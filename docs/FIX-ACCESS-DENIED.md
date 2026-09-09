@@ -47,10 +47,14 @@ that identity in.
 There is a button near it, **Copy policy**. Click it. AWS has just written the exact
 permission you need and put it on your clipboard. Now go to Step 3 and paste it in.
 
-### If it says "Public"
+### If it says "Public"  ← this is the ADspace setup
 
-CloudFront is coming in as an anonymous member of the public, so the bucket itself has to
-allow public reads. Go to Step 3 and check the policy covers the `content/` folder.
+CloudFront fetches files as an ordinary anonymous visitor, so the bucket itself has to
+allow anyone to read them. There is no button to click here. Go to Step 3.
+
+Confirmed on the ADspace distribution: **Origin access: Public**, and **Origin path** is
+empty, which means the address mapping is already correct. `content/x.jpg` in the bucket
+really is `mycdn.adspace.me/content/x.jpg`. The only thing missing is permission.
 
 ### If it says "Legacy access identities"
 
@@ -71,7 +75,28 @@ read what.
 **If you copied a policy in Step 2**, delete everything in the box, paste what AWS gave
 you, and click **Save changes**. You are done with this step.
 
-**If you did not**, look through the text for lines starting with `"Resource"`. They look
+**For the ADspace bucket**, since origin access is Public, the box needs a rule that lets
+anyone read files. If the box is empty, paste this in exactly:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "PublicReadForCDN",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::myadspace/*"
+    }
+  ]
+}
+```
+
+If the box already has text in it, **do not delete it**. Something in there is what makes
+the logo work. Read on.
+
+**If there is existing text**, look through it for lines starting with `"Resource"`. They look
 like this:
 
 ```
@@ -96,6 +121,29 @@ Keep the quotes and the comma exactly as they were. Click **Save changes**.
 
 If it refuses to save, copy the whole box into a message to me before changing anything
 else. A broken policy is worth avoiding.
+
+### If it saves but still does not work
+
+Same **Permissions** tab, scroll up to **Block public access (bucket settings)** and click
+**Edit**.
+
+A bucket policy that allows public reads does nothing while this is switched on. It
+overrules the policy. The two settings that matter are the ones mentioning **public bucket
+policies**, and they must be **off** for the policy above to take effect.
+
+If everything here is already off, the policy is being applied and the problem is
+elsewhere. Go to Step 4.
+
+### A note for later, not now
+
+**Origin access: Public** means the bucket can also be read directly at
+`myadspace.s3.ap-southeast-5.amazonaws.com`, going around CloudFront entirely. That is how
+your CDN already works today, so this is not something the portal introduced and not a
+reason to stop.
+
+Tightening it means switching the origin to **Origin access control** so only CloudFront
+can reach the bucket. Worth doing eventually. Not while you are debugging, because changing
+it mid-fix makes it much harder to tell which change did what.
 
 ---
 
