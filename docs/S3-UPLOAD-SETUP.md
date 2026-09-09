@@ -210,6 +210,25 @@ If the upload fails:
   admin session expired, sign in again. `too_large` means the file is over 2 GB.
 - **"S3 rejected the upload"** — usually the CORS rule in step 2, or the IAM policy prefix
   not matching `S3_PREFIX`.
+- **The URL returns `AccessDenied` from S3.** The file uploaded fine, the path is right,
+  but nothing is allowed to read it. The upload user only has `s3:PutObject`, which is
+  correct, so this is about how the bucket grants reads. Check in this order:
+
+  1. **CloudFront → your distribution → Origins → the S3 origin → Origin access.**
+     If it uses **Origin access control (OAC)**, the bucket policy must let that
+     distribution read. AWS offers to write that policy for you when you create the OAC,
+     and it is easy to end up with one scoped to a narrower path than `content/*`.
+  2. **S3 → myadspace → Permissions → Bucket policy.** Whatever statement lets
+     `adspace-brandname.png` be read needs to cover `arn:aws:s3:::myadspace/content/*`
+     as well. If the `Resource` on that statement names specific files or a different
+     prefix, new uploads are not covered by it.
+  3. **Default encryption.** S3 → Permissions → Default encryption. If the bucket uses
+     **SSE-KMS**, CloudFront also needs `kms:Decrypt` on that key, otherwise every newly
+     uploaded object returns AccessDenied while older unencrypted ones keep working. This
+     one catches people out because nothing about it looks like a permissions problem.
+
+  Post the bucket policy and I can tell you which statement to widen.
+
 - **"Uploaded to S3, but nothing is served at ..."** — the file reached the bucket but
   CloudFront does not serve it at that address, so the post would be broken for the client.
   The portal refuses to save it rather than let that happen. Work out the right mapping:
