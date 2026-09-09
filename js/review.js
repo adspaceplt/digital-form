@@ -34,8 +34,8 @@
     $('coverBody').textContent = body;
     $('passForm').hidden = !wantsPass;
     $('coverContact').hidden = wantsPass;
-    $('coverContact').href = 'mailto:' + cfg.supportEmail +
-      '?subject=' + encodeURIComponent('Content review link');
+    $('coverContact').href = 'mailto:' + (cfg.accountEmail || cfg.supportEmail) +
+      '?subject=' + encodeURIComponent('Content review access');
     document.querySelector('.brand-for').hidden = true;
     if (wantsPass) $('passInput').focus();
   }
@@ -401,9 +401,8 @@
   // ---- Load ----------------------------------------------------------------
   function load() {
     if (!token && API.configured) {
-      showState('Access your review link',
-        'Each client is issued a unique link. Please use the link provided by ' +
-        cfg.agencyName + ' to access your content.');
+      showState('Content Review',
+        'Please access using your unique link provided by ' + cfg.agencyName + '.');
       return;
     }
     API.getReviewFeed(token, passcode).then(function (data) {
