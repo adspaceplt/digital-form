@@ -23,6 +23,8 @@
     ['instagram:reel',     'Instagram Reels'],
     ['instagram:story',    'Instagram Story'],
     ['facebook:feed',      'Facebook post'],
+    ['facebook:carousel',  'Facebook carousel'],
+    ['facebook:reel',      'Facebook Reels'],
     ['facebook:story',     'Facebook Story'],
     ['tiktok:reel',        'TikTok video'],
     ['xhs:note',           'RedNote post'],

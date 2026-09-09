@@ -160,10 +160,15 @@
 
   /* Each platform shows a different account name, so use the one set on the
      client and fall back to the brand name rather than inventing a handle. */
-  /* Instagram and TikTok show an @, Facebook and RedNote do not. */
-  function atHandle(h) {
+  /* Instagram and TikTok use @ handles. Facebook Pages and RedNote accounts do
+     not, and a Facebook Reel is still a Page, so the @ depends on the account
+     rather than on the format being vertical. */
+  const AT_PLATFORMS = { instagram: true, tiktok: true, cover: true };
+
+  function atHandle(h, post) {
     h = String(h || '');
-    return h && h.charAt(0) !== '@' ? '@' + h : h;
+    if (!h || !AT_PLATFORMS[post.platform || 'instagram']) return h;
+    return h.charAt(0) === '@' ? h : '@' + h;
   }
 
   /* Which account each placement belongs to. A cover image is shown inside the
@@ -306,7 +311,7 @@
     screen.appendChild(rail);
 
     const foot = el('div', 'mk-vfoot');
-    foot.appendChild(el('div', 'mk-vhandle', esc(atHandle(handleFor(post, cfg)))));
+    foot.appendChild(el('div', 'mk-vhandle', esc(atHandle(handleFor(post, cfg), post))));
     const cap = el('div', 'mk-vcaption');
     cap.innerHTML = captionHtml(post.caption);
     foot.appendChild(clampable(cap, 2));
