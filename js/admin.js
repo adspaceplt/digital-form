@@ -490,9 +490,29 @@
 
   /* One place that knows where files live. S3 behind CloudFront when it is set
      up, Supabase storage otherwise. Returns the URL to save on the post. */
+  /* The content type is authoritative, the filename is not. A video named
+     .jpg, or a Drive file with no extension at all, must not decide how the
+     file is stored or how the client's browser is told to play it. */
+  var MIME_EXT = {
+    'video/mp4': 'mp4', 'video/quicktime': 'mov', 'video/webm': 'webm',
+    'video/x-m4v': 'm4v', 'video/mpeg': 'mpg', 'video/x-matroska': 'mkv',
+    'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp',
+    'image/gif': 'gif', 'image/heic': 'heic', 'image/avif': 'avif'
+  };
+
+  function extFor(mimeType, name) {
+    var byMime = MIME_EXT[String(mimeType || '').toLowerCase().split(';')[0].trim()];
+    if (byMime) return byMime;
+
+    var fromName = String(name || '').split('.').pop().toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (fromName && fromName.length <= 5 && /\./.test(String(name || ''))) return fromName;
+
+    // Last resort: at least keep video and image apart.
+    return String(mimeType || '').indexOf('video') === 0 ? 'mp4' : 'jpg';
+  }
+
   function storeFile(file) {
-    var ext = (file.name.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-    return storeBlob(file, ext || 'bin', file.type);
+    return storeBlob(file, extFor(file.type, file.name), file.type);
   }
 
   function storeBlob(blob, ext, contentType) {
@@ -532,7 +552,17 @@
         }
       }).then(function (put) {
         if (!put.ok) throw new Error('S3 rejected the upload (HTTP ' + put.status + ').');
-        return r.data.publicUrl;
+
+        // The file is in the bucket, but that does not prove CloudFront serves it
+        // at the URL we are about to save. Check before it becomes a broken post.
+        return probeUrl(r.data.publicUrl).then(function (info) {
+          if (info.ok) return r.data.publicUrl;
+          throw new Error(
+            'Uploaded to S3, but nothing is served at ' + r.data.publicUrl + ' — so the ' +
+            'client would see a broken post. Usually the CloudFront distribution has an ' +
+            'Origin path set, which shifts where files appear. Open that URL in a tab to ' +
+            'confirm, then see docs/S3-UPLOAD-SETUP.md.');
+        });
       });
     });
   }
@@ -686,8 +716,7 @@
         return r.blob();
       })
       .then(function (blob) {
-        var ext = (f.name.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-        return storeBlob(blob, ext || (f.isVideo ? 'mp4' : 'jpg'), f.mimeType);
+        return storeBlob(blob, extFor(f.mimeType, f.name), f.mimeType);
       })
       .then(function (publicUrl) {
         state.drafts.push({
