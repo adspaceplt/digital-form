@@ -302,23 +302,82 @@ a { color: inherit; }
 
 /* Phone-framed verticals */
 .mk-phone {
-  width: 300px; max-width: 100%; background: #000; border-radius: 34px; padding: 8px;
-  box-shadow: 0 0 0 2px #2a2a2a, 0 18px 40px rgba(0,0,0,.28);
+  position: relative;
+  width: 300px; max-width: 100%;
+  padding: 5px;
+  border-radius: 46px;
+  /* brushed metal rail rather than a flat black block */
+  background: linear-gradient(155deg, #4a4a50 0%, #17171a 26%, #0b0b0d 62%, #303035 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.13),
+    0 1px 2px rgba(0,0,0,.45),
+    0 10px 24px rgba(0,0,0,.20),
+    0 30px 60px rgba(0,0,0,.16);
 }
+/* side buttons, just enough to read as hardware */
+.mk-phone::before, .mk-phone::after {
+  content: ''; position: absolute; width: 2px; border-radius: 3px;
+  background: linear-gradient(90deg, #2c2c31, #4c4c53);
+}
+.mk-phone::before { left: -2px; top: 104px; height: 54px; }
+.mk-phone::after  { right: -2px; top: 122px; height: 42px; }
+
 .mk-screen {
-  position: relative; border-radius: 27px; overflow: hidden; background: #000; color: #fff;
+  position: relative; border-radius: 41px; overflow: hidden;
+  background: #000; color: #fff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
 }
 .mk-screen .mk-media { aspect-ratio: 9 / 16; background: #111; }
+
+/* Status bar, island and home indicator */
+.mk-statusbar {
+  position: absolute; top: 0; left: 0; right: 0; height: 46px; z-index: 3;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 2px 20px 0 24px; pointer-events: none;
+  font-size: 12.5px; font-weight: 600; letter-spacing: .2px;
+  color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.4);
+}
+.mk-sysicons { display: flex; align-items: center; gap: 5px; }
+.mk-island {
+  position: absolute; top: 9px; left: 50%; transform: translateX(-50%);
+  width: 84px; height: 25px; border-radius: 999px; background: #000; z-index: 4;
+}
+.mk-home {
+  position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%);
+  width: 108px; height: 4px; border-radius: 999px;
+  /* solid white with a soft dark halo, so it stays visible on light and dark
+     content alike. mix-blend-mode disappeared against dark video. */
+  background: rgba(255,255,255,.92); z-index: 4; pointer-events: none;
+  box-shadow: 0 0 6px rgba(0,0,0,.35);
+}
+
+/* App chrome at the top of the screen */
+.mk-topbar {
+  position: absolute; top: 50px; left: 0; right: 0; z-index: 3;
+  display: flex; align-items: center; padding: 0 14px; color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,.45);
+}
+.mk-topbar-ig { justify-content: space-between; }
+.mk-topbar-ig b { font-size: 17px; font-weight: 700; letter-spacing: -.3px; }
+.mk-topbar-tt { justify-content: center; gap: 20px; font-size: 14px; }
+.mk-topbar-tt span { color: rgba(255,255,255,.62); }
+.mk-topbar-tt b { position: relative; font-weight: 700; }
+.mk-topbar-tt b::after {
+  content: ''; position: absolute; left: 50%; transform: translateX(-50%);
+  bottom: -7px; width: 22px; height: 2.5px; background: #fff; border-radius: 2px;
+}
+
 .mk-rail {
-  position: absolute; right: 8px; bottom: 136px;
-  display: flex; flex-direction: column; align-items: center; gap: 18px;
-  text-shadow: 0 1px 3px rgba(0,0,0,.5);
+  position: absolute; right: 10px; bottom: 150px; z-index: 2;
+  display: flex; flex-direction: column; align-items: center; gap: 20px;
+  text-shadow: 0 1px 4px rgba(0,0,0,.55);
 }
 .mk-rail span { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .mk-rail b { font-size: 11px; font-weight: 600; }
 .mk-vfoot {
-  position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 56px 16px 12px;
-  background: linear-gradient(0deg, rgba(0,0,0,.75), rgba(0,0,0,0));
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+  padding: 14px 58px 30px 16px;
+  background: linear-gradient(0deg, rgba(0,0,0,.8) 12%, rgba(0,0,0,0));
   text-shadow: 0 1px 3px rgba(0,0,0,.5);
 }
 .mk-vhandle { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
@@ -328,29 +387,31 @@ a { color: inherit; }
 .mk-audio {
   display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: 11.5px; color: #eee;
 }
-.mk-tiktok .mk-rail { bottom: 120px; }
+.mk-tiktok .mk-rail { bottom: 150px; }
 
 /* Stories */
 .mk-story .mk-screen { background: #111; }
 .mk-story-stage { position: relative; }
-.mk-bars { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; gap: 3px; }
+.mk-bars { position: absolute; top: 52px; left: 10px; right: 10px; z-index: 3;
+  display: flex; gap: 3px; }
 .mk-bar { flex: 1; height: 2px; border-radius: 2px; background: rgba(255,255,255,.35); }
 .mk-bar.is-on { background: #fff; }
 .mk-story-head {
-  position: absolute; top: 18px; left: 10px; right: 10px;
+  position: absolute; top: 62px; left: 12px; right: 12px; z-index: 3;
   display: flex; align-items: center; gap: 8px;
   text-shadow: 0 1px 3px rgba(0,0,0,.5);
 }
 .mk-story-head .mk-avatar { width: 26px; height: 26px; border: 1.5px solid #fff; }
 .mk-story-time { color: #ddd; font-size: 11.5px; }
 .mk-sticker {
-  position: absolute; left: 16px; right: 16px; bottom: 76px;
+  position: absolute; left: 16px; right: 16px; bottom: 92px; z-index: 2;
   background: rgba(0,0,0,.42); border-radius: 10px; padding: 10px 12px;
   font-size: 13px; line-height: 1.4; color: #fff; backdrop-filter: blur(2px);
 }
-.mk-tap { position: absolute; top: 44px; bottom: 0; width: 34%; border: 0; background: none; }
+.mk-tap { position: absolute; top: 86px; bottom: 26px; width: 34%; border: 0;
+  background: none; z-index: 3; }
 .mk-tap-l { left: 0; } .mk-tap-r { right: 0; }
-.mk-counter-story { top: auto; bottom: 12px; right: 12px; }
+.mk-counter-story { top: auto; bottom: 26px; right: 12px; z-index: 3; }
 
 /* XiaoHongShu */
 .mk-xhs {
