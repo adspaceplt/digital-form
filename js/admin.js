@@ -23,6 +23,9 @@
     ['instagram:reel',     'Instagram Reels'],
     ['instagram:story',    'Instagram Story'],
     ['facebook:feed',      'Facebook post'],
+    ['facebook:multi',     'Facebook multi-photo post'],
+    ['facebook:carousel',  'Facebook carousel ad'],
+    ['facebook:reel',      'Facebook Reels'],
     ['facebook:story',     'Facebook Story'],
     ['tiktok:reel',        'TikTok video'],
     ['xhs:note',           'RedNote post'],
@@ -443,10 +446,12 @@
     $('publishSet').textContent = live ? 'Hide from client' : 'Send to client';
     $('publishSet').className = live ? 'btn btn-warn' : 'btn btn-go';
 
-    msg('setMsg', live
-      ? 'Published. Visible to the client on their review link.'
-      : 'Draft. Not visible to the client.',
-      live ? 'ok' : '');
+    // The standing state belongs beside the title. #setMsg is kept free for
+    // things that just happened, so one does not overwrite the other.
+    $('setNote').textContent = live
+      ? 'Visible to the client on their review link.'
+      : 'Not visible to the client yet.';
+    msg('setMsg', '');
   }
 
   $('publishSet').addEventListener('click', function () {
@@ -476,6 +481,9 @@
         state.client.name + ' — ' + state.batch.title);
       state.batch.published = next;
       paintSetHeader();
+      msg('setMsg', next
+        ? 'Published. The client can now see this set on their review link.'
+        : 'Withdrawn. This set is no longer visible to the client.', next ? 'ok' : '');
       loadBatches();
     });
   }
@@ -1242,7 +1250,9 @@
         var body = row.querySelector('.draft-body');
         var strip = slidesNode(d.media, function () { saveDrafts(); renderDrafts(); });
         var hint = el2('div', 'slide-hint');
-        hint.textContent = 'Slide 1 is the cover and sets the shape of the whole carousel.';
+        hint.textContent = d.placement === 'facebook:multi'
+          ? 'Photo 1 takes the largest tile in the grid.'
+          : 'Slide 1 is the cover and sets the shape of the whole carousel.';
         body.insertBefore(strip, body.children[1] || null);
         body.insertBefore(hint, strip.nextSibling);
       }

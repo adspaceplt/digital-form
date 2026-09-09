@@ -11,6 +11,7 @@
     bookmark: '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
     dots: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
     music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+    globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18"/>',
     star: '<path d="m12 3 2.7 5.6 6.3.9-4.5 4.4 1 6.1-5.5-2.9L6.5 20l1-6.1L3 9.5l6.3-.9z"/>',
     thumb: '<path d="M7 22H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3m0 10 4.4-9.9V2a3 3 0 0 1 3 3v5h4.6a2 2 0 0 1 2 2.4l-1.4 7A2 2 0 0 1 18.6 21H7z"/>'
   };
@@ -47,7 +48,8 @@
     'instagram:feed':     { min: 0.8,  max: 1.91 },   // 4:5 up to 1.91:1
     'instagram:carousel': { min: 0.8,  max: 1.91 },
     'facebook:feed':      { min: 0.6,  max: 1.91 },
-    'facebook:carousel':  { min: 0.6,  max: 1.91 },
+    'facebook:multi':     { min: 0.6,  max: 1.91 },
+    'facebook:carousel':  { min: 0.8,  max: 1.91 },   // all ad cards share one shape
     'xhs:note':           { min: 0.65, max: 1.5 },
     'xhs:feed':           { min: 0.65, max: 1.5 }
   };
@@ -160,16 +162,32 @@
 
   /* Each platform shows a different account name, so use the one set on the
      client and fall back to the brand name rather than inventing a handle. */
-  /* Instagram and TikTok show an @, Facebook and RedNote do not. */
-  function atHandle(h) {
+  /* Instagram and TikTok use @ handles. Facebook Pages and RedNote accounts do
+     not, and a Facebook Reel is still a Page, so the @ depends on the account
+     rather than on the format being vertical. */
+  const AT_PLATFORMS = { instagram: true, tiktok: true, cover: true };
+
+  function atHandle(h, post) {
     h = String(h || '');
-    return h && h.charAt(0) !== '@' ? '@' + h : h;
+    if (!h || !AT_PLATFORMS[post.platform || 'instagram']) return h;
+    return h.charAt(0) === '@' ? h : '@' + h;
   }
+
+  /* Which account each placement belongs to. A cover image is shown inside the
+     Reels player, so it carries the Instagram account rather than none. */
+  const HANDLE_KEY = {
+    instagram: 'instagram',
+    facebook:  'facebook',
+    tiktok:    'tiktok',
+    xhs:       'xhs',
+    cover:     'instagram'
+  };
 
   function handleFor(post, cfg) {
     // The account name set on the client comes first. A handle stored on the
     // post is only a fallback, since older posts saved the brand name there.
-    const h = (cfg.handles || {})[post.platform || 'instagram'];
+    const key = HANDLE_KEY[post.platform || 'instagram'] || 'instagram';
+    const h = (cfg.handles || {})[key];
     if (h) return h;
     if (post.handle) return post.handle;
     return cfg.clientHandle || cfg.clientName || '';
@@ -232,7 +250,6 @@
     head.appendChild(avatar(post, cfg));
     const who = el('div', 'mk-who');
     who.appendChild(el('span', 'mk-handle', esc(handleFor(post, cfg))));
-    who.appendChild(el('span', 'mk-sub', 'Sponsored'));
     head.appendChild(who);
     head.appendChild(el('span', 'mk-more', icon('dots', 20)));
     frame.appendChild(head);
@@ -250,14 +267,110 @@
     return frame;
   }
 
+  /* Facebook's photo grid for an organic multi-image post. Not the paid ad
+     carousel, which is swipeable and a different product entirely.
+       2  side by side
+       3  one across the top, two beneath
+       4  two by two
+       5+ two on top, three beneath, the last carrying +N for the remainder
+     Tile proportions are close to Facebook's rather than pixel exact. */
+  function facebookGrid(media, count) {
+    const shown = media.slice(0, 5);
+    const grid = el('div', 'fb-grid fb-grid-' + Math.min(shown.length, 5));
+    shown.forEach(function (m, i) {
+      const cell = el('div', 'fb-cell');
+      cell.appendChild(mediaNode(m, {}));
+      if (count > 5 && i === 4) {
+        cell.appendChild(el('div', 'fb-more', '+' + (count - 5)));
+      }
+      grid.appendChild(cell);
+    });
+    return grid;
+  }
+
+  /* A paid carousel card: the image, then the white strip carrying the
+     headline and the call to action button. Cards are narrower than the frame
+     so the next one peeks in from the right, the way Meta renders them. */
+  function fbAdCarousel(post, cfg, shape) {
+    const wrap = el('div', 'fb-ad-carousel');
+    const track = el('div', 'fb-ad-track');
+    const media = post.media || [];
+    const headlines = post.headlines || [];
+    const cta = post.cta || 'Learn more';
+
+    media.forEach(function (item, i) {
+      const card = el('div', 'fb-ad-card');
+      const shot = el('div', 'fb-ad-shot');
+      const known = clampRatio(item.width, item.height, shape);
+      shot.style.aspectRatio = known || 1;
+      shot.appendChild(mediaNode(item, {
+        onSize: function (w, h) {
+          const r = clampRatio(w, h, shape);
+          // Every card in a Meta carousel is cropped to the first card's shape.
+          if (r && i === 0) {
+            Array.prototype.forEach.call(track.children, function (c) {
+              c.firstChild.style.aspectRatio = r;
+            });
+          }
+        }
+      }));
+      card.appendChild(shot);
+
+      const foot = el('div', 'fb-ad-foot');
+      const text = el('div', 'fb-ad-text');
+      text.appendChild(el('div', 'fb-ad-headline',
+        esc(headlines[i] || post.headline || handleFor(post, cfg))));
+      // Meta shows the display link under the headline. Left out when the post
+      // carries none, rather than padding the card with a second Sponsored.
+      if (post.link_caption) {
+        text.appendChild(el('div', 'fb-ad-sub', esc(post.link_caption)));
+      }
+      foot.appendChild(text);
+      foot.appendChild(el('span', 'fb-ad-cta', esc(cta)));
+      card.appendChild(foot);
+      track.appendChild(card);
+    });
+    wrap.appendChild(track);
+
+    if (media.length > 1) {
+      const prev = el('button', 'mk-arrow mk-arrow-prev', '&#8249;');
+      const next = el('button', 'mk-arrow mk-arrow-next', '&#8250;');
+      prev.type = 'button'; next.type = 'button';
+      prev.setAttribute('aria-label', 'Previous card');
+      next.setAttribute('aria-label', 'Next card');
+      const counter = el('div', 'mk-counter', '1/' + media.length);
+
+      let index = 0;
+      function go(i) {
+        index = Math.max(0, Math.min(media.length - 1, i));
+        // Cards are 86% of the frame; the gap keeps the peek even at the end.
+        track.style.transform = 'translateX(calc(' + (index * -86) + '% - ' +
+          (index * 8) + 'px))';
+        counter.textContent = (index + 1) + '/' + media.length;
+        prev.disabled = index === 0;
+        next.disabled = index === media.length - 1;
+      }
+      prev.addEventListener('click', function () { go(index - 1); });
+      next.addEventListener('click', function () { go(index + 1); });
+      wrap.appendChild(prev);
+      wrap.appendChild(next);
+      wrap.appendChild(counter);
+      go(0);
+    }
+    return wrap;
+  }
+
   // ---- Facebook feed --------------------------------------------------------
-  function facebookFeed(post, cfg) {
+  /* One shell for every Facebook post. `sub` is the line under the Page name,
+     which is where an ad says Sponsored and an organic post says how long ago
+     it went up. `body` is whatever sits between caption and action bar. */
+  function facebookShell(post, cfg, sub, body) {
     const frame = el('article', 'mk mk-fb');
     const head = el('header', 'mk-head');
     head.appendChild(avatar(post, cfg));
     const who = el('div', 'mk-who');
     who.appendChild(el('span', 'mk-handle', esc(handleFor(post, cfg))));
-    who.appendChild(el('span', 'mk-sub', 'Sponsored &middot; <span>Johor Bahru</span>'));
+    who.appendChild(el('span', 'mk-sub', sub));
     head.appendChild(who);
     head.appendChild(el('span', 'mk-more', icon('dots', 20)));
     frame.appendChild(head);
@@ -266,7 +379,7 @@
     cap.innerHTML = captionHtml(post.caption);
     frame.appendChild(clampable(cap, 3, ['See more', 'See less']));
 
-    frame.appendChild(carouselNode(post.media || [], { shape: SHAPES['facebook:feed'] }));
+    frame.appendChild(body);
 
     const bar = el('div', 'mk-fb-bar');
     bar.innerHTML =
@@ -275,6 +388,29 @@
       '<span>' + icon('send', 18) + ' Share</span>';
     frame.appendChild(bar);
     return frame;
+  }
+
+  const FB_ORGANIC_SUB = '2h &middot; ' + icon('globe', 12);
+
+  function facebookFeed(post, cfg) {
+    const media = post.media || [];
+    // A single upload keeps the plain frame; more than one falls back to the
+    // photo grid rather than silently showing only the first file.
+    return facebookShell(post, cfg, FB_ORGANIC_SUB, media.length > 1
+      ? facebookGrid(media, media.length)
+      : carouselNode(media, { shape: SHAPES['facebook:feed'] }));
+  }
+
+  function facebookMulti(post, cfg) {
+    const media = post.media || [];
+    return facebookShell(post, cfg, FB_ORGANIC_SUB, media.length > 1
+      ? facebookGrid(media, media.length)
+      : carouselNode(media, { shape: SHAPES['facebook:multi'] }));
+  }
+
+  function facebookAd(post, cfg) {
+    return facebookShell(post, cfg, 'Sponsored &middot; ' + icon('globe', 12),
+      fbAdCarousel(post, cfg, SHAPES['facebook:carousel']));
   }
 
   // ---- Reels / TikTok -------------------------------------------------------
@@ -295,7 +431,7 @@
     screen.appendChild(rail);
 
     const foot = el('div', 'mk-vfoot');
-    foot.appendChild(el('div', 'mk-vhandle', esc(atHandle(handleFor(post, cfg)))));
+    foot.appendChild(el('div', 'mk-vhandle', esc(atHandle(handleFor(post, cfg), post))));
     const cap = el('div', 'mk-vcaption');
     cap.innerHTML = captionHtml(post.caption);
     foot.appendChild(clampable(cap, 2));
@@ -434,7 +570,8 @@
     'instagram:reel':     function (p, c) { return vertical(p, c, 'reel'); },
     'instagram:story':    story,
     'facebook:feed':      facebookFeed,
-    'facebook:carousel':  facebookFeed,
+    'facebook:multi':     facebookMulti,
+    'facebook:carousel':  facebookAd,
     'facebook:story':     story,
     'facebook:reel':      function (p, c) { return vertical(p, c, 'reel'); },
     'tiktok:reel':        function (p, c) { return vertical(p, c, 'tiktok'); },
@@ -450,7 +587,8 @@
     'instagram:reel':     ['Instagram Reels', '1080 x 1920'],
     'instagram:story':    ['Instagram Story', '1080 x 1920'],
     'facebook:feed':      ['Facebook Post', '1200 x 1200'],
-    'facebook:carousel':  ['Facebook Carousel', '1080 x 1080'],
+    'facebook:multi':     ['Facebook Multi-photo Post', '1080 x 1080'],
+    'facebook:carousel':  ['Facebook Carousel Ad', '1080 x 1080'],
     'facebook:story':     ['Facebook Story', '1080 x 1920'],
     'facebook:reel':      ['Facebook Reels', '1080 x 1920'],
     'tiktok:reel':        ['TikTok', '1080 x 1920'],
