@@ -19,6 +19,14 @@ window.ADSPACE_CONFIG = {
   // On Pro you can raise it in Dashboard > Storage > Settings, then change
   // this number to match. Anything bigger should be pasted as a link instead.
   maxUploadMB: 50,
+
+  // Uploads go to S3 behind CloudFront when this is on, which removes the size
+  // limit above. Requires the sign-upload edge function to be deployed.
+  // Leave enabled false to keep using Supabase storage.
+  s3: {
+    enabled: false,
+    functionName: 'sign-upload'
+  },
   brandLogo: 'https://mycdn.adspace.me/adspace-brandname.png',
   agencyName: 'ADspace',
   supportEmail: 'adspacestudios@gmail.com'

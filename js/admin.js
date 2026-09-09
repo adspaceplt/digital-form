@@ -351,7 +351,8 @@
     if (!files || !files.length) return;
     if (!state.batch) { msg('setMsg', 'Open a content set first.', 'err'); return; }
 
-    var cap = (cfg.maxUploadMB || 50) * 1024 * 1024;
+    // The size limit belongs to Supabase storage. S3 has no such ceiling.
+    var cap = usingS3() ? Infinity : (cfg.maxUploadMB || 50) * 1024 * 1024;
     var all = Array.prototype.slice.call(files);
     var queue = all.filter(function (f) { return f.size <= cap; });
     var toobig = all.filter(function (f) { return f.size > cap; });
@@ -374,17 +375,11 @@
     queue.reduce(function (chain, file) {
       return chain.then(function () {
         return probe(file).then(function (info) {
-          var ext  = (file.name.split('.').pop() || 'bin').toLowerCase();
-          var path = state.client.id + '/' + crypto.randomUUID() + '.' + ext;
-          return db.storage.from(cfg.storageBucket)
-            .upload(path, file, { cacheControl: '31536000' })
-            .then(function (r) {
-              if (r.error) throw r.error;
-              var pub = db.storage.from(cfg.storageBucket).getPublicUrl(path).data.publicUrl;
-              pushDraft(pub, info);
-              done++;
-              if (!toobig.length) msg('setMsg', 'Uploaded ' + done + ' of ' + queue.length + '…');
-            });
+          return storeFile(file).then(function (publicUrl) {
+            pushDraft(publicUrl, info);
+            done++;
+            if (!toobig.length) msg('setMsg', 'Uploaded ' + done + ' of ' + queue.length + '…');
+          });
         });
       });
     }, Promise.resolve())
@@ -405,6 +400,43 @@
   }
 
   function mb(bytes) { return (bytes / 1024 / 1024).toFixed(0); }
+
+  function usingS3() { return Boolean(cfg.s3 && cfg.s3.enabled); }
+
+  /* One place that knows where files live. S3 behind CloudFront when it is set
+     up, Supabase storage otherwise. Returns the URL to save on the post. */
+  function storeFile(file) {
+    var ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    if (!usingS3()) {
+      var path = state.client.id + '/' + crypto.randomUUID() + '.' + (ext || 'bin');
+      return db.storage.from(cfg.storageBucket)
+        .upload(path, file, { cacheControl: '31536000' })
+        .then(function (r) {
+          if (r.error) throw r.error;
+          return db.storage.from(cfg.storageBucket).getPublicUrl(path).data.publicUrl;
+        });
+    }
+
+    // Ask our own function to sign one upload, then send the file straight to
+    // S3. The file never passes through Supabase, so there is no size ceiling.
+    return db.functions.invoke(cfg.s3.functionName || 'sign-upload', {
+      body: { ext: ext || 'bin', clientId: state.client.id, size: file.size }
+    }).then(function (r) {
+      if (r.error) throw new Error('Could not start the upload. ' + r.error.message);
+      if (!r.data || !r.data.uploadUrl) throw new Error(
+        'Upload was refused: ' + ((r.data && r.data.error) || 'unknown reason'));
+
+      return fetch(r.data.uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type || 'application/octet-stream' }
+      }).then(function (put) {
+        if (!put.ok) throw new Error('S3 rejected the upload (HTTP ' + put.status + ').');
+        return r.data.publicUrl;
+      });
+    });
+  }
 
   function pushDraft(url, info) {
     // Store the real pixel size so the client's preview frame matches the file
