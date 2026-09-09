@@ -161,6 +161,24 @@
 
   $('backToClients').addEventListener('click', showClients);
 
+  $('deleteClient').addEventListener('click', function () {
+    var c = state.client;
+    db.from('batches').select('id').eq('client_id', c.id).then(function (r) {
+      var sets = (r.data || []).length;
+      var warning = 'Delete ' + c.name + ' permanently?\n\n' +
+        'This removes their review link and ' + sets + ' content set' +
+        (sets === 1 ? '' : 's') + ', including every post and every approval on record.\n\n' +
+        'This cannot be undone.';
+      if (!confirm(warning)) return;
+      if (!confirm('Last check. Type of thing you cannot get back.\n\nDelete ' + c.name + '?')) return;
+
+      db.from('clients').delete().eq('id', c.id).then(function (res) {
+        if (res.error) { msg('clientMsg', res.error.message, 'err'); return; }
+        showClients();
+      });
+    });
+  });
+
   $('copyLink').addEventListener('click', function () {
     navigator.clipboard.writeText($('clientLink').value).then(function () {
       $('copyLink').textContent = 'Copied';
@@ -258,6 +276,26 @@
       loadBatches();
     });
   }
+
+  $('deleteSet').addEventListener('click', function () {
+    var b = state.batch;
+    db.from('posts').select('id').eq('batch_id', b.id).then(function (r) {
+      var n = (r.data || []).length;
+      var warning = 'Delete "' + b.title + '"?\n\n' +
+        'This removes ' + n + ' post' + (n === 1 ? '' : 's') + ' and any approvals on them.' +
+        (b.published ? '\n\nThe client can currently see this set.' : '') +
+        '\n\nThis cannot be undone.';
+      if (!confirm(warning)) return;
+
+      db.from('batches').delete().eq('id', b.id).then(function (res) {
+        if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
+        state.batch = null;
+        clearDrafts();
+        $('setPanel').hidden = true;
+        loadBatches();
+      });
+    });
+  });
 
   $('renameSet').addEventListener('click', function () {
     var title = (window.prompt('Rename this set:', state.batch.title) || '').trim();
@@ -369,9 +407,16 @@
   function mb(bytes) { return (bytes / 1024 / 1024).toFixed(0); }
 
   function pushDraft(url, info) {
+    // Store the real pixel size so the client's preview frame matches the file
+    // before it has finished loading.
     state.drafts.push({
       placement: guessPlacement(info),
-      media: [{ url: url, type: info.isVideo ? 'video' : 'image' }],
+      media: [{
+        url: url,
+        type: info.isVideo ? 'video' : 'image',
+        width: info.width || null,
+        height: info.height || null
+      }],
       caption: '', caption_zh: '', title: '', showZh: false
     });
     renderDrafts();

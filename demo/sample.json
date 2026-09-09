@@ -16,7 +16,14 @@
           "format": "feed",
           "handle": "kembaracoffee",
           "position": 0,
-          "media": [{ "url": "/demo/ph-feed-1.svg", "type": "image" }],
+          "media": [
+            {
+              "url": "/demo/ph-feed-1.svg",
+              "type": "image",
+              "width": 1080,
+              "height": 1350
+            }
+          ],
           "caption": "☕ Your 3pm slump just met its match\n\nSlow steeped for 18 hours, so every sip stays smooth instead of bitter. No sugar needed, no crash after.\n\nCold Brew Original is now on the menu at both JB outlets.\n\n📍 Taman Molek and Mount Austin\n#KembaraCoffee #JBCafe #ColdBrew",
           "caption_zh": "☕ 下午三点的疲惫，一杯就解决\n\n慢萃18小时，入口顺滑不带苦涩。不加糖也好喝，喝完不心慌。\n\n经典冷萃现已在两家门市供应。\n\n📍 Taman Molek ・ Mount Austin\n#新山咖啡 #冷萃"
         },
@@ -27,9 +34,24 @@
           "handle": "kembaracoffee",
           "position": 1,
           "media": [
-            { "url": "/demo/ph-carousel-1.svg", "type": "image" },
-            { "url": "/demo/ph-carousel-2.svg", "type": "image" },
-            { "url": "/demo/ph-carousel-3.svg", "type": "image" }
+            {
+              "url": "/demo/ph-carousel-1.svg",
+              "type": "image",
+              "width": 1080,
+              "height": 1350
+            },
+            {
+              "url": "/demo/ph-carousel-2.svg",
+              "type": "image",
+              "width": 1080,
+              "height": 1350
+            },
+            {
+              "url": "/demo/ph-carousel-3.svg",
+              "type": "image",
+              "width": 1080,
+              "height": 1350
+            }
           ],
           "caption": "✨ Three ways to order cold brew like a regular\n\nSwipe for the combinations our baristas actually drink on their break. Number two is the one nobody expects to work.\n\nSave this for your next visit.\n#KembaraCoffee #JBFoodie"
         },
@@ -39,7 +61,14 @@
           "format": "reel",
           "handle": "kembaracoffee",
           "position": 2,
-          "media": [{ "url": "/demo/ph-reel-1.svg", "type": "image" }],
+          "media": [
+            {
+              "url": "/demo/ph-reel-1.svg",
+              "type": "image",
+              "width": 1080,
+              "height": 1920
+            }
+          ],
           "caption": "18 hours in 15 seconds ⏳ This is why it never tastes bitter. #ColdBrew #JBCafe #KembaraCoffee"
         },
         {
@@ -49,8 +78,18 @@
           "handle": "kembaracoffee",
           "position": 3,
           "media": [
-            { "url": "/demo/ph-story-1.svg", "type": "image" },
-            { "url": "/demo/ph-story-2.svg", "type": "image" }
+            {
+              "url": "/demo/ph-story-1.svg",
+              "type": "image",
+              "width": 1080,
+              "height": 1920
+            },
+            {
+              "url": "/demo/ph-story-2.svg",
+              "type": "image",
+              "width": 1080,
+              "height": 1920
+            }
           ],
           "caption": "Open till 1am all through Ramadan. Bring the family after terawih 🌙"
         },
@@ -62,8 +101,18 @@
           "position": 4,
           "title": "新山这家咖啡店，冷萃是真的顺口",
           "media": [
-            { "url": "/demo/ph-xhs-1.svg", "type": "image" },
-            { "url": "/demo/ph-xhs-2.svg", "type": "image" }
+            {
+              "url": "/demo/ph-xhs-1.svg",
+              "type": "image",
+              "width": 1080,
+              "height": 1440
+            },
+            {
+              "url": "/demo/ph-xhs-2.svg",
+              "type": "image",
+              "width": 1080,
+              "height": 1440
+            }
           ],
           "caption_zh": "最近常来这家坐 ☕\n\n他们的冷萃慢萃18小时，喝起来很顺，不会有那种涩涩的感觉。我通常点原味，配他们的可颂刚刚好。\n\n位置在 Taman Molek，位子多，插座也够，带电脑来待一个下午完全没问题。\n\n斋戒月期间开到凌晨一点，晚上来氛围更好。\n\n#新山咖啡 #JB咖啡店 #冷萃 #咖啡日记"
         }
@@ -81,7 +130,14 @@
           "format": "feed",
           "handle": "Kembara Coffee",
           "position": 0,
-          "media": [{ "url": "/demo/ph-fb-1.svg", "type": "image" }],
+          "media": [
+            {
+              "url": "/demo/ph-fb-1.svg",
+              "type": "image",
+              "width": 1080,
+              "height": 1080
+            }
+          ],
           "caption": "Chinese New Year gift sets are ready 🧧\n\nDrip bags and house blend beans packed in a reusable tin, so the gift keeps working long after the coffee runs out. Corporate orders above 20 sets get free delivery within Johor Bahru.\n\nWhatsApp us to reserve yours before 10 February.",
           "review": {
             "decision": "approved",
@@ -96,7 +152,14 @@
           "format": "reel",
           "handle": "kembaracoffee",
           "position": 1,
-          "media": [{ "url": "/demo/ph-tiktok-1.svg", "type": "image" }],
+          "media": [
+            {
+              "url": "/demo/ph-tiktok-1.svg",
+              "type": "image",
+              "width": 1080,
+              "height": 1920
+            }
+          ],
           "caption": "POV: you asked for the least sweet drink on the menu 😌 #JBCafe #KembaraCoffee #fyp",
           "review": {
             "decision": "changes",

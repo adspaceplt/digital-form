@@ -40,13 +40,34 @@
       .replace(/\n/g, '<br>');
   }
 
-  function mediaNode(item, ratioClass) {
-    const wrap = el('div', 'mk-media ' + (ratioClass || ''));
+  /* Instagram, Facebook and XiaoHongShu each accept a range of shapes, so the
+     frame follows the real file rather than a hardcoded square. Values are the
+     narrowest and widest each platform actually renders. */
+  const SHAPES = {
+    'instagram:feed':     { min: 0.8,  max: 1.91 },   // 4:5 up to 1.91:1
+    'instagram:carousel': { min: 0.8,  max: 1.91 },
+    'facebook:feed':      { min: 0.6,  max: 1.91 },
+    'facebook:carousel':  { min: 0.6,  max: 1.91 },
+    'xhs:note':           { min: 0.65, max: 1.5 },
+    'xhs:feed':           { min: 0.65, max: 1.5 }
+  };
+
+  function clampRatio(w, h, shape) {
+    if (!w || !h) return null;
+    const r = w / h;
+    return shape ? Math.min(shape.max, Math.max(shape.min, r)) : r;
+  }
+
+  function mediaNode(item, opts) {
+    opts = opts || {};
+    const wrap = el('div', 'mk-media' + (opts.ratioClass ? ' ' + opts.ratioClass : ''));
     if (!item || !item.url) {
       wrap.classList.add('mk-media-empty');
       wrap.textContent = 'No media uploaded';
       return wrap;
     }
+    const report = function (w, h) { if (opts.onSize && w && h) opts.onSize(w, h); };
+
     if (item.type === 'video') {
       const video = document.createElement('video');
       video.src = item.url;
@@ -54,24 +75,47 @@
       video.controls = true;
       video.playsInline = true;
       video.preload = 'metadata';
+      video.addEventListener('loadedmetadata', function () {
+        report(video.videoWidth, video.videoHeight);
+      });
       wrap.appendChild(video);
     } else {
       const img = document.createElement('img');
       img.src = item.url;
       img.alt = '';
       img.loading = 'lazy';
+      img.addEventListener('load', function () {
+        report(img.naturalWidth, img.naturalHeight);
+      });
       wrap.appendChild(img);
     }
     return wrap;
   }
 
   /* Swipeable carousel with dots and arrows. */
-  function carouselNode(media, ratioClass) {
+  function carouselNode(media, opts) {
+    opts = opts || {};
     const wrap = el('div', 'mk-carousel');
     const track = el('div', 'mk-carousel-track');
-    media.forEach(function (item) {
+
+    // Instagram sizes a carousel to its first slide and crops the rest to match.
+    const sized = Boolean(opts.shape);
+    if (sized) {
+      wrap.classList.add('mk-carousel-sized');
+      const first = media[0] || {};
+      const known = clampRatio(first.width, first.height, opts.shape);
+      wrap.style.aspectRatio = known || 0.8;   // 4:5 placeholder until the file loads
+    }
+
+    media.forEach(function (item, i) {
       const slide = el('div', 'mk-slide');
-      slide.appendChild(mediaNode(item, ratioClass));
+      slide.appendChild(mediaNode(item, {
+        ratioClass: sized ? null : opts.ratioClass,
+        onSize: sized && i === 0 ? function (w, h) {
+          const r = clampRatio(w, h, opts.shape);
+          if (r) wrap.style.aspectRatio = r;
+        } : null
+      }));
       track.appendChild(slide);
     });
     wrap.appendChild(track);
@@ -148,8 +192,7 @@
     head.appendChild(el('span', 'mk-more', icon('dots', 20)));
     frame.appendChild(head);
 
-    const ratio = post.format === 'carousel' || post.ratio === '4:5' ? 'r-45' : 'r-11';
-    frame.appendChild(carouselNode(post.media || [], ratio));
+    frame.appendChild(carouselNode(post.media || [], { shape: SHAPES[key(post)] || SHAPES['instagram:feed'] }));
 
     frame.appendChild(actionRow(['heart', 'comment', 'send']));
     frame.appendChild(el('div', 'mk-likes', '1,248 likes'));
@@ -178,7 +221,7 @@
     cap.innerHTML = captionHtml(post.caption);
     frame.appendChild(clampable(cap, 3, ['See more', 'See less']));
 
-    frame.appendChild(carouselNode(post.media || [], 'r-11'));
+    frame.appendChild(carouselNode(post.media || [], { shape: SHAPES['facebook:feed'] }));
 
     const bar = el('div', 'mk-fb-bar');
     bar.innerHTML =
@@ -193,7 +236,7 @@
   function vertical(post, cfg, kind) {
     const phone = el('div', 'mk mk-phone mk-' + kind);
     const screen = el('div', 'mk-screen');
-    screen.appendChild(mediaNode((post.media || [])[0], 'r-916'));
+    screen.appendChild(mediaNode((post.media || [])[0], { ratioClass: 'r-916' }));
 
     const rail = el('div', 'mk-rail');
     rail.innerHTML =
@@ -227,7 +270,7 @@
     });
 
     const stage = el('div', 'mk-story-stage');
-    stage.appendChild(mediaNode(media[0], 'r-916'));
+    stage.appendChild(mediaNode(media[0], { ratioClass: 'r-916' }));
 
     const head = el('div', 'mk-story-head');
     head.appendChild(avatar(post, cfg));
@@ -242,7 +285,7 @@
       let index = 0;
       const step = function (delta) {
         index = Math.max(0, Math.min(media.length - 1, index + delta));
-        stage.replaceChild(mediaNode(media[index], 'r-916'), stage.firstChild);
+        stage.replaceChild(mediaNode(media[index], { ratioClass: 'r-916' }), stage.firstChild);
         Array.prototype.forEach.call(bars.children, function (bar, n) {
           bar.classList.toggle('is-on', n <= index);
         });
@@ -271,7 +314,7 @@
   // ---- XiaoHongShu note -----------------------------------------------------
   function xhsNote(post, cfg) {
     const frame = el('article', 'mk mk-xhs');
-    frame.appendChild(carouselNode(post.media || [], 'r-34'));
+    frame.appendChild(carouselNode(post.media || [], { shape: SHAPES['xhs:note'] }));
 
     const body = el('div', 'mk-xhs-body');
     if (post.title) body.appendChild(el('h4', 'mk-xhs-title', esc(post.title)));
@@ -354,6 +397,8 @@
       return (LABELS[key(post)] || ['Post', ''])[0];
     },
     dimensions: function (post) {
+      const m = (post.media || [])[0];
+      if (m && m.width && m.height) return m.width + ' x ' + m.height;
       return (LABELS[key(post)] || ['Post', ''])[1];
     },
     key: key

@@ -210,6 +210,11 @@ a { color: inherit; }
 
 /* Carousel */
 .mk-carousel { position: relative; overflow: hidden; }
+/* When the frame is sized from the real file, every slide fills that box. */
+.mk-carousel-sized .mk-carousel-track,
+.mk-carousel-sized .mk-slide,
+.mk-carousel-sized .mk-media { height: 100%; }
+.mk-carousel-sized .mk-media { aspect-ratio: auto; }
 .mk-carousel-track { display: flex; transition: transform .32s cubic-bezier(.4,0,.2,1); }
 .mk-slide { flex: 0 0 100%; }
 .mk-arrow {
@@ -420,6 +425,9 @@ a { color: inherit; }
   font-size: 12.5px; text-decoration: underline; text-underline-offset: 2px;
 }
 .linkbtn:hover { color: var(--ink); }
+.linkbtn.is-danger { color: #b3261e; }
+.linkbtn.is-danger:hover { color: #8c1d18; }
+.dangerrow { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
 
 /* Client and content set cards */
 .cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
