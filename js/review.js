@@ -23,13 +23,20 @@
   })();
   if (!API.configured) $('demoStrip').hidden = false;
 
+  /* Nothing to review is not an error, so it gets a cover page rather than the
+     look of something having gone wrong. */
   function showState(title, body, wantsPass) {
     $('content').innerHTML = '';
     $('filterbar').hidden = true;
-    $('state').hidden = false;
-    $('stateTitle').textContent = title;
-    $('stateBody').textContent = body;
+    $('qrBtn').hidden = true;
+    $('cover').hidden = false;
+    $('coverTitle').textContent = title;
+    $('coverBody').textContent = body;
     $('passForm').hidden = !wantsPass;
+    $('coverContact').hidden = wantsPass;
+    $('coverContact').href = 'mailto:' + cfg.supportEmail +
+      '?subject=' + encodeURIComponent('Content review link');
+    document.querySelector('.brand-for').hidden = true;
     if (wantsPass) $('passInput').focus();
   }
 
@@ -385,15 +392,16 @@
   // ---- Load ----------------------------------------------------------------
   function load() {
     if (!token && API.configured) {
-      showState('Content Review Page',
-        'This page opens with your own review link. Please use the link ' +
-        cfg.agencyName + ' sent you, or ask your account manager to resend it.');
+      showState('Open your review link',
+        'Every client has their own link. Use the one ' + cfg.agencyName +
+        ' sent you and your content will be waiting here.');
       return;
     }
     API.getReviewFeed(token, passcode).then(function (data) {
       if (!data || data.error === 'not_found') {
-        showState('Link not found',
-          'This review link is no longer active. Contact your ' + cfg.agencyName + ' account manager for a new one.');
+        showState('This link is no longer active',
+          'It may have been reset. Ask your ' + cfg.agencyName +
+          ' account manager to send you the current one.');
         return;
       }
       if (data.error === 'passcode_required') {
@@ -401,12 +409,14 @@
         return;
       }
       feed = data;
-      $('state').hidden = true;
+      $('cover').hidden = true;
+      document.querySelector('.brand-for').hidden = false;
       $('clientName').textContent = feed.client.name;
       document.title = feed.client.name + ' — ADspace Content Review';
       if (!feed.batches.length) {
         showState('Nothing to review yet',
-          'Your next content set will appear here. We will let you know when it is ready.');
+          'Your next content set will appear here as soon as it is ready, and we will let ' +
+          'you know when it is.');
         return;
       }
       build();
