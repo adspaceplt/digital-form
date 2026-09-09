@@ -324,8 +324,8 @@
     setUrl();
     state.drafts = readStoredDrafts();
     $('setPanel').hidden = false;
-    $('driveBox').hidden = !driveKey();
     $('driveUrl').value = state.client.drive_folder || '';
+    $('mediaUrl').value = '';
     $('drivePicker').hidden = true;
     msg('driveMsg', '');
     paintSetHeader();
@@ -342,13 +342,22 @@
   }
 
   function paintSetHeader() {
+    var live = state.batch.published;
     $('setTitle').textContent = state.batch.title;
-    $('publishSet').textContent = state.batch.published ? 'Hide from client' : 'Send to client';
-    $('publishSet').className = state.batch.published ? 'btn' : 'btn btn-primary';
-    msg('setMsg', state.batch.published
-      ? 'This set is live. The client sees it on their link.'
+
+    var chip = $('setState');
+    chip.textContent = live ? 'Sent to client' : 'Draft';
+    chip.className = 'chip' + (live ? ' is-live' : '');
+
+    // Publishing is the positive action, hiding is a step backwards, so they
+    // should not look the same.
+    $('publishSet').textContent = live ? 'Hide from client' : 'Send to client';
+    $('publishSet').className = live ? 'btn btn-warn' : 'btn btn-go';
+
+    msg('setMsg', live
+      ? 'Live. The client sees this set on their link.'
       : 'Draft. Nothing here is visible to the client yet.',
-      state.batch.published ? 'ok' : '');
+      live ? 'ok' : '');
   }
 
   $('publishSet').addEventListener('click', function () {
@@ -742,9 +751,8 @@
     if (folder) {
       $('mediaUrl').value = '';
       $('driveUrl').value = url;
-      msg('setMsg', 'That is a Drive folder. Loading it below.', 'ok');
+      msg('setMsg', '');
       $('driveLoad').click();
-      $('driveBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
@@ -1092,6 +1100,7 @@
     var box = $('drafts');
     box.innerHTML = '';
     $('draftActions').hidden = state.drafts.length === 0;
+    $('draftZone').hidden = state.drafts.length === 0;
 
     var images = state.drafts.filter(function (d) { return d.media[0].type === 'image'; });
     var canCombine = state.drafts.length > 1 && images.length === state.drafts.length;
@@ -1231,8 +1240,11 @@
       .then(function (r) {
         var box = $('postList');
         box.innerHTML = '';
-        $('savedLabel').hidden = !(r.data && r.data.length);
-        if (r.error || !r.data.length) return;
+        var n = (r.data || []).length;
+        $('savedCount').textContent = n
+          ? n + ' post' + (n === 1 ? '' : 's') + ' in this set.'
+          : 'Nothing added yet.';
+        if (r.error || !n) return;
 
         var ids = r.data.map(function (p) { return p.id; });
         db.from('reviews').select('post_id, decision, note, reviewer, created_at')
@@ -1268,10 +1280,33 @@
             ? (review.decision === 'approved' ? 'is-ok' : 'is-changes') : '') + '">' +
           (review ? (review.decision === 'approved' ? 'Approved' : 'Changes') : 'Pending') +
         '</span>' +
+        (p.review_reset_note
+          ? '<span class="saved-note is-warn">Sent back: ' + esc(p.review_reset_note) + '</span>'
+          : '') +
+        (review && review.decision === 'approved'
+          ? '<button class="btn btn-warn btn-sm" data-a="reask" type="button">Ask again</button>'
+          : '') +
         '<button class="btn btn-sm" data-a="edit" type="button">Edit</button>' +
-        '<button class="linkbtn is-danger" data-a="del" type="button">Delete</button>';
+        '<button class="btn btn-quiet btn-sm is-danger" data-a="del" type="button">Delete</button>';
 
       row.querySelector('[data-a="edit"]').addEventListener('click', paintEdit);
+
+      var reask = row.querySelector('[data-a="reask"]');
+      if (reask) reask.addEventListener('click', function () {
+        var why = (window.prompt(
+          'Why does this need approving again? The client will see this note.\n\n' +
+          'For example: price corrected, logo updated, caption reworded.') || '').trim();
+        if (!why) return;
+        db.from('posts').update({
+          review_reset_at: new Date().toISOString(),
+          review_reset_note: why
+        }).eq('id', p.id).then(function (r) {
+          if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
+          msg('setMsg', 'Sent back for approval. The client sees it as pending again, ' +
+            'with your note.', 'ok');
+          loadPosts();
+        });
+      });
       row.querySelector('[data-a="del"]').addEventListener('click', function () {
         if (!confirm('Delete this post? The client will no longer see it.\n\n' +
           'The file stays in storage, so re-importing it from Drive will not upload it again.')) return;

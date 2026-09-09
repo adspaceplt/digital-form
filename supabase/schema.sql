@@ -69,6 +69,11 @@ create table if not exists public.posts (
   created_at    timestamptz not null default now()
 );
 
+-- Asking a client to look again after they have already approved. The previous
+-- approval stays in the history, it just no longer counts.
+alter table public.posts add column if not exists review_reset_at   timestamptz;
+alter table public.posts add column if not exists review_reset_note text;
+
 create table if not exists public.reviews (
   id            uuid primary key default gen_random_uuid(),
   post_id       uuid not null references public.posts(id) on delete cascade,
@@ -159,6 +164,8 @@ begin
                 'title',      p.title,
                 'media',      p.media,
                 'position',   p.position,
+                'reset_note', case
+                  when p.review_reset_at is not null then p.review_reset_note end,
                 'review',     (
                   select jsonb_build_object(
                     'decision',   r.decision,
@@ -167,6 +174,7 @@ begin
                     'created_at', r.created_at)
                   from public.reviews r
                   where r.post_id = p.id
+                    and (p.review_reset_at is null or r.created_at > p.review_reset_at)
                   order by r.created_at desc
                   limit 1)
               ) as post

@@ -111,6 +111,15 @@
       card.appendChild(copy);
     }
 
+    // Something changed since they last approved, so say what before asking again.
+    if (post.reset_note) {
+      var again = document.createElement('div');
+      again.className = 'reask';
+      again.innerHTML = '<b>Updated since you approved this</b>' +
+        '<span>' + escapeHtml(post.reset_note) + '</span>';
+      card.appendChild(again);
+    }
+
     card.appendChild(approvalBlock(post, head.querySelector('.badge')));
     paintDecision(post.review, head.querySelector('.badge'), card);
     return card;

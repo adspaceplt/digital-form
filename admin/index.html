@@ -108,14 +108,12 @@
   <section id="workspace" hidden>
     <button class="backlink" id="backToClients" type="button">← All clients</button>
 
-    <div class="panel">
-      <div class="viewhead" style="margin:0 0 4px">
-        <h2 id="wsClientName"></h2>
-      </div>
+    <section class="panel">
+      <div class="viewhead" style="margin:0 0 4px"><h2 id="wsClientName"></h2></div>
       <p class="hint">Their permanent review link. Send it once, it keeps working.</p>
       <div class="linkbox">
         <input class="input" id="clientLink" readonly>
-        <button class="btn" id="copyLink" type="button">Copy link</button>
+        <button class="btn btn-primary" id="copyLink" type="button">Copy link</button>
         <a class="btn btn-icon" id="openLink" target="_blank" rel="noopener">Preview
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -124,11 +122,12 @@
           </svg>
         </a>
       </div>
-      <p class="hint" style="margin:10px 0 0">
-        Resetting makes the current link stop working immediately and issues a new one.
-        Use it if a link reaches someone it should not have.
-      </p>
-      <div class="row" id="handleRow" style="margin-top:20px">
+    </section>
+
+    <section class="panel">
+      <h3>Account names</h3>
+      <p class="hint">Shown inside the mockups, so each platform reads as the real account.</p>
+      <div class="row" id="handleRow">
         <div>
           <label class="field-label" for="eIg">Instagram</label>
           <input class="input" id="eIg" placeholder="@handle">
@@ -145,15 +144,20 @@
           <label class="field-label" for="eXhs">RedNote name</label>
           <input class="input" id="eXhs" placeholder="Name">
         </div>
-        <button class="btn" id="saveHandles" type="button">Save names</button>
+        <button class="btn btn-primary" id="saveHandles" type="button">Save names</button>
       </div>
       <div class="msg" id="handleMsg"></div>
+    </section>
 
+    <section class="panel panel-danger">
+      <h3>Careful with these</h3>
+      <p class="hint">Resetting stops the current link working immediately and issues a new
+      one. Deleting removes the client and every set, post and approval under them.</p>
       <div class="dangerrow">
-        <button class="btn" id="resetLink" type="button">Reset permalink</button>
+        <button class="btn btn-warn" id="resetLink" type="button">Reset permalink</button>
         <button class="btn btn-danger" id="deleteClient" type="button">Delete client</button>
       </div>
-    </div>
+    </section>
 
     <div class="viewhead">
       <h2>Content sets</h2>
@@ -162,74 +166,105 @@
     <div class="cards" id="batchCards"></div>
 
     <!-- ============ One set ============ -->
-    <section class="panel" id="setPanel" hidden>
-      <div class="viewhead" style="margin:0 0 14px">
-        <h3 id="setTitle"></h3>
-        <span class="topbar-spacer"></span>
-        <button class="btn" id="renameSet" type="button">Rename</button>
-        <button class="btn" id="deleteSet" type="button">Delete set</button>
-        <button class="btn btn-primary" id="publishSet" type="button">Send to client</button>
-      </div>
-      <div class="msg" id="setMsg"></div>
+    <div id="setPanel" hidden>
 
-      <div class="drop" id="drop">
-        <b>Drop your graphics and videos here</b>
-        <span>or click to choose files. We work out the format for you.</span>
-      </div>
-      <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
-
-      <div class="linkrow">
-        <input class="input" id="mediaUrl"
-               placeholder="Or paste a link: a Google Drive file or folder, or a direct CDN link">
-        <button class="btn" id="addMediaUrl" type="button">Add link</button>
-      </div>
-
-      <div class="drivebox" id="driveBox" hidden>
-        <div class="drivebox-head">
-          <b>Import from Google Drive</b>
-          <span class="muted">Paste the folder your creative team uploaded to. Nothing is
-          downloaded to your machine.</span>
+      <!-- Header: what this set is and what can be done to it -->
+      <section class="panel setbar">
+        <div class="setbar-main">
+          <h3 id="setTitle"></h3>
+          <span class="chip" id="setState"></span>
         </div>
+        <div class="setbar-actions">
+          <button class="btn btn-quiet" id="renameSet" type="button">Rename</button>
+          <button class="btn btn-quiet" id="deleteSet" type="button">Delete set</button>
+          <button class="btn btn-go" id="publishSet" type="button">Send to client</button>
+        </div>
+        <div class="msg" id="setMsg"></div>
+      </section>
+
+      <!-- Step 1: where content comes in -->
+      <section class="panel zone-in">
+        <div class="zone-head">
+          <span class="zone-num">1</span>
+          <div>
+            <b>Add content</b>
+            <span class="muted">Drop files, or paste a Google Drive folder, a Drive file,
+            or a direct link.</span>
+          </div>
+        </div>
+
+        <div class="drop" id="drop">
+          <b>Drop your graphics and videos here</b>
+          <span>or click to choose files. We work out the format for you.</span>
+        </div>
+        <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
+
         <div class="linkrow">
-          <input class="input" id="driveUrl"
-                 placeholder="https://drive.google.com/drive/folders/...">
-          <button class="btn" id="driveLoad" type="button">Load files</button>
+          <input class="input" id="mediaUrl"
+                 placeholder="Paste a Drive folder, a Drive file, or a direct link">
+          <button class="btn btn-primary" id="addMediaUrl" type="button">Add</button>
         </div>
         <div class="msg" id="driveMsg"></div>
 
+        <div class="progress" id="driveProgress" hidden>
+          <div class="progress-head">
+            <span id="progressLabel"></span>
+            <span id="progressPct"></span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        </div>
+
         <div id="drivePicker" hidden>
           <div class="drive-actions">
-            <button class="linkbtn" id="driveAll" type="button">Select all</button>
-            <button class="linkbtn" id="driveNone" type="button">Select none</button>
+            <b class="zone-sub">Choose what to import</b>
+            <button class="btn btn-quiet btn-sm" id="driveAll" type="button">Select all</button>
+            <button class="btn btn-quiet btn-sm" id="driveNone" type="button">Select none</button>
             <span class="topbar-spacer"></span>
             <button class="btn btn-primary" id="driveImport" type="button">Import selected</button>
           </div>
-          <div class="progress" id="driveProgress" hidden>
-            <div class="progress-head">
-              <span id="progressLabel"></span>
-              <span id="progressPct"></span>
-            </div>
-            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-          </div>
           <div class="drive-files" id="driveFiles"></div>
         </div>
-      </div>
+        <input type="hidden" id="driveUrl">
+        <button id="driveLoad" type="button" hidden></button>
+      </section>
 
-      <div id="combineBar" class="combinebar" hidden>
-        <span id="combineText"></span>
-        <button class="btn" id="combineBtn" type="button">Combine into one carousel</button>
-      </div>
+      <!-- Step 2: uploaded but not yet part of the set -->
+      <section class="panel zone-draft" id="draftZone" hidden>
+        <div class="zone-head">
+          <span class="zone-num">2</span>
+          <div>
+            <b>Write the captions</b>
+            <span class="muted">These are uploaded but not in the set yet. The client
+            cannot see them.</span>
+          </div>
+        </div>
 
-      <div id="drafts"></div>
+        <div id="combineBar" class="combinebar" hidden>
+          <span id="combineText"></span>
+          <button class="btn" id="combineBtn" type="button">Combine into one carousel</button>
+        </div>
 
-      <div class="row" id="draftActions" hidden style="margin-top:18px">
-        <button class="btn btn-primary" id="saveDrafts" type="button">Add to this set</button>
-        <button class="btn" id="clearDrafts" type="button" style="flex:0 0 auto">Discard</button>
-      </div>
+        <div id="drafts"></div>
 
-      <h4 class="sectionlabel" id="savedLabel" hidden>In this set</h4>
-      <div id="postList"></div>
-    </section>
+        <div class="zone-actions" id="draftActions" hidden>
+          <button class="btn btn-quiet" id="clearDrafts" type="button">Discard</button>
+          <button class="btn btn-primary" id="saveDrafts" type="button">Add to this set</button>
+        </div>
+      </section>
+
+      <!-- Step 3: what is actually in the set -->
+      <section class="panel zone-out">
+        <div class="zone-head">
+          <span class="zone-num">3</span>
+          <div>
+            <b>In this set</b>
+            <span class="muted" id="savedCount">Nothing added yet.</span>
+          </div>
+        </div>
+        <div id="postList"></div>
+      </section>
+
+    </div>
   </section>
 
 </main>

@@ -682,7 +682,7 @@ a { color: inherit; }
 
 /* What the file actually is */
 .filetag {
-  display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .03em;
+  display: inline-block; align-self: flex-start; font-size: 11px; font-weight: 600; letter-spacing: .03em;
   color: var(--ink-soft); background: var(--line-soft);
   padding: 2px 7px; border-radius: 5px; white-space: nowrap;
 }
@@ -807,4 +807,91 @@ a { color: inherit; }
 @media (max-width: 640px) {
   .cover-inner h1 { font-size: 30px; }
   .cover-lead { font-size: 14px; }
+}
+
+/* =========================================================================
+   BUTTON SYSTEM
+   One job per colour, so a glance tells you what a button will do.
+     primary  solid ink    the main action in its section
+     default  outline      supporting action
+     go       solid green  publishes something to the client
+     warn     amber        steps backwards or asks for something again
+     danger   solid red    destroys data
+     quiet    borderless   incidental, never the point of the section
+   ========================================================================= */
+.btn-go {
+  background: var(--ok); border-color: var(--ok); color: #fff; flex: 0 0 auto; font-weight: 600;
+}
+.btn-go:hover { background: #19603c; border-color: #19603c; color: #fff; }
+
+.btn-warn { background: #fff; border-color: var(--warn); color: var(--warn); flex: 0 0 auto; }
+.btn-warn:hover { background: var(--warn); border-color: var(--warn); color: #fff; }
+
+.btn-quiet { background: none; border-color: transparent; color: var(--ink-mute); flex: 0 0 auto; }
+.btn-quiet:hover { background: var(--line-soft); border-color: transparent; color: var(--ink); }
+.btn-quiet.is-danger { color: #b3261e; }
+.btn-quiet.is-danger:hover { background: #fdeceb; color: #8c1d18; }
+
+/* =========================================================================
+   CONTENT SET ZONES
+   Input, work in progress and output are three different things, so they
+   stop looking like one undifferentiated wall of card.
+   ========================================================================= */
+.setbar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 18px 22px; }
+.setbar-main { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.setbar-main h3 { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.setbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.setbar .msg { flex: 1 1 100%; margin-top: 0; }
+
+.chip {
+  font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  padding: 4px 9px; border-radius: 999px; background: var(--line-soft); color: var(--ink-mute);
+  white-space: nowrap;
+}
+.chip.is-live { background: var(--ok-bg); color: var(--ok); }
+
+.zone-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px; }
+.zone-head > div { display: flex; flex-direction: column; gap: 2px; }
+.zone-head b { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; }
+.zone-head .muted { font-size: 12.5px; }
+.zone-num {
+  flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 11.5px; font-weight: 700;
+  background: var(--ink); color: #fff;
+}
+.zone-sub { font-size: 12.5px; font-weight: 600; }
+
+/* Where things come in reads as an input surface */
+.zone-in { background: #f4f6f8; border-color: #e2e7ec; }
+.zone-in .drop { background: #fff; border-color: #d8dee5; }
+.zone-in .drop:hover, .zone-in .drop.is-over { border-color: var(--ink); }
+
+/* Work in progress is warm, so it is obvious it is unfinished */
+.zone-draft { background: #fffaf2; border-color: #f0e2cd; }
+.zone-draft .zone-num { background: var(--warn); }
+.zone-actions {
+  display: flex; justify-content: flex-end; gap: 10px; align-items: center;
+  margin-top: 18px; padding-top: 16px; border-top: 1px solid #f0e2cd;
+}
+
+/* Output stays plain white, it is the finished thing */
+.zone-out { background: var(--card); }
+
+.panel-danger { border-color: #f0d5d3; background: #fffafa; }
+.panel-danger h3 { color: #8c1d18; }
+
+.saved-note.is-warn { color: var(--warn); background: var(--warn-bg); align-self: center; max-width: 260px; }
+
+/* Client side notice that something changed after approval */
+.reask {
+  display: flex; flex-direction: column; gap: 3px;
+  margin: 0 16px; padding: 11px 13px; border-radius: 9px;
+  background: var(--warn-bg); border: 1px solid #f0e2cd;
+}
+.reask b { font-size: 12.5px; font-weight: 600; color: var(--warn); }
+.reask span { font-size: 13px; color: var(--ink-soft); }
+
+@media (max-width: 640px) {
+  .setbar-actions { margin-left: 0; width: 100%; }
+  .zone-actions { flex-wrap: wrap; }
 }
