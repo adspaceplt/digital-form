@@ -1,0 +1,20 @@
+/*
+ * ADspace Content Review Portal — configuration
+ *
+ * Paste your Supabase project URL and anon (public) key below.
+ * Dashboard > Project Settings > API.
+ *
+ * Leave them blank to run the portal in DEMO MODE, which loads sample content
+ * from /demo/sample.json so you can review the design without any backend.
+ *
+ * The anon key is safe to publish. Every table is protected by row level
+ * security and clients can only reach data through the token-checked functions.
+ */
+window.ADSPACE_CONFIG = {
+  supabaseUrl: 'https://hwwuigvdfubuymchsvyx.supabase.co',
+  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3d3VpZ3ZkZnVidXltY2hzdnl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5Mzg4NzIsImV4cCI6MjEwNDUxNDg3Mn0.c4g_r0W3zeA0rmQ-qYFVE2Iw3l4uAg5ub0EfKBgSsUs',
+  storageBucket: 'content',
+  brandLogo: 'https://mycdn.adspace.me/adspace-brandname.png',
+  agencyName: 'ADspace',
+  supportEmail: 'adspacestudios@gmail.com'
+};

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADspace Content Review — Team</title>
+<link rel="stylesheet" href="/css/portal.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/js/config.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/mockups.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <img id="agencyLogo" class="brand-logo" src="" alt="ADspace">
+      <span class="brand-wordmark" id="agencyWordmark" hidden>ADspace</span>
+      <span class="brand-divider"></span>
+      <span class="brand-meta">
+        <span class="brand-kicker">Content Review</span>
+        <span class="brand-for">Team</span>
+      </span>
+    </div>
+    <span class="topbar-spacer"></span>
+    <span class="muted" id="whoami"></span>
+    <button class="pill" id="signOut" type="button" hidden>Sign out</button>
+  </div>
+</header>
+
+<main class="shell">
+
+  <section class="panel" id="notConfigured" hidden>
+    <h3>Not connected yet</h3>
+    <p class="hint">Someone needs to paste the Supabase keys into <code>js/config.js</code> once.
+    The steps are in <code>docs/CONTENT-REVIEW-SETUP.md</code> and take about ten minutes.</p>
+  </section>
+
+  <section class="panel narrow" id="authPanel" hidden>
+    <h3>Sign in</h3>
+    <p class="hint">We email you a link. Click it and you are in. No password to remember.</p>
+    <div class="row">
+      <div><input class="input" id="authEmail" type="email" placeholder="you@adspacestudios.com"></div>
+      <button class="btn btn-primary" id="authSend" type="button">Email me a link</button>
+    </div>
+    <div class="msg" id="authMsg"></div>
+  </section>
+
+  <!-- ============ Clients ============ -->
+  <section id="clientsView" hidden>
+    <div class="viewhead">
+      <h2>Clients</h2>
+      <button class="btn btn-primary" id="showAddClient" type="button">Add a client</button>
+    </div>
+
+    <div class="panel" id="addClientBox" hidden>
+      <h3>New client</h3>
+      <p class="hint">Only the name is required. They get a permanent review link straight away.</p>
+      <div class="row">
+        <div>
+          <label class="field-label" for="newClientName">Client name</label>
+          <input class="input" id="newClientName" placeholder="e.g. Star Living">
+        </div>
+        <div>
+          <label class="field-label" for="newClientLogo">Logo URL (optional)</label>
+          <input class="input" id="newClientLogo" placeholder="https://...">
+        </div>
+        <div style="flex:0 0 170px">
+          <label class="field-label" for="newClientPass">Access code (optional)</label>
+          <input class="input" id="newClientPass" placeholder="Leave blank">
+        </div>
+        <button class="btn btn-primary" id="addClient" type="button">Create</button>
+        <button class="btn" id="cancelAddClient" type="button" style="flex:0 0 auto">Cancel</button>
+      </div>
+      <div class="msg" id="clientMsg"></div>
+    </div>
+
+    <div class="cards" id="clientCards"></div>
+  </section>
+
+  <!-- ============ One client ============ -->
+  <section id="workspace" hidden>
+    <button class="backlink" id="backToClients" type="button">← All clients</button>
+
+    <div class="panel">
+      <div class="viewhead" style="margin:0 0 4px">
+        <h2 id="wsClientName"></h2>
+      </div>
+      <p class="hint">This is their permanent link. Send it once, it keeps working forever.</p>
+      <div class="linkbox">
+        <input class="input" id="clientLink" readonly>
+        <button class="btn" id="copyLink" type="button">Copy link</button>
+        <a class="btn btn-wa" id="waShare" target="_blank" rel="noopener">Send on WhatsApp</a>
+        <a class="btn" id="openLink" target="_blank" rel="noopener">Preview</a>
+      </div>
+    </div>
+
+    <div class="viewhead">
+      <h2>Content sets</h2>
+      <button class="btn btn-primary" id="addBatch" type="button">New content set</button>
+    </div>
+    <div class="cards" id="batchCards"></div>
+
+    <!-- ============ One set ============ -->
+    <section class="panel" id="setPanel" hidden>
+      <div class="viewhead" style="margin:0 0 14px">
+        <h3 id="setTitle"></h3>
+        <span class="topbar-spacer"></span>
+        <button class="btn" id="renameSet" type="button">Rename</button>
+        <button class="btn btn-primary" id="publishSet" type="button">Send to client</button>
+      </div>
+      <div class="msg" id="setMsg"></div>
+
+      <div class="drop" id="drop">
+        <b>Drop your graphics and videos here</b>
+        <span>or click to choose files. We work out the format for you.</span>
+      </div>
+      <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
+
+      <div id="combineBar" class="combinebar" hidden>
+        <span id="combineText"></span>
+        <button class="btn" id="combineBtn" type="button">Combine into one carousel</button>
+      </div>
+
+      <div id="drafts"></div>
+
+      <div class="row" id="draftActions" hidden style="margin-top:18px">
+        <button class="btn btn-primary" id="saveDrafts" type="button">Add to this set</button>
+        <button class="btn" id="clearDrafts" type="button" style="flex:0 0 auto">Discard</button>
+      </div>
+
+      <h4 class="sectionlabel" id="savedLabel" hidden>In this set</h4>
+      <div id="postList"></div>
+    </section>
+  </section>
+
+</main>
+
+<script src="/js/admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+{
+  "client": {
+    "name": "Kembara Coffee (Demo)",
+    "logo_url": null
+  },
+  "batches": [
+    {
+      "id": "b-2026-03",
+      "title": "March 2026 Content",
+      "note": "Five posts for March. Theme is the new cold brew range and the Ramadan late night hours. Please review by 6 March so we can schedule on time.",
+      "created_at": "2026-03-02T09:00:00+08:00",
+      "posts": [
+        {
+          "id": "p1",
+          "platform": "instagram",
+          "format": "feed",
+          "handle": "kembaracoffee",
+          "position": 0,
+          "media": [{ "url": "/demo/ph-feed-1.svg", "type": "image" }],
+          "caption": "☕ Your 3pm slump just met its match\n\nSlow steeped for 18 hours, so every sip stays smooth instead of bitter. No sugar needed, no crash after.\n\nCold Brew Original is now on the menu at both JB outlets.\n\n📍 Taman Molek and Mount Austin\n#KembaraCoffee #JBCafe #ColdBrew",
+          "caption_zh": "☕ 下午三点的疲惫，一杯就解决\n\n慢萃18小时，入口顺滑不带苦涩。不加糖也好喝，喝完不心慌。\n\n经典冷萃现已在两家门市供应。\n\n📍 Taman Molek ・ Mount Austin\n#新山咖啡 #冷萃"
+        },
+        {
+          "id": "p2",
+          "platform": "instagram",
+          "format": "carousel",
+          "handle": "kembaracoffee",
+          "position": 1,
+          "media": [
+            { "url": "/demo/ph-carousel-1.svg", "type": "image" },
+            { "url": "/demo/ph-carousel-2.svg", "type": "image" },
+            { "url": "/demo/ph-carousel-3.svg", "type": "image" }
+          ],
+          "caption": "✨ Three ways to order cold brew like a regular\n\nSwipe for the combinations our baristas actually drink on their break. Number two is the one nobody expects to work.\n\nSave this for your next visit.\n#KembaraCoffee #JBFoodie"
+        },
+        {
+          "id": "p3",
+          "platform": "instagram",
+          "format": "reel",
+          "handle": "kembaracoffee",
+          "position": 2,
+          "media": [{ "url": "/demo/ph-reel-1.svg", "type": "image" }],
+          "caption": "18 hours in 15 seconds ⏳ This is why it never tastes bitter. #ColdBrew #JBCafe #KembaraCoffee"
+        },
+        {
+          "id": "p4",
+          "platform": "instagram",
+          "format": "story",
+          "handle": "kembaracoffee",
+          "position": 3,
+          "media": [
+            { "url": "/demo/ph-story-1.svg", "type": "image" },
+            { "url": "/demo/ph-story-2.svg", "type": "image" }
+          ],
+          "caption": "Open till 1am all through Ramadan. Bring the family after terawih 🌙"
+        },
+        {
+          "id": "p5",
+          "platform": "xhs",
+          "format": "note",
+          "handle": "Kembara 咖啡日记",
+          "position": 4,
+          "title": "新山这家咖啡店，冷萃是真的顺口",
+          "media": [
+            { "url": "/demo/ph-xhs-1.svg", "type": "image" },
+            { "url": "/demo/ph-xhs-2.svg", "type": "image" }
+          ],
+          "caption_zh": "最近常来这家坐 ☕\n\n他们的冷萃慢萃18小时，喝起来很顺，不会有那种涩涩的感觉。我通常点原味，配他们的可颂刚刚好。\n\n位置在 Taman Molek，位子多，插座也够，带电脑来待一个下午完全没问题。\n\n斋戒月期间开到凌晨一点，晚上来氛围更好。\n\n#新山咖啡 #JB咖啡店 #冷萃 #咖啡日记"
+        }
+      ]
+    },
+    {
+      "id": "b-2026-02",
+      "title": "February 2026 Content",
+      "note": null,
+      "created_at": "2026-02-03T09:00:00+08:00",
+      "posts": [
+        {
+          "id": "p6",
+          "platform": "facebook",
+          "format": "feed",
+          "handle": "Kembara Coffee",
+          "position": 0,
+          "media": [{ "url": "/demo/ph-fb-1.svg", "type": "image" }],
+          "caption": "Chinese New Year gift sets are ready 🧧\n\nDrip bags and house blend beans packed in a reusable tin, so the gift keeps working long after the coffee runs out. Corporate orders above 20 sets get free delivery within Johor Bahru.\n\nWhatsApp us to reserve yours before 10 February.",
+          "review": {
+            "decision": "approved",
+            "note": null,
+            "reviewer": "Wei Ling",
+            "created_at": "2026-02-04T11:22:00+08:00"
+          }
+        },
+        {
+          "id": "p7",
+          "platform": "tiktok",
+          "format": "reel",
+          "handle": "kembaracoffee",
+          "position": 1,
+          "media": [{ "url": "/demo/ph-tiktok-1.svg", "type": "image" }],
+          "caption": "POV: you asked for the least sweet drink on the menu 😌 #JBCafe #KembaraCoffee #fyp",
+          "review": {
+            "decision": "changes",
+            "note": "Can we cut the first two seconds? The logo shows up too late and the hook feels slow. Also please change the price on screen to RM12.90.",
+            "reviewer": "Wei Ling",
+            "created_at": "2026-02-04T11:31:00+08:00"
+          }
+        }
+      ]
+    }
+  ]
+}
