@@ -23,7 +23,8 @@
     ['instagram:reel',     'Instagram Reels'],
     ['instagram:story',    'Instagram Story'],
     ['facebook:feed',      'Facebook post'],
-    ['facebook:carousel',  'Facebook carousel'],
+    ['facebook:multi',     'Facebook multi-photo post'],
+    ['facebook:carousel',  'Facebook carousel ad'],
     ['facebook:reel',      'Facebook Reels'],
     ['facebook:story',     'Facebook Story'],
     ['tiktok:reel',        'TikTok video'],
@@ -1244,7 +1245,9 @@
         var body = row.querySelector('.draft-body');
         var strip = slidesNode(d.media, function () { saveDrafts(); renderDrafts(); });
         var hint = el2('div', 'slide-hint');
-        hint.textContent = 'Slide 1 is the cover and sets the shape of the whole carousel.';
+        hint.textContent = d.placement === 'facebook:multi'
+          ? 'Photo 1 takes the largest tile in the grid.'
+          : 'Slide 1 is the cover and sets the shape of the whole carousel.';
         body.insertBefore(strip, body.children[1] || null);
         body.insertBefore(hint, strip.nextSibling);
       }
