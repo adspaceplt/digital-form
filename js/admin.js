@@ -508,7 +508,11 @@
       return fetch(r.data.uploadUrl, {
         method: 'PUT',
         body: file,
-        headers: { 'Content-Type': file.type || 'application/octet-stream' }
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream',
+          // filenames are random and never reused, so this is safe to cache hard
+          'Cache-Control': 'public, max-age=31536000, immutable'
+        }
       }).then(function (put) {
         if (!put.ok) throw new Error('S3 rejected the upload (HTTP ' + put.status + ').');
         return r.data.publicUrl;
