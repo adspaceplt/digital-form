@@ -139,6 +139,12 @@ end $$;
 -- The activity record is deliberately not covered by the blanket policy above.
 -- Anyone signed in can write to it, since every logged action is theirs to
 -- take, but reading it back is restricted to the listed addresses.
+-- If an earlier version of this file ran, activity_log carries the blanket
+-- policy the loop above used to create. Policies are additive, so leaving it
+-- in place would keep the record readable by everyone regardless of the rule
+-- below. Remove it explicitly.
+drop policy if exists team_all on public.activity_log;
+
 drop policy if exists activity_write on public.activity_log;
 create policy activity_write on public.activity_log
   for insert to authenticated with check (true);
