@@ -532,7 +532,17 @@
         }
       }).then(function (put) {
         if (!put.ok) throw new Error('S3 rejected the upload (HTTP ' + put.status + ').');
-        return r.data.publicUrl;
+
+        // The file is in the bucket, but that does not prove CloudFront serves it
+        // at the URL we are about to save. Check before it becomes a broken post.
+        return probeUrl(r.data.publicUrl).then(function (info) {
+          if (info.ok) return r.data.publicUrl;
+          throw new Error(
+            'Uploaded to S3, but nothing is served at ' + r.data.publicUrl + ' — so the ' +
+            'client would see a broken post. Usually the CloudFront distribution has an ' +
+            'Origin path set, which shifts where files appear. Open that URL in a tab to ' +
+            'confirm, then see docs/S3-UPLOAD-SETUP.md.');
+        });
       });
     });
   }

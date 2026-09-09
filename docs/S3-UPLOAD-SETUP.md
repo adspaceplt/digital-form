@@ -210,9 +210,26 @@ If the upload fails:
   admin session expired, sign in again. `too_large` means the file is over 2 GB.
 - **"S3 rejected the upload"** — usually the CORS rule in step 2, or the IAM policy prefix
   not matching `S3_PREFIX`.
-- **Upload succeeds but the image is broken** — the CloudFront mapping is different from
-  what `CDN_BASE` and `S3_PREFIX` assume. Open the stored URL directly to see. This is the
-  origin path question at the top of this page.
+- **"Uploaded to S3, but nothing is served at ..."** — the file reached the bucket but
+  CloudFront does not serve it at that address, so the post would be broken for the client.
+  The portal refuses to save it rather than let that happen. Work out the right mapping:
+
+  1. In the S3 console, find the file you just uploaded. Its key will look like
+     `content/<client id>/<random>.mp4`.
+  2. CloudFront → your distribution → **Origins** → the S3 origin → **Origin path**.
+  3. If Origin path is **empty**, the file should be at
+     `https://mycdn.adspace.me/content/<client id>/<random>.mp4`. If that 404s, the bucket
+     policy or the origin access setting is blocking it rather than the path being wrong.
+  4. If Origin path is **`/content`**, CloudFront is already pointing inside that folder,
+     so the file appears at `https://mycdn.adspace.me/<client id>/<random>.mp4` with no
+     `content/` in it. Fix it by setting the secret `CDN_BASE` to `https://mycdn.adspace.me`
+     and leaving `S3_PREFIX=content`, then removing the origin path in CloudFront so the two
+     agree. Changing one without the other just moves the problem.
+  5. Whatever Origin path says, the rule is: **the public URL is `CDN_BASE` + the part of
+     the S3 key that comes after the origin path.**
+
+  Posts saved before this check existed may already hold a bad URL. Delete and re-import
+  them once the mapping is right.
 - **Works for images, fails for a large video** — check the CORS rule is on the bucket and
   not only on the distribution, and that the upload is not being blocked by a corporate
   network.
