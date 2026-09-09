@@ -24,7 +24,7 @@ window.ADSPACE_CONFIG = {
   // limit above. Requires the sign-upload edge function to be deployed.
   // Leave enabled false to keep using Supabase storage.
   s3: {
-    enabled: false,
+    enabled: true,
     functionName: 'sign-upload'
   },
   brandLogo: 'https://mycdn.adspace.me/adspace-brandname.png',
