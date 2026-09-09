@@ -10,12 +10,12 @@
   var $   = function (id) { return document.getElementById(id); };
 
   (function () {
-    var logo = $('agencyLogo');
-    logo.onerror = function () {
-      logo.hidden = true;
-      $('agencyWordmark').hidden = false;
-    };
-    logo.src = cfg.brandLogo;
+    [['agencyLogo', 'agencyWordmark'], ['signinLogo', 'signinWordmark']].forEach(function (pair) {
+      var logo = $(pair[0]);
+      if (!logo) return;
+      logo.onerror = function () { logo.hidden = true; $(pair[1]).hidden = false; };
+      logo.src = cfg.brandLogo;
+    });
   })();
   if (!API.configured || !db) { $('notConfigured').hidden = false; return; }
 
@@ -72,6 +72,10 @@
           r.error ? 'err' : 'ok');
     });
   });
+  $('authEmail').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') $('authSend').click();
+  });
+
   $('signOut').addEventListener('click', function () {
     db.auth.signOut().then(function () { location.reload(); });
   });
@@ -86,6 +90,7 @@
   function gate(session) {
     var inApp = Boolean(session);
     $('authPanel').hidden = inApp;
+    $('topbar').hidden = !inApp;
     $('signOut').hidden = !inApp;
     $('whoami').textContent = inApp ? session.user.email : '';
 
@@ -519,6 +524,41 @@
   }
 
   /* "MP4 · 1080 x 1920", so it is obvious what was actually imported. */
+  /* Carousel order decides which slide Instagram shows first and sizes the
+     whole post, so it has to be changeable when the guess is wrong. */
+  function slidesNode(media, onChange) {
+    var wrap = el2('div', 'slides');
+    media.forEach(function (m, i) {
+      var chip = el2('div', 'slide-chip');
+      chip.innerHTML =
+        (m.type === 'video'
+          ? '<video src="' + m.url + '" muted></video>'
+          : '<img src="' + m.url + '" alt="">') +
+        '<i>' + (i + 1) + '</i>' +
+        '<span class="slide-move">' +
+          '<button type="button" data-d="-1"' + (i === 0 ? ' disabled' : '') + '>&#8249;</button>' +
+          '<button type="button" data-d="1"' + (i === media.length - 1 ? ' disabled' : '') + '>&#8250;</button>' +
+        '</span>';
+      chip.querySelectorAll('button').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var to = i + Number(btn.dataset.d);
+          if (to < 0 || to >= media.length) return;
+          var moved = media.splice(i, 1)[0];
+          media.splice(to, 0, moved);
+          onChange();
+        });
+      });
+      wrap.appendChild(chip);
+    });
+    return wrap;
+  }
+
+  function el2(tag, cls) {
+    var n = document.createElement(tag);
+    n.className = cls;
+    return n;
+  }
+
   function fileLabel(m) {
     if (!m) return '';
     var ext = extFor(m.mime, m.url || '').toUpperCase();
@@ -1100,6 +1140,15 @@
             : '<button class="linkbtn" data-f="addzh" type="button">+ Add Chinese caption</button>') +
         '</div>';
 
+      if (d.media.length > 1) {
+        var body = row.querySelector('.draft-body');
+        var strip = slidesNode(d.media, function () { saveDrafts(); renderDrafts(); });
+        var hint = el2('div', 'slide-hint');
+        hint.textContent = 'Slide 1 is the cover and sets the shape of the whole carousel.';
+        body.insertBefore(strip, body.children[1] || null);
+        body.insertBefore(hint, strip.nextSibling);
+      }
+
       row.querySelector('[data-f="placement"]').addEventListener('change', function (e) {
         d.placement = e.target.value; renderDrafts();
       });
@@ -1236,6 +1285,8 @@
       });
     }
 
+    var editMedia = null;
+
     function paintEdit() {
       row.classList.add('is-editing');
       var current = (p.platform || 'instagram') + ':' + (p.format || 'feed');
@@ -1267,7 +1318,18 @@
           '</div>' +
         '</div>';
 
-      row.querySelector('[data-a="cancel"]').addEventListener('click', paintRead);
+      var mediaCopy = editMedia || JSON.parse(JSON.stringify(p.media || []));
+      editMedia = mediaCopy;
+      if (mediaCopy.length > 1) {
+        var sbody = row.querySelector('.saved-body');
+        var sstrip = slidesNode(mediaCopy, function () { paintEdit(); });
+        sbody.insertBefore(sstrip, sbody.children[1] || null);
+      }
+
+      row.querySelector('[data-a="cancel"]').addEventListener('click', function () {
+        editMedia = null;
+        paintRead();
+      });
       row.querySelector('[data-a="save"]').addEventListener('click', function () {
         var parts = row.querySelector('[data-f="placement"]').value.split(':');
         var titleEl = row.querySelector('[data-f="title"]');
@@ -1276,11 +1338,14 @@
           format: parts[1],
           title: titleEl ? (titleEl.value.trim() || null) : p.title,
           caption: row.querySelector('[data-f="caption"]').value || null,
-          caption_zh: row.querySelector('[data-f="caption_zh"]').value || null
+          caption_zh: row.querySelector('[data-f="caption_zh"]').value || null,
+          media: mediaCopy
         };
         db.from('posts').update(patch).eq('id', p.id).then(function (res) {
           if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
           Object.keys(patch).forEach(function (k) { p[k] = patch[k]; });
+          m = (p.media || [])[0] || {};
+          editMedia = null;
           paintRead();
           msg('setMsg', 'Post updated.', 'ok');
         });

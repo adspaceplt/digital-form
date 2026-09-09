@@ -14,7 +14,7 @@
 </head>
 <body>
 
-<header class="topbar">
+<header class="topbar" id="topbar">
   <div class="topbar-inner">
     <div class="brand">
       <img id="agencyLogo" class="brand-logo" src="" alt="ADspace">
@@ -38,14 +38,18 @@
     The steps are in <code>docs/CONTENT-REVIEW-SETUP.md</code> and take about ten minutes.</p>
   </section>
 
-  <section class="panel narrow" id="authPanel" hidden>
-    <h3>Sign in</h3>
-    <p class="hint">We email you a link. Click it and you are in. No password to remember.</p>
-    <div class="row">
-      <div><input class="input" id="authEmail" type="email" placeholder="you@adspacestudios.com"></div>
-      <button class="btn btn-primary" id="authSend" type="button">Email me a link</button>
+  <section class="signin" id="authPanel" hidden>
+    <div class="signin-card">
+      <img class="signin-logo" id="signinLogo" src="" alt="ADspace">
+      <span class="signin-wordmark" id="signinWordmark" hidden>ADspace</span>
+      <h2>Content Review Internal</h2>
+      <p>Sign in with your company credentials.</p>
+      <label class="field-label" for="authEmail">Company email</label>
+      <input class="input" id="authEmail" type="email" placeholder="you@adspacestudios.com"
+             autocomplete="email">
+      <button class="btn btn-primary signin-btn" id="authSend" type="button">Sign in</button>
+      <div class="msg" id="authMsg"></div>
     </div>
-    <div class="msg" id="authMsg"></div>
   </section>
 
   <!-- ============ Clients ============ -->
