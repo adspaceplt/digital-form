@@ -100,6 +100,17 @@ create table if not exists public.activity_log (
 create index if not exists activity_log_idx on public.activity_log(created_at desc);
 alter table public.activity_log enable row level security;
 
+-- Who may read the activity record. Everyone signed in writes to it, only the
+-- people listed here can read it back.
+--
+-- To grant access, add a row in the Supabase dashboard:
+--   insert into activity_viewers (email) values ('name@adspacestudios.com');
+create table if not exists public.activity_viewers (
+  email      text primary key,
+  added_at   timestamptz not null default now()
+);
+alter table public.activity_viewers enable row level security;
+
 create index if not exists posts_batch_idx    on public.posts(batch_id, position);
 create index if not exists batches_client_idx on public.batches(client_id, created_at desc);
 create index if not exists reviews_post_idx   on public.reviews(post_id, created_at desc);
@@ -118,12 +129,38 @@ alter table public.reviews enable row level security;
 do $$
 declare t text;
 begin
-  foreach t in array array['clients','batches','posts','reviews','drive_assets','activity_log'] loop
+  foreach t in array array['clients','batches','posts','reviews','drive_assets'] loop
     execute format('drop policy if exists team_all on public.%I', t);
     execute format(
       'create policy team_all on public.%I for all to authenticated using (true) with check (true)', t);
   end loop;
 end $$;
+
+-- The activity record is deliberately not covered by the blanket policy above.
+-- Anyone signed in can write to it, since every logged action is theirs to
+-- take, but reading it back is restricted to the listed addresses.
+-- If an earlier version of this file ran, activity_log carries the blanket
+-- policy the loop above used to create. Policies are additive, so leaving it
+-- in place would keep the record readable by everyone regardless of the rule
+-- below. Remove it explicitly.
+drop policy if exists team_all on public.activity_log;
+
+drop policy if exists activity_write on public.activity_log;
+create policy activity_write on public.activity_log
+  for insert to authenticated with check (true);
+
+drop policy if exists activity_read on public.activity_log;
+create policy activity_read on public.activity_log
+  for select to authenticated
+  using (exists (
+    select 1 from public.activity_viewers v
+    where lower(v.email) = lower(auth.jwt() ->> 'email')));
+
+-- Anyone signed in may check the list, which is how the interface knows whether
+-- to offer the section at all. Changes are made in the dashboard.
+drop policy if exists viewers_read on public.activity_viewers;
+create policy viewers_read on public.activity_viewers
+  for select to authenticated using (true);
 
 -- ---------------------------------------------------------------------------
 -- Client-facing API

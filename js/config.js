@@ -33,5 +33,8 @@ window.ADSPACE_CONFIG = {
 
   brandLogo: 'https://mycdn.adspace.me/adspace-brandname.png',
   agencyName: 'ADspace',
-  supportEmail: 'adspacestudios@gmail.com'
+  supportEmail: 'adspacestudios@gmail.com',
+
+  // Shown to clients on the review page as Contact Account Manager.
+  accountEmail: 'marketing@adspacestudios.com'
 };

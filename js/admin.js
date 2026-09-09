@@ -147,6 +147,7 @@
     state.client = null; state.batch = null;
     setUrl();
     loadClients();
+    gateActivity();
   }
 
   function loadClients() {
@@ -191,6 +192,19 @@
     'reapproval.requested':  ['Re-approval requested', 'is-warn']
   };
 
+  /* The section only appears for people on the viewer list. The database
+     enforces this too, so hiding it here is convenience rather than the
+     control itself. */
+  function gateActivity() {
+    var panel = $('activityToggle').closest('.panel');
+    panel.hidden = true;
+    if (!actor) return;
+    db.from('activity_viewers').select('email').ilike('email', actor).limit(1)
+      .then(function (r) {
+        panel.hidden = !(r.data && r.data.length);
+      }, function () { panel.hidden = true; });
+  }
+
   $('activityToggle').addEventListener('click', function () {
     var open = $('activityBody').hidden;
     $('activityBody').hidden = !open;
@@ -205,7 +219,10 @@
     db.from('activity_log').select('*')
       .order('created_at', { ascending: false }).limit(60)
       .then(function (r) {
-        if (r.error) { box.innerHTML = '<div class="empty">' + esc(r.error.message) + '</div>'; return; }
+        if (r.error) {
+          box.innerHTML = '<div class="empty">You do not have access to the activity record.</div>';
+          return;
+        }
         if (!r.data.length) { box.innerHTML = '<div class="empty">No recorded activity.</div>'; return; }
         box.innerHTML = '';
         r.data.forEach(function (a) {

@@ -225,6 +225,26 @@ editing copy is deliberately not recorded, since a log nobody reads is worse tha
 The record is kept separately from the content, so deleting a client removes their sets
 and posts but leaves the note that it happened. That is the case it exists for.
 
+### Who can read it
+
+Everyone signed in writes to the record, but only named people can read it back, and the
+database enforces that rather than the interface. The section does not appear at all for
+anyone else.
+
+To grant access, run this in the Supabase SQL editor, once per person:
+
+```sql
+insert into activity_viewers (email) values ('name@adspacestudios.com');
+```
+
+To revoke it:
+
+```sql
+delete from activity_viewers where email = 'name@adspacestudios.com';
+```
+
+Until at least one address is added, nobody sees the section, including you.
+
 ## Bigger files
 
 To lift the 50 MB limit, uploads can go to the ADspace S3 bucket instead of Supabase.
