@@ -31,7 +31,14 @@
     ['xhs:note',           'XiaoHongShu note']
   ];
 
-  var state = { client: null, batch: null, drafts: [], lastDropCount: 0 };
+  var state = { client: null, batch: null, drafts: [], lastDropCount: 0, uploading: false };
+
+  // Switching tabs is safe. Closing one mid upload is not, so only warn then.
+  window.addEventListener('beforeunload', function (e) {
+    if (!state.uploading) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
 
   function msg(id, text, kind) {
     var n = $(id); n.textContent = text || ''; n.className = 'msg' + (kind ? ' ' + kind : '');
@@ -54,11 +61,15 @@
   $('authSend').addEventListener('click', function () {
     var email = $('authEmail').value.trim();
     if (!email) return;
-    db.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.href } })
-      .then(function (r) {
-        msg('authMsg', r.error ? r.error.message : 'Check your inbox for the sign in link.',
-            r.error ? 'err' : 'ok');
-      });
+    // A fixed URL, not location.href, so it matches the Supabase allow list exactly.
+    // Supabase silently falls back to its Site URL for anything not on that list.
+    db.auth.signInWithOtp({
+      email: email,
+      options: { emailRedirectTo: location.origin + '/admin/' }
+    }).then(function (r) {
+      msg('authMsg', r.error ? r.error.message : 'Check your inbox for the sign in link.',
+          r.error ? 'err' : 'ok');
+    });
   });
   $('signOut').addEventListener('click', function () {
     db.auth.signOut().then(function () { location.reload(); });
@@ -66,12 +77,51 @@
   db.auth.getSession().then(function (r) { gate(r.data.session); });
   db.auth.onAuthStateChange(function (_e, session) { gate(session); });
 
+  /* Supabase refreshes the token when you come back to the tab, which fires an
+     auth event. Only the first one should decide what is on screen, otherwise
+     switching tabs throws away whatever you were in the middle of. */
+  var entered = false;
+
   function gate(session) {
     var inApp = Boolean(session);
     $('authPanel').hidden = inApp;
     $('signOut').hidden = !inApp;
     $('whoami').textContent = inApp ? session.user.email : '';
-    if (inApp) showClients(); else { $('clientsView').hidden = true; $('workspace').hidden = true; }
+
+    if (!inApp) {
+      entered = false;
+      $('clientsView').hidden = true;
+      $('workspace').hidden = true;
+      return;
+    }
+    if (entered) return;
+    entered = true;
+    restoreView();
+  }
+
+  // 2. The address bar remembers the client and set you are working on, so a
+  //    reload or a reopened tab lands back in the same place.
+  function setUrl() {
+    var q = [];
+    if (state.client) q.push('client=' + state.client.id);
+    if (state.batch)  q.push('set=' + state.batch.id);
+    history.replaceState(null, '', '/admin/' + (q.length ? '?' + q.join('&') : ''));
+  }
+
+  function restoreView() {
+    var params = new URLSearchParams(location.search);
+    var clientId = params.get('client');
+    var setId = params.get('set');
+    if (!clientId) { showClients(); return; }
+
+    db.from('clients').select('*').eq('id', clientId).single().then(function (r) {
+      if (r.error || !r.data) { showClients(); return; }
+      openClient(r.data);
+      if (!setId) return;
+      db.from('batches').select('*').eq('id', setId).single().then(function (bt) {
+        if (!bt.error && bt.data) openBatch(bt.data, true);
+      });
+    });
   }
 
   // ---- Clients ------------------------------------------------------------
@@ -79,6 +129,7 @@
     $('clientsView').hidden = false;
     $('workspace').hidden = true;
     state.client = null; state.batch = null;
+    setUrl();
     loadClients();
   }
 
@@ -151,11 +202,30 @@
     $('waShare').href = 'https://wa.me/?text=' + encodeURIComponent(
       'Hi ' + c.name + ', your content is ready for review. You can approve each post or ' +
       'tell us what to change here: ' + url);
+    setUrl();
     loadBatches();
     window.scrollTo(0, 0);
   }
 
   $('backToClients').addEventListener('click', showClients);
+
+  $('deleteClient').addEventListener('click', function () {
+    var c = state.client;
+    db.from('batches').select('id').eq('client_id', c.id).then(function (r) {
+      var sets = (r.data || []).length;
+      var warning = 'Delete ' + c.name + ' permanently?\n\n' +
+        'This removes their review link and ' + sets + ' content set' +
+        (sets === 1 ? '' : 's') + ', including every post and every approval on record.\n\n' +
+        'This cannot be undone.';
+      if (!confirm(warning)) return;
+      if (!confirm('Last check. Type of thing you cannot get back.\n\nDelete ' + c.name + '?')) return;
+
+      db.from('clients').delete().eq('id', c.id).then(function (res) {
+        if (res.error) { msg('clientMsg', res.error.message, 'err'); return; }
+        showClients();
+      });
+    });
+  });
 
   $('copyLink').addEventListener('click', function () {
     navigator.clipboard.writeText($('clientLink').value).then(function () {
@@ -207,14 +277,22 @@
     });
   });
 
-  function openBatch(b) {
+  function openBatch(b, quiet) {
     state.batch = b;
-    clearDrafts();
+    setUrl();
+    state.drafts = readStoredDrafts();
     $('setPanel').hidden = false;
     paintSetHeader();
+    renderDrafts();
     loadBatches();
     loadPosts();
-    $('setPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    if (state.drafts.length) {
+      msg('setMsg', 'Picked up where you left off. ' + state.drafts.length + ' upload' +
+        (state.drafts.length === 1 ? '' : 's') +
+        ' still waiting to be added to this set.', 'ok');
+    }
+    if (!quiet) $('setPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function paintSetHeader() {
@@ -254,6 +332,26 @@
       loadBatches();
     });
   }
+
+  $('deleteSet').addEventListener('click', function () {
+    var b = state.batch;
+    db.from('posts').select('id').eq('batch_id', b.id).then(function (r) {
+      var n = (r.data || []).length;
+      var warning = 'Delete "' + b.title + '"?\n\n' +
+        'This removes ' + n + ' post' + (n === 1 ? '' : 's') + ' and any approvals on them.' +
+        (b.published ? '\n\nThe client can currently see this set.' : '') +
+        '\n\nThis cannot be undone.';
+      if (!confirm(warning)) return;
+
+      db.from('batches').delete().eq('id', b.id).then(function (res) {
+        if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
+        state.batch = null;
+        clearDrafts();
+        $('setPanel').hidden = true;
+        loadBatches();
+      });
+    });
+  });
 
   $('renameSet').addEventListener('click', function () {
     var title = (window.prompt('Rename this set:', state.batch.title) || '').trim();
@@ -309,42 +407,185 @@
     if (!files || !files.length) return;
     if (!state.batch) { msg('setMsg', 'Open a content set first.', 'err'); return; }
 
-    var queue = Array.prototype.slice.call(files);
+    // The size limit belongs to Supabase storage. S3 has no such ceiling.
+    var cap = usingS3() ? Infinity : (cfg.maxUploadMB || 50) * 1024 * 1024;
+    var all = Array.prototype.slice.call(files);
+    var queue = all.filter(function (f) { return f.size <= cap; });
+    var toobig = all.filter(function (f) { return f.size > cap; });
+
+    if (toobig.length) {
+      msg('setMsg',
+        toobig.map(function (f) { return f.name + ' (' + mb(f.size) + ' MB)'; }).join(', ') +
+        ' — too big to upload. The limit is ' + (cfg.maxUploadMB || 50) + ' MB. ' +
+        'Export a review copy at 1080p and around 5 Mbps, which is plenty for approval, ' +
+        'or put the file on your own CDN and paste the link below.', 'err');
+      if (!queue.length) return;
+    }
+
     state.lastDropCount = queue.length;
-    msg('setMsg', 'Uploading ' + queue.length + ' file' + (queue.length === 1 ? '' : 's') + '…');
+    state.uploading = true;
     var done = 0;
+    if (!toobig.length) {
+      msg('setMsg', 'Uploading ' + queue.length + ' file' + (queue.length === 1 ? '' : 's') + '…');
+    }
 
     queue.reduce(function (chain, file) {
       return chain.then(function () {
         return probe(file).then(function (info) {
-          var ext  = (file.name.split('.').pop() || 'bin').toLowerCase();
-          var path = state.client.id + '/' + crypto.randomUUID() + '.' + ext;
-          return db.storage.from(cfg.storageBucket)
-            .upload(path, file, { cacheControl: '31536000' })
-            .then(function (r) {
-              if (r.error) throw r.error;
-              var pub = db.storage.from(cfg.storageBucket).getPublicUrl(path).data.publicUrl;
-              state.drafts.push({
-                placement: guessPlacement(info),
-                media: [{ url: pub, type: info.isVideo ? 'video' : 'image' }],
-                caption: '', caption_zh: '', title: '', showZh: false
-              });
-              done++;
-              msg('setMsg', 'Uploaded ' + done + ' of ' + queue.length + '…');
-              renderDrafts();
-            });
+          return storeFile(file).then(function (publicUrl) {
+            pushDraft(publicUrl, info);
+            done++;
+            if (!toobig.length) msg('setMsg', 'Uploaded ' + done + ' of ' + queue.length + '…');
+          });
         });
       });
     }, Promise.resolve())
       .then(function () {
-        msg('setMsg', 'Ready. Add captions below, then click "Add to this set".', 'ok');
+        state.uploading = false;
+        if (!toobig.length) {
+          msg('setMsg', 'Ready. Add captions below, then click "Add to this set".', 'ok');
+        }
         renderDrafts();
       })
-      .catch(function (e) { msg('setMsg', e.message || 'Upload failed.', 'err'); });
+      .catch(function (e) {
+        state.uploading = false;
+        var text = e.message || 'Upload failed.';
+        if (/payload|too large|exceeded/i.test(text)) {
+          text = 'That file is over the ' + (cfg.maxUploadMB || 50) +
+            ' MB storage limit. Export a smaller review copy, or paste a link instead.';
+        }
+        msg('setMsg', text, 'err');
+      });
   }
+
+  function mb(bytes) { return (bytes / 1024 / 1024).toFixed(0); }
+
+  function usingS3() { return Boolean(cfg.s3 && cfg.s3.enabled); }
+
+  /* Files are already in storage by the time they become drafts, so keeping the
+     draft list locally means a reload never costs you an upload. */
+  function draftKey() { return 'adspace_drafts_' + (state.batch ? state.batch.id : 'none'); }
+
+  function saveDrafts() {
+    try {
+      if (state.drafts.length) localStorage.setItem(draftKey(), JSON.stringify(state.drafts));
+      else localStorage.removeItem(draftKey());
+    } catch (e) { /* private mode, carry on without it */ }
+  }
+
+  function readStoredDrafts() {
+    try {
+      var raw = localStorage.getItem(draftKey());
+      var list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list : [];
+    } catch (e) { return []; }
+  }
+
+  /* One place that knows where files live. S3 behind CloudFront when it is set
+     up, Supabase storage otherwise. Returns the URL to save on the post. */
+  function storeFile(file) {
+    var ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    if (!usingS3()) {
+      var path = state.client.id + '/' + crypto.randomUUID() + '.' + (ext || 'bin');
+      return db.storage.from(cfg.storageBucket)
+        .upload(path, file, { cacheControl: '31536000' })
+        .then(function (r) {
+          if (r.error) throw r.error;
+          return db.storage.from(cfg.storageBucket).getPublicUrl(path).data.publicUrl;
+        });
+    }
+
+    // Ask our own function to sign one upload, then send the file straight to
+    // S3. The file never passes through Supabase, so there is no size ceiling.
+    return db.functions.invoke(cfg.s3.functionName || 'sign-upload', {
+      body: { ext: ext || 'bin', clientId: state.client.id, size: file.size }
+    }).then(function (r) {
+      if (r.error) throw new Error('Could not start the upload. ' + r.error.message);
+      if (!r.data || !r.data.uploadUrl) throw new Error(
+        'Upload was refused: ' + ((r.data && r.data.error) || 'unknown reason'));
+
+      return fetch(r.data.uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream',
+          // filenames are random and never reused, so this is safe to cache hard
+          'Cache-Control': 'public, max-age=31536000, immutable'
+        }
+      }).then(function (put) {
+        if (!put.ok) throw new Error('S3 rejected the upload (HTTP ' + put.status + ').');
+        return r.data.publicUrl;
+      });
+    });
+  }
+
+  function pushDraft(url, info) {
+    // Store the real pixel size so the client's preview frame matches the file
+    // before it has finished loading.
+    state.drafts.push({
+      placement: guessPlacement(info),
+      media: [{
+        url: url,
+        type: info.isVideo ? 'video' : 'image',
+        width: info.width || null,
+        height: info.height || null
+      }],
+      caption: '', caption_zh: '', title: '', showZh: false
+    });
+    renderDrafts();
+  }
+
+  /* Large videos can live anywhere that serves the file directly, such as
+     mycdn.adspace.me. We read the dimensions off the URL the same way. */
+  function probeUrl(url) {
+    return new Promise(function (resolve) {
+      var settled = false;
+      var finish = function (r) { if (!settled) { settled = true; resolve(r); } };
+      setTimeout(function () { finish({ ok: false }); }, 12000);
+
+      var v = document.createElement('video');
+      v.preload = 'metadata';
+      v.onloadedmetadata = function () {
+        finish({ width: v.videoWidth, height: v.videoHeight, isVideo: true, ok: v.videoWidth > 0 });
+      };
+      v.onerror = function () {
+        var i = new Image();
+        i.onload = function () {
+          finish({ width: i.naturalWidth, height: i.naturalHeight, isVideo: false, ok: true });
+        };
+        i.onerror = function () { finish({ ok: false }); };
+        i.src = url;
+      };
+      v.src = url;
+    });
+  }
+
+  $('addMediaUrl').addEventListener('click', function () {
+    var url = $('mediaUrl').value.trim();
+    if (!url) return;
+    if (!state.batch) { msg('setMsg', 'Open a content set first.', 'err'); return; }
+    if (!/^https:\/\//i.test(url)) {
+      msg('setMsg', 'The link needs to start with https://', 'err');
+      return;
+    }
+    msg('setMsg', 'Checking the link…');
+    probeUrl(url).then(function (info) {
+      if (!info.ok) {
+        msg('setMsg', 'We could not load that link. It has to point straight at the file, ' +
+          'the way https://mycdn.adspace.me/reel.mp4 does. A Google Drive or Dropbox ' +
+          'share page will not work because it returns a web page, not the video.', 'err');
+        return;
+      }
+      pushDraft(url, info);
+      $('mediaUrl').value = '';
+      msg('setMsg', 'Added. Write the caption below, then click "Add to this set".', 'ok');
+    });
+  });
 
   // ---- Drafts -------------------------------------------------------------
   function renderDrafts() {
+    saveDrafts();
     var box = $('drafts');
     box.innerHTML = '';
     $('draftActions').hidden = state.drafts.length === 0;
@@ -398,13 +639,13 @@
         state.drafts.splice(i, 1); renderDrafts();
       });
       var cap = row.querySelector('[data-f="caption"]');
-      cap.addEventListener('input', function (e) { d.caption = e.target.value; });
+      cap.addEventListener('input', function (e) { d.caption = e.target.value; queueSave(); });
       var zh = row.querySelector('[data-f="caption_zh"]');
-      if (zh) zh.addEventListener('input', function (e) { d.caption_zh = e.target.value; });
+      if (zh) zh.addEventListener('input', function (e) { d.caption_zh = e.target.value; queueSave(); });
       var addzh = row.querySelector('[data-f="addzh"]');
       if (addzh) addzh.addEventListener('click', function () { d.showZh = true; renderDrafts(); });
       var title = row.querySelector('[data-f="title"]');
-      if (title) title.addEventListener('input', function (e) { d.title = e.target.value; });
+      if (title) title.addEventListener('input', function (e) { d.title = e.target.value; queueSave(); });
 
       box.appendChild(row);
     });
@@ -426,8 +667,15 @@
     clearDrafts();
   });
 
+  var saveTimer = null;
+  function queueSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveDrafts, 400);   // typing should not hit storage on every key
+  }
+
   function clearDrafts() {
     state.drafts = [];
+    try { localStorage.removeItem(draftKey()); } catch (e) {}
     renderDrafts();
     msg('setMsg', '');
     if (state.batch) paintSetHeader();

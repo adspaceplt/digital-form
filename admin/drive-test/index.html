@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Drive import check</title>
+<link rel="stylesheet" href="/css/portal.css">
+<style>
+  .res { margin-top: 22px; }
+  .check { display: flex; gap: 12px; align-items: flex-start; padding: 13px 0;
+           border-bottom: 1px solid var(--line-soft); }
+  .check:last-child { border-bottom: 0; }
+  .dot { flex: 0 0 auto; width: 18px; height: 18px; border-radius: 50%; margin-top: 1px;
+         display: grid; place-items: center; font-size: 11px; font-weight: 700; color: #fff; }
+  .dot.ok { background: var(--ok); } .dot.no { background: #b3261e; }
+  .dot.wait { background: var(--ink-mute); }
+  .check-body { flex: 1; min-width: 0; }
+  .check-body b { display: block; font-size: 13.5px; font-weight: 600; }
+  .check-body span { color: var(--ink-mute); font-size: 12.5px; word-break: break-word; }
+  .files { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .f { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #fff; }
+  .f-img { aspect-ratio: 4/5; background: var(--line-soft); }
+  .f-img img { width: 100%; height: 100%; object-fit: contain; }
+  .f-meta { padding: 9px 10px; font-size: 12px; }
+  .f-meta b { display: block; font-weight: 600; overflow: hidden;
+              text-overflow: ellipsis; white-space: nowrap; }
+  .f-meta span { color: var(--ink-mute); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-wordmark">ADspace</span>
+      <span class="brand-divider"></span>
+      <span class="brand-meta">
+        <span class="brand-kicker">Google Drive import</span>
+        <span class="brand-for">Compatibility check</span>
+      </span>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+  <section class="panel">
+    <h3>Can we import straight from Drive?</h3>
+    <p class="hint">This page only reads. It does not change the folder, and it saves nothing.
+    Paste a Google Cloud API key and a link to a folder shared as
+    <b>Anyone with the link</b>, then run the check.</p>
+
+    <div class="stack">
+      <div>
+        <label class="field-label" for="apiKey">Google API key</label>
+        <input class="input" id="apiKey" style="width:100%" placeholder="AIza..." autocomplete="off">
+      </div>
+      <div>
+        <label class="field-label" for="folderUrl">Drive folder link</label>
+        <input class="input" id="folderUrl" style="width:100%"
+               placeholder="https://drive.google.com/drive/folders/...">
+      </div>
+      <div class="row">
+        <button class="btn btn-primary" id="run" type="button">Run the check</button>
+      </div>
+    </div>
+
+    <div class="res" id="checks"></div>
+  </section>
+
+  <section class="panel" id="filesPanel" hidden>
+    <h3>What we found</h3>
+    <p class="hint">If these previews look right, the import will look right.</p>
+    <div class="files" id="files"></div>
+  </section>
+</main>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var API = 'https://www.googleapis.com/drive/v3/files';
+
+  function row(state, title, detail) {
+    var d = document.createElement('div');
+    d.className = 'check';
+    d.innerHTML =
+      '<span class="dot ' + state + '">' +
+        (state === 'ok' ? '&#10003;' : state === 'no' ? '!' : '&middot;') + '</span>' +
+      '<span class="check-body"><b>' + title + '</b><span>' + (detail || '') + '</span></span>';
+    $('checks').appendChild(d);
+    return d;
+  }
+
+  /* A blocked network or a firewalled office can leave fetch hanging forever,
+     so every call gets a deadline and fails with something readable. */
+  function fetchWithTimeout(url, ms) {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, ms || 20000);
+    return fetch(url, { signal: ctrl.signal })
+      .finally(function () { clearTimeout(timer); });
+  }
+
+  function folderId(url) {
+    var m = String(url).match(/\/folders\/([A-Za-z0-9_-]{10,})/) ||
+            String(url).match(/[?&]id=([A-Za-z0-9_-]{10,})/);
+    return m ? m[1] : null;
+  }
+
+  function bytes(n) {
+    if (!n) return 'unknown size';
+    var mb = n / 1024 / 1024;
+    return mb >= 1 ? mb.toFixed(1) + ' MB' : (n / 1024).toFixed(0) + ' KB';
+  }
+
+  $('run').addEventListener('click', function () {
+    $('checks').innerHTML = '';
+    $('files').innerHTML = '';
+    $('filesPanel').hidden = true;
+
+    var key = $('apiKey').value.trim();
+    var id  = folderId($('folderUrl').value.trim());
+
+    if (!key) { row('no', 'No API key', 'Paste the key from Google Cloud Console.'); return; }
+    if (!id)  {
+      row('no', 'That does not look like a folder link',
+        'It should contain /folders/ followed by a long id.');
+      return;
+    }
+    row('ok', 'Folder id read from the link', id);
+
+    // 1. can we list the folder at all
+    var fields = 'files(id,name,mimeType,size,imageMediaMetadata(width,height),' +
+                 'videoMediaMetadata(width,height,durationMillis))';
+    var url = API + '?q=' + encodeURIComponent("'" + id + "' in parents and trashed=false") +
+      '&key=' + encodeURIComponent(key) +
+      '&fields=' + encodeURIComponent(fields) +
+      '&pageSize=100&supportsAllDrives=true&includeItemsFromAllDrives=true';
+
+    var listing = row('wait', 'Reading the folder', 'Asking Google for the file list…');
+
+    fetchWithTimeout(url).then(function (r) {
+      return r.json().then(function (body) { return { status: r.status, body: body }; });
+    }).then(function (res) {
+      if (res.status !== 200) {
+        var reason = (res.body.error && res.body.error.message) || ('HTTP ' + res.status);
+        listing.outerHTML = '';
+        row('no', 'Could not read the folder', reason +
+          ' — usual causes are the key not being enabled for the Drive API, ' +
+          'a referrer restriction that does not include this site, ' +
+          'or the folder not being shared as Anyone with the link.');
+        return;
+      }
+
+      var files = (res.body.files || []).filter(function (f) {
+        return /^(image|video)\//.test(f.mimeType);
+      });
+      listing.outerHTML = '';
+      row('ok', 'Folder is readable',
+        files.length + ' image or video file' + (files.length === 1 ? '' : 's') + ' found.');
+
+      if (!files.length) {
+        row('no', 'Nothing to import', 'The folder has no images or videos in it.');
+        return;
+      }
+
+      // 2. does Drive give us the pixel size, so placement can still be detected
+      var sized = files.filter(function (f) {
+        var m = f.imageMediaMetadata || f.videoMediaMetadata;
+        return m && m.width && m.height;
+      });
+      row(sized.length === files.length ? 'ok' : (sized.length ? 'wait' : 'no'),
+        'Dimensions from Drive',
+        sized.length + ' of ' + files.length + ' files report their pixel size. ' +
+        'That is what picks Reels versus feed automatically.');
+
+      // 3. can the browser fetch the actual bytes, which is what importing needs
+      var smallest = files.slice().sort(function (a, b) {
+        return (Number(a.size) || 0) - (Number(b.size) || 0);
+      })[0];
+      var corsRow = row('wait', 'Copying a file into the portal',
+        'Trying to read the bytes of ' + smallest.name + '…');
+
+      fetchWithTimeout(API + '/' + smallest.id + '?alt=media&key=' + encodeURIComponent(key), 60000)
+        .then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.blob();
+        })
+        .then(function (blob) {
+          corsRow.outerHTML = '';
+          row('ok', 'Files can be copied in',
+            'Read ' + bytes(blob.size) + ' of ' + smallest.name +
+            '. Importing will work, no downloading and re-uploading by hand.');
+        })
+        .catch(function (e) {
+          corsRow.outerHTML = '';
+          row('no', 'Files cannot be copied in',
+            (e.name === 'AbortError' ? 'Timed out reading the file.' : e.message) +
+            ' We would have to point at Drive rather than import, ' +
+            'which is the fragile option. Worth telling me if you see this.');
+        });
+
+      // 4. do the previews actually render
+      $('filesPanel').hidden = false;
+      var rendered = 0, attempted = 0;
+      var previewRow = row('wait', 'Previews', 'Loading thumbnails…');
+
+      files.slice(0, 12).forEach(function (f) {
+        var m = f.imageMediaMetadata || f.videoMediaMetadata || {};
+        var card = document.createElement('div');
+        card.className = 'f';
+        card.innerHTML =
+          '<div class="f-img"><img alt=""></div>' +
+          '<div class="f-meta"><b>' + f.name + '</b>' +
+          '<span>' + (m.width ? m.width + ' x ' + m.height : 'size unknown') +
+          ' · ' + bytes(Number(f.size)) + '</span></div>';
+        var img = card.querySelector('img');
+        attempted++;
+        img.onload  = function () { rendered++; done(); };
+        img.onerror = function () { card.querySelector('.f-img').textContent = ''; done(); };
+        img.src = 'https://drive.google.com/thumbnail?id=' + f.id + '&sz=w800';
+        setTimeout(function () { if (!img.complete) img.onerror(); }, 20000);
+        $('files').appendChild(card);
+      });
+
+      var settled = 0;
+      function done() {
+        if (++settled < attempted) return;
+        previewRow.outerHTML = '';
+        row(rendered === attempted ? 'ok' : (rendered ? 'wait' : 'no'), 'Previews',
+          rendered + ' of ' + attempted + ' thumbnails rendered. ' +
+          (rendered ? 'Check they look correct below.' :
+            'None loaded, which usually means the folder is not public.'));
+      }
+    }).catch(function (e) {
+      listing.outerHTML = '';
+      row('no', 'Could not reach Google',
+        (e.name === 'AbortError'
+          ? 'The request timed out. Either the network is blocking googleapis.com, ' +
+            'or you are behind a firewall that does not allow it.'
+          : e.message + ' — if this says failed to fetch, the API key most likely has a ' +
+            'referrer restriction that does not include this site.'));
+    });
+  });
+})();
+</script>
+</body>
+</html>

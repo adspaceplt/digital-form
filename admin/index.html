@@ -95,6 +95,9 @@
         <a class="btn btn-wa" id="waShare" target="_blank" rel="noopener">Send on WhatsApp</a>
         <a class="btn" id="openLink" target="_blank" rel="noopener">Preview</a>
       </div>
+      <div class="dangerrow">
+        <button class="linkbtn is-danger" id="deleteClient" type="button">Delete this client</button>
+      </div>
     </div>
 
     <div class="viewhead">
@@ -109,6 +112,7 @@
         <h3 id="setTitle"></h3>
         <span class="topbar-spacer"></span>
         <button class="btn" id="renameSet" type="button">Rename</button>
+        <button class="btn" id="deleteSet" type="button">Delete set</button>
         <button class="btn btn-primary" id="publishSet" type="button">Send to client</button>
       </div>
       <div class="msg" id="setMsg"></div>
@@ -118,6 +122,12 @@
         <span>or click to choose files. We work out the format for you.</span>
       </div>
       <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
+
+      <div class="linkrow">
+        <input class="input" id="mediaUrl"
+               placeholder="Or paste a video link for anything too big to upload">
+        <button class="btn" id="addMediaUrl" type="button">Add link</button>
+      </div>
 
       <div id="combineBar" class="combinebar" hidden>
         <span id="combineText"></span>

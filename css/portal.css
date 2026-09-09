@@ -148,8 +148,20 @@ a { color: inherit; }
   transition: background .2s, color .2s, border-color .2s;
 }
 .btn:hover { border-color: var(--ink); color: var(--ink); }
-.btn-approve[aria-pressed="true"] { background: var(--ok); border-color: var(--ok); color: #fff; }
-.btn-changes[aria-pressed="true"] { background: var(--warn); border-color: var(--warn); color: #fff; }
+/* Approve is the action we want the client to take, so it carries the weight.
+   Request changes stays available but visually quiet. */
+.approve-row .btn-approve {
+  flex: 1.35; font-weight: 600;
+  background: var(--ok); border-color: var(--ok); color: #fff;
+}
+.approve-row .btn-approve:hover { background: #19603c; border-color: #19603c; color: #fff; }
+.approve-row .btn-approve[aria-pressed="true"]::before { content: '\2713\00a0'; }
+
+.approve-row .btn-changes { flex: 1; color: var(--ink-mute); }
+.approve-row .btn-changes:hover { color: var(--ink); border-color: var(--ink); }
+.approve-row .btn-changes[aria-pressed="true"] {
+  background: var(--warn); border-color: var(--warn); color: #fff; font-weight: 600;
+}
 .btn-primary { background: var(--ink); border-color: var(--ink); color: #fff; flex: 0 0 auto; }
 .btn-primary:hover { background: #000; color: #fff; }
 .btn[disabled] { opacity: .5; cursor: default; }
@@ -210,6 +222,11 @@ a { color: inherit; }
 
 /* Carousel */
 .mk-carousel { position: relative; overflow: hidden; }
+/* When the frame is sized from the real file, every slide fills that box. */
+.mk-carousel-sized .mk-carousel-track,
+.mk-carousel-sized .mk-slide,
+.mk-carousel-sized .mk-media { height: 100%; }
+.mk-carousel-sized .mk-media { aspect-ratio: auto; }
 .mk-carousel-track { display: flex; transition: transform .32s cubic-bezier(.4,0,.2,1); }
 .mk-slide { flex: 0 0 100%; }
 .mk-arrow {
@@ -420,6 +437,9 @@ a { color: inherit; }
   font-size: 12.5px; text-decoration: underline; text-underline-offset: 2px;
 }
 .linkbtn:hover { color: var(--ink); }
+.linkbtn.is-danger { color: #b3261e; }
+.linkbtn.is-danger:hover { color: #8c1d18; }
+.dangerrow { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
 
 /* Client and content set cards */
 .cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
@@ -457,6 +477,10 @@ a { color: inherit; }
 .drop b { font-size: 14.5px; font-weight: 600; color: var(--ink); }
 .drop span { color: var(--ink-mute); font-size: 13px; }
 .drop:hover, .drop.is-over { border-color: var(--ink); background: #fafafa; }
+
+.linkrow { display: flex; gap: 8px; margin-top: 12px; }
+.linkrow .input { flex: 1; font-size: 13px; }
+.linkrow .btn { flex: 0 0 auto; }
 
 .combinebar {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
