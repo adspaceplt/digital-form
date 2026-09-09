@@ -35,6 +35,6 @@ window.ADSPACE_CONFIG = {
   agencyName: 'ADspace',
   supportEmail: 'adspacestudios@gmail.com',
 
-  // Shown to clients on the review page as Contact Account Manager.
+  // Reply-to on anything the portal sends on the team's behalf.
   accountEmail: 'marketing@adspacestudios.com'
 };

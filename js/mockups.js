@@ -76,7 +76,14 @@
       if (item.poster) video.poster = item.poster;
       video.controls = true;
       video.playsInline = true;
-      video.preload = 'metadata';
+      /* A set can hold a dozen videos. Asking every one of them for metadata on
+         load means a dozen requests before the client sees anything, and for a
+         file whose moov atom sits at the end that means downloading it whole.
+         Nothing loads up front. A poster carries the frame, so those wait for
+         the play button; the rest are woken by the page once they come near
+         the viewport, which is the only way to show a frame without one. */
+      video.preload = 'none';
+      video.dataset.lazy = item.poster ? 'poster' : 'meta';
       video.addEventListener('loadedmetadata', function () {
         report(video.videoWidth, video.videoHeight);
       });
@@ -413,6 +420,23 @@
       fbAdCarousel(post, cfg, SHAPES['facebook:carousel']));
   }
 
+  /* The band each platform's own UI sits over, so copy placed there is covered
+     on a real phone. Held as a share of the canvas rather than pixels: the
+     frame is scaled to the column, and Meta's guidance is proportional.
+
+       Instagram / Facebook Reels  top 250, bottom 420, left 60, right 120
+       Instagram / Facebook Story  top 250, bottom 250, left 60, right 60
+       TikTok                      top 108, bottom 320, left 60, right 120
+
+     Measured against 1080 x 1920. Confirm against each platform's current
+     spec before treating these as exact; they move. */
+  function safeZone(kind) {
+    const wrap = el('div', 'mk-safe mk-safe-' + kind);
+    wrap.setAttribute('aria-hidden', 'true');
+    wrap.appendChild(el('div', 'mk-safe-box', '<span>Safe area</span>'));
+    return wrap;
+  }
+
   // ---- Reels / TikTok -------------------------------------------------------
   function vertical(post, cfg, kind) {
     const phone = el('div', 'mk mk-phone mk-' + kind);
@@ -440,6 +464,7 @@
     screen.appendChild(foot);
 
     deviceChrome(screen);
+    screen.appendChild(safeZone(kind === 'tiktok' ? 'tiktok' : 'reel'));
     phone.appendChild(screen);
     return phone;
   }
@@ -494,6 +519,7 @@
     }
 
     deviceChrome(screen);
+    screen.appendChild(safeZone('story'));
     phone.appendChild(screen);
     return phone;
   }
