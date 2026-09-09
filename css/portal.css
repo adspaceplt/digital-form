@@ -255,7 +255,7 @@ a { color: inherit; }
 .mk-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
 .mk-avatar {
   width: 32px; height: 32px; border-radius: 50%; flex: 0 0 auto; overflow: hidden;
-  background: #ddd; display: grid; place-items: center; font-weight: 600; color: #666;
+  background: #c8ccd2; display: grid; place-items: center; font-weight: 600; color: #5b6068;
 }
 .mk-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .mk-who { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
@@ -630,4 +630,104 @@ a { color: inherit; }
   .cards { grid-template-columns: 1fr; }
   .draft { flex-direction: column; }
   .draft-media { flex: 0 0 auto; width: 100%; height: 180px; }
+}
+
+
+/* =========================================================================
+   BATCH 2 ADDITIONS
+   ========================================================================= */
+.beta {
+  display: inline-block; vertical-align: 2px; margin-left: 6px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  padding: 2px 6px; border-radius: 4px; background: var(--ink); color: #fff;
+}
+
+/* Foldable content sets */
+.batch-head {
+  width: 100%; text-align: left; border: 0; background: none;
+  display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+  padding: 14px 2px; margin-bottom: 0; border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.batch-head:hover .batch-title { color: #000; }
+.fold-caret {
+  align-self: center; color: var(--ink-mute); font-size: 12px;
+  transition: transform .18s ease;
+}
+.batch.is-folded .fold-caret { transform: rotate(-90deg); }
+.batch-progress {
+  margin-left: auto; font-size: 12px; color: var(--ink-mute);
+  padding: 3px 9px; border-radius: 999px; background: var(--line-soft);
+}
+.batch.is-done .batch-progress { background: var(--ok-bg); color: var(--ok); }
+.batch-body { padding-top: 22px; }
+.batch.is-folded .batch-body { display: none; }
+
+/* Equal looking cards: media on top, copy in the middle, buttons pinned down */
+.grid { align-items: stretch; }
+.card { display: flex; flex-direction: column; }
+.copyblock { flex: 1 1 auto; }
+.approve { margin-top: auto; }
+.copytext {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; overflow: hidden;
+}
+.copyblock.is-open .copytext { -webkit-line-clamp: 999; }
+.copy-more {
+  border: 0; background: none; padding: 6px 0 0; color: var(--ink-mute);
+  font-size: 12.5px; text-decoration: underline; text-underline-offset: 2px;
+}
+.copy-more:hover { color: var(--ink); }
+
+/* An approved post is settled: one wide outlined button, no second option */
+.approve-row.is-settled .btn-approve {
+  flex: 1; background: #fff; border-color: var(--ok); color: var(--ok);
+  opacity: 1; cursor: default; font-weight: 600;
+}
+.approve-row.is-settled .btn-approve::before { content: '\2713\00a0'; }
+
+/* Import progress */
+.progress { margin: 16px 0 4px; }
+.progress-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 12.5px; color: var(--ink-soft); margin-bottom: 6px;
+}
+.progress-head span:last-child { font-weight: 600; font-variant-numeric: tabular-nums; }
+.progress-track { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.progress-fill {
+  height: 100%; width: 0; border-radius: 999px; background: var(--ink);
+  transition: width .25s ease;
+}
+
+/* What the file actually is */
+.filetag {
+  display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .03em;
+  color: var(--ink-soft); background: var(--line-soft);
+  padding: 2px 7px; border-radius: 5px; white-space: nowrap;
+}
+
+/* Button variants */
+.btn-sm { flex: 0 0 auto; padding: 7px 12px; font-size: 12.5px; }
+.btn-danger { background: #b3261e; border-color: #b3261e; color: #fff; flex: 0 0 auto; }
+.btn-danger:hover { background: #8c1d18; border-color: #8c1d18; color: #fff; }
+.btn-icon { display: inline-flex; align-items: center; gap: 7px; }
+.btn-icon svg { width: 14px; height: 14px; }
+.dangerrow { display: flex; gap: 10px; align-items: center; }
+
+.saved.is-editing { align-items: flex-start; background: #fafafa; }
+.saved.is-editing .saved-body { gap: 10px; }
+.saved.is-editing .textarea { min-height: 64px; font-size: 13px; }
+
+/* Cover image is an asset, not a post, so it gets a neutral frame */
+.mk-cover {
+  width: 100%; max-width: 340px; background: #fff;
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+}
+.mk-cover-tag {
+  padding: 8px 12px; font-size: 11.5px; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--ink-mute); border-top: 1px solid var(--line-soft);
+}
+
+@media (max-width: 640px) {
+  .batch-progress { margin-left: 0; }
+  .dangerrow { flex-wrap: wrap; }
 }

@@ -1,7 +1,13 @@
 {
   "client": {
     "name": "Kembara Coffee (Demo)",
-    "logo_url": null
+    "logo_url": null,
+    "handles": {
+      "instagram": "@kembaracoffee",
+      "facebook": "Kembara Coffee",
+      "tiktok": "@kembaracoffee",
+      "xhs": "Kembara 咖啡日记"
+    }
   },
   "batches": [
     {
@@ -115,6 +121,21 @@
             }
           ],
           "caption_zh": "最近常来这家坐 ☕\n\n他们的冷萃慢萃18小时，喝起来很顺，不会有那种涩涩的感觉。我通常点原味，配他们的可颂刚刚好。\n\n位置在 Taman Molek，位子多，插座也够，带电脑来待一个下午完全没问题。\n\n斋戒月期间开到凌晨一点，晚上来氛围更好。\n\n#新山咖啡 #JB咖啡店 #冷萃 #咖啡日记"
+        },
+        {
+          "id": "p8",
+          "platform": "cover",
+          "format": "image",
+          "position": 5,
+          "media": [
+            {
+              "url": "/demo/ph-feed-1.svg",
+              "type": "image",
+              "width": 1080,
+              "height": 1350
+            }
+          ],
+          "caption": "Cover frame for the cold brew Reel. Used as the grid thumbnail so the feed stays tidy."
         }
       ]
     },

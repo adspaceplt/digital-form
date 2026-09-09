@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ADspace Content Review — Team</title>
+<title>Content Review Internal</title>
+<link rel="icon" href="https://adspacestudios.com/favicon.ico">
 <link rel="stylesheet" href="/css/portal.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/js/config.js"></script>
@@ -20,8 +21,7 @@
       <span class="brand-wordmark" id="agencyWordmark" hidden>ADspace</span>
       <span class="brand-divider"></span>
       <span class="brand-meta">
-        <span class="brand-kicker">Content Review</span>
-        <span class="brand-for">Team</span>
+        <span class="brand-kicker">Content Review Internal</span>
       </span>
     </div>
     <span class="topbar-spacer"></span>
@@ -71,6 +71,28 @@
           <label class="field-label" for="newClientPass">Access code (optional)</label>
           <input class="input" id="newClientPass" placeholder="Leave blank">
         </div>
+      </div>
+
+      <h4 class="sectionlabel">Account names shown in the mockups</h4>
+      <div class="row">
+        <div>
+          <label class="field-label" for="hIg">Instagram</label>
+          <input class="input" id="hIg" placeholder="@starliving">
+        </div>
+        <div>
+          <label class="field-label" for="hFb">Facebook page</label>
+          <input class="input" id="hFb" placeholder="Star Living">
+        </div>
+        <div>
+          <label class="field-label" for="hTt">TikTok</label>
+          <input class="input" id="hTt" placeholder="@starliving">
+        </div>
+        <div>
+          <label class="field-label" for="hXhs">RedNote name</label>
+          <input class="input" id="hXhs" placeholder="Star Living 家居">
+        </div>
+      </div>
+      <div class="row" style="margin-top:14px">
         <button class="btn btn-primary" id="addClient" type="button">Create</button>
         <button class="btn" id="cancelAddClient" type="button" style="flex:0 0 auto">Cancel</button>
       </div>
@@ -88,15 +110,46 @@
       <div class="viewhead" style="margin:0 0 4px">
         <h2 id="wsClientName"></h2>
       </div>
-      <p class="hint">This is their permanent link. Send it once, it keeps working forever.</p>
+      <p class="hint">Their permanent review link. Send it once, it keeps working.</p>
       <div class="linkbox">
         <input class="input" id="clientLink" readonly>
         <button class="btn" id="copyLink" type="button">Copy link</button>
-        <a class="btn btn-wa" id="waShare" target="_blank" rel="noopener">Send on WhatsApp</a>
-        <a class="btn" id="openLink" target="_blank" rel="noopener">Preview</a>
+        <a class="btn btn-icon" id="openLink" target="_blank" rel="noopener">Preview
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 4h6v6"/><path d="M20 4 11 13"/>
+            <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>
+          </svg>
+        </a>
       </div>
+      <p class="hint" style="margin:10px 0 0">
+        Resetting makes the current link stop working immediately and issues a new one.
+        Use it if a link reaches someone it should not have.
+      </p>
+      <div class="row" id="handleRow" style="margin-top:20px">
+        <div>
+          <label class="field-label" for="eIg">Instagram</label>
+          <input class="input" id="eIg" placeholder="@handle">
+        </div>
+        <div>
+          <label class="field-label" for="eFb">Facebook page</label>
+          <input class="input" id="eFb" placeholder="Page name">
+        </div>
+        <div>
+          <label class="field-label" for="eTt">TikTok</label>
+          <input class="input" id="eTt" placeholder="@handle">
+        </div>
+        <div>
+          <label class="field-label" for="eXhs">RedNote name</label>
+          <input class="input" id="eXhs" placeholder="Name">
+        </div>
+        <button class="btn" id="saveHandles" type="button">Save names</button>
+      </div>
+      <div class="msg" id="handleMsg"></div>
+
       <div class="dangerrow">
-        <button class="linkbtn is-danger" id="deleteClient" type="button">Delete this client</button>
+        <button class="btn" id="resetLink" type="button">Reset permalink</button>
+        <button class="btn btn-danger" id="deleteClient" type="button">Delete client</button>
       </div>
     </div>
 
@@ -148,6 +201,13 @@
             <button class="linkbtn" id="driveNone" type="button">Select none</button>
             <span class="topbar-spacer"></span>
             <button class="btn btn-primary" id="driveImport" type="button">Import selected</button>
+          </div>
+          <div class="progress" id="driveProgress" hidden>
+            <div class="progress-head">
+              <span id="progressLabel"></span>
+              <span id="progressPct"></span>
+            </div>
+            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
           </div>
           <div class="drive-files" id="driveFiles"></div>
         </div>

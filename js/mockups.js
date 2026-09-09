@@ -158,6 +158,21 @@
     return wrap;
   }
 
+  /* Each platform shows a different account name, so use the one set on the
+     client and fall back to the brand name rather than inventing a handle. */
+  /* Instagram and TikTok show an @, Facebook and XiaoHongShu do not. */
+  function atHandle(h) {
+    h = String(h || '');
+    return h && h.charAt(0) !== '@' ? '@' + h : h;
+  }
+
+  function handleFor(post, cfg) {
+    if (post.handle) return post.handle;
+    const h = (cfg.handles || {})[post.platform || 'instagram'];
+    if (h) return h;
+    return cfg.clientHandle || cfg.clientName || '';
+  }
+
   function avatar(post, cfg) {
     const url = (post.client && post.client.logo_url) || cfg.clientLogo;
     const node = el('div', 'mk-avatar');
@@ -214,7 +229,7 @@
     const head = el('header', 'mk-head');
     head.appendChild(avatar(post, cfg));
     const who = el('div', 'mk-who');
-    who.appendChild(el('span', 'mk-handle', esc(post.handle || cfg.clientHandle)));
+    who.appendChild(el('span', 'mk-handle', esc(handleFor(post, cfg))));
     who.appendChild(el('span', 'mk-sub', 'Sponsored'));
     head.appendChild(who);
     head.appendChild(el('span', 'mk-more', icon('dots', 20)));
@@ -226,7 +241,7 @@
     frame.appendChild(el('div', 'mk-likes', '1,248 likes'));
 
     const cap = el('div', 'mk-caption');
-    cap.innerHTML = '<span class="mk-handle">' + esc(post.handle || cfg.clientHandle) + '</span> ' +
+    cap.innerHTML = '<span class="mk-handle">' + esc(handleFor(post, cfg)) + '</span> ' +
       captionHtml(post.caption);
     frame.appendChild(clampable(cap));
     frame.appendChild(el('div', 'mk-time', 'View all 32 comments'));
@@ -239,7 +254,7 @@
     const head = el('header', 'mk-head');
     head.appendChild(avatar(post, cfg));
     const who = el('div', 'mk-who');
-    who.appendChild(el('span', 'mk-handle', esc(post.handle || cfg.clientName)));
+    who.appendChild(el('span', 'mk-handle', esc(handleFor(post, cfg))));
     who.appendChild(el('span', 'mk-sub', 'Sponsored &middot; <span>Johor Bahru</span>'));
     head.appendChild(who);
     head.appendChild(el('span', 'mk-more', icon('dots', 20)));
@@ -278,7 +293,7 @@
     screen.appendChild(rail);
 
     const foot = el('div', 'mk-vfoot');
-    foot.appendChild(el('div', 'mk-vhandle', '@' + esc(post.handle || cfg.clientHandle)));
+    foot.appendChild(el('div', 'mk-vhandle', esc(atHandle(handleFor(post, cfg)))));
     const cap = el('div', 'mk-vcaption');
     cap.innerHTML = captionHtml(post.caption);
     foot.appendChild(clampable(cap, 2));
@@ -307,7 +322,7 @@
 
     const head = el('div', 'mk-story-head');
     head.appendChild(avatar(post, cfg));
-    head.appendChild(el('span', 'mk-vhandle', esc(post.handle || cfg.clientHandle)));
+    head.appendChild(el('span', 'mk-vhandle', esc(handleFor(post, cfg))));
     head.appendChild(el('span', 'mk-story-time', '2h'));
 
     screen.appendChild(stage);
@@ -358,7 +373,7 @@
 
     const foot = el('div', 'mk-xhs-foot');
     foot.appendChild(avatar(post, cfg));
-    foot.appendChild(el('span', 'mk-xhs-author', esc(post.handle || cfg.clientName)));
+    foot.appendChild(el('span', 'mk-xhs-author', esc(handleFor(post, cfg))));
     foot.appendChild(el('span', 'mk-xhs-stats',
       icon('heart', 15) + '<b>2,341</b>' + icon('star', 15) + '<b>876</b>'));
     body.appendChild(foot);
@@ -388,6 +403,15 @@
     return wrap;
   }
 
+  /* A cover image is an asset, not a post, so it gets a plain frame with no
+     platform chrome pretending otherwise. */
+  function coverImage(post, cfg) {
+    const frame = el('article', 'mk mk-cover');
+    frame.appendChild(carouselNode(post.media || [], { shape: { min: 0.4, max: 2.5 } }));
+    frame.appendChild(el('div', 'mk-cover-tag', 'Cover image'));
+    return frame;
+  }
+
   const RENDERERS = {
     'instagram:feed':     instagramFeed,
     'instagram:carousel': instagramFeed,
@@ -400,7 +424,8 @@
     'tiktok:reel':        function (p, c) { return vertical(p, c, 'tiktok'); },
     'tiktok:feed':        function (p, c) { return vertical(p, c, 'tiktok'); },
     'xhs:note':           xhsNote,
-    'xhs:feed':           xhsNote
+    'xhs:feed':           xhsNote,
+    'cover:image':        coverImage
   };
 
   const LABELS = {
@@ -415,7 +440,8 @@
     'tiktok:reel':        ['TikTok', '1080 x 1920'],
     'tiktok:feed':        ['TikTok', '1080 x 1920'],
     'xhs:note':           ['XiaoHongShu Note', '1080 x 1440'],
-    'xhs:feed':           ['XiaoHongShu Note', '1080 x 1440']
+    'xhs:feed':           ['XiaoHongShu Note', '1080 x 1440'],
+    'cover:image':        ['Cover Image', '']
   };
 
   function key(post) {
