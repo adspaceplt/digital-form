@@ -575,6 +575,10 @@
     var url = $('mediaUrl').value.trim();
     if (!url) return;
     if (!state.batch) { msg('setMsg', 'Open a content set first.', 'err'); return; }
+
+    // A Drive link is a normal thing to paste here, so handle it rather than refuse it.
+    if (isDriveLink(url)) { handleDriveLink(url); return; }
+
     if (!/^https:\/\//i.test(url)) {
       msg('setMsg', 'The link needs to start with https://', 'err');
       return;
@@ -583,8 +587,8 @@
     probeUrl(url).then(function (info) {
       if (!info.ok) {
         msg('setMsg', 'We could not load that link. It has to point straight at the file, ' +
-          'the way https://mycdn.adspace.me/reel.mp4 does. A Google Drive or Dropbox ' +
-          'share page will not work because it returns a web page, not the video.', 'err');
+          'the way https://mycdn.adspace.me/reel.mp4 does. A Dropbox share page will not ' +
+          'work because it returns a web page, not the video.', 'err');
         return;
       }
       pushDraft(url, info);
@@ -593,6 +597,59 @@
     });
   });
 
+  function handleDriveLink(url) {
+    if (!driveKey()) {
+      msg('setMsg', 'That is a Google Drive link. To pull files straight from Drive we need ' +
+        'a Google API key in js/config.js first. See docs/DRIVE-IMPORT-CHECK.md.', 'err');
+      return;
+    }
+
+    // A folder belongs in the Drive section, so send it there and load it.
+    var folder = driveFolderId(url);
+    if (folder) {
+      $('mediaUrl').value = '';
+      $('driveUrl').value = url;
+      msg('setMsg', 'That is a Drive folder. Loading it below.', 'ok');
+      $('driveLoad').click();
+      $('driveBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+
+    var fileId = driveFileId(url);
+    if (!fileId) {
+      msg('setMsg', 'That looks like a Drive link but we could not find a file id in it. ' +
+        'Use the Share button in Drive and copy the link it gives you.', 'err');
+      return;
+    }
+
+    msg('setMsg', 'Reading the file from Drive…');
+    driveMeta(fileId).then(function (f) {
+      if (!/^(image|video)\//.test(f.mimeType)) {
+        msg('setMsg', f.name + ' is not an image or a video.', 'err');
+        return;
+      }
+      var cap = usingS3() ? Infinity : (cfg.maxUploadMB || 50) * 1024 * 1024;
+      if (f.size > cap) {
+        msg('setMsg', f.name + ' is ' + mb(f.size) + ' MB, over the ' +
+          (cfg.maxUploadMB || 50) + ' MB limit. Turning on S3 storage removes this limit.', 'err');
+        return;
+      }
+      msg('setMsg', 'Copying ' + f.name + ' from Drive…');
+      state.uploading = true;
+      return copyDriveFile(f).then(function () {
+        state.uploading = false;
+        $('mediaUrl').value = '';
+        msg('setMsg', f.name + ' imported. Write the caption below, then click ' +
+          '"Add to this set".', 'ok');
+      });
+    }).catch(function (e) {
+      state.uploading = false;
+      msg('setMsg', e.name === 'AbortError'
+        ? 'Timed out reading that file from Drive.'
+        : 'Could not read that file. ' + e.message +
+          ' Check it is shared as Anyone with the link.', 'err');
+    });
+  }
 
   // ---- Google Drive import -------------------------------------------------
   // Creative uploads to Drive, so the portal reads that folder directly rather
@@ -602,6 +659,65 @@
   var driveFiles = [];
 
   function driveKey() { return (cfg.googleApiKey || '').trim(); }
+
+  function driveFileId(url) {
+    var m = String(url).match(/\/file\/d\/([A-Za-z0-9_-]{10,})/) ||
+            String(url).match(/[?&]id=([A-Za-z0-9_-]{10,})/);
+    return m ? m[1] : null;
+  }
+
+  function isDriveLink(url) {
+    return /^https?:\/\/(?:[a-z0-9-]+\.)*drive\.google\.com\//i.test(String(url).trim());
+  }
+
+  /* Pulls the bytes out of Drive and puts them in our own storage. */
+  function copyDriveFile(f) {
+    return driveFetch(DRIVE_API + '/' + f.id + '?alt=media&key=' +
+                      encodeURIComponent(driveKey()), 300000)
+      .then(function (r) {
+        if (!r.ok) throw new Error('Drive refused ' + f.name + ' (HTTP ' + r.status + ')');
+        return r.blob();
+      })
+      .then(function (blob) {
+        var ext = (f.name.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        return storeBlob(blob, ext || (f.isVideo ? 'mp4' : 'jpg'), f.mimeType);
+      })
+      .then(function (publicUrl) {
+        state.drafts.push({
+          placement: guessPlacement({ width: f.width, height: f.height, isVideo: f.isVideo }),
+          media: [{
+            url: publicUrl,
+            type: f.isVideo ? 'video' : 'image',
+            width: f.width || null,
+            height: f.height || null,
+            driveId: f.id
+          }],
+          caption: '', caption_zh: '', title: '', showZh: false
+        });
+        renderDrafts();
+      });
+  }
+
+  function driveMeta(id) {
+    var fields = 'id,name,mimeType,size,imageMediaMetadata(width,height),' +
+                 'videoMediaMetadata(width,height)';
+    return driveFetch(DRIVE_API + '/' + id + '?key=' + encodeURIComponent(driveKey()) +
+                      '&fields=' + encodeURIComponent(fields) + '&supportsAllDrives=true')
+      .then(function (r) {
+        return r.json().then(function (body) {
+          if (r.status !== 200) {
+            throw new Error((body.error && body.error.message) || ('Google returned ' + r.status));
+          }
+          var m = body.imageMediaMetadata || body.videoMediaMetadata || {};
+          return {
+            id: body.id, name: body.name || 'file', mimeType: body.mimeType || '',
+            size: Number(body.size) || 0,
+            width: m.width || 0, height: m.height || 0,
+            isVideo: String(body.mimeType || '').indexOf('video') === 0
+          };
+        });
+      });
+  }
 
   function driveFolderId(url) {
     var m = String(url).match(/\/folders\/([A-Za-z0-9_-]{10,})/) ||
@@ -753,32 +869,10 @@
         if (!toobig.length) {
           msg('driveMsg', 'Copying ' + (done + 1) + ' of ' + queue.length + ', ' + f.name + '…');
         }
-        return driveFetch(DRIVE_API + '/' + f.id + '?alt=media&key=' +
-                          encodeURIComponent(driveKey()), 300000)
-          .then(function (r) {
-            if (!r.ok) throw new Error('Drive refused ' + f.name + ' (HTTP ' + r.status + ')');
-            return r.blob();
-          })
-          .then(function (blob) {
-            var ext = (f.name.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-            return storeBlob(blob, ext || (f.isVideo ? 'mp4' : 'jpg'), f.mimeType);
-          })
-          .then(function (publicUrl) {
-            state.drafts.push({
-              placement: guessPlacement({ width: f.width, height: f.height, isVideo: f.isVideo }),
-              media: [{
-                url: publicUrl,
-                type: f.isVideo ? 'video' : 'image',
-                width: f.width || null,
-                height: f.height || null,
-                driveId: f.id
-              }],
-              caption: '', caption_zh: '', title: '', showZh: false
-            });
-            f.done = true; f.pick = false;
-            done++;
-            renderDrafts();
-          });
+        return copyDriveFile(f).then(function () {
+          f.done = true; f.pick = false;
+          done++;
+        });
       });
     }, Promise.resolve())
       .then(function () {
