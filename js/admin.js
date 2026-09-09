@@ -31,7 +31,14 @@
     ['xhs:note',           'XiaoHongShu note']
   ];
 
-  var state = { client: null, batch: null, drafts: [], lastDropCount: 0 };
+  var state = { client: null, batch: null, drafts: [], lastDropCount: 0, uploading: false };
+
+  // Switching tabs is safe. Closing one mid upload is not, so only warn then.
+  window.addEventListener('beforeunload', function (e) {
+    if (!state.uploading) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
 
   function msg(id, text, kind) {
     var n = $(id); n.textContent = text || ''; n.className = 'msg' + (kind ? ' ' + kind : '');
@@ -70,12 +77,51 @@
   db.auth.getSession().then(function (r) { gate(r.data.session); });
   db.auth.onAuthStateChange(function (_e, session) { gate(session); });
 
+  /* Supabase refreshes the token when you come back to the tab, which fires an
+     auth event. Only the first one should decide what is on screen, otherwise
+     switching tabs throws away whatever you were in the middle of. */
+  var entered = false;
+
   function gate(session) {
     var inApp = Boolean(session);
     $('authPanel').hidden = inApp;
     $('signOut').hidden = !inApp;
     $('whoami').textContent = inApp ? session.user.email : '';
-    if (inApp) showClients(); else { $('clientsView').hidden = true; $('workspace').hidden = true; }
+
+    if (!inApp) {
+      entered = false;
+      $('clientsView').hidden = true;
+      $('workspace').hidden = true;
+      return;
+    }
+    if (entered) return;
+    entered = true;
+    restoreView();
+  }
+
+  // 2. The address bar remembers the client and set you are working on, so a
+  //    reload or a reopened tab lands back in the same place.
+  function setUrl() {
+    var q = [];
+    if (state.client) q.push('client=' + state.client.id);
+    if (state.batch)  q.push('set=' + state.batch.id);
+    history.replaceState(null, '', '/admin/' + (q.length ? '?' + q.join('&') : ''));
+  }
+
+  function restoreView() {
+    var params = new URLSearchParams(location.search);
+    var clientId = params.get('client');
+    var setId = params.get('set');
+    if (!clientId) { showClients(); return; }
+
+    db.from('clients').select('*').eq('id', clientId).single().then(function (r) {
+      if (r.error || !r.data) { showClients(); return; }
+      openClient(r.data);
+      if (!setId) return;
+      db.from('batches').select('*').eq('id', setId).single().then(function (bt) {
+        if (!bt.error && bt.data) openBatch(bt.data, true);
+      });
+    });
   }
 
   // ---- Clients ------------------------------------------------------------
@@ -83,6 +129,7 @@
     $('clientsView').hidden = false;
     $('workspace').hidden = true;
     state.client = null; state.batch = null;
+    setUrl();
     loadClients();
   }
 
@@ -155,6 +202,7 @@
     $('waShare').href = 'https://wa.me/?text=' + encodeURIComponent(
       'Hi ' + c.name + ', your content is ready for review. You can approve each post or ' +
       'tell us what to change here: ' + url);
+    setUrl();
     loadBatches();
     window.scrollTo(0, 0);
   }
@@ -229,14 +277,22 @@
     });
   });
 
-  function openBatch(b) {
+  function openBatch(b, quiet) {
     state.batch = b;
-    clearDrafts();
+    setUrl();
+    state.drafts = readStoredDrafts();
     $('setPanel').hidden = false;
     paintSetHeader();
+    renderDrafts();
     loadBatches();
     loadPosts();
-    $('setPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    if (state.drafts.length) {
+      msg('setMsg', 'Picked up where you left off. ' + state.drafts.length + ' upload' +
+        (state.drafts.length === 1 ? '' : 's') +
+        ' still waiting to be added to this set.', 'ok');
+    }
+    if (!quiet) $('setPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function paintSetHeader() {
@@ -367,6 +423,7 @@
     }
 
     state.lastDropCount = queue.length;
+    state.uploading = true;
     var done = 0;
     if (!toobig.length) {
       msg('setMsg', 'Uploading ' + queue.length + ' file' + (queue.length === 1 ? '' : 's') + '…');
@@ -384,12 +441,14 @@
       });
     }, Promise.resolve())
       .then(function () {
+        state.uploading = false;
         if (!toobig.length) {
           msg('setMsg', 'Ready. Add captions below, then click "Add to this set".', 'ok');
         }
         renderDrafts();
       })
       .catch(function (e) {
+        state.uploading = false;
         var text = e.message || 'Upload failed.';
         if (/payload|too large|exceeded/i.test(text)) {
           text = 'That file is over the ' + (cfg.maxUploadMB || 50) +
@@ -402,6 +461,25 @@
   function mb(bytes) { return (bytes / 1024 / 1024).toFixed(0); }
 
   function usingS3() { return Boolean(cfg.s3 && cfg.s3.enabled); }
+
+  /* Files are already in storage by the time they become drafts, so keeping the
+     draft list locally means a reload never costs you an upload. */
+  function draftKey() { return 'adspace_drafts_' + (state.batch ? state.batch.id : 'none'); }
+
+  function saveDrafts() {
+    try {
+      if (state.drafts.length) localStorage.setItem(draftKey(), JSON.stringify(state.drafts));
+      else localStorage.removeItem(draftKey());
+    } catch (e) { /* private mode, carry on without it */ }
+  }
+
+  function readStoredDrafts() {
+    try {
+      var raw = localStorage.getItem(draftKey());
+      var list = raw ? JSON.parse(raw) : [];
+      return Array.isArray(list) ? list : [];
+    } catch (e) { return []; }
+  }
 
   /* One place that knows where files live. S3 behind CloudFront when it is set
      up, Supabase storage otherwise. Returns the URL to save on the post. */
@@ -503,6 +581,7 @@
 
   // ---- Drafts -------------------------------------------------------------
   function renderDrafts() {
+    saveDrafts();
     var box = $('drafts');
     box.innerHTML = '';
     $('draftActions').hidden = state.drafts.length === 0;
@@ -556,13 +635,13 @@
         state.drafts.splice(i, 1); renderDrafts();
       });
       var cap = row.querySelector('[data-f="caption"]');
-      cap.addEventListener('input', function (e) { d.caption = e.target.value; });
+      cap.addEventListener('input', function (e) { d.caption = e.target.value; queueSave(); });
       var zh = row.querySelector('[data-f="caption_zh"]');
-      if (zh) zh.addEventListener('input', function (e) { d.caption_zh = e.target.value; });
+      if (zh) zh.addEventListener('input', function (e) { d.caption_zh = e.target.value; queueSave(); });
       var addzh = row.querySelector('[data-f="addzh"]');
       if (addzh) addzh.addEventListener('click', function () { d.showZh = true; renderDrafts(); });
       var title = row.querySelector('[data-f="title"]');
-      if (title) title.addEventListener('input', function (e) { d.title = e.target.value; });
+      if (title) title.addEventListener('input', function (e) { d.title = e.target.value; queueSave(); });
 
       box.appendChild(row);
     });
@@ -584,8 +663,15 @@
     clearDrafts();
   });
 
+  var saveTimer = null;
+  function queueSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveDrafts, 400);   // typing should not hit storage on every key
+  }
+
   function clearDrafts() {
     state.drafts = [];
+    try { localStorage.removeItem(draftKey()); } catch (e) {}
     renderDrafts();
     msg('setMsg', '');
     if (state.batch) paintSetHeader();

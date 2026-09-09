@@ -180,6 +180,11 @@ copy the link again.
 **A client says they see nothing.**
 The set is still a draft. Open it and click **Send to client**.
 
+**I switched tabs and lost my place.**
+Fixed. The address bar now remembers which client and set you are in, and uploads waiting
+to be added are kept on your machine until you add or discard them. If you land back on
+the client list, you were signed out rather than reset.
+
 **A video will not upload.**
 It is over 50 MB. See the section above. Quickest route is to export a review copy at
 1080p and 5 Mbps, or paste a link to the file on your own CDN.
