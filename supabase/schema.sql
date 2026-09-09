@@ -38,9 +38,12 @@ create table if not exists public.drive_assets (
   width       int,
   height      int,
   bytes       bigint,
+  poster_url  text,
   created_at  timestamptz not null default now(),
   unique (client_id, drive_id)
 );
+-- safe to re-run on a database created before posters existed
+alter table public.drive_assets add column if not exists poster_url text;
 alter table public.drive_assets enable row level security;
 
 create table if not exists public.batches (

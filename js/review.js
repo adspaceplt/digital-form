@@ -33,12 +33,46 @@
     $('coverTitle').textContent = title;
     $('coverBody').textContent = body;
     $('passForm').hidden = !wantsPass;
-    $('coverContact').hidden = wantsPass;
-    $('coverContact').href = 'mailto:' + (cfg.accountEmail || cfg.supportEmail) +
-      '?subject=' + encodeURIComponent('Content review access');
     document.querySelector('.brand-for').hidden = true;
     if (wantsPass) $('passInput').focus();
   }
+
+  /* No video loads on its own. One that has a poster already shows its frame,
+     so it stays untouched until the client presses play. One without a poster
+     has to read metadata to show anything, so it is woken when it comes near
+     the viewport rather than on page load. Either way a set of a dozen reels
+     no longer opens a dozen connections before the first card is readable. */
+  var lazyVideos = window.IntersectionObserver
+    ? new IntersectionObserver(function (entries, obs) {
+        entries.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          e.target.preload = 'metadata';
+          e.target.dataset.lazy = 'woken';
+          obs.unobserve(e.target);
+        });
+      }, { rootMargin: '400px 0px' })
+    : null;
+
+  function watchVideos(root) {
+    var pending = (root || document).querySelectorAll('video[data-lazy="meta"]');
+    if (!lazyVideos) {
+      // No observer: fall back to loading metadata rather than showing nothing.
+      pending.forEach(function (v) { v.preload = 'metadata'; });
+      return;
+    }
+    pending.forEach(function (v) { lazyVideos.observe(v); });
+  }
+
+  /* Only worth offering where a platform draws its own UI over the video, so
+     the switch stays out of the way for a client reviewing static posts. */
+  function paintSafeSwitch() {
+    var any = document.querySelector('#content .mk-safe');
+    $('safeWrap').hidden = !any;
+  }
+
+  $('safeToggle').addEventListener('change', function (e) {
+    document.body.classList.toggle('is-safe', e.target.checked);
+  });
 
   function fmtDate(iso) {
     if (!iso) return '';
@@ -347,6 +381,8 @@
     bf.addEventListener('change', applyFilters);
     $('filterbar').hidden = false;
     $('qrBtn').hidden = false;
+    paintSafeSwitch();
+    watchVideos(document);
     applyFilters();
   }
 

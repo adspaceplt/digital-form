@@ -218,6 +218,36 @@ a { color: inherit; }
 /* Belt and braces: some browsers do not match the pseudo-class on the element
    itself, so the script below sets this class as well. */
 .mk-media video.is-fullscreen { object-fit: contain; background: #000; }
+
+/* Safe zones. Off unless the page asks for them, so the default view is what
+   the audience sees rather than a diagram. The box carries the scrim in its
+   own shadow, which dims everything outside it without a second element. */
+.mk-safe { position: absolute; inset: 0; z-index: 6; pointer-events: none; display: none; }
+.is-safe .mk-safe { display: block; }
+.mk-safe-box {
+  position: absolute;
+  border: 1px dashed rgba(255,255,255,.9);
+  box-shadow: 0 0 0 2000px rgba(0,0,0,.42);
+}
+.mk-safe-box span {
+  position: absolute; top: 5px; left: 5px;
+  font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: #fff; background: rgba(0,0,0,.55); padding: 2px 8px; border-radius: 999px;
+  white-space: nowrap;
+}
+/* Instagram and Facebook Reels: 250 top, 420 bottom, 60 left, 120 right of 1080 x 1920 */
+.mk-safe-reel .mk-safe-box   { top: 13.02%; bottom: 21.88%; left: 5.56%; right: 11.11%; }
+/* Stories: 250 top and bottom, 60 each side */
+.mk-safe-story .mk-safe-box  { top: 13.02%; bottom: 13.02%; left: 5.56%; right: 5.56%; }
+/* TikTok: 108 top, 320 bottom, 60 left, 120 right */
+.mk-safe-tiktok .mk-safe-box { top: 5.63%;  bottom: 16.67%; left: 5.56%; right: 11.11%; }
+
+/* The switch that turns them on */
+.safetoggle { display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+.safetoggle input { width: 16px; height: 16px; accent-color: var(--ink); cursor: pointer; }
+.safetoggle span { font-size: 13px; color: var(--ink-mute); }
+.safetoggle:hover span { color: var(--ink); }
+
 .mk-media-empty {
   display: flex; align-items: center; justify-content: center;
   color: #9aa3a8; font-size: 12px; background:
@@ -844,13 +874,6 @@ a { color: inherit; }
 .cover-panel p { color: var(--ink-soft); font-size: 14px; line-height: 1.65; }
 .cover-panel form { margin-top: 18px; display: flex; gap: 8px; }
 .cover-panel form .input { flex: 1; }
-.cover-contact {
-  display: inline-block; margin-top: 22px; flex: 0 0 auto;
-  text-decoration: none; text-align: center;
-}
-
-
-
 @media (max-width: 640px) {
   .cover-panel { padding: 30px 22px 26px; }
   .cover-panel h2 { font-size: 21px; }
