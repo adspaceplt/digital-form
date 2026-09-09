@@ -1,0 +1,361 @@
+/*
+ * Platform mockups.
+ * Renders a post record into a frame that reads like the real feed, so the
+ * client reviews the post the way their audience will actually see it.
+ */
+(function () {
+  const SVG = {
+    heart: '<path d="M12 21s-7.5-4.9-9.6-9A5.4 5.4 0 0 1 12 6.2 5.4 5.4 0 0 1 21.6 12c-2.1 4.1-9.6 9-9.6 9z"/>',
+    comment: '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.5 9.5 0 0 1-3.6-.7L3 21l1.9-5a8.2 8.2 0 0 1-.9-3.8 8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8 7.7z"/>',
+    send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>',
+    bookmark: '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
+    dots: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
+    music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+    star: '<path d="m12 3 2.7 5.6 6.3.9-4.5 4.4 1 6.1-5.5-2.9L6.5 20l1-6.1L3 9.5l6.3-.9z"/>',
+    thumb: '<path d="M7 22H4a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3m0 10 4.4-9.9V2a3 3 0 0 1 3 3v5h4.6a2 2 0 0 1 2 2.4l-1.4 7A2 2 0 0 1 18.6 21H7z"/>'
+  };
+
+  function icon(name, size) {
+    return '<svg viewBox="0 0 24 24" width="' + (size || 22) + '" height="' + (size || 22) +
+      '" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" ' +
+      'stroke-linejoin="round" aria-hidden="true">' + SVG[name] + '</svg>';
+  }
+
+  function el(tag, className, html) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (html !== undefined) node.innerHTML = html;
+    return node;
+  }
+
+  function esc(text) {
+    return String(text == null ? '' : text)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  /* Turns #tags and @mentions blue, keeps line breaks. */
+  function captionHtml(text) {
+    return esc(text)
+      .replace(/(^|\s)([#@][\w一-龥.]+)/g, '$1<span class="mk-tag">$2</span>')
+      .replace(/\n/g, '<br>');
+  }
+
+  function mediaNode(item, ratioClass) {
+    const wrap = el('div', 'mk-media ' + (ratioClass || ''));
+    if (!item || !item.url) {
+      wrap.classList.add('mk-media-empty');
+      wrap.textContent = 'No media uploaded';
+      return wrap;
+    }
+    if (item.type === 'video') {
+      const video = document.createElement('video');
+      video.src = item.url;
+      if (item.poster) video.poster = item.poster;
+      video.controls = true;
+      video.playsInline = true;
+      video.preload = 'metadata';
+      wrap.appendChild(video);
+    } else {
+      const img = document.createElement('img');
+      img.src = item.url;
+      img.alt = '';
+      img.loading = 'lazy';
+      wrap.appendChild(img);
+    }
+    return wrap;
+  }
+
+  /* Swipeable carousel with dots and arrows. */
+  function carouselNode(media, ratioClass) {
+    const wrap = el('div', 'mk-carousel');
+    const track = el('div', 'mk-carousel-track');
+    media.forEach(function (item) {
+      const slide = el('div', 'mk-slide');
+      slide.appendChild(mediaNode(item, ratioClass));
+      track.appendChild(slide);
+    });
+    wrap.appendChild(track);
+
+    if (media.length > 1) {
+      const dots = el('div', 'mk-dots');
+      const counter = el('div', 'mk-counter', '1/' + media.length);
+      media.forEach(function (_, i) {
+        const dot = el('span', 'mk-dot' + (i === 0 ? ' is-on' : ''));
+        dot.addEventListener('click', function () { go(i); });
+        dots.appendChild(dot);
+      });
+
+      const prev = el('button', 'mk-arrow mk-arrow-prev', '&#8249;');
+      const next = el('button', 'mk-arrow mk-arrow-next', '&#8250;');
+      prev.type = 'button'; next.type = 'button';
+      prev.setAttribute('aria-label', 'Previous slide');
+      next.setAttribute('aria-label', 'Next slide');
+
+      let index = 0;
+      function go(i) {
+        index = Math.max(0, Math.min(media.length - 1, i));
+        track.style.transform = 'translateX(' + (index * -100) + '%)';
+        counter.textContent = (index + 1) + '/' + media.length;
+        Array.prototype.forEach.call(dots.children, function (dot, n) {
+          dot.classList.toggle('is-on', n === index);
+        });
+        prev.disabled = index === 0;
+        next.disabled = index === media.length - 1;
+      }
+      prev.addEventListener('click', function () { go(index - 1); });
+      next.addEventListener('click', function () { go(index + 1); });
+
+      wrap.appendChild(prev);
+      wrap.appendChild(next);
+      wrap.appendChild(dots);
+      wrap.appendChild(counter);
+      go(0);
+    }
+    return wrap;
+  }
+
+  function avatar(post, cfg) {
+    const url = (post.client && post.client.logo_url) || cfg.clientLogo;
+    const node = el('div', 'mk-avatar');
+    if (url) {
+      const img = document.createElement('img');
+      img.src = url; img.alt = '';
+      node.appendChild(img);
+    } else {
+      node.textContent = (cfg.clientName || 'A').charAt(0).toUpperCase();
+    }
+    return node;
+  }
+
+  function actionRow(items) {
+    const row = el('div', 'mk-actions');
+    const left = el('div', 'mk-actions-left');
+    items.forEach(function (name) { left.appendChild(el('span', 'mk-act', icon(name))); });
+    row.appendChild(left);
+    row.appendChild(el('span', 'mk-act', icon('bookmark')));
+    return row;
+  }
+
+  // ---- Instagram feed / carousel -------------------------------------------
+  function instagramFeed(post, cfg) {
+    const frame = el('article', 'mk mk-ig');
+    const head = el('header', 'mk-head');
+    head.appendChild(avatar(post, cfg));
+    const who = el('div', 'mk-who');
+    who.appendChild(el('span', 'mk-handle', esc(post.handle || cfg.clientHandle)));
+    who.appendChild(el('span', 'mk-sub', 'Sponsored'));
+    head.appendChild(who);
+    head.appendChild(el('span', 'mk-more', icon('dots', 20)));
+    frame.appendChild(head);
+
+    const ratio = post.format === 'carousel' || post.ratio === '4:5' ? 'r-45' : 'r-11';
+    frame.appendChild(carouselNode(post.media || [], ratio));
+
+    frame.appendChild(actionRow(['heart', 'comment', 'send']));
+    frame.appendChild(el('div', 'mk-likes', '1,248 likes'));
+
+    const cap = el('div', 'mk-caption');
+    cap.innerHTML = '<span class="mk-handle">' + esc(post.handle || cfg.clientHandle) + '</span> ' +
+      captionHtml(post.caption);
+    frame.appendChild(clampable(cap));
+    frame.appendChild(el('div', 'mk-time', 'View all 32 comments'));
+    return frame;
+  }
+
+  // ---- Facebook feed --------------------------------------------------------
+  function facebookFeed(post, cfg) {
+    const frame = el('article', 'mk mk-fb');
+    const head = el('header', 'mk-head');
+    head.appendChild(avatar(post, cfg));
+    const who = el('div', 'mk-who');
+    who.appendChild(el('span', 'mk-handle', esc(post.handle || cfg.clientName)));
+    who.appendChild(el('span', 'mk-sub', 'Sponsored &middot; <span>Johor Bahru</span>'));
+    head.appendChild(who);
+    head.appendChild(el('span', 'mk-more', icon('dots', 20)));
+    frame.appendChild(head);
+
+    const cap = el('div', 'mk-caption mk-caption-top');
+    cap.innerHTML = captionHtml(post.caption);
+    frame.appendChild(clampable(cap, 3, ['See more', 'See less']));
+
+    frame.appendChild(carouselNode(post.media || [], 'r-11'));
+
+    const bar = el('div', 'mk-fb-bar');
+    bar.innerHTML =
+      '<span>' + icon('thumb', 18) + ' Like</span>' +
+      '<span>' + icon('comment', 18) + ' Comment</span>' +
+      '<span>' + icon('send', 18) + ' Share</span>';
+    frame.appendChild(bar);
+    return frame;
+  }
+
+  // ---- Reels / TikTok -------------------------------------------------------
+  function vertical(post, cfg, kind) {
+    const phone = el('div', 'mk mk-phone mk-' + kind);
+    const screen = el('div', 'mk-screen');
+    screen.appendChild(mediaNode((post.media || [])[0], 'r-916'));
+
+    const rail = el('div', 'mk-rail');
+    rail.innerHTML =
+      '<span>' + icon('heart', 26) + '<b>4.2K</b></span>' +
+      '<span>' + icon('comment', 26) + '<b>318</b></span>' +
+      '<span>' + icon('send', 26) + '<b>96</b></span>';
+    screen.appendChild(rail);
+
+    const foot = el('div', 'mk-vfoot');
+    foot.appendChild(el('div', 'mk-vhandle', '@' + esc(post.handle || cfg.clientHandle)));
+    const cap = el('div', 'mk-vcaption');
+    cap.innerHTML = captionHtml(post.caption);
+    foot.appendChild(clampable(cap, 2));
+    foot.appendChild(el('div', 'mk-audio',
+      icon('music', 14) + '<span>Original audio &middot; ' + esc(cfg.clientName) + '</span>'));
+    screen.appendChild(foot);
+
+    phone.appendChild(screen);
+    return phone;
+  }
+
+  // ---- Stories --------------------------------------------------------------
+  function story(post, cfg) {
+    const media = post.media || [];
+    const phone = el('div', 'mk mk-phone mk-story');
+    const screen = el('div', 'mk-screen');
+
+    const bars = el('div', 'mk-bars');
+    (media.length ? media : [null]).forEach(function (_, i) {
+      bars.appendChild(el('span', 'mk-bar' + (i === 0 ? ' is-on' : '')));
+    });
+
+    const stage = el('div', 'mk-story-stage');
+    stage.appendChild(mediaNode(media[0], 'r-916'));
+
+    const head = el('div', 'mk-story-head');
+    head.appendChild(avatar(post, cfg));
+    head.appendChild(el('span', 'mk-vhandle', esc(post.handle || cfg.clientHandle)));
+    head.appendChild(el('span', 'mk-story-time', '2h'));
+
+    screen.appendChild(stage);
+    screen.appendChild(bars);
+    screen.appendChild(head);
+
+    if (media.length > 1) {
+      let index = 0;
+      const step = function (delta) {
+        index = Math.max(0, Math.min(media.length - 1, index + delta));
+        stage.replaceChild(mediaNode(media[index], 'r-916'), stage.firstChild);
+        Array.prototype.forEach.call(bars.children, function (bar, n) {
+          bar.classList.toggle('is-on', n <= index);
+        });
+      };
+      const prev = el('button', 'mk-tap mk-tap-l', ''); prev.type = 'button';
+      const next = el('button', 'mk-tap mk-tap-r', ''); next.type = 'button';
+      prev.setAttribute('aria-label', 'Previous frame');
+      next.setAttribute('aria-label', 'Next frame');
+      prev.addEventListener('click', function () { step(-1); });
+      next.addEventListener('click', function () { step(1); });
+      screen.appendChild(prev);
+      screen.appendChild(next);
+      screen.appendChild(el('div', 'mk-counter mk-counter-story', media.length + ' frames'));
+    }
+
+    if (post.caption) {
+      const sticker = el('div', 'mk-sticker');
+      sticker.innerHTML = captionHtml(post.caption);
+      stage.appendChild(sticker);
+    }
+
+    phone.appendChild(screen);
+    return phone;
+  }
+
+  // ---- XiaoHongShu note -----------------------------------------------------
+  function xhsNote(post, cfg) {
+    const frame = el('article', 'mk mk-xhs');
+    frame.appendChild(carouselNode(post.media || [], 'r-34'));
+
+    const body = el('div', 'mk-xhs-body');
+    if (post.title) body.appendChild(el('h4', 'mk-xhs-title', esc(post.title)));
+    const cap = el('div', 'mk-xhs-text');
+    cap.innerHTML = captionHtml(post.caption_zh || post.caption);
+    body.appendChild(clampable(cap, 6, ['展开', '收起']));
+
+    const foot = el('div', 'mk-xhs-foot');
+    foot.appendChild(avatar(post, cfg));
+    foot.appendChild(el('span', 'mk-xhs-author', esc(post.handle || cfg.clientName)));
+    foot.appendChild(el('span', 'mk-xhs-stats',
+      icon('heart', 15) + '<b>2,341</b>' + icon('star', 15) + '<b>876</b>'));
+    body.appendChild(foot);
+
+    frame.appendChild(body);
+    return frame;
+  }
+
+  /* Adds a "more" toggle when the text overflows. */
+  function clampable(node, lines, labels) {
+    const more = (labels && labels[0]) || 'more';
+    const less = (labels && labels[1]) || 'less';
+    node.classList.add('mk-clamp');
+    node.style.setProperty('--mk-lines', lines || 2);
+    const toggle = el('button', 'mk-morebtn', more);
+    toggle.type = 'button';
+    const wrap = el('div', 'mk-clampwrap');
+    wrap.appendChild(node);
+    wrap.appendChild(toggle);
+    toggle.addEventListener('click', function () {
+      const open = node.classList.toggle('is-open');
+      toggle.textContent = open ? less : more;
+    });
+    requestAnimationFrame(function () {
+      if (node.scrollHeight <= node.clientHeight + 2) toggle.remove();
+    });
+    return wrap;
+  }
+
+  const RENDERERS = {
+    'instagram:feed':     instagramFeed,
+    'instagram:carousel': instagramFeed,
+    'instagram:reel':     function (p, c) { return vertical(p, c, 'reel'); },
+    'instagram:story':    story,
+    'facebook:feed':      facebookFeed,
+    'facebook:carousel':  facebookFeed,
+    'facebook:story':     story,
+    'facebook:reel':      function (p, c) { return vertical(p, c, 'reel'); },
+    'tiktok:reel':        function (p, c) { return vertical(p, c, 'tiktok'); },
+    'tiktok:feed':        function (p, c) { return vertical(p, c, 'tiktok'); },
+    'xhs:note':           xhsNote,
+    'xhs:feed':           xhsNote
+  };
+
+  const LABELS = {
+    'instagram:feed':     ['Instagram Feed', '1080 x 1350'],
+    'instagram:carousel': ['Instagram Carousel', '1080 x 1350'],
+    'instagram:reel':     ['Instagram Reels', '1080 x 1920'],
+    'instagram:story':    ['Instagram Story', '1080 x 1920'],
+    'facebook:feed':      ['Facebook Post', '1200 x 1200'],
+    'facebook:carousel':  ['Facebook Carousel', '1080 x 1080'],
+    'facebook:story':     ['Facebook Story', '1080 x 1920'],
+    'facebook:reel':      ['Facebook Reels', '1080 x 1920'],
+    'tiktok:reel':        ['TikTok', '1080 x 1920'],
+    'tiktok:feed':        ['TikTok', '1080 x 1920'],
+    'xhs:note':           ['XiaoHongShu Note', '1080 x 1440'],
+    'xhs:feed':           ['XiaoHongShu Note', '1080 x 1440']
+  };
+
+  function key(post) {
+    return (post.platform || 'instagram') + ':' + (post.format || 'feed');
+  }
+
+  window.ADspaceMockups = {
+    render: function (post, cfg) {
+      const fn = RENDERERS[key(post)] || instagramFeed;
+      return fn(post, cfg || {});
+    },
+    label: function (post) {
+      return (LABELS[key(post)] || ['Post', ''])[0];
+    },
+    dimensions: function (post) {
+      return (LABELS[key(post)] || ['Post', ''])[1];
+    },
+    key: key
+  };
+})();

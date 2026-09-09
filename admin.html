@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Content Review Admin</title>
+<link rel="stylesheet" href="/css/portal.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/js/config.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/mockups.js"></script>
+<style>
+  .panel { background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+           box-shadow:var(--shadow); padding:22px; margin-bottom:22px; }
+  .panel h3 { font-size:15px; font-weight:600; letter-spacing:-.01em; margin-bottom:4px; }
+  .panel .hint { color:var(--ink-mute); font-size:13px; margin-bottom:16px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+  .row > div { flex:1 1 180px; min-width:0; }
+  .row .input, .row .select { width:100%; }
+  .stack > * + * { margin-top:14px; }
+  .list { border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .list-item { display:flex; align-items:center; gap:12px; padding:12px 14px;
+               border-bottom:1px solid var(--line-soft); }
+  .list-item:last-child { border-bottom:0; }
+  .list-item.is-on { background:#f4f4f4; }
+  .list-item b { font-weight:600; }
+  .list-item .sp { flex:1; }
+  .muted { color:var(--ink-mute); font-size:12.5px; }
+  .linkbox { display:flex; gap:8px; margin-top:12px; }
+  .linkbox .input { flex:1; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12.5px; }
+  .drop { border:1.5px dashed var(--line); border-radius:10px; padding:22px; text-align:center;
+          color:var(--ink-mute); font-size:13px; cursor:pointer; }
+  .drop.is-over { border-color:var(--ink); color:var(--ink); background:#fafafa; }
+  .thumbs { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .thumb { position:relative; width:66px; height:82px; border-radius:8px; overflow:hidden;
+           border:1px solid var(--line); background:#f0f0f0; }
+  .thumb img, .thumb video { width:100%; height:100%; object-fit:cover; }
+  .thumb button { position:absolute; top:3px; right:3px; width:18px; height:18px; border-radius:50%;
+                  border:0; background:rgba(0,0,0,.65); color:#fff; font-size:11px; line-height:1;
+                  display:grid; place-items:center; padding:0; }
+  .thumb i { position:absolute; bottom:3px; left:4px; font-style:normal; font-size:10px;
+             color:#fff; text-shadow:0 1px 2px rgba(0,0,0,.7); }
+  .msg { font-size:13px; margin-top:12px; }
+  .msg.err { color:#b3261e; } .msg.ok { color:var(--ok); }
+  .preview-wrap { display:flex; justify-content:center; padding:18px; background:#fafafa;
+                  border:1px solid var(--line); border-radius:10px; }
+  .split { display:grid; grid-template-columns:1fr 340px; gap:22px; align-items:start; }
+  @media (max-width:860px) { .split { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <img id="agencyLogo" src="" alt="">
+      <span class="brand-divider"></span>
+      <span><span class="brand-client">Content Review</span><br><span class="brand-sub">Team admin</span></span>
+    </div>
+    <span class="topbar-spacer"></span>
+    <span class="muted" id="whoami"></span>
+    <button class="pill" id="signOut" type="button" hidden>Sign out</button>
+  </div>
+</header>
+
+<main class="shell">
+
+  <section class="panel" id="notConfigured" hidden>
+    <h3>Connect Supabase first</h3>
+    <p class="hint">Open <code>js/config.js</code> and paste your project URL and anon key.
+    Setup takes about ten minutes, the steps are in <code>docs/CONTENT-REVIEW-SETUP.md</code>.</p>
+  </section>
+
+  <section class="panel" id="authPanel" hidden>
+    <h3>Sign in</h3>
+    <p class="hint">We email you a one time link. No password to remember or share.</p>
+    <div class="row">
+      <div><input class="input" id="authEmail" type="email" placeholder="you@adspacestudios.com"></div>
+      <button class="btn btn-primary" id="authSend" type="button">Email me a link</button>
+    </div>
+    <div class="msg" id="authMsg"></div>
+  </section>
+
+  <div id="app" hidden>
+
+    <section class="panel">
+      <h3>Clients</h3>
+      <p class="hint">Each client gets one permanent link. Everything you publish to them appears there.</p>
+      <div class="list" id="clientList"></div>
+      <div class="row" style="margin-top:16px">
+        <div><input class="input" id="newClientName" placeholder="Client name"></div>
+        <div><input class="input" id="newClientLogo" placeholder="Logo URL (optional)"></div>
+        <div style="flex:0 0 150px"><input class="input" id="newClientPass" placeholder="Access code (optional)"></div>
+        <button class="btn btn-primary" id="addClient" type="button">Add client</button>
+      </div>
+      <div class="msg" id="clientMsg"></div>
+    </section>
+
+    <section class="panel" id="clientPanel" hidden>
+      <h3 id="clientPanelTitle"></h3>
+      <p class="hint">Share this link with the client. It never changes.</p>
+      <div class="linkbox">
+        <input class="input" id="clientLink" readonly>
+        <button class="btn" id="copyLink" type="button">Copy</button>
+        <a class="btn" id="openLink" target="_blank" rel="noopener" style="text-align:center;text-decoration:none;flex:0 0 auto">Open</a>
+      </div>
+
+      <div style="margin-top:24px">
+        <div class="row">
+          <div><input class="input" id="newBatchTitle" placeholder="Content drop title, e.g. March 2026 Content"></div>
+          <div><input class="input" id="newBatchNote" placeholder="Note to client (optional)"></div>
+          <button class="btn btn-primary" id="addBatch" type="button">Create drop</button>
+        </div>
+        <div class="list" id="batchList" style="margin-top:16px"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="postPanel" hidden>
+      <h3 id="postPanelTitle"></h3>
+      <p class="hint">Upload the creative, paste the caption, choose where it sits. The client sees exactly this.</p>
+
+      <div class="split">
+        <div class="stack">
+          <div class="row">
+            <div>
+              <label class="field-label" for="pPlatform">Platform</label>
+              <select class="select" id="pPlatform">
+                <option value="instagram">Instagram</option>
+                <option value="facebook">Facebook</option>
+                <option value="tiktok">TikTok</option>
+                <option value="xhs">XiaoHongShu</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" for="pFormat">Format</label>
+              <select class="select" id="pFormat">
+                <option value="feed">Feed post</option>
+                <option value="carousel">Carousel</option>
+                <option value="reel">Reel / vertical video</option>
+                <option value="story">Story</option>
+                <option value="note">Note</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" for="pHandle">Handle shown in mockup</label>
+              <input class="input" id="pHandle" placeholder="clienthandle">
+            </div>
+          </div>
+
+          <div id="titleField" hidden>
+            <label class="field-label" for="pTitle">Note title (XiaoHongShu)</label>
+            <input class="input" id="pTitle" placeholder="标题">
+          </div>
+
+          <div>
+            <label class="field-label" for="pCaption">Caption (English)</label>
+            <textarea class="textarea" id="pCaption" placeholder="Benefit first. What does the customer gain?"></textarea>
+          </div>
+
+          <div>
+            <label class="field-label" for="pCaptionZh">文案 (Chinese, optional)</label>
+            <textarea class="textarea" id="pCaptionZh" placeholder="中文文案"></textarea>
+          </div>
+
+          <div>
+            <label class="field-label">Creative</label>
+            <div class="drop" id="drop">
+              Drop images or video here, or click to choose. Multiple files become carousel slides or story frames.
+            </div>
+            <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
+            <div class="thumbs" id="thumbs"></div>
+          </div>
+
+          <div class="row">
+            <button class="btn btn-primary" id="savePost" type="button">Add post to drop</button>
+            <button class="btn" id="resetPost" type="button" style="flex:0 0 auto">Clear</button>
+          </div>
+          <div class="msg" id="postMsg"></div>
+        </div>
+
+        <div>
+          <label class="field-label">Live preview</label>
+          <div class="preview-wrap" id="previewWrap"></div>
+        </div>
+      </div>
+
+      <div class="list" id="postList" style="margin-top:24px"></div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+(function () {
+  var cfg = window.ADSPACE_CONFIG;
+  var API = window.ADspaceAPI;
+  var MK  = window.ADspaceMockups;
+  var db  = API.client;
+  var $   = function (id) { return document.getElementById(id); };
+
+  $('agencyLogo').src = cfg.brandLogo;
+
+  if (!API.configured || !db) { $('notConfigured').hidden = false; return; }
+
+  var state = { client: null, batch: null, media: [] };
+
+  function msg(id, text, kind) {
+    var node = $(id);
+    node.textContent = text || '';
+    node.className = 'msg' + (kind ? ' ' + kind : '');
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function token() {
+    var a = new Uint8Array(16);
+    crypto.getRandomValues(a);
+    return Array.from(a, function (b) { return b.toString(36).padStart(2, '0'); }).join('').slice(0, 22);
+  }
+
+  // ---- Auth ---------------------------------------------------------------
+  $('authSend').addEventListener('click', function () {
+    var email = $('authEmail').value.trim();
+    if (!email) return;
+    db.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.href } })
+      .then(function (r) {
+        msg('authMsg', r.error ? r.error.message : 'Check your inbox for the sign in link.',
+            r.error ? 'err' : 'ok');
+      });
+  });
+  $('signOut').addEventListener('click', function () {
+    db.auth.signOut().then(function () { location.reload(); });
+  });
+
+  db.auth.getSession().then(function (r) { gate(r.data.session); });
+  db.auth.onAuthStateChange(function (_e, session) { gate(session); });
+
+  function gate(session) {
+    var inApp = Boolean(session);
+    $('app').hidden = !inApp;
+    $('authPanel').hidden = inApp;
+    $('signOut').hidden = !inApp;
+    $('whoami').textContent = inApp ? session.user.email : '';
+    if (inApp) loadClients();
+  }
+
+  // ---- Clients ------------------------------------------------------------
+  function loadClients() {
+    db.from('clients').select('*').order('name').then(function (r) {
+      var list = $('clientList');
+      list.innerHTML = '';
+      if (r.error) { msg('clientMsg', r.error.message, 'err'); return; }
+      if (!r.data.length) {
+        list.innerHTML = '<div class="list-item muted">No clients yet. Add your first one below.</div>';
+        return;
+      }
+      r.data.forEach(function (c) {
+        var row = document.createElement('div');
+        row.className = 'list-item' + (state.client && state.client.id === c.id ? ' is-on' : '');
+        row.innerHTML = '<b>' + esc(c.name) + '</b>' +
+          (c.passcode ? '<span class="muted">code protected</span>' : '') +
+          '<span class="sp"></span><button class="btn" style="flex:0 0 auto">Open</button>';
+        row.querySelector('button').addEventListener('click', function () { selectClient(c); });
+        list.appendChild(row);
+      });
+    });
+  }
+
+  $('addClient').addEventListener('click', function () {
+    var name = $('newClientName').value.trim();
+    if (!name) { msg('clientMsg', 'Client name is required.', 'err'); return; }
+    db.from('clients').insert({
+      name: name,
+      logo_url: $('newClientLogo').value.trim() || null,
+      passcode: $('newClientPass').value.trim() || null,
+      access_token: token()
+    }).select().single().then(function (r) {
+      if (r.error) { msg('clientMsg', r.error.message, 'err'); return; }
+      $('newClientName').value = ''; $('newClientLogo').value = ''; $('newClientPass').value = '';
+      msg('clientMsg', 'Client added.', 'ok');
+      loadClients();
+      selectClient(r.data);
+    });
+  });
+
+  function selectClient(c) {
+    state.client = c;
+    state.batch = null;
+    $('clientPanel').hidden = false;
+    $('postPanel').hidden = true;
+    $('clientPanelTitle').textContent = c.name;
+    var url = location.origin + '/review.html?k=' + c.access_token;
+    $('clientLink').value = url;
+    $('openLink').href = url;
+    loadClients();
+    loadBatches();
+  }
+
+  $('copyLink').addEventListener('click', function () {
+    navigator.clipboard.writeText($('clientLink').value).then(function () {
+      $('copyLink').textContent = 'Copied';
+      setTimeout(function () { $('copyLink').textContent = 'Copy'; }, 1600);
+    });
+  });
+
+  // ---- Batches ------------------------------------------------------------
+  function loadBatches() {
+    db.from('batches').select('*').eq('client_id', state.client.id)
+      .order('created_at', { ascending: false }).then(function (r) {
+        var list = $('batchList');
+        list.innerHTML = '';
+        if (r.error || !r.data.length) {
+          list.innerHTML = '<div class="list-item muted">No content drops yet.</div>';
+          return;
+        }
+        r.data.forEach(function (b) {
+          var row = document.createElement('div');
+          row.className = 'list-item' + (state.batch && state.batch.id === b.id ? ' is-on' : '');
+          row.innerHTML = '<b>' + esc(b.title) + '</b>' +
+            '<span class="muted">' + new Date(b.created_at).toLocaleDateString('en-GB') + '</span>' +
+            '<span class="sp"></span>' +
+            '<label class="muted" style="display:flex;gap:6px;align-items:center">' +
+              '<input type="checkbox" ' + (b.published ? 'checked' : '') + '> visible to client</label>' +
+            '<button class="btn" style="flex:0 0 auto">Manage posts</button>';
+          row.querySelector('input').addEventListener('change', function (e) {
+            db.from('batches').update({ published: e.target.checked }).eq('id', b.id)
+              .then(function () { b.published = e.target.checked; });
+          });
+          row.querySelector('button').addEventListener('click', function () { selectBatch(b); });
+          list.appendChild(row);
+        });
+      });
+  }
+
+  $('addBatch').addEventListener('click', function () {
+    var title = $('newBatchTitle').value.trim();
+    if (!title || !state.client) return;
+    db.from('batches').insert({
+      client_id: state.client.id,
+      title: title,
+      note: $('newBatchNote').value.trim() || null,
+      published: false
+    }).select().single().then(function (r) {
+      if (r.error) return;
+      $('newBatchTitle').value = ''; $('newBatchNote').value = '';
+      loadBatches();
+      selectBatch(r.data);
+    });
+  });
+
+  function selectBatch(b) {
+    state.batch = b;
+    $('postPanel').hidden = false;
+    $('postPanelTitle').textContent = b.title + ' — posts';
+    loadBatches();
+    loadPosts();
+    $('postPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // ---- Posts --------------------------------------------------------------
+  function loadPosts() {
+    db.from('posts').select('*').eq('batch_id', state.batch.id).order('position')
+      .then(function (r) {
+        var list = $('postList');
+        list.innerHTML = '';
+        if (r.error || !r.data.length) {
+          list.innerHTML = '<div class="list-item muted">No posts in this drop yet.</div>';
+          return;
+        }
+        r.data.forEach(function (p) {
+          var row = document.createElement('div');
+          row.className = 'list-item';
+          row.innerHTML = '<b>' + MK.label(p) + '</b>' +
+            '<span class="muted">' + esc((p.caption || p.caption_zh || '').slice(0, 58)) + '…</span>' +
+            '<span class="sp"></span>' +
+            '<span class="muted">' + (p.media || []).length + ' file(s)</span>' +
+            '<button class="btn" style="flex:0 0 auto">Delete</button>';
+          row.querySelector('button').addEventListener('click', function () {
+            if (!confirm('Delete this post? The client will no longer see it.')) return;
+            db.from('posts').delete().eq('id', p.id).then(loadPosts);
+          });
+          list.appendChild(row);
+        });
+      });
+  }
+
+  // Media upload
+  var drop = $('drop'), fileInput = $('fileInput');
+  drop.addEventListener('click', function () { fileInput.click(); });
+  drop.addEventListener('dragover', function (e) {
+    e.preventDefault(); drop.classList.add('is-over');
+  });
+  drop.addEventListener('dragleave', function () { drop.classList.remove('is-over'); });
+  drop.addEventListener('drop', function (e) {
+    e.preventDefault(); drop.classList.remove('is-over');
+    upload(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', function () { upload(fileInput.files); fileInput.value = ''; });
+
+  function upload(files) {
+    if (!files || !files.length) return;
+    msg('postMsg', 'Uploading ' + files.length + ' file(s)…');
+    var queue = Array.prototype.slice.call(files);
+    var done = 0;
+
+    queue.forEach(function (file) {
+      var ext  = (file.name.split('.').pop() || 'bin').toLowerCase();
+      var path = state.client.id + '/' + crypto.randomUUID() + '.' + ext;
+      db.storage.from(cfg.storageBucket).upload(path, file, { cacheControl: '31536000' })
+        .then(function (r) {
+          if (r.error) { msg('postMsg', r.error.message, 'err'); return; }
+          var pub = db.storage.from(cfg.storageBucket).getPublicUrl(path).data.publicUrl;
+          state.media.push({ url: pub, type: file.type.indexOf('video') === 0 ? 'video' : 'image' });
+          renderThumbs(); renderPreview();
+          if (++done === queue.length) msg('postMsg', 'Upload complete.', 'ok');
+        });
+    });
+  }
+
+  function renderThumbs() {
+    var box = $('thumbs');
+    box.innerHTML = '';
+    state.media.forEach(function (m, i) {
+      var t = document.createElement('div');
+      t.className = 'thumb';
+      t.innerHTML = (m.type === 'video'
+          ? '<video src="' + m.url + '" muted></video>'
+          : '<img src="' + m.url + '" alt="">') +
+        '<button type="button" title="Remove">&times;</button><i>' + (i + 1) + '</i>';
+      t.querySelector('button').addEventListener('click', function () {
+        state.media.splice(i, 1); renderThumbs(); renderPreview();
+      });
+      box.appendChild(t);
+    });
+  }
+
+  function draft() {
+    return {
+      platform:   $('pPlatform').value,
+      format:     $('pFormat').value,
+      handle:     $('pHandle').value.trim() || (state.client ? state.client.name : ''),
+      title:      $('pTitle').value.trim() || null,
+      caption:    $('pCaption').value,
+      caption_zh: $('pCaptionZh').value,
+      media:      state.media
+    };
+  }
+
+  function renderPreview() {
+    var wrap = $('previewWrap');
+    wrap.innerHTML = '';
+    wrap.appendChild(MK.render(draft(), {
+      clientName: state.client ? state.client.name : 'Client',
+      clientLogo: state.client ? state.client.logo_url : null,
+      clientHandle: $('pHandle').value.trim() || 'clienthandle'
+    }));
+  }
+
+  ['pPlatform','pFormat','pHandle','pTitle','pCaption','pCaptionZh'].forEach(function (id) {
+    $(id).addEventListener('input', function () {
+      $('titleField').hidden = $('pPlatform').value !== 'xhs';
+      renderPreview();
+    });
+    $(id).addEventListener('change', function () {
+      $('titleField').hidden = $('pPlatform').value !== 'xhs';
+      renderPreview();
+    });
+  });
+
+  $('savePost').addEventListener('click', function () {
+    if (!state.batch) { msg('postMsg', 'Pick a content drop first.', 'err'); return; }
+    if (!state.media.length) { msg('postMsg', 'Upload at least one file.', 'err'); return; }
+    var d = draft();
+    db.from('posts').select('position').eq('batch_id', state.batch.id)
+      .order('position', { ascending: false }).limit(1).then(function (r) {
+        var next = (r.data && r.data.length ? r.data[0].position : -1) + 1;
+        db.from('posts').insert({
+          batch_id:   state.batch.id,
+          platform:   d.platform,
+          format:     d.format,
+          handle:     d.handle,
+          title:      d.title,
+          caption:    d.caption || null,
+          caption_zh: d.caption_zh || null,
+          media:      d.media,
+          position:   next
+        }).then(function (res) {
+          if (res.error) { msg('postMsg', res.error.message, 'err'); return; }
+          msg('postMsg', 'Post added.', 'ok');
+          resetForm();
+          loadPosts();
+        });
+      });
+  });
+
+  $('resetPost').addEventListener('click', resetForm);
+
+  function resetForm() {
+    ['pCaption','pCaptionZh','pTitle'].forEach(function (id) { $(id).value = ''; });
+    state.media = [];
+    renderThumbs();
+    renderPreview();
+  }
+
+  renderPreview();
+})();
+</script>
+</body>
+</html>
