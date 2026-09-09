@@ -34,8 +34,27 @@ the bucket root with no origin path, which is what these steps assume.
 
 ## 1. An IAM user that can only do this one thing
 
-IAM → Users → Create user, no console access. Attach this inline policy, replacing the
-bucket name. It can write, and nothing else. It cannot read, list or delete.
+The JSON box is not on the first screen. It sits behind a button that opens a new tab,
+which is the usual place to get stuck.
+
+### Create the user
+
+1. AWS console, search **IAM**, open it.
+2. Left sidebar → **Users** → **Create user** (orange button, top right).
+3. User name: `adspace-portal-upload`
+4. **Leave "Provide user access to the AWS Management Console" unticked.** This user is for
+   the portal, not for a person.
+5. **Next** → on the permissions screen just click **Next** again, then **Create user**.
+   Permissions come in the next part. It is easier to add them after the user exists.
+
+### Add the policy, this is where the JSON box lives
+
+6. **Users** → click **adspace-portal-upload**.
+7. **Permissions** tab → on the right, the **Add permissions** dropdown →
+   **Create inline policy**.
+8. The policy editor opens. Top right of the editor there is a **Visual** / **JSON**
+   toggle. **Click JSON.**
+9. Select everything already in the box and replace it with:
 
 ```json
 {
@@ -49,15 +68,27 @@ bucket name. It can write, and nothing else. It cannot read, list or delete.
 }
 ```
 
+10. **Next** → Policy name: `ADspacePortalUpload` → **Create policy**.
+
 Note the `/content/*` on the end. Without it the user could write anywhere in the bucket,
 including over `adspace-brandname.png` and anything else already served from your CDN.
 
-Create an access key for it and keep the two values for step 3. Rotate them if they are
-ever pasted anywhere other than Supabase secrets.
+### Get the two keys
+
+11. Still on the user → **Security credentials** tab.
+12. Scroll to **Access keys** → **Create access key**.
+13. Use case: **Third-party service** (some accounts word it "Application running outside
+    AWS"). Tick the confirmation box → **Next** → **Create access key**.
+14. **Copy both values now.** The secret is shown once and never again. If you lose it,
+    delete the key and make a new one, no harm done.
+
+These two values go into the `supabase secrets set` command in step 3. They should not be
+pasted anywhere else, and never into this repo.
 
 ## 2. Let the browser PUT to the bucket
 
-S3 → your bucket → Permissions → Cross-origin resource sharing:
+This one is also buried. S3 → **myadspace** → **Permissions** tab → scroll right to the
+bottom → **Cross-origin resource sharing (CORS)** → **Edit**, then paste:
 
 ```json
 [{
