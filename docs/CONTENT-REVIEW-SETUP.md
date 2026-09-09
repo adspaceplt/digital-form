@@ -12,7 +12,7 @@ header, not as their own branded site.
 | Page | Who uses it |
 | --- | --- |
 | `digital.adspace.me/admin/` | Your team |
-| `digital.adspace.me/review/<their-link>` | The client |
+| `digital.adspace.me/review/?k=<their-token>` | The client |
 
 ## Look before you set anything up
 
@@ -86,9 +86,9 @@ Their answers come straight back into `/admin/`, shown against each post.
 
 ## Links and access
 
-Client links look like `digital.adspace.me/review/8f2a9c1b4e6d`. No file extensions, no
-query strings. The token is random and permanent, so one link per client covers every
-month you ever send them.
+Client links look like `digital.adspace.me/review/?k=8f2a9c1b4e6d`. The token is random
+and permanent, so one link per client covers every month you ever send them. You never
+type it, the admin page hands you Copy link and Send on WhatsApp.
 
 It is a private link, not a login. Anyone the client forwards it to can open it, so treat
 it as semi-public. For accounts where that matters, set an **Access code** when creating
@@ -102,13 +102,6 @@ the client and send that separately. Both pages carry `noindex`, so they stay ou
   a sensible bitrate is plenty for review.
 - **Deleting a post** removes it from the client view but leaves the file in storage.
   Clear those from Dashboard → Storage occasionally.
-
-## How the clean links work
-
-GitHub Pages cannot route `/review/<token>` on its own, so `404.html` catches that path,
-hands the token to the review page, and the pretty URL is restored in the address bar.
-The client never sees anything odd. If you ever restructure the site, keep that snippet at
-the top of `404.html`.
 
 ## What to build next
 

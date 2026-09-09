@@ -7,19 +7,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta http-equiv="cache-control" content="no-cache">
-
-<!-- Clean client links look like /review/ab12cd34. GitHub Pages has no routing,
-     so that path lands here. Stash the token and hand off to the review app,
-     which puts the pretty path back in the address bar. -->
-<script>
-(function () {
-  var m = location.pathname.match(/^\/review\/([A-Za-z0-9_-]{6,})\/?$/);
-  if (m) {
-    try { sessionStorage.setItem('adspace_route_token', m[1]); } catch (e) {}
-    location.replace('/review/');
-  }
-})();
-</script>
       
   <!--Redirect if JS is disabled-->
 <noscript>

@@ -44,7 +44,7 @@
     crypto.getRandomValues(a);
     return Array.from(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
   }
-  function reviewUrl(c) { return location.origin + '/review/' + c.access_token; }
+  function reviewUrl(c) { return location.origin + '/review/?k=' + c.access_token; }
 
   function thisMonth() {
     return new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) + ' Content';

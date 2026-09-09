@@ -8,26 +8,8 @@
   var $ = function (id) { return document.getElementById(id); };
 
   // ---- Token ---------------------------------------------------------------
-  // Clean links look like /review/ab12cd34. GitHub Pages has no routing, so
-  // 404.html catches that path, stashes the token and sends us here. We put the
-  // pretty path back in the address bar so the link stays shareable.
-  var token = (function () {
-    var m = location.pathname.match(/^\/review\/([A-Za-z0-9_-]{6,})\/?$/);
-    if (m) return m[1];
-
-    var q = new URLSearchParams(location.search).get('k');
-    if (q) {
-      history.replaceState(null, '', '/review/' + q);
-      return q;
-    }
-    var stashed = sessionStorage.getItem('adspace_route_token');
-    if (stashed) {
-      sessionStorage.removeItem('adspace_route_token');
-      history.replaceState(null, '', '/review/' + stashed);
-      return stashed;
-    }
-    return '';
-  })();
+  // GitHub Pages serves static files only, so the token travels as ?k=.
+  var token = new URLSearchParams(location.search).get('k') || '';
 
   var passcode = sessionStorage.getItem('adspace_pass_' + token) || '';
 
