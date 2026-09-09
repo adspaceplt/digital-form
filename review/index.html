@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADspace Content Review</title>
+<link rel="stylesheet" href="/css/portal.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/js/config.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/mockups.js"></script>
+</head>
+<body>
+
+<div id="demoStrip" class="demo-strip" hidden>
+  <b>Demo mode.</b> Sample content shown because no Supabase project is connected yet.
+</div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <img id="agencyLogo" class="brand-logo" src="" alt="ADspace">
+      <span class="brand-wordmark" id="agencyWordmark" hidden>ADspace</span>
+      <span class="brand-divider"></span>
+      <span class="brand-meta">
+        <span class="brand-kicker">Content Review</span>
+        <span class="brand-for">Prepared for <b id="clientName">…</b></span>
+      </span>
+    </div>
+    <span class="topbar-spacer"></span>
+    <button class="pill" id="qrBtn" type="button" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 14h2M14 19h3M19 19h2"/></svg>
+      View on phone
+    </button>
+    <button class="pill" id="printBtn" type="button" hidden>Save as PDF</button>
+  </div>
+</header>
+
+<main class="shell">
+  <div class="filterbar" id="filterbar" hidden>
+    <div>
+      <label class="field-label" for="formatFilter">Show formats</label>
+      <select class="select" id="formatFilter"><option value="all">All formats</option></select>
+    </div>
+    <div>
+      <label class="field-label" for="batchFilter">Content set</label>
+      <select class="select" id="batchFilter"><option value="all">All sets</option></select>
+    </div>
+    <span class="count" id="countLabel"></span>
+  </div>
+
+  <div id="content"></div>
+
+  <section class="state" id="state" hidden>
+    <h2 id="stateTitle"></h2>
+    <p id="stateBody"></p>
+    <form id="passForm" hidden>
+      <input class="input" id="passInput" type="password" placeholder="Access code" autocomplete="off">
+      <button class="btn btn-primary" type="submit">Open</button>
+    </form>
+  </section>
+</main>
+
+<div class="qr-modal" id="qrModal">
+  <div class="qr-card">
+    <h3>Review on your phone</h3>
+    <p>Scan to open this page on mobile. Reels and Stories are best judged on a phone screen.</p>
+    <div id="qrTarget"></div>
+    <button class="btn" id="qrClose" type="button">Close</button>
+  </div>
+</div>
+
+<script src="/js/review.js"></script>
+</body>
+</html>

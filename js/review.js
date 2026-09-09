@@ -1,88 +1,44 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="robots" content="noindex, nofollow">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Content Review</title>
-<link rel="stylesheet" href="/css/portal.css">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="/js/config.js"></script>
-<script src="/js/api.js"></script>
-<script src="/js/mockups.js"></script>
-</head>
-<body>
-
-<div id="demoStrip" class="demo-strip" hidden>
-  <b>Demo mode.</b> Sample content shown because no Supabase project is connected yet.
-</div>
-
-<header class="topbar">
-  <div class="topbar-inner">
-    <div class="brand">
-      <img id="agencyLogo" src="" alt="">
-      <span class="brand-divider"></span>
-      <span>
-        <span class="brand-client" id="clientName">Loading</span><br>
-        <span class="brand-sub">Content Review</span>
-      </span>
-    </div>
-    <span class="topbar-spacer"></span>
-    <button class="pill" id="qrBtn" type="button" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 14h2M14 19h3M19 19h2"/></svg>
-      View on phone
-    </button>
-    <button class="pill" id="printBtn" type="button" hidden>Save as PDF</button>
-  </div>
-</header>
-
-<main class="shell">
-  <div class="filterbar" id="filterbar" hidden>
-    <div>
-      <label class="field-label" for="formatFilter">Show formats</label>
-      <select class="select" id="formatFilter"><option value="all">All formats</option></select>
-    </div>
-    <div>
-      <label class="field-label" for="batchFilter">Content drop</label>
-      <select class="select" id="batchFilter"><option value="all">All drops</option></select>
-    </div>
-    <span class="count" id="countLabel"></span>
-  </div>
-
-  <div id="content"></div>
-
-  <section class="state" id="state" hidden>
-    <h2 id="stateTitle"></h2>
-    <p id="stateBody"></p>
-    <form id="passForm" hidden>
-      <input class="input" id="passInput" type="password" placeholder="Access code" autocomplete="off">
-      <button class="btn btn-primary" type="submit">Open</button>
-    </form>
-  </section>
-</main>
-
-<div class="qr-modal" id="qrModal">
-  <div class="qr-card">
-    <h3>Review on your phone</h3>
-    <p>Scan to open this page on mobile. Reels and Stories are best judged on a phone screen.</p>
-    <div id="qrTarget"></div>
-    <button class="btn" id="qrClose" type="button">Close</button>
-  </div>
-</div>
-
-<script>
+/* Client review page. Runs at /review/<token> and at /review/?k=<token>. */
 (function () {
-  var cfg    = window.ADSPACE_CONFIG;
-  var API    = window.ADspaceAPI;
-  var MK     = window.ADspaceMockups;
-  var params = new URLSearchParams(location.search);
-  var token  = params.get('k') || params.get('c') || '';
-  var passcode = sessionStorage.getItem('adspace_pass_' + token) || '';
+  var cfg = window.ADSPACE_CONFIG;
+  var API = window.ADspaceAPI;
+  var MK  = window.ADspaceMockups;
   var feed = null;
 
   var $ = function (id) { return document.getElementById(id); };
-  document.getElementById('agencyLogo').src = cfg.brandLogo;
+
+  // ---- Token ---------------------------------------------------------------
+  // Clean links look like /review/ab12cd34. GitHub Pages has no routing, so
+  // 404.html catches that path, stashes the token and sends us here. We put the
+  // pretty path back in the address bar so the link stays shareable.
+  var token = (function () {
+    var m = location.pathname.match(/^\/review\/([A-Za-z0-9_-]{6,})\/?$/);
+    if (m) return m[1];
+
+    var q = new URLSearchParams(location.search).get('k');
+    if (q) {
+      history.replaceState(null, '', '/review/' + q);
+      return q;
+    }
+    var stashed = sessionStorage.getItem('adspace_route_token');
+    if (stashed) {
+      sessionStorage.removeItem('adspace_route_token');
+      history.replaceState(null, '', '/review/' + stashed);
+      return stashed;
+    }
+    return '';
+  })();
+
+  var passcode = sessionStorage.getItem('adspace_pass_' + token) || '';
+
+  (function () {
+    var logo = $('agencyLogo');
+    logo.onerror = function () {
+      logo.hidden = true;
+      $('agencyWordmark').hidden = false;
+    };
+    logo.src = cfg.brandLogo;
+  })();
   if (!API.configured) $('demoStrip').hidden = false;
 
   function showState(title, body, wantsPass) {
@@ -101,7 +57,12 @@
       { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
-  // ---- Rendering ----------------------------------------------------------
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // ---- Rendering -----------------------------------------------------------
   function postCard(post, clientMeta) {
     var mkCfg = {
       clientName:   clientMeta.name,
@@ -126,7 +87,7 @@
     stage.appendChild(MK.render(post, mkCfg));
     card.appendChild(stage);
 
-    // Caption block. The mockup truncates like the real feed; this shows it in full.
+    // The mockup truncates like the real feed. This shows the caption in full.
     if (post.caption || post.caption_zh || post.title) {
       var copy = document.createElement('div');
       copy.className = 'copyblock';
@@ -167,16 +128,14 @@
       '</div>' +
       '<div class="approve-state"></div>';
 
-    var approveBtn = wrap.querySelector('.btn-approve');
-    var changesBtn = wrap.querySelector('.btn-changes');
-    var box        = wrap.querySelector('.changebox');
-    var textarea   = wrap.querySelector('.textarea');
+    var box      = wrap.querySelector('.changebox');
+    var textarea = wrap.querySelector('.textarea');
 
-    approveBtn.addEventListener('click', function () {
+    wrap.querySelector('.btn-approve').addEventListener('click', function () {
       box.classList.remove('is-open');
       send(post, 'approved', null, wrap, badge);
     });
-    changesBtn.addEventListener('click', function () {
+    wrap.querySelector('.btn-changes').addEventListener('click', function () {
       box.classList.add('is-open');
       textarea.focus();
     });
@@ -214,12 +173,11 @@
             : 'Could not save. Refresh and try again.';
         return;
       }
-      var review = {
+      post.review = {
         decision: decision, note: note, reviewer: reviewer,
         created_at: new Date().toISOString()
       };
-      post.review = review;
-      paintDecision(review, badge, wrap.closest('.card'));
+      paintDecision(post.review, badge, wrap.closest('.card'));
     }).catch(function () {
       Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
       wrap.querySelector('.approve-state').textContent = 'Could not save. Check your connection.';
@@ -227,7 +185,7 @@
   }
 
   function paintDecision(review, badge, card) {
-    var wrap = card.querySelector('.approve');
+    var wrap  = card.querySelector('.approve');
     var state = wrap.querySelector('.approve-state');
     var approveBtn = wrap.querySelector('.btn-approve');
     var changesBtn = wrap.querySelector('.btn-changes');
@@ -263,12 +221,7 @@
     }
   }
 
-  function escapeHtml(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-
-  // ---- Build page ---------------------------------------------------------
+  // ---- Build ---------------------------------------------------------------
   function build() {
     var root = $('content');
     root.innerHTML = '';
@@ -346,7 +299,7 @@
     $('countLabel').textContent = shown + ' post' + (shown === 1 ? '' : 's') + ' shown';
   }
 
-  // ---- QR -----------------------------------------------------------------
+  // ---- Chrome --------------------------------------------------------------
   $('qrBtn').addEventListener('click', function () {
     var target = $('qrTarget');
     if (!target.hasChildNodes() && window.QRCode) {
@@ -368,7 +321,7 @@
     load();
   });
 
-  // ---- Load ---------------------------------------------------------------
+  // ---- Load ----------------------------------------------------------------
   function load() {
     if (!token && API.configured) {
       showState('No review link',
@@ -382,18 +335,16 @@
         return;
       }
       if (data.error === 'passcode_required') {
-        showState('Access code required',
-          'Enter the access code we sent alongside this link.', true);
+        showState('Access code required', 'Enter the access code we sent alongside this link.', true);
         return;
       }
       feed = data;
       $('state').hidden = true;
       $('clientName').textContent = feed.client.name;
-      document.title = feed.client.name + ' — Content Review';
+      document.title = feed.client.name + ' — ADspace Content Review';
       if (!feed.batches.length) {
         showState('Nothing to review yet',
-          'Your next content drop will appear here. We will let you know when it is ready.');
-        $('clientName').textContent = feed.client.name;
+          'Your next content set will appear here. We will let you know when it is ready.');
         return;
       }
       build();
@@ -405,6 +356,3 @@
 
   load();
 })();
-</script>
-</body>
-</html>
