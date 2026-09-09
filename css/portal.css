@@ -148,8 +148,20 @@ a { color: inherit; }
   transition: background .2s, color .2s, border-color .2s;
 }
 .btn:hover { border-color: var(--ink); color: var(--ink); }
-.btn-approve[aria-pressed="true"] { background: var(--ok); border-color: var(--ok); color: #fff; }
-.btn-changes[aria-pressed="true"] { background: var(--warn); border-color: var(--warn); color: #fff; }
+/* Approve is the action we want the client to take, so it carries the weight.
+   Request changes stays available but visually quiet. */
+.approve-row .btn-approve {
+  flex: 1.35; font-weight: 600;
+  background: var(--ok); border-color: var(--ok); color: #fff;
+}
+.approve-row .btn-approve:hover { background: #19603c; border-color: #19603c; color: #fff; }
+.approve-row .btn-approve[aria-pressed="true"]::before { content: '\2713\00a0'; }
+
+.approve-row .btn-changes { flex: 1; color: var(--ink-mute); }
+.approve-row .btn-changes:hover { color: var(--ink); border-color: var(--ink); }
+.approve-row .btn-changes[aria-pressed="true"] {
+  background: var(--warn); border-color: var(--warn); color: #fff; font-weight: 600;
+}
 .btn-primary { background: var(--ink); border-color: var(--ink); color: #fff; flex: 0 0 auto; }
 .btn-primary:hover { background: #000; color: #fff; }
 .btn[disabled] { opacity: .5; cursor: default; }
