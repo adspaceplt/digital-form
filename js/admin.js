@@ -54,11 +54,15 @@
   $('authSend').addEventListener('click', function () {
     var email = $('authEmail').value.trim();
     if (!email) return;
-    db.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.href } })
-      .then(function (r) {
-        msg('authMsg', r.error ? r.error.message : 'Check your inbox for the sign in link.',
-            r.error ? 'err' : 'ok');
-      });
+    // A fixed URL, not location.href, so it matches the Supabase allow list exactly.
+    // Supabase silently falls back to its Site URL for anything not on that list.
+    db.auth.signInWithOtp({
+      email: email,
+      options: { emailRedirectTo: location.origin + '/admin/' }
+    }).then(function (r) {
+      msg('authMsg', r.error ? r.error.message : 'Check your inbox for the sign in link.',
+          r.error ? 'err' : 'ok');
+    });
   });
   $('signOut').addEventListener('click', function () {
     db.auth.signOut().then(function () { location.reload(); });

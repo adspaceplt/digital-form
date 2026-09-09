@@ -37,7 +37,18 @@ storage rules attach to it.
 **Confirm email** on and **Allow new users to sign up** off. Add each team member under
 Authentication → Users. Only those addresses can open `/admin/`.
 
-**5. Connect the site.** Dashboard → Project Settings → API. Copy the Project URL and the
+**5. Point Supabase at your site.** Dashboard → Authentication → URL Configuration.
+
+| Field | Value |
+| --- | --- |
+| Site URL | `https://digital.adspace.me` |
+| Redirect URLs | `https://digital.adspace.me/**` |
+
+Do not skip this. Supabase ships with `http://localhost:3000` as the Site URL, and it
+silently ignores any redirect that is not on the allow list. If you skip it, the sign in
+email arrives fine but the link drops you on a localhost error page.
+
+**6. Connect the site.** Dashboard → Project Settings → API. Copy the Project URL and the
 `anon public` key into `js/config.js`:
 
 ```js
@@ -102,6 +113,29 @@ the client and send that separately. Both pages carry `noindex`, so they stay ou
   a sensible bitrate is plenty for review.
 - **Deleting a post** removes it from the client view but leaves the file in storage.
   Clear those from Dashboard → Storage occasionally.
+
+## If something goes wrong
+
+**The sign in link opens a localhost error page.**
+Step 5 was skipped or the URL does not match. Set Site URL to `https://digital.adspace.me`
+and add `https://digital.adspace.me/**` to Redirect URLs, then request a new link. The old
+email will not work, magic links are single use.
+
+**The sign in email never arrives.**
+Check spam first. Supabase's built in email has a low hourly limit, so if you have been
+testing repeatedly it will throttle you. Wait an hour, or connect your own SMTP under
+Authentication → Emails.
+
+**"Not connected yet" on /admin/.**
+`js/config.js` still has blank keys, or the change has not deployed. GitHub Pages takes
+about a minute after a push.
+
+**The client link shows "Link not found".**
+The client was deleted, or the token was edited by hand. Open the client in `/admin/` and
+copy the link again.
+
+**A client says they see nothing.**
+The set is still a draft. Open it and click **Send to client**.
 
 ## What to build next
 
