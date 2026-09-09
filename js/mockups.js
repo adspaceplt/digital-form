@@ -40,7 +40,7 @@
       .replace(/\n/g, '<br>');
   }
 
-  /* Instagram, Facebook and XiaoHongShu each accept a range of shapes, so the
+  /* Instagram, Facebook and RedNote each accept a range of shapes, so the
      frame follows the real file rather than a hardcoded square. Values are the
      narrowest and widest each platform actually renders. */
   const SHAPES = {
@@ -160,16 +160,18 @@
 
   /* Each platform shows a different account name, so use the one set on the
      client and fall back to the brand name rather than inventing a handle. */
-  /* Instagram and TikTok show an @, Facebook and XiaoHongShu do not. */
+  /* Instagram and TikTok show an @, Facebook and RedNote do not. */
   function atHandle(h) {
     h = String(h || '');
     return h && h.charAt(0) !== '@' ? '@' + h : h;
   }
 
   function handleFor(post, cfg) {
-    if (post.handle) return post.handle;
+    // The account name set on the client comes first. A handle stored on the
+    // post is only a fallback, since older posts saved the brand name there.
     const h = (cfg.handles || {})[post.platform || 'instagram'];
     if (h) return h;
+    if (post.handle) return post.handle;
     return cfg.clientHandle || cfg.clientName || '';
   }
 
@@ -360,7 +362,7 @@
     return phone;
   }
 
-  // ---- XiaoHongShu note -----------------------------------------------------
+  // ---- RedNote post ---------------------------------------------------------
   function xhsNote(post, cfg) {
     const frame = el('article', 'mk mk-xhs');
     frame.appendChild(carouselNode(post.media || [], { shape: SHAPES['xhs:note'] }));
@@ -406,10 +408,12 @@
   /* A cover image is an asset, not a post, so it gets a plain frame with no
      platform chrome pretending otherwise. */
   function coverImage(post, cfg) {
-    const frame = el('article', 'mk mk-cover');
-    frame.appendChild(carouselNode(post.media || [], { shape: { min: 0.4, max: 2.5 } }));
-    frame.appendChild(el('div', 'mk-cover-tag', 'Cover image'));
-    return frame;
+    // A cover is what people see inside the Reels player and the profile grid,
+    // so it gets the same overlays. Without them there is no safe zone to judge.
+    const wrap = el('div', 'mk mk-coverwrap');
+    wrap.appendChild(vertical(post, cfg, 'reel'));
+    wrap.appendChild(el('div', 'mk-cover-tag', 'Cover image'));
+    return wrap;
   }
 
   const RENDERERS = {
@@ -439,8 +443,8 @@
     'facebook:reel':      ['Facebook Reels', '1080 x 1920'],
     'tiktok:reel':        ['TikTok', '1080 x 1920'],
     'tiktok:feed':        ['TikTok', '1080 x 1920'],
-    'xhs:note':           ['XiaoHongShu Note', '1080 x 1440'],
-    'xhs:feed':           ['XiaoHongShu Note', '1080 x 1440'],
+    'xhs:note':           ['RedNote Post', '1080 x 1440'],
+    'xhs:feed':           ['RedNote Post', '1080 x 1440'],
     'cover:image':        ['Cover Image', '']
   };
 

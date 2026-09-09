@@ -25,7 +25,7 @@
     ['facebook:feed',      'Facebook post'],
     ['facebook:story',     'Facebook Story'],
     ['tiktok:reel',        'TikTok video'],
-    ['xhs:note',           'XiaoHongShu note'],
+    ['xhs:note',           'RedNote post'],
     ['cover:image',        'Cover image']
   ];
 
@@ -51,6 +51,19 @@
   }
   function reviewUrl(c) { return location.origin + '/review/?k=' + c.access_token; }
 
+  /* Records the handful of actions that destroy data or change what a client
+     can see. Deliberately fire and forget: a failure to log must never stop
+     the action itself, and this is not a click tracker. */
+  var actor = '';
+  function logAction(action, subject, detail) {
+    db.from('activity_log').insert({
+      actor: actor || 'unknown',
+      action: action,
+      subject: subject || null,
+      detail: detail || null
+    }).then(function () {}, function () {});
+  }
+
   function thisMonth() {
     return new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) + ' Content';
   }
@@ -65,7 +78,7 @@
       email: email,
       options: { emailRedirectTo: location.origin + '/admin/' }
     }).then(function (r) {
-      msg('authMsg', r.error ? r.error.message : 'Check your inbox for the sign in link.',
+      msg('authMsg', r.error ? r.error.message : 'A sign in link has been sent to that address.',
           r.error ? 'err' : 'ok');
     });
   });
@@ -89,6 +102,7 @@
     $('authPanel').hidden = inApp;
     $('signOut').hidden = !inApp;
     $('whoami').textContent = inApp ? session.user.email : '';
+    actor = inApp ? session.user.email : '';
 
     if (!inApp) {
       entered = false;
@@ -158,13 +172,58 @@
         // A one line answer to "where does this client stand?"
         db.from('batches').select('id, published').eq('client_id', c.id).then(function (b) {
           var sub = card.querySelector('[data-role="sub"]');
-          if (b.error || !b.data.length) { sub.textContent = 'No content sets yet'; return; }
+          if (b.error || !b.data.length) { sub.textContent = 'No content sets'; return; }
           var live = b.data.filter(function (x) { return x.published; }).length;
           sub.textContent = b.data.length + ' set' + (b.data.length === 1 ? '' : 's') +
-            ' · ' + live + ' sent to client';
+            ' · ' + live + ' published';
         });
       });
     });
+  }
+
+  var ACTION_LABEL = {
+    'client.removed':        ['Client removed', 'is-danger'],
+    'set.deleted':           ['Content set deleted', 'is-danger'],
+    'post.deleted':          ['Post deleted', 'is-danger'],
+    'set.published':         ['Published to client', 'is-ok'],
+    'set.withdrawn':         ['Withdrawn from client', 'is-warn'],
+    'link.reset':            ['Access link reset', 'is-warn'],
+    'reapproval.requested':  ['Re-approval requested', 'is-warn']
+  };
+
+  $('activityToggle').addEventListener('click', function () {
+    var open = $('activityBody').hidden;
+    $('activityBody').hidden = !open;
+    $('activityToggle').setAttribute('aria-expanded', String(open));
+    $('activityToggle').classList.toggle('is-open', open);
+    if (open) loadActivity();
+  });
+
+  function loadActivity() {
+    var box = $('activityList');
+    box.innerHTML = '<div class="empty">Loading…</div>';
+    db.from('activity_log').select('*')
+      .order('created_at', { ascending: false }).limit(60)
+      .then(function (r) {
+        if (r.error) { box.innerHTML = '<div class="empty">' + esc(r.error.message) + '</div>'; return; }
+        if (!r.data.length) { box.innerHTML = '<div class="empty">No recorded activity.</div>'; return; }
+        box.innerHTML = '';
+        r.data.forEach(function (a) {
+          var meta = ACTION_LABEL[a.action] || [a.action, ''];
+          var row = document.createElement('div');
+          row.className = 'act';
+          row.innerHTML =
+            '<span class="act-tag ' + meta[1] + '">' + esc(meta[0]) + '</span>' +
+            '<span class="act-subject">' + esc(a.subject || '') + '</span>' +
+            '<span class="muted act-detail">' + esc(a.detail || '') + '</span>' +
+            '<span class="muted act-who">' + esc(a.actor || '') + '</span>' +
+            '<span class="muted act-when">' +
+              new Date(a.created_at).toLocaleString('en-GB',
+                { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) +
+            '</span>';
+          box.appendChild(row);
+        });
+      });
   }
 
   $('showAddClient').addEventListener('click', function () {
@@ -175,7 +234,7 @@
 
   $('addClient').addEventListener('click', function () {
     var name = $('newClientName').value.trim();
-    if (!name) { msg('clientMsg', 'Please enter the client name.', 'err'); return; }
+    if (!name) { msg('clientMsg', 'A client name is required.', 'err'); return; }
     db.from('clients').insert({
       name: name,
       logo_url: $('newClientLogo').value.trim() || null,
@@ -206,6 +265,9 @@
     var url = reviewUrl(c);
     $('clientLink').value = url;
     $('openLink').href = url;
+    $('advancedBody').hidden = true;
+    $('advancedToggle').setAttribute('aria-expanded', 'false');
+    $('advancedToggle').classList.remove('is-open');
     $('eIg').value  = c.handle_ig || '';
     $('eFb').value  = c.handle_fb || '';
     $('eTt').value  = c.handle_tiktok || '';
@@ -217,6 +279,13 @@
   }
 
   $('backToClients').addEventListener('click', showClients);
+
+  $('advancedToggle').addEventListener('click', function () {
+    var open = $('advancedBody').hidden;
+    $('advancedBody').hidden = !open;
+    $('advancedToggle').setAttribute('aria-expanded', String(open));
+    $('advancedToggle').classList.toggle('is-open', open);
+  });
 
   $('saveHandles').addEventListener('click', function () {
     db.from('clients').update({
@@ -230,24 +299,25 @@
       state.client.handle_fb = $('eFb').value.trim() || null;
       state.client.handle_tiktok = $('eTt').value.trim() || null;
       state.client.handle_xhs = $('eXhs').value.trim() || null;
-      msg('handleMsg', 'Saved. New posts will show these names.', 'ok');
+      msg('handleMsg', 'Handles saved. Applied to all previews.', 'ok');
     });
   });
 
   $('resetLink').addEventListener('click', function () {
     if (!confirm('Reset the review link for ' + state.client.name + '?\n\n' +
-      'The link they have now stops working straight away, and anyone holding it loses ' +
-      'access. You will need to send them the new one.')) return;
+      'The current link will be invalidated immediately and anyone holding it will lose ' +
+      'access. The replacement link must be reissued to the client.')) return;
 
     var next = makeToken();
     db.from('clients').update({ access_token: next }).eq('id', state.client.id)
       .then(function (r) {
         if (r.error) { msg('handleMsg', r.error.message, 'err'); return; }
+        logAction('link.reset', state.client.name, 'Previous link invalidated');
         state.client.access_token = next;
         var fresh = reviewUrl(state.client);
         $('clientLink').value = fresh;
         $('openLink').href = fresh;
-        msg('handleMsg', 'New link issued. The old one no longer works.', 'ok');
+        msg('handleMsg', 'New link issued. The previous link is no longer valid.', 'ok');
       });
   });
 
@@ -255,15 +325,17 @@
     var c = state.client;
     db.from('batches').select('id').eq('client_id', c.id).then(function (r) {
       var sets = (r.data || []).length;
-      var warning = 'Delete ' + c.name + ' permanently?\n\n' +
-        'This removes their review link and ' + sets + ' content set' +
-        (sets === 1 ? '' : 's') + ', including every post and every approval on record.\n\n' +
-        'This cannot be undone.';
+      var warning = 'Permanently remove ' + c.name + '?\n\n' +
+        'This deletes their review link and ' + sets + ' content set' +
+        (sets === 1 ? '' : 's') + ', including every post and approval record.\n\n' +
+        'This action cannot be reversed.';
       if (!confirm(warning)) return;
-      if (!confirm('Last check. Type of thing you cannot get back.\n\nDelete ' + c.name + '?')) return;
+      if (!confirm('Please confirm. Removing ' + c.name + ' cannot be undone.')) return;
 
       db.from('clients').delete().eq('id', c.id).then(function (res) {
         if (res.error) { msg('clientMsg', res.error.message, 'err'); return; }
+        logAction('client.removed', c.name,
+          sets + ' content set' + (sets === 1 ? '' : 's') + ' removed with it');
         showClients();
       });
     });
@@ -294,7 +366,7 @@
             '<span class="bigcard-name">' + esc(b.title) + '</span>' +
             '<span class="bigcard-sub" data-role="sub">Loading…</span>' +
             '<span class="bigcard-tag ' + (b.published ? 'is-live' : '') + '">' +
-              (b.published ? 'Sent to client' : 'Draft, client cannot see it') + '</span>';
+              (b.published ? 'Published' : 'Draft') + '</span>';
           card.addEventListener('click', function () { openBatch(b); });
           box.appendChild(card);
 
@@ -308,7 +380,7 @@
   }
 
   $('addBatch').addEventListener('click', function () {
-    var title = (window.prompt('Name this content set:', thisMonth()) || '').trim();
+    var title = (window.prompt('Name for this content set:', thisMonth()) || '').trim();
     if (!title) return;
     db.from('batches').insert({
       client_id: state.client.id, title: title, published: false
@@ -324,8 +396,8 @@
     setUrl();
     state.drafts = readStoredDrafts();
     $('setPanel').hidden = false;
-    $('driveBox').hidden = !driveKey();
     $('driveUrl').value = state.client.drive_folder || '';
+    $('mediaUrl').value = '';
     $('drivePicker').hidden = true;
     msg('driveMsg', '');
     paintSetHeader();
@@ -334,7 +406,7 @@
     loadPosts();
 
     if (state.drafts.length) {
-      msg('setMsg', 'Picked up where you left off. ' + state.drafts.length + ' upload' +
+      msg('setMsg', state.drafts.length + ' unsaved upload' +
         (state.drafts.length === 1 ? '' : 's') +
         ' still waiting to be added to this set.', 'ok');
     }
@@ -342,13 +414,22 @@
   }
 
   function paintSetHeader() {
+    var live = state.batch.published;
     $('setTitle').textContent = state.batch.title;
-    $('publishSet').textContent = state.batch.published ? 'Hide from client' : 'Send to client';
-    $('publishSet').className = state.batch.published ? 'btn' : 'btn btn-primary';
-    msg('setMsg', state.batch.published
-      ? 'This set is live. The client sees it on their link.'
-      : 'Draft. Nothing here is visible to the client yet.',
-      state.batch.published ? 'ok' : '');
+
+    var chip = $('setState');
+    chip.textContent = live ? 'Published' : 'Draft';
+    chip.className = 'chip' + (live ? ' is-live' : '');
+
+    // Publishing is the positive action, hiding is a step backwards, so they
+    // should not look the same.
+    $('publishSet').textContent = live ? 'Hide from client' : 'Send to client';
+    $('publishSet').className = live ? 'btn btn-warn' : 'btn btn-go';
+
+    msg('setMsg', live
+      ? 'Published. Visible to the client on their review link.'
+      : 'Draft. Not visible to the client.',
+      live ? 'ok' : '');
   }
 
   $('publishSet').addEventListener('click', function () {
@@ -358,14 +439,15 @@
     // Sending is the commitment, so this is where a missing caption is worth flagging.
     db.from('posts').select('caption, caption_zh').eq('batch_id', state.batch.id).then(function (r) {
       var posts = r.data || [];
-      if (!posts.length) { msg('setMsg', 'Add at least one post before sending.', 'err'); return; }
+      if (!posts.length) { msg('setMsg', 'Add at least one post before publishing.', 'err'); return; }
       var blank = posts.filter(function (p) { return !p.caption && !p.caption_zh; }).length;
       var warn = blank
         ? '\n\n' + blank + ' of ' + posts.length + ' posts ' + (blank === 1 ? 'has' : 'have') +
-          ' no caption yet.'
+          ' no copy assigned.'
         : '';
-      if (!confirm('Send ' + posts.length + ' post' + (posts.length === 1 ? '' : 's') + ' to ' +
-                   state.client.name + '? They will see it immediately.' + warn)) return;
+      if (!confirm('Publish ' + posts.length + ' post' + (posts.length === 1 ? '' : 's') +
+                   ' to ' + state.client.name + '? The set becomes visible immediately.' +
+                   warn)) return;
       setPublished(true);
     });
   });
@@ -373,6 +455,8 @@
   function setPublished(next) {
     db.from('batches').update({ published: next }).eq('id', state.batch.id).then(function (r) {
       if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
+      logAction(next ? 'set.published' : 'set.withdrawn',
+        state.client.name + ' — ' + state.batch.title);
       state.batch.published = next;
       paintSetHeader();
       loadBatches();
@@ -384,13 +468,15 @@
     db.from('posts').select('id').eq('batch_id', b.id).then(function (r) {
       var n = (r.data || []).length;
       var warning = 'Delete "' + b.title + '"?\n\n' +
-        'This removes ' + n + ' post' + (n === 1 ? '' : 's') + ' and any approvals on them.' +
-        (b.published ? '\n\nThe client can currently see this set.' : '') +
-        '\n\nThis cannot be undone.';
+        'This removes ' + n + ' post' + (n === 1 ? '' : 's') + ' and their approval records.' +
+        (b.published ? '\n\nThis set is currently published to the client.' : '') +
+        '\n\nThis action cannot be reversed.';
       if (!confirm(warning)) return;
 
       db.from('batches').delete().eq('id', b.id).then(function (res) {
         if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
+        logAction('set.deleted', state.client.name + ' — ' + b.title,
+          n + ' post' + (n === 1 ? '' : 's') + (b.published ? ', was published' : ', was draft'));
         state.batch = null;
         clearDrafts();
         $('setPanel').hidden = true;
@@ -400,7 +486,7 @@
   });
 
   $('renameSet').addEventListener('click', function () {
-    var title = (window.prompt('Rename this set:', state.batch.title) || '').trim();
+    var title = (window.prompt('Rename this content set:', state.batch.title) || '').trim();
     if (!title) return;
     db.from('batches').update({ title: title }).eq('id', state.batch.id).then(function () {
       state.batch.title = title;
@@ -451,7 +537,7 @@
 
   function handleFiles(files) {
     if (!files || !files.length) return;
-    if (!state.batch) { msg('setMsg', 'Open a content set first.', 'err'); return; }
+    if (!state.batch) { msg('setMsg', 'Select a content set first.', 'err'); return; }
 
     // The size limit belongs to Supabase storage. S3 has no such ceiling.
     var cap = usingS3() ? Infinity : (cfg.maxUploadMB || 50) * 1024 * 1024;
@@ -489,7 +575,7 @@
       .then(function () {
         state.uploading = false;
         if (!toobig.length) {
-          msg('setMsg', 'Ready. Add captions below, then click "Add to this set".', 'ok');
+          msg('setMsg', 'Upload complete. Add copy below, then select Add to set.', 'ok');
         }
         renderDrafts();
       })
@@ -707,7 +793,7 @@
   $('addMediaUrl').addEventListener('click', function () {
     var url = $('mediaUrl').value.trim();
     if (!url) return;
-    if (!state.batch) { msg('setMsg', 'Open a content set first.', 'err'); return; }
+    if (!state.batch) { msg('setMsg', 'Select a content set first.', 'err'); return; }
 
     // A Drive link is a normal thing to paste here, so handle it rather than refuse it.
     if (isDriveLink(url)) { handleDriveLink(url); return; }
@@ -716,7 +802,7 @@
       msg('setMsg', 'The link needs to start with https://', 'err');
       return;
     }
-    msg('setMsg', 'Checking the link…');
+    msg('setMsg', 'Verifying the link…');
     probeUrl(url).then(function (info) {
       if (!info.ok) {
         msg('setMsg', 'We could not load that link. It has to point straight at the file, ' +
@@ -726,7 +812,7 @@
       }
       pushDraft(url, info);
       $('mediaUrl').value = '';
-      msg('setMsg', 'Added. Write the caption below, then click "Add to this set".', 'ok');
+      msg('setMsg', 'Asset added. Add copy below, then select Add to set.', 'ok');
     });
   });
 
@@ -742,9 +828,8 @@
     if (folder) {
       $('mediaUrl').value = '';
       $('driveUrl').value = url;
-      msg('setMsg', 'That is a Drive folder. Loading it below.', 'ok');
+      msg('setMsg', '');
       $('driveLoad').click();
-      $('driveBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
@@ -755,7 +840,7 @@
       return;
     }
 
-    msg('setMsg', 'Reading the file from Drive…');
+    msg('setMsg', 'Retrieving file details from Drive…');
     driveMeta(fileId).then(function (f) {
       if (!/^(image|video)\//.test(f.mimeType)) {
         msg('setMsg', f.name + ' is not an image or a video.', 'err');
@@ -772,8 +857,7 @@
       return copyDriveFile(f).then(function () {
         state.uploading = false;
         $('mediaUrl').value = '';
-        msg('setMsg', f.name + ' imported. Write the caption below, then click ' +
-          '"Add to this set".', 'ok');
+        msg('setMsg', f.name + ' imported. Add copy below, then select Add to set.', 'ok');
       });
     }).catch(function (e) {
       state.uploading = false;
@@ -933,7 +1017,7 @@
         '/folders/ followed by a long id.', 'err');
       return;
     }
-    msg('driveMsg', 'Reading the folder…');
+    msg('driveMsg', 'Reading folder contents…');
     $('drivePicker').hidden = true;
 
     var fields = 'files(id,name,mimeType,size,imageMediaMetadata(width,height),' +
@@ -956,7 +1040,7 @@
         return /^(image|video)\//.test(f.mimeType);
       });
       if (!files.length) {
-        msg('driveMsg', 'No images or videos in that folder.', 'err');
+        msg('driveMsg', 'That folder contains no images or videos.', 'err');
         return;
       }
 
@@ -1032,9 +1116,9 @@
   }
 
   $('driveImport').addEventListener('click', function () {
-    if (!state.batch) { msg('driveMsg', 'Open a content set first.', 'err'); return; }
+    if (!state.batch) { msg('driveMsg', 'Select a content set first.', 'err'); return; }
     var picked = driveFiles.filter(function (f) { return f.pick && !f.done; });
-    if (!picked.length) { msg('driveMsg', 'Nothing selected.', 'err'); return; }
+    if (!picked.length) { msg('driveMsg', 'No assets selected.', 'err'); return; }
 
     var cap = usingS3() ? Infinity : (cfg.maxUploadMB || 50) * 1024 * 1024;
     var toobig = picked.filter(function (f) { return f.size > cap; });
@@ -1051,7 +1135,7 @@
     state.uploading = true;
     var done = 0;
     var reused = 0;
-    showProgress('Starting…', 0);
+    showProgress('Preparing…', 0);
 
     queue.reduce(function (chain, f) {
       return chain.then(function () {
@@ -1074,8 +1158,8 @@
         renderDriveFiles();
         if (!toobig.length) {
           msg('driveMsg', done + ' file' + (done === 1 ? '' : 's') + ' imported' +
-            (reused ? ', ' + reused + ' already in storage so nothing was uploaded again' : '') +
-            '. Write the captions below, then click "Add to this set".', 'ok');
+            (reused ? ', ' + reused + ' reused from storage at no additional cost' : '') +
+            '. Add copy below, then select Add to set.', 'ok');
         }
       })
       .catch(function (e) {
@@ -1092,6 +1176,7 @@
     var box = $('drafts');
     box.innerHTML = '';
     $('draftActions').hidden = state.drafts.length === 0;
+    $('draftZone').hidden = state.drafts.length === 0;
 
     var images = state.drafts.filter(function (d) { return d.media[0].type === 'image'; });
     var canCombine = state.drafts.length > 1 && images.length === state.drafts.length;
@@ -1205,7 +1290,7 @@
           return {
             batch_id: state.batch.id,
             platform: parts[0], format: parts[1],
-            handle: state.client.name,
+            handle: null,   // the client's per platform account name is used instead
             title: d.title || null,
             caption: d.caption || null,
             caption_zh: d.caption_zh || null,
@@ -1231,8 +1316,11 @@
       .then(function (r) {
         var box = $('postList');
         box.innerHTML = '';
-        $('savedLabel').hidden = !(r.data && r.data.length);
-        if (r.error || !r.data.length) return;
+        var n = (r.data || []).length;
+        $('savedCount').textContent = n
+          ? n + ' post' + (n === 1 ? '' : 's') + ' in this set.'
+          : 'Nothing added yet.';
+        if (r.error || !n) return;
 
         var ids = r.data.map(function (p) { return p.id; });
         db.from('reviews').select('post_id, decision, note, reviewer, created_at')
@@ -1268,14 +1356,41 @@
             ? (review.decision === 'approved' ? 'is-ok' : 'is-changes') : '') + '">' +
           (review ? (review.decision === 'approved' ? 'Approved' : 'Changes') : 'Pending') +
         '</span>' +
+        (p.review_reset_note
+          ? '<span class="saved-note is-warn">Sent back: ' + esc(p.review_reset_note) + '</span>'
+          : '') +
+        (review && review.decision === 'approved'
+          ? '<button class="btn btn-warn btn-sm" data-a="reask" type="button">Request re-approval</button>'
+          : '') +
         '<button class="btn btn-sm" data-a="edit" type="button">Edit</button>' +
-        '<button class="linkbtn is-danger" data-a="del" type="button">Delete</button>';
+        '<button class="btn btn-quiet btn-sm is-danger" data-a="del" type="button">Delete</button>';
 
       row.querySelector('[data-a="edit"]').addEventListener('click', paintEdit);
+
+      var reask = row.querySelector('[data-a="reask"]');
+      if (reask) reask.addEventListener('click', function () {
+        var why = (window.prompt(
+          'Reason for requesting re-approval. This note will be shown to the client.\n\n' +
+          'For example: pricing corrected, logo updated, copy revised.') || '').trim();
+        if (!why) return;
+        db.from('posts').update({
+          review_reset_at: new Date().toISOString(),
+          review_reset_note: why
+        }).eq('id', p.id).then(function (r) {
+          if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
+          logAction('reapproval.requested',
+            state.client.name + ' — ' + MK.label(p), why);
+          msg('setMsg', 'Re-approval requested. The client now sees this post as pending, ' +
+            'together with your note.', 'ok');
+          loadPosts();
+        });
+      });
       row.querySelector('[data-a="del"]').addEventListener('click', function () {
-        if (!confirm('Delete this post? The client will no longer see it.\n\n' +
-          'The file stays in storage, so re-importing it from Drive will not upload it again.')) return;
+        if (!confirm('Delete this post? It will be removed from the client view.\n\n' +
+          'The file remains in storage, so re-importing it from Drive will not upload again.')) return;
         db.from('posts').delete().eq('id', p.id).then(function () {
+          logAction('post.deleted',
+            state.client.name + ' — ' + state.batch.title, MK.label(p));
           loadPosts(); loadBatches();
         });
       });
