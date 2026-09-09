@@ -189,6 +189,26 @@ the client list, you were signed out rather than reset.
 It is over 50 MB. See the section above. Quickest route is to export a review copy at
 1080p and 5 Mbps, or paste a link to the file on your own CDN.
 
+## Importing from Google Drive
+
+If your creative team already uploads to Drive, the portal can pull straight from that
+folder. No downloading, no re-uploading.
+
+**One time setup.** Create an API key in Google Cloud Console, enable the Drive API, and
+restrict the key to `https://digital.adspace.me/*` and the Drive API only. Paste it into
+`googleApiKey` in `js/config.js`. Full steps are in `docs/DRIVE-IMPORT-CHECK.md`.
+
+**Each month.** Open the content set, paste the Drive folder link, click **Load files**.
+Tick what you want and click **Import selected**. Files are copied into your own storage,
+so a client link never breaks because someone moved a folder.
+
+The folder is remembered per client, so from the second month it is already filled in.
+Anything imported before is marked **already imported** and cannot be picked twice, so
+running the same folder again only brings in what is new.
+
+Placement is read from Drive's own metadata, so a 9:16 video still lands as Reels without
+downloading anything first.
+
 ## Bigger files
 
 To lift the 50 MB limit, uploads can go to the ADspace S3 bucket instead of Supabase.

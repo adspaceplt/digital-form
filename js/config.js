@@ -27,6 +27,10 @@ window.ADSPACE_CONFIG = {
     enabled: true,
     functionName: 'sign-upload'
   },
+  // Google Drive import. Key from Google Cloud Console, restricted to this
+  // site and to the Drive API. Blank hides the Drive section in admin.
+  googleApiKey: '',
+
   brandLogo: 'https://mycdn.adspace.me/adspace-brandname.png',
   agencyName: 'ADspace',
   supportEmail: 'adspacestudios@gmail.com'

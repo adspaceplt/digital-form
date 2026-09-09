@@ -282,6 +282,10 @@
     setUrl();
     state.drafts = readStoredDrafts();
     $('setPanel').hidden = false;
+    $('driveBox').hidden = !driveKey();
+    $('driveUrl').value = state.client.drive_folder || '';
+    $('drivePicker').hidden = true;
+    msg('driveMsg', '');
     paintSetHeader();
     renderDrafts();
     loadBatches();
@@ -458,7 +462,10 @@
       });
   }
 
-  function mb(bytes) { return (bytes / 1024 / 1024).toFixed(0); }
+  function mb(bytes) {
+    var v = bytes / 1024 / 1024;
+    return v < 1 ? v.toFixed(1) : v.toFixed(0);   // 0.4 MB should not read as 0 MB
+  }
 
   function usingS3() { return Boolean(cfg.s3 && cfg.s3.enabled); }
 
@@ -484,12 +491,15 @@
   /* One place that knows where files live. S3 behind CloudFront when it is set
      up, Supabase storage otherwise. Returns the URL to save on the post. */
   function storeFile(file) {
-    var ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+    var ext = (file.name.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return storeBlob(file, ext || 'bin', file.type);
+  }
 
+  function storeBlob(blob, ext, contentType) {
     if (!usingS3()) {
       var path = state.client.id + '/' + crypto.randomUUID() + '.' + (ext || 'bin');
       return db.storage.from(cfg.storageBucket)
-        .upload(path, file, { cacheControl: '31536000' })
+        .upload(path, blob, { cacheControl: '31536000', contentType: contentType || undefined })
         .then(function (r) {
           if (r.error) throw r.error;
           return db.storage.from(cfg.storageBucket).getPublicUrl(path).data.publicUrl;
@@ -499,7 +509,7 @@
     // Ask our own function to sign one upload, then send the file straight to
     // S3. The file never passes through Supabase, so there is no size ceiling.
     return db.functions.invoke(cfg.s3.functionName || 'sign-upload', {
-      body: { ext: ext || 'bin', clientId: state.client.id, size: file.size }
+      body: { ext: ext || 'bin', clientId: state.client.id, size: blob.size }
     }).then(function (r) {
       if (r.error) throw new Error('Could not start the upload. ' + r.error.message);
       if (!r.data || !r.data.uploadUrl) throw new Error(
@@ -507,9 +517,9 @@
 
       return fetch(r.data.uploadUrl, {
         method: 'PUT',
-        body: file,
+        body: blob,
         headers: {
-          'Content-Type': file.type || 'application/octet-stream',
+          'Content-Type': contentType || 'application/octet-stream',
           // filenames are random and never reused, so this is safe to cache hard
           'Cache-Control': 'public, max-age=31536000, immutable'
         }
@@ -581,6 +591,210 @@
       $('mediaUrl').value = '';
       msg('setMsg', 'Added. Write the caption below, then click "Add to this set".', 'ok');
     });
+  });
+
+
+  // ---- Google Drive import -------------------------------------------------
+  // Creative uploads to Drive, so the portal reads that folder directly rather
+  // than making anyone download and re-upload. Files are copied into our own
+  // storage once, so a client link never depends on a Drive folder staying put.
+  var DRIVE_API = 'https://www.googleapis.com/drive/v3/files';
+  var driveFiles = [];
+
+  function driveKey() { return (cfg.googleApiKey || '').trim(); }
+
+  function driveFolderId(url) {
+    var m = String(url).match(/\/folders\/([A-Za-z0-9_-]{10,})/) ||
+            String(url).match(/[?&]id=([A-Za-z0-9_-]{10,})/);
+    return m ? m[1] : null;
+  }
+
+  function driveFetch(url, ms) {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, ms || 30000);
+    return fetch(url, { signal: ctrl.signal }).finally(function () { clearTimeout(timer); });
+  }
+
+  /* Drive ids already used by this client, so last month's files are not
+     imported a second time by accident. */
+  function alreadyImported() {
+    return db.from('batches').select('id').eq('client_id', state.client.id)
+      .then(function (r) {
+        var ids = (r.data || []).map(function (b) { return b.id; });
+        if (!ids.length) return {};
+        return db.from('posts').select('media').in('batch_id', ids).then(function (p) {
+          var seen = {};
+          (p.data || []).forEach(function (post) {
+            (post.media || []).forEach(function (m) { if (m.driveId) seen[m.driveId] = true; });
+          });
+          return seen;
+        });
+      }).catch(function () { return {}; });
+  }
+
+  $('driveLoad').addEventListener('click', function () {
+    var url = $('driveUrl').value.trim();
+    var id = driveFolderId(url);
+    if (!id) {
+      msg('driveMsg', 'That does not look like a Drive folder link. It should have ' +
+        '/folders/ followed by a long id.', 'err');
+      return;
+    }
+    msg('driveMsg', 'Reading the folder…');
+    $('drivePicker').hidden = true;
+
+    var fields = 'files(id,name,mimeType,size,imageMediaMetadata(width,height),' +
+                 'videoMediaMetadata(width,height))';
+    var q = encodeURIComponent("'" + id + "' in parents and trashed=false");
+    var listUrl = DRIVE_API + '?q=' + q + '&key=' + encodeURIComponent(driveKey()) +
+      '&fields=' + encodeURIComponent(fields) +
+      '&pageSize=200&supportsAllDrives=true&includeItemsFromAllDrives=true';
+
+    driveFetch(listUrl).then(function (r) {
+      return r.json().then(function (body) { return { status: r.status, body: body }; });
+    }).then(function (res) {
+      if (res.status !== 200) {
+        msg('driveMsg', (res.body.error && res.body.error.message) ||
+          ('Google returned ' + res.status) +
+          '. Check the folder is shared as Anyone with the link.', 'err');
+        return;
+      }
+      var files = (res.body.files || []).filter(function (f) {
+        return /^(image|video)\//.test(f.mimeType);
+      });
+      if (!files.length) {
+        msg('driveMsg', 'No images or videos in that folder.', 'err');
+        return;
+      }
+
+      // remember the folder so next month is one click
+      db.from('clients').update({ drive_folder: url }).eq('id', state.client.id)
+        .then(function () { state.client.drive_folder = url; });
+
+      return alreadyImported().then(function (seen) {
+        driveFiles = files.map(function (f) {
+          var m = f.imageMediaMetadata || f.videoMediaMetadata || {};
+          return {
+            id: f.id, name: f.name, mimeType: f.mimeType,
+            size: Number(f.size) || 0,
+            width: m.width || 0, height: m.height || 0,
+            isVideo: f.mimeType.indexOf('video') === 0,
+            done: Boolean(seen[f.id]),
+            pick: !seen[f.id]
+          };
+        });
+        renderDriveFiles();
+        var fresh = driveFiles.filter(function (f) { return !f.done; }).length;
+        msg('driveMsg', files.length + ' file' + (files.length === 1 ? '' : 's') + ' found, ' +
+          fresh + ' not imported yet.', 'ok');
+      });
+    }).catch(function (e) {
+      msg('driveMsg', e.name === 'AbortError'
+        ? 'Timed out reading the folder.'
+        : 'Could not reach Google. ' + e.message, 'err');
+    });
+  });
+
+  function renderDriveFiles() {
+    var box = $('driveFiles');
+    box.innerHTML = '';
+    $('drivePicker').hidden = false;
+
+    driveFiles.forEach(function (f, i) {
+      var card = document.createElement('label');
+      card.className = 'dfile' + (f.done ? ' is-done' : '');
+      card.innerHTML =
+        '<input type="checkbox"' + (f.pick ? ' checked' : '') + (f.done ? ' disabled' : '') + '>' +
+        '<span class="dfile-img"><img loading="lazy" alt=""></span>' +
+        '<span class="dfile-meta"><b>' + esc(f.name) + '</b>' +
+        '<span class="muted">' + (f.width ? f.width + ' x ' + f.height : 'size unknown') +
+        (f.size ? ' · ' + mb(f.size) + ' MB' : '') +
+        (f.done ? ' · already imported' : '') + '</span></span>';
+      card.querySelector('img').src =
+        'https://drive.google.com/thumbnail?id=' + f.id + '&sz=w400';
+      card.querySelector('input').addEventListener('change', function (e) {
+        driveFiles[i].pick = e.target.checked;
+      });
+      box.appendChild(card);
+    });
+  }
+
+  $('driveAll').addEventListener('click', function () {
+    driveFiles.forEach(function (f) { if (!f.done) f.pick = true; });
+    renderDriveFiles();
+  });
+  $('driveNone').addEventListener('click', function () {
+    driveFiles.forEach(function (f) { f.pick = false; });
+    renderDriveFiles();
+  });
+
+  $('driveImport').addEventListener('click', function () {
+    if (!state.batch) { msg('driveMsg', 'Open a content set first.', 'err'); return; }
+    var picked = driveFiles.filter(function (f) { return f.pick && !f.done; });
+    if (!picked.length) { msg('driveMsg', 'Nothing selected.', 'err'); return; }
+
+    var cap = usingS3() ? Infinity : (cfg.maxUploadMB || 50) * 1024 * 1024;
+    var toobig = picked.filter(function (f) { return f.size > cap; });
+    var queue = picked.filter(function (f) { return f.size <= cap; });
+
+    if (toobig.length) {
+      msg('driveMsg', toobig.length + ' file' + (toobig.length === 1 ? ' is' : 's are') +
+        ' over the ' + (cfg.maxUploadMB || 50) + ' MB limit and were skipped: ' +
+        toobig.map(function (f) { return f.name; }).join(', ') +
+        '. Turning on S3 storage removes this limit.', 'err');
+      if (!queue.length) return;
+    }
+
+    state.uploading = true;
+    var done = 0;
+
+    queue.reduce(function (chain, f) {
+      return chain.then(function () {
+        if (!toobig.length) {
+          msg('driveMsg', 'Copying ' + (done + 1) + ' of ' + queue.length + ', ' + f.name + '…');
+        }
+        return driveFetch(DRIVE_API + '/' + f.id + '?alt=media&key=' +
+                          encodeURIComponent(driveKey()), 300000)
+          .then(function (r) {
+            if (!r.ok) throw new Error('Drive refused ' + f.name + ' (HTTP ' + r.status + ')');
+            return r.blob();
+          })
+          .then(function (blob) {
+            var ext = (f.name.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            return storeBlob(blob, ext || (f.isVideo ? 'mp4' : 'jpg'), f.mimeType);
+          })
+          .then(function (publicUrl) {
+            state.drafts.push({
+              placement: guessPlacement({ width: f.width, height: f.height, isVideo: f.isVideo }),
+              media: [{
+                url: publicUrl,
+                type: f.isVideo ? 'video' : 'image',
+                width: f.width || null,
+                height: f.height || null,
+                driveId: f.id
+              }],
+              caption: '', caption_zh: '', title: '', showZh: false
+            });
+            f.done = true; f.pick = false;
+            done++;
+            renderDrafts();
+          });
+      });
+    }, Promise.resolve())
+      .then(function () {
+        state.uploading = false;
+        renderDriveFiles();
+        if (!toobig.length) {
+          msg('driveMsg', done + ' file' + (done === 1 ? '' : 's') +
+            ' imported. Write the captions below, then click "Add to this set".', 'ok');
+        }
+      })
+      .catch(function (e) {
+        state.uploading = false;
+        msg('driveMsg', e.name === 'AbortError'
+          ? 'Timed out copying a file. Large videos can take a while, try fewer at a time.'
+          : e.message, 'err');
+      });
   });
 
   // ---- Drafts -------------------------------------------------------------
