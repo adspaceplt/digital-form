@@ -131,8 +131,27 @@ A bucket policy that allows public reads does nothing while this is switched on.
 overrules the policy. The two settings that matter are the ones mentioning **public bucket
 policies**, and they must be **off** for the policy above to take effect.
 
-If everything here is already off, the policy is being applied and the problem is
-elsewhere. Go to Step 4.
+If everything here is already off, public policies are allowed and honoured, so nothing is
+blocking you. That points at the policy being **missing** rather than blocked.
+
+### Why the logo works when there is no policy
+
+There are two old ways a file in S3 could be public, and a bucket set up years ago often
+uses the older one.
+
+- **An ACL on the individual file.** Uploading through the AWS console used to offer a
+  "make public" tick, which marks that one file readable. The brand logo was almost
+  certainly put there this way.
+- **A bucket policy**, which covers everything at once. This is the modern way.
+
+The portal uploads through the API and does not set per file ACLs, on purpose. Per file
+permissions are exactly the sort of thing that gets forgotten and leaves a client staring
+at a broken video.
+
+So the logo works because someone ticked a box on that one file years ago, and your new
+uploads fail because nothing has granted them anything. Adding the bucket policy above
+fixes every file at once, including any future ones, and leaves the logo working exactly
+as it does now.
 
 ### A note for later, not now
 
