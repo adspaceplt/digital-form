@@ -95,6 +95,9 @@
     var stage = document.createElement('div');
     stage.className = 'card-stage';
     stage.appendChild(MK.render(post, mkCfg));
+    // Vertical formats fill the card edge to edge, so 9:16 is shown as large as
+    // the column allows rather than inset inside padding.
+    if (stage.querySelector('.mk-phone')) card.classList.add('is-vertical');
     card.appendChild(stage);
 
     // The mockup truncates like the real feed. This shows the caption in full.
@@ -407,6 +410,17 @@
   $('qrClose').addEventListener('click', function () { $('qrModal').classList.remove('is-open'); });
   $('qrModal').addEventListener('click', function (e) {
     if (e.target === this) this.classList.remove('is-open');
+  });
+
+  /* A video is cropped to its placement inside the frame. Once it goes full
+     screen that crop is wrong, so drop it for as long as it is expanded. */
+  ['fullscreenchange', 'webkitfullscreenchange'].forEach(function (ev) {
+    document.addEventListener(ev, function () {
+      var active = document.fullscreenElement || document.webkitFullscreenElement || null;
+      document.querySelectorAll('.mk-media video').forEach(function (v) {
+        v.classList.toggle('is-fullscreen', v === active);
+      });
+    });
   });
 
   $('passForm').addEventListener('submit', function (e) {

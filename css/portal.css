@@ -116,6 +116,11 @@ a { color: inherit; }
     linear-gradient(0deg, rgba(0,0,0,.015), rgba(0,0,0,.015)), #fff;
   display: flex; justify-content: center;
 }
+/* A 9:16 post is the whole screen on a phone, so it gets the whole column here
+   rather than sitting inset with padding around it. */
+.card.is-vertical .card-stage { padding: 0; background: #000; }
+.card.is-vertical .mk-phone { max-width: none; border: 0; border-radius: 0; box-shadow: none; }
+.card.is-vertical .mk-coverwrap { max-width: none; }
 
 .badge {
   margin-left: auto; font-size: 11px; font-weight: 600; letter-spacing: .04em;
@@ -206,6 +211,13 @@ a { color: inherit; }
 
 .mk-media { position: relative; background: #eceff1; overflow: hidden; }
 .mk-media img, .mk-media video { width: 100%; height: 100%; object-fit: cover; }
+/* In the frame the video is cropped to the placement. Full screen is a
+   different job: show the whole thing, letterboxed if it has to be. */
+.mk-media video:fullscreen { object-fit: contain; background: #000; }
+.mk-media video:-webkit-full-screen { object-fit: contain; background: #000; }
+/* Belt and braces: some browsers do not match the pseudo-class on the element
+   itself, so the script below sets this class as well. */
+.mk-media video.is-fullscreen { object-fit: contain; background: #000; }
 .mk-media-empty {
   display: flex; align-items: center; justify-content: center;
   color: #9aa3a8; font-size: 12px; background:
@@ -397,7 +409,7 @@ a { color: inherit; }
 
 /* XiaoHongShu */
 .mk-xhs {
-  width: 300px; background: #fff; border-radius: 10px; overflow: hidden;
+  width: 100%; max-width: 380px; background: #fff; border-radius: 10px; overflow: hidden;
   box-shadow: 0 2px 12px rgba(0,0,0,.08);
   font-family: "PingFang SC", "Microsoft YaHei", var(--font);
 }
