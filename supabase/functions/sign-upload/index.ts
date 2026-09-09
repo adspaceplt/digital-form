@@ -6,6 +6,10 @@
  * A signed URL is only issued to someone already signed in to /admin/.
  *
  * Deploy:  supabase functions deploy sign-upload
+ *
+ * Turn OFF "Verify JWT" for this function in the dashboard. The platform check
+ * rejects the browser's CORS preflight, which carries no Authorization header,
+ * and this function verifies the caller itself below.
  */
 import { AwsClient } from 'https://esm.sh/aws4fetch@1.0.20';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
@@ -22,7 +26,10 @@ function cors(origin: string | null) {
   const allow = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
   return {
     'Access-Control-Allow-Origin': allow,
-    'Access-Control-Allow-Headers': 'authorization, content-type',
+    // supabase-js sends x-client-info and apikey as well. Leaving them out makes
+    // the browser preflight fail, which surfaces as "Failed to send a request".
+    'Access-Control-Allow-Headers':
+      'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Vary': 'Origin'
   };

@@ -117,6 +117,16 @@ from a terminal.
 4. Delete the sample code in the editor and paste ours in its place.
 5. **Deploy**.
 
+**Then turn off Verify JWT for this function.** Edge Functions → `sign-upload` →
+**Settings** (or the toggle on the function's detail page) → switch **Verify JWT** off.
+
+This sounds wrong but is not. The browser sends a CORS preflight before the real request,
+and a preflight carries no `Authorization` header by design. With Verify JWT on, Supabase
+rejects that preflight before your function runs, and the portal reports
+**"Failed to send a request to the Edge Function"**. The function does its own check on
+every real request, refusing anyone not signed in to `/admin/`, so nothing is loosened by
+turning the platform one off.
+
 Then the secrets, which are set separately from the code:
 
 6. Still under **Edge Functions**, open **Secrets** (on some dashboards it is
@@ -190,7 +200,10 @@ confirm the video plays.
 
 If the upload fails:
 
-- **"Could not start the upload"** — the function is not deployed, or a secret is missing.
+- **"Could not start the upload. Failed to send a request to the Edge Function"** — the
+  browser never reached it. Either the function is not deployed under the name
+  `sign-upload`, or **Verify JWT** is still on. Turning that off is the usual fix.
+- **"Could not start the upload"** with another message — a secret is missing.
   Dashboard → Edge Functions → `sign-upload` → **Logs** shows why. A missing secret usually
   appears as an error naming the variable.
 - **"Upload was refused"** — the function ran but declined. `not_signed_in` means the

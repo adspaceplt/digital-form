@@ -511,7 +511,14 @@
     return db.functions.invoke(cfg.s3.functionName || 'sign-upload', {
       body: { ext: ext || 'bin', clientId: state.client.id, size: blob.size }
     }).then(function (r) {
-      if (r.error) throw new Error('Could not start the upload. ' + r.error.message);
+      if (r.error) {
+        var hint = /failed to send|fetch/i.test(r.error.message || '')
+          ? ' The browser could not reach it. In the Supabase dashboard, open Edge ' +
+            'Functions, check a function named "' + (cfg.s3.functionName || 'sign-upload') +
+            '" exists, and turn OFF its "Verify JWT" setting.'
+          : '';
+        throw new Error('Could not start the upload. ' + r.error.message + hint);
+      }
       if (!r.data || !r.data.uploadUrl) throw new Error(
         'Upload was refused: ' + ((r.data && r.data.error) || 'unknown reason'));
 
