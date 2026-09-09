@@ -129,10 +129,10 @@
           "position": 5,
           "media": [
             {
-              "url": "/demo/ph-feed-1.svg",
+              "url": "/demo/ph-reel-1.svg",
               "type": "image",
               "width": 1080,
-              "height": 1350
+              "height": 1920
             }
           ],
           "caption": "Cover frame for the cold brew Reel. Used as the grid thumbnail so the feed stays tidy."

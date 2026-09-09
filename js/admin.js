@@ -25,7 +25,7 @@
     ['facebook:feed',      'Facebook post'],
     ['facebook:story',     'Facebook Story'],
     ['tiktok:reel',        'TikTok video'],
-    ['xhs:note',           'XiaoHongShu note'],
+    ['xhs:note',           'RedNote post'],
     ['cover:image',        'Cover image']
   ];
 
@@ -1205,7 +1205,7 @@
           return {
             batch_id: state.batch.id,
             platform: parts[0], format: parts[1],
-            handle: state.client.name,
+            handle: null,   // the client's per platform account name is used instead
             title: d.title || null,
             caption: d.caption || null,
             caption_zh: d.caption_zh || null,

@@ -304,7 +304,7 @@ a { color: inherit; }
    own UI drawn on it, so the overlays double as a safe zone guide. */
 .mk-phone {
   position: relative;
-  width: 300px; max-width: 100%;
+  width: 100%; max-width: 380px;
   border-radius: 14px; overflow: hidden;
   border: 1px solid var(--line);
   box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 8px 20px rgba(0,0,0,.07);
@@ -704,10 +704,8 @@ a { color: inherit; }
 .saved.is-editing .textarea { min-height: 64px; font-size: 13px; }
 
 /* Cover image is an asset, not a post, so it gets a neutral frame */
-.mk-cover {
-  width: 100%; max-width: 340px; background: #fff;
-  border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
-}
+.mk-coverwrap { width: 100%; max-width: 380px; }
+.mk-coverwrap .mk-phone { max-width: 100%; }
 .mk-cover-tag {
   padding: 8px 12px; font-size: 11.5px; font-weight: 600; letter-spacing: .04em;
   text-transform: uppercase; color: var(--ink-mute); border-top: 1px solid var(--line-soft);
