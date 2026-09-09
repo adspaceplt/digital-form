@@ -398,11 +398,23 @@
     toggle.addEventListener('click', function () {
       const open = node.classList.toggle('is-open');
       toggle.textContent = open ? less : more;
+      measureClamp(wrap);
     });
-    requestAnimationFrame(function () {
-      if (node.scrollHeight <= node.clientHeight + 2) toggle.remove();
-    });
+    requestAnimationFrame(function () { measureClamp(wrap); });
     return wrap;
+  }
+
+  /* Decides whether the toggle is needed. A hidden element reports zero height,
+     so a card inside a folded set or filtered out would look like it never
+     overflows and lose its toggle for good. Leave it alone until it can
+     actually be measured. */
+  function measureClamp(wrap) {
+    const node = wrap.querySelector('.mk-clamp');
+    const toggle = wrap.querySelector('.mk-morebtn');
+    if (!node || !toggle) return;
+    if (!node.clientHeight) return;                       // not laid out yet
+    if (node.classList.contains('is-open')) { toggle.hidden = false; return; }
+    toggle.hidden = node.scrollHeight <= node.clientHeight + 2;
   }
 
   /* A cover image is an asset, not a post, so it gets a plain frame with no
@@ -453,6 +465,12 @@
   }
 
   window.ADspaceMockups = {
+    /* Re-measure every caption toggle under a root, after anything that
+       changes visibility. */
+    remeasure: function (root) {
+      (root || document).querySelectorAll('.mk-clampwrap').forEach(measureClamp);
+    },
+
     render: function (post, cfg) {
       const fn = RENDERERS[key(post)] || instagramFeed;
       return fn(post, cfg || {});

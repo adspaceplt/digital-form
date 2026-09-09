@@ -46,6 +46,26 @@
       { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
+  /* A hidden element reports zero height, so a card inside a folded set or one
+     filtered out would look like it never overflows and lose its toggle. Only
+     decide once it can actually be measured. */
+  function measureCopy(copy) {
+    var more = copy.querySelector('.copy-more');
+    if (!more) return;
+    var texts = copy.querySelectorAll('.copytext');
+    if (!texts.length || !texts[0].clientHeight) return;
+    if (copy.classList.contains('is-open')) { more.hidden = false; return; }
+    more.hidden = !Array.prototype.some.call(texts, function (n) {
+      return n.scrollHeight > n.clientHeight + 2;
+    });
+  }
+
+  /* Anything that reveals cards has to re-run those measurements. */
+  function remeasure() {
+    document.querySelectorAll('.copyblock').forEach(measureCopy);
+    if (MK.remeasure) MK.remeasure(document);
+  }
+
   function escapeHtml(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -94,13 +114,9 @@
       more.addEventListener('click', function () {
         var open = copy.classList.toggle('is-open');
         more.textContent = open ? 'Show less' : 'Show full copy';
+        measureCopy(copy);
       });
-      requestAnimationFrame(function () {
-        var overflowing = Array.prototype.some.call(
-          copy.querySelectorAll('.copytext'),
-          function (n) { return n.scrollHeight > n.clientHeight + 2; });
-        more.hidden = !overflowing;
-      });
+      requestAnimationFrame(function () { measureCopy(copy); });
       copy.querySelector('.copy-btn').addEventListener('click', function (e) {
         navigator.clipboard.writeText([post.title, post.caption, post.caption_zh]
           .filter(Boolean).join('\n\n')).then(function () {
@@ -302,6 +318,7 @@
         section.dataset.userSet = '1';
         section.classList.toggle('is-folded');
         head.setAttribute('aria-expanded', section.classList.contains('is-folded') ? 'false' : 'true');
+        if (!section.classList.contains('is-folded')) requestAnimationFrame(remeasure);
       });
 
       // A set everyone has already signed off starts folded, so the page opens
@@ -375,6 +392,7 @@
     });
 
     $('countLabel').textContent = shown + ' post' + (shown === 1 ? '' : 's') + ' shown';
+    requestAnimationFrame(remeasure);
   }
 
   // ---- Chrome --------------------------------------------------------------
