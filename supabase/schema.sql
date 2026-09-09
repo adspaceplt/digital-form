@@ -21,6 +21,28 @@ create table if not exists public.clients (
 -- Remembered Drive folder per client, so next month is one click.
 alter table public.clients add column if not exists drive_folder text;
 
+-- The account name shown inside each platform's mockup.
+alter table public.clients add column if not exists handle_ig     text;
+alter table public.clients add column if not exists handle_fb     text;
+alter table public.clients add column if not exists handle_tiktok text;
+alter table public.clients add column if not exists handle_xhs    text;
+
+-- Every Drive file we have already copied, kept even if the post is deleted, so
+-- re-importing reuses the file in S3 instead of paying to upload it again.
+create table if not exists public.drive_assets (
+  id          uuid primary key default gen_random_uuid(),
+  client_id   uuid not null references public.clients(id) on delete cascade,
+  drive_id    text not null,
+  url         text not null,
+  mime_type   text,
+  width       int,
+  height      int,
+  bytes       bigint,
+  created_at  timestamptz not null default now(),
+  unique (client_id, drive_id)
+);
+alter table public.drive_assets enable row level security;
+
 create table if not exists public.batches (
   id            uuid primary key default gen_random_uuid(),
   client_id     uuid not null references public.clients(id) on delete cascade,
@@ -74,7 +96,7 @@ alter table public.reviews enable row level security;
 do $$
 declare t text;
 begin
-  foreach t in array array['clients','batches','posts','reviews'] loop
+  foreach t in array array['clients','batches','posts','reviews','drive_assets'] loop
     execute format('drop policy if exists team_all on public.%I', t);
     execute format(
       'create policy team_all on public.%I for all to authenticated using (true) with check (true)', t);
@@ -108,7 +130,14 @@ begin
   end if;
 
   return jsonb_build_object(
-    'client', jsonb_build_object('name', v_client.name, 'logo_url', v_client.logo_url),
+    'client', jsonb_build_object(
+      'name', v_client.name,
+      'logo_url', v_client.logo_url,
+      'handles', jsonb_build_object(
+        'instagram', v_client.handle_ig,
+        'facebook',  v_client.handle_fb,
+        'tiktok',    v_client.handle_tiktok,
+        'xhs',       v_client.handle_xhs)),
     'batches', coalesce((
       select jsonb_agg(batch order by batch->>'created_at' desc)
       from (

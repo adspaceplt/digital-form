@@ -158,6 +158,21 @@
     return wrap;
   }
 
+  /* Each platform shows a different account name, so use the one set on the
+     client and fall back to the brand name rather than inventing a handle. */
+  /* Instagram and TikTok show an @, Facebook and XiaoHongShu do not. */
+  function atHandle(h) {
+    h = String(h || '');
+    return h && h.charAt(0) !== '@' ? '@' + h : h;
+  }
+
+  function handleFor(post, cfg) {
+    if (post.handle) return post.handle;
+    const h = (cfg.handles || {})[post.platform || 'instagram'];
+    if (h) return h;
+    return cfg.clientHandle || cfg.clientName || '';
+  }
+
   function avatar(post, cfg) {
     const url = (post.client && post.client.logo_url) || cfg.clientLogo;
     const node = el('div', 'mk-avatar');
@@ -169,6 +184,34 @@
       node.textContent = (cfg.clientName || 'A').charAt(0).toUpperCase();
     }
     return node;
+  }
+
+  /* Status bar, Dynamic Island and home indicator. These are what make a frame
+     read as a phone rather than a black rectangle, and they sit over the media
+     exactly as they do on a real device. */
+  const SYS = {
+    signal: '<svg width="17" height="11" viewBox="0 0 17 11" fill="currentColor">' +
+      '<rect y="7.5" width="3" height="3.5" rx="1"/><rect x="4.6" y="5.5" width="3" height="5.5" rx="1"/>' +
+      '<rect x="9.2" y="3" width="3" height="8" rx="1"/><rect x="13.8" width="3" height="11" rx="1"/></svg>',
+    wifi: '<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"/>' +
+      '<path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"/><path d="M6.2 9a2.6 2.6 0 0 1 3.6 0"/></svg>',
+    battery: '<svg width="25" height="12" viewBox="0 0 25 12" fill="none">' +
+      '<rect x=".6" y=".6" width="21" height="10.8" rx="3.2" stroke="currentColor" stroke-opacity=".5"/>' +
+      '<rect x="2.3" y="2.3" width="14.5" height="7.4" rx="1.8" fill="currentColor"/>' +
+      '<path d="M23.2 4.3v3.4a2 2 0 0 0 0-3.4z" fill="currentColor" fill-opacity=".5"/></svg>',
+    camera: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" ' +
+      'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.7l1.1-1.8h6.4L15.8 6h2.7A2.5 2.5 0 0 1 21 8.5v8A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5z"/>' +
+      '<circle cx="12" cy="12.3" r="3.4"/></svg>'
+  };
+
+  function deviceChrome(screen) {
+    screen.appendChild(el('div', 'mk-statusbar',
+      '<span class="mk-time">9:41</span>' +
+      '<span class="mk-sysicons">' + SYS.signal + SYS.wifi + SYS.battery + '</span>'));
+    screen.appendChild(el('div', 'mk-island'));
+    screen.appendChild(el('div', 'mk-home'));
   }
 
   function actionRow(items) {
@@ -186,7 +229,7 @@
     const head = el('header', 'mk-head');
     head.appendChild(avatar(post, cfg));
     const who = el('div', 'mk-who');
-    who.appendChild(el('span', 'mk-handle', esc(post.handle || cfg.clientHandle)));
+    who.appendChild(el('span', 'mk-handle', esc(handleFor(post, cfg))));
     who.appendChild(el('span', 'mk-sub', 'Sponsored'));
     head.appendChild(who);
     head.appendChild(el('span', 'mk-more', icon('dots', 20)));
@@ -198,7 +241,7 @@
     frame.appendChild(el('div', 'mk-likes', '1,248 likes'));
 
     const cap = el('div', 'mk-caption');
-    cap.innerHTML = '<span class="mk-handle">' + esc(post.handle || cfg.clientHandle) + '</span> ' +
+    cap.innerHTML = '<span class="mk-handle">' + esc(handleFor(post, cfg)) + '</span> ' +
       captionHtml(post.caption);
     frame.appendChild(clampable(cap));
     frame.appendChild(el('div', 'mk-time', 'View all 32 comments'));
@@ -211,7 +254,7 @@
     const head = el('header', 'mk-head');
     head.appendChild(avatar(post, cfg));
     const who = el('div', 'mk-who');
-    who.appendChild(el('span', 'mk-handle', esc(post.handle || cfg.clientName)));
+    who.appendChild(el('span', 'mk-handle', esc(handleFor(post, cfg))));
     who.appendChild(el('span', 'mk-sub', 'Sponsored &middot; <span>Johor Bahru</span>'));
     head.appendChild(who);
     head.appendChild(el('span', 'mk-more', icon('dots', 20)));
@@ -238,6 +281,10 @@
     const screen = el('div', 'mk-screen');
     screen.appendChild(mediaNode((post.media || [])[0], { ratioClass: 'r-916' }));
 
+    screen.appendChild(kind === 'tiktok'
+      ? el('div', 'mk-topbar mk-topbar-tt', '<span>Following</span><b>For You</b>')
+      : el('div', 'mk-topbar mk-topbar-ig', '<b>Reels</b>' + SYS.camera));
+
     const rail = el('div', 'mk-rail');
     rail.innerHTML =
       '<span>' + icon('heart', 26) + '<b>4.2K</b></span>' +
@@ -246,7 +293,7 @@
     screen.appendChild(rail);
 
     const foot = el('div', 'mk-vfoot');
-    foot.appendChild(el('div', 'mk-vhandle', '@' + esc(post.handle || cfg.clientHandle)));
+    foot.appendChild(el('div', 'mk-vhandle', esc(atHandle(handleFor(post, cfg)))));
     const cap = el('div', 'mk-vcaption');
     cap.innerHTML = captionHtml(post.caption);
     foot.appendChild(clampable(cap, 2));
@@ -254,6 +301,7 @@
       icon('music', 14) + '<span>Original audio &middot; ' + esc(cfg.clientName) + '</span>'));
     screen.appendChild(foot);
 
+    deviceChrome(screen);
     phone.appendChild(screen);
     return phone;
   }
@@ -274,7 +322,7 @@
 
     const head = el('div', 'mk-story-head');
     head.appendChild(avatar(post, cfg));
-    head.appendChild(el('span', 'mk-vhandle', esc(post.handle || cfg.clientHandle)));
+    head.appendChild(el('span', 'mk-vhandle', esc(handleFor(post, cfg))));
     head.appendChild(el('span', 'mk-story-time', '2h'));
 
     screen.appendChild(stage);
@@ -307,6 +355,7 @@
       stage.appendChild(sticker);
     }
 
+    deviceChrome(screen);
     phone.appendChild(screen);
     return phone;
   }
@@ -324,7 +373,7 @@
 
     const foot = el('div', 'mk-xhs-foot');
     foot.appendChild(avatar(post, cfg));
-    foot.appendChild(el('span', 'mk-xhs-author', esc(post.handle || cfg.clientName)));
+    foot.appendChild(el('span', 'mk-xhs-author', esc(handleFor(post, cfg))));
     foot.appendChild(el('span', 'mk-xhs-stats',
       icon('heart', 15) + '<b>2,341</b>' + icon('star', 15) + '<b>876</b>'));
     body.appendChild(foot);
@@ -354,6 +403,15 @@
     return wrap;
   }
 
+  /* A cover image is an asset, not a post, so it gets a plain frame with no
+     platform chrome pretending otherwise. */
+  function coverImage(post, cfg) {
+    const frame = el('article', 'mk mk-cover');
+    frame.appendChild(carouselNode(post.media || [], { shape: { min: 0.4, max: 2.5 } }));
+    frame.appendChild(el('div', 'mk-cover-tag', 'Cover image'));
+    return frame;
+  }
+
   const RENDERERS = {
     'instagram:feed':     instagramFeed,
     'instagram:carousel': instagramFeed,
@@ -366,7 +424,8 @@
     'tiktok:reel':        function (p, c) { return vertical(p, c, 'tiktok'); },
     'tiktok:feed':        function (p, c) { return vertical(p, c, 'tiktok'); },
     'xhs:note':           xhsNote,
-    'xhs:feed':           xhsNote
+    'xhs:feed':           xhsNote,
+    'cover:image':        coverImage
   };
 
   const LABELS = {
@@ -381,7 +440,8 @@
     'tiktok:reel':        ['TikTok', '1080 x 1920'],
     'tiktok:feed':        ['TikTok', '1080 x 1920'],
     'xhs:note':           ['XiaoHongShu Note', '1080 x 1440'],
-    'xhs:feed':           ['XiaoHongShu Note', '1080 x 1440']
+    'xhs:feed':           ['XiaoHongShu Note', '1080 x 1440'],
+    'cover:image':        ['Cover Image', '']
   };
 
   function key(post) {

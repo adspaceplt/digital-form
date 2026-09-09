@@ -11,10 +11,7 @@
 
   (function () {
     var logo = $('agencyLogo');
-    logo.onerror = function () {
-      logo.hidden = true;
-      $('agencyWordmark').hidden = false;
-    };
+    logo.onerror = function () { logo.hidden = true; $('agencyWordmark').hidden = false; };
     logo.src = cfg.brandLogo;
   })();
   if (!API.configured || !db) { $('notConfigured').hidden = false; return; }
@@ -28,7 +25,8 @@
     ['facebook:feed',      'Facebook post'],
     ['facebook:story',     'Facebook Story'],
     ['tiktok:reel',        'TikTok video'],
-    ['xhs:note',           'XiaoHongShu note']
+    ['xhs:note',           'XiaoHongShu note'],
+    ['cover:image',        'Cover image']
   ];
 
   var state = { client: null, batch: null, drafts: [], lastDropCount: 0, uploading: false };
@@ -71,6 +69,10 @@
           r.error ? 'err' : 'ok');
     });
   });
+  $('authEmail').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') $('authSend').click();
+  });
+
   $('signOut').addEventListener('click', function () {
     db.auth.signOut().then(function () { location.reload(); });
   });
@@ -178,10 +180,15 @@
       name: name,
       logo_url: $('newClientLogo').value.trim() || null,
       passcode: $('newClientPass').value.trim() || null,
+      handle_ig: $('hIg').value.trim() || null,
+      handle_fb: $('hFb').value.trim() || null,
+      handle_tiktok: $('hTt').value.trim() || null,
+      handle_xhs: $('hXhs').value.trim() || null,
       access_token: makeToken()
     }).select().single().then(function (r) {
       if (r.error) { msg('clientMsg', r.error.message, 'err'); return; }
-      ['newClientName','newClientLogo','newClientPass'].forEach(function (i) { $(i).value = ''; });
+      ['newClientName','newClientLogo','newClientPass','hIg','hFb','hTt','hXhs']
+        .forEach(function (i) { $(i).value = ''; });
       $('addClientBox').hidden = true;
       msg('clientMsg', '');
       openClient(r.data);
@@ -199,15 +206,50 @@
     var url = reviewUrl(c);
     $('clientLink').value = url;
     $('openLink').href = url;
-    $('waShare').href = 'https://wa.me/?text=' + encodeURIComponent(
-      'Hi ' + c.name + ', your content is ready for review. You can approve each post or ' +
-      'tell us what to change here: ' + url);
+    $('eIg').value  = c.handle_ig || '';
+    $('eFb').value  = c.handle_fb || '';
+    $('eTt').value  = c.handle_tiktok || '';
+    $('eXhs').value = c.handle_xhs || '';
+    msg('handleMsg', '');
     setUrl();
     loadBatches();
     window.scrollTo(0, 0);
   }
 
   $('backToClients').addEventListener('click', showClients);
+
+  $('saveHandles').addEventListener('click', function () {
+    db.from('clients').update({
+      handle_ig:     $('eIg').value.trim() || null,
+      handle_fb:     $('eFb').value.trim() || null,
+      handle_tiktok: $('eTt').value.trim() || null,
+      handle_xhs:    $('eXhs').value.trim() || null
+    }).eq('id', state.client.id).then(function (r) {
+      if (r.error) { msg('handleMsg', r.error.message, 'err'); return; }
+      state.client.handle_ig = $('eIg').value.trim() || null;
+      state.client.handle_fb = $('eFb').value.trim() || null;
+      state.client.handle_tiktok = $('eTt').value.trim() || null;
+      state.client.handle_xhs = $('eXhs').value.trim() || null;
+      msg('handleMsg', 'Saved. New posts will show these names.', 'ok');
+    });
+  });
+
+  $('resetLink').addEventListener('click', function () {
+    if (!confirm('Reset the review link for ' + state.client.name + '?\n\n' +
+      'The link they have now stops working straight away, and anyone holding it loses ' +
+      'access. You will need to send them the new one.')) return;
+
+    var next = makeToken();
+    db.from('clients').update({ access_token: next }).eq('id', state.client.id)
+      .then(function (r) {
+        if (r.error) { msg('handleMsg', r.error.message, 'err'); return; }
+        state.client.access_token = next;
+        var fresh = reviewUrl(state.client);
+        $('clientLink').value = fresh;
+        $('openLink').href = fresh;
+        msg('handleMsg', 'New link issued. The old one no longer works.', 'ok');
+      });
+  });
 
   $('deleteClient').addEventListener('click', function () {
     var c = state.client;
@@ -386,7 +428,7 @@
       var node = document.createElement(isVideo ? 'video' : 'img');
       var done = function (w, h) {
         URL.revokeObjectURL(url);
-        resolve({ width: w || 0, height: h || 0, isVideo: isVideo });
+        resolve({ width: w || 0, height: h || 0, isVideo: isVideo, mime: file.type || null });
       };
       if (isVideo) {
         node.preload = 'metadata';
@@ -468,6 +510,57 @@
   }
 
   function usingS3() { return Boolean(cfg.s3 && cfg.s3.enabled); }
+
+  function clientHandles() {
+    var c = state.client || {};
+    return {
+      instagram: c.handle_ig, facebook: c.handle_fb,
+      tiktok: c.handle_tiktok, xhs: c.handle_xhs
+    };
+  }
+
+  /* "MP4 · 1080 x 1920", so it is obvious what was actually imported. */
+  /* Carousel order decides which slide Instagram shows first and sizes the
+     whole post, so it has to be changeable when the guess is wrong. */
+  function slidesNode(media, onChange) {
+    var wrap = el2('div', 'slides');
+    media.forEach(function (m, i) {
+      var chip = el2('div', 'slide-chip');
+      chip.innerHTML =
+        (m.type === 'video'
+          ? '<video src="' + m.url + '" muted></video>'
+          : '<img src="' + m.url + '" alt="">') +
+        '<i>' + (i + 1) + '</i>' +
+        '<span class="slide-move">' +
+          '<button type="button" data-d="-1"' + (i === 0 ? ' disabled' : '') + '>&#8249;</button>' +
+          '<button type="button" data-d="1"' + (i === media.length - 1 ? ' disabled' : '') + '>&#8250;</button>' +
+        '</span>';
+      chip.querySelectorAll('button').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var to = i + Number(btn.dataset.d);
+          if (to < 0 || to >= media.length) return;
+          var moved = media.splice(i, 1)[0];
+          media.splice(to, 0, moved);
+          onChange();
+        });
+      });
+      wrap.appendChild(chip);
+    });
+    return wrap;
+  }
+
+  function el2(tag, cls) {
+    var n = document.createElement(tag);
+    n.className = cls;
+    return n;
+  }
+
+  function fileLabel(m) {
+    if (!m) return '';
+    var ext = extFor(m.mime, m.url || '').toUpperCase();
+    var size = m.width && m.height ? m.width + ' x ' + m.height : '';
+    return [ext, size].filter(Boolean).join(' · ');
+  }
 
   /* Files are already in storage by the time they become drafts, so keeping the
      draft list locally means a reload never costs you an upload. */
@@ -576,7 +669,8 @@
         url: url,
         type: info.isVideo ? 'video' : 'image',
         width: info.width || null,
-        height: info.height || null
+        height: info.height || null,
+        mime: info.mime || null
       }],
       caption: '', caption_zh: '', title: '', showZh: false
     });
@@ -594,12 +688,14 @@
       var v = document.createElement('video');
       v.preload = 'metadata';
       v.onloadedmetadata = function () {
-        finish({ width: v.videoWidth, height: v.videoHeight, isVideo: true, ok: v.videoWidth > 0 });
+        finish({ width: v.videoWidth, height: v.videoHeight, isVideo: true,
+                 mime: null, ok: v.videoWidth > 0 });
       };
       v.onerror = function () {
         var i = new Image();
         i.onload = function () {
-          finish({ width: i.naturalWidth, height: i.naturalHeight, isVideo: false, ok: true });
+          finish({ width: i.naturalWidth, height: i.naturalHeight, isVideo: false,
+                   mime: null, ok: true });
         };
         i.onerror = function () { finish({ ok: false }); };
         i.src = url;
@@ -681,10 +777,15 @@
       });
     }).catch(function (e) {
       state.uploading = false;
-      msg('setMsg', e.name === 'AbortError'
-        ? 'Timed out reading that file from Drive.'
-        : 'Could not read that file. ' + e.message +
+      if (e.name === 'AbortError') {
+        msg('setMsg', 'Timed out reading that file from Drive.', 'err');
+      } else if (/uploaded to s3|s3 rejected|could not start/i.test(e.message || '')) {
+        // A storage problem, not a Drive one. Do not muddy it with sharing advice.
+        msg('setMsg', e.message, 'err');
+      } else {
+        msg('setMsg', 'Could not read that file from Drive. ' + e.message +
           ' Check it is shared as Anyone with the link.', 'err');
+      }
     });
   }
 
@@ -707,30 +808,70 @@
     return /^https?:\/\/(?:[a-z0-9-]+\.)*drive\.google\.com\//i.test(String(url).trim());
   }
 
-  /* Pulls the bytes out of Drive and puts them in our own storage. */
-  function copyDriveFile(f) {
-    return driveFetch(DRIVE_API + '/' + f.id + '?alt=media&key=' +
-                      encodeURIComponent(driveKey()), 300000)
+  /* Reads bytes with progress, so a large video does not look like it has hung. */
+  function fetchWithProgress(url, onProgress) {
+    return driveFetch(url, 600000).then(function (r) {
+      if (!r.ok) throw new Error('Drive refused the file (HTTP ' + r.status + ')');
+      var total = Number(r.headers.get('content-length')) || 0;
+      if (!r.body || !total) return r.blob();
+
+      var reader = r.body.getReader();
+      var chunks = [];
+      var got = 0;
+      return (function pump() {
+        return reader.read().then(function (res) {
+          if (res.done) return new Blob(chunks);
+          chunks.push(res.value);
+          got += res.value.length;
+          if (onProgress) onProgress(got / total);
+          return pump();
+        });
+      })();
+    });
+  }
+
+  /* Pulls a Drive file into our own storage. If we have copied this Drive file
+     before, reuse it: re-importing after a mistake should not upload again and
+     pay for a second copy in S3. */
+  function copyDriveFile(f, onProgress) {
+    return db.from('drive_assets')
+      .select('url').eq('client_id', state.client.id).eq('drive_id', f.id).limit(1)
       .then(function (r) {
-        if (!r.ok) throw new Error('Drive refused ' + f.name + ' (HTTP ' + r.status + ')');
-        return r.blob();
+        var hit = (r.data || [])[0];
+        if (hit && hit.url) {
+          if (onProgress) onProgress(1);
+          return { url: hit.url, reused: true };
+        }
+        return fetchWithProgress(
+          DRIVE_API + '/' + f.id + '?alt=media&key=' + encodeURIComponent(driveKey()), onProgress)
+          .then(function (blob) {
+            return storeBlob(blob, extFor(f.mimeType, f.name), f.mimeType)
+              .then(function (url) {
+                // Remember it even if the post is later deleted.
+                db.from('drive_assets').insert({
+                  client_id: state.client.id, drive_id: f.id, url: url,
+                  mime_type: f.mimeType, width: f.width || null, height: f.height || null,
+                  bytes: f.size || null
+                }).then(function () {}, function () {});
+                return { url: url, reused: false };
+              });
+          });
       })
-      .then(function (blob) {
-        return storeBlob(blob, extFor(f.mimeType, f.name), f.mimeType);
-      })
-      .then(function (publicUrl) {
+      .then(function (res) {
         state.drafts.push({
           placement: guessPlacement({ width: f.width, height: f.height, isVideo: f.isVideo }),
           media: [{
-            url: publicUrl,
+            url: res.url,
             type: f.isVideo ? 'video' : 'image',
             width: f.width || null,
             height: f.height || null,
+            mime: f.mimeType || null,
             driveId: f.id
           }],
           caption: '', caption_zh: '', title: '', showZh: false
         });
         renderDrafts();
+        return res;
       });
   }
 
@@ -880,6 +1021,16 @@
     renderDriveFiles();
   });
 
+  function showProgress(label, fraction) {
+    var box = $('driveProgress');
+    if (label === null) { box.hidden = true; return; }
+    box.hidden = false;
+    $('progressLabel').textContent = label;
+    var pct = Math.max(0, Math.min(100, Math.round(fraction * 100)));
+    $('progressPct').textContent = pct + '%';
+    $('progressFill').style.width = pct + '%';
+  }
+
   $('driveImport').addEventListener('click', function () {
     if (!state.batch) { msg('driveMsg', 'Open a content set first.', 'err'); return; }
     var picked = driveFiles.filter(function (f) { return f.pick && !f.done; });
@@ -899,35 +1050,43 @@
 
     state.uploading = true;
     var done = 0;
+    var reused = 0;
+    showProgress('Starting…', 0);
 
     queue.reduce(function (chain, f) {
       return chain.then(function () {
-        if (!toobig.length) {
-          msg('driveMsg', 'Copying ' + (done + 1) + ' of ' + queue.length + ', ' + f.name + '…');
-        }
-        return copyDriveFile(f).then(function () {
+        var label = 'File ' + (done + 1) + ' of ' + queue.length + ' · ' + f.name;
+        showProgress(label, done / queue.length);
+
+        return copyDriveFile(f, function (frac) {
+          showProgress(label, (done + frac) / queue.length);
+        }).then(function (res) {
+          if (res.reused) reused++;
           f.done = true; f.pick = false;
           done++;
+          showProgress(label, done / queue.length);
         });
       });
     }, Promise.resolve())
       .then(function () {
         state.uploading = false;
+        showProgress(null);
         renderDriveFiles();
         if (!toobig.length) {
-          msg('driveMsg', done + ' file' + (done === 1 ? '' : 's') +
-            ' imported. Write the captions below, then click "Add to this set".', 'ok');
+          msg('driveMsg', done + ' file' + (done === 1 ? '' : 's') + ' imported' +
+            (reused ? ', ' + reused + ' already in storage so nothing was uploaded again' : '') +
+            '. Write the captions below, then click "Add to this set".', 'ok');
         }
       })
       .catch(function (e) {
         state.uploading = false;
+        showProgress(null);
         msg('driveMsg', e.name === 'AbortError'
           ? 'Timed out copying a file. Large videos can take a while, try fewer at a time.'
           : e.message, 'err');
       });
   });
 
-  // ---- Drafts -------------------------------------------------------------
   function renderDrafts() {
     saveDrafts();
     var box = $('drafts');
@@ -964,7 +1123,8 @@
         '<div class="draft-body">' +
           '<div class="draft-top">' +
             '<select class="select" data-f="placement">' + opts + '</select>' +
-            '<span class="muted">Detected automatically, change it if we guessed wrong</span>' +
+            '<span class="filetag">' + esc(fileLabel(d.media[0])) + '</span>' +
+            '<span class="muted">Detected automatically, change if wrong</span>' +
             '<button class="linkbtn" data-f="remove" type="button">Remove</button>' +
           '</div>' +
           (isXhs ? '<input class="input" data-f="title" placeholder="Note title 标题" value="' +
@@ -975,6 +1135,15 @@
             ? '<textarea class="textarea" data-f="caption_zh" placeholder="中文文案">' + esc(d.caption_zh) + '</textarea>'
             : '<button class="linkbtn" data-f="addzh" type="button">+ Add Chinese caption</button>') +
         '</div>';
+
+      if (d.media.length > 1) {
+        var body = row.querySelector('.draft-body');
+        var strip = slidesNode(d.media, function () { saveDrafts(); renderDrafts(); });
+        var hint = el2('div', 'slide-hint');
+        hint.textContent = 'Slide 1 is the cover and sets the shape of the whole carousel.';
+        body.insertBefore(strip, body.children[1] || null);
+        body.insertBefore(hint, strip.nextSibling);
+      }
 
       row.querySelector('[data-f="placement"]').addEventListener('change', function (e) {
         d.placement = e.target.value; renderDrafts();
@@ -1055,6 +1224,8 @@
   });
 
   // ---- Saved posts --------------------------------------------------------
+  /* Once a post is in the set it is shown as settled rather than as a form.
+     Editing is deliberate, so a stray click cannot change what a client sees. */
   function loadPosts() {
     db.from('posts').select('*').eq('batch_id', state.batch.id).order('position')
       .then(function (r) {
@@ -1069,37 +1240,115 @@
           .then(function (rev) {
             var latest = {};
             (rev.data || []).forEach(function (x) { if (!latest[x.post_id]) latest[x.post_id] = x; });
-
-            r.data.forEach(function (p) {
-              var review = latest[p.id];
-              var row = document.createElement('div');
-              row.className = 'saved';
-              var m = (p.media || [])[0] || {};
-              row.innerHTML =
-                '<div class="saved-thumb">' +
-                  (m.type === 'video'
-                    ? '<video src="' + m.url + '" muted></video>'
-                    : '<img src="' + (m.url || '') + '" alt="">') + '</div>' +
-                '<div class="saved-body">' +
-                  '<b>' + MK.label(p) + '</b>' +
-                  '<span class="muted">' + esc((p.caption || p.caption_zh || 'No caption').slice(0, 90)) + '</span>' +
-                  (review && review.decision === 'changes' && review.note
-                    ? '<span class="saved-note">' + esc(review.note) + '</span>' : '') +
-                '</div>' +
-                '<span class="badge ' + (review
-                    ? (review.decision === 'approved' ? 'is-ok' : 'is-changes') : '') + '">' +
-                  (review ? (review.decision === 'approved' ? 'Approved' : 'Changes') : 'Pending') +
-                '</span>' +
-                '<button class="linkbtn" type="button">Delete</button>';
-              row.querySelector('button').addEventListener('click', function () {
-                if (!confirm('Delete this post? The client will no longer see it.')) return;
-                db.from('posts').delete().eq('id', p.id).then(function () {
-                  loadPosts(); loadBatches();
-                });
-              });
-              box.appendChild(row);
-            });
+            r.data.forEach(function (p) { box.appendChild(savedRow(p, latest[p.id])); });
           });
       });
+  }
+
+  function savedRow(p, review) {
+    var row = document.createElement('div');
+    row.className = 'saved';
+    var m = (p.media || [])[0] || {};
+
+    function paintRead() {
+      row.classList.remove('is-editing');
+      row.innerHTML =
+        '<div class="saved-thumb">' +
+          (m.type === 'video'
+            ? '<video src="' + m.url + '" muted></video>'
+            : '<img src="' + (m.url || '') + '" alt="">') + '</div>' +
+        '<div class="saved-body">' +
+          '<b>' + MK.label(p) + '</b>' +
+          '<span class="filetag">' + esc(fileLabel(m)) + '</span>' +
+          '<span class="muted">' + esc((p.caption || p.caption_zh || 'No caption').slice(0, 90)) + '</span>' +
+          (review && review.decision === 'changes' && review.note
+            ? '<span class="saved-note">' + esc(review.note) + '</span>' : '') +
+        '</div>' +
+        '<span class="badge ' + (review
+            ? (review.decision === 'approved' ? 'is-ok' : 'is-changes') : '') + '">' +
+          (review ? (review.decision === 'approved' ? 'Approved' : 'Changes') : 'Pending') +
+        '</span>' +
+        '<button class="btn btn-sm" data-a="edit" type="button">Edit</button>' +
+        '<button class="linkbtn is-danger" data-a="del" type="button">Delete</button>';
+
+      row.querySelector('[data-a="edit"]').addEventListener('click', paintEdit);
+      row.querySelector('[data-a="del"]').addEventListener('click', function () {
+        if (!confirm('Delete this post? The client will no longer see it.\n\n' +
+          'The file stays in storage, so re-importing it from Drive will not upload it again.')) return;
+        db.from('posts').delete().eq('id', p.id).then(function () {
+          loadPosts(); loadBatches();
+        });
+      });
+    }
+
+    var editMedia = null;
+
+    function paintEdit() {
+      row.classList.add('is-editing');
+      var current = (p.platform || 'instagram') + ':' + (p.format || 'feed');
+      var opts = PLACEMENTS.map(function (o) {
+        return '<option value="' + o[0] + '"' + (o[0] === current ? ' selected' : '') + '>' +
+          o[1] + '</option>';
+      }).join('');
+
+      row.innerHTML =
+        '<div class="saved-thumb">' +
+          (m.type === 'video'
+            ? '<video src="' + m.url + '" muted></video>'
+            : '<img src="' + (m.url || '') + '" alt="">') + '</div>' +
+        '<div class="saved-body">' +
+          '<div class="draft-top">' +
+            '<select class="select" data-f="placement">' + opts + '</select>' +
+            '<span class="filetag">' + esc(fileLabel(m)) + '</span>' +
+          '</div>' +
+          (current.indexOf('xhs') === 0
+            ? '<input class="input" data-f="title" placeholder="Note title 标题" value="' +
+              esc(p.title || '') + '">' : '') +
+          '<textarea class="textarea" data-f="caption" placeholder="Caption">' +
+            esc(p.caption || '') + '</textarea>' +
+          '<textarea class="textarea" data-f="caption_zh" placeholder="中文文案">' +
+            esc(p.caption_zh || '') + '</textarea>' +
+          '<div class="changebox-actions">' +
+            '<button class="btn btn-sm" data-a="cancel" type="button">Cancel</button>' +
+            '<button class="btn btn-primary btn-sm" data-a="save" type="button">Save changes</button>' +
+          '</div>' +
+        '</div>';
+
+      var mediaCopy = editMedia || JSON.parse(JSON.stringify(p.media || []));
+      editMedia = mediaCopy;
+      if (mediaCopy.length > 1) {
+        var sbody = row.querySelector('.saved-body');
+        var sstrip = slidesNode(mediaCopy, function () { paintEdit(); });
+        sbody.insertBefore(sstrip, sbody.children[1] || null);
+      }
+
+      row.querySelector('[data-a="cancel"]').addEventListener('click', function () {
+        editMedia = null;
+        paintRead();
+      });
+      row.querySelector('[data-a="save"]').addEventListener('click', function () {
+        var parts = row.querySelector('[data-f="placement"]').value.split(':');
+        var titleEl = row.querySelector('[data-f="title"]');
+        var patch = {
+          platform: parts[0],
+          format: parts[1],
+          title: titleEl ? (titleEl.value.trim() || null) : p.title,
+          caption: row.querySelector('[data-f="caption"]').value || null,
+          caption_zh: row.querySelector('[data-f="caption_zh"]').value || null,
+          media: mediaCopy
+        };
+        db.from('posts').update(patch).eq('id', p.id).then(function (res) {
+          if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
+          Object.keys(patch).forEach(function (k) { p[k] = patch[k]; });
+          m = (p.media || [])[0] || {};
+          editMedia = null;
+          paintRead();
+          msg('setMsg', 'Post updated.', 'ok');
+        });
+      });
+    }
+
+    paintRead();
+    return row;
   }
 })();

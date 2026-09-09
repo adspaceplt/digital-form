@@ -49,6 +49,7 @@
     var mkCfg = {
       clientName:   clientMeta.name,
       clientLogo:   clientMeta.logo_url,
+      handles:      clientMeta.handles || {},
       clientHandle: post.handle || clientMeta.name.toLowerCase().replace(/[^a-z0-9]+/g, '')
     };
 
@@ -77,7 +78,22 @@
       if (post.title)      html += '<h5>Title</h5><div class="copytext">' + escapeHtml(post.title) + '</div>';
       if (post.caption)    html += '<h5>Caption</h5><div class="copytext">' + escapeHtml(post.caption) + '</div>';
       if (post.caption_zh) html += '<h5>中文文案</h5><div class="copytext">' + escapeHtml(post.caption_zh) + '</div>';
-      copy.innerHTML = html + '<button class="copy-btn" type="button">Copy caption</button>';
+      copy.innerHTML = html +
+        '<button class="copy-more" type="button" hidden>Show full caption</button>' +
+        '<button class="copy-btn" type="button">Copy caption</button>';
+
+      // Long captions are clamped so cards in a row finish at the same height.
+      var more = copy.querySelector('.copy-more');
+      more.addEventListener('click', function () {
+        var open = copy.classList.toggle('is-open');
+        more.textContent = open ? 'Show less' : 'Show full caption';
+      });
+      requestAnimationFrame(function () {
+        var overflowing = Array.prototype.some.call(
+          copy.querySelectorAll('.copytext'),
+          function (n) { return n.scrollHeight > n.clientHeight + 2; });
+        more.hidden = !overflowing;
+      });
       copy.querySelector('.copy-btn').addEventListener('click', function (e) {
         navigator.clipboard.writeText([post.title, post.caption, post.caption_zh]
           .filter(Boolean).join('\n\n')).then(function () {
@@ -137,10 +153,18 @@
     var buttons = wrap.querySelectorAll('.btn');
     Array.prototype.forEach.call(buttons, function (b) { b.disabled = true; });
 
+    // An approval with nobody's name on it is worth nothing, so this is a hard
+    // stop rather than a prompt that can be dismissed past.
     var reviewer = localStorage.getItem('adspace_reviewer') || '';
     if (!reviewer) {
       reviewer = (window.prompt('Your name, so we know who signed off:') || '').trim();
-      if (reviewer) localStorage.setItem('adspace_reviewer', reviewer);
+      if (!reviewer) {
+        Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
+        wrap.querySelector('.approve-state').textContent =
+          'We need your name before recording this. Nothing has been saved.';
+        return;
+      }
+      localStorage.setItem('adspace_reviewer', reviewer);
     }
 
     API.submitReview({
@@ -175,6 +199,11 @@
     badge.className = 'badge';
     approveBtn.setAttribute('aria-pressed', 'false');
     changesBtn.setAttribute('aria-pressed', 'false');
+    wrap.querySelector('.approve-row').classList.remove('is-settled');
+    changesBtn.hidden = false;
+    approveBtn.hidden = false;
+    approveBtn.disabled = false;
+    approveBtn.textContent = 'Approve';
     var old = wrap.querySelector('.approve-note');
     if (old) old.remove();
 
@@ -188,7 +217,14 @@
       badge.textContent = 'Approved';
       badge.classList.add('is-ok');
       approveBtn.setAttribute('aria-pressed', 'true');
+      // Approved is the end of the road for this post. Hide the other option and
+      // let the button fill the row so the state is unmistakable.
+      wrap.querySelector('.approve-row').classList.add('is-settled');
+      changesBtn.hidden = true;
+      approveBtn.textContent = 'Approved';
+      approveBtn.disabled = true;
       state.innerHTML = 'Approved' + who + ' on ' + when + '.';
+      autoFold(card);
     } else {
       badge.textContent = 'Changes';
       badge.classList.add('is-changes');
@@ -214,19 +250,25 @@
       section.className = 'batch';
       section.dataset.batch = batch.id;
 
-      var head = document.createElement('div');
+      var head = document.createElement('button');
+      head.type = 'button';
       head.className = 'batch-head';
       head.innerHTML =
+        '<span class="fold-caret" aria-hidden="true">&#9662;</span>' +
         '<span class="batch-title">' + escapeHtml(batch.title) + '</span>' +
         '<span class="batch-date">' + fmtDate(batch.created_at) + ' &middot; ' +
-        batch.posts.length + ' post' + (batch.posts.length === 1 ? '' : 's') + '</span>';
+        batch.posts.length + ' post' + (batch.posts.length === 1 ? '' : 's') + '</span>' +
+        '<span class="batch-progress"></span>';
       section.appendChild(head);
+
+      var body = document.createElement('div');
+      body.className = 'batch-body';
 
       if (batch.note) {
         var note = document.createElement('div');
         note.className = 'batch-note';
         note.textContent = batch.note;
-        section.appendChild(note);
+        body.appendChild(note);
       }
 
       var grid = document.createElement('div');
@@ -235,8 +277,20 @@
         formats[MK.key(post)] = MK.label(post);
         grid.appendChild(postCard(post, feed.client));
       });
-      section.appendChild(grid);
+      body.appendChild(grid);
+      section.appendChild(body);
       root.appendChild(section);
+
+      head.addEventListener('click', function () {
+        // A deliberate click always wins over the automatic folding.
+        section.dataset.userSet = '1';
+        section.classList.toggle('is-folded');
+        head.setAttribute('aria-expanded', section.classList.contains('is-folded') ? 'false' : 'true');
+      });
+
+      // A set everyone has already signed off starts folded, so the page opens
+      // on what still needs attention.
+      paintFold(section, true);
     });
 
     var ff = $('formatFilter');
@@ -257,8 +311,33 @@
     bf.addEventListener('change', applyFilters);
     $('filterbar').hidden = false;
     $('qrBtn').hidden = false;
-    $('printBtn').hidden = false;
     applyFilters();
+  }
+
+  /* Counts approvals in a set, updates its header, and folds it once nothing is
+     left to do. initial=true allows folding a set that arrived fully approved. */
+  function paintFold(section, initial) {
+    var cards = section.querySelectorAll('.card');
+    var total = cards.length;
+    var done = section.querySelectorAll('.badge.is-ok').length;
+    var changes = section.querySelectorAll('.badge.is-changes').length;
+
+    var label = done + ' of ' + total + ' approved';
+    if (changes) label += ' · ' + changes + ' with changes';
+    section.querySelector('.batch-progress').textContent = label;
+    section.classList.toggle('is-done', done === total && total > 0);
+
+    var settled = total > 0 && done === total;
+    if (settled && (initial || !section.dataset.userSet)) {
+      section.classList.add('is-folded');
+    }
+    var head = section.querySelector('.batch-head');
+    head.setAttribute('aria-expanded', section.classList.contains('is-folded') ? 'false' : 'true');
+  }
+
+  function autoFold(card) {
+    var section = card.closest('.batch');
+    if (section) paintFold(section, false);
   }
 
   function applyFilters() {
@@ -275,6 +354,7 @@
         if (ok) visibleHere++;
       });
       section.hidden = visibleHere === 0;
+      if (!section.hidden) paintFold(section, false);
       shown += visibleHere;
     });
 
@@ -294,7 +374,6 @@
   $('qrModal').addEventListener('click', function (e) {
     if (e.target === this) this.classList.remove('is-open');
   });
-  $('printBtn').addEventListener('click', function () { window.print(); });
 
   $('passForm').addEventListener('submit', function (e) {
     e.preventDefault();
@@ -306,8 +385,9 @@
   // ---- Load ----------------------------------------------------------------
   function load() {
     if (!token && API.configured) {
-      showState('No review link',
-        'This page needs your personal review link. Please use the link ' + cfg.agencyName + ' sent you.');
+      showState('Content Review Page',
+        'This page opens with your own review link. Please use the link ' +
+        cfg.agencyName + ' sent you, or ask your account manager to resend it.');
       return;
     }
     API.getReviewFeed(token, passcode).then(function (data) {
