@@ -884,11 +884,19 @@ a { color: inherit; }
    Input, work in progress and output are three different things, so they
    stop looking like one undifferentiated wall of card.
    ========================================================================= */
-.setbar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 18px 22px; }
-.setbar-main { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.setbar-main h3 { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+/* The open set is a section heading, not a second card. The selected card
+   above already carries the name, so a white panel repeating it read as a
+   stray dropdown glued to the card row. */
+.setbar {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  margin: 26px 0 18px; padding: 0 2px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.setbar-main { display: flex; align-items: baseline; gap: 10px; min-width: 0; flex-wrap: wrap; }
+.setbar-main h3 { font-size: 17px; font-weight: 600; letter-spacing: -.02em; }
+.setbar-note { color: var(--ink-mute); font-size: 13px; }
 .setbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-.setbar .msg { flex: 1 1 100%; margin-top: 0; }
+.setbar .msg { flex: 1 1 100%; margin-top: 10px; }
 
 .chip {
   font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;

@@ -446,10 +446,12 @@
     $('publishSet').textContent = live ? 'Hide from client' : 'Send to client';
     $('publishSet').className = live ? 'btn btn-warn' : 'btn btn-go';
 
-    msg('setMsg', live
-      ? 'Published. Visible to the client on their review link.'
-      : 'Draft. Not visible to the client.',
-      live ? 'ok' : '');
+    // The standing state belongs beside the title. #setMsg is kept free for
+    // things that just happened, so one does not overwrite the other.
+    $('setNote').textContent = live
+      ? 'Visible to the client on their review link.'
+      : 'Not visible to the client yet.';
+    msg('setMsg', '');
   }
 
   $('publishSet').addEventListener('click', function () {
@@ -479,6 +481,9 @@
         state.client.name + ' — ' + state.batch.title);
       state.batch.published = next;
       paintSetHeader();
+      msg('setMsg', next
+        ? 'Published. The client can now see this set on their review link.'
+        : 'Withdrawn. This set is no longer visible to the client.', next ? 'ok' : '');
       loadBatches();
     });
   }
