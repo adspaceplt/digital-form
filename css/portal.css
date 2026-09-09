@@ -458,6 +458,10 @@ a { color: inherit; }
 .drop span { color: var(--ink-mute); font-size: 13px; }
 .drop:hover, .drop.is-over { border-color: var(--ink); background: #fafafa; }
 
+.linkrow { display: flex; gap: 8px; margin-top: 12px; }
+.linkrow .input { flex: 1; font-size: 13px; }
+.linkrow .btn { flex: 0 0 auto; }
+
 .combinebar {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
   margin-top: 16px; padding: 13px 16px; border-radius: 10px;

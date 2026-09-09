@@ -313,10 +313,25 @@
     if (!files || !files.length) return;
     if (!state.batch) { msg('setMsg', 'Open a content set first.', 'err'); return; }
 
-    var queue = Array.prototype.slice.call(files);
+    var cap = (cfg.maxUploadMB || 50) * 1024 * 1024;
+    var all = Array.prototype.slice.call(files);
+    var queue = all.filter(function (f) { return f.size <= cap; });
+    var toobig = all.filter(function (f) { return f.size > cap; });
+
+    if (toobig.length) {
+      msg('setMsg',
+        toobig.map(function (f) { return f.name + ' (' + mb(f.size) + ' MB)'; }).join(', ') +
+        ' — too big to upload. The limit is ' + (cfg.maxUploadMB || 50) + ' MB. ' +
+        'Export a review copy at 1080p and around 5 Mbps, which is plenty for approval, ' +
+        'or put the file on your own CDN and paste the link below.', 'err');
+      if (!queue.length) return;
+    }
+
     state.lastDropCount = queue.length;
-    msg('setMsg', 'Uploading ' + queue.length + ' file' + (queue.length === 1 ? '' : 's') + '…');
     var done = 0;
+    if (!toobig.length) {
+      msg('setMsg', 'Uploading ' + queue.length + ' file' + (queue.length === 1 ? '' : 's') + '…');
+    }
 
     queue.reduce(function (chain, file) {
       return chain.then(function () {
@@ -328,24 +343,86 @@
             .then(function (r) {
               if (r.error) throw r.error;
               var pub = db.storage.from(cfg.storageBucket).getPublicUrl(path).data.publicUrl;
-              state.drafts.push({
-                placement: guessPlacement(info),
-                media: [{ url: pub, type: info.isVideo ? 'video' : 'image' }],
-                caption: '', caption_zh: '', title: '', showZh: false
-              });
+              pushDraft(pub, info);
               done++;
-              msg('setMsg', 'Uploaded ' + done + ' of ' + queue.length + '…');
-              renderDrafts();
+              if (!toobig.length) msg('setMsg', 'Uploaded ' + done + ' of ' + queue.length + '…');
             });
         });
       });
     }, Promise.resolve())
       .then(function () {
-        msg('setMsg', 'Ready. Add captions below, then click "Add to this set".', 'ok');
+        if (!toobig.length) {
+          msg('setMsg', 'Ready. Add captions below, then click "Add to this set".', 'ok');
+        }
         renderDrafts();
       })
-      .catch(function (e) { msg('setMsg', e.message || 'Upload failed.', 'err'); });
+      .catch(function (e) {
+        var text = e.message || 'Upload failed.';
+        if (/payload|too large|exceeded/i.test(text)) {
+          text = 'That file is over the ' + (cfg.maxUploadMB || 50) +
+            ' MB storage limit. Export a smaller review copy, or paste a link instead.';
+        }
+        msg('setMsg', text, 'err');
+      });
   }
+
+  function mb(bytes) { return (bytes / 1024 / 1024).toFixed(0); }
+
+  function pushDraft(url, info) {
+    state.drafts.push({
+      placement: guessPlacement(info),
+      media: [{ url: url, type: info.isVideo ? 'video' : 'image' }],
+      caption: '', caption_zh: '', title: '', showZh: false
+    });
+    renderDrafts();
+  }
+
+  /* Large videos can live anywhere that serves the file directly, such as
+     mycdn.adspace.me. We read the dimensions off the URL the same way. */
+  function probeUrl(url) {
+    return new Promise(function (resolve) {
+      var settled = false;
+      var finish = function (r) { if (!settled) { settled = true; resolve(r); } };
+      setTimeout(function () { finish({ ok: false }); }, 12000);
+
+      var v = document.createElement('video');
+      v.preload = 'metadata';
+      v.onloadedmetadata = function () {
+        finish({ width: v.videoWidth, height: v.videoHeight, isVideo: true, ok: v.videoWidth > 0 });
+      };
+      v.onerror = function () {
+        var i = new Image();
+        i.onload = function () {
+          finish({ width: i.naturalWidth, height: i.naturalHeight, isVideo: false, ok: true });
+        };
+        i.onerror = function () { finish({ ok: false }); };
+        i.src = url;
+      };
+      v.src = url;
+    });
+  }
+
+  $('addMediaUrl').addEventListener('click', function () {
+    var url = $('mediaUrl').value.trim();
+    if (!url) return;
+    if (!state.batch) { msg('setMsg', 'Open a content set first.', 'err'); return; }
+    if (!/^https:\/\//i.test(url)) {
+      msg('setMsg', 'The link needs to start with https://', 'err');
+      return;
+    }
+    msg('setMsg', 'Checking the link…');
+    probeUrl(url).then(function (info) {
+      if (!info.ok) {
+        msg('setMsg', 'We could not load that link. It has to point straight at the file, ' +
+          'the way https://mycdn.adspace.me/reel.mp4 does. A Google Drive or Dropbox ' +
+          'share page will not work because it returns a web page, not the video.', 'err');
+        return;
+      }
+      pushDraft(url, info);
+      $('mediaUrl').value = '';
+      msg('setMsg', 'Added. Write the caption below, then click "Add to this set".', 'ok');
+    });
+  });
 
   // ---- Drafts -------------------------------------------------------------
   function renderDrafts() {

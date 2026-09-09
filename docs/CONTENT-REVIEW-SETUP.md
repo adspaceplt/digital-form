@@ -109,10 +109,53 @@ the client and send that separately. Both pages carry `noindex`, so they stay ou
 
 - **Approvals are a record, not a lock.** Anyone with the link can approve. It settles
   "we never agreed to this", it is not a legal signature.
-- **Video size.** Supabase free tier gives 1 GB. Compress Reels before uploading. 1080p at
-  a sensible bitrate is plenty for review.
+- **Video size.** See the section below. Supabase caps single uploads at 50 MB on the free
+  plan and that cap cannot be raised on free.
 - **Deleting a post** removes it from the client view but leaves the file in storage.
   Clear those from Dashboard → Storage occasionally.
+
+## Videos over 50 MB
+
+Supabase refuses any single file above **50 MB** on the free plan, and that ceiling cannot
+be lifted without upgrading. Three ways round it, in the order we would try them.
+
+### 1. Export a review copy, not the master
+
+This is the real fix and it is what agencies do anyway. Nobody needs a ProRes master to
+say yes to a Reel. A 30 second vertical video exported properly lands around 15 to 20 MB,
+well inside the limit.
+
+| Setting | Value |
+| --- | --- |
+| Format | H.264 (MP4) |
+| Resolution | 1080 x 1920 |
+| Bitrate | Target 5 Mbps, VBR 1 pass |
+| Audio | AAC, 128 kbps |
+
+In Premiere or Media Encoder, do not use "Match Source High Bitrate", it exports at three
+times what you need. Set the target bitrate by hand. In HandBrake, the "Fast 1080p30"
+preset at RF 24 gets you there in one click. CapCut exports are usually fine already.
+
+Keep the master in your own archive. The portal is for approval, not delivery.
+
+### 2. Paste a link instead of uploading
+
+Under the drop zone there is a field for a video link. Put the file on
+`mycdn.adspace.me` and paste the direct URL. The portal reads the dimensions off the link
+and treats it exactly like an uploaded file. No size limit at all, because the file never
+touches Supabase.
+
+The link has to point straight at the file, the way `https://mycdn.adspace.me/reel.mp4`
+does. A Google Drive or Dropbox share page will not work, those return a web page rather
+than the video itself.
+
+### 3. Upgrade Supabase
+
+The Pro plan (around 25 US dollars a month, check current pricing) lets you raise the
+limit under Dashboard → Storage → Settings and gives you 100 GB of storage. Worth it once
+you are running several clients and the free 1 GB starts filling up. If you do upgrade,
+change `maxUploadMB` in `js/config.js` to match whatever you set there, otherwise the
+portal will keep refusing files at 50 MB.
 
 ## If something goes wrong
 
@@ -136,6 +179,10 @@ copy the link again.
 
 **A client says they see nothing.**
 The set is still a draft. Open it and click **Send to client**.
+
+**A video will not upload.**
+It is over 50 MB. See the section above. Quickest route is to export a review copy at
+1080p and 5 Mbps, or paste a link to the file on your own CDN.
 
 ## What to build next
 
