@@ -125,8 +125,32 @@
 
       <div class="linkrow">
         <input class="input" id="mediaUrl"
-               placeholder="Or paste a video link for anything too big to upload">
+               placeholder="Or paste a link: a Google Drive file or folder, or a direct CDN link">
         <button class="btn" id="addMediaUrl" type="button">Add link</button>
+      </div>
+
+      <div class="drivebox" id="driveBox" hidden>
+        <div class="drivebox-head">
+          <b>Import from Google Drive</b>
+          <span class="muted">Paste the folder your creative team uploaded to. Nothing is
+          downloaded to your machine.</span>
+        </div>
+        <div class="linkrow">
+          <input class="input" id="driveUrl"
+                 placeholder="https://drive.google.com/drive/folders/...">
+          <button class="btn" id="driveLoad" type="button">Load files</button>
+        </div>
+        <div class="msg" id="driveMsg"></div>
+
+        <div id="drivePicker" hidden>
+          <div class="drive-actions">
+            <button class="linkbtn" id="driveAll" type="button">Select all</button>
+            <button class="linkbtn" id="driveNone" type="button">Select none</button>
+            <span class="topbar-spacer"></span>
+            <button class="btn btn-primary" id="driveImport" type="button">Import selected</button>
+          </div>
+          <div class="drive-files" id="driveFiles"></div>
+        </div>
       </div>
 
       <div id="combineBar" class="combinebar" hidden>

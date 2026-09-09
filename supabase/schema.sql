@@ -18,6 +18,9 @@ create table if not exists public.clients (
   created_at    timestamptz not null default now()
 );
 
+-- Remembered Drive folder per client, so next month is one click.
+alter table public.clients add column if not exists drive_folder text;
+
 create table if not exists public.batches (
   id            uuid primary key default gen_random_uuid(),
   client_id     uuid not null references public.clients(id) on delete cascade,
