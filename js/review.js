@@ -83,17 +83,17 @@
       copy.className = 'copyblock';
       var html = '';
       if (post.title)      html += '<h5>Title</h5><div class="copytext">' + escapeHtml(post.title) + '</div>';
-      if (post.caption)    html += '<h5>Caption</h5><div class="copytext">' + escapeHtml(post.caption) + '</div>';
+      if (post.caption)    html += '<h5>Copy</h5><div class="copytext">' + escapeHtml(post.caption) + '</div>';
       if (post.caption_zh) html += '<h5>中文文案</h5><div class="copytext">' + escapeHtml(post.caption_zh) + '</div>';
       copy.innerHTML = html +
-        '<button class="copy-more" type="button" hidden>Show full caption</button>' +
-        '<button class="copy-btn" type="button">Copy caption</button>';
+        '<button class="copy-more" type="button" hidden>Show full copy</button>' +
+        '<button class="copy-btn" type="button">Copy text</button>';
 
       // Long captions are clamped so cards in a row finish at the same height.
       var more = copy.querySelector('.copy-more');
       more.addEventListener('click', function () {
         var open = copy.classList.toggle('is-open');
-        more.textContent = open ? 'Show less' : 'Show full caption';
+        more.textContent = open ? 'Show less' : 'Show full copy';
       });
       requestAnimationFrame(function () {
         var overflowing = Array.prototype.some.call(
@@ -105,7 +105,7 @@
         navigator.clipboard.writeText([post.title, post.caption, post.caption_zh]
           .filter(Boolean).join('\n\n')).then(function () {
             e.target.textContent = 'Copied';
-            setTimeout(function () { e.target.textContent = 'Copy caption'; }, 1600);
+            setTimeout(function () { e.target.textContent = 'Copy text'; }, 1600);
           });
       });
       card.appendChild(copy);
@@ -173,11 +173,11 @@
     // stop rather than a prompt that can be dismissed past.
     var reviewer = localStorage.getItem('adspace_reviewer') || '';
     if (!reviewer) {
-      reviewer = (window.prompt('Your name, so we know who signed off:') || '').trim();
+      reviewer = (window.prompt('Please enter your name to record this decision:') || '').trim();
       if (!reviewer) {
         Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
         wrap.querySelector('.approve-state').textContent =
-          'We need your name before recording this. Nothing has been saved.';
+          'A name is required to record this decision. Nothing has been saved.';
         return;
       }
       localStorage.setItem('adspace_reviewer', reviewer);
@@ -191,8 +191,8 @@
       if (res && res.error) {
         wrap.querySelector('.approve-state').textContent =
           res.error === 'note_required'
-            ? 'Please tell us what needs changing.'
-            : 'Could not save. Refresh and try again.';
+            ? 'Please describe the required changes.'
+            : 'Unable to save. Please refresh and try again.';
         return;
       }
       post.review = {
@@ -202,7 +202,7 @@
       paintDecision(post.review, badge, wrap.closest('.card'));
     }).catch(function () {
       Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
-      wrap.querySelector('.approve-state').textContent = 'Could not save. Check your connection.';
+      wrap.querySelector('.approve-state').textContent = 'Unable to save. Please check your connection.';
     });
   }
 
@@ -401,20 +401,20 @@
   // ---- Load ----------------------------------------------------------------
   function load() {
     if (!token && API.configured) {
-      showState('Open your review link',
-        'Every client has their own link. Use the one ' + cfg.agencyName +
-        ' sent you and your content will be waiting here.');
+      showState('Access your review link',
+        'Each client is issued a unique link. Please use the link provided by ' +
+        cfg.agencyName + ' to access your content.');
       return;
     }
     API.getReviewFeed(token, passcode).then(function (data) {
       if (!data || data.error === 'not_found') {
         showState('This link is no longer active',
-          'It may have been reset. Ask your ' + cfg.agencyName +
-          ' account manager to send you the current one.');
+          'It may have been reset. Please contact your ' + cfg.agencyName +
+          ' account manager to be reissued the current link.');
         return;
       }
       if (data.error === 'passcode_required') {
-        showState('Access code required', 'Enter the access code we sent alongside this link.', true);
+        showState('Access code required', 'Please enter the access code issued alongside this link.', true);
         return;
       }
       feed = data;
@@ -423,15 +423,15 @@
       $('clientName').textContent = feed.client.name;
       document.title = feed.client.name + ' — ADspace Content Review';
       if (!feed.batches.length) {
-        showState('Nothing to review yet',
-          'Your next content set will appear here as soon as it is ready, and we will let ' +
-          'you know when it is.');
+        showState('No content pending review',
+          'Your next content set will appear here once it is ready for review. We will notify ' +
+          'you when it is available.');
         return;
       }
       build();
     }).catch(function (err) {
       console.error(err);
-      showState('Something went wrong', 'Please refresh the page, or contact ' + cfg.supportEmail + '.');
+      showState('Unable to load this page', 'Please refresh the page. If the problem continues, contact ' + cfg.supportEmail + '.');
     });
   }
 

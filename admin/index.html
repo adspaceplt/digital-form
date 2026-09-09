@@ -59,7 +59,7 @@
 
     <div class="panel" id="addClientBox" hidden>
       <h3>New client</h3>
-      <p class="hint">Only the name is required. They get a permanent review link straight away.</p>
+      <p class="hint">Only the client name is required. A permanent review link is issued on creation.</p>
       <div class="row">
         <div>
           <label class="field-label" for="newClientName">Client name</label>
@@ -75,7 +75,7 @@
         </div>
       </div>
 
-      <h4 class="sectionlabel">Account names shown in the mockups</h4>
+      <h4 class="sectionlabel">Account handles shown in previews</h4>
       <div class="row">
         <div>
           <label class="field-label" for="hIg">Instagram</label>
@@ -110,7 +110,7 @@
 
     <section class="panel">
       <div class="viewhead" style="margin:0 0 4px"><h2 id="wsClientName"></h2></div>
-      <p class="hint">Their permanent review link. Send it once, it keeps working.</p>
+      <p class="hint">Permanent review link for this client. Issue once; it remains valid indefinitely.</p>
       <div class="linkbox">
         <input class="input" id="clientLink" readonly>
         <button class="btn btn-primary" id="copyLink" type="button">Copy link</button>
@@ -125,8 +125,8 @@
     </section>
 
     <section class="panel">
-      <h3>Account names</h3>
-      <p class="hint">Shown inside the mockups, so each platform reads as the real account.</p>
+      <h3>Account handles</h3>
+      <p class="hint">Displayed within each platform preview so the post reflects the correct account.</p>
       <div class="row" id="handleRow">
         <div>
           <label class="field-label" for="eIg">Instagram</label>
@@ -144,18 +144,25 @@
           <label class="field-label" for="eXhs">RedNote name</label>
           <input class="input" id="eXhs" placeholder="Name">
         </div>
-        <button class="btn btn-primary" id="saveHandles" type="button">Save names</button>
+        <button class="btn btn-primary" id="saveHandles" type="button">Save handles</button>
       </div>
       <div class="msg" id="handleMsg"></div>
     </section>
 
-    <section class="panel panel-danger">
-      <h3>Careful with these</h3>
-      <p class="hint">Resetting stops the current link working immediately and issues a new
-      one. Deleting removes the client and every set, post and approval under them.</p>
-      <div class="dangerrow">
-        <button class="btn btn-warn" id="resetLink" type="button">Reset permalink</button>
-        <button class="btn btn-danger" id="deleteClient" type="button">Delete client</button>
+    <section class="panel panel-collapse">
+      <button class="disclosure" id="advancedToggle" type="button" aria-expanded="false">
+        <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
+        <span>Account administration</span>
+        <span class="muted">Reset access link, remove client</span>
+      </button>
+      <div class="disclosure-body" id="advancedBody" hidden>
+        <p class="hint">Resetting invalidates the current link immediately and issues a
+        replacement. Removing a client permanently deletes every content set, post and
+        approval record associated with them.</p>
+        <div class="dangerrow">
+          <button class="btn btn-warn" id="resetLink" type="button">Reset access link</button>
+          <button class="btn btn-danger" id="deleteClient" type="button">Remove client</button>
+        </div>
       </div>
     </section>
 
@@ -185,24 +192,23 @@
       <!-- Step 1: where content comes in -->
       <section class="panel zone-in">
         <div class="zone-head">
-          <span class="zone-num">1</span>
           <div>
-            <b>Add content</b>
-            <span class="muted">Drop files, or paste a Google Drive folder, a Drive file,
-            or a direct link.</span>
+            <b>Add creative assets</b>
+            <span class="muted">Upload files directly, or provide a Google Drive folder,
+            Drive file, or direct asset link.</span>
           </div>
         </div>
 
         <div class="drop" id="drop">
-          <b>Drop your graphics and videos here</b>
-          <span>or click to choose files. We work out the format for you.</span>
+          <b>Drag files here to upload</b>
+          <span>Or click to browse. Placement is detected automatically from each file.</span>
         </div>
         <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
 
         <div class="linkrow">
           <input class="input" id="mediaUrl"
-                 placeholder="Paste a Drive folder, a Drive file, or a direct link">
-          <button class="btn btn-primary" id="addMediaUrl" type="button">Add</button>
+                 placeholder="Google Drive folder, Drive file, or direct asset link">
+          <button class="btn btn-primary" id="addMediaUrl" type="button">Add asset</button>
         </div>
         <div class="msg" id="driveMsg"></div>
 
@@ -216,7 +222,7 @@
 
         <div id="drivePicker" hidden>
           <div class="drive-actions">
-            <b class="zone-sub">Choose what to import</b>
+            <b class="zone-sub">Select assets to import</b>
             <button class="btn btn-quiet btn-sm" id="driveAll" type="button">Select all</button>
             <button class="btn btn-quiet btn-sm" id="driveNone" type="button">Select none</button>
             <span class="topbar-spacer"></span>
@@ -231,11 +237,10 @@
       <!-- Step 2: uploaded but not yet part of the set -->
       <section class="panel zone-draft" id="draftZone" hidden>
         <div class="zone-head">
-          <span class="zone-num">2</span>
           <div>
-            <b>Write the captions</b>
-            <span class="muted">These are uploaded but not in the set yet. The client
-            cannot see them.</span>
+            <b>Pending assets</b>
+            <span class="muted">Uploaded but not yet added to this set. Not visible to the
+            client.</span>
           </div>
         </div>
 
@@ -247,18 +252,17 @@
         <div id="drafts"></div>
 
         <div class="zone-actions" id="draftActions" hidden>
-          <button class="btn btn-quiet" id="clearDrafts" type="button">Discard</button>
-          <button class="btn btn-primary" id="saveDrafts" type="button">Add to this set</button>
+          <button class="btn btn-quiet" id="clearDrafts" type="button">Discard all</button>
+          <button class="btn btn-primary" id="saveDrafts" type="button">Add to set</button>
         </div>
       </section>
 
       <!-- Step 3: what is actually in the set -->
       <section class="panel zone-out">
         <div class="zone-head">
-          <span class="zone-num">3</span>
           <div>
-            <b>In this set</b>
-            <span class="muted" id="savedCount">Nothing added yet.</span>
+            <b>Content in this set</b>
+            <span class="muted" id="savedCount">No content added.</span>
           </div>
         </div>
         <div id="postList"></div>

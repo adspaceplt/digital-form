@@ -854,11 +854,6 @@ a { color: inherit; }
 .zone-head > div { display: flex; flex-direction: column; gap: 2px; }
 .zone-head b { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; }
 .zone-head .muted { font-size: 12.5px; }
-.zone-num {
-  flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%;
-  display: grid; place-items: center; font-size: 11.5px; font-weight: 700;
-  background: var(--ink); color: #fff;
-}
 .zone-sub { font-size: 12.5px; font-weight: 600; }
 
 /* Where things come in reads as an input surface */
@@ -868,7 +863,6 @@ a { color: inherit; }
 
 /* Work in progress is warm, so it is obvious it is unfinished */
 .zone-draft { background: #fffaf2; border-color: #f0e2cd; }
-.zone-draft .zone-num { background: var(--warn); }
 .zone-actions {
   display: flex; justify-content: flex-end; gap: 10px; align-items: center;
   margin-top: 18px; padding-top: 16px; border-top: 1px solid #f0e2cd;
@@ -894,4 +888,22 @@ a { color: inherit; }
 @media (max-width: 640px) {
   .setbar-actions { margin-left: 0; width: 100%; }
   .zone-actions { flex-wrap: wrap; }
+}
+
+/* Disclosure for actions that are needed rarely and are hard to undo */
+.panel-collapse { padding: 0; overflow: hidden; }
+.disclosure {
+  width: 100%; text-align: left; border: 0; background: none;
+  display: flex; align-items: center; gap: 10px; padding: 16px 22px;
+  font-size: 14px; font-weight: 600; letter-spacing: -.01em; color: var(--ink-soft);
+}
+.disclosure:hover { color: var(--ink); background: #fafafa; }
+.disclosure .muted { margin-left: auto; font-weight: 400; }
+.disclosure-caret { font-size: 10px; color: var(--ink-mute); transition: transform .18s ease; }
+.disclosure.is-open .disclosure-caret { transform: rotate(90deg); }
+.disclosure-body { padding: 4px 22px 20px; border-top: 1px solid var(--line-soft); }
+.disclosure-body .hint { margin: 14px 0 16px; }
+
+@media (max-width: 640px) {
+  .disclosure .muted { display: none; }
 }
