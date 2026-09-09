@@ -166,10 +166,21 @@
     return h && h.charAt(0) !== '@' ? '@' + h : h;
   }
 
+  /* Which account each placement belongs to. A cover image is shown inside the
+     Reels player, so it carries the Instagram account rather than none. */
+  const HANDLE_KEY = {
+    instagram: 'instagram',
+    facebook:  'facebook',
+    tiktok:    'tiktok',
+    xhs:       'xhs',
+    cover:     'instagram'
+  };
+
   function handleFor(post, cfg) {
     // The account name set on the client comes first. A handle stored on the
     // post is only a fallback, since older posts saved the brand name there.
-    const h = (cfg.handles || {})[post.platform || 'instagram'];
+    const key = HANDLE_KEY[post.platform || 'instagram'] || 'instagram';
+    const h = (cfg.handles || {})[key];
     if (h) return h;
     if (post.handle) return post.handle;
     return cfg.clientHandle || cfg.clientName || '';
