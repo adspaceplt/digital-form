@@ -32,7 +32,8 @@
     ['cover:image',        'Cover image']
   ];
 
-  var state = { client: null, batch: null, drafts: [], lastDropCount: 0, uploading: false };
+  var state = { client: null, batch: null, drafts: [], lastDropCount: 0, uploading: false,
+               storageCheck: null };
 
   // Switching tabs is safe. Closing one mid upload is not, so only warn then.
   window.addEventListener('beforeunload', function (e) {
@@ -582,23 +583,37 @@
     state.lastDropCount = queue.length;
     state.uploading = true;
     var done = 0;
-    if (!toobig.length) {
-      msg('setMsg', 'Uploading ' + queue.length + ' file' + (queue.length === 1 ? '' : 's') + '…');
+    var total = queue.reduce(function (n, f) { return n + f.size; }, 0);
+    var sent = queue.map(function () { return 0; });
+    var word = queue.length === 1 ? 'file' : 'files';
+    if (!toobig.length) msg('setMsg', '');
+    showProgress('Uploading ' + queue.length + ' ' + word + '…', 0);
+
+    function tick() {
+      var n = sent.reduce(function (a, b) { return a + b; }, 0);
+      showProgress('Uploading ' + queue.length + ' ' + word + ' · ' +
+        done + ' of ' + queue.length + ' complete', total ? n / total : 0);
     }
 
-    queue.reduce(function (chain, file) {
-      return chain.then(function () {
-        return probe(file).then(function (info) {
-          return storeFile(file).then(function (publicUrl) {
-            pushDraft(publicUrl, info);
-            done++;
-            if (!toobig.length) msg('setMsg', 'Uploaded ' + done + ' of ' + queue.length + '…');
-          });
+    runPool(queue, function (file, i) {
+      return probe(file).then(function (info) {
+        return storeFile(file, function (frac) {
+          sent[i] = frac * file.size;
+          tick();
+        }).then(function (publicUrl) {
+          sent[i] = file.size;
+          done++;
+          tick();
+          return { url: publicUrl, info: info };
         });
       });
-    }, Promise.resolve())
-      .then(function () {
+    }, 3)
+      .then(function (results) {
         state.uploading = false;
+        showProgress(null);
+        // Added in the order they were chosen, not the order they happened to
+        // finish, so the running order of a set is never a lottery.
+        results.forEach(function (r) { pushDraft(r.url, r.info, true); });
         if (!toobig.length) {
           msg('setMsg', 'Upload complete. Add copy below, then select Add to set.', 'ok');
         }
@@ -606,6 +621,7 @@
       })
       .catch(function (e) {
         state.uploading = false;
+        showProgress(null);
         var text = e.message || 'Upload failed.';
         if (/payload|too large|exceeded/i.test(text)) {
           text = 'That file is over the ' + (cfg.maxUploadMB || 50) +
@@ -658,6 +674,25 @@
       wrap.appendChild(chip);
     });
     return wrap;
+  }
+
+  /* Runs `work` over `items` a few at a time. One upload rarely fills the
+     office line on its own, so several in flight finish the batch far sooner
+     than one after another. Results come back in the original order. */
+  function runPool(items, work, limit) {
+    var out = new Array(items.length);
+    var next = 0;
+    function lane() {
+      if (next >= items.length) return Promise.resolve();
+      var i = next++;
+      return Promise.resolve(work(items[i], i)).then(function (r) {
+        out[i] = r;
+        return lane();
+      });
+    }
+    var lanes = [];
+    for (var i = 0; i < Math.min(limit || 3, items.length); i++) lanes.push(lane());
+    return Promise.all(lanes).then(function () { return out; });
   }
 
   function el2(tag, cls) {
@@ -715,11 +750,36 @@
     return String(mimeType || '').indexOf('video') === 0 ? 'mp4' : 'jpg';
   }
 
-  function storeFile(file) {
-    return storeBlob(file, extFor(file.type, file.name), file.type);
+  function storeFile(file, onProgress) {
+    return storeBlob(file, extFor(file.type, file.name), file.type, onProgress);
   }
 
-  function storeBlob(blob, ext, contentType) {
+  /* fetch() cannot report how much of a body has gone out, so a 40 MB video
+     looks frozen until it lands. XHR can, and it is the same request. */
+  function putToS3(url, blob, contentType, onProgress) {
+    return new Promise(function (resolve, reject) {
+      var xhr = new XMLHttpRequest();
+      xhr.open('PUT', url, true);
+      xhr.setRequestHeader('Content-Type', contentType || 'application/octet-stream');
+      // filenames are random and never reused, so this is safe to cache hard
+      xhr.setRequestHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      if (onProgress) {
+        xhr.upload.onprogress = function (e) {
+          if (e.lengthComputable) onProgress(e.loaded / e.total);
+        };
+      }
+      xhr.onload = function () {
+        if (xhr.status >= 200 && xhr.status < 300) { if (onProgress) onProgress(1); resolve(); }
+        else reject(new Error('S3 rejected the upload (HTTP ' + xhr.status + ').'));
+      };
+      xhr.onerror = function () {
+        reject(new Error('The connection to storage dropped part way through the upload.'));
+      };
+      xhr.send(blob);
+    });
+  }
+
+  function storeBlob(blob, ext, contentType, onProgress) {
     if (!usingS3()) {
       var path = state.client.id + '/' + crypto.randomUUID() + '.' + (ext || 'bin');
       return db.storage.from(cfg.storageBucket)
@@ -746,32 +806,30 @@
       if (!r.data || !r.data.uploadUrl) throw new Error(
         'Upload was refused: ' + ((r.data && r.data.error) || 'unknown reason'));
 
-      return fetch(r.data.uploadUrl, {
-        method: 'PUT',
-        body: blob,
-        headers: {
-          'Content-Type': contentType || 'application/octet-stream',
-          // filenames are random and never reused, so this is safe to cache hard
-          'Cache-Control': 'public, max-age=31536000, immutable'
-        }
-      }).then(function (put) {
-        if (!put.ok) throw new Error('S3 rejected the upload (HTTP ' + put.status + ').');
-
+      return putToS3(r.data.uploadUrl, blob, contentType, onProgress).then(function () {
         // The file is in the bucket, but that does not prove CloudFront serves it
-        // at the URL we are about to save. Check before it becomes a broken post.
-        return probeUrl(r.data.publicUrl).then(function (info) {
-          if (info.ok) return r.data.publicUrl;
-          throw new Error(
-            'Uploaded to S3, but nothing is served at ' + r.data.publicUrl + ' — so the ' +
-            'client would see a broken post. Usually the CloudFront distribution has an ' +
-            'Origin path set, which shifts where files appear. Open that URL in a tab to ' +
-            'confirm, then see docs/S3-UPLOAD-SETUP.md.');
-        });
+        // at the URL we are about to save. What this catches is a misconfigured
+        // distribution, which is the same for every file, so one check a session
+        // is enough. Reading every upload back meant downloading it a second
+        // time. Held as a promise rather than a flag so uploads running side by
+        // side share the one check instead of each starting their own.
+        if (!state.storageCheck) {
+          state.storageCheck = probeUrl(r.data.publicUrl).then(function (info) {
+            if (info.ok) return true;
+            state.storageCheck = null;   // a later upload may be worth retrying
+            throw new Error(
+              'Uploaded to S3, but nothing is served at ' + r.data.publicUrl + ' — so the ' +
+              'client would see a broken post. Usually the CloudFront distribution has an ' +
+              'Origin path set, which shifts where files appear. Open that URL in a tab to ' +
+              'confirm, then see docs/S3-UPLOAD-SETUP.md.');
+          });
+        }
+        return state.storageCheck.then(function () { return r.data.publicUrl; });
       });
     });
   }
 
-  function pushDraft(url, info) {
+  function pushDraft(url, info, quiet) {
     // Store the real pixel size so the client's preview frame matches the file
     // before it has finished loading.
     state.drafts.push({
@@ -785,7 +843,7 @@
       }],
       caption: '', caption_zh: '', title: '', showZh: false
     });
-    renderDrafts();
+    if (!quiet) renderDrafts();
   }
 
   /* Large videos can live anywhere that serves the file directly, such as
@@ -879,7 +937,9 @@
       }
       msg('setMsg', 'Copying ' + f.name + ' from Drive…');
       state.uploading = true;
-      return copyDriveFile(f).then(function () {
+      return copyDriveFile(f).then(function (res) {
+        state.drafts.push(res.draft);
+        renderDrafts();
         state.uploading = false;
         $('mediaUrl').value = '';
         msg('setMsg', f.name + ' imported. Add copy below, then select Add to set.', 'ok');
@@ -951,10 +1011,16 @@
           if (onProgress) onProgress(1);
           return { url: hit.url, reused: true };
         }
+        // A Drive import is two transfers, down from Google and up to storage,
+        // so each leg gets half the bar rather than the bar sticking at full
+        // while the upload is still running.
+        var leg = function (base) {
+          return onProgress ? function (frac) { onProgress(base + frac / 2); } : null;
+        };
         return fetchWithProgress(
-          DRIVE_API + '/' + f.id + '?alt=media&key=' + encodeURIComponent(driveKey()), onProgress)
+          DRIVE_API + '/' + f.id + '?alt=media&key=' + encodeURIComponent(driveKey()), leg(0))
           .then(function (blob) {
-            return storeBlob(blob, extFor(f.mimeType, f.name), f.mimeType)
+            return storeBlob(blob, extFor(f.mimeType, f.name), f.mimeType, leg(0.5))
               .then(function (url) {
                 // Remember it even if the post is later deleted.
                 db.from('drive_assets').insert({
@@ -967,7 +1033,9 @@
           });
       })
       .then(function (res) {
-        state.drafts.push({
+        // The caller adds it, so a batch import can keep the chosen order even
+        // though the copies finish out of order.
+        res.draft = {
           placement: guessPlacement({ width: f.width, height: f.height, isVideo: f.isVideo }),
           media: [{
             url: res.url,
@@ -978,8 +1046,7 @@
             driveId: f.id
           }],
           caption: '', caption_zh: '', title: '', showZh: false
-        });
-        renderDrafts();
+        };
         return res;
       });
   }
@@ -1160,26 +1227,34 @@
     state.uploading = true;
     var done = 0;
     var reused = 0;
+    var total = queue.reduce(function (n, f) { return n + (f.size || 0); }, 0);
+    var moved = queue.map(function () { return 0; });
     showProgress('Preparing…', 0);
 
-    queue.reduce(function (chain, f) {
-      return chain.then(function () {
-        var label = 'File ' + (done + 1) + ' of ' + queue.length + ' · ' + f.name;
-        showProgress(label, done / queue.length);
+    function tick() {
+      var n = moved.reduce(function (a, b) { return a + b; }, 0);
+      showProgress('Importing ' + queue.length + ' file' + (queue.length === 1 ? '' : 's') +
+        ' · ' + done + ' of ' + queue.length + ' complete', total ? n / total : 0);
+    }
 
-        return copyDriveFile(f, function (frac) {
-          showProgress(label, (done + frac) / queue.length);
-        }).then(function (res) {
-          if (res.reused) reused++;
-          f.done = true; f.pick = false;
-          done++;
-          showProgress(label, done / queue.length);
-        });
+    runPool(queue, function (f, i) {
+      return copyDriveFile(f, function (frac) {
+        moved[i] = frac * (f.size || 0);
+        tick();
+      }).then(function (res) {
+        if (res.reused) reused++;
+        f.done = true; f.pick = false;
+        moved[i] = f.size || 0;
+        done++;
+        tick();
+        return res;
       });
-    }, Promise.resolve())
-      .then(function () {
+    }, 3)
+      .then(function (results) {
         state.uploading = false;
         showProgress(null);
+        results.forEach(function (r) { state.drafts.push(r.draft); });
+        renderDrafts();
         renderDriveFiles();
         if (!toobig.length) {
           msg('driveMsg', done + ' file' + (done === 1 ? '' : 's') + ' imported' +
