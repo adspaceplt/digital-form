@@ -102,6 +102,19 @@
     </div>
 
     <div class="cards" id="clientCards"></div>
+
+    <section class="panel panel-collapse" style="margin-top:22px">
+      <button class="disclosure" id="activityToggle" type="button" aria-expanded="false">
+        <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
+        <span>Activity record</span>
+        <span class="muted">Deletions, publishing and link resets</span>
+      </button>
+      <div class="disclosure-body" id="activityBody" hidden>
+        <p class="hint">Actions that remove data or change what a client can see. Routine
+        work such as uploads and edits is not recorded.</p>
+        <div id="activityList"></div>
+      </div>
+    </section>
   </section>
 
   <!-- ============ One client ============ -->

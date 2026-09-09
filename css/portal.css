@@ -907,3 +907,28 @@ a { color: inherit; }
 @media (max-width: 640px) {
   .disclosure .muted { display: none; }
 }
+
+/* Activity record */
+.act {
+  display: grid; align-items: baseline; gap: 4px 14px;
+  grid-template-columns: 170px minmax(0,1fr) auto;
+  padding: 11px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px;
+}
+.act:last-child { border-bottom: 0; }
+.act-tag {
+  font-size: 11px; font-weight: 600; letter-spacing: .03em;
+  padding: 3px 8px; border-radius: 5px; justify-self: start;
+  background: var(--line-soft); color: var(--ink-soft); white-space: nowrap;
+}
+.act-tag.is-danger { background: #fdeceb; color: #8c1d18; }
+.act-tag.is-ok     { background: var(--ok-bg); color: var(--ok); }
+.act-tag.is-warn   { background: var(--warn-bg); color: var(--warn); }
+.act-subject { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.act-when { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.act-detail { grid-column: 2; font-size: 12.5px; }
+.act-who { grid-column: 3; font-size: 12px; }
+
+@media (max-width: 700px) {
+  .act { grid-template-columns: 1fr; }
+  .act-detail, .act-who { grid-column: 1; }
+}

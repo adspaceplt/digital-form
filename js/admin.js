@@ -51,6 +51,19 @@
   }
   function reviewUrl(c) { return location.origin + '/review/?k=' + c.access_token; }
 
+  /* Records the handful of actions that destroy data or change what a client
+     can see. Deliberately fire and forget: a failure to log must never stop
+     the action itself, and this is not a click tracker. */
+  var actor = '';
+  function logAction(action, subject, detail) {
+    db.from('activity_log').insert({
+      actor: actor || 'unknown',
+      action: action,
+      subject: subject || null,
+      detail: detail || null
+    }).then(function () {}, function () {});
+  }
+
   function thisMonth() {
     return new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) + ' Content';
   }
@@ -89,6 +102,7 @@
     $('authPanel').hidden = inApp;
     $('signOut').hidden = !inApp;
     $('whoami').textContent = inApp ? session.user.email : '';
+    actor = inApp ? session.user.email : '';
 
     if (!inApp) {
       entered = false;
@@ -165,6 +179,51 @@
         });
       });
     });
+  }
+
+  var ACTION_LABEL = {
+    'client.removed':        ['Client removed', 'is-danger'],
+    'set.deleted':           ['Content set deleted', 'is-danger'],
+    'post.deleted':          ['Post deleted', 'is-danger'],
+    'set.published':         ['Published to client', 'is-ok'],
+    'set.withdrawn':         ['Withdrawn from client', 'is-warn'],
+    'link.reset':            ['Access link reset', 'is-warn'],
+    'reapproval.requested':  ['Re-approval requested', 'is-warn']
+  };
+
+  $('activityToggle').addEventListener('click', function () {
+    var open = $('activityBody').hidden;
+    $('activityBody').hidden = !open;
+    $('activityToggle').setAttribute('aria-expanded', String(open));
+    $('activityToggle').classList.toggle('is-open', open);
+    if (open) loadActivity();
+  });
+
+  function loadActivity() {
+    var box = $('activityList');
+    box.innerHTML = '<div class="empty">Loading…</div>';
+    db.from('activity_log').select('*')
+      .order('created_at', { ascending: false }).limit(60)
+      .then(function (r) {
+        if (r.error) { box.innerHTML = '<div class="empty">' + esc(r.error.message) + '</div>'; return; }
+        if (!r.data.length) { box.innerHTML = '<div class="empty">No recorded activity.</div>'; return; }
+        box.innerHTML = '';
+        r.data.forEach(function (a) {
+          var meta = ACTION_LABEL[a.action] || [a.action, ''];
+          var row = document.createElement('div');
+          row.className = 'act';
+          row.innerHTML =
+            '<span class="act-tag ' + meta[1] + '">' + esc(meta[0]) + '</span>' +
+            '<span class="act-subject">' + esc(a.subject || '') + '</span>' +
+            '<span class="muted act-detail">' + esc(a.detail || '') + '</span>' +
+            '<span class="muted act-who">' + esc(a.actor || '') + '</span>' +
+            '<span class="muted act-when">' +
+              new Date(a.created_at).toLocaleString('en-GB',
+                { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) +
+            '</span>';
+          box.appendChild(row);
+        });
+      });
   }
 
   $('showAddClient').addEventListener('click', function () {
@@ -253,6 +312,7 @@
     db.from('clients').update({ access_token: next }).eq('id', state.client.id)
       .then(function (r) {
         if (r.error) { msg('handleMsg', r.error.message, 'err'); return; }
+        logAction('link.reset', state.client.name, 'Previous link invalidated');
         state.client.access_token = next;
         var fresh = reviewUrl(state.client);
         $('clientLink').value = fresh;
@@ -274,6 +334,8 @@
 
       db.from('clients').delete().eq('id', c.id).then(function (res) {
         if (res.error) { msg('clientMsg', res.error.message, 'err'); return; }
+        logAction('client.removed', c.name,
+          sets + ' content set' + (sets === 1 ? '' : 's') + ' removed with it');
         showClients();
       });
     });
@@ -393,6 +455,8 @@
   function setPublished(next) {
     db.from('batches').update({ published: next }).eq('id', state.batch.id).then(function (r) {
       if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
+      logAction(next ? 'set.published' : 'set.withdrawn',
+        state.client.name + ' — ' + state.batch.title);
       state.batch.published = next;
       paintSetHeader();
       loadBatches();
@@ -411,6 +475,8 @@
 
       db.from('batches').delete().eq('id', b.id).then(function (res) {
         if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
+        logAction('set.deleted', state.client.name + ' — ' + b.title,
+          n + ' post' + (n === 1 ? '' : 's') + (b.published ? ', was published' : ', was draft'));
         state.batch = null;
         clearDrafts();
         $('setPanel').hidden = true;
@@ -1312,6 +1378,8 @@
           review_reset_note: why
         }).eq('id', p.id).then(function (r) {
           if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
+          logAction('reapproval.requested',
+            state.client.name + ' — ' + MK.label(p), why);
           msg('setMsg', 'Re-approval requested. The client now sees this post as pending, ' +
             'together with your note.', 'ok');
           loadPosts();
@@ -1321,6 +1389,8 @@
         if (!confirm('Delete this post? It will be removed from the client view.\n\n' +
           'The file remains in storage, so re-importing it from Drive will not upload again.')) return;
         db.from('posts').delete().eq('id', p.id).then(function () {
+          logAction('post.deleted',
+            state.client.name + ' — ' + state.batch.title, MK.label(p));
           loadPosts(); loadBatches();
         });
       });

@@ -209,6 +209,22 @@ running the same folder again only brings in what is new.
 Placement is read from Drive's own metadata, so a 9:16 video still lands as Reels without
 downloading anything first.
 
+## Activity record
+
+Under Clients there is an **Activity record**, closed by default. It holds the actions
+that either destroy data or change what a client can see:
+
+- A client removed, a content set deleted, a post deleted
+- A set published to a client, or withdrawn from them
+- An access link reset
+- Re-approval requested on a post the client had already approved
+
+Each entry records who did it and when. Routine work such as uploading, importing and
+editing copy is deliberately not recorded, since a log nobody reads is worse than no log.
+
+The record is kept separately from the content, so deleting a client removes their sets
+and posts but leaves the note that it happened. That is the case it exists for.
+
 ## Bigger files
 
 To lift the 50 MB limit, uploads can go to the ADspace S3 bucket instead of Supabase.
