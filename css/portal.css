@@ -718,24 +718,21 @@ a { color: inherit; }
   .dangerrow { flex-wrap: wrap; }
 }
 
-/* Full screen sign in, so it reads as a way in rather than a stray panel */
+/* Sign in sits in the middle of the page, under the same header as everywhere
+   else. The negative margin cancels the shell's bottom padding so the card
+   centres in the real space below the header rather than sitting high. */
 .signin {
-  position: fixed; inset: 0; z-index: 60;
-  display: flex; align-items: center; justify-content: center; padding: 24px;
-  background:
-    radial-gradient(1100px 520px at 50% -10%, #ffffff 0%, rgba(255,255,255,0) 70%),
-    var(--page);
+  display: flex; align-items: center; justify-content: center;
+  min-height: calc(100vh - 55px); margin-bottom: -96px; padding: 24px 0;
+}
+@supports (height: 100dvh) {
+  .signin { min-height: calc(100dvh - 55px); }
 }
 .signin-card {
   width: 100%; max-width: 380px; background: var(--card);
   border: 1px solid var(--line); border-radius: 18px; padding: 34px 30px 30px;
   box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 18px 50px rgba(0,0,0,.08);
   text-align: left;
-}
-.signin-logo { height: 26px; width: auto; margin-bottom: 26px; }
-.signin-wordmark {
-  display: block; font-size: 17px; font-weight: 700;
-  letter-spacing: -.02em; margin-bottom: 26px;
 }
 .signin-card h2 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; margin-bottom: 6px; }
 .signin-card p { color: var(--ink-mute); font-size: 13.5px; margin-bottom: 24px; }

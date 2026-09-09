@@ -10,12 +10,9 @@
   var $   = function (id) { return document.getElementById(id); };
 
   (function () {
-    [['agencyLogo', 'agencyWordmark'], ['signinLogo', 'signinWordmark']].forEach(function (pair) {
-      var logo = $(pair[0]);
-      if (!logo) return;
-      logo.onerror = function () { logo.hidden = true; $(pair[1]).hidden = false; };
-      logo.src = cfg.brandLogo;
-    });
+    var logo = $('agencyLogo');
+    logo.onerror = function () { logo.hidden = true; $('agencyWordmark').hidden = false; };
+    logo.src = cfg.brandLogo;
   })();
   if (!API.configured || !db) { $('notConfigured').hidden = false; return; }
 
@@ -90,7 +87,6 @@
   function gate(session) {
     var inApp = Boolean(session);
     $('authPanel').hidden = inApp;
-    $('topbar').hidden = !inApp;
     $('signOut').hidden = !inApp;
     $('whoami').textContent = inApp ? session.user.email : '';
 
