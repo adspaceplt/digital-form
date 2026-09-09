@@ -189,6 +189,11 @@ the client list, you were signed out rather than reset.
 It is over 50 MB. See the section above. Quickest route is to export a review copy at
 1080p and 5 Mbps, or paste a link to the file on your own CDN.
 
+## Bigger files
+
+To lift the 50 MB limit, uploads can go to the ADspace S3 bucket instead of Supabase.
+Setup is in `docs/S3-UPLOAD-SETUP.md` and needs nothing installed on your machine.
+
 ## What to build next
 
 In the order it would pay off:

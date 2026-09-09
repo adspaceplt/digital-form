@@ -104,11 +104,50 @@ Without this the browser blocks the upload before it leaves the page.
 
 ## 3. Deploy the signing function
 
-Install the Supabase CLI, then from the repo root:
+Two ways. The first needs nothing installed and is the one to use unless you already work
+from a terminal.
+
+### Option A: from the Supabase dashboard, nothing to install
+
+1. Open the file `supabase/functions/sign-upload/index.ts` on GitHub and copy the whole
+   thing. The **Copy raw file** button at the top right of the file view gets all of it.
+2. Supabase dashboard → **Edge Functions** in the left sidebar → **Create a new function**
+   (or **Deploy a new function** → via the editor, depending on your dashboard version).
+3. Name it exactly **`sign-upload`**. The portal looks for that name.
+4. Delete the sample code in the editor and paste ours in its place.
+5. **Deploy**.
+
+Then the secrets, which are set separately from the code:
+
+6. Still under **Edge Functions**, open **Secrets** (on some dashboards it is
+   **Project Settings → Edge Functions → Secrets**).
+7. Add these six, one at a time:
+
+| Name | Value |
+| --- | --- |
+| `AWS_ACCESS_KEY_ID` | the access key from step 1 |
+| `AWS_SECRET_ACCESS_KEY` | the secret from step 1 |
+| `S3_BUCKET` | `myadspace` |
+| `S3_REGION` | `ap-southeast-5` |
+| `S3_PREFIX` | `content` |
+| `CDN_BASE` | `https://mycdn.adspace.me` |
+
+Do **not** add `SUPABASE_URL` or `SUPABASE_ANON_KEY`. Supabase provides those itself and
+will reject them.
+
+### Option B: from a terminal
+
+Only worth it if you already have the repo cloned. Installing globally through npm is no
+longer supported by Supabase, so use Homebrew on a Mac:
 
 ```bash
-npm install -g supabase
+brew install supabase/tap/supabase
+```
 
+On Windows, `scoop install supabase`. Or run it without installing anything, from inside
+the cloned repo, using `npx supabase ...` in place of `supabase ...` below.
+
+```bash
 supabase login
 supabase link --project-ref YOUR_PROJECT_REF
 
@@ -126,7 +165,8 @@ supabase functions deploy sign-upload
 Your project ref is the subdomain of your Supabase URL. If it is
 `https://abcdefgh.supabase.co` then the ref is `abcdefgh`.
 
-`SUPABASE_URL` and `SUPABASE_ANON_KEY` are provided automatically, do not set them.
+Run these from the root of the cloned repo, so the CLI can find
+`supabase/functions/sign-upload/`.
 
 ## 4. Turn it on
 
@@ -151,7 +191,10 @@ confirm the video plays.
 If the upload fails:
 
 - **"Could not start the upload"** — the function is not deployed, or a secret is missing.
-  Check `supabase functions logs sign-upload`.
+  Dashboard → Edge Functions → `sign-upload` → **Logs** shows why. A missing secret usually
+  appears as an error naming the variable.
+- **"Upload was refused"** — the function ran but declined. `not_signed_in` means the
+  admin session expired, sign in again. `too_large` means the file is over 2 GB.
 - **"S3 rejected the upload"** — usually the CORS rule in step 2, or the IAM policy prefix
   not matching `S3_PREFIX`.
 - **Upload succeeds but the image is broken** — the CloudFront mapping is different from
