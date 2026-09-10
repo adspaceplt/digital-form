@@ -1461,8 +1461,10 @@
         });
         renderDriveFiles();
         var fresh = driveFiles.filter(function (f) { return !f.done; }).length;
-        msg('driveMsg', files.length + ' file' + (files.length === 1 ? '' : 's') + ' found, ' +
-          fresh + ' not imported yet.', 'ok');
+        // Neutral: nothing has happened yet. Green is kept for the import
+        // actually finishing, so it means the same thing everywhere.
+        msg('driveMsg', files.length + ' file' + (files.length === 1 ? '' : 's') + ' found' +
+          (fresh ? ', ' + fresh + ' not imported yet.' : '. All of them are already in storage.'));
       });
     }).catch(function (e) {
       msg('driveMsg', e.name === 'AbortError'
@@ -1479,15 +1481,27 @@
     driveFiles.forEach(function (f, i) {
       var card = document.createElement('label');
       card.className = 'dfile' + (f.done ? ' is-done' : '');
+      // Drive knows the pixel size of an image but often not of a video, and
+      // "size unknown" beside a figure in megabytes read as a contradiction.
+      var spec = [f.width ? f.width + ' x ' + f.height : '', f.size ? mb(f.size) + ' MB' : '']
+        .filter(Boolean).join(' \u00b7 ');
       card.innerHTML =
         '<input type="checkbox"' + (f.pick ? ' checked' : '') + (f.done ? ' disabled' : '') + '>' +
-        '<span class="dfile-img"><img loading="lazy" alt=""></span>' +
+        '<span class="dfile-img"><img loading="lazy" alt="">' +
+          '<i>' + esc(extFor(f.mimeType, f.name).toUpperCase()) + '</i></span>' +
         '<span class="dfile-meta"><b>' + esc(f.name) + '</b>' +
-        '<span class="muted">' + (f.width ? f.width + ' x ' + f.height : 'size unknown') +
-        (f.size ? ' · ' + mb(f.size) + ' MB' : '') +
-        (f.done ? ' · already imported' : '') + '</span></span>';
-      card.querySelector('img').src =
-        'https://drive.google.com/thumbnail?id=' + f.id + '&sz=w400';
+          '<span class="dfile-status status ' +
+            (f.done ? 'status-approved' : 'status-pending') + '">' +
+            '<i class="status-dot"></i>' + (f.done ? 'Imported' : 'Not imported') + '</span>' +
+          (spec ? '<span class="muted">' + spec + '</span>' : '') +
+        '</span>';
+      // Drive has no thumbnail for every file. Fall back to the file type
+      // rather than leaving a browser's broken image icon on screen.
+      var thumb = card.querySelector('img');
+      thumb.addEventListener('error', function () {
+        card.querySelector('.dfile-img').classList.add('is-blank');
+      });
+      thumb.src = 'https://drive.google.com/thumbnail?id=' + f.id + '&sz=w400';
       card.querySelector('input').addEventListener('change', function (e) {
         driveFiles[i].pick = e.target.checked;
       });
