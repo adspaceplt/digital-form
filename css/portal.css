@@ -652,10 +652,10 @@ a { color: inherit; }
 .bigcard.is-on { border-color: var(--ink); }
 .bigcard-top { display: flex; align-items: center; gap: 9px; min-width: 0; }
 /* Same treatment as a profile picture in the previews, so what the team sees
-   here is what the client's audience will see. */
+   here is what the client's audience will see: no ring, no inset, no padding. */
 .bigcard-logo {
   width: 26px; height: 26px; flex: 0 0 auto; border-radius: 50%; overflow: hidden;
-  background: #fff; box-shadow: inset 0 0 0 1px rgba(0,0,0,.1); padding: 1px;
+  background: #fff;
 }
 .bigcard-logo img { width: 100%; height: 100%; object-fit: contain; }
 .bigcard-name {
@@ -1230,11 +1230,16 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
    from a mockup. */
 .logorow { display: flex; align-items: center; gap: 10px; }
 .logorow .input { flex: 1 1 auto; min-width: 0; }
+/* Nothing around this one either. An empty circle still needs an edge to be
+   seen at all, so the checker below supplies it until an address is pasted;
+   once there is an image, the image is all there is. */
 .logopreview {
   width: 38px; height: 38px; flex: 0 0 auto; border-radius: 50%; overflow: hidden;
-  background: var(--line-soft); box-shadow: inset 0 0 0 1px rgba(0,0,0,.1);
-  display: grid; place-items: center; padding: 1px;
+  background: #fff; display: grid; place-items: center;
 }
 .logopreview img { width: 100%; height: 100%; object-fit: contain; }
-.logopreview.is-empty { background: repeating-conic-gradient(#f2f2f2 0 25%, #fff 0 50%) 0 0 / 10px 10px; }
+.logopreview.is-empty {
+  background: repeating-conic-gradient(#f2f2f2 0 25%, #fff 0 50%) 0 0 / 10px 10px;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
+}
 .msg.warn { color: var(--warn); }
