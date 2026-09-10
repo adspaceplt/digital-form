@@ -766,8 +766,13 @@ a { color: inherit; }
 .batch-body { padding-top: 22px; }
 .batch.is-folded .batch-body { display: none; }
 
-/* Equal looking cards: media on top, copy in the middle, buttons pinned down */
+/* Equal looking cards: media on top, copy in the middle, buttons pinned down.
+   Stretching is what lines the approve rows up across a row, but it also means
+   one card growing drags every card beside it with it. So the moment anything
+   in the row is expanded the row goes back to sizing each card to its own
+   content, and only the card that was opened gets taller. */
 .grid { align-items: stretch; }
+.grid.has-open { align-items: start; }
 .card { display: flex; flex-direction: column; }
 .copyblock { flex: 1 1 auto; }
 .approve { margin-top: auto; }

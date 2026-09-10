@@ -423,32 +423,16 @@
   });
 
   /* Deleting a client takes every set, post and approval with it, and two
-     confirm boxes are two reflexes. It now takes something typed: the master
-     code where the agency has set one, otherwise the client's own name. */
-  function deleteGuard(name) {
-    var master = String(cfg.deleteCode || '');
-    if (master) {
-      var given = window.prompt(
-        'Deleting ' + name + ' cannot be undone.\n\n' +
-        'Enter the deletion code to continue:', '');
-      if (given === null) return false;
-      if (given.trim() !== master) {
-        msg('profileMsg', 'That deletion code is not correct. Nothing has been deleted.', 'err');
-        return false;
-      }
-      return true;
-    }
-    var typed = window.prompt(
-      'Deleting ' + name + ' cannot be undone.\n\n' +
-      'Type the client name exactly to confirm:', '');
-    if (typed === null) return false;
-    if (typed.trim() !== name) {
-      msg('profileMsg', 'That does not match the client name. Nothing has been deleted.', 'err');
-      return false;
-    }
-    return true;
-  }
+     confirm boxes are two reflexes. It takes something typed instead.
 
+     The code itself is never in this file. Anything here is served to the
+     browser and readable by anyone who opens the page, so a code kept here
+     would not be a code at all. It lives in the database, behind a table the
+     browser cannot read, and the deletion runs as a function on the server
+     that compares it there. This side only asks the question and passes the
+     answer along; it never learns whether the answer was right until the
+     server says so, and a browser that skipped the question outright would be
+     refused all the same. */
   $('deleteClient').addEventListener('click', function () {
     var c = state.client;
     db.from('batches').select('id').eq('client_id', c.id).then(function (r) {
@@ -457,16 +441,71 @@
         'This removes their review link and ' + sets + ' content set' +
         (sets === 1 ? '' : 's') + ', including every post and approval record.\n\n' +
         'This cannot be reversed.')) return;
-      if (!deleteGuard(c.name)) return;
 
-      db.from('clients').delete().eq('id', c.id).then(function (res) {
+      db.rpc('delete_code_set').then(function (q) {
+        // The function is missing until the current schema has been applied.
+        if (q.error) { legacyDelete(c, sets, q.error); return; }
+        askAndDelete(c, sets, q.data === true);
+      });
+    });
+  });
+
+  function askAndDelete(c, sets, coded) {
+    var answer = window.prompt(
+      'Deleting ' + c.name + ' cannot be undone.\n\n' +
+      (coded ? 'Enter the deletion code to continue:'
+             : 'Type the client name exactly to confirm:'), '');
+    if (answer === null) return;
+    answer = answer.trim();
+
+    if (!coded && answer !== c.name) {
+      msg('profileMsg', 'That does not match the client name. Nothing has been deleted.', 'err');
+      return;
+    }
+
+    db.rpc('delete_client', { p_client: c.id, p_code: coded ? answer : null })
+      .then(function (res) {
         if (res.error) { msg('profileMsg', res.error.message, 'err'); return; }
+        if (res.data === 'wrong-code') {
+          msg('profileMsg', 'That deletion code is not correct. Nothing has been deleted.', 'err');
+          return;
+        }
+        if (res.data === 'not-found') {
+          msg('profileMsg', 'That client no longer exists.', 'err');
+          showClients();
+          return;
+        }
         logAction('client.removed', c.name,
           sets + ' content set' + (sets === 1 ? '' : 's') + ' removed with it');
         showClients();
       });
+  }
+
+  /* A database that has not had the current schema applied yet. Deleting still
+     works, and still asks, but the check is only the one in this browser. Say
+     so rather than implying a protection that is not there. */
+  function legacyDelete(c, sets, why) {
+    if (!/function|does not exist|schema|404/i.test(why.message || '')) {
+      msg('profileMsg', why.message, 'err');
+      return;
+    }
+    var typed = window.prompt(
+      'Deleting ' + c.name + ' cannot be undone.\n\n' +
+      'Type the client name exactly to confirm:', '');
+    if (typed === null) return;
+    if (typed.trim() !== c.name) {
+      msg('profileMsg', 'That does not match the client name. Nothing has been deleted.', 'err');
+      return;
+    }
+    db.from('clients').delete().eq('id', c.id).then(function (res) {
+      if (res.error) { msg('profileMsg', res.error.message, 'err'); return; }
+      logAction('client.removed', c.name,
+        sets + ' content set' + (sets === 1 ? '' : 's') + ' removed with it');
+      showClients();
+      msg('clientMsg', 'Deleted. Run the current supabase/schema.sql to move the ' +
+        'deletion code onto the server, where a browser cannot read it.', 'err');
     });
-  });
+  }
 
   $('copyLink').addEventListener('click', function () {
     navigator.clipboard.writeText($('clientLink').value).then(function () {

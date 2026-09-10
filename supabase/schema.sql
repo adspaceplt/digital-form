@@ -139,6 +139,92 @@ begin
   end loop;
 end $$;
 
+-- Deleting a client takes every set, post and approval with it, so it does not
+-- go through the blanket policy above. The only way through is delete_client
+-- below, which runs as the owner and asks for the code first. Policies are
+-- additive, so the blanket one has to be narrowed rather than sat beside.
+drop policy if exists team_all      on public.clients;
+drop policy if exists clients_read   on public.clients;
+drop policy if exists clients_write  on public.clients;
+drop policy if exists clients_update on public.clients;
+create policy clients_read   on public.clients for select to authenticated using (true);
+create policy clients_write  on public.clients for insert to authenticated with check (true);
+create policy clients_update on public.clients for update to authenticated using (true) with check (true);
+-- deliberately no delete policy: see delete_client
+
+-- ---------------------------------------------------------------------------
+-- Settings the browser must never be handed
+-- ---------------------------------------------------------------------------
+-- The deletion code lived in js/config.js, which is a public file on a public
+-- site: anyone who could open the page could read it. It lives here instead,
+-- behind a policy that grants nobody any access at all. Only a security
+-- definer function, which runs as the table's owner, can read it.
+create table if not exists public.app_secrets (
+  key         text primary key,
+  value       text not null,
+  updated_at  timestamptz not null default now()
+);
+alter table public.app_secrets enable row level security;
+revoke all on public.app_secrets from anon, authenticated;
+drop policy if exists secrets_none on public.app_secrets;
+-- No policy is created. With RLS on and no policy, every direct read and write
+-- is refused, including from a signed in team member's browser console.
+
+-- Set the code with this, run in the SQL editor. Change the text, keep the key:
+--   insert into public.app_secrets (key, value) values ('delete_code', 'your-code-here')
+--   on conflict (key) do update set value = excluded.value, updated_at = now();
+--
+-- Remove it, and deletion asks the person to type the client's name instead:
+--   delete from public.app_secrets where key = 'delete_code';
+
+create or replace function public.delete_client(p_client uuid, p_code text)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  want text;
+  who  text := auth.jwt() ->> 'email';
+begin
+  if who is null then
+    raise exception 'Not signed in';
+  end if;
+
+  select value into want from public.app_secrets where key = 'delete_code';
+
+  -- No code set: the interface asks for the client's name instead, and has
+  -- already checked it. Nothing more to enforce here.
+  if want is not null and want <> '' then
+    if p_code is null or p_code <> want then
+      return 'wrong-code';
+    end if;
+  end if;
+
+  delete from public.clients where id = p_client;
+  if not found then
+    return 'not-found';
+  end if;
+  return 'deleted';
+end $$;
+
+-- Whether a code is set at all is not a secret, and the interface needs to know
+-- which question to ask before it asks it.
+create or replace function public.delete_code_set()
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1 from public.app_secrets where key = 'delete_code' and value <> '');
+$$;
+
+revoke all on function public.delete_client(uuid, text) from anon;
+revoke all on function public.delete_code_set() from anon;
+grant execute on function public.delete_client(uuid, text) to authenticated;
+grant execute on function public.delete_code_set() to authenticated;
+
 -- The activity record is deliberately not covered by the blanket policy above.
 -- Anyone signed in can write to it, since every logged action is theirs to
 -- take, but reading it back is restricted to the listed addresses.
