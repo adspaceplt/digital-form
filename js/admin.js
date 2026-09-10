@@ -103,6 +103,8 @@
 
   function gate(session) {
     var inApp = Boolean(session);
+    // The sign in form is the whole page, so the page is white to the edges.
+    document.body.classList.toggle('is-plain', !inApp);
     $('authPanel').hidden = inApp;
     $('signOut').hidden = !inApp;
     $('whoami').textContent = inApp ? session.user.email : '';
@@ -1692,6 +1694,31 @@
       });
   }
 
+  var ICON = {
+    pencil: '<path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/>',
+    trash:  '<path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/>' +
+            '<path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/>',
+    redo:   '<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v4h-4"/>'
+  };
+
+  /* A round mark with the action named for anyone who cannot see the shape. */
+  function iconBtn(name, action, label, tone) {
+    return '<button class="iconbtn' + (tone ? ' ' + tone : '') + '" data-a="' + action +
+      '" type="button" title="' + label + '" aria-label="' + label + '">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" ' +
+      'stroke-linejoin="round" aria-hidden="true">' + ICON[name] + '</svg></button>';
+  }
+
+  /* Pending, approved, changes requested. The dot is what you scan for; the
+     word is what makes it mean something. */
+  function statusMark(review) {
+    var kind = !review ? 'pending'
+             : review.decision === 'approved' ? 'approved' : 'changes';
+    var word = kind === 'pending' ? 'Pending'
+             : kind === 'approved' ? 'Approved' : 'Changes requested';
+    return '<span class="status status-' + kind + '"><i class="dot"></i>' + word + '</span>';
+  }
+
   function savedRow(p, review) {
     var row = document.createElement('div');
     row.className = 'saved';
@@ -1706,28 +1733,27 @@
             : '<img src="' + (m.url || '') + '" alt="">') + '</div>' +
         '<div class="saved-body">' +
           '<b>' + MK.label(p) + '</b>' +
-          '<span class="saved-meta">' +
-            '<span class="filetag">' + esc(fileLabel(m)) + '</span>' +
-            '<span class="badge ' + (review
-                ? (review.decision === 'approved' ? 'is-ok' : 'is-changes') : '') + '">' +
-              (review ? (review.decision === 'approved' ? 'Approved' : 'Changes') : 'Pending') +
-            '</span>' +
+          '<span class="saved-meta">' + statusMark(review) +
+            '<span class="sep">&middot;</span>' +
+            '<span class="spec">' + esc(fileLabel(m)) + '</span>' +
           '</span>' +
-          '<span class="muted">' + esc((p.caption || p.caption_zh || 'No caption').slice(0, 90)) + '</span>' +
+          // A post with no copy yet says nothing rather than saying "No caption".
+          ((p.caption || p.caption_zh)
+            ? '<span class="muted">' + esc((p.caption || p.caption_zh).slice(0, 90)) + '</span>'
+            : '') +
           (review && review.decision === 'changes' && review.note
             ? '<span class="saved-note">' + esc(review.note) + '</span>' : '') +
           (p.review_reset_note
             ? '<span class="saved-note is-warn">Sent back: ' + esc(p.review_reset_note) + '</span>'
             : '') +
         '</div>' +
-        // The buttons travel together, so a narrow column drops the whole group
-        // to its own line instead of squeezing the text under them.
+        // Two marks, not two words. Secondary actions should not outweigh the
+        // name of the placement they belong to.
         '<div class="saved-actions">' +
           (review && review.decision === 'approved'
-            ? '<button class="btn btn-warn btn-sm" data-a="reask" type="button">Request re-approval</button>'
-            : '') +
-          '<button class="btn btn-sm" data-a="edit" type="button">Edit</button>' +
-          '<button class="btn btn-quiet btn-sm is-danger" data-a="del" type="button">Delete</button>' +
+            ? iconBtn('redo', 'reask', 'Request re-approval', 'is-warn') : '') +
+          iconBtn('pencil', 'edit', 'Edit post') +
+          iconBtn('trash', 'del', 'Delete post', 'is-danger') +
         '</div>';
 
       row.querySelector('[data-a="edit"]').addEventListener('click', paintEdit);

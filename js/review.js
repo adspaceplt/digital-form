@@ -30,6 +30,9 @@
     $('filterbar').hidden = true;
     $('qrBtn').hidden = true;
     $('cover').hidden = false;
+    // Nothing but a notice, so the page is white to the edges rather than a
+    // white panel sitting on grey.
+    document.body.classList.add('is-plain');
     $('coverTitle').textContent = title;
     $('coverBody').textContent = body;
     $('passForm').hidden = !wantsPass;
@@ -348,7 +351,9 @@
     var approveBtn = wrap.querySelector('.btn-approve');
     var changesBtn = wrap.querySelector('.btn-changes');
 
-    badge.className = 'badge';
+    badge.className = 'badge status status-pending';
+    badge.innerHTML = '<i class="dot"></i><span></span>';
+    var badgeWord = badge.querySelector('span');
     approveBtn.setAttribute('aria-pressed', 'false');
     changesBtn.setAttribute('aria-pressed', 'false');
     wrap.querySelector('.approve-row').classList.remove('is-settled');
@@ -359,15 +364,15 @@
     var old = wrap.querySelector('.approve-note');
     if (old) old.remove();
 
-    if (!review) { badge.textContent = 'Pending'; state.textContent = ''; return; }
+    if (!review) { badgeWord.textContent = 'Pending'; state.textContent = ''; return; }
 
     var who  = review.reviewer ? ' by <b>' + escapeHtml(review.reviewer) + '</b>' : '';
     var when = new Date(review.created_at).toLocaleString('en-GB',
       { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
     if (review.decision === 'approved') {
-      badge.textContent = 'Approved';
-      badge.classList.add('is-ok');
+      badgeWord.textContent = 'Approved';
+      badge.className = 'badge status status-approved is-ok';
       approveBtn.setAttribute('aria-pressed', 'true');
       // Approved is the end of the road for this post. Hide the other option and
       // let the button fill the row so the state is unmistakable.
@@ -378,8 +383,8 @@
       state.innerHTML = 'Approved' + who + ' on ' + when + '.';
       autoFold(card);
     } else {
-      badge.textContent = 'Changes';
-      badge.classList.add('is-changes');
+      badgeWord.textContent = 'Changes requested';
+      badge.className = 'badge status status-changes is-changes';
       changesBtn.setAttribute('aria-pressed', 'true');
       state.innerHTML = 'Changes requested' + who + ' on ' + when + '.';
       if (review.note) {
@@ -393,6 +398,7 @@
 
   // ---- Build ---------------------------------------------------------------
   function build() {
+    document.body.classList.remove('is-plain');
     var root = $('content');
     root.innerHTML = '';
     var formats = {};
