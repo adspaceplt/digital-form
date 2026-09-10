@@ -714,10 +714,20 @@ a { color: inherit; }
 .dfile.is-done { opacity: .55; cursor: default; }
 .dfile input { flex: 0 0 auto; margin: 0; }
 .dfile-img {
+  position: relative;
   flex: 0 0 40px; height: 50px; border-radius: 6px; overflow: hidden;
   background: var(--line-soft);
 }
 .dfile-img img { width: 100%; height: 100%; object-fit: cover; }
+/* No thumbnail from Drive: show what the file is instead of a broken icon. */
+.dfile-img i {
+  position: absolute; inset: 0; display: none; place-items: center;
+  font-style: normal; font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  color: var(--ink-mute); background: var(--line-soft);
+}
+.dfile-img.is-blank img { display: none; }
+.dfile-img.is-blank i { display: grid; }
+.dfile-status { font-size: 11.5px; }
 .dfile-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .dfile-meta b {
   font-size: 12.5px; font-weight: 600; overflow: hidden;
