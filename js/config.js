@@ -27,8 +27,21 @@ window.ADSPACE_CONFIG = {
     enabled: true,
     functionName: 'sign-upload'
   },
-  // Google Drive import. Key from Google Cloud Console, restricted to this
-  // site and to the Drive API. Blank hides the Drive section in admin.
+  /* Google Drive import.
+
+     This one is meant to be here. It is a browser key: the browser is what
+     calls Google, so the key travels with the request whatever we do with it.
+     Moving it into the database would only mean reading it from the network
+     tab instead of from this file.
+
+     What keeps it safe is restriction, not hiding, and both are set in the
+     Google Cloud Console under Credentials:
+       Application restrictions  Websites, listing digital.adspace.me/*
+       API restrictions          Google Drive API only
+     So restricted, the key is useless to anyone who copies it off this page.
+     Check those two settings before treating it as safe.
+
+     Blank hides the Drive section in admin. */
   googleApiKey: 'AIzaSyDKzn17TE3wimfU-nKlikwKta4pi8RKtNc',
 
   brandLogo: 'https://mycdn.adspace.me/adspace-brandname.png',
@@ -38,8 +51,9 @@ window.ADSPACE_CONFIG = {
   // Reply-to on anything the portal sends on the team's behalf.
   accountEmail: 'marketing@adspacestudios.com'
 
-  // No secrets belong in this file. It is served to the browser on a public
-  // site, so anything here can be read by anyone who opens the page. The
-  // deletion code lives in the database instead; supabase/schema.sql says how
-  // to set it.
+  /* No secret belongs in this file. It is served to the browser on a public
+     site, so anything here can be read by anyone who opens the page. The
+     deletion code lives in the database instead; supabase/schema.sql says how
+     to set it. The Supabase anon key and the Google key above are not secrets:
+     both are meant to be public and are held back by their own restrictions. */
 };

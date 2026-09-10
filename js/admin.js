@@ -217,8 +217,15 @@
         var card = document.createElement('button');
         card.className = 'bigcard';
         card.type = 'button';
+        // The mark, where there is one, so it is obvious at a glance that the
+        // address saved and that it actually loads.
         card.innerHTML =
-          '<span class="bigcard-name">' + esc(c.name) + '</span>' +
+          '<span class="bigcard-top">' +
+            (c.logo_url
+              ? '<span class="bigcard-logo"><img src="' + esc(c.logo_url) + '" alt=""></span>'
+              : '') +
+            '<span class="bigcard-name">' + esc(c.name) + '</span>' +
+          '</span>' +
           '<span class="bigcard-sub" data-role="sub">Loading…</span>' +
           (c.passcode ? '<span class="bigcard-tag">Access code on</span>' : '');
         card.addEventListener('click', function () { openClient(c); });
@@ -339,6 +346,7 @@
     $('eTt').value  = c.handle_tiktok || '';
     $('eXhs').value = c.handle_xhs || '';
     $('eLogo').value = c.logo_url || '';
+    paintLogo();
     $('ePass').value = c.passcode || '';
     paintLock();
     msg('handleMsg', '');
@@ -374,6 +382,47 @@
       state.client.handle_xhs = $('eXhs').value.trim() || null;
       msg('handleMsg', 'Saved. Applied to every preview.', 'ok');
     });
+  });
+
+  /* Shows the address as a circle, the way every platform will, and says so
+     when the file is not square. Nothing is ever skewed: a wide mark either
+     loses its ends to a crop or sits small inside the circle, and neither is
+     what the client's real profile looks like. The fix is a square file, so
+     the tool asks for one here rather than letting a mockup deliver the news. */
+  var logoTimer = null;
+  function paintLogo() {
+    var url = $('eLogo').value.trim();
+    var box = $('logoPreview');
+    var img = $('logoPreviewImg');
+    box.classList.toggle('is-empty', !url);
+    if (!url) { img.hidden = true; img.removeAttribute('src'); msg('logoNote', ''); return; }
+    if (!/^https:\/\//i.test(url)) { img.hidden = true; msg('logoNote', ''); return; }
+
+    var probe = new Image();
+    probe.onload = function () {
+      img.src = url;
+      img.hidden = false;
+      var w = probe.naturalWidth, h = probe.naturalHeight;
+      var square = w && h && Math.abs(w - h) / Math.max(w, h) < 0.02;
+      if (square) {
+        msg('logoNote', w + ' x ' + h + '. Square, so it fills the circle exactly.', 'ok');
+      } else {
+        msg('logoNote', w + ' x ' + h + '. A profile picture is square on every ' +
+          'platform, so a ' + (w > h ? 'wide' : 'tall') + ' mark sits small inside the circle ' +
+          'with space around it. A square version of the same file will read properly.', 'warn');
+      }
+    };
+    probe.onerror = function () {
+      img.hidden = true;
+      msg('logoNote', 'Nothing loaded from that address. Open it in a tab to check it is ' +
+        'the file itself and not a page about it.', 'err');
+    };
+    probe.src = url;
+  }
+
+  $('eLogo').addEventListener('input', function () {
+    clearTimeout(logoTimer);
+    logoTimer = setTimeout(paintLogo, 400);
   });
 
   /* Whether the link needs a code is worth seeing without opening the drawer. */
@@ -1716,7 +1765,7 @@
              : review.decision === 'approved' ? 'approved' : 'changes';
     var word = kind === 'pending' ? 'Pending'
              : kind === 'approved' ? 'Approved' : 'Changes requested';
-    return '<span class="status status-' + kind + '"><i class="dot"></i>' + word + '</span>';
+    return '<span class="status status-' + kind + '"><i class="status-dot"></i>' + word + '</span>';
   }
 
   function savedRow(p, review) {

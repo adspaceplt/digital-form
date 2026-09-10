@@ -5,7 +5,10 @@
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Content Review Internal</title>
-<link rel="icon" href="https://adspacestudios.com/favicon.ico">
+<!-- The ADspace mark, so a pinned tab reads as ADspace. Served from our own
+     CDN rather than the website builder's, so a site rebuild cannot break it. -->
+<link rel="icon" type="image/png" href="https://mycdn.adspace.me/ADspace.png">
+<link rel="apple-touch-icon" href="https://mycdn.adspace.me/ADspace.png">
 <link rel="stylesheet" href="/css/portal.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/js/config.js"></script>
@@ -163,7 +166,12 @@
           <div class="row">
             <div>
               <label class="field-label" for="eLogo">Logo URL</label>
-              <input class="input" id="eLogo" placeholder="https://… shown as the profile picture">
+              <div class="logorow">
+                <span class="logopreview" id="logoPreview" title="How it will look as a profile picture">
+                  <img id="logoPreviewImg" alt="" hidden>
+                </span>
+                <input class="input" id="eLogo" placeholder="https://… shown as the profile picture">
+              </div>
             </div>
             <div style="flex:0 0 190px">
               <label class="field-label" for="ePass">Access code</label>
@@ -171,6 +179,7 @@
             </div>
             <button class="btn btn-primary" id="saveProfile" type="button">Save</button>
           </div>
+          <div class="msg" id="logoNote"></div>
           <div class="msg" id="profileMsg"></div>
         </div>
 
