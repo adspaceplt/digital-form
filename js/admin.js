@@ -119,6 +119,48 @@
     restoreView();
   }
 
+  /* A tab that has been in the background long enough is thrown away by the
+     browser and rebuilt from scratch when you return. The address bar already
+     carries the client and the set; this carries how far down the page you
+     were, so coming back lands where you left rather than at the top. */
+  var PLACE = 'adspace.place';
+  var pendingScroll = 0;
+
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+  var scrollTimer = null;
+  window.addEventListener('scroll', function () {
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(function () {
+      if (!state.client) return;
+      try {
+        sessionStorage.setItem(PLACE, JSON.stringify({
+          client: state.client.id,
+          set: state.batch ? state.batch.id : null,
+          y: Math.round(window.scrollY),
+          drawer: !$('advancedBody').hidden
+        }));
+      } catch (e) { /* private browsing */ }
+    }, 180);
+  }, { passive: true });
+
+  function readPlace() {
+    try { return JSON.parse(sessionStorage.getItem(PLACE) || 'null'); }
+    catch (e) { return null; }
+  }
+
+  /* Called once the lists that make the page tall have rendered, so the
+     position it scrolls to actually exists. */
+  function settleScroll() {
+    if (!pendingScroll) return;
+    var y = pendingScroll;
+    requestAnimationFrame(function () {
+      window.scrollTo(0, y);
+      // A second pass after images size themselves, which is what moves things.
+      setTimeout(function () { if (pendingScroll) { window.scrollTo(0, y); pendingScroll = 0; } }, 260);
+    });
+  }
+
   // 2. The address bar remembers the client and set you are working on, so a
   //    reload or a reopened tab lands back in the same place.
   function setUrl() {
@@ -134,9 +176,14 @@
     var setId = params.get('set');
     if (!clientId) { showClients(); return; }
 
+    var place = readPlace();
+    var samePlace = place && place.client === clientId;
+    if (samePlace) pendingScroll = place.y || 0;
+
     db.from('clients').select('*').eq('id', clientId).single().then(function (r) {
       if (r.error || !r.data) { showClients(); return; }
       openClient(r.data);
+      if (samePlace && place.drawer) openDrawer(true);
       if (!setId) return;
       db.from('batches').select('*').eq('id', setId).single().then(function (bt) {
         if (!bt.error && bt.data) openBatch(bt.data, true);
@@ -161,6 +208,7 @@
       if (r.error) { msg('clientMsg', r.error.message, 'err'); return; }
       if (!r.data.length) {
         box.innerHTML = '<div class="empty">No clients yet. Add your first one above.</div>';
+        settleScroll();
         return;
       }
       r.data.forEach(function (c) {
@@ -183,6 +231,7 @@
             ' · ' + live + ' published';
         });
       });
+      settleScroll();
     });
   }
 
@@ -260,14 +309,10 @@
       name: name,
       logo_url: $('newClientLogo').value.trim() || null,
       passcode: $('newClientPass').value.trim() || null,
-      handle_ig: $('hIg').value.trim() || null,
-      handle_fb: $('hFb').value.trim() || null,
-      handle_tiktok: $('hTt').value.trim() || null,
-      handle_xhs: $('hXhs').value.trim() || null,
       access_token: makeToken()
     }).select().single().then(function (r) {
       if (r.error) { msg('clientMsg', r.error.message, 'err'); return; }
-      ['newClientName','newClientLogo','newClientPass','hIg','hFb','hTt','hXhs']
+      ['newClientName','newClientLogo','newClientPass']
         .forEach(function (i) { $(i).value = ''; });
       $('addClientBox').hidden = true;
       msg('clientMsg', '');
@@ -286,26 +331,31 @@
     var url = reviewUrl(c);
     $('clientLink').value = url;
     $('openLink').href = url;
-    $('advancedBody').hidden = true;
-    $('advancedToggle').setAttribute('aria-expanded', 'false');
-    $('advancedToggle').classList.remove('is-open');
+    openDrawer(false);
     $('eIg').value  = c.handle_ig || '';
     $('eFb').value  = c.handle_fb || '';
     $('eTt').value  = c.handle_tiktok || '';
     $('eXhs').value = c.handle_xhs || '';
+    $('eLogo').value = c.logo_url || '';
+    $('ePass').value = c.passcode || '';
+    paintLock();
     msg('handleMsg', '');
+    msg('profileMsg', '');
     setUrl();
     loadBatches();
-    window.scrollTo(0, 0);
+    if (!pendingScroll) window.scrollTo(0, 0);
   }
 
   $('backToClients').addEventListener('click', showClients);
 
-  $('advancedToggle').addEventListener('click', function () {
-    var open = $('advancedBody').hidden;
+  function openDrawer(open) {
     $('advancedBody').hidden = !open;
     $('advancedToggle').setAttribute('aria-expanded', String(open));
     $('advancedToggle').classList.toggle('is-open', open);
+  }
+
+  $('advancedToggle').addEventListener('click', function () {
+    openDrawer($('advancedBody').hidden);
   });
 
   $('saveHandles').addEventListener('click', function () {
@@ -320,8 +370,38 @@
       state.client.handle_fb = $('eFb').value.trim() || null;
       state.client.handle_tiktok = $('eTt').value.trim() || null;
       state.client.handle_xhs = $('eXhs').value.trim() || null;
-      msg('handleMsg', 'Handles saved. Applied to all previews.', 'ok');
+      msg('handleMsg', 'Saved. Applied to every preview.', 'ok');
     });
+  });
+
+  /* Whether the link needs a code is worth seeing without opening the drawer. */
+  function paintLock() {
+    $('wsLock').hidden = !state.client.passcode;
+  }
+
+  /* Logo and access code were set once at creation and then stuck. Both are
+     editable here, and clearing either field removes it. */
+  $('saveProfile').addEventListener('click', function () {
+    var logo = $('eLogo').value.trim();
+    var pass = $('ePass').value.trim();
+    if (logo && !/^https:\/\//i.test(logo)) {
+      msg('profileMsg', 'The logo address needs to start with https://', 'err');
+      return;
+    }
+    var had = Boolean(state.client.passcode);
+    db.from('clients').update({ logo_url: logo || null, passcode: pass || null })
+      .eq('id', state.client.id).then(function (r) {
+        if (r.error) { msg('profileMsg', r.error.message, 'err'); return; }
+        state.client.logo_url = logo || null;
+        state.client.passcode = pass || null;
+        paintLock();
+        var note = !had && pass ? 'Access code added. The client will be asked for it.'
+                 : had && !pass ? 'Access code removed. The link now opens on its own.'
+                 : had && pass  ? 'Access code updated. The previous one no longer works.'
+                 : 'Saved.';
+        msg('profileMsg', note, 'ok');
+        if (!had && !pass) msg('profileMsg', logo ? 'Logo saved.' : 'Saved.', 'ok');
+      });
   });
 
   $('resetLink').addEventListener('click', function () {
@@ -342,25 +422,90 @@
       });
   });
 
+  /* Deleting a client takes every set, post and approval with it, and two
+     confirm boxes are two reflexes. It takes something typed instead.
+
+     The code itself is never in this file. Anything here is served to the
+     browser and readable by anyone who opens the page, so a code kept here
+     would not be a code at all. It lives in the database, behind a table the
+     browser cannot read, and the deletion runs as a function on the server
+     that compares it there. This side only asks the question and passes the
+     answer along; it never learns whether the answer was right until the
+     server says so, and a browser that skipped the question outright would be
+     refused all the same. */
   $('deleteClient').addEventListener('click', function () {
     var c = state.client;
     db.from('batches').select('id').eq('client_id', c.id).then(function (r) {
       var sets = (r.data || []).length;
-      var warning = 'Permanently remove ' + c.name + '?\n\n' +
-        'This deletes their review link and ' + sets + ' content set' +
+      if (!confirm('Delete ' + c.name + '?\n\n' +
+        'This removes their review link and ' + sets + ' content set' +
         (sets === 1 ? '' : 's') + ', including every post and approval record.\n\n' +
-        'This action cannot be reversed.';
-      if (!confirm(warning)) return;
-      if (!confirm('Please confirm. Removing ' + c.name + ' cannot be undone.')) return;
+        'This cannot be reversed.')) return;
 
-      db.from('clients').delete().eq('id', c.id).then(function (res) {
-        if (res.error) { msg('clientMsg', res.error.message, 'err'); return; }
+      db.rpc('delete_code_set').then(function (q) {
+        // The function is missing until the current schema has been applied.
+        if (q.error) { legacyDelete(c, sets, q.error); return; }
+        askAndDelete(c, sets, q.data === true);
+      });
+    });
+  });
+
+  function askAndDelete(c, sets, coded) {
+    var answer = window.prompt(
+      'Deleting ' + c.name + ' cannot be undone.\n\n' +
+      (coded ? 'Enter the deletion code to continue:'
+             : 'Type the client name exactly to confirm:'), '');
+    if (answer === null) return;
+    answer = answer.trim();
+
+    if (!coded && answer !== c.name) {
+      msg('profileMsg', 'That does not match the client name. Nothing has been deleted.', 'err');
+      return;
+    }
+
+    db.rpc('delete_client', { p_client: c.id, p_code: coded ? answer : null })
+      .then(function (res) {
+        if (res.error) { msg('profileMsg', res.error.message, 'err'); return; }
+        if (res.data === 'wrong-code') {
+          msg('profileMsg', 'That deletion code is not correct. Nothing has been deleted.', 'err');
+          return;
+        }
+        if (res.data === 'not-found') {
+          msg('profileMsg', 'That client no longer exists.', 'err');
+          showClients();
+          return;
+        }
         logAction('client.removed', c.name,
           sets + ' content set' + (sets === 1 ? '' : 's') + ' removed with it');
         showClients();
       });
+  }
+
+  /* A database that has not had the current schema applied yet. Deleting still
+     works, and still asks, but the check is only the one in this browser. Say
+     so rather than implying a protection that is not there. */
+  function legacyDelete(c, sets, why) {
+    if (!/function|does not exist|schema|404/i.test(why.message || '')) {
+      msg('profileMsg', why.message, 'err');
+      return;
+    }
+    var typed = window.prompt(
+      'Deleting ' + c.name + ' cannot be undone.\n\n' +
+      'Type the client name exactly to confirm:', '');
+    if (typed === null) return;
+    if (typed.trim() !== c.name) {
+      msg('profileMsg', 'That does not match the client name. Nothing has been deleted.', 'err');
+      return;
+    }
+    db.from('clients').delete().eq('id', c.id).then(function (res) {
+      if (res.error) { msg('profileMsg', res.error.message, 'err'); return; }
+      logAction('client.removed', c.name,
+        sets + ' content set' + (sets === 1 ? '' : 's') + ' removed with it');
+      showClients();
+      msg('clientMsg', 'Deleted. Run the current supabase/schema.sql to move the ' +
+        'deletion code onto the server, where a browser cannot read it.', 'err');
     });
-  });
+  }
 
   $('copyLink').addEventListener('click', function () {
     navigator.clipboard.writeText($('clientLink').value).then(function () {
@@ -442,10 +587,16 @@
     chip.textContent = live ? 'Published' : 'Draft';
     chip.className = 'chip' + (live ? ' is-live' : '');
 
-    // Publishing is the positive action, hiding is a step backwards, so they
-    // should not look the same.
-    $('publishSet').textContent = live ? 'Hide from client' : 'Send to client';
-    $('publishSet').className = live ? 'btn btn-warn' : 'btn btn-go';
+    // Publishing is the positive action, taking it back is a step in reverse,
+    // so they should not look the same.
+    $('publishLabel').textContent = live ? 'Unpublish' : 'Publish';
+    // A paper plane to send it out, an eye struck through to take it back.
+    $('publishIcon').innerHTML = live
+      ? '<path d="m3 3 18 18"/><path d="M10.6 5.1A9.6 9.6 0 0 1 12 5c5 0 9 4.5 9 7a12 12 0 0 1-2.4 3.4"/>' +
+        '<path d="M6.5 7.6C4.3 9.1 3 11.2 3 12c0 2.5 4 7 9 7a9.7 9.7 0 0 0 4.2-1"/>' +
+        '<path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>'
+      : '<path d="M21 3 10.5 13.5"/><path d="M21 3l-6.8 18-3.7-7.5L3 9.8z"/>';
+    $('publishSet').className = 'btn btn-icon ' + (live ? 'btn-warn' : 'btn-go');
 
     // The standing state belongs beside the title. #setMsg is kept free for
     // things that just happened, so one does not overwrite the other.
@@ -1414,7 +1565,7 @@
           '<div class="draft-top">' +
             '<select class="select" data-f="placement">' + opts + '</select>' +
             '<span class="filetag">' + esc(fileLabel(d.media[0])) + '</span>' +
-            '<span class="muted">Detected automatically, change if wrong</span>' +
+            '<span class="muted">Change if wrong</span>' +
             '<button class="linkbtn" data-f="remove" type="button">Remove</button>' +
           '</div>' +
           (isXhs ? '<input class="input" data-f="title" placeholder="Note title 标题" value="' +
@@ -1527,7 +1678,7 @@
         $('savedCount').textContent = n
           ? n + ' post' + (n === 1 ? '' : 's') + ' in this set.'
           : 'Nothing added yet.';
-        if (r.error || !n) return;
+        if (r.error || !n) { settleScroll(); return; }
 
         var ids = r.data.map(function (p) { return p.id; });
         db.from('reviews').select('post_id, decision, note, reviewer, created_at')
@@ -1536,6 +1687,7 @@
             var latest = {};
             (rev.data || []).forEach(function (x) { if (!latest[x.post_id]) latest[x.post_id] = x; });
             r.data.forEach(function (p) { box.appendChild(savedRow(p, latest[p.id])); });
+            settleScroll();
           });
       });
   }

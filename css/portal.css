@@ -68,10 +68,14 @@ a { color: inherit; }
 .pill:hover { border-color: var(--ink); color: var(--ink); }
 .pill svg { width: 15px; height: 15px; }
 
+/* One row: two selects that already name themselves, the count, and the safe
+   zone switch. The stacked labels above them were a second row saying what the
+   selects said. */
 .filterbar {
-  display: flex; align-items: flex-end; gap: 28px; flex-wrap: wrap;
-  padding: 22px 0 18px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 16px 0 14px;
 }
+.filterbar .count { margin-left: auto; padding-bottom: 0; }
 .field-label { display: block; font-size: 12px; color: var(--ink-mute); margin-bottom: 4px; }
 .select, .input, .textarea {
   font: inherit; color: var(--ink); background: #fff;
@@ -80,7 +84,7 @@ a { color: inherit; }
 .select { min-width: 180px; }
 .textarea { width: 100%; resize: vertical; min-height: 84px; }
 .input:focus, .select:focus, .textarea:focus { outline: 2px solid var(--ink); outline-offset: -1px; }
-.count { color: var(--ink-mute); font-size: 13px; padding-bottom: 9px; }
+.count { color: var(--ink-mute); font-size: 13px; }
 
 /* ---------- Batch ---------- */
 .batch { margin-bottom: 56px; }
@@ -105,12 +109,14 @@ a { color: inherit; }
   background: var(--card); border: 1px solid var(--line);
   border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
 }
+/* On a phone the placement name, the pixel size and the status ran into each
+   other. Wrapping lets the status drop to its own line instead. */
 .card-head {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; flex-wrap: wrap; column-gap: 10px; row-gap: 3px;
   padding: 13px 16px; border-bottom: 1px solid var(--line-soft);
 }
-.card-title { font-weight: 600; font-size: 13px; letter-spacing: -.01em; }
-.card-dims { color: var(--ink-mute); font-size: 12px; }
+.card-title { font-weight: 600; font-size: 13px; letter-spacing: -.01em; min-width: 0; }
+.card-dims { color: var(--ink-mute); font-size: 12px; white-space: nowrap; }
 .card-stage {
   padding: 22px 18px; background:
     linear-gradient(0deg, rgba(0,0,0,.015), rgba(0,0,0,.015)), #fff;
@@ -123,7 +129,7 @@ a { color: inherit; }
 .card.is-vertical .mk-coverwrap { max-width: none; }
 
 .badge {
-  margin-left: auto; font-size: 11px; font-weight: 600; letter-spacing: .04em;
+  margin-left: auto; flex: 0 0 auto; font-size: 11px; font-weight: 600; letter-spacing: .04em;
   text-transform: uppercase; padding: 4px 9px; border-radius: 999px;
   background: var(--line-soft); color: var(--ink-mute);
 }
@@ -148,10 +154,16 @@ a { color: inherit; }
 .approve { border-top: 1px solid var(--line-soft); padding: 14px 16px; }
 .approve-row { display: flex; gap: 10px; }
 .btn {
-  flex: 1; border-radius: 9px; padding: 10px 14px; font-size: 13px; font-weight: 500;
+  flex: 1; border-radius: 9px; padding: 10px 16px; font-size: 13px; font-weight: 500;
   border: 1px solid var(--line); background: #fff; color: var(--ink-soft);
   transition: background .2s, color .2s, border-color .2s;
+  /* Width came entirely from the label, so a row of buttons stepped up and
+     down with the length of the words. A floor evens them out and centres
+     the label in the space rather than leaving it padded to one side. */
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  min-width: 116px; text-align: center;
 }
+.btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
 .btn:hover { border-color: var(--ink); color: var(--ink); }
 /* Approve is the action we want the client to take, so it carries the weight.
    Request changes stays available but visually quiet. */
@@ -291,9 +303,17 @@ a { color: inherit; }
 
 /* Shared chrome */
 .mk-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+/* Without a logo this is the client's face in every preview, so it gets a
+   light falling across it rather than a flat grey disc. One hue, light to
+   dark, so it reads as a surface and never competes with the creative. */
 .mk-avatar {
   width: 32px; height: 32px; border-radius: 50%; flex: 0 0 auto; overflow: hidden;
-  background: #c8ccd2; display: grid; place-items: center; font-weight: 600; color: #5b6068;
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255,255,255,.95), rgba(255,255,255,0) 58%),
+    linear-gradient(145deg, #dfe6ef 0%, #b9c4d3 52%, #8d9aac 100%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.5), inset 0 -2px 5px rgba(0,0,0,.06);
+  display: grid; place-items: center; font-weight: 600; color: #47505d;
+  font-size: 13px; letter-spacing: -.01em;
 }
 .mk-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .mk-who { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
@@ -515,13 +535,15 @@ a { color: inherit; }
 @media (max-width: 640px) {
   .shell { padding: 0 16px 72px; }
   .topbar-inner { padding: 12px 16px; }
+  /* The signed-in address pushed the sign out button onto a second row. */
+  #whoami { display: none; }
   .grid { grid-template-columns: 1fr; }
   /* Offering a "view on phone" QR code to someone already on a phone is noise. */
   #qrBtn { display: none; }
-  .filterbar { gap: 12px 14px; padding: 16px 0 14px; }
-  .filterbar > div { flex: 1 1 140px; }
-  .filterbar .select { min-width: 0; width: 100%; }
-  .count { flex: 1 1 100%; padding-bottom: 0; }
+  .filterbar { gap: 10px; padding: 14px 0 12px; }
+  .filterbar .select { flex: 1 1 140px; min-width: 0; }
+  .filterbar .count { flex: 1 1 100%; margin-left: 0; }
+  .filterbar .safetoggle { flex: 1 1 100%; }
 }
 
 
@@ -530,18 +552,18 @@ a { color: inherit; }
    ========================================================================= */
 .panel {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
-  box-shadow: var(--shadow); padding: 22px; margin-bottom: 22px;
+  box-shadow: var(--shadow); padding: 18px 20px; margin-bottom: 16px;
 }
 .panel.narrow { max-width: 520px; margin-top: 48px; }
 .cards + .panel { margin-top: 22px; }
 .panel h3 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 4px; }
-.panel .hint { color: var(--ink-mute); font-size: 13px; margin-bottom: 16px; }
+.panel .hint { color: var(--ink-mute); font-size: 13px; margin-bottom: 13px; }
 .panel code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
   background: var(--line-soft); padding: 1px 5px; border-radius: 4px;
 }
 
-.viewhead { display: flex; align-items: center; gap: 12px; margin: 28px 0 16px; }
+.viewhead { display: flex; align-items: center; gap: 12px; margin: 24px 0 13px; }
 .viewhead h2, .viewhead h3 { flex: 1 1 auto; }
 .viewhead h2 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
 .viewhead h3 { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
@@ -560,13 +582,19 @@ a { color: inherit; }
 .msg.err { color: #b3261e; }
 .msg.ok  { color: var(--ok); }
 .empty {
+  grid-column: 1 / -1;
   border: 1px dashed var(--line); border-radius: var(--radius);
-  padding: 28px; text-align: center; color: var(--ink-mute); font-size: 13px;
+  padding: 26px; text-align: center; color: var(--ink-mute); font-size: 13px;
 }
+/* Sat flush against the page with almost nothing to aim at. */
 .backlink {
-  border: 0; background: none; padding: 18px 0 0; color: var(--ink-mute); font-size: 13px;
+  display: inline-flex; align-items: center; gap: 7px;
+  border: 1px solid transparent; background: none; border-radius: 8px;
+  margin: 14px 0 4px; padding: 8px 12px 8px 9px;
+  color: var(--ink-mute); font-size: 13px;
 }
-.backlink:hover { color: var(--ink); }
+.backlink svg { width: 15px; height: 15px; }
+.backlink:hover { color: var(--ink); background: var(--line-soft); border-color: var(--line); }
 .linkbtn {
   border: 0; background: none; padding: 0; color: var(--ink-mute);
   font-size: 12.5px; text-decoration: underline; text-underline-offset: 2px;
@@ -574,7 +602,7 @@ a { color: inherit; }
 .linkbtn:hover { color: var(--ink); }
 .linkbtn.is-danger { color: #b3261e; }
 .linkbtn.is-danger:hover { color: #8c1d18; }
-.dangerrow { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.dangerrow { margin-top: 14px; }
 
 /* Client and content set cards */
 .cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
@@ -713,7 +741,8 @@ a { color: inherit; }
 .beta {
   display: inline-block; vertical-align: 2px; margin-left: 6px;
   font-size: 9.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-  padding: 2px 6px; border-radius: 4px; background: var(--ink); color: #fff;
+  padding: 1px 6px; border-radius: 4px;
+  background: none; color: var(--ink-mute); border: 1px solid var(--line);
 }
 
 /* Foldable content sets */
@@ -737,8 +766,13 @@ a { color: inherit; }
 .batch-body { padding-top: 22px; }
 .batch.is-folded .batch-body { display: none; }
 
-/* Equal looking cards: media on top, copy in the middle, buttons pinned down */
+/* Equal looking cards: media on top, copy in the middle, buttons pinned down.
+   Stretching is what lines the approve rows up across a row, but it also means
+   one card growing drags every card beside it with it. So the moment anything
+   in the row is expanded the row goes back to sizing each card to its own
+   content, and only the card that was opened gets taller. */
 .grid { align-items: stretch; }
+.grid.has-open { align-items: start; }
 .card { display: flex; flex-direction: column; }
 .copyblock { flex: 1 1 auto; }
 .approve { margin-top: auto; }
@@ -780,7 +814,8 @@ a { color: inherit; }
 }
 
 /* Button variants */
-.btn-sm { flex: 0 0 auto; padding: 7px 12px; font-size: 12.5px; }
+.btn-sm { flex: 0 0 auto; padding: 7px 13px; font-size: 12.5px; min-width: 92px; }
+.btn-sm svg { width: 13px; height: 13px; }
 .btn-danger { background: #b3261e; border-color: #b3261e; color: #fff; flex: 0 0 auto; }
 .btn-danger:hover { background: #8c1d18; border-color: #8c1d18; color: #fff; }
 .btn-icon { display: inline-flex; align-items: center; gap: 7px; }
@@ -865,11 +900,10 @@ a { color: inherit; }
 
 
 
-.cover-panel {
-  padding: 38px 32px 34px;
-  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
-  box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 14px 40px rgba(0,0,0,.06);
-}
+/* The notice is the whole page here. An outline and a shadow around it only
+   added a box to look at, so the page itself carries the card's white. */
+.cover { background: var(--card); }
+.cover-panel { padding: 38px 8px 34px; }
 .cover-panel h2 { font-size: 24px; font-weight: 600; letter-spacing: -.02em; margin-bottom: 10px; }
 .cover-panel p { color: var(--ink-soft); font-size: 14px; line-height: 1.65; }
 .cover-panel form { margin-top: 18px; display: flex; gap: 8px; }
@@ -928,7 +962,11 @@ a { color: inherit; }
 }
 .chip.is-live { background: var(--ok-bg); color: var(--ok); }
 
-.zone-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px; }
+.zone-head { display: flex; gap: 11px; align-items: flex-start; margin-bottom: 16px; }
+.zone-mark {
+  width: 17px; height: 17px; flex: 0 0 auto; stroke-width: 1.7;
+  color: var(--ink-mute); margin-top: 1px;
+}
 .zone-head > div { display: flex; flex-direction: column; gap: 2px; }
 .zone-head b { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; }
 .zone-head .muted { font-size: 12.5px; }
@@ -1010,3 +1048,51 @@ a { color: inherit; }
   .act { grid-template-columns: 1fr; }
   .act-detail, .act-who { grid-column: 1; }
 }
+
+/* =========================================================================
+   BATCH 11
+   ========================================================================= */
+
+/* A title with a mark beside it, used for every panel heading in the internal
+   tool so a section is recognised before it is read. */
+.panelhead {
+  display: flex; align-items: center; gap: 9px; margin-bottom: 4px;
+}
+.panelhead h3 { margin: 0; }
+.panelhead svg {
+  width: 17px; height: 17px; flex: 0 0 auto; color: var(--ink-mute);
+  stroke-width: 1.7;
+}
+.viewhead svg {
+  width: 18px; height: 18px; flex: 0 0 auto; color: var(--ink-mute); stroke-width: 1.7;
+}
+.viewhead .headmark { display: flex; align-items: center; gap: 9px; flex: 1 1 auto; }
+.viewhead .headmark h2 { flex: 0 1 auto; }
+.disclosure svg.disclosure-mark {
+  width: 16px; height: 16px; flex: 0 0 auto; color: var(--ink-mute); stroke-width: 1.7;
+}
+
+/* Groups inside the client settings drawer, so handles, profile and the
+   destructive pair read as three separate things rather than one long form. */
+.subsection + .subsection { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line-soft); }
+.subsection > h4 {
+  font-size: 12.5px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 3px;
+}
+.subsection > .hint { margin-bottom: 12px; }
+
+/* The set toolbar: publish carries the weight, rename and delete are marked
+   actions rather than two words sitting in a row. */
+/* Rename and delete were two words in a row that read as body text. As square
+   buttons they are recognisably actions, and the delete one is the only red
+   thing on the toolbar. */
+.btn-icononly {
+  min-width: 0; width: 38px; height: 38px; padding: 0; gap: 0; flex: 0 0 auto;
+}
+.btn-icononly svg { width: 16px; height: 16px; }
+.btn-icononly.is-danger { color: #b3261e; }
+.btn-icononly.is-danger:hover { background: #fdeceb; border-color: #e9b9b5; color: #8c1d18; }
+.setbar-actions { gap: 8px; }
+
+/* Scrollbar-free horizontal rhythm for the danger pair */
+.dangerrow { display: flex; gap: 10px; flex-wrap: wrap; }
+.dangerrow .btn { flex: 0 0 auto; }

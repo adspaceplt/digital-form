@@ -37,4 +37,9 @@ window.ADSPACE_CONFIG = {
 
   // Reply-to on anything the portal sends on the team's behalf.
   accountEmail: 'marketing@adspacestudios.com'
+
+  // No secrets belong in this file. It is served to the browser on a public
+  // site, so anything here can be read by anyone who opens the page. The
+  // deletion code lives in the database instead; supabase/schema.sql says how
+  // to set it.
 };

@@ -63,6 +63,23 @@
     pending.forEach(function (v) { lazyVideos.observe(v); });
   }
 
+  /* Cards in a row are stretched to a common height so their approve rows line
+     up. That is right until someone expands a caption, at which point every
+     card beside it grew too. A row holding anything expanded stops stretching,
+     so only the card that was opened gets taller. */
+  function syncOpenRows() {
+    document.querySelectorAll('#content .grid').forEach(function (grid) {
+      grid.classList.toggle('has-open',
+        Boolean(grid.querySelector('.copyblock.is-open, .mk-clamp.is-open')));
+    });
+  }
+
+  /* The caption toggle inside a mockup is built by the mockup itself, so catch
+     it on the way up rather than reaching in to rebind it. */
+  document.getElementById('content').addEventListener('click', function (e) {
+    if (e.target.closest('.mk-morebtn')) syncOpenRows();
+  });
+
   /* Only worth offering where a platform draws its own UI over the video, so
      the switch stays out of the way for a client reviewing static posts. */
   function paintSafeSwitch() {
@@ -152,6 +169,7 @@
         var open = copy.classList.toggle('is-open');
         more.textContent = open ? 'Show less' : 'Show full copy';
         measureCopy(copy);
+        syncOpenRows();
       });
       requestAnimationFrame(function () { measureCopy(copy); });
       copy.querySelector('.copy-btn').addEventListener('click', function (e) {

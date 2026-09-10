@@ -41,14 +41,12 @@
 
 <main class="shell">
   <div class="filterbar" id="filterbar" hidden>
-    <div>
-      <label class="field-label" for="formatFilter">Format</label>
-      <select class="select" id="formatFilter"><option value="all">All formats</option></select>
-    </div>
-    <div>
-      <label class="field-label" for="batchFilter">Content set</label>
-      <select class="select" id="batchFilter"><option value="all">All sets</option></select>
-    </div>
+    <select class="select" id="formatFilter" aria-label="Filter by format">
+      <option value="all">All formats</option>
+    </select>
+    <select class="select" id="batchFilter" aria-label="Filter by content set">
+      <option value="all">All sets</option>
+    </select>
     <label class="safetoggle" id="safeWrap" hidden>
       <input type="checkbox" id="safeToggle">
       <span>Show safe zones</span>
