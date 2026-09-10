@@ -333,10 +333,11 @@ a { color: inherit; }
    it is fitted whole on a white ground rather than cropped to fill. A logo
    that is already square fills the circle either way. */
 .mk-avatar img { width: 100%; height: 100%; object-fit: contain; }
-.mk-avatar.has-logo {
-  background: #fff; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
-  padding: 1px;
-}
+/* Nothing is drawn around a real profile picture, so nothing is drawn around
+   this one: no ring, no inset, no padding. The image runs to the edge of the
+   circle. White sits behind it because a mark with transparency needs a ground,
+   the same as the client's own profile has. */
+.mk-avatar.has-logo { background: #fff; box-shadow: none; padding: 0; }
 .mk-who { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
 .mk-handle { font-weight: 600; font-size: 13px; }
 .mk-sub { font-size: 11.5px; color: #737373; }
@@ -492,7 +493,7 @@ a { color: inherit; }
 /* TikTok carries the account at the top of the rail, with the follow badge
    tucked under it. */
 .mk-rail-me { position: relative; margin-bottom: 4px; }
-.mk-avatar-rail { width: 34px; height: 34px; border: 1.5px solid #fff; }
+.mk-avatar-rail { width: 34px; height: 34px; }
 .mk-rail-plus {
   position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%);
   width: 16px; height: 16px; border-radius: 50%; background: #fe2c55; color: #fff;
@@ -507,7 +508,7 @@ a { color: inherit; }
 }
 /* Reels show the account next to the handle at the foot. */
 .mk-vwho { display: flex; align-items: center; gap: 9px; margin-bottom: 6px; }
-.mk-avatar-v { width: 28px; height: 28px; border: 1.5px solid rgba(255,255,255,.9); }
+.mk-avatar-v { width: 28px; height: 28px; }
 .mk-vhandle { font-weight: 600; font-size: 13px; }
 .mk-vcaption { font-size: 12.5px; line-height: 1.4; }
 .mk-vfoot .mk-morebtn { padding: 0; color: #ddd; font-size: 12.5px; }
@@ -529,7 +530,7 @@ a { color: inherit; }
   display: flex; align-items: center; gap: 8px;
   text-shadow: 0 1px 3px rgba(0,0,0,.5);
 }
-.mk-story-head .mk-avatar { width: 26px; height: 26px; border: 1.5px solid #fff; }
+.mk-story-head .mk-avatar { width: 26px; height: 26px; }
 .mk-story-time { color: #ddd; font-size: 11.5px; }
 .mk-sticker {
   position: absolute; left: 16px; right: 16px; bottom: 92px; z-index: 2;
