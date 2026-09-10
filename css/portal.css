@@ -128,13 +128,13 @@ a { color: inherit; }
 .card.is-vertical .mk-phone { max-width: none; border: 0; border-radius: 0; box-shadow: none; }
 .card.is-vertical .mk-coverwrap { max-width: none; }
 
+/* Was a grey block in capitals that shouted louder than the placement it sat
+   beside. A dot and the word, at the size of the text around them. */
 .badge {
-  margin-left: auto; flex: 0 0 auto; font-size: 11px; font-weight: 600; letter-spacing: .04em;
-  text-transform: uppercase; padding: 4px 9px; border-radius: 999px;
-  background: var(--line-soft); color: var(--ink-mute);
+  margin-left: auto; flex: 0 0 auto; font-size: 12px; font-weight: 500;
+  padding: 0; background: none;
 }
-.badge.is-ok      { background: var(--ok-bg);   color: var(--ok); }
-.badge.is-changes { background: var(--warn-bg); color: var(--warn); }
+.badge .dot { width: 7px; height: 7px; }
 
 /* Copy block under the mockup: the caption is half the deliverable. */
 .copyblock { border-top: 1px solid var(--line-soft); padding: 16px; }
@@ -142,11 +142,18 @@ a { color: inherit; }
   font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
   color: var(--ink-mute); font-weight: 600; margin-bottom: 7px;
 }
+/* The section name and the copy button on one line, above the words, so the
+   button keeps its place while the text below it grows and shrinks. */
+.copyhead {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 9px;
+}
+.copyhead h5 { margin-bottom: 0; flex: 1 1 auto; }
 .copytext { white-space: pre-wrap; color: var(--ink-soft); font-size: 13.5px; }
 .copytext + h5 { margin-top: 16px; }
 .copy-btn {
-  margin-top: 12px; border: 1px solid var(--line); background: #fff;
-  border-radius: 8px; padding: 6px 12px; font-size: 12px; color: var(--ink-soft);
+  flex: 0 0 auto; border: 1px solid var(--line); background: #fff;
+  border-radius: 8px; padding: 0 12px; min-height: 32px; font-size: 12px;
+  color: var(--ink-soft);
 }
 .copy-btn:hover { border-color: var(--ink); color: var(--ink); }
 
@@ -303,17 +310,24 @@ a { color: inherit; }
 
 /* Shared chrome */
 .mk-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
-/* Without a logo this is the client's face in every preview, so it gets a
-   light falling across it rather than a flat grey disc. One hue, light to
-   dark, so it reads as a surface and never competes with the creative. */
+/* Without a logo this is the client's face in every preview. A mesh of soft
+   colour rather than a grey disc: warm at the top, magenta through the middle,
+   blue at the foot, with the edges of each blob dissolved so no band shows.
+   A logo, when there is one, covers all of it. */
 .mk-avatar {
   width: 32px; height: 32px; border-radius: 50%; flex: 0 0 auto; overflow: hidden;
   background:
-    radial-gradient(circle at 32% 26%, rgba(255,255,255,.95), rgba(255,255,255,0) 58%),
-    linear-gradient(145deg, #dfe6ef 0%, #b9c4d3 52%, #8d9aac 100%);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,.5), inset 0 -2px 5px rgba(0,0,0,.06);
-  display: grid; place-items: center; font-weight: 600; color: #47505d;
+    radial-gradient(circle at 18% 12%,  #ffe066 0%, rgba(255,224,102,0) 58%),
+    radial-gradient(circle at 80% 10%,  #ff922b 0%, rgba(255,146,43,0)  52%),
+    radial-gradient(circle at 10% 52%,  #ff3d7f 0%, rgba(255,61,127,0)  58%),
+    radial-gradient(circle at 88% 56%,  #f06bd8 0%, rgba(240,107,216,0) 55%),
+    radial-gradient(circle at 26% 96%,  #3b5bdb 0%, rgba(59,91,219,0)   62%),
+    radial-gradient(circle at 86% 98%,  #4dabf7 0%, rgba(77,171,247,0)  58%),
+    linear-gradient(158deg, #ffb84d 0%, #f0629f 42%, #9775fa 72%, #3b5bdb 100%);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.28);
+  display: grid; place-items: center; font-weight: 700; color: #fff;
   font-size: 13px; letter-spacing: -.01em;
+  text-shadow: 0 1px 2px rgba(0,0,0,.3);
 }
 .mk-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .mk-who { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
@@ -544,6 +558,7 @@ a { color: inherit; }
   .filterbar .select { flex: 1 1 140px; min-width: 0; }
   .filterbar .count { flex: 1 1 100%; margin-left: 0; }
   .filterbar .safetoggle { flex: 1 1 100%; }
+
 }
 
 
@@ -709,23 +724,95 @@ a { color: inherit; }
 .draft-body .textarea { min-height: 72px; font-size: 13.5px; }
 .draft-body .linkbtn { align-self: flex-start; }
 
-/* Posts already saved into the set */
-.saved {
-  display: flex; align-items: center; gap: 14px; padding: 12px 14px;
-  border: 1px solid var(--line); border-radius: 10px; background: #fff; margin-bottom: 8px;
+/* Status, everywhere it appears. A dot and a word, sized like the text around
+   it, rather than a grey block in capitals shouting over the thing it labels.
+   Colour alone never carries it: the word is always there. */
+.dot {
+  width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto;
+  background: currentColor; margin-right: 7px;
 }
+/* The dot carries the colour, so the word does not also need weight. */
+.status {
+  display: inline-flex; align-items: center; font-weight: 500; white-space: nowrap;
+}
+.status-pending  { color: #b7791f; }
+.status-approved { color: var(--ok); }
+.status-changes  { color: #b3261e; }
+
+/* Posts already saved into the set.
+
+   Three columns on a desktop, two rows on a phone, stated as areas so nothing
+   can wrap somewhere it was not meant to. On a phone three marks beside the
+   text left it about a hundred pixels, which broke every placement name over
+   two lines and cut the pixel count in half, so there the marks take a line of
+   their own under a hairline and the words get the width. */
+.saved {
+  display: grid; gap: 0 13px; padding: 11px 12px;
+  grid-template-columns: 62px minmax(0, 1fr) auto;
+  grid-template-areas: "thumb body actions";
+  align-items: center;
+  border: 1px solid var(--line); border-radius: 12px; background: #fff; margin-bottom: 8px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.saved:hover { border-color: #d9d9d9; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
 .saved-thumb {
-  flex: 0 0 44px; height: 54px; border-radius: 6px; overflow: hidden; background: var(--line-soft);
+  grid-area: thumb; width: 62px; height: 62px; border-radius: 9px; overflow: hidden;
+  background: var(--line-soft);
 }
 .saved-thumb img, .saved-thumb video { width: 100%; height: 100%; object-fit: cover; }
-.saved-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.saved-body b { font-size: 13px; font-weight: 600; }
-.saved-body .muted { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.saved-body {
+  grid-area: body; min-width: 0; display: flex; flex-direction: column;
+  align-items: flex-start; gap: 2px;
+}
+.saved-body b {
+  font-size: 13.5px; font-weight: 600; letter-spacing: -.01em; line-height: 1.35;
+}
+.saved-body .muted {
+  max-width: 100%; font-size: 12px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* status, then the file, on one quiet line */
+.saved-meta {
+  display: flex; align-items: center; gap: 6px; max-width: 100%;
+  font-size: 12px; color: var(--ink-mute);
+}
+.saved-meta .sep { opacity: .5; }
+/* Drop the whole spec rather than leave half a pixel count on screen. */
+.saved-meta .spec { overflow: hidden; white-space: nowrap; }
+.saved-actions { grid-area: actions; display: flex; align-items: center; gap: 4px; }
+/* A round, quiet mark that only takes colour when you reach for it. */
+.iconbtn {
+  width: 34px; height: 34px; flex: 0 0 auto; padding: 0;
+  display: inline-grid; place-items: center;
+  border: 0; background: none; border-radius: 9px;
+  color: var(--ink-mute); transition: background .15s, color .15s;
+}
+.iconbtn svg { width: 16px; height: 16px; stroke-width: 1.7; }
+.iconbtn:hover { background: var(--line-soft); color: var(--ink); }
+.iconbtn.is-danger:hover { background: #fdeceb; color: #b3261e; }
+.iconbtn.is-warn:hover { background: var(--warn-bg); color: var(--warn); }
+
+@media (max-width: 640px) {
+  .saved {
+    grid-template-columns: 56px minmax(0, 1fr);
+    grid-template-areas: "thumb body" "actions actions";
+    align-items: start; padding-bottom: 3px;
+  }
+  .saved-thumb { width: 56px; height: 56px; }
+  .saved-meta { flex-wrap: wrap; row-gap: 0; }
+  .saved-meta .sep { display: none; }
+  .saved-meta .spec { flex: 1 0 100%; }
+  .saved-actions {
+    justify-content: flex-end; margin-top: 7px; padding-top: 3px;
+    border-top: 1px solid var(--line-soft);
+  }
+}
+
 .saved-note {
   margin-top: 4px; font-size: 12.5px; color: var(--warn);
   background: var(--warn-bg); border-radius: 6px; padding: 5px 9px;
 }
-.saved .badge { margin-left: 0; flex: 0 0 auto; }
+.saved-note { margin-top: 6px; }
 
 @media (max-width: 640px) {
   .panel { padding: 18px; }
@@ -849,10 +936,11 @@ a { color: inherit; }
 @supports (height: 100dvh) {
   .signin { min-height: calc(100dvh - 55px); }
 }
+/* Signing in is the whole page, the same as the review notice. A card drawn
+   around it only adds an edge to look at. */
 .signin-card {
-  width: 100%; max-width: 380px; background: var(--card);
-  border: 1px solid var(--line); border-radius: 18px; padding: 34px 30px 30px;
-  box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 18px 50px rgba(0,0,0,.08);
+  width: 100%; max-width: 340px; background: none;
+  border: 0; border-radius: 0; padding: 0; box-shadow: none;
   text-align: left;
 }
 .signin-card h2 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; margin-bottom: 6px; }
@@ -901,8 +989,11 @@ a { color: inherit; }
 
 
 /* The notice is the whole page here. An outline and a shadow around it only
-   added a box to look at, so the page itself carries the card's white. */
-.cover { background: var(--card); }
+   added a box to look at.
+
+   Painting the section white was not enough: the section is only as wide as
+   the shell, so the white sat on the grey page with a seam down each side.
+   The page carries the white instead, and nothing draws an edge. */
 .cover-panel { padding: 38px 8px 34px; }
 .cover-panel h2 { font-size: 24px; font-weight: 600; letter-spacing: -.02em; margin-bottom: 10px; }
 .cover-panel p { color: var(--ink-soft); font-size: 14px; line-height: 1.65; }
@@ -1096,3 +1187,7 @@ a { color: inherit; }
 /* Scrollbar-free horizontal rhythm for the danger pair */
 .dangerrow { display: flex; gap: 10px; flex-wrap: wrap; }
 .dangerrow .btn { flex: 0 0 auto; }
+
+/* A page that is nothing but a notice or a sign in form: white to the edges. */
+body.is-plain { background: var(--card); }
+body.is-plain .topbar { background: rgba(255,255,255,.9); }

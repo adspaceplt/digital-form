@@ -172,6 +172,8 @@
   /* Instagram and TikTok use @ handles. Facebook Pages and RedNote accounts do
      not, and a Facebook Reel is still a Page, so the @ depends on the account
      rather than on the format being vertical. */
+  /* Applied at every surface that shows an account, not just some of them:
+     the same client used to read hkllim on a feed post and @hkllim on a reel. */
   const AT_PLATFORMS = { instagram: true, tiktok: true, cover: true };
 
   function atHandle(h, post) {
@@ -256,7 +258,7 @@
     const head = el('header', 'mk-head');
     head.appendChild(avatar(post, cfg));
     const who = el('div', 'mk-who');
-    who.appendChild(el('span', 'mk-handle', esc(handleFor(post, cfg))));
+    who.appendChild(el('span', 'mk-handle', esc(atHandle(handleFor(post, cfg), post))));
     head.appendChild(who);
     head.appendChild(el('span', 'mk-more', icon('dots', 20)));
     frame.appendChild(head);
@@ -267,7 +269,7 @@
     frame.appendChild(el('div', 'mk-likes', '1,248 likes'));
 
     const cap = el('div', 'mk-caption');
-    cap.innerHTML = '<span class="mk-handle">' + esc(handleFor(post, cfg)) + '</span> ' +
+    cap.innerHTML = '<span class="mk-handle">' + esc(atHandle(handleFor(post, cfg), post)) + '</span> ' +
       captionHtml(post.caption);
     frame.appendChild(clampable(cap));
     frame.appendChild(el('div', 'mk-time', 'View all 32 comments'));
@@ -485,7 +487,7 @@
 
     const head = el('div', 'mk-story-head');
     head.appendChild(avatar(post, cfg));
-    head.appendChild(el('span', 'mk-vhandle', esc(handleFor(post, cfg))));
+    head.appendChild(el('span', 'mk-vhandle', esc(atHandle(handleFor(post, cfg), post))));
     head.appendChild(el('span', 'mk-story-time', '2h'));
 
     screen.appendChild(stage);
