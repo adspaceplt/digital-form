@@ -63,6 +63,60 @@
     pending.forEach(function (v) { lazyVideos.observe(v); });
   }
 
+  /* A phone throws a tab away once it has been in the background long enough
+     and rebuilds it from scratch on return, which lands the client back at the
+     top of a long set with their filters cleared. Keep the few things that
+     make a page theirs, per link, so coming back looks like coming back. */
+  var PLACE = 'adspace.review.' + (new URLSearchParams(location.search).get('k') || 'demo');
+  var restoring = null;
+
+  function savePlace() {
+    if (!feedLoaded) return;
+    try {
+      sessionStorage.setItem(PLACE, JSON.stringify({
+        y: Math.round(window.scrollY),
+        fmt: $('formatFilter').value,
+        bat: $('batchFilter').value,
+        safe: $('safeToggle').checked,
+        // Only sets the reader opened or closed themselves. The rest follow
+        // the automatic rule, which may have changed since they were here.
+        open: Array.prototype.filter.call(document.querySelectorAll('.batch'), function (b) {
+          return b.dataset.userSet && !b.classList.contains('is-folded');
+        }).map(function (b) { return b.dataset.batch; }),
+        shut: Array.prototype.filter.call(document.querySelectorAll('.batch'), function (b) {
+          return b.dataset.userSet && b.classList.contains('is-folded');
+        }).map(function (b) { return b.dataset.batch; })
+      }));
+    } catch (e) { /* private browsing */ }
+  }
+
+  function readPlace() {
+    try {
+      var p = JSON.parse(sessionStorage.getItem(PLACE) || 'null');
+      if (!p) return null;
+      p.open = p.open || [];
+      p.shut = p.shut || [];
+      return p;
+    } catch (e) { return null; }
+  }
+
+  function hasOption(select, value) {
+    return Array.prototype.some.call(select.options, function (o) { return o.value === value; });
+  }
+
+  var feedLoaded = false;
+  var saveTimer = null;
+  function queuePlace() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(savePlace, 200);
+  }
+  window.addEventListener('scroll', queuePlace, { passive: true });
+  // A phone often gets no unload event, but it always gets this one.
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'hidden') savePlace();
+  });
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
   /* Cards in a row are stretched to a common height so their approve rows line
      up. That is right until someone expands a caption, at which point every
      card beside it grew too. A row holding anything expanded stops stretching,
@@ -89,6 +143,7 @@
 
   $('safeToggle').addEventListener('change', function (e) {
     document.body.classList.toggle('is-safe', e.target.checked);
+    savePlace();
   });
 
   function fmtDate(iso) {
@@ -156,12 +211,22 @@
       var copy = document.createElement('div');
       copy.className = 'copyblock';
       var html = '';
+      // The heading names the section once, so the caption below it needs no
+      // label of its own. A title and a Chinese version are different things
+      // and keep theirs.
       if (post.title)      html += '<h5>Title</h5><div class="copytext">' + escapeHtml(post.title) + '</div>';
-      if (post.caption)    html += '<h5>Copy</h5><div class="copytext">' + escapeHtml(post.caption) + '</div>';
+      if (post.caption)    html += '<div class="copytext">' + escapeHtml(post.caption) + '</div>';
       if (post.caption_zh) html += '<h5>中文文案</h5><div class="copytext">' + escapeHtml(post.caption_zh) + '</div>';
-      copy.innerHTML = html +
-        '<button class="copy-more" type="button" hidden>Show full copy</button>' +
-        '<button class="copy-btn" type="button">Copy text</button>';
+      // Copy text sits in the heading so it stays where the reader left it.
+      // Below the words it moved every time the block was expanded, and sat
+      // right beside Show full copy, which is a different kind of action.
+      copy.innerHTML =
+        '<div class="copyhead">' +
+          '<h5>Copywriting</h5>' +
+          '<button class="copy-btn" type="button">Copy text</button>' +
+        '</div>' +
+        html +
+        '<button class="copy-more" type="button" hidden>Show full copy</button>';
 
       // Long captions are clamped so cards in a row finish at the same height.
       var more = copy.querySelector('.copy-more');
@@ -331,6 +396,7 @@
     var root = $('content');
     root.innerHTML = '';
     var formats = {};
+    restoring = readPlace();
 
     feed.batches.forEach(function (batch) {
       var section = document.createElement('section');
@@ -374,11 +440,23 @@
         section.classList.toggle('is-folded');
         head.setAttribute('aria-expanded', section.classList.contains('is-folded') ? 'false' : 'true');
         if (!section.classList.contains('is-folded')) requestAnimationFrame(remeasure);
+        savePlace();
       });
 
       // A set everyone has already signed off starts folded, so the page opens
       // on what still needs attention.
       paintFold(section, true);
+
+      // Unless the reader had already decided otherwise before they left.
+      if (restoring) {
+        var was = restoring.open.indexOf(batch.id) !== -1 ? 'open'
+                : restoring.shut.indexOf(batch.id) !== -1 ? 'shut' : null;
+        if (was) {
+          section.dataset.userSet = '1';
+          section.classList.toggle('is-folded', was === 'shut');
+          head.setAttribute('aria-expanded', was === 'shut' ? 'false' : 'true');
+        }
+      }
     });
 
     var ff = $('formatFilter');
@@ -401,7 +479,29 @@
     $('qrBtn').hidden = false;
     paintSafeSwitch();
     watchVideos(document);
+
+    if (restoring) {
+      // A filter naming a format or a set that has since gone is dropped
+      // rather than leaving the reader looking at nothing.
+      if (hasOption(ff, restoring.fmt)) ff.value = restoring.fmt;
+      if (hasOption(bf, restoring.bat)) bf.value = restoring.bat;
+      if (restoring.safe) {
+        $('safeToggle').checked = true;
+        document.body.classList.add('is-safe');
+      }
+    }
     applyFilters();
+
+    feedLoaded = true;
+    if (restoring && restoring.y) {
+      var y = restoring.y;
+      requestAnimationFrame(function () {
+        window.scrollTo(0, y);
+        // Again once the media has sized itself, which is what moves things.
+        setTimeout(function () { window.scrollTo(0, y); }, 300);
+      });
+    }
+    restoring = null;
   }
 
   /* Counts approvals in a set, updates its header, and folds it once nothing is
@@ -450,6 +550,7 @@
 
     $('countLabel').textContent = shown + ' post' + (shown === 1 ? '' : 's') + ' shown';
     requestAnimationFrame(remeasure);
+    savePlace();
   }
 
   // ---- Chrome --------------------------------------------------------------

@@ -1706,23 +1706,29 @@
             : '<img src="' + (m.url || '') + '" alt="">') + '</div>' +
         '<div class="saved-body">' +
           '<b>' + MK.label(p) + '</b>' +
-          '<span class="filetag">' + esc(fileLabel(m)) + '</span>' +
+          '<span class="saved-meta">' +
+            '<span class="filetag">' + esc(fileLabel(m)) + '</span>' +
+            '<span class="badge ' + (review
+                ? (review.decision === 'approved' ? 'is-ok' : 'is-changes') : '') + '">' +
+              (review ? (review.decision === 'approved' ? 'Approved' : 'Changes') : 'Pending') +
+            '</span>' +
+          '</span>' +
           '<span class="muted">' + esc((p.caption || p.caption_zh || 'No caption').slice(0, 90)) + '</span>' +
           (review && review.decision === 'changes' && review.note
             ? '<span class="saved-note">' + esc(review.note) + '</span>' : '') +
+          (p.review_reset_note
+            ? '<span class="saved-note is-warn">Sent back: ' + esc(p.review_reset_note) + '</span>'
+            : '') +
         '</div>' +
-        '<span class="badge ' + (review
-            ? (review.decision === 'approved' ? 'is-ok' : 'is-changes') : '') + '">' +
-          (review ? (review.decision === 'approved' ? 'Approved' : 'Changes') : 'Pending') +
-        '</span>' +
-        (p.review_reset_note
-          ? '<span class="saved-note is-warn">Sent back: ' + esc(p.review_reset_note) + '</span>'
-          : '') +
-        (review && review.decision === 'approved'
-          ? '<button class="btn btn-warn btn-sm" data-a="reask" type="button">Request re-approval</button>'
-          : '') +
-        '<button class="btn btn-sm" data-a="edit" type="button">Edit</button>' +
-        '<button class="btn btn-quiet btn-sm is-danger" data-a="del" type="button">Delete</button>';
+        // The buttons travel together, so a narrow column drops the whole group
+        // to its own line instead of squeezing the text under them.
+        '<div class="saved-actions">' +
+          (review && review.decision === 'approved'
+            ? '<button class="btn btn-warn btn-sm" data-a="reask" type="button">Request re-approval</button>'
+            : '') +
+          '<button class="btn btn-sm" data-a="edit" type="button">Edit</button>' +
+          '<button class="btn btn-quiet btn-sm is-danger" data-a="del" type="button">Delete</button>' +
+        '</div>';
 
       row.querySelector('[data-a="edit"]').addEventListener('click', paintEdit);
 
