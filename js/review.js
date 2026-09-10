@@ -175,6 +175,17 @@
     if (MK.remeasure) MK.remeasure(document);
   }
 
+  /* The tab, and the tags a link preview reads. A crawler will not get this
+     far, since it runs no scripts, but anything that does execute the page
+     sees the client's name rather than the generic line in the file. */
+  function setPageTitle(text) {
+    document.title = text;
+    ['meta[property="og:title"]', 'meta[name="twitter:title"]'].forEach(function (sel) {
+      var tag = document.head.querySelector(sel);
+      if (tag) tag.setAttribute('content', text);
+    });
+  }
+
   function escapeHtml(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -613,7 +624,9 @@
       $('cover').hidden = true;
       document.querySelector('.brand-for').hidden = false;
       $('clientName').textContent = feed.client.name;
-      document.title = feed.client.name + ' — ADspace Content Review';
+      // The name goes in front, here and on the tags a crawler would have read
+      // had it run this. Written in one place so the two cannot drift apart.
+      setPageTitle(feed.client.name + ' Content Review Portal by ADspace');
       if (!feed.batches.length) {
         showState('No content pending review',
           'Your next content set will appear here once it is ready for review. We will notify ' +

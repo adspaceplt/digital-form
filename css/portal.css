@@ -1253,3 +1253,92 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
   box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
 }
 .msg.warn { color: var(--warn); }
+
+/* =========================================================================
+   ADMIN CONSOLE
+   A shell rather than a page: a fixed rail of sections on the left, the
+   section's own work on the right. Content Review is the first of them, and
+   nothing about it needs to know that others will arrive.
+   ========================================================================= */
+.console { display: flex; min-height: 100vh; align-items: stretch; }
+@supports (height: 100dvh) { .console { min-height: 100dvh; } }
+
+.sidebar {
+  flex: 0 0 244px; display: flex; flex-direction: column;
+  background: var(--card); border-right: 1px solid var(--line);
+  padding: 22px 14px 16px;
+  position: sticky; top: 0; height: 100vh;
+}
+@supports (height: 100dvh) { .sidebar { height: 100dvh; } }
+
+.sidebar-brand { display: flex; flex-direction: column; gap: 2px; padding: 0 10px 22px; }
+.sidebar-brand .brand-logo { height: 24px; width: auto; align-self: flex-start; }
+.sidebar-kicker {
+  font-size: 10.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-mute);
+}
+
+.sidebar-nav { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; }
+.sidebar-label {
+  font-size: 10.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-mute); padding: 0 10px 8px;
+}
+.navitem {
+  display: flex; align-items: center; gap: 11px;
+  width: 100%; text-align: left; border: 0; background: none;
+  padding: 9px 10px; border-radius: 9px;
+  font-size: 13.5px; font-weight: 500; color: var(--ink-soft);
+  transition: background .15s, color .15s;
+}
+.navitem svg { width: 17px; height: 17px; flex: 0 0 auto; stroke-width: 1.7; color: var(--ink-mute); }
+.navitem:hover { background: var(--line-soft); color: var(--ink); }
+.navitem.is-on { background: var(--line-soft); color: var(--ink); font-weight: 600; }
+.navitem.is-on svg { color: var(--ink); }
+
+.sidebar-foot {
+  border-top: 1px solid var(--line-soft); padding: 14px 10px 0;
+  display: flex; flex-direction: column; gap: 4px; align-items: flex-start;
+}
+.sidebar-who {
+  font-size: 12px; color: var(--ink-mute); max-width: 100%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.console-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.console-head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 0 28px; height: 56px; flex: 0 0 auto;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255,255,255,.86); backdrop-filter: saturate(180%) blur(14px);
+  position: sticky; top: 0; z-index: 30;
+}
+.console-title { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+.console-body { padding: 0 28px 96px; }
+/* The section's own views were written for a page with its own margins. */
+.console-body .shell { padding: 0; max-width: none; }
+
+/* The rail becomes a drawer on a phone. */
+.navtoggle {
+  display: none; width: 34px; height: 34px; padding: 0; border: 0; background: none;
+  border-radius: 8px; color: var(--ink-soft);
+}
+.navtoggle svg { width: 19px; height: 19px; stroke-width: 1.7; }
+.navtoggle:hover { background: var(--line-soft); color: var(--ink); }
+
+@media (max-width: 860px) {
+  .sidebar {
+    position: fixed; left: 0; top: 0; z-index: 60; width: 244px; flex-basis: 244px;
+    transform: translateX(-100%); transition: transform .22s ease;
+    box-shadow: 0 0 40px rgba(0,0,0,.12);
+  }
+  .sidebar.is-open { transform: none; }
+  .navtoggle { display: inline-grid; place-items: center; }
+  .console-head { padding: 0 16px; }
+  .console-body { padding: 0 16px 72px; }
+  /* Starts where the drawer ends. Dimming the area underneath an opaque
+     drawer shows nothing, and it left the tappable region overlapping it. */
+  .scrim {
+    position: fixed; top: 0; right: 0; bottom: 0; left: 244px;
+    z-index: 55; background: rgba(0,0,0,.35); border: 0; padding: 0;
+  }
+}
