@@ -329,7 +329,14 @@ a { color: inherit; }
   font-size: 13px; letter-spacing: -.01em;
   text-shadow: 0 1px 2px rgba(0,0,0,.3);
 }
-.mk-avatar img { width: 100%; height: 100%; object-fit: cover; }
+/* A brand mark is rarely square and often carries transparency around it, so
+   it is fitted whole on a white ground rather than cropped to fill. A logo
+   that is already square fills the circle either way. */
+.mk-avatar img { width: 100%; height: 100%; object-fit: contain; }
+.mk-avatar.has-logo {
+  background: #fff; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08);
+  padding: 1px;
+}
 .mk-who { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
 .mk-handle { font-weight: 600; font-size: 13px; }
 .mk-sub { font-size: 11.5px; color: #737373; }
@@ -482,13 +489,26 @@ a { color: inherit; }
 }
 .mk-rail span { display: flex; flex-direction: column; align-items: center; gap: 3px; }
 .mk-rail b { font-size: 11px; font-weight: 600; }
+/* TikTok carries the account at the top of the rail, with the follow badge
+   tucked under it. */
+.mk-rail-me { position: relative; margin-bottom: 4px; }
+.mk-avatar-rail { width: 34px; height: 34px; border: 1.5px solid #fff; }
+.mk-rail-plus {
+  position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%);
+  width: 16px; height: 16px; border-radius: 50%; background: #fe2c55; color: #fff;
+  display: grid; place-items: center; font-size: 12px; font-weight: 700;
+  line-height: 1; text-shadow: none;
+}
 .mk-vfoot {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
   padding: 14px 58px 30px 16px;
   background: linear-gradient(0deg, rgba(0,0,0,.8) 12%, rgba(0,0,0,0));
   text-shadow: 0 1px 3px rgba(0,0,0,.5);
 }
-.mk-vhandle { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+/* Reels show the account next to the handle at the foot. */
+.mk-vwho { display: flex; align-items: center; gap: 9px; margin-bottom: 6px; }
+.mk-avatar-v { width: 28px; height: 28px; border: 1.5px solid rgba(255,255,255,.9); }
+.mk-vhandle { font-weight: 600; font-size: 13px; }
 .mk-vcaption { font-size: 12.5px; line-height: 1.4; }
 .mk-vfoot .mk-morebtn { padding: 0; color: #ddd; font-size: 12.5px; }
 .mk-vfoot .mk-tag { color: #fff; font-weight: 600; }
@@ -629,7 +649,18 @@ a { color: inherit; }
 }
 .bigcard:hover { border-color: var(--ink); transform: translateY(-1px); }
 .bigcard.is-on { border-color: var(--ink); }
-.bigcard-name { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.bigcard-top { display: flex; align-items: center; gap: 9px; min-width: 0; }
+/* Same treatment as a profile picture in the previews, so what the team sees
+   here is what the client's audience will see. */
+.bigcard-logo {
+  width: 26px; height: 26px; flex: 0 0 auto; border-radius: 50%; overflow: hidden;
+  background: #fff; box-shadow: inset 0 0 0 1px rgba(0,0,0,.1); padding: 1px;
+}
+.bigcard-logo img { width: 100%; height: 100%; object-fit: contain; }
+.bigcard-name {
+  font-size: 15px; font-weight: 600; letter-spacing: -.01em; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .bigcard-sub { color: var(--ink-mute); font-size: 12.5px; }
 .bigcard-tag {
   align-self: flex-start; margin-top: 8px; font-size: 11px; font-weight: 600;

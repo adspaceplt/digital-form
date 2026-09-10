@@ -217,8 +217,15 @@
         var card = document.createElement('button');
         card.className = 'bigcard';
         card.type = 'button';
+        // The mark, where there is one, so it is obvious at a glance that the
+        // address saved and that it actually loads.
         card.innerHTML =
-          '<span class="bigcard-name">' + esc(c.name) + '</span>' +
+          '<span class="bigcard-top">' +
+            (c.logo_url
+              ? '<span class="bigcard-logo"><img src="' + esc(c.logo_url) + '" alt=""></span>'
+              : '') +
+            '<span class="bigcard-name">' + esc(c.name) + '</span>' +
+          '</span>' +
           '<span class="bigcard-sub" data-role="sub">Loading…</span>' +
           (c.passcode ? '<span class="bigcard-tag">Access code on</span>' : '');
         card.addEventListener('click', function () { openClient(c); });

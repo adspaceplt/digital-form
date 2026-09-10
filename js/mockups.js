@@ -202,10 +202,14 @@
     return cfg.clientHandle || cfg.clientName || '';
   }
 
-  function avatar(post, cfg) {
+  function avatar(post, cfg, extra) {
     const url = (post.client && post.client.logo_url) || cfg.clientLogo;
-    const node = el('div', 'mk-avatar');
+    const node = el('div', 'mk-avatar' + (extra ? ' ' + extra : ''));
     if (url) {
+      // A brand mark is rarely square and often has transparency around it.
+      // Fitting it whole inside the circle on a white ground is what a real
+      // profile picture looks like; cropping it to fill would cut the edges off.
+      node.classList.add('has-logo');
       const img = document.createElement('img');
       img.src = url; img.alt = '';
       node.appendChild(img);
@@ -450,14 +454,26 @@
       : el('div', 'mk-topbar mk-topbar-ig', '<b>Reels</b>' + SYS.camera));
 
     const rail = el('div', 'mk-rail');
-    rail.innerHTML =
+    // TikTok carries the account at the top of the rail, above the heart.
+    if (kind === 'tiktok') {
+      const badge = el('div', 'mk-rail-me');
+      badge.appendChild(avatar(post, cfg, 'mk-avatar-rail'));
+      badge.appendChild(el('span', 'mk-rail-plus', '+'));
+      rail.appendChild(badge);
+    }
+    rail.insertAdjacentHTML('beforeend',
       '<span>' + icon('heart', 26) + '<b>4.2K</b></span>' +
       '<span>' + icon('comment', 26) + '<b>318</b></span>' +
-      '<span>' + icon('send', 26) + '<b>96</b></span>';
+      '<span>' + icon('send', 26) + '<b>96</b></span>');
     screen.appendChild(rail);
 
     const foot = el('div', 'mk-vfoot');
-    foot.appendChild(el('div', 'mk-vhandle', esc(atHandle(handleFor(post, cfg), post))));
+    const who = el('div', 'mk-vwho');
+    // Reels put the account beside the handle at the foot; TikTok has it on
+    // the rail instead, so it is not repeated here.
+    if (kind !== 'tiktok') who.appendChild(avatar(post, cfg, 'mk-avatar-v'));
+    who.appendChild(el('div', 'mk-vhandle', esc(atHandle(handleFor(post, cfg), post))));
+    foot.appendChild(who);
     const cap = el('div', 'mk-vcaption');
     cap.innerHTML = captionHtml(post.caption);
     foot.appendChild(clampable(cap, 2));
