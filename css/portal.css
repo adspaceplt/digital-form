@@ -1222,3 +1222,18 @@ a { color: inherit; }
 /* A page that is nothing but a notice or a sign in form: white to the edges. */
 body.is-plain { background: var(--card); }
 body.is-plain .topbar { background: rgba(255,255,255,.9); }
+
+/* The logo, as a circle, beside the field that sets it. A profile picture is
+   square on every platform, so the shape of what gets pasted here decides
+   whether it reads or not. Showing it at the point of entry beats finding out
+   from a mockup. */
+.logorow { display: flex; align-items: center; gap: 10px; }
+.logorow .input { flex: 1 1 auto; min-width: 0; }
+.logopreview {
+  width: 38px; height: 38px; flex: 0 0 auto; border-radius: 50%; overflow: hidden;
+  background: var(--line-soft); box-shadow: inset 0 0 0 1px rgba(0,0,0,.1);
+  display: grid; place-items: center; padding: 1px;
+}
+.logopreview img { width: 100%; height: 100%; object-fit: contain; }
+.logopreview.is-empty { background: repeating-conic-gradient(#f2f2f2 0 25%, #fff 0 50%) 0 0 / 10px 10px; }
+.msg.warn { color: var(--warn); }

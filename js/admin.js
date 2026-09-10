@@ -346,6 +346,7 @@
     $('eTt').value  = c.handle_tiktok || '';
     $('eXhs').value = c.handle_xhs || '';
     $('eLogo').value = c.logo_url || '';
+    paintLogo();
     $('ePass').value = c.passcode || '';
     paintLock();
     msg('handleMsg', '');
@@ -381,6 +382,47 @@
       state.client.handle_xhs = $('eXhs').value.trim() || null;
       msg('handleMsg', 'Saved. Applied to every preview.', 'ok');
     });
+  });
+
+  /* Shows the address as a circle, the way every platform will, and says so
+     when the file is not square. Nothing is ever skewed: a wide mark either
+     loses its ends to a crop or sits small inside the circle, and neither is
+     what the client's real profile looks like. The fix is a square file, so
+     the tool asks for one here rather than letting a mockup deliver the news. */
+  var logoTimer = null;
+  function paintLogo() {
+    var url = $('eLogo').value.trim();
+    var box = $('logoPreview');
+    var img = $('logoPreviewImg');
+    box.classList.toggle('is-empty', !url);
+    if (!url) { img.hidden = true; img.removeAttribute('src'); msg('logoNote', ''); return; }
+    if (!/^https:\/\//i.test(url)) { img.hidden = true; msg('logoNote', ''); return; }
+
+    var probe = new Image();
+    probe.onload = function () {
+      img.src = url;
+      img.hidden = false;
+      var w = probe.naturalWidth, h = probe.naturalHeight;
+      var square = w && h && Math.abs(w - h) / Math.max(w, h) < 0.02;
+      if (square) {
+        msg('logoNote', w + ' x ' + h + '. Square, so it fills the circle exactly.', 'ok');
+      } else {
+        msg('logoNote', w + ' x ' + h + '. A profile picture is square on every ' +
+          'platform, so a ' + (w > h ? 'wide' : 'tall') + ' mark sits small inside the circle ' +
+          'with space around it. A square version of the same file will read properly.', 'warn');
+      }
+    };
+    probe.onerror = function () {
+      img.hidden = true;
+      msg('logoNote', 'Nothing loaded from that address. Open it in a tab to check it is ' +
+        'the file itself and not a page about it.', 'err');
+    };
+    probe.src = url;
+  }
+
+  $('eLogo').addEventListener('input', function () {
+    clearTimeout(logoTimer);
+    logoTimer = setTimeout(paintLogo, 400);
   });
 
   /* Whether the link needs a code is worth seeing without opening the drawer. */

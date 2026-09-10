@@ -166,7 +166,12 @@
           <div class="row">
             <div>
               <label class="field-label" for="eLogo">Logo URL</label>
-              <input class="input" id="eLogo" placeholder="https://… shown as the profile picture">
+              <div class="logorow">
+                <span class="logopreview" id="logoPreview" title="How it will look as a profile picture">
+                  <img id="logoPreviewImg" alt="" hidden>
+                </span>
+                <input class="input" id="eLogo" placeholder="https://… shown as the profile picture">
+              </div>
             </div>
             <div style="flex:0 0 190px">
               <label class="field-label" for="ePass">Access code</label>
@@ -174,6 +179,7 @@
             </div>
             <button class="btn btn-primary" id="saveProfile" type="button">Save</button>
           </div>
+          <div class="msg" id="logoNote"></div>
           <div class="msg" id="profileMsg"></div>
         </div>
 
