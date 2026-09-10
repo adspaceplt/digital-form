@@ -21,6 +21,7 @@
 </head>
 <body>
 
+<!-- Signed out: the plain page, brand only. -->
 <header class="topbar" id="topbar">
   <div class="topbar-inner">
     <div class="brand">
@@ -28,16 +29,13 @@
       <span class="brand-wordmark" id="agencyWordmark" hidden>ADspace</span>
       <span class="brand-divider"></span>
       <span class="brand-meta">
-        <span class="brand-kicker">Content Review Internal</span>
+        <span class="brand-kicker">Digital Admin</span>
       </span>
     </div>
-    <span class="topbar-spacer"></span>
-    <span class="muted" id="whoami"></span>
-    <button class="pill" id="signOut" type="button" hidden>Sign out</button>
   </div>
 </header>
 
-<main class="shell">
+<main class="shell" id="publicShell">
 
   <section class="panel" id="notConfigured" hidden>
     <h3>Not connected yet</h3>
@@ -56,6 +54,40 @@
       <div class="msg" id="authMsg"></div>
     </div>
   </section>
+</main>
+
+<!-- Signed in: the console. One section today, and the shape holds however
+     many arrive later without any of them disturbing the others. -->
+<div class="console" id="console" hidden>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <img id="sideLogo" class="brand-logo" src="" alt="ADspace">
+      <span class="brand-wordmark" id="sideWordmark" hidden>ADspace</span>
+      <span class="sidebar-kicker">Digital Admin</span>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Sections">
+      <span class="sidebar-label">Tools</span>
+      <button class="navitem is-on" data-section="review" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg><span>Content Review</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <span class="sidebar-who" id="whoami"></span>
+      <button class="linkbtn" id="signOut" type="button" hidden>Sign out</button>
+    </div>
+  </aside>
+
+  <div class="console-main">
+    <header class="console-head">
+      <button class="navtoggle" id="navToggle" type="button" aria-label="Sections">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <span class="console-title" id="sectionTitle">Content Review</span>
+    </header>
+
+    <div class="console-body" id="sectionReview">
 
   <!-- ============ Clients ============ -->
   <section id="clientsView" hidden>
@@ -315,7 +347,9 @@
     </div>
   </section>
 
-</main>
+    </div>
+  </div>
+</div>
 
 <script src="/js/admin.js"></script>
 </body>

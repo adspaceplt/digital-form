@@ -9,11 +9,14 @@
   var db  = API.client;
   var $   = function (id) { return document.getElementById(id); };
 
-  (function () {
-    var logo = $('agencyLogo');
-    logo.onerror = function () { logo.hidden = true; $('agencyWordmark').hidden = false; };
+  /* The mark appears twice: on the signed out page and on the console rail.
+     Either can fail to load, and each falls back to the wordmark on its own. */
+  [['agencyLogo', 'agencyWordmark'], ['sideLogo', 'sideWordmark']].forEach(function (pair) {
+    var logo = $(pair[0]);
+    if (!logo) return;
+    logo.onerror = function () { logo.hidden = true; $(pair[1]).hidden = false; };
     logo.src = cfg.brandLogo;
-  })();
+  });
   if (!API.configured || !db) { $('notConfigured').hidden = false; return; }
 
   /* One dropdown in plain language beats two dropdowns of jargon. */
@@ -103,8 +106,12 @@
 
   function gate(session) {
     var inApp = Boolean(session);
-    // The sign in form is the whole page, so the page is white to the edges.
+    // Signed out is a plain page, white to the edges. Signed in is the console,
+    // which brings its own chrome and does not want the page header as well.
     document.body.classList.toggle('is-plain', !inApp);
+    $('topbar').hidden = inApp;
+    $('publicShell').hidden = inApp;
+    $('console').hidden = !inApp;
     $('authPanel').hidden = inApp;
     $('signOut').hidden = !inApp;
     $('whoami').textContent = inApp ? session.user.email : '';
@@ -120,6 +127,37 @@
     entered = true;
     restoreView();
   }
+
+  /* On a phone the rail is a drawer. It closes on a pick, on the scrim, and on
+     escape, so it can never be left covering the work. */
+  (function () {
+    var bar = $('sidebar');
+    var scrim = null;
+
+    function shut() {
+      bar.classList.remove('is-open');
+      if (scrim) { scrim.remove(); scrim = null; }
+    }
+    function open() {
+      bar.classList.add('is-open');
+      scrim = document.createElement('button');
+      scrim.className = 'scrim';
+      scrim.type = 'button';
+      scrim.setAttribute('aria-label', 'Close sections');
+      scrim.addEventListener('click', shut);
+      document.body.appendChild(scrim);
+    }
+
+    $('navToggle').addEventListener('click', function () {
+      bar.classList.contains('is-open') ? shut() : open();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') shut();
+    });
+    bar.addEventListener('click', function (e) {
+      if (e.target.closest('.navitem')) shut();
+    });
+  })();
 
   /* A tab that has been in the background long enough is thrown away by the
      browser and rebuilt from scratch when you return. The address bar already
