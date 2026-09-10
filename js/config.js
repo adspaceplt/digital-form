@@ -36,5 +36,11 @@ window.ADSPACE_CONFIG = {
   supportEmail: 'adspacestudios@gmail.com',
 
   // Reply-to on anything the portal sends on the team's behalf.
-  accountEmail: 'marketing@adspacestudios.com'
+  accountEmail: 'marketing@adspacestudios.com',
+
+  // Deleting a client takes every content set, post and approval with it.
+  // Set a code here and it has to be typed before a deletion goes through, so
+  // no single mis-click can lose a client's history. Left blank, the client's
+  // own name has to be typed instead.
+  deleteCode: ''
 };

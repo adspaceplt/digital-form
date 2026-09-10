@@ -53,13 +53,14 @@
   <!-- ============ Clients ============ -->
   <section id="clientsView" hidden>
     <div class="viewhead">
-      <h2>Clients</h2>
-      <button class="btn btn-primary" id="showAddClient" type="button">Add a client</button>
+      <span class="headmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.85"/><path d="M16 3.6a4 4 0 0 1 0 7"/></svg><h2>Clients</h2></span>
+      <button class="btn btn-primary" id="showAddClient" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a client</button>
     </div>
 
     <div class="panel" id="addClientBox" hidden>
-      <h3>New client</h3>
-      <p class="hint">Only the client name is required. A permanent review link is issued on creation.</p>
+      <div class="panelhead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><h3>New client</h3></div>
+      <p class="hint">Only the name is required. Everything else can be added later from
+      the client's own page.</p>
       <div class="row">
         <div>
           <label class="field-label" for="newClientName">Client name</label>
@@ -75,26 +76,7 @@
         </div>
       </div>
 
-      <h4 class="sectionlabel">Account handles shown in previews</h4>
-      <div class="row">
-        <div>
-          <label class="field-label" for="hIg">Instagram</label>
-          <input class="input" id="hIg" placeholder="@starliving">
-        </div>
-        <div>
-          <label class="field-label" for="hFb">Facebook page</label>
-          <input class="input" id="hFb" placeholder="Star Living">
-        </div>
-        <div>
-          <label class="field-label" for="hTt">TikTok</label>
-          <input class="input" id="hTt" placeholder="@starliving">
-        </div>
-        <div>
-          <label class="field-label" for="hXhs">RedNote name</label>
-          <input class="input" id="hXhs" placeholder="Star Living 家居">
-        </div>
-      </div>
-      <div class="row" style="margin-top:14px">
+      <div class="row" style="margin-top:16px">
         <button class="btn btn-primary" id="addClient" type="button">Create</button>
         <button class="btn" id="cancelAddClient" type="button" style="flex:0 0 auto">Cancel</button>
       </div>
@@ -106,6 +88,7 @@
     <section class="panel panel-collapse" style="margin-top:22px">
       <button class="disclosure" id="activityToggle" type="button" aria-expanded="false">
         <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
+        <svg class="disclosure-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 8v4.3l3 1.8"/></svg>
         <span>Activity record</span>
         <span class="muted">Deletions, publishing and link resets</span>
       </button>
@@ -119,14 +102,16 @@
 
   <!-- ============ One client ============ -->
   <section id="workspace" hidden>
-    <button class="backlink" id="backToClients" type="button">← All clients</button>
+    <button class="backlink" id="backToClients" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back to all clients</button>
 
     <section class="panel">
-      <div class="viewhead" style="margin:0 0 4px"><h2 id="wsClientName"></h2></div>
-      <p class="hint">Permanent review link for this client. Issue once; it remains valid indefinitely.</p>
+      <div class="viewhead" style="margin:0 0 4px">
+        <span class="headmark"><h2 id="wsClientName"></h2><span class="chip" id="wsLock" hidden>Access code</span></span>
+      </div>
+      <p class="hint">Permanent review link. Issue it once; it stays valid indefinitely.</p>
       <div class="linkbox">
         <input class="input" id="clientLink" readonly>
-        <button class="btn btn-primary" id="copyLink" type="button">Copy link</button>
+        <button class="btn btn-primary btn-icon" id="copyLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
         <a class="btn btn-icon" id="openLink" target="_blank" rel="noopener">Preview
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -137,51 +122,75 @@
       </div>
     </section>
 
-    <section class="panel">
-      <h3>Account handles</h3>
-      <p class="hint">Displayed within each platform preview so the post reflects the correct account.</p>
-      <div class="row" id="handleRow">
-        <div>
-          <label class="field-label" for="eIg">Instagram</label>
-          <input class="input" id="eIg" placeholder="@handle">
-        </div>
-        <div>
-          <label class="field-label" for="eFb">Facebook page</label>
-          <input class="input" id="eFb" placeholder="Page name">
-        </div>
-        <div>
-          <label class="field-label" for="eTt">TikTok</label>
-          <input class="input" id="eTt" placeholder="@handle">
-        </div>
-        <div>
-          <label class="field-label" for="eXhs">RedNote name</label>
-          <input class="input" id="eXhs" placeholder="Name">
-        </div>
-        <button class="btn btn-primary" id="saveHandles" type="button">Save handles</button>
-      </div>
-      <div class="msg" id="handleMsg"></div>
-    </section>
-
     <section class="panel panel-collapse">
       <button class="disclosure" id="advancedToggle" type="button" aria-expanded="false">
         <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
-        <span>Account administration</span>
-        <span class="muted">Reset access link, remove client</span>
+        <svg class="disclosure-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+        <span>Client settings</span>
+        <span class="muted">Handles, logo, access code, link, deletion</span>
       </button>
       <div class="disclosure-body" id="advancedBody" hidden>
-        <p class="hint">Resetting invalidates the current link immediately and issues a
-        replacement. Removing a client permanently deletes every content set, post and
-        approval record associated with them.</p>
-        <div class="dangerrow">
-          <button class="btn btn-warn" id="resetLink" type="button">Reset access link</button>
-          <button class="btn btn-danger" id="deleteClient" type="button">Remove client</button>
+
+        <div class="subsection">
+          <h4>Account handles</h4>
+          <p class="hint">Shown inside each platform preview so a post carries the right account.</p>
+          <div class="row" id="handleRow">
+            <div>
+              <label class="field-label" for="eIg">Instagram</label>
+              <input class="input" id="eIg" placeholder="@handle">
+            </div>
+            <div>
+              <label class="field-label" for="eFb">Facebook page</label>
+              <input class="input" id="eFb" placeholder="Page name">
+            </div>
+            <div>
+              <label class="field-label" for="eTt">TikTok</label>
+              <input class="input" id="eTt" placeholder="@handle">
+            </div>
+            <div>
+              <label class="field-label" for="eXhs">RedNote name</label>
+              <input class="input" id="eXhs" placeholder="Name">
+            </div>
+            <button class="btn btn-primary" id="saveHandles" type="button">Save</button>
+          </div>
+          <div class="msg" id="handleMsg"></div>
         </div>
+
+        <div class="subsection">
+          <h4>Logo and access code</h4>
+          <p class="hint">Both can be added, changed or cleared at any time. Clearing the
+          access code leaves the link working on its own.</p>
+          <div class="row">
+            <div>
+              <label class="field-label" for="eLogo">Logo URL</label>
+              <input class="input" id="eLogo" placeholder="https://… shown as the profile picture">
+            </div>
+            <div style="flex:0 0 190px">
+              <label class="field-label" for="ePass">Access code</label>
+              <input class="input" id="ePass" placeholder="None">
+            </div>
+            <button class="btn btn-primary" id="saveProfile" type="button">Save</button>
+          </div>
+          <div class="msg" id="profileMsg"></div>
+        </div>
+
+        <div class="subsection">
+          <h4>Link and deletion</h4>
+          <p class="hint">Resetting invalidates the current link at once and issues a
+          replacement. Deleting a client removes every content set, post and approval
+          record they have, permanently.</p>
+          <div class="dangerrow">
+            <button class="btn btn-warn" id="resetLink" type="button">Reset access link</button>
+            <button class="btn btn-danger" id="deleteClient" type="button">Delete client</button>
+          </div>
+        </div>
+
       </div>
     </section>
 
     <div class="viewhead">
-      <h2>Content sets</h2>
-      <button class="btn btn-primary" id="addBatch" type="button">New content set</button>
+      <span class="headmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg><h2>Content sets</h2></span>
+      <button class="btn btn-primary" id="addBatch" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New content set</button>
     </div>
     <div class="cards" id="batchCards"></div>
 
@@ -196,9 +205,16 @@
           <span class="setbar-note" id="setNote"></span>
         </div>
         <div class="setbar-actions">
-          <button class="btn btn-quiet" id="renameSet" type="button">Rename</button>
-          <button class="btn btn-quiet" id="deleteSet" type="button">Delete set</button>
-          <button class="btn btn-go" id="publishSet" type="button">Send to client</button>
+          <button class="btn btn-icononly" id="renameSet" type="button"
+                  title="Rename set" aria-label="Rename set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg></button>
+          <button class="btn btn-icononly is-danger" id="deleteSet" type="button"
+                  title="Delete set" aria-label="Delete set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/></svg></button>
+          <button class="btn btn-go btn-icon" id="publishSet" type="button">
+            <svg id="publishIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true"></svg>
+            <span id="publishLabel">Publish</span>
+          </button>
         </div>
         <div class="msg" id="setMsg"></div>
       </section>
@@ -206,16 +222,16 @@
       <!-- Step 1: where content comes in -->
       <section class="panel zone-in">
         <div class="zone-head">
+          <svg class="zone-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"/></svg>
           <div>
             <b>Add creative assets</b>
-            <span class="muted">Upload files directly, or provide a Google Drive folder,
-            Drive file, or direct asset link.</span>
+            <span class="muted">Drag them in, or paste a Drive folder, Drive file or direct link.</span>
           </div>
         </div>
 
         <div class="drop" id="drop">
           <b>Drag files here to upload</b>
-          <span>Or click to browse. Placement is detected automatically from each file.</span>
+          <span>Or click to browse. Placement is read from each file.</span>
         </div>
         <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
 
@@ -251,10 +267,10 @@
       <!-- Step 2: uploaded but not yet part of the set -->
       <section class="panel zone-draft" id="draftZone" hidden>
         <div class="zone-head">
+          <svg class="zone-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 1.9"/></svg>
           <div>
             <b>Pending assets</b>
-            <span class="muted">Uploaded but not yet added to this set. Not visible to the
-            client.</span>
+            <span class="muted">Uploaded, not yet in the set. The client cannot see these.</span>
           </div>
         </div>
 
@@ -274,6 +290,7 @@
       <!-- Step 3: what is actually in the set -->
       <section class="panel zone-out">
         <div class="zone-head">
+          <svg class="zone-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg>
           <div>
             <b>Content in this set</b>
             <span class="muted" id="savedCount">No content added.</span>
