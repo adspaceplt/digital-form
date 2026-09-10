@@ -134,7 +134,7 @@ a { color: inherit; }
   margin-left: auto; flex: 0 0 auto; font-size: 12px; font-weight: 500;
   padding: 0; background: none;
 }
-.badge .dot { width: 7px; height: 7px; }
+.badge .status-dot { width: 7px; height: 7px; }
 
 /* Copy block under the mockup: the caption is half the deliverable. */
 .copyblock { border-top: 1px solid var(--line-soft); padding: 16px; }
@@ -727,7 +727,7 @@ a { color: inherit; }
 /* Status, everywhere it appears. A dot and a word, sized like the text around
    it, rather than a grey block in capitals shouting over the thing it labels.
    Colour alone never carries it: the word is always there. */
-.dot {
+.status-dot {
   width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto;
   background: currentColor; margin-right: 7px;
 }

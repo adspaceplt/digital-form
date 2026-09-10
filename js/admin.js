@@ -1716,7 +1716,7 @@
              : review.decision === 'approved' ? 'approved' : 'changes';
     var word = kind === 'pending' ? 'Pending'
              : kind === 'approved' ? 'Approved' : 'Changes requested';
-    return '<span class="status status-' + kind + '"><i class="dot"></i>' + word + '</span>';
+    return '<span class="status status-' + kind + '"><i class="status-dot"></i>' + word + '</span>';
   }
 
   function savedRow(p, review) {
