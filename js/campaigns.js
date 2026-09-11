@@ -1517,4 +1517,5 @@
       showTab(params.get('tab') === 'roster' ? 'roster' : 'campaigns');
     }
   };
+  if (bridge.campaignsReady) bridge.campaignsReady();
 })();
