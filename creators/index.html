@@ -20,27 +20,16 @@
 </head>
 <body>
 
-<header class="topbar" id="topbar">
-  <div class="topbar-inner">
-    <!-- The ADspace mark leads, exactly as it does on the review portal. This
-         is our portal shown to a client, so the branding is ours and the
-         client's name sits under the section name. -->
-    <div class="brand">
-      <img id="agencyLogo" class="brand-logo" src="" alt="ADspace">
-      <span class="brand-wordmark" id="agencyWordmark" hidden>ADspace</span>
-      <span class="brand-divider"></span>
-      <span class="brand-meta">
-        <span class="brand-kicker" id="kicker">Creator Selection</span>
-        <span class="brand-for" id="clientFor">Prepared for <b id="clientName">…</b></span>
-      </span>
-    </div>
-    <span class="topbar-spacer"></span>
-    <a class="headlink" id="invoiceLink" target="_blank" rel="noopener" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></svg><span id="invoiceLinkText"></span>
-    </a>
-    <button class="langtoggle" id="langToggle" type="button">中文</button>
-  </div>
-</header>
+<!-- Header and footer come from the shared chrome, so a new page gets them
+     by including one script rather than copying this markup. -->
+<script src="/js/chrome.js" data-kicker="Creator Selection" data-for data-actions="lang"></script>
+
+<!-- This page's own header control. Everything standard is in the chrome. -->
+<template id="chromeExtra">
+  <a class="headlink" id="invoiceLink" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></svg><span id="invoiceLinkText"></span>
+  </a>
+</template>
 
 <main class="shell">
 

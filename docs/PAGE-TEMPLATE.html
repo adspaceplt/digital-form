@@ -1,0 +1,88 @@
+<!--
+  ADspace portal page template.
+
+  Copy this to start a new page in the portal. The header and the footer come
+  from /js/chrome.js, so they are never written out again: change the chrome
+  once and every page follows.
+
+  What to edit:
+    1. <title> and the description meta.
+    2. data-kicker on the chrome script: the section name shown beside the mark.
+    3. data-for: keep it only when the page is prepared for one client.
+       Then call ADspaceChrome.preparedFor('Prepared for', client.name).
+    4. data-actions: built-in header controls, space separated.
+         lang  the 中文 / EN toggle
+         qr    view on phone
+       Anything of your own goes in a <template id="chromeExtra"> and is moved
+       into ADspaceChrome.actions() by your page script.
+    5. data-footer="off" only if the page draws its own (the signed-in console).
+
+  What NOT to change:
+    - /css/portal.css must stay in <head>. It cannot be injected without the
+      page flashing unstyled.
+    - The chrome script must be the FIRST thing inside <body>, because it
+      writes the header where the tag sits.
+
+  Ids the chrome provides, which your script may use:
+    topbar, agencyLogo, agencyWordmark, kicker, clientFor, clientName,
+    chromeActions, langToggle (with data-actions="lang"), qrBtn (with "qr")
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADspace Section Name</title>
+<meta name="description" content="One sentence on what this page is for.">
+<meta property="og:title" content="Section Name by ADspace">
+<meta property="og:description" content="One sentence on what this page is for.">
+<meta property="og:image" content="https://mycdn.adspace.me/adspace-favicon.png">
+<!-- The favicon, apple touch icon and og:site_name are added by the chrome. -->
+<link rel="stylesheet" href="/css/portal.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/js/config.js"></script>
+<script src="/js/api.js"></script>
+</head>
+<body>
+
+<script src="/js/chrome.js" data-kicker="Section Name" data-actions="lang"></script>
+
+<!-- Controls of your own for the header, moved into the chrome by your script:
+<template id="chromeExtra">
+  <button class="headlink" id="myThing" type="button">My thing</button>
+</template>
+-->
+
+<main class="shell">
+
+  <!-- A whole-page notice: no panel around it, same as the other portals. -->
+  <section class="cover-panel" id="stateBox" hidden>
+    <h2 id="stateTitle"></h2>
+    <p id="stateText"></p>
+  </section>
+
+  <div id="app" hidden>
+
+    <div class="viewhead">
+      <span class="headmark"><h2>Something</h2></span>
+      <button class="btn btn-primary" id="doThing" type="button">Do the thing</button>
+    </div>
+
+    <section class="panel">
+      <div class="panelhead"><h3>A panel</h3></div>
+      <p class="hint">One line saying what this is for.</p>
+      <div class="row">
+        <div><label class="field-label" for="aField">A field</label>
+          <input class="input" id="aField"></div>
+        <button class="btn" id="aButton" type="button">Save</button>
+      </div>
+      <div class="msg" id="aMsg"></div>
+    </section>
+
+  </div>
+</main>
+
+<script src="/js/your-page.js"></script>
+</body>
+</html>

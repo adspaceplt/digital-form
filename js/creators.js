@@ -17,20 +17,18 @@
   /* "Prepared for <client>" under the section name, in whichever language the
      page is showing. */
   function paintPreparedFor(name) {
-    var el = $('clientFor');
-    if (!el) return;
-    var who = name || $('clientName').textContent || '';
-    el.hidden = !who;
-    if (who) el.innerHTML = esc(t().preparedFor) + ' <b id="clientName">' + esc(who) + '</b>';
+    var who = name || ($('clientName') ? $('clientName').textContent : '');
+    if (window.ADspaceChrome) window.ADspaceChrome.preparedFor(t().preparedFor, who);
   }
 
-  /* Our mark, loaded the same way the review portal loads it, with the
-     wordmark as the fallback if the image does not arrive. */
+  /* The mark and the standard bar come from the shared chrome. This page's
+     one extra control is moved into the slot the chrome leaves for it. */
   (function () {
-    var logo = $('agencyLogo');
-    if (!logo) return;
-    logo.onerror = function () { logo.hidden = true; $('agencyWordmark').hidden = false; };
-    logo.src = (window.ADSPACE_CONFIG || {}).brandLogo || '';
+    var slot = window.ADspaceChrome && window.ADspaceChrome.actions();
+    var extra = $('chromeExtra');
+    if (!slot || !extra) return;
+    slot.insertBefore(extra.content.cloneNode(true), slot.firstChild);
+    if ($('invoiceLink')) $('invoiceLink').hidden = true;
   })();
   function money(n) {
     return 'RM ' + Number(n || 0).toLocaleString('en-MY', { minimumFractionDigits: 0 });

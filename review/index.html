@@ -40,24 +40,8 @@
   <b>Demo mode.</b> Sample content shown because no Supabase project is connected yet.
 </div>
 
-<header class="topbar">
-  <div class="topbar-inner">
-    <div class="brand">
-      <img id="agencyLogo" class="brand-logo" src="" alt="ADspace">
-      <span class="brand-wordmark" id="agencyWordmark" hidden>ADspace</span>
-      <span class="brand-divider"></span>
-      <span class="brand-meta">
-        <span class="brand-kicker">Content Review <span class="beta">Beta</span></span>
-        <span class="brand-for">Prepared for <b id="clientName">…</b></span>
-      </span>
-    </div>
-    <span class="topbar-spacer"></span>
-    <button class="pill" id="qrBtn" type="button" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM19 14h2M14 19h3M19 19h2"/></svg>
-      View on phone
-    </button>
-  </div>
-</header>
+<!-- Header and footer come from the shared chrome. -->
+<script src="/js/chrome.js" data-kicker="Content Review" data-for data-actions="qr"></script>
 
 <main class="shell">
   <div class="filterbar" id="filterbar" hidden>
