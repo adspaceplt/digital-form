@@ -370,21 +370,47 @@
     });
   }
 
+  /* Label, tone, and which section of the portal the action belongs to, so the
+     record can be filtered the way the sidebar is. */
   var ACTION_LABEL = {
-    'client.removed':        ['Client removed', 'is-danger'],
-    'set.deleted':           ['Content set deleted', 'is-danger'],
-    'post.deleted':          ['Post deleted', 'is-danger'],
-    'set.published':         ['Published to client', 'is-ok'],
-    'set.withdrawn':         ['Withdrawn from client', 'is-warn'],
-    'link.reset':            ['Access link reset', 'is-warn'],
-    'reapproval.requested':  ['Re-approval requested', 'is-warn'],
+    'client.added':          ['Client added', 'is-ok', 'review'],
+    'client.removed':        ['Client removed', 'is-danger', 'review'],
+    'set.deleted':           ['Content set deleted', 'is-danger', 'review'],
+    'post.deleted':          ['Post deleted', 'is-danger', 'review'],
+    'set.published':         ['Published to client', 'is-ok', 'review'],
+    'set.withdrawn':         ['Withdrawn from client', 'is-warn', 'review'],
+    'link.reset':            ['Access link reset', 'is-warn', 'review'],
+    'reapproval.requested':  ['Re-approval requested', 'is-warn', 'review'],
     // Short links. Named apart from link.reset above, which is the client's
     // access link and a different thing entirely.
-    'shortlink.created':     ['Short link created', 'is-ok'],
-    'shortlink.updated':     ['Short link changed', 'is-warn'],
-    'shortlink.deleted':     ['Short link deleted', 'is-danger'],
-    'shortlink.imported':    ['Short links imported', 'is-ok']
+    'shortlink.created':     ['Short link created', 'is-ok', 'links'],
+    'shortlink.updated':     ['Short link changed', 'is-warn', 'links'],
+    'shortlink.deleted':     ['Short link deleted', 'is-danger', 'links'],
+    'shortlink.imported':    ['Short links imported', 'is-ok', 'links'],
+    // Creator campaigns and the roster behind them.
+    'campaign.created':      ['Campaign created', 'is-ok', 'campaigns'],
+    'campaign.edited':       ['Campaign edited', '', 'campaigns'],
+    'campaign.opened':       ['Sent to client', 'is-ok', 'campaigns'],
+    'campaign.closed':       ['Withdrawn from client', 'is-warn', 'campaigns'],
+    'campaign.deleted':      ['Campaign deleted', 'is-danger', 'campaigns'],
+    'campaign.locked':       ['Selection accepted', 'is-ok', 'campaigns'],
+    'campaign.keyed':        ['Chosen for the client', '', 'campaigns'],
+    'campaign.unkeyed':      ['Selection undone', 'is-warn', 'campaigns'],
+    'campaign.rate':         ['Rate changed', 'is-warn', 'campaigns'],
+    'campaign.stage':        ['Stage moved', '', 'campaigns'],
+    'campaign.unbooked':     ['Returned to options', 'is-warn', 'campaigns'],
+    'campaign.withdrawn':    ['Creator withdrew', 'is-danger', 'campaigns'],
+    'campaign.replaced':     ['Creator replaced', 'is-danger', 'campaigns'],
+    'campaign.reinstated':   ['Put back in production', 'is-ok', 'campaigns'],
+    'campaign.invoice':      ['Invoice number set', '', 'campaigns'],
+    'campaign.invoice_file': ['Invoice uploaded', 'is-ok', 'campaigns'],
+    'campaign.bulk':         ['Shoot dates applied', '', 'campaigns'],
+    'creator.added':         ['Creator added', 'is-ok', 'campaigns'],
+    'creator.updated':       ['Creator edited', '', 'campaigns'],
+    'creator.removed':       ['Creator removed', 'is-danger', 'campaigns']
   };
+  var ACT_SECTION = { all: 'Everything', review: 'Content Review',
+                      campaigns: 'Creator Campaigns', links: 'Short Links' };
 
   /* The section only appears for people on the viewer list. The database
      enforces this too, so hiding it here is convenience rather than the
@@ -402,10 +428,11 @@
       }, function () { maySeeActivity = false; showActivityLink(); });
   }
 
-  /* The record belongs to Content Review, so it is offered there and nowhere
-     else. Hiding it is convenience; the database is what actually refuses. */
+  /* The record covers the whole portal, not one section of it, so it is
+     offered wherever you are. Hiding it is convenience; the database is what
+     actually refuses. */
   function showActivityLink() {
-    $('activityOpen').hidden = !(maySeeActivity && section === 'review');
+    $('activityOpen').hidden = !maySeeActivity;
   }
 
   function shutActivity() { $('activitySheet').hidden = true; }
@@ -422,36 +449,97 @@
     if (e.key === 'Escape') shutActivity();
   });
 
+  /* Filtered by section and grouped by day. Sixty rows in one unbroken column
+     was a scroll with no landmarks in it; a date heading gives the eye
+     somewhere to stop, and the tabs answer "what happened in campaigns" without
+     reading past everything else. */
+  var actFilter = 'all';
+  var actRows = [];
+
+  function dayLabel(iso) {
+    var d = new Date(iso);
+    // A row with no usable timestamp gets its own group rather than a heading
+    // reading "Invalid Date".
+    if (!iso || isNaN(d.getTime())) return 'Undated';
+    var today = new Date();
+    var same = function (a, b) { return a.toDateString() === b.toDateString(); };
+    var yest = new Date(today.getTime() - 864e5);
+    if (same(d, today)) return 'Today';
+    if (same(d, yest)) return 'Yesterday';
+    return d.toLocaleDateString('en-GB',
+      { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function sectionOf(action) { return (ACTION_LABEL[action] || [])[2] || 'other'; }
+
+  function clockOf(iso) {
+    var d = new Date(iso);
+    if (!iso || isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function paintActivity() {
+    var box = $('activityList');
+    var rows = actRows.filter(function (a) {
+      return actFilter === 'all' || sectionOf(a.action) === actFilter;
+    });
+    Array.prototype.forEach.call($('activityTabs').children, function (b) {
+      b.classList.toggle('is-on', b.getAttribute('data-af') === actFilter);
+    });
+    if (!rows.length) {
+      box.innerHTML = '<div class="empty">Nothing recorded' +
+        (actFilter === 'all' ? '' : ' in ' + ACT_SECTION[actFilter]) + '.</div>';
+      return;
+    }
+    box.innerHTML = '';
+    var day = '';
+    rows.forEach(function (a) {
+      var label = dayLabel(a.created_at);
+      if (label !== day) {
+        day = label;
+        var h = document.createElement('div');
+        h.className = 'act-day';
+        h.textContent = day;
+        box.appendChild(h);
+      }
+      var meta = ACTION_LABEL[a.action] || [a.action, ''];
+      var row = document.createElement('div');
+      row.className = 'act';
+      row.innerHTML =
+        '<span class="act-tag ' + meta[1] + '">' + esc(meta[0]) + '</span>' +
+        '<span class="act-subject">' + esc(a.subject || '') + '</span>' +
+        '<span class="muted act-when">' + esc(clockOf(a.created_at)) + '</span>' +
+        // Who did it and any note, on one line. Separated only when both
+        // are there, so a missing note never leaves a stray bullet.
+        '<span class="muted act-meta">' +
+          [a.detail, a.actor].filter(Boolean).map(esc).join(' · ') +
+        '</span>';
+      box.appendChild(row);
+    });
+  }
+
+  Array.prototype.forEach.call($('activityTabs').children, function (b) {
+    b.addEventListener('click', function () {
+      actFilter = b.getAttribute('data-af');
+      paintActivity();
+    });
+  });
+
   function loadActivity() {
     var box = $('activityList');
     box.innerHTML = '<div class="empty">Loading…</div>';
+    // Opening it from a section starts on that section, since that is almost
+    // always what the question was about.
+    actFilter = ACT_SECTION[section] ? section : 'all';
     db.from('activity_log').select('*')
-      .order('created_at', { ascending: false }).limit(60)
+      .order('created_at', { ascending: false }).limit(200)
       .then(function (r) {
         if (r.error) {
           box.innerHTML = '<div class="empty">You do not have access to the activity record.</div>';
           return;
         }
-        if (!r.data.length) { box.innerHTML = '<div class="empty">No recorded activity.</div>'; return; }
-        box.innerHTML = '';
-        r.data.forEach(function (a) {
-          var meta = ACTION_LABEL[a.action] || [a.action, ''];
-          var row = document.createElement('div');
-          row.className = 'act';
-          row.innerHTML =
-            '<span class="act-tag ' + meta[1] + '">' + esc(meta[0]) + '</span>' +
-            '<span class="act-subject">' + esc(a.subject || '') + '</span>' +
-            '<span class="muted act-when">' +
-              new Date(a.created_at).toLocaleString('en-GB',
-                { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) +
-            '</span>' +
-            // Who did it and any note, on one line. Separated only when both
-            // are there, so a missing note never leaves a stray bullet.
-            '<span class="muted act-meta">' +
-              [a.detail, a.actor].filter(Boolean).map(esc).join(' · ') +
-            '</span>';
-          box.appendChild(row);
-        });
+        actRows = r.data || [];
+        paintActivity();
       });
   }
 

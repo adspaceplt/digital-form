@@ -13,6 +13,25 @@
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
+
+  /* "Prepared for <client>" under the section name, in whichever language the
+     page is showing. */
+  function paintPreparedFor(name) {
+    var el = $('clientFor');
+    if (!el) return;
+    var who = name || $('clientName').textContent || '';
+    el.hidden = !who;
+    if (who) el.innerHTML = esc(t().preparedFor) + ' <b id="clientName">' + esc(who) + '</b>';
+  }
+
+  /* Our mark, loaded the same way the review portal loads it, with the
+     wordmark as the fallback if the image does not arrive. */
+  (function () {
+    var logo = $('agencyLogo');
+    if (!logo) return;
+    logo.onerror = function () { logo.hidden = true; $('agencyWordmark').hidden = false; };
+    logo.src = (window.ADSPACE_CONFIG || {}).brandLogo || '';
+  })();
   function money(n) {
     return 'RM ' + Number(n || 0).toLocaleString('en-MY', { minimumFractionDigits: 0 });
   }
@@ -20,6 +39,12 @@
   function money2(n) {
     return 'RM ' + Number(n || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
+  // The mark that says this opens somewhere else.
+  var EXT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M14 4h6v6"/><path d="M20 4 11 13"/>' +
+    '<path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+
   var SST = 0.08;
   function sstOf(subtotal) { return Math.round(subtotal * SST * 100) / 100; }
   function totalsHtml(subtotal) {
@@ -34,6 +59,7 @@
   var T = {
     en: {
       kicker: 'Creator Selection',
+      preparedFor: 'Prepared for',
       lang: '中文',
       chooseMore: function (n) { return 'Choose ' + n + ' more.'; },
       complete: 'All chosen.',
@@ -55,7 +81,7 @@
       oneMoreBackup: 'Choose another backup so two stay in reserve.',
       replacement: 'Replacement',
       viewProfile: 'View profile',
-      viewOn: function (platform) { return 'View ' + platform + ' profile →'; },
+      viewOn: function (platform) { return 'View ' + platform + ' profile'; },
       platform: { xhs: 'RedNote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' },
       full: 'All slots taken',
       confirm: 'Confirm selection',
@@ -127,6 +153,7 @@
     },
     zh: {
       kicker: '博主选择',
+      preparedFor: '呈交',
       lang: 'EN',
       chooseMore: function (n) { return '再选 ' + n + ' 位。'; },
       complete: '已选齐。',
@@ -148,7 +175,7 @@
       oneMoreBackup: '请再选一位备选，以保持两位在候补。',
       replacement: '替补',
       viewProfile: '查看主页',
-      viewOn: function (platform) { return '查看' + platform + '主页 →'; },
+      viewOn: function (platform) { return '查看' + platform + '主页'; },
       platform: { xhs: '小红书', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' },
       full: '名额已满',
       confirm: '确认选择',
@@ -255,6 +282,7 @@
     try { localStorage.setItem(LANG_KEY, lang); } catch (e) {}
     $('langToggle').textContent = t().lang;
     $('kicker').textContent = t().kicker;
+    paintPreparedFor();
     document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
     if (feed) build();
   }
@@ -298,12 +326,10 @@
     var client = feed.client || {};
     var options = feed.options || [];
 
-    document.title = (client.name ? client.name + ' · ' : '') + t().kicker;
+    document.title = (client.name ? client.name + ' · ' : '') + 'ADspace ' + t().kicker;
     $('clientName').textContent = client.name || '';
-    if (client.logo_url) {
-      $('clientLogo').src = client.logo_url;
-      $('clientLogo').hidden = false;
-    }
+    paintPreparedFor(client.name);
+
     $('kicker').textContent = t().kicker;
     $('langToggle').textContent = t().lang;
     $('invoiceLink').hidden = !c.invoice_url;
@@ -601,14 +627,13 @@
 
       // The profile link is the thing they came to click, so it is a button
       // with the platform named on it, not a chip that reads as decoration.
-      /* "View RedNote profile →" is right on a desktop and too long for a
-         phone, where two of them will not sit side by side. Both labels are
-         rendered and the width decides which one shows. */
+      /* The profile is the thing they came to open, so it is named in full and
+         carries the icon that says it leaves the page. Several sit side by
+         side and wrap when the width runs out. */
       var links = (o.profiles || []).map(function (p) {
         var name = t().platform[p.platform] || platLabel(p.platform);
         return '<a class="plink" href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
-          '<span class="plink-full">' + esc(t().viewOn(name)) + '</span>' +
-          '<span class="plink-short">' + esc(name) + ' →</span></a>';
+          esc(t().viewOn(name)) + EXT_ICON + '</a>';
       }).join('');
 
       row.innerHTML =
