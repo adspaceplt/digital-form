@@ -544,8 +544,16 @@
           '<span class="slink-target">' + esc(o.platforms || '') + ' · ' + money(o.rate) + '</span>' +
         '</div>' +
         '<div class="slink-actions">' +
+          (o.state === 'option' || o.state === 'backup'
+            ? iconBtn('tick', 'pick', 'Shortlist on the client\'s behalf') : '') +
+          (o.state === 'shortlisted'
+            ? iconBtn('redo', 'unpick', 'Take off the shortlist', 'is-warn') : '') +
           iconBtn('trash', 'del', 'Remove option', 'is-danger') +
         '</div>';
+      var pick = row.querySelector('[data-a="pick"]');
+      if (pick) pick.addEventListener('click', function () { keyIn(o, 'shortlisted'); });
+      var unpick = row.querySelector('[data-a="unpick"]');
+      if (unpick) unpick.addEventListener('click', function () { keyIn(o, 'option'); });
       row.querySelector('[data-a="del"]').addEventListener('click', function () { dropOption(o); });
       box.appendChild(row);
     });
@@ -561,6 +569,24 @@
 
   function tallyCell(label, value) {
     return '<div class="tally-cell"><b>' + esc(String(value)) + '</b><span>' + esc(label) + '</span></div>';
+  }
+
+  /* A client who answers on WhatsApp has still chosen. This is how that choice
+     gets into the record, and the lock records that it was keyed in by us. */
+  function keyIn(o, to) {
+    var name = (o.creators || {}).name || '';
+    var chosen = state.options.filter(function (x) { return x.state === 'shortlisted'; }).length;
+    var booked = state.options.filter(isLive).length;
+    if (to === 'shortlisted' && chosen + booked >= state.campaign.slots) {
+      msg('campWorkMsg', 'Every slot is already spoken for. Take one off first.', 'err');
+      return;
+    }
+    db.from('campaign_options').update({ state: to }).eq('id', o.id).then(function (r) {
+      if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+      log(to === 'shortlisted' ? 'campaign.keyed' : 'campaign.unkeyed', name, '');
+      msg('campWorkMsg', '');
+      loadOptions();
+    });
   }
 
   function dropOption(o) {

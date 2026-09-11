@@ -1749,3 +1749,12 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
   .prod-sum { flex: 1 1 100%; white-space: normal; }
   .booking-cta { width: 100%; }
 }
+
+/* Backups are part of the selection, so their count sits with the count. */
+.progress-backup { color: var(--ink-mute); margin-top: 4px; }
+.progress-backup.is-ok { color: var(--ok); }
+.listhint.is-priority { color: var(--warn); font-weight: 500; }
+.tag-pri {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .04em;
+  padding: 2px 7px; border-radius: 4px; background: var(--warn); color: #fff;
+}

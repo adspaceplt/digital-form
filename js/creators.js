@@ -34,7 +34,13 @@
       selected: 'Selected',
       backup: 'Backup',
       isBackup: 'Backup ✓',
-      backupHint: 'Tick the ones you want. Marking a creator as backup costs nothing. We only use them if someone you picked becomes unavailable.',
+      backupHint: 'Tick the ones you want, then mark two as backups. A backup costs nothing. We only use them if someone you picked becomes unavailable.',
+      backupsNeeded: function (n) { return 'Choose ' + n + ' more backup' + (n === 1 ? '' : 's') + ' before confirming.'; },
+      backupsDone: 'Backups chosen.',
+      backupCount: function (a, b) { return a + ' of ' + b + ' backups'; },
+      priorityNotice: 'A creator became unavailable. Your backups are first in line. Tick one to fill the slot.',
+      priority: 'Priority',
+      oneMoreBackup: 'Choose another backup so two stay in reserve.',
       replacement: 'Replacement',
       viewProfile: 'View profile',
       full: 'All slots taken',
@@ -100,7 +106,13 @@
       selected: '已选',
       backup: '设为备选',
       isBackup: '备选 ✓',
-      backupHint: '勾选您想合作的博主。设为备选不产生费用，只有当您所选的博主档期不合时才会启用。',
+      backupHint: '勾选您想合作的博主，并将两位设为备选。备选不产生费用，只有当您所选的博主档期不合时才会启用。',
+      backupsNeeded: function (n) { return '请再选 ' + n + ' 位备选后再确认。'; },
+      backupsDone: '备选已完成。',
+      backupCount: function (a, b) { return '备选 ' + a + ' / ' + b; },
+      priorityNotice: '有一位博主暂不可用。您的备选将优先显示，请勾选一位补上名额。',
+      priority: '优先',
+      oneMoreBackup: '请再选一位备选，以保持两位在候补。',
       replacement: '替补',
       viewProfile: '查看主页',
       full: '名额已满',
@@ -406,8 +418,25 @@
       { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
+  var BACKUPS_WANTED = 2;
+
   function countSelected() {
     return Object.keys(chosen).filter(function (k) { return chosen[k] === 'selected'; }).length;
+  }
+  function countBackups() {
+    return Object.keys(chosen).filter(function (k) { return chosen[k] === 'backup'; }).length;
+  }
+  /* Two backups, unless there are not two spare creators to choose from. A
+     client with exactly ten options for ten slots cannot be asked for more. */
+  function backupsWanted() {
+    var spare = choosable().length - countSelected();
+    return Math.max(0, Math.min(BACKUPS_WANTED, spare));
+  }
+  /* A slot has come free through a withdrawal and has not been refilled. The
+     client's own backups are the first thing they should see. */
+  function slotReopened() {
+    var lost = (feed.options || []).some(function (o) { return o.state === 'withdrawn'; });
+    return lost && countSelected() < slotsLeft();
   }
   // Already locked, so they hold a slot and are no longer on offer.
   function countBooked() {
@@ -429,6 +458,15 @@
     var options = choosable();
     var slots = slotsLeft();
     var before = seenBefore();
+    var priority = slotReopened();
+    if (priority) {
+      // Backups first, everything else in its original order.
+      options = options.slice().sort(function (a, b) {
+        var ab = chosen[a.id] === 'backup' ? 0 : 1;
+        var bb = chosen[b.id] === 'backup' ? 0 : 1;
+        return ab - bb;
+      });
+    }
     var isNew = function (o) { return before.length > 0 && before.indexOf(o.id) < 0; };
 
     grid.innerHTML = '';
@@ -441,7 +479,8 @@
       return;
     }
     $('chooseHint').hidden = false;
-    $('chooseHint').textContent = t().backupHint;
+    $('chooseHint').textContent = priority ? t().priorityNotice : t().backupHint;
+    $('chooseHint').classList.toggle('is-priority', priority);
 
     /* A list, not cards. Ten is a page of cards and forty is an afternoon of
        scrolling; the decision is made by opening profiles and comparing rates,
@@ -474,6 +513,7 @@
         '<div class="crow-name">' +
           '<b>' + esc(o.name) + '</b>' +
           (isNew(o) ? '<span class="tag-new">NEW</span>' : '') +
+          (priority && pick === 'backup' ? '<span class="tag-pri">' + esc(t().priority) + '</span>' : '') +
           (o.is_replacement ? '<span class="tag-rep">' + esc(t().replacement) + '</span>' : '') +
         '</div>' +
         '<div class="crow-links">' + links + '</div>' +
@@ -519,14 +559,27 @@
     $('progSay').textContent = n >= slots ? t().complete : t().chooseMore(slots - n);
     $('progressCard').classList.toggle('is-done', n >= slots);
 
+    var want = backupsWanted();
+    var have = countBackups();
+    var backupsOk = have >= want;
+    $('progBackup').hidden = !want;
+    $('progBackup').textContent = !want ? '' :
+      (backupsOk ? t().backupsDone + ' ' + t().backupCount(have, want)
+                 : t().backupsNeeded(want - have) + ' ' + t().backupCount(have, want));
+    $('progBackup').classList.toggle('is-ok', backupsOk);
+
     /* The bar is about what is waiting to be confirmed, not about the campaign.
        Counting booked creators in it said "3 chosen · RM 0" and offered to
        confirm a selection nobody had made. */
     var pending = (feed.options || []).filter(function (o) { return chosen[o.id] === 'selected'; });
     var value = pending.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
-    $('confirmSummary').textContent = t().summary(pending.length, money(value));
+    // Confirming needs the backups too, and the bar says so rather than just
+    // refusing. A backup promoted into a slot leaves one fewer in reserve.
+    var short = want - have;
+    $('confirmSummary').textContent = t().summary(pending.length, money(value)) +
+      (short > 0 ? '  ·  ' + t().backupsNeeded(short) : '');
     $('confirmBtn').textContent = t().confirm;
-    $('confirmBtn').disabled = !pending.length;
+    $('confirmBtn').disabled = !pending.length || !backupsOk;
     $('confirmBar').hidden = !pending.length;
   }
 
