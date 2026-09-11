@@ -1631,8 +1631,8 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 .clist { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
 .crow {
   display: grid; align-items: center; gap: 4px 14px;
-  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
-  grid-template-areas: "tick name links rate backup";
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto auto;
+  grid-template-areas: "no tick name links rate backup";
   padding: 11px 14px; background: var(--card);
   border-bottom: 1px solid var(--line-soft);
 }
@@ -1640,6 +1640,7 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 .crow.is-on { background: var(--line-soft); }
 .crow.is-backup { background: repeating-linear-gradient(135deg, var(--card) 0 8px, var(--line-soft) 8px 16px); }
 
+.crow-no { grid-area: no; }
 .crow-tick {
   grid-area: tick; width: 24px; height: 24px; flex: 0 0 auto; padding: 0;
   border: 1.5px solid var(--line); border-radius: 7px; background: #fff;
@@ -1693,11 +1694,12 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 
 @media (max-width: 640px) {
   .crow {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "tick name rate" "tick links backup";
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "no tick name rate" "no tick links backup";
     row-gap: 8px;
   }
-  .crow-tick { align-self: start; }
+  .crow-tick, .crow-no { align-self: start; }
+  .crow-no { padding-top: 3px; }
 }
 
 /* ---------- Confirm bar ---------- */
@@ -1775,11 +1777,12 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
   border-bottom-left-radius: calc(var(--radius) - 1px);
   border-bottom-right-radius: calc(var(--radius) - 1px);
 }
-/* The live work carries a signature edge. Nothing else does, so the eye finds
-   the running campaign without reading a word. */
-.kcard.is-live { box-shadow: inset 3px 0 0 var(--accent); }
-.kcard.is-waiting { box-shadow: inset 3px 0 0 var(--warn); }
 .kcard.is-off { opacity: .62; }
+/* Running numbers, so a card or a row can be referred to in a call. */
+.kcard-no, .rowno {
+  flex: 0 0 auto; min-width: 18px; font-size: 12px; font-weight: 600;
+  color: var(--ink-mute); font-variant-numeric: tabular-nums;
+}
 
 .kcard-head {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -1906,16 +1909,42 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
   border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
   padding: 14px 16px; margin-bottom: 9px;
 }
-.booking.is-mine { box-shadow: inset 3px 0 0 var(--accent); }
 .booking.is-off { opacity: .6; }
 .booking-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
 .booking-head b { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; }
+/* The same words and the same colours as the console's state chips. */
 .chip-state {
   font-size: 11.5px; font-weight: 600; line-height: 1.5; padding: 2px 8px; border-radius: 5px;
   background: var(--line-soft); color: var(--ink-soft); white-space: nowrap;
 }
-.chip-state.is-mine { background: var(--accent); color: #fff; }
+.chip-state.is-ok     { background: var(--ok-bg);   color: var(--ok); }
+.chip-state.is-warn   { background: var(--warn-bg); color: var(--warn); }
+.chip-state.is-danger { background: #fbeceb;        color: #a3312a; }
 .booking-meta { font-size: 13px; color: var(--ink-mute); margin-top: 5px; }
+
+/* Results as a table: one row per platform, the post link in the first
+   column, the date the numbers were taken beside the numbers. */
+.results-wrap { margin-top: 12px; overflow-x: auto; }
+.results { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.results th {
+  text-align: left; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--line-soft);
+  font-size: 10.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--ink-mute); white-space: nowrap;
+}
+.results td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--line-soft); color: var(--ink); white-space: nowrap; }
+.results tr:last-child td { border-bottom: 0; }
+.results th:last-child, .results td:last-child { padding-right: 0; }
+.results .num { text-align: right; font-variant-numeric: tabular-nums; }
+.results-link { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; color: var(--ink); text-decoration: none; }
+.results-link svg { width: 13px; height: 13px; color: var(--ink-mute); }
+.results-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.postrow-measured { font-size: 12px; margin-top: 6px; }
+.rollup-card {
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
+  padding: 14px 16px; margin: 0 0 12px;
+}
+.rollup-head { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+.rollup-card .tally { margin-top: 10px; }
 
 /* The facts that make the card worth looking at: when, where, what next.
    A grid so they fill the width instead of trailing off in one grey line. */
@@ -1982,9 +2011,14 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 .rate-edit .slugfield { width: 150px; }
 .rate-edit .input { min-width: 0; width: 100%; }
 
-/* Deletion sits apart from the things you do every day, and looks like what
+/* The form inside the campaign's own card: no second border, no second
+   padding. Deletion is at its foot, behind the edit, and looks like what
    it is. */
-.camp-danger { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+#addCampBox.is-inline { border: 0; padding: 0; margin: 0; box-shadow: none; }
+.form-danger { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line-soft); display: flex; }
+.form-danger .btn { flex: 0 0 auto; min-width: 0; }
+.btn-quiet.is-danger { color: #a3312a; }
+.btn-quiet.is-danger:hover { color: #a3312a; border-color: #a3312a; }
 
 @media (max-width: 640px) {
   .pickrow { flex-wrap: wrap; }
@@ -2135,8 +2169,8 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
      tap sit on the next, and the profile button drops to the platform name so
      two of them fit across instead of stacking. */
   .crow {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "tick name rate" ".  links backup";
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: "no tick name rate" "no . links backup";
     gap: 9px 10px; padding: 12px 14px;
   }
   .crow-rate { min-width: 0; }
@@ -2309,6 +2343,9 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 body { min-height: 100vh; display: flex; flex-direction: column; }
 @supports (min-height: 100dvh) { body { min-height: 100dvh; } }
 body > main, body > .shell, body > .console { flex: 1 0 auto; }
+/* In a flex column an item with auto side margins shrinks to its content
+   instead of stretching; the client pages were a 450px column on a desktop. */
+body > .shell { width: 100%; }
 
 /* The review cover claimed a full viewport of its own, which put the footer
    just below the fold on a page with nothing else on it. It now fills what is
@@ -2463,8 +2500,7 @@ body > main, body > .shell, body > .console { flex: 1 0 auto; }
    What a person may not do is not drawn. The database refuses it anyway;
    this stops the screen offering what will be refused. */
 body.no-remove #deleteClient,
-body.no-remove #campDelete,
-body.no-remove .panel-collapse:has(#dangerToggle),
+body.no-remove #campDangerRow,
 body.no-remove .slink-actions [data-a="del"],
 body.no-remove .kmenu-item[data-a="del"].is-danger:not([data-soft]) { display: none !important; }
 body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; }

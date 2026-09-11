@@ -606,7 +606,7 @@
               <input class="input" id="campTitle" placeholder="Campaign name"></div>
             <div><label class="field-label" for="campPurpose">Campaign purpose</label>
               <input class="input" id="campPurpose" placeholder="Purpose"></div>
-            <div style="flex:0 0 110px"><label class="field-label" for="campSlots">Slots</label>
+            <div style="flex:0 0 110px"><label class="field-label" for="campSlots">Creators</label>
               <input class="input" id="campSlots" type="number" min="1" value="10"></div>
           </div>
           <div class="row" style="margin-top:12px">
@@ -634,6 +634,10 @@
             <button class="btn" id="cancelAddCamp" type="button" style="flex:0 0 auto">Cancel</button>
           </div>
           <div class="msg" id="campMsg"></div>
+          <!-- Deletion lives with editing: rare, and behind one more click. -->
+          <div class="form-danger" id="campDangerRow" hidden>
+            <button class="btn btn-quiet is-danger btn-sm" id="campDelete" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/></svg>Delete campaign</button>
+          </div>
         </div>
 
       <!-- ---- Campaign list ---- -->
@@ -650,7 +654,8 @@
       <div id="campWork" hidden>
         <button class="backlink" id="campBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
 
-        <section class="panel">
+        <section class="panel" id="campHead">
+          <div id="campSummary">
           <div class="viewhead" style="margin:0 0 2px">
             <span class="headmark"><h2 id="campName"></h2><span class="chip" id="campState"></span></span>
             <button class="btn btn-quiet btn-sm" id="campEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg>Edit details</button>
@@ -670,10 +675,11 @@
             </a>
           </div>
           <div class="row" style="margin-top:12px">
-            <button class="btn btn-go" id="campPublish" type="button">Open for selection</button>
+            <button class="btn btn-go" id="campPublish" type="button">Publish to client</button>
             <button class="btn btn-primary" id="campLock" type="button" hidden>Confirm creators</button>
           </div>
           <div class="msg" id="campWorkMsg"></div>
+          </div>
         </section>
 
         <!-- Optional, so closed until wanted: open on its own once there is one. -->
@@ -703,21 +709,6 @@
           </div>
         </section>
 
-        <!-- Rare and hard to undo, so it is folded away, not on the desk. -->
-        <section class="panel panel-collapse">
-          <button class="disclosure" id="dangerToggle" type="button" aria-expanded="false">
-            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
-            <svg class="disclosure-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/></svg>
-            <span>Delete campaign</span>
-            <span class="muted">Removes all offers, selections and results</span>
-          </button>
-          <div class="disclosure-body" id="dangerBody" hidden>
-            <p class="hint">This cannot be undone.</p>
-            <div class="dangerrow">
-              <button class="btn btn-danger" id="campDelete" type="button">Delete campaign</button>
-            </div>
-          </div>
-        </section>
 
         <!-- ---- The creators on this campaign ---- -->
         <!-- One list, one card each. An option and a booking were two lists of
@@ -731,7 +722,6 @@
 
         <div class="panel" id="bulkBox" hidden>
           <div class="panelhead"><h3 id="bulkTitle">Shoot date for all</h3></div>
-          <p class="hint" id="bulkHint">Applies to cards without a date. Existing dates are kept.</p>
           <div class="row" id="bulkVisitRow">
             <div style="flex:0 0 160px"><label class="field-label" for="bulkDate">Date</label>
               <input class="input" id="bulkDate" type="date"></div>
@@ -740,7 +730,7 @@
           </div>
           <div class="row" style="margin-top:14px">
             <button class="btn btn-primary" id="bulkApply" type="button">Apply</button>
-            <button class="btn" id="bulkApplyAll" type="button" style="flex:0 0 auto">Overwrite</button>
+            <button class="btn" id="bulkApplyAll" type="button" style="flex:0 0 auto">Apply all</button>
             <button class="btn btn-quiet" id="bulkCancel" type="button" style="flex:0 0 auto">Cancel</button>
           </div>
           <div class="msg" id="bulkMsg"></div>
