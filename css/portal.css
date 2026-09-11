@@ -1453,3 +1453,185 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 }
 
 .iconbtn.is-done { color: var(--ok); background: var(--ok-bg); }
+
+/* =========================================================================
+   CREATOR CAMPAIGNS
+   ========================================================================= */
+
+/* ---------- Tabs ---------- */
+.tabrow {
+  display: flex; gap: 4px; border-bottom: 1px solid var(--line);
+  margin: 18px 0 4px;
+}
+.tab {
+  border: 0; background: none; padding: 10px 14px; border-radius: 9px 9px 0 0;
+  font-size: 13.5px; font-weight: 500; color: var(--ink-mute);
+  border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.tab:hover { color: var(--ink); background: var(--line-soft); }
+.tab.is-on { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
+
+/* ---------- Tally ----------
+   Invoiced against booked. Their only job is to make a goodwill replacement a
+   decision somebody took, rather than something found at reconciliation. */
+.tally { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.tally-cell {
+  flex: 0 0 auto; min-width: 104px;
+  border: 1px solid var(--line); border-radius: 10px; padding: 10px 13px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.tally-cell b { font-size: 17px; font-weight: 600; letter-spacing: -.02em; }
+.tally-cell span { font-size: 11.5px; color: var(--ink-mute); }
+.tally-cell.is-warn { border-color: var(--warn); background: var(--warn-bg); }
+.tally-cell.is-warn b, .tally-cell.is-warn span { color: var(--warn); }
+
+/* ---------- Profile link rows ---------- */
+.profrow { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.profrow .input { flex: 1 1 auto; min-width: 0; }
+.prof-read { flex: 0 0 auto; font-size: 12px; min-width: 150px; }
+.prof-read.ok  { color: var(--ok); }
+.prof-read.err { color: #b3261e; }
+
+.pchip {
+  display: inline-block; font-size: 11.5px; padding: 2px 8px; border-radius: 999px;
+  background: var(--line-soft); color: var(--ink-soft); margin-right: 5px;
+  text-decoration: none;
+}
+.pchip:hover { background: var(--line); color: var(--ink); }
+.pchip-anon { opacity: .5; }
+
+/* ---------- Roster picker ---------- */
+.optionpick { max-height: 320px; overflow: auto; margin-top: 12px; }
+.pickrow {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 9px 2px; border-bottom: 1px solid var(--line-soft); font-size: 13px;
+}
+.pickrow:last-child { border-bottom: 0; }
+.pickrow.is-in { opacity: .5; }
+
+/* =========================================================================
+   CREATOR SELECTION  (client facing)
+   ========================================================================= */
+
+.langtoggle {
+  border: 1px solid var(--line); background: var(--card); border-radius: 8px;
+  padding: 6px 12px; font-size: 12.5px; color: var(--ink-soft); flex: 0 0 auto;
+}
+.langtoggle:hover { border-color: var(--ink-mute); color: var(--ink); }
+.brand-client { max-height: 26px; width: auto; border-radius: 6px; }
+
+/* ---------- Campaign heading ----------
+   Not the review page's cover: that one is a full height hero, which here just
+   pushed the thing the client came to do below the fold. */
+.camphead { margin: 22px 0 4px; }
+.camphead h1 { font-size: 24px; font-weight: 600; letter-spacing: -.02em; }
+.camphead p { font-size: 13.5px; color: var(--ink-mute); margin-top: 6px; }
+.camphead-due { font-weight: 500; color: var(--ink-soft) !important; }
+
+/* ---------- Progress ----------
+   Determinate, because the slot count is known and fixed by the invoice. It
+   leads with what is left to do; a tally alone makes the reader do the
+   subtraction before they know whether to act. */
+.progress-card {
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
+  padding: 16px 18px; margin: 20px 0 18px;
+}
+.progress-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.progress-top b { font-size: 14px; font-weight: 600; }
+.progress-card .progress-track {
+  height: 8px; border-radius: 999px; background: var(--line-soft);
+  overflow: hidden; margin: 10px 0 0;
+}
+.progress-card .progress-fill {
+  height: 100%; background: var(--ink); border-radius: 999px;
+  transition: width .28s ease;
+}
+.progress-card.is-done .progress-fill { background: var(--ok); }
+.progress-say { font-size: 13.5px; margin-top: 10px; }
+.progress-card.is-done .progress-say { color: var(--ok); font-weight: 500; }
+.progress-new {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft);
+  font-size: 13px; color: var(--ink-mute);
+}
+
+/* ---------- Creator cards ---------- */
+.ccard {
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
+  padding: 15px 16px; display: flex; flex-direction: column; gap: 7px;
+  transition: border-color .18s, box-shadow .18s;
+}
+.ccard.is-on { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.ccard.is-backup { border-style: dashed; }
+.ccard-head { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.ccard-head b { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; }
+.ccard-meta { font-size: 12.5px; color: var(--ink-mute); }
+.ccard-links { display: flex; flex-wrap: wrap; gap: 4px; }
+.ccard-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-top: auto; padding-top: 8px;
+}
+.ccard-rate { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.ccard-pick { min-width: 96px; }
+.ccard-pick[disabled] { opacity: .45; }
+.ccard-backup { align-self: flex-start; }
+
+.tag-new {
+  font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  padding: 2px 6px; border-radius: 4px; background: var(--ink); color: #fff;
+}
+.tag-rep {
+  font-size: 10.5px; font-weight: 600;
+  padding: 2px 7px; border-radius: 4px; background: var(--warn-bg); color: var(--warn);
+}
+
+/* ---------- Confirm bar ---------- */
+.confirmbar {
+  position: sticky; bottom: 0; z-index: 40; margin: 18px -20px 0;
+  background: rgba(255,255,255,.92); backdrop-filter: saturate(180%) blur(14px);
+  border-top: 1px solid var(--line);
+}
+.confirmbar-in {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 12px 20px; font-size: 13.5px;
+}
+
+@media (max-width: 640px) {
+  .tabrow { overflow-x: auto; }
+  .profrow { flex-wrap: wrap; }
+  .prof-read { min-width: 0; flex: 1 1 100%; }
+  .confirmbar-in { flex-direction: column; align-items: stretch; gap: 9px; }
+  .confirmbar-in .btn { width: 100%; }
+}
+
+/* The KOC list has always gone out as a printed sheet, so it still can. */
+@media print {
+  .langtoggle, .confirmbar, .ccard-pick, .ccard-backup, .progress-new { display: none !important; }
+  .ccard { break-inside: avoid; border-color: #ccc; }
+  .progress-card { border-color: #ccc; }
+}
+
+/* ---------- QR codes ---------- */
+.qrrow {
+  display: flex; gap: 16px; align-items: flex-start;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 16px; margin-bottom: 10px; background: var(--card);
+}
+.qrrow.is-off { opacity: .55; }
+.qrrow.is-off .qrrow-img { filter: grayscale(1); }
+.qrrow-img { flex: 0 0 auto; line-height: 0; }
+.qrrow-img canvas, .qrrow-img img { display: block; border-radius: 4px; }
+.qrrow-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.qrrow-body b { font-size: 13.5px; font-weight: 600; }
+.qrrow-url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px;
+  color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.qrrow-body .muted { font-size: 11.5px; }
+.qrrow-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.qrrow-acts .btn { min-width: 0; }
+
+@media (max-width: 560px) {
+  .qrrow { flex-direction: column; }
+  .qrrow-acts .btn { flex: 1 1 auto; }
+}

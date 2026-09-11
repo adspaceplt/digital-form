@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creator Selection</title>
+<meta name="description" content="Choose the creators for your campaign.">
+<meta property="og:site_name" content="ADspace">
+<meta property="og:title" content="Creator Selection by ADspace">
+<meta property="og:description" content="The creators we have sourced for your campaign. Open each profile, then choose the ones you want.">
+<meta property="og:image" content="https://mycdn.adspace.me/adspace-favicon.png">
+<meta name="twitter:card" content="summary">
+<link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
+<link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
+<link rel="stylesheet" href="/css/portal.css">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/js/config.js"></script>
+<script src="/js/api.js"></script>
+</head>
+<body>
+
+<header class="topbar" id="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <img id="clientLogo" class="brand-logo brand-client" src="" alt="" hidden>
+      <span class="brand-wordmark" id="clientName"></span>
+      <span class="brand-divider"></span>
+      <span class="brand-meta"><span class="brand-kicker" id="kicker">Creator Selection</span></span>
+    </div>
+    <span class="topbar-spacer"></span>
+    <button class="langtoggle" id="langToggle" type="button">中文</button>
+  </div>
+</header>
+
+<main class="shell">
+
+  <section class="panel" id="stateBox" hidden>
+    <h3 id="stateTitle"></h3>
+    <p class="hint" id="stateText"></p>
+    <div class="row" id="passRow" hidden>
+      <div style="flex:0 0 200px">
+        <input class="input" id="passInput" placeholder="Access code">
+      </div>
+      <button class="btn btn-primary" id="passGo" type="button">Open</button>
+    </div>
+    <div class="msg" id="stateMsg"></div>
+  </section>
+
+  <div id="app" hidden>
+
+    <div class="camphead">
+      <h1 id="campTitle"></h1>
+      <p id="campBrief"></p>
+      <p class="camphead-due" id="campDue"></p>
+    </div>
+
+    <!-- Progress. Determinate, because the slot count is known, and phrased as
+         what is left to do rather than as a tally. -->
+    <section class="progress-card" id="progressCard">
+      <div class="progress-top">
+        <b id="progLabel"></b>
+        <span class="muted" id="progCount"></span>
+      </div>
+      <div class="progress-track"><div class="progress-fill" id="progFill"></div></div>
+      <p class="progress-say" id="progSay"></p>
+      <div class="progress-new" id="progNew" hidden>
+        <span id="progNewText"></span>
+        <button class="linkbtn" id="progNewBtn" type="button"></button>
+      </div>
+    </section>
+
+    <div class="grid" id="optionGrid"></div>
+
+    <div class="confirmbar" id="confirmBar">
+      <div class="confirmbar-in">
+        <span id="confirmSummary"></span>
+        <button class="btn btn-primary" id="confirmBtn" type="button"></button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="sheet" id="confirmSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true">
+    <div class="sheet-head">
+      <h3 id="confirmHeading"></h3>
+      <button class="iconbtn" id="confirmClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <p class="hint" id="confirmBlurb"></p>
+    <div id="confirmList" class="sheet-body"></div>
+    <label class="field-label" for="confirmName" id="confirmNameLabel"></label>
+    <input class="input" id="confirmName" placeholder="">
+    <div class="row" style="margin-top:14px;margin-bottom:14px">
+      <button class="btn btn-primary" id="confirmGo" type="button"></button>
+      <button class="btn" id="confirmCancel" type="button" style="flex:0 0 auto"></button>
+    </div>
+    <div class="msg" id="confirmMsg"></div>
+  </div>
+</div>
+
+<script src="/js/creators.js"></script>
+</body>
+</html>
