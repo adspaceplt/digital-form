@@ -452,7 +452,7 @@
             (ct.is_primary ? '' :
               '<button class="kmenu-item" data-a="primary" type="button"><b>Make main contact</b>' +
               '<span>The person we deal with by default.</span></button>') +
-            '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Remove</b>' +
+            '<button class="kmenu-item is-danger" data-a="del" data-soft type="button"><b>Remove</b>' +
             '<span>Hidden, not deleted. Can be put back.</span></button>') +
       '</div>' +
       '<div class="kstep kstep-terms">' +

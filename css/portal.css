@@ -2371,3 +2371,73 @@ body > main, body > .shell, body > .console { flex: 1 0 auto; }
 .touch-actions { grid-area: del; display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 .touch-next.is-done { color: var(--ink-mute); text-decoration: line-through; }
 .crm-head, .crm-row { grid-template-columns: minmax(0, 2.2fr) 128px minmax(0, 1fr) 110px minmax(0, 1.1fr); }
+
+/* ---------- Team ----------
+   A grid of people against permissions. One row per person, a column per
+   switch, so a glance answers "who can see the activity record" the same way
+   a glance at the client table answers "who owns Star Living". */
+.team-table {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 12px 0 4px; overflow-x: auto;
+}
+.team-head, .team-row {
+  display: grid; align-items: center; gap: 0 10px; min-width: 860px;
+  grid-template-columns: minmax(200px, 1.6fr) 136px repeat(7, minmax(78px, .7fr)) 110px;
+  padding: 0 15px;
+}
+.team-head {
+  padding-bottom: 8px; border-bottom: 1px solid var(--line);
+  font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-mute); text-align: center;
+}
+.team-head > span:first-child { text-align: left; }
+.team-row { padding-top: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line-soft); }
+.team-row:last-child { border-bottom: 0; }
+.team-row.is-off { opacity: .55; }
+.team-who { display: flex; flex-direction: column; min-width: 0; }
+.team-who b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+.team-who b i { font-style: normal; font-size: 11px; font-weight: 600; color: var(--accent); margin-left: 6px; }
+.team-who small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-flag { text-align: center; }
+.team-flag input { width: 18px; height: 18px; accent-color: var(--accent); }
+.team-flag input:disabled { opacity: .45; }
+.team-act { text-align: right; }
+.select-sm { min-height: 36px; min-width: 0; padding-right: 28px; font-size: 13px; width: 100%; }
+
+/* ---------- Access ----------
+   What a person may not do is not drawn. The database refuses it anyway;
+   this stops the screen offering what will be refused. */
+body.no-remove #deleteClient,
+body.no-remove #campDelete,
+body.no-remove .panel-collapse:has(#dangerToggle),
+body.no-remove .slink-actions [data-a="del"],
+body.no-remove .kmenu-item[data-a="del"].is-danger:not([data-soft]) { display: none !important; }
+body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; }
+/* On a phone the role select and the switches meet the same target as
+   everything else. The switch cell is the target, not the 18px box in it. */
+@media (pointer: coarse) {
+  .select-sm { min-height: var(--ctl-h); }
+  .team-flag { min-height: var(--ctl-h); display: grid; place-items: center; }
+  .team-flag input { width: 22px; height: 22px; }
+}
+/* A phone cannot show ten columns, and a table that scrolls sideways hides
+   the switches it exists to show. So each person becomes a card: who, role,
+   the switches two abreast with their names beside them, then the actions. */
+@media (max-width: 640px) {
+  .team-table { overflow: visible; padding: 0; }
+  .team-head { display: none; }
+  .team-row {
+    min-width: 0; grid-template-columns: 1fr 1fr; gap: 8px 12px;
+    padding: 14px 15px; align-items: stretch;
+  }
+  .team-row > span:nth-child(1), .team-row > span:nth-child(2), .team-act { grid-column: 1 / -1; }
+  .team-row > span:nth-child(2) { margin-bottom: 4px; }
+  .team-flag {
+    display: flex; align-items: center; gap: 10px; text-align: left;
+    min-height: var(--ctl-h); font-size: 13px; color: var(--ink-soft);
+  }
+  .team-flag::after { content: attr(data-label); }
+  .team-flag input { flex: 0 0 auto; margin: 0; }
+  .team-act { display: flex; gap: 8px; margin-top: 4px; }
+  .team-act .btn { flex: 1 1 0; min-height: var(--ctl-h); }
+}

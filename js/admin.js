@@ -92,6 +92,9 @@
   $('signOut').addEventListener('click', function () {
     db.auth.signOut().then(function () { location.reload(); });
   });
+  $('noTeamOut').addEventListener('click', function () {
+    db.auth.signOut().then(function () { location.reload(); });
+  });
   db.auth.getSession().then(function (r) { gate(r.data.session); });
   db.auth.onAuthStateChange(function (_e, session) { gate(session); });
 
@@ -121,20 +124,66 @@
     }
     if (entered) return;
     entered = true;
-    /* Whether this person may see the activity record is a property of the
-       person, not of the section they happen to open first. It used to be
-       checked inside the Content Review client list, so going straight to
-       Creator Campaigns or Short Links left the record hidden and looking
-       like it belonged to Content Review. */
-    gateActivity();
-    // A session kept in local storage answers before the scripts below this
-    // one have run. Restoring then would write the address with nothing open
-    // and lose the tab or campaign it named, so wait for the whole page.
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', restoreView, { once: true });
-    } else {
-      restoreView();
-    }
+    /* Who this person is on the team decides what the console draws. The
+       database enforces the same row on every query; this only keeps the
+       screen honest about it. Fetched once, before anything is shown. */
+    loadMe(function () {
+      applyAccess();
+      gateActivity();
+      if (!me) {
+        $('console').hidden = true;
+        $('noTeamShell').hidden = false;
+        $('noTeamWho').textContent = actor;
+        return;
+      }
+      // A session kept in local storage answers before the scripts below this
+      // one have run. Restoring then would write the address with nothing
+      // open and lose the tab or campaign it named, so wait for the page.
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', restoreView, { once: true });
+      } else {
+        restoreView();
+      }
+    });
+  }
+
+  /* The signed-in person's team row, or null if they have a login but no row.
+     A missing me() function (schema not yet applied) is treated as "everyone
+     may do everything", so an older database keeps working. */
+  var me = null;
+  var meLoaded = false;
+  function loadMe(then) {
+    db.rpc('me').then(function (r) {
+      if (r.error) {
+        me = { role: 'admin', can_clients: true, can_review: true, can_campaigns: true,
+               can_links: true, can_activity: false, can_billing: true, can_remove: true,
+               legacy: true };
+      } else {
+        me = r.data && r.data.id ? r.data : null;
+      }
+      meLoaded = true;
+      then();
+    }, function () { me = null; meLoaded = true; then(); });
+  }
+  function may(flag) {
+    if (!me) return false;
+    if (me.role === 'admin') return true;
+    return Boolean(me['can_' + flag]);
+  }
+  var SECTION_FLAG = { clients: 'clients', review: 'review', campaigns: 'campaigns',
+                       links: 'links', team: 'admin' };
+  function sectionAllowed(name) {
+    if (name === 'team') return Boolean(me && me.role === 'admin');
+    return may(SECTION_FLAG[name] || name);
+  }
+  /* Hide what the person may not use. Nothing here is the control; the
+     policies are. This keeps the screen from offering what will be refused. */
+  function applyAccess() {
+    navItems().forEach(function (b) {
+      b.hidden = !sectionAllowed(b.getAttribute('data-section'));
+    });
+    document.body.classList.toggle('no-remove', !may('remove'));
+    document.body.classList.toggle('no-billing', !may('billing'));
   }
 
   /* On a phone the rail is a drawer. It closes on a pick, on the scrim, and on
@@ -178,18 +227,27 @@
     clients: 'Clients',
     review: 'Content Review',
     campaigns: 'Creator Campaigns',
-    links: 'Short Links'
+    links: 'Short Links',
+    team: 'Team'
   };
+  // The first section this person is allowed, for when the one asked for is not.
+  function firstAllowed() {
+    var order = ['clients', 'review', 'campaigns', 'links', 'team'];
+    for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
+    return 'clients';
+  }
 
   var enterLater = '';
 
   function showSection(name) {
     if (!SECTION_TITLE[name]) name = 'clients';
+    if (meLoaded && !sectionAllowed(name)) name = firstAllowed();
     section = name;
     $('sectionClients').hidden   = name !== 'clients';
     $('sectionReview').hidden    = name !== 'review';
     $('sectionCampaigns').hidden = name !== 'campaigns';
     $('sectionLinks').hidden     = name !== 'links';
+    $('sectionTeam').hidden      = name !== 'team';
     $('sectionTitle').textContent = SECTION_TITLE[name];
     // The tab said Content Review Internal whichever section you were in.
     document.title = SECTION_TITLE[name] + ' · ADspace Digital Portal';
@@ -209,6 +267,12 @@
     if (name === 'clients') {
       if (!window.ADspaceCRM) { enterLater = 'clients'; return; }
       window.ADspaceCRM.enter();
+      return;
+    }
+    if (name === 'team') {
+      if (!window.ADspaceTeam) { enterLater = 'team'; return; }
+      window.ADspaceTeam.enter();
+      setUrl();
       return;
     }
     setUrl();
@@ -311,8 +375,8 @@
     // address from state, and state does not know about these yet.
     var clientId = params.get('client');
     var setId = params.get('set');
-    var where = params.get('s') || 'clients';
-    if (!SECTION_TITLE[where]) where = 'clients';
+    var where = params.get('s') || firstAllowed();
+    if (!SECTION_TITLE[where]) where = firstAllowed();
 
     if (where !== 'review') {
       // Content Review still needs its list painted for when they come back.
@@ -399,6 +463,9 @@
      record can be filtered the way the sidebar is. */
   var ACTION_LABEL = {
     'client.added':          ['Client added', 'is-ok', 'clients'],
+    'team.added':            ['Team member added', 'is-ok', 'team'],
+    'team.changed':          ['Access changed', 'is-warn', 'team'],
+    'team.invited':          ['Sign-in invitation sent', '', 'team'],
     'client.removed':        ['Client removed', 'is-danger', 'review'],
     'review.removed':        ['Removed from Content Review', 'is-danger', 'review'],
     'client.edited':         ['Client edited', '', 'clients'],
@@ -449,7 +516,7 @@
     'creator.updated':       ['Creator edited', '', 'campaigns'],
     'creator.removed':       ['Creator removed', 'is-danger', 'campaigns']
   };
-  var ACT_SECTION = { all: 'Everything', clients: 'Clients', review: 'Content Review',
+  var ACT_SECTION = { all: 'Everything', clients: 'Clients', team: 'Team', review: 'Content Review',
                       campaigns: 'Creator Campaigns', links: 'Short Links' };
 
   /* The section only appears for people on the viewer list. The database
@@ -458,14 +525,16 @@
   var maySeeActivity = false;
 
   function gateActivity() {
-    maySeeActivity = false;
+    maySeeActivity = may('activity');
     showActivityLink();
-    if (!actor) return;
-    db.from('activity_viewers').select('email').ilike('email', actor).limit(1)
-      .then(function (r) {
-        maySeeActivity = Boolean(r.data && r.data.length);
-        showActivityLink();
-      }, function () { maySeeActivity = false; showActivityLink(); });
+    // An older database without me() still has the viewers list; honour it.
+    if (me && me.legacy && actor) {
+      db.from('activity_viewers').select('email').ilike('email', actor).limit(1)
+        .then(function (r) {
+          maySeeActivity = Boolean(r.data && r.data.length);
+          showActivityLink();
+        }, function () {});
+    }
   }
 
   /* The record covers the whole portal, not one section of it, so it is
@@ -2022,7 +2091,15 @@
       if (enterLater !== 'clients' || section !== 'clients') return;
       enterLater = '';
       window.ADspaceCRM.enter();
-    }
+    },
+    teamReady: function () {
+      if (enterLater !== 'team' || section !== 'team') return;
+      enterLater = '';
+      window.ADspaceTeam.enter();
+    },
+    // The signed-in person's team row, for sections that gate on it.
+    me: function () { return me; },
+    may: may
   };
 
   /* Pending, approved, changes requested. The dot is what you scan for; the

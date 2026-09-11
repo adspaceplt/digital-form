@@ -50,6 +50,19 @@
   </section>
 </main>
 
+<!-- Signed in, but not on the team list: the portal shows nothing and says
+     why. The database would refuse every query anyway; this is the courtesy. -->
+<main class="shell" id="noTeamShell" hidden>
+  <section class="cover-panel">
+    <h2>Not on the team list yet</h2>
+    <p>Your login works, but an admin has not added you to the team. Ask them to add
+    <b id="noTeamWho"></b> under Team, then sign in again.</p>
+    <div class="row" style="margin-top:18px">
+      <button class="btn" id="noTeamOut" type="button">Sign out</button>
+    </div>
+  </section>
+</main>
+
 <!-- Signed in: the console. One section today, and the shape holds however
      many arrive later without any of them disturbing the others. -->
 <div class="console" id="console" hidden>
@@ -73,6 +86,9 @@
       </button>
       <button class="navitem" data-section="links" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.6-5.7l-1.7 1.7"/><path d="M14 10.5a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.6 5.7l1.7-1.7"/></svg><span>Short Links</span>
+      </button>
+      <button class="navitem" data-section="team" type="button" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/><path d="m17.5 5.5 1 1 2-2"/></svg><span>Team</span>
       </button>
     </nav>
 
@@ -852,6 +868,37 @@
     </div>
 
     <!-- ============ Short Links ============ -->
+    <!-- ---- Team: who may do what ---- -->
+    <div class="console-body" id="sectionTeam" hidden>
+      <div class="filterbar crm-bar">
+        <p class="hint" style="margin:0;flex:1 1 300px">The role sets defaults; the switches adjust
+        them per person. The database enforces what is set here, so a switch that is off is
+        refused, not merely hidden. A person also needs a login under Supabase Authentication.</p>
+        <button class="btn btn-primary" id="teamAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a person</button>
+      </div>
+
+      <div class="panel" id="teamAddBox" hidden>
+        <div class="panelhead"><h3>New team member</h3></div>
+        <div class="row">
+          <div><label class="field-label" for="tmName">Name</label>
+            <input class="input" id="tmName" placeholder="Qiao Rou"></div>
+          <div><label class="field-label" for="tmEmail">Sign-in email</label>
+            <input class="input" id="tmEmail" type="email" placeholder="name@adspacestudios.com"></div>
+          <div style="flex:0 0 190px"><label class="field-label" for="tmRole">Role</label>
+            <select class="select" id="tmRole"></select></div>
+        </div>
+        <p class="hint" id="tmRoleHint" style="margin-top:8px"></p>
+        <div class="row" style="margin-top:14px">
+          <button class="btn btn-primary" id="tmSave" type="button">Add to the team</button>
+          <button class="btn btn-quiet" id="tmCancel" type="button" style="flex:0 0 auto">Cancel</button>
+        </div>
+        <div class="msg" id="tmMsg"></div>
+      </div>
+
+      <div class="msg" id="teamMsg" style="margin:0 0 10px"></div>
+      <div class="team-table" id="teamList"></div>
+    </div>
+
     <div class="console-body" id="sectionLinks" hidden>
 
       <!-- The bar above already says Short Links. Repeating it pushed the
@@ -994,6 +1041,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="acttabs" id="activityTabs">
       <button class="acttab is-on" data-af="all" type="button">Everything</button>
       <button class="acttab" data-af="clients" type="button">Clients</button>
+      <button class="acttab" data-af="team" type="button">Team</button>
       <button class="acttab" data-af="review" type="button">Content Review</button>
       <button class="acttab" data-af="campaigns" type="button">Creator Campaigns</button>
       <button class="acttab" data-af="links" type="button">Short Links</button>
@@ -1004,6 +1052,7 @@ raya-2026        https://example.com/raya"></textarea>
 
 <script src="/js/admin.js"></script>
 <script src="/js/crm.js"></script>
+<script src="/js/team.js"></script>
 <script src="/js/campaigns.js"></script>
 </body>
 </html>
