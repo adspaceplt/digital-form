@@ -2113,22 +2113,40 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 }
 
 /* ---------- Shared footer ----------
-   Drawn by js/chrome.js, so every page that includes the chrome gets it and
-   a new page does not have to remember it. Quiet by design: it closes the
-   page rather than competing with it. */
-.portalfoot { border-top: 1px solid var(--line); margin-top: 56px; background: var(--card); }
+   Drawn by js/chrome.js, so every page that includes the chrome gets it and a
+   new page does not have to remember it. Two things, one at each end, and
+   nothing in the middle competing with them. */
+.portalfoot {
+  flex: 0 0 auto; margin-top: auto;          /* see the sticky-footer note below */
+  border-top: 1px solid var(--line); background: var(--card);
+}
 .portalfoot-in {
-  max-width: 1240px; margin: 0 auto; padding: 18px 24px;
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  max-width: 1240px; margin: 0 auto; padding: 16px 24px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
   font-size: 12.5px; color: var(--ink-mute);
 }
-.portalfoot-mark { font-weight: 700; letter-spacing: -.02em; color: var(--ink-soft); }
-.portalfoot-link { color: var(--ink-mute); text-decoration: none; }
+.portalfoot-copy { min-width: 0; }
+.portalfoot-link { flex: 0 0 auto; color: var(--ink-mute); text-decoration: none; }
 .portalfoot-link:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
 .chrome-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-/* The console draws its own chrome and has a sticky action bar at the bottom
-   of the client page, so no footer is added there. */
+
+/* A short page used to leave the footer floating halfway up with dead space
+   under it. The page is a column at least as tall as the window, the content
+   takes the slack, and the footer's auto top margin pushes it to the floor. */
+body { min-height: 100vh; display: flex; flex-direction: column; }
+@supports (min-height: 100dvh) { body { min-height: 100dvh; } }
+body > main, body > .shell, body > .console { flex: 1 0 auto; }
+
+/* The review cover claimed a full viewport of its own, which put the footer
+   just below the fold on a page with nothing else on it. It now fills what is
+   left between the bar and the footer instead of asking for the lot. */
+.shell:has(> .cover:not([hidden])) {
+  display: flex; flex-direction: column; padding-bottom: 0;
+}
+.shell:has(> .cover:not([hidden])) > .cover {
+  flex: 1 1 auto; min-height: 0; margin-bottom: 0;
+}
+
 @media (max-width: 560px) {
-  .portalfoot-in { padding: 16px; gap: 8px; }
-  .portalfoot-note { flex: 1 1 100%; order: 3; }
+  .portalfoot-in { padding: 14px 16px; gap: 10px; font-size: 12px; }
 }

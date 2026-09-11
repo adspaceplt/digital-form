@@ -95,13 +95,15 @@
     '</div></header>';
   }
 
+  /* Two things, one at each end. The year comes from the clock so nobody has
+     to remember to change it in January. */
   function footerHtml() {
     var year = new Date().getFullYear();
     return '<footer class="portalfoot"><div class="portalfoot-in">' +
-      '<span class="portalfoot-mark">ADspace</span>' +
-      '<span class="portalfoot-note">Digital Portal · ' + year + '</span>' +
-      '<span class="topbar-spacer"></span>' +
-      '<a class="portalfoot-link" href="https://adspace.me" target="_blank" rel="noopener">adspace.me</a>' +
+      '<span class="portalfoot-copy">\u00a9 ' + year +
+        ' ADSPACE PLT. All Rights Reserved.</span>' +
+      '<a class="portalfoot-link" href="https://adspacestudios.com/legal/policies" ' +
+        'target="_blank" rel="noopener">Terms of Service</a>' +
     '</div></footer>';
   }
 
