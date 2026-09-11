@@ -423,8 +423,7 @@
       box.innerHTML = '';
       if (r.error) { msg('clientMsg', r.error.message, 'err'); return; }
       if (!r.data.length) {
-        box.innerHTML = '<div class="empty">No active clients to review content for. ' +
-          'A client appears here once they are active under Clients.</div>';
+        box.innerHTML = '<div class="empty">No active clients.</div>';
         settleScroll();
         return;
       }
@@ -861,7 +860,7 @@
         var box = $('batchCards');
         box.innerHTML = '';
         if (r.error || !r.data.length) {
-          box.innerHTML = '<div class="empty">No content sets yet. Create one to start uploading.</div>';
+          box.innerHTML = '<div class="empty">No content sets yet.</div>';
           return;
         }
         r.data.forEach(function (b) {
@@ -1936,8 +1935,8 @@
         var strip = slidesNode(d.media, function () { saveDrafts(); renderDrafts(); });
         var hint = el2('div', 'slide-hint');
         hint.textContent = d.placement === 'facebook:multi'
-          ? 'Photo 1 takes the largest tile in the grid.'
-          : 'Slide 1 is the cover and sets the shape of the whole carousel.';
+          ? 'Photo 1 takes the largest tile.'
+          : 'Slide 1 is the cover and sets the carousel shape.';
         body.insertBefore(strip, body.children[1] || null);
         body.insertBefore(hint, strip.nextSibling);
       }
@@ -2313,7 +2312,7 @@
     if (!shown.length) {
       box.innerHTML = '<div class="empty">' +
         (links.length ? 'Nothing matches that search.'
-                      : 'No links yet. Add one above, or paste your existing list into Bulk import.') +
+                      : 'No links yet.') +
         '</div>';
       return;
     }
@@ -2518,8 +2517,7 @@
     var box = $('qrList');
     box.innerHTML = '';
     if (!qrCodes.length) {
-      box.innerHTML = '<div class="empty">No QR codes yet. Create one above, ' +
-        'and give it the name of the thing it is printed on.</div>';
+      box.innerHTML = '<div class="empty">No QR codes yet.</div>';
       return;
     }
     qrCodes.forEach(function (q) {

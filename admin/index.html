@@ -33,8 +33,7 @@
 
   <section class="panel" id="notConfigured" hidden>
     <h3>Not connected yet</h3>
-    <p class="hint">Someone needs to paste the Supabase keys into <code>js/config.js</code> once.
-    The steps are in <code>docs/CONTENT-REVIEW-SETUP.md</code> and take about ten minutes.</p>
+    <p class="hint">Supabase keys are not set in <code>js/config.js</code>. See <code>docs/CONTENT-REVIEW-SETUP.md</code>.</p>
   </section>
 
   <section class="signin" id="authPanel" hidden>
@@ -54,9 +53,8 @@
      why. The database would refuse every query anyway; this is the courtesy. -->
 <main class="shell" id="noTeamShell" hidden>
   <section class="cover-panel">
-    <h2>Not on the team list yet</h2>
-    <p>Your login works, but an admin has not added you to the team. Ask them to add
-    <b id="noTeamWho"></b> under Team, then sign in again.</p>
+    <h2>Access not assigned</h2>
+    <p><b id="noTeamWho"></b> has not been added to the team. Please contact an administrator.</p>
     <div class="row" style="margin-top:18px">
       <button class="btn" id="noTeamOut" type="button">Sign out</button>
     </div>
@@ -136,8 +134,6 @@
 
         <div class="panel" id="crmAddBox" hidden>
           <div class="panelhead"><h3 id="crmFormTitle">New client</h3></div>
-          <p class="hint">Only the name is required. A lead and a billing client sit on the
-          same list, told apart by stage.</p>
           <div class="row">
             <div><label class="field-label" for="crmName">Client name</label>
               <input class="input" id="crmName" placeholder="e.g. Star Living"></div>
@@ -225,8 +221,7 @@
             <span class="muted" id="crmBillSummary"></span>
           </button>
           <div class="disclosure-body" id="crmBillBody" hidden>
-            <p class="hint">Everything an e-invoice needs. All of it is required before the
-            client can be made active; a client we cannot invoice is not a client.</p>
+            <p class="hint">Required for e-invoice submission and before the client can be set to Active.</p>
             <div class="row">
               <div><label class="field-label" for="crmLegalName">Company name, as registered (capitals)</label>
                 <input class="input crm-caps" id="crmLegalName" placeholder="S P SETIA BERHAD" autocapitalize="characters"></div>
@@ -260,9 +255,7 @@
             <label class="tickline" style="margin-top:12px">
               <input type="checkbox" id="crmSstApplies"> <span id="crmSstLabel">Charge SST 8% on this client's quotes</span>
             </label>
-            <p class="hint" style="margin-top:6px">We are a Malaysian entity, so the tax is
-            Malaysian service tax at 8% whoever is billed. A Singapore client is invoiced in S$
-            and still carries it. Untick only for a client who is genuinely exempt.</p>
+            <p class="hint" style="margin-top:6px">Malaysian service tax (8%) applies to all clients, including Singapore. Untick only if exempt.</p>
             <div class="row" style="margin-top:14px">
               <button class="btn btn-primary" id="crmBillSave" type="button">Save billing details</button>
             </div>
@@ -277,8 +270,6 @@
             <span class="muted" id="crmNotesSummary"></span>
           </button>
           <div class="disclosure-body" id="crmNotesBody" hidden>
-            <p class="hint">Tone, themes, words to avoid, competitors, which language they answer
-            in. Read before writing, not after.</p>
             <textarea class="input textarea" id="crmNotes" rows="5"></textarea>
             <div class="row" style="margin-top:12px">
               <button class="btn btn-primary" id="crmNotesSave" type="button">Save notes</button>
@@ -399,7 +390,6 @@
       <div class="viewhead" style="margin:0 0 4px">
         <span class="headmark"><h2 id="wsClientName"></h2><span class="chip" id="wsLock" hidden>Access code</span></span>
       </div>
-      <p class="hint">Permanent review link. Issue it once; it stays valid indefinitely.</p>
       <div class="linkbox">
         <input class="input" id="clientLink" readonly>
         <button class="btn btn-primary btn-icon" id="copyLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
@@ -424,7 +414,6 @@
 
         <div class="subsection">
           <h4>Account handles</h4>
-          <p class="hint">Shown inside each platform preview so a post carries the right account.</p>
           <div class="row" id="handleRow">
             <div>
               <label class="field-label" for="eIg">Instagram</label>
@@ -449,8 +438,6 @@
 
         <div class="subsection">
           <h4>Logo and access code</h4>
-          <p class="hint">Both can be added, changed or cleared at any time. Clearing the
-          access code leaves the link working on its own.</p>
           <div class="row">
             <div>
               <label class="field-label" for="eLogo">Logo URL</label>
@@ -473,9 +460,7 @@
 
         <div class="subsection">
           <h4>Link and removal</h4>
-          <p class="hint">Resetting invalidates the current link at once and issues a
-          replacement. Removing a client from Content Review deletes their content sets,
-          posts and approval records here; the client itself stays in Clients.</p>
+          <p class="hint">Resetting invalidates the current link. Removing from Content Review deletes the content sets and approvals; the client record is kept.</p>
           <div class="dangerrow">
             <button class="btn btn-warn" id="resetLink" type="button">Reset access link</button>
             <button class="btn btn-danger" id="deleteClient" type="button">Remove from Content Review</button>
@@ -522,7 +507,7 @@
           <svg class="zone-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 16v2.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V16"/></svg>
           <div>
             <b>Add creative assets</b>
-            <span class="muted">Drag them in, or paste a Drive folder, Drive file or direct link.</span>
+            <span class="muted">Drop files here, or paste a Drive or direct link.</span>
           </div>
         </div>
 
@@ -567,7 +552,7 @@
           <svg class="zone-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 1.9"/></svg>
           <div>
             <b>Pending assets</b>
-            <span class="muted">Uploaded, not yet in the set. The client cannot see these.</span>
+            <span class="muted">Not yet in the set. Not visible to the client.</span>
           </div>
         </div>
 
@@ -612,15 +597,11 @@
       <!-- ---- Campaign form: creates, and edits an open campaign in place ---- -->
       <div class="panel" id="addCampBox" hidden>
           <div class="panelhead"><h3 id="campFormTitle">New campaign</h3></div>
-          <p class="hint">This is a proposal. Slots is the number of creators agreed with the
-          client; they choose that many from the quoted rates and see the total. The invoice
-          is raised after they confirm, and attached on the campaign.</p>
           <div class="row">
             <div><label class="field-label" for="campClient">Client</label>
               <!-- Only active clients can be proposed to. The list is the CRM's. -->
               <select class="select" id="campClient"></select>
-              <p class="hint" id="campClientNone" hidden style="margin-top:6px">No active clients yet.
-              A client can be proposed to once they are active under Clients.</p></div>
+              <p class="hint" id="campClientNone" hidden style="margin-top:6px">No active clients.</p></div>
             <div><label class="field-label" for="campTitle">Campaign name</label>
               <input class="input" id="campTitle" placeholder="Laman Citra Launch, Oct 2026"></div>
             <div><label class="field-label" for="campPurpose">Campaign purpose</label>
@@ -704,9 +685,6 @@
             <span class="muted" id="invoiceSummary">Not issued yet</span>
           </button>
           <div class="disclosure-body" id="invoiceBody" hidden>
-
-            <p class="hint">Raised after the client confirms. Enter the number and upload the PDF;
-            it appears on the client's page for them to open and download.</p>
             <div class="row">
               <div style="flex:0 0 220px"><label class="field-label" for="invNo">Invoice no.</label>
                 <div class="slugfield">
@@ -731,11 +709,10 @@
             <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
             <svg class="disclosure-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/></svg>
             <span>Delete campaign</span>
-            <span class="muted">Removes every offer, selection and result on it</span>
+            <span class="muted">Removes all offers, selections and results</span>
           </button>
           <div class="disclosure-body" id="dangerBody" hidden>
-            <p class="hint">Nothing comes back. If the campaign has simply finished, leave it;
-            it is the record.</p>
+            <p class="hint">This cannot be undone.</p>
             <div class="dangerrow">
               <button class="btn btn-danger" id="campDelete" type="button">Delete this campaign</button>
             </div>
@@ -774,16 +751,12 @@
           <div class="panelhead"><h3>Add creators</h3>
             <button class="btn btn-quiet btn-sm" id="optionCancel" type="button" style="margin-left:auto">Close</button>
           </div>
-          <p class="hint">The rate is set per campaign. Her usual rate only fills the box to
-          start with, and once offered it is frozen here whatever the roster says later.</p>
           <input class="input" id="optionSearch" placeholder="Search the roster by name">
           <div class="optionpick" id="optionPick"></div>
           <div class="msg" id="optionMsg"></div>
 
           <div class="subsection">
-            <h4>Not in the roster yet?</h4>
-            <p class="hint">She is offered here and kept in the roster, so next time she is
-            one search away and cannot be added twice.</p>
+            <h4>New creator</h4>
             <div class="row">
               <div><label class="field-label" for="ncName">Name</label>
                 <input class="input" id="ncName" placeholder="香香的爆米花 🍿"></div>
@@ -807,8 +780,6 @@
 
         <section class="panel" id="rollup" hidden>
             <div class="panelhead"><h3>Campaign results</h3></div>
-          <p class="hint">Totals across every posted placement. This is the number that wins
-          the next campaign.</p>
           <div class="tally" id="rollupTally"></div>
         </section>
 
@@ -843,9 +814,7 @@
 
           <div class="subsection">
             <h4>Profile links</h4>
-            <p class="hint">One per account. Paste the full profile URL so the identity can be
-            read from it. A <code>xhslink.com</code> short link is accepted but carries no
-            identity, so it cannot be matched against anything.</p>
+            <p class="hint">Full profile URL, one per platform.</p>
             <div id="profRows"></div>
             <button class="btn btn-quiet btn-sm" id="addProfRow" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add another link</button>
           </div>
@@ -871,9 +840,7 @@
     <!-- ---- Team: who may do what ---- -->
     <div class="console-body" id="sectionTeam" hidden>
       <div class="filterbar crm-bar">
-        <p class="hint" style="margin:0;flex:1 1 300px">The role sets defaults; the switches adjust
-        them per person. The database enforces what is set here, so a switch that is off is
-        refused, not merely hidden. A person also needs a login under Supabase Authentication.</p>
+        <p class="hint" style="margin:0;flex:1 1 300px">Roles set the defaults. Switches adjust access per person.</p>
         <button class="btn btn-primary" id="teamAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a person</button>
       </div>
 
@@ -942,9 +909,7 @@
 
       <div class="panel" id="importBox" hidden>
         <div class="panelhead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg><h3>Import existing slugs</h3></div>
-        <p class="hint">One per line: slug, then destination, separated by a tab, comma or
-        spaces. Anything after that becomes the label. A slug already in the list is
-        updated rather than duplicated, so the same paste can be run twice safely.</p>
+        <p class="hint">One per line: slug, destination, optional label (separated by tab, comma or space). Existing slugs are updated.</p>
         <textarea class="input textarea" id="importText" rows="8" spellcheck="false"
           placeholder="spring-launch    https://example.com/spring    Spring campaign
 raya-2026        https://example.com/raya"></textarea>
@@ -1011,9 +976,7 @@ raya-2026        https://example.com/raya"></textarea>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
     </div>
-    <p class="hint">A QR is a picture of a URL, so a printed one cannot be taken back.
-    Revoking turns away scans that carry that code, while the typed short link keeps
-    working. Give each placement its own code and you can pull one without the others.</p>
+    <p class="hint">Revoking a code stops scans of that code. The short link itself keeps working.</p>
 
     <div class="sheet-body">
       <div class="row" style="margin-bottom:16px">
@@ -1036,8 +999,7 @@ raya-2026        https://example.com/raya"></textarea>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
     </div>
-    <p class="hint">Actions that remove data or change what a client can see. Routine work
-    such as uploads and edits is not recorded.</p>
+    <p class="hint">Records removals and changes to what a client can see.</p>
     <div class="acttabs" id="activityTabs">
       <button class="acttab is-on" data-af="all" type="button">Everything</button>
       <button class="acttab" data-af="clients" type="button">Clients</button>

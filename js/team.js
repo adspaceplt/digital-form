@@ -25,9 +25,9 @@
   }
 
   var ROLES = [
-    ['admin',   'Admin',   'Everything, including this page.'],
-    ['account', 'Account', 'All the work. No activity record, cannot remove.'],
-    ['sales',   'Sales',   'Clients only, with billing.']
+    ['admin',   'Admin',   'Full access, including Team.'],
+    ['account', 'Account', 'All sections. No activity record; cannot remove.'],
+    ['sales',   'Sales',   'Clients and billing only.']
   ];
   /* The switches, in the order they are asked about. Column, label, what it
      lets the person do. */
@@ -58,7 +58,7 @@
     var box = $('teamList');
     box.innerHTML = '';
     if (!state.rows.length) {
-      box.innerHTML = '<div class="empty">Nobody yet. Add the people who sign in.</div>';
+      box.innerHTML = '<div class="empty">No team members.</div>';
       return;
     }
     var head = document.createElement('div');

@@ -56,9 +56,9 @@
     ['past',     'Past',          '',        'ended']
   ];
   var GROUPS = [
-    ['leads',  'Leads',           'Being worked. Anyone can add one; sales follows up.'],
-    ['active', 'Active clients',  'Invoiceable. These can be given content to review and campaigns to choose from.'],
-    ['ended',  'Paused and past', 'Kept for the record. Reactivate from Edit.']
+    ['leads',  'Leads'],
+    ['active', 'Active clients'],
+    ['ended',  'Paused and past']
   ];
   var INDUSTRIES = ['Property', 'F&B', 'Retail', 'Wellness', 'Lifestyle',
                     'Automotive', 'Tech', 'Education', 'Other'];
@@ -148,7 +148,7 @@
     if (!rows.length) {
       box.innerHTML = '<div class="empty">' +
         (state.clients.length ? 'No client matches that.'
-                              : 'No clients yet. Add the first lead above.') + '</div>';
+                              : 'No clients yet.') + '</div>';
       return;
     }
     GROUPS.forEach(function (g) {
@@ -166,7 +166,6 @@
       sec.className = 'crm-group';
       sec.innerHTML =
         '<div class="crm-group-head"><h3>' + esc(g[1]) + ' <span>' + mine.length + '</span></h3>' +
-          '<p class="hint">' + esc(g[2]) + '</p>' +
           (worthText ? '<span class="crm-group-worth">' + esc(worthText) + '</span>' : '') +
         '</div>' +
         '<div class="crm-table">' +
@@ -315,8 +314,8 @@
     var missing = billingMissing(c);
     $('crmGate').hidden = c.stage === 'active' || c.stage === 'past';
     $('crmGateText').textContent = missing.length
-      ? 'Before they can be made active, Billing details still needs: ' + missing.join(', ') + '.'
-      : 'Billing details are complete. Change the stage to Active from Edit to start work with them.';
+      ? 'Billing details required before Active: ' + missing.join(', ') + '.'
+      : 'Billing details complete. Set the stage to Active from Edit.';
 
     BILLING.forEach(function (f) { $(f[0]).value = c[f[1]] || ''; });
     $('crmSstApplies').checked = c.sst_applies !== false;
@@ -412,8 +411,7 @@
         }).join('');
         box.innerHTML = '';
         if (!state.contacts.length) {
-          box.innerHTML = '<div class="empty">No one recorded yet. A company does not ' +
-            'answer the phone; add the person who does.</div>';
+          box.innerHTML = '<div class="empty">No contacts recorded.</div>';
         }
         state.contacts.forEach(function (ct) { box.appendChild(contactRow(ct, false)); });
         if (gone.length) {
@@ -581,8 +579,7 @@
         var gone = all.filter(function (t) { return t.archived_at; });
         box.innerHTML = '';
         if (!state.touches.length) {
-          box.innerHTML = '<div class="empty">Nothing logged yet. After a call or a visit, ' +
-            'write what was discussed and what happens next, so it is not left to memory.</div>';
+          box.innerHTML = '<div class="empty">No calls or visits logged.</div>';
         }
         state.touches.forEach(function (tc) { box.appendChild(touchRow(tc, false)); });
         if (gone.length) {
@@ -731,8 +728,7 @@
     var act = $('crmEngageActions');
     if (c.stage !== 'active') {
       act.innerHTML = '';
-      box.innerHTML = '<div class="empty">Work starts once they are active. Content review and ' +
-        'creator campaigns are only offered to active clients.</div>';
+      box.innerHTML = '<div class="empty">Available once the client is active.</div>';
       return;
     }
     act.innerHTML =
@@ -757,7 +753,7 @@
     });
 
     if (!sets.length && !camps.length) {
-      box.innerHTML = '<div class="empty">Nothing running for them yet.</div>';
+      box.innerHTML = '<div class="empty">No engagements yet.</div>';
       return;
     }
     box.innerHTML = '';
