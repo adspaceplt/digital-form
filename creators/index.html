@@ -49,7 +49,21 @@
       <p id="campBrief"></p>
       <!-- The date is the one thing on the page with a consequence, so it is
            drawn as a pill and not left as a line of grey text. -->
-      <p class="camphead-due" id="campDue"></p>
+      <section class="engage-card" id="engageCard">
+        <dl class="booking-facts" id="engageFacts"></dl>
+        <!-- The amount is folded away. Campaigns get shown on a screen in a
+             meeting, and the billing figure is not always for that room. -->
+        <div class="amountfold" id="amountFold" hidden>
+          <div class="amountfold-head">
+            <button class="amountfold-btn" id="amountToggle" type="button" aria-expanded="false" aria-controls="bookedTotals">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+              <span id="amountLabel"></span>
+            </button>
+            <a class="amountfold-link" id="amountPdf" target="_blank" rel="noopener" hidden></a>
+          </div>
+          <div class="totals" id="bookedTotals" hidden></div>
+        </div>
+      </section>
     </div>
 
     <!-- Progress. Determinate, because the slot count is known, and phrased as
@@ -72,18 +86,6 @@
          client wants to know whether it is their turn, not our vocabulary. -->
     <section id="bookingWrap" hidden>
       <h2 class="sectionhead" id="bookingHead"></h2>
-      <!-- The amount is folded away. Campaigns get shown on a screen in a
-           meeting, and the billing figure is not always for that room. -->
-      <div class="amountfold" id="amountFold" hidden>
-        <div class="amountfold-head">
-          <button class="amountfold-btn" id="amountToggle" type="button" aria-expanded="false" aria-controls="bookedTotals">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
-            <span id="amountLabel"></span>
-          </button>
-          <a class="amountfold-link" id="amountPdf" target="_blank" rel="noopener" hidden></a>
-        </div>
-        <div class="totals" id="bookedTotals" hidden></div>
-      </div>
       <!-- Totals across every live post, the same figures the console adds up. -->
       <section class="rollup-card" id="clientRollup" hidden>
         <div class="rollup-head" id="rollupHead"></div>

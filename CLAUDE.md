@@ -121,9 +121,11 @@ Rules:
   `sst_applies` is false. `js/money.js` is the only place money is formatted.
 - Stage → Active requires all ten e-invoice billing fields; company legal
   name is stored in capitals.
-- Access is enforced by the database: `team_members` (role admin | account |
-  sales, seven `can_*` switches), `me()`, `allowed(flag)`. The console only
-  hides what would be refused.
+- Access is enforced by the database. A person belongs to one **user group**
+  (`team_roles`: Admin, Account, Sales built in; admins can add more). The
+  group holds the seven `can_*` switches and `is_admin`; a trigger copies
+  them onto `team_members`, which `me()` and `allowed(flag)` read. The
+  console only hides what would be refused. Never add per-person switches.
 - A policy on `team_members` must not query `team_members` directly (infinite
   recursion); go through `allowed()`.
 - `invite-member` edge function creates logins; Verify JWT off.

@@ -1542,9 +1542,11 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 /* ---------- Tally ----------
    Invoiced against booked. Their only job is to make a goodwill replacement a
    decision somebody took, rather than something found at reconciliation. */
-.tally { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+/* Cells fill the row on any width: a grid, not a wrap. */
+.tally { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 14px; }
+@media (max-width: 640px) { .tally { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .tally-cell {
-  flex: 0 0 auto; min-width: 104px;
+  min-width: 0;
   border: 1px solid var(--line); border-radius: 10px; padding: 10px 13px;
   display: flex; flex-direction: column; gap: 2px;
 }
@@ -1938,7 +1940,39 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 .results-link { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; color: var(--ink); text-decoration: none; }
 .results-link svg { width: 13px; height: 13px; color: var(--ink-mute); }
 .results-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* On a phone the table becomes one block per platform: the link on top, the
+   figures two abreast under their labels. Nothing scrolls sideways. */
+@media (max-width: 640px) {
+  .results-wrap { overflow: visible; }
+  .results thead { display: none; }
+  .results, .results tbody { display: block; }
+  .results tr {
+    display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px;
+    padding: 10px 0; border-bottom: 1px solid var(--line-soft);
+  }
+  .results tr:last-child { border-bottom: 0; }
+  .results td { display: flex; flex-direction: column; gap: 2px; padding: 0; border: 0; white-space: normal; }
+  .results td::before {
+    content: attr(data-l); font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--ink-mute);
+  }
+  .results td:first-child { grid-column: 1 / -1; }
+  .results td:first-child::before { display: none; }
+  .results .num { text-align: left; }
+}
 .postrow-measured { font-size: 12px; margin-top: 6px; }
+
+/* The engagement, above everything: how many creators, when it is due, the
+   invoice and the money. "Your campaign" below is then only the creators. */
+.engage-card {
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
+  padding: 14px 16px 8px; margin-top: 16px;
+}
+.engage-card .booking-facts { margin: 0; }
+.engage-card .amountfold {
+  border: 0; border-top: 1px solid var(--line-soft); border-radius: 0;
+  margin: 12px 0 0; padding: 4px 0 0;
+}
 .rollup-card {
   border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
   padding: 14px 16px; margin: 0 0 12px;
@@ -2472,20 +2506,29 @@ body > .shell { width: 100%; }
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 12px 0 4px; overflow-x: auto;
 }
+/* Members: who, which group, what to do with them. */
 .team-head, .team-row {
-  display: grid; align-items: center; gap: 0 10px; min-width: 860px;
-  grid-template-columns: minmax(200px, 1.6fr) 136px repeat(7, minmax(78px, .7fr)) 110px;
+  display: grid; align-items: center; gap: 0 10px;
+  grid-template-columns: minmax(200px, 1.6fr) 180px minmax(180px, .8fr);
   padding: 0 15px;
 }
-.team-head {
+/* Groups: one row per group, a column per switch. */
+.group-head, .group-row {
+  display: grid; align-items: center; gap: 0 10px; min-width: 900px;
+  grid-template-columns: minmax(150px, 1.3fr) repeat(7, minmax(72px, .7fr)) 70px 90px;
+  padding: 0 15px;
+}
+.team-head, .group-head {
   padding-bottom: 8px; border-bottom: 1px solid var(--line);
   font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
   color: var(--ink-mute); text-align: center;
 }
-.team-head > span:first-child { text-align: left; }
-.team-row { padding-top: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line-soft); }
-.team-row:last-child { border-bottom: 0; }
+.team-head > span:first-child, .group-head > span:first-child { text-align: left; }
+.team-row, .group-row { padding-top: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line-soft); }
+.team-row:last-child, .group-row:last-child { border-bottom: 0; }
 .team-row.is-off { opacity: .55; }
+.group-name .input { width: 100%; }
+.input-sm { min-height: 34px; font-size: 13px; }
 .team-who { display: flex; flex-direction: column; min-width: 0; }
 .team-who b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
 .team-who b i { font-style: normal; font-size: 11px; font-weight: 600; color: var(--accent); margin-left: 6px; }
@@ -2516,13 +2559,14 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
    the switches two abreast with their names beside them, then the actions. */
 @media (max-width: 640px) {
   .team-table { overflow: visible; padding: 0; }
-  .team-head { display: none; }
-  .team-row {
+  .team-head, .group-head { display: none; }
+  .team-row, .group-row {
     min-width: 0; grid-template-columns: 1fr 1fr; gap: 8px 12px;
     padding: 14px 15px; align-items: stretch;
   }
-  .team-row > span:nth-child(1), .team-row > span:nth-child(2), .team-act { grid-column: 1 / -1; }
-  .team-row > span:nth-child(2) { margin-bottom: 4px; }
+  .team-row > span:nth-child(1), .team-row > span:nth-child(2), .team-act,
+  .group-row > span:nth-child(1) { grid-column: 1 / -1; }
+  .team-row > span:nth-child(2), .group-row > span:nth-child(1) { margin-bottom: 4px; }
   .team-flag {
     display: flex; align-items: center; gap: 10px; text-align: left;
     min-height: var(--ctl-h); font-size: 13px; color: var(--ink-soft);

@@ -1,10 +1,10 @@
 /*
- * Team — who may do what.
+ * Team — people and the groups they belong to.
  *
- * One row per person who can sign in. The role sets defaults, the switches
- * adjust them per person, and the database enforces the result: this page
- * draws the switches, the policies in supabase/schema.sql are the control.
- * Only an admin sees this section.
+ * A person is in one group. The group says which sections its members open,
+ * whether they see billing and the activity record, and whether they may
+ * remove things. The database enforces it: the switches on a group are
+ * copied onto its members by trigger and read by every policy.
  */
 (function () {
   var API = window.ADspaceAPI;
@@ -24,113 +24,202 @@
     el.textContent = text || ''; el.className = 'msg' + (kind ? ' ' + kind : '');
   }
 
-  var ROLES = [
-    ['admin',   'Admin'],
-    ['account', 'Account'],
-    ['sales',   'Sales']
-  ];
-  /* The switches, in the order they are asked about. Column, label, what it
-     lets the person do. */
   var FLAGS = [
-    ['can_clients',   'Clients',          'The client list, contacts and the log'],
-    ['can_review',    'Content Review',   'Content sets and approvals'],
-    ['can_campaigns', 'Creator Campaigns','Creators, proposals and production'],
-    ['can_links',     'Short Links',      'Links and QR codes'],
-    ['can_billing',   'Billing details',  'See and edit the e-invoice fields'],
-    ['can_activity',  'Activity record',  'Read the record of who did what'],
-    ['can_remove',    'Can remove',       'Delete campaigns and links, remove clients from Content Review']
+    ['can_clients',   'Clients'],
+    ['can_review',    'Content Review'],
+    ['can_campaigns', 'Creator Campaigns'],
+    ['can_links',     'Short Links'],
+    ['can_billing',   'Billing'],
+    ['can_activity',  'Activity record'],
+    ['can_remove',    'Remove']
   ];
 
-  var state = { rows: [] };
+  var state = { rows: [], roles: [] };
 
   function load() {
-    var box = $('teamList');
-    box.innerHTML = '<div class="empty">Loading…</div>';
-    db.from('team_members').select('*').order('active', { ascending: false })
-      .order('role').order('name').then(function (r) {
-        if (r.error) { box.innerHTML = '<div class="empty">' + esc(r.error.message) + '</div>'; return; }
-        state.rows = r.data || [];
-        paint();
-      });
+    $('teamList').innerHTML = '<div class="empty">Loading…</div>';
+    db.from('team_roles').select('*').order('position').order('name').then(function (r) {
+      if (r.error) { $('groupList').innerHTML = '<div class="empty">' + esc(r.error.message) + '</div>'; return; }
+      state.roles = r.data || [];
+      paintGroups();
+      fillRolePick();
+      db.from('team_members').select('*').order('active', { ascending: false })
+        .order('role').order('name').then(function (q) {
+          if (q.error) { $('teamList').innerHTML = '<div class="empty">' + esc(q.error.message) + '</div>'; return; }
+          state.rows = q.data || [];
+          paintMembers();
+        });
+    });
   }
 
-  function paint() {
+  function roleName(slug) {
+    var r = state.roles.filter(function (x) { return x.slug === slug; })[0];
+    return r ? r.name : slug;
+  }
+  function roleOptions(current) {
+    return state.roles.map(function (r) {
+      return '<option value="' + esc(r.slug) + '"' + (r.slug === current ? ' selected' : '') + '>' + esc(r.name) + '</option>';
+    }).join('');
+  }
+  function fillRolePick() {
+    var keep = $('tmRole').value;
+    $('tmRole').innerHTML = roleOptions(keep || 'account');
+  }
+
+  // ---- Members ------------------------------------------------------------
+  function paintMembers() {
     var box = $('teamList');
     box.innerHTML = '';
-    if (!state.rows.length) {
-      box.innerHTML = '<div class="empty">No team members.</div>';
-      return;
-    }
+    if (!state.rows.length) { box.innerHTML = '<div class="empty">No team members.</div>'; return; }
     var head = document.createElement('div');
     head.className = 'team-head';
-    head.innerHTML = '<span>Person</span><span>Role</span>' +
-      FLAGS.map(function (f) { return '<span title="' + esc(f[2]) + '">' + esc(f[1]) + '</span>'; }).join('') +
-      '<span></span>';
+    head.innerHTML = '<span>Person</span><span>Group</span><span></span>';
     box.appendChild(head);
-    state.rows.forEach(function (m) { box.appendChild(row(m)); });
+    state.rows.forEach(function (m) { box.appendChild(memberRow(m)); });
   }
 
-  function row(m) {
+  function memberRow(m) {
     var self = me() && me().id === m.id;
     var el = document.createElement('div');
     el.className = 'team-row' + (m.active ? '' : ' is-off');
     el.innerHTML =
       '<span class="team-who"><b>' + esc(m.name) + (self ? ' <i>you</i>' : '') + '</b>' +
-        '<small>' + esc(m.email || 'no email, cannot sign in') + '</small></span>' +
-      '<span><select class="select select-sm" data-f="role">' +
-        ROLES.map(function (r) {
-          return '<option value="' + r[0] + '"' + (m.role === r[0] ? ' selected' : '') + '>' + esc(r[1]) + '</option>';
-        }).join('') + '</select></span>' +
-      FLAGS.map(function (f) {
-        return '<span class="team-flag" data-label="' + esc(f[1]) + '"><input type="checkbox" data-f="' + f[0] + '"' +
-          (m[f[0]] ? ' checked' : '') + (m.role === 'admin' ? ' disabled' : '') +
-          ' aria-label="' + esc(f[1]) + '"></span>';
-      }).join('') +
+        '<small>' + esc(m.email || '') + '</small></span>' +
+      '<span><select class="select select-sm" data-f="role" aria-label="Group">' + roleOptions(m.role) + '</select></span>' +
       '<span class="team-act">' +
         (m.active && m.email ? '<button class="btn btn-quiet btn-sm" data-a="invite" type="button">Invite</button>' : '') +
         (m.active
           ? '<button class="btn btn-quiet btn-sm' + (self ? '' : ' is-danger') + '" data-a="off" type="button"' +
-            (self ? ' disabled title="Ask another admin"' : '') + '>Deactivate</button>'
+            (self ? ' disabled' : '') + '>Deactivate</button>'
           : '<button class="btn btn-quiet btn-sm" data-a="on" type="button">Reactivate</button>') +
       '</span>';
 
-    // Any change saves at once and says so. The role change re-fetches so the
-    // defaults the database applied are what is on screen.
     el.querySelector('[data-f="role"]').addEventListener('change', function () {
-      save(m, { role: this.value }, true);
-    });
-    Array.prototype.forEach.call(el.querySelectorAll('input[type="checkbox"]'), function (cb) {
-      cb.addEventListener('change', function () {
-        var patch = {}; patch[cb.getAttribute('data-f')] = cb.checked;
-        save(m, patch, false);
-      });
+      saveMember(m, { role: this.value });
     });
     var off = el.querySelector('[data-a="off"]');
     if (off) off.addEventListener('click', function () {
       if (!confirm('Deactivate ' + m.name + '?\n\nAccess is removed until reactivated.')) return;
-      save(m, { active: false }, true);
+      saveMember(m, { active: false });
     });
     var on = el.querySelector('[data-a="on"]');
-    if (on) on.addEventListener('click', function () { save(m, { active: true }, true); });
+    if (on) on.addEventListener('click', function () { saveMember(m, { active: true }); });
     var inv = el.querySelector('[data-a="invite"]');
     if (inv) inv.addEventListener('click', function () { reinvite(m); });
     return el;
   }
 
-  function save(m, patch, reload) {
+  function saveMember(m, patch) {
     db.from('team_members').update(patch).eq('id', m.id).then(function (r) {
       if (r.error) { msg('teamMsg', r.error.message, 'err'); load(); return; }
-      Object.keys(patch).forEach(function (k) { m[k] = patch[k]; });
-      log('team.changed', m.name, Object.keys(patch).map(function (k) { return k.replace('can_', '') + '=' + patch[k]; }).join(', '));
-      msg('teamMsg', 'Saved for ' + m.name + '.', 'ok');
-      if (reload) load();
+      log('team.changed', m.name, Object.keys(patch).map(function (k) {
+        return k + '=' + (k === 'role' ? roleName(patch[k]) : patch[k]);
+      }).join(', '));
+      msg('teamMsg', 'Saved.', 'ok');
+      load();
     });
   }
+
+  // ---- Groups -------------------------------------------------------------
+  function paintGroups() {
+    var box = $('groupList');
+    box.innerHTML = '';
+    var head = document.createElement('div');
+    head.className = 'group-head';
+    head.innerHTML = '<span>Group</span>' +
+      FLAGS.map(function (f) { return '<span>' + esc(f[1]) + '</span>'; }).join('') +
+      '<span>Admin</span><span></span>';
+    box.appendChild(head);
+    state.roles.forEach(function (r) { box.appendChild(groupRow(r)); });
+  }
+
+  function groupRow(r) {
+    var locked = r.slug === 'admin';
+    var used = state.rows.some(function (m) { return m.role === r.slug; });
+    var el = document.createElement('div');
+    el.className = 'group-row';
+    el.innerHTML =
+      '<span class="group-name"><input class="input input-sm" data-f="name" value="' + esc(r.name) + '"' +
+        (locked ? ' disabled' : '') + ' aria-label="Group name"></span>' +
+      FLAGS.map(function (f) {
+        return '<span class="team-flag" data-label="' + esc(f[1]) + '"><input type="checkbox" data-f="' + f[0] + '"' +
+          (r[f[0]] ? ' checked' : '') + (locked ? ' disabled' : '') + ' aria-label="' + esc(f[1]) + '"></span>';
+      }).join('') +
+      '<span class="team-flag" data-label="Admin"><input type="checkbox" data-f="is_admin"' +
+        (r.is_admin ? ' checked' : '') + (locked ? ' disabled' : '') + ' aria-label="Admin"></span>' +
+      '<span class="team-act">' +
+        (locked || used ? '' : '<button class="btn btn-quiet btn-sm is-danger" data-a="del" type="button">Delete</button>') +
+      '</span>';
+
+    Array.prototype.forEach.call(el.querySelectorAll('input[type="checkbox"]'), function (cb) {
+      cb.addEventListener('change', function () {
+        var patch = {}; patch[cb.getAttribute('data-f')] = cb.checked;
+        saveGroup(r, patch);
+      });
+    });
+    var name = el.querySelector('[data-f="name"]');
+    name.addEventListener('change', function () {
+      var v = name.value.trim();
+      if (!v) { name.value = r.name; return; }
+      saveGroup(r, { name: v });
+    });
+    var del = el.querySelector('[data-a="del"]');
+    if (del) del.addEventListener('click', function () {
+      if (!confirm('Delete the ' + r.name + ' group?')) return;
+      db.from('team_roles').delete().eq('slug', r.slug).then(function (q) {
+        if (q.error) { msg('groupMsg', q.error.message, 'err'); return; }
+        log('team.group_removed', r.name, '');
+        msg('groupMsg', r.name + ' deleted.', 'ok');
+        load();
+      });
+    });
+    return el;
+  }
+
+  function saveGroup(r, patch) {
+    db.from('team_roles').update(patch).eq('slug', r.slug).then(function (q) {
+      if (q.error) { msg('groupMsg', q.error.message, 'err'); load(); return; }
+      Object.keys(patch).forEach(function (k) { r[k] = patch[k]; });
+      log('team.group_changed', r.name, Object.keys(patch).map(function (k) {
+        return k.replace('can_', '') + '=' + patch[k];
+      }).join(', '));
+      msg('groupMsg', 'Saved.', 'ok');
+      // Members carry their group's switches; the console reads them at sign-in.
+      load();
+    });
+  }
+
+  $('groupAdd').addEventListener('click', function () {
+    $('groupAddBox').hidden = false;
+    $('grName').value = '';
+    msg('grMsg', '');
+    $('grName').focus();
+  });
+  $('grCancel').addEventListener('click', function () { $('groupAddBox').hidden = true; });
+  $('grSave').addEventListener('click', function () {
+    var name = ($('grName').value || '').trim();
+    if (!name) { msg('grMsg', 'A name is required.', 'err'); return; }
+    var slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    if (!slug) { msg('grMsg', 'Use letters or numbers in the name.', 'err'); return; }
+    if (state.roles.some(function (r) { return r.slug === slug; })) { msg('grMsg', 'That group already exists.', 'err'); return; }
+    db.from('team_roles').insert({
+      slug: slug, name: name, position: state.roles.length,
+      can_clients: true, can_review: false, can_campaigns: false, can_links: false,
+      can_billing: false, can_activity: false, can_remove: false, is_admin: false
+    }).then(function (q) {
+      if (q.error) { msg('grMsg', q.error.message, 'err'); return; }
+      log('team.group_added', name, '');
+      $('groupAddBox').hidden = true;
+      msg('groupMsg', name + ' added.', 'ok');
+      load();
+    });
+  });
 
   // ---- Add a person -------------------------------------------------------
   $('teamAdd').addEventListener('click', function () {
     $('teamAddBox').hidden = false;
-    $('tmName').value = ''; $('tmEmail').value = ''; $('tmRole').value = 'account';
+    $('tmName').value = ''; $('tmEmail').value = '';
+    fillRolePick(); $('tmRole').value = 'account';
     msg('tmMsg', '');
     $('tmName').focus();
   });
@@ -138,16 +227,18 @@
   $('tmSave').addEventListener('click', function () {
     var name = ($('tmName').value || '').trim();
     var email = ($('tmEmail').value || '').trim().toLowerCase();
-    if (!name) { msg('tmMsg', 'A name is needed.', 'err'); return; }
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg('tmMsg', 'Enter the email they sign in with.', 'err'); return; }
-    db.from('team_members').insert({ name: name, email: email, role: $('tmRole').value, active: true })
+    var role = $('tmRole').value;
+    if (!name) { msg('tmMsg', 'A name is required.', 'err'); return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg('tmMsg', 'A valid email is required.', 'err'); return; }
+    if (!role) { msg('tmMsg', 'A group is required.', 'err'); return; }
+    db.from('team_members').insert({ name: name, email: email, role: role, active: true })
       .then(function (r) {
         if (r.error) {
           msg('tmMsg', /duplicate|unique/i.test(r.error.message)
             ? 'That email is already on the list.' : r.error.message, 'err');
           return;
         }
-        log('team.added', name, email + ' · ' + $('tmRole').value);
+        log('team.added', name, email + ' · ' + roleName(role));
         $('teamAddBox').hidden = true;
         load();
         // The row is theirs; now the login. The function holds the key the
@@ -173,7 +264,6 @@
       });
   });
 
-  // For a person added before the function existed, or whose email got lost.
   function reinvite(m) {
     if (!m.email) { msg('teamMsg', m.name + ' has no email on record.', 'err'); return; }
     msg('teamMsg', 'Sending an invitation to ' + m.email + '…', 'ok');
@@ -186,11 +276,6 @@
                                  : 'Invitation sent to ' + m.email + '.', 'ok');
       });
   }
-
-  $('tmRole').innerHTML = ROLES.map(function (r) {
-    return '<option value="' + r[0] + '">' + esc(r[1]) + '</option>';
-  }).join('');
-  $('tmRole').value = 'account';
 
   window.ADspaceTeam = {
     urlState: function () { return {}; },
