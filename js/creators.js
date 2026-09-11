@@ -601,9 +601,14 @@
 
       // The profile link is the thing they came to click, so it is a button
       // with the platform named on it, not a chip that reads as decoration.
+      /* "View RedNote profile →" is right on a desktop and too long for a
+         phone, where two of them will not sit side by side. Both labels are
+         rendered and the width decides which one shows. */
       var links = (o.profiles || []).map(function (p) {
+        var name = t().platform[p.platform] || platLabel(p.platform);
         return '<a class="plink" href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
-          esc(t().viewOn(t().platform[p.platform] || platLabel(p.platform))) + '</a>';
+          '<span class="plink-full">' + esc(t().viewOn(name)) + '</span>' +
+          '<span class="plink-short">' + esc(name) + ' →</span></a>';
       }).join('');
 
       row.innerHTML =

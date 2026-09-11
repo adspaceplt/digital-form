@@ -778,8 +778,8 @@
     $('bulkToggle').hidden = !working.length;
     if (!working.length) $('bulkBox').hidden = true;
     $('bulkTitle').textContent = 'Same ' + (isDelivery() ? 'delivery' : 'shoot') + ' date for everyone';
-    $('bulkHint').textContent = 'Fills the date and time on every card still blank. A card set ' +
-      'by hand keeps what it has unless you overwrite.';
+    $('bulkHint').textContent = 'Fills every card still blank. A card set by hand keeps ' +
+      'what it has unless you overwrite.';
     paintRollup(working);
   }
 
@@ -1057,8 +1057,8 @@
   var TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>';
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
 
-  function field(label, id, value, type, ph) {
-    return '<label class="kfield"><span>' + esc(label) + '</span>' +
+  function field(label, id, value, type, ph, cls) {
+    return '<label class="kfield ' + (cls || '') + '"><span>' + esc(label) + '</span>' +
       '<input class="input" data-f="' + id + '" type="' + (type || 'text') + '" value="' +
       esc(value == null ? '' : value) + '" placeholder="' + esc(ph || '') + '"></label>';
   }
@@ -1141,7 +1141,7 @@
           field(visitWord() + ' date', 'visit_date', o.visit_date, 'date') +
           field('Time', 'visit_time', o.visit_time, 'text', '2pm') +
           (isDelivery() ? field('Tracking no.', 'tracking_no', o.tracking_no, 'text', '') : '') +
-          field('Publish date', 'planned_publish', o.planned_publish, 'date') +
+          field('Publish date', 'planned_publish', o.planned_publish, 'date', '', 'kfield-pub') +
           '<label class="kfield kfield-wide"><span>Draft link (Google Drive)</span>' +
             '<input class="input" data-f="draft_url" value="' + esc(o.draft_url || '') +
             '" placeholder="https://drive.google.com/…"></label>' +

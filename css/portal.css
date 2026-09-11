@@ -22,10 +22,21 @@
   --warn-bg:    #fbf2e6;
   --radius:     10px;
   --radius-sm:  7px;
+  /* One height for every control, so a button, a select and an input standing
+     next to each other line up instead of stepping. Touch devices get the
+     44px target Apple asks for, and 16px text so iOS stops zooming the page
+     the moment a field is focused. */
+  --ctl-h:      38px;
+  --ctl-h-sm:   32px;
+  --ctl-text:   13px;
+  --field-text: 14px;
   --shadow:     0 1px 2px rgba(19,24,26,.05);
   --shadow-lift: 0 1px 2px rgba(19,24,26,.06), 0 12px 32px rgba(19,24,26,.10);
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
           "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+@media (pointer: coarse) {
+  :root { --ctl-h: 44px; --ctl-h-sm: 44px; --ctl-text: 14px; --field-text: 16px; }
 }
 
 * { box-sizing: border-box; margin: 0; }
@@ -85,11 +96,12 @@ a { color: inherit; }
   padding: 16px 0 14px;
 }
 .filterbar .count { margin-left: auto; padding-bottom: 0; }
-.field-label { display: block; font-size: 12px; color: var(--ink-mute); margin-bottom: 4px; }
+.field-label { display: block; font-size: 12px; color: var(--ink-mute); margin-bottom: 5px; }
 .select, .input, .textarea {
-  font: inherit; color: var(--ink); background: #fff;
-  border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px;
+  font: inherit; font-size: var(--field-text); color: var(--ink); background: #fff;
+  border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 12px;
 }
+.select, .input { min-height: var(--ctl-h); padding-block: 0; }
 /* The native control drew its own chrome, so a select sat a few pixels taller
    than the inputs beside it and carried a different arrow on every platform.
    Same box, one chevron, drawn by us. */
@@ -100,8 +112,8 @@ a { color: inherit; }
   background-repeat: no-repeat; background-position: right 10px center; background-size: 15px;
 }
 /* Date and time fields bring their own chrome too, and it is taller. */
-.input[type="date"], .input[type="time"] { line-height: 1.5; min-height: 39px; }
-.textarea { width: 100%; resize: vertical; min-height: 84px; }
+.input[type="date"], .input[type="time"] { line-height: 1.5; min-height: var(--ctl-h); }
+.textarea { width: 100%; resize: vertical; min-height: 84px; padding-block: 10px; }
 .input:focus, .select:focus, .textarea:focus { outline: 2px solid var(--ink); outline-offset: -1px; }
 .count { color: var(--ink-mute); font-size: 13px; }
 
@@ -180,7 +192,8 @@ a { color: inherit; }
 .approve { border-top: 1px solid var(--line-soft); padding: 14px 16px; }
 .approve-row { display: flex; gap: 10px; }
 .btn {
-  flex: 1; border-radius: 9px; padding: 10px 16px; font-size: 13px; font-weight: 500;
+  flex: 1; border-radius: var(--radius-sm); padding: 0 16px;
+  min-height: var(--ctl-h); font-size: var(--ctl-text); font-weight: 500;
   border: 1px solid var(--line); background: #fff; color: var(--ink-soft);
   transition: background .2s, color .2s, border-color .2s;
   /* Width came entirely from the label, so a row of buttons stepped up and
@@ -628,8 +641,12 @@ a { color: inherit; }
   color: var(--ink-mute); font-weight: 600; margin: 28px 0 10px;
 }
 
-.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
-.row > div { flex: 1 1 180px; min-width: 0; }
+/* Bottom alignment dropped the label of any field standing next to a taller
+   one, which is what made Date and Time sit at two different heights. Each
+   pair is now its own column and the row aligns from the top. */
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+.row > div { flex: 1 1 180px; min-width: 0; display: flex; flex-direction: column; }
+.row > div > .input, .row > div > .select { margin-top: auto; }
 .row .input, .row .select { width: 100%; }
 .row .btn { flex: 0 0 auto; }
 .muted { color: var(--ink-mute); font-size: 12.5px; }
@@ -962,7 +979,7 @@ a { color: inherit; }
 }
 
 /* Button variants */
-.btn-sm { flex: 0 0 auto; padding: 7px 13px; font-size: 12.5px; min-width: 92px; }
+.btn-sm { flex: 0 0 auto; padding: 0 13px; min-height: var(--ctl-h-sm); font-size: 12.5px; min-width: 92px; }
 .btn-sm svg { width: 13px; height: 13px; }
 .btn-danger { background: #b3261e; border-color: #b3261e; color: #fff; flex: 0 0 auto; }
 .btn-danger:hover { background: #8c1d18; border-color: #8c1d18; color: #fff; }
@@ -1620,6 +1637,7 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
   white-space: nowrap;
 }
 .plink svg { width: 11px; height: 11px; opacity: .7; }
+.plink-short { display: none; }
 .plink:hover { border-color: var(--ink); color: var(--ink); }
 
 .crow-rate {
@@ -1628,9 +1646,11 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 }
 
 /* Was an underlined word, which read as fine print rather than a control. */
+/* Same corner as the profile buttons it stands beside: two shapes in one row
+   read as two unrelated systems. */
 .crow-backup {
   grid-area: backup; flex: 0 0 auto; white-space: nowrap;
-  border: 1px solid var(--line); border-radius: 999px; background: #fff;
+  border: 1px solid var(--line); border-radius: var(--radius-sm); background: #fff;
   padding: 4px 11px; font-size: 11.5px; color: var(--ink-mute);
 }
 .crow-backup:hover { border-color: var(--ink-mute); color: var(--ink); }
@@ -1968,3 +1988,95 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 
 /* A profile link reads as an instruction now, not a tag. */
 .plink { padding: 5px 11px; font-weight: 500; }
+
+/* =========================================================================
+   PHONE
+   One pass, last in the file, so it is the final word on layout at phone
+   width rather than a correction scattered through eighteen breakpoints.
+   Three rules govern it: nothing is narrower than the thumb that taps it,
+   a row either fits or becomes a column, and a button never sits at a
+   different height from the button beside it.
+   ========================================================================= */
+@media (max-width: 560px) {
+
+  /* A heading and its actions: the heading takes the line, the actions share
+     the next one equally. Two buttons of different widths and heights side by
+     side was the thing that read as unfinished. */
+  .viewhead { flex-wrap: wrap; gap: 10px; margin: 22px 0 12px; }
+  .viewhead h2, .viewhead h3, .viewhead .headmark { flex: 1 1 100%; min-width: 0; }
+  .viewhead .btn { flex: 1 1 0; min-width: 0; }
+  .viewhead .btn-sm { min-height: var(--ctl-h); font-size: var(--ctl-text); }
+
+  /* Action rows: a button keeps a readable width and wraps to the next line
+     rather than squeezing its label onto three. */
+  .kactions .btn,
+  .row > .btn { flex: 1 1 138px; min-width: 0; }
+  /* A borderless tertiary button left alone at the end of a wrapped row read
+     as a stray word. It takes the whole last line instead. */
+  .kactions > .btn-quiet:last-child,
+  .row > .btn-quiet:last-child { flex: 1 1 100%; }
+  .btn { padding-inline: 12px; }
+
+  /* Fields stack rather than squeeze. A fixed flex-basis in a style attribute
+     is what produced the half-width date box next to a narrower time box. */
+  .row > div[style] { flex: 1 1 100% !important; }
+  .row > div { flex: 1 1 100%; }
+  #bulkVisitRow > div { flex: 1 1 calc(50% - 6px) !important; }
+
+  /* Panels give back the side gutter the phone needs. A folded panel is a row,
+     not a box: it was standing 70px tall to hold one word. */
+  .panel { padding: 15px 16px; margin-bottom: 12px; }
+  .panel-collapse { padding: 0; }
+  .disclosure { padding: 12px 14px; gap: 9px; flex-wrap: wrap; }
+  .disclosure .muted { margin-left: 0; flex: 1 1 100%; padding-left: 27px; font-size: 12px; }
+  .disclosure-body { padding: 4px 14px 16px; }
+  .panel .hint { font-size: 12.5px; line-height: 1.5; }
+  .subsection + .subsection { margin-top: 18px; padding-top: 16px; }
+  .empty { padding: 20px 16px; }
+
+  /* Creator cards: the head keeps the name and status on one line with the
+     menu pinned right, and the field grid drops to two columns. */
+  /* Name, then status, then the menu pinned right. The name gives way first. */
+  .kcard-head { padding: 11px 8px 11px 14px; gap: 8px; }
+  .kcard-name { font-size: 14.5px; flex: 0 1 auto; }
+  .kmenu { right: 6px; top: 46px; width: calc(100vw - 52px); }
+  .kstep { padding: 11px 14px 13px; }
+  /* Shoot date and time pair on one line. Publish date would otherwise orphan
+     next to an empty half, so it takes the width. */
+  .kfields { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .kfield-wide, .kfield-pub { grid-column: 1 / -1; }
+  .kactions { gap: 8px; }
+
+  /* Terms wraps to two lines instead of crushing the money against the edge. */
+  .kstep-terms { gap: 8px 10px; }
+  .kstep-terms .kstep-sum { flex: 1 1 100%; order: 4; margin-left: 27px; }
+  .kstep-terms .btn, .kstep-note { margin-left: auto; }
+
+  /* The client's creator list. Name and rate read as one line, the things to
+     tap sit on the next, and the profile button drops to the platform name so
+     two of them fit across instead of stacking. */
+  .crow {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "tick name rate" ".  links backup";
+    gap: 9px 10px; padding: 12px 14px;
+  }
+  .crow-rate { min-width: 0; }
+  .crow-backup { align-self: start; padding: 7px 13px; font-size: 12px; }
+  .plink { padding: 7px 11px; font-size: 12.5px; }
+  .plink-full { display: none; }
+  .plink-short { display: inline; }
+
+  /* Sheets are full-height on a phone, not a card floating in a dark room. */
+  .sheet { padding: 0; align-items: flex-end; }
+  .sheet-card {
+    width: 100%; max-height: 92vh; border-radius: var(--radius) var(--radius) 0 0;
+    padding: 18px 16px 8px;
+  }
+}
+
+/* A tap target is never smaller than a finger, whatever the width. */
+@media (pointer: coarse) {
+  .btn-icononly, .kmenu-btn { width: 40px; height: 40px; }
+  .kmenu-item { padding: 11px 12px; }
+  .linkish { padding: 8px 2px; }
+}
