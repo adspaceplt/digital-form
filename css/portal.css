@@ -1454,9 +1454,14 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 .notice span { font-size: 13px; color: var(--ink-mute); }
 
 /* ---------- Short Links ---------- */
-.linksbar { display: flex; align-items: center; gap: 12px; margin: 20px 0 12px; }
-.linksbar .input { flex: 1 1 auto; }
+.linksbar { display: flex; align-items: center; gap: 12px; margin: 20px 0 12px; flex-wrap: wrap; }
+.linksbar .input { flex: 1 1 240px; min-width: 0; }
 .linksbar .muted { flex: 0 0 auto; white-space: nowrap; }
+.linksbar .btn { flex: 0 0 auto; }
+@media (max-width: 760px) {
+  .linksbar .muted { order: 8; }
+  .linksbar .btn-primary { order: 10; flex: 1 1 100%; }
+}
 
 .slugfield { display: flex; align-items: stretch; }
 .slugfield-pre {
@@ -2116,23 +2121,74 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 }
 
 /* ---------- CRM ----------
-   The client list is scanned, not read, so it is a dense row with the name
-   doing the work and everything else sitting quietly behind it. */
+   A client list is a table, because that is the shape of every CRM the team
+   has already used and the eye reads a column faster than it hunts across a
+   wide row. Columns align down the page; everything about one client sits
+   together on its line. */
+.crm-head, .crm-row {
+  display: grid; align-items: center; gap: 0 16px;
+  grid-template-columns: minmax(0, 2.4fr) 128px minmax(0, 1fr) 74px minmax(0, 1.1fr);
+}
+.crm-c-meta { display: none; }
+.crm-head {
+  padding: 0 15px 8px; border-bottom: 1px solid var(--line);
+  font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  color: var(--ink-mute);
+}
 .crm-row {
-  display: grid; align-items: center; gap: 4px 12px; width: 100%; text-align: left;
+  width: 100%; text-align: left; background: var(--card);
+  border: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0;
+  padding: 13px 15px; min-height: 52px;
+}
+.crm-row:hover { background: var(--sunk); }
+.crm-row:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+.crm-c { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 13.5px; color: var(--ink-mute); }
+.crm-c-name { font-size: 14.5px; font-weight: 600; letter-spacing: -.012em; color: var(--ink); }
+.crm-c-mkt { font-variant-numeric: tabular-nums; }
+#crmList {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding-top: 12px; overflow: hidden;
+}
+#crmList .crm-row:last-child { border-bottom: 0; }
+#crmList .empty { border: 0; margin: 0; }
+
+.crm-reach { display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; }
+/* Which language they answer in describes the person, so it sits with the
+   person rather than at the far end of the row. */
+.crm-lang { font-size: 12px; color: var(--ink-mute); }
+
+/* What is running for this client. A row, with the chevron that says it
+   goes somewhere, because it does. */
+.work-row {
+  display: grid; align-items: center; gap: 2px 14px; width: 100%; text-align: left;
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "name tone" "meta meta";
+  grid-template-areas: "name go" "meta go";
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 12px 15px; margin-bottom: 8px;
 }
-.crm-row:hover { border-color: var(--ink-mute); }
-.crm-row-name {
-  grid-area: name; font-size: 14.5px; font-weight: 600; letter-spacing: -.012em;
-  color: var(--ink); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.work-row:hover { border-color: var(--ink-mute); }
+.work-row-name {
+  grid-area: name; font-size: 14px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.crm-row .tone { grid-area: tone; }
-.crm-row-meta { grid-area: meta; font-size: 12.5px; color: var(--ink-mute); }
-.crm-reach { display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.work-row-meta { grid-area: meta; font-size: 12.5px; color: var(--ink-mute); }
+.work-row-go { grid-area: go; width: 15px; height: 15px; color: var(--ink-mute); }
+
+/* Name, state and the control that changes them, together. */
+.crm-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.crm-title h2 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
+.crm-title .btn { flex: 0 0 auto; }
+
+/* Search, filters, count and the one action on a single line: everything that
+   changes what the list shows lives in one place. */
+.crm-bar { align-items: center; }
+.crm-bar .count { margin-left: auto; }
+.crm-bar .btn-primary { flex: 0 0 auto; }
+@media (max-width: 760px) {
+  .crm-bar .count { margin-left: 0; order: 9; }
+  .crm-bar .btn-primary { order: 10; flex: 1 1 100%; }
+}
 
 /* A checkbox with its label, sized to be tapped rather than aimed at. */
 .tickline {
@@ -2141,8 +2197,22 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 }
 .tickline input { width: 18px; height: 18px; accent-color: var(--accent); flex: 0 0 auto; }
 
+/* Below the column widths, the same cells become two lines: who they are,
+   then everything else. */
+@media (max-width: 760px) {
+  .crm-head { display: none; }
+  .crm-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "name stage" "meta meta";
+    gap: 5px 10px; padding: 12px 14px;
+  }
+  .crm-c-name  { grid-area: name; white-space: normal; }
+  .crm-c-stage { grid-area: stage; }
+  /* The three column cells give way to the one combined line. */
+  .crm-c-ind, .crm-c-mkt, .crm-c-own { display: none; }
+  .crm-c-meta { display: block; grid-area: meta; font-size: 12.5px; }
+}
 @media (max-width: 560px) {
-  .crm-row { padding: 12px 14px; }
   .crm-reach .plink { flex: 1 1 auto; justify-content: center; }
 }
 

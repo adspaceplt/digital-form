@@ -115,16 +115,31 @@
                               : 'No clients yet. Add the first one above.') + '</div>';
       return;
     }
+    /* A column per fact, because that is what every CRM anyone here has used
+       looks like, and because the eye scans a column far faster than it scans
+       a chip stranded at the other end of a wide row. The same cells stack
+       into two lines on a phone. */
+    var head = document.createElement('div');
+    head.className = 'crm-head';
+    head.innerHTML = ['Client', 'Stage', 'Industry', 'Bills in', 'Owner']
+      .map(function (h) { return '<span>' + h + '</span>'; }).join('');
+    box.appendChild(head);
+
     rows.forEach(function (c) {
       var w = stageWord(c.stage || 'lead');
       var row = document.createElement('button');
       row.type = 'button';
       row.className = 'crm-row';
       row.innerHTML =
-        '<span class="crm-row-name">' + esc(c.name || '') + '</span>' +
-        '<span class="tone ' + w[2] + '">' + esc(w[1]) + '</span>' +
-        '<span class="crm-row-meta">' +
-          [c.industry, MON.market(c.market).sign, c.owner].filter(Boolean).map(esc).join(' · ') +
+        '<span class="crm-c crm-c-name">' + esc(c.name || '') + '</span>' +
+        '<span class="crm-c crm-c-stage"><span class="tone ' + w[2] + '">' + esc(w[1]) + '</span></span>' +
+        '<span class="crm-c crm-c-ind">' + esc(c.industry || '—') + '</span>' +
+        '<span class="crm-c crm-c-mkt">' + esc(MON.market(c.market).sign) + '</span>' +
+        '<span class="crm-c crm-c-own">' + esc(c.owner || 'Unassigned') + '</span>' +
+        // The same three facts as one line, for widths too narrow for columns.
+        '<span class="crm-c crm-c-meta">' +
+          [c.industry, MON.market(c.market).sign, c.owner || 'Unassigned']
+            .filter(Boolean).map(esc).join(' · ') +
         '</span>';
       row.addEventListener('click', function () { openClient(c); });
       box.appendChild(row);
@@ -283,6 +298,7 @@
         '<span class="kcard-name">' + esc(ct.name) + '</span>' +
         (ct.is_primary ? '<span class="tone is-ok">Main contact</span>' : '') +
         (ct.role ? '<span class="tone">' + esc(ct.role) + '</span>' : '') +
+        '<span class="crm-lang">Writes in ' + esc(LANG_WORD[ct.lang] || 'English') + '</span>' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
           '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>' +
         '</button>' +
@@ -302,7 +318,6 @@
           (ct.email ? '<a class="plink" href="mailto:' + esc(ct.email) + '">' + esc(ct.email) + '</a>' : '') +
           (!ct.phone && !ct.email ? '<span class="muted">Nothing recorded</span>' : '') +
         '</span>' +
-        '<span class="kstep-note">Writes in ' + esc(LANG_WORD[ct.lang] || 'English') + '</span>' +
       '</div>';
 
     var menu = row.querySelector('[data-menu]');
@@ -427,13 +442,17 @@
     return '<div class="stat"><b>' + esc(String(value)) + '</b><span>' + esc(label) + '</span></div>';
   }
 
+  /* Its own shape: the client table's columns describe clients, not work. */
   function workRow(title, meta, section, id) {
     var row = document.createElement('button');
     row.type = 'button';
-    row.className = 'crm-row';
+    row.className = 'work-row';
     row.innerHTML =
-      '<span class="crm-row-name">' + esc(title) + '</span>' +
-      '<span class="crm-row-meta">' + esc(meta) + '</span>';
+      '<span class="work-row-name">' + esc(title) + '</span>' +
+      '<span class="work-row-meta">' + esc(meta) + '</span>' +
+      '<svg class="work-row-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M9 18l6-6-6-6"/></svg>';
     row.addEventListener('click', function () {
       // Hand over to the section that owns this work, on the item itself.
       var q = section === 'campaigns' ? '?s=campaigns&campaign=' + encodeURIComponent(id)

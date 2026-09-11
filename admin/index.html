@@ -62,11 +62,11 @@
 
     <nav class="sidebar-nav" aria-label="Sections">
       <span class="sidebar-label">Tools</span>
-      <button class="navitem is-on" data-section="review" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg><span>Content Review</span>
-      </button>
-      <button class="navitem" data-section="clients" type="button">
+      <button class="navitem is-on" data-section="clients" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 11h4v10"/><path d="M7 21v-4h5v4"/><path d="M7 9h2M7 13h2M13 9h1M13 13h1"/></svg><span>Clients</span>
+      </button>
+      <button class="navitem" data-section="review" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg><span>Content Review</span>
       </button>
       <button class="navitem" data-section="campaigns" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="m17.5 4.5 1.2 2.5 2.8.4-2 2 .5 2.8-2.5-1.3-2.5 1.3.5-2.8-2-2 2.8-.4z"/></svg><span>Creator Campaigns</span>
@@ -89,7 +89,7 @@
       <button class="navtoggle" id="navToggle" type="button" aria-label="Sections">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
-      <span class="console-title" id="sectionTitle">Content Review</span>
+      <span class="console-title" id="sectionTitle">Clients</span>
       <span class="console-spacer"></span>
       <!-- The activity record was a full width card sitting under the client
            list, which is a lot of furniture for something read once a month. -->
@@ -102,13 +102,12 @@
     <div class="console-body" id="sectionClients" hidden>
 
       <section id="crmListView">
-        <div class="viewhead">
-          <span class="headmark"><h2>Clients</h2></span>
-          <button class="btn btn-primary" id="crmNew" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a client</button>
-        </div>
-
-        <div class="filterbar">
-          <input class="input" id="crmSearch" placeholder="Search by name" autocomplete="off">
+        <!-- The bar above already names the section, so the row carries the
+             controls rather than repeating the word. Search, filters and the
+             one action sit together: everything that changes what is on the
+             list is in one place. -->
+        <div class="filterbar crm-bar">
+          <input class="input" id="crmSearch" placeholder="Search clients" autocomplete="off">
           <select class="select" id="crmStage" aria-label="Filter by stage">
             <option value="all">Every stage</option>
           </select>
@@ -116,6 +115,7 @@
             <option value="all">Everyone</option>
           </select>
           <span class="count" id="crmCount"></span>
+          <button class="btn btn-primary" id="crmNew" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a client</button>
         </div>
 
         <div class="panel" id="crmAddBox" hidden>
@@ -155,8 +155,11 @@
         <button class="backlink" id="crmBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back to all clients</button>
 
         <section class="panel">
-          <div class="viewhead" style="margin:0 0 2px">
-            <span class="headmark"><h2 id="crmClientName"></h2><span class="chip" id="crmClientStage"></span></span>
+          <!-- Edit sits next to the name it edits. It used to be a thousand
+               pixels away at the other end of the card. -->
+          <div class="crm-title">
+            <h2 id="crmClientName"></h2>
+            <span class="chip" id="crmClientStage"></span>
             <button class="btn btn-quiet btn-sm" id="crmEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg>Edit</button>
           </div>
           <dl class="facts" id="crmFacts"></dl>
@@ -204,7 +207,9 @@
         <div class="viewhead"><span class="headmark"><h2>Work</h2></span></div>
         <div id="crmWorkList"></div>
 
-        <!-- Rarely opened, never in the way. -->
+        <!-- Rarely opened, never in the way. Given their own heading so they
+             do not read as part of the Work list above them. -->
+        <div class="viewhead"><span class="headmark"><h2>Details</h2></span></div>
         <section class="panel panel-collapse">
           <button class="disclosure" id="crmBillToggle" type="button" aria-expanded="false">
             <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
@@ -753,11 +758,8 @@
     <!-- ============ Short Links ============ -->
     <div class="console-body" id="sectionLinks" hidden>
 
-      <div class="viewhead">
-        <span class="headmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.6-5.7l-1.7 1.7"/><path d="M14 10.5a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.6 5.7l1.7-1.7"/></svg><h2>Short Links</h2></span>
-        <button class="btn btn-primary" id="showAddLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a link</button>
-      </div>
-
+      <!-- The bar above already says Short Links. Repeating it pushed the
+           controls down and told the reader nothing. -->
       <div class="notice" id="linksNotice">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.5"/></svg>
         <div>
@@ -810,10 +812,13 @@ raya-2026        https://example.com/raya"></textarea>
         <div class="msg" id="importMsg"></div>
       </div>
 
+      <!-- Search, count and both actions on one line, so everything that
+           changes the list is in one place and none of it is a screen away. -->
       <div class="linksbar">
         <input class="input" id="linkSearch" placeholder="Search slug, destination or label">
         <span class="muted" id="linkCount"></span>
         <button class="btn btn-quiet btn-sm" id="showImport" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>Bulk import</button>
+        <button class="btn btn-primary" id="showAddLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a link</button>
       </div>
 
       <div id="linkList"></div>

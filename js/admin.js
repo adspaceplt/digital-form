@@ -170,7 +170,10 @@
 
   /* Which section of the console is on screen. The rail decides; neither
      section knows the other exists, which is the point of the shell. */
-  var section = 'review';
+  /* Clients is the root of the model: a content set and a campaign both hang
+     off one, so the console opens on the list rather than on work whose owner
+     has not been established yet. */
+  var section = 'clients';
   var SECTION_TITLE = {
     clients: 'Clients',
     review: 'Content Review',
@@ -181,7 +184,7 @@
   var enterLater = '';
 
   function showSection(name) {
-    if (!SECTION_TITLE[name]) name = 'review';
+    if (!SECTION_TITLE[name]) name = 'clients';
     section = name;
     $('sectionClients').hidden   = name !== 'clients';
     $('sectionReview').hidden    = name !== 'review';
@@ -268,7 +271,7 @@
      What you were typing is not here; that is the form's own memory. */
   function setUrl() {
     var q = [];
-    if (section !== 'review') q.push('s=' + section);
+    if (section !== 'clients') q.push('s=' + section);
     if (section === 'review') {
       if (state.client) q.push('client=' + state.client.id);
       if (state.batch)  q.push('set=' + state.batch.id);
@@ -304,16 +307,22 @@
 
   function restoreView() {
     var params = new URLSearchParams(location.search);
-    var where = params.get('s');
-    if (where && where !== 'review' && SECTION_TITLE[where]) {
+    // Read the address before anything writes to it: showSection rewrites the
+    // address from state, and state does not know about these yet.
+    var clientId = params.get('client');
+    var setId = params.get('set');
+    var where = params.get('s') || 'clients';
+    if (!SECTION_TITLE[where]) where = 'clients';
+
+    if (where !== 'review') {
       // Content Review still needs its list painted for when they come back.
       $('clientsView').hidden = false;
       loadClients();
       showSection(where);
       return;
     }
-    var clientId = params.get('client');
-    var setId = params.get('set');
+
+    showSection('review');
     if (!clientId) { showClients(); return; }
 
     var place = readPlace();
