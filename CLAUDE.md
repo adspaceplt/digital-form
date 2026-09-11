@@ -69,7 +69,7 @@ Tokens (`:root`):
 | `--font` | system stack + PingFang SC, Microsoft YaHei | One family everywhere |
 
 Coarse pointer (`@media (pointer: coarse)`): `--ctl-h` and `--ctl-h-sm` become
-44px, `--field-text` 16px (stops iOS zoom). Icon-only buttons 40px.
+44px, `--field-text` 16px (stops iOS zoom). Icon-only buttons 44px.
 
 Rules:
 
@@ -179,3 +179,14 @@ Rules:
 - Playwright headless suites live outside the repo; they stub Supabase. Run
   the full sweep before every push. Screenshot at 390 and 1280 for any
   layout change.
+- The sweep includes `uxaudit`, which walks every page and state at 1280
+  and at 390 with a coarse pointer and fails on: sideways overflow, a cell
+  alone on its row, a value that wraps or clips, buttons in one row at
+  different heights (or widths on a phone), a control under 38px (44px
+  touch; `.btn-sm` and `.input-sm` may be 32px on desktop), a field or
+  icon-only button without a name, more than one green action in a view,
+  text under 4.5:1, a control that takes focus without a ring. A red audit
+  blocks the push. Control borders under 3:1 (`--line` on white) are
+  reported as warnings until the border token is decided.
+- The review page's post mockups reproduce each platform's own UI and are
+  outside the audit.
