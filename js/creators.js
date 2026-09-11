@@ -124,7 +124,8 @@
         posted: 'Results in 7 days'
       },
       tbc: 'To be confirmed',
-      amountLabel: 'Campaign amount',
+      amountLabel: 'Amount',
+      pdf: 'PDF ↗',
       pic: 'Contact',
       goLive: 'Going live',
       viewPost: 'View post',
@@ -218,7 +219,8 @@
         posted: '7 天后提供数据'
       },
       tbc: '待定',
-      amountLabel: '合作金额',
+      amountLabel: '金额',
+      pdf: 'PDF ↗',
       pic: '联系人',
       goLive: '发布日期',
       viewPost: '查看帖子',
@@ -402,9 +404,14 @@
     rows.forEach(function (o) { box.appendChild(bookingRow(o)); });
 
     var sub = booked.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
+    var c = feed.campaign || {};
     $('bookedTotals').innerHTML = booked.length ? totalsHtml(sub) : '';
     $('amountFold').hidden = !booked.length;
-    $('amountLabel').textContent = t().amountLabel;
+    // Named by the invoice once there is one; the amount stands in until then.
+    $('amountLabel').textContent = c.invoice_no ? t().invoice + ' ' + c.invoice_no : t().amountLabel;
+    $('amountPdf').hidden = !c.invoice_url;
+    $('amountPdf').href = c.invoice_url || '#';
+    $('amountPdf').textContent = t().pdf;
   }
 
   /* Folded shut every time the page loads, so the figure is shown on purpose
@@ -613,8 +620,10 @@
       $('chooseHint').hidden = true;
       return;
     }
-    $('chooseHint').hidden = false;
-    $('chooseHint').textContent = priority ? t().priorityNotice : t().backupHint;
+    // The progress card already says how to choose; only a reopened slot
+    // needs a line here.
+    $('chooseHint').hidden = !priority;
+    $('chooseHint').textContent = priority ? t().priorityNotice : '';
     $('chooseHint').classList.toggle('is-priority', priority);
 
     /* A list, not cards. Ten is a page of cards and forty is an afternoon of

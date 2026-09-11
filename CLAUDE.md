@@ -18,6 +18,13 @@ Supabase behind `js/api.js`; schema in `supabase/schema.sql` (re-runnable).
 - Placeholders never reuse a real name, client, creator or campaign from the
   business. Use the field's name ("Company name", "Campaign name") or a
   universal stand-in: John Doe, john@adspacestudios.com, COMPANY NAME SDN BHD.
+- Buttons: one to three words, sentence case, verb first, no article, no
+  object the context already gives ("Add", "Save", "Back", "Confirm",
+  "Delete campaign"). Never "Add a person", "Save to the log", "Back to all
+  clients", "Client replaced them". Menu items are the action's name only,
+  no subtitle. Destructive items carry `is-danger`, nothing else.
+- Do not state the obvious ("Uploading again replaces it"). No status
+  narration, no transition words, no filler.
 - Brand names are spelled exactly: ADspace, S P Setia, CraftStone, Home Leader,
   The Mill International, EV SUN, Foodince, Furiku Matcha, HKL Lim,
   HKL Lim Motorsport, Star Living, Niro Granite, Dale & Cecil, Dale.
@@ -70,6 +77,18 @@ Rules:
   `Terms of Service` → https://adspacestudios.com/legal/policies. Footer
   stays at the bottom on short pages.
 - New pages start from `docs/PAGE-TEMPLATE.html`.
+- Icons: every primary action button in a `.viewhead` or `.filterbar`
+  carries its 15px stroke icon (`+` for add, arrow-out for external links,
+  copy glyph for copy). Icon-only buttons need `aria-label`. Same glyph for
+  the same action everywhere; never mix outline and filled icon styles.
+- Lists of ten or more cards fold by default to a one-line header (name,
+  state, one summary line, chevron); one card open at a time is the norm.
+- Laws to check on every change: Fitts (targets ≥ 38px desktop, 44px
+  touch, primary action nearest the hand), proximity (a control sits with
+  the thing it changes, never in a bar above it), Jakob (patterns people
+  know: table, disclosure, ⋯ menu, sheet), hierarchy (one primary per view,
+  one accent), consistency (same width and height for controls in a row,
+  same order of Save / secondary / Cancel).
 - Chinese UI text uses the same tokens; `lang="zh"` swaps the font stack only.
 
 ## Console structure

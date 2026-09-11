@@ -1913,7 +1913,7 @@
             esc(d.caption) + '</textarea>' +
           (d.showZh
             ? '<textarea class="textarea" data-f="caption_zh" placeholder="中文文案">' + esc(d.caption_zh) + '</textarea>'
-            : '<button class="linkbtn" data-f="addzh" type="button">+ Add Chinese caption</button>') +
+            : '<button class="linkbtn" data-f="addzh" type="button">Add Chinese caption</button>') +
         '</div>';
 
       if (d.media.length > 1) {
@@ -2191,7 +2191,7 @@
             esc(p.caption_zh || '') + '</textarea>' +
           '<div class="changebox-actions">' +
             '<button class="btn btn-sm" data-a="cancel" type="button">Cancel</button>' +
-            '<button class="btn btn-primary btn-sm" data-a="save" type="button">Save changes</button>' +
+            '<button class="btn btn-primary btn-sm" data-a="save" type="button">Save</button>' +
           '</div>' +
         '</div>';
 
