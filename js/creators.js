@@ -83,6 +83,20 @@
         withdrawn: 'Unavailable'
       },
       shootOn: 'Shoot',
+      deliveryOn: 'Delivery',
+      postedOn: 'Posted',
+      platformsLabel: 'Posting on',
+      stageLabel: 'Stage',
+      revisionLabel: 'Revision',
+      nextLabel: 'Next',
+      nextUp: {
+        confirmed: 'We fix a shoot date', pending_visit: 'Filming',
+        pending_draft: 'Draft comes to you', reviewing: 'Your approval',
+        changes: 'Creator reworks it', scheduled: 'Goes live',
+        posted: 'Results after 7 days'
+      },
+      tbc: 'To be confirmed',
+      amountLabel: 'Campaign amount',
       pic: 'Ask for',
       goLive: 'Going live',
       viewPost: 'View post',
@@ -162,6 +176,20 @@
         withdrawn: '暂不可用'
       },
       shootOn: '拍摄',
+      deliveryOn: '寄送',
+      postedOn: '发布于',
+      platformsLabel: '发布平台',
+      stageLabel: '当前进度',
+      revisionLabel: '修改',
+      nextLabel: '下一步',
+      nextUp: {
+        confirmed: '确定拍摄日期', pending_visit: '拍摄',
+        pending_draft: '初稿交给您', reviewing: '等您确认',
+        changes: '博主修改中', scheduled: '即将发布',
+        posted: '7 天后出数据'
+      },
+      tbc: '待定',
+      amountLabel: '合作金额',
       pic: '对接人',
       goLive: '发布日期',
       viewPost: '查看帖子',
@@ -347,8 +375,18 @@
 
     var sub = booked.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
     $('bookedTotals').innerHTML = booked.length ? totalsHtml(sub) : '';
-    $('bookedTotals').hidden = !booked.length;
+    $('amountFold').hidden = !booked.length;
+    $('amountLabel').textContent = t().amountLabel;
   }
+
+  /* Folded shut every time the page loads, so the figure is shown on purpose
+     rather than by default. */
+  $('amountToggle').addEventListener('click', function () {
+    var open = $('bookedTotals').hidden;
+    $('bookedTotals').hidden = !open;
+    this.setAttribute('aria-expanded', String(open));
+    this.classList.toggle('is-open', open);
+  });
 
   function chipFor(o) {
     var c = feed.campaign || {};
@@ -365,12 +403,36 @@
     row.className = 'booking' + (mine ? ' is-mine' : '') +
       (o.state === 'withdrawn' ? ' is-off' : '');
 
-    var bits = [];
-    if (!seeding && o.visit_date) {
-      bits.push(t().shootOn + ' ' + fmtDate(o.visit_date) + (o.visit_time ? ', ' + o.visit_time : ''));
+    /* One line of small grey text left most of the card empty and made the
+       client hunt for the date. The same facts as a labelled grid fill the
+       card and read at a glance. */
+    var live = o.state === 'posted' || o.state === 'completed';
+    var facts = [];
+    if (o.state !== 'withdrawn') {
+      // Once it is out, when it went out is the date that matters. Before
+      // that, the shoot is the date everyone is planning around.
+      var wentOut = live && (o.posts || []).map(function (p) { return p.published_at; })
+        .filter(Boolean).sort()[0];
+      if (wentOut) {
+        facts.push([t().postedOn, fmtDate(wentOut)]);
+      } else if (!live) {
+        facts.push([seeding ? t().deliveryOn : t().shootOn,
+          o.visit_date ? fmtDate(o.visit_date) + (o.visit_time ? ', ' + o.visit_time : '') : t().tbc]);
+      }
+      var plats = String(o.platforms || '').split(',').map(function (s) { return s.trim(); })
+        .filter(Boolean).map(platLabel);
+      if (plats.length) facts.push([t().platformsLabel, plats.join(' · ')]);
+      if (o.planned_publish && !live) facts.push([t().goLive, fmtDate(o.planned_publish)]);
+      if ((o.state === 'changes' || o.state === 'reviewing') && o.revision_round > 1) {
+        facts.push([t().revisionLabel, o.revision_round + ' / 2']);
+      }
+      // The one thing a chip cannot say: what happens after this.
+      var next = t().nextUp[o.state];
+      if (next) facts.push([t().nextLabel, next]);
     }
-    if (o.planned_publish && o.state === 'scheduled') bits.push(t().goLive + ' ' + fmtDate(o.planned_publish));
-    if (o.state === 'changes' && o.revision_round > 1) bits.push(t().roundOf(o.revision_round));
+    var factsHtml = facts.length ? '<dl class="booking-facts">' + facts.map(function (f) {
+      return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
+    }).join('') + '</dl>' : '';
 
     var posts = (o.posts || []).filter(function (p) { return p.post_url; });
 
@@ -380,7 +442,7 @@
         '<span class="chip-state' + (mine ? ' is-mine' : '') + '">' + esc(chipFor(o)) + '</span>' +
         (o.is_replacement ? '<span class="tag-rep">' + esc(t().replacement) + '</span>' : '') +
       '</div>' +
-      (bits.length ? '<div class="booking-meta">' + esc(bits.join('  ·  ')) + '</div>' : '') +
+      factsHtml +
       (o.state === 'withdrawn' ? '<div class="booking-meta">' + esc(t().unavailable) + '</div>' : '') +
       (posts.length ? '<div class="booking-posts">' + posts.map(function (p) {
           return '<a class="pchip" href="' + esc(p.post_url) + '" target="_blank" rel="noopener">' +
