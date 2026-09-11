@@ -30,25 +30,29 @@
     slot.insertBefore(extra.content.cloneNode(true), slot.firstChild);
     if ($('invoiceLink')) $('invoiceLink').hidden = true;
   })();
-  function money(n) {
-    return 'RM ' + Number(n || 0).toLocaleString('en-MY', { minimumFractionDigits: 0 });
+  /* Currency comes with the campaign, so a Singapore client sees S$ and never
+     a ringgit sign on their own page. */
+  var MON = window.ADspaceMoney;
+  function mkt() { return (feed && feed.client && feed.client.market) || 'MY'; }
+  function taxOn() {
+    var v = feed && feed.client && feed.client.sst_applies;
+    return v === undefined || v === null ? true : v;
   }
-  // Totals carry sen; a rate is a whole ringgit.
-  function money2(n) {
-    return 'RM ' + Number(n || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
+  function money(n)  { return MON.money(n, mkt()); }
+  function money2(n) { return MON.money2(n, mkt()); }
   // The mark that says this opens somewhere else.
   var EXT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M14 4h6v6"/><path d="M20 4 11 13"/>' +
     '<path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
 
-  var SST = 0.08;
-  function sstOf(subtotal) { return Math.round(subtotal * SST * 100) / 100; }
+  function sstOf(subtotal) { return MON.taxOf(subtotal, mkt(), taxOn()); }
+  /* A client who is not charged tax gets two lines, not three with a zero in
+     the middle. */
   function totalsHtml(subtotal) {
     var sst = sstOf(subtotal);
     return '<div><span>' + esc(t().subtotal) + '</span><span>' + money2(subtotal) + '</span></div>' +
-           '<div><span>' + esc(t().sst) + '</span><span>' + money2(sst) + '</span></div>' +
+           (sst ? '<div><span>' + esc(MON.taxLabel(mkt())) + '</span><span>' + money2(sst) + '</span></div>' : '') +
            '<div class="is-total"><span>' + esc(t().total) + '</span><span>' + money2(subtotal + sst) + '</span></div>';
   }
 
@@ -95,7 +99,7 @@
       subtotal: 'Subtotal',
       sst: 'SST 8%',
       total: 'Total',
-      totalShort: function (v) { return 'Total ' + v + ' incl. SST'; },
+      totalShort: function (v, tax) { return 'Total ' + v + (tax ? ' incl. ' + tax : ''); },
       invoice: 'Invoice',
       due: function (d) { return 'Campaign due ' + d; },
       yourCampaign: 'Your campaign',
@@ -189,7 +193,7 @@
       subtotal: '小计',
       sst: 'SST 8%',
       total: '总计',
-      totalShort: function (v) { return '总计 ' + v + '（含 SST）'; },
+      totalShort: function (v, tax) { return '总计 ' + v + (tax ? '（含 ' + tax + '）' : ''); },
       invoice: '发票',
       due: function (d) { return '合作截止 ' + d; },
       yourCampaign: '合作进度',
@@ -708,9 +712,12 @@
     // refusing. A backup promoted into a slot leaves one fewer in reserve.
     var short = want - have;
     $('confirmSummary').innerHTML =
-      '<b>' + esc(t().totalShort(money2(value + sstOf(value)))) + '</b>' +
-      '<span class="muted">' + esc(t().summary(pending.length, money2(value))) + ' + ' +
-        esc(t().sst) + ' ' + money2(sstOf(value)) + '</span>' +
+      '<b>' + esc(t().totalShort(money2(value + sstOf(value)),
+                 sstOf(value) ? MON.taxLabel(mkt()) : '')) + '</b>' +
+      // A client who is not charged tax should not read a tax line of zero.
+      '<span class="muted">' + esc(t().summary(pending.length, money2(value))) +
+        (sstOf(value) ? ' + ' + esc(MON.taxLabel(mkt())) + ' ' + money2(sstOf(value)) : '') +
+      '</span>' +
       (short > 0 ? '<span class="muted">' + esc(t().backupsNeeded(short)) + '</span>' : '');
     $('confirmBtn').textContent = t().confirm;
     $('confirmBtn').disabled = !pending.length || !backupsOk;

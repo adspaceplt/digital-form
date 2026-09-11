@@ -27,6 +27,87 @@ alter table public.clients add column if not exists handle_fb     text;
 alter table public.clients add column if not exists handle_tiktok text;
 alter table public.clients add column if not exists handle_xhs    text;
 
+-- ---------------------------------------------------------------------------
+-- CRM. A client is the company, not a name typed into a box, and the same
+-- record is what Content Review, Creator Campaigns and Short Links all point
+-- at. These columns are what the sales team needs in front of them.
+-- ---------------------------------------------------------------------------
+
+-- Lead -> proposal -> active -> paused -> past. One word that tells the team
+-- how to treat them. Leads live on the same list as billing clients, so nobody
+-- keeps a second one in WhatsApp.
+alter table public.clients add column if not exists stage text not null default 'lead';
+alter table public.clients add column if not exists industry text;
+alter table public.clients add column if not exists owner text;
+
+-- Currency and tax are two separate switches. Currency follows where the
+-- client is; Malaysian SST follows the service, so a Singapore client billed
+-- from Malaysia can still carry it. Default it on and let finance turn it off
+-- per client.
+alter table public.clients add column if not exists market text not null default 'MY';
+alter table public.clients add column if not exists sst_applies boolean not null default true;
+
+-- What finance needs on an invoice. Filled in by whoever gets it from the
+-- client, then never asked for again.
+alter table public.clients add column if not exists company_no text;
+alter table public.clients add column if not exists sst_no text;
+alter table public.clients add column if not exists billing_address text;
+
+alter table public.clients add column if not exists website text;
+alter table public.clients add column if not exists source text;
+-- Free text the team actually reads before writing: tone, no-go words,
+-- competitor names, language mix.
+alter table public.clients add column if not exists brand_notes text;
+alter table public.clients add column if not exists updated_at timestamptz not null default now();
+
+-- A client is a company; the people in it change. The campaign lock sheet and
+-- the review page can pick a person from here instead of a free text box.
+create table if not exists public.client_contacts (
+  id          uuid primary key default gen_random_uuid(),
+  client_id   uuid not null references public.clients(id) on delete cascade,
+  name        text not null,
+  role        text,
+  phone       text,
+  email       text,
+  whatsapp    text,
+  lang        text default 'en',          -- en | zh | ms, how we write to them
+  is_primary  boolean not null default false,
+  notes       text,
+  created_at  timestamptz not null default now()
+);
+create index if not exists client_contacts_client_idx on public.client_contacts(client_id);
+-- One primary per client, enforced rather than merely intended.
+create unique index if not exists client_contacts_one_primary
+  on public.client_contacts(client_id) where is_primary;
+
+-- The people who can be an owner. A fixed list makes "my clients" a filter;
+-- anyone not on it can still be typed in, which is why owner above is text.
+create table if not exists public.team_members (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null,
+  email      text,
+  role       text not null default 'sales',   -- sales | account | admin
+  active     boolean not null default true,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists team_members_name_idx on public.team_members(lower(name));
+
+alter table public.client_contacts enable row level security;
+alter table public.team_members enable row level security;
+
+do $$ begin
+  if not exists (select 1 from pg_policies
+                 where tablename = 'client_contacts' and policyname = 'contacts staff') then
+    create policy "contacts staff" on public.client_contacts
+      for all to authenticated using (true) with check (true);
+  end if;
+  if not exists (select 1 from pg_policies
+                 where tablename = 'team_members' and policyname = 'team staff') then
+    create policy "team staff" on public.team_members
+      for all to authenticated using (true) with check (true);
+  end if;
+end $$;
+
 -- Every Drive file we have already copied, kept even if the post is deleted, so
 -- re-importing reuses the file in S3 instead of paying to upload it again.
 create table if not exists public.drive_assets (
@@ -632,7 +713,10 @@ begin
       'deadline', c.deadline, 'state', c.state, 'deliverable', c.deliverable,
       'push_format', c.push_format, 'brief', c.brief, 'brief_zh', c.brief_zh,
       'invoice_no', c.invoice_no, 'invoice_url', c.invoice_url),
-    'client', jsonb_build_object('name', cl.name, 'logo_url', cl.logo_url),
+    -- Currency and tax travel with the campaign, because the client's page
+    -- prints both and must not assume Malaysia.
+    'client', jsonb_build_object('name', cl.name, 'logo_url', cl.logo_url,
+      'market', coalesce(cl.market, 'MY'), 'sst_applies', coalesce(cl.sst_applies, true)),
     'options', coalesce((
       select jsonb_agg(jsonb_build_object(
         'id', o.id, 'name', cr.name,
