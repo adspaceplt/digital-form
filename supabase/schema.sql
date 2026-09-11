@@ -1225,15 +1225,14 @@ create policy activity_read on public.activity_log
   for select to authenticated using (public.allowed('activity'));
 
 -- The team list is read by everyone signed in (the owner dropdown, and me())
--- and changed only by an admin.
+-- and changed only by an admin. The admin test goes through allowed(), which
+-- is security definer: a policy on team_members that queried team_members
+-- directly would re-enter itself and Postgres refuses with "infinite
+-- recursion detected".
 drop policy if exists "team staff" on public.team_members;
 drop policy if exists team_read    on public.team_members;
 drop policy if exists team_admin   on public.team_members;
 create policy team_read on public.team_members for select to authenticated using (true);
 create policy team_admin on public.team_members for all to authenticated
-  using (public.allowed('admin') or exists (
-    select 1 from public.team_members a
-    where lower(a.email) = lower(auth.jwt() ->> 'email') and a.role = 'admin' and a.active))
-  with check (exists (
-    select 1 from public.team_members a
-    where lower(a.email) = lower(auth.jwt() ->> 'email') and a.role = 'admin' and a.active));
+  using (public.allowed('admin'))
+  with check (public.allowed('admin'));
