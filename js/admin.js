@@ -1859,7 +1859,10 @@
     redo:   '<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v4h-4"/>',
     copy:   '<rect x="9" y="9" width="11" height="11" rx="2"/>' +
             '<path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/>',
-    tick:   '<path d="m5 12.5 4.5 4.5L19 7.5"/>'
+    tick:   '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+    qr:     '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>' +
+            '<rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/>' +
+            '<path d="M20 14v3M14 20h3M20 20h.01"/>'
   };
 
   /* A round mark with the action named for anyone who cannot see the shape. */
@@ -2108,6 +2111,7 @@
         '</div>' +
         '<div class="slink-actions">' +
           iconBtn('copy',   'copy',   'Copy short link') +
+          iconBtn('qr',     'qr',     'QR codes') +
           iconBtn('pencil', 'edit',   'Edit link') +
           iconBtn('trash',  'del',    'Delete link', 'is-danger') +
         '</div>';
@@ -2122,6 +2126,7 @@
           }, 1400);
         });
       });
+      row.querySelector('[data-a="qr"]').addEventListener('click', function () { openQr(l); });
       row.querySelector('[data-a="edit"]').addEventListener('click', function () { editLink(l); });
       row.querySelector('[data-a="del"]').addEventListener('click', function () { removeLink(l); });
       box.appendChild(row);
@@ -2192,6 +2197,175 @@
       }
       logAction(was ? 'shortlink.updated' : 'shortlink.created', '/' + slug, target);
       shutLinkForm();
+    });
+  });
+
+  /* ---- QR codes ----------------------------------------------------------
+     A QR is a picture of a URL. Once printed it decodes to that URL forever,
+     so there is no revoking the image. Each code therefore carries its own
+     identity and the redirector is what turns a revoked one away:
+
+         https://go.adspace.me/<slug>?q=<code>
+
+     One slug can hold several, so a single placement can be pulled without
+     taking the rest of the campaign down with it. The encoded text never
+     changes for a given code, which is what makes the picture permanent. */
+  var qrLink = null;
+  var qrCodes = [];
+
+  function qrUrl(slug, code) { return shortUrl(slug) + '?q=' + code; }
+
+  function makeCode() {
+    var a = new Uint8Array(5);
+    crypto.getRandomValues(a);
+    return Array.from(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
+  }
+
+  /* Draws into a fresh element every time. qrcodejs appends rather than
+     replaces, so reusing a node stacks images on top of each other. */
+  function drawQr(box, text, size) {
+    box.innerHTML = '';
+    if (!window.QRCode) {
+      box.innerHTML = '<span class="muted">QR library did not load.</span>';
+      return;
+    }
+    new window.QRCode(box, {
+      text: text, width: size, height: size,
+      correctLevel: window.QRCode.CorrectLevel.H
+    });
+  }
+
+  /* Print wants far more than the screen does, so the file is rendered at a
+     size nobody has to look at, off screen, and thrown away after. */
+  function downloadQr(slug, code, label) {
+    var tmp = document.createElement('div');
+    tmp.style.cssText = 'position:fixed;left:-9999px;top:0';
+    document.body.appendChild(tmp);
+    drawQr(tmp, qrUrl(slug, code), 1024);
+    setTimeout(function () {
+      var canvas = tmp.querySelector('canvas');
+      var img = tmp.querySelector('img');
+      var data = canvas ? canvas.toDataURL('image/png') : (img && img.src);
+      if (data) {
+        var a = document.createElement('a');
+        a.href = data;
+        a.download = 'qr-' + slug + (label ? '-' + label.toLowerCase().replace(/[^a-z0-9]+/g, '-') : '') + '.png';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }
+      tmp.remove();
+    }, 120);
+  }
+
+  function openQr(l) {
+    qrLink = l;
+    $('qrHeading').textContent = 'QR codes for /' + l.slug;
+    $('qrLabel').value = '';
+    msg('qrMsg', '');
+    $('qrSheet').hidden = false;
+    loadQrs();
+  }
+  function shutQr() { $('qrSheet').hidden = true; qrLink = null; }
+  $('qrSheetClose').addEventListener('click', shutQr);
+  $('qrSheet').addEventListener('click', function (e) {
+    if (e.target === $('qrSheet')) shutQr();
+  });
+
+  function loadQrs() {
+    var box = $('qrList');
+    box.innerHTML = '<div class="empty">Loading…</div>';
+    db.from('link_qrs').select('*').eq('slug', qrLink.slug)
+      .order('created_at').then(function (r) {
+        if (r.error) {
+          box.innerHTML = '<div class="empty">Could not load the codes. ' + esc(r.error.message) + '</div>';
+          return;
+        }
+        qrCodes = r.data || [];
+        paintQrs();
+      });
+  }
+
+  /* The timestamp is the database's to set, so a row that has not been read
+     back yet simply has none. Saying nothing beats saying "Invalid Date". */
+  function made(value, prefix) {
+    if (!value) return '';
+    var d = new Date(value);
+    if (isNaN(d.getTime())) return '';
+    return prefix + d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function paintQrs() {
+    var box = $('qrList');
+    box.innerHTML = '';
+    if (!qrCodes.length) {
+      box.innerHTML = '<div class="empty">No QR codes yet. Create one above, ' +
+        'and give it the name of the thing it is printed on.</div>';
+      return;
+    }
+    qrCodes.forEach(function (q) {
+      var card = document.createElement('div');
+      card.className = 'qrrow' + (q.active ? '' : ' is-off');
+      card.innerHTML =
+        '<div class="qrrow-img"></div>' +
+        '<div class="qrrow-body">' +
+          '<b>' + esc(q.label || 'Untitled code') + '</b>' +
+          (q.active ? '' : '<span class="act-tag is-danger" style="margin-left:8px">Revoked</span>') +
+          '<span class="qrrow-url">' + esc(qrUrl(q.slug, q.code)) + '</span>' +
+          '<span class="muted">' +
+            [made(q.created_at, 'Created '), made(q.revoked_at, 'revoked ')]
+              .filter(Boolean).join(' · ') +
+          '</span>' +
+          '<div class="qrrow-acts">' +
+            '<button class="btn btn-sm" data-q="dl" type="button">Download PNG</button>' +
+            '<button class="btn btn-sm btn-quiet" data-q="copy" type="button">Copy URL</button>' +
+            '<button class="btn btn-sm btn-quiet' + (q.active ? ' is-danger' : '') +
+              '" data-q="toggle" type="button">' + (q.active ? 'Revoke' : 'Restore') + '</button>' +
+          '</div>' +
+        '</div>';
+      drawQr(card.querySelector('.qrrow-img'), qrUrl(q.slug, q.code), 132);
+      card.querySelector('[data-q="dl"]').addEventListener('click', function () {
+        downloadQr(q.slug, q.code, q.label);
+      });
+      card.querySelector('[data-q="copy"]').addEventListener('click', function (e) {
+        var b = e.currentTarget;
+        navigator.clipboard.writeText(qrUrl(q.slug, q.code)).then(function () {
+          b.textContent = 'Copied';
+          setTimeout(function () { b.textContent = 'Copy URL'; }, 1500);
+        });
+      });
+      card.querySelector('[data-q="toggle"]').addEventListener('click', function () { toggleQr(q); });
+      box.appendChild(card);
+    });
+  }
+
+  function toggleQr(q) {
+    var next = !q.active;
+    if (!next && !confirm('Revoke "' + (q.label || 'this code') + '"?\n\n' +
+        'Anything already printed keeps decoding to the same address, but scans ' +
+        'carrying this code will be turned away. /' + q.slug + ' itself keeps working.')) return;
+    db.from('link_qrs').update({ active: next, revoked_at: next ? null : new Date().toISOString() })
+      .eq('code', q.code).then(function (r) {
+        if (r.error) { msg('qrMsg', r.error.message, 'err'); return; }
+        logAction(next ? 'qr.restored' : 'qr.revoked', '/' + q.slug, q.label || q.code);
+        loadQrs();
+      });
+  }
+
+  $('qrNew').addEventListener('click', function () {
+    if (!qrLink) return;
+    var row = {
+      code: makeCode(), slug: qrLink.slug,
+      label: ($('qrLabel').value || '').trim() || null,
+      active: true,
+      created_by: actor || null
+    };
+    db.from('link_qrs').insert(row).then(function (r) {
+      if (r.error) { msg('qrMsg', r.error.message, 'err'); return; }
+      logAction('qr.created', '/' + qrLink.slug, row.label || row.code);
+      $('qrLabel').value = '';
+      msg('qrMsg', '');
+      loadQrs();
     });
   });
 

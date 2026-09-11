@@ -15,6 +15,9 @@
 <link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
 <link rel="stylesheet" href="/css/portal.css">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<!-- Same encoder the client review page already uses, so a QR looks identical
+     wherever it is produced. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="/js/config.js"></script>
 <script src="/js/api.js"></script>
 <script src="/js/mockups.js"></script>
@@ -580,6 +583,31 @@ raya-2026        https://example.com/raya"></textarea>
       <div id="linkList"></div>
     </div>
 
+  </div>
+</div>
+
+<!-- QR codes for one short link. -->
+<div class="sheet" id="qrSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="qrHeading">
+    <div class="sheet-head">
+      <h3 id="qrHeading">QR codes</h3>
+      <button class="iconbtn" id="qrSheetClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <p class="hint">A QR is a picture of a URL, so a printed one cannot be taken back.
+    Revoking turns away scans that carry that code, while the typed short link keeps
+    working. Give each placement its own code and you can pull one without the others.</p>
+
+    <div class="sheet-body">
+      <div class="row" style="margin-bottom:16px">
+        <div><label class="field-label" for="qrLabel">Label for a new code</label>
+          <input class="input" id="qrLabel" placeholder="e.g. Mall poster, roadshow bunting"></div>
+        <button class="btn btn-primary" id="qrNew" type="button">Create QR code</button>
+      </div>
+      <div class="msg" id="qrMsg"></div>
+      <div id="qrList"></div>
+    </div>
   </div>
 </div>
 

@@ -1610,3 +1610,28 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
   .ccard { break-inside: avoid; border-color: #ccc; }
   .progress-card { border-color: #ccc; }
 }
+
+/* ---------- QR codes ---------- */
+.qrrow {
+  display: flex; gap: 16px; align-items: flex-start;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 16px; margin-bottom: 10px; background: var(--card);
+}
+.qrrow.is-off { opacity: .55; }
+.qrrow.is-off .qrrow-img { filter: grayscale(1); }
+.qrrow-img { flex: 0 0 auto; line-height: 0; }
+.qrrow-img canvas, .qrrow-img img { display: block; border-radius: 4px; }
+.qrrow-body { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.qrrow-body b { font-size: 13.5px; font-weight: 600; }
+.qrrow-url {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px;
+  color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.qrrow-body .muted { font-size: 11.5px; }
+.qrrow-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.qrrow-acts .btn { min-width: 0; }
+
+@media (max-width: 560px) {
+  .qrrow { flex-direction: column; }
+  .qrrow-acts .btn { flex: 1 1 auto; }
+}

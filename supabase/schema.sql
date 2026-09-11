@@ -711,3 +711,39 @@ revoke all on function public.confirm_selection(text, text, text) from public;
 grant execute on function public.get_campaign(text, text) to anon, authenticated;
 grant execute on function public.save_selection(text, uuid[], uuid[], text) to anon, authenticated;
 grant execute on function public.confirm_selection(text, text, text) to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- QR codes for short links
+--
+-- A QR code cannot be revoked. It is a picture of a URL, and a printed one
+-- keeps decoding to that URL forever. What can be revoked is what the URL
+-- resolves to, which is why each code carries its own identity rather than
+-- pointing at the bare slug:
+--
+--     https://go.adspace.me/<slug>?q=<code>
+--
+-- The redirector turns away a scan carrying a revoked code while the typed
+-- link keeps working, and one slug can carry several codes so a single
+-- placement can be pulled without taking the rest down with it.
+--
+-- The encoded text never changes for a given code, so the image is permanent:
+-- regenerate it in a year and it is the same picture.
+-- ---------------------------------------------------------------------------
+create table if not exists public.link_qrs (
+  code        text primary key,
+  slug        text not null references public.links(slug) on delete cascade,
+  label       text,
+  active      boolean not null default true,
+  revoked_at  timestamptz,
+  created_by  text,
+  created_at  timestamptz not null default now()
+);
+alter table public.link_qrs drop constraint if exists link_qrs_code_shape;
+alter table public.link_qrs add constraint link_qrs_code_shape
+  check (code ~ '^[a-z0-9]{6,16}$');
+alter table public.link_qrs enable row level security;
+create index if not exists link_qrs_slug_idx on public.link_qrs(slug, created_at);
+
+drop policy if exists link_qrs_team on public.link_qrs;
+create policy link_qrs_team on public.link_qrs
+  for all to authenticated using (true) with check (true);
