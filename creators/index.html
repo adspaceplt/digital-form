@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Creator Selection</title>
+<title>ADspace Creator Selection</title>
 <meta name="description" content="Choose the creators for your campaign.">
 <meta property="og:site_name" content="ADspace">
 <meta property="og:title" content="Creator Selection by ADspace">
@@ -22,11 +22,17 @@
 
 <header class="topbar" id="topbar">
   <div class="topbar-inner">
+    <!-- The ADspace mark leads, exactly as it does on the review portal. This
+         is our portal shown to a client, so the branding is ours and the
+         client's name sits under the section name. -->
     <div class="brand">
-      <img id="clientLogo" class="brand-logo brand-client" src="" alt="" hidden>
-      <span class="brand-wordmark" id="clientName"></span>
+      <img id="agencyLogo" class="brand-logo" src="" alt="ADspace">
+      <span class="brand-wordmark" id="agencyWordmark" hidden>ADspace</span>
       <span class="brand-divider"></span>
-      <span class="brand-meta"><span class="brand-kicker" id="kicker">Creator Selection</span></span>
+      <span class="brand-meta">
+        <span class="brand-kicker" id="kicker">Creator Selection</span>
+        <span class="brand-for" id="clientFor">Prepared for <b id="clientName">…</b></span>
+      </span>
     </div>
     <span class="topbar-spacer"></span>
     <a class="headlink" id="invoiceLink" target="_blank" rel="noopener" hidden>
