@@ -93,6 +93,11 @@ Rules:
   `Terms of Service` → https://adspacestudios.com/legal/policies. Footer
   stays at the bottom on short pages.
 - New pages start from `docs/PAGE-TEMPLATE.html`.
+- Full-page states (no link, access code, selection closed, confirmed,
+  nothing to review, access not assigned) use one component on every page:
+  `.cover > .cover-inner > .cover-panel`, centred in the viewport, title
+  then one line, `body.is-plain`, footer on the floor. Never a left-aligned
+  block, never a boxed panel.
 - Icons: every primary action button in a `.viewhead` or `.filterbar`
   carries its 15px stroke icon (`+` for add, arrow-out for external links,
   copy glyph for copy). Icon-only buttons need `aria-label`. Same glyph for

@@ -27,7 +27,7 @@
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js" data-kicker="Digital Portal" data-footer="off"></script>
+<script src="/js/chrome.js" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -52,11 +52,15 @@
 <!-- Signed in, but not on the team list: the portal shows nothing and says
      why. The database would refuse every query anyway; this is the courtesy. -->
 <main class="shell" id="noTeamShell" hidden>
-  <section class="cover-panel">
-    <h2>Access not assigned</h2>
-    <p><b id="noTeamWho"></b> has not been added to the team. Please contact an administrator.</p>
-    <div class="row" style="margin-top:18px">
-      <button class="btn" id="noTeamOut" type="button">Sign out</button>
+  <section class="cover">
+    <div class="cover-inner">
+      <div class="cover-panel">
+        <h2>Access not assigned</h2>
+        <p><b id="noTeamWho"></b> has not been added to the team. Please contact an administrator.</p>
+        <div class="row" style="margin-top:18px;justify-content:center">
+          <button class="btn" id="noTeamOut" type="button" style="flex:0 0 auto">Sign out</button>
+        </div>
+      </div>
     </div>
   </section>
 </main>

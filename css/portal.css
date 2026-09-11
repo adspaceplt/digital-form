@@ -1305,6 +1305,9 @@ a { color: inherit; }
 
 /* A page that is nothing but a notice or a sign in form: white to the edges. */
 body.is-plain { background: var(--card); }
+/* The console draws its own chrome; the shared footer belongs to the plain
+   pages around it (sign in, access not assigned). */
+.console:not([hidden]) ~ .portalfoot { display: none; }
 body.is-plain .topbar { background: rgba(255,255,255,.9); }
 
 /* The logo, as a circle, beside the field that sets it. A profile picture is
