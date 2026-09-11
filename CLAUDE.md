@@ -34,6 +34,11 @@ Supabase behind `js/api.js`; schema in `supabase/schema.sql` (re-runnable).
   same chip colours as the console (Confirmed, Pending visit, Pending draft,
   Reviewing, Changes requested, Scheduled, Posted, Completed, Withdrawn);
   the Chinese set mirrors it. Pending and reviewing states are warn colour.
+- Client pages share one set of link states, word for word: a missing or
+  unknown token is "Link not recognised / Please check the link or contact
+  your ADspace account manager."; a code gate is "Access code / Enter the
+  access code provided."; a failure is "Unable to load / Please refresh…".
+  The Chinese set mirrors it.
 - Count creators, not "slots". A campaign card shows the client's final
   amount, not the invoice number.
 - Brand names are spelled exactly: ADspace, S P Setia, CraftStone, Home Leader,

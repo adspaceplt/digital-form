@@ -598,18 +598,18 @@
   // ---- Load ----------------------------------------------------------------
   function load() {
     if (!token && API.configured) {
-      showState('Content Review',
-        'Please access using your unique link provided by ' + cfg.agencyName + '.');
+      showState('Link not recognised',
+        'Please check the link or contact your ' + cfg.agencyName + ' account manager.');
       return;
     }
     API.getReviewFeed(token, passcode).then(function (data) {
       if (!data || data.error === 'not_found') {
-        showState('This link is no longer active',
-          'Please contact your ' + cfg.agencyName + ' account manager for a new link.');
+        showState('Link not recognised',
+          'Please check the link or contact your ' + cfg.agencyName + ' account manager.');
         return;
       }
       if (data.error === 'passcode_required') {
-        showState('Access code required', 'Please enter the access code issued alongside this link.', true);
+        showState('Access code', 'Enter the access code provided.', true);
         return;
       }
       feed = data;
@@ -627,7 +627,7 @@
       build();
     }).catch(function (err) {
       console.error(err);
-      showState('Unable to load this page', 'Please refresh the page. If the problem continues, contact ' + cfg.supportEmail + '.');
+      showState('Unable to load', 'Please refresh. If the problem continues, contact ' + cfg.supportEmail + '.');
     });
   }
 
