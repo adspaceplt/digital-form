@@ -1,13 +1,12 @@
 /*
  * Clients — the CRM.
  *
- * A client used to be a name typed into a box, created from wherever it was
- * first needed. Content Review made one, Creator Campaigns made another, and
- * both wrote to the same table without either being the place a client
- * actually lives. This is that place. The other sections point at it.
- *
- * Content Review publishes deliverables. Creator Campaigns runs campaigns.
- * Neither creates a company; they pick one from here.
+ * The company list is the root of everything else in the portal. A lead is
+ * entered here by anyone, the sales team works it through calls and visits,
+ * and it becomes an active client only once every detail an e-invoice needs
+ * is on file. Only an active client can be given content to review or a
+ * creator campaign to choose from. Content Review and Creator Campaigns pick
+ * from this list; neither creates a company.
  */
 (function () {
   var API = window.ADspaceAPI;
@@ -17,6 +16,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var bridge = window.ADspaceAdmin || {};
   var log = bridge.log || function () {};
+  var actor = bridge.actor || function () { return ''; };
   var setUrl = bridge.setUrl || function () {};
   var restoreScroll = bridge.restoreScroll || function () {};
   var MON = window.ADspaceMoney;
@@ -36,26 +36,61 @@
       : a.forEach(function (_, i) { a[i] = Math.floor(Math.random() * 256); });
     return Array.from(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
   }
+  function val(id) { return ($(id).value || '').trim(); }
+  function niceDate(d) {
+    if (!d) return '';
+    var dt = new Date(String(d).slice(0, 10) + 'T00:00:00');
+    if (isNaN(dt.getTime())) return String(d);
+    return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  function today() { return new Date().toISOString().slice(0, 10); }
 
-  /* Stage is the one word that tells the team how to treat someone. A lead and
-     a paying client sit on the same list precisely so nobody keeps a second
-     list somewhere else. */
+  /* Stage is the one word that tells the team how to treat someone. The list
+     is grouped by it: leads being worked at the top, the clients we are
+     serving below, and the ones that have ended at the bottom. */
   var STAGES = [
-    ['lead',     'Lead',          ''],
-    ['proposal', 'Proposal sent', 'is-warn'],
-    ['active',   'Active',        'is-ok'],
-    ['paused',   'Paused',        'is-warn'],
-    ['past',     'Past',          '']
+    ['lead',     'Lead',          '',        'leads'],
+    ['proposal', 'Proposal sent', 'is-warn', 'leads'],
+    ['active',   'Active',        'is-ok',   'active'],
+    ['paused',   'Paused',        'is-warn', 'ended'],
+    ['past',     'Past',          '',        'ended']
+  ];
+  var GROUPS = [
+    ['leads',  'Leads',           'Being worked. Anyone can add one; sales follows up.'],
+    ['active', 'Active clients',  'Invoiceable. These can be given content to review and campaigns to choose from.'],
+    ['ended',  'Paused and past', 'Kept for the record. Reactivate from Edit.']
   ];
   var INDUSTRIES = ['Property', 'F&B', 'Retail', 'Wellness', 'Lifestyle',
                     'Automotive', 'Tech', 'Education', 'Other'];
+  var LANG_WORD = { en: 'English', zh: '中文', ms: 'Bahasa Malaysia' };
+  var KIND_WORD = { call: 'Call', visit: 'Site visit', meeting: 'Meeting',
+                    whatsapp: 'WhatsApp', email: 'Email', note: 'Note' };
 
   function stageWord(v) {
     for (var i = 0; i < STAGES.length; i++) if (STAGES[i][0] === v) return STAGES[i];
-    return [v, v || 'Lead', ''];
+    return STAGES[0];
   }
 
-  var state = { clients: [], team: [], client: null, editing: null, contacts: [] };
+  /* What an e-invoice needs. A client is not active until all of it is here.
+     Field id, column, label. */
+  var BILLING = [
+    ['crmLegalName',        'legal_name',         'Company name as registered'],
+    ['crmCompanyNo',        'company_no',         'Business registration no.'],
+    ['crmCompanyNoOld',     'company_no_old',     'Old registration no.'],
+    ['crmTin',              'tin',                'TIN'],
+    ['crmSstNo',            'sst_no',             'SST registration no.'],
+    ['crmBillContact',      'bill_contact',       'Contact person'],
+    ['crmBillContactEmail', 'bill_contact_email', 'Contact person email'],
+    ['crmBillContactPhone', 'bill_contact_phone', 'Contact person mobile'],
+    ['crmFinanceEmail',     'finance_email',      'Finance department email'],
+    ['crmBillAddr',         'billing_address',    'Company billing address']
+  ];
+  function billingMissing(c) {
+    return BILLING.filter(function (f) { return !String(c[f[1]] || '').trim(); })
+                  .map(function (f) { return f[2]; });
+  }
+
+  var state = { clients: [], team: [], client: null, editing: null, contacts: [], touches: [] };
 
   // ---- List ---------------------------------------------------------------
   function fillSelect(el, rows, all) {
@@ -93,11 +128,12 @@
   }
 
   function visible() {
-    var q = ($('crmSearch').value || '').trim().toLowerCase();
+    var q = val('crmSearch').toLowerCase();
     var stage = $('crmStage').value;
     var owner = $('crmOwner').value;
     return state.clients.filter(function (c) {
-      if (q && String(c.name || '').toLowerCase().indexOf(q) < 0) return false;
+      if (q && String(c.name || '').toLowerCase().indexOf(q) < 0 &&
+               String(c.legal_name || '').toLowerCase().indexOf(q) < 0) return false;
       if (stage !== 'all' && (c.stage || 'lead') !== stage) return false;
       if (owner !== 'all' && (c.owner || '') !== owner) return false;
       return true;
@@ -112,38 +148,47 @@
     if (!rows.length) {
       box.innerHTML = '<div class="empty">' +
         (state.clients.length ? 'No client matches that.'
-                              : 'No clients yet. Add the first one above.') + '</div>';
+                              : 'No clients yet. Add the first lead above.') + '</div>';
       return;
     }
-    /* A column per fact, because that is what every CRM anyone here has used
-       looks like, and because the eye scans a column far faster than it scans
-       a chip stranded at the other end of a wide row. The same cells stack
-       into two lines on a phone. */
-    var head = document.createElement('div');
-    head.className = 'crm-head';
-    head.innerHTML = ['Client', 'Stage', 'Industry', 'Bills in', 'Owner']
-      .map(function (h) { return '<span>' + h + '</span>'; }).join('');
-    box.appendChild(head);
-
-    rows.forEach(function (c) {
-      var w = stageWord(c.stage || 'lead');
-      var row = document.createElement('button');
-      row.type = 'button';
-      row.className = 'crm-row';
-      row.innerHTML =
-        '<span class="crm-c crm-c-name">' + esc(c.name || '') + '</span>' +
-        '<span class="crm-c crm-c-stage"><span class="tone ' + w[2] + '">' + esc(w[1]) + '</span></span>' +
-        '<span class="crm-c crm-c-ind">' + esc(c.industry || '—') + '</span>' +
-        '<span class="crm-c crm-c-mkt">' + esc(MON.market(c.market).sign) + '</span>' +
-        '<span class="crm-c crm-c-own">' + esc(c.owner || 'Unassigned') + '</span>' +
-        // The same three facts as one line, for widths too narrow for columns.
-        '<span class="crm-c crm-c-meta">' +
-          [c.industry, MON.market(c.market).sign, c.owner || 'Unassigned']
-            .filter(Boolean).map(esc).join(' · ') +
-        '</span>';
-      row.addEventListener('click', function () { openClient(c); });
-      box.appendChild(row);
+    GROUPS.forEach(function (g) {
+      var mine = rows.filter(function (c) { return stageWord(c.stage || 'lead')[3] === g[0]; });
+      if (!mine.length) return;
+      var sec = document.createElement('section');
+      sec.className = 'crm-group';
+      sec.innerHTML =
+        '<div class="crm-group-head"><h3>' + esc(g[1]) + ' <span>' + mine.length + '</span></h3>' +
+          '<p class="hint">' + esc(g[2]) + '</p></div>' +
+        '<div class="crm-table">' +
+          '<div class="crm-head">' + ['Client', 'Stage', 'Industry', 'Bills in', 'Owner']
+            .map(function (h) { return '<span>' + h + '</span>'; }).join('') + '</div>' +
+        '</div>';
+      var table = sec.querySelector('.crm-table');
+      mine.forEach(function (c) { table.appendChild(listRow(c)); });
+      box.appendChild(sec);
     });
+  }
+
+  /* A column per fact, because that is what every CRM anyone here has used
+     looks like, and because the eye scans a column far faster than it scans
+     a chip stranded at the other end of a wide row. */
+  function listRow(c) {
+    var w = stageWord(c.stage || 'lead');
+    var row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'crm-row';
+    row.innerHTML =
+      '<span class="crm-c crm-c-name">' + esc(c.name || '') + '</span>' +
+      '<span class="crm-c crm-c-stage"><span class="tone ' + w[2] + '">' + esc(w[1]) + '</span></span>' +
+      '<span class="crm-c crm-c-ind">' + esc(c.industry || '—') + '</span>' +
+      '<span class="crm-c crm-c-mkt">' + esc(MON.market(c.market).sign) + '</span>' +
+      '<span class="crm-c crm-c-own">' + esc(c.owner || 'Unassigned') + '</span>' +
+      '<span class="crm-c crm-c-meta">' +
+        [c.industry, MON.market(c.market).sign, c.owner || 'Unassigned']
+          .filter(Boolean).map(esc).join(' · ') +
+      '</span>';
+    row.addEventListener('click', function () { openClient(c); });
+    return row;
   }
 
   ['crmSearch', 'crmStage', 'crmOwner'].forEach(function (id) {
@@ -152,14 +197,19 @@
   });
 
   // ---- Create and edit ----------------------------------------------------
+  var FORM = [
+    ['crmName', 'name'], ['crmIndustry', 'industry'], ['crmOwnerPick', 'owner'],
+    ['crmWebsite', 'website'], ['crmPhone', 'phone'],
+    ['crmSocialIg', 'social_ig'], ['crmSocialFb', 'social_fb'],
+    ['crmSocialTiktok', 'social_tiktok'], ['crmSocialXhs', 'social_xhs']
+  ];
+
   function openForm(c) {
     state.editing = c || null;
-    $('crmFormTitle').textContent = c ? 'Edit client' : 'New client';
-    $('crmSave').textContent = c ? 'Save changes' : 'Add client';
-    $('crmName').value = c ? (c.name || '') : '';
+    $('crmFormTitle').textContent = c ? 'Edit client' : 'New lead';
+    $('crmSave').textContent = c ? 'Save changes' : 'Add lead';
+    FORM.forEach(function (f) { $(f[0]).value = c ? (c[f[1]] || '') : ''; });
     $('crmFormStage').value = c ? (c.stage || 'lead') : 'lead';
-    $('crmIndustry').value = c ? (c.industry || '') : '';
-    $('crmOwnerPick').value = c ? (c.owner || '') : '';
     $('crmMarket').value = c ? (c.market || 'MY') : 'MY';
     msg('crmMsg', '');
     $('crmAddBox').hidden = false;
@@ -173,15 +223,25 @@
   $('crmCancel').addEventListener('click', shutForm);
 
   $('crmSave').addEventListener('click', function () {
-    var name = ($('crmName').value || '').trim();
+    var name = val('crmName');
     if (!name) { msg('crmMsg', 'A client needs a name.', 'err'); $('crmName').focus(); return; }
-    var patch = {
-      name: name,
-      stage: $('crmFormStage').value,
-      industry: $('crmIndustry').value || null,
-      owner: ($('crmOwnerPick').value || '').trim() || null,
-      market: $('crmMarket').value
-    };
+    var patch = { stage: $('crmFormStage').value, market: $('crmMarket').value };
+    FORM.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
+    patch.name = name;
+
+    /* The one rule with teeth: nobody becomes active until we can invoice
+       them. Said at the moment it matters, naming what is missing. */
+    if (patch.stage === 'active') {
+      var probe = Object.assign({}, state.editing || {}, patch);
+      var missing = billingMissing(probe);
+      if (missing.length) {
+        msg('crmMsg', 'Cannot make them active yet. Billing details still needed: ' +
+          missing.join(', ') + '. Save with the current stage, fill in Billing details ' +
+          'on their page, then change the stage.', 'err');
+        return;
+      }
+    }
+
     if (state.editing) {
       var id = state.editing.id;
       db.from('clients').update(patch).eq('id', id).then(function (r) {
@@ -190,7 +250,7 @@
         shutForm();
         loadClients(function () {
           var found = state.clients.filter(function (x) { return x.id === id; })[0];
-          if (state.client && found) openClient(found);
+          if (found) openClient(found);
         });
       });
       return;
@@ -222,35 +282,52 @@
       ['Market',   (c.market === 'SG' ? 'Singapore' : 'Malaysia') + ' · ' + mk.sign],
       ['Owner',    c.owner || '<span class="muted">Unassigned</span>'],
       ['Tax',      c.sst_applies === false ? 'Not charged' : MON.taxLabel()],
-      ['Added',    c.created_at ? niceDate(String(c.created_at).slice(0, 10)) : '']
+      ['Added',    c.created_at ? niceDate(c.created_at) : '']
     ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
       return '<div><dt>' + f[0] + '</dt><dd>' +
         (String(f[1]).indexOf('<span') === 0 ? f[1] : esc(f[1])) + '</dd></div>';
     }).join('');
 
-    $('crmCompanyNo').value = c.company_no || '';
-    $('crmSstNo').value = c.sst_no || '';
-    $('crmBillAddr').value = c.billing_address || '';
+    // Website, phone and the social pages, as things to open rather than read.
+    var links = [];
+    if (c.website) links.push(linkChip(c.website, 'Website', true));
+    if (c.phone)   links.push(linkChip('tel:' + c.phone, c.phone, false));
+    [['social_ig', 'Instagram'], ['social_fb', 'Facebook'],
+     ['social_tiktok', 'TikTok'], ['social_xhs', 'RedNote']].forEach(function (p) {
+      if (c[p[0]]) links.push(linkChip(c[p[0]], p[1], true));
+    });
+    $('crmLinks').innerHTML = links.join('');
+
+    // The gate, stated once, with what is missing.
+    var missing = billingMissing(c);
+    $('crmGate').hidden = c.stage === 'active' || c.stage === 'past';
+    $('crmGateText').textContent = missing.length
+      ? 'Before they can be made active, Billing details still needs: ' + missing.join(', ') + '.'
+      : 'Billing details are complete. Change the stage to Active from Edit to start work with them.';
+
+    BILLING.forEach(function (f) { $(f[0]).value = c[f[1]] || ''; });
     $('crmSstApplies').checked = c.sst_applies !== false;
     $('crmSstLabel').textContent = 'Charge ' + MON.taxLabel() + ' on this client\'s quotes';
-    $('crmBillSummary').textContent = c.company_no ? 'On file' : 'Not entered';
+    $('crmBillSummary').textContent = missing.length
+      ? missing.length + ' of ' + BILLING.length + ' still needed' : 'Complete';
     $('crmNotes').value = c.brand_notes || '';
     $('crmNotesSummary').textContent = c.brand_notes ? 'Written' : 'None yet';
     setOpen('crmBillToggle', 'crmBillBody', false);
     setOpen('crmNotesToggle', 'crmNotesBody', false);
     msg('crmWorkMsg', ''); msg('crmBillMsg', ''); msg('crmNotesMsg', '');
     shutContact();
+    shutTouch();
     loadContacts();
+    loadTouches();
     loadWork();
     setUrl();
     if (restoring) restoreScroll();
   }
 
-  function niceDate(d) {
-    if (!d) return '';
-    var dt = new Date(d + 'T00:00:00');
-    if (isNaN(dt.getTime())) return String(d);
-    return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  function linkChip(href, label, external) {
+    var url = /^https?:\/\/|^tel:|^mailto:/.test(href) ? href : 'https://' + href.replace(/^@/, '');
+    return '<a class="plink" href="' + esc(url) + '"' +
+      (external ? ' target="_blank" rel="noopener"' : '') + '>' + esc(label) + '</a>';
   }
 
   $('crmBack').addEventListener('click', function () {
@@ -263,7 +340,47 @@
   $('crmEdit').addEventListener('click', function () {
     $('crmWork').hidden = true;
     $('crmListView').hidden = false;
+    // After a refresh straight into a client the list behind the form has
+    // never been painted, so paint it rather than open the form over nothing.
+    if (!state.clients.length) loadClients();
     openForm(state.client);
+  });
+
+  // ---- Billing and notes --------------------------------------------------
+  // The registered name goes on an invoice in capitals, so it is kept that way.
+  $('crmLegalName').addEventListener('input', function () {
+    var pos = this.selectionStart;
+    this.value = this.value.toUpperCase();
+    try { this.setSelectionRange(pos, pos); } catch (e) {}
+  });
+
+  $('crmBillSave').addEventListener('click', function () {
+    var patch = { sst_applies: $('crmSstApplies').checked };
+    BILLING.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
+    if (patch.legal_name) patch.legal_name = patch.legal_name.toUpperCase();
+    db.from('clients').update(patch).eq('id', state.client.id).then(function (r) {
+      if (r.error) { msg('crmBillMsg', r.error.message, 'err'); return; }
+      Object.keys(patch).forEach(function (k) { state.client[k] = patch[k]; });
+      var still = billingMissing(state.client);
+      log('client.billing', state.client.name, still.length ? still.length + ' fields still needed' : 'complete');
+      openClient(state.client);
+      setOpen('crmBillToggle', 'crmBillBody', true);
+      msg('crmBillMsg', still.length
+        ? 'Saved. Still needed before they can be active: ' + still.join(', ') + '.'
+        : 'Saved. Billing is complete; they can be made active from Edit.',
+        still.length ? 'warn' : 'ok');
+    });
+  });
+
+  $('crmNotesSave').addEventListener('click', function () {
+    var notes = val('crmNotes') || null;
+    db.from('clients').update({ brand_notes: notes }).eq('id', state.client.id)
+      .then(function (r) {
+        if (r.error) { msg('crmNotesMsg', r.error.message, 'err'); return; }
+        state.client.brand_notes = notes;
+        msg('crmNotesMsg', 'Saved.', 'ok');
+        $('crmNotesSummary').textContent = notes ? 'Written' : 'None yet';
+      });
   });
 
   // ---- Contacts -----------------------------------------------------------
@@ -272,11 +389,11 @@
     box.innerHTML = '<div class="empty">Loading…</div>';
     db.from('client_contacts').select('*').eq('client_id', state.client.id)
       .order('is_primary', { ascending: false }).order('name').then(function (r) {
-        if (r.error) {
-          box.innerHTML = '<div class="empty">Could not load contacts.</div>';
-          return;
-        }
+        if (r.error) { box.innerHTML = '<div class="empty">Could not load contacts.</div>'; return; }
         state.contacts = r.data || [];
+        $('crmContactNames').innerHTML = state.contacts.map(function (ct) {
+          return '<option value="' + esc(ct.name) + '"></option>';
+        }).join('');
         if (!state.contacts.length) {
           box.innerHTML = '<div class="empty">No one recorded yet. A company does not ' +
             'answer the phone; add the person who does.</div>';
@@ -286,8 +403,6 @@
         state.contacts.forEach(function (ct) { box.appendChild(contactRow(ct)); });
       });
   }
-
-  var LANG_WORD = { en: 'English', zh: '中文', ms: 'Bahasa Malaysia' };
 
   function contactRow(ct) {
     var row = document.createElement('div');
@@ -319,7 +434,14 @@
           (!ct.phone && !ct.email ? '<span class="muted">Nothing recorded</span>' : '') +
         '</span>' +
       '</div>';
+    wireMenu(row);
+    var prim = row.querySelector('[data-a="primary"]');
+    if (prim) prim.addEventListener('click', function () { makePrimary(ct); });
+    row.querySelector('[data-a="del"]').addEventListener('click', function () { dropContact(ct); });
+    return row;
+  }
 
+  function wireMenu(row) {
     var menu = row.querySelector('[data-menu]');
     row.querySelector('[data-a="menu"]').addEventListener('click', function () {
       var open = menu.hidden;
@@ -327,10 +449,6 @@
       menu.hidden = !open;
       this.setAttribute('aria-expanded', String(open));
     });
-    var prim = row.querySelector('[data-a="primary"]');
-    if (prim) prim.addEventListener('click', function () { makePrimary(ct); });
-    row.querySelector('[data-a="del"]').addEventListener('click', function () { dropContact(ct); });
-    return row;
   }
 
   function openContact() {
@@ -346,15 +464,13 @@
   $('ctCancel').addEventListener('click', shutContact);
 
   $('ctSave').addEventListener('click', function () {
-    var name = ($('ctName').value || '').trim();
+    var name = val('ctName');
     if (!name) { msg('ctMsg', 'A contact needs a name.', 'err'); $('ctName').focus(); return; }
-    var phone = ($('ctPhone').value || '').trim();
+    var phone = val('ctPhone');
     var row = {
       client_id: state.client.id, name: name,
-      role: ($('ctRole').value || '').trim() || null,
-      phone: phone || null, whatsapp: phone || null,
-      email: ($('ctEmail').value || '').trim() || null,
-      lang: $('ctLang').value,
+      role: val('ctRole') || null, phone: phone || null, whatsapp: phone || null,
+      email: val('ctEmail') || null, lang: $('ctLang').value,
       is_primary: $('ctPrimary').checked
     };
     var go = function () {
@@ -365,7 +481,6 @@
         loadContacts();
       });
     };
-    // Only one person can be the main one, so stand the others down first.
     if (row.is_primary && state.contacts.length) clearPrimary(go); else go();
   });
 
@@ -373,7 +488,6 @@
     db.from('client_contacts').update({ is_primary: false })
       .eq('client_id', state.client.id).then(then, then);
   }
-
   function makePrimary(ct) {
     clearPrimary(function () {
       db.from('client_contacts').update({ is_primary: true }).eq('id', ct.id).then(function () {
@@ -382,7 +496,6 @@
       });
     });
   }
-
   function dropContact(ct) {
     if (!confirm('Remove ' + ct.name + ' from ' + state.client.name + '?')) return;
     db.from('client_contacts').delete().eq('id', ct.id).then(function (r) {
@@ -392,58 +505,154 @@
     });
   }
 
-  // ---- What is live with them --------------------------------------------
+  // ---- Calls and visits ---------------------------------------------------
+  function loadTouches() {
+    var box = $('crmTouches');
+    box.innerHTML = '<div class="empty">Loading…</div>';
+    db.from('client_touches').select('*').eq('client_id', state.client.id)
+      .order('happened_at', { ascending: false }).order('created_at', { ascending: false })
+      .then(function (r) {
+        if (r.error) { box.innerHTML = '<div class="empty">Could not load the log.</div>'; return; }
+        state.touches = r.data || [];
+        if (!state.touches.length) {
+          box.innerHTML = '<div class="empty">Nothing logged yet. After a call or a visit, ' +
+            'write what was discussed and what happens next, so it is not left to memory.</div>';
+          return;
+        }
+        box.innerHTML = '';
+        state.touches.forEach(function (tc) { box.appendChild(touchRow(tc)); });
+      });
+  }
+
+  function touchRow(tc) {
+    var due = tc.next_at && tc.next_at < today();
+    var row = document.createElement('div');
+    row.className = 'touch' + (due ? ' is-due' : '');
+    row.innerHTML =
+      '<div class="touch-when"><b>' + esc(niceDate(tc.happened_at)) + '</b>' +
+        '<span class="tone">' + esc(KIND_WORD[tc.kind] || tc.kind) + '</span></div>' +
+      '<div class="touch-body">' +
+        '<p class="touch-summary">' + esc(tc.summary) + '</p>' +
+        '<p class="touch-meta">' +
+          [tc.contact_name ? 'With ' + tc.contact_name : '', tc.by_whom ? 'by ' + tc.by_whom : '']
+            .filter(Boolean).map(esc).join(' · ') +
+        '</p>' +
+        (tc.next_action ? '<p class="touch-next' + (due ? ' is-due' : '') + '">Next: ' +
+          esc(tc.next_action) + (tc.next_at ? ' · by ' + esc(niceDate(tc.next_at)) : '') +
+          (due ? ' · overdue' : '') + '</p>' : '') +
+      '</div>' +
+      '<button class="btn btn-quiet btn-sm is-danger touch-del" data-a="del" type="button">Remove</button>';
+    row.querySelector('[data-a="del"]').addEventListener('click', function () {
+      if (!confirm('Remove this entry from the log?')) return;
+      db.from('client_touches').delete().eq('id', tc.id).then(function () { loadTouches(); });
+    });
+    return row;
+  }
+
+  function openTouch() {
+    $('crmTouchBox').hidden = false;
+    $('tcKind').value = 'call';
+    $('tcDate').value = today();
+    ['tcWith', 'tcSummary', 'tcNext', 'tcNextAt'].forEach(function (id) { $(id).value = ''; });
+    var main = state.contacts.filter(function (c) { return c.is_primary; })[0];
+    if (main) $('tcWith').value = main.name;
+    msg('tcMsg', '');
+    $('tcSummary').focus();
+  }
+  function shutTouch() { $('crmTouchBox').hidden = true; }
+  $('crmAddTouch').addEventListener('click', openTouch);
+  $('tcCancel').addEventListener('click', shutTouch);
+
+  $('tcSave').addEventListener('click', function () {
+    var summary = val('tcSummary');
+    if (!summary) { msg('tcMsg', 'Write what was discussed.', 'err'); $('tcSummary').focus(); return; }
+    var row = {
+      client_id: state.client.id,
+      kind: $('tcKind').value,
+      happened_at: $('tcDate').value || today(),
+      by_whom: actor() || null,
+      contact_name: val('tcWith') || null,
+      summary: summary,
+      next_action: val('tcNext') || null,
+      next_at: $('tcNextAt').value || null
+    };
+    db.from('client_touches').insert(row).then(function (r) {
+      if (r.error) { msg('tcMsg', r.error.message, 'err'); return; }
+      log('client.touch', state.client.name, KIND_WORD[row.kind] + (row.next_action ? ' · next: ' + row.next_action : ''));
+      shutTouch();
+      loadTouches();
+    });
+  });
+
+  // ---- Engagements --------------------------------------------------------
+  var CAMP_WORD = { draft: 'Draft', open: 'With the client', production: 'In production',
+                    completed: 'Completed' };
+
   function loadWork() {
     var box = $('crmWorkList');
     box.innerHTML = '<div class="empty">Loading…</div>';
-    var id = state.client.id;
+    var c = state.client;
     var out = { sets: null, camps: null };
     var done = function () {
       if (out.sets === null || out.camps === null) return;
       paintWork(out.sets, out.camps);
     };
-    db.from('batches').select('id, title, state, created_at').eq('client_id', id)
+    db.from('batches').select('id, title, state, created_at').eq('client_id', c.id)
       .order('created_at', { ascending: false }).limit(20)
-      .then(function (r) { out.sets = r.data || []; done(); },
-            function () { out.sets = []; done(); });
-    db.from('campaigns').select('id, title, state, slots, created_at').eq('client_id', id)
+      .then(function (r) { out.sets = r.data || []; done(); }, function () { out.sets = []; done(); });
+    db.from('campaigns').select('id, title, state, slots, created_at').eq('client_id', c.id)
       .order('created_at', { ascending: false }).limit(20)
-      .then(function (r) { out.camps = r.data || []; done(); },
-            function () { out.camps = []; done(); });
+      .then(function (r) { out.camps = r.data || []; done(); }, function () { out.camps = []; done(); });
   }
 
-  var CAMP_WORD = { draft: 'Draft', open: 'With the client', production: 'In production',
-                    completed: 'Completed' };
-
   function paintWork(sets, camps) {
+    var c = state.client;
     var box = $('crmWorkList');
-    $('crmTally').innerHTML =
-      statCell('Content sets', sets.length) +
-      statCell('Campaigns', camps.length) +
-      statCell('Contacts', state.contacts.length);
+    var act = $('crmEngageActions');
+    if (c.stage !== 'active') {
+      act.innerHTML = '';
+      box.innerHTML = '<div class="empty">Work starts once they are active. Content review and ' +
+        'creator campaigns are only offered to active clients.</div>';
+      return;
+    }
+    act.innerHTML =
+      (c.review_hidden
+        ? '<button class="btn btn-sm" id="crmReviewOn" type="button">Add to Content Review</button>'
+        : '<button class="btn btn-sm" id="crmGoReview" type="button">Open in Content Review</button>') +
+      '<button class="btn btn-sm" id="crmGoCampaign" type="button">New campaign</button>';
+    var on = $('crmReviewOn');
+    if (on) on.addEventListener('click', function () {
+      db.from('clients').update({ review_hidden: false }).eq('id', c.id).then(function () {
+        c.review_hidden = false;
+        log('client.review_on', c.name, '');
+        location.href = '/admin/?s=review&client=' + encodeURIComponent(c.id);
+      });
+    });
+    var go = $('crmGoReview');
+    if (go) go.addEventListener('click', function () {
+      location.href = '/admin/?s=review&client=' + encodeURIComponent(c.id);
+    });
+    $('crmGoCampaign').addEventListener('click', function () {
+      location.href = '/admin/?s=campaigns&new=' + encodeURIComponent(c.id);
+    });
+
     if (!sets.length && !camps.length) {
-      box.innerHTML = '<div class="empty">Nothing running for them yet. Content sets and ' +
-        'creator campaigns made for this client appear here.</div>';
+      box.innerHTML = '<div class="empty">Nothing running for them yet.</div>';
       return;
     }
     box.innerHTML = '';
-    camps.forEach(function (c) {
-      box.appendChild(workRow(c.title, 'Creator campaign · ' + (CAMP_WORD[c.state] || c.state) +
-        ' · ' + c.slots + ' slots', 'campaigns', c.id));
+    camps.forEach(function (k) {
+      box.appendChild(workRow(k.title, 'Creator campaign · ' + (CAMP_WORD[k.state] || k.state) +
+        ' · ' + k.slots + ' slots', '/admin/?s=campaigns&campaign=' + encodeURIComponent(k.id)));
     });
     sets.forEach(function (b) {
       box.appendChild(workRow(b.title || 'Content set',
         'Content Review · ' + (b.state === 'published' ? 'With the client' : 'Draft'),
-        'review', b.id));
+        '/admin/?s=review&client=' + encodeURIComponent(c.id) + '&set=' + encodeURIComponent(b.id)));
     });
   }
 
-  function statCell(label, value) {
-    return '<div class="stat"><b>' + esc(String(value)) + '</b><span>' + esc(label) + '</span></div>';
-  }
-
-  /* Its own shape: the client table's columns describe clients, not work. */
-  function workRow(title, meta, section, id) {
+  function workRow(title, meta, href) {
     var row = document.createElement('button');
     row.type = 'button';
     row.className = 'work-row';
@@ -453,45 +662,11 @@
       '<svg class="work-row-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
         'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
         '<path d="M9 18l6-6-6-6"/></svg>';
-    row.addEventListener('click', function () {
-      // Hand over to the section that owns this work, on the item itself.
-      var q = section === 'campaigns' ? '?s=campaigns&campaign=' + encodeURIComponent(id)
-                                      : '?s=review&client=' + encodeURIComponent(state.client.id);
-      location.href = '/admin/' + q;
-    });
+    row.addEventListener('click', function () { location.href = href; });
     return row;
   }
 
-  // ---- Billing and notes --------------------------------------------------
-  $('crmBillSave').addEventListener('click', function () {
-    var patch = {
-      company_no: ($('crmCompanyNo').value || '').trim() || null,
-      sst_no: ($('crmSstNo').value || '').trim() || null,
-      billing_address: ($('crmBillAddr').value || '').trim() || null,
-      sst_applies: $('crmSstApplies').checked
-    };
-    db.from('clients').update(patch).eq('id', state.client.id).then(function (r) {
-      if (r.error) { msg('crmBillMsg', r.error.message, 'err'); return; }
-      Object.keys(patch).forEach(function (k) { state.client[k] = patch[k]; });
-      log('client.billing', state.client.name, patch.sst_applies ? 'tax on' : 'tax off');
-      msg('crmBillMsg', 'Saved.', 'ok');
-      $('crmBillSummary').textContent = patch.company_no ? 'On file' : 'Not entered';
-      openClient(state.client);
-      setOpen('crmBillToggle', 'crmBillBody', true);
-    });
-  });
-
-  $('crmNotesSave').addEventListener('click', function () {
-    var notes = ($('crmNotes').value || '').trim() || null;
-    db.from('clients').update({ brand_notes: notes }).eq('id', state.client.id)
-      .then(function (r) {
-        if (r.error) { msg('crmNotesMsg', r.error.message, 'err'); return; }
-        state.client.brand_notes = notes;
-        msg('crmNotesMsg', 'Saved.', 'ok');
-        $('crmNotesSummary').textContent = notes ? 'Written' : 'None yet';
-      });
-  });
-
+  // ---- Disclosures --------------------------------------------------------
   function disclose(toggleId, bodyId) {
     var t = $(toggleId), b = $(bodyId);
     if (!t || !b) return;
@@ -516,11 +691,7 @@
   fillSelect($('crmIndustry'), INDUSTRIES.map(function (i) { return [i, i]; }), 'Not set');
 
   window.ADspaceCRM = {
-    urlState: function () {
-      return { client: state.client ? state.client.id : '' };
-    },
-    /* On entry the address is read before it is written, so a refresh inside a
-       client lands back inside it rather than in front of the list. */
+    urlState: function () { return { client: state.client ? state.client.id : '' }; },
     enter: function () {
       var params = new URLSearchParams(location.search);
       var id = params.get('client');
@@ -535,8 +706,13 @@
       if (state.client) { openClient(state.client, true); return; }
       showList();
     },
-    // Other sections ask for the list rather than keeping one of their own.
-    clients: function () { return state.clients.slice(); }
+    // What the other sections may offer work to. They ask here rather than
+    // keeping a list of their own.
+    active: function (then) {
+      db.from('clients').select('*').eq('stage', 'active').order('name')
+        .then(function (r) { then(r.data || []); }, function () { then([]); });
+    },
+    billingMissing: billingMissing
   };
 
   function showList() {

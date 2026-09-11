@@ -74,8 +74,8 @@
       selected: 'Selected',
       backup: 'Backup',
       isBackup: 'Backup ✓',
-      backupHint: 'Tick your picks. Then mark two backups, in case someone becomes unavailable. Backups cost nothing.',
-      backupsNeeded: function (n) { return 'Mark ' + n + ' more backup' + (n === 1 ? '' : 's') + '.'; },
+      backupHint: 'Tick your picks. Best to also mark one or two backups, in case someone becomes unavailable. Backups cost nothing.',
+      backupsNeeded: function (n) { return 'Best to mark ' + n + ' more backup' + (n === 1 ? '' : 's') + ', optional.'; },
       backupsDone: 'Backups marked.',
       backupCount: function (a, b) { return a + ' of ' + b + ' backups'; },
       priorityNotice: 'A creator is unavailable. Your backups are first in line. Tick one.',
@@ -168,8 +168,8 @@
       selected: '已选',
       backup: '设为备选',
       isBackup: '备选 ✓',
-      backupHint: '勾选您想要的博主，再设两位备选，以防有人档期不合。备选不产生费用。',
-      backupsNeeded: function (n) { return '请再设 ' + n + ' 位备选。'; },
+      backupHint: '勾选您想要的博主。建议再设一两位备选，以防有人档期不合。备选不产生费用。',
+      backupsNeeded: function (n) { return '建议再设 ' + n + ' 位备选（可选）。'; },
       backupsDone: '备选已设。',
       backupCount: function (a, b) { return '备选 ' + a + ' / ' + b; },
       priorityNotice: '有一位博主暂不可用。备选已优先显示，请勾选一位。',
@@ -720,7 +720,9 @@
       '</span>' +
       (short > 0 ? '<span class="muted">' + esc(t().backupsNeeded(short)) + '</span>' : '');
     $('confirmBtn').textContent = t().confirm;
-    $('confirmBtn').disabled = !pending.length || !backupsOk;
+    // Backups are advice. Blocking the button on them left people who had
+    // made their choice staring at a grey Confirm with no idea why.
+    $('confirmBtn').disabled = !pending.length;
     $('confirmBar').hidden = !pending.length;
   }
 

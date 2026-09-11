@@ -60,6 +60,50 @@ alter table public.clients add column if not exists source text;
 alter table public.clients add column if not exists brand_notes text;
 alter table public.clients add column if not exists updated_at timestamptz not null default now();
 
+-- What an e-invoice needs. Every one of these is mandatory before a client can
+-- become active, because a client we cannot invoice is not a client. The legal
+-- name is kept apart from the display name: "Laman Citra" is what the team
+-- says, "S P SETIA BERHAD" is what goes on the invoice, in capitals.
+alter table public.clients add column if not exists legal_name        text;
+alter table public.clients add column if not exists company_no_old    text;   -- the pre-2019 format
+alter table public.clients add column if not exists tin               text;
+alter table public.clients add column if not exists bill_contact      text;
+alter table public.clients add column if not exists bill_contact_email text;
+alter table public.clients add column if not exists bill_contact_phone text;
+alter table public.clients add column if not exists finance_email     text;
+alter table public.clients add column if not exists phone             text;
+alter table public.clients add column if not exists social_ig         text;
+alter table public.clients add column if not exists social_fb         text;
+alter table public.clients add column if not exists social_tiktok     text;
+alter table public.clients add column if not exists social_xhs        text;
+-- Removed from Content Review without being removed from the company list.
+alter table public.clients add column if not exists review_hidden boolean not null default false;
+
+-- Every call, visit, meeting and message with a client, in order. A sales
+-- person writes what was discussed and what happens next; the next action
+-- and its date are what the list surfaces so nothing is left to memory.
+create table if not exists public.client_touches (
+  id           uuid primary key default gen_random_uuid(),
+  client_id    uuid not null references public.clients(id) on delete cascade,
+  kind         text not null default 'call',   -- call | visit | meeting | whatsapp | email | note
+  happened_at  date not null default current_date,
+  by_whom      text,
+  contact_name text,                            -- who on their side
+  summary      text not null,
+  next_action  text,
+  next_at      date,
+  created_at   timestamptz not null default now()
+);
+create index if not exists client_touches_client_idx on public.client_touches(client_id, happened_at desc);
+alter table public.client_touches enable row level security;
+do $$ begin
+  if not exists (select 1 from pg_policies
+                 where tablename = 'client_touches' and policyname = 'touches staff') then
+    create policy "touches staff" on public.client_touches
+      for all to authenticated using (true) with check (true);
+  end if;
+end $$;
+
 -- A client is a company; the people in it change. The campaign lock sheet and
 -- the review page can pick a person from here instead of a free text box.
 create table if not exists public.client_contacts (

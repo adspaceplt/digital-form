@@ -114,7 +114,9 @@ a { color: inherit; }
 /* Date and time fields bring their own chrome too, and it is taller. */
 .input[type="date"], .input[type="time"] { line-height: 1.5; min-height: var(--ctl-h); }
 .textarea { width: 100%; resize: vertical; min-height: 84px; padding-block: 10px; }
-.input:focus, .select:focus, .textarea:focus { outline: 2px solid var(--ink); outline-offset: -1px; }
+.input:focus, .select:focus, .textarea:focus {
+  outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px rgba(31,122,77,.18);
+}
 .count { color: var(--ink-mute); font-size: 13px; }
 
 /* ---------- Batch ---------- */
@@ -648,7 +650,14 @@ a { color: inherit; }
    pair is now its own column and the row aligns from the top. */
 .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
 .row > div { flex: 1 1 180px; min-width: 0; display: flex; flex-direction: column; }
-.row > div > .input, .row > div > .select { margin-top: auto; }
+.row > div > .input, .row > div > .select, .row > div > .slugfield { margin-top: auto; }
+/* A button standing in a row of labelled fields lines up with the fields, not
+   with their labels. Top alignment put Save number level with "Invoice no."
+   and a full control height above the box it saves. */
+.row > .btn { align-self: flex-end; }
+/* A field given a fixed basis may still grow into spare room, so a row of
+   five never leaves one squashed with its chevron over its text. */
+.row > div[style*="flex:0 0"] { flex-grow: 1 !important; }
 .row .input, .row .select { width: 100%; }
 .row .btn { flex: 0 0 auto; }
 .muted { color: var(--ink-mute); font-size: 12.5px; }
@@ -1205,35 +1214,45 @@ a { color: inherit; }
 /* Two lines, named rather than left to auto placement. The old version let
    the browser place five spans across three columns, which reflowed into a
    different shape at every width it was put in. */
+/* The record is a table: time, what happened, to what, the detail, and who.
+   Columns hold still so a hundred rows read as a list rather than as a
+   hundred sentences of different shapes. */
 .act {
-  display: grid; align-items: baseline; gap: 3px 12px;
-  grid-template-columns: auto minmax(0,1fr) auto;
-  grid-template-areas: "tag subject when" "tag meta meta";
-  padding: 11px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px;
+  display: grid; align-items: center; gap: 0 14px;
+  grid-template-columns: 52px 150px minmax(0, 1.2fr) minmax(0, 1.6fr) minmax(0, .9fr);
+  padding: 9px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px;
 }
 .act:last-child { border-bottom: 0; }
+.act-head {
+  padding: 4px 0 6px; font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+  text-transform: uppercase; color: var(--ink-mute); border-bottom: 1px solid var(--line);
+}
 .act-tag {
-  font-size: 11px; font-weight: 600; letter-spacing: .03em;
-  padding: 3px 8px; border-radius: 5px; justify-self: start;
+  display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .03em;
+  padding: 3px 8px; border-radius: 5px; max-width: 100%;
   background: var(--line-soft); color: var(--ink-soft); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
 }
 .act-tag.is-danger { background: #fdeceb; color: #8c1d18; }
 .act-tag.is-ok     { background: var(--ok-bg); color: var(--ok); }
 .act-tag.is-warn   { background: var(--warn-bg); color: var(--warn); }
-.act-tag { grid-area: tag; align-self: center; }
-.act-subject { grid-area: subject; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
-.act-when { grid-area: when; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.act-meta {
-  grid-area: meta; font-size: 12.5px;
+.act-tagcell { min-width: 0; }
+.act-subject { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act-when { white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--ink-mute); }
+.act-detail, .act-who {
+  color: var(--ink-mute); font-size: 12.5px; min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
 @media (max-width: 560px) {
-  .act {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "tag" "subject" "meta" "when";
-  }
-  .act-when { justify-self: start; }
+  /* Two lines on a phone: what and to what, then the rest. */
+  .act { grid-template-columns: auto minmax(0, 1fr); gap: 3px 10px; }
+  .act-head { display: none; }
+  .act-when { order: 3; }
+  .act-tagcell { order: 1; }
+  .act-subject { order: 2; white-space: normal; }
+  .act-detail { order: 4; grid-column: 2; white-space: normal; }
+  .act-who { order: 5; grid-column: 2; }
 }
 
 /* =========================================================================
@@ -1465,12 +1484,12 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 
 .slugfield { display: flex; align-items: stretch; }
 .slugfield-pre {
-  display: inline-flex; align-items: center; padding: 0 8px;
+  display: inline-flex; align-items: center; padding: 0 10px; min-height: var(--ctl-h);
   border: 1px solid var(--line); border-right: 0;
-  border-radius: 9px 0 0 9px; background: var(--line-soft);
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm); background: var(--line-soft);
   font-size: 12.5px; color: var(--ink-mute); white-space: nowrap;
 }
-.slugfield .input { border-radius: 0 9px 9px 0; min-width: 0; }
+.slugfield .input { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; min-width: 0; flex: 1 1 auto; }
 
 .slink {
   display: grid; align-items: center; gap: 4px 14px;
@@ -2255,4 +2274,48 @@ body > main, body > .shell, body > .console { flex: 1 0 auto; }
   .portalfoot-in { padding: 14px 16px; gap: 10px; font-size: 12px; }
   #crmSearch { flex: 1 1 100%; }
   .filterbar .select { flex: 1 1 calc(50% - 5px); min-width: 0; }
+}
+
+/* ---------- CRM: groups, links, the gate, the log ---------- */
+.crm-group { margin-bottom: 26px; }
+.crm-group-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 0 0 8px; }
+.crm-group-head h3 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.crm-group-head h3 span { font-weight: 500; color: var(--ink-mute); margin-left: 4px; }
+.crm-group-head .hint { margin: 0; flex: 1 1 260px; }
+.crm-table {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding-top: 12px; overflow: hidden;
+}
+.crm-table .crm-row:last-child { border-bottom: 0; }
+#crmList { background: none; border: 0; padding: 0; overflow: visible; }
+.crm-links { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+.crm-links:empty { display: none; }
+.notice.is-warn { border-color: #efd7b6; background: var(--warn-bg); margin: 14px 0 0; }
+.notice.is-warn svg { color: var(--warn); }
+.notice.is-warn b { color: var(--warn); }
+.crm-caps { text-transform: uppercase; }
+.crm-engage-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* One call, one visit, one row. Date and kind on the left hold still so the
+   eye reads down; the summary carries the width; what happens next is the
+   one line that can be overdue, and says so. */
+.touch {
+  display: grid; align-items: start; gap: 4px 16px;
+  grid-template-columns: 128px minmax(0, 1fr) auto;
+  grid-template-areas: "when body del";
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 13px 15px; margin-bottom: 8px;
+}
+.touch.is-due { box-shadow: inset 3px 0 0 var(--warn); }
+.touch-when { grid-area: when; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.touch-when b { font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.touch-body { grid-area: body; min-width: 0; }
+.touch-summary { font-size: 14px; line-height: 1.5; white-space: pre-wrap; }
+.touch-meta { font-size: 12.5px; color: var(--ink-mute); margin-top: 4px; }
+.touch-next { font-size: 13px; margin-top: 8px; color: var(--ink-soft); font-weight: 500; }
+.touch-next.is-due { color: var(--warn); }
+.touch-del { grid-area: del; }
+@media (max-width: 640px) {
+  .touch { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "when del" "body body"; }
+  .touch-when { flex-direction: row; align-items: center; }
 }

@@ -140,6 +140,22 @@
                 <option value="SG">Singapore · S$</option>
               </select></div>
           </div>
+          <div class="row" style="margin-top:12px">
+            <div><label class="field-label" for="crmWebsite">Website</label>
+              <input class="input" id="crmWebsite" type="url" placeholder="https://"></div>
+            <div style="flex:0 0 200px"><label class="field-label" for="crmPhone">Main phone</label>
+              <input class="input" id="crmPhone" type="tel" placeholder="03-xxxx xxxx"></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div><label class="field-label" for="crmSocialIg">Instagram</label>
+              <input class="input" id="crmSocialIg" placeholder="@handle or link"></div>
+            <div><label class="field-label" for="crmSocialFb">Facebook</label>
+              <input class="input" id="crmSocialFb" placeholder="page link"></div>
+            <div><label class="field-label" for="crmSocialTiktok">TikTok</label>
+              <input class="input" id="crmSocialTiktok" placeholder="@handle"></div>
+            <div><label class="field-label" for="crmSocialXhs">RedNote</label>
+              <input class="input" id="crmSocialXhs" placeholder="profile link"></div>
+          </div>
           <div class="row" style="margin-top:14px">
             <button class="btn btn-primary" id="crmSave" type="button">Add client</button>
             <button class="btn btn-quiet" id="crmCancel" type="button" style="flex:0 0 auto">Cancel</button>
@@ -150,21 +166,98 @@
         <div id="crmList"></div>
       </section>
 
-      <!-- ---- One client ---- -->
+      <!-- ---- One client ----
+           Top to bottom: who they are, how we invoice them, what we know about
+           the brand, the people, the record of every call and visit, and only
+           then the work. The work comes last because none of it can exist
+           until the rest is settled. -->
       <div id="crmWork" hidden>
         <button class="backlink" id="crmBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back to all clients</button>
 
         <section class="panel">
-          <!-- Edit sits next to the name it edits. It used to be a thousand
-               pixels away at the other end of the card. -->
           <div class="crm-title">
             <h2 id="crmClientName"></h2>
             <span class="chip" id="crmClientStage"></span>
             <button class="btn btn-quiet btn-sm" id="crmEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg>Edit</button>
           </div>
           <dl class="facts" id="crmFacts"></dl>
-          <div class="stats" id="crmTally"></div>
+          <div class="crm-links" id="crmLinks"></div>
+          <!-- What stands between a lead and an active client, said plainly. -->
+          <div class="notice is-warn" id="crmGate" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.5"/></svg>
+            <div><b>Not active yet.</b> <span id="crmGateText"></span></div>
+          </div>
           <div class="msg" id="crmWorkMsg"></div>
+        </section>
+
+        <!-- Billing: every field an e-invoice needs, mandatory before Active. -->
+        <section class="panel panel-collapse">
+          <button class="disclosure" id="crmBillToggle" type="button" aria-expanded="false">
+            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
+            <span>Billing details</span>
+            <span class="muted" id="crmBillSummary"></span>
+          </button>
+          <div class="disclosure-body" id="crmBillBody" hidden>
+            <p class="hint">Everything an e-invoice needs. All of it is required before the
+            client can be made active; a client we cannot invoice is not a client.</p>
+            <div class="row">
+              <div><label class="field-label" for="crmLegalName">Company name, as registered (capitals)</label>
+                <input class="input crm-caps" id="crmLegalName" placeholder="S P SETIA BERHAD" autocapitalize="characters"></div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <div style="flex:0 0 220px"><label class="field-label" for="crmCompanyNo">Business registration no.</label>
+                <input class="input" id="crmCompanyNo" placeholder="202201012345"></div>
+              <div style="flex:0 0 200px"><label class="field-label" for="crmCompanyNoOld">Old registration no.</label>
+                <input class="input" id="crmCompanyNoOld" placeholder="1234567-A"></div>
+              <div style="flex:0 0 200px"><label class="field-label" for="crmTin">TIN</label>
+                <input class="input" id="crmTin" placeholder="C 1234567890"></div>
+              <div style="flex:0 0 220px"><label class="field-label" for="crmSstNo">SST registration no.</label>
+                <input class="input" id="crmSstNo" placeholder="W10-1808-12345678"></div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <div><label class="field-label" for="crmBillContact">Contact person</label>
+                <input class="input" id="crmBillContact" placeholder="Mr Lim"></div>
+              <div><label class="field-label" for="crmBillContactEmail">Contact person email</label>
+                <input class="input" id="crmBillContactEmail" type="email" placeholder="lim@company.com"></div>
+              <div style="flex:0 0 200px"><label class="field-label" for="crmBillContactPhone">Contact person mobile</label>
+                <input class="input" id="crmBillContactPhone" type="tel" placeholder="01x-xxx xxxx"></div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <div><label class="field-label" for="crmFinanceEmail">Finance department email</label>
+                <input class="input" id="crmFinanceEmail" type="email" placeholder="accounts@company.com"></div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <div><label class="field-label" for="crmBillAddr">Company billing address</label>
+                <textarea class="input textarea" id="crmBillAddr" rows="3"></textarea></div>
+            </div>
+            <label class="tickline" style="margin-top:12px">
+              <input type="checkbox" id="crmSstApplies"> <span id="crmSstLabel">Charge SST 8% on this client's quotes</span>
+            </label>
+            <p class="hint" style="margin-top:6px">We are a Malaysian entity, so the tax is
+            Malaysian service tax at 8% whoever is billed. A Singapore client is invoiced in S$
+            and still carries it. Untick only for a client who is genuinely exempt.</p>
+            <div class="row" style="margin-top:14px">
+              <button class="btn btn-primary" id="crmBillSave" type="button">Save billing details</button>
+            </div>
+            <div class="msg" id="crmBillMsg"></div>
+          </div>
+        </section>
+
+        <section class="panel panel-collapse">
+          <button class="disclosure" id="crmNotesToggle" type="button" aria-expanded="false">
+            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
+            <span>Brand notes</span>
+            <span class="muted" id="crmNotesSummary"></span>
+          </button>
+          <div class="disclosure-body" id="crmNotesBody" hidden>
+            <p class="hint">Tone, themes, words to avoid, competitors, which language they answer
+            in. Read before writing, not after.</p>
+            <textarea class="input textarea" id="crmNotes" rows="5"></textarea>
+            <div class="row" style="margin-top:12px">
+              <button class="btn btn-primary" id="crmNotesSave" type="button">Save notes</button>
+            </div>
+            <div class="msg" id="crmNotesMsg"></div>
+          </div>
         </section>
 
         <!-- The people. A company does not answer the phone. -->
@@ -177,15 +270,15 @@
           <div class="row">
             <div><label class="field-label" for="ctName">Name</label>
               <input class="input" id="ctName" placeholder="Mr Lim"></div>
-            <div style="flex:0 0 180px"><label class="field-label" for="ctRole">Role</label>
+            <div style="flex:0 0 200px"><label class="field-label" for="ctRole">Role</label>
               <input class="input" id="ctRole" placeholder="Marketing"></div>
           </div>
           <div class="row" style="margin-top:12px">
-            <div style="flex:0 0 190px"><label class="field-label" for="ctPhone">Phone / WhatsApp</label>
+            <div style="flex:0 0 200px"><label class="field-label" for="ctPhone">Phone / WhatsApp</label>
               <input class="input" id="ctPhone" type="tel" placeholder="01x-xxx xxxx"></div>
             <div><label class="field-label" for="ctEmail">Email</label>
               <input class="input" id="ctEmail" type="email" placeholder="name@company.com"></div>
-            <div style="flex:0 0 150px"><label class="field-label" for="ctLang">Writes in</label>
+            <div style="flex:0 0 170px"><label class="field-label" for="ctLang">Writes in</label>
               <select class="select" id="ctLang">
                 <option value="en">English</option>
                 <option value="zh">中文</option>
@@ -203,62 +296,54 @@
         </div>
         <div id="crmContacts"></div>
 
-        <!-- What is live with them, across the portal. -->
-        <div class="viewhead"><span class="headmark"><h2>Work</h2></span></div>
+        <!-- Every call, visit and message, newest first. -->
+        <div class="viewhead">
+          <span class="headmark"><h2>Calls and visits</h2></span>
+          <button class="btn btn-primary btn-sm" id="crmAddTouch" type="button">Log a call or visit</button>
+        </div>
+        <div class="panel" id="crmTouchBox" hidden>
+          <div class="panelhead"><h3>What happened</h3></div>
+          <div class="row">
+            <div style="flex:0 0 170px"><label class="field-label" for="tcKind">Type</label>
+              <select class="select" id="tcKind">
+                <option value="call">Call</option>
+                <option value="visit">Site visit</option>
+                <option value="meeting">Meeting</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="email">Email</option>
+                <option value="note">Note</option>
+              </select></div>
+            <div style="flex:0 0 170px"><label class="field-label" for="tcDate">Date</label>
+              <input class="input" id="tcDate" type="date"></div>
+            <div><label class="field-label" for="tcWith">Who on their side</label>
+              <input class="input" id="tcWith" list="crmContactNames" placeholder="Mr Lim">
+              <datalist id="crmContactNames"></datalist></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div><label class="field-label" for="tcSummary">What was discussed</label>
+              <textarea class="input textarea" id="tcSummary" rows="3" placeholder="Walked the showroom, they want the launch video before Raya. Budget around RM 20k."></textarea></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div><label class="field-label" for="tcNext">Next action</label>
+              <input class="input" id="tcNext" placeholder="Send proposal"></div>
+            <div style="flex:0 0 170px"><label class="field-label" for="tcNextAt">By when</label>
+              <input class="input" id="tcNextAt" type="date"></div>
+          </div>
+          <div class="row" style="margin-top:14px">
+            <button class="btn btn-primary" id="tcSave" type="button">Save to the log</button>
+            <button class="btn btn-quiet" id="tcCancel" type="button" style="flex:0 0 auto">Cancel</button>
+          </div>
+          <div class="msg" id="tcMsg"></div>
+        </div>
+        <div id="crmTouches"></div>
+
+        <!-- The work, last, because none of it exists until the client is
+             active. Each engagement says where it is and opens in its section. -->
+        <div class="viewhead">
+          <span class="headmark"><h2>Engagements</h2></span>
+          <div class="crm-engage-actions" id="crmEngageActions"></div>
+        </div>
         <div id="crmWorkList"></div>
-
-        <!-- Rarely opened, never in the way. Given their own heading so they
-             do not read as part of the Work list above them. -->
-        <div class="viewhead"><span class="headmark"><h2>Details</h2></span></div>
-        <section class="panel panel-collapse">
-          <button class="disclosure" id="crmBillToggle" type="button" aria-expanded="false">
-            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
-            <span>Billing details</span>
-            <span class="muted" id="crmBillSummary"></span>
-          </button>
-          <div class="disclosure-body" id="crmBillBody" hidden>
-            <p class="hint">What finance needs on an invoice. Entered once by whoever gets it
-            from the client.</p>
-            <div class="row">
-              <div style="flex:0 0 200px"><label class="field-label" for="crmCompanyNo">Company no.</label>
-                <input class="input" id="crmCompanyNo" placeholder="202201012345 (1234567-A)"></div>
-              <div style="flex:0 0 200px"><label class="field-label" for="crmSstNo">SST / GST no.</label>
-                <input class="input" id="crmSstNo" placeholder="W10-1808-12345678"></div>
-            </div>
-            <div class="row" style="margin-top:12px">
-              <div><label class="field-label" for="crmBillAddr">Billing address</label>
-                <textarea class="input textarea" id="crmBillAddr" rows="3"></textarea></div>
-            </div>
-            <label class="tickline" style="margin-top:12px">
-              <input type="checkbox" id="crmSstApplies"> <span id="crmSstLabel">Charge SST 8% on this client's quotes</span>
-            </label>
-            <p class="hint" style="margin-top:6px">We are a Malaysian entity, so the tax is
-            Malaysian service tax at 8% whoever is billed. A Singapore client is invoiced in S$
-            and still carries it. Untick only for a client who is genuinely exempt.</p>
-            <div class="row" style="margin-top:14px">
-              <button class="btn btn-primary" id="crmBillSave" type="button">Save billing details</button>
-            </div>
-            <div class="msg" id="crmBillMsg"></div>
-          </div>
-        </section>
-
-        <!-- Everything the team should read before writing for them. -->
-        <section class="panel panel-collapse">
-          <button class="disclosure" id="crmNotesToggle" type="button" aria-expanded="false">
-            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
-            <span>Brand notes</span>
-            <span class="muted" id="crmNotesSummary"></span>
-          </button>
-          <div class="disclosure-body" id="crmNotesBody" hidden>
-            <p class="hint">Tone, words to avoid, competitors, which language they answer in.
-            Read before writing, not after.</p>
-            <textarea class="input textarea" id="crmNotes" rows="5"></textarea>
-            <div class="row" style="margin-top:12px">
-              <button class="btn btn-primary" id="crmNotesSave" type="button">Save notes</button>
-            </div>
-            <div class="msg" id="crmNotesMsg"></div>
-          </div>
-        </section>
       </div>
     </div>
 
@@ -360,13 +445,13 @@
         </div>
 
         <div class="subsection">
-          <h4>Link and deletion</h4>
+          <h4>Link and removal</h4>
           <p class="hint">Resetting invalidates the current link at once and issues a
-          replacement. Deleting a client removes every content set, post and approval
-          record they have, permanently.</p>
+          replacement. Removing a client from Content Review deletes their content sets,
+          posts and approval records here; the client itself stays in Clients.</p>
           <div class="dangerrow">
             <button class="btn btn-warn" id="resetLink" type="button">Reset access link</button>
-            <button class="btn btn-danger" id="deleteClient" type="button">Delete client</button>
+            <button class="btn btn-danger" id="deleteClient" type="button">Remove from Content Review</button>
           </div>
         </div>
 
@@ -494,7 +579,7 @@
 
       <div class="tabrow" role="tablist">
         <button class="tab is-on" id="tabCampaigns" data-tab="campaigns" type="button" role="tab">Campaigns</button>
-        <button class="tab" id="tabRoster" data-tab="roster" type="button" role="tab">Creator roster</button>
+        <button class="tab" id="tabRoster" data-tab="roster" type="button" role="tab">Creators</button>
       </div>
 
       <!-- ---- Campaign form: creates, and edits an open campaign in place ---- -->
@@ -505,12 +590,10 @@
           is raised after they confirm, and attached on the campaign.</p>
           <div class="row">
             <div><label class="field-label" for="campClient">Client</label>
-              <!-- Typed, not picked. There is no CRM yet, so forcing a choice
-                   from a list would mean creating the client somewhere else
-                   first. Existing names are offered as you type. -->
-              <input class="input" id="campClient" list="clientNames" autocomplete="off"
-                     placeholder="Type a client name">
-              <datalist id="clientNames"></datalist></div>
+              <!-- Only active clients can be proposed to. The list is the CRM's. -->
+              <select class="select" id="campClient"></select>
+              <p class="hint" id="campClientNone" hidden style="margin-top:6px">No active clients yet.
+              A client can be proposed to once they are active under Clients.</p></div>
             <div><label class="field-label" for="campTitle">Campaign name</label>
               <input class="input" id="campTitle" placeholder="Laman Citra Launch, Oct 2026"></div>
             <div><label class="field-label" for="campPurpose">Campaign purpose</label>
@@ -661,7 +744,9 @@
 
 
         <div class="panel" id="addOptionBox" hidden>
-          <div class="panelhead"><h3>Add creators</h3></div>
+          <div class="panelhead"><h3>Add creators</h3>
+            <button class="btn btn-quiet btn-sm" id="optionCancel" type="button" style="margin-left:auto">Close</button>
+          </div>
           <p class="hint">The rate is set per campaign. Her usual rate only fills the box to
           start with, and once offered it is frozen here whatever the roster says later.</p>
           <input class="input" id="optionSearch" placeholder="Search the roster by name">
@@ -706,7 +791,7 @@
       <!-- ---- Roster ---- -->
       <div id="rosterView" hidden>
         <div class="viewhead">
-          <span class="headmark"><h2>Creator roster</h2></span>
+          <span class="headmark"><h2>Creators</h2></span>
           <button class="btn btn-primary" id="showAddCreator" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a creator</button>
         </div>
 
@@ -840,8 +925,9 @@ raya-2026        https://example.com/raya"></textarea>
     <p class="hint" id="lockBlurb"></p>
     <div class="sheet-body">
       <div id="lockList"></div>
-      <label class="field-label" for="lockPerson">Who confirmed</label>
-      <input class="input" id="lockPerson" placeholder="Their name">
+      <p class="lockby">Recorded by <b id="lockBy"></b></p>
+      <label class="field-label" for="lockPerson">Client's name, if they confirmed to you directly (optional)</label>
+      <input class="input" id="lockPerson" placeholder="e.g. Wei Ling">
       <label class="field-label" for="lockSource" style="margin-top:12px">How it reached us</label>
       <select class="select" id="lockSource">
         <option value="portal">They confirmed on the portal themselves</option>
@@ -896,6 +982,7 @@ raya-2026        https://example.com/raya"></textarea>
     such as uploads and edits is not recorded.</p>
     <div class="acttabs" id="activityTabs">
       <button class="acttab is-on" data-af="all" type="button">Everything</button>
+      <button class="acttab" data-af="clients" type="button">Clients</button>
       <button class="acttab" data-af="review" type="button">Content Review</button>
       <button class="acttab" data-af="campaigns" type="button">Creator Campaigns</button>
       <button class="acttab" data-af="links" type="button">Short Links</button>

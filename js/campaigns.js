@@ -410,29 +410,23 @@
   }
 
   // ---- Campaigns ----------------------------------------------------------
+  /* Only an active client can be proposed to, and the list of those is the
+     CRM's. A campaign never creates a company; if the client is not on this
+     list, they are not active yet and the CRM says why. */
   function loadClients(then) {
-    db.from('clients').select('id, name').order('name').then(function (r) {
-      state.clients = (r.data) || [];
-      $('clientNames').innerHTML = state.clients.map(function (c) {
-        return '<option value="' + esc(c.name) + '"></option>';
-      }).join('');
-      if (then) then();
-    });
-  }
-
-  /* Matches an existing client by name, or makes one. Until there is a CRM to
-     pick from, the name typed here is the record. */
-  function resolveClient(name, then) {
-    var hit = state.clients.filter(function (c) {
-      return c.name.trim().toLowerCase() === name.toLowerCase();
-    })[0];
-    if (hit) { then(hit.id); return; }
-    db.from('clients').insert({ name: name, access_token: token() })
-      .select().single().then(function (r) {
-        if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
-        state.clients.push({ id: r.data.id, name: r.data.name });
-        log('client.added', name, 'from a campaign');
-        then(r.data.id);
+    db.from('clients').select('id, name, market').eq('stage', 'active').order('name')
+      .then(function (r) {
+        state.clients = (r.data) || [];
+        var sel = $('campClient');
+        var keep = sel.value;
+        sel.innerHTML = '<option value="">Choose a client…</option>' +
+          state.clients.map(function (c) {
+            return '<option value="' + esc(c.id) + '">' + esc(c.name) +
+              (c.market === 'SG' ? ' · S$' : '') + '</option>';
+          }).join('');
+        if (keep) sel.value = keep;
+        $('campClientNone').hidden = state.clients.length > 0;
+        if (then) then();
       });
   }
 
@@ -492,7 +486,7 @@
     editingCamp = c || null;
     $('campFormTitle').textContent = c ? 'Edit campaign' : 'New campaign';
     $('addCamp').textContent = c ? 'Save' : 'Create';
-    $('campClient').value = c ? ((c.clients && c.clients.name) || '') : '';
+    $('campClient').value = c ? (c.client_id || '') : ($('campClient').value || '');
     $('campTitle').value = c ? c.title : '';
     $('campPurpose').value = c ? (c.purpose || '') : '';
     $('campSlots').value = c ? c.slots : 10;
@@ -524,8 +518,8 @@
 
   $('addCamp').addEventListener('click', function () {
     var title = ($('campTitle').value || '').trim();
-    var clientName = ($('campClient').value || '').trim();
-    if (!clientName) { msg('campMsg', 'A client name is required.', 'err'); return; }
+    var clientId = $('campClient').value;
+    if (!clientId) { msg('campMsg', 'Choose the client this proposal is for.', 'err'); return; }
     if (!title) { msg('campMsg', 'A campaign name is required.', 'err'); return; }
     var slots = Number($('campSlots').value || 0);
     if (!slots || slots < 1) { msg('campMsg', 'Slots must be at least 1.', 'err'); return; }
@@ -540,10 +534,8 @@
       }
     }
 
-    resolveClient(clientName, function (clientId) {
-      if (editingCamp) saveCampaign(clientId, title, slots);
-      else createCampaign(clientId, title, slots);
-    });
+    if (editingCamp) saveCampaign(clientId, title, slots);
+    else createCampaign(clientId, title, slots);
   });
 
   function saveCampaign(clientId, title, slots) {
@@ -648,7 +640,10 @@
     // Sending to the client is the one strong action on a draft. After that the
     // strong action is accepting, so this one steps back to neutral.
     $('campPublish').textContent = publishMove(c.state).label;
-    $('campPublish').className = c.state === 'draft' ? 'btn btn-go' : 'btn';
+    // Publishing is the forward move and carries the weight. Unpublishing is a
+    // warning, drawn as one, the same as withdrawing a content set.
+    $('campPublish').className = c.state === 'draft' ? 'btn btn-go'
+                               : c.state === 'open'  ? 'btn btn-warn' : 'btn';
     msg('campWorkMsg', '');
     loadOptions();
     if (restoring) { campDraft.restore(); ncDraft.restore(); restoreScroll(); }
@@ -676,8 +671,10 @@
      revisit reopens; a campaign marked finished too early comes back. Neither
      needs the campaign rebuilding. */
   function publishMove(s) {
-    if (s === 'draft')      return { to: 'open',  label: 'Send to client' };
-    if (s === 'open')        return { to: 'draft', label: 'Withdraw from client' };
+    if (s === 'draft')      return { to: 'open',  label: 'Publish to client' };
+    if (s === 'open')        return { to: 'draft', label: 'Unpublish',
+      ask: 'Unpublish this campaign?\n\nThe client\'s link stops working until it is ' +
+           'published again. Nothing they have chosen is lost.' };
     if (s === 'production')  return { to: 'open',  label: 'Return to client selection',
       ask: 'Return this campaign to the client for selection?\n\nBookings already made stay ' +
            'exactly as they are. The client can choose again for any slot that is free.' };
@@ -875,6 +872,9 @@
     });
   }
 
+  $('optionCancel').addEventListener('click', function () {
+    $('addOptionBox').hidden = true;
+  });
   $('showAddOption').addEventListener('click', function () {
     $('addOptionBox').hidden = false;
     resetNc();
@@ -1520,9 +1520,9 @@
         '</span><span class="muted act-when">' + money(o.rate) + '</span></div>';
     }).join('');
     $('lockPerson').value = '';
+    $('lockBy').textContent = (bridge.actor && bridge.actor()) || '';
     msg('lockMsg', '');
     $('lockSheet').hidden = false;
-    $('lockPerson').focus();
   });
 
   function shutLock() { $('lockSheet').hidden = true; }
@@ -1533,8 +1533,10 @@
   });
 
   $('lockGo').addEventListener('click', function () {
-    var person = ($('lockPerson').value || '').trim();
-    if (!person) { msg('lockMsg', 'Record who confirmed it.', 'err'); return; }
+    // Who did this is whoever is signed in; the client's own name is worth
+    // keeping when we have it but is not a gate.
+    var who = (bridge.actor && bridge.actor()) || '';
+    var person = ($('lockPerson').value || '').trim() || who;
     var source = $('lockSource').value;
     var picked = state.options.filter(function (o) { return o.state === 'shortlisted'; });
     var ids = picked.map(function (o) { return o.id; });
@@ -1647,6 +1649,14 @@
       }
       if (state.campaign) { showTab('campaigns'); return; }
       showTab(params.get('tab') === 'roster' ? 'roster' : 'campaigns');
+      var forClient = params.get('new');
+      if (forClient) {
+        loadClients(function () {
+          openCampForm(null);
+          $('campClient').value = forClient;
+          $('campTitle').focus();
+        });
+      }
     }
   };
   if (bridge.campaignsReady) bridge.campaignsReady();
