@@ -25,9 +25,9 @@
   }
 
   var ROLES = [
-    ['admin',   'Admin',   'Full access, including Team.'],
-    ['account', 'Account', 'All sections. No activity record; cannot remove.'],
-    ['sales',   'Sales',   'Clients and billing only.']
+    ['admin',   'Admin'],
+    ['account', 'Account'],
+    ['sales',   'Sales']
   ];
   /* The switches, in the order they are asked about. Column, label, what it
      lets the person do. */
@@ -187,15 +187,10 @@
       });
   }
 
-  $('tmRole').addEventListener('change', function () {
-    var r = ROLES.filter(function (x) { return x[0] === $('tmRole').value; })[0];
-    $('tmRoleHint').textContent = r ? r[2] : '';
-  });
   $('tmRole').innerHTML = ROLES.map(function (r) {
     return '<option value="' + r[0] + '">' + esc(r[1]) + '</option>';
   }).join('');
   $('tmRole').value = 'account';
-  $('tmRoleHint').textContent = ROLES[1][2];
 
   window.ADspaceTeam = {
     urlState: function () { return {}; },
