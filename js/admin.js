@@ -181,8 +181,12 @@
       b.classList.toggle('is-on', b.getAttribute('data-section') === name);
     });
     showActivityLink();
-    if (name === 'links') loadLinks();
-    if (name === 'campaigns' && window.ADspaceCampaigns) window.ADspaceCampaigns.enter();
+    // Campaigns reads the address before it writes it, because on a reload the
+    // address is the only record of which campaign or tab was open. Writing
+    // first, with nothing open yet, blanked exactly the part it needed.
+    if (name === 'campaigns' && window.ADspaceCampaigns) { window.ADspaceCampaigns.enter(); return; }
+    setUrl();
+    if (name === 'links') { loadLinks(); restoreScroll(); }
   }
 
   function navItems() {
@@ -236,15 +240,52 @@
 
   // 2. The address bar remembers the client and set you are working on, so a
   //    reload or a reopened tab lands back in the same place.
+  /* The address bar is where you are: the section, and whatever is open
+     inside it. A refresh, a reopened tab or a pasted link all land there.
+     What you were typing is not here; that is the form's own memory. */
   function setUrl() {
     var q = [];
-    if (state.client) q.push('client=' + state.client.id);
-    if (state.batch)  q.push('set=' + state.batch.id);
+    if (section !== 'review') q.push('s=' + section);
+    if (section === 'review') {
+      if (state.client) q.push('client=' + state.client.id);
+      if (state.batch)  q.push('set=' + state.batch.id);
+    } else if (section === 'campaigns' && window.ADspaceCampaigns) {
+      var sub = window.ADspaceCampaigns.urlState();
+      Object.keys(sub).forEach(function (k) { if (sub[k]) q.push(k + '=' + encodeURIComponent(sub[k])); });
+    }
     history.replaceState(null, '', '/admin/' + (q.length ? '?' + q.join('&') : ''));
+  }
+
+  /* Scroll, per address. Review has its own richer memory tied to the client;
+     this is the plain one the other sections use. */
+  var SCROLL = 'adspace.admin.scroll:';
+  var scrollSaveTimer = null;
+  window.addEventListener('scroll', function () {
+    if (section === 'review') return;
+    clearTimeout(scrollSaveTimer);
+    scrollSaveTimer = setTimeout(function () {
+      try { sessionStorage.setItem(SCROLL + location.search, String(window.scrollY)); } catch (e) {}
+    }, 200);
+  });
+  function restoreScroll() {
+    var y = 0;
+    try { y = Number(sessionStorage.getItem(SCROLL + location.search) || 0); } catch (e) {}
+    if (!y) return;
+    // The content arrives after the call, so try now and again once it has.
+    window.scrollTo(0, y);
+    setTimeout(function () { window.scrollTo(0, y); }, 260);
   }
 
   function restoreView() {
     var params = new URLSearchParams(location.search);
+    var where = params.get('s');
+    if (where && where !== 'review' && SECTION_TITLE[where]) {
+      // Content Review still needs its list painted for when they come back.
+      $('clientsView').hidden = false;
+      loadClients();
+      showSection(where);
+      return;
+    }
     var clientId = params.get('client');
     var setId = params.get('set');
     if (!clientId) { showClients(); return; }
@@ -1882,7 +1923,10 @@
     log: logAction,
     actor: function () { return actor; },
     // The signed PUT to S3, so an invoice PDF travels the same road as media.
-    putToS3: putToS3
+    putToS3: putToS3,
+    // Where you are, and how far down. The address bar is shared property.
+    setUrl: setUrl,
+    restoreScroll: restoreScroll
   };
 
   /* Pending, approved, changes requested. The dot is what you scan for; the

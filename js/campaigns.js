@@ -19,6 +19,44 @@
   var who     = bridge.actor || function () { return ''; };
   var putToS3 = bridge.putToS3;
   var cfg     = window.ADSPACE_CONFIG || {};
+  var setUrl  = bridge.setUrl || function () {};
+  var restoreScroll = bridge.restoreScroll || function () {};
+
+  /* ---- A form's memory -----------------------------------------------------
+     What was typed, whether the form was open, and what it was editing, kept
+     until it is submitted or cancelled. A refresh in the middle of a campaign
+     used to throw all of it away. `extra` is for the parts that are not plain
+     fields: the profile link rows and the platform ticks. */
+  var DRAFT = 'adspace.admin.draft.';
+  function keepDraft(boxId, ids, extra) {
+    var key = DRAFT + boxId;
+    var meta = {};
+    function save() {
+      var box = $(boxId); if (!box) return;
+      var v = {};
+      ids.forEach(function (id) { var el = $(id); if (el) v[id] = el.value; });
+      var d = { open: !box.hidden, v: v, meta: meta };
+      if (extra && extra.get) d.extra = extra.get();
+      try { sessionStorage.setItem(key, JSON.stringify(d)); } catch (e) {}
+    }
+    ids.forEach(function (id) {
+      var el = $(id); if (!el) return;
+      el.addEventListener('input', save);
+      el.addEventListener('change', save);
+    });
+    return {
+      save: save,
+      note: function (m) { meta = m || {}; save(); },
+      read: function () {
+        try { return JSON.parse(sessionStorage.getItem(key) || 'null'); } catch (e) { return null; }
+      },
+      fill: function (d) {
+        ids.forEach(function (id) { var el = $(id); if (el && d.v && d.v[id] != null) el.value = d.v[id]; });
+        if (extra && extra.set && d.extra) extra.set(d.extra);
+      },
+      clear: function () { meta = {}; try { sessionStorage.removeItem(key); } catch (e) {} }
+    };
+  }
 
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) {
@@ -97,8 +135,9 @@
     Array.prototype.forEach.call(document.querySelectorAll('#sectionCampaigns .tab'), function (b) {
       b.classList.toggle('is-on', b.getAttribute('data-tab') === name);
     });
-    if (name === 'roster') loadRoster();
-    if (name === 'campaigns' && !state.campaign) loadCampaigns();
+    setUrl();
+    if (name === 'roster') loadRoster(function () { rosterDraft.restore(); restoreScroll(); });
+    if (name === 'campaigns' && !state.campaign) { loadCampaigns(); campDraft.restore(); restoreScroll(); }
   }
   Array.prototype.forEach.call(document.querySelectorAll('#sectionCampaigns .tab'), function (b) {
     b.addEventListener('click', function () { showTab(b.getAttribute('data-tab')); });
@@ -240,7 +279,32 @@
     msg(ctx.warn, '');
   }
 
-  function openCreator(c) {
+  var rosterDraft = keepDraft('addCreatorBox', ['crName', 'crRate', 'crNotes'], {
+    get: function () {
+      return { links: Array.prototype.slice.call(document.querySelectorAll('#profRows .prof-url'))
+        .map(function (i) { return i.value; }) };
+    },
+    set: function (x) {
+      var rows = $('profRows'); rows.innerHTML = '';
+      (x.links && x.links.length ? x.links : ['']).forEach(function (u) {
+        rows.appendChild(profRow(u ? { url: u } : null, ROSTER_CTX));
+      });
+    }
+  });
+  rosterDraft.restore = function () {
+    var d = rosterDraft.read();
+    if (!d || !d.open) return;
+    var editing = d.meta && d.meta.editing
+      ? state.creators.filter(function (c) { return c.id === d.meta.editing; })[0] : null;
+    openCreator(editing || null, true);
+    rosterDraft.fill(d);
+    warnDupes(ROSTER_CTX);
+  };
+  document.addEventListener('input', function (e) {
+    if (e.target.closest && e.target.closest('#profRows')) rosterDraft.save();
+  });
+
+  function openCreator(c, restoring) {
     state.editing = c || null;
     $('creatorFormTitle').textContent = c ? 'Edit creator' : 'New creator';
     $('saveCreator').textContent = c ? 'Save' : 'Create';
@@ -254,12 +318,13 @@
     else ps.forEach(function (p) { rows.appendChild(profRow(p, ROSTER_CTX)); });
     msg('creatorMsg', ''); msg('dupeWarn', '');
     $('addCreatorBox').hidden = false;
+    if (!restoring) rosterDraft.note({ editing: c ? c.id : null });
     $('crName').focus();
   }
 
   $('showAddCreator').addEventListener('click', function () { openCreator(null); });
   $('cancelAddCreator').addEventListener('click', function () {
-    $('addCreatorBox').hidden = true; state.editing = null;
+    $('addCreatorBox').hidden = true; state.editing = null; rosterDraft.clear();
   });
   $('addProfRow').addEventListener('click', function () { $('profRows').appendChild(profRow(null, ROSTER_CTX)); });
   $('rosterSearch').addEventListener('input', paintRoster);
@@ -302,6 +367,7 @@
           log(created ? 'creator.added' : 'creator.updated', name, '');
           $('addCreatorBox').hidden = true;
           state.editing = null;
+          rosterDraft.clear();
           loadRoster();
         };
         if (!rows.length) after(null);
@@ -402,7 +468,20 @@
 
   /* One form for both. Editing prefills it from the campaign; the invoice
      shows without its fixed prefix because the field puts that back. */
-  function openCampForm(c) {
+  var campDraft = keepDraft('addCampBox',
+    ['campClient', 'campTitle', 'campSlots', 'campDeadline', 'campFormat', 'campDeliverable', 'campOwner']);
+  campDraft.restore = function () {
+    var d = campDraft.read();
+    if (!d || !d.open) return;
+    var editId = d.meta && d.meta.editing;
+    if (editId && !(state.campaign && state.campaign.id === editId)) return;   // belongs to another view
+    loadClients(function () {
+      openCampForm(editId ? state.campaign : null, true);
+      campDraft.fill(d);
+    });
+  };
+
+  function openCampForm(c, restoring) {
     editingCamp = c || null;
     $('campFormTitle').textContent = c ? 'Edit campaign' : 'New campaign';
     $('addCamp').textContent = c ? 'Save' : 'Create';
@@ -415,9 +494,10 @@
     $('campOwner').value = c ? (c.owner || '') : '';
     msg('campMsg', '');
     $('addCampBox').hidden = false;
+    if (!restoring) campDraft.note({ editing: c ? c.id : null });
     (c ? $('campTitle') : $('campClient')).focus();
   }
-  function shutCampForm() { $('addCampBox').hidden = true; editingCamp = null; }
+  function shutCampForm() { $('addCampBox').hidden = true; editingCamp = null; campDraft.clear(); }
 
   $('showAddCamp').addEventListener('click', function () {
     loadClients(function () { openCampForm(null); });
@@ -499,10 +579,40 @@
 
   function campaignUrl(c) { return location.origin + '/creators/?k=' + c.access_token; }
 
-  function openCampaign(c) {
+  var ncDraft = keepDraft('addOptionBox', ['ncName', 'ncRate', 'optionSearch'], {
+    get: function () {
+      return {
+        links: Array.prototype.slice.call(document.querySelectorAll('#ncProfRows .prof-url'))
+          .map(function (i) { return i.value; }),
+        plats: readBoxes($('ncPlatforms'))
+      };
+    },
+    set: function (x) {
+      var rows = $('ncProfRows'); rows.innerHTML = '';
+      (x.links && x.links.length ? x.links : ['']).forEach(function (u) {
+        rows.appendChild(profRow(u ? { url: u } : null, NC_CTX));
+      });
+      $('ncPlatforms').innerHTML = platformBoxes(x.plats || []);
+    }
+  });
+  ncDraft.restore = function () {
+    var d = ncDraft.read();
+    if (!d || !d.open || !(d.meta && state.campaign && d.meta.campaign === state.campaign.id)) return;
+    $('addOptionBox').hidden = false;
+    loadRoster(function () { ncDraft.fill(d); paintPicker(); warnDupes(NC_CTX); });
+  };
+  document.addEventListener('input', function (e) {
+    if (e.target.closest && e.target.closest('#ncProfRows, #ncPlatforms')) ncDraft.save();
+  });
+  document.addEventListener('change', function (e) {
+    if (e.target.closest && e.target.closest('#ncPlatforms')) ncDraft.save();
+  });
+
+  function openCampaign(c, restoring) {
     state.campaign = c;
     $('addCampBox').hidden = true;
     $('campListView').hidden = true;
+    setUrl();
     $('campWork').hidden = false;
     $('campName').textContent = c.title;
     $('campState').textContent = STATE_WORD[c.state] || c.state;
@@ -525,6 +635,7 @@
     $('campPublish').textContent = c.state === 'draft' ? 'Open for selection' : 'Close selection';
     msg('campWorkMsg', '');
     loadOptions();
+    if (restoring) { campDraft.restore(); ncDraft.restore(); restoreScroll(); }
   }
 
   $('campBack').addEventListener('click', function () {
@@ -532,6 +643,8 @@
     $('campWork').hidden = true;
     $('campListView').hidden = false;
     $('addOptionBox').hidden = true;
+    ncDraft.clear();
+    setUrl();
     loadCampaigns();
   });
 
@@ -736,6 +849,7 @@
   $('showAddOption').addEventListener('click', function () {
     $('addOptionBox').hidden = false;
     resetNc();
+    ncDraft.note({ campaign: state.campaign.id });
     loadRoster(paintPicker);
     $('optionSearch').focus();
   });
@@ -866,6 +980,7 @@
           created.client_rate = rate;
           loadRoster(function () {
             resetNc();
+            ncDraft.note({ campaign: state.campaign.id });
             addOption(created, plats, rate);
           });
         };
@@ -1352,6 +1467,32 @@
 
   // ---- Entry --------------------------------------------------------------
   window.ADspaceCampaigns = {
-    enter: function () { showTab(state.tab === 'roster' ? 'roster' : 'campaigns'); }
+    // What the address bar should carry for this section.
+    urlState: function () {
+      return {
+        campaign: state.campaign ? state.campaign.id : '',
+        tab: (!state.campaign && state.tab === 'roster') ? 'roster' : ''
+      };
+    },
+    /* On entry, read the address rather than starting from the list. An open
+       campaign is fetched by id so a refresh lands inside it, not in front of it. */
+    enter: function () {
+      var params = new URLSearchParams(location.search);
+      var id = params.get('campaign');
+      if (id && !(state.campaign && state.campaign.id === id)) {
+        db.from('campaigns').select('*, clients(name)').eq('id', id).single().then(function (r) {
+          if (r.error || !r.data) { state.campaign = null; showTab('campaigns'); return; }
+          state.tab = 'campaigns';
+          Array.prototype.forEach.call(document.querySelectorAll('#sectionCampaigns .tab'), function (b) {
+            b.classList.toggle('is-on', b.getAttribute('data-tab') === 'campaigns');
+          });
+          $('rosterView').hidden = true;
+          openCampaign(r.data, true);
+        });
+        return;
+      }
+      if (state.campaign) { showTab('campaigns'); return; }
+      showTab(params.get('tab') === 'roster' ? 'roster' : 'campaigns');
+    }
   };
 })();
