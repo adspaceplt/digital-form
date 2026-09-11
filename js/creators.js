@@ -35,8 +35,8 @@
     en: {
       kicker: 'Creator Selection',
       lang: '中文',
-      chooseMore: function (n) { return 'Choose ' + n + ' more to complete your list.'; },
-      complete: 'Your list is complete.',
+      chooseMore: function (n) { return 'Choose ' + n + ' more.'; },
+      complete: 'All chosen.',
       over: 'You have chosen more than your campaign allows.',
       yourSelection: 'Your selection',
       count: function (a, b) { return a + ' of ' + b + ' chosen'; },
@@ -46,25 +46,27 @@
       selected: 'Selected',
       backup: 'Backup',
       isBackup: 'Backup ✓',
-      backupHint: 'Tick the ones you want, then mark two as backups. A backup costs nothing. We only use them if someone you picked becomes unavailable.',
-      backupsNeeded: function (n) { return 'Choose ' + n + ' more backup' + (n === 1 ? '' : 's') + ' before confirming.'; },
-      backupsDone: 'Backups chosen.',
+      backupHint: 'Tick your picks. Then mark two backups, in case someone becomes unavailable. Backups cost nothing.',
+      backupsNeeded: function (n) { return 'Mark ' + n + ' more backup' + (n === 1 ? '' : 's') + '.'; },
+      backupsDone: 'Backups marked.',
       backupCount: function (a, b) { return a + ' of ' + b + ' backups'; },
-      priorityNotice: 'A creator became unavailable. Your backups are first in line. Tick one to fill the slot.',
+      priorityNotice: 'A creator is unavailable. Your backups are first in line. Tick one.',
       priority: 'Priority',
       oneMoreBackup: 'Choose another backup so two stay in reserve.',
       replacement: 'Replacement',
       viewProfile: 'View profile',
+      viewOn: function (platform) { return 'View ' + platform + ' profile →'; },
+      platform: { xhs: 'RedNote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' },
       full: 'All slots taken',
       confirm: 'Confirm selection',
       confirmHeading: 'Confirm your selection',
-      confirmBlurb: 'We will start booking these creators. Your name is recorded against the confirmation.',
+      confirmBlurb: 'We will book these creators. Your name goes on the confirmation.',
       nameLabel: 'Your name',
       namePlaceholder: 'Who is confirming',
       send: 'Confirm',
       cancel: 'Cancel',
       nameNeeded: 'Please enter your name.',
-      confirmed: 'Thank you. Your selection is confirmed and we will be in touch with the shoot dates.',
+      confirmed: 'Confirmed. We will send the shoot dates soon.',
       summary: function (n, v) { return n + ' chosen · ' + v; },
       subtotal: 'Subtotal',
       sst: 'SST 8%',
@@ -86,34 +88,34 @@
       viewPost: 'View post',
       reviewDraft: 'Review the draft',
       draftHeading: 'Review the draft',
-      draftBlurb: 'Open it in Drive, then tell us whether it is good to go.',
+      draftBlurb: 'Open the draft in Drive. Then approve it, or ask for changes.',
       openDraft: 'Open the draft ↗',
       noteLabel: 'Anything to change (optional)',
       byLabel: 'Your name',
       approve: 'Approve',
       askChanges: 'Request changes',
       roundOf: function (n) { return 'Revision round ' + n + ' of 2'; },
-      lastRound: 'This is the last included revision round.',
+      lastRound: 'Last included revision round.',
       reviewThanks: 'Thank you, that has gone through to the team.',
       needNote: 'Please say what needs changing.',
-      unavailable: 'This creator became unavailable. Please choose a replacement below.',
+      unavailable: 'Unavailable. Choose a replacement below.',
       results: 'Results',
       impressions: 'Impressions', engagements: 'Engagements', views: 'Views',
       closed: 'Selection closed',
-      closedText: 'This campaign is no longer open for selection. Speak to your ADspace contact if something needs changing.',
+      closedText: 'Selection is closed. Contact your ADspace person to change anything.',
       notFound: 'Link not recognised',
-      notFoundText: 'Check the link, or ask your ADspace contact for a new one.',
+      notFoundText: 'Check the link, or ask your ADspace person for a new one.',
       passTitle: 'Access code',
       passText: 'Enter the code we sent you.',
       passWrong: 'That code did not work.',
       loading: 'Loading…',
-      noneYet: 'We are still sourcing. Creators will appear here as they confirm availability.'
+      noneYet: 'Still sourcing. Creators appear here as they confirm.'
     },
     zh: {
       kicker: '博主选择',
       lang: 'EN',
-      chooseMore: function (n) { return '再选 ' + n + ' 位即可完成。'; },
-      complete: '您的名单已完成。',
+      chooseMore: function (n) { return '再选 ' + n + ' 位。'; },
+      complete: '已选齐。',
       over: '所选人数已超出本次合作的名额。',
       yourSelection: '您的选择',
       count: function (a, b) { return '已选 ' + a + ' / ' + b; },
@@ -123,25 +125,27 @@
       selected: '已选',
       backup: '设为备选',
       isBackup: '备选 ✓',
-      backupHint: '勾选您想合作的博主，并将两位设为备选。备选不产生费用，只有当您所选的博主档期不合时才会启用。',
-      backupsNeeded: function (n) { return '请再选 ' + n + ' 位备选后再确认。'; },
-      backupsDone: '备选已完成。',
+      backupHint: '勾选您想要的博主，再设两位备选，以防有人档期不合。备选不产生费用。',
+      backupsNeeded: function (n) { return '请再设 ' + n + ' 位备选。'; },
+      backupsDone: '备选已设。',
       backupCount: function (a, b) { return '备选 ' + a + ' / ' + b; },
-      priorityNotice: '有一位博主暂不可用。您的备选将优先显示，请勾选一位补上名额。',
+      priorityNotice: '有一位博主暂不可用。备选已优先显示，请勾选一位。',
       priority: '优先',
       oneMoreBackup: '请再选一位备选，以保持两位在候补。',
       replacement: '替补',
       viewProfile: '查看主页',
+      viewOn: function (platform) { return '查看' + platform + '主页 →'; },
+      platform: { xhs: '小红书', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' },
       full: '名额已满',
       confirm: '确认选择',
       confirmHeading: '确认您的选择',
-      confirmBlurb: '我们将开始安排这些博主。确认人姓名会一并记录。',
+      confirmBlurb: '我们将安排这些博主。确认人姓名会一并记录。',
       nameLabel: '您的姓名',
       namePlaceholder: '确认人',
       send: '确认',
       cancel: '取消',
       nameNeeded: '请填写姓名。',
-      confirmed: '已收到，感谢确认。我们会尽快与您跟进拍摄日期。',
+      confirmed: '已确认。我们会尽快发送拍摄日期。',
       summary: function (n, v) { return '已选 ' + n + ' 位 · ' + v; },
       subtotal: '小计',
       sst: 'SST 8%',
@@ -163,7 +167,7 @@
       viewPost: '查看帖子',
       reviewDraft: '查看初稿',
       draftHeading: '查看初稿',
-      draftBlurb: '请在 Drive 中打开查看，然后告诉我们是否可以发布。',
+      draftBlurb: '请在 Drive 中打开初稿，然后通过或提出修改。',
       openDraft: '打开初稿 ↗',
       noteLabel: '需要修改的地方（选填）',
       byLabel: '您的姓名',
@@ -173,18 +177,18 @@
       lastRound: '这是最后一次包含在内的修改。',
       reviewThanks: '已收到，我们会尽快处理。',
       needNote: '请说明需要修改的内容。',
-      unavailable: '该博主暂不可用，请在下方另选一位。',
+      unavailable: '暂不可用。请在下方另选一位。',
       results: '数据',
       impressions: '曝光', engagements: '互动', views: '播放',
       closed: '选择已结束',
-      closedText: '本次合作已不开放选择。如需调整，请联系您的 ADspace 对接人。',
+      closedText: '选择已结束。如需调整，请联系您的 ADspace 对接人。',
       notFound: '链接无效',
       notFoundText: '请检查链接，或向您的 ADspace 对接人索取新链接。',
       passTitle: '访问码',
       passText: '请输入我们发送给您的访问码。',
       passWrong: '访问码不正确。',
       loading: '加载中…',
-      noneYet: '我们仍在寻找合适的博主，确认档期后会陆续显示在这里。'
+      noneYet: '仍在寻找博主，确认档期后会显示在这里。'
     }
   };
 
@@ -282,6 +286,9 @@
 
     var title = (lang === 'zh' && c.title_zh) ? c.title_zh : c.title;
     $('campTitle').textContent = title || '';
+    var purpose = (lang === 'zh' && c.purpose_zh) ? c.purpose_zh : c.purpose;
+    $('campPurpose').textContent = purpose || '';
+    $('campPurpose').hidden = !purpose;
     var brief = (lang === 'zh' && c.brief_zh) ? c.brief_zh : c.brief;
     $('campBrief').textContent = brief || '';
     $('campBrief').hidden = !brief;
@@ -317,6 +324,15 @@
     var options = feed.options || [];
     var booked = options.filter(isBooked);
     var lost = options.filter(function (o) { return o.state === 'withdrawn'; });
+    // The next shoot is what the client is watching for, so dated bookings
+    // come first, soonest first. Undated ones follow in the order offered.
+    booked = booked.map(function (o, i) { return [o, i]; }).sort(function (a, b) {
+      var da = a[0].visit_date || '', dbb = b[0].visit_date || '';
+      if (da && dbb) return da < dbb ? -1 : da > dbb ? 1 : a[1] - b[1];
+      if (da) return -1;
+      if (dbb) return 1;
+      return a[1] - b[1];
+    }).map(function (x) { return x[0]; });
     var rows = booked.concat(lost);
 
     $('bookingWrap').hidden = !rows.length;
@@ -353,8 +369,6 @@
     if (!seeding && o.visit_date) {
       bits.push(t().shootOn + ' ' + fmtDate(o.visit_date) + (o.visit_time ? ', ' + o.visit_time : ''));
     }
-    if (o.visit_location) bits.push(o.visit_location);
-    if (o.visit_pic) bits.push(t().pic + ' ' + o.visit_pic + (o.visit_pic_phone ? ' (' + o.visit_pic_phone + ')' : ''));
     if (o.planned_publish && o.state === 'scheduled') bits.push(t().goLive + ' ' + fmtDate(o.planned_publish));
     if (o.state === 'changes' && o.revision_round > 1) bits.push(t().roundOf(o.revision_round));
 
@@ -527,11 +541,7 @@
       // with the platform named on it, not a chip that reads as decoration.
       var links = (o.profiles || []).map(function (p) {
         return '<a class="plink" href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
-          esc(platLabel(p.platform)) +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
-          'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-          '<path d="M14 4h6v6"/><path d="M20 4 11 13"/>' +
-          '<path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>';
+          esc(t().viewOn(t().platform[p.platform] || platLabel(p.platform))) + '</a>';
       }).join('');
 
       row.innerHTML =

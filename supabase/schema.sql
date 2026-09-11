@@ -507,7 +507,7 @@ create unique index if not exists creator_profiles_identity
 create table if not exists public.campaigns (
   id            uuid primary key default gen_random_uuid(),
   client_id     uuid not null references public.clients(id) on delete cascade,
-  title         text not null,
+  title         text not null,                 -- the campaign's name
   title_zh      text,
   invoice_no    text,                          -- issued after confirmation
   slots         integer not null default 10,   -- the number agreed; the cap
@@ -530,6 +530,10 @@ create index if not exists campaigns_client_idx on public.campaigns(client_id, c
 -- selection is confirmed, through the same signed S3 path media uses.
 alter table public.campaigns add column if not exists invoice_url         text;
 alter table public.campaigns add column if not exists invoice_uploaded_at timestamptz;
+-- What the campaign is for, under its name. The name is the handle the team
+-- uses; the purpose is what the client reads.
+alter table public.campaigns add column if not exists purpose    text;
+alter table public.campaigns add column if not exists purpose_zh text;
 
 -- A creator offered inside a campaign. The rate and the placements are
 -- snapshotted here, so a roster edit can never reprice a live offer.
@@ -623,7 +627,8 @@ begin
 
   return jsonb_build_object(
     'campaign', jsonb_build_object(
-      'title', c.title, 'title_zh', c.title_zh, 'slots', c.slots,
+      'title', c.title, 'title_zh', c.title_zh,
+      'purpose', c.purpose, 'purpose_zh', c.purpose_zh, 'slots', c.slots,
       'deadline', c.deadline, 'state', c.state, 'deliverable', c.deliverable,
       'push_format', c.push_format, 'brief', c.brief, 'brief_zh', c.brief_zh,
       'invoice_no', c.invoice_no, 'invoice_url', c.invoice_url),

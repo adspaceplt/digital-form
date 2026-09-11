@@ -375,7 +375,9 @@
                      placeholder="Type a client name">
               <datalist id="clientNames"></datalist></div>
             <div><label class="field-label" for="campTitle">Campaign name</label>
-              <input class="input" id="campTitle" placeholder="Promote Newly Launch Project"></div>
+              <input class="input" id="campTitle" placeholder="Laman Citra Launch, Oct 2026"></div>
+            <div><label class="field-label" for="campPurpose">Campaign purpose</label>
+              <input class="input" id="campPurpose" placeholder="Promote the newly launched project"></div>
             <div style="flex:0 0 110px"><label class="field-label" for="campSlots">Slots</label>
               <input class="input" id="campSlots" type="number" min="1" value="10"></div>
           </div>
@@ -396,7 +398,7 @@
                 <option value="video">Video</option>
                 <option value="graphic">Graphic</option>
               </select></div>
-            <div><label class="field-label" for="campOwner">KOC team owner</label>
+            <div><label class="field-label" for="campOwner">Person in charge</label>
               <input class="input" id="campOwner" placeholder="Name"></div>
           </div>
           <div class="row" style="margin-top:16px">
@@ -421,15 +423,16 @@
         <button class="backlink" id="campBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back to all campaigns</button>
 
         <section class="panel">
-          <div class="viewhead" style="margin:0 0 4px">
+          <div class="viewhead" style="margin:0 0 2px">
             <span class="headmark"><h2 id="campName"></h2><span class="chip" id="campState"></span></span>
             <button class="btn btn-quiet btn-sm" id="campEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg>Edit details</button>
           </div>
-          <!-- The facts of the campaign, one label per value. They were a single
-               grey sentence, which is too much to scan and too little to read. -->
+          <!-- The name is the handle; the purpose is what the client reads. -->
+          <p class="camp-purpose" id="campPurposeLine"></p>
           <dl class="facts" id="campFacts"></dl>
 
-          <div class="tally" id="campTally"></div>
+          <!-- Counts on the left, money on the right, on one line. -->
+          <div class="stats" id="campTally"></div>
 
           <div class="linkbox" style="margin-top:14px">
             <input class="input" id="campLink" readonly>
@@ -443,9 +446,18 @@
             <button class="btn btn-primary" id="campLock" type="button" hidden>Lock the selection</button>
           </div>
           <div class="msg" id="campWorkMsg"></div>
+        </section>
 
-          <div class="subsection" id="invoiceBox">
-            <h4>Invoice</h4>
+        <!-- Optional, so closed until wanted: open on its own once there is one. -->
+        <section class="panel panel-collapse">
+          <button class="disclosure" id="invoiceToggle" type="button" aria-expanded="false">
+            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
+            <svg class="disclosure-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></svg>
+            <span>Invoice</span>
+            <span class="muted" id="invoiceSummary">Not issued yet</span>
+          </button>
+          <div class="disclosure-body" id="invoiceBody" hidden>
+
             <p class="hint">Raised after the client confirms. Enter the number and upload the PDF;
             it appears on the client's page for them to open and download.</p>
             <div class="row">
@@ -464,16 +476,59 @@
             <div class="invcurrent" id="invCurrent"></div>
             <div class="msg" id="invMsg"></div>
           </div>
+        </section>
 
-          <div class="subsection camp-danger">
-            <h4>Deletion</h4>
-            <p class="hint">Removes the campaign with every offer, selection, draft verdict and
-            result on it. Nothing comes back.</p>
+        <!-- Rare and hard to undo, so it is folded away, not on the desk. -->
+        <section class="panel panel-collapse">
+          <button class="disclosure" id="dangerToggle" type="button" aria-expanded="false">
+            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
+            <svg class="disclosure-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/></svg>
+            <span>Delete campaign</span>
+            <span class="muted">Removes every offer, selection and result on it</span>
+          </button>
+          <div class="disclosure-body" id="dangerBody" hidden>
+            <p class="hint">Nothing comes back. If the campaign has simply finished, leave it;
+            it is the record.</p>
             <div class="dangerrow">
-              <button class="btn btn-danger" id="campDelete" type="button">Delete campaign</button>
+              <button class="btn btn-danger" id="campDelete" type="button">Delete this campaign</button>
             </div>
           </div>
         </section>
+
+        <!-- ---- Production ---- -->
+        <div id="prodWrap" hidden>
+          <div class="viewhead">
+            <span class="headmark"><h2>Production</h2></span>
+            <button class="btn" id="bulkToggle" type="button">Set shoot dates for all</button>
+          </div>
+
+          <div class="panel" id="bulkBox" hidden>
+            <div class="panelhead"><h3 id="bulkTitle">Apply to every confirmed creator</h3></div>
+            <p class="hint" id="bulkHint">Fills anything left blank on each row. A row you have
+            already set by hand is marked, and is left alone unless you say otherwise.</p>
+            <div class="row" id="bulkVisitRow">
+              <div style="flex:0 0 160px"><label class="field-label" for="bulkDate">Date</label>
+                <input class="input" id="bulkDate" type="date"></div>
+              <div style="flex:0 0 130px"><label class="field-label" for="bulkTime">Time</label>
+                <input class="input" id="bulkTime" placeholder="2pm"></div>
+            </div>
+            <div class="row" style="margin-top:14px">
+              <button class="btn btn-primary" id="bulkApply" type="button">Apply to blanks</button>
+              <button class="btn" id="bulkApplyAll" type="button" style="flex:0 0 auto">Overwrite every row</button>
+              <button class="btn btn-quiet" id="bulkCancel" type="button" style="flex:0 0 auto">Cancel</button>
+            </div>
+            <div class="msg" id="bulkMsg"></div>
+          </div>
+
+          <div id="prodList"></div>
+
+          <section class="panel" id="rollup" hidden>
+            <div class="panelhead"><h3>Results</h3></div>
+            <p class="hint">Totals across every posted placement. The number that wins the
+            next campaign is this one, not the per-post breakdown.</p>
+            <div class="tally" id="rollupTally"></div>
+          </section>
+        </div>
 
         <div class="viewhead">
           <span class="headmark"><h2>Options offered</h2></span>
@@ -513,47 +568,6 @@
         </div>
 
         <div id="optionList"></div>
-
-        <!-- ---- Production ---- -->
-        <div id="prodWrap" hidden>
-          <div class="viewhead">
-            <span class="headmark"><h2>Production</h2></span>
-            <button class="btn" id="bulkToggle" type="button">Set dates for all</button>
-          </div>
-
-          <div class="panel" id="bulkBox" hidden>
-            <div class="panelhead"><h3 id="bulkTitle">Apply to every confirmed creator</h3></div>
-            <p class="hint" id="bulkHint">Fills anything left blank on each row. A row you have
-            already set by hand is marked, and is left alone unless you say otherwise.</p>
-            <div class="row" id="bulkVisitRow">
-              <div style="flex:0 0 160px"><label class="field-label" for="bulkDate">Date</label>
-                <input class="input" id="bulkDate" type="date"></div>
-              <div style="flex:0 0 130px"><label class="field-label" for="bulkTime">Time</label>
-                <input class="input" id="bulkTime" placeholder="2pm"></div>
-              <div><label class="field-label" for="bulkLoc">Location</label>
-                <input class="input" id="bulkLoc" placeholder="Laman Citra sales gallery"></div>
-              <div style="flex:0 0 160px"><label class="field-label" for="bulkPic">PIC to look for</label>
-                <input class="input" id="bulkPic" placeholder="Name"></div>
-              <div style="flex:0 0 150px"><label class="field-label" for="bulkPhone">PIC contact</label>
-                <input class="input" id="bulkPhone" placeholder="01x-xxx xxxx"></div>
-            </div>
-            <div class="row" style="margin-top:14px">
-              <button class="btn btn-primary" id="bulkApply" type="button">Apply to blanks</button>
-              <button class="btn" id="bulkApplyAll" type="button" style="flex:0 0 auto">Overwrite every row</button>
-              <button class="btn btn-quiet" id="bulkCancel" type="button" style="flex:0 0 auto">Cancel</button>
-            </div>
-            <div class="msg" id="bulkMsg"></div>
-          </div>
-
-          <div id="prodList"></div>
-
-          <section class="panel" id="rollup" hidden>
-            <div class="panelhead"><h3>Results</h3></div>
-            <p class="hint">Totals across every posted placement. The number that wins the
-            next campaign is this one, not the per-post breakdown.</p>
-            <div class="tally" id="rollupTally"></div>
-          </section>
-        </div>
       </div>
 
       <!-- ---- Roster ---- -->
