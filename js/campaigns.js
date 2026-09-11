@@ -47,6 +47,21 @@
     { id: 'facebook',  label: 'Facebook',  re: /facebook\.com\/([A-Za-z0-9.]{2,60})/i }
   ];
   var PLATFORM_LABEL = { xhs: 'RedNote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' };
+  var PLATFORM_NAMES = ['RedNote', 'Instagram', 'TikTok', 'Facebook'];
+
+  /* Where she posts for THIS campaign is proposed by us, one tick per
+     platform. Her profile links only decide which boxes start ticked; a
+     creator with two accounts may still be booked for one of them. */
+  function platformBoxes(ticked) {
+    return '<span class="pboxes">' + PLATFORM_NAMES.map(function (name) {
+      return '<label class="pbox"><input type="checkbox" value="' + name + '"' +
+        (ticked.indexOf(name) > -1 ? ' checked' : '') + '>' + name + '</label>';
+    }).join('') + '</span>';
+  }
+  function readBoxes(container) {
+    return Array.prototype.slice.call(container.querySelectorAll('.pbox input:checked'))
+      .map(function (i) { return i.value; });
+  }
 
   /* Returns what a URL is, or null when it is not a profile we recognise.
      handle null means "recognised the platform, could not read an identity",
@@ -141,7 +156,12 @@
   }
 
   // ---- Profile link rows --------------------------------------------------
-  function profRow(p) {
+  // Two forms build these: the roster's, and the one inside a campaign. Each
+  // names its own rows, name field and warning line.
+  var ROSTER_CTX = { rows: 'profRows',   name: 'crName', warn: 'dupeWarn' };
+  var NC_CTX     = { rows: 'ncProfRows', name: 'ncName', warn: 'ncDupe' };
+
+  function profRow(p, ctx) {
     var row = document.createElement('div');
     row.className = 'profrow';
     row.innerHTML =
@@ -159,16 +179,17 @@
       else if (!got) { read.textContent = 'Not a profile link we recognise'; read.className = 'prof-read err'; }
       else if (!got.handle) { read.textContent = PLATFORM_LABEL[got.platform] + ' · short link'; read.className = 'prof-read muted'; }
       else { read.textContent = PLATFORM_LABEL[got.platform] + ' · ' + got.handle; read.className = 'prof-read ok'; }
-      warnDupes();
+      warnDupes(ctx);
+      if (ctx === NC_CTX) tickFromLinks();
     }
     input.addEventListener('input', reflect);
-    row.querySelector('.iconbtn').addEventListener('click', function () { row.remove(); warnDupes(); });
+    row.querySelector('.iconbtn').addEventListener('click', function () { row.remove(); warnDupes(ctx); });
     reflect();
     return row;
   }
 
-  function profValues() {
-    return Array.prototype.slice.call(document.querySelectorAll('#profRows .prof-url'))
+  function profValues(ctx) {
+    return Array.prototype.slice.call(document.querySelectorAll('#' + ctx.rows + ' .prof-url'))
       .map(function (i) { return readProfile(i.value); })
       .filter(Boolean);
   }
@@ -176,9 +197,9 @@
   /* Before saving, say who else already owns one of these identities. The
      database refuses it outright; this is so the person finds out while they
      still have the form open. */
-  function warnDupes() {
-    var mine = profValues().filter(function (p) { return p.handle; });
-    if (!mine.length) { msg('dupeWarn', ''); return; }
+  function warnDupes(ctx) {
+    var mine = profValues(ctx).filter(function (p) { return p.handle; });
+    if (!mine.length) { msg(ctx.warn, ''); return; }
     var hits = [];
     state.creators.forEach(function (c) {
       if (state.editing && c.id === state.editing.id) return;
@@ -192,11 +213,11 @@
       });
     });
     if (hits.length) {
-      msg('dupeWarn', 'Already in the roster as ' + hits.join(', ') + '. Saving will be refused.', 'err');
+      msg(ctx.warn, 'Already in the roster as ' + hits.join(', ') + '. Saving will be refused.', 'err');
       return;
     }
     // Nothing identical. Names close enough to be worth a second look.
-    var name = ($('crName').value || '').trim().toLowerCase().replace(/[^a-z0-9一-鿿]/g, '');
+    var name = ($(ctx.name).value || '').trim().toLowerCase().replace(/[^a-z0-9一-鿿]/g, '');
     if (name.length > 1) {
       var near = state.creators.filter(function (c) {
         if (state.editing && c.id === state.editing.id) return false;
@@ -204,11 +225,11 @@
         return o && (o.indexOf(name) > -1 || name.indexOf(o) > -1);
       }).map(function (c) { return c.name; });
       if (near.length) {
-        msg('dupeWarn', 'Similar name already in the roster: ' + near.join(', ') + '.', 'warn');
+        msg(ctx.warn, 'Similar name already in the roster: ' + near.join(', ') + '.', 'warn');
         return;
       }
     }
-    msg('dupeWarn', '');
+    msg(ctx.warn, '');
   }
 
   function openCreator(c) {
@@ -221,8 +242,8 @@
     var rows = $('profRows');
     rows.innerHTML = '';
     var ps = (c && c.creator_profiles) || [];
-    if (!ps.length) rows.appendChild(profRow(null));
-    else ps.forEach(function (p) { rows.appendChild(profRow(p)); });
+    if (!ps.length) rows.appendChild(profRow(null, ROSTER_CTX));
+    else ps.forEach(function (p) { rows.appendChild(profRow(p, ROSTER_CTX)); });
     msg('creatorMsg', ''); msg('dupeWarn', '');
     $('addCreatorBox').hidden = false;
     $('crName').focus();
@@ -232,9 +253,9 @@
   $('cancelAddCreator').addEventListener('click', function () {
     $('addCreatorBox').hidden = true; state.editing = null;
   });
-  $('addProfRow').addEventListener('click', function () { $('profRows').appendChild(profRow(null)); });
+  $('addProfRow').addEventListener('click', function () { $('profRows').appendChild(profRow(null, ROSTER_CTX)); });
   $('rosterSearch').addEventListener('input', paintRoster);
-  $('crName').addEventListener('input', warnDupes);
+  $('crName').addEventListener('input', function () { warnDupes(ROSTER_CTX); });
 
   $('saveCreator').addEventListener('click', function () {
     var name = ($('crName').value || '').trim();
@@ -247,7 +268,7 @@
       msg('creatorMsg', 'These are not profile links we recognise: ' + bad.join(', '), 'err');
       return;
     }
-    var profiles = profValues();
+    var profiles = profValues(ROSTER_CTX);
 
     var body = {
       name: name,
@@ -365,14 +386,39 @@
   }
 
   var STATE_WORD = { draft: 'Draft', open: 'Open for selection', production: 'In production', completed: 'Completed' };
+  var FORMAT_WORD = {
+    site_visit: 'Site visit', event: 'Event', seeding: 'Product seeding',
+    tenant_trail: 'Tenant trail', teaser: 'Pre-launch teaser', always_on: 'Always-on review'
+  };
+  var editingCamp = null;
+
+  /* One form for both. Editing prefills it from the campaign; the invoice
+     shows without its fixed prefix because the field puts that back. */
+  function openCampForm(c) {
+    editingCamp = c || null;
+    $('campFormTitle').textContent = c ? 'Edit campaign' : 'New campaign';
+    $('addCamp').textContent = c ? 'Save' : 'Create';
+    $('campClient').value = c ? ((c.clients && c.clients.name) || '') : '';
+    $('campTitle').value = c ? c.title : '';
+    $('campInvoice').value = c ? String(c.invoice_no || '').replace(/^AINV2/i, '') : '';
+    $('campSlots').value = c ? c.slots : 10;
+    $('campDeadline').value = c ? (c.deadline || '') : '';
+    $('campFormat').value = c ? (c.push_format || 'site_visit') : 'site_visit';
+    $('campDeliverable').value = c ? (c.deliverable || 'video') : 'video';
+    $('campOwner').value = c ? (c.owner || '') : '';
+    msg('campMsg', '');
+    $('addCampBox').hidden = false;
+    (c ? $('campTitle') : $('campClient')).focus();
+  }
+  function shutCampForm() { $('addCampBox').hidden = true; editingCamp = null; }
 
   $('showAddCamp').addEventListener('click', function () {
-    loadClients(function () {
-      $('addCampBox').hidden = false;
-      $('campClient').focus();
-    });
+    loadClients(function () { openCampForm(null); });
   });
-  $('cancelAddCamp').addEventListener('click', function () { $('addCampBox').hidden = true; });
+  $('campEdit').addEventListener('click', function () {
+    loadClients(function () { openCampForm(state.campaign); });
+  });
+  $('cancelAddCamp').addEventListener('click', shutCampForm);
 
   // Every invoice starts AINV2, so the field carries it and only the rest is
   // typed. Stored whole, because that is what is on the document.
@@ -389,8 +435,39 @@
     var slots = Number($('campSlots').value || 0);
     if (!slots || slots < 1) { msg('campMsg', 'Slots must be at least 1.', 'err'); return; }
 
-    resolveClient(clientName, function (clientId) { createCampaign(clientId, title, slots); });
+    // A slot with a creator booked into it cannot be taken away by editing a
+    // number. Free the booking first, then lower the count.
+    if (editingCamp) {
+      var booked = state.options.filter(isLive).length;
+      if (slots < booked) {
+        msg('campMsg', booked + ' creators are already booked, so slots cannot go below ' + booked + '.', 'err');
+        return;
+      }
+    }
+
+    resolveClient(clientName, function (clientId) {
+      if (editingCamp) saveCampaign(clientId, title, slots);
+      else createCampaign(clientId, title, slots);
+    });
   });
+
+  function saveCampaign(clientId, title, slots) {
+    var c = editingCamp;
+    var patch = {
+      client_id: clientId, title: title,
+      invoice_no: invoiceNo(), slots: slots,
+      deadline: $('campDeadline').value || null,
+      push_format: $('campFormat').value,
+      deliverable: $('campDeliverable').value,
+      owner: ($('campOwner').value || '').trim() || null
+    };
+    db.from('campaigns').update(patch).eq('id', c.id).select('*, clients(name)').single().then(function (r) {
+      if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
+      log('campaign.edited', title, patch.invoice_no || '');
+      shutCampForm();
+      openCampaign(r.data);
+    });
+  }
 
   function createCampaign(clientId, title, slots) {
     db.from('campaigns').insert({
@@ -409,9 +486,7 @@
     }).select('*, clients(name)').single().then(function (r) {
       if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
       log('campaign.created', title, r.data.invoice_no || '');
-      $('addCampBox').hidden = true;
-      ['campTitle','campInvoice','campOwner','campClient'].forEach(function (i) { $(i).value = ''; });
-      msg('campMsg', '');
+      shutCampForm();
       openCampaign(r.data);
     });
   }
@@ -420,18 +495,24 @@
 
   function openCampaign(c) {
     state.campaign = c;
+    $('addCampBox').hidden = true;
     $('campListView').hidden = true;
     $('campWork').hidden = false;
     $('campName').textContent = c.title;
     $('campState').textContent = STATE_WORD[c.state] || c.state;
     $('campState').classList.toggle('is-live', c.state !== 'draft');
-    $('campMeta').textContent = [
-      (c.clients && c.clients.name) || '',
-      c.invoice_no ? 'Invoice ' + c.invoice_no : 'No invoice number',
-      c.slots + ' slots',
-      c.deliverable === 'graphic' ? 'One graphic' : 'One video',
-      c.owner ? 'Owner: ' + c.owner : ''
-    ].filter(Boolean).join('  ·  ');
+    $('campFacts').innerHTML = [
+      ['Client',       (c.clients && c.clients.name) || ''],
+      ['Invoice',      c.invoice_no || '<span class="muted">Not entered</span>'],
+      ['Slots',        String(c.slots)],
+      ['Push format',  FORMAT_WORD[c.push_format] || c.push_format || ''],
+      ['Deliverable',  c.deliverable === 'graphic' ? 'One graphic' : 'One video'],
+      ['Respond by',   c.deadline ? niceDate(c.deadline) : '<span class="muted">No deadline</span>'],
+      ['Owner',        c.owner || '<span class="muted">Unassigned</span>'],
+      ['Created',      c.created_at ? niceDate(String(c.created_at).slice(0, 10)) : '']
+    ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
+      return '<div><dt>' + f[0] + '</dt><dd>' + (f[1].indexOf('<span') === 0 ? f[1] : esc(f[1])) + '</dd></div>';
+    }).join('');
     $('campLink').value = campaignUrl(c);
     $('campOpen').href = campaignUrl(c);
     $('campPublish').textContent = c.state === 'draft' ? 'Open for selection' : 'Close selection';
@@ -544,12 +625,16 @@
           '<span class="slink-target">' + esc(o.platforms || '') + ' · ' + money(o.rate) + '</span>' +
         '</div>' +
         '<div class="slink-actions">' +
+          (['option', 'backup', 'shortlisted'].indexOf(o.state) > -1
+            ? iconBtn('pencil', 'rate', 'Change the rate or platforms on this campaign') : '') +
           (o.state === 'option' || o.state === 'backup'
             ? iconBtn('tick', 'pick', 'Shortlist on the client\'s behalf') : '') +
           (o.state === 'shortlisted'
             ? iconBtn('redo', 'unpick', 'Take off the shortlist', 'is-warn') : '') +
           iconBtn('trash', 'del', 'Remove option', 'is-danger') +
         '</div>';
+      var rateBtn = row.querySelector('[data-a="rate"]');
+      if (rateBtn) rateBtn.addEventListener('click', function () { editRate(row, o); });
       var pick = row.querySelector('[data-a="pick"]');
       if (pick) pick.addEventListener('click', function () { keyIn(o, 'shortlisted'); });
       var unpick = row.querySelector('[data-a="unpick"]');
@@ -569,6 +654,42 @@
 
   function tallyCell(label, value) {
     return '<div class="tally-cell"><b>' + esc(String(value)) + '</b><span>' + esc(label) + '</span></div>';
+  }
+
+  /* The rate is this campaign's, so it is changed here and nowhere else. Once
+     the client has been locked in at a number, that number is what they
+     agreed to, and the pencil goes away. */
+  function editRate(row, o) {
+    var body = row.querySelector('.slink-body');
+    if (body.querySelector('.rate-edit')) return;
+    var ed = document.createElement('div');
+    ed.className = 'rate-edit';
+    var current = String(o.platforms || '').split(',').map(function (x) { return x.trim(); });
+    ed.innerHTML =
+      platformBoxes(current) +
+      '<span class="slugfield"><span class="slugfield-pre">RM</span>' +
+      '<input class="input" type="number" min="0" step="10" value="' + esc(o.rate) + '"></span>' +
+      '<button class="btn btn-sm btn-primary" type="button">Save</button>' +
+      '<button class="btn btn-sm btn-quiet" type="button">Cancel</button>';
+    body.appendChild(ed);
+    // The platform boxes are inputs too and come first; this is the number.
+    var input = ed.querySelector('input[type="number"]');
+    input.focus(); input.select();
+    ed.querySelectorAll('button')[1].addEventListener('click', function () { ed.remove(); });
+    ed.querySelectorAll('button')[0].addEventListener('click', function () {
+      var rate = Number(input.value || 0);
+      var plats = readBoxes(ed);
+      if (!rate || rate <= 0) { msg('campWorkMsg', 'Enter a rate above zero.', 'err'); input.focus(); return; }
+      if (!plats.length) { msg('campWorkMsg', 'Tick at least one platform.', 'err'); return; }
+      db.from('campaign_options').update({ rate: rate, platforms: plats.join(', ') })
+        .eq('id', o.id).then(function (r) {
+          if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+          log('campaign.rate', (o.creators || {}).name || '',
+              money(o.rate) + ' → ' + money(rate) + ' · ' + plats.join(', '));
+          msg('campWorkMsg', '');
+          loadOptions();
+        });
+    });
   }
 
   /* A client who answers on WhatsApp has still chosen. This is how that choice
@@ -604,6 +725,7 @@
 
   $('showAddOption').addEventListener('click', function () {
     $('addOptionBox').hidden = false;
+    resetNc();
     loadRoster(paintPicker);
     $('optionSearch').focus();
   });
@@ -633,26 +755,35 @@
       var uniq = plats.filter(function (v, i) { return plats.indexOf(v) === i; });
       row.innerHTML =
         '<div><b>' + esc(c.name) + '</b>' +
-        '<span class="muted"> ' + (uniq.join(', ') || 'no links') +
-        (c.client_rate ? ' · ' + money(c.client_rate) : ' · no rate') + '</span></div>' +
+        '<span class="muted"> ' + (uniq.join(', ') || 'no links') + '</span></div>' +
         (inCamp ? '<span class="muted">Already offered</span>'
-                : '<button class="btn btn-sm btn-primary" type="button">Add</button>');
+                : '<span class="pickadd">' + platformBoxes(uniq) +
+                  '<span class="slugfield"><span class="slugfield-pre">RM</span>' +
+                  '<input class="input pickrate" type="number" min="0" step="10" value="' +
+                  (c.client_rate || '') + '" placeholder="rate"></span>' +
+                  '<button class="btn btn-sm btn-primary" type="button">Add</button></span>');
       if (!inCamp) {
-        row.querySelector('button').addEventListener('click', function () { addOption(c, uniq); });
+        row.querySelector('button').addEventListener('click', function () {
+          addOption(c, readBoxes(row), Number(row.querySelector('.pickrate').value || 0));
+        });
       }
       box.appendChild(row);
     });
   }
 
-  function addOption(c, platformNames) {
-    if (!c.client_rate) {
-      msg('optionMsg', c.name + ' has no client rate. Set one in the roster first, because the offer freezes the rate at this moment.', 'err');
+  function addOption(c, platformNames, rate) {
+    if (!platformNames.length) {
+      msg('optionMsg', 'Tick at least one platform for ' + c.name + ' to post on.', 'err');
+      return;
+    }
+    if (!rate || rate <= 0) {
+      msg('optionMsg', 'Set a rate for ' + c.name + ' on this campaign.', 'err');
       return;
     }
     db.from('campaign_options').insert({
       campaign_id: state.campaign.id,
       creator_id: c.id,
-      rate: c.client_rate,
+      rate: rate,
       platforms: platformNames.join(', '),
       state: 'option',
       position: state.options.length
@@ -662,11 +793,76 @@
           ? c.name + ' is already offered in this campaign.' : r.error.message, 'err');
         return;
       }
-      msg('optionMsg', c.name + ' added at ' + money(c.client_rate) + '.', 'ok');
+      msg('optionMsg', c.name + ' added at ' + money(rate) + '.', 'ok');
       loadOptions();
       setTimeout(paintPicker, 150);
     });
   }
+
+  // ---- A new creator, made from inside the campaign ----------------------
+  function resetNc() {
+    $('ncName').value = ''; $('ncRate').value = '';
+    $('ncProfRows').innerHTML = '';
+    $('ncProfRows').appendChild(profRow(null, NC_CTX));
+    $('ncPlatforms').innerHTML = platformBoxes([]);
+    msg('ncDupe', ''); msg('ncMsg', '');
+  }
+  // A recognised link ticks its platform. It never unticks one, so a box
+  // someone cleared on purpose stays cleared.
+  function tickFromLinks() {
+    var box = $('ncPlatforms');
+    if (!box) return;
+    profValues(NC_CTX).forEach(function (p) {
+      var name = PLATFORM_LABEL[p.platform];
+      var input = box.querySelector('.pbox input[value="' + name + '"]');
+      if (input && !input.dataset.cleared) input.checked = true;
+    });
+  }
+  $('ncPlatforms').addEventListener('change', function (e) {
+    if (e.target.type === 'checkbox' && !e.target.checked) e.target.dataset.cleared = '1';
+  });
+  $('ncAddProf').addEventListener('click', function () { $('ncProfRows').appendChild(profRow(null, NC_CTX)); });
+  $('ncName').addEventListener('input', function () { warnDupes(NC_CTX); });
+
+  $('ncSave').addEventListener('click', function () {
+    var name = ($('ncName').value || '').trim();
+    var rate = Number($('ncRate').value || 0);
+    if (!name) { msg('ncMsg', 'A name is required.', 'err'); return; }
+    if (!rate || rate <= 0) { msg('ncMsg', 'Set the rate for this campaign.', 'err'); return; }
+    var raw = Array.prototype.slice.call(document.querySelectorAll('#ncProfRows .prof-url'))
+      .map(function (i) { return i.value.trim(); }).filter(Boolean);
+    var bad = raw.filter(function (u) { return !readProfile(u); });
+    if (bad.length) { msg('ncMsg', 'These are not profile links we recognise: ' + bad.join(', '), 'err'); return; }
+    var profiles = profValues(NC_CTX);
+    var plats = readBoxes($('ncPlatforms'));
+    if (!plats.length) { msg('ncMsg', 'Tick at least one platform she will post on.', 'err'); return; }
+
+    // Kept in the roster with this as her usual rate, since it is the only
+    // number known for her yet. The offer carries it independently.
+    db.from('creators').insert({ name: name, client_rate: rate, created_by: who() || null })
+      .select().single().then(function (r) {
+        if (r.error) { msg('ncMsg', r.error.message, 'err'); return; }
+        var created = r.data;
+        var rows = profiles.map(function (p) {
+          return { creator_id: created.id, platform: p.platform, url: p.url, handle: p.handle };
+        });
+        var offer = function (res) {
+          if (res && res.error) {
+            msg('ncMsg', /duplicate|unique/i.test(res.error.message)
+              ? 'One of those profile links already belongs to another creator.' : res.error.message, 'err');
+            return;
+          }
+          log('creator.added', name, 'from a campaign');
+          created.client_rate = rate;
+          loadRoster(function () {
+            resetNc();
+            addOption(created, plats, rate);
+          });
+        };
+        if (!rows.length) offer(null);
+        else db.from('creator_profiles').insert(rows).then(offer);
+      });
+  });
 
   /* ---- Production --------------------------------------------------------
      The pipeline, and what each step is waiting on. Order matters: it is what
