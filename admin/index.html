@@ -125,7 +125,7 @@
              one action sit together: everything that changes what is on the
              list is in one place. -->
         <div class="filterbar crm-bar">
-          <input class="input" id="crmSearch" placeholder="Search clients" autocomplete="off">
+          <input class="input" id="crmSearch" placeholder="Search clients" aria-label="Search clients" autocomplete="off">
           <select class="select" id="crmStage" aria-label="Filter by stage">
             <option value="all">Every stage</option>
           </select>
@@ -672,7 +672,7 @@
 
           <div class="kstep-title" style="margin:18px 0 8px">Client link</div>
           <div class="linkbox">
-            <input class="input" id="campLink" readonly>
+            <input class="input" id="campLink" readonly aria-label="Client link">
             <button class="btn btn-primary btn-icon" id="campCopy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
             <a class="btn btn-icon" id="campOpen" target="_blank" rel="noopener">Preview
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
@@ -925,7 +925,7 @@ raya-2026        https://example.com/raya"></textarea>
       <!-- Search, count and both actions on one line, so everything that
            changes the list is in one place and none of it is a screen away. -->
       <div class="linksbar">
-        <input class="input" id="linkSearch" placeholder="Search slug, destination or label">
+        <input class="input" id="linkSearch" placeholder="Search slug, destination or label" aria-label="Search links">
         <span class="muted" id="linkCount"></span>
         <button class="btn btn-quiet btn-sm" id="showImport" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>Bulk import</button>
         <button class="btn btn-primary" id="showAddLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
