@@ -1136,13 +1136,19 @@ a { color: inherit; }
 .saved-note.is-warn { color: var(--warn); background: var(--warn-bg); align-self: center; max-width: 260px; }
 
 /* Client side notice that something changed after approval */
+/* Sat with no vertical margin at all, so it touched the media above and the
+   button divider below and read as part of neither. It is its own thing, set
+   apart from both, with the same side inset as the buttons under it. */
 .reask {
-  display: flex; flex-direction: column; gap: 3px;
-  margin: 0 16px; padding: 11px 13px; border-radius: 9px;
+  display: flex; flex-direction: column; gap: 5px;
+  margin: 14px 16px; padding: 12px 14px; border-radius: 9px;
   background: var(--warn-bg); border: 1px solid #f0e2cd;
 }
 .reask b { font-size: 12.5px; font-weight: 600; color: var(--warn); }
-.reask span { font-size: 13px; color: var(--ink-soft); }
+.reask span {
+  font-size: 13px; color: var(--ink-soft); line-height: 1.5;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
 
 @media (max-width: 640px) {
   .setbar-actions { margin-left: 0; width: 100%; }
