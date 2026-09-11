@@ -101,7 +101,7 @@
     if (!box) return;
     var q = ($('rosterSearch').value || '').trim().toLowerCase();
     var shown = !q ? state.creators : state.creators.filter(function (c) {
-      var hay = c.name + ' ' + (c.industries || '') + ' ' +
+      var hay = c.name + ' ' +
         (c.creator_profiles || []).map(function (p) { return p.handle || p.url; }).join(' ');
       return hay.toLowerCase().indexOf(q) > -1;
     });
@@ -127,7 +127,6 @@
       row.innerHTML =
         '<div class="slink-body">' +
           '<span class="slink-slug">' + esc(c.name) + '</span>' +
-          (c.followers ? '<span class="slink-label">' + Number(c.followers).toLocaleString() + ' followers</span>' : '') +
           '<span class="slink-target">' + (chips || '<span class="muted">No profile links</span>') +
             (c.client_rate ? ' &nbsp;·&nbsp; ' + money(c.client_rate) : '') + '</span>' +
         '</div>' +
@@ -217,10 +216,7 @@
     $('creatorFormTitle').textContent = c ? 'Edit creator' : 'New creator';
     $('saveCreator').textContent = c ? 'Save' : 'Create';
     $('crName').value = c ? c.name : '';
-    $('crFollowers').value = c && c.followers != null ? c.followers : '';
-    $('crCost').value = c && c.cost_rate != null ? c.cost_rate : '';
     $('crRate').value = c && c.client_rate != null ? c.client_rate : '';
-    $('crIndustries').value = c ? (c.industries || '') : '';
     $('crNotes').value = c ? (c.notes || '') : '';
     var rows = $('profRows');
     rows.innerHTML = '';
@@ -255,10 +251,7 @@
 
     var body = {
       name: name,
-      followers: $('crFollowers').value ? Number($('crFollowers').value) : null,
-      cost_rate: $('crCost').value ? Number($('crCost').value) : null,
       client_rate: $('crRate').value ? Number($('crRate').value) : null,
-      industries: ($('crIndustries').value || '').trim() || null,
       notes: ($('crNotes').value || '').trim() || null,
       created_by: who() || null
     };
@@ -318,12 +311,27 @@
   function loadClients(then) {
     db.from('clients').select('id, name').order('name').then(function (r) {
       state.clients = (r.data) || [];
-      var sel = $('campClient');
-      sel.innerHTML = state.clients.map(function (c) {
-        return '<option value="' + c.id + '">' + esc(c.name) + '</option>';
+      $('clientNames').innerHTML = state.clients.map(function (c) {
+        return '<option value="' + esc(c.name) + '"></option>';
       }).join('');
       if (then) then();
     });
+  }
+
+  /* Matches an existing client by name, or makes one. Until there is a CRM to
+     pick from, the name typed here is the record. */
+  function resolveClient(name, then) {
+    var hit = state.clients.filter(function (c) {
+      return c.name.trim().toLowerCase() === name.toLowerCase();
+    })[0];
+    if (hit) { then(hit.id); return; }
+    db.from('clients').insert({ name: name, access_token: token() })
+      .select().single().then(function (r) {
+        if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
+        state.clients.push({ id: r.data.id, name: r.data.name });
+        log('client.added', name, 'from a campaign');
+        then(r.data.id);
+      });
   }
 
   function loadCampaigns() {
@@ -360,26 +368,34 @@
 
   $('showAddCamp').addEventListener('click', function () {
     loadClients(function () {
-      if (!state.clients.length) {
-        msg('campMsg', 'Add a client under Content Review first.', 'err');
-      }
       $('addCampBox').hidden = false;
-      $('campTitle').focus();
+      $('campClient').focus();
     });
   });
   $('cancelAddCamp').addEventListener('click', function () { $('addCampBox').hidden = true; });
 
+  // Every invoice starts AINV2, so the field carries it and only the rest is
+  // typed. Stored whole, because that is what is on the document.
+  function invoiceNo() {
+    var rest = ($('campInvoice').value || '').trim().replace(/^AINV2/i, '');
+    return rest ? 'AINV2' + rest : null;
+  }
+
   $('addCamp').addEventListener('click', function () {
     var title = ($('campTitle').value || '').trim();
-    var clientId = $('campClient').value;
-    if (!clientId) { msg('campMsg', 'Pick a client.', 'err'); return; }
+    var clientName = ($('campClient').value || '').trim();
+    if (!clientName) { msg('campMsg', 'A client name is required.', 'err'); return; }
     if (!title) { msg('campMsg', 'A campaign name is required.', 'err'); return; }
     var slots = Number($('campSlots').value || 0);
     if (!slots || slots < 1) { msg('campMsg', 'Slots must be at least 1.', 'err'); return; }
 
+    resolveClient(clientName, function (clientId) { createCampaign(clientId, title, slots); });
+  });
+
+  function createCampaign(clientId, title, slots) {
     db.from('campaigns').insert({
       client_id: clientId, title: title,
-      invoice_no: ($('campInvoice').value || '').trim() || null,
+      invoice_no: invoiceNo(),
       slots: slots,
       deadline: $('campDeadline').value || null,
       push_format: $('campFormat').value,
@@ -394,11 +410,11 @@
       if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
       log('campaign.created', title, r.data.invoice_no || '');
       $('addCampBox').hidden = true;
-      ['campTitle','campInvoice','campOwner'].forEach(function (i) { $(i).value = ''; });
+      ['campTitle','campInvoice','campOwner','campClient'].forEach(function (i) { $(i).value = ''; });
       msg('campMsg', '');
       openCampaign(r.data);
     });
-  });
+  }
 
   function campaignUrl(c) { return location.origin + '/creators/?k=' + c.access_token; }
 
@@ -478,7 +494,7 @@
   };
 
   function loadOptions() {
-    db.from('campaign_options').select('*, creators(name, followers, creator_profiles(platform, url))')
+    db.from('campaign_options').select('*, creators(name, creator_profiles(platform, url))')
       .eq('campaign_id', state.campaign.id).order('position').then(function (r) {
         state.options = (r.data) || [];
         paintOptions();
@@ -525,19 +541,52 @@
           '<span class="slink-slug">' + esc(cr.name || '') + '</span>' +
           '<span class="act-tag ' + word[1] + '" style="margin-left:8px">' + esc(word[0]) + '</span>' +
           (o.is_replacement ? '<span class="act-tag is-warn" style="margin-left:6px">Replacement</span>' : '') +
-          '<span class="slink-target">' + esc(o.platforms || '') + ' · ' + money(o.rate) +
-            (cr.followers ? ' · ' + Number(cr.followers).toLocaleString() + ' followers' : '') + '</span>' +
+          '<span class="slink-target">' + esc(o.platforms || '') + ' · ' + money(o.rate) + '</span>' +
         '</div>' +
         '<div class="slink-actions">' +
+          (o.state === 'option' || o.state === 'backup'
+            ? iconBtn('tick', 'pick', 'Shortlist on the client\'s behalf') : '') +
+          (o.state === 'shortlisted'
+            ? iconBtn('redo', 'unpick', 'Take off the shortlist', 'is-warn') : '') +
           iconBtn('trash', 'del', 'Remove option', 'is-danger') +
         '</div>';
+      var pick = row.querySelector('[data-a="pick"]');
+      if (pick) pick.addEventListener('click', function () { keyIn(o, 'shortlisted'); });
+      var unpick = row.querySelector('[data-a="unpick"]');
+      if (unpick) unpick.addEventListener('click', function () { keyIn(o, 'option'); });
       row.querySelector('[data-a="del"]').addEventListener('click', function () { dropOption(o); });
       box.appendChild(row);
     });
+
+    // Locking is offered exactly when there is something to lock.
+    var waiting = state.options.filter(function (o) { return o.state === 'shortlisted'; });
+    $('campLock').hidden = !waiting.length;
+    $('campLock').textContent = 'Lock ' + waiting.length +
+      (waiting.length === 1 ? ' selection' : ' selections');
+
+    paintProduction();
   }
 
   function tallyCell(label, value) {
     return '<div class="tally-cell"><b>' + esc(String(value)) + '</b><span>' + esc(label) + '</span></div>';
+  }
+
+  /* A client who answers on WhatsApp has still chosen. This is how that choice
+     gets into the record, and the lock records that it was keyed in by us. */
+  function keyIn(o, to) {
+    var name = (o.creators || {}).name || '';
+    var chosen = state.options.filter(function (x) { return x.state === 'shortlisted'; }).length;
+    var booked = state.options.filter(isLive).length;
+    if (to === 'shortlisted' && chosen + booked >= state.campaign.slots) {
+      msg('campWorkMsg', 'Every slot is already spoken for. Take one off first.', 'err');
+      return;
+    }
+    db.from('campaign_options').update({ state: to }).eq('id', o.id).then(function (r) {
+      if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+      log(to === 'shortlisted' ? 'campaign.keyed' : 'campaign.unkeyed', name, '');
+      msg('campWorkMsg', '');
+      loadOptions();
+    });
   }
 
   function dropOption(o) {
@@ -568,7 +617,7 @@
     var q = ($('optionSearch').value || '').trim().toLowerCase();
     var list = state.creators.filter(function (c) {
       if (!q) return true;
-      return (c.name + ' ' + (c.industries || '')).toLowerCase().indexOf(q) > -1;
+      return c.name.toLowerCase().indexOf(q) > -1;
     });
 
     box.innerHTML = '';
@@ -618,6 +667,419 @@
       setTimeout(paintPicker, 150);
     });
   }
+
+  /* ---- Production --------------------------------------------------------
+     The pipeline, and what each step is waiting on. Order matters: it is what
+     "next" means, and what the client-facing chip is derived from. */
+  /* The line forward. `changes` is deliberately not on it: it is a branch the
+     client causes off `reviewing`, not a step towards being done. Putting it
+     in the sequence made "next" walk reviewing → changes → reviewing forever. */
+  var PIPELINE = ['confirmed', 'pending_visit', 'pending_draft', 'reviewing',
+                  'scheduled', 'posted', 'completed'];
+  var IN_PRODUCTION = PIPELINE.concat(['changes']);
+
+  // Product seeding has no visit. Asking for a location would mean typing N/A
+  // into a box forever, so the same fields are labelled for what they are.
+  function isDelivery() {
+    return (state.campaign || {}).push_format === 'seeding';
+  }
+  function visitWord() { return isDelivery() ? 'Delivery' : 'Visit'; }
+
+  function nextState(s) {
+    if (s === 'changes') return 'reviewing';           // re-submitted after edits
+    var i = PIPELINE.indexOf(s);
+    return i > -1 && i < PIPELINE.length - 1 ? PIPELINE[i + 1] : null;
+  }
+
+  function isLive(o) { return IN_PRODUCTION.indexOf(o.state) > -1; }
+
+  // Reads the same way it does on the client's page.
+  function niceDate(d) {
+    if (!d) return '';
+    var dt = new Date(d + 'T00:00:00');
+    if (isNaN(dt.getTime())) return String(d);
+    return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function paintProduction() {
+    var live = state.options.filter(isLive);
+    var gone = state.options.filter(function (o) {
+      return o.state === 'withdrawn' || o.state === 'replaced';
+    });
+    $('prodWrap').hidden = !live.length && !gone.length;
+    if ($('prodWrap').hidden) return;
+
+    $('bulkTitle').textContent = 'Apply to every confirmed creator';
+    $('bulkHint').textContent = isDelivery()
+      ? 'Fills anything left blank on each row. Seeding has no visit, so these are delivery details.'
+      : 'Fills anything left blank on each row. A row you have already set by hand is marked, and is left alone unless you say otherwise.';
+
+    var box = $('prodList');
+    box.innerHTML = '';
+    live.concat(gone).forEach(function (o) { box.appendChild(prodRow(o)); });
+    paintRollup(live);
+  }
+
+  function prodRow(o) {
+    var cr = o.creators || {};
+    var word = OPTION_WORD[o.state] || [o.state, ''];
+    var row = document.createElement('div');
+    row.className = 'prod' + (isLive(o) ? '' : ' is-off');
+
+    var dead = o.state === 'withdrawn' || o.state === 'replaced';
+    var summary = [];
+    if (o.visit_date) summary.push(visitWord() + ' ' + niceDate(o.visit_date) + (o.visit_time ? ', ' + o.visit_time : ''));
+    if (o.visit_location) summary.push(o.visit_location);
+    if (o.visit_pic) summary.push('PIC ' + o.visit_pic);
+    if (o.revision_round > 1) summary.push('Round ' + o.revision_round + ' of 2');
+
+    row.innerHTML =
+      '<div class="prod-head">' +
+        '<b>' + esc(cr.name || '') + '</b>' +
+        '<span class="act-tag ' + word[1] + '">' + esc(word[0]) + '</span>' +
+        (o.is_replacement ? '<span class="act-tag is-warn">Replacement</span>' : '') +
+        (o.goodwill ? '<span class="act-tag is-warn">Goodwill</span>' : '') +
+        '<span class="prod-sum muted">' + esc(summary.join(' · ')) + '</span>' +
+        (dead ? '' : '<button class="btn btn-sm btn-quiet prod-more" type="button">Details</button>') +
+      '</div>' +
+      '<div class="prod-body" hidden></div>';
+
+    if (dead) {
+      if (o.drop_reason) {
+        row.querySelector('.prod-body').hidden = false;
+        row.querySelector('.prod-body').innerHTML =
+          '<p class="hint">' + esc(o.drop_reason) + '</p>';
+      }
+      return row;
+    }
+
+    var body = row.querySelector('.prod-body');
+    row.querySelector('.prod-more').addEventListener('click', function () {
+      body.hidden = !body.hidden;
+      if (!body.hidden && !body.innerHTML) fillProdBody(body, o);
+    });
+    return row;
+  }
+
+  function field(label, id, value, type, ph) {
+    return '<div><label class="field-label">' + esc(label) + '</label>' +
+      '<input class="input" data-f="' + id + '" type="' + (type || 'text') + '" value="' +
+      esc(value == null ? '' : value) + '" placeholder="' + esc(ph || '') + '"></div>';
+  }
+
+  function fillProdBody(body, o) {
+    var advance = nextState(o.state);
+    body.innerHTML =
+      '<div class="row">' +
+        field(visitWord() + ' date', 'visit_date', o.visit_date, 'date') +
+        field('Time', 'visit_time', o.visit_time, 'text', '2pm') +
+        (isDelivery()
+          ? field('Tracking no.', 'tracking_no', o.tracking_no, 'text', '')
+          : field('Location', 'visit_location', o.visit_location, 'text', '')) +
+        field('PIC to look for', 'visit_pic', o.visit_pic, 'text', 'Name') +
+        field('PIC contact', 'visit_pic_phone', o.visit_pic_phone, 'text', '01x-xxx xxxx') +
+      '</div>' +
+      '<div class="row" style="margin-top:12px">' +
+        '<div style="flex:1 1 340px"><label class="field-label">Draft link (Google Drive)</label>' +
+          '<input class="input" data-f="draft_url" value="' + esc(o.draft_url || '') +
+          '" placeholder="https://drive.google.com/…"></div>' +
+        field('Planned publish', 'planned_publish', o.planned_publish, 'date') +
+      '</div>' +
+      '<div class="row" style="margin-top:12px">' +
+        '<div><label class="field-label">Internal note</label>' +
+          '<input class="input" data-f="notes" value="' + esc(o.notes || '') + '"></div>' +
+      '</div>' +
+      '<div class="prod-posts" data-posts></div>' +
+      '<div class="row" style="margin-top:14px">' +
+        '<button class="btn btn-primary" data-a="save" type="button">Save</button>' +
+        (advance ? '<button class="btn btn-go" data-a="advance" type="button">Move to ' +
+          esc((OPTION_WORD[advance] || [advance])[0]) + '</button>' : '') +
+        '<button class="btn btn-quiet" data-a="withdraw" type="button" style="flex:0 0 auto">Creator withdrew</button>' +
+        '<button class="btn btn-quiet is-danger" data-a="replace" type="button" style="flex:0 0 auto">Client replaced</button>' +
+      '</div>' +
+      '<div class="msg" data-msg></div>';
+
+    paintPosts(body.querySelector('[data-posts]'), o);
+
+    body.querySelector('[data-a="save"]').addEventListener('click', function () {
+      var patch = {};
+      Array.prototype.forEach.call(body.querySelectorAll('[data-f]'), function (i) {
+        var v = i.value.trim();
+        patch[i.getAttribute('data-f')] = v === '' ? null : v;
+      });
+      db.from('campaign_options').update(patch).eq('id', o.id).then(function (r) {
+        var m = body.querySelector('[data-msg]');
+        if (r.error) { m.textContent = r.error.message; m.className = 'msg err'; return; }
+        m.textContent = 'Saved.'; m.className = 'msg ok';
+        loadOptions();
+      });
+    });
+
+    var adv = body.querySelector('[data-a="advance"]');
+    if (adv) adv.addEventListener('click', function () { advanceOption(o, advance); });
+    body.querySelector('[data-a="withdraw"]').addEventListener('click', function () { endOption(o, 'withdrawn'); });
+    body.querySelector('[data-a="replace"]').addEventListener('click', function () { endOption(o, 'replaced'); });
+  }
+
+  /* Moving to posted needs somewhere for the numbers to go, and there is one
+     row per platform because two placements are two posts. */
+  function advanceOption(o, to) {
+    var patch = { state: to };
+    db.from('campaign_options').update(patch).eq('id', o.id).then(function (r) {
+      if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+      log('campaign.stage', (o.creators || {}).name || '', to);
+      if (to !== 'posted') { loadOptions(); return; }
+      seedPosts(o, function () { loadOptions(); });
+    });
+  }
+
+  function platformsOf(o) {
+    return String(o.platforms || '').split(',').map(function (s) { return s.trim(); })
+      .filter(Boolean);
+  }
+
+  function seedPosts(o, then) {
+    db.from('option_posts').select('platform').eq('option_id', o.id).then(function (r) {
+      var have = {};
+      (r.data || []).forEach(function (p) { have[p.platform] = true; });
+      var rows = platformsOf(o).filter(function (p) { return !have[p]; })
+        .map(function (p) { return { option_id: o.id, platform: p, window_days: 7 }; });
+      if (!rows.length) { then(); return; }
+      db.from('option_posts').insert(rows).then(function () { then(); });
+    });
+  }
+
+  function paintPosts(box, o) {
+    if (PIPELINE.indexOf(o.state) < PIPELINE.indexOf('posted')) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="sectionlabel">Published posts and results</div>' +
+      '<div class="empty">Loading…</div>';
+    db.from('option_posts').select('*').eq('option_id', o.id).then(function (r) {
+      var rows = r.data || [];
+      if (!rows.length) {
+        box.innerHTML = '<div class="sectionlabel">Published posts and results</div>' +
+          '<div class="empty">No placements recorded.</div>';
+        return;
+      }
+      box.innerHTML = '<div class="sectionlabel">Published posts and results</div>';
+      rows.forEach(function (p) {
+        var w = document.createElement('div');
+        w.className = 'postrow';
+        w.innerHTML =
+          '<div class="row">' +
+            '<div style="flex:0 0 110px"><label class="field-label">Platform</label>' +
+              '<input class="input" value="' + esc(p.platform) + '" readonly></div>' +
+            '<div style="flex:1 1 280px"><label class="field-label">Post link</label>' +
+              '<input class="input" data-p="post_url" value="' + esc(p.post_url || '') + '"></div>' +
+            '<div style="flex:0 0 150px"><label class="field-label">Published</label>' +
+              '<input class="input" data-p="published_at" type="date" value="' + esc(p.published_at || '') + '"></div>' +
+            '<div style="flex:0 0 110px"><label class="field-label">Window (days)</label>' +
+              '<input class="input" data-p="window_days" type="number" min="1" value="' + (p.window_days || 7) + '"></div>' +
+          '</div>' +
+          '<div class="row" style="margin-top:10px">' +
+            '<div><label class="field-label">Impressions</label>' +
+              '<input class="input" data-p="impressions" type="number" min="0" value="' + (p.impressions == null ? '' : p.impressions) + '"></div>' +
+            '<div><label class="field-label">Engagements</label>' +
+              '<input class="input" data-p="engagements" type="number" min="0" value="' + (p.engagements == null ? '' : p.engagements) + '"></div>' +
+            '<div><label class="field-label">Views</label>' +
+              '<input class="input" data-p="views" type="number" min="0" value="' + (p.views == null ? '' : p.views) + '"></div>' +
+            '<button class="btn btn-sm btn-primary" data-p-save type="button">Save</button>' +
+          '</div>' +
+          '<div class="msg" data-p-msg></div>';
+        w.querySelector('[data-p-save]').addEventListener('click', function () {
+          var patch = {};
+          Array.prototype.forEach.call(w.querySelectorAll('[data-p]'), function (i) {
+            var k = i.getAttribute('data-p');
+            var v = i.value.trim();
+            patch[k] = v === '' ? null : (i.type === 'number' ? Number(v) : v);
+          });
+          patch.measured_at = new Date().toISOString().slice(0, 10);
+          db.from('option_posts').update(patch).eq('id', p.id).then(function (res) {
+            var m = w.querySelector('[data-p-msg]');
+            if (res.error) { m.textContent = res.error.message; m.className = 'msg err'; return; }
+            m.textContent = 'Saved.'; m.className = 'msg ok';
+            loadOptions();
+          });
+        });
+        box.appendChild(w);
+      });
+    });
+  }
+
+  /* Withdrawn and replaced both end a booking, and they are not the same
+     thing. A creator pulling out frees the slot. A client changing their mind
+     after the shoot does not, because the shoot still gets paid for. */
+  function endOption(o, kind) {
+    var name = (o.creators || {}).name || 'this creator';
+    var shot = PIPELINE.indexOf(o.state) >= PIPELINE.indexOf('pending_draft');
+    var goodwill = false;
+
+    if (kind === 'replaced' && shot) {
+      if (!confirm(name + ' has already filmed.\n\nReplacing them now is goodwill: they ' +
+          'still get paid, so the campaign ends up costing one more creator than was ' +
+          'invoiced. Continue?')) return;
+      goodwill = true;
+    } else if (!confirm((kind === 'withdrawn' ? 'Mark ' + name + ' as withdrawn?'
+                                              : 'Replace ' + name + '?') +
+        '\n\nThey stay on the record either way, because the invoice has to reconcile against them.')) {
+      return;
+    }
+
+    var why = prompt(kind === 'withdrawn' ? 'Why did they withdraw?' : 'Why the replacement?') || '';
+    db.from('campaign_options')
+      .update({ state: kind, drop_reason: why.trim() || null, goodwill: goodwill })
+      .eq('id', o.id).then(function (r) {
+        if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+        log(kind === 'withdrawn' ? 'campaign.withdrawn' : 'campaign.replaced', name, why);
+        msg('campWorkMsg', kind === 'withdrawn'
+          ? name + ' is withdrawn and the slot is free again. The client can pick a replacement from the remaining options.'
+          : name + ' is replaced.' + (goodwill ? ' Logged as goodwill.' : ' The slot is free again.'), 'warn');
+        loadOptions();
+      });
+  }
+
+  function paintRollup(live) {
+    var posted = live.filter(function (o) {
+      return PIPELINE.indexOf(o.state) >= PIPELINE.indexOf('posted');
+    });
+    if (!posted.length) { $('rollup').hidden = true; return; }
+    db.from('option_posts').select('*').then(function (r) {
+      var mine = {};
+      posted.forEach(function (o) { mine[o.id] = true; });
+      var rows = (r.data || []).filter(function (p) { return mine[p.option_id]; });
+      var sum = function (k) {
+        return rows.reduce(function (s, p) { return s + Number(p[k] || 0); }, 0);
+      };
+      var imp = sum('impressions'), eng = sum('engagements'), vie = sum('views');
+      var spend = posted.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
+      $('rollup').hidden = false;
+      $('rollupTally').innerHTML =
+        tallyCell('Placements', rows.length) +
+        tallyCell('Impressions', imp.toLocaleString()) +
+        tallyCell('Engagements', eng.toLocaleString()) +
+        tallyCell('Views', vie.toLocaleString()) +
+        tallyCell('Spend', money(spend)) +
+        (eng ? tallyCell('Cost per engagement', 'RM ' + (spend / eng).toFixed(2)) : '');
+    });
+  }
+
+  // ---- Locking the selection ---------------------------------------------
+  $('campLock').addEventListener('click', function () {
+    var picked = state.options.filter(function (o) { return o.state === 'shortlisted'; });
+    if (!picked.length) {
+      msg('campWorkMsg', 'Nothing is shortlisted yet.', 'err');
+      return;
+    }
+    $('lockBlurb').textContent = 'These ' + picked.length + ' become bookings and production starts. ' +
+      'Anything still offered stays available, so the rest of the slots can be filled later.';
+    $('lockList').innerHTML = picked.map(function (o) {
+      return '<div class="act"><span class="act-subject">' + esc((o.creators || {}).name || '') +
+        '</span><span class="muted act-when">' + money(o.rate) + '</span></div>';
+    }).join('');
+    $('lockPerson').value = '';
+    msg('lockMsg', '');
+    $('lockSheet').hidden = false;
+    $('lockPerson').focus();
+  });
+
+  function shutLock() { $('lockSheet').hidden = true; }
+  $('lockClose').addEventListener('click', shutLock);
+  $('lockCancel').addEventListener('click', shutLock);
+  $('lockSheet').addEventListener('click', function (e) {
+    if (e.target === $('lockSheet')) shutLock();
+  });
+
+  $('lockGo').addEventListener('click', function () {
+    var person = ($('lockPerson').value || '').trim();
+    if (!person) { msg('lockMsg', 'Record who confirmed it.', 'err'); return; }
+    var source = $('lockSource').value;
+    var picked = state.options.filter(function (o) { return o.state === 'shortlisted'; });
+    var ids = picked.map(function (o) { return o.id; });
+    var stamp = new Date().toISOString();
+
+    db.from('campaign_confirmations').insert({
+      campaign_id: state.campaign.id,
+      kind: source === 'portal' ? 'client' : 'keyed_in',
+      person: person, source: source
+    }).then(function (r) {
+      if (r.error) { msg('lockMsg', r.error.message, 'err'); return; }
+      // One at a time, because these are a handful of rows and a partial
+      // failure should leave the rest locked rather than roll the lot back.
+      var left = ids.length;
+      if (!left) { shutLock(); return; }
+      ids.forEach(function (id) {
+        db.from('campaign_options')
+          .update({ state: 'confirmed', confirmed_at: stamp, confirmed_by: person })
+          .eq('id', id).then(function () {
+            if (--left) return;
+            db.from('campaigns').update({ state: 'production' }).eq('id', state.campaign.id)
+              .then(function () {
+                state.campaign.state = 'production';
+                log('campaign.locked', state.campaign.title, picked.length + ' creators · ' + person);
+                shutLock();
+                openCampaign(state.campaign);
+              });
+          });
+      });
+    });
+  });
+
+  // ---- Bulk logistics -----------------------------------------------------
+  $('bulkToggle').addEventListener('click', function () {
+    $('bulkBox').hidden = !$('bulkBox').hidden;
+  });
+  $('bulkCancel').addEventListener('click', function () { $('bulkBox').hidden = true; });
+
+  function bulkValues() {
+    var v = {
+      visit_date: $('bulkDate').value || null,
+      visit_time: ($('bulkTime').value || '').trim() || null,
+      visit_pic: ($('bulkPic').value || '').trim() || null,
+      visit_pic_phone: ($('bulkPhone').value || '').trim() || null
+    };
+    var loc = ($('bulkLoc').value || '').trim() || null;
+    if (isDelivery()) v.tracking_no = null; else v.visit_location = loc;
+    if (isDelivery() && loc) v.visit_location = loc;
+    return v;
+  }
+
+  function applyBulk(overwrite) {
+    var vals = bulkValues();
+    var keys = Object.keys(vals).filter(function (k) { return vals[k] !== null; });
+    if (!keys.length) { msg('bulkMsg', 'Fill in something to apply.', 'err'); return; }
+
+    var targets = state.options.filter(isLive);
+    if (!targets.length) { msg('bulkMsg', 'Nothing is in production yet.', 'err'); return; }
+
+    var left = targets.length, touched = 0;
+    targets.forEach(function (o) {
+      var patch = {};
+      keys.forEach(function (k) {
+        // "Apply to blanks" is the safe one: a row somebody set by hand keeps
+        // what they set. Overwrite is the deliberate, separate button.
+        if (overwrite || o[k] == null || o[k] === '') patch[k] = vals[k];
+      });
+      if (!Object.keys(patch).length) { if (!--left) done(); return; }
+      touched++;
+      db.from('campaign_options').update(patch).eq('id', o.id).then(function () {
+        if (!--left) done();
+      });
+    });
+
+    function done() {
+      msg('bulkMsg', touched
+        ? 'Applied to ' + touched + (touched === 1 ? ' creator.' : ' creators.')
+        : 'Every row already had those filled in. Use Overwrite to replace them.',
+        touched ? 'ok' : 'warn');
+      log('campaign.bulk', state.campaign.title, touched + ' rows');
+      loadOptions();
+    }
+  }
+
+  $('bulkApply').addEventListener('click', function () { applyBulk(false); });
+  $('bulkApplyAll').addEventListener('click', function () {
+    if (!confirm('Overwrite these fields on every creator, including rows already set by hand?')) return;
+    applyBulk(true);
+  });
 
   // ---- Entry --------------------------------------------------------------
   window.ADspaceCampaigns = {

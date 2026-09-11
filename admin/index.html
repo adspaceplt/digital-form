@@ -373,11 +373,19 @@
           number here: it is what authorises the slot count, and the cap is enforced against it.</p>
           <div class="row">
             <div><label class="field-label" for="campClient">Client</label>
-              <select class="select" id="campClient"></select></div>
+              <!-- Typed, not picked. There is no CRM yet, so forcing a choice
+                   from a list would mean creating the client somewhere else
+                   first. Existing names are offered as you type. -->
+              <input class="input" id="campClient" list="clientNames" autocomplete="off"
+                     placeholder="Type a client name">
+              <datalist id="clientNames"></datalist></div>
             <div><label class="field-label" for="campTitle">Campaign name</label>
               <input class="input" id="campTitle" placeholder="Promote Newly Launch Project"></div>
-            <div style="flex:0 0 150px"><label class="field-label" for="campInvoice">Invoice no.</label>
-              <input class="input" id="campInvoice" placeholder="INV-0001"></div>
+            <div style="flex:0 0 190px"><label class="field-label" for="campInvoice">Invoice no.</label>
+              <div class="slugfield">
+                <span class="slugfield-pre">AINV2</span>
+                <input class="input" id="campInvoice" placeholder="XXXXXX" autocomplete="off">
+              </div></div>
             <div style="flex:0 0 110px"><label class="field-label" for="campSlots">Slots</label>
               <input class="input" id="campSlots" type="number" min="1" value="10"></div>
           </div>
@@ -432,6 +440,7 @@
           </div>
           <div class="row" style="margin-top:12px">
             <button class="btn btn-go" id="campPublish" type="button">Open for selection</button>
+            <button class="btn btn-primary" id="campLock" type="button" hidden>Lock the selection</button>
             <button class="btn" id="campDelete" type="button" style="flex:0 0 auto">Delete campaign</button>
           </div>
           <div class="msg" id="campWorkMsg"></div>
@@ -452,6 +461,47 @@
         </div>
 
         <div id="optionList"></div>
+
+        <!-- ---- Production ---- -->
+        <div id="prodWrap" hidden>
+          <div class="viewhead">
+            <span class="headmark"><h2>Production</h2></span>
+            <button class="btn" id="bulkToggle" type="button">Set dates for all</button>
+          </div>
+
+          <div class="panel" id="bulkBox" hidden>
+            <div class="panelhead"><h3 id="bulkTitle">Apply to every confirmed creator</h3></div>
+            <p class="hint" id="bulkHint">Fills anything left blank on each row. A row you have
+            already set by hand is marked, and is left alone unless you say otherwise.</p>
+            <div class="row" id="bulkVisitRow">
+              <div style="flex:0 0 160px"><label class="field-label" for="bulkDate">Date</label>
+                <input class="input" id="bulkDate" type="date"></div>
+              <div style="flex:0 0 130px"><label class="field-label" for="bulkTime">Time</label>
+                <input class="input" id="bulkTime" placeholder="2pm"></div>
+              <div><label class="field-label" for="bulkLoc">Location</label>
+                <input class="input" id="bulkLoc" placeholder="Laman Citra sales gallery"></div>
+              <div style="flex:0 0 160px"><label class="field-label" for="bulkPic">PIC to look for</label>
+                <input class="input" id="bulkPic" placeholder="Name"></div>
+              <div style="flex:0 0 150px"><label class="field-label" for="bulkPhone">PIC contact</label>
+                <input class="input" id="bulkPhone" placeholder="01x-xxx xxxx"></div>
+            </div>
+            <div class="row" style="margin-top:14px">
+              <button class="btn btn-primary" id="bulkApply" type="button">Apply to blanks</button>
+              <button class="btn" id="bulkApplyAll" type="button" style="flex:0 0 auto">Overwrite every row</button>
+              <button class="btn btn-quiet" id="bulkCancel" type="button" style="flex:0 0 auto">Cancel</button>
+            </div>
+            <div class="msg" id="bulkMsg"></div>
+          </div>
+
+          <div id="prodList"></div>
+
+          <section class="panel" id="rollup" hidden>
+            <div class="panelhead"><h3>Results</h3></div>
+            <p class="hint">Totals across every posted placement. The number that wins the
+            next campaign is this one, not the per-post breakdown.</p>
+            <div class="tally" id="rollupTally"></div>
+          </section>
+        </div>
       </div>
 
       <!-- ---- Roster ---- -->
@@ -474,16 +524,8 @@
           <div class="row">
             <div><label class="field-label" for="crName">Name</label>
               <input class="input" id="crName" placeholder="香香的爆米花 🍿"></div>
-            <div style="flex:0 0 130px"><label class="field-label" for="crFollowers">Followers</label>
-              <input class="input" id="crFollowers" type="number" min="0" placeholder="12400"></div>
-            <div style="flex:0 0 130px"><label class="field-label" for="crCost">Our cost (RM)</label>
-              <input class="input" id="crCost" type="number" min="0" step="10" placeholder="280"></div>
-            <div style="flex:0 0 140px"><label class="field-label" for="crRate">Client rate (RM)</label>
+            <div style="flex:0 0 150px"><label class="field-label" for="crRate">Rate (RM)</label>
               <input class="input" id="crRate" type="number" min="0" step="10" placeholder="360"></div>
-          </div>
-          <div class="row" style="margin-top:12px">
-            <div><label class="field-label" for="crIndustries">Industries</label>
-              <input class="input" id="crIndustries" placeholder="F&amp;B, lifestyle, property"></div>
             <div><label class="field-label" for="crNotes">Notes</label>
               <input class="input" id="crNotes" placeholder="Internal only"></div>
           </div>
@@ -583,6 +625,37 @@ raya-2026        https://example.com/raya"></textarea>
       <div id="linkList"></div>
     </div>
 
+  </div>
+</div>
+
+<!-- Locking the selection. Both paths are honest; pretending every client
+     clicks Confirm is how an audit trail ends up lying. -->
+<div class="sheet" id="lockSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="lockHeading">
+    <div class="sheet-head">
+      <h3 id="lockHeading">Lock the selection</h3>
+      <button class="iconbtn" id="lockClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <p class="hint" id="lockBlurb"></p>
+    <div class="sheet-body">
+      <div id="lockList"></div>
+      <label class="field-label" for="lockPerson">Who confirmed</label>
+      <input class="input" id="lockPerson" placeholder="Their name">
+      <label class="field-label" for="lockSource" style="margin-top:12px">How it reached us</label>
+      <select class="select" id="lockSource">
+        <option value="portal">They confirmed on the portal themselves</option>
+        <option value="whatsapp">WhatsApp, keyed in by us</option>
+        <option value="email">Email, keyed in by us</option>
+        <option value="call">Call or meeting, keyed in by us</option>
+      </select>
+      <div class="row" style="margin-top:16px;margin-bottom:14px">
+        <button class="btn btn-primary" id="lockGo" type="button">Lock and start production</button>
+        <button class="btn" id="lockCancel" type="button" style="flex:0 0 auto">Cancel</button>
+      </div>
+      <div class="msg" id="lockMsg"></div>
+    </div>
   </div>
 </div>
 
