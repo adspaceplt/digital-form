@@ -667,8 +667,7 @@
       ['Push format',       FORMAT_WORD[c.push_format] || c.push_format || ''],
       ['Deliverable',       c.deliverable === 'graphic' ? 'One graphic' : 'One video'],
       ['Person in charge',  c.owner || '<span class="muted">Unassigned</span>'],
-      ['Campaign due',      c.deadline ? niceDate(c.deadline) : '<span class="muted">No date set</span>'],
-      ['Created',           c.created_at ? niceDate(String(c.created_at).slice(0, 10)) : '']
+      ['Campaign due',      c.deadline ? niceDate(c.deadline) : '<span class="muted">No date set</span>']
     ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
       return '<div><dt>' + f[0] + '</dt><dd>' + (f[1].indexOf('<span') === 0 ? f[1] : esc(f[1])) + '</dd></div>';
     }).join('');
@@ -782,17 +781,21 @@
     // purpose rather than discover it at reconciliation.
     var booked = chosen.length + goodwill.length;
     // Counts, then what the client sees: the quoted rates and 8% SST on top.
+    // Two labelled groups of cells, the same cells as the results card.
     $('campTally').innerHTML =
-      stat('Creators', c.slots) +
-      stat('Options', live.length) +
-      stat('Selected', chosen.length + ' of ' + c.slots) +
-      '<i class="stat-gap" aria-hidden="true"></i>' +
-      stat('Subtotal', money2(total)) +
-      stat(taxWord(), money2(sstOf(total))) +
-      stat('Total', money2(total + sstOf(total)), 'is-total') +
-      (booked > c.slots
-        ? '<div class="stat is-warn"><b>' + booked + '</b><span>Booked · ' +
-          goodwill.length + ' goodwill</span></div>' : '');
+      '<div class="tallygroup"><div class="kstep-title">Selection</div><div class="tally">' +
+        tallyCell('Creators', c.slots) +
+        tallyCell('Options', live.length) +
+        tallyCell('Selected', chosen.length + ' of ' + c.slots) +
+        (booked > c.slots
+          ? '<div class="tally-cell is-warn"><b>' + booked + '</b><span>Booked · ' +
+            goodwill.length + ' goodwill</span></div>' : '') +
+      '</div></div>' +
+      '<div class="tallygroup"><div class="kstep-title">Amount</div><div class="tally">' +
+        tallyCell('Subtotal', money2(total)) +
+        tallyCell(taxWord(), money2(sstOf(total))) +
+        '<div class="tally-cell is-total"><b>' + esc(money2(total + sstOf(total))) + '</b><span>Total</span></div>' +
+      '</div></div>';
 
     /* One card per creator. An option and a booking were two lists showing the
        same people at different moments, which meant reading both to know where
