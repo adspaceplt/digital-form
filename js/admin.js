@@ -349,14 +349,18 @@
     loadClients();
   }
 
+  /* Only active clients belong here. The CRM also holds leads and past
+     clients, and none of those have content to review. A client removed from
+     this section stays a client; they are simply not listed here. */
   function loadClients() {
-    db.from('clients').select('*').order('name').then(function (r) {
+    db.from('clients').select('*').eq('stage', 'active').eq('review_hidden', false)
+      .order('name').then(function (r) {
       var box = $('clientCards');
       box.innerHTML = '';
       if (r.error) { msg('clientMsg', r.error.message, 'err'); return; }
       if (!r.data.length) {
-        box.innerHTML = '<div class="empty">No clients yet. Add one under Clients, ' +
-          'then come back to publish their content.</div>';
+        box.innerHTML = '<div class="empty">No active clients to review content for. ' +
+          'A client appears here once they are active under Clients.</div>';
         settleScroll();
         return;
       }
@@ -394,8 +398,23 @@
   /* Label, tone, and which section of the portal the action belongs to, so the
      record can be filtered the way the sidebar is. */
   var ACTION_LABEL = {
-    'client.added':          ['Client added', 'is-ok', 'review'],
+    'client.added':          ['Client added', 'is-ok', 'clients'],
     'client.removed':        ['Client removed', 'is-danger', 'review'],
+    'review.removed':        ['Removed from Content Review', 'is-danger', 'review'],
+    'client.edited':         ['Client edited', '', 'clients'],
+    'client.billing':        ['Billing details saved', '', 'clients'],
+    'client.touch':          ['Call or visit logged', '', 'clients'],
+    'client.review_on':      ['Added to Content Review', 'is-ok', 'clients'],
+    'contact.added':         ['Contact added', 'is-ok', 'clients'],
+    'contact.edited':        ['Contact edited', '', 'clients'],
+    'contact.restored':      ['Contact put back', 'is-ok', 'clients'],
+    'client.touch_edited':   ['Log entry edited', '', 'clients'],
+    'client.touch_removed':  ['Log entry removed', 'is-warn', 'clients'],
+    'client.touch_restored': ['Log entry put back', 'is-ok', 'clients'],
+    'client.action_done':    ['Next action done', 'is-ok', 'clients'],
+    'client.action_reopened':['Next action reopened', 'is-warn', 'clients'],
+    'contact.primary':       ['Main contact changed', '', 'clients'],
+    'contact.removed':       ['Contact removed', 'is-danger', 'clients'],
     'set.deleted':           ['Content set deleted', 'is-danger', 'review'],
     'post.deleted':          ['Post deleted', 'is-danger', 'review'],
     'set.published':         ['Published to client', 'is-ok', 'review'],
@@ -430,7 +449,7 @@
     'creator.updated':       ['Creator edited', '', 'campaigns'],
     'creator.removed':       ['Creator removed', 'is-danger', 'campaigns']
   };
-  var ACT_SECTION = { all: 'Everything', review: 'Content Review',
+  var ACT_SECTION = { all: 'Everything', clients: 'Clients', review: 'Content Review',
                       campaigns: 'Creator Campaigns', links: 'Short Links' };
 
   /* The section only appears for people on the viewer list. The database
@@ -522,19 +541,23 @@
         h.className = 'act-day';
         h.textContent = day;
         box.appendChild(h);
+        var th = document.createElement('div');
+        th.className = 'act act-head';
+        th.innerHTML = ['Time', 'Action', 'On', 'Detail', 'By']
+          .map(function (c) { return '<span>' + c + '</span>'; }).join('');
+        box.appendChild(th);
       }
       var meta = ACTION_LABEL[a.action] || [a.action, ''];
       var row = document.createElement('div');
       row.className = 'act';
+      // Four columns, so the eye reads down a column instead of hunting
+      // across each line for where the detail happens to have landed.
       row.innerHTML =
-        '<span class="act-tag ' + meta[1] + '">' + esc(meta[0]) + '</span>' +
+        '<span class="act-when">' + esc(clockOf(a.created_at)) + '</span>' +
+        '<span class="act-tagcell"><span class="act-tag ' + meta[1] + '">' + esc(meta[0]) + '</span></span>' +
         '<span class="act-subject">' + esc(a.subject || '') + '</span>' +
-        '<span class="muted act-when">' + esc(clockOf(a.created_at)) + '</span>' +
-        // Who did it and any note, on one line. Separated only when both
-        // are there, so a missing note never leaves a stray bullet.
-        '<span class="muted act-meta">' +
-          [a.detail, a.actor].filter(Boolean).map(esc).join(' · ') +
-        '</span>';
+        '<span class="act-detail">' + esc(a.detail || '') + '</span>' +
+        '<span class="act-who">' + esc(a.actor || '') + '</span>';
       box.appendChild(row);
     });
   }
@@ -725,79 +748,35 @@
      answer along; it never learns whether the answer was right until the
      server says so, and a browser that skipped the question outright would be
      refused all the same. */
+  /* "Delete" here used to delete the company. It now removes what Content
+     Review holds for them, their content sets, and takes them off this list.
+     The company, its contacts and its log stay in Clients, where they belong. */
   $('deleteClient').addEventListener('click', function () {
     var c = state.client;
     db.from('batches').select('id').eq('client_id', c.id).then(function (r) {
       var sets = (r.data || []).length;
-      if (!confirm('Delete ' + c.name + '?\n\n' +
-        'This removes their review link and ' + sets + ' content set' +
-        (sets === 1 ? '' : 's') + ', including every post and approval record.\n\n' +
-        'This cannot be reversed.')) return;
-
-      db.rpc('delete_code_set').then(function (q) {
-        // The function is missing until the current schema has been applied.
-        if (q.error) { legacyDelete(c, sets, q.error); return; }
-        askAndDelete(c, sets, q.data === true);
+      if (!confirm('Remove ' + c.name + ' from Content Review?\n\n' +
+        'This deletes their ' + sets + ' content set' + (sets === 1 ? '' : 's') +
+        ', including every post and approval record, and takes them off this list.\n\n' +
+        'The client itself stays in Clients with its contacts and log. ' +
+        'They can be added back to Content Review from there.')) return;
+      var typed = prompt('Type the client name exactly to confirm:', '');
+      if (typed === null) return;
+      if (typed.trim() !== c.name) {
+        msg('profileMsg', 'That does not match the client name. Nothing has been removed.', 'err');
+        return;
+      }
+      db.from('batches').delete().eq('client_id', c.id).then(function (d) {
+        if (d.error) { msg('profileMsg', d.error.message, 'err'); return; }
+        db.from('clients').update({ review_hidden: true }).eq('id', c.id).then(function (u) {
+          if (u.error) { msg('profileMsg', u.error.message, 'err'); return; }
+          logAction('review.removed', c.name,
+            sets + ' content set' + (sets === 1 ? '' : 's') + ' removed');
+          showClients();
+        });
       });
     });
   });
-
-  function askAndDelete(c, sets, coded) {
-    var answer = window.prompt(
-      'Deleting ' + c.name + ' cannot be undone.\n\n' +
-      (coded ? 'Enter the deletion code to continue:'
-             : 'Type the client name exactly to confirm:'), '');
-    if (answer === null) return;
-    answer = answer.trim();
-
-    if (!coded && answer !== c.name) {
-      msg('profileMsg', 'That does not match the client name. Nothing has been deleted.', 'err');
-      return;
-    }
-
-    db.rpc('delete_client', { p_client: c.id, p_code: coded ? answer : null })
-      .then(function (res) {
-        if (res.error) { msg('profileMsg', res.error.message, 'err'); return; }
-        if (res.data === 'wrong-code') {
-          msg('profileMsg', 'That deletion code is not correct. Nothing has been deleted.', 'err');
-          return;
-        }
-        if (res.data === 'not-found') {
-          msg('profileMsg', 'That client no longer exists.', 'err');
-          showClients();
-          return;
-        }
-        logAction('client.removed', c.name,
-          sets + ' content set' + (sets === 1 ? '' : 's') + ' removed with it');
-        showClients();
-      });
-  }
-
-  /* A database that has not had the current schema applied yet. Deleting still
-     works, and still asks, but the check is only the one in this browser. Say
-     so rather than implying a protection that is not there. */
-  function legacyDelete(c, sets, why) {
-    if (!/function|does not exist|schema|404/i.test(why.message || '')) {
-      msg('profileMsg', why.message, 'err');
-      return;
-    }
-    var typed = window.prompt(
-      'Deleting ' + c.name + ' cannot be undone.\n\n' +
-      'Type the client name exactly to confirm:', '');
-    if (typed === null) return;
-    if (typed.trim() !== c.name) {
-      msg('profileMsg', 'That does not match the client name. Nothing has been deleted.', 'err');
-      return;
-    }
-    db.from('clients').delete().eq('id', c.id).then(function (res) {
-      if (res.error) { msg('profileMsg', res.error.message, 'err'); return; }
-      logAction('client.removed', c.name,
-        sets + ' content set' + (sets === 1 ? '' : 's') + ' removed with it');
-      showClients();
-      msg('clientMsg', 'Deleted. Run the current supabase/schema.sql to move the ' +
-        'deletion code onto the server, where a browser cannot read it.', 'err');
-    });
-  }
 
   $('copyLink').addEventListener('click', function () {
     navigator.clipboard.writeText($('clientLink').value).then(function () {
