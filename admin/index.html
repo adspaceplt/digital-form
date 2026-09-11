@@ -41,7 +41,7 @@
       <h2>Sign in</h2>
       <p>Sign in with your company credentials.</p>
       <label class="field-label" for="authEmail">Company email</label>
-      <input class="input" id="authEmail" type="email" placeholder="you@adspacestudios.com"
+      <input class="input" id="authEmail" type="email" placeholder="john@adspacestudios.com"
              autocomplete="email">
       <button class="btn btn-primary signin-btn" id="authSend" type="button">Sign in</button>
       <div class="msg" id="authMsg"></div>
@@ -136,7 +136,7 @@
           <div class="panelhead"><h3 id="crmFormTitle">New client</h3></div>
           <div class="row">
             <div><label class="field-label" for="crmName">Client name</label>
-              <input class="input" id="crmName" placeholder="e.g. Star Living"></div>
+              <input class="input" id="crmName" placeholder="Company name"></div>
             <div style="flex:0 0 170px"><label class="field-label" for="crmFormStage">Stage</label>
               <select class="select" id="crmFormStage"></select></div>
           </div>
@@ -224,7 +224,7 @@
             <p class="hint">Required for e-invoice submission and before the client can be set to Active.</p>
             <div class="row">
               <div><label class="field-label" for="crmLegalName">Company name, as registered (capitals)</label>
-                <input class="input crm-caps" id="crmLegalName" placeholder="S P SETIA BERHAD" autocapitalize="characters"></div>
+                <input class="input crm-caps" id="crmLegalName" placeholder="COMPANY NAME SDN BHD" autocapitalize="characters"></div>
             </div>
             <div class="row" style="margin-top:12px">
               <div style="flex:0 0 220px"><label class="field-label" for="crmCompanyNo">Business registration no.</label>
@@ -238,9 +238,9 @@
             </div>
             <div class="row" style="margin-top:12px">
               <div><label class="field-label" for="crmBillContact">Contact person</label>
-                <input class="input" id="crmBillContact" placeholder="Mr Lim"></div>
+                <input class="input" id="crmBillContact" placeholder="John Doe"></div>
               <div><label class="field-label" for="crmBillContactEmail">Contact person email</label>
-                <input class="input" id="crmBillContactEmail" type="email" placeholder="lim@company.com"></div>
+                <input class="input" id="crmBillContactEmail" type="email" placeholder="john@company.com"></div>
               <div style="flex:0 0 200px"><label class="field-label" for="crmBillContactPhone">Contact person mobile</label>
                 <input class="input" id="crmBillContactPhone" type="tel" placeholder="01x-xxx xxxx"></div>
             </div>
@@ -287,7 +287,7 @@
           <div class="panelhead"><h3 id="crmContactTitle">New contact</h3></div>
           <div class="row">
             <div><label class="field-label" for="ctName">Name</label>
-              <input class="input" id="ctName" placeholder="Mr Lim"></div>
+              <input class="input" id="ctName" placeholder="John Doe"></div>
             <div style="flex:0 0 200px"><label class="field-label" for="ctRole">Role</label>
               <input class="input" id="ctRole" placeholder="Marketing"></div>
           </div>
@@ -334,7 +334,7 @@
             <div style="flex:0 0 170px"><label class="field-label" for="tcDate">Date</label>
               <input class="input" id="tcDate" type="date"></div>
             <div><label class="field-label" for="tcWith">Who on their side</label>
-              <input class="input" id="tcWith" list="crmContactNames" placeholder="Mr Lim">
+              <input class="input" id="tcWith" list="crmContactNames" placeholder="John Doe">
               <datalist id="crmContactNames"></datalist></div>
           </div>
           <div class="row" style="margin-top:12px">
@@ -343,7 +343,7 @@
           </div>
           <div class="row" style="margin-top:12px">
             <div><label class="field-label" for="tcNext">Next action</label>
-              <input class="input" id="tcNext" placeholder="Send proposal"></div>
+              <input class="input" id="tcNext" placeholder="Next action"></div>
             <div style="flex:0 0 170px"><label class="field-label" for="tcNextAt">By when</label>
               <input class="input" id="tcNextAt" type="date"></div>
           </div>
@@ -603,9 +603,9 @@
               <select class="select" id="campClient"></select>
               <p class="hint" id="campClientNone" hidden style="margin-top:6px">No active clients.</p></div>
             <div><label class="field-label" for="campTitle">Campaign name</label>
-              <input class="input" id="campTitle" placeholder="Laman Citra Launch, Oct 2026"></div>
+              <input class="input" id="campTitle" placeholder="Campaign name"></div>
             <div><label class="field-label" for="campPurpose">Campaign purpose</label>
-              <input class="input" id="campPurpose" placeholder="Promote the newly launched project"></div>
+              <input class="input" id="campPurpose" placeholder="Purpose"></div>
             <div style="flex:0 0 110px"><label class="field-label" for="campSlots">Slots</label>
               <input class="input" id="campSlots" type="number" min="1" value="10"></div>
           </div>
@@ -759,7 +759,7 @@
             <h4>New creator</h4>
             <div class="row">
               <div><label class="field-label" for="ncName">Name</label>
-                <input class="input" id="ncName" placeholder="香香的爆米花 🍿"></div>
+                <input class="input" id="ncName" placeholder="Creator name"></div>
               <div style="flex:0 0 200px"><label class="field-label" for="ncRate">Rate for this campaign (RM)</label>
                 <input class="input" id="ncRate" type="number" min="0" step="10" placeholder="360"></div>
             </div>
@@ -797,11 +797,11 @@
           <div class="panelhead"><h3 id="creatorFormTitle">New creator</h3></div>
           <div class="row">
             <div><label class="field-label" for="crName">Name</label>
-              <input class="input" id="crName" placeholder="香香的爆米花 🍿"></div>
+              <input class="input" id="crName" placeholder="Creator name"></div>
             <div style="flex:0 0 150px"><label class="field-label" for="crRate">Usual rate (RM), optional</label>
               <input class="input" id="crRate" type="number" min="0" step="10" placeholder="360"></div>
             <div><label class="field-label" for="crNotes">Notes</label>
-              <input class="input" id="crNotes" placeholder="Internal only"></div>
+              <input class="input" id="crNotes" placeholder="Notes"></div>
           </div>
 
           <div class="subsection">
@@ -831,8 +831,7 @@
     <!-- ============ Short Links ============ -->
     <!-- ---- Team: who may do what ---- -->
     <div class="console-body" id="sectionTeam" hidden>
-      <div class="filterbar crm-bar">
-        <p class="hint" style="margin:0;flex:1 1 300px">Roles set the defaults. Switches adjust access per person.</p>
+      <div class="filterbar crm-bar" style="justify-content:flex-end">
         <button class="btn btn-primary" id="teamAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a person</button>
       </div>
 
@@ -840,14 +839,12 @@
         <div class="panelhead"><h3>New team member</h3></div>
         <div class="row">
           <div><label class="field-label" for="tmName">Name</label>
-            <input class="input" id="tmName" placeholder="Qiao Rou"></div>
+            <input class="input" id="tmName" placeholder="John Doe"></div>
           <div><label class="field-label" for="tmEmail">Sign-in email</label>
-            <input class="input" id="tmEmail" type="email" placeholder="name@adspacestudios.com"></div>
+            <input class="input" id="tmEmail" type="email" placeholder="john@adspacestudios.com"></div>
           <div style="flex:0 0 190px"><label class="field-label" for="tmRole">Role</label>
             <select class="select" id="tmRole"></select></div>
-        </div>
-        <p class="hint" id="tmRoleHint" style="margin-top:8px"></p>
-        <div class="row" style="margin-top:14px">
+        </div>        <div class="row" style="margin-top:14px">
           <button class="btn btn-primary" id="tmSave" type="button">Add to the team</button>
           <button class="btn btn-quiet" id="tmCancel" type="button" style="flex:0 0 auto">Cancel</button>
         </div>
@@ -971,7 +968,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-body">
       <div class="row" style="margin-bottom:16px">
         <div><label class="field-label" for="qrLabel">Label for a new code</label>
-          <input class="input" id="qrLabel" placeholder="Placement, e.g. mall poster"></div>
+          <input class="input" id="qrLabel" placeholder="Placement"></div>
         <button class="btn btn-primary" id="qrNew" type="button">Create QR code</button>
       </div>
       <div class="msg" id="qrMsg"></div>
