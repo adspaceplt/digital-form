@@ -290,6 +290,9 @@
     $('stateText').textContent = text;
     $('passRow').hidden = !withPass;
     document.body.classList.add('is-plain');
+    // No client to name until the link resolves.
+    var who = document.querySelector('.brand-for');
+    if (who && !(feed && feed.client && feed.client.name)) who.hidden = true;
     if (withPass) $('passInput').focus();
   }
 

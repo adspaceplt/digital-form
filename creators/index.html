@@ -27,18 +27,20 @@
 
 <main class="shell">
 
-  <!-- The notice is the whole page, so nothing draws a box around it. Same
-       treatment as the review portal and the admin sign in. -->
-  <section class="cover-panel" id="stateBox" hidden>
-    <h2 id="stateTitle"></h2>
-    <p id="stateText"></p>
-    <div class="row" id="passRow" hidden style="margin-top:18px">
-      <div style="flex:0 0 200px">
-        <input class="input" id="passInput" placeholder="Access code">
+  <!-- The same cover as the review page: centred, the page white to the
+       edges, the footer on the floor. -->
+  <section class="cover" id="stateBox" hidden>
+    <div class="cover-inner">
+      <div class="cover-panel">
+        <h2 id="stateTitle"></h2>
+        <p id="stateText"></p>
+        <form id="passRow" hidden onsubmit="return false">
+          <input class="input" id="passInput" type="password" placeholder="Access code" autocomplete="off">
+          <button class="btn btn-primary" id="passGo" type="button">Open</button>
+        </form>
+        <div class="msg" id="stateMsg"></div>
       </div>
-      <button class="btn btn-primary" id="passGo" type="button">Open</button>
     </div>
-    <div class="msg" id="stateMsg"></div>
   </section>
 
   <div id="app" hidden>

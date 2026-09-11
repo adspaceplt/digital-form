@@ -131,7 +131,10 @@
       applyAccess();
       gateActivity();
       if (!me) {
+        // A plain page like sign-in: the page header, white to the edges.
         $('console').hidden = true;
+        $('topbar').hidden = false;
+        document.body.classList.add('is-plain');
         $('noTeamShell').hidden = false;
         $('noTeamWho').textContent = actor;
         return;
