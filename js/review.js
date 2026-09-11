@@ -13,14 +13,7 @@
 
   var passcode = sessionStorage.getItem('adspace_pass_' + token) || '';
 
-  (function () {
-    var logo = $('agencyLogo');
-    logo.onerror = function () {
-      logo.hidden = true;
-      $('agencyWordmark').hidden = false;
-    };
-    logo.src = cfg.brandLogo;
-  })();
+  // The mark is the shared chrome's job now.
   if (!API.configured) $('demoStrip').hidden = false;
 
   /* Nothing to review is not an error, so it gets a cover page rather than the

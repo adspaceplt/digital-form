@@ -9,14 +9,10 @@
   var db  = API.client;
   var $   = function (id) { return document.getElementById(id); };
 
-  /* The mark appears twice: on the signed out page and on the console rail.
-     Either can fail to load, and each falls back to the wordmark on its own. */
-  [['agencyLogo', 'agencyWordmark'], ['sideLogo', 'sideWordmark']].forEach(function (pair) {
-    var logo = $(pair[0]);
-    if (!logo) return;
-    logo.onerror = function () { logo.hidden = true; $(pair[1]).hidden = false; };
-    logo.src = cfg.brandLogo;
-  });
+  /* The signed out bar is the shared chrome's, which handles its own mark.
+     The console rail is this page's, so it asks the chrome to wire that one
+     the same way rather than repeating the fallback here. */
+  if (window.ADspaceChrome) window.ADspaceChrome.mark('sideLogo', 'sideWordmark');
   if (!API.configured || !db) { $('notConfigured').hidden = false; return; }
 
   /* One dropdown in plain language beats two dropdowns of jargon. */
