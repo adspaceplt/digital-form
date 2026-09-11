@@ -469,7 +469,7 @@
   /* One form for both. Editing prefills it from the campaign; the invoice
      shows without its fixed prefix because the field puts that back. */
   var campDraft = keepDraft('addCampBox',
-    ['campClient', 'campTitle', 'campSlots', 'campDeadline', 'campFormat', 'campDeliverable', 'campOwner']);
+    ['campClient', 'campTitle', 'campPurpose', 'campSlots', 'campDeadline', 'campFormat', 'campDeliverable', 'campOwner']);
   campDraft.restore = function () {
     var d = campDraft.read();
     if (!d || !d.open) return;
@@ -487,6 +487,7 @@
     $('addCamp').textContent = c ? 'Save' : 'Create';
     $('campClient').value = c ? ((c.clients && c.clients.name) || '') : '';
     $('campTitle').value = c ? c.title : '';
+    $('campPurpose').value = c ? (c.purpose || '') : '';
     $('campSlots').value = c ? c.slots : 10;
     $('campDeadline').value = c ? (c.deadline || '') : '';
     $('campFormat').value = c ? (c.push_format || 'site_visit') : 'site_visit';
@@ -542,6 +543,7 @@
     var c = editingCamp;
     var patch = {
       client_id: clientId, title: title,
+      purpose: ($('campPurpose').value || '').trim() || null,
       slots: slots,
       deadline: $('campDeadline').value || null,
       push_format: $('campFormat').value,
@@ -559,6 +561,7 @@
   function createCampaign(clientId, title, slots) {
     db.from('campaigns').insert({
       client_id: clientId, title: title,
+      purpose: ($('campPurpose').value || '').trim() || null,
       slots: slots,
       deadline: $('campDeadline').value || null,
       push_format: $('campFormat').value,
@@ -615,22 +618,25 @@
     setUrl();
     $('campWork').hidden = false;
     $('campName').textContent = c.title;
+    // Not the form's input of the same name: this is the line under the title.
+    $('campPurposeLine').textContent = c.purpose || '';
+    $('campPurposeLine').hidden = !c.purpose;
     $('campState').textContent = STATE_WORD[c.state] || c.state;
     $('campState').classList.toggle('is-live', c.state !== 'draft');
     $('campFacts').innerHTML = [
-      ['Client',       (c.clients && c.clients.name) || ''],
-      ['Invoice',      c.invoice_no || '<span class="muted">Not issued yet</span>'],
-      ['Slots',        String(c.slots)],
-      ['Push format',  FORMAT_WORD[c.push_format] || c.push_format || ''],
-      ['Deliverable',  c.deliverable === 'graphic' ? 'One graphic' : 'One video'],
-      ['Respond by',   c.deadline ? niceDate(c.deadline) : '<span class="muted">No deadline</span>'],
-      ['Owner',        c.owner || '<span class="muted">Unassigned</span>'],
-      ['Created',      c.created_at ? niceDate(String(c.created_at).slice(0, 10)) : '']
+      ['Client',            (c.clients && c.clients.name) || ''],
+      ['Push format',       FORMAT_WORD[c.push_format] || c.push_format || ''],
+      ['Deliverable',       c.deliverable === 'graphic' ? 'One graphic' : 'One video'],
+      ['Person in charge',  c.owner || '<span class="muted">Unassigned</span>'],
+      ['Respond by',        c.deadline ? niceDate(c.deadline) : '<span class="muted">No deadline</span>'],
+      ['Created',           c.created_at ? niceDate(String(c.created_at).slice(0, 10)) : '']
     ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
       return '<div><dt>' + f[0] + '</dt><dd>' + (f[1].indexOf('<span') === 0 ? f[1] : esc(f[1])) + '</dd></div>';
     }).join('');
     $('campLink').value = campaignUrl(c);
     $('campOpen').href = campaignUrl(c);
+    setOpen('invoiceToggle', 'invoiceBody', false);
+    setOpen('dangerToggle', 'dangerBody', false);
     paintInvoice(c);
     $('campPublish').textContent = c.state === 'draft' ? 'Open for selection' : 'Close selection';
     msg('campWorkMsg', '');
@@ -716,16 +722,17 @@
     // is a goodwill replacement and somebody needs to have decided that on
     // purpose rather than discover it at reconciliation.
     var booked = chosen.length + goodwill.length;
-    // What the client sees: the quoted rates, then 8% SST on top.
+    // Counts, then what the client sees: the quoted rates and 8% SST on top.
     $('campTally').innerHTML =
-      tallyCell('Slots agreed', c.slots) +
-      tallyCell('Offered', live.length) +
-      tallyCell('Chosen', chosen.length + ' of ' + c.slots) +
-      tallyCell('Subtotal', money2(total)) +
-      tallyCell('SST 8%', money2(sstOf(total))) +
-      tallyCell('Total', money2(total + sstOf(total))) +
+      stat('Slots', c.slots) +
+      stat('Options', live.length) +
+      stat('Selected', chosen.length + ' of ' + c.slots) +
+      '<i class="stat-gap" aria-hidden="true"></i>' +
+      stat('Subtotal', money2(total)) +
+      stat('SST 8%', money2(sstOf(total))) +
+      stat('Total', money2(total + sstOf(total)), 'is-total') +
       (booked > c.slots
-        ? '<div class="tally-cell is-warn"><b>' + booked + '</b><span>Booked · ' +
+        ? '<div class="stat is-warn"><b>' + booked + '</b><span>Booked · ' +
           goodwill.length + ' goodwill</span></div>' : '');
 
     var box = $('optionList');
@@ -773,6 +780,11 @@
       (waiting.length === 1 ? ' selection' : ' selections');
 
     paintProduction();
+  }
+
+  function stat(label, value, cls) {
+    return '<div class="stat' + (cls ? ' ' + cls : '') + '"><b>' + esc(String(value)) +
+      '</b><span>' + esc(label) + '</span></div>';
   }
 
   function tallyCell(label, value) {
@@ -1030,10 +1042,8 @@
     $('prodWrap').hidden = !live.length && !gone.length;
     if ($('prodWrap').hidden) return;
 
-    $('bulkTitle').textContent = 'Apply to every confirmed creator';
-    $('bulkHint').textContent = isDelivery()
-      ? 'Fills anything left blank on each row. Seeding has no visit, so these are delivery details.'
-      : 'Fills anything left blank on each row. A row you have already set by hand is marked, and is left alone unless you say otherwise.';
+    $('bulkTitle').textContent = 'Same ' + (isDelivery() ? 'delivery' : 'shoot') + ' date for everyone';
+    $('bulkHint').textContent = 'Fills the date and time on every row that is still blank. A row set by hand keeps what it has unless you overwrite.';
 
     var box = $('prodList');
     box.innerHTML = '';
@@ -1050,8 +1060,6 @@
     var dead = o.state === 'withdrawn' || o.state === 'replaced';
     var summary = [];
     if (o.visit_date) summary.push(visitWord() + ' ' + niceDate(o.visit_date) + (o.visit_time ? ', ' + o.visit_time : ''));
-    if (o.visit_location) summary.push(o.visit_location);
-    if (o.visit_pic) summary.push('PIC ' + o.visit_pic);
     if (o.revision_round > 1) summary.push('Round ' + o.revision_round + ' of 2');
 
     row.innerHTML =
@@ -1094,11 +1102,7 @@
       '<div class="row">' +
         field(visitWord() + ' date', 'visit_date', o.visit_date, 'date') +
         field('Time', 'visit_time', o.visit_time, 'text', '2pm') +
-        (isDelivery()
-          ? field('Tracking no.', 'tracking_no', o.tracking_no, 'text', '')
-          : field('Location', 'visit_location', o.visit_location, 'text', '')) +
-        field('PIC to look for', 'visit_pic', o.visit_pic, 'text', 'Name') +
-        field('PIC contact', 'visit_pic_phone', o.visit_pic_phone, 'text', '01x-xxx xxxx') +
+        (isDelivery() ? field('Tracking no.', 'tracking_no', o.tracking_no, 'text', '') : '') +
       '</div>' +
       '<div class="row" style="margin-top:12px">' +
         '<div style="flex:1 1 340px"><label class="field-label">Draft link (Google Drive)</label>' +
@@ -1283,8 +1287,32 @@
     });
   }
 
+  // ---- Closed panels: open on demand, or on their own when there is reason to
+  function disclose(toggleId, bodyId) {
+    var t = $(toggleId), b = $(bodyId);
+    if (!t || !b) return;
+    t.addEventListener('click', function () {
+      var open = b.hidden;
+      b.hidden = !open;
+      t.setAttribute('aria-expanded', String(open));
+      t.classList.toggle('is-open', open);
+    });
+  }
+  function setOpen(toggleId, bodyId, open) {
+    $(bodyId).hidden = !open;
+    $(toggleId).setAttribute('aria-expanded', String(open));
+    $(toggleId).classList.toggle('is-open', open);
+  }
+  disclose('invoiceToggle', 'invoiceBody');
+  disclose('dangerToggle', 'dangerBody');
+
   // ---- Invoice: raised after confirmation, attached here -----------------
   function paintInvoice(c) {
+    // The closed panel says what it holds, and opens itself once it holds something.
+    $('invoiceSummary').textContent = c.invoice_url
+      ? (c.invoice_no ? c.invoice_no + ' · PDF attached' : 'PDF attached')
+      : (c.invoice_no ? c.invoice_no + ' · no PDF yet' : 'Not issued yet');
+    if (c.invoice_url || c.invoice_no) setOpen('invoiceToggle', 'invoiceBody', true);
     $('invNo').value = String(c.invoice_no || '').replace(/^AINV2/i, '');
     $('invFile').value = '';
     var cur = $('invCurrent');
@@ -1414,16 +1442,10 @@
   $('bulkCancel').addEventListener('click', function () { $('bulkBox').hidden = true; });
 
   function bulkValues() {
-    var v = {
+    return {
       visit_date: $('bulkDate').value || null,
-      visit_time: ($('bulkTime').value || '').trim() || null,
-      visit_pic: ($('bulkPic').value || '').trim() || null,
-      visit_pic_phone: ($('bulkPhone').value || '').trim() || null
+      visit_time: ($('bulkTime').value || '').trim() || null
     };
-    var loc = ($('bulkLoc').value || '').trim() || null;
-    if (isDelivery()) v.tracking_no = null; else v.visit_location = loc;
-    if (isDelivery() && loc) v.visit_location = loc;
-    return v;
   }
 
   function applyBulk(overwrite) {
