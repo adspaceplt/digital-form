@@ -832,9 +832,10 @@
             <input class="input" id="tmName" placeholder="John Doe"></div>
           <div><label class="field-label" for="tmEmail">Sign-in email</label>
             <input class="input" id="tmEmail" type="email" placeholder="john@adspacestudios.com"></div>
-          <div style="flex:0 0 190px"><label class="field-label" for="tmRole">Role</label>
+          <div style="flex:0 0 190px"><label class="field-label" for="tmRole">Group</label>
             <select class="select" id="tmRole"></select></div>
-        </div>        <div class="row" style="margin-top:14px">
+        </div>
+        <div class="row" style="margin-top:14px">
           <button class="btn btn-primary" id="tmSave" type="button">Add</button>
           <button class="btn btn-quiet" id="tmCancel" type="button" style="flex:0 0 auto">Cancel</button>
         </div>
@@ -843,6 +844,26 @@
 
       <div class="msg" id="teamMsg" style="margin:0 0 10px"></div>
       <div class="team-table" id="teamList"></div>
+
+      <!-- ---- Groups: one set of switches per group, members inherit ---- -->
+      <div class="viewhead" style="margin-top:28px">
+        <span class="headmark"><h2>User groups</h2></span>
+        <button class="btn btn-sm" id="groupAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add group</button>
+      </div>
+      <div class="panel" id="groupAddBox" hidden>
+        <div class="panelhead"><h3>New group</h3></div>
+        <div class="row">
+          <div><label class="field-label" for="grName">Name</label>
+            <input class="input" id="grName" placeholder="Group name"></div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn btn-primary" id="grSave" type="button">Add</button>
+          <button class="btn btn-quiet" id="grCancel" type="button" style="flex:0 0 auto">Cancel</button>
+        </div>
+        <div class="msg" id="grMsg"></div>
+      </div>
+      <div class="msg" id="groupMsg" style="margin:0 0 10px"></div>
+      <div class="team-table" id="groupList"></div>
     </div>
 
     <div class="console-body" id="sectionLinks" hidden>

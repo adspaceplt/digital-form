@@ -127,12 +127,14 @@
       },
       tbc: 'To be confirmed',
       amountLabel: 'Amount',
+      creatorsLabel: 'Creators',
+      dueLabel: 'Campaign due',
       pdf: 'PDF ↗',
       pic: 'Contact',
       goLive: 'Going live',
       viewPost: 'View post',
-      reviewDraft: 'Review the draft',
-      draftHeading: 'Review the draft',
+      reviewDraft: 'Review draft',
+      draftHeading: 'Review draft',
       draftBlurb: 'Open the draft, then approve it or request changes.',
       openDraft: 'Open the draft ↗',
       noteLabel: 'Anything to change (optional)',
@@ -226,6 +228,8 @@
       },
       tbc: '待定',
       amountLabel: '金额',
+      creatorsLabel: '博主人数',
+      dueLabel: '合作截止',
       pdf: 'PDF ↗',
       pic: '联系人',
       goLive: '发布日期',
@@ -353,8 +357,13 @@
     var brief = (lang === 'zh' && c.brief_zh) ? c.brief_zh : c.brief;
     $('campBrief').textContent = brief || '';
     $('campBrief').hidden = !brief;
-    $('campDue').textContent = c.deadline ? t().due(fmtDate(c.deadline)) : '';
-    $('campDue').hidden = !c.deadline;
+    // The engagement in one line: how many creators, when, which invoice.
+    var facts = [[t().creatorsLabel, String(c.slots || 0)]];
+    if (c.deadline) facts.push([t().dueLabel, fmtDate(c.deadline)]);
+    if (c.invoice_no) facts.push([t().invoice, c.invoice_no]);
+    $('engageFacts').innerHTML = facts.map(function (f) {
+      return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
+    }).join('');
 
     if (c.state === 'draft') { showState(t().closed, t().closedText, false); return; }
 
@@ -410,8 +419,7 @@
     var c = feed.campaign || {};
     $('bookedTotals').innerHTML = booked.length ? totalsHtml(sub) : '';
     $('amountFold').hidden = !booked.length;
-    // Named by the invoice once there is one; the amount stands in until then.
-    $('amountLabel').textContent = c.invoice_no ? t().invoice + ' ' + c.invoice_no : t().amountLabel;
+    $('amountLabel').textContent = t().amountLabel;
     $('amountPdf').hidden = !c.invoice_url;
     $('amountPdf').href = c.invoice_url || '#';
     $('amountPdf').textContent = t().pdf;
@@ -444,7 +452,6 @@
     };
     $('rollupHead').textContent = t().resultsHead;
     $('clientTally').innerHTML =
-      cell(t().placements, rows.length) +
       cell(t().impressions, imp.toLocaleString()) +
       cell(t().engagements, eng.toLocaleString()) +
       cell(t().views, vie.toLocaleString()) +
@@ -553,13 +560,13 @@
       '</tr></thead><tbody>' +
       posts.map(function (p) {
         return '<tr>' +
-          '<td><a class="results-link" href="' + esc(absUrl(p.post_url)) + '" target="_blank" rel="noopener">' +
+          '<td data-l="' + esc(t().platformCol) + '"><a class="results-link" href="' + esc(absUrl(p.post_url)) + '" target="_blank" rel="noopener">' +
             esc(platLabel(p.platform)) + EXT_ICON + '</a></td>' +
-          '<td>' + (p.published_at ? esc(fmtDate(p.published_at)) : '<span class="muted">–</span>') + '</td>' +
-          (hasNums ? '<td>' + esc(measured(p)) + '</td>' +
-            '<td class="num">' + num(p.impressions) + '</td>' +
-            '<td class="num">' + num(p.engagements) + '</td>' +
-            '<td class="num">' + num(p.views) + '</td>' : '') +
+          '<td data-l="' + esc(t().postedOn) + '">' + (p.published_at ? esc(fmtDate(p.published_at)) : '<span class="muted">–</span>') + '</td>' +
+          (hasNums ? '<td data-l="' + esc(t().measuredOn) + '">' + esc(measured(p)) + '</td>' +
+            '<td class="num" data-l="' + esc(t().impressions) + '">' + num(p.impressions) + '</td>' +
+            '<td class="num" data-l="' + esc(t().engagements) + '">' + num(p.engagements) + '</td>' +
+            '<td class="num" data-l="' + esc(t().views) + '">' + num(p.views) + '</td>' : '') +
         '</tr>';
       }).join('') +
       '</tbody></table></div>';

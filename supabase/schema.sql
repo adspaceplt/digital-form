@@ -1236,3 +1236,140 @@ create policy team_read on public.team_members for select to authenticated using
 create policy team_admin on public.team_members for all to authenticated
   using (public.allowed('admin'))
   with check (public.allowed('admin'));
+
+-- ===========================================================================
+-- USER GROUPS
+-- A person belongs to one group; the group says what its members may do.
+-- Admin, Account and Sales come built in; an admin can add more from the
+-- Team page. A member's can_* columns are a copy of the group's, kept in
+-- step by trigger, so every policy above keeps reading the member row.
+-- ===========================================================================
+create table if not exists public.team_roles (
+  slug          text primary key,
+  name          text not null,
+  is_admin      boolean not null default false,
+  can_clients   boolean not null default true,
+  can_review    boolean not null default true,
+  can_campaigns boolean not null default true,
+  can_links     boolean not null default true,
+  can_activity  boolean not null default false,
+  can_billing   boolean not null default true,
+  can_remove    boolean not null default false,
+  position      integer not null default 0,
+  created_at    timestamptz not null default now()
+);
+alter table public.team_roles enable row level security;
+insert into public.team_roles
+  (slug, name, is_admin, can_clients, can_review, can_campaigns, can_links, can_activity, can_billing, can_remove, position)
+values
+  ('admin',   'Admin',   true,  true, true,  true,  true,  true,  true, true,  0),
+  ('account', 'Account', false, true, true,  true,  true,  false, true, false, 1),
+  ('sales',   'Sales',   false, true, false, false, false, false, true, false, 2)
+on conflict (slug) do nothing;
+
+alter table public.team_members add column if not exists is_admin boolean not null default false;
+update public.team_members set role = 'account'
+  where role is null or role not in (select slug from public.team_roles);
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'team_members_role_fkey') then
+    alter table public.team_members
+      add constraint team_members_role_fkey foreign key (role) references public.team_roles(slug);
+  end if;
+end $$;
+
+-- A member carries their group's switches. Runs on every write, so a group
+-- change and a member's group change both land here.
+create or replace function public.team_role_defaults()
+returns trigger language plpgsql as $$
+declare r public.team_roles;
+begin
+  select * into r from public.team_roles where slug = new.role;
+  if r.slug is null then
+    select * into r from public.team_roles where slug = 'account';
+    new.role := 'account';
+  end if;
+  new.is_admin      := r.is_admin;
+  new.can_clients   := r.can_clients;   new.can_review   := r.can_review;
+  new.can_campaigns := r.can_campaigns; new.can_links    := r.can_links;
+  new.can_activity  := r.can_activity;  new.can_billing  := r.can_billing;
+  new.can_remove    := r.can_remove;
+  new.updated_at    := now();
+  return new;
+end $$;
+
+-- Changing a group re-stamps everyone in it.
+create or replace function public.team_role_sync()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  update public.team_members set role = new.slug where role = new.slug;
+  return new;
+end $$;
+drop trigger if exists team_role_sync on public.team_roles;
+create trigger team_role_sync after update on public.team_roles
+  for each row execute function public.team_role_sync();
+
+-- The Admin group cannot be narrowed or removed, and a group with members
+-- cannot be deleted.
+create or replace function public.team_roles_guard()
+returns trigger language plpgsql as $$
+begin
+  if old.slug = 'admin' then
+    if tg_op = 'DELETE' or not (new.is_admin and new.can_clients and new.can_review and new.can_campaigns
+       and new.can_links and new.can_activity and new.can_billing and new.can_remove) then
+      raise exception 'The Admin group cannot be changed.';
+    end if;
+  end if;
+  if tg_op = 'DELETE' and exists (select 1 from public.team_members where role = old.slug) then
+    raise exception 'Move its members to another group first.';
+  end if;
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
+end $$;
+drop trigger if exists team_roles_guard on public.team_roles;
+create trigger team_roles_guard before update or delete on public.team_roles
+  for each row execute function public.team_roles_guard();
+
+-- Nobody removes their own admin access, so the team always keeps one.
+create or replace function public.team_keep_one_admin()
+returns trigger language plpgsql as $$
+begin
+  if lower(old.email) = lower(auth.jwt() ->> 'email') and old.is_admin
+     and (tg_op = 'DELETE' or new.active = false
+          or not coalesce((select is_admin from public.team_roles where slug = new.role), false)) then
+    raise exception 'You cannot remove your own admin access. Ask another admin.';
+  end if;
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
+end $$;
+
+-- Admin is a property of the group now, not the word.
+create or replace function public.allowed(flag text)
+returns boolean
+language plpgsql security definer stable set search_path = public as $$
+declare t public.team_members;
+begin
+  select * into t from public.team_members
+    where lower(email) = lower(auth.jwt() ->> 'email') and active limit 1;
+  if t.id is null then return false; end if;
+  if t.is_admin then return true; end if;
+  return coalesce(case flag
+    when 'clients'   then t.can_clients
+    when 'review'    then t.can_review
+    when 'campaigns' then t.can_campaigns
+    when 'links'     then t.can_links
+    when 'activity'  then t.can_activity
+    when 'billing'   then t.can_billing
+    when 'remove'    then t.can_remove
+    when 'admin'     then false
+  end, false);
+end $$;
+
+-- Re-stamp every member from their group once, so rows written before this
+-- block carry the right switches.
+update public.team_members set role = role;
+
+drop policy if exists roles_read  on public.team_roles;
+drop policy if exists roles_admin on public.team_roles;
+create policy roles_read  on public.team_roles for select to authenticated using (true);
+create policy roles_admin on public.team_roles for all to authenticated
+  using (public.allowed('admin')) with check (public.allowed('admin'));

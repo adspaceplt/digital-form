@@ -167,13 +167,13 @@
   }
   function may(flag) {
     if (!me) return false;
-    if (me.role === 'admin') return true;
+    if (me.is_admin || me.role === 'admin') return true;
     return Boolean(me['can_' + flag]);
   }
   var SECTION_FLAG = { clients: 'clients', review: 'review', campaigns: 'campaigns',
                        links: 'links', team: 'admin' };
   function sectionAllowed(name) {
-    if (name === 'team') return Boolean(me && me.role === 'admin');
+    if (name === 'team') return Boolean(me && (me.is_admin || me.role === 'admin'));
     return may(SECTION_FLAG[name] || name);
   }
   /* Hide what the person may not use. Nothing here is the control; the
@@ -465,6 +465,9 @@
     'team.added':            ['Team member added', 'is-ok', 'team'],
     'team.changed':          ['Access changed', 'is-warn', 'team'],
     'team.invited':          ['Sign-in invitation sent', '', 'team'],
+    'team.group_added':      ['User group added', 'is-ok', 'team'],
+    'team.group_changed':    ['User group changed', 'is-warn', 'team'],
+    'team.group_removed':    ['User group removed', 'is-danger', 'team'],
     'client.removed':        ['Client removed', 'is-danger', 'review'],
     'review.removed':        ['Removed from Content Review', 'is-danger', 'review'],
     'client.edited':         ['Client edited', '', 'clients'],
