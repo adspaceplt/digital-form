@@ -2387,10 +2387,10 @@ body > .shell { width: 100%; }
 /* The review cover claimed a full viewport of its own, which put the footer
    just below the fold on a page with nothing else on it. It now fills what is
    left between the bar and the footer instead of asking for the lot. */
-.shell:has(> .cover:not([hidden])) {
+.shell:has(> .cover:not([hidden])), .shell:has(> .signin:not([hidden])) {
   display: flex; flex-direction: column; padding-bottom: 0;
 }
-.shell:has(> .cover:not([hidden])) > .cover {
+.shell:has(> .cover:not([hidden])) > .cover, .shell:has(> .signin:not([hidden])) > .signin {
   flex: 1 1 auto; min-height: 0; margin-bottom: 0;
 }
 
