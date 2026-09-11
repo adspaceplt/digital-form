@@ -1557,6 +1557,12 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 .tally-cell span { font-size: 11.5px; color: var(--ink-mute); }
 .tally-cell.is-warn { border-color: var(--warn); background: var(--warn-bg); }
 .tally-cell.is-warn b, .tally-cell.is-warn span { color: var(--warn); }
+.tally-cell.is-total { border-color: var(--ink); }
+.tally-cell.is-total b { color: var(--ink); }
+/* Labelled groups of cells side by side; one under the other on a phone. */
+.tallies { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin: 4px 0 0; }
+.tallygroup .tally { margin-top: 6px; }
+@media (max-width: 900px) { .tallies { grid-template-columns: 1fr; } }
 
 /* ---------- Profile link rows ---------- */
 .profrow { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
