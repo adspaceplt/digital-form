@@ -104,6 +104,19 @@ do $$ begin
   end if;
 end $$;
 
+-- Nothing in the CRM is deleted by a click. A contact or a log entry that is
+-- removed is hidden with a timestamp and can be put back; a next action that
+-- is dealt with is marked done rather than erased. Reversible, every time.
+alter table public.client_contacts add column if not exists archived_at timestamptz;
+alter table public.client_touches  add column if not exists archived_at timestamptz;
+alter table public.client_touches  add column if not exists done_at     timestamptz;
+alter table public.client_touches  add column if not exists updated_at  timestamptz;
+
+-- A lead is worth something before it is a client. The number the pipeline
+-- adds up, in the client's currency.
+alter table public.clients add column if not exists deal_value numeric(12,2);
+alter table public.clients add column if not exists deal_note  text;
+
 -- A client is a company; the people in it change. The campaign lock sheet and
 -- the review page can pick a person from here instead of a free text box.
 create table if not exists public.client_contacts (

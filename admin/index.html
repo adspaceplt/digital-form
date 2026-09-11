@@ -139,6 +139,8 @@
                 <option value="MY">Malaysia · RM</option>
                 <option value="SG">Singapore · S$</option>
               </select></div>
+            <div style="flex:0 0 170px"><label class="field-label" for="crmDeal">Deal value</label>
+              <input class="input" id="crmDeal" type="number" min="0" step="100" placeholder="0"></div>
           </div>
           <div class="row" style="margin-top:12px">
             <div><label class="field-label" for="crmWebsite">Website</label>
@@ -162,6 +164,14 @@
           </div>
           <div class="msg" id="crmMsg"></div>
         </div>
+
+        <!-- Every open next action across every client, soonest first. The
+             data was already on each log entry; this is the screen that
+             gathers it, so nothing is left to memory. -->
+        <section class="due" id="crmDue" hidden>
+          <div class="due-head"><h3>Next actions</h3><span class="muted" id="crmDueCount"></span></div>
+          <div id="crmDueList"></div>
+        </section>
 
         <div id="crmList"></div>
       </section>
@@ -189,6 +199,7 @@
           </div>
           <div class="msg" id="crmWorkMsg"></div>
         </section>
+        <div class="undobar" id="crmUndo" hidden></div>
 
         <!-- Billing: every field an e-invoice needs, mandatory before Active. -->
         <section class="panel panel-collapse">
@@ -302,7 +313,7 @@
           <button class="btn btn-primary btn-sm" id="crmAddTouch" type="button">Log a call or visit</button>
         </div>
         <div class="panel" id="crmTouchBox" hidden>
-          <div class="panelhead"><h3>What happened</h3></div>
+          <div class="panelhead"><h3 id="crmTouchTitle">What happened</h3></div>
           <div class="row">
             <div style="flex:0 0 170px"><label class="field-label" for="tcKind">Type</label>
               <select class="select" id="tcKind">

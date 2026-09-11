@@ -154,13 +154,23 @@
     GROUPS.forEach(function (g) {
       var mine = rows.filter(function (c) { return stageWord(c.stage || 'lead')[3] === g[0]; });
       if (!mine.length) return;
+      // What the group is worth, per currency, so the pipeline has a number.
+      var worth = {};
+      mine.forEach(function (c) {
+        if (!c.deal_value) return;
+        var k = c.market || 'MY';
+        worth[k] = (worth[k] || 0) + Number(c.deal_value);
+      });
+      var worthText = Object.keys(worth).map(function (k) { return MON.money(worth[k], k); }).join(' + ');
       var sec = document.createElement('section');
       sec.className = 'crm-group';
       sec.innerHTML =
         '<div class="crm-group-head"><h3>' + esc(g[1]) + ' <span>' + mine.length + '</span></h3>' +
-          '<p class="hint">' + esc(g[2]) + '</p></div>' +
+          '<p class="hint">' + esc(g[2]) + '</p>' +
+          (worthText ? '<span class="crm-group-worth">' + esc(worthText) + '</span>' : '') +
+        '</div>' +
         '<div class="crm-table">' +
-          '<div class="crm-head">' + ['Client', 'Stage', 'Industry', 'Bills in', 'Owner']
+          '<div class="crm-head">' + ['Client', 'Stage', 'Industry', 'Value', 'Owner']
             .map(function (h) { return '<span>' + h + '</span>'; }).join('') + '</div>' +
         '</div>';
       var table = sec.querySelector('.crm-table');
@@ -181,7 +191,7 @@
       '<span class="crm-c crm-c-name">' + esc(c.name || '') + '</span>' +
       '<span class="crm-c crm-c-stage"><span class="tone ' + w[2] + '">' + esc(w[1]) + '</span></span>' +
       '<span class="crm-c crm-c-ind">' + esc(c.industry || '—') + '</span>' +
-      '<span class="crm-c crm-c-mkt">' + esc(MON.market(c.market).sign) + '</span>' +
+      '<span class="crm-c crm-c-mkt">' + esc(c.deal_value ? MON.money(c.deal_value, c.market) : MON.market(c.market).sign) + '</span>' +
       '<span class="crm-c crm-c-own">' + esc(c.owner || 'Unassigned') + '</span>' +
       '<span class="crm-c crm-c-meta">' +
         [c.industry, MON.market(c.market).sign, c.owner || 'Unassigned']
@@ -211,6 +221,7 @@
     FORM.forEach(function (f) { $(f[0]).value = c ? (c[f[1]] || '') : ''; });
     $('crmFormStage').value = c ? (c.stage || 'lead') : 'lead';
     $('crmMarket').value = c ? (c.market || 'MY') : 'MY';
+    $('crmDeal').value = c && c.deal_value ? c.deal_value : '';
     msg('crmMsg', '');
     $('crmAddBox').hidden = false;
     $('crmName').focus();
@@ -228,6 +239,7 @@
     var patch = { stage: $('crmFormStage').value, market: $('crmMarket').value };
     FORM.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
     patch.name = name;
+    patch.deal_value = val('crmDeal') ? Number(val('crmDeal')) : null;
 
     /* The one rule with teeth: nobody becomes active until we can invoice
        them. Said at the moment it matters, naming what is missing. */
@@ -281,6 +293,7 @@
       ['Industry', c.industry || '<span class="muted">Not set</span>'],
       ['Market',   (c.market === 'SG' ? 'Singapore' : 'Malaysia') + ' · ' + mk.sign],
       ['Owner',    c.owner || '<span class="muted">Unassigned</span>'],
+      ['Value',    c.deal_value ? MON.money(c.deal_value, c.market) : '<span class="muted">Not set</span>'],
       ['Tax',      c.sst_applies === false ? 'Not charged' : MON.taxLabel()],
       ['Added',    c.created_at ? niceDate(c.created_at) : '']
     ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
@@ -332,10 +345,7 @@
 
   $('crmBack').addEventListener('click', function () {
     state.client = null;
-    $('crmWork').hidden = true;
-    $('crmListView').hidden = false;
-    setUrl();
-    loadClients();
+    showList();          // the list and the next actions above it, together
   });
   $('crmEdit').addEventListener('click', function () {
     $('crmWork').hidden = true;
@@ -384,34 +394,49 @@
   });
 
   // ---- Contacts -----------------------------------------------------------
+  /* Nothing here is deleted by a click. A removed contact is hidden with a
+     timestamp and sits under "Removed" until someone puts them back. */
+  var showRemovedContacts = false;
+
   function loadContacts() {
     var box = $('crmContacts');
     box.innerHTML = '<div class="empty">Loading…</div>';
     db.from('client_contacts').select('*').eq('client_id', state.client.id)
       .order('is_primary', { ascending: false }).order('name').then(function (r) {
         if (r.error) { box.innerHTML = '<div class="empty">Could not load contacts.</div>'; return; }
-        state.contacts = r.data || [];
+        var all = r.data || [];
+        state.contacts = all.filter(function (c) { return !c.archived_at; });
+        var gone = all.filter(function (c) { return c.archived_at; });
         $('crmContactNames').innerHTML = state.contacts.map(function (ct) {
           return '<option value="' + esc(ct.name) + '"></option>';
         }).join('');
+        box.innerHTML = '';
         if (!state.contacts.length) {
           box.innerHTML = '<div class="empty">No one recorded yet. A company does not ' +
             'answer the phone; add the person who does.</div>';
-          return;
         }
-        box.innerHTML = '';
-        state.contacts.forEach(function (ct) { box.appendChild(contactRow(ct)); });
+        state.contacts.forEach(function (ct) { box.appendChild(contactRow(ct, false)); });
+        if (gone.length) {
+          var t = document.createElement('button');
+          t.type = 'button'; t.className = 'linkish crm-removed-toggle';
+          t.textContent = (showRemovedContacts ? 'Hide ' : 'Show ') + gone.length +
+            ' removed contact' + (gone.length === 1 ? '' : 's');
+          t.addEventListener('click', function () { showRemovedContacts = !showRemovedContacts; loadContacts(); });
+          box.appendChild(t);
+          if (showRemovedContacts) gone.forEach(function (ct) { box.appendChild(contactRow(ct, true)); });
+        }
       });
   }
 
-  function contactRow(ct) {
+  function contactRow(ct, removed) {
     var row = document.createElement('div');
-    row.className = 'kcard';
+    row.className = 'kcard' + (removed ? ' is-off' : '');
     var wa = String(ct.whatsapp || ct.phone || '').replace(/[^0-9]/g, '');
     row.innerHTML =
       '<header class="kcard-head">' +
         '<span class="kcard-name">' + esc(ct.name) + '</span>' +
-        (ct.is_primary ? '<span class="tone is-ok">Main contact</span>' : '') +
+        (removed ? '<span class="tone">Removed</span>' : '') +
+        (ct.is_primary && !removed ? '<span class="tone is-ok">Main contact</span>' : '') +
         (ct.role ? '<span class="tone">' + esc(ct.role) + '</span>' : '') +
         '<span class="crm-lang">Writes in ' + esc(LANG_WORD[ct.lang] || 'English') + '</span>' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
@@ -419,11 +444,16 @@
         '</button>' +
       '</header>' +
       '<div class="kmenu" data-menu hidden>' +
-        (ct.is_primary ? '' :
-          '<button class="kmenu-item" data-a="primary" type="button"><b>Make main contact</b>' +
-          '<span>The person we deal with by default.</span></button>') +
-        '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Remove contact</b>' +
-        '<span>They have left, or were entered twice.</span></button>' +
+        (removed
+          ? '<button class="kmenu-item" data-a="restore" type="button"><b>Put back</b>' +
+            '<span>Returns them to the contact list as they were.</span></button>'
+          : '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b>' +
+            '<span>Change their details.</span></button>' +
+            (ct.is_primary ? '' :
+              '<button class="kmenu-item" data-a="primary" type="button"><b>Make main contact</b>' +
+              '<span>The person we deal with by default.</span></button>') +
+            '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Remove</b>' +
+            '<span>Hidden, not deleted. Can be put back.</span></button>') +
       '</div>' +
       '<div class="kstep kstep-terms">' +
         '<span class="kstep-label">Reach</span>' +
@@ -435,9 +465,11 @@
         '</span>' +
       '</div>';
     wireMenu(row);
-    var prim = row.querySelector('[data-a="primary"]');
-    if (prim) prim.addEventListener('click', function () { makePrimary(ct); });
-    row.querySelector('[data-a="del"]').addEventListener('click', function () { dropContact(ct); });
+    var on = function (a, fn) { var el = row.querySelector('[data-a="' + a + '"]'); if (el) el.addEventListener('click', fn); };
+    on('edit',    function () { openContact(ct); });
+    on('primary', function () { makePrimary(ct); });
+    on('del',     function () { archiveContact(ct, true); });
+    on('restore', function () { archiveContact(ct, false); });
     return row;
   }
 
@@ -451,16 +483,23 @@
     });
   }
 
-  function openContact() {
+  var editingContact = null;
+  function openContact(ct) {
+    editingContact = ct || null;
     $('crmContactBox').hidden = false;
-    ['ctName', 'ctRole', 'ctPhone', 'ctEmail'].forEach(function (id) { $(id).value = ''; });
-    $('ctLang').value = 'en';
-    $('ctPrimary').checked = !state.contacts.length;   // the first one is the main one
+    $('crmContactTitle').textContent = ct ? 'Edit contact' : 'New contact';
+    $('ctSave').textContent = ct ? 'Save changes' : 'Save contact';
+    $('ctName').value = ct ? (ct.name || '') : '';
+    $('ctRole').value = ct ? (ct.role || '') : '';
+    $('ctPhone').value = ct ? (ct.phone || '') : '';
+    $('ctEmail').value = ct ? (ct.email || '') : '';
+    $('ctLang').value = ct ? (ct.lang || 'en') : 'en';
+    $('ctPrimary').checked = ct ? Boolean(ct.is_primary) : !state.contacts.length;
     msg('ctMsg', '');
     $('ctName').focus();
   }
-  function shutContact() { $('crmContactBox').hidden = true; }
-  $('crmAddContact').addEventListener('click', openContact);
+  function shutContact() { $('crmContactBox').hidden = true; editingContact = null; }
+  $('crmAddContact').addEventListener('click', function () { openContact(null); });
   $('ctCancel').addEventListener('click', shutContact);
 
   $('ctSave').addEventListener('click', function () {
@@ -468,20 +507,28 @@
     if (!name) { msg('ctMsg', 'A contact needs a name.', 'err'); $('ctName').focus(); return; }
     var phone = val('ctPhone');
     var row = {
-      client_id: state.client.id, name: name,
-      role: val('ctRole') || null, phone: phone || null, whatsapp: phone || null,
+      name: name, role: val('ctRole') || null, phone: phone || null, whatsapp: phone || null,
       email: val('ctEmail') || null, lang: $('ctLang').value,
       is_primary: $('ctPrimary').checked
     };
-    var go = function () {
-      db.from('client_contacts').insert(row).then(function (r) {
-        if (r.error) { msg('ctMsg', r.error.message, 'err'); return; }
-        log('contact.added', state.client.name + ' · ' + name, row.role || '');
-        shutContact();
-        loadContacts();
-      });
+    var after = function (r) {
+      if (r.error) { msg('ctMsg', r.error.message, 'err'); return; }
+      log(editingContact ? 'contact.edited' : 'contact.added', state.client.name + ' · ' + name, row.role || '');
+      shutContact();
+      loadContacts();
     };
-    if (row.is_primary && state.contacts.length) clearPrimary(go); else go();
+    var go = function () {
+      if (editingContact) {
+        db.from('client_contacts').update(row).eq('id', editingContact.id).then(after);
+      } else {
+        row.client_id = state.client.id;
+        db.from('client_contacts').insert(row).then(after);
+      }
+    };
+    var othersPrimary = state.contacts.some(function (c) {
+      return c.is_primary && !(editingContact && c.id === editingContact.id);
+    });
+    if (row.is_primary && othersPrimary) clearPrimary(go); else go();
   });
 
   function clearPrimary(then) {
@@ -496,16 +543,32 @@
       });
     });
   }
-  function dropContact(ct) {
-    if (!confirm('Remove ' + ct.name + ' from ' + state.client.name + '?')) return;
-    db.from('client_contacts').delete().eq('id', ct.id).then(function (r) {
+  function archiveContact(ct, away) {
+    var patch = away ? { archived_at: new Date().toISOString(), is_primary: false }
+                     : { archived_at: null };
+    db.from('client_contacts').update(patch).eq('id', ct.id).then(function (r) {
       if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
-      log('contact.removed', state.client.name + ' · ' + ct.name, '');
+      log(away ? 'contact.removed' : 'contact.restored', state.client.name + ' · ' + ct.name, '');
+      if (away) undoBar(ct.name + ' removed.', function () { archiveContact(ct, false); });
       loadContacts();
     });
   }
 
+  /* One line with an Undo on it, for the few seconds after a removal when a
+     person realises. Nothing is lost either way; this is only the fast path. */
+  var undoTimer = null;
+  function undoBar(text, undo) {
+    var bar = $('crmUndo');
+    bar.hidden = false;
+    bar.innerHTML = '<span>' + esc(text) + '</span><button class="btn btn-sm" type="button">Undo</button>';
+    bar.querySelector('button').addEventListener('click', function () { bar.hidden = true; undo(); });
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(function () { bar.hidden = true; }, 8000);
+  }
+
   // ---- Calls and visits ---------------------------------------------------
+  var showRemovedTouches = false;
+
   function loadTouches() {
     var box = $('crmTouches');
     box.innerHTML = '<div class="empty">Loading…</div>';
@@ -513,75 +576,132 @@
       .order('happened_at', { ascending: false }).order('created_at', { ascending: false })
       .then(function (r) {
         if (r.error) { box.innerHTML = '<div class="empty">Could not load the log.</div>'; return; }
-        state.touches = r.data || [];
+        var all = r.data || [];
+        state.touches = all.filter(function (t) { return !t.archived_at; });
+        var gone = all.filter(function (t) { return t.archived_at; });
+        box.innerHTML = '';
         if (!state.touches.length) {
           box.innerHTML = '<div class="empty">Nothing logged yet. After a call or a visit, ' +
             'write what was discussed and what happens next, so it is not left to memory.</div>';
-          return;
         }
-        box.innerHTML = '';
-        state.touches.forEach(function (tc) { box.appendChild(touchRow(tc)); });
+        state.touches.forEach(function (tc) { box.appendChild(touchRow(tc, false)); });
+        if (gone.length) {
+          var t = document.createElement('button');
+          t.type = 'button'; t.className = 'linkish crm-removed-toggle';
+          t.textContent = (showRemovedTouches ? 'Hide ' : 'Show ') + gone.length +
+            ' removed ' + (gone.length === 1 ? 'entry' : 'entries');
+          t.addEventListener('click', function () { showRemovedTouches = !showRemovedTouches; loadTouches(); });
+          box.appendChild(t);
+          if (showRemovedTouches) gone.forEach(function (tc) { box.appendChild(touchRow(tc, true)); });
+        }
       });
   }
 
-  function touchRow(tc) {
-    var due = tc.next_at && tc.next_at < today();
+  function touchRow(tc, removed) {
+    var open = tc.next_action && !tc.done_at;
+    var due = open && tc.next_at && tc.next_at < today();
     var row = document.createElement('div');
-    row.className = 'touch' + (due ? ' is-due' : '');
+    row.className = 'touch' + (due ? ' is-due' : '') + (removed ? ' is-off' : '');
     row.innerHTML =
       '<div class="touch-when"><b>' + esc(niceDate(tc.happened_at)) + '</b>' +
-        '<span class="tone">' + esc(KIND_WORD[tc.kind] || tc.kind) + '</span></div>' +
+        '<span class="tone">' + esc(KIND_WORD[tc.kind] || tc.kind) + '</span>' +
+        (removed ? '<span class="tone">Removed</span>' : '') + '</div>' +
       '<div class="touch-body">' +
         '<p class="touch-summary">' + esc(tc.summary) + '</p>' +
         '<p class="touch-meta">' +
-          [tc.contact_name ? 'With ' + tc.contact_name : '', tc.by_whom ? 'by ' + tc.by_whom : '']
+          [tc.contact_name ? 'With ' + tc.contact_name : '', tc.by_whom ? 'by ' + tc.by_whom : '',
+           tc.updated_at ? 'edited' : '']
             .filter(Boolean).map(esc).join(' · ') +
         '</p>' +
-        (tc.next_action ? '<p class="touch-next' + (due ? ' is-due' : '') + '">Next: ' +
-          esc(tc.next_action) + (tc.next_at ? ' · by ' + esc(niceDate(tc.next_at)) : '') +
+        (tc.next_action ? '<p class="touch-next' + (due ? ' is-due' : '') + (tc.done_at ? ' is-done' : '') + '">' +
+          (tc.done_at ? 'Done: ' : 'Next: ') + esc(tc.next_action) +
+          (tc.next_at ? ' · by ' + esc(niceDate(tc.next_at)) : '') +
           (due ? ' · overdue' : '') + '</p>' : '') +
       '</div>' +
-      '<button class="btn btn-quiet btn-sm is-danger touch-del" data-a="del" type="button">Remove</button>';
-    row.querySelector('[data-a="del"]').addEventListener('click', function () {
-      if (!confirm('Remove this entry from the log?')) return;
-      db.from('client_touches').delete().eq('id', tc.id).then(function () { loadTouches(); });
-    });
+      '<div class="touch-actions">' +
+        (removed
+          ? '<button class="btn btn-quiet btn-sm" data-a="restore" type="button">Put back</button>'
+          : (open ? '<button class="btn btn-sm" data-a="done" type="button">Done</button>' : '') +
+            (tc.done_at ? '<button class="btn btn-quiet btn-sm" data-a="undone" type="button">Reopen</button>' : '') +
+            '<button class="btn btn-quiet btn-sm" data-a="edit" type="button">Edit</button>' +
+            '<button class="btn btn-quiet btn-sm is-danger" data-a="del" type="button">Remove</button>') +
+      '</div>';
+    var on = function (a, fn) { var el = row.querySelector('[data-a="' + a + '"]'); if (el) el.addEventListener('click', fn); };
+    on('edit',    function () { openTouch(tc); });
+    on('done',    function () { markDone(tc, true); });
+    on('undone',  function () { markDone(tc, false); });
+    on('del',     function () { archiveTouch(tc, true); });
+    on('restore', function () { archiveTouch(tc, false); });
     return row;
   }
 
-  function openTouch() {
+  function markDone(tc, done) {
+    db.from('client_touches').update({ done_at: done ? new Date().toISOString() : null })
+      .eq('id', tc.id).then(function (r) {
+        if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
+        log(done ? 'client.action_done' : 'client.action_reopened', state.client.name, tc.next_action || '');
+        loadTouches();
+      });
+  }
+  function archiveTouch(tc, away) {
+    db.from('client_touches').update({ archived_at: away ? new Date().toISOString() : null })
+      .eq('id', tc.id).then(function (r) {
+        if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
+        log(away ? 'client.touch_removed' : 'client.touch_restored', state.client.name, KIND_WORD[tc.kind] || '');
+        if (away) undoBar('Log entry removed.', function () { archiveTouch(tc, false); });
+        loadTouches();
+      });
+  }
+
+  var editingTouch = null;
+  function openTouch(tc) {
+    editingTouch = tc || null;
     $('crmTouchBox').hidden = false;
-    $('tcKind').value = 'call';
-    $('tcDate').value = today();
-    ['tcWith', 'tcSummary', 'tcNext', 'tcNextAt'].forEach(function (id) { $(id).value = ''; });
-    var main = state.contacts.filter(function (c) { return c.is_primary; })[0];
-    if (main) $('tcWith').value = main.name;
+    $('crmTouchTitle').textContent = tc ? 'Edit entry' : 'What happened';
+    $('tcSave').textContent = tc ? 'Save changes' : 'Save to the log';
+    $('tcKind').value = tc ? (tc.kind || 'call') : 'call';
+    $('tcDate').value = tc ? (tc.happened_at || today()) : today();
+    $('tcWith').value = tc ? (tc.contact_name || '') : '';
+    $('tcSummary').value = tc ? (tc.summary || '') : '';
+    $('tcNext').value = tc ? (tc.next_action || '') : '';
+    $('tcNextAt').value = tc ? (tc.next_at || '') : '';
+    if (!tc) {
+      var main = state.contacts.filter(function (c) { return c.is_primary; })[0];
+      if (main) $('tcWith').value = main.name;
+    }
     msg('tcMsg', '');
     $('tcSummary').focus();
   }
-  function shutTouch() { $('crmTouchBox').hidden = true; }
-  $('crmAddTouch').addEventListener('click', openTouch);
+  function shutTouch() { $('crmTouchBox').hidden = true; editingTouch = null; }
+  $('crmAddTouch').addEventListener('click', function () { openTouch(null); });
   $('tcCancel').addEventListener('click', shutTouch);
 
   $('tcSave').addEventListener('click', function () {
     var summary = val('tcSummary');
     if (!summary) { msg('tcMsg', 'Write what was discussed.', 'err'); $('tcSummary').focus(); return; }
     var row = {
-      client_id: state.client.id,
       kind: $('tcKind').value,
       happened_at: $('tcDate').value || today(),
-      by_whom: actor() || null,
       contact_name: val('tcWith') || null,
       summary: summary,
       next_action: val('tcNext') || null,
       next_at: $('tcNextAt').value || null
     };
-    db.from('client_touches').insert(row).then(function (r) {
+    var after = function (r) {
       if (r.error) { msg('tcMsg', r.error.message, 'err'); return; }
-      log('client.touch', state.client.name, KIND_WORD[row.kind] + (row.next_action ? ' · next: ' + row.next_action : ''));
+      log(editingTouch ? 'client.touch_edited' : 'client.touch', state.client.name,
+          KIND_WORD[row.kind] + (row.next_action ? ' · next: ' + row.next_action : ''));
       shutTouch();
       loadTouches();
-    });
+    };
+    if (editingTouch) {
+      row.updated_at = new Date().toISOString();
+      db.from('client_touches').update(row).eq('id', editingTouch.id).then(after);
+    } else {
+      row.client_id = state.client.id;
+      row.by_whom = actor() || null;
+      db.from('client_touches').insert(row).then(after);
+    }
   });
 
   // ---- Engagements --------------------------------------------------------
@@ -719,7 +839,57 @@
     $('crmWork').hidden = true;
     $('crmListView').hidden = false;
     setUrl();
-    loadClients(function () { restoreScroll(); });
+    loadClients(function () { loadDue(); restoreScroll(); });
+  }
+
+  /* Every open next action, across every client, soonest first. Overdue ones
+     lead. Each line opens its client, and Done clears it from here without
+     touching the log entry it came from. */
+  function loadDue() {
+    var box = $('crmDueList');
+    db.from('client_touches').select('*').not('next_action', 'is', null)
+      .is('done_at', null).is('archived_at', null)
+      .order('next_at', { ascending: true, nullsFirst: false }).limit(50)
+      .then(function (r) {
+        var rows = (r.data || []).filter(function (t) { return t.next_action; });
+        // Soonest first, undated last.
+        rows.sort(function (a, b) {
+          if (a.next_at && b.next_at) return a.next_at < b.next_at ? -1 : a.next_at > b.next_at ? 1 : 0;
+          return a.next_at ? -1 : b.next_at ? 1 : 0;
+        });
+        var byId = {};
+        state.clients.forEach(function (c) { byId[c.id] = c; });
+        $('crmDue').hidden = !rows.length;
+        var over = rows.filter(function (t) { return t.next_at && t.next_at < today(); }).length;
+        $('crmDueCount').textContent = rows.length + ' open' + (over ? ' · ' + over + ' overdue' : '');
+        box.innerHTML = '';
+        rows.forEach(function (t) {
+          var c = byId[t.client_id];
+          var due = t.next_at && t.next_at < today();
+          var soon = !due && t.next_at && t.next_at <= new Date(Date.now() + 6 * 864e5).toISOString().slice(0, 10);
+          var row = document.createElement('div');
+          row.className = 'due-row' + (due ? ' is-due' : soon ? ' is-soon' : '');
+          row.innerHTML =
+            '<span class="due-when">' + esc(t.next_at ? niceDate(t.next_at) : 'No date') +
+              (due ? '<em>overdue</em>' : soon ? '<em>this week</em>' : '') + '</span>' +
+            '<button class="due-client" type="button">' + esc(c ? c.name : 'Client') + '</button>' +
+            '<span class="due-what">' + esc(t.next_action) +
+              (t.by_whom ? '<small>' + esc(t.by_whom) + '</small>' : '') + '</span>' +
+            '<button class="btn btn-sm" data-a="done" type="button">Done</button>';
+          row.querySelector('.due-client').addEventListener('click', function () { if (c) openClient(c); });
+          row.querySelector('[data-a="done"]').addEventListener('click', function () {
+            db.from('client_touches').update({ done_at: new Date().toISOString() }).eq('id', t.id)
+              .then(function () {
+                log('client.action_done', c ? c.name : '', t.next_action);
+                undoBar('Marked done: ' + t.next_action, function () {
+                  db.from('client_touches').update({ done_at: null }).eq('id', t.id).then(loadDue);
+                });
+                loadDue();
+              });
+          });
+          box.appendChild(row);
+        });
+      }, function () { $('crmDue').hidden = true; });
   }
 
   if (bridge.crmReady) bridge.crmReady();
