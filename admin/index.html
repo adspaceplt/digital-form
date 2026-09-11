@@ -144,7 +144,7 @@
             <div style="flex:0 0 200px"><label class="field-label" for="crmIndustry">Industry</label>
               <select class="select" id="crmIndustry"></select></div>
             <div style="flex:0 0 180px"><label class="field-label" for="crmOwnerPick">Owner</label>
-              <input class="input" id="crmOwnerPick" list="crmTeamList" placeholder="Who is accountable">
+              <input class="input" id="crmOwnerPick" list="crmTeamList" placeholder="Name">
               <datalist id="crmTeamList"></datalist></div>
             <div style="flex:0 0 160px"><label class="field-label" for="crmMarket">Market</label>
               <select class="select" id="crmMarket">
@@ -207,7 +207,7 @@
           <!-- What stands between a lead and an active client, said plainly. -->
           <div class="notice is-warn" id="crmGate" hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.5"/></svg>
-            <div><b>Not active yet.</b> <span id="crmGateText"></span></div>
+            <div><b>Not active.</b> <span id="crmGateText"></span></div>
           </div>
           <div class="msg" id="crmWorkMsg"></div>
         </section>
@@ -339,7 +339,7 @@
           </div>
           <div class="row" style="margin-top:12px">
             <div><label class="field-label" for="tcSummary">What was discussed</label>
-              <textarea class="input textarea" id="tcSummary" rows="3" placeholder="Walked the showroom, they want the launch video before Raya. Budget around RM 20k."></textarea></div>
+              <textarea class="input textarea" id="tcSummary" rows="3" placeholder="Summary of the discussion"></textarea></div>
           </div>
           <div class="row" style="margin-top:12px">
             <div><label class="field-label" for="tcNext">Next action</label>
@@ -445,7 +445,7 @@
                 <span class="logopreview" id="logoPreview" title="How it will look as a profile picture">
                   <img id="logoPreviewImg" alt="" hidden>
                 </span>
-                <input class="input" id="eLogo" placeholder="https://… shown as the profile picture">
+                <input class="input" id="eLogo" placeholder="https://">
               </div>
             </div>
             <div style="flex:0 0 190px">
@@ -731,7 +731,7 @@
 
         <div class="panel" id="bulkBox" hidden>
           <div class="panelhead"><h3 id="bulkTitle">Same shoot date for everyone</h3></div>
-          <p class="hint" id="bulkHint">Fills every card still blank.</p>
+          <p class="hint" id="bulkHint">Applies to cards without a date. Existing dates are kept.</p>
           <div class="row" id="bulkVisitRow">
             <div style="flex:0 0 160px"><label class="field-label" for="bulkDate">Date</label>
               <input class="input" id="bulkDate" type="date"></div>
@@ -791,14 +791,6 @@
         <div class="viewhead">
           <span class="headmark"><h2>Creators</h2></span>
           <button class="btn btn-primary" id="showAddCreator" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a creator</button>
-        </div>
-
-        <div class="notice">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.5"/></svg>
-          <div><b>A creator lives here once.</b>
-          <span>Campaigns point at this record rather than holding their own copy, which is
-          what makes the same creator appearing twice in one campaign impossible rather than
-          merely something to spot.</span></div>
         </div>
 
         <div class="panel" id="addCreatorBox" hidden>
@@ -873,10 +865,8 @@
       <div class="notice" id="linksNotice">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.5"/></svg>
         <div>
-          <b>Not serving yet.</b>
-          <span>Slugs live here now so the list is ready and complete. They start
-          redirecting once <code>go.adspace.me</code> moves off Rebrandly, and nothing
-          you enter needs changing when it does.</span>
+          <b>Not live yet.</b>
+          <span>Links redirect once <code>go.adspace.me</code> is moved from Rebrandly. Entries here are kept.</span>
         </div>
       </div>
 
@@ -897,7 +887,7 @@
           </div>
           <div style="flex:0 0 190px">
             <label class="field-label" for="newLinkLabel">Label (optional)</label>
-            <input class="input" id="newLinkLabel" placeholder="What it is for">
+            <input class="input" id="newLinkLabel" placeholder="Label">
           </div>
         </div>
         <div class="row" style="margin-top:16px">
@@ -950,7 +940,7 @@ raya-2026        https://example.com/raya"></textarea>
       <div id="lockList"></div>
       <p class="lockby">Recorded by <b id="lockBy"></b></p>
       <label class="field-label" for="lockPerson">Client's name, if they confirmed to you directly (optional)</label>
-      <input class="input" id="lockPerson" placeholder="e.g. Wei Ling">
+      <input class="input" id="lockPerson" placeholder="Name">
       <label class="field-label" for="lockSource" style="margin-top:12px">How it reached us</label>
       <select class="select" id="lockSource">
         <option value="portal">They confirmed on the portal themselves</option>
@@ -981,7 +971,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-body">
       <div class="row" style="margin-bottom:16px">
         <div><label class="field-label" for="qrLabel">Label for a new code</label>
-          <input class="input" id="qrLabel" placeholder="e.g. Mall poster, roadshow bunting"></div>
+          <input class="input" id="qrLabel" placeholder="Placement, e.g. mall poster"></div>
         <button class="btn btn-primary" id="qrNew" type="button">Create QR code</button>
       </div>
       <div class="msg" id="qrMsg"></div>

@@ -107,7 +107,7 @@
     });
     var off = el.querySelector('[data-a="off"]');
     if (off) off.addEventListener('click', function () {
-      if (!confirm('Deactivate ' + m.name + '?\n\nThey keep their login but the portal shows them nothing until reactivated.')) return;
+      if (!confirm('Deactivate ' + m.name + '?\n\nAccess is removed until reactivated.')) return;
       save(m, { active: false }, true);
     });
     var on = el.querySelector('[data-a="on"]');
@@ -152,22 +152,22 @@
         load();
         // The row is theirs; now the login. The function holds the key the
         // browser must not, and emails them the sign-in link.
-        msg('teamMsg', name + ' added. Sending their sign-in invitation…', 'ok');
+        msg('teamMsg', name + ' added. Sending invitation…', 'ok');
         db.functions.invoke('invite-member', { body: { email: email, name: name } })
           .then(function (r) {
             var d = r.data || {};
             if (r.error || d.error) {
               var why = (d.error === 'not_admin') ? 'Only an admin can send invitations.'
                 : (r.error && /not found|404|Failed to send/i.test(String(r.error.message || r.error)))
-                  ? 'The invite-member function is not deployed yet. Add their login under Supabase ' +
-                    'Authentication for now, or deploy the function and use Resend invitation.'
-                  : 'Could not send the invitation: ' + (d.detail || (r.error && r.error.message) || d.error);
-              msg('teamMsg', name + ' is on the team, but: ' + why, 'warn');
+                  ? 'The invite-member function is not deployed. Add the login under Supabase ' +
+                    'Authentication, or deploy the function and use Invite.'
+                  : 'Invitation could not be sent: ' + (d.detail || (r.error && r.error.message) || d.error);
+              msg('teamMsg', name + ' added. ' + why, 'warn');
               return;
             }
             msg('teamMsg', d.already
-              ? name + ' is on the team and already had a login. They can sign in now.'
-              : name + ' is on the team. An invitation with their sign-in link has been emailed to ' + email + '.',
+              ? name + ' added. A login already exists.'
+              : name + ' added. Invitation sent to ' + email + '.',
               'ok');
           });
       });
@@ -182,7 +182,7 @@
         var d = r.data || {};
         if (r.error || d.error) { msg('teamMsg', 'Could not send: ' + (d.detail || d.error || (r.error && r.error.message)), 'err'); return; }
         log('team.invited', m.name, m.email);
-        msg('teamMsg', d.already ? m.name + ' already has a login and can sign in.'
+        msg('teamMsg', d.already ? m.name + ' already has a login.'
                                  : 'Invitation sent to ' + m.email + '.', 'ok');
       });
   }

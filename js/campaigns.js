@@ -345,7 +345,7 @@
       .map(function (i) { return i.value.trim(); }).filter(Boolean);
     var bad = raw.filter(function (u) { return !readProfile(u); });
     if (bad.length) {
-      msg('creatorMsg', 'These are not profile links we recognise: ' + bad.join(', '), 'err');
+      msg('creatorMsg', 'Unrecognised profile links: ' + bad.join(', '), 'err');
       return;
     }
     var profiles = profValues(ROSTER_CTX);
@@ -367,7 +367,7 @@
         var after = function (res) {
           if (res && res.error) {
             msg('creatorMsg', /duplicate|unique/i.test(res.error.message)
-              ? 'One of those profile links already belongs to another creator.'
+              ? 'A profile link is already assigned to another creator.'
               : res.error.message, 'err');
             return;
           }
@@ -396,11 +396,11 @@
   });
 
   function removeCreator(c) {
-    if (!confirm('Remove ' + c.name + ' from the roster?\n\nCampaigns that already offered them keep their record.')) return;
+    if (!confirm('Remove ' + c.name + ' from the roster?\n\nExisting campaign records are kept.')) return;
     db.from('creators').delete().eq('id', c.id).then(function (r) {
       if (r.error) {
         alert(/foreign key|violates/i.test(r.error.message)
-          ? c.name + ' has been offered in a campaign, so the record has to stay. Mark them inactive instead.'
+          ? c.name + ' has been offered in a campaign and cannot be removed. Mark them inactive instead.'
           : r.error.message);
         return;
       }
@@ -673,11 +673,9 @@
   function publishMove(s) {
     if (s === 'draft')      return { to: 'open',  label: 'Publish to client' };
     if (s === 'open')        return { to: 'draft', label: 'Unpublish',
-      ask: 'Unpublish this campaign?\n\nThe client\'s link stops working until it is ' +
-           'published again. Nothing they have chosen is lost.' };
+      ask: 'Unpublish this campaign?\n\nThe client link stops working until published again. Selections are kept.' };
     if (s === 'production')  return { to: 'open',  label: 'Return to client selection',
-      ask: 'Return this campaign to the client for selection?\n\nBookings already made stay ' +
-           'exactly as they are. The client can choose again for any slot that is free.' };
+      ask: 'Return this campaign to client selection?\n\nExisting bookings are kept.' };
     return { to: 'production', label: 'Resume campaign',
       ask: 'Put this campaign back into production?' };
   }
@@ -696,7 +694,7 @@
 
   $('campDelete').addEventListener('click', function () {
     var c = state.campaign;
-    if (!confirm('Delete ' + c.title + '?\n\nEvery option and selection on it goes too. This cannot be undone.')) return;
+    if (!confirm('Delete ' + c.title + '?\n\nAll offers and selections will be removed. This cannot be undone.')) return;
     db.from('campaigns').delete().eq('id', c.id).then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
       log('campaign.deleted', c.title, c.invoice_no || '');
@@ -844,7 +842,7 @@
     var chosen = state.options.filter(function (x) { return x.state === 'shortlisted'; }).length;
     var booked = state.options.filter(isLive).length;
     if (to === 'shortlisted' && chosen + booked >= state.campaign.slots) {
-      msg('campWorkMsg', 'Every slot is already spoken for. Take one off first.', 'err');
+      msg('campWorkMsg', 'All slots are filled.', 'err');
       return;
     }
     db.from('campaign_options').update({ state: to }).eq('id', o.id).then(function (r) {
@@ -858,9 +856,7 @@
   function dropOption(o) {
     var name = (o.creators && o.creators.name) || 'this creator';
     if (o.state !== 'option' && o.state !== 'backup') {
-      alert(name + ' has been chosen by the client, so this is no longer a deletion.\n\n' +
-        'Open them under Production above. "Something changed…" there covers sending ' +
-        'them back to the options, a withdrawal and a replacement, and each one can be undone.');
+      alert(name + ' has been selected by the client. Manage them under Production.');
       return;
     }
     if (!confirm('Withdraw ' + name + ' from the options?')) return;
@@ -983,10 +979,10 @@
     var raw = Array.prototype.slice.call(document.querySelectorAll('#ncProfRows .prof-url'))
       .map(function (i) { return i.value.trim(); }).filter(Boolean);
     var bad = raw.filter(function (u) { return !readProfile(u); });
-    if (bad.length) { msg('ncMsg', 'These are not profile links we recognise: ' + bad.join(', '), 'err'); return; }
+    if (bad.length) { msg('ncMsg', 'Unrecognised profile links: ' + bad.join(', '), 'err'); return; }
     var profiles = profValues(NC_CTX);
     var plats = readBoxes($('ncPlatforms'));
-    if (!plats.length) { msg('ncMsg', 'Tick at least one platform she will post on.', 'err'); return; }
+    if (!plats.length) { msg('ncMsg', 'Select at least one platform.', 'err'); return; }
 
     // Kept in the roster with this as her usual rate, since it is the only
     // number known for her yet. The offer carries it independently.
@@ -1000,7 +996,7 @@
         var offer = function (res) {
           if (res && res.error) {
             msg('ncMsg', /duplicate|unique/i.test(res.error.message)
-              ? 'One of those profile links already belongs to another creator.' : res.error.message, 'err');
+              ? 'A profile link is already assigned to another creator.' : res.error.message, 'err');
             return;
           }
           log('creator.added', name, 'from a campaign');
@@ -1080,21 +1076,21 @@
     var items = '';
     if (o.state === 'option' || o.state === 'backup') {
       items += menuItem('pick', 'Accept for the client',
-        'They said yes over WhatsApp or a call. Records the choice here.');
+        'Records a confirmation received directly.');
       items += menuItem('del', 'Remove from this campaign',
-        'They were never offered in the end.', 'is-danger');
+        'Withdraws the offer.', 'is-danger');
     }
     if (o.state === 'shortlisted') {
       items += menuItem('unpick', 'Undo the selection',
-        'Puts them back among the options the client can choose from.');
+        'Returns them to the options.');
     }
     if (isLive(o)) {
       items += menuItem('unbook', 'Return to the options',
-        'Frees the slot. Dates and notes on this card are kept.');
+        'Frees the slot. Dates and notes are kept.');
       items += menuItem('withdraw', 'Creator withdrew',
-        'They pulled out. The slot reopens and the client\'s backups move up.');
+        'The slot reopens and backups move up.');
       items += menuItem('replace', 'Client replaced them',
-        'After filming this is goodwill: the creator is still paid.', 'is-danger');
+        'After filming, the creator is still paid.', 'is-danger');
     }
     return items ? '<div class="kmenu" data-menu hidden>' + items + '</div>' : '';
   }
@@ -1249,12 +1245,11 @@
      was spent. They go back among the options and the slot frees up. */
   function unbook(o) {
     var name = (o.creators || {}).name || 'this creator';
-    if (!confirm('Return ' + name + ' to the options?\n\nThe slot frees up and the client ' +
-        'can choose again. Dates and notes on this card are kept.')) return;
+    if (!confirm('Return ' + name + ' to the options?\n\nThe slot is freed. Dates and notes are kept.')) return;
     db.from('campaign_options').update({ state: 'option' }).eq('id', o.id).then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
       log('campaign.unbooked', name, '');
-      msg('campWorkMsg', name + ' is back on the list of options and the slot is free.', 'ok');
+      msg('campWorkMsg', name + ' returned to the options.', 'ok');
       loadOptions();
     });
   }
@@ -1262,8 +1257,7 @@
   // A withdrawal or replacement keyed on the wrong card, undone.
   function reinstate(o) {
     var name = (o.creators || {}).name || 'this creator';
-    if (!confirm('Put ' + name + ' back into production?\n\nThey return as confirmed and ' +
-        'the reason recorded against them is cleared.')) return;
+    if (!confirm('Return ' + name + ' to production?\n\nThe recorded reason is cleared.')) return;
     db.from('campaign_options')
       .update({ state: 'confirmed', drop_reason: null, goodwill: false })
       .eq('id', o.id).then(function (r) {
@@ -1367,25 +1361,23 @@
     var goodwill = false;
 
     if (kind === 'replaced' && shot) {
-      if (!confirm(name + ' has already filmed.\n\nReplacing them now is goodwill: they ' +
-          'still get paid, so the campaign ends up costing one more creator than was ' +
-          'invoiced. Continue?')) return;
+      if (!confirm(name + ' has already filmed.\n\nReplacing them is goodwill: the creator is still paid. Continue?')) return;
       goodwill = true;
     } else if (!confirm((kind === 'withdrawn' ? 'Mark ' + name + ' as withdrawn?'
                                               : 'Replace ' + name + '?') +
-        '\n\nThey stay on the record either way, because the invoice has to reconcile against them.')) {
+        '\n\nThe record is kept for invoice reconciliation.')) {
       return;
     }
 
-    var why = prompt(kind === 'withdrawn' ? 'Why did they withdraw?' : 'Why the replacement?') || '';
+    var why = prompt(kind === 'withdrawn' ? 'Reason for withdrawal:' : 'Reason for replacement:') || '';
     db.from('campaign_options')
       .update({ state: kind, drop_reason: why.trim() || null, goodwill: goodwill })
       .eq('id', o.id).then(function (r) {
         if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
         log(kind === 'withdrawn' ? 'campaign.withdrawn' : 'campaign.replaced', name, why);
         msg('campWorkMsg', kind === 'withdrawn'
-          ? name + ' is withdrawn and the slot is free again. The client can pick a replacement from the remaining options.'
-          : name + ' is replaced.' + (goodwill ? ' Logged as goodwill.' : ' The slot is free again.'), 'warn');
+          ? name + ' withdrawn. The slot is open for a replacement.'
+          : name + ' replaced.' + (goodwill ? ' Recorded as goodwill.' : ' The slot is open.'), 'warn');
         loadOptions();
       });
   }
@@ -1497,7 +1489,7 @@
           c.invoice_url = url; c.invoice_uploaded_at = stamp;
           log('campaign.invoice_file', c.title, c.invoice_no || '');
           openCampaign(c);
-          msg('invMsg', 'Invoice uploaded. The client can open it from their page.', 'ok');
+          msg('invMsg', 'Invoice uploaded.', 'ok');
         });
     }).catch(function (e) { msg('invMsg', e.message, 'err'); });
   });
@@ -1605,7 +1597,7 @@
     function done() {
       msg('bulkMsg', touched
         ? 'Applied to ' + touched + (touched === 1 ? ' creator.' : ' creators.')
-        : 'Every row already had those filled in. Use Overwrite to replace them.',
+        : 'All rows already have these values. Use Overwrite to replace them.',
         touched ? 'ok' : 'warn');
       log('campaign.bulk', state.campaign.title, touched + ' rows');
       loadOptions();
@@ -1614,7 +1606,7 @@
 
   $('bulkApply').addEventListener('click', function () { applyBulk(false); });
   $('bulkApplyAll').addEventListener('click', function () {
-    if (!confirm('Overwrite these fields on every creator, including rows already set by hand?')) return;
+    if (!confirm('Overwrite these fields on every creator?')) return;
     applyBulk(true);
   });
 

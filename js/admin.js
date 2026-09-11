@@ -81,7 +81,7 @@
       email: email,
       options: { emailRedirectTo: location.origin + '/admin/' }
     }).then(function (r) {
-      msg('authMsg', r.error ? r.error.message : 'A sign in link has been sent to that address.',
+      msg('authMsg', r.error ? r.error.message : 'A sign-in link has been sent.',
           r.error ? 'err' : 'ok');
     });
   });
@@ -739,15 +739,12 @@
       if (square) {
         msg('logoNote', w + ' x ' + h + '. Square, so it fills the circle exactly.', 'ok');
       } else {
-        msg('logoNote', w + ' x ' + h + '. A profile picture is square on every ' +
-          'platform, so a ' + (w > h ? 'wide' : 'tall') + ' mark sits small inside the circle ' +
-          'with space around it. A square version of the same file will read properly.', 'warn');
+        msg('logoNote', w + ' x ' + h + '. Not square; it will appear small inside the circle. Use a square version.', 'warn');
       }
     };
     probe.onerror = function () {
       img.hidden = true;
-      msg('logoNote', 'Nothing loaded from that address. Open it in a tab to check it is ' +
-        'the file itself and not a page about it.', 'err');
+      msg('logoNote', 'No image could be loaded from that address.', 'err');
     };
     probe.src = url;
   }
@@ -778,9 +775,9 @@
         state.client.logo_url = logo || null;
         state.client.passcode = pass || null;
         paintLock();
-        var note = !had && pass ? 'Access code added. The client will be asked for it.'
-                 : had && !pass ? 'Access code removed. The link now opens on its own.'
-                 : had && pass  ? 'Access code updated. The previous one no longer works.'
+        var note = !had && pass ? 'Access code added.'
+                 : had && !pass ? 'Access code removed.'
+                 : had && pass  ? 'Access code updated.'
                  : 'Saved.';
         msg('profileMsg', note, 'ok');
         if (!had && !pass) msg('profileMsg', logo ? 'Logo saved.' : 'Saved.', 'ok');
@@ -789,8 +786,7 @@
 
   $('resetLink').addEventListener('click', function () {
     if (!confirm('Reset the review link for ' + state.client.name + '?\n\n' +
-      'The current link will be invalidated immediately and anyone holding it will lose ' +
-      'access. The replacement link must be reissued to the client.')) return;
+      'The current link stops working immediately. The new link must be reissued to the client.')) return;
 
     var next = makeToken();
     db.from('clients').update({ access_token: next }).eq('id', state.client.id)
@@ -824,14 +820,12 @@
     db.from('batches').select('id').eq('client_id', c.id).then(function (r) {
       var sets = (r.data || []).length;
       if (!confirm('Remove ' + c.name + ' from Content Review?\n\n' +
-        'This deletes their ' + sets + ' content set' + (sets === 1 ? '' : 's') +
-        ', including every post and approval record, and takes them off this list.\n\n' +
-        'The client itself stays in Clients with its contacts and log. ' +
-        'They can be added back to Content Review from there.')) return;
+        'Deletes ' + sets + ' content set' + (sets === 1 ? '' : 's') +
+        ' with all posts and approval records. The client record is kept.')) return;
       var typed = prompt('Type the client name exactly to confirm:', '');
       if (typed === null) return;
       if (typed.trim() !== c.name) {
-        msg('profileMsg', 'That does not match the client name. Nothing has been removed.', 'err');
+        msg('profileMsg', 'Name does not match. Nothing removed.', 'err');
         return;
       }
       db.from('batches').delete().eq('client_id', c.id).then(function (d) {
@@ -1136,9 +1130,7 @@
     if (toobig.length) {
       msg('setMsg',
         toobig.map(function (f) { return f.name + ' (' + mb(f.size) + ' MB)'; }).join(', ') +
-        ' — too big to upload. The limit is ' + (cfg.maxUploadMB || 50) + ' MB. ' +
-        'Export a review copy at 1080p and around 5 Mbps, which is plenty for approval, ' +
-        'or put the file on your own CDN and paste the link below.', 'err');
+        ' exceeds the ' + (cfg.maxUploadMB || 50) + ' MB limit. Export a smaller review copy or paste a link.', 'err');
       if (!queue.length) return;
     }
 
@@ -1184,12 +1176,10 @@
         // finish, so the running order of a set is never a lottery.
         results.forEach(function (r) { pushDraft(r.url, r.info, true); });
         if (slow.length) {
-          msg('setMsg', slow.join(', ') + ' — ' + (slow.length === 1 ? 'this file has' : 'these files have') +
-            ' its index at the end, so a viewer waits for the whole download before ' +
-            'the first frame appears. Re-export with Fast Start or Web Optimised ' +
-            'for instant playback. The upload itself is fine.', 'err');
+          msg('setMsg', slow.join(', ') + ': not web-optimised, so playback waits for the full download. ' +
+            'Re-export with Fast Start.', 'err');
         } else if (!toobig.length) {
-          msg('setMsg', 'Upload complete. Add copy below, then select Add to set.', 'ok');
+          msg('setMsg', 'Upload complete. Add copy, then Add to set.', 'ok');
         }
         renderDrafts();
       })
@@ -1198,8 +1188,8 @@
         showProgress(null);
         var text = e.message || 'Upload failed.';
         if (/payload|too large|exceeded/i.test(text)) {
-          text = 'That file is over the ' + (cfg.maxUploadMB || 50) +
-            ' MB storage limit. Export a smaller review copy, or paste a link instead.';
+          text = 'File exceeds the ' + (cfg.maxUploadMB || 50) +
+            ' MB limit. Export a smaller review copy or paste a link.';
         }
         msg('setMsg', text, 'err');
       });
@@ -1471,21 +1461,18 @@
     msg('setMsg', 'Verifying the link…');
     probeUrl(url).then(function (info) {
       if (!info.ok) {
-        msg('setMsg', 'We could not load that link. It has to point straight at the file, ' +
-          'the way https://mycdn.adspace.me/reel.mp4 does. A Dropbox share page will not ' +
-          'work because it returns a web page, not the video.', 'err');
+        msg('setMsg', 'Link could not be loaded. It must point directly to the file.', 'err');
         return;
       }
       pushDraft(url, info);
       $('mediaUrl').value = '';
-      msg('setMsg', 'Asset added. Add copy below, then select Add to set.', 'ok');
+      msg('setMsg', 'Asset added. Add copy, then Add to set.', 'ok');
     });
   });
 
   function handleDriveLink(url) {
     if (!driveKey()) {
-      msg('setMsg', 'That is a Google Drive link. To pull files straight from Drive we need ' +
-        'a Google API key in js/config.js first. See docs/DRIVE-IMPORT-CHECK.md.', 'err');
+      msg('setMsg', 'Drive import requires a Google API key in js/config.js. See docs/DRIVE-IMPORT-CHECK.md.', 'err');
       return;
     }
 
@@ -1501,8 +1488,7 @@
 
     var fileId = driveFileId(url);
     if (!fileId) {
-      msg('setMsg', 'That looks like a Drive link but we could not find a file id in it. ' +
-        'Use the Share button in Drive and copy the link it gives you.', 'err');
+      msg('setMsg', 'No file id found in that Drive link. Use Share in Drive and copy the link.', 'err');
       return;
     }
 
@@ -1892,7 +1878,7 @@
     $('combineBar').hidden = !canCombine;
     if (canCombine) {
       $('combineText').textContent =
-        state.drafts.length + ' images uploaded. Are these separate posts, or slides of one carousel?';
+        state.drafts.length + ' images uploaded. Separate posts, or one carousel?';
     }
 
     state.drafts.forEach(function (d, i) {
@@ -1923,7 +1909,7 @@
           '</div>' +
           (isXhs ? '<input class="input" data-f="title" placeholder="Note title 标题" value="' +
                    esc(d.title) + '">' : '') +
-          '<textarea class="textarea" data-f="caption" placeholder="Caption. Lead with what the customer gains.">' +
+          '<textarea class="textarea" data-f="caption" placeholder="Caption">' +
             esc(d.caption) + '</textarea>' +
           (d.showZh
             ? '<textarea class="textarea" data-f="caption_zh" placeholder="中文文案">' + esc(d.caption_zh) + '</textarea>'
@@ -2153,8 +2139,7 @@
       var reask = row.querySelector('[data-a="reask"]');
       if (reask) reask.addEventListener('click', function () {
         var why = (window.prompt(
-          'Reason for requesting re-approval. This note will be shown to the client.\n\n' +
-          'For example: pricing corrected, logo updated, copy revised.') || '').trim();
+          'Reason for re-approval (shown to the client):') || '').trim();
         if (!why) return;
         db.from('posts').update({
           review_reset_at: new Date().toISOString(),
@@ -2163,14 +2148,12 @@
           if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
           logAction('reapproval.requested',
             state.client.name + ' — ' + MK.label(p), why);
-          msg('setMsg', 'Re-approval requested. The client now sees this post as pending, ' +
-            'together with your note.', 'ok');
+          msg('setMsg', 'Re-approval requested.', 'ok');
           loadPosts();
         });
       });
       row.querySelector('[data-a="del"]').addEventListener('click', function () {
-        if (!confirm('Delete this post? It will be removed from the client view.\n\n' +
-          'The file remains in storage, so re-importing it from Drive will not upload again.')) return;
+        if (!confirm('Delete this post?\n\nIt will be removed from the client view.')) return;
         db.from('posts').delete().eq('id', p.id).then(function () {
           logAction('post.deleted',
             state.client.name + ' — ' + state.batch.title, MK.label(p));
@@ -2559,8 +2542,7 @@
   function toggleQr(q) {
     var next = !q.active;
     if (!next && !confirm('Revoke "' + (q.label || 'this code') + '"?\n\n' +
-        'Anything already printed keeps decoding to the same address, but scans ' +
-        'carrying this code will be turned away. /' + q.slug + ' itself keeps working.')) return;
+        'Scans of this code will be turned away. /' + q.slug + ' keeps working.')) return;
     db.from('link_qrs').update({ active: next, revoked_at: next ? null : new Date().toISOString() })
       .eq('code', q.code).then(function (r) {
         if (r.error) { msg('qrMsg', r.error.message, 'err'); return; }
