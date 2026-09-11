@@ -125,7 +125,14 @@
     }
     if (entered) return;
     entered = true;
-    restoreView();
+    // A session kept in local storage answers before the scripts below this
+    // one have run. Restoring then would write the address with nothing open
+    // and lose the tab or campaign it named, so wait for the whole page.
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', restoreView, { once: true });
+    } else {
+      restoreView();
+    }
   }
 
   /* On a phone the rail is a drawer. It closes on a pick, on the scrim, and on
@@ -168,6 +175,8 @@
     links: 'Short Links'
   };
 
+  var enterCampaignsLater = false;
+
   function showSection(name) {
     if (!SECTION_TITLE[name]) name = 'review';
     section = name;
@@ -184,7 +193,12 @@
     // Campaigns reads the address before it writes it, because on a reload the
     // address is the only record of which campaign or tab was open. Writing
     // first, with nothing open yet, blanked exactly the part it needed.
-    if (name === 'campaigns' && window.ADspaceCampaigns) { window.ADspaceCampaigns.enter(); return; }
+    if (name === 'campaigns') {
+      // Not loaded yet: leave the address alone and enter once it is.
+      if (!window.ADspaceCampaigns) { enterCampaignsLater = true; return; }
+      window.ADspaceCampaigns.enter();
+      return;
+    }
     setUrl();
     if (name === 'links') { loadLinks(); restoreScroll(); }
   }
@@ -1926,7 +1940,14 @@
     putToS3: putToS3,
     // Where you are, and how far down. The address bar is shared property.
     setUrl: setUrl,
-    restoreScroll: restoreScroll
+    restoreScroll: restoreScroll,
+    // Campaigns announces itself once its script has run; if the rail asked
+    // for it before then, enter now.
+    campaignsReady: function () {
+      if (!enterCampaignsLater || section !== 'campaigns') return;
+      enterCampaignsLater = false;
+      window.ADspaceCampaigns.enter();
+    }
   };
 
   /* Pending, approved, changes requested. The dot is what you scan for; the
