@@ -1058,3 +1058,182 @@ create policy option_posts_team on public.option_posts
 drop policy if exists option_reviews_team on public.option_reviews;
 create policy option_reviews_team on public.option_reviews
   for all to authenticated using (true) with check (true);
+
+-- ===========================================================================
+-- ACCESS
+-- Who may do what, decided by the database and not by which buttons a page
+-- chooses to draw. Every signed-in person has a row in team_members; the row
+-- says which sections they see, whether they see the activity record and the
+-- billing fields, and whether they may remove things. An admin manages the
+-- rows from the Team page. Someone with a login but no row sees nothing.
+-- ===========================================================================
+alter table public.team_members add column if not exists can_clients   boolean not null default true;
+alter table public.team_members add column if not exists can_review    boolean not null default true;
+alter table public.team_members add column if not exists can_campaigns boolean not null default true;
+alter table public.team_members add column if not exists can_links     boolean not null default true;
+alter table public.team_members add column if not exists can_activity  boolean not null default false;
+alter table public.team_members add column if not exists can_billing   boolean not null default true;
+alter table public.team_members add column if not exists can_remove    boolean not null default false;
+alter table public.team_members add column if not exists updated_at    timestamptz;
+create unique index if not exists team_members_email_idx
+  on public.team_members(lower(email)) where email is not null;
+
+-- Everyone who can already sign in carries over as Account. Nobody is locked
+-- out by this file; someone is only ever narrowed from the Team page.
+insert into public.team_members (name, email, role)
+  select coalesce(u.raw_user_meta_data ->> 'name', split_part(u.email, '@', 1)), u.email, 'account'
+  from auth.users u
+  where u.email is not null
+    and not exists (select 1 from public.team_members t where lower(t.email) = lower(u.email));
+
+-- The first admin. Change the address if the owner's login is a different one.
+update public.team_members
+  set role = 'admin', can_activity = true, can_remove = true,
+      can_clients = true, can_review = true, can_campaigns = true, can_links = true, can_billing = true
+  where lower(email) = 'adspacestudios@gmail.com';
+
+-- A role sets sensible defaults when it is chosen; the switches can then be
+-- adjusted per person. Sales sees Clients only. Account sees the work but not
+-- the record and cannot remove. Admin sees and may do everything.
+create or replace function public.team_role_defaults()
+returns trigger language plpgsql as $$
+begin
+  if tg_op = 'INSERT' or new.role is distinct from old.role then
+    if new.role = 'admin' then
+      new.can_clients := true;  new.can_review := true; new.can_campaigns := true;
+      new.can_links := true;    new.can_activity := true; new.can_billing := true; new.can_remove := true;
+    elsif new.role = 'sales' then
+      new.can_clients := true;  new.can_review := false; new.can_campaigns := false;
+      new.can_links := false;   new.can_activity := false; new.can_billing := true; new.can_remove := false;
+    else
+      new.role := 'account';
+      new.can_clients := true;  new.can_review := true; new.can_campaigns := true;
+      new.can_links := true;    new.can_activity := false; new.can_billing := true; new.can_remove := false;
+    end if;
+  end if;
+  new.updated_at := now();
+  return new;
+end $$;
+drop trigger if exists team_role_defaults on public.team_members;
+create trigger team_role_defaults before insert or update on public.team_members
+  for each row execute function public.team_role_defaults();
+
+-- Nobody removes their own admin role or deactivates themselves, so the team
+-- can never be left with no admin by accident.
+create or replace function public.team_keep_one_admin()
+returns trigger language plpgsql as $$
+begin
+  if lower(old.email) = lower(auth.jwt() ->> 'email')
+     and old.role = 'admin'
+     and (tg_op = 'DELETE' or new.role <> 'admin' or new.active = false) then
+    raise exception 'You cannot remove your own admin access. Ask another admin.';
+  end if;
+  if tg_op = 'DELETE' then return old; end if;
+  return new;
+end $$;
+drop trigger if exists team_keep_one_admin on public.team_members;
+create trigger team_keep_one_admin before update or delete on public.team_members
+  for each row execute function public.team_keep_one_admin();
+
+-- The signed-in person's own row. What the console reads once at sign-in to
+-- decide what to draw; the policies below decide what actually works.
+create or replace function public.me()
+returns public.team_members
+language sql security definer stable set search_path = public as $$
+  select * from public.team_members
+  where lower(email) = lower(auth.jwt() ->> 'email') and active
+  limit 1
+$$;
+grant execute on function public.me() to authenticated;
+
+-- One predicate for every policy: may this person do this? Admin may do all.
+create or replace function public.allowed(flag text)
+returns boolean
+language plpgsql security definer stable set search_path = public as $$
+declare t public.team_members;
+begin
+  select * into t from public.team_members
+    where lower(email) = lower(auth.jwt() ->> 'email') and active limit 1;
+  if t.id is null then return false; end if;
+  if t.role = 'admin' then return true; end if;
+  return coalesce(case flag
+    when 'clients'   then t.can_clients
+    when 'review'    then t.can_review
+    when 'campaigns' then t.can_campaigns
+    when 'links'     then t.can_links
+    when 'activity'  then t.can_activity
+    when 'billing'   then t.can_billing
+    when 'remove'    then t.can_remove
+    when 'admin'     then false
+  end, false);
+end $$;
+grant execute on function public.allowed(text) to authenticated;
+
+-- The section tables, each gated by its section, with removal gated twice.
+-- Policies are additive, so the old blanket ones have to go first.
+do $$
+declare
+  spec text[][] := array[
+    ['client_contacts',        'clients'],
+    ['client_touches',         'clients'],
+    ['batches',                'review'],
+    ['posts',                  'review'],
+    ['reviews',                'review'],
+    ['drive_assets',           'review'],
+    ['links',                  'links'],
+    ['link_qrs',               'links'],
+    ['creators',               'campaigns'],
+    ['creator_profiles',       'campaigns'],
+    ['campaigns',              'campaigns'],
+    ['campaign_options',       'campaigns'],
+    ['campaign_confirmations', 'campaigns'],
+    ['option_posts',           'campaigns'],
+    ['option_reviews',         'campaigns']
+  ];
+  i int; t text; f text; p record;
+begin
+  for i in 1 .. array_length(spec, 1) loop
+    t := spec[i][1]; f := spec[i][2];
+    for p in select policyname from pg_policies where schemaname = 'public' and tablename = t loop
+      execute format('drop policy if exists %I on public.%I', p.policyname, t);
+    end loop;
+    execute format('create policy %I on public.%I for select to authenticated using (public.allowed(%L))', t || '_read', t, f);
+    execute format('create policy %I on public.%I for insert to authenticated with check (public.allowed(%L))', t || '_write', t, f);
+    execute format('create policy %I on public.%I for update to authenticated using (public.allowed(%L)) with check (public.allowed(%L))', t || '_edit', t, f, f);
+    execute format('create policy %I on public.%I for delete to authenticated using (public.allowed(%L) and public.allowed(''remove''))', t || '_del', t, f);
+  end loop;
+end $$;
+
+-- Clients are read by every section that hangs off them, and written by the
+-- CRM and by Content Review (handles, logo, passcode, the review flag).
+drop policy if exists team_all       on public.clients;
+drop policy if exists clients_read   on public.clients;
+drop policy if exists clients_write  on public.clients;
+drop policy if exists clients_update on public.clients;
+create policy clients_read on public.clients for select to authenticated
+  using (public.allowed('clients') or public.allowed('review') or public.allowed('campaigns'));
+create policy clients_write on public.clients for insert to authenticated
+  with check (public.allowed('clients'));
+create policy clients_update on public.clients for update to authenticated
+  using (public.allowed('clients') or public.allowed('review'))
+  with check (public.allowed('clients') or public.allowed('review'));
+
+-- The activity record is written by anyone and read by those allowed to.
+-- activity_viewers is no longer consulted; the switch lives on the team row.
+drop policy if exists activity_read on public.activity_log;
+create policy activity_read on public.activity_log
+  for select to authenticated using (public.allowed('activity'));
+
+-- The team list is read by everyone signed in (the owner dropdown, and me())
+-- and changed only by an admin.
+drop policy if exists "team staff" on public.team_members;
+drop policy if exists team_read    on public.team_members;
+drop policy if exists team_admin   on public.team_members;
+create policy team_read on public.team_members for select to authenticated using (true);
+create policy team_admin on public.team_members for all to authenticated
+  using (public.allowed('admin') or exists (
+    select 1 from public.team_members a
+    where lower(a.email) = lower(auth.jwt() ->> 'email') and a.role = 'admin' and a.active))
+  with check (exists (
+    select 1 from public.team_members a
+    where lower(a.email) = lower(auth.jwt() ->> 'email') and a.role = 'admin' and a.active));
