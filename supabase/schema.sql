@@ -450,3 +450,264 @@ begin
       using (bucket_id = 'content') with check (bucket_id = 'content');
   end if;
 end $$;
+
+-- ===========================================================================
+-- CREATOR CAMPAIGNS  (Package II, custom pricing)
+--
+-- Sales agrees the package and rate and raises the invoice. The KOC team
+-- takes over from the invoice number: sources creators, offers them as
+-- options, shares one link, and runs the engagement to completion.
+--
+-- Package I never reaches the portal. It is a fixed set with nothing to
+-- choose, so there is nothing here for it to do.
+-- ===========================================================================
+
+-- The roster. A creator exists once and is reused across every campaign,
+-- which is what makes "the same creator twice" impossible rather than merely
+-- detectable.
+create table if not exists public.creators (
+  id           uuid primary key default gen_random_uuid(),
+  name         text not null,
+  followers    integer,
+  cost_rate    numeric(10,2),          -- what we pay. Never sent to a client.
+  client_rate  numeric(10,2),          -- default offer price
+  industries   text,
+  notes        text,
+  active       boolean not null default true,
+  created_by   text,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+alter table public.creators enable row level security;
+create index if not exists creators_name_idx on public.creators(name);
+
+-- One row per profile link. A creator may hold several: RedNote, Instagram,
+-- TikTok, Facebook, or two accounts on one platform.
+--
+-- `handle` is the canonical identity pulled out of the URL: the id after
+-- /user/profile/ on RedNote, the handle elsewhere. A xhslink.com short link
+-- carries no identity, so it is stored with handle null and simply cannot
+-- take part in matching.
+create table if not exists public.creator_profiles (
+  id          uuid primary key default gen_random_uuid(),
+  creator_id  uuid not null references public.creators(id) on delete cascade,
+  platform    text not null,            -- xhs | instagram | tiktok | facebook
+  url         text not null,
+  handle      text,
+  created_at  timestamptz not null default now()
+);
+alter table public.creator_profiles enable row level security;
+create index if not exists creator_profiles_owner on public.creator_profiles(creator_id);
+-- Two creators cannot claim one identity. Short links (handle null) are exempt
+-- because they identify nothing.
+create unique index if not exists creator_profiles_identity
+  on public.creator_profiles(platform, lower(handle)) where handle is not null;
+
+-- One engagement for one client, created against the invoice that authorises it.
+create table if not exists public.campaigns (
+  id            uuid primary key default gen_random_uuid(),
+  client_id     uuid not null references public.clients(id) on delete cascade,
+  title         text not null,
+  title_zh      text,
+  invoice_no    text,
+  slots         integer not null default 10,   -- the hard cap, from the invoice
+  deadline      date,
+  owner         text,                          -- KOC team member running it
+  push_format   text default 'site_visit',
+  deliverable   text not null default 'video', -- video | graphic. Exactly one.
+  brief         text,
+  brief_zh      text,
+  state         text not null default 'draft', -- draft|open|production|completed
+  access_token  text unique not null,
+  passcode      text,
+  created_by    text,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+alter table public.campaigns enable row level security;
+create index if not exists campaigns_client_idx on public.campaigns(client_id, created_at desc);
+
+-- A creator offered inside a campaign. The rate and the placements are
+-- snapshotted here, so a roster edit can never reprice a live offer.
+--
+-- The unique constraint is the whole duplicate story: one creator can appear
+-- in a campaign once, enforced by the database rather than by a check someone
+-- might forget to run.
+create table if not exists public.campaign_options (
+  id             uuid primary key default gen_random_uuid(),
+  campaign_id    uuid not null references public.campaigns(id) on delete cascade,
+  creator_id     uuid not null references public.creators(id) on delete restrict,
+  rate           numeric(10,2) not null,
+  platforms      text not null,               -- comma separated placements offered
+  position       integer not null default 0,
+  is_replacement boolean not null default false,
+  -- option → shortlisted → backup → confirmed → … → completed
+  -- withdrawn (creator pulled out) and replaced (client swapped) are terminal
+  -- and are never deleted, because the invoice has to reconcile against them.
+  state          text not null default 'option',
+  drop_reason    text,
+  goodwill       boolean not null default false,
+  added_at       timestamptz not null default now(),
+  unique (campaign_id, creator_id)
+);
+alter table public.campaign_options enable row level security;
+create index if not exists campaign_options_camp on public.campaign_options(campaign_id, position);
+
+-- Who confirmed, when, and whether they did it themselves or we keyed it in
+-- from a WhatsApp reply. Both are honest; pretending every client clicks
+-- Confirm is how an audit trail ends up lying.
+create table if not exists public.campaign_confirmations (
+  id           uuid primary key default gen_random_uuid(),
+  campaign_id  uuid not null references public.campaigns(id) on delete cascade,
+  kind         text not null,          -- client | keyed_in
+  person       text not null,
+  source       text,                   -- portal | whatsapp | email
+  note         text,
+  created_at   timestamptz not null default now()
+);
+alter table public.campaign_confirmations enable row level security;
+create index if not exists campaign_conf_camp on public.campaign_confirmations(campaign_id, created_at desc);
+
+-- Team only. Clients reach campaigns through the token-checked functions
+-- below and never touch these tables directly.
+drop policy if exists creators_team on public.creators;
+create policy creators_team on public.creators
+  for all to authenticated using (true) with check (true);
+drop policy if exists creator_profiles_team on public.creator_profiles;
+create policy creator_profiles_team on public.creator_profiles
+  for all to authenticated using (true) with check (true);
+drop policy if exists campaigns_team on public.campaigns;
+create policy campaigns_team on public.campaigns
+  for all to authenticated using (true) with check (true);
+drop policy if exists campaign_options_team on public.campaign_options;
+create policy campaign_options_team on public.campaign_options
+  for all to authenticated using (true) with check (true);
+drop policy if exists campaign_conf_team on public.campaign_confirmations;
+create policy campaign_conf_team on public.campaign_confirmations
+  for all to authenticated using (true) with check (true);
+
+drop trigger if exists creators_touch on public.creators;
+create trigger creators_touch before update on public.creators
+  for each row execute function public.touch_updated_at();
+drop trigger if exists campaigns_touch on public.campaigns;
+create trigger campaigns_touch before update on public.campaigns
+  for each row execute function public.touch_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- Client-facing API. Same shape as the review portal: the token is the key,
+-- the function is the only door, and cost_rate is never in the result.
+-- ---------------------------------------------------------------------------
+create or replace function public.get_campaign(p_token text, p_passcode text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c campaigns%rowtype;
+  cl clients%rowtype;
+begin
+  select * into c from campaigns where access_token = p_token;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  select * into cl from clients where id = c.client_id;
+
+  if c.passcode is not null and c.passcode <> '' then
+    if p_passcode is null or p_passcode <> c.passcode then
+      return jsonb_build_object('error', 'passcode', 'client', cl.name);
+    end if;
+  end if;
+
+  return jsonb_build_object(
+    'campaign', jsonb_build_object(
+      'title', c.title, 'title_zh', c.title_zh, 'slots', c.slots,
+      'deadline', c.deadline, 'state', c.state, 'deliverable', c.deliverable,
+      'push_format', c.push_format, 'brief', c.brief, 'brief_zh', c.brief_zh),
+    'client', jsonb_build_object('name', cl.name, 'logo_url', cl.logo_url),
+    'options', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'id', o.id, 'name', cr.name, 'followers', cr.followers,
+        'rate', o.rate, 'platforms', o.platforms, 'state', o.state,
+        'is_replacement', o.is_replacement, 'added_at', o.added_at,
+        'profiles', coalesce((
+          select jsonb_agg(jsonb_build_object('platform', p.platform, 'url', p.url))
+          from creator_profiles p where p.creator_id = cr.id), '[]'::jsonb))
+        order by o.position, o.added_at)
+      from campaign_options o
+      join creators cr on cr.id = o.creator_id
+      where o.campaign_id = c.id and o.state <> 'replaced'), '[]'::jsonb)
+  );
+end $$;
+
+-- Selection. Rewrites only the rows this campaign owns, refuses to exceed the
+-- invoiced slot count, and never touches a row that has moved past confirmed.
+create or replace function public.save_selection(
+  p_token text, p_selected uuid[], p_backup uuid[], p_passcode text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c campaigns%rowtype;
+  n integer;
+begin
+  select * into c from campaigns where access_token = p_token;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  if c.passcode is not null and c.passcode <> ''
+     and (p_passcode is null or p_passcode <> c.passcode) then
+    return jsonb_build_object('error', 'passcode');
+  end if;
+
+  n := coalesce(array_length(p_selected, 1), 0);
+  if n > c.slots then
+    return jsonb_build_object('error', 'over-slots', 'slots', c.slots);
+  end if;
+
+  -- Anything already confirmed or further along is the team's to change.
+  update campaign_options set state = 'option'
+   where campaign_id = c.id and state in ('shortlisted', 'backup');
+
+  if n > 0 then
+    update campaign_options set state = 'shortlisted'
+     where campaign_id = c.id and id = any(p_selected) and state = 'option';
+  end if;
+  if coalesce(array_length(p_backup, 1), 0) > 0 then
+    update campaign_options set state = 'backup'
+     where campaign_id = c.id and id = any(p_backup) and state = 'option';
+  end if;
+
+  return jsonb_build_object('ok', true, 'selected', n);
+end $$;
+
+create or replace function public.confirm_selection(
+  p_token text, p_person text, p_passcode text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c campaigns%rowtype;
+begin
+  select * into c from campaigns where access_token = p_token;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  if c.passcode is not null and c.passcode <> ''
+     and (p_passcode is null or p_passcode <> c.passcode) then
+    return jsonb_build_object('error', 'passcode');
+  end if;
+  if coalesce(trim(p_person), '') = '' then
+    return jsonb_build_object('error', 'name-required');
+  end if;
+
+  insert into campaign_confirmations (campaign_id, kind, person, source)
+  values (c.id, 'client', trim(p_person), 'portal');
+
+  return jsonb_build_object('ok', true);
+end $$;
+
+revoke all on function public.get_campaign(text, text) from public;
+revoke all on function public.save_selection(text, uuid[], uuid[], text) from public;
+revoke all on function public.confirm_selection(text, text, text) from public;
+grant execute on function public.get_campaign(text, text) to anon, authenticated;
+grant execute on function public.save_selection(text, uuid[], uuid[], text) to anon, authenticated;
+grant execute on function public.confirm_selection(text, text, text) to anon, authenticated;

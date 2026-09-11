@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Content Review Internal</title>
-<meta name="description" content="ADspace internal content review.">
-<meta property="og:title" content="Content Review Internal · ADspace">
+<title>ADspace Digital Portal</title>
+<meta name="description" content="ADspace internal portal.">
+<meta property="og:title" content="ADspace Digital Portal">
 <meta property="og:description" content="Sign in with your company credentials.">
 <meta property="og:image" content="https://mycdn.adspace.me/adspace-favicon.png">
 <!-- The ADspace mark, so a pinned tab reads as ADspace. Served from our own
@@ -70,6 +70,9 @@
       <span class="sidebar-label">Tools</span>
       <button class="navitem is-on" data-section="review" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg><span>Content Review</span>
+      </button>
+      <button class="navitem" data-section="campaigns" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="m17.5 4.5 1.2 2.5 2.8.4-2 2 .5 2.8-2.5-1.3-2.5 1.3.5-2.8-2-2 2.8-.4z"/></svg><span>Creator Campaigns</span>
       </button>
       <button class="navitem" data-section="links" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.6-5.7l-1.7 1.7"/><path d="M14 10.5a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.6 5.7l1.7-1.7"/></svg><span>Short Links</span>
@@ -346,6 +349,168 @@
 
     </div>
 
+    <!-- ============ Creator Campaigns ============ -->
+    <div class="console-body" id="sectionCampaigns" hidden>
+
+      <div class="tabrow" role="tablist">
+        <button class="tab is-on" id="tabCampaigns" data-tab="campaigns" type="button" role="tab">Campaigns</button>
+        <button class="tab" id="tabRoster" data-tab="roster" type="button" role="tab">Creator roster</button>
+      </div>
+
+      <!-- ---- Campaign list ---- -->
+      <div id="campListView">
+        <div class="viewhead">
+          <span class="headmark"><h2>Campaigns</h2></span>
+          <button class="btn btn-primary" id="showAddCamp" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New campaign</button>
+        </div>
+
+        <div class="panel" id="addCampBox" hidden>
+          <div class="panelhead"><h3>New campaign</h3></div>
+          <p class="hint">Sales agrees the package and raises the invoice. Enter that invoice
+          number here: it is what authorises the slot count, and the cap is enforced against it.</p>
+          <div class="row">
+            <div><label class="field-label" for="campClient">Client</label>
+              <select class="select" id="campClient"></select></div>
+            <div><label class="field-label" for="campTitle">Campaign name</label>
+              <input class="input" id="campTitle" placeholder="Promote Newly Launch Project"></div>
+            <div style="flex:0 0 150px"><label class="field-label" for="campInvoice">Invoice no.</label>
+              <input class="input" id="campInvoice" placeholder="INV-0001"></div>
+            <div style="flex:0 0 110px"><label class="field-label" for="campSlots">Slots</label>
+              <input class="input" id="campSlots" type="number" min="1" value="10"></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div style="flex:0 0 170px"><label class="field-label" for="campDeadline">Respond by</label>
+              <input class="input" id="campDeadline" type="date"></div>
+            <div style="flex:0 0 190px"><label class="field-label" for="campFormat">Push format</label>
+              <select class="select" id="campFormat">
+                <option value="site_visit">Site visit</option>
+                <option value="event">Event</option>
+                <option value="seeding">Product seeding</option>
+                <option value="tenant_trail">Tenant trail</option>
+                <option value="teaser">Pre-launch teaser</option>
+                <option value="always_on">Always-on review</option>
+              </select></div>
+            <div style="flex:0 0 150px"><label class="field-label" for="campDeliverable">Deliverable</label>
+              <select class="select" id="campDeliverable">
+                <option value="video">Video</option>
+                <option value="graphic">Graphic</option>
+              </select></div>
+            <div><label class="field-label" for="campOwner">KOC team owner</label>
+              <input class="input" id="campOwner" placeholder="Name"></div>
+          </div>
+          <div class="row" style="margin-top:16px">
+            <button class="btn btn-primary" id="addCamp" type="button">Create</button>
+            <button class="btn" id="cancelAddCamp" type="button" style="flex:0 0 auto">Cancel</button>
+          </div>
+          <div class="msg" id="campMsg"></div>
+        </div>
+
+        <div class="cards" id="campCards"></div>
+      </div>
+
+      <!-- ---- One campaign ---- -->
+      <div id="campWork" hidden>
+        <button class="backlink" id="campBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back to all campaigns</button>
+
+        <section class="panel">
+          <div class="viewhead" style="margin:0 0 4px">
+            <span class="headmark"><h2 id="campName"></h2><span class="chip" id="campState"></span></span>
+          </div>
+          <p class="hint" id="campMeta"></p>
+
+          <div class="tally" id="campTally"></div>
+
+          <div class="linkbox" style="margin-top:14px">
+            <input class="input" id="campLink" readonly>
+            <button class="btn btn-primary btn-icon" id="campCopy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
+            <a class="btn btn-icon" id="campOpen" target="_blank" rel="noopener">Preview
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+            </a>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn btn-go" id="campPublish" type="button">Open for selection</button>
+            <button class="btn" id="campDelete" type="button" style="flex:0 0 auto">Delete campaign</button>
+          </div>
+          <div class="msg" id="campWorkMsg"></div>
+        </section>
+
+        <div class="viewhead">
+          <span class="headmark"><h2>Options offered</h2></span>
+          <button class="btn btn-primary" id="showAddOption" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creators</button>
+        </div>
+
+        <div class="panel" id="addOptionBox" hidden>
+          <div class="panelhead"><h3>Add from roster</h3></div>
+          <p class="hint">Offer more than the slot count. The rate and placements are copied
+          here and frozen, so editing the roster later cannot reprice a live offer.</p>
+          <input class="input" id="optionSearch" placeholder="Search the roster">
+          <div class="optionpick" id="optionPick"></div>
+          <div class="msg" id="optionMsg"></div>
+        </div>
+
+        <div id="optionList"></div>
+      </div>
+
+      <!-- ---- Roster ---- -->
+      <div id="rosterView" hidden>
+        <div class="viewhead">
+          <span class="headmark"><h2>Creator roster</h2></span>
+          <button class="btn btn-primary" id="showAddCreator" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a creator</button>
+        </div>
+
+        <div class="notice">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.5"/></svg>
+          <div><b>A creator lives here once.</b>
+          <span>Campaigns point at this record rather than holding their own copy, which is
+          what makes the same creator appearing twice in one campaign impossible rather than
+          merely something to spot.</span></div>
+        </div>
+
+        <div class="panel" id="addCreatorBox" hidden>
+          <div class="panelhead"><h3 id="creatorFormTitle">New creator</h3></div>
+          <div class="row">
+            <div><label class="field-label" for="crName">Name</label>
+              <input class="input" id="crName" placeholder="香香的爆米花 🍿"></div>
+            <div style="flex:0 0 130px"><label class="field-label" for="crFollowers">Followers</label>
+              <input class="input" id="crFollowers" type="number" min="0" placeholder="12400"></div>
+            <div style="flex:0 0 130px"><label class="field-label" for="crCost">Our cost (RM)</label>
+              <input class="input" id="crCost" type="number" min="0" step="10" placeholder="280"></div>
+            <div style="flex:0 0 140px"><label class="field-label" for="crRate">Client rate (RM)</label>
+              <input class="input" id="crRate" type="number" min="0" step="10" placeholder="360"></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div><label class="field-label" for="crIndustries">Industries</label>
+              <input class="input" id="crIndustries" placeholder="F&amp;B, lifestyle, property"></div>
+            <div><label class="field-label" for="crNotes">Notes</label>
+              <input class="input" id="crNotes" placeholder="Internal only"></div>
+          </div>
+
+          <div class="subsection">
+            <h4>Profile links</h4>
+            <p class="hint">One per account. Paste the full profile URL so the identity can be
+            read from it. A <code>xhslink.com</code> short link is accepted but carries no
+            identity, so it cannot be matched against anything.</p>
+            <div id="profRows"></div>
+            <button class="btn btn-quiet btn-sm" id="addProfRow" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add another link</button>
+          </div>
+
+          <div class="msg" id="dupeWarn"></div>
+          <div class="row" style="margin-top:16px">
+            <button class="btn btn-primary" id="saveCreator" type="button">Create</button>
+            <button class="btn" id="cancelAddCreator" type="button" style="flex:0 0 auto">Cancel</button>
+          </div>
+          <div class="msg" id="creatorMsg"></div>
+        </div>
+
+        <div class="linksbar">
+          <input class="input" id="rosterSearch" placeholder="Search name, handle or industry">
+          <span class="muted" id="rosterCount"></span>
+        </div>
+        <div id="rosterList"></div>
+      </div>
+
+    </div>
+
     <!-- ============ Short Links ============ -->
     <div class="console-body" id="sectionLinks" hidden>
 
@@ -434,5 +599,6 @@ raya-2026        https://example.com/raya"></textarea>
 </div>
 
 <script src="/js/admin.js"></script>
+<script src="/js/campaigns.js"></script>
 </body>
 </html>

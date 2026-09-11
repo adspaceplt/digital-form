@@ -162,19 +162,27 @@
   /* Which section of the console is on screen. The rail decides; neither
      section knows the other exists, which is the point of the shell. */
   var section = 'review';
-  var SECTION_TITLE = { review: 'Content Review', links: 'Short Links' };
+  var SECTION_TITLE = {
+    review: 'Content Review',
+    campaigns: 'Creator Campaigns',
+    links: 'Short Links'
+  };
 
   function showSection(name) {
     if (!SECTION_TITLE[name]) name = 'review';
     section = name;
-    $('sectionReview').hidden = name !== 'review';
-    $('sectionLinks').hidden  = name !== 'links';
+    $('sectionReview').hidden    = name !== 'review';
+    $('sectionCampaigns').hidden = name !== 'campaigns';
+    $('sectionLinks').hidden     = name !== 'links';
     $('sectionTitle').textContent = SECTION_TITLE[name];
+    // The tab said Content Review Internal whichever section you were in.
+    document.title = SECTION_TITLE[name] + ' · ADspace Digital Portal';
     navItems().forEach(function (b) {
       b.classList.toggle('is-on', b.getAttribute('data-section') === name);
     });
     showActivityLink();
     if (name === 'links') loadLinks();
+    if (name === 'campaigns' && window.ADspaceCampaigns) window.ADspaceCampaigns.enter();
   }
 
   function navItems() {
@@ -1861,6 +1869,16 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" ' +
       'stroke-linejoin="round" aria-hidden="true">' + ICON[name] + '</svg></button>';
   }
+
+  /* Creator Campaigns lives in its own file, because this one is long enough.
+     It needs the same marks, the same activity record and the same idea of who
+     is signed in, so those are lent rather than written twice. */
+  window.ADspaceAdmin = {
+    ICON: ICON,
+    iconBtn: iconBtn,
+    log: logAction,
+    actor: function () { return actor; }
+  };
 
   /* Pending, approved, changes requested. The dot is what you scan for; the
      word is what makes it mean something. */
