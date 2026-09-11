@@ -360,15 +360,9 @@
         <button class="tab" id="tabRoster" data-tab="roster" type="button" role="tab">Creator roster</button>
       </div>
 
-      <!-- ---- Campaign list ---- -->
-      <div id="campListView">
-        <div class="viewhead">
-          <span class="headmark"><h2>Campaigns</h2></span>
-          <button class="btn btn-primary" id="showAddCamp" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New campaign</button>
-        </div>
-
-        <div class="panel" id="addCampBox" hidden>
-          <div class="panelhead"><h3>New campaign</h3></div>
+      <!-- ---- Campaign form: creates, and edits an open campaign in place ---- -->
+      <div class="panel" id="addCampBox" hidden>
+          <div class="panelhead"><h3 id="campFormTitle">New campaign</h3></div>
           <p class="hint">Sales agrees the package and raises the invoice. Enter that invoice
           number here: it is what authorises the slot count, and the cap is enforced against it.</p>
           <div class="row">
@@ -416,6 +410,13 @@
           <div class="msg" id="campMsg"></div>
         </div>
 
+      <!-- ---- Campaign list ---- -->
+      <div id="campListView">
+        <div class="viewhead">
+          <span class="headmark"><h2>Campaigns</h2></span>
+          <button class="btn btn-primary" id="showAddCamp" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New campaign</button>
+        </div>
+
         <div class="cards" id="campCards"></div>
       </div>
 
@@ -426,8 +427,11 @@
         <section class="panel">
           <div class="viewhead" style="margin:0 0 4px">
             <span class="headmark"><h2 id="campName"></h2><span class="chip" id="campState"></span></span>
+            <button class="btn btn-quiet btn-sm" id="campEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg>Edit details</button>
           </div>
-          <p class="hint" id="campMeta"></p>
+          <!-- The facts of the campaign, one label per value. They were a single
+               grey sentence, which is too much to scan and too little to read. -->
+          <dl class="facts" id="campFacts"></dl>
 
           <div class="tally" id="campTally"></div>
 
@@ -441,9 +445,17 @@
           <div class="row" style="margin-top:12px">
             <button class="btn btn-go" id="campPublish" type="button">Open for selection</button>
             <button class="btn btn-primary" id="campLock" type="button" hidden>Lock the selection</button>
-            <button class="btn" id="campDelete" type="button" style="flex:0 0 auto">Delete campaign</button>
           </div>
           <div class="msg" id="campWorkMsg"></div>
+
+          <div class="subsection camp-danger">
+            <h4>Deletion</h4>
+            <p class="hint">Removes the campaign with every offer, selection, draft verdict and
+            result on it. Nothing comes back.</p>
+            <div class="dangerrow">
+              <button class="btn btn-danger" id="campDelete" type="button">Delete campaign</button>
+            </div>
+          </div>
         </section>
 
         <div class="viewhead">
@@ -452,12 +464,35 @@
         </div>
 
         <div class="panel" id="addOptionBox" hidden>
-          <div class="panelhead"><h3>Add from roster</h3></div>
-          <p class="hint">Offer more than the slot count. The rate and placements are copied
-          here and frozen, so editing the roster later cannot reprice a live offer.</p>
-          <input class="input" id="optionSearch" placeholder="Search the roster">
+          <div class="panelhead"><h3>Add creators</h3></div>
+          <p class="hint">The rate is set here, for this campaign. The same creator can be
+          RM 500 on one campaign and RM 350 on the next; her usual rate only fills the box
+          to start with. Once offered, the rate is frozen on this campaign whatever the
+          roster says later.</p>
+          <input class="input" id="optionSearch" placeholder="Search the roster by name">
           <div class="optionpick" id="optionPick"></div>
           <div class="msg" id="optionMsg"></div>
+
+          <div class="subsection">
+            <h4>Not in the roster yet?</h4>
+            <p class="hint">Add her here. She is offered on this campaign and kept in the
+            roster, so next time she is one search away and cannot be added twice.</p>
+            <div class="row">
+              <div><label class="field-label" for="ncName">Name</label>
+                <input class="input" id="ncName" placeholder="香香的爆米花 🍿"></div>
+              <div style="flex:0 0 200px"><label class="field-label" for="ncRate">Rate for this campaign (RM)</label>
+                <input class="input" id="ncRate" type="number" min="0" step="10" placeholder="360"></div>
+            </div>
+            <div id="ncProfRows" style="margin-top:10px"></div>
+            <button class="btn btn-quiet btn-sm" id="ncAddProf" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add another link</button>
+            <label class="field-label" style="margin-top:12px">Posts on</label>
+            <div id="ncPlatforms"></div>
+            <div class="msg" id="ncDupe"></div>
+            <div class="row" style="margin-top:12px">
+              <button class="btn btn-primary" id="ncSave" type="button">Add and offer</button>
+            </div>
+            <div class="msg" id="ncMsg"></div>
+          </div>
         </div>
 
         <div id="optionList"></div>
@@ -524,7 +559,7 @@
           <div class="row">
             <div><label class="field-label" for="crName">Name</label>
               <input class="input" id="crName" placeholder="香香的爆米花 🍿"></div>
-            <div style="flex:0 0 150px"><label class="field-label" for="crRate">Rate (RM)</label>
+            <div style="flex:0 0 150px"><label class="field-label" for="crRate">Usual rate (RM), optional</label>
               <input class="input" id="crRate" type="number" min="0" step="10" placeholder="360"></div>
             <div><label class="field-label" for="crNotes">Notes</label>
               <input class="input" id="crNotes" placeholder="Internal only"></div>
