@@ -16,6 +16,18 @@
   function money(n) {
     return 'RM ' + Number(n || 0).toLocaleString('en-MY', { minimumFractionDigits: 0 });
   }
+  // Totals carry sen; a rate is a whole ringgit.
+  function money2(n) {
+    return 'RM ' + Number(n || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  var SST = 0.08;
+  function sstOf(subtotal) { return Math.round(subtotal * SST * 100) / 100; }
+  function totalsHtml(subtotal) {
+    var sst = sstOf(subtotal);
+    return '<div><span>' + esc(t().subtotal) + '</span><span>' + money2(subtotal) + '</span></div>' +
+           '<div><span>' + esc(t().sst) + '</span><span>' + money2(sst) + '</span></div>' +
+           '<div class="is-total"><span>' + esc(t().total) + '</span><span>' + money2(subtotal + sst) + '</span></div>';
+  }
 
   /* Page furniture in both languages. Creator names are already Chinese and
      are never translated; only the words around them are. */
@@ -54,6 +66,11 @@
       nameNeeded: 'Please enter your name.',
       confirmed: 'Thank you. Your selection is confirmed and we will be in touch with the shoot dates.',
       summary: function (n, v) { return n + ' chosen · ' + v; },
+      subtotal: 'Subtotal',
+      sst: 'SST 8%',
+      total: 'Total',
+      totalShort: function (v) { return 'Total ' + v + ' incl. SST'; },
+      invoice: 'Invoice',
       due: function (d) { return 'Please respond by ' + d; },
       yourCampaign: 'Your campaign',
       stillChoosing: 'Still to choose',
@@ -126,6 +143,11 @@
       nameNeeded: '请填写姓名。',
       confirmed: '已收到，感谢确认。我们会尽快与您跟进拍摄日期。',
       summary: function (n, v) { return '已选 ' + n + ' 位 · ' + v; },
+      subtotal: '小计',
+      sst: 'SST 8%',
+      total: '总计',
+      totalShort: function (v) { return '总计 ' + v + '（含 SST）'; },
+      invoice: '发票',
       due: function (d) { return '请于 ' + d + ' 前回复'; },
       yourCampaign: '合作进度',
       stillChoosing: '待选择',
@@ -252,6 +274,11 @@
     }
     $('kicker').textContent = t().kicker;
     $('langToggle').textContent = t().lang;
+    $('invoiceLink').hidden = !c.invoice_url;
+    if (c.invoice_url) {
+      $('invoiceLink').href = c.invoice_url;
+      $('invoiceLinkText').textContent = t().invoice + (c.invoice_no ? ' ' + c.invoice_no : '');
+    }
 
     var title = (lang === 'zh' && c.title_zh) ? c.title_zh : c.title;
     $('campTitle').textContent = title || '';
@@ -301,6 +328,10 @@
     var box = $('bookingList');
     box.innerHTML = '';
     rows.forEach(function (o) { box.appendChild(bookingRow(o)); });
+
+    var sub = booked.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
+    $('bookedTotals').innerHTML = booked.length ? totalsHtml(sub) : '';
+    $('bookedTotals').hidden = !booked.length;
   }
 
   function chipFor(o) {
@@ -576,8 +607,11 @@
     // Confirming needs the backups too, and the bar says so rather than just
     // refusing. A backup promoted into a slot leaves one fewer in reserve.
     var short = want - have;
-    $('confirmSummary').textContent = t().summary(pending.length, money(value)) +
-      (short > 0 ? '  ·  ' + t().backupsNeeded(short) : '');
+    $('confirmSummary').innerHTML =
+      '<b>' + esc(t().totalShort(money2(value + sstOf(value)))) + '</b>' +
+      '<span class="muted">' + esc(t().summary(pending.length, money2(value))) + ' + ' +
+        esc(t().sst) + ' ' + money2(sstOf(value)) + '</span>' +
+      (short > 0 ? '<span class="muted">' + esc(t().backupsNeeded(short)) + '</span>' : '');
     $('confirmBtn').textContent = t().confirm;
     $('confirmBtn').disabled = !pending.length || !backupsOk;
     $('confirmBar').hidden = !pending.length;
@@ -611,6 +645,8 @@
       return '<div class="act"><span class="act-subject">' + esc(o.name) + '</span>' +
         '<span class="muted act-when">' + money(o.rate) + '</span></div>';
     }).join('');
+    var sub = picked.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
+    $('confirmTotals').innerHTML = totalsHtml(sub);
     msg('confirmMsg', '');
     $('confirmSheet').hidden = false;
     $('confirmName').focus();

@@ -1880,7 +1880,9 @@
     ICON: ICON,
     iconBtn: iconBtn,
     log: logAction,
-    actor: function () { return actor; }
+    actor: function () { return actor; },
+    // The signed PUT to S3, so an invoice PDF travels the same road as media.
+    putToS3: putToS3
   };
 
   /* Pending, approved, changes requested. The dot is what you scan for; the

@@ -500,14 +500,17 @@ create index if not exists creator_profiles_owner on public.creator_profiles(cre
 create unique index if not exists creator_profiles_identity
   on public.creator_profiles(platform, lower(handle)) where handle is not null;
 
--- One engagement for one client, created against the invoice that authorises it.
+-- One engagement for one client. It is a proposal first: the client chooses
+-- from quoted rates and sees the total, and only then is an invoice raised
+-- and attached here for them to open. The slot count is the number agreed
+-- with sales, not something an invoice authorised.
 create table if not exists public.campaigns (
   id            uuid primary key default gen_random_uuid(),
   client_id     uuid not null references public.clients(id) on delete cascade,
   title         text not null,
   title_zh      text,
-  invoice_no    text,
-  slots         integer not null default 10,   -- the hard cap, from the invoice
+  invoice_no    text,                          -- issued after confirmation
+  slots         integer not null default 10,   -- the number agreed; the cap
   deadline      date,
   owner         text,                          -- KOC team member running it
   push_format   text default 'site_visit',
@@ -523,6 +526,10 @@ create table if not exists public.campaigns (
 );
 alter table public.campaigns enable row level security;
 create index if not exists campaigns_client_idx on public.campaigns(client_id, created_at desc);
+-- The official invoice, as a file the client can open. Uploaded once the
+-- selection is confirmed, through the same signed S3 path media uses.
+alter table public.campaigns add column if not exists invoice_url         text;
+alter table public.campaigns add column if not exists invoice_uploaded_at timestamptz;
 
 -- A creator offered inside a campaign. The rate and the placements are
 -- snapshotted here, so a roster edit can never reprice a live offer.
@@ -618,7 +625,8 @@ begin
     'campaign', jsonb_build_object(
       'title', c.title, 'title_zh', c.title_zh, 'slots', c.slots,
       'deadline', c.deadline, 'state', c.state, 'deliverable', c.deliverable,
-      'push_format', c.push_format, 'brief', c.brief, 'brief_zh', c.brief_zh),
+      'push_format', c.push_format, 'brief', c.brief, 'brief_zh', c.brief_zh,
+      'invoice_no', c.invoice_no, 'invoice_url', c.invoice_url),
     'client', jsonb_build_object('name', cl.name, 'logo_url', cl.logo_url),
     'options', coalesce((
       select jsonb_agg(jsonb_build_object(
@@ -823,6 +831,7 @@ create policy link_qrs_team on public.link_qrs
 --
 -- The pipeline, in order:
 --   confirmed       locked by us, with a name and a time against it
+--                   (the invoice is raised and attached at this point)
 --   pending_visit   logistics set, waiting on the shoot
 --                   (pending_delivery instead, when the format is seeding)
 --   pending_draft   filmed, waiting on content

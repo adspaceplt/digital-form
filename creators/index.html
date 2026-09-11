@@ -29,6 +29,9 @@
       <span class="brand-meta"><span class="brand-kicker" id="kicker">Creator Selection</span></span>
     </div>
     <span class="topbar-spacer"></span>
+    <a class="headlink" id="invoiceLink" target="_blank" rel="noopener" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></svg><span id="invoiceLinkText"></span>
+    </a>
     <button class="langtoggle" id="langToggle" type="button">中文</button>
   </div>
 </header>
@@ -77,6 +80,7 @@
          client wants to know whether it is their turn, not our vocabulary. -->
     <section id="bookingWrap" hidden>
       <h2 class="sectionhead" id="bookingHead"></h2>
+      <div class="totals" id="bookedTotals"></div>
       <div id="bookingList"></div>
     </section>
 
@@ -103,6 +107,7 @@
     </div>
     <p class="hint" id="confirmBlurb"></p>
     <div id="confirmList" class="sheet-body"></div>
+    <div class="totals" id="confirmTotals"></div>
     <label class="field-label" for="confirmName" id="confirmNameLabel"></label>
     <input class="input" id="confirmName" placeholder="">
     <div class="row" style="margin-top:14px;margin-bottom:14px">

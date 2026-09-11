@@ -1136,13 +1136,19 @@ a { color: inherit; }
 .saved-note.is-warn { color: var(--warn); background: var(--warn-bg); align-self: center; max-width: 260px; }
 
 /* Client side notice that something changed after approval */
+/* Sat with no vertical margin at all, so it touched the media above and the
+   button divider below and read as part of neither. It is its own thing, set
+   apart from both, with the same side inset as the buttons under it. */
 .reask {
-  display: flex; flex-direction: column; gap: 3px;
-  margin: 0 16px; padding: 11px 13px; border-radius: 9px;
+  display: flex; flex-direction: column; gap: 5px;
+  margin: 14px 16px; padding: 12px 14px; border-radius: 9px;
   background: var(--warn-bg); border: 1px solid #f0e2cd;
 }
 .reask b { font-size: 12.5px; font-weight: 600; color: var(--warn); }
-.reask span { font-size: 13px; color: var(--ink-soft); }
+.reask span {
+  font-size: 13px; color: var(--ink-soft); line-height: 1.5;
+  white-space: pre-wrap; overflow-wrap: anywhere;
+}
 
 @media (max-width: 640px) {
   .setbar-actions { margin-left: 0; width: 100%; }
@@ -1800,3 +1806,20 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
   color: var(--ink-mute); margin-bottom: 3px;
 }
 .facts dd { font-size: 14px; color: var(--ink); margin: 0; overflow-wrap: anywhere; }
+
+/* ---------- Money ----------
+   Subtotal, tax, total, the way an invoice lays them out, because that is
+   what this becomes. */
+.totals { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 16px; max-width: 420px; }
+.totals > div { display: flex; justify-content: space-between; gap: 16px; font-size: 13.5px; color: var(--ink-soft); }
+.totals > div span:last-child { font-variant-numeric: tabular-nums; }
+.totals .is-total { padding-top: 6px; border-top: 1px solid var(--line); font-weight: 600; color: var(--ink); font-size: 14.5px; }
+#confirmTotals { margin-top: 10px; }
+.confirmbar-in > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.confirmbar-in > span b { font-size: 14px; }
+.confirmbar-in > span .muted { font-size: 12.5px; }
+
+/* The invoice, once there is one. */
+.topbar .headlink { margin-right: 8px; text-decoration: none; }
+.invcurrent { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.invcurrent .btn { flex: 0 0 auto; }

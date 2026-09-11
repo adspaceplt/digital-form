@@ -363,8 +363,9 @@
       <!-- ---- Campaign form: creates, and edits an open campaign in place ---- -->
       <div class="panel" id="addCampBox" hidden>
           <div class="panelhead"><h3 id="campFormTitle">New campaign</h3></div>
-          <p class="hint">Sales agrees the package and raises the invoice. Enter that invoice
-          number here: it is what authorises the slot count, and the cap is enforced against it.</p>
+          <p class="hint">This is a proposal. Slots is the number of creators agreed with the
+          client; they choose that many from the quoted rates and see the total. The invoice
+          is raised after they confirm, and attached on the campaign.</p>
           <div class="row">
             <div><label class="field-label" for="campClient">Client</label>
               <!-- Typed, not picked. There is no CRM yet, so forcing a choice
@@ -375,11 +376,6 @@
               <datalist id="clientNames"></datalist></div>
             <div><label class="field-label" for="campTitle">Campaign name</label>
               <input class="input" id="campTitle" placeholder="Promote Newly Launch Project"></div>
-            <div style="flex:0 0 190px"><label class="field-label" for="campInvoice">Invoice no.</label>
-              <div class="slugfield">
-                <span class="slugfield-pre">AINV2</span>
-                <input class="input" id="campInvoice" placeholder="XXXXXX" autocomplete="off">
-              </div></div>
             <div style="flex:0 0 110px"><label class="field-label" for="campSlots">Slots</label>
               <input class="input" id="campSlots" type="number" min="1" value="10"></div>
           </div>
@@ -447,6 +443,27 @@
             <button class="btn btn-primary" id="campLock" type="button" hidden>Lock the selection</button>
           </div>
           <div class="msg" id="campWorkMsg"></div>
+
+          <div class="subsection" id="invoiceBox">
+            <h4>Invoice</h4>
+            <p class="hint">Raised after the client confirms. Enter the number and upload the PDF;
+            it appears on the client's page for them to open and download.</p>
+            <div class="row">
+              <div style="flex:0 0 220px"><label class="field-label" for="invNo">Invoice no.</label>
+                <div class="slugfield">
+                  <span class="slugfield-pre">AINV2</span>
+                  <input class="input" id="invNo" placeholder="XXXXXX" autocomplete="off">
+                </div></div>
+              <button class="btn" id="invSaveNo" type="button">Save number</button>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <div><label class="field-label" for="invFile">Invoice PDF</label>
+                <input class="input" id="invFile" type="file" accept="application/pdf,.pdf"></div>
+              <button class="btn btn-primary" id="invUpload" type="button">Upload</button>
+            </div>
+            <div class="invcurrent" id="invCurrent"></div>
+            <div class="msg" id="invMsg"></div>
+          </div>
 
           <div class="subsection camp-danger">
             <h4>Deletion</h4>
