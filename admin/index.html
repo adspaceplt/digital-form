@@ -507,7 +507,7 @@
 
         <div class="panel" id="bulkBox" hidden>
           <div class="panelhead"><h3 id="bulkTitle">Same shoot date for everyone</h3></div>
-          <p class="hint" id="bulkHint">Fills the date and time on every card still blank.</p>
+          <p class="hint" id="bulkHint">Fills every card still blank.</p>
           <div class="row" id="bulkVisitRow">
             <div style="flex:0 0 160px"><label class="field-label" for="bulkDate">Date</label>
               <input class="input" id="bulkDate" type="date"></div>
@@ -525,18 +525,16 @@
 
         <div class="panel" id="addOptionBox" hidden>
           <div class="panelhead"><h3>Add creators</h3></div>
-          <p class="hint">The rate is set here, for this campaign. The same creator can be
-          RM 500 on one campaign and RM 350 on the next; her usual rate only fills the box
-          to start with. Once offered, the rate is frozen on this campaign whatever the
-          roster says later.</p>
+          <p class="hint">The rate is set per campaign. Her usual rate only fills the box to
+          start with, and once offered it is frozen here whatever the roster says later.</p>
           <input class="input" id="optionSearch" placeholder="Search the roster by name">
           <div class="optionpick" id="optionPick"></div>
           <div class="msg" id="optionMsg"></div>
 
           <div class="subsection">
             <h4>Not in the roster yet?</h4>
-            <p class="hint">Add her here. She is offered on this campaign and kept in the
-            roster, so next time she is one search away and cannot be added twice.</p>
+            <p class="hint">She is offered here and kept in the roster, so next time she is
+            one search away and cannot be added twice.</p>
             <div class="row">
               <div><label class="field-label" for="ncName">Name</label>
                 <input class="input" id="ncName" placeholder="香香的爆米花 🍿"></div>
@@ -560,8 +558,8 @@
 
         <section class="panel" id="rollup" hidden>
             <div class="panelhead"><h3>Campaign results</h3></div>
-          <p class="hint">Totals across every posted placement. The number that wins the
-          next campaign is this one, not the per-post breakdown.</p>
+          <p class="hint">Totals across every posted placement. This is the number that wins
+          the next campaign.</p>
           <div class="tally" id="rollupTally"></div>
         </section>
 
