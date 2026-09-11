@@ -87,6 +87,14 @@ Rules:
 - Tables (`.crm-row`, `.team-row`) become stacked cards under 640px. Never a
   sideways-scrolling table on a phone.
 - No horizontal overflow at 390px. Side gutter ≥ 16px.
+- A phone screenshot is reviewed, not just taken. Before a push, check at
+  390px: no cell in a grid sits alone on its row (column count follows cell
+  count, `.tally` does this by `:has()`; a money group runs two across with
+  the total spanning the row); a value never wraps inside a cell; buttons
+  that share a row share a width (`.row > .btn`, `.kactions .btn`,
+  `.linkbox .btn` flex equally);
+  a head card ends above the fold so the list it heads is reachable
+  without scrolling past it; nothing is clipped under the sticky top bar.
 - Header and footer come from `js/chrome.js`
   (`<script src="/js/chrome.js" data-kicker=… data-actions="lang|qr">`).
   Footer: left `© {year} ADSPACE PLT. All Rights Reserved.`, right
@@ -104,12 +112,38 @@ Rules:
   the same action everywhere; never mix outline and filled icon styles.
 - Lists of ten or more cards fold by default to a one-line header (name,
   state, one summary line, chevron); one card open at a time is the norm.
-- Laws to check on every change: Fitts (targets ≥ 38px desktop, 44px
-  touch, primary action nearest the hand), proximity (a control sits with
-  the thing it changes, never in a bar above it), Jakob (patterns people
-  know: table, disclosure, ⋯ menu, sheet), hierarchy (one primary per view,
-  one accent), consistency (same width and height for controls in a row,
-  same order of Save / secondary / Cancel).
+- Laws to check on every change, at 1280 and 390:
+  - Fitts: targets ≥ 38px desktop, 44px touch; the primary action nearest
+    the hand (bottom of a card on a phone, end of a row on desktop).
+  - Hick: one primary per view; rare actions in the ⋯ menu; a select over
+    a row of buttons once there are more than four choices.
+  - Miller and chunking: groups of three to five (facts, cells, fields);
+    a group carries a label; six or more items fold or become a table.
+  - Gestalt proximity, similarity, common region: a control sits with the
+    thing it changes; the same kind of data looks the same everywhere
+    (cells for counts and money, `.facts` for text, a table for rows);
+    a border groups, whitespace separates.
+  - Jakob: patterns people know (table, disclosure, ⋯ menu, sheet, chip),
+    nothing invented.
+  - Von Restorff: one accent. Green is the go action and live states only;
+    warn for caution; ink outline for the total. Nothing else is coloured.
+  - Tesler: the console carries the complexity, the client page does not.
+  - Doherty: feedback under 400ms; a saving state on the button, never a
+    page reload; optimistic where safe.
+  - Progressive disclosure: folded cards, one open at a time; a step
+    appears when its stage is reached (draft link after Pending draft).
+  - Consistency: same width and height for controls in a row; same order
+    Save / secondary / Cancel; same glyph for the same action.
+  - Aesthetic usability: flat, quiet, aligned. Alignment errors, orphan
+    cells and wrapped values read as bugs.
+  - WCAG 2.2 AA: contrast ≥ 4.5:1 for text, ≥ 3:1 for controls; focus
+    visible; labels on every field and icon-only button; no information
+    by colour alone (a chip carries a word).
+  - Apple HIG and Material: 44pt / 48dp touch targets; system font;
+    sheet from the bottom on a phone.
+  - Data: Malaysian PDPA 2010 and Singapore PDPA 2012. Collect what the
+    page needs, show a person only their own client's data, soft remove
+    before hard delete.
 - Chinese UI text uses the same tokens; `lang="zh"` swaps the font stack only.
 
 ## Console structure

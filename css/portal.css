@@ -1547,7 +1547,21 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
    decision somebody took, rather than something found at reconciliation. */
 /* Cells fill the row on any width: a grid, not a wrap. */
 .tally { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 14px; }
-@media (max-width: 640px) { .tally { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* On a phone the column count follows the cell count so no cell sits alone:
+   three, five or six cells run three across; anything else runs two across. */
+@media (max-width: 640px) {
+  .tally { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .tally:has(> :nth-child(3):last-child),
+  .tally:has(> :nth-child(5):last-child),
+  .tally:has(> :nth-child(6):last-child) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  /* Money is too wide for a third of a phone: two across, the total on its
+     own full row. A value never wraps. */
+  .tally:has(> .tally-cell.is-total) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tally-cell.is-total { grid-column: 1 / -1; }
+  .tally-cell { padding: 9px 10px; }
+  .tally-cell b { font-size: 15px; white-space: nowrap; }
+  .tally-cell span { font-size: 11px; }
+}
 .tally-cell {
   min-width: 0;
   border: 1px solid var(--line); border-radius: 10px; padding: 10px 13px;
@@ -2166,6 +2180,7 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
   /* Action rows: a button keeps a readable width and wraps to the next line
      rather than squeezing its label onto three. */
   .kactions .btn,
+  .linkbox .btn,
   .row > .btn { flex: 1 1 138px; min-width: 0; }
   /* A borderless tertiary button left alone at the end of a wrapped row read
      as a stray word. It takes the whole last line instead. */
