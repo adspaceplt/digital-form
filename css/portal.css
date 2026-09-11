@@ -1158,9 +1158,13 @@ a { color: inherit; }
 }
 
 /* Activity record */
+/* Two lines, named rather than left to auto placement. The old version let
+   the browser place five spans across three columns, which reflowed into a
+   different shape at every width it was put in. */
 .act {
-  display: grid; align-items: baseline; gap: 4px 14px;
-  grid-template-columns: 170px minmax(0,1fr) auto;
+  display: grid; align-items: baseline; gap: 3px 12px;
+  grid-template-columns: auto minmax(0,1fr) auto;
+  grid-template-areas: "tag subject when" "tag meta meta";
   padding: 11px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px;
 }
 .act:last-child { border-bottom: 0; }
@@ -1172,14 +1176,20 @@ a { color: inherit; }
 .act-tag.is-danger { background: #fdeceb; color: #8c1d18; }
 .act-tag.is-ok     { background: var(--ok-bg); color: var(--ok); }
 .act-tag.is-warn   { background: var(--warn-bg); color: var(--warn); }
-.act-subject { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
-.act-when { white-space: nowrap; font-variant-numeric: tabular-nums; }
-.act-detail { grid-column: 2; font-size: 12.5px; }
-.act-who { grid-column: 3; font-size: 12px; }
+.act-tag { grid-area: tag; align-self: center; }
+.act-subject { grid-area: subject; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.act-when { grid-area: when; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.act-meta {
+  grid-area: meta; font-size: 12.5px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
-@media (max-width: 700px) {
-  .act { grid-template-columns: 1fr; }
-  .act-detail, .act-who { grid-column: 1; }
+@media (max-width: 560px) {
+  .act {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "tag" "subject" "meta" "when";
+  }
+  .act-when { justify-self: start; }
 }
 
 /* =========================================================================
@@ -1342,3 +1352,104 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
     z-index: 55; background: rgba(0,0,0,.35); border: 0; padding: 0;
   }
 }
+
+/* ---------- Console head: a link rather than a card ---------- */
+.console-spacer { flex: 1 1 auto; }
+.headlink {
+  display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto;
+  border: 0; background: none; padding: 7px 9px; border-radius: 8px;
+  font-size: 12.5px; color: var(--ink-mute);
+  text-decoration: underline; text-underline-offset: 3px;
+  text-decoration-color: var(--line);
+}
+.headlink svg { width: 15px; height: 15px; stroke-width: 1.7; }
+.headlink:hover { color: var(--ink); background: var(--line-soft); text-decoration-color: currentColor; }
+
+/* ---------- Signing out ----------
+   It read as body text with an underline, which is not something you reach for
+   deliberately. Same corner, same size as any other action in the console. */
+.sidebar-who { white-space: normal; line-height: 1.45; }
+.sidebar-who b {
+  display: block; font-weight: 600; color: var(--ink-soft);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
+}
+.signout {
+  width: 100%; margin-top: 10px; min-width: 0;
+  padding: 8px 12px; font-size: 12.5px; color: var(--ink-soft);
+}
+.signout svg { width: 15px; height: 15px; stroke-width: 1.7; }
+.signout:hover { border-color: var(--ink-mute); color: var(--ink); }
+
+/* ---------- Sheet ----------
+   Opens over the work and hands it straight back, so reading the record never
+   costs you the place you were in. */
+.sheet {
+  position: fixed; inset: 0; z-index: 90; display: flex;
+  align-items: center; justify-content: center; padding: 24px;
+  background: rgba(0,0,0,.42);
+}
+.sheet[hidden] { display: none; }
+.sheet-card {
+  background: var(--card); border-radius: var(--radius);
+  width: min(780px, 100%); max-height: min(82vh, 720px);
+  display: flex; flex-direction: column;
+  padding: 22px 24px 8px; box-shadow: 0 24px 60px rgba(0,0,0,.25);
+}
+.sheet-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.sheet-head h3 { flex: 1 1 auto; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.sheet-body { overflow: auto; margin: 0 -24px; padding: 0 24px 18px; }
+
+/* ---------- Notice ---------- */
+.notice {
+  display: flex; gap: 11px; align-items: flex-start;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--line-soft); padding: 13px 15px; margin-bottom: 18px;
+}
+.notice svg { width: 17px; height: 17px; flex: 0 0 auto; margin-top: 1px; color: var(--ink-mute); stroke-width: 1.7; }
+.notice b { font-size: 13px; font-weight: 600; margin-right: 4px; }
+.notice span { font-size: 13px; color: var(--ink-mute); }
+
+/* ---------- Smart Links ---------- */
+.linksbar { display: flex; align-items: center; gap: 12px; margin: 20px 0 12px; }
+.linksbar .input { flex: 1 1 auto; }
+.linksbar .muted { flex: 0 0 auto; white-space: nowrap; }
+
+.slugfield { display: flex; align-items: stretch; }
+.slugfield-pre {
+  display: inline-flex; align-items: center; padding: 0 8px;
+  border: 1px solid var(--line); border-right: 0;
+  border-radius: 9px 0 0 9px; background: var(--line-soft);
+  font-size: 12.5px; color: var(--ink-mute); white-space: nowrap;
+}
+.slugfield .input { border-radius: 0 9px 9px 0; min-width: 0; }
+
+.slink {
+  display: grid; align-items: center; gap: 4px 14px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "body actions";
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--card); padding: 13px 15px; margin-bottom: 8px;
+}
+.slink-body { grid-area: body; min-width: 0; }
+.slink-slug {
+  font-weight: 600; font-size: 13.5px; letter-spacing: -.01em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.slink-label { font-size: 12.5px; color: var(--ink-soft); margin-left: 8px; }
+.slink-target {
+  display: block; font-size: 12.5px; color: var(--ink-mute); margin-top: 3px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.slink-actions { grid-area: actions; display: flex; gap: 6px; align-items: center; }
+.slink.is-off { opacity: .55; }
+
+@media (max-width: 640px) {
+  .slink { grid-template-columns: 1fr; grid-template-areas: "body" "actions"; }
+  .slink-actions { justify-content: flex-end; margin-top: 8px; }
+  .linksbar { flex-wrap: wrap; }
+  .linksbar .input { flex: 1 1 100%; }
+  .sheet { padding: 0; }
+  .sheet-card { max-height: 100vh; height: 100%; width: 100%; border-radius: 0; }
+}
+
+.iconbtn.is-done { color: var(--ok); background: var(--ok-bg); }

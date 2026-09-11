@@ -159,6 +159,31 @@
     });
   })();
 
+  /* Which section of the console is on screen. The rail decides; neither
+     section knows the other exists, which is the point of the shell. */
+  var section = 'review';
+  var SECTION_TITLE = { review: 'Content Review', links: 'Smart Links' };
+
+  function showSection(name) {
+    if (!SECTION_TITLE[name]) name = 'review';
+    section = name;
+    $('sectionReview').hidden = name !== 'review';
+    $('sectionLinks').hidden  = name !== 'links';
+    $('sectionTitle').textContent = SECTION_TITLE[name];
+    navItems().forEach(function (b) {
+      b.classList.toggle('is-on', b.getAttribute('data-section') === name);
+    });
+    showActivityLink();
+    if (name === 'links') loadLinks();
+  }
+
+  function navItems() {
+    return Array.prototype.slice.call(document.querySelectorAll('.navitem'));
+  }
+  navItems().forEach(function (b) {
+    b.addEventListener('click', function () { showSection(b.getAttribute('data-section')); });
+  });
+
   /* A tab that has been in the background long enough is thrown away by the
      browser and rebuilt from scratch when you return. The address bar already
      carries the client and the set; this carries how far down the page you
@@ -289,28 +314,49 @@
     'set.published':         ['Published to client', 'is-ok'],
     'set.withdrawn':         ['Withdrawn from client', 'is-warn'],
     'link.reset':            ['Access link reset', 'is-warn'],
-    'reapproval.requested':  ['Re-approval requested', 'is-warn']
+    'reapproval.requested':  ['Re-approval requested', 'is-warn'],
+    // Short links. Named apart from link.reset above, which is the client's
+    // access link and a different thing entirely.
+    'smartlink.created':     ['Short link created', 'is-ok'],
+    'smartlink.updated':     ['Short link changed', 'is-warn'],
+    'smartlink.deleted':     ['Short link deleted', 'is-danger'],
+    'smartlink.imported':    ['Short links imported', 'is-ok']
   };
 
   /* The section only appears for people on the viewer list. The database
      enforces this too, so hiding it here is convenience rather than the
      control itself. */
+  var maySeeActivity = false;
+
   function gateActivity() {
-    var panel = $('activityToggle').closest('.panel');
-    panel.hidden = true;
+    maySeeActivity = false;
+    showActivityLink();
     if (!actor) return;
     db.from('activity_viewers').select('email').ilike('email', actor).limit(1)
       .then(function (r) {
-        panel.hidden = !(r.data && r.data.length);
-      }, function () { panel.hidden = true; });
+        maySeeActivity = Boolean(r.data && r.data.length);
+        showActivityLink();
+      }, function () { maySeeActivity = false; showActivityLink(); });
   }
 
-  $('activityToggle').addEventListener('click', function () {
-    var open = $('activityBody').hidden;
-    $('activityBody').hidden = !open;
-    $('activityToggle').setAttribute('aria-expanded', String(open));
-    $('activityToggle').classList.toggle('is-open', open);
-    if (open) loadActivity();
+  /* The record belongs to Content Review, so it is offered there and nowhere
+     else. Hiding it is convenience; the database is what actually refuses. */
+  function showActivityLink() {
+    $('activityOpen').hidden = !(maySeeActivity && section === 'review');
+  }
+
+  function shutActivity() { $('activitySheet').hidden = true; }
+
+  $('activityOpen').addEventListener('click', function () {
+    $('activitySheet').hidden = false;
+    loadActivity();
+  });
+  $('activityClose').addEventListener('click', shutActivity);
+  $('activitySheet').addEventListener('click', function (e) {
+    if (e.target === $('activitySheet')) shutActivity();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') shutActivity();
   });
 
   function loadActivity() {
@@ -332,11 +378,14 @@
           row.innerHTML =
             '<span class="act-tag ' + meta[1] + '">' + esc(meta[0]) + '</span>' +
             '<span class="act-subject">' + esc(a.subject || '') + '</span>' +
-            '<span class="muted act-detail">' + esc(a.detail || '') + '</span>' +
-            '<span class="muted act-who">' + esc(a.actor || '') + '</span>' +
             '<span class="muted act-when">' +
               new Date(a.created_at).toLocaleString('en-GB',
                 { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) +
+            '</span>' +
+            // Who did it and any note, on one line. Separated only when both
+            // are there, so a missing note never leaves a stray bullet.
+            '<span class="muted act-meta">' +
+              [a.detail, a.actor].filter(Boolean).map(esc).join(' · ') +
             '</span>';
           box.appendChild(row);
         });
@@ -1799,7 +1848,10 @@
     pencil: '<path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/>',
     trash:  '<path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/>' +
             '<path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/>',
-    redo:   '<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v4h-4"/>'
+    redo:   '<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v4h-4"/>',
+    copy:   '<rect x="9" y="9" width="11" height="11" rx="2"/>' +
+            '<path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/>',
+    tick:   '<path d="m5 12.5 4.5 4.5L19 7.5"/>'
   };
 
   /* A round mark with the action named for anyone who cannot see the shape. */
@@ -1958,4 +2010,222 @@
     paintRead();
     return row;
   }
+
+  /* ---- Smart Links -------------------------------------------------------
+     Short links for go.adspace.me. The redirector is not built and the domain
+     has not moved, so what this manages is the list it will serve. Entering
+     the existing slugs now means the switch is a DNS change and nothing more;
+     every slug keeps the address it already has printed on it. */
+  var LINK_HOST = 'go.adspace.me';
+  var links = [];
+  var editingSlug = null;
+
+  // What a slug may be: the part after the slash, and safe in a URL as typed.
+  function slugOk(s) { return /^[a-z0-9][a-z0-9._-]{0,79}$/.test(s); }
+
+  // People paste the whole short link as often as they type the slug alone.
+  function cleanSlug(s) {
+    return String(s == null ? '' : s).trim()
+      .replace(/^https?:\/\//i, '').replace(/^[^/]*\//, '')
+      .replace(/^\/+|\/+$/g, '').toLowerCase();
+  }
+  /* Returns '' for anything that is not plausibly a destination. Without the
+     hostname check, a stray line like "BROKEN LINE ONLY" in a pasted export
+     parses as the slug "broken" pointing at "https://LINE", and a bad row
+     imports silently instead of being reported. */
+  function cleanTarget(u) {
+    var v = String(u == null ? '' : u).trim();
+    if (!v) return '';
+    if (/^https?:\/\//i.test(v)) return v;
+    return /^[a-z0-9-]+(\.[a-z0-9-]+)+([:/?#]|$)/i.test(v) ? 'https://' + v : '';
+  }
+  function shortUrl(slug) { return 'https://' + LINK_HOST + '/' + slug; }
+
+  function loadLinks() {
+    var box = $('linkList');
+    box.innerHTML = '<div class="empty">Loading…</div>';
+    db.from('links').select('*').order('slug').then(function (r) {
+      if (r.error) {
+        links = [];
+        box.innerHTML = '<div class="empty">Could not load the links. ' +
+          esc(r.error.message) + '</div>';
+        $('linkCount').textContent = '';
+        return;
+      }
+      links = r.data || [];
+      paintLinks();
+    });
+  }
+
+  function paintLinks() {
+    var box = $('linkList');
+    var q = $('linkSearch').value.trim().toLowerCase();
+    var shown = !q ? links : links.filter(function (l) {
+      return (l.slug + ' ' + (l.target_url || '') + ' ' + (l.title || ''))
+        .toLowerCase().indexOf(q) > -1;
+    });
+
+    $('linkCount').textContent = !links.length ? '' :
+      (q ? shown.length + ' of ' + links.length : links.length +
+        (links.length === 1 ? ' link' : ' links'));
+
+    box.innerHTML = '';
+    if (!shown.length) {
+      box.innerHTML = '<div class="empty">' +
+        (links.length ? 'Nothing matches that search.'
+                      : 'No links yet. Add one above, or paste your existing list into Bulk import.') +
+        '</div>';
+      return;
+    }
+
+    shown.forEach(function (l) {
+      var row = document.createElement('div');
+      row.className = 'slink' + (l.active === false ? ' is-off' : '');
+      row.innerHTML =
+        '<div class="slink-body">' +
+          '<span class="slink-slug">/' + esc(l.slug) + '</span>' +
+          (l.title ? '<span class="slink-label">' + esc(l.title) + '</span>' : '') +
+          (l.active === false ? '<span class="slink-label">· paused</span>' : '') +
+          '<span class="slink-target">' + esc(l.target_url || '') + '</span>' +
+        '</div>' +
+        '<div class="slink-actions">' +
+          iconBtn('copy',   'copy',   'Copy short link') +
+          iconBtn('pencil', 'edit',   'Edit link') +
+          iconBtn('trash',  'del',    'Delete link', 'is-danger') +
+        '</div>';
+      row.querySelector('[data-a="copy"]').addEventListener('click', function (e) {
+        var b = e.currentTarget;
+        navigator.clipboard.writeText(shortUrl(l.slug)).then(function () {
+          b.classList.add('is-done');
+          b.querySelector('svg').innerHTML = ICON.tick;
+          setTimeout(function () {
+            b.classList.remove('is-done');
+            b.querySelector('svg').innerHTML = ICON.copy;
+          }, 1400);
+        });
+      });
+      row.querySelector('[data-a="edit"]').addEventListener('click', function () { editLink(l); });
+      row.querySelector('[data-a="del"]').addEventListener('click', function () { removeLink(l); });
+      box.appendChild(row);
+    });
+  }
+
+  function openLinkForm(link) {
+    editingSlug = link ? link.slug : null;
+    $('linkFormTitle').textContent = link ? 'Edit short link' : 'New short link';
+    $('saveLink').textContent = link ? 'Save' : 'Create';
+    $('newSlug').value = link ? link.slug : '';
+    $('newTarget').value = link ? (link.target_url || '') : '';
+    $('newLinkLabel').value = link ? (link.title || '') : '';
+    $('addLinkBox').hidden = false;
+    $('importBox').hidden = true;
+    msg('linkMsg', '');
+    $('newSlug').focus();
+  }
+  function shutLinkForm() { $('addLinkBox').hidden = true; editingSlug = null; msg('linkMsg', ''); }
+
+  function editLink(l) { openLinkForm(l); }
+
+  function removeLink(l) {
+    if (!confirm('Delete /' + l.slug + '?\n\nAnywhere this link is already printed or posted will stop working.')) return;
+    db.from('links').delete().eq('slug', l.slug).then(function (r) {
+      if (r.error) { msg('linkMsg', r.error.message, 'err'); return; }
+      logAction('smartlink.deleted', '/' + l.slug, l.target_url || '');
+      loadLinks();
+    });
+  }
+
+  $('showAddLink').addEventListener('click', function () { openLinkForm(null); });
+  $('cancelAddLink').addEventListener('click', shutLinkForm);
+  $('linkSearch').addEventListener('input', paintLinks);
+
+  $('saveLink').addEventListener('click', function () {
+    var slug = cleanSlug($('newSlug').value);
+    var target = cleanTarget($('newTarget').value);
+    if (!slug)       { msg('linkMsg', 'A short link needs a slug.', 'err'); return; }
+    if (!slugOk(slug)) {
+      msg('linkMsg', 'Use lowercase letters, digits, dots, dashes or underscores.', 'err');
+      return;
+    }
+    if (!target) {
+      msg('linkMsg', $('newTarget').value.trim()
+        ? 'That destination does not look like a web address.'
+        : 'A destination is required.', 'err');
+      return;
+    }
+
+    // Renaming a slug is a new row plus a delete, so catch the collision first.
+    var clash = links.filter(function (l) { return l.slug === slug && l.slug !== editingSlug; });
+    if (clash.length) { msg('linkMsg', '/' + slug + ' is already in use.', 'err'); return; }
+
+    var body = {
+      slug: slug, target_url: target,
+      title: $('newLinkLabel').value.trim() || null,
+      created_by: actor || null
+    };
+    var was = editingSlug;
+
+    db.from('links').upsert(body, { onConflict: 'slug' }).then(function (r) {
+      if (r.error) { msg('linkMsg', r.error.message, 'err'); return; }
+      if (was && was !== slug) {
+        db.from('links').delete().eq('slug', was).then(function () { loadLinks(); });
+      } else {
+        loadLinks();
+      }
+      logAction(was ? 'smartlink.updated' : 'smartlink.created', '/' + slug, target);
+      shutLinkForm();
+    });
+  });
+
+  $('showImport').addEventListener('click', function () {
+    $('importBox').hidden = false;
+    $('addLinkBox').hidden = true;
+    msg('importMsg', '');
+    $('importText').focus();
+  });
+  $('cancelImport').addEventListener('click', function () { $('importBox').hidden = true; });
+
+  /* A paste from Rebrandly is a slug, a destination, and sometimes a name.
+     Splitting on tab, comma or a run of spaces covers every export shape
+     without asking anyone to reformat fifty rows by hand. */
+  function parseImport(text) {
+    var rows = [], bad = [];
+    String(text || '').split(/\r?\n/).forEach(function (line, i) {
+      var raw = line.trim();
+      if (!raw) return;
+      var parts = raw.split(/\t|\s*,\s*|\s{2,}|\s+/);
+      var slug = cleanSlug(parts.shift());
+      var target = cleanTarget(parts.shift());
+      var title = parts.join(' ').trim();
+      if (!slug || !slugOk(slug) || !target) { bad.push(i + 1); return; }
+      rows.push({ slug: slug, target_url: target, title: title || null, created_by: actor || null });
+    });
+    return { rows: rows, bad: bad };
+  }
+
+  $('runImport').addEventListener('click', function () {
+    var parsed = parseImport($('importText').value);
+    if (!parsed.rows.length) {
+      msg('importMsg', 'Nothing to import. Each line needs a slug and a destination.', 'err');
+      return;
+    }
+    // Last one wins, so a list with a repeated slug still imports cleanly.
+    var seen = {};
+    parsed.rows.forEach(function (r) { seen[r.slug] = r; });
+    var rows = Object.keys(seen).map(function (k) { return seen[k]; });
+
+    msg('importMsg', 'Importing ' + rows.length + '…');
+    db.from('links').upsert(rows, { onConflict: 'slug' }).then(function (r) {
+      if (r.error) { msg('importMsg', r.error.message, 'err'); return; }
+      logAction('smartlink.imported', rows.length + ' links', '');
+      var note = 'Imported ' + rows.length + (rows.length === 1 ? ' link.' : ' links.');
+      if (parsed.bad.length) {
+        note += ' Skipped line' + (parsed.bad.length === 1 ? ' ' : 's ') +
+                parsed.bad.join(', ') + ' — could not read a slug and destination.';
+      }
+      msg('importMsg', note, parsed.bad.length ? 'warn' : 'ok');
+      $('importText').value = '';
+      loadLinks();
+    });
+  });
 })();

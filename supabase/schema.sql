@@ -114,6 +114,32 @@ create table if not exists public.activity_viewers (
 );
 alter table public.activity_viewers enable row level security;
 
+-- ---------------------------------------------------------------------------
+-- Short links (go.adspace.me/<slug>)
+-- The list the redirector will serve. It is filled in before the domain moves
+-- so the switch is a DNS change and nothing else: every slug already carries
+-- the address it is printed with.
+--
+-- The slug IS the key. There is no separate id, because the slug is what the
+-- outside world holds and two rows claiming one slug is not a state worth
+-- being able to represent.
+-- ---------------------------------------------------------------------------
+create table if not exists public.links (
+  slug        text primary key,
+  target_url  text not null,
+  title       text,
+  active      boolean not null default true,
+  created_by  text,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+-- Lowercase, URL safe, and never the empty string.
+alter table public.links drop constraint if exists links_slug_shape;
+alter table public.links add constraint links_slug_shape
+  check (slug ~ '^[a-z0-9][a-z0-9._-]{0,79}$');
+alter table public.links enable row level security;
+create index if not exists links_created_idx on public.links(created_at desc);
+
 create index if not exists posts_batch_idx    on public.posts(batch_id, position);
 create index if not exists batches_client_idx on public.batches(client_id, created_at desc);
 create index if not exists reviews_post_idx   on public.reviews(post_id, created_at desc);
@@ -150,6 +176,22 @@ drop policy if exists clients_update on public.clients;
 create policy clients_read   on public.clients for select to authenticated using (true);
 create policy clients_write  on public.clients for insert to authenticated with check (true);
 create policy clients_update on public.clients for update to authenticated using (true) with check (true);
+
+-- Short links are internal: the team manages them, anonymous visitors get no
+-- direct table access at all. When the redirector is built it reads this table
+-- with the service role, not with the anon key, so nothing here has to open up.
+drop policy if exists links_team on public.links;
+create policy links_team on public.links
+  for all to authenticated using (true) with check (true);
+
+-- Kept honest in the database rather than trusted to every caller.
+create or replace function public.touch_updated_at()
+returns trigger language plpgsql as $$
+begin new.updated_at := now(); return new; end $$;
+
+drop trigger if exists links_touch on public.links;
+create trigger links_touch before update on public.links
+  for each row execute function public.touch_updated_at();
 -- deliberately no delete policy: see delete_client
 
 -- ---------------------------------------------------------------------------

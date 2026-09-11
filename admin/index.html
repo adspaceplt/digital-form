@@ -29,7 +29,7 @@
       <span class="brand-wordmark" id="agencyWordmark" hidden>ADspace</span>
       <span class="brand-divider"></span>
       <span class="brand-meta">
-        <span class="brand-kicker">Digital Admin</span>
+        <span class="brand-kicker">Digital Portal</span>
       </span>
     </div>
   </div>
@@ -63,7 +63,7 @@
     <div class="sidebar-brand">
       <img id="sideLogo" class="brand-logo" src="" alt="ADspace">
       <span class="brand-wordmark" id="sideWordmark" hidden>ADspace</span>
-      <span class="sidebar-kicker">Digital Admin</span>
+      <span class="sidebar-kicker">Digital Portal</span>
     </div>
 
     <nav class="sidebar-nav" aria-label="Sections">
@@ -71,11 +71,16 @@
       <button class="navitem is-on" data-section="review" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg><span>Content Review</span>
       </button>
+      <button class="navitem" data-section="links" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.6-5.7l-1.7 1.7"/><path d="M14 10.5a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.6 5.7l1.7-1.7"/></svg><span>Smart Links</span>
+      </button>
     </nav>
 
     <div class="sidebar-foot">
-      <span class="sidebar-who" id="whoami"></span>
-      <button class="linkbtn" id="signOut" type="button" hidden>Sign out</button>
+      <span class="sidebar-who">Logged in as <b id="whoami"></b></span>
+      <button class="btn signout" id="signOut" type="button" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 20H6.5A1.5 1.5 0 0 1 5 18.5v-13A1.5 1.5 0 0 1 6.5 4H12"/></svg>Sign out
+      </button>
     </div>
   </aside>
 
@@ -85,6 +90,12 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
       <span class="console-title" id="sectionTitle">Content Review</span>
+      <span class="console-spacer"></span>
+      <!-- The activity record was a full width card sitting under the client
+           list, which is a lot of furniture for something read once a month. -->
+      <button class="headlink" id="activityOpen" type="button" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 8v4.3l3 1.8"/></svg>Activity record
+      </button>
     </header>
 
     <div class="console-body" id="sectionReview">
@@ -123,20 +134,6 @@
     </div>
 
     <div class="cards" id="clientCards"></div>
-
-    <section class="panel panel-collapse" style="margin-top:22px">
-      <button class="disclosure" id="activityToggle" type="button" aria-expanded="false">
-        <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
-        <svg class="disclosure-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 8v4.3l3 1.8"/></svg>
-        <span>Activity record</span>
-        <span class="muted">Deletions, publishing and link resets</span>
-      </button>
-      <div class="disclosure-body" id="activityBody" hidden>
-        <p class="hint">Actions that remove data or change what a client can see. Routine
-        work such as uploads and edits is not recorded.</p>
-        <div id="activityList"></div>
-      </div>
-    </section>
   </section>
 
   <!-- ============ One client ============ -->
@@ -348,6 +345,91 @@
   </section>
 
     </div>
+
+    <!-- ============ Smart Links ============ -->
+    <div class="console-body" id="sectionLinks" hidden>
+
+      <div class="viewhead">
+        <span class="headmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.6-5.7l-1.7 1.7"/><path d="M14 10.5a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.6 5.7l1.7-1.7"/></svg><h2>Smart Links</h2></span>
+        <button class="btn btn-primary" id="showAddLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a link</button>
+      </div>
+
+      <div class="notice" id="linksNotice">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.5"/></svg>
+        <div>
+          <b>Not serving yet.</b>
+          <span>Slugs live here now so the list is ready and complete. They start
+          redirecting once <code>go.adspace.me</code> moves off Rebrandly, and nothing
+          you enter needs changing when it does.</span>
+        </div>
+      </div>
+
+      <div class="panel" id="addLinkBox" hidden>
+        <div class="panelhead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><h3 id="linkFormTitle">New short link</h3></div>
+        <div class="row">
+          <div style="flex:0 0 210px">
+            <label class="field-label" for="newSlug">Short link</label>
+            <div class="slugfield">
+              <span class="slugfield-pre" id="slugPrefix">go.adspace.me/</span>
+              <input class="input" id="newSlug" placeholder="spring-launch" autocapitalize="off"
+                     autocorrect="off" spellcheck="false">
+            </div>
+          </div>
+          <div>
+            <label class="field-label" for="newTarget">Destination</label>
+            <input class="input" id="newTarget" placeholder="https://…">
+          </div>
+          <div style="flex:0 0 190px">
+            <label class="field-label" for="newLinkLabel">Label (optional)</label>
+            <input class="input" id="newLinkLabel" placeholder="What it is for">
+          </div>
+        </div>
+        <div class="row" style="margin-top:16px">
+          <button class="btn btn-primary" id="saveLink" type="button">Create</button>
+          <button class="btn" id="cancelAddLink" type="button" style="flex:0 0 auto">Cancel</button>
+        </div>
+        <div class="msg" id="linkMsg"></div>
+      </div>
+
+      <div class="panel" id="importBox" hidden>
+        <div class="panelhead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg><h3>Import existing slugs</h3></div>
+        <p class="hint">One per line: slug, then destination, separated by a tab, comma or
+        spaces. Anything after that becomes the label. A slug already in the list is
+        updated rather than duplicated, so the same paste can be run twice safely.</p>
+        <textarea class="input textarea" id="importText" rows="8" spellcheck="false"
+          placeholder="spring-launch    https://example.com/spring    Spring campaign
+raya-2026        https://example.com/raya"></textarea>
+        <div class="row" style="margin-top:14px">
+          <button class="btn btn-primary" id="runImport" type="button">Import</button>
+          <button class="btn" id="cancelImport" type="button" style="flex:0 0 auto">Cancel</button>
+        </div>
+        <div class="msg" id="importMsg"></div>
+      </div>
+
+      <div class="linksbar">
+        <input class="input" id="linkSearch" placeholder="Search slug, destination or label">
+        <span class="muted" id="linkCount"></span>
+        <button class="btn btn-quiet btn-sm" id="showImport" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>Bulk import</button>
+      </div>
+
+      <div id="linkList"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Read once a month, so it opens over the work and gives it back on close. -->
+<div class="sheet" id="activitySheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="activityHeading">
+    <div class="sheet-head">
+      <h3 id="activityHeading">Activity record</h3>
+      <button class="iconbtn" id="activityClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <p class="hint">Actions that remove data or change what a client can see. Routine work
+    such as uploads and edits is not recorded.</p>
+    <div class="sheet-body" id="activityList"></div>
   </div>
 </div>
 
