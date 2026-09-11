@@ -83,7 +83,15 @@
          client wants to know whether it is their turn, not our vocabulary. -->
     <section id="bookingWrap" hidden>
       <h2 class="sectionhead" id="bookingHead"></h2>
-      <div class="totals" id="bookedTotals"></div>
+      <!-- The amount is folded away. Campaigns get shown on a screen in a
+           meeting, and the billing figure is not always for that room. -->
+      <div class="amountfold" id="amountFold" hidden>
+        <button class="amountfold-btn" id="amountToggle" type="button" aria-expanded="false" aria-controls="bookedTotals">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+          <span id="amountLabel"></span>
+        </button>
+        <div class="totals" id="bookedTotals" hidden></div>
+      </div>
       <div id="bookingList"></div>
     </section>
 

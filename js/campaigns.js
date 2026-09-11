@@ -638,7 +638,7 @@
     setOpen('invoiceToggle', 'invoiceBody', false);
     setOpen('dangerToggle', 'dangerBody', false);
     paintInvoice(c);
-    $('campPublish').textContent = c.state === 'draft' ? 'Open for selection' : 'Close selection';
+    $('campPublish').textContent = publishMove(c.state).label;
     msg('campWorkMsg', '');
     loadOptions();
     if (restoring) { campDraft.restore(); ncDraft.restore(); restoreScroll(); }
@@ -662,13 +662,27 @@
     });
   });
 
+  /* The campaign moves forward and back. A locked selection the client wants to
+     revisit reopens; a campaign marked finished too early comes back. Neither
+     needs the campaign rebuilding. */
+  function publishMove(s) {
+    if (s === 'draft')      return { to: 'open',       label: 'Open for selection' };
+    if (s === 'open')       return { to: 'draft',      label: 'Close selection' };
+    if (s === 'production') return { to: 'open',       label: 'Reopen for selection',
+      ask: 'Reopen this campaign for selection?\n\nBookings already made stay exactly as ' +
+           'they are. The client can pick again for any slot that is free.' };
+    return { to: 'production', label: 'Reopen campaign',
+      ask: 'Put this campaign back into production?' };
+  }
+
   $('campPublish').addEventListener('click', function () {
     var c = state.campaign;
-    var next = c.state === 'draft' ? 'open' : 'draft';
-    db.from('campaigns').update({ state: next }).eq('id', c.id).then(function (r) {
+    var move = publishMove(c.state);
+    if (move.ask && !confirm(move.ask)) return;
+    db.from('campaigns').update({ state: move.to }).eq('id', c.id).then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-      c.state = next;
-      log(next === 'open' ? 'campaign.opened' : 'campaign.closed', c.title, '');
+      c.state = move.to;
+      log(move.to === 'open' ? 'campaign.opened' : 'campaign.closed', c.title, move.to);
       openCampaign(c);
     });
   });
@@ -848,7 +862,9 @@
   function dropOption(o) {
     var name = (o.creators && o.creators.name) || 'this creator';
     if (o.state !== 'option' && o.state !== 'backup') {
-      alert(name + ' has been chosen by the client, so removing them is a replacement rather than a deletion. That flow arrives with the production board.');
+      alert(name + ' has been chosen by the client, so this is no longer a deletion.\n\n' +
+        'Open them under Production above. "Something changed…" there covers sending ' +
+        'them back to the options, a withdrawal and a replacement, and each one can be undone.');
       return;
     }
     if (!confirm('Withdraw ' + name + ' from the options?')) return;
@@ -1024,6 +1040,16 @@
     return i > -1 && i < PIPELINE.length - 1 ? PIPELINE[i + 1] : null;
   }
 
+  /* Every step forward has a step back. Things go wrong, a status gets clicked
+     twice, a client asks to undo: none of that should mean deleting the
+     campaign and building it again. */
+  function prevState(s) {
+    if (s === 'changes') return 'reviewing';           // the branch folds back
+    var i = PIPELINE.indexOf(s);
+    return i > 0 ? PIPELINE[i - 1] : null;             // confirmed is the floor
+  }
+  function wordFor(s) { return (OPTION_WORD[s] || [s])[0]; }
+
   function isLive(o) { return IN_PRODUCTION.indexOf(o.state) > -1; }
 
   // Reads the same way it does on the client's page.
@@ -1074,11 +1100,16 @@
       '<div class="prod-body" hidden></div>';
 
     if (dead) {
-      if (o.drop_reason) {
-        row.querySelector('.prod-body').hidden = false;
-        row.querySelector('.prod-body').innerHTML =
-          '<p class="hint">' + esc(o.drop_reason) + '</p>';
-      }
+      // Ended, but not beyond recall: a withdrawal keyed on the wrong row, or a
+      // creator who came back, is one click to put right.
+      var db_ = row.querySelector('.prod-body');
+      db_.hidden = false;
+      db_.innerHTML =
+        (o.drop_reason ? '<p class="hint">' + esc(o.drop_reason) + '</p>' : '') +
+        '<button class="btn btn-sm btn-quiet" data-a="reinstate" type="button">Put back in production</button>';
+      db_.querySelector('[data-a="reinstate"]').addEventListener('click', function () {
+        reinstate(o);
+      });
       return row;
     }
 
@@ -1096,8 +1127,15 @@
       esc(value == null ? '' : value) + '" placeholder="' + esc(ph || '') + '"></div>';
   }
 
+  function altRow(action, label, cls, why) {
+    return '<div class="prod-alt-row">' +
+      '<button class="btn btn-sm btn-quiet ' + cls + '" data-a="' + action + '" type="button">' +
+      esc(label) + '</button><span class="hint">' + esc(why) + '</span></div>';
+  }
+
   function fillProdBody(body, o) {
     var advance = nextState(o.state);
+    var back = prevState(o.state);
     body.innerHTML =
       '<div class="row">' +
         field(visitWord() + ' date', 'visit_date', o.visit_date, 'date') +
@@ -1115,12 +1153,24 @@
           '<input class="input" data-f="notes" value="' + esc(o.notes || '') + '"></div>' +
       '</div>' +
       '<div class="prod-posts" data-posts></div>' +
-      '<div class="row" style="margin-top:14px">' +
+      '<div class="row prod-actions" style="margin-top:14px">' +
         '<button class="btn btn-primary" data-a="save" type="button">Save</button>' +
         (advance ? '<button class="btn btn-go" data-a="advance" type="button">Move to ' +
-          esc((OPTION_WORD[advance] || [advance])[0]) + '</button>' : '') +
-        '<button class="btn btn-quiet" data-a="withdraw" type="button" style="flex:0 0 auto">Creator withdrew</button>' +
-        '<button class="btn btn-quiet is-danger" data-a="replace" type="button" style="flex:0 0 auto">Client replaced</button>' +
+          esc(wordFor(advance)) + '</button>' : '') +
+        (back ? '<button class="btn btn-quiet btn-sm" data-a="back" type="button" style="flex:0 0 auto">' +
+          '↩ Back to ' + esc(wordFor(back).toLowerCase()) + '</button>' : '') +
+        '<button class="linkish prod-alt-toggle" data-a="alt" type="button">Something changed…</button>' +
+      '</div>' +
+      /* Withdrawals and client replacements happen a few times a year. They
+         used to sit here as two full-width buttons beside Save, which is the
+         wrong weight for what they are and easy to hit by mistake. */
+      '<div class="prod-alt" data-alt hidden>' +
+        altRow('unbook', 'Back to the client\'s list', '',
+               'Frees the slot and returns them to the options, so the client can choose again. Nothing else is lost.') +
+        altRow('withdraw', 'Creator withdrew', '',
+               'They pulled out. The slot reopens and the client\'s backups move up.') +
+        altRow('replace', 'Client replaced them', 'is-danger',
+               'The client asked for someone else. After filming this is goodwill: the creator is still paid.') +
       '</div>' +
       '<div class="msg" data-msg></div>';
 
@@ -1142,8 +1192,60 @@
 
     var adv = body.querySelector('[data-a="advance"]');
     if (adv) adv.addEventListener('click', function () { advanceOption(o, advance); });
+    var bk = body.querySelector('[data-a="back"]');
+    if (bk) bk.addEventListener('click', function () { stepBack(o, back); });
+
+    var alt = body.querySelector('[data-alt]');
+    body.querySelector('[data-a="alt"]').addEventListener('click', function () {
+      alt.hidden = !alt.hidden;
+      this.classList.toggle('is-open', !alt.hidden);
+    });
+    body.querySelector('[data-a="unbook"]').addEventListener('click', function () { unbook(o); });
     body.querySelector('[data-a="withdraw"]').addEventListener('click', function () { endOption(o, 'withdrawn'); });
     body.querySelector('[data-a="replace"]').addEventListener('click', function () { endOption(o, 'replaced'); });
+  }
+
+  /* One step back up the line. Posts and results stay where they are, so
+     stepping back out of Posted and forward again does not lose the numbers
+     somebody already typed in. */
+  function stepBack(o, to) {
+    var name = (o.creators || {}).name || 'this creator';
+    if (!confirm('Move ' + name + ' back to ' + wordFor(to).toLowerCase() + '?')) return;
+    db.from('campaign_options').update({ state: to }).eq('id', o.id).then(function (r) {
+      if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+      log('campaign.stage', name, 'back to ' + to);
+      msg('campWorkMsg', name + ' is back at ' + wordFor(to).toLowerCase() + '.', 'ok');
+      loadOptions();
+    });
+  }
+
+  /* The booking was made and the client has changed their mind before anything
+     was spent. They go back among the options and the slot frees up. */
+  function unbook(o) {
+    var name = (o.creators || {}).name || 'this creator';
+    if (!confirm('Return ' + name + ' to the options?\n\nThe slot frees up and the client ' +
+        'can choose again. Dates and notes on this booking are kept.')) return;
+    db.from('campaign_options').update({ state: 'option' }).eq('id', o.id).then(function (r) {
+      if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+      log('campaign.unbooked', name, '');
+      msg('campWorkMsg', name + ' is back on the list of options and the slot is free.', 'ok');
+      loadOptions();
+    });
+  }
+
+  // A withdrawal or replacement keyed on the wrong row, undone.
+  function reinstate(o) {
+    var name = (o.creators || {}).name || 'this creator';
+    if (!confirm('Put ' + name + ' back into production?\n\nThey return as confirmed and ' +
+        'the reason recorded against them is cleared.')) return;
+    db.from('campaign_options')
+      .update({ state: 'confirmed', drop_reason: null, goodwill: false })
+      .eq('id', o.id).then(function (r) {
+        if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+        log('campaign.reinstated', name, '');
+        msg('campWorkMsg', name + ' is back in production as confirmed.', 'ok');
+        loadOptions();
+      });
   }
 
   /* Moving to posted needs somewhere for the numbers to go, and there is one
