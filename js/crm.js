@@ -246,9 +246,7 @@
       var probe = Object.assign({}, state.editing || {}, patch);
       var missing = billingMissing(probe);
       if (missing.length) {
-        msg('crmMsg', 'Cannot make them active yet. Billing details still needed: ' +
-          missing.join(', ') + '. Save with the current stage, fill in Billing details ' +
-          'on their page, then change the stage.', 'err');
+        msg('crmMsg', 'Billing details required before Active: ' + missing.join(', ') + '.', 'err');
         return;
       }
     }
@@ -375,8 +373,8 @@
       openClient(state.client);
       setOpen('crmBillToggle', 'crmBillBody', true);
       msg('crmBillMsg', still.length
-        ? 'Saved. Still needed before they can be active: ' + still.join(', ') + '.'
-        : 'Saved. Billing is complete; they can be made active from Edit.',
+        ? 'Saved. Still required: ' + still.join(', ') + '.'
+        : 'Saved. Billing details complete.',
         still.length ? 'warn' : 'ok');
     });
   });
@@ -444,14 +442,14 @@
       '<div class="kmenu" data-menu hidden>' +
         (removed
           ? '<button class="kmenu-item" data-a="restore" type="button"><b>Put back</b>' +
-            '<span>Returns them to the contact list as they were.</span></button>'
+            '<span>Restore to the contact list.</span></button>'
           : '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b>' +
-            '<span>Change their details.</span></button>' +
+            '<span>Edit details.</span></button>' +
             (ct.is_primary ? '' :
               '<button class="kmenu-item" data-a="primary" type="button"><b>Make main contact</b>' +
-              '<span>The person we deal with by default.</span></button>') +
+              '<span>Default contact.</span></button>') +
             '<button class="kmenu-item is-danger" data-a="del" data-soft type="button"><b>Remove</b>' +
-            '<span>Hidden, not deleted. Can be put back.</span></button>') +
+            '<span>Hidden. Can be restored.</span></button>') +
       '</div>' +
       '<div class="kstep kstep-terms">' +
         '<span class="kstep-label">Reach</span>' +

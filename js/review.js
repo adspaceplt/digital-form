@@ -320,7 +320,7 @@
       if (!reviewer) {
         Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
         wrap.querySelector('.approve-state').textContent =
-          'A name is required to record this decision. Nothing has been saved.';
+          'A name is required to record this decision.';
         return;
       }
       localStorage.setItem('adspace_reviewer', reviewer);
@@ -605,8 +605,7 @@
     API.getReviewFeed(token, passcode).then(function (data) {
       if (!data || data.error === 'not_found') {
         showState('This link is no longer active',
-          'It may have been reset. Please contact your ' + cfg.agencyName +
-          ' account manager to be reissued the current link.');
+          'Please contact your ' + cfg.agencyName + ' account manager for a new link.');
         return;
       }
       if (data.error === 'passcode_required') {
