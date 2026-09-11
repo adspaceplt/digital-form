@@ -17,6 +17,8 @@
   var iconBtn = bridge.iconBtn || function () { return ''; };
   var log     = bridge.log || function () {};
   var who     = bridge.actor || function () { return ''; };
+  var putToS3 = bridge.putToS3;
+  var cfg     = window.ADSPACE_CONFIG || {};
 
   var $ = function (id) { return document.getElementById(id); };
   function esc(s) {
@@ -34,6 +36,12 @@
   function money(n) {
     return 'RM ' + Number(n || 0).toLocaleString('en-MY', { minimumFractionDigits: 0 });
   }
+  // Totals carry sen; a rate is a whole ringgit.
+  function money2(n) {
+    return 'RM ' + Number(n || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  var SST = 0.08;
+  function sstOf(subtotal) { return Math.round(subtotal * SST * 100) / 100; }
 
   /* ---- Platforms -------------------------------------------------------
      Each platform states the shape of a profile URL and where the identity
@@ -400,7 +408,6 @@
     $('addCamp').textContent = c ? 'Save' : 'Create';
     $('campClient').value = c ? ((c.clients && c.clients.name) || '') : '';
     $('campTitle').value = c ? c.title : '';
-    $('campInvoice').value = c ? String(c.invoice_no || '').replace(/^AINV2/i, '') : '';
     $('campSlots').value = c ? c.slots : 10;
     $('campDeadline').value = c ? (c.deadline || '') : '';
     $('campFormat').value = c ? (c.push_format || 'site_visit') : 'site_visit';
@@ -423,7 +430,7 @@
   // Every invoice starts AINV2, so the field carries it and only the rest is
   // typed. Stored whole, because that is what is on the document.
   function invoiceNo() {
-    var rest = ($('campInvoice').value || '').trim().replace(/^AINV2/i, '');
+    var rest = ($('invNo').value || '').trim().replace(/^AINV2/i, '');
     return rest ? 'AINV2' + rest : null;
   }
 
@@ -455,7 +462,7 @@
     var c = editingCamp;
     var patch = {
       client_id: clientId, title: title,
-      invoice_no: invoiceNo(), slots: slots,
+      slots: slots,
       deadline: $('campDeadline').value || null,
       push_format: $('campFormat').value,
       deliverable: $('campDeliverable').value,
@@ -463,7 +470,7 @@
     };
     db.from('campaigns').update(patch).eq('id', c.id).select('*, clients(name)').single().then(function (r) {
       if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
-      log('campaign.edited', title, patch.invoice_no || '');
+      log('campaign.edited', title, slots + ' slots');
       shutCampForm();
       openCampaign(r.data);
     });
@@ -472,7 +479,6 @@
   function createCampaign(clientId, title, slots) {
     db.from('campaigns').insert({
       client_id: clientId, title: title,
-      invoice_no: invoiceNo(),
       slots: slots,
       deadline: $('campDeadline').value || null,
       push_format: $('campFormat').value,
@@ -485,7 +491,7 @@
       created_by: who() || null
     }).select('*, clients(name)').single().then(function (r) {
       if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
-      log('campaign.created', title, r.data.invoice_no || '');
+      log('campaign.created', title, slots + ' slots');
       shutCampForm();
       openCampaign(r.data);
     });
@@ -503,7 +509,7 @@
     $('campState').classList.toggle('is-live', c.state !== 'draft');
     $('campFacts').innerHTML = [
       ['Client',       (c.clients && c.clients.name) || ''],
-      ['Invoice',      c.invoice_no || '<span class="muted">Not entered</span>'],
+      ['Invoice',      c.invoice_no || '<span class="muted">Not issued yet</span>'],
       ['Slots',        String(c.slots)],
       ['Push format',  FORMAT_WORD[c.push_format] || c.push_format || ''],
       ['Deliverable',  c.deliverable === 'graphic' ? 'One graphic' : 'One video'],
@@ -515,6 +521,7 @@
     }).join('');
     $('campLink').value = campaignUrl(c);
     $('campOpen').href = campaignUrl(c);
+    paintInvoice(c);
     $('campPublish').textContent = c.state === 'draft' ? 'Open for selection' : 'Close selection';
     msg('campWorkMsg', '');
     loadOptions();
@@ -596,11 +603,14 @@
     // is a goodwill replacement and somebody needs to have decided that on
     // purpose rather than discover it at reconciliation.
     var booked = chosen.length + goodwill.length;
+    // What the client sees: the quoted rates, then 8% SST on top.
     $('campTally').innerHTML =
-      tallyCell('Invoiced slots', c.slots) +
+      tallyCell('Slots agreed', c.slots) +
       tallyCell('Offered', live.length) +
       tallyCell('Chosen', chosen.length + ' of ' + c.slots) +
-      tallyCell('Value', money(total)) +
+      tallyCell('Subtotal', money2(total)) +
+      tallyCell('SST 8%', money2(sstOf(total))) +
+      tallyCell('Total', money2(total + sstOf(total))) +
       (booked > c.slots
         ? '<div class="tally-cell is-warn"><b>' + booked + '</b><span>Booked · ' +
           goodwill.length + ' goodwill</span></div>' : '');
@@ -1157,6 +1167,69 @@
         (eng ? tallyCell('Cost per engagement', 'RM ' + (spend / eng).toFixed(2)) : '');
     });
   }
+
+  // ---- Invoice: raised after confirmation, attached here -----------------
+  function paintInvoice(c) {
+    $('invNo').value = String(c.invoice_no || '').replace(/^AINV2/i, '');
+    $('invFile').value = '';
+    var cur = $('invCurrent');
+    if (c.invoice_url) {
+      cur.innerHTML =
+        '<a class="btn btn-icon" href="' + esc(c.invoice_url) + '" target="_blank" rel="noopener">View invoice' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
+        'stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/>' +
+        '<path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>' +
+        (c.invoice_uploaded_at
+          ? '<span class="muted">Uploaded ' + niceDate(String(c.invoice_uploaded_at).slice(0, 10)) +
+            '. Uploading again replaces it.</span>' : '');
+    } else {
+      cur.innerHTML = '<span class="muted">No invoice uploaded yet.</span>';
+    }
+    msg('invMsg', '');
+  }
+
+  $('invSaveNo').addEventListener('click', function () {
+    var c = state.campaign;
+    var no = invoiceNo();
+    db.from('campaigns').update({ invoice_no: no }).eq('id', c.id).then(function (r) {
+      if (r.error) { msg('invMsg', r.error.message, 'err'); return; }
+      c.invoice_no = no;
+      log('campaign.invoice', c.title, no || 'cleared');
+      openCampaign(c);
+      msg('invMsg', no ? 'Invoice number saved.' : 'Invoice number cleared.', 'ok');
+    });
+  });
+
+  /* The PDF goes to S3 by the same signed path media takes, and the campaign
+     keeps the public URL. Only the URL is ours to store; the file is the
+     accountant's. */
+  $('invUpload').addEventListener('click', function () {
+    var c = state.campaign;
+    var file = $('invFile').files && $('invFile').files[0];
+    if (!file) { msg('invMsg', 'Choose the invoice PDF first.', 'err'); return; }
+    if (!/pdf$/i.test(file.type) && !/\.pdf$/i.test(file.name)) {
+      msg('invMsg', 'The invoice has to be a PDF.', 'err'); return;
+    }
+    if (!putToS3) { msg('invMsg', 'Uploads are not available on this page.', 'err'); return; }
+    msg('invMsg', 'Uploading…');
+    db.functions.invoke((cfg.s3 && cfg.s3.functionName) || 'sign-upload', {
+      body: { ext: 'pdf', clientId: c.client_id, size: file.size }
+    }).then(function (r) {
+      if (r.error) throw new Error('Could not start the upload. ' + r.error.message);
+      if (!r.data || !r.data.uploadUrl) throw new Error('Upload was refused: ' + ((r.data && r.data.error) || 'unknown reason'));
+      return putToS3(r.data.uploadUrl, file, 'application/pdf').then(function () { return r.data.publicUrl; });
+    }).then(function (url) {
+      var stamp = new Date().toISOString();
+      return db.from('campaigns').update({ invoice_url: url, invoice_uploaded_at: stamp })
+        .eq('id', c.id).then(function (r) {
+          if (r.error) throw new Error(r.error.message);
+          c.invoice_url = url; c.invoice_uploaded_at = stamp;
+          log('campaign.invoice_file', c.title, c.invoice_no || '');
+          openCampaign(c);
+          msg('invMsg', 'Invoice uploaded. The client can open it from their page.', 'ok');
+        });
+    }).catch(function (e) { msg('invMsg', e.message, 'err'); });
+  });
 
   // ---- Locking the selection ---------------------------------------------
   $('campLock').addEventListener('click', function () {
