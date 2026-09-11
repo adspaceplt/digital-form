@@ -795,7 +795,7 @@ begin
             'platform', pp.platform, 'post_url', pp.post_url,
             'published_at', pp.published_at, 'window_days', pp.window_days,
             'impressions', pp.impressions, 'engagements', pp.engagements,
-            'views', pp.views) order by pp.platform)
+            'views', pp.views, 'measured_at', pp.measured_at) order by pp.platform)
           from option_posts pp where pp.option_id = o.id), '[]'::jsonb))
         order by o.position, o.added_at)
       from campaign_options o

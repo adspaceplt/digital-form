@@ -25,13 +25,6 @@
      by including one script rather than copying this markup. -->
 <script src="/js/chrome.js" data-kicker="Creator Selection" data-for data-actions="lang"></script>
 
-<!-- This page's own header control. Everything standard is in the chrome. -->
-<template id="chromeExtra">
-  <a class="headlink" id="invoiceLink" target="_blank" rel="noopener">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></svg><span id="invoiceLinkText"></span>
-  </a>
-</template>
-
 <main class="shell">
 
   <!-- The notice is the whole page, so nothing draws a box around it. Same
@@ -91,6 +84,11 @@
         </div>
         <div class="totals" id="bookedTotals" hidden></div>
       </div>
+      <!-- Totals across every live post, the same figures the console adds up. -->
+      <section class="rollup-card" id="clientRollup" hidden>
+        <div class="rollup-head" id="rollupHead"></div>
+        <div class="tally" id="clientTally"></div>
+      </section>
       <div id="bookingList"></div>
     </section>
 

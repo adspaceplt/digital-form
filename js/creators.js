@@ -103,16 +103,18 @@
       invoice: 'Invoice',
       due: function (d) { return 'Campaign due ' + d; },
       yourCampaign: 'Your campaign',
-      stillChoosing: 'Still to choose',
+      stillChoosing: 'Available creators',
       chip: {
-        confirmed: 'Confirmed', pending_visit: 'Shoot booked', pending_delivery: 'Sending product',
-        pending_draft: 'Filming done', reviewing: 'Your review needed',
-        changes: 'Changes in progress', scheduled: 'Going live', posted: 'Live', completed: 'Complete',
-        withdrawn: 'Unavailable'
+        confirmed: 'Confirmed', pending_visit: 'Pending visit', pending_delivery: 'Pending delivery',
+        pending_draft: 'Pending draft', reviewing: 'Reviewing',
+        changes: 'Changes requested', scheduled: 'Scheduled', posted: 'Posted', completed: 'Completed',
+        withdrawn: 'Withdrawn'
       },
       shootOn: 'Shoot',
       deliveryOn: 'Delivery',
       postedOn: 'Posted',
+      measuredOn: 'Measured',
+      platformCol: 'Platform',
       platformsLabel: 'Posting on',
       stageLabel: 'Stage',
       revisionLabel: 'Revision',
@@ -143,6 +145,8 @@
       needNote: 'Please describe the changes required.',
       unavailable: 'Unavailable. Please select a replacement below.',
       results: 'Results',
+      resultsHead: 'Campaign results',
+      placements: 'Placements', cpe: 'Cost per engagement',
       impressions: 'Impressions', engagements: 'Engagements', views: 'Views',
       closed: 'Selection closed',
       closedText: 'Selection is closed. Please contact your ADspace account manager for any changes.',
@@ -198,16 +202,18 @@
       invoice: '发票',
       due: function (d) { return '合作截止 ' + d; },
       yourCampaign: '合作进度',
-      stillChoosing: '待选择',
+      stillChoosing: '可选博主',
       chip: {
-        confirmed: '已确认', pending_visit: '已排期', pending_delivery: '寄送中',
-        pending_draft: '已拍摄', reviewing: '待您确认',
-        changes: '修改中', scheduled: '待发布', posted: '已发布', completed: '已完成',
-        withdrawn: '暂不可用'
+        confirmed: '已确认', pending_visit: '待拍摄', pending_delivery: '待寄送',
+        pending_draft: '待初稿', reviewing: '审阅中',
+        changes: '需修改', scheduled: '已排期', posted: '已发布', completed: '已完成',
+        withdrawn: '已退出'
       },
       shootOn: '拍摄',
       deliveryOn: '寄送',
       postedOn: '发布于',
+      measuredOn: '统计日期',
+      platformCol: '平台',
       platformsLabel: '发布平台',
       stageLabel: '当前进度',
       revisionLabel: '修改',
@@ -238,6 +244,8 @@
       needNote: '请说明需要修改的内容。',
       unavailable: '暂不可用，请在下方选择替补。',
       results: '数据',
+      resultsHead: '合作成效',
+      placements: '发布数', cpe: '单次互动成本',
       impressions: '曝光', engagements: '互动', views: '播放',
       closed: '选择已结束',
       closedText: '选择已结束。如需调整，请联系您的 ADspace 客户经理。',
@@ -336,11 +344,6 @@
 
     $('kicker').textContent = t().kicker;
     $('langToggle').textContent = t().lang;
-    $('invoiceLink').hidden = !c.invoice_url;
-    if (c.invoice_url) {
-      $('invoiceLink').href = c.invoice_url;
-      $('invoiceLinkText').textContent = t().invoice + (c.invoice_no ? ' ' + c.invoice_no : '');
-    }
 
     var title = (lang === 'zh' && c.title_zh) ? c.title_zh : c.title;
     $('campTitle').textContent = title || '';
@@ -401,7 +404,7 @@
 
     var box = $('bookingList');
     box.innerHTML = '';
-    rows.forEach(function (o) { box.appendChild(bookingRow(o)); });
+    rows.forEach(function (o, i) { box.appendChild(bookingRow(o, i + 1)); });
 
     var sub = booked.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
     var c = feed.campaign || {};
@@ -412,6 +415,7 @@
     $('amountPdf').hidden = !c.invoice_url;
     $('amountPdf').href = c.invoice_url || '#';
     $('amountPdf').textContent = t().pdf;
+    paintRollup(booked);
   }
 
   /* Folded shut every time the page loads, so the figure is shown on purpose
@@ -423,6 +427,30 @@
     this.classList.toggle('is-open', open);
   });
 
+  /* The campaign's numbers, added up the way the console adds them: every
+     post that is live, against what the live creators cost. */
+  function paintRollup(booked) {
+    var live = booked.filter(function (o) { return o.state === 'posted' || o.state === 'completed'; });
+    var rows = [];
+    live.forEach(function (o) { (o.posts || []).forEach(function (p) { if (p.post_url) rows.push(p); }); });
+    var hasNums = rows.some(function (p) { return p.impressions != null || p.engagements != null || p.views != null; });
+    $('clientRollup').hidden = !rows.length || !hasNums;
+    if (!rows.length || !hasNums) return;
+    var sum = function (k) { return rows.reduce(function (s, p) { return s + Number(p[k] || 0); }, 0); };
+    var imp = sum('impressions'), eng = sum('engagements'), vie = sum('views');
+    var spend = live.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
+    var cell = function (label, value) {
+      return '<div class="tally-cell"><b>' + esc(String(value)) + '</b><span>' + esc(label) + '</span></div>';
+    };
+    $('rollupHead').textContent = t().resultsHead;
+    $('clientTally').innerHTML =
+      cell(t().placements, rows.length) +
+      cell(t().impressions, imp.toLocaleString()) +
+      cell(t().engagements, eng.toLocaleString()) +
+      cell(t().views, vie.toLocaleString()) +
+      (eng ? cell(t().cpe, money2(spend / eng)) : '');
+  }
+
   function chipFor(o) {
     var c = feed.campaign || {};
     var key = o.state;
@@ -430,13 +458,19 @@
     return t().chip[key] || key;
   }
 
-  function bookingRow(o) {
+  // The same colour the console gives the same state.
+  function toneOf(s) {
+    if (['confirmed', 'scheduled', 'posted', 'completed'].indexOf(s) > -1) return 'is-ok';
+    if (s === 'withdrawn') return 'is-danger';
+    return 'is-warn';
+  }
+
+  function bookingRow(o, no) {
     var c = feed.campaign || {};
     var seeding = c.push_format === 'seeding';
     var row = document.createElement('div');
     var mine = o.state === 'reviewing';          // the only one that is theirs to act on
-    row.className = 'booking' + (mine ? ' is-mine' : '') +
-      (o.state === 'withdrawn' ? ' is-off' : '');
+    row.className = 'booking' + (o.state === 'withdrawn' ? ' is-off' : '');
 
     /* One line of small grey text left most of the card empty and made the
        client hunt for the date. The same facts as a labelled grid fill the
@@ -473,16 +507,13 @@
 
     row.innerHTML =
       '<div class="booking-head">' +
+        (no ? '<span class="rowno">' + no + '</span>' : '') +
         '<b>' + esc(o.name) + '</b>' +
-        '<span class="chip-state' + (mine ? ' is-mine' : '') + '">' + esc(chipFor(o)) + '</span>' +
+        '<span class="chip-state ' + toneOf(o.state) + '">' + esc(chipFor(o)) + '</span>' +
         (o.is_replacement ? '<span class="tag-rep">' + esc(t().replacement) + '</span>' : '') +
       '</div>' +
       factsHtml +
       (o.state === 'withdrawn' ? '<div class="booking-meta">' + esc(t().unavailable) + '</div>' : '') +
-      (posts.length ? '<div class="booking-posts">' + posts.map(function (p) {
-          return '<a class="pchip" href="' + esc(p.post_url) + '" target="_blank" rel="noopener">' +
-            esc(platLabel(p.platform)) + ' · ' + esc(t().viewPost) + ' ↗</a>';
-        }).join('') + '</div>' : '') +
       (resultsOf(posts) || '') +
       (mine && o.draft_url ? '<button class="btn btn-sm btn-primary booking-cta" type="button">' +
         esc(t().reviewDraft) + '</button>' : '');
@@ -493,18 +524,51 @@
     return row;
   }
 
+  /* One row per platform: the post, when it went out, when the numbers were
+     taken, and the numbers. The measured date is what makes a figure read a
+     year later still make sense. */
   function resultsOf(posts) {
-    var withNums = posts.filter(function (p) {
+    if (!posts.length) return '';
+    var hasNums = posts.some(function (p) {
       return p.impressions != null || p.engagements != null || p.views != null;
     });
-    if (!withNums.length) return '';
-    return '<div class="booking-results">' + withNums.map(function (p) {
-      var n = [];
-      if (p.impressions != null) n.push(t().impressions + ' ' + Number(p.impressions).toLocaleString());
-      if (p.engagements != null) n.push(t().engagements + ' ' + Number(p.engagements).toLocaleString());
-      if (p.views != null) n.push(t().views + ' ' + Number(p.views).toLocaleString());
-      return '<span><b>' + esc(platLabel(p.platform)) + '</b> ' + esc(n.join(' · ')) + '</span>';
-    }).join('') + '</div>';
+    var num = function (v) { return v == null ? '<span class="muted">–</span>' : Number(v).toLocaleString(); };
+    var measured = function (p) {
+      if (p.measured_at) return fmtDate(p.measured_at);
+      if (p.published_at && p.window_days) {
+        var d = new Date(p.published_at + 'T00:00:00');
+        d.setDate(d.getDate() + Number(p.window_days));
+        return fmtDate(d.toISOString().slice(0, 10));
+      }
+      return '';
+    };
+    return '<div class="results-wrap"><table class="results">' +
+      '<thead><tr>' +
+        '<th>' + esc(t().platformCol) + '</th>' +
+        '<th>' + esc(t().postedOn) + '</th>' +
+        (hasNums ? '<th>' + esc(t().measuredOn) + '</th>' +
+          '<th class="num">' + esc(t().impressions) + '</th>' +
+          '<th class="num">' + esc(t().engagements) + '</th>' +
+          '<th class="num">' + esc(t().views) + '</th>' : '') +
+      '</tr></thead><tbody>' +
+      posts.map(function (p) {
+        return '<tr>' +
+          '<td><a class="results-link" href="' + esc(absUrl(p.post_url)) + '" target="_blank" rel="noopener">' +
+            esc(platLabel(p.platform)) + EXT_ICON + '</a></td>' +
+          '<td>' + (p.published_at ? esc(fmtDate(p.published_at)) : '<span class="muted">–</span>') + '</td>' +
+          (hasNums ? '<td>' + esc(measured(p)) + '</td>' +
+            '<td class="num">' + num(p.impressions) + '</td>' +
+            '<td class="num">' + num(p.engagements) + '</td>' +
+            '<td class="num">' + num(p.views) + '</td>' : '') +
+        '</tr>';
+      }).join('') +
+      '</tbody></table></div>';
+  }
+
+  function absUrl(u) {
+    u = String(u || '').trim();
+    if (!u) return '';
+    return /^[a-z][a-z0-9+.-]*:\/\//i.test(u) ? u : 'https://' + u.replace(/^\/+/, '');
   }
 
   // ---- Draft review -------------------------------------------------------
@@ -515,7 +579,7 @@
     $('draftHeading').textContent = t().draftHeading + ' · ' + o.name;
     $('draftBlurb').textContent = t().draftBlurb +
       (o.revision_round >= 2 ? '  ' + t().lastRound : '');
-    $('draftOpen').href = o.draft_url;
+    $('draftOpen').href = absUrl(o.draft_url);
     $('draftOpen').textContent = t().openDraft;
     $('draftNoteLabel').textContent = t().noteLabel;
     $('draftByLabel').textContent = t().byLabel;
@@ -629,7 +693,7 @@
     /* A list, not cards. Ten is a page of cards and forty is an afternoon of
        scrolling; the decision is made by opening profiles and comparing rates,
        and a row puts both within reach without moving the eye. */
-    options.forEach(function (o) {
+    options.forEach(function (o, idx) {
       var pick = chosen[o.id];
       var full = countSelected() >= slots && pick !== 'selected';
       var row = document.createElement('div');
@@ -648,6 +712,7 @@
       }).join('');
 
       row.innerHTML =
+        '<span class="rowno crow-no">' + (idx + 1) + '</span>' +
         '<button class="crow-tick' + (full ? ' is-full' : '') + '" type="button"' +
           (full ? ' disabled' : '') + ' aria-pressed="' + (pick === 'selected') + '"' +
           ' title="' + esc(full ? t().full : t().select) + '">' +

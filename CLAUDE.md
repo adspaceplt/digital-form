@@ -25,6 +25,17 @@ Supabase behind `js/api.js`; schema in `supabase/schema.sql` (re-runnable).
   no subtitle. Destructive items carry `is-danger`, nothing else.
 - Do not state the obvious ("Uploading again replaces it"). No status
   narration, no transition words, no filler.
+- Global microcopy: **Back** is navigation only (to a list or previous
+  screen). **Revert** undoes a state change (a creator's stage, a
+  campaign's stage). **Restore** brings back an archived record. **Reinstate**
+  brings back a withdrawn or replaced person. Never "Return" for any of
+  these.
+- One status vocabulary. The client's page uses the same state words and the
+  same chip colours as the console (Confirmed, Pending visit, Pending draft,
+  Reviewing, Changes requested, Scheduled, Posted, Completed, Withdrawn);
+  the Chinese set mirrors it. Pending and reviewing states are warn colour.
+- Count creators, not "slots". A campaign card shows the client's final
+  amount, not the invoice number.
 - Brand names are spelled exactly: ADspace, S P Setia, CraftStone, Home Leader,
   The Mill International, EV SUN, Foodince, Furiku Matcha, HKL Lim,
   HKL Lim Motorsport, Star Living, Niro Granite, Dale & Cecil, Dale.

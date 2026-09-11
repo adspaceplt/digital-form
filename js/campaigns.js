@@ -443,22 +443,39 @@
           box.innerHTML = '<div class="empty">No campaigns yet.</div>';
           return;
         }
-        r.data.forEach(function (c) {
-          var b = document.createElement('button');
-          b.className = 'bigcard';
-          b.type = 'button';
-          b.innerHTML =
-            '<b>' + esc(c.title) + '</b>' +
-            '<span class="muted">' + esc((c.clients && c.clients.name) || '') + '</span>' +
-            '<span class="muted">' + c.slots + ' slots' +
-              (c.invoice_no ? ' · ' + esc(c.invoice_no) : '') + '</span>' +
-            '<span class="chip' + (c.state === 'draft' ? '' : ' is-live') + '">' +
-              esc(STATE_WORD[c.state] || c.state) + '</span>';
-          b.addEventListener('click', function () { openCampaign(c); });
-          box.appendChild(b);
+        // The amount on a card is what the client is charged: the rates of
+        // everyone selected or booked, plus tax, in the client's currency.
+        db.from('campaign_options').select('campaign_id, rate, state').then(function (q) {
+          var sums = {};
+          (q.data || []).forEach(function (o) {
+            if (CHARGED.indexOf(o.state) < 0) return;
+            sums[o.campaign_id] = (sums[o.campaign_id] || 0) + Number(o.rate || 0);
+          });
+          r.data.forEach(function (c) {
+            var cl = c.clients || {};
+            var mk = cl.market || 'MY';
+            var ap = cl.sst_applies == null ? true : cl.sst_applies;
+            var sub = sums[c.id] || 0;
+            var b = document.createElement('button');
+            b.className = 'bigcard';
+            b.type = 'button';
+            b.innerHTML =
+              '<b>' + esc(c.title) + '</b>' +
+              '<span class="muted">' + esc(cl.name || '') + '</span>' +
+              '<span class="muted">' + c.slots + ' creator' + (c.slots === 1 ? '' : 's') +
+                (sub ? ' · ' + esc(MON.money2(sub + MON.taxOf(sub, mk, ap), mk)) : '') + '</span>' +
+              '<span class="chip' + (c.state === 'draft' ? '' : ' is-live') + '">' +
+                esc(STATE_WORD[c.state] || c.state) + '</span>';
+            b.addEventListener('click', function () { openCampaign(c); });
+            box.appendChild(b);
+          });
         });
       });
   }
+
+  // The states whose rate the client pays for.
+  var CHARGED = ['shortlisted', 'confirmed', 'pending_visit', 'pending_draft', 'reviewing',
+                 'changes', 'scheduled', 'posted', 'completed'];
 
   var STATE_WORD = { draft: 'Draft', open: 'Open for selection', production: 'In production', completed: 'Completed' };
   var FORMAT_WORD = {
@@ -482,8 +499,27 @@
     });
   };
 
+  /* Editing happens in the campaign's own card: the form takes the place of
+     the summary and gives it back on save or cancel. Creating happens above
+     the list, where the form lives otherwise. */
+  function placeCampForm(inline) {
+    var box = $('addCampBox');
+    if (inline) {
+      $('campHead').appendChild(box);
+      box.classList.add('is-inline');
+      $('campSummary').hidden = true;
+    } else {
+      var list = $('campListView');
+      if (box.parentNode !== list.parentNode) list.parentNode.insertBefore(box, list);
+      box.classList.remove('is-inline');
+      $('campSummary').hidden = false;
+    }
+    $('campDangerRow').hidden = !inline;
+  }
+
   function openCampForm(c, restoring) {
     editingCamp = c || null;
+    placeCampForm(!!c);
     $('campFormTitle').textContent = c ? 'Edit campaign' : 'New campaign';
     $('addCamp').textContent = c ? 'Save' : 'Create';
     $('campClient').value = c ? (c.client_id || '') : ($('campClient').value || '');
@@ -499,7 +535,8 @@
     if (!restoring) campDraft.note({ editing: c ? c.id : null });
     (c ? $('campTitle') : $('campClient')).focus();
   }
-  function shutCampForm() { $('addCampBox').hidden = true; editingCamp = null; campDraft.clear(); }
+  function parkCampForm() { $('addCampBox').hidden = true; placeCampForm(false); }
+  function shutCampForm() { parkCampForm(); editingCamp = null; campDraft.clear(); }
 
   $('showAddCamp').addEventListener('click', function () {
     loadClients(function () { openCampForm(null); });
@@ -522,14 +559,14 @@
     if (!clientId) { msg('campMsg', 'Choose the client this proposal is for.', 'err'); return; }
     if (!title) { msg('campMsg', 'A campaign name is required.', 'err'); return; }
     var slots = Number($('campSlots').value || 0);
-    if (!slots || slots < 1) { msg('campMsg', 'Slots must be at least 1.', 'err'); return; }
+    if (!slots || slots < 1) { msg('campMsg', 'At least one creator is required.', 'err'); return; }
 
     // A slot with a creator booked into it cannot be taken away by editing a
     // number. Free the booking first, then lower the count.
     if (editingCamp) {
       var booked = state.options.filter(isLive).length;
       if (slots < booked) {
-        msg('campMsg', booked + ' creators are already booked, so slots cannot go below ' + booked + '.', 'err');
+        msg('campMsg', booked + ' creators are already booked; the count cannot go below ' + booked + '.', 'err');
         return;
       }
     }
@@ -611,8 +648,11 @@
   });
 
   function openCampaign(c, restoring) {
+    // A repaint of the campaign already open keeps its panels as they are;
+    // arriving at a campaign starts with them folded.
+    var same = !!(state.campaign && state.campaign.id === c.id);
     state.campaign = c;
-    $('addCampBox').hidden = true;
+    parkCampForm();
     $('campListView').hidden = true;
     setUrl();
     $('campWork').hidden = false;
@@ -634,16 +674,13 @@
     }).join('');
     $('campLink').value = campaignUrl(c);
     $('campOpen').href = campaignUrl(c);
-    setOpen('invoiceToggle', 'invoiceBody', false);
-    setOpen('dangerToggle', 'dangerBody', false);
+    if (!same) setOpen('invoiceToggle', 'invoiceBody', false);
     paintInvoice(c);
-    // Sending to the client is the one strong action on a draft. After that the
-    // strong action is accepting, so this one steps back to neutral.
-    $('campPublish').textContent = publishMove(c.state).label;
-    // Publishing is the forward move and carries the weight. Unpublishing is a
-    // warning, drawn as one, the same as withdrawing a content set.
-    $('campPublish').className = c.state === 'draft' ? 'btn btn-go'
-                               : c.state === 'open'  ? 'btn btn-warn' : 'btn';
+    // Publishing is the forward move and carries the weight. Unpublishing and
+    // reopening are warnings, drawn as such.
+    var move = publishMove(c.state);
+    $('campPublish').innerHTML = move.icon + esc(move.label);
+    $('campPublish').className = 'btn ' + move.cls;
     msg('campWorkMsg', '');
     loadOptions();
     if (restoring) { campDraft.restore(); ncDraft.restore(); restoreScroll(); }
@@ -670,14 +707,20 @@
   /* The campaign moves forward and back. A locked selection the client wants to
      revisit reopens; a campaign marked finished too early comes back. Neither
      needs the campaign rebuilding. */
+  var ICON = {
+    send:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3 14.5 21l-4.5-7-7-4.5z"/></svg>',
+    eyeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 5.1A9.6 9.6 0 0 1 12 5c5 0 9 4.5 9 7a12 12 0 0 1-2.4 3.4"/><path d="M6.5 7.6C4.3 9.1 3 11.2 3 12c0 2.5 4 7 9 7a9.7 9.7 0 0 0 4.2-1"/></svg>',
+    reopen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/></svg>',
+    play:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 5 12 7-12 7z"/></svg>'
+  };
   function publishMove(s) {
-    if (s === 'draft')      return { to: 'open',  label: 'Publish to client' };
-    if (s === 'open')        return { to: 'draft', label: 'Unpublish',
+    if (s === 'draft')      return { to: 'open',  label: 'Publish to client', cls: 'btn-go', icon: ICON.send };
+    if (s === 'open')        return { to: 'draft', label: 'Unpublish', cls: 'btn-warn', icon: ICON.eyeOff,
       ask: 'Unpublish this campaign?\n\nThe client link stops working until published again. Selections are kept.' };
-    if (s === 'production')  return { to: 'open',  label: 'Return to client selection',
-      ask: 'Return this campaign to client selection?\n\nExisting bookings are kept.' };
-    return { to: 'production', label: 'Resume campaign',
-      ask: 'Put this campaign back into production?' };
+    if (s === 'production')  return { to: 'open',  label: 'Reopen selection', cls: 'btn-warn', icon: ICON.reopen,
+      ask: 'Reopen selection for the client?\n\nExisting bookings are kept.' };
+    return { to: 'production', label: 'Resume campaign', cls: '', icon: ICON.play,
+      ask: 'Resume this campaign?' };
   }
 
   $('campPublish').addEventListener('click', function () {
@@ -730,10 +773,7 @@
   function paintOptions() {
     var c = state.campaign;
     var live = state.options.filter(function (o) { return o.state !== 'replaced' && o.state !== 'withdrawn'; });
-    var chosen = state.options.filter(function (o) {
-      return ['shortlisted','confirmed','pending_visit','pending_draft','reviewing',
-              'changes','scheduled','posted','completed'].indexOf(o.state) > -1;
-    });
+    var chosen = state.options.filter(function (o) { return CHARGED.indexOf(o.state) > -1; });
     var goodwill = state.options.filter(function (o) { return o.goodwill; });
     var total = chosen.reduce(function (s, o) { return s + Number(o.rate || 0); }, 0);
 
@@ -743,7 +783,7 @@
     var booked = chosen.length + goodwill.length;
     // Counts, then what the client sees: the quoted rates and 8% SST on top.
     $('campTally').innerHTML =
-      stat('Slots', c.slots) +
+      stat('Creators', c.slots) +
       stat('Options', live.length) +
       stat('Selected', chosen.length + ' of ' + c.slots) +
       '<i class="stat-gap" aria-hidden="true"></i>' +
@@ -766,7 +806,7 @@
     } else {
       state.options.slice().sort(function (a, b) {
         return (cardRank(a) - cardRank(b)) || (Number(a.position || 0) - Number(b.position || 0));
-      }).forEach(function (o) { box.appendChild(creatorCard(o)); });
+      }).forEach(function (o, i) { box.appendChild(creatorCard(o, i + 1)); });
     }
 
     // Accepting is offered exactly when the client has chosen something.
@@ -779,7 +819,6 @@
     $('bulkToggle').hidden = !working.length;
     if (!working.length) $('bulkBox').hidden = true;
     $('bulkTitle').textContent = (isDelivery() ? 'Delivery' : 'Shoot') + ' date for all';
-    $('bulkHint').textContent = 'Applies to cards without a date. Existing dates are kept.';
     paintRollup(working);
   }
 
@@ -842,7 +881,7 @@
     var chosen = state.options.filter(function (x) { return x.state === 'shortlisted'; }).length;
     var booked = state.options.filter(isLive).length;
     if (to === 'shortlisted' && chosen + booked >= state.campaign.slots) {
-      msg('campWorkMsg', 'All slots are filled.', 'err');
+      msg('campWorkMsg', 'All creator places are filled.', 'err');
       return;
     }
     db.from('campaign_options').update({ state: to }).eq('id', o.id).then(function (r) {
@@ -1082,7 +1121,7 @@
       items += menuItem('unpick', 'Undo selection');
     }
     if (isLive(o)) {
-      items += menuItem('unbook', 'Return to options');
+      items += menuItem('unbook', 'Revert to options');
       items += menuItem('withdraw', 'Withdrawn');
       items += menuItem('replace', 'Replaced', 'is-danger');
     }
@@ -1098,7 +1137,7 @@
   /* One creator, one card. What is inside depends only on where they have got
      to: terms while they are an option, terms plus production once accepted,
      results once the post is live. */
-  function creatorCard(o) {
+  function creatorCard(o, no) {
     var cr = o.creators || {};
     var word = OPTION_WORD[o.state] || [o.state, ''];
     var live = isLive(o);
@@ -1130,6 +1169,7 @@
       '<header class="kcard-head">' +
         (live ? '<button class="kfold" data-a="fold" type="button" aria-label="Details" ' +
           'aria-expanded="' + String(open) + '">' + CHEV + '</button>' : '') +
+        (no ? '<span class="kcard-no">' + no + '</span>' : '') +
         '<span class="kcard-name">' + esc(cr.name || '') + '</span>' +
         '<span class="tone ' + (word[1] || 'tone-plain') + '">' + esc(word[0]) + '</span>' +
         (o.is_replacement ? '<span class="tone is-warn">Replacement</span>' : '') +
@@ -1177,7 +1217,7 @@
           '<button class="btn btn-sm btn-primary" data-a="save" type="button">Save</button>' +
           (advance ? '<button class="btn btn-sm btn-go" data-a="advance" type="button">' +
             esc(wordFor(advance)) + CHEV + '</button>' : '') +
-          (back ? '<button class="btn btn-sm btn-quiet" data-a="back" type="button">Back</button>' : '') +
+          (back ? '<button class="btn btn-sm btn-quiet" data-a="back" type="button">Revert</button>' : '') +
         '</div>' +
         '<div class="msg" data-msg></div>' +
       '</div>' : '') +
@@ -1232,22 +1272,61 @@
     on('withdraw',  function () { endOption(o, 'withdrawn'); });
     on('replace',   function () { endOption(o, 'replaced'); });
     on('reinstate', function () { reinstate(o); });
-    on('advance',   function () { advanceOption(o, nextState(o.state)); });
+    // Moving forward saves what is typed and checks the step has what it
+    // needs: a draft before review, a publish date before scheduling, and
+    // the date reached before posted.
+    on('advance', function () {
+      var to = nextState(o.state);
+      var patch = readCard(card);
+      var why = blockAdvance(to, patch);
+      var m = card.querySelector('[data-msg]');
+      if (why) { m.textContent = why; m.className = 'msg err'; return; }
+      advanceOption(o, to, patch);
+    });
     on('back',      function () { stepBack(o, prevState(o.state)); });
 
     on('save', function () {
-      var patch = {};
-      Array.prototype.forEach.call(card.querySelectorAll('[data-f]'), function (i) {
-        var v = i.value.trim();
-        patch[i.getAttribute('data-f')] = v === '' ? null : v;
-      });
-      db.from('campaign_options').update(patch).eq('id', o.id).then(function (r) {
+      db.from('campaign_options').update(readCard(card)).eq('id', o.id).then(function (r) {
         var m = card.querySelector('[data-msg]');
         if (r.error) { m.textContent = r.error.message; m.className = 'msg err'; return; }
         m.textContent = 'Saved.'; m.className = 'msg ok';
         loadOptions();
       });
     });
+  }
+
+  function readCard(card) {
+    var patch = {};
+    Array.prototype.forEach.call(card.querySelectorAll('[data-f]'), function (i) {
+      var k = i.getAttribute('data-f');
+      var v = i.value.trim();
+      if (k === 'draft_url') v = absUrl(v);
+      patch[k] = v === '' ? null : v;
+    });
+    return patch;
+  }
+
+  function blockAdvance(to, p) {
+    if (to === 'reviewing' && !p.draft_url) return 'Draft link required.';
+    if (to === 'scheduled' && !p.planned_publish) return 'Publish date required.';
+    if (to === 'posted') {
+      if (!p.planned_publish) return 'Publish date required.';
+      if (p.planned_publish > today()) return 'Publish date is ' + niceDate(p.planned_publish) + '.';
+    }
+    return '';
+  }
+
+  function today() {
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  }
+
+  // A link typed without its scheme is still a link.
+  function absUrl(u) {
+    u = String(u || '').trim();
+    if (!u) return '';
+    return /^[a-z][a-z0-9+.-]*:\/\//i.test(u) ? u : 'https://' + u.replace(/^\/+/, '');
   }
 
   function shutMenus() {
@@ -1268,7 +1347,7 @@
      somebody already typed in. */
   function stepBack(o, to) {
     var name = (o.creators || {}).name || 'this creator';
-    if (!to || !confirm('Move ' + name + ' back to ' + wordFor(to).toLowerCase() + '?')) return;
+    if (!to || !confirm('Revert ' + name + ' to ' + wordFor(to) + '?')) return;
     db.from('campaign_options').update({ state: to }).eq('id', o.id).then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
       log('campaign.stage', name, 'back to ' + to);
@@ -1281,11 +1360,11 @@
      was spent. They go back among the options and the slot frees up. */
   function unbook(o) {
     var name = (o.creators || {}).name || 'this creator';
-    if (!confirm('Return ' + name + ' to the options?\n\nThe slot is freed. Dates and notes are kept.')) return;
+    if (!confirm('Revert ' + name + ' to options?\n\nDates and notes are kept.')) return;
     db.from('campaign_options').update({ state: 'option' }).eq('id', o.id).then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
       log('campaign.unbooked', name, '');
-      msg('campWorkMsg', name + ' returned to the options.', 'ok');
+      msg('campWorkMsg', name + ' reverted to options.', 'ok');
       loadOptions();
     });
   }
@@ -1293,7 +1372,7 @@
   // A withdrawal or replacement keyed on the wrong card, undone.
   function reinstate(o) {
     var name = (o.creators || {}).name || 'this creator';
-    if (!confirm('Return ' + name + ' to production?\n\nThe recorded reason is cleared.')) return;
+    if (!confirm('Reinstate ' + name + '?\n\nThe recorded reason is cleared.')) return;
     db.from('campaign_options')
       .update({ state: 'confirmed', drop_reason: null, goodwill: false })
       .eq('id', o.id).then(function (r) {
@@ -1306,8 +1385,8 @@
 
   /* Moving to posted needs somewhere for the numbers to go, and there is one
      row per platform because two placements are two posts. */
-  function advanceOption(o, to) {
-    var patch = { state: to };
+  function advanceOption(o, to, fields) {
+    var patch = Object.assign({}, fields || {}, { state: to });
     db.from('campaign_options').update(patch).eq('id', o.id).then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
       log('campaign.stage', (o.creators || {}).name || '', to);
@@ -1367,12 +1446,14 @@
               '<input class="input" data-p="views" type="number" min="0" value="' + (p.views == null ? '' : p.views) + '"></div>' +
             '<button class="btn btn-sm btn-primary" data-p-save type="button">Save</button>' +
           '</div>' +
+          (p.measured_at ? '<div class="muted postrow-measured">Measured ' + esc(niceDate(p.measured_at)) + '</div>' : '') +
           '<div class="msg" data-p-msg></div>';
         w.querySelector('[data-p-save]').addEventListener('click', function () {
           var patch = {};
           Array.prototype.forEach.call(w.querySelectorAll('[data-p]'), function (i) {
             var k = i.getAttribute('data-p');
             var v = i.value.trim();
+            if (k === 'post_url') v = absUrl(v);
             patch[k] = v === '' ? null : (i.type === 'number' ? Number(v) : v);
           });
           patch.measured_at = new Date().toISOString().slice(0, 10);
@@ -1412,8 +1493,8 @@
         if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
         log(kind === 'withdrawn' ? 'campaign.withdrawn' : 'campaign.replaced', name, why);
         msg('campWorkMsg', kind === 'withdrawn'
-          ? name + ' withdrawn. The slot is open for a replacement.'
-          : name + ' replaced.' + (goodwill ? ' Recorded as goodwill.' : ' The slot is open.'), 'warn');
+          ? name + ' withdrawn. The place is open for a replacement.'
+          : name + ' replaced.' + (goodwill ? ' Recorded as goodwill.' : ' The place is open.'), 'warn');
         loadOptions();
       });
   }
@@ -1439,7 +1520,7 @@
         tallyCell('Engagements', eng.toLocaleString()) +
         tallyCell('Views', vie.toLocaleString()) +
         tallyCell('Spend', money(spend)) +
-        (eng ? tallyCell('Cost per engagement', 'RM ' + (spend / eng).toFixed(2)) : '');
+        (eng ? tallyCell('Cost per engagement', money2(spend / eng)) : '');
     });
   }
 
@@ -1460,7 +1541,6 @@
     $(toggleId).classList.toggle('is-open', open);
   }
   disclose('invoiceToggle', 'invoiceBody');
-  disclose('dangerToggle', 'dangerBody');
 
   // ---- Invoice: raised after confirmation, attached here -----------------
   function paintInvoice(c) {
@@ -1468,7 +1548,6 @@
     $('invoiceSummary').textContent = c.invoice_url
       ? (c.invoice_no ? c.invoice_no + ' · PDF attached' : 'PDF attached')
       : (c.invoice_no ? c.invoice_no + ' · no PDF' : 'Not issued');
-    if (c.invoice_url || c.invoice_no) setOpen('invoiceToggle', 'invoiceBody', true);
     $('invNo').value = String(c.invoice_no || '').replace(/^AINV2/i, '');
     $('invFile').value = '';
     var cur = $('invCurrent');
