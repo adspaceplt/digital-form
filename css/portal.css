@@ -81,7 +81,17 @@ a { color: inherit; }
   font: inherit; color: var(--ink); background: #fff;
   border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px;
 }
-.select { min-width: 180px; }
+/* The native control drew its own chrome, so a select sat a few pixels taller
+   than the inputs beside it and carried a different arrow on every platform.
+   Same box, one chevron, drawn by us. */
+.select {
+  min-width: 180px; appearance: none; -webkit-appearance: none;
+  padding-right: 34px; line-height: 1.5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6b6b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; background-size: 15px;
+}
+/* Date and time fields bring their own chrome too, and it is taller. */
+.input[type="date"], .input[type="time"] { line-height: 1.5; min-height: 39px; }
 .textarea { width: 100%; resize: vertical; min-height: 84px; }
 .input:focus, .select:focus, .textarea:focus { outline: 2px solid var(--ink); outline-offset: -1px; }
 .count { color: var(--ink-mute); font-size: 13px; }
@@ -1555,26 +1565,61 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
   font-size: 13px; color: var(--ink-mute);
 }
 
-/* ---------- Creator cards ---------- */
-.ccard {
-  border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
-  padding: 15px 16px; display: flex; flex-direction: column; gap: 7px;
-  transition: border-color .18s, box-shadow .18s;
+/* ---------- Creator list ----------
+   A list rather than cards. Ten creators is a page of cards and forty is an
+   afternoon of scrolling, and the decision is made by opening profiles and
+   comparing rates, which a row puts side by side. */
+.listhint { font-size: 13px; color: var(--ink-mute); margin: -4px 0 12px; }
+.clist { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.crow {
+  display: grid; align-items: center; gap: 4px 14px;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  grid-template-areas: "tick name links rate backup";
+  padding: 11px 14px; background: var(--card);
+  border-bottom: 1px solid var(--line-soft);
 }
-.ccard.is-on { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
-.ccard.is-backup { border-style: dashed; }
-.ccard-head { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-.ccard-head b { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; }
-.ccard-meta { font-size: 12.5px; color: var(--ink-mute); }
-.ccard-links { display: flex; flex-wrap: wrap; gap: 4px; }
-.ccard-foot {
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  margin-top: auto; padding-top: 8px;
+.crow:last-child { border-bottom: 0; }
+.crow.is-on { background: var(--line-soft); }
+.crow.is-backup { background: repeating-linear-gradient(135deg, var(--card) 0 8px, var(--line-soft) 8px 16px); }
+
+.crow-tick {
+  grid-area: tick; width: 24px; height: 24px; flex: 0 0 auto; padding: 0;
+  border: 1.5px solid var(--line); border-radius: 7px; background: #fff;
+  display: inline-grid; place-items: center; color: transparent;
+  transition: background .14s, border-color .14s, color .14s;
 }
-.ccard-rate { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
-.ccard-pick { min-width: 96px; }
-.ccard-pick[disabled] { opacity: .45; }
-.ccard-backup { align-self: flex-start; }
+.crow-tick svg { width: 14px; height: 14px; }
+.crow-tick:hover:not([disabled]) { border-color: var(--ink-mute); }
+.crow.is-on .crow-tick { background: var(--ink); border-color: var(--ink); color: #fff; }
+.crow-tick[disabled] { opacity: .35; }
+
+.crow-name { grid-area: name; min-width: 0; display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.crow-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+
+/* The thing they came to click, so it looks like something to click. */
+.crow-links { grid-area: links; display: flex; gap: 6px; flex-wrap: wrap; }
+.plink {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1px solid var(--line); border-radius: 7px; padding: 4px 9px;
+  font-size: 12px; color: var(--ink-soft); text-decoration: none; background: #fff;
+  white-space: nowrap;
+}
+.plink svg { width: 11px; height: 11px; opacity: .7; }
+.plink:hover { border-color: var(--ink); color: var(--ink); }
+
+.crow-rate {
+  grid-area: rate; font-size: 14px; font-weight: 600; letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums; text-align: right; min-width: 76px;
+}
+
+/* Was an underlined word, which read as fine print rather than a control. */
+.crow-backup {
+  grid-area: backup; flex: 0 0 auto; white-space: nowrap;
+  border: 1px solid var(--line); border-radius: 999px; background: #fff;
+  padding: 4px 11px; font-size: 11.5px; color: var(--ink-mute);
+}
+.crow-backup:hover { border-color: var(--ink-mute); color: var(--ink); }
+.crow-backup.is-on { background: var(--ink); border-color: var(--ink); color: #fff; }
 
 .tag-new {
   font-size: 10px; font-weight: 700; letter-spacing: .06em;
@@ -1585,29 +1630,42 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
   padding: 2px 7px; border-radius: 4px; background: var(--warn-bg); color: var(--warn);
 }
 
+@media (max-width: 640px) {
+  .crow {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "tick name rate" "tick links backup";
+    row-gap: 8px;
+  }
+  .crow-tick { align-self: start; }
+}
+
 /* ---------- Confirm bar ---------- */
+/* Bleeds to the page edge, so the negative margin has to be the shell's own
+   gutter. A guessed 20px sat inside it on desktop and overflowed it on a
+   phone, where the gutter is 16. */
 .confirmbar {
-  position: sticky; bottom: 0; z-index: 40; margin: 18px -20px 0;
+  position: sticky; bottom: 0; z-index: 40; margin: 18px -24px 0;
   background: rgba(255,255,255,.92); backdrop-filter: saturate(180%) blur(14px);
   border-top: 1px solid var(--line);
 }
 .confirmbar-in {
   display: flex; align-items: center; justify-content: space-between; gap: 14px;
-  padding: 12px 20px; font-size: 13.5px;
+  padding: 12px 24px; font-size: 13.5px;
 }
 
 @media (max-width: 640px) {
   .tabrow { overflow-x: auto; }
   .profrow { flex-wrap: wrap; }
   .prof-read { min-width: 0; flex: 1 1 100%; }
-  .confirmbar-in { flex-direction: column; align-items: stretch; gap: 9px; }
+  .confirmbar { margin-left: -16px; margin-right: -16px; }
+  .confirmbar-in { flex-direction: column; align-items: stretch; gap: 9px; padding: 12px 16px; }
   .confirmbar-in .btn { width: 100%; }
 }
 
 /* The KOC list has always gone out as a printed sheet, so it still can. */
 @media print {
-  .langtoggle, .confirmbar, .ccard-pick, .ccard-backup, .progress-new { display: none !important; }
-  .ccard { break-inside: avoid; border-color: #ccc; }
+  .langtoggle, .confirmbar, .crow-tick, .crow-backup, .progress-new { display: none !important; }
+  .crow { break-inside: avoid; }
   .progress-card { border-color: #ccc; }
 }
 
@@ -1634,4 +1692,60 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 @media (max-width: 560px) {
   .qrrow { flex-direction: column; }
   .qrrow-acts .btn { flex: 1 1 auto; }
+}
+
+/* =========================================================================
+   PRODUCTION  (internal)
+   ========================================================================= */
+.prod {
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
+  padding: 13px 15px; margin-bottom: 8px;
+}
+.prod.is-off { opacity: .55; }
+.prod-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.prod-head b { font-size: 13.5px; font-weight: 600; }
+.prod-sum { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prod-more { flex: 0 0 auto; }
+.prod-body { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.postrow {
+  border: 1px solid var(--line-soft); border-radius: 10px;
+  padding: 12px 13px; margin-bottom: 8px; background: var(--line-soft);
+}
+.postrow .input { background: var(--card); }
+
+/* =========================================================================
+   BOOKINGS  (client facing)
+   Short chips only. A client wants to know whether it is their turn, not our
+   internal vocabulary, and exactly one state is ever theirs to act on.
+   ========================================================================= */
+.sectionhead {
+  font-size: 16px; font-weight: 600; letter-spacing: -.01em;
+  margin: 26px 0 12px;
+}
+.booking {
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
+  padding: 14px 16px; margin-bottom: 9px;
+}
+.booking.is-mine { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.booking.is-off { opacity: .6; border-style: dashed; }
+.booking-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.booking-head b { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; }
+.chip-state {
+  font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 999px;
+  background: var(--line-soft); color: var(--ink-soft); white-space: nowrap;
+}
+.chip-state.is-mine { background: var(--ink); color: #fff; }
+.booking-meta { font-size: 13px; color: var(--ink-mute); margin-top: 5px; }
+.booking-posts { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+.booking-results {
+  display: flex; flex-direction: column; gap: 3px;
+  margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--line-soft);
+  font-size: 12.5px; color: var(--ink-mute);
+}
+.booking-results b { font-weight: 600; color: var(--ink-soft); }
+.booking-cta { margin-top: 11px; }
+
+@media (max-width: 560px) {
+  .prod-sum { flex: 1 1 100%; white-space: normal; }
+  .booking-cta { width: 100%; }
 }

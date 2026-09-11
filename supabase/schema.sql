@@ -468,10 +468,7 @@ end $$;
 create table if not exists public.creators (
   id           uuid primary key default gen_random_uuid(),
   name         text not null,
-  followers    integer,
-  cost_rate    numeric(10,2),          -- what we pay. Never sent to a client.
   client_rate  numeric(10,2),          -- default offer price
-  industries   text,
   notes        text,
   active       boolean not null default true,
   created_by   text,
@@ -625,18 +622,86 @@ begin
     'client', jsonb_build_object('name', cl.name, 'logo_url', cl.logo_url),
     'options', coalesce((
       select jsonb_agg(jsonb_build_object(
-        'id', o.id, 'name', cr.name, 'followers', cr.followers,
+        'id', o.id, 'name', cr.name,
         'rate', o.rate, 'platforms', o.platforms, 'state', o.state,
         'is_replacement', o.is_replacement, 'added_at', o.added_at,
+        -- Production. Present once a creator is locked; null before that, so
+        -- the page can tell "not started" from "nothing to say".
+        'visit_date', o.visit_date, 'visit_time', o.visit_time,
+        'visit_location', o.visit_location, 'visit_pic', o.visit_pic,
+        'visit_pic_phone', o.visit_pic_phone, 'tracking_no', o.tracking_no,
+        'draft_url', o.draft_url, 'revision_round', o.revision_round,
+        'planned_publish', o.planned_publish,
         'profiles', coalesce((
           select jsonb_agg(jsonb_build_object('platform', p.platform, 'url', p.url))
-          from creator_profiles p where p.creator_id = cr.id), '[]'::jsonb))
+          from creator_profiles p where p.creator_id = cr.id), '[]'::jsonb),
+        -- One row per platform posted on, so two placements stay two numbers.
+        'posts', coalesce((
+          select jsonb_agg(jsonb_build_object(
+            'platform', pp.platform, 'post_url', pp.post_url,
+            'published_at', pp.published_at, 'window_days', pp.window_days,
+            'impressions', pp.impressions, 'engagements', pp.engagements,
+            'views', pp.views) order by pp.platform)
+          from option_posts pp where pp.option_id = o.id), '[]'::jsonb))
         order by o.position, o.added_at)
       from campaign_options o
       join creators cr on cr.id = o.creator_id
       where o.campaign_id = c.id and o.state <> 'replaced'), '[]'::jsonb)
   );
 end $$;
+
+-- A client's verdict on one draft. The round is counted here rather than
+-- trusted to the caller, so the tally cannot be talked down later.
+create or replace function public.review_draft(
+  p_token text, p_option uuid, p_decision text, p_note text default null,
+  p_reviewer text default null, p_passcode text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c campaigns%rowtype;
+  o campaign_options%rowtype;
+  n integer;
+begin
+  select * into c from campaigns where access_token = p_token;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  if c.passcode is not null and c.passcode <> ''
+     and (p_passcode is null or p_passcode <> c.passcode) then
+    return jsonb_build_object('error', 'passcode');
+  end if;
+  if p_decision not in ('approved', 'changes') then
+    return jsonb_build_object('error', 'bad-decision');
+  end if;
+
+  select * into o from campaign_options
+   where id = p_option and campaign_id = c.id;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+
+  -- Only a draft that is actually with the client can be ruled on.
+  if o.state not in ('reviewing', 'changes') then
+    return jsonb_build_object('error', 'not-reviewing');
+  end if;
+
+  n := coalesce(o.revision_round, 0);
+
+  insert into option_reviews (option_id, round, decision, note, reviewer)
+  values (p_option, greatest(n, 1), p_decision, nullif(trim(coalesce(p_note, '')), ''), p_reviewer);
+
+  if p_decision = 'approved' then
+    update campaign_options set state = 'scheduled' where id = p_option;
+  else
+    update campaign_options
+       set state = 'changes', revision_round = greatest(n, 1) + 1
+     where id = p_option;
+  end if;
+
+  return jsonb_build_object('ok', true, 'decision', p_decision);
+end $$;
+
+revoke all on function public.review_draft(text, uuid, text, text, text, text) from public;
+grant execute on function public.review_draft(text, uuid, text, text, text, text) to anon, authenticated;
 
 -- Selection. Rewrites only the rows this campaign owns, refuses to exceed the
 -- invoiced slot count, and never touches a row that has moved past confirmed.
@@ -746,4 +811,95 @@ create index if not exists link_qrs_slug_idx on public.link_qrs(slug, created_at
 
 drop policy if exists link_qrs_team on public.link_qrs;
 create policy link_qrs_team on public.link_qrs
+  for all to authenticated using (true) with check (true);
+
+-- ===========================================================================
+-- CREATOR CAMPAIGNS, PHASES 2 AND 3
+-- Production, drafts and results.
+--
+-- The campaign has four states; the work has one state per creator, because
+-- they move at different speeds. Creator three can be Posted while creator
+-- seven is still waiting to film, and a single campaign status cannot say so.
+--
+-- The pipeline, in order:
+--   confirmed       locked by us, with a name and a time against it
+--   pending_visit   logistics set, waiting on the shoot
+--                   (pending_delivery instead, when the format is seeding)
+--   pending_draft   filmed, waiting on content
+--   reviewing       draft link with the client
+--   changes         client asked for edits. Round N of 2
+--   scheduled       approved, publish date set
+--   posted          live, post link captured
+--   completed       results in, creator closed
+--
+-- And two that end it early, neither of which is ever deleted, because the
+-- invoice has to reconcile against them:
+--   withdrawn       the creator pulled out
+--   replaced        the client swapped them
+-- ===========================================================================
+
+-- Logistics. A visit and a delivery are the same shape of thing; which one is
+-- asked for depends on the campaign's push format, so both live here rather
+-- than in two near-identical tables.
+alter table public.campaign_options add column if not exists visit_date      date;
+alter table public.campaign_options add column if not exists visit_time      text;
+alter table public.campaign_options add column if not exists visit_location  text;
+alter table public.campaign_options add column if not exists visit_pic       text;
+alter table public.campaign_options add column if not exists visit_pic_phone text;
+alter table public.campaign_options add column if not exists tracking_no     text;
+
+-- Content. One deliverable per creator, so one draft link. It is a Drive URL
+-- pasted in, deliberately not an import: the content already lives in Drive
+-- and copying it here would only make a second place for it to be wrong.
+alter table public.campaign_options add column if not exists draft_url       text;
+alter table public.campaign_options add column if not exists revision_round  integer not null default 0;
+
+-- Planned against actual, kept apart. The status says a post is scheduled;
+-- only the dates say whether the date was met, which is what gets asked about.
+alter table public.campaign_options add column if not exists planned_publish date;
+alter table public.campaign_options add column if not exists confirmed_at    timestamptz;
+alter table public.campaign_options add column if not exists confirmed_by    text;
+alter table public.campaign_options add column if not exists notes           text;
+
+-- One row per platform the creator posts on. "XHS sync IG" is one video
+-- published twice, so it is one draft, two post links and two sets of numbers.
+-- Averaging them would hide exactly the thing worth knowing.
+create table if not exists public.option_posts (
+  id           uuid primary key default gen_random_uuid(),
+  option_id    uuid not null references public.campaign_options(id) on delete cascade,
+  platform     text not null,
+  post_url     text,
+  published_at date,
+  window_days  integer not null default 7,
+  impressions  bigint,
+  engagements  bigint,
+  views        bigint,
+  measured_at  date,
+  created_at   timestamptz not null default now(),
+  unique (option_id, platform)
+);
+alter table public.option_posts enable row level security;
+create index if not exists option_posts_owner on public.option_posts(option_id);
+
+-- Every decision a client makes on a draft, kept as a list rather than a flag,
+-- because "how many rounds has this had" is a commercial question. Two rounds
+-- are included; a third is chargeable, and nobody can bill for what was never
+-- written down.
+create table if not exists public.option_reviews (
+  id          uuid primary key default gen_random_uuid(),
+  option_id   uuid not null references public.campaign_options(id) on delete cascade,
+  round       integer not null default 1,
+  decision    text not null check (decision in ('approved', 'changes')),
+  note        text,
+  reviewer    text,
+  created_at  timestamptz not null default now()
+);
+alter table public.option_reviews enable row level security;
+create index if not exists option_reviews_owner on public.option_reviews(option_id, created_at desc);
+
+drop policy if exists option_posts_team on public.option_posts;
+create policy option_posts_team on public.option_posts
+  for all to authenticated using (true) with check (true);
+drop policy if exists option_reviews_team on public.option_reviews;
+create policy option_reviews_team on public.option_reviews
   for all to authenticated using (true) with check (true);
