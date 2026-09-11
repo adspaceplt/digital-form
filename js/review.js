@@ -277,7 +277,7 @@
         '<button class="btn btn-changes" type="button" aria-pressed="false">Request changes</button>' +
       '</div>' +
       '<div class="changebox">' +
-        '<textarea class="textarea" placeholder="What needs to change? Be specific so we can action it in one round."></textarea>' +
+        '<textarea class="textarea" placeholder="Describe the changes required."></textarea>' +
         '<div class="changebox-actions">' +
           '<button class="btn" type="button" data-act="cancel">Cancel</button>' +
           '<button class="btn btn-primary" type="button" data-act="send">Send request</button>' +
@@ -622,8 +622,7 @@
       setPageTitle(feed.client.name + ' Content Review Portal by ADspace');
       if (!feed.batches.length) {
         showState('No content pending review',
-          'Your next content set will appear here once it is ready for review. We will notify ' +
-          'you when it is available.');
+          'The next content set will appear here when it is ready for review.');
         return;
       }
       build();

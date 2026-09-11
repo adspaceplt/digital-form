@@ -182,7 +182,7 @@
     if (!shown.length) {
       box.innerHTML = '<div class="empty">' +
         (state.creators.length ? 'Nothing matches that search.'
-                               : 'No creators yet. Add your first one above.') + '</div>';
+                               : 'No creators yet.') + '</div>';
       return;
     }
     shown.forEach(function (c) {
@@ -440,7 +440,7 @@
         }
         box.innerHTML = '';
         if (!r.data.length) {
-          box.innerHTML = '<div class="empty">No campaigns yet. Create one from an invoice above.</div>';
+          box.innerHTML = '<div class="empty">No campaigns yet.</div>';
           return;
         }
         r.data.forEach(function (c) {
@@ -764,8 +764,7 @@
     var box = $('creatorList');
     box.innerHTML = '';
     if (!state.options.length) {
-      box.innerHTML = '<div class="empty">No creators yet. Add them above, and offer more ' +
-        'than the slot count so the client has a real choice.</div>';
+      box.innerHTML = '<div class="empty">No creators offered yet.</div>';
     } else {
       state.options.slice().sort(function (a, b) {
         return (cardRank(a) - cardRank(b)) || (Number(a.position || 0) - Number(b.position || 0));
@@ -782,8 +781,7 @@
     $('bulkToggle').hidden = !working.length;
     if (!working.length) $('bulkBox').hidden = true;
     $('bulkTitle').textContent = 'Same ' + (isDelivery() ? 'delivery' : 'shoot') + ' date for everyone';
-    $('bulkHint').textContent = 'Fills every card still blank. A card set by hand keeps ' +
-      'what it has unless you overwrite.';
+    $('bulkHint').textContent = 'Applies to cards without a date. Existing dates are kept.';
     paintRollup(working);
   }
 
@@ -1511,8 +1509,7 @@
       msg('campWorkMsg', 'Nothing is shortlisted yet.', 'err');
       return;
     }
-    $('lockBlurb').textContent = 'These ' + picked.length + ' become bookings and production starts. ' +
-      'Anything still offered stays available, so the rest of the slots can be filled later.';
+    $('lockBlurb').textContent = 'The selected creators are confirmed and move into production. Remaining offers stay open.';
     $('lockHeading').textContent = 'Accept ' + picked.length +
       (picked.length === 1 ? ' creator' : ' creators');
     $('lockList').innerHTML = picked.map(function (o) {
