@@ -772,13 +772,13 @@
     // Accepting is offered exactly when the client has chosen something.
     var waiting = state.options.filter(function (o) { return o.state === 'shortlisted'; });
     $('campLock').hidden = !waiting.length;
-    $('campLock').textContent = 'Accept ' + waiting.length +
+    $('campLock').textContent = 'Confirm ' + waiting.length +
       (waiting.length === 1 ? ' creator' : ' creators');
 
     var working = state.options.filter(isLive);
     $('bulkToggle').hidden = !working.length;
     if (!working.length) $('bulkBox').hidden = true;
-    $('bulkTitle').textContent = 'Same ' + (isDelivery() ? 'delivery' : 'shoot') + ' date for everyone';
+    $('bulkTitle').textContent = (isDelivery() ? 'Delivery' : 'Shoot') + ' date for all';
     $('bulkHint').textContent = 'Applies to cards without a date. Existing dates are kept.';
     paintRollup(working);
   }
@@ -1067,33 +1067,33 @@
   /* The exceptional actions. They used to be buttons in the row, at the same
      weight as Save, which is the wrong weight for something that happens a few
      times a year. A menu says "there is more here" without shouting it. */
-  function menuItem(action, label, why, cls) {
+  function menuItem(action, label, cls) {
     return '<button class="kmenu-item ' + (cls || '') + '" data-a="' + action + '" type="button">' +
-      '<b>' + esc(label) + '</b><span>' + esc(why) + '</span></button>';
+      '<b>' + esc(label) + '</b></button>';
   }
 
   function cardMenu(o) {
     var items = '';
     if (o.state === 'option' || o.state === 'backup') {
-      items += menuItem('pick', 'Accept for the client',
-        'Records a confirmation received directly.');
-      items += menuItem('del', 'Remove from this campaign',
-        'Withdraws the offer.', 'is-danger');
+      items += menuItem('pick', 'Confirm for client');
+      items += menuItem('del', 'Remove', 'is-danger');
     }
     if (o.state === 'shortlisted') {
-      items += menuItem('unpick', 'Undo the selection',
-        'Returns them to the options.');
+      items += menuItem('unpick', 'Undo selection');
     }
     if (isLive(o)) {
-      items += menuItem('unbook', 'Return to the options',
-        'Frees the slot. Dates and notes are kept.');
-      items += menuItem('withdraw', 'Creator withdrew',
-        'The slot reopens and backups move up.');
-      items += menuItem('replace', 'Client replaced them',
-        'After filming, the creator is still paid.', 'is-danger');
+      items += menuItem('unbook', 'Return to options');
+      items += menuItem('withdraw', 'Withdrawn');
+      items += menuItem('replace', 'Replaced', 'is-danger');
     }
     return items ? '<div class="kmenu" data-menu hidden>' + items + '</div>' : '';
   }
+
+  var CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>';
+
+  /* Which production cards are open. Ten creators in production is ten
+     cards; folded, each is one line, and the one being worked on is open. */
+  var openCards = {};
 
   /* One creator, one card. What is inside depends only on where they have got
      to: terms while they are an option, terms plus production once accepted,
@@ -1109,21 +1109,37 @@
     var advance = live ? nextState(o.state) : null;
     var back = live ? prevState(o.state) : null;
 
+    // The draft is a step of its own: it exists only once filming is done.
+    var stage = PIPELINE.indexOf(o.state === 'changes' ? 'reviewing' : o.state);
+    var drafting = live && stage >= PIPELINE.indexOf('pending_draft');
+    var open = !live || !!openCards[o.id];
+
     var card = document.createElement('article');
     card.className = 'kcard' + (live ? ' is-live' : '') + (dead ? ' is-off' : '') +
-      (o.state === 'reviewing' ? ' is-waiting' : '');
+      (o.state === 'reviewing' ? ' is-waiting' : '') + (live && !open ? ' is-folded' : '');
     card.setAttribute('data-state', o.state);
+
+    // Folded, the card is one line: the date, the platforms, the money.
+    var sum = live ? [
+      o.visit_date ? niceDate(o.visit_date) + (o.visit_time ? ', ' + o.visit_time : '')
+                   : visitWord() + ' TBC',
+      plats, money(o.rate)
+    ].filter(Boolean).join(' · ') : '';
 
     card.innerHTML =
       '<header class="kcard-head">' +
+        (live ? '<button class="kfold" data-a="fold" type="button" aria-label="Details" ' +
+          'aria-expanded="' + String(open) + '">' + CHEV + '</button>' : '') +
         '<span class="kcard-name">' + esc(cr.name || '') + '</span>' +
         '<span class="tone ' + (word[1] || 'tone-plain') + '">' + esc(word[0]) + '</span>' +
         (o.is_replacement ? '<span class="tone is-warn">Replacement</span>' : '') +
         (o.goodwill ? '<span class="tone is-warn">Goodwill</span>' : '') +
+        (sum ? '<span class="kcard-sum">' + esc(sum) + '</span>' : '') +
         (dead ? '' : '<button class="kmenu-btn" data-a="menu" type="button" ' +
           'aria-label="More actions" aria-expanded="false">' + DOTS + '</button>') +
       '</header>' +
       cardMenu(o) +
+      '<div class="kcard-body" data-body' + (open ? '' : ' hidden') + '>' +
 
       // Money and platforms: one line, ticked off once the client has agreed.
       '<div class="kstep kstep-terms' + (agreed ? ' is-done' : '') + '">' +
@@ -1131,30 +1147,37 @@
         '<span class="kstep-label">Terms</span>' +
         '<span class="kstep-sum"><b>' + esc(money(o.rate)) + '</b>' +
           (plats ? '<span>' + esc(plats) + '</span>' : '') + '</span>' +
-        (canEdit ? '<button class="btn btn-sm btn-quiet" data-a="rate" type="button">Change</button>'
+        (canEdit ? '<button class="btn btn-sm btn-quiet" data-a="rate" type="button">Edit</button>'
                  : '<span class="kstep-note">Agreed</span>') +
       '</div>' +
 
       (live ?
       '<div class="kstep kstep-work">' +
-        '<div class="kstep-title">Production</div>' +
+        '<div class="kstep-title">' + (isDelivery() ? 'Delivery' : 'Shoot') + '</div>' +
         '<div class="kfields">' +
-          field(visitWord() + ' date', 'visit_date', o.visit_date, 'date') +
-          field('Time', 'visit_time', o.visit_time, 'text', '2pm') +
+          field('Date', 'visit_date', o.visit_date, 'date') +
+          field('Time', 'visit_time', o.visit_time, 'text', '') +
           (isDelivery() ? field('Tracking no.', 'tracking_no', o.tracking_no, 'text', '') : '') +
           field('Publish date', 'planned_publish', o.planned_publish, 'date', '', 'kfield-pub') +
-          '<label class="kfield kfield-wide"><span>Draft link (Google Drive)</span>' +
-            '<input class="input" data-f="draft_url" value="' + esc(o.draft_url || '') +
-            '" placeholder="https://drive.google.com/…"></label>' +
-          '<label class="kfield kfield-wide"><span>Internal note</span>' +
+          '<label class="kfield kfield-wide"><span>Notes</span>' +
             '<input class="input" data-f="notes" value="' + esc(o.notes || '') + '"></label>' +
         '</div>' +
+      '</div>' +
+      (drafting ?
+      '<div class="kstep kstep-work">' +
+        '<div class="kstep-title">Draft</div>' +
+        '<div class="kfields">' +
+          '<label class="kfield kfield-wide"><span>Draft link</span>' +
+            '<input class="input" data-f="draft_url" value="' + esc(o.draft_url || '') +
+            '" placeholder="https://"></label>' +
+        '</div>' +
+      '</div>' : '') +
+      '<div class="kstep kstep-work">' +
         '<div class="kactions">' +
           '<button class="btn btn-sm btn-primary" data-a="save" type="button">Save</button>' +
-          (advance ? '<button class="btn btn-sm btn-go" data-a="advance" type="button">Move to ' +
-            esc(wordFor(advance).toLowerCase()) + '</button>' : '') +
-          (back ? '<button class="btn btn-sm btn-quiet" data-a="back" type="button">' +
-            'Back to ' + esc(wordFor(back).toLowerCase()) + '</button>' : '') +
+          (advance ? '<button class="btn btn-sm btn-go" data-a="advance" type="button">' +
+            esc(wordFor(advance)) + CHEV + '</button>' : '') +
+          (back ? '<button class="btn btn-sm btn-quiet" data-a="back" type="button">Back</button>' : '') +
         '</div>' +
         '<div class="msg" data-msg></div>' +
       '</div>' : '') +
@@ -1164,8 +1187,9 @@
       (dead ?
       '<div class="kstep kstep-ended">' +
         '<p class="hint">' + esc(o.drop_reason || 'No reason recorded.') + '</p>' +
-        '<button class="btn btn-sm btn-quiet" data-a="reinstate" type="button">Put back in production</button>' +
-      '</div>' : '');
+        '<button class="btn btn-sm btn-quiet" data-a="reinstate" type="button">Reinstate</button>' +
+      '</div>' : '') +
+      '</div>';
 
     if (live) paintPosts(card.querySelector('[data-posts]'), o);
     wireCard(card, o);
@@ -1186,6 +1210,18 @@
         menu.hidden = !open;
         this.setAttribute('aria-expanded', String(open));
       }
+    });
+
+    // The header is the fold target; its buttons keep their own jobs.
+    var body = card.querySelector('[data-body]');
+    var foldBtn = card.querySelector('[data-a="fold"]');
+    if (foldBtn) card.querySelector('.kcard-head').addEventListener('click', function (e) {
+      if (e.target.closest('button') && e.target.closest('button') !== foldBtn) return;
+      var show = body.hidden;
+      openCards[o.id] = show;
+      body.hidden = !show;
+      card.classList.toggle('is-folded', !show);
+      foldBtn.setAttribute('aria-expanded', String(show));
     });
 
     on('rate',      function () { editRate(card, o); });
@@ -1236,7 +1272,7 @@
     db.from('campaign_options').update({ state: to }).eq('id', o.id).then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
       log('campaign.stage', name, 'back to ' + to);
-      msg('campWorkMsg', name + ' is back at ' + wordFor(to).toLowerCase() + '.', 'ok');
+      msg('campWorkMsg', name + ': ' + wordFor(to) + '.', 'ok');
       loadOptions();
     });
   }
@@ -1263,7 +1299,7 @@
       .eq('id', o.id).then(function (r) {
         if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
         log('campaign.reinstated', name, '');
-        msg('campWorkMsg', name + ' is back in production as confirmed.', 'ok');
+        msg('campWorkMsg', name + ' reinstated.', 'ok');
         loadOptions();
       });
   }
@@ -1431,7 +1467,7 @@
     // The closed panel says what it holds, and opens itself once it holds something.
     $('invoiceSummary').textContent = c.invoice_url
       ? (c.invoice_no ? c.invoice_no + ' · PDF attached' : 'PDF attached')
-      : (c.invoice_no ? c.invoice_no + ' · no PDF yet' : 'Not issued yet');
+      : (c.invoice_no ? c.invoice_no + ' · no PDF' : 'Not issued');
     if (c.invoice_url || c.invoice_no) setOpen('invoiceToggle', 'invoiceBody', true);
     $('invNo').value = String(c.invoice_no || '').replace(/^AINV2/i, '');
     $('invFile').value = '';
@@ -1443,10 +1479,9 @@
         'stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/>' +
         '<path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>' +
         (c.invoice_uploaded_at
-          ? '<span class="muted">Uploaded ' + niceDate(String(c.invoice_uploaded_at).slice(0, 10)) +
-            '. Uploading again replaces it.</span>' : '');
+          ? '<span class="muted">Uploaded ' + niceDate(String(c.invoice_uploaded_at).slice(0, 10)) + '</span>' : '');
     } else {
-      cur.innerHTML = '<span class="muted">No invoice uploaded yet.</span>';
+      cur.innerHTML = '<span class="muted">No PDF</span>';
     }
     msg('invMsg', '');
   }
@@ -1498,11 +1533,10 @@
   $('campLock').addEventListener('click', function () {
     var picked = state.options.filter(function (o) { return o.state === 'shortlisted'; });
     if (!picked.length) {
-      msg('campWorkMsg', 'Nothing is shortlisted yet.', 'err');
+      msg('campWorkMsg', 'No creators selected.', 'err');
       return;
     }
-    $('lockBlurb').textContent = 'The selected creators are confirmed and move into production. Remaining offers stay open.';
-    $('lockHeading').textContent = 'Accept ' + picked.length +
+    $('lockHeading').textContent = 'Confirm ' + picked.length +
       (picked.length === 1 ? ' creator' : ' creators');
     $('lockList').innerHTML = picked.map(function (o) {
       return '<div class="act"><span class="act-subject">' + esc((o.creators || {}).name || '') +

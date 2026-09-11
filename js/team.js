@@ -87,7 +87,7 @@
           ' aria-label="' + esc(f[1]) + '"></span>';
       }).join('') +
       '<span class="team-act">' +
-        (m.active && m.email ? '<button class="btn btn-quiet btn-sm" data-a="invite" type="button" title="Email their sign-in link again">Invite</button>' : '') +
+        (m.active && m.email ? '<button class="btn btn-quiet btn-sm" data-a="invite" type="button">Invite</button>' : '') +
         (m.active
           ? '<button class="btn btn-quiet btn-sm' + (self ? '' : ' is-danger') + '" data-a="off" type="button"' +
             (self ? ' disabled title="Ask another admin"' : '') + '>Deactivate</button>'

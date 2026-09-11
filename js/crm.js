@@ -615,7 +615,7 @@
       '</div>' +
       '<div class="touch-actions">' +
         (removed
-          ? '<button class="btn btn-quiet btn-sm" data-a="restore" type="button">Put back</button>'
+          ? '<button class="btn btn-quiet btn-sm" data-a="restore" type="button">Restore</button>'
           : (open ? '<button class="btn btn-sm" data-a="done" type="button">Done</button>' : '') +
             (tc.done_at ? '<button class="btn btn-quiet btn-sm" data-a="undone" type="button">Reopen</button>' : '') +
             '<button class="btn btn-quiet btn-sm" data-a="edit" type="button">Edit</button>' +

@@ -1874,6 +1874,49 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
   .kstep-terms .btn, .kstep-note { margin-left: 0; }
 }
 
+/* Folded, a production card is its header: the fold control, the name, the
+   state, and one line of what matters. The header is the target; the
+   buttons in it keep their own jobs. */
+.kfold {
+  flex: 0 0 auto; width: 28px; height: 28px; margin-left: -6px;
+  display: grid; place-items: center; border: 0; border-radius: var(--radius-sm);
+  background: none; color: var(--ink-mute);
+}
+.kfold svg { width: 16px; height: 16px; transition: transform .16s ease; }
+.kfold[aria-expanded="true"] svg { transform: rotate(90deg); }
+.kfold:hover { background: var(--line-soft); color: var(--ink); }
+.kcard.is-live .kcard-head { cursor: pointer; }
+.kcard-sum {
+  flex: 1 1 auto; min-width: 0; font-size: 12.5px; color: var(--ink-mute);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.kcard-body > .kstep:first-child { border-top: 1px solid var(--line-soft); }
+.kactions .btn svg { width: 14px; height: 14px; }
+@media (max-width: 640px) {
+  .kcard-sum { flex: 1 1 100%; order: 10; padding-left: 22px; white-space: normal; }
+}
+@media (prefers-reduced-motion: reduce) { .kfold svg { transition: none; } }
+
+/* ---------- Client-facing bookings ----------
+   One card per confirmed creator, in the same language as the console's
+   cards: flat, hairline, a state chip, the live one marked on its edge. */
+.sectionhead { font-size: 16px; font-weight: 600; letter-spacing: -.01em; margin: 26px 0 12px; }
+.booking {
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
+  padding: 14px 16px; margin-bottom: 9px;
+}
+.booking.is-mine { box-shadow: inset 3px 0 0 var(--accent); }
+.booking.is-off { opacity: .6; }
+.booking-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.booking-head b { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; }
+.chip-state {
+  font-size: 11.5px; font-weight: 600; line-height: 1.5; padding: 2px 8px; border-radius: 5px;
+  background: var(--line-soft); color: var(--ink-soft); white-space: nowrap;
+}
+.chip-state.is-mine { background: var(--accent); color: #fff; }
+.booking-meta { font-size: 13px; color: var(--ink-mute); margin-top: 5px; }
+
 /* The facts that make the card worth looking at: when, where, what next.
    A grid so they fill the width instead of trailing off in one grey line. */
 .booking-facts {
@@ -1890,16 +1933,23 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 }
 
 /* The amount, folded until asked for. */
-.amountfold { margin: 4px 0 14px; }
-.amountfold-btn {
-  display: inline-flex; align-items: center; gap: 7px;
-  background: none; border: 0; padding: 4px 0; cursor: pointer;
-  font: 600 13px/1.3 inherit; color: var(--ink-soft);
+/* The invoice is a card of its own, folded to its number. */
+.amountfold {
+  margin: 0 0 12px; padding: 6px 16px;
+  border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
 }
-.amountfold-btn svg { width: 14px; height: 14px; transition: transform .16s ease; }
+.amountfold-head { display: flex; align-items: center; gap: 12px; }
+.amountfold-btn {
+  display: inline-flex; align-items: center; gap: 7px; flex: 1 1 auto; min-width: 0;
+  min-height: 34px; background: none; border: 0; padding: 0; cursor: pointer;
+  font: 600 14px/1.3 inherit; color: var(--ink); text-align: left;
+}
+.amountfold-btn svg { flex: 0 0 auto; width: 14px; height: 14px; color: var(--ink-mute); transition: transform .16s ease; }
 .amountfold-btn.is-open svg { transform: rotate(90deg); }
-.amountfold-btn:hover { color: var(--ink); }
-.amountfold .totals { margin-top: 8px; margin-bottom: 0; }
+.amountfold-btn:hover svg { color: var(--ink); }
+.amountfold-link { flex: 0 0 auto; font-size: 13px; font-weight: 500; color: var(--ink-soft); text-decoration: none; }
+.amountfold-link:hover { color: var(--ink); text-decoration: underline; }
+.amountfold .totals { margin: 6px 0 8px; max-width: none; }
 @media (prefers-reduced-motion: reduce) { .amountfold-btn svg { transition: none; } }
 .booking-posts { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
 .booking-results {
@@ -2197,7 +2247,7 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 /* Name, state and the control that changes them, together. */
 .crm-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
 .crm-title h2 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
-.crm-title .btn { flex: 0 0 auto; }
+.crm-title .btn { flex: 0 0 auto; margin-left: auto; }
 
 /* Search, filters, count and the one action on a single line: everything that
    changes what the list shows lives in one place. */
@@ -2371,6 +2421,11 @@ body > main, body > .shell, body > .console { flex: 1 0 auto; }
 .touch-actions { grid-area: del; display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 .touch-next.is-done { color: var(--ink-mute); text-decoration: line-through; }
 .crm-head, .crm-row { grid-template-columns: minmax(0, 2.2fr) 128px minmax(0, 1fr) 110px minmax(0, 1.1fr); }
+/* Restated after the desktop template above, or the five columns win on a
+   phone and the name is squeezed to a letter. */
+@media (max-width: 640px) {
+  .crm-head, .crm-row { grid-template-columns: minmax(0, 1fr) auto; }
+}
 
 /* ---------- Team ----------
    A grid of people against permissions. One row per person, a column per

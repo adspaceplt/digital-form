@@ -129,7 +129,7 @@
             <option value="all">Everyone</option>
           </select>
           <span class="count" id="crmCount"></span>
-          <button class="btn btn-primary" id="crmNew" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a client</button>
+          <button class="btn btn-primary" id="crmNew" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add client</button>
         </div>
 
         <div class="panel" id="crmAddBox" hidden>
@@ -194,7 +194,7 @@
            then the work. The work comes last because none of it can exist
            until the rest is settled. -->
       <div id="crmWork" hidden>
-        <button class="backlink" id="crmBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back to all clients</button>
+        <button class="backlink" id="crmBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
 
         <section class="panel">
           <div class="crm-title">
@@ -257,7 +257,7 @@
             </label>
             <p class="hint" style="margin-top:6px">Malaysian service tax (8%) applies to all clients, including Singapore. Untick only if exempt.</p>
             <div class="row" style="margin-top:14px">
-              <button class="btn btn-primary" id="crmBillSave" type="button">Save billing details</button>
+              <button class="btn btn-primary" id="crmBillSave" type="button">Save</button>
             </div>
             <div class="msg" id="crmBillMsg"></div>
           </div>
@@ -272,7 +272,7 @@
           <div class="disclosure-body" id="crmNotesBody" hidden>
             <textarea class="input textarea" id="crmNotes" rows="5"></textarea>
             <div class="row" style="margin-top:12px">
-              <button class="btn btn-primary" id="crmNotesSave" type="button">Save notes</button>
+              <button class="btn btn-primary" id="crmNotesSave" type="button">Save</button>
             </div>
             <div class="msg" id="crmNotesMsg"></div>
           </div>
@@ -307,7 +307,7 @@
             <input type="checkbox" id="ctPrimary"> <span>Main person we deal with</span>
           </label>
           <div class="row" style="margin-top:14px">
-            <button class="btn btn-primary" id="ctSave" type="button">Save contact</button>
+            <button class="btn btn-primary" id="ctSave" type="button">Save</button>
             <button class="btn btn-quiet" id="ctCancel" type="button" style="flex:0 0 auto">Cancel</button>
           </div>
           <div class="msg" id="ctMsg"></div>
@@ -317,7 +317,7 @@
         <!-- Every call, visit and message, newest first. -->
         <div class="viewhead">
           <span class="headmark"><h2>Calls and visits</h2></span>
-          <button class="btn btn-primary btn-sm" id="crmAddTouch" type="button">Log a call or visit</button>
+          <button class="btn btn-primary btn-sm" id="crmAddTouch" type="button">Add entry</button>
         </div>
         <div class="panel" id="crmTouchBox" hidden>
           <div class="panelhead"><h3 id="crmTouchTitle">What happened</h3></div>
@@ -348,7 +348,7 @@
               <input class="input" id="tcNextAt" type="date"></div>
           </div>
           <div class="row" style="margin-top:14px">
-            <button class="btn btn-primary" id="tcSave" type="button">Save to the log</button>
+            <button class="btn btn-primary" id="tcSave" type="button">Save</button>
             <button class="btn btn-quiet" id="tcCancel" type="button" style="flex:0 0 auto">Cancel</button>
           </div>
           <div class="msg" id="tcMsg"></div>
@@ -373,7 +373,7 @@
       <span class="headmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.85"/><path d="M16 3.6a4 4 0 0 1 0 7"/></svg><h2>Clients</h2></span>
       <!-- A client is a company and belongs to the CRM. Content Review
            publishes their deliverables; it does not create them. -->
-      <button class="btn" id="goToCrm" type="button">Manage clients</button>
+      <button class="btn" id="goToCrm" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 11h4v10"/><path d="M7 21v-4h5v4"/></svg>Manage clients</button>
     </div>
     <div class="msg" id="clientMsg"></div>
 
@@ -384,7 +384,7 @@
 
   <!-- ============ One client ============ -->
   <section id="workspace" hidden>
-    <button class="backlink" id="backToClients" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back to all clients</button>
+    <button class="backlink" id="backToClients" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
 
     <section class="panel">
       <div class="viewhead" style="margin:0 0 4px">
@@ -538,7 +538,7 @@
             <button class="btn btn-quiet btn-sm" id="driveAll" type="button">Select all</button>
             <button class="btn btn-quiet btn-sm" id="driveNone" type="button">Select none</button>
             <span class="topbar-spacer"></span>
-            <button class="btn btn-primary" id="driveImport" type="button">Import selected</button>
+            <button class="btn btn-primary" id="driveImport" type="button">Import</button>
           </div>
           <div class="drive-files" id="driveFiles"></div>
         </div>
@@ -558,7 +558,7 @@
 
         <div id="combineBar" class="combinebar" hidden>
           <span id="combineText"></span>
-          <button class="btn" id="combineBtn" type="button">Combine into one carousel</button>
+          <button class="btn" id="combineBtn" type="button">Combine as carousel</button>
         </div>
 
         <div id="drafts"></div>
@@ -648,7 +648,7 @@
 
       <!-- ---- One campaign ---- -->
       <div id="campWork" hidden>
-        <button class="backlink" id="campBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back to all campaigns</button>
+        <button class="backlink" id="campBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
 
         <section class="panel">
           <div class="viewhead" style="margin:0 0 2px">
@@ -671,7 +671,7 @@
           </div>
           <div class="row" style="margin-top:12px">
             <button class="btn btn-go" id="campPublish" type="button">Open for selection</button>
-            <button class="btn btn-primary" id="campLock" type="button" hidden>Accept the selection</button>
+            <button class="btn btn-primary" id="campLock" type="button" hidden>Confirm creators</button>
           </div>
           <div class="msg" id="campWorkMsg"></div>
         </section>
@@ -691,7 +691,7 @@
                   <span class="slugfield-pre">AINV2</span>
                   <input class="input" id="invNo" placeholder="XXXXXX" autocomplete="off">
                 </div></div>
-              <button class="btn" id="invSaveNo" type="button">Save number</button>
+              <button class="btn" id="invSaveNo" type="button">Save</button>
             </div>
             <div class="row" style="margin-top:12px">
               <div><label class="field-label" for="invFile">Invoice PDF</label>
@@ -714,7 +714,7 @@
           <div class="disclosure-body" id="dangerBody" hidden>
             <p class="hint">This cannot be undone.</p>
             <div class="dangerrow">
-              <button class="btn btn-danger" id="campDelete" type="button">Delete this campaign</button>
+              <button class="btn btn-danger" id="campDelete" type="button">Delete campaign</button>
             </div>
           </div>
         </section>
@@ -725,12 +725,12 @@
              the sections inside it are the moments. -->
         <div class="viewhead">
           <span class="headmark"><h2>Creators</h2></span>
-          <button class="btn btn-sm" id="bulkToggle" type="button" hidden>Set shoot dates for all</button>
+          <button class="btn btn-sm" id="bulkToggle" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Bulk dates</button>
           <button class="btn btn-primary" id="showAddOption" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creators</button>
         </div>
 
         <div class="panel" id="bulkBox" hidden>
-          <div class="panelhead"><h3 id="bulkTitle">Same shoot date for everyone</h3></div>
+          <div class="panelhead"><h3 id="bulkTitle">Shoot date for all</h3></div>
           <p class="hint" id="bulkHint">Applies to cards without a date. Existing dates are kept.</p>
           <div class="row" id="bulkVisitRow">
             <div style="flex:0 0 160px"><label class="field-label" for="bulkDate">Date</label>
@@ -739,8 +739,8 @@
               <input class="input" id="bulkTime" placeholder="2pm"></div>
           </div>
           <div class="row" style="margin-top:14px">
-            <button class="btn btn-primary" id="bulkApply" type="button">Apply to blanks</button>
-            <button class="btn" id="bulkApplyAll" type="button" style="flex:0 0 auto">Overwrite every card</button>
+            <button class="btn btn-primary" id="bulkApply" type="button">Apply</button>
+            <button class="btn" id="bulkApplyAll" type="button" style="flex:0 0 auto">Overwrite</button>
             <button class="btn btn-quiet" id="bulkCancel" type="button" style="flex:0 0 auto">Cancel</button>
           </div>
           <div class="msg" id="bulkMsg"></div>
@@ -764,12 +764,12 @@
                 <input class="input" id="ncRate" type="number" min="0" step="10" placeholder="360"></div>
             </div>
             <div id="ncProfRows" style="margin-top:10px"></div>
-            <button class="btn btn-quiet btn-sm" id="ncAddProf" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add another link</button>
+            <button class="btn btn-quiet btn-sm" id="ncAddProf" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
             <label class="field-label" style="margin-top:12px">Posts on</label>
             <div id="ncPlatforms"></div>
             <div class="msg" id="ncDupe"></div>
             <div class="row" style="margin-top:12px">
-              <button class="btn btn-primary" id="ncSave" type="button">Add and offer</button>
+              <button class="btn btn-primary" id="ncSave" type="button">Add</button>
             </div>
             <div class="msg" id="ncMsg"></div>
           </div>
@@ -790,7 +790,7 @@
       <div id="rosterView" hidden>
         <div class="viewhead">
           <span class="headmark"><h2>Creators</h2></span>
-          <button class="btn btn-primary" id="showAddCreator" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a creator</button>
+          <button class="btn btn-primary" id="showAddCreator" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creator</button>
         </div>
 
         <div class="panel" id="addCreatorBox" hidden>
@@ -808,7 +808,7 @@
             <h4>Profile links</h4>
             <p class="hint">Full profile URL, one per platform.</p>
             <div id="profRows"></div>
-            <button class="btn btn-quiet btn-sm" id="addProfRow" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add another link</button>
+            <button class="btn btn-quiet btn-sm" id="addProfRow" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
           </div>
 
           <div class="msg" id="dupeWarn"></div>
@@ -832,7 +832,7 @@
     <!-- ---- Team: who may do what ---- -->
     <div class="console-body" id="sectionTeam" hidden>
       <div class="filterbar crm-bar" style="justify-content:flex-end">
-        <button class="btn btn-primary" id="teamAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a person</button>
+        <button class="btn btn-primary" id="teamAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add member</button>
       </div>
 
       <div class="panel" id="teamAddBox" hidden>
@@ -845,7 +845,7 @@
           <div style="flex:0 0 190px"><label class="field-label" for="tmRole">Role</label>
             <select class="select" id="tmRole"></select></div>
         </div>        <div class="row" style="margin-top:14px">
-          <button class="btn btn-primary" id="tmSave" type="button">Add to the team</button>
+          <button class="btn btn-primary" id="tmSave" type="button">Add</button>
           <button class="btn btn-quiet" id="tmCancel" type="button" style="flex:0 0 auto">Cancel</button>
         </div>
         <div class="msg" id="tmMsg"></div>
@@ -913,7 +913,7 @@ raya-2026        https://example.com/raya"></textarea>
         <input class="input" id="linkSearch" placeholder="Search slug, destination or label">
         <span class="muted" id="linkCount"></span>
         <button class="btn btn-quiet btn-sm" id="showImport" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>Bulk import</button>
-        <button class="btn btn-primary" id="showAddLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a link</button>
+        <button class="btn btn-primary" id="showAddLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
       </div>
 
       <div id="linkList"></div>
@@ -927,26 +927,25 @@ raya-2026        https://example.com/raya"></textarea>
 <div class="sheet" id="lockSheet" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="lockHeading">
     <div class="sheet-head">
-      <h3 id="lockHeading">Accept the selection</h3>
+      <h3 id="lockHeading">Confirm creators</h3>
       <button class="iconbtn" id="lockClose" type="button" aria-label="Close">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
     </div>
-    <p class="hint" id="lockBlurb"></p>
     <div class="sheet-body">
       <div id="lockList"></div>
       <p class="lockby">Recorded by <b id="lockBy"></b></p>
-      <label class="field-label" for="lockPerson">Client's name, if they confirmed to you directly (optional)</label>
+      <label class="field-label" for="lockPerson">Confirmed by (optional)</label>
       <input class="input" id="lockPerson" placeholder="Name">
-      <label class="field-label" for="lockSource" style="margin-top:12px">How it reached us</label>
+      <label class="field-label" for="lockSource" style="margin-top:12px">Channel</label>
       <select class="select" id="lockSource">
-        <option value="portal">They confirmed on the portal themselves</option>
-        <option value="whatsapp">WhatsApp, keyed in by us</option>
-        <option value="email">Email, keyed in by us</option>
-        <option value="call">Call or meeting, keyed in by us</option>
+        <option value="portal">Portal</option>
+        <option value="whatsapp">WhatsApp</option>
+        <option value="email">Email</option>
+        <option value="call">Call or meeting</option>
       </select>
       <div class="row" style="margin-top:16px;margin-bottom:14px">
-        <button class="btn btn-primary" id="lockGo" type="button">Accept and start production</button>
+        <button class="btn btn-primary" id="lockGo" type="button">Confirm</button>
         <button class="btn" id="lockCancel" type="button" style="flex:0 0 auto">Cancel</button>
       </div>
       <div class="msg" id="lockMsg"></div>
@@ -969,7 +968,7 @@ raya-2026        https://example.com/raya"></textarea>
       <div class="row" style="margin-bottom:16px">
         <div><label class="field-label" for="qrLabel">Label for a new code</label>
           <input class="input" id="qrLabel" placeholder="Placement"></div>
-        <button class="btn btn-primary" id="qrNew" type="button">Create QR code</button>
+        <button class="btn btn-primary" id="qrNew" type="button">Create</button>
       </div>
       <div class="msg" id="qrMsg"></div>
       <div id="qrList"></div>
