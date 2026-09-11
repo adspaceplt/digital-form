@@ -628,7 +628,7 @@
       ['Push format',       FORMAT_WORD[c.push_format] || c.push_format || ''],
       ['Deliverable',       c.deliverable === 'graphic' ? 'One graphic' : 'One video'],
       ['Person in charge',  c.owner || '<span class="muted">Unassigned</span>'],
-      ['Respond by',        c.deadline ? niceDate(c.deadline) : '<span class="muted">No deadline</span>'],
+      ['Campaign due',      c.deadline ? niceDate(c.deadline) : '<span class="muted">No date set</span>'],
       ['Created',           c.created_at ? niceDate(String(c.created_at).slice(0, 10)) : '']
     ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
       return '<div><dt>' + f[0] + '</dt><dd>' + (f[1].indexOf('<span') === 0 ? f[1] : esc(f[1])) + '</dd></div>';
@@ -638,7 +638,10 @@
     setOpen('invoiceToggle', 'invoiceBody', false);
     setOpen('dangerToggle', 'dangerBody', false);
     paintInvoice(c);
+    // Sending to the client is the one strong action on a draft. After that the
+    // strong action is accepting, so this one steps back to neutral.
     $('campPublish').textContent = publishMove(c.state).label;
+    $('campPublish').className = c.state === 'draft' ? 'btn btn-go' : 'btn';
     msg('campWorkMsg', '');
     loadOptions();
     if (restoring) { campDraft.restore(); ncDraft.restore(); restoreScroll(); }
@@ -666,12 +669,12 @@
      revisit reopens; a campaign marked finished too early comes back. Neither
      needs the campaign rebuilding. */
   function publishMove(s) {
-    if (s === 'draft')      return { to: 'open',       label: 'Open for selection' };
-    if (s === 'open')       return { to: 'draft',      label: 'Close selection' };
-    if (s === 'production') return { to: 'open',       label: 'Reopen for selection',
-      ask: 'Reopen this campaign for selection?\n\nBookings already made stay exactly as ' +
-           'they are. The client can pick again for any slot that is free.' };
-    return { to: 'production', label: 'Reopen campaign',
+    if (s === 'draft')      return { to: 'open',  label: 'Send to client' };
+    if (s === 'open')        return { to: 'draft', label: 'Withdraw from client' };
+    if (s === 'production')  return { to: 'open',  label: 'Return to client selection',
+      ask: 'Return this campaign to the client for selection?\n\nBookings already made stay ' +
+           'exactly as they are. The client can choose again for any slot that is free.' };
+    return { to: 'production', label: 'Resume campaign',
       ask: 'Put this campaign back into production?' };
   }
 
@@ -749,51 +752,42 @@
         ? '<div class="stat is-warn"><b>' + booked + '</b><span>Booked · ' +
           goodwill.length + ' goodwill</span></div>' : '');
 
-    var box = $('optionList');
+    /* One card per creator. An option and a booking were two lists showing the
+       same people at different moments, which meant reading both to know where
+       anyone stood. Now the card is the person and the sections inside it are
+       the moments: terms first, production once accepted, results once live.
+       Order runs by how live the work is. */
+    var box = $('creatorList');
     box.innerHTML = '';
     if (!state.options.length) {
-      box.innerHTML = '<div class="empty">No options yet. Add creators from the roster above, ' +
-        'and offer more than the slot count so the client has a real choice.</div>';
-      return;
+      box.innerHTML = '<div class="empty">No creators yet. Add them above, and offer more ' +
+        'than the slot count so the client has a real choice.</div>';
+    } else {
+      state.options.slice().sort(function (a, b) {
+        return (cardRank(a) - cardRank(b)) || (Number(a.position || 0) - Number(b.position || 0));
+      }).forEach(function (o) { box.appendChild(creatorCard(o)); });
     }
-    state.options.forEach(function (o) {
-      var word = OPTION_WORD[o.state] || [o.state, ''];
-      var cr = o.creators || {};
-      var row = document.createElement('div');
-      row.className = 'slink';
-      row.innerHTML =
-        '<div class="slink-body">' +
-          '<span class="slink-slug">' + esc(cr.name || '') + '</span>' +
-          '<span class="act-tag ' + word[1] + '" style="margin-left:8px">' + esc(word[0]) + '</span>' +
-          (o.is_replacement ? '<span class="act-tag is-warn" style="margin-left:6px">Replacement</span>' : '') +
-          '<span class="slink-target">' + esc(o.platforms || '') + ' · ' + money(o.rate) + '</span>' +
-        '</div>' +
-        '<div class="slink-actions">' +
-          (['option', 'backup', 'shortlisted'].indexOf(o.state) > -1
-            ? iconBtn('pencil', 'rate', 'Change the rate or platforms on this campaign') : '') +
-          (o.state === 'option' || o.state === 'backup'
-            ? iconBtn('tick', 'pick', 'Shortlist on the client\'s behalf') : '') +
-          (o.state === 'shortlisted'
-            ? iconBtn('redo', 'unpick', 'Take off the shortlist', 'is-warn') : '') +
-          iconBtn('trash', 'del', 'Remove option', 'is-danger') +
-        '</div>';
-      var rateBtn = row.querySelector('[data-a="rate"]');
-      if (rateBtn) rateBtn.addEventListener('click', function () { editRate(row, o); });
-      var pick = row.querySelector('[data-a="pick"]');
-      if (pick) pick.addEventListener('click', function () { keyIn(o, 'shortlisted'); });
-      var unpick = row.querySelector('[data-a="unpick"]');
-      if (unpick) unpick.addEventListener('click', function () { keyIn(o, 'option'); });
-      row.querySelector('[data-a="del"]').addEventListener('click', function () { dropOption(o); });
-      box.appendChild(row);
-    });
 
-    // Locking is offered exactly when there is something to lock.
+    // Accepting is offered exactly when the client has chosen something.
     var waiting = state.options.filter(function (o) { return o.state === 'shortlisted'; });
     $('campLock').hidden = !waiting.length;
-    $('campLock').textContent = 'Lock ' + waiting.length +
-      (waiting.length === 1 ? ' selection' : ' selections');
+    $('campLock').textContent = 'Accept ' + waiting.length +
+      (waiting.length === 1 ? ' creator' : ' creators');
 
-    paintProduction();
+    var working = state.options.filter(isLive);
+    $('bulkToggle').hidden = !working.length;
+    if (!working.length) $('bulkBox').hidden = true;
+    $('bulkTitle').textContent = 'Same ' + (isDelivery() ? 'delivery' : 'shoot') + ' date for everyone';
+    $('bulkHint').textContent = 'Fills the date and time on every card still blank. A card set ' +
+      'by hand keeps what it has unless you overwrite.';
+    paintRollup(working);
+  }
+
+  function cardRank(o) {
+    if (isLive(o)) return 0;                                   // the live work
+    if (o.state === 'shortlisted') return 1;                   // chosen, awaiting accept
+    if (o.state === 'withdrawn' || o.state === 'replaced') return 3;
+    return 2;                                                  // still on offer
   }
 
   function stat(label, value, cls) {
@@ -806,10 +800,10 @@
   }
 
   /* The rate is this campaign's, so it is changed here and nowhere else. Once
-     the client has been locked in at a number, that number is what they
-     agreed to, and the pencil goes away. */
-  function editRate(row, o) {
-    var body = row.querySelector('.slink-body');
+     the client has accepted at a number, that number is what they agreed to,
+     and the editor goes away. */
+  function editRate(card, o) {
+    var body = card.querySelector('.kstep-terms');
     if (body.querySelector('.rate-edit')) return;
     var ed = document.createElement('div');
     ed.className = 'rate-edit';
@@ -1060,157 +1054,184 @@
     return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
-  function paintProduction() {
-    var live = state.options.filter(isLive);
-    var gone = state.options.filter(function (o) {
-      return o.state === 'withdrawn' || o.state === 'replaced';
-    });
-    $('prodWrap').hidden = !live.length && !gone.length;
-    if ($('prodWrap').hidden) return;
-
-    $('bulkTitle').textContent = 'Same ' + (isDelivery() ? 'delivery' : 'shoot') + ' date for everyone';
-    $('bulkHint').textContent = 'Fills the date and time on every row that is still blank. A row set by hand keeps what it has unless you overwrite.';
-
-    var box = $('prodList');
-    box.innerHTML = '';
-    live.concat(gone).forEach(function (o) { box.appendChild(prodRow(o)); });
-    paintRollup(live);
-  }
-
-  function prodRow(o) {
-    var cr = o.creators || {};
-    var word = OPTION_WORD[o.state] || [o.state, ''];
-    var row = document.createElement('div');
-    row.className = 'prod' + (isLive(o) ? '' : ' is-off');
-
-    var dead = o.state === 'withdrawn' || o.state === 'replaced';
-    var summary = [];
-    if (o.visit_date) summary.push(visitWord() + ' ' + niceDate(o.visit_date) + (o.visit_time ? ', ' + o.visit_time : ''));
-    if (o.revision_round > 1) summary.push('Round ' + o.revision_round + ' of 2');
-
-    row.innerHTML =
-      '<div class="prod-head">' +
-        '<b>' + esc(cr.name || '') + '</b>' +
-        '<span class="act-tag ' + word[1] + '">' + esc(word[0]) + '</span>' +
-        (o.is_replacement ? '<span class="act-tag is-warn">Replacement</span>' : '') +
-        (o.goodwill ? '<span class="act-tag is-warn">Goodwill</span>' : '') +
-        '<span class="prod-sum muted">' + esc(summary.join(' · ')) + '</span>' +
-        (dead ? '' : '<button class="btn btn-sm btn-quiet prod-more" type="button">Details</button>') +
-      '</div>' +
-      '<div class="prod-body" hidden></div>';
-
-    if (dead) {
-      // Ended, but not beyond recall: a withdrawal keyed on the wrong row, or a
-      // creator who came back, is one click to put right.
-      var db_ = row.querySelector('.prod-body');
-      db_.hidden = false;
-      db_.innerHTML =
-        (o.drop_reason ? '<p class="hint">' + esc(o.drop_reason) + '</p>' : '') +
-        '<button class="btn btn-sm btn-quiet" data-a="reinstate" type="button">Put back in production</button>';
-      db_.querySelector('[data-a="reinstate"]').addEventListener('click', function () {
-        reinstate(o);
-      });
-      return row;
-    }
-
-    var body = row.querySelector('.prod-body');
-    row.querySelector('.prod-more').addEventListener('click', function () {
-      body.hidden = !body.hidden;
-      if (!body.hidden && !body.innerHTML) fillProdBody(body, o);
-    });
-    return row;
-  }
+  var TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>';
+  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
 
   function field(label, id, value, type, ph) {
-    return '<div><label class="field-label">' + esc(label) + '</label>' +
+    return '<label class="kfield"><span>' + esc(label) + '</span>' +
       '<input class="input" data-f="' + id + '" type="' + (type || 'text') + '" value="' +
-      esc(value == null ? '' : value) + '" placeholder="' + esc(ph || '') + '"></div>';
+      esc(value == null ? '' : value) + '" placeholder="' + esc(ph || '') + '"></label>';
   }
 
-  function altRow(action, label, cls, why) {
-    return '<div class="prod-alt-row">' +
-      '<button class="btn btn-sm btn-quiet ' + cls + '" data-a="' + action + '" type="button">' +
-      esc(label) + '</button><span class="hint">' + esc(why) + '</span></div>';
+  /* The exceptional actions. They used to be buttons in the row, at the same
+     weight as Save, which is the wrong weight for something that happens a few
+     times a year. A menu says "there is more here" without shouting it. */
+  function menuItem(action, label, why, cls) {
+    return '<button class="kmenu-item ' + (cls || '') + '" data-a="' + action + '" type="button">' +
+      '<b>' + esc(label) + '</b><span>' + esc(why) + '</span></button>';
   }
 
-  function fillProdBody(body, o) {
-    var advance = nextState(o.state);
-    var back = prevState(o.state);
-    body.innerHTML =
-      '<div class="row">' +
-        field(visitWord() + ' date', 'visit_date', o.visit_date, 'date') +
-        field('Time', 'visit_time', o.visit_time, 'text', '2pm') +
-        (isDelivery() ? field('Tracking no.', 'tracking_no', o.tracking_no, 'text', '') : '') +
-      '</div>' +
-      '<div class="row" style="margin-top:12px">' +
-        '<div style="flex:1 1 340px"><label class="field-label">Draft link (Google Drive)</label>' +
-          '<input class="input" data-f="draft_url" value="' + esc(o.draft_url || '') +
-          '" placeholder="https://drive.google.com/…"></div>' +
-        field('Planned publish', 'planned_publish', o.planned_publish, 'date') +
-      '</div>' +
-      '<div class="row" style="margin-top:12px">' +
-        '<div><label class="field-label">Internal note</label>' +
-          '<input class="input" data-f="notes" value="' + esc(o.notes || '') + '"></div>' +
-      '</div>' +
-      '<div class="prod-posts" data-posts></div>' +
-      '<div class="row prod-actions" style="margin-top:14px">' +
-        '<button class="btn btn-primary" data-a="save" type="button">Save</button>' +
-        (advance ? '<button class="btn btn-go" data-a="advance" type="button">Move to ' +
-          esc(wordFor(advance)) + '</button>' : '') +
-        (back ? '<button class="btn btn-quiet btn-sm" data-a="back" type="button" style="flex:0 0 auto">' +
-          '↩ Back to ' + esc(wordFor(back).toLowerCase()) + '</button>' : '') +
-        '<button class="linkish prod-alt-toggle" data-a="alt" type="button">Something changed…</button>' +
-      '</div>' +
-      /* Withdrawals and client replacements happen a few times a year. They
-         used to sit here as two full-width buttons beside Save, which is the
-         wrong weight for what they are and easy to hit by mistake. */
-      '<div class="prod-alt" data-alt hidden>' +
-        altRow('unbook', 'Back to the client\'s list', '',
-               'Frees the slot and returns them to the options, so the client can choose again. Nothing else is lost.') +
-        altRow('withdraw', 'Creator withdrew', '',
-               'They pulled out. The slot reopens and the client\'s backups move up.') +
-        altRow('replace', 'Client replaced them', 'is-danger',
-               'The client asked for someone else. After filming this is goodwill: the creator is still paid.') +
-      '</div>' +
-      '<div class="msg" data-msg></div>';
+  function cardMenu(o) {
+    var items = '';
+    if (o.state === 'option' || o.state === 'backup') {
+      items += menuItem('pick', 'Accept for the client',
+        'They said yes over WhatsApp or a call. Records the choice here.');
+      items += menuItem('del', 'Remove from this campaign',
+        'They were never offered in the end.', 'is-danger');
+    }
+    if (o.state === 'shortlisted') {
+      items += menuItem('unpick', 'Undo the selection',
+        'Puts them back among the options the client can choose from.');
+    }
+    if (isLive(o)) {
+      items += menuItem('unbook', 'Return to the options',
+        'Frees the slot. Dates and notes on this card are kept.');
+      items += menuItem('withdraw', 'Creator withdrew',
+        'They pulled out. The slot reopens and the client\'s backups move up.');
+      items += menuItem('replace', 'Client replaced them',
+        'After filming this is goodwill: the creator is still paid.', 'is-danger');
+    }
+    return items ? '<div class="kmenu" data-menu hidden>' + items + '</div>' : '';
+  }
 
-    paintPosts(body.querySelector('[data-posts]'), o);
+  /* One creator, one card. What is inside depends only on where they have got
+     to: terms while they are an option, terms plus production once accepted,
+     results once the post is live. */
+  function creatorCard(o) {
+    var cr = o.creators || {};
+    var word = OPTION_WORD[o.state] || [o.state, ''];
+    var live = isLive(o);
+    var dead = o.state === 'withdrawn' || o.state === 'replaced';
+    var agreed = live || o.state === 'shortlisted';
+    var canEdit = ['option', 'backup', 'shortlisted'].indexOf(o.state) > -1;
+    var plats = platformsOf(o).join(' · ');
+    var advance = live ? nextState(o.state) : null;
+    var back = live ? prevState(o.state) : null;
 
-    body.querySelector('[data-a="save"]').addEventListener('click', function () {
+    var card = document.createElement('article');
+    card.className = 'kcard' + (live ? ' is-live' : '') + (dead ? ' is-off' : '') +
+      (o.state === 'reviewing' ? ' is-waiting' : '');
+    card.setAttribute('data-state', o.state);
+
+    card.innerHTML =
+      '<header class="kcard-head">' +
+        '<span class="kcard-name">' + esc(cr.name || '') + '</span>' +
+        '<span class="tone ' + (word[1] || 'tone-plain') + '">' + esc(word[0]) + '</span>' +
+        (o.is_replacement ? '<span class="tone is-warn">Replacement</span>' : '') +
+        (o.goodwill ? '<span class="tone is-warn">Goodwill</span>' : '') +
+        (dead ? '' : '<button class="kmenu-btn" data-a="menu" type="button" ' +
+          'aria-label="More actions" aria-expanded="false">' + DOTS + '</button>') +
+      '</header>' +
+      cardMenu(o) +
+
+      // Money and platforms: one line, ticked off once the client has agreed.
+      '<div class="kstep kstep-terms' + (agreed ? ' is-done' : '') + '">' +
+        '<span class="kstep-mark" aria-hidden="true">' + (agreed ? TICK : '') + '</span>' +
+        '<span class="kstep-label">Terms</span>' +
+        '<span class="kstep-sum"><b>' + esc(money(o.rate)) + '</b>' +
+          (plats ? '<span>' + esc(plats) + '</span>' : '') + '</span>' +
+        (canEdit ? '<button class="btn btn-sm btn-quiet" data-a="rate" type="button">Change</button>'
+                 : '<span class="kstep-note">Agreed</span>') +
+      '</div>' +
+
+      (live ?
+      '<div class="kstep kstep-work">' +
+        '<div class="kstep-title">Production</div>' +
+        '<div class="kfields">' +
+          field(visitWord() + ' date', 'visit_date', o.visit_date, 'date') +
+          field('Time', 'visit_time', o.visit_time, 'text', '2pm') +
+          (isDelivery() ? field('Tracking no.', 'tracking_no', o.tracking_no, 'text', '') : '') +
+          field('Publish date', 'planned_publish', o.planned_publish, 'date') +
+          '<label class="kfield kfield-wide"><span>Draft link (Google Drive)</span>' +
+            '<input class="input" data-f="draft_url" value="' + esc(o.draft_url || '') +
+            '" placeholder="https://drive.google.com/…"></label>' +
+          '<label class="kfield kfield-wide"><span>Internal note</span>' +
+            '<input class="input" data-f="notes" value="' + esc(o.notes || '') + '"></label>' +
+        '</div>' +
+        '<div class="kactions">' +
+          '<button class="btn btn-sm btn-primary" data-a="save" type="button">Save</button>' +
+          (advance ? '<button class="btn btn-sm btn-go" data-a="advance" type="button">Move to ' +
+            esc(wordFor(advance).toLowerCase()) + '</button>' : '') +
+          (back ? '<button class="btn btn-sm btn-quiet" data-a="back" type="button">' +
+            'Back to ' + esc(wordFor(back).toLowerCase()) + '</button>' : '') +
+        '</div>' +
+        '<div class="msg" data-msg></div>' +
+      '</div>' : '') +
+
+      '<div data-posts></div>' +
+
+      (dead ?
+      '<div class="kstep kstep-ended">' +
+        '<p class="hint">' + esc(o.drop_reason || 'No reason recorded.') + '</p>' +
+        '<button class="btn btn-sm btn-quiet" data-a="reinstate" type="button">Put back in production</button>' +
+      '</div>' : '');
+
+    if (live) paintPosts(card.querySelector('[data-posts]'), o);
+    wireCard(card, o);
+    return card;
+  }
+
+  function wireCard(card, o) {
+    var on = function (sel, fn) {
+      var el = card.querySelector('[data-a="' + sel + '"]');
+      if (el) el.addEventListener('click', fn);
+    };
+
+    var menu = card.querySelector('[data-menu]');
+    on('menu', function () {
+      var open = menu && menu.hidden;
+      shutMenus();
+      if (menu) {
+        menu.hidden = !open;
+        this.setAttribute('aria-expanded', String(open));
+      }
+    });
+
+    on('rate',      function () { editRate(card, o); });
+    on('pick',      function () { keyIn(o, 'shortlisted'); });
+    on('unpick',    function () { keyIn(o, 'option'); });
+    on('del',       function () { dropOption(o); });
+    on('unbook',    function () { unbook(o); });
+    on('withdraw',  function () { endOption(o, 'withdrawn'); });
+    on('replace',   function () { endOption(o, 'replaced'); });
+    on('reinstate', function () { reinstate(o); });
+    on('advance',   function () { advanceOption(o, nextState(o.state)); });
+    on('back',      function () { stepBack(o, prevState(o.state)); });
+
+    on('save', function () {
       var patch = {};
-      Array.prototype.forEach.call(body.querySelectorAll('[data-f]'), function (i) {
+      Array.prototype.forEach.call(card.querySelectorAll('[data-f]'), function (i) {
         var v = i.value.trim();
         patch[i.getAttribute('data-f')] = v === '' ? null : v;
       });
       db.from('campaign_options').update(patch).eq('id', o.id).then(function (r) {
-        var m = body.querySelector('[data-msg]');
+        var m = card.querySelector('[data-msg]');
         if (r.error) { m.textContent = r.error.message; m.className = 'msg err'; return; }
         m.textContent = 'Saved.'; m.className = 'msg ok';
         loadOptions();
       });
     });
-
-    var adv = body.querySelector('[data-a="advance"]');
-    if (adv) adv.addEventListener('click', function () { advanceOption(o, advance); });
-    var bk = body.querySelector('[data-a="back"]');
-    if (bk) bk.addEventListener('click', function () { stepBack(o, back); });
-
-    var alt = body.querySelector('[data-alt]');
-    body.querySelector('[data-a="alt"]').addEventListener('click', function () {
-      alt.hidden = !alt.hidden;
-      this.classList.toggle('is-open', !alt.hidden);
-    });
-    body.querySelector('[data-a="unbook"]').addEventListener('click', function () { unbook(o); });
-    body.querySelector('[data-a="withdraw"]').addEventListener('click', function () { endOption(o, 'withdrawn'); });
-    body.querySelector('[data-a="replace"]').addEventListener('click', function () { endOption(o, 'replaced'); });
   }
+
+  function shutMenus() {
+    Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) {
+      m.hidden = true;
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.kmenu-btn'), function (b) {
+      b.setAttribute('aria-expanded', 'false');
+    });
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('.kcard-head, .kmenu')) shutMenus();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutMenus(); });
 
   /* One step back up the line. Posts and results stay where they are, so
      stepping back out of Posted and forward again does not lose the numbers
      somebody already typed in. */
   function stepBack(o, to) {
     var name = (o.creators || {}).name || 'this creator';
-    if (!confirm('Move ' + name + ' back to ' + wordFor(to).toLowerCase() + '?')) return;
+    if (!to || !confirm('Move ' + name + ' back to ' + wordFor(to).toLowerCase() + '?')) return;
     db.from('campaign_options').update({ state: to }).eq('id', o.id).then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
       log('campaign.stage', name, 'back to ' + to);
@@ -1224,7 +1245,7 @@
   function unbook(o) {
     var name = (o.creators || {}).name || 'this creator';
     if (!confirm('Return ' + name + ' to the options?\n\nThe slot frees up and the client ' +
-        'can choose again. Dates and notes on this booking are kept.')) return;
+        'can choose again. Dates and notes on this card are kept.')) return;
     db.from('campaign_options').update({ state: 'option' }).eq('id', o.id).then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
       log('campaign.unbooked', name, '');
@@ -1233,7 +1254,7 @@
     });
   }
 
-  // A withdrawal or replacement keyed on the wrong row, undone.
+  // A withdrawal or replacement keyed on the wrong card, undone.
   function reinstate(o) {
     var name = (o.creators || {}).name || 'this creator';
     if (!confirm('Put ' + name + ' back into production?\n\nThey return as confirmed and ' +
@@ -1278,16 +1299,16 @@
 
   function paintPosts(box, o) {
     if (PIPELINE.indexOf(o.state) < PIPELINE.indexOf('posted')) { box.innerHTML = ''; return; }
-    box.innerHTML = '<div class="sectionlabel">Published posts and results</div>' +
-      '<div class="empty">Loading…</div>';
+    var head = '<div class="kstep-title">Results</div>';
+    box.className = 'kstep kstep-results';
+    box.innerHTML = head + '<div class="empty">Loading…</div>';
     db.from('option_posts').select('*').eq('option_id', o.id).then(function (r) {
       var rows = r.data || [];
       if (!rows.length) {
-        box.innerHTML = '<div class="sectionlabel">Published posts and results</div>' +
-          '<div class="empty">No placements recorded.</div>';
+        box.innerHTML = head + '<div class="empty">No placements recorded.</div>';
         return;
       }
-      box.innerHTML = '<div class="sectionlabel">Published posts and results</div>';
+      box.innerHTML = head;
       rows.forEach(function (p) {
         var w = document.createElement('div');
         w.className = 'postrow';
@@ -1485,6 +1506,8 @@
     }
     $('lockBlurb').textContent = 'These ' + picked.length + ' become bookings and production starts. ' +
       'Anything still offered stays available, so the rest of the slots can be filled later.';
+    $('lockHeading').textContent = 'Accept ' + picked.length +
+      (picked.length === 1 ? ' creator' : ' creators');
     $('lockList').innerHTML = picked.map(function (o) {
       return '<div class="act"><span class="act-subject">' + esc((o.creators || {}).name || '') +
         '</span><span class="muted act-when">' + money(o.rate) + '</span></div>';

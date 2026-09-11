@@ -73,7 +73,7 @@
       total: 'Total',
       totalShort: function (v) { return 'Total ' + v + ' incl. SST'; },
       invoice: 'Invoice',
-      due: function (d) { return 'Please respond by ' + d; },
+      due: function (d) { return 'Campaign due ' + d; },
       yourCampaign: 'Your campaign',
       stillChoosing: 'Still to choose',
       chip: {
@@ -166,7 +166,7 @@
       total: '总计',
       totalShort: function (v) { return '总计 ' + v + '（含 SST）'; },
       invoice: '发票',
-      due: function (d) { return '请于 ' + d + ' 前回复'; },
+      due: function (d) { return '合作截止 ' + d; },
       yourCampaign: '合作进度',
       stillChoosing: '待选择',
       chip: {
