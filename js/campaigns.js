@@ -71,15 +71,22 @@
     crypto.getRandomValues(a);
     return Array.from(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
   }
-  function money(n) {
-    return 'RM ' + Number(n || 0).toLocaleString('en-MY', { minimumFractionDigits: 0 });
+  /* Currency belongs to the client, not to the office. A Singapore client is
+     quoted in S$ everywhere the number appears, including here. */
+  var MON = window.ADspaceMoney;
+  function mkt() {
+    var c = state.campaign || {};
+    return (c.clients && c.clients.market) || c.market || 'MY';
   }
-  // Totals carry sen; a rate is a whole ringgit.
-  function money2(n) {
-    return 'RM ' + Number(n || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function taxOn() {
+    var c = state.campaign || {};
+    var v = (c.clients && c.clients.sst_applies);
+    return v === undefined || v === null ? true : v;
   }
-  var SST = 0.08;
-  function sstOf(subtotal) { return Math.round(subtotal * SST * 100) / 100; }
+  function money(n)  { return MON.money(n, mkt()); }
+  function money2(n) { return MON.money2(n, mkt()); }
+  function sstOf(subtotal) { return MON.taxOf(subtotal, mkt(), taxOn()); }
+  function taxWord() { return taxOn() ? MON.taxLabel(mkt()) : 'Tax'; }
 
   /* ---- Platforms -------------------------------------------------------
      Each platform states the shape of a profile URL and where the identity
@@ -430,7 +437,7 @@
   }
 
   function loadCampaigns() {
-    db.from('campaigns').select('*, clients(name)').order('created_at', { ascending: false })
+    db.from('campaigns').select('*, clients(name, market, sst_applies)').order('created_at', { ascending: false })
       .then(function (r) {
         var box = $('campCards');
         if (r.error) {
@@ -550,7 +557,7 @@
       deliverable: $('campDeliverable').value,
       owner: ($('campOwner').value || '').trim() || null
     };
-    db.from('campaigns').update(patch).eq('id', c.id).select('*, clients(name)').single().then(function (r) {
+    db.from('campaigns').update(patch).eq('id', c.id).select('*, clients(name, market, sst_applies)').single().then(function (r) {
       if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
       log('campaign.edited', title, slots + ' slots');
       shutCampForm();
@@ -572,7 +579,7 @@
       // work with is the one we sent, so it has to be complete on its own.
       state: 'draft',
       created_by: who() || null
-    }).select('*, clients(name)').single().then(function (r) {
+    }).select('*, clients(name, market, sst_applies)').single().then(function (r) {
       if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
       log('campaign.created', title, slots + ' slots');
       shutCampForm();
@@ -746,7 +753,7 @@
       stat('Selected', chosen.length + ' of ' + c.slots) +
       '<i class="stat-gap" aria-hidden="true"></i>' +
       stat('Subtotal', money2(total)) +
-      stat('SST 8%', money2(sstOf(total))) +
+      stat(taxWord(), money2(sstOf(total))) +
       stat('Total', money2(total + sstOf(total)), 'is-total') +
       (booked > c.slots
         ? '<div class="stat is-warn"><b>' + booked + '</b><span>Booked · ' +
@@ -1627,7 +1634,7 @@
       var params = new URLSearchParams(location.search);
       var id = params.get('campaign');
       if (id && !(state.campaign && state.campaign.id === id)) {
-        db.from('campaigns').select('*, clients(name)').eq('id', id).single().then(function (r) {
+        db.from('campaigns').select('*, clients(name, market, sst_applies)').eq('id', id).single().then(function (r) {
           if (r.error || !r.data) { state.campaign = null; showTab('campaigns'); return; }
           state.tab = 'campaigns';
           Array.prototype.forEach.call(document.querySelectorAll('#sectionCampaigns .tab'), function (b) {

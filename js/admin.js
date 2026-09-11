@@ -121,6 +121,12 @@
     }
     if (entered) return;
     entered = true;
+    /* Whether this person may see the activity record is a property of the
+       person, not of the section they happen to open first. It used to be
+       checked inside the Content Review client list, so going straight to
+       Creator Campaigns or Short Links left the record hidden and looking
+       like it belonged to Content Review. */
+    gateActivity();
     // A session kept in local storage answers before the scripts below this
     // one have run. Restoring then would write the address with nothing open
     // and lose the tab or campaign it named, so wait for the whole page.
@@ -166,16 +172,18 @@
      section knows the other exists, which is the point of the shell. */
   var section = 'review';
   var SECTION_TITLE = {
+    clients: 'Clients',
     review: 'Content Review',
     campaigns: 'Creator Campaigns',
     links: 'Short Links'
   };
 
-  var enterCampaignsLater = false;
+  var enterLater = '';
 
   function showSection(name) {
     if (!SECTION_TITLE[name]) name = 'review';
     section = name;
+    $('sectionClients').hidden   = name !== 'clients';
     $('sectionReview').hidden    = name !== 'review';
     $('sectionCampaigns').hidden = name !== 'campaigns';
     $('sectionLinks').hidden     = name !== 'links';
@@ -191,8 +199,13 @@
     // first, with nothing open yet, blanked exactly the part it needed.
     if (name === 'campaigns') {
       // Not loaded yet: leave the address alone and enter once it is.
-      if (!window.ADspaceCampaigns) { enterCampaignsLater = true; return; }
+      if (!window.ADspaceCampaigns) { enterLater = 'campaigns'; return; }
       window.ADspaceCampaigns.enter();
+      return;
+    }
+    if (name === 'clients') {
+      if (!window.ADspaceCRM) { enterLater = 'clients'; return; }
+      window.ADspaceCRM.enter();
       return;
     }
     setUrl();
@@ -262,6 +275,9 @@
     } else if (section === 'campaigns' && window.ADspaceCampaigns) {
       var sub = window.ADspaceCampaigns.urlState();
       Object.keys(sub).forEach(function (k) { if (sub[k]) q.push(k + '=' + encodeURIComponent(sub[k])); });
+    } else if (section === 'clients' && window.ADspaceCRM) {
+      var crm = window.ADspaceCRM.urlState();
+      Object.keys(crm).forEach(function (k) { if (crm[k]) q.push(k + '=' + encodeURIComponent(crm[k])); });
     }
     history.replaceState(null, '', '/admin/' + (q.length ? '?' + q.join('&') : ''));
   }
@@ -322,7 +338,6 @@
     state.client = null; state.batch = null;
     setUrl();
     loadClients();
-    gateActivity();
   }
 
   function loadClients() {
@@ -331,7 +346,8 @@
       box.innerHTML = '';
       if (r.error) { msg('clientMsg', r.error.message, 'err'); return; }
       if (!r.data.length) {
-        box.innerHTML = '<div class="empty">No clients yet. Add your first one above.</div>';
+        box.innerHTML = '<div class="empty">No clients yet. Add one under Clients, ' +
+          'then come back to publish their content.</div>';
         settleScroll();
         return;
       }
@@ -539,29 +555,11 @@
       });
   }
 
-  $('showAddClient').addEventListener('click', function () {
-    $('addClientBox').hidden = false;
-    $('newClientName').focus();
-  });
-  $('cancelAddClient').addEventListener('click', function () { $('addClientBox').hidden = true; });
-
-  $('addClient').addEventListener('click', function () {
-    var name = $('newClientName').value.trim();
-    if (!name) { msg('clientMsg', 'A client name is required.', 'err'); return; }
-    db.from('clients').insert({
-      name: name,
-      logo_url: $('newClientLogo').value.trim() || null,
-      passcode: $('newClientPass').value.trim() || null,
-      access_token: makeToken()
-    }).select().single().then(function (r) {
-      if (r.error) { msg('clientMsg', r.error.message, 'err'); return; }
-      ['newClientName','newClientLogo','newClientPass']
-        .forEach(function (i) { $(i).value = ''; });
-      $('addClientBox').hidden = true;
-      msg('clientMsg', '');
-      openClient(r.data);
-    });
-  });
+  /* Creating a client used to happen here, and separately inside Creator
+     Campaigns, so the same company could be entered twice with neither place
+     owning the record. A client is a company and belongs to the CRM; this
+     section publishes their deliverables. */
+  $('goToCrm').addEventListener('click', function () { showSection('clients'); });
 
   function openClient(c) {
     state.client = c;
@@ -2028,9 +2026,14 @@
     // Campaigns announces itself once its script has run; if the rail asked
     // for it before then, enter now.
     campaignsReady: function () {
-      if (!enterCampaignsLater || section !== 'campaigns') return;
-      enterCampaignsLater = false;
+      if (enterLater !== 'campaigns' || section !== 'campaigns') return;
+      enterLater = '';
       window.ADspaceCampaigns.enter();
+    },
+    crmReady: function () {
+      if (enterLater !== 'clients' || section !== 'clients') return;
+      enterLater = '';
+      window.ADspaceCRM.enter();
     }
   };
 

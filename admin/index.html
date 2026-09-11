@@ -20,6 +20,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="/js/config.js"></script>
 <script src="/js/api.js"></script>
+<script src="/js/money.js"></script>
 <script src="/js/mockups.js"></script>
 </head>
 <body>
@@ -64,6 +65,9 @@
       <button class="navitem is-on" data-section="review" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg><span>Content Review</span>
       </button>
+      <button class="navitem" data-section="clients" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 11h4v10"/><path d="M7 21v-4h5v4"/><path d="M7 9h2M7 13h2M13 9h1M13 13h1"/></svg><span>Clients</span>
+      </button>
       <button class="navitem" data-section="campaigns" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="m17.5 4.5 1.2 2.5 2.8.4-2 2 .5 2.8-2.5-1.3-2.5 1.3.5-2.8-2-2 2.8-.4z"/></svg><span>Creator Campaigns</span>
       </button>
@@ -94,40 +98,178 @@
       </button>
     </header>
 
+    <!-- ---- CRM: the client record everything else points at ---- -->
+    <div class="console-body" id="sectionClients" hidden>
+
+      <section id="crmListView">
+        <div class="viewhead">
+          <span class="headmark"><h2>Clients</h2></span>
+          <button class="btn btn-primary" id="crmNew" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a client</button>
+        </div>
+
+        <div class="filterbar">
+          <input class="input" id="crmSearch" placeholder="Search by name" autocomplete="off">
+          <select class="select" id="crmStage" aria-label="Filter by stage">
+            <option value="all">Every stage</option>
+          </select>
+          <select class="select" id="crmOwner" aria-label="Filter by owner">
+            <option value="all">Everyone</option>
+          </select>
+          <span class="count" id="crmCount"></span>
+        </div>
+
+        <div class="panel" id="crmAddBox" hidden>
+          <div class="panelhead"><h3 id="crmFormTitle">New client</h3></div>
+          <p class="hint">Only the name is required. A lead and a billing client sit on the
+          same list, told apart by stage.</p>
+          <div class="row">
+            <div><label class="field-label" for="crmName">Client name</label>
+              <input class="input" id="crmName" placeholder="e.g. Star Living"></div>
+            <div style="flex:0 0 170px"><label class="field-label" for="crmFormStage">Stage</label>
+              <select class="select" id="crmFormStage"></select></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div style="flex:0 0 200px"><label class="field-label" for="crmIndustry">Industry</label>
+              <select class="select" id="crmIndustry"></select></div>
+            <div style="flex:0 0 180px"><label class="field-label" for="crmOwnerPick">Owner</label>
+              <input class="input" id="crmOwnerPick" list="crmTeamList" placeholder="Who is accountable">
+              <datalist id="crmTeamList"></datalist></div>
+            <div style="flex:0 0 160px"><label class="field-label" for="crmMarket">Market</label>
+              <select class="select" id="crmMarket">
+                <option value="MY">Malaysia · RM</option>
+                <option value="SG">Singapore · S$</option>
+              </select></div>
+          </div>
+          <div class="row" style="margin-top:14px">
+            <button class="btn btn-primary" id="crmSave" type="button">Add client</button>
+            <button class="btn btn-quiet" id="crmCancel" type="button" style="flex:0 0 auto">Cancel</button>
+          </div>
+          <div class="msg" id="crmMsg"></div>
+        </div>
+
+        <div id="crmList"></div>
+      </section>
+
+      <!-- ---- One client ---- -->
+      <div id="crmWork" hidden>
+        <button class="backlink" id="crmBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back to all clients</button>
+
+        <section class="panel">
+          <div class="viewhead" style="margin:0 0 2px">
+            <span class="headmark"><h2 id="crmClientName"></h2><span class="chip" id="crmClientStage"></span></span>
+            <button class="btn btn-quiet btn-sm" id="crmEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg>Edit</button>
+          </div>
+          <dl class="facts" id="crmFacts"></dl>
+          <div class="stats" id="crmTally"></div>
+          <div class="msg" id="crmWorkMsg"></div>
+        </section>
+
+        <!-- The people. A company does not answer the phone. -->
+        <div class="viewhead">
+          <span class="headmark"><h2>Contacts</h2></span>
+          <button class="btn btn-primary btn-sm" id="crmAddContact" type="button">Add contact</button>
+        </div>
+        <div class="panel" id="crmContactBox" hidden>
+          <div class="panelhead"><h3 id="crmContactTitle">New contact</h3></div>
+          <div class="row">
+            <div><label class="field-label" for="ctName">Name</label>
+              <input class="input" id="ctName" placeholder="Mr Lim"></div>
+            <div style="flex:0 0 180px"><label class="field-label" for="ctRole">Role</label>
+              <input class="input" id="ctRole" placeholder="Marketing"></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div style="flex:0 0 190px"><label class="field-label" for="ctPhone">Phone / WhatsApp</label>
+              <input class="input" id="ctPhone" type="tel" placeholder="01x-xxx xxxx"></div>
+            <div><label class="field-label" for="ctEmail">Email</label>
+              <input class="input" id="ctEmail" type="email" placeholder="name@company.com"></div>
+            <div style="flex:0 0 150px"><label class="field-label" for="ctLang">Writes in</label>
+              <select class="select" id="ctLang">
+                <option value="en">English</option>
+                <option value="zh">中文</option>
+                <option value="ms">Bahasa Malaysia</option>
+              </select></div>
+          </div>
+          <label class="tickline" style="margin-top:12px">
+            <input type="checkbox" id="ctPrimary"> <span>Main person we deal with</span>
+          </label>
+          <div class="row" style="margin-top:14px">
+            <button class="btn btn-primary" id="ctSave" type="button">Save contact</button>
+            <button class="btn btn-quiet" id="ctCancel" type="button" style="flex:0 0 auto">Cancel</button>
+          </div>
+          <div class="msg" id="ctMsg"></div>
+        </div>
+        <div id="crmContacts"></div>
+
+        <!-- What is live with them, across the portal. -->
+        <div class="viewhead"><span class="headmark"><h2>Work</h2></span></div>
+        <div id="crmWorkList"></div>
+
+        <!-- Rarely opened, never in the way. -->
+        <section class="panel panel-collapse">
+          <button class="disclosure" id="crmBillToggle" type="button" aria-expanded="false">
+            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
+            <span>Billing details</span>
+            <span class="muted" id="crmBillSummary"></span>
+          </button>
+          <div class="disclosure-body" id="crmBillBody" hidden>
+            <p class="hint">What finance needs on an invoice. Entered once by whoever gets it
+            from the client.</p>
+            <div class="row">
+              <div style="flex:0 0 200px"><label class="field-label" for="crmCompanyNo">Company no.</label>
+                <input class="input" id="crmCompanyNo" placeholder="202201012345 (1234567-A)"></div>
+              <div style="flex:0 0 200px"><label class="field-label" for="crmSstNo">SST / GST no.</label>
+                <input class="input" id="crmSstNo" placeholder="W10-1808-12345678"></div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <div><label class="field-label" for="crmBillAddr">Billing address</label>
+                <textarea class="input textarea" id="crmBillAddr" rows="3"></textarea></div>
+            </div>
+            <label class="tickline" style="margin-top:12px">
+              <input type="checkbox" id="crmSstApplies"> <span id="crmSstLabel">Charge SST 8% on this client's quotes</span>
+            </label>
+            <p class="hint" style="margin-top:6px">We are a Malaysian entity, so the tax is
+            Malaysian service tax at 8% whoever is billed. A Singapore client is invoiced in S$
+            and still carries it. Untick only for a client who is genuinely exempt.</p>
+            <div class="row" style="margin-top:14px">
+              <button class="btn btn-primary" id="crmBillSave" type="button">Save billing details</button>
+            </div>
+            <div class="msg" id="crmBillMsg"></div>
+          </div>
+        </section>
+
+        <!-- Everything the team should read before writing for them. -->
+        <section class="panel panel-collapse">
+          <button class="disclosure" id="crmNotesToggle" type="button" aria-expanded="false">
+            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
+            <span>Brand notes</span>
+            <span class="muted" id="crmNotesSummary"></span>
+          </button>
+          <div class="disclosure-body" id="crmNotesBody" hidden>
+            <p class="hint">Tone, words to avoid, competitors, which language they answer in.
+            Read before writing, not after.</p>
+            <textarea class="input textarea" id="crmNotes" rows="5"></textarea>
+            <div class="row" style="margin-top:12px">
+              <button class="btn btn-primary" id="crmNotesSave" type="button">Save notes</button>
+            </div>
+            <div class="msg" id="crmNotesMsg"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
     <div class="console-body" id="sectionReview">
 
   <!-- ============ Clients ============ -->
   <section id="clientsView" hidden>
     <div class="viewhead">
       <span class="headmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.85"/><path d="M16 3.6a4 4 0 0 1 0 7"/></svg><h2>Clients</h2></span>
-      <button class="btn btn-primary" id="showAddClient" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add a client</button>
+      <!-- A client is a company and belongs to the CRM. Content Review
+           publishes their deliverables; it does not create them. -->
+      <button class="btn" id="goToCrm" type="button">Manage clients</button>
     </div>
+    <div class="msg" id="clientMsg"></div>
 
-    <div class="panel" id="addClientBox" hidden>
-      <div class="panelhead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><h3>New client</h3></div>
-      <p class="hint">Only the name is required. Everything else can be added later from
-      the client's own page.</p>
-      <div class="row">
-        <div>
-          <label class="field-label" for="newClientName">Client name</label>
-          <input class="input" id="newClientName" placeholder="e.g. Star Living">
-        </div>
-        <div>
-          <label class="field-label" for="newClientLogo">Logo URL (optional)</label>
-          <input class="input" id="newClientLogo" placeholder="https://...">
-        </div>
-        <div style="flex:0 0 170px">
-          <label class="field-label" for="newClientPass">Access code (optional)</label>
-          <input class="input" id="newClientPass" placeholder="Leave blank">
-        </div>
-      </div>
 
-      <div class="row" style="margin-top:16px">
-        <button class="btn btn-primary" id="addClient" type="button">Create</button>
-        <button class="btn" id="cancelAddClient" type="button" style="flex:0 0 auto">Cancel</button>
-      </div>
-      <div class="msg" id="clientMsg"></div>
-    </div>
 
     <div class="cards" id="clientCards"></div>
   </section>
@@ -758,6 +900,7 @@ raya-2026        https://example.com/raya"></textarea>
 </div>
 
 <script src="/js/admin.js"></script>
+<script src="/js/crm.js"></script>
 <script src="/js/campaigns.js"></script>
 </body>
 </html>
