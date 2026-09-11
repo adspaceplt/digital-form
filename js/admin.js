@@ -162,7 +162,7 @@
   /* Which section of the console is on screen. The rail decides; neither
      section knows the other exists, which is the point of the shell. */
   var section = 'review';
-  var SECTION_TITLE = { review: 'Content Review', links: 'Smart Links' };
+  var SECTION_TITLE = { review: 'Content Review', links: 'Short Links' };
 
   function showSection(name) {
     if (!SECTION_TITLE[name]) name = 'review';
@@ -317,10 +317,10 @@
     'reapproval.requested':  ['Re-approval requested', 'is-warn'],
     // Short links. Named apart from link.reset above, which is the client's
     // access link and a different thing entirely.
-    'smartlink.created':     ['Short link created', 'is-ok'],
-    'smartlink.updated':     ['Short link changed', 'is-warn'],
-    'smartlink.deleted':     ['Short link deleted', 'is-danger'],
-    'smartlink.imported':    ['Short links imported', 'is-ok']
+    'shortlink.created':     ['Short link created', 'is-ok'],
+    'shortlink.updated':     ['Short link changed', 'is-warn'],
+    'shortlink.deleted':     ['Short link deleted', 'is-danger'],
+    'shortlink.imported':    ['Short links imported', 'is-ok']
   };
 
   /* The section only appears for people on the viewer list. The database
@@ -2011,7 +2011,7 @@
     return row;
   }
 
-  /* ---- Smart Links -------------------------------------------------------
+  /* ---- Short Links -------------------------------------------------------
      Short links for go.adspace.me. The redirector is not built and the domain
      has not moved, so what this manages is the list it will serve. Entering
      the existing slugs now means the switch is a DNS change and nothing more;
@@ -2130,7 +2130,7 @@
     if (!confirm('Delete /' + l.slug + '?\n\nAnywhere this link is already printed or posted will stop working.')) return;
     db.from('links').delete().eq('slug', l.slug).then(function (r) {
       if (r.error) { msg('linkMsg', r.error.message, 'err'); return; }
-      logAction('smartlink.deleted', '/' + l.slug, l.target_url || '');
+      logAction('shortlink.deleted', '/' + l.slug, l.target_url || '');
       loadLinks();
     });
   }
@@ -2172,7 +2172,7 @@
       } else {
         loadLinks();
       }
-      logAction(was ? 'smartlink.updated' : 'smartlink.created', '/' + slug, target);
+      logAction(was ? 'shortlink.updated' : 'shortlink.created', '/' + slug, target);
       shutLinkForm();
     });
   });
@@ -2217,7 +2217,7 @@
     msg('importMsg', 'Importing ' + rows.length + '…');
     db.from('links').upsert(rows, { onConflict: 'slug' }).then(function (r) {
       if (r.error) { msg('importMsg', r.error.message, 'err'); return; }
-      logAction('smartlink.imported', rows.length + ' links', '');
+      logAction('shortlink.imported', rows.length + ' links', '');
       var note = 'Imported ' + rows.length + (rows.length === 1 ? ' link.' : ' links.');
       if (parsed.bad.length) {
         note += ' Skipped line' + (parsed.bad.length === 1 ? ' ' : 's ') +

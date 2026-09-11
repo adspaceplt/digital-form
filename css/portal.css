@@ -1409,7 +1409,7 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 .notice b { font-size: 13px; font-weight: 600; margin-right: 4px; }
 .notice span { font-size: 13px; color: var(--ink-mute); }
 
-/* ---------- Smart Links ---------- */
+/* ---------- Short Links ---------- */
 .linksbar { display: flex; align-items: center; gap: 12px; margin: 20px 0 12px; }
 .linksbar .input { flex: 1 1 auto; }
 .linksbar .muted { flex: 0 0 auto; white-space: nowrap; }
