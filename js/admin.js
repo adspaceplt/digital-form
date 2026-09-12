@@ -674,7 +674,7 @@
       .order('created_at', { ascending: false }).limit(200)
       .then(function (r) {
         if (r.error) {
-          box.innerHTML = '<div class="empty">You do not have access to the activity record.</div>';
+          box.innerHTML = '<div class="empty">Access not assigned.</div>';
           return;
         }
         actRows = r.data || [];
@@ -739,7 +739,7 @@
       state.client.handle_fb = $('eFb').value.trim() || null;
       state.client.handle_tiktok = $('eTt').value.trim() || null;
       state.client.handle_xhs = $('eXhs').value.trim() || null;
-      msg('handleMsg', 'Saved. Applied to every preview.', 'ok');
+      msg('handleMsg', 'Saved.', 'ok');
     });
   });
 
@@ -881,7 +881,7 @@
         var box = $('batchCards');
         box.innerHTML = '';
         if (r.error || !r.data.length) {
-          box.innerHTML = '<div class="empty">No content sets yet.</div>';
+          box.innerHTML = '<div class="empty">No content sets.</div>';
           return;
         }
         r.data.forEach(function (b) {
@@ -1206,7 +1206,7 @@
           msg('setMsg', slow.join(', ') + ': not web-optimised, so playback waits for the full download. ' +
             'Re-export with Fast Start.', 'err');
         } else if (!toobig.length) {
-          msg('setMsg', 'Upload complete. Add copy, then Add to set.', 'ok');
+          msg('setMsg', 'Upload complete.', 'ok');
         }
         renderDrafts();
       })
@@ -1493,7 +1493,7 @@
       }
       pushDraft(url, info);
       $('mediaUrl').value = '';
-      msg('setMsg', 'Asset added. Add copy, then Add to set.', 'ok');
+      msg('setMsg', 'Asset added.', 'ok');
     });
   });
 
@@ -2328,7 +2328,7 @@
     if (!shown.length) {
       box.innerHTML = '<div class="empty">' +
         (links.length ? 'Nothing matches that search.'
-                      : 'No links yet.') +
+                      : 'No links.') +
         '</div>';
       return;
     }
@@ -2533,7 +2533,7 @@
     var box = $('qrList');
     box.innerHTML = '';
     if (!qrCodes.length) {
-      box.innerHTML = '<div class="empty">No QR codes yet.</div>';
+      box.innerHTML = '<div class="empty">No codes.</div>';
       return;
     }
     qrCodes.forEach(function (q) {

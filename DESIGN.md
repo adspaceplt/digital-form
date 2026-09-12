@@ -56,10 +56,12 @@ with the state word. Status selects are tinted like their chip:
 | Money in a row | 13.5px, tabular | `.svc-rate` |
 | Control, small text | 13px / 12.5px | `.btn`, `.btn-sm`, `.svc-calc`, `.backlink` |
 | Meta and labels | 12px | `.field-label`, `.svc-name small`, `.crm-lang` |
-| Chip and select | 12.5px / 600 and 11.5px / 600 | `.state-select`, `.tone`, `.chip-state` |
+| Chip and select | 12.5px / 600 and 11.5px / 600 | `.state-select`; `.tone`, `.chip`, `.chip-state` (one chip shape: 11.5px, radius 5px, padding 2px 8px, sentence case, never an uppercase pill) |
 | Eyebrow | 11px / 600 / .06em uppercase, mute | `.facts dt`, `.kstep-title`, `.crm-head`, `.svc-cat`, `.sectionlabel` |
 | Numbers in cells | 17px / 600 / -.02em | `.tally-cell b` |
 | Brand wordmark fallback | 16px / 700 / -.02em | `.brand-logo` text when the image fails |
+| Display | 24px / 600 / -.02em (21px on a phone); 26px on the review hero; 20px batch title | `.cover-panel h2`, `.camphead h1`, `.batch-title` |
+| Floor | 11px | Nothing in the portal is set smaller; the audit fails on it (`type`). The review mockups reproduce each platform and are exempt |
 Monospace (`ui-monospace, SFMono-Regular, Menlo`) 12.5px for slugs, tokens and code only.
 
 Brand fonts for print: `ADSPACE_ORG.font` = `/css/SlateBook.TTF` (text),
@@ -68,7 +70,7 @@ or Bold file exists), `css/OPTIMA.TTF` unused; the web UI stays on the
 system stack. Config holds file paths, never font names.
 
 ### Spacing scale and vertical rhythm
-Scale: 4, 8, 12, 16, 24, 32. Nothing else.
+Scale for gaps between blocks and sections: 4, 8, 12, 16, 24, 32. Component paddings are the values in the table below and nothing else.
 
 | Where | Value |
 |---|---|
@@ -107,7 +109,7 @@ first row sits as far from the top as the last does from the bottom.
 | Modal | `.sheet` > `.sheet-card`, from the bottom on a phone, fixed height when it filters |
 | Undo | `.undobar` with one `Undo` button, eight seconds |
 | Message | `.msg` (`ok`, `warn`, `err`) as one line under the control, never a card |
-| Empty list | `.empty` with two words |
+| Empty list | `.empty` with two words ("No entries.", "No links.", "No matches.", "Access not assigned."); never "yet", never a sentence |
 | Links to reach a person | `.plink` chips (phone, WhatsApp, email); equal widths on a phone |
 
 Buttons: `.btn` outline, `.btn-primary` ink, `.btn-go` accent (the one
@@ -142,7 +144,12 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   the access code provided."; "Unable to load / Please refresh…"; the
   Chinese set mirrors it.
 - A save failure shows the database message in `.msg.err` under the
-  control; the page never reloads; the control keeps what was typed.
+  control; the page never reloads; the control keeps what was typed. A
+  success message is one word or two ("Saved.", "Asset added."), never
+  the next step. A validation message names what is required ("A client
+  is required.").
+- A value cell with no amount shows the client's currency sign in mute
+  (the currency is information; the missing amount is not), never a blank.
 - Demo mode when Supabase config is blank (`/demo/sample.json`).
 - Focus ring `0 0 0 3px rgba(31,122,77,.18)` on every control; never
   removed. `prefers-reduced-motion` turns transitions off.
@@ -151,7 +158,10 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
 - No explanatory copy: no hints, blurbs, notices, role descriptions or
   empty states that explain what a section is for. The heading and the
   controls are the explanation. Where a line is unavoidable, one short
-  neutral sentence in corporate register; no "we", no "you should".
+  neutral sentence in corporate register; no "we", no "you should". The
+  sign-in page is a title, a field and a button; a section head is a
+  heading and its one action; a hint under a destructive control states
+  the consequence in one sentence.
 - Buttons: one to three words, sentence case, verb first, no article, no
   object the context gives ("Add", "Save", "Confirm", "Delete campaign").
   Menu items are the action's name only. Never "Add a person", "Client

@@ -440,7 +440,7 @@
         }
         box.innerHTML = '';
         if (!r.data.length) {
-          box.innerHTML = '<div class="empty">No campaigns yet.</div>';
+          box.innerHTML = '<div class="empty">No campaigns.</div>';
           return;
         }
         // The amount on a card is what the client is charged: the rates of
@@ -556,7 +556,7 @@
   $('addCamp').addEventListener('click', function () {
     var title = ($('campTitle').value || '').trim();
     var clientId = $('campClient').value;
-    if (!clientId) { msg('campMsg', 'Choose the client this proposal is for.', 'err'); return; }
+    if (!clientId) { msg('campMsg', 'A client is required.', 'err'); return; }
     if (!title) { msg('campMsg', 'A campaign name is required.', 'err'); return; }
     var slots = Number($('campSlots').value || 0);
     if (!slots || slots < 1) { msg('campMsg', 'At least one creator is required.', 'err'); return; }
@@ -805,7 +805,7 @@
     var box = $('creatorList');
     box.innerHTML = '';
     if (!state.options.length) {
-      box.innerHTML = '<div class="empty">No creators offered yet.</div>';
+      box.innerHTML = '<div class="empty">No creators.</div>';
     } else {
       state.options.slice().sort(function (a, b) {
         return (cardRank(a) - cardRank(b)) || (Number(a.position || 0) - Number(b.position || 0));
@@ -933,7 +933,7 @@
 
     box.innerHTML = '';
     if (!list.length) {
-      box.innerHTML = '<div class="empty">Nothing in the roster matches.</div>';
+      box.innerHTML = '<div class="empty">No matches.</div>';
       return;
     }
     list.forEach(function (c) {
@@ -1422,7 +1422,7 @@
     db.from('option_posts').select('*').eq('option_id', o.id).then(function (r) {
       var rows = r.data || [];
       if (!rows.length) {
-        box.innerHTML = head + '<div class="empty">No placements recorded.</div>';
+        box.innerHTML = head + '<div class="empty">No placements.</div>';
         return;
       }
       box.innerHTML = head;
@@ -1714,7 +1714,7 @@
   function applyBulk(overwrite) {
     var vals = bulkValues();
     var keys = Object.keys(vals).filter(function (k) { return vals[k] !== null; });
-    if (!keys.length) { msg('bulkMsg', 'Fill in something to apply.', 'err'); return; }
+    if (!keys.length) { msg('bulkMsg', 'A date or a note is required.', 'err'); return; }
 
     var targets = state.options.filter(isLive);
     if (!targets.length) { msg('bulkMsg', 'Nothing is in production yet.', 'err'); return; }

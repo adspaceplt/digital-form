@@ -17,7 +17,7 @@ const CLIENT = seedOf('client.js');
 const CPROD = seedOf('cprod.js');
 const QR = 'window.QRCode=function(){};window.QRCode.CorrectLevel={H:2};';
 
-const FAIL = new Set(['overflow', 'orphan', 'padding', 'stack', 'wrap', 'clip', 'row-height', 'row-width', 'target', 'label', 'icon-label', 'accent', 'contrast', 'boundary', 'focus']);
+const FAIL = new Set(['overflow', 'orphan', 'padding', 'stack', 'type', 'wrap', 'clip', 'row-height', 'row-width', 'target', 'label', 'icon-label', 'accent', 'contrast', 'boundary', 'focus']);
 let fails = 0, warns = 0;
 
 /* Runs inside the page. Returns [[kind, detail], ...]. */
@@ -114,6 +114,15 @@ function inPage(coarse) {
     for (let i = 1; i < blocks.length; i++) gaps.push(Math.round(blocks[i].top - blocks[i - 1].bottom));
     if (gaps.length > 1 && Math.max(...gaps) - Math.min(...gaps) > 2) F.push(['stack', desc(h) + ': blocks below it sit ' + gaps.join(' / ') + 'px apart']);
     if (blocks.length && Math.round(blocks[0].top - h.getBoundingClientRect().bottom) > 16) F.push(['stack', desc(h) + ': first block ' + Math.round(blocks[0].top - h.getBoundingClientRect().bottom) + 'px under the head']);
+  });
+
+  // 4c type floor: no text under 11px in the portal (the mockups are the platforms' own UI)
+  document.querySelectorAll('body *').forEach(el => {
+    if (!vis(el) || el.closest('.card-stage, svg, [aria-hidden="true"]')) return;
+    const own = [...el.childNodes].some(n => n.nodeType === 3 && n.textContent.trim());
+    if (!own) return;
+    const fs = parseFloat(getComputedStyle(el).fontSize);
+    if (fs < 10.9) F.push(['type', desc(el) + ' is ' + fs + 'px']);
   });
 
   // 5 target size

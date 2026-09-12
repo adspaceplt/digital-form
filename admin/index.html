@@ -7,13 +7,13 @@
 <title>ADspace Digital Portal</title>
 <meta name="description" content="ADspace internal portal.">
 <meta property="og:title" content="ADspace Digital Portal">
-<meta property="og:description" content="Sign in with your company credentials.">
+<meta property="og:description" content="ADspace Digital Portal.">
 <meta property="og:image" content="https://mycdn.adspace.me/adspace-favicon.png">
 <!-- The ADspace mark, so a pinned tab reads as ADspace. Served from our own
      CDN rather than the website builder's, so a site rebuild cannot break it. -->
 <link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
 <link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
-<link rel="stylesheet" href="/css/portal.css?v=20260912i">
+<link rel="stylesheet" href="/css/portal.css?v=20260912j">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
@@ -21,16 +21,16 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260912i"></script>
-<script src="/js/api.js?v=20260912i"></script>
-<script src="/js/money.js?v=20260912i"></script>
-<script src="/js/mockups.js?v=20260912i"></script>
+<script src="/js/config.js?v=20260912j"></script>
+<script src="/js/api.js?v=20260912j"></script>
+<script src="/js/money.js?v=20260912j"></script>
+<script src="/js/mockups.js?v=20260912j"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260912i" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260912j" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -42,7 +42,6 @@
   <section class="signin" id="authPanel" hidden>
     <div class="signin-card">
       <h2>Sign in</h2>
-      <p>Sign in with your company credentials.</p>
       <label class="field-label" for="authEmail">Company email</label>
       <input class="input" id="authEmail" type="email" placeholder="john@adspacestudios.com"
              autocomplete="email">
@@ -533,7 +532,7 @@
 
         <div class="subsection">
           <h4>Link and removal</h4>
-          <p class="hint">Resetting invalidates the current link. Removing from Content Review deletes the content sets and approvals; the client record is kept.</p>
+          <p class="hint">Reset invalidates the current link. Removal deletes the content sets and approvals and keeps the client record.</p>
           <div class="dangerrow">
             <button class="btn btn-warn" id="resetLink" type="button">Reset access link</button>
             <button class="btn btn-danger" id="deleteClient" type="button">Remove from Content Review</button>
@@ -1076,7 +1075,7 @@ raya-2026        https://example.com/raya"></textarea>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
     </div>
-    <p class="hint">Revoking a code stops scans of that code. The short link itself keeps working.</p>
+    <p class="hint">Revoking stops scans of this code.</p>
 
     <div class="sheet-body">
       <div class="row" style="margin-bottom:16px">
@@ -1099,7 +1098,6 @@ raya-2026        https://example.com/raya"></textarea>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
     </div>
-    <p class="hint">Records removals and changes to what a client can see.</p>
     <div class="acttabs" id="activityTabs">
       <button class="acttab is-on" data-af="all" type="button">Everything</button>
       <button class="acttab" data-af="clients" type="button">Clients</button>
@@ -1113,10 +1111,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260912i"></script>
-<script src="/js/documents.js?v=20260912i"></script>
-<script src="/js/crm.js?v=20260912i"></script>
-<script src="/js/team.js?v=20260912i"></script>
-<script src="/js/campaigns.js?v=20260912i"></script>
+<script src="/js/admin.js?v=20260912j"></script>
+<script src="/js/documents.js?v=20260912j"></script>
+<script src="/js/crm.js?v=20260912j"></script>
+<script src="/js/team.js?v=20260912j"></script>
+<script src="/js/campaigns.js?v=20260912j"></script>
 </body>
 </html>
