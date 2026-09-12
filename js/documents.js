@@ -10,10 +10,12 @@
  *
  * Numbers: AQT/INT/YYMMXXX, sequence per month.
  *
- * The layout follows the reference document: mark, title, the document's
- * facts, client and contact side by side, the deal facts, the lines, the
- * totals, a sign-off. The brand mark and font come from ADSPACE_ORG when
- * set; otherwise the wordmark and Helvetica.
+ * The layout is the ADspace letterhead: wordmark, registration and address
+ * left, the monogram and the office contact right, PRIVATE & CONFIDENTIAL,
+ * Our Ref / Date / To / Attn, the subject, the salutation, the body with the
+ * lines and totals, Yours sincerely, the Company Profile QR bottom right, the
+ * monogram bottom centre and the page count. Fonts and images come from
+ * ADSPACE_ORG; blanks fall back to Helvetica and the wordmark.
  */
 (function () {
   var API = window.ADspaceAPI;
@@ -151,23 +153,39 @@
     };
     if (!ORG.font || !window.fontkit) return std();
     pdf.registerFontkit(window.fontkit);
-    return Promise.all([fetchBytes(ORG.font), ORG.fontBold ? fetchBytes(ORG.fontBold) : null])
+    var opt = function (url) { return url ? fetchBytes(url).catch(function () { return null; }) : Promise.resolve(null); };
+    return Promise.all([fetchBytes(ORG.font), opt(ORG.fontBold), opt(ORG.fontMark)])
       .then(function (b) {
-        return Promise.all([pdf.embedFont(b[0], { subset: true }), b[1] ? pdf.embedFont(b[1], { subset: true }) : null])
-          .then(function (f) { return { font: f[0], bold: f[1] || f[0], custom: true }; });
+        return Promise.all([pdf.embedFont(b[0], { subset: true }),
+                            b[1] ? pdf.embedFont(b[1], { subset: true }) : null,
+                            b[2] ? pdf.embedFont(b[2], { subset: true }) : null])
+          .then(function (f) { return { font: f[0], bold: f[1] || f[0], mark: f[2] || f[1] || f[0], custom: true }; });
       })
       .catch(std);
   }
   /* The mark is ADSPACE_ORG.logo, else the header's own mark. A failure to
      load it (most often no CORS on the file) is reported, not hidden. */
   var logoWarn = '';
-  function embedLogo(pdf) {
-    var url = ORG.logo || CFG.brandLogo;
-    logoWarn = '';
+  function embedImage(pdf, url, onFail) {
     if (!url) return Promise.resolve(null);
     return fetchBytes(url).then(function (bytes) {
       return /\.jpe?g(\?|$)/i.test(url) ? pdf.embedJpg(bytes) : pdf.embedPng(bytes);
-    }).catch(function () { delete assetCache[url]; logoWarn = 'Logo not loaded.'; return null; });
+    }).catch(function () { delete assetCache[url]; if (onFail) onFail(); return null; });
+  }
+  function embedLogo(pdf) {
+    logoWarn = '';
+    return embedImage(pdf, ORG.logo || CFG.brandLogo, function () { logoWarn = 'Logo not loaded.'; });
+  }
+  /* (60)18 762 5233 from 60187625233; anything else is printed as typed. */
+  function phoneWord(p) {
+    var d = String(p || '').replace(/[^0-9]/g, '');
+    if (d.length === 11 && d.indexOf('60') === 0) return '(60)' + d.slice(2, 4) + ' ' + d.slice(4, 7) + ' ' + d.slice(7);
+    return String(p || '');
+  }
+  function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
+  function letterDate(s) {
+    var d = dateOf(s);
+    return d ? ordinal(d.getDate()) + ' ' + d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) : String(s || '');
   }
 
   // ---- Drawing ---------------------------------------------------------------
@@ -179,10 +197,10 @@
     var pdf, fonts, logo;
     return PDF.PDFDocument.create().then(function (p) {
       pdf = p;
-      return Promise.all([embedFonts(pdf, PDF), embedLogo(pdf)]);
+      return Promise.all([embedFonts(pdf, PDF), embedLogo(pdf), embedImage(pdf, ORG.profileQr)]);
     }).then(function (got) {
-      fonts = got[0]; logo = got[1];
-      var font = fonts.font, bold = fonts.bold;
+      fonts = got[0]; logo = got[1]; var qr = got[2];
+      var font = fonts.font, bold = fonts.bold, markFont = fonts.mark || bold;
       var ink = PDF.rgb(0.075, 0.094, 0.102), mute = PDF.rgb(0.39, 0.43, 0.44), line = PDF.rgb(0.87, 0.89, 0.89);
       var pages = [];
       var page, y;
@@ -211,146 +229,129 @@
       var need = function (h) { if (y - h < 64) newPage(); };
       newPage();
 
-      // Mark, then the title under it.
-      if (logo) {
-        var lh = 26, lw = logo.width * (lh / logo.height);
-        page.drawImage(logo, { x: M, y: y - lh + 6, width: lw, height: lh });
-      } else {
-        text('ADspace', M, y - 10, 20, bold);
-      }
-      y -= 44;
-      text(k.title, M, y, 22, bold);
-      y -= 30;
+      // The letterhead, on every page: wordmark and registration left, the
+      // monogram and how to reach the office right, in the reference's
+      // positions; the monogram again bottom centre, the page count bottom
+      // right. y counts down from the top of the page.
+      var R = W - M, T = function (top) { return H - top; };
+      var head = function () {
+        text('ADspace', M, T(58), 14, markFont);
+        if (ORG.regno) text('Co. Reg.  ' + ORG.regno, M, T(70), 9, font, mute);
+        var ly = T(83);
+        String(ORG.address || '').split(/\r?\n/).filter(Boolean).forEach(function (s) { text(s, M, ly, 11); ly -= 12.5; });
+        if (logo) { var mh = 21, mw = logo.width * (mh / logo.height); page.drawImage(logo, { x: R - mw, y: T(65), width: mw, height: mh }); }
+        var ry = T(92);
+        [phoneWord(ORG.phone), ORG.email, ORG.website].filter(Boolean).forEach(function (s) { right(s, R, ry, 11); ry -= 12.5; });
+        y = Math.min(ly, ry) - 12;
+      };
+      var foot = function (i, n) {
+        if (logo) { var fh = 20, fw = logo.width * (fh / logo.height); page.drawImage(logo, { x: (W - fw) / 2, y: 30, width: fw, height: fh }); }
+        right('Page ' + (i + 1) + ' of ' + n, R, 30, 7.5, font, mute);
+      };
+      var LH = 14.5, PARA = 14, BODY = 11;
+      var para = function (s, f, size) {
+        wrap(s, R - M, size || BODY, f).forEach(function (ln) { need(LH); text(ln, M, y, size || BODY, f); y -= LH; });
+        y -= PARA;
+      };
+      head();
 
-      // The document's facts, label and value.
       var b = doc.bill_to || {};
-      var facts = [
-        [k.word, doc.number],
-        ['Date', longDate(doc.issued_at)],
-        ['Prepared by', doc.issued_by || ''],
-        ['Account owner', b.owner || '']
-      ].filter(function (f) { return f[1]; });
-      facts.forEach(function (f) { text(f[0], M, y, 9, font, mute); text(f[1], M + 110, y, 9, bold); y -= 13; });
-      y -= 12;
+      text('PRIVATE & CONFIDENTIAL', M, y, BODY, bold); y -= 27;
 
-      // Client left, contact right.
-      var colR = W / 2 + 10;
-      var top = y;
-      var ly = y;
-      text('Client', M, ly, 9, bold, mute); ly -= 13;
-      text(b.legal_name || b.name || '', M, ly, 10, bold); ly -= 13;
-      [b.legal_name && b.name && b.legal_name !== b.name ? b.name : '',
-       b.regno ? 'Reg. no. ' + b.regno + (b.regno_old ? ' (' + b.regno_old + ')' : '') : '',
-       b.tin ? 'TIN ' + b.tin : '', b.sst_no ? 'SST no. ' + b.sst_no : '']
-        .concat(String(b.address || '').split(/\r?\n/))
-        .filter(Boolean).forEach(function (s) { text(s, M, ly, 9, font, mute); ly -= 12; });
-      var ry = top;
-      text('Billing contact', colR, ry, 9, bold, mute); ry -= 13;
-      text(b.contact || '', colR, ry, 10, bold); ry -= 13;
-      [b.contact_role, b.phone, b.email, b.finance_email ? 'Finance: ' + b.finance_email : '']
-        .filter(Boolean).forEach(function (s) { text(s, colR, ry, 9, font, mute); ry -= 12; });
-      y = Math.min(ly, ry) - 18;
-
-      // The deal, as a line of facts.
-      var deal = [
-        ['Source', b.source], ['Industry', b.industry],
-        ['Market', (doc.market === 'SG' ? 'Singapore' : 'Malaysia') + ' · ' + MON.market(doc.market).sign],
-        ['Stage', b.stage], ['SST', b.sst_applies === false ? 'Not applicable' : '8% on the subtotal']
+      // Our Ref / Date / To / Attn, the colons in one column.
+      var refs = [
+        ['Our Ref', doc.number], ['Date', letterDate(doc.issued_at)],
+        ['To', (b.legal_name || b.name || '').toUpperCase()],
+        ['Attn', b.contact ? b.contact + (b.contact_role ? ', ' + b.contact_role : '') : '']
       ].filter(function (f) { return f[1]; });
-      if (deal.length) {
-        var dx = M, dw = (W - 2 * M) / deal.length;
-        deal.forEach(function (f) { text(f[0].toUpperCase(), dx, y, 7.5, bold, mute); text(f[1], dx, y - 12, 9); dx += dw; });
-        y -= 30;
-      }
-      // The statement: what the lead needs, in sentences the quotation team
-      // can read without the table.
+      refs.forEach(function (f) { text(f[0], M, y, BODY); text(':', M + 72, y, BODY); text(f[1], M + 78, y, BODY); y -= LH; });
+      y -= 14;
+
+      text(String(k.title).toUpperCase(), M, y, BODY, bold); y -= 29;
+      text('Dear ' + (b.contact || 'Sir/Madam') + ',', M, y, BODY); y -= 29;
+
+      // The body: the intent, the enquiry, the lines, the totals, the terms.
       var sumOf = function (st) {
         return (doc.lines || []).filter(function (l) { return l.state === st; })
           .reduce(function (s, l) { return s + amountOf(l); }, 0);
       };
-      var para = function (s, size) {
-        wrap(s, W - 2 * M, size || 9.5).forEach(function (ln) { need(14); text(ln, M, y, size || 9.5); y -= 13; });
-        y -= 6;
-      };
-      text('STATEMENT', M, y, 7.5, bold, mute); y -= 14;
       para((b.legal_name || b.name || 'The client') + (b.legal_name && b.name && b.legal_name !== b.name ? ' (' + b.name + ')' : '') +
         ' intends to engage ' + (ORG.name || 'ADSPACE PLT') + ' for the services set out below' +
-        (b.contact ? ', with ' + b.contact + (b.contact_role ? ', ' + b.contact_role + ',' : '') + ' as the point of contact' : '') + '.');
+        (b.contact ? ', with ' + b.contact + (b.contact_role ? ', ' + b.contact_role + ',' : '') + ' as the point of contact' : '') +
+        '. This letter records that intent for the preparation of the formal quotation.');
       if (b.enquiry) para('Enquiry as received: ' + b.enquiry);
-      (doc.lines || []).forEach(function (l) {
-        var q = Number(l.qty || 0), n = Math.max(1, Number(l.tenure || 1));
-        para((q % 1 ? q.toFixed(2) : String(q)) + ' x ' + l.label + (l.unit ? ', ' + l.unit.toLowerCase() : '') +
-          (n > 1 ? ', ' + n + ' months' : '') + (l.start_on ? ' from ' + longDate(l.start_on) : '') +
-          ' at ' + MON.money2(l.rate, doc.market) + (n > 1 || q !== 1 ? ' each' : '') + ': ' +
-          MON.money2(amountOf(l), doc.market) + ' (' + (STATE_WORD[l.state] || l.state || '').toLowerCase() + ').' +
-          (l.note ? ' ' + l.note : ''));
-      });
-      para('Confirmed lines total ' + MON.money2(sumOf('confirmed'), doc.market) + ' and quoted lines total ' +
-        MON.money2(sumOf('quoted'), doc.market) + '. ' +
-        (Number(doc.tax) ? 'With SST at 8% on the subtotal, the amount for the formal quotation is ' + MON.money2(doc.total, doc.market) + '.'
-                         : 'SST does not apply; the amount for the formal quotation is ' + MON.money2(doc.total, doc.market) + '.'));
-      y -= 4;
 
-      // Lines.
-      var cols = { desc: M, state: W - M - 250, qty: W - M - 180, unit: W - M - 100, amt: W - M };
-      var descW = cols.state - cols.desc - 70;
-      var head = function () {
-        text('Description', cols.desc, y, 8.5, bold, mute);
-        text('State', cols.state - 60, y, 8.5, bold, mute);
-        right('Qty', cols.qty, y, 8.5, bold, mute); right('Unit price', cols.unit, y, 8.5, bold, mute);
-        right('Amount', cols.amt, y, 8.5, bold, mute);
-        y -= 8; rule(y); y -= 16;
+      // Lines, as a table inside the letter.
+      var cols = { desc: M, state: R - 230, qty: R - 165, unit: R - 90, amt: R };
+      var descW = cols.state - cols.desc - 60;
+      var thead = function () {
+        text('Description', cols.desc, y, 9, bold, mute);
+        text('State', cols.state - 52, y, 9, bold, mute);
+        right('Qty', cols.qty, y, 9, bold, mute); right('Unit price', cols.unit, y, 9, bold, mute); right('Amount', cols.amt, y, 9, bold, mute);
+        y -= 7; rule(y); y -= 15;
       };
-      head();
+      need(60); thead();
       (doc.lines || []).forEach(function (l) {
-        var ls = wrap(l.label, descW, 9.5);
+        var ls = wrap(l.label, descW, 10);
         var sub = [periodOf(l), l.unit, l.note].filter(Boolean).join('  ');
-        var subs = sub ? wrap(sub, descW + 50, 8.5) : [];
-        if (y - (ls.length * 13 + subs.length * 11 + 6) < 90) { newPage(); head(); }
+        var subs = sub ? wrap(sub, descW + 60, 8.5) : [];
+        if (y - (ls.length * 13 + subs.length * 11 + 8) < 70) { newPage(); head(); thead(); }
         var q = Number(l.qty || 0), n = Math.max(1, Number(l.tenure || 1));
-        text(ls[0] || '', cols.desc, y, 9.5);
-        text(STATE_WORD[l.state] || l.state || '', cols.state - 60, y, 9.5, font, l.state === 'confirmed' ? ink : mute);
-        right((q % 1 ? q.toFixed(2) : String(q)) + (n > 1 ? ' x ' + n + ' mo' : ''), cols.qty, y, 9.5);
-        right(MON.money2(l.rate, doc.market), cols.unit, y, 9.5);
-        right(MON.money2(amountOf(l), doc.market), cols.amt, y, 9.5);
+        text(ls[0] || '', cols.desc, y, 10);
+        text(STATE_WORD[l.state] || l.state || '', cols.state - 52, y, 10, font, l.state === 'confirmed' ? ink : mute);
+        right((q % 1 ? q.toFixed(2) : String(q)) + (n > 1 ? ' x ' + n + ' mo' : ''), cols.qty, y, 10);
+        right(MON.money2(l.rate, doc.market), cols.unit, y, 10);
+        right(MON.money2(amountOf(l), doc.market), cols.amt, y, 10);
         y -= 13;
-        ls.slice(1).forEach(function (s) { text(s, cols.desc, y, 9.5); y -= 13; });
-        subs.forEach(function (s) { text(s, cols.desc, y, 8.5, font, mute); y -= 11; });
-        y -= 6;
+        ls.slice(1).forEach(function (s2) { text(s2, cols.desc, y, 10); y -= 13; });
+        subs.forEach(function (s2) { text(s2, cols.desc, y, 8.5, font, mute); y -= 11; });
+        y -= 7;
       });
-      rule(y); y -= 18;
+      rule(y); y -= 16;
 
-      // Totals, right. Confirmed and quoted are shown apart, then together.
-      need(110);
-      var lx = W - M - 230;
+      need(96);
+      var lx = R - 230;
       var trow = function (label, value, strong) {
-        text(label, lx, y, strong ? 10.5 : 9.5, strong ? bold : font, strong ? ink : mute);
-        right(value, cols.amt, y, strong ? 10.5 : 9.5, strong ? bold : font);
+        text(label, lx, y, strong ? 10.5 : 10, strong ? bold : font, strong ? ink : mute);
+        right(value, R, y, strong ? 10.5 : 10, strong ? bold : font);
         y -= 15;
       };
       trow('Confirmed', MON.money2(sumOf('confirmed'), doc.market));
       trow('Quoted', MON.money2(sumOf('quoted'), doc.market));
       trow('Subtotal', MON.money2(doc.subtotal, doc.market));
-      trow(Number(doc.tax) ? 'SST Malaysia 8% on ' + MON.money2(doc.subtotal, doc.market) : 'SST not applicable',
-           MON.money2(doc.tax, doc.market));
-      y += 4; rule(y, lx, W - M, true); y -= 14;
+      trow(Number(doc.tax) ? 'SST Malaysia 8% on ' + MON.money2(doc.subtotal, doc.market) : 'SST not applicable', MON.money2(doc.tax, doc.market));
+      y += 4; rule(y, lx, R, true); y -= 14;
       trow('Total', MON.money2(doc.total, doc.market), true);
-      y -= 16;
+      y -= 12;
 
-      // Sign-off: the person who prepared it and the person who checks it.
-      need(62);
-      y -= 8;
-      var half = (W - 2 * M - 24) / 2;
-      [['Prepared by', M], ['Checked by', M + half + 24]].forEach(function (f) { rule(y, f[1], f[1] + half); text(f[0], f[1], y - 11, 8, font, mute); });
-      y -= 40;
-      [['Date', M], ['Date', M + half + 24]].forEach(function (f) { rule(y, f[1], f[1] + half); text(f[0], f[1], y - 11, 8, font, mute); });
+      para('Confirmed lines total ' + MON.money2(sumOf('confirmed'), doc.market) + ' and quoted lines total ' +
+        MON.money2(sumOf('quoted'), doc.market) + '. ' +
+        (Number(doc.tax) ? 'With SST at 8% on the subtotal, the amount for the formal quotation is ' + MON.money2(doc.total, doc.market) + '.'
+                         : 'SST does not apply; the amount for the formal quotation is ' + MON.money2(doc.total, doc.market) + '.'));
+      var deal = [
+        b.owner ? 'Account owner ' + b.owner : '', b.source ? 'Source ' + b.source : '', b.industry ? 'Industry ' + b.industry : '',
+        'Market ' + (doc.market === 'SG' ? 'Singapore' : 'Malaysia') + ' (' + MON.market(doc.market).sign + ')', b.stage ? 'Stage ' + b.stage : ''
+      ].filter(Boolean).join('  ·  ');
+      wrap(deal, R - M, 9, font).forEach(function (ln) { need(LH); text(ln, M, y, 9, font, mute); y -= 12; });
+      y -= 22;
 
-      // Every page: the number bottom left, the page count top right.
-      pages.forEach(function (pg, i) {
-        page = pg;
-        text((ORG.name || 'ADSPACE PLT') + '  ' + doc.number + '  Internal', M, 40, 8, font, mute);
-        right('Page ' + (i + 1) + ' of ' + pages.length, W - M, H - 40, 8, font, mute);
-      });
+      // Closing, as the reference signs off.
+      need(60);
+      text('Yours sincerely,', M, y, BODY); y -= LH;
+      text(ORG.name || 'ADSPACE PLT', M, y, BODY, bold); y -= LH;
+      if (doc.issued_by) { text(doc.issued_by, M, y, BODY); y -= LH; }
+
+      // Company Profile and its QR, bottom right of the last page.
+      // Company Profile and its QR: bottom right where the reference has it,
+      // lower when the letter runs long, on a new page only when it must.
+      if (qr) {
+        var labelTop = Math.max(684, (H - y) + 12);
+        if (labelTop + 75 > H - 55) { newPage(); head(); labelTop = 684; }
+        text('Company Profile', R - width('Company Profile', BODY), T(labelTop), BODY);
+        page.drawImage(qr, { x: R - 66, y: T(labelTop + 73), width: 64, height: 64 });
+      }
+
+      pages.forEach(function (pg, i) { page = pg; foot(i, pages.length); });
       return pdf.save();
     });
   }

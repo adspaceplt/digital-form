@@ -15,17 +15,21 @@ window.ADSPACE_ORG = {
   name: 'ADSPACE PLT',
   regno: '202304002162',      // business registration no.
   sst: 'J31-2401-32100002',        // SST registration no.
-  address: '61-02, Jalan Mutiara Emas 2A, Taman Mount Austin, 81100 Johor Bahru, Johor, Malaysia',
+  address: '61-02 Jalan Mutiara Emas 2A\nTaman Mount Austin\n81100 Johor Bahru\nJohor, Malaysia',
   email: 'advertise@adspacestudios.com',
   phone: '60187625233',
+  website: 'adspacestudios.com',
   bank: '',       // bank, account number and account name, on one line
-  // The mark and the brand fonts on the Letter of Intent. Files, not font
-  // names: PNG or JPG for the mark, TTF or OTF for the fonts, same origin or
-  // served with CORS. Blank mark uses brandLogo below; blank fonts fall back
-  // to Helvetica.
-  logo: 'https://mycdn.adspace.me/adspace-brandname.png',
+  // The letterhead: the monogram top right and bottom centre, the wordmark
+  // set in Optima, the text in Slate Book, the heavier lines in Slate
+  // Regular, the Company Profile QR (https://go.adspace.me/co) bottom right.
+  // Files, not font names, same origin or served with CORS. A blank mark
+  // uses brandLogo below; blank fonts fall back to Helvetica.
+  logo: '/css/adspace-mark.png',
   font: '/css/SlateBook.TTF',
-  fontBold: '/css/SlateRg.TTF'
+  fontBold: '/css/SlateRg.TTF',
+  fontMark: '/css/OPTIMA.TTF',
+  profileQr: '/css/adspace-profile-qr.png'
 };
 
 window.ADSPACE_CONFIG = {
