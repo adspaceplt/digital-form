@@ -195,8 +195,10 @@ missed; none should need asking again.
   contact, who a call was with) picks from Contacts, prefilled with the
   main contact, and never asks for the name, phone or email again.
 - Every action reverses: Revert for a stage, Restore for a removed record,
-  Undo bar for a removal, Void then Delete for an issued document (delete
-  only after void; a number is never reused).
+  Undo bar for a removal (a log entry, a contact, a service line, an
+  uploaded file such as the campaign invoice PDF), Void then Delete for an
+  issued document (delete only after void; a number is never reused).
+  Anything a person can upload or attach, a person can remove.
 - A ⋯ menu in a table row is placed on the viewport by its button, because
   the table's overflow and any faded (`opacity`) ancestor would hide it.
   A faded row fades its content, never its ⋯. A card menu stays absolute
@@ -286,9 +288,12 @@ the stub tables in the test suite; a walk in `uxaudit`; a screenshot at
   stage, SST), the enquiry, lines as Description / State / Qty / Unit
   price / Amount with the period under a termed line, totals as
   Confirmed, Quoted, Subtotal, SST 8% on the subtotal, Total, a Prepared
-  by / Checked by sign-off, page x of y. The mark and fonts come from
-  `ADSPACE_ORG.logo`, `.font`, `.fontBold` in `js/config.js` (files served
-  with CORS); blank falls back to the wordmark and Helvetica.
+  by / Checked by sign-off, page x of y. The mark is `ADSPACE_ORG.logo`,
+  else `ADSPACE_CONFIG.brandLogo` (the header's mark); the fonts are
+  `ADSPACE_ORG.font` and `.fontBold`. All are fetched, so the files must
+  be served with CORS; a mark that fails to load says so in the issue
+  message and the PDF carries the wordmark. Blank fonts fall back to
+  Helvetica. Never ask for a URL that config already holds.
 - The rate card reads as two tables, Services and Add-ons, with the
   categories as sub-headings inside (`.svc-cat`), never a card per
   category.

@@ -1561,11 +1561,35 @@
         'stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/>' +
         '<path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>' +
         (c.invoice_uploaded_at
-          ? '<span class="muted">Uploaded ' + niceDate(String(c.invoice_uploaded_at).slice(0, 10)) + '</span>' : '');
+          ? '<span class="muted">Uploaded ' + niceDate(String(c.invoice_uploaded_at).slice(0, 10)) + '</span>' : '') +
+        '<button class="btn btn-warn" id="invRemove" type="button">Remove PDF</button>';
+      cur.querySelector('#invRemove').addEventListener('click', function () { setInvoiceFile(c, null, null); });
     } else {
       cur.innerHTML = '<span class="muted">No PDF</span>';
     }
     msg('invMsg', '');
+  }
+
+  /* Removing the PDF clears the link the client sees; the file itself stays
+     with the accountant. Undo puts the link back. */
+  var undoTimer = null;
+  function undoBar(text, undo) {
+    var bar = $('campUndo');
+    bar.hidden = false;
+    bar.innerHTML = '<span>' + esc(text) + '</span><button class="btn btn-sm" type="button">Undo</button>';
+    bar.querySelector('button').addEventListener('click', function () { bar.hidden = true; undo(); });
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(function () { bar.hidden = true; }, 8000);
+  }
+  function setInvoiceFile(c, url, stamp) {
+    var was = { url: c.invoice_url, stamp: c.invoice_uploaded_at };
+    db.from('campaigns').update({ invoice_url: url, invoice_uploaded_at: stamp }).eq('id', c.id).then(function (r) {
+      if (r.error) { msg('invMsg', r.error.message, 'err'); return; }
+      c.invoice_url = url; c.invoice_uploaded_at = stamp;
+      log(url ? 'campaign.invoice_file' : 'campaign.invoice_removed', c.title, c.invoice_no || '');
+      openCampaign(c);
+      if (!url) undoBar('Invoice PDF removed.', function () { setInvoiceFile(c, was.url, was.stamp); });
+    });
   }
 
   $('invSaveNo').addEventListener('click', function () {

@@ -125,7 +125,7 @@
       document.body.appendChild(a);
       a.click();
       setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
-      if (then) then('');
+      if (then) then(logoWarn);
     }, function (e) {
       if (then) then('PDF not drawn: ' + ((e && e.message) || e));
     });
@@ -156,12 +156,16 @@
       })
       .catch(std);
   }
+  /* The mark is ADSPACE_ORG.logo, else the header's own mark. A failure to
+     load it (most often no CORS on the file) is reported, not hidden. */
+  var logoWarn = '';
   function embedLogo(pdf) {
     var url = ORG.logo || CFG.brandLogo;
+    logoWarn = '';
     if (!url) return Promise.resolve(null);
     return fetchBytes(url).then(function (bytes) {
       return /\.jpe?g(\?|$)/i.test(url) ? pdf.embedJpg(bytes) : pdf.embedPng(bytes);
-    }).catch(function () { return null; });
+    }).catch(function () { delete assetCache[url]; logoWarn = 'Logo not loaded.'; return null; });
   }
 
   // ---- Drawing ---------------------------------------------------------------

@@ -536,6 +536,7 @@
     'campaign.reinstated':   ['Put back in production', 'is-ok', 'campaigns'],
     'campaign.invoice':      ['Invoice number set', '', 'campaigns'],
     'campaign.invoice_file': ['Invoice uploaded', 'is-ok', 'campaigns'],
+    'campaign.invoice_removed': ['Invoice PDF removed', 'is-warn', 'campaigns'],
     'campaign.bulk':         ['Shoot dates applied', '', 'campaigns'],
     'creator.added':         ['Creator added', 'is-ok', 'campaigns'],
     'creator.updated':       ['Creator edited', '', 'campaigns'],

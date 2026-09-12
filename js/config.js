@@ -10,7 +10,7 @@
  * The anon key is safe to publish. Every table is protected by row level
  * security and clients can only reach data through the token-checked functions.
  */
-/* The issuer printed on quotations and invoices. Blank lines are left out. */
+/* The issuer printed on the cover letter. Blank lines are left out. */
 window.ADSPACE_ORG = {
   name: 'ADSPACE PLT',
   regno: '',      // business registration no.
@@ -19,9 +19,9 @@ window.ADSPACE_ORG = {
   email: '',
   phone: '',
   bank: '',       // bank, account number and account name, on one line
-  // The mark and the brand font on quotations and invoices. PNG or JPG for
-  // the logo; TTF or OTF for the fonts, served with CORS. Blank falls back to
-  // the wordmark and Helvetica.
+  // The mark on the cover letter: blank uses brandLogo below, the header's
+  // own mark. TTF or OTF for the fonts. Every file is fetched, so it must
+  // be served with CORS. Blank fonts fall back to Helvetica.
   logo: '',
   font: '',
   fontBold: ''
