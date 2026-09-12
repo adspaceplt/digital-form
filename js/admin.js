@@ -490,6 +490,7 @@
     'document.issued':       ['Document issued', 'is-ok', 'clients'],
     'document.voided':       ['Document voided', 'is-danger', 'clients'],
     'document.restored':     ['Document restored', 'is-ok', 'clients'],
+    'document.deleted':      ['Document deleted', 'is-danger', 'clients'],
     'service.added':         ['Rate card line added', 'is-ok', 'clients'],
     'service.changed':       ['Rate card line changed', '', 'clients'],
     'service.off':           ['Rate card line retired', 'is-warn', 'clients'],

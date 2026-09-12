@@ -13,23 +13,24 @@
      CDN rather than the website builder's, so a site rebuild cannot break it. -->
 <link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
 <link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
-<link rel="stylesheet" href="/css/portal.css?v=20260912d">
+<link rel="stylesheet" href="/css/portal.css?v=20260912f">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<script src="/js/config.js?v=20260912d"></script>
-<script src="/js/api.js?v=20260912d"></script>
-<script src="/js/money.js?v=20260912d"></script>
-<script src="/js/mockups.js?v=20260912d"></script>
+<script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+<script src="/js/config.js?v=20260912f"></script>
+<script src="/js/api.js?v=20260912f"></script>
+<script src="/js/money.js?v=20260912f"></script>
+<script src="/js/mockups.js?v=20260912f"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260912d" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260912f" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -148,8 +149,6 @@
               <input class="input" id="crmName" placeholder="Company name"></div>
             <div style="flex:0 0 190px"><label class="field-label" for="crmSource">Source</label>
               <select class="select" id="crmSource"></select></div>
-            <div style="flex:0 0 170px" id="crmStageWrap"><label class="field-label" for="crmFormStage">Stage</label>
-              <select class="select" id="crmFormStage"></select></div>
           </div>
           <div class="row" style="margin-top:12px">
             <div style="flex:0 0 200px"><label class="field-label" for="crmIndustry">Industry</label>
@@ -208,7 +207,7 @@
         <section class="panel">
           <div class="crm-title">
             <h2 id="crmClientName"></h2>
-            <span class="chip" id="crmClientStage"></span>
+            <select class="select state-select" id="crmClientStage" aria-label="Stage"></select>
             <button class="btn btn-quiet btn-sm" id="crmEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg>Edit</button>
           </div>
           <dl class="facts" id="crmFacts"></dl>
@@ -986,7 +985,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.5"/></svg>
         <div>
           <b>Not live yet.</b>
-          <span>Links redirect once <code>go.adspace.me</code> is moved from Rebrandly. Entries here are kept.</span>
+          <span>Links redirect once <code>go.adspace.me</code> is moved.</span>
         </div>
       </div>
 
@@ -1121,10 +1120,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260912d"></script>
-<script src="/js/documents.js?v=20260912d"></script>
-<script src="/js/crm.js?v=20260912d"></script>
-<script src="/js/team.js?v=20260912d"></script>
-<script src="/js/campaigns.js?v=20260912d"></script>
+<script src="/js/admin.js?v=20260912f"></script>
+<script src="/js/documents.js?v=20260912f"></script>
+<script src="/js/crm.js?v=20260912f"></script>
+<script src="/js/team.js?v=20260912f"></script>
+<script src="/js/campaigns.js?v=20260912f"></script>
 </body>
 </html>

@@ -238,8 +238,6 @@
     $('crmSave').textContent = c ? 'Save' : 'Add lead';
     FORM.forEach(function (f) { $(f[0]).value = c ? (c[f[1]] || '') : ''; });
     if (!c) $('crmSource').value = 'referral';
-    $('crmFormStage').value = c ? (c.stage || 'lead') : 'lead';
-    $('crmStageWrap').hidden = !c;
     $('crmMarket').value = c ? (c.market || 'MY') : 'MY';
     // The person who asked, and what for. Only a new lead needs this here.
     $('crmLeadOnly').hidden = Boolean(c);
@@ -270,46 +268,24 @@
   $('crmSave').addEventListener('click', function () {
     var name = val('crmName');
     if (!name) { msg('crmMsg', 'A client needs a name.', 'err'); $('crmName').focus(); return; }
-    var patch = { stage: state.editing ? $('crmFormStage').value : 'lead', market: $('crmMarket').value };
+    var patch = { market: $('crmMarket').value };
     FORM.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
     patch.name = name;
-    // A lead is a person who asked for something.
+    // A lead is a person who asked for something. The stage lives on the
+    // record's head, not here.
     var contactName = state.editing ? '' : val('crmContactName');
     if (!state.editing && !contactName) { msg('crmMsg', 'A contact person is required.', 'err'); $('crmContactName').focus(); return; }
-    if (!state.editing) patch.deal_note = val('crmEnquiry') || null;
-
-    /* The one rule with teeth: nobody becomes active until we can invoice
-       them. Said at the moment it matters, naming what is missing. */
-    var missing = [];
-    if (patch.stage === 'active') {
-      var probe = Object.assign({}, state.editing || {}, patch);
-      missing = billingMissing(probe);
-      if (missing.length && !state.editing) {
-        msg('crmMsg', 'Billing details required before Active: ' + missing.join(', ') + '.', 'err');
-        return;
-      }
-    }
+    if (!state.editing) { patch.stage = 'lead'; patch.deal_note = val('crmEnquiry') || null; }
 
     if (state.editing) {
       var id = state.editing.id;
-      // The billing fields live on the record, not in this form. Everything
-      // else is saved, the stage stays where it was, and the record opens
-      // on the fields that are still needed.
-      var held = missing.length ? state.editing.stage : null;
-      if (held) patch.stage = held;
       db.from('clients').update(patch).eq('id', id).then(function (r) {
         if (r.error) { msg('crmMsg', r.error.message, 'err'); return; }
-        log('client.edited', name, patch.stage);
+        log('client.edited', name, '');
         shutForm();
         loadClients(function () {
           var found = state.clients.filter(function (x) { return x.id === id; })[0];
-          if (!found) return;
-          openClient(found);
-          if (!held) return;
-          setOpen('crmBillToggle', 'crmBillBody', true);
-          msg('crmBillMsg', 'Billing details required before Active: ' + missing.join(', ') + '.', 'err');
-          var first = BILLING.filter(function (f) { return missing.indexOf(f[2]) > -1; })[0];
-          if (first && $(first[0])) $(first[0]).focus();
+          if (found) openClient(found);
         });
       });
       return;
@@ -336,8 +312,13 @@
     $('crmWork').hidden = false;
     $('crmClientName').textContent = c.name || '';
     var w = stageWord(c.stage || 'lead');
-    $('crmClientStage').textContent = w[1];
-    $('crmClientStage').className = 'chip' + (w[2] === 'is-ok' ? ' is-live' : '');
+    // The stage is a value, so it is a select on the head; the gate to Active
+    // sits on it.
+    var sel = $('crmClientStage');
+    sel.innerHTML = STAGES.map(function (s) {
+      return '<option value="' + s[0] + '"' + (s[0] === (c.stage || 'lead') ? ' selected' : '') + '>' + esc(s[1]) + '</option>';
+    }).join('');
+    sel.className = 'select select-sm state-select ' + (w[2] || '');
 
     var mk = MON.market(c.market);
     $('crmFacts').innerHTML = [
@@ -408,6 +389,32 @@
   $('crmEdit').addEventListener('click', function () {
     if (!state.clients.length) loadClients();
     openForm(state.client);
+  });
+
+  /* The one rule with teeth: nobody becomes active until they can be
+     invoiced. The select goes back and the record opens on what is missing. */
+  $('crmClientStage').addEventListener('change', function () {
+    var c = state.client, to = this.value, was = c.stage || 'lead';
+    if (to === was) return;
+    if (to === 'active') {
+      var missing = billingMissing(c);
+      if (missing.length) {
+        this.value = was;
+        setOpen('crmBillToggle', 'crmBillBody', true);
+        msg('crmBillMsg', 'Billing details required before Active: ' + missing.join(', ') + '.', 'err');
+        var first = BILLING.filter(function (f) { return missing.indexOf(f[2]) > -1; })[0];
+        if (first && $(first[0])) $(first[0]).focus();
+        return;
+      }
+    }
+    db.from('clients').update({ stage: to }).eq('id', c.id).then(function (r) {
+      if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); openClient(c); return; }
+      c.stage = to;
+      var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
+      if (mine) mine.stage = to;
+      log('client.edited', c.name, to);
+      openClient(c);
+    });
   });
 
   // ---- Billing and notes --------------------------------------------------
@@ -956,7 +963,10 @@
     row.innerHTML =
       '<span class="svc-name"><b>' + esc(l.label) + '</b>' +
         (l.note || l.unit || termWord(l) ? '<small>' + esc([l.unit, termWord(l), l.note].filter(Boolean).join(' · ')) + '</small>' : '') + '</span>' +
-      '<span class="svc-state"><span class="tone ' + w[1] + '">' + esc(w[0]) + '</span></span>' +
+      '<span class="svc-state"><select class="select select-sm state-select ' +w[1] + '" data-f="state" aria-label="State">' +
+        Object.keys(SV_STATE).map(function (k) {
+          return '<option value="' + k + '"' + (k === l.state ? ' selected' : '') + '>' + esc(SV_STATE[k][0]) + '</option>';
+        }).join('') + '</select></span>' +
       '<span class="svc-rate">' + esc(Number(l.qty) + ' × ' + MON.money2(l.rate, c.market) +
         (Number(l.tenure || 1) > 1 ? ' × ' + Number(l.tenure) + ' mo' : '')) + '</span>' +
       '<span class="svc-rate"><b>' + esc(MON.money2(amountOf(l), c.market)) + '</b></span>' +
@@ -964,16 +974,13 @@
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
           '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
-          (l.state !== 'quoted' ? '<button class="kmenu-item" data-a="quoted" type="button"><b>Quoted</b></button>' : '') +
-          (l.state !== 'confirmed' ? '<button class="kmenu-item" data-a="confirmed" type="button"><b>Confirmed</b></button>' : '') +
-          (l.state !== 'enquired' ? '<button class="kmenu-item" data-a="enquired" type="button"><b>Revert to enquired</b></button>' : '') +
           '<button class="kmenu-item is-danger" data-a="del" data-soft type="button"><b>Remove</b></button>' +
         '</div>' +
       '</span>';
     wireMenu(row);
     var on = function (a, fn) { var el = row.querySelector('[data-a="' + a + '"]'); if (el) el.addEventListener('click', fn); };
     on('edit', function () { openService(l); });
-    ['quoted', 'confirmed', 'enquired'].forEach(function (st) { on(st, function () { saveService(l, { state: st }); }); });
+    row.querySelector('[data-f="state"]').addEventListener('change', function () { saveService(l, { state: this.value }); });
     on('del', function () { saveService(l, { archived_at: new Date().toISOString() }, true); });
     return row;
   }
@@ -1106,28 +1113,36 @@
     row.innerHTML =
       '<span class="svc-name"><b>' + esc(d.number) + '</b><small>' + esc(DOC_WORD[d.kind] || d.kind) + ' · ' + esc(niceDate(d.issued_at)) +
         (d.issued_by ? ' · ' + esc(d.issued_by) : '') + '</small></span>' +
-      '<span class="svc-state">' + (d.voided_at ? '<span class="tone">Void</span>' : '<span class="tone is-ok">Issued</span>') + '</span>' +
+      '<span class="svc-state"><select class="select select-sm state-select ' +(d.voided_at ? 'is-off' : 'is-ok') + '" data-f="state" aria-label="State">' +
+        '<option value="issued"' + (d.voided_at ? '' : ' selected') + '>Issued</option>' +
+        '<option value="void"' + (d.voided_at ? ' selected' : '') + '>Void</option></select></span>' +
       '<span class="svc-rate"><b>' + esc(MON.money2(d.total, d.market)) + '</b></span>' +
       '<span class="team-act">' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
           '<button class="kmenu-item" data-a="download" type="button"><b>Download</b></button>' +
-          (d.voided_at
-            ? '<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>'
-            : '<button class="kmenu-item is-danger" data-a="void" type="button"><b>Void</b></button>') +
+          (d.voided_at ? '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete</b></button>' : '') +
         '</div>' +
       '</span>';
     wireMenu(row);
     var on = function (a, fn) { var el = row.querySelector('[data-a="' + a + '"]'); if (el) el.addEventListener('click', fn); };
     on('download', function () { DOCS.download(d, function (warn) { if (warn) msg('crmDocMsg', warn, 'err'); }); });
-    on('void', function () {
-      DOCS.setVoid(d, true, function (err) {
-        if (err) { msg('crmDocMsg', err.message, 'err'); return; }
-        undoBar(d.number + ' voided.', function () { DOCS.setVoid(d, false, loadDocuments); });
+    row.querySelector('[data-f="state"]').addEventListener('change', function () {
+      var toVoid = this.value === 'void';
+      DOCS.setVoid(d, toVoid, function (err) {
+        if (err) { msg('crmDocMsg', err.message, 'err'); loadDocuments(); return; }
+        if (toVoid) undoBar(d.number + ' voided.', function () { DOCS.setVoid(d, false, loadDocuments); });
         loadDocuments();
       });
     });
-    on('restore', function () { DOCS.setVoid(d, false, function () { loadDocuments(); }); });
+    // A voided document can go for good. The number is not reused.
+    on('del', function () {
+      if (!confirm('Delete ' + d.number + '?')) return;
+      DOCS.remove(d, function (err) {
+        if (err) { msg('crmDocMsg', err.message, 'err'); return; }
+        loadDocuments();
+      });
+    });
     return row;
   }
 
@@ -1159,17 +1174,30 @@
     box.innerHTML = '';
     var rows = catalog || [];
     if (!rows.length) { box.innerHTML = '<div class="empty">No services.</div>'; return; }
+    // Two tables, not a card per category: what is sold, and what is added
+    // to it. Categories are sub-headings inside each.
     var extra = rows.map(function (s) { return s.category; })
       .filter(function (k, i, a) { return CATS.indexOf(k) < 0 && a.indexOf(k) === i; });
-    CATS.concat(extra).forEach(function (k) {
-      var mine = rows.filter(function (s) { return s.category === k; });
-      if (!mine.length) return;
+    var TIERS = [
+      ['Services', ['Content', 'Account management', 'Monthly packages', 'KOC programmes', 'KOL programmes'].concat(extra)],
+      ['Add-ons',  ['Verification', 'Add-ons']]
+    ];
+    TIERS.forEach(function (t) {
+      var cats = t[1].filter(function (k) { return rows.some(function (s) { return s.category === k; }); });
+      if (!cats.length) return;
+      var n = rows.filter(function (s) { return cats.indexOf(s.category) > -1; }).length;
       var sec = document.createElement('section');
       sec.className = 'crm-group';
-      sec.innerHTML = '<div class="crm-group-head"><h3>' + esc(k) + ' <span>' + mine.length + '</span></h3></div>' +
+      sec.innerHTML = '<div class="crm-group-head"><h3>' + esc(t[0]) + ' <span>' + n + '</span></h3></div>' +
         '<div class="crm-table"></div>';
       var table = sec.querySelector('.crm-table');
-      mine.forEach(function (s) { table.appendChild(catalogRow(s)); });
+      cats.forEach(function (k) {
+        var cat = document.createElement('div');
+        cat.className = 'svc-cat';
+        cat.textContent = k;
+        table.appendChild(cat);
+        rows.filter(function (s) { return s.category === k; }).forEach(function (s) { table.appendChild(catalogRow(s)); });
+      });
       box.appendChild(sec);
     });
   }
@@ -1180,21 +1208,25 @@
       '<span class="svc-name"><b>' + esc(s.name) + '</b>' + (s.note ? '<small>' + esc(s.note) + '</small>' : '') + '</span>' +
       '<span class="svc-rate">' + (s.rate != null ? esc(MON.money2(s.rate, 'MY')) : '<span class="muted">On quote</span>') + '</span>' +
       '<span class="svc-unit">' + esc(s.unit || '') + '</span>' +
+      '<span class="svc-state">' + (isAdmin()
+        ? '<select class="select select-sm state-select ' +(s.active === false ? 'is-off' : 'is-ok') + '" data-f="active" aria-label="State">' +
+            '<option value="on"' + (s.active === false ? '' : ' selected') + '>Active</option>' +
+            '<option value="off"' + (s.active === false ? ' selected' : '') + '>Retired</option></select>'
+        : (s.active === false ? '<span class="tone">Retired</span>' : '')) + '</span>' +
       '<span class="team-act">' + (isAdmin()
         ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
             '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
-            (s.active === false
-              ? '<button class="kmenu-item" data-a="on" type="button"><b>Restore</b></button>'
-              : '<button class="kmenu-item is-danger" data-a="off" type="button"><b>Retire</b></button>') +
           '</div>'
         : '') + '</span>';
+    row.classList.add('cat-row');
     if (isAdmin()) {
       wireMenu(row);
-      var on = function (a, fn) { var el = row.querySelector('[data-a="' + a + '"]'); if (el) el.addEventListener('click', fn); };
-      on('edit', function () { openSvc(s); });
-      on('off',  function () { patchSvc(s, { active: false }, 'service.off'); });
-      on('on',   function () { patchSvc(s, { active: true }, 'service.on'); });
+      row.querySelector('[data-a="edit"]').addEventListener('click', function () { openSvc(s); });
+      row.querySelector('[data-f="active"]').addEventListener('change', function () {
+        var on = this.value === 'on';
+        patchSvc(s, { active: on }, on ? 'service.on' : 'service.off');
+      });
     }
     return row;
   }
@@ -1240,7 +1272,6 @@
 
   // ---- Entry --------------------------------------------------------------
   fillSelect($('crmStage'), STAGES.map(function (s) { return [s[0], s[1]]; }), 'Every stage');
-  fillSelect($('crmFormStage'), STAGES.map(function (s) { return [s[0], s[1]]; }));
   fillSelect($('crmIndustry'), INDUSTRIES.map(function (i) { return [i, i]; }), 'Not set');
   fillSelect($('crmSource'), SOURCES);
 

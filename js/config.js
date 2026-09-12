@@ -18,7 +18,13 @@ window.ADSPACE_ORG = {
   address: '',
   email: '',
   phone: '',
-  bank: ''        // bank, account number and account name, on one line
+  bank: '',       // bank, account number and account name, on one line
+  // The mark and the brand font on quotations and invoices. PNG or JPG for
+  // the logo; TTF or OTF for the fonts, served with CORS. Blank falls back to
+  // the wordmark and Helvetica.
+  logo: '',
+  font: '',
+  fontBold: ''
 };
 
 window.ADSPACE_CONFIG = {

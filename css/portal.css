@@ -2462,7 +2462,9 @@ body > .shell { width: 100%; }
   padding: 10px 15px; border-bottom: 1px solid var(--line-soft);
 }
 .svc-row:last-child { border-bottom: 0; }
-.svc-row.is-off { opacity: .55; }
+/* A retired or voided row fades its content, never its ⋯: fading the row
+   itself put the menu inside a faded stacking context, behind the next row. */
+.svc-row.is-off > :not(.team-act), .team-row.is-off > :not(.team-act), .group-row.is-off > :not(.team-act) { opacity: .55; }
 .svc-name { display: flex; flex-direction: column; min-width: 0; }
 .svc-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
 .svc-name small { font-size: 12px; color: var(--ink-mute); }
@@ -2473,6 +2475,26 @@ body > .shell { width: 100%; }
 .csv-row { grid-template-columns: minmax(0, 1fr) 140px 150px 130px var(--ctl-h); }
 /* A document: number and kind, state, total, ⋯ */
 .doc-row { grid-template-columns: minmax(0, 1fr) 140px 150px var(--ctl-h); }
+/* A rate card line: name, rate, unit, state, ⋯ */
+.cat-row { grid-template-columns: minmax(0, 1fr) 130px minmax(0, 1fr) 120px var(--ctl-h); }
+/* A category heading inside the table, between its lines. */
+.svc-cat {
+  padding: 14px 15px 6px; font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ink-mute); background: var(--sunk);
+  border-bottom: 1px solid var(--line-soft);
+}
+.svc-cat:first-child { padding-top: 12px; }
+/* A status is a value, so it is a select on the row, tinted like its chip.
+   The ⋯ beside it holds only what is not a status. */
+.state-select {
+  width: 100%; min-width: 0; padding: 0 26px 0 10px;
+  font-size: 12.5px; font-weight: 600; line-height: 1.4;
+  background-size: 13px; background-position: right 8px center;
+}
+.state-select.is-ok   { color: var(--ok);   border-color: var(--ok);   background-color: var(--ok-bg); }
+.state-select.is-warn { color: var(--warn); border-color: var(--warn); background-color: var(--warn-bg); }
+.state-select.is-off  { color: var(--ink-mute); }
+.crm-title .state-select { width: auto; flex: 0 0 auto; }
 .csv-total {
   display: flex; justify-content: flex-end; gap: 28px; flex-wrap: wrap;
   padding: 11px 15px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-mute);
@@ -2584,7 +2606,7 @@ body > .shell { width: 100%; }
 /* Members: who, which group, what to do with them. */
 .team-head, .team-row {
   display: grid; align-items: center; gap: 0 10px;
-  grid-template-columns: minmax(200px, 1.6fr) 200px var(--ctl-h);
+  grid-template-columns: minmax(200px, 1.6fr) 200px 130px var(--ctl-h);
   padding: 0 15px;
 }
 /* Groups: one row per group, a column per switch. */
@@ -2607,7 +2629,6 @@ body > .shell { width: 100%; }
 .team-head > span:first-child, .group-head > span:first-child { text-align: left; }
 .team-row, .group-row { padding-top: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line-soft); }
 .team-row:last-child, .group-row:last-child { border-bottom: 0; }
-.team-row.is-off { opacity: .55; }
 .group-name .input { width: 100%; }
 .input-sm { min-height: var(--ctl-h-sm); font-size: 13px; }
 .team-who { display: flex; flex-direction: column; min-width: 0; }
@@ -2647,7 +2668,7 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   }
   /* Who or which group on the left, the ⋯ on the right, the rest below. */
   .team-row { grid-template-columns: minmax(0, 1fr) var(--ctl-h); }
-  .team-row > span:nth-child(2) { grid-column: 1 / -1; }
+  .team-row > span:nth-child(2), .team-row > span:nth-child(3) { grid-column: 1 / -1; }
   .group-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .group-row > .group-name { grid-column: 1; grid-row: 1; }
   .team-row > .team-act, .group-row > .team-act { grid-column: 2; grid-row: 1; align-items: start; }
