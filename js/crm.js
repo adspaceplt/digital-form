@@ -963,7 +963,7 @@
     row.innerHTML =
       '<span class="svc-name"><b>' + esc(l.label) + '</b>' +
         (l.note || l.unit || termWord(l) ? '<small>' + esc([l.unit, termWord(l), l.note].filter(Boolean).join(' · ')) + '</small>' : '') + '</span>' +
-      '<span class="svc-state"><select class="select select-sm state-select' + w[1] + '" data-f="state" aria-label="State">' +
+      '<span class="svc-state"><select class="select select-sm state-select ' +w[1] + '" data-f="state" aria-label="State">' +
         Object.keys(SV_STATE).map(function (k) {
           return '<option value="' + k + '"' + (k === l.state ? ' selected' : '') + '>' + esc(SV_STATE[k][0]) + '</option>';
         }).join('') + '</select></span>' +
@@ -1113,7 +1113,7 @@
     row.innerHTML =
       '<span class="svc-name"><b>' + esc(d.number) + '</b><small>' + esc(DOC_WORD[d.kind] || d.kind) + ' · ' + esc(niceDate(d.issued_at)) +
         (d.issued_by ? ' · ' + esc(d.issued_by) : '') + '</small></span>' +
-      '<span class="svc-state"><select class="select select-sm state-select' + (d.voided_at ? 'is-off' : 'is-ok') + '" data-f="state" aria-label="State">' +
+      '<span class="svc-state"><select class="select select-sm state-select ' +(d.voided_at ? 'is-off' : 'is-ok') + '" data-f="state" aria-label="State">' +
         '<option value="issued"' + (d.voided_at ? '' : ' selected') + '>Issued</option>' +
         '<option value="void"' + (d.voided_at ? ' selected' : '') + '>Void</option></select></span>' +
       '<span class="svc-rate"><b>' + esc(MON.money2(d.total, d.market)) + '</b></span>' +
@@ -1209,7 +1209,7 @@
       '<span class="svc-rate">' + (s.rate != null ? esc(MON.money2(s.rate, 'MY')) : '<span class="muted">On quote</span>') + '</span>' +
       '<span class="svc-unit">' + esc(s.unit || '') + '</span>' +
       '<span class="svc-state">' + (isAdmin()
-        ? '<select class="select select-sm state-select' + (s.active === false ? 'is-off' : 'is-ok') + '" data-f="active" aria-label="State">' +
+        ? '<select class="select select-sm state-select ' +(s.active === false ? 'is-off' : 'is-ok') + '" data-f="active" aria-label="State">' +
             '<option value="on"' + (s.active === false ? '' : ' selected') + '>Active</option>' +
             '<option value="off"' + (s.active === false ? ' selected' : '') + '>Retired</option></select>'
         : (s.active === false ? '<span class="tone">Retired</span>' : '')) + '</span>' +
