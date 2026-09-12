@@ -13,7 +13,7 @@
      CDN rather than the website builder's, so a site rebuild cannot break it. -->
 <link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
 <link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
-<link rel="stylesheet" href="/css/portal.css?v=20260912m">
+<link rel="stylesheet" href="/css/portal.css?v=20260912n">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
@@ -21,16 +21,16 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260912m"></script>
-<script src="/js/api.js?v=20260912m"></script>
-<script src="/js/money.js?v=20260912m"></script>
-<script src="/js/mockups.js?v=20260912m"></script>
+<script src="/js/config.js?v=20260912n"></script>
+<script src="/js/api.js?v=20260912n"></script>
+<script src="/js/money.js?v=20260912n"></script>
+<script src="/js/mockups.js?v=20260912n"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260912m" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260912n" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -424,6 +424,30 @@
         </div>
         <div class="msg" id="crmDocMsg"></div>
         <div id="crmDocuments"></div>
+
+        <!-- What the client asked for from the portal. The team moves each
+             one along and may set a fee and a reply the client reads. -->
+        <div id="crmRequests" hidden>
+        <div class="viewhead">
+          <span class="headmark"><h2>Requests</h2></span>
+        </div>
+        <div class="panel" id="crmReplyBox" hidden>
+          <div class="panelhead"><h3 id="crmReplyTitle">Reply</h3></div>
+          <div class="row">
+            <div style="flex:0 0 200px"><label class="field-label" for="rqFee">Fee</label>
+              <input class="input" id="rqFee" type="number" min="0" step="0.01" placeholder="0.00"></div>
+            <div><label class="field-label" for="rqReply">Reply</label>
+              <input class="input" id="rqReply" placeholder="Reply"></div>
+          </div>
+          <div class="row" style="margin-top:14px">
+            <button class="btn btn-primary" id="rqSave" type="button">Save</button>
+            <button class="btn btn-quiet" id="rqCancel" type="button" style="flex:0 0 auto">Cancel</button>
+          </div>
+          <div class="msg" id="rqMsg"></div>
+        </div>
+        <div class="msg" id="crmReqMsg"></div>
+        <div id="crmRequestList"></div>
+        </div>
 
         <div id="crmEngage" hidden>
         <!-- The work, last, because none of it exists until the client is
@@ -1111,10 +1135,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260912m"></script>
-<script src="/js/documents.js?v=20260912m"></script>
-<script src="/js/crm.js?v=20260912m"></script>
-<script src="/js/team.js?v=20260912m"></script>
-<script src="/js/campaigns.js?v=20260912m"></script>
+<script src="/js/admin.js?v=20260912n"></script>
+<script src="/js/documents.js?v=20260912n"></script>
+<script src="/js/crm.js?v=20260912n"></script>
+<script src="/js/team.js?v=20260912n"></script>
+<script src="/js/campaigns.js?v=20260912n"></script>
 </body>
 </html>

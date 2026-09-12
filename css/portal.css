@@ -1089,7 +1089,7 @@ a { color: inherit; }
 .cover-panel h2 { font-size: 24px; font-weight: 600; letter-spacing: -.02em; margin-bottom: 10px; }
 .cover-panel p { color: var(--ink-soft); font-size: 14px; line-height: 1.65; }
 .cover-panel form { margin-top: 18px; display: flex; gap: 8px; }
-.cover-panel form .input { flex: 1; }
+.cover-panel form .input { flex: 1; min-width: 0; }
 @media (max-width: 640px) {
   .cover-panel { padding: 30px 22px 26px; }
   .cover-panel h2 { font-size: 21px; }
@@ -2455,6 +2455,10 @@ body > .shell { width: 100%; }
 /* Blocks stacked in a section sit 12px apart whatever they are: a table, a
    panel, a fold, an empty state, a card. The section head carries 24 above. */
 #crmWork .empty, #campWork .empty, #svcList .empty, .crm-removed-toggle { margin-bottom: 12px; }
+/* The client portal stacks the same blocks under the same heads. */
+#app > .empty, #app .empty, #crmRequests .empty { margin-bottom: 12px; }
+.viewhead > .select { flex: 0 0 auto; width: auto; min-width: 180px; }
+.sheet-card > .facts { margin: 8px 0 16px; }
 /* The pad above the first row exists for the column header only. */
 .crm-table:has(> .crm-head) { padding-top: 12px; }
 .crm-table .crm-row:last-child { border-bottom: 0; }

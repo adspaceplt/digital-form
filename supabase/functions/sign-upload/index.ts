@@ -57,7 +57,17 @@ Deno.serve(async (req) => {
     { global: { headers: { Authorization: auth } } }
   );
   const { data: { user }, error: authErr } = await supa.auth.getUser();
-  if (authErr || !user) return json({ error: 'not_signed_in' }, 401, origin);
+  if (authErr || !user?.email) return json({ error: 'not_signed_in' }, 401, origin);
+
+  // Clients sign in to /client/ with the same Authentication, so a login by
+  // itself is not enough: the person has to be an active member of the team,
+  // asked of the database with the service role.
+  const admin = createClient(
+    Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  );
+  const { data: member } = await admin.from('team_members')
+    .select('active').ilike('email', user.email).maybeSingle();
+  if (!member || !member.active) return json({ error: 'not_team' }, 403, origin);
 
   // 2. Validate what they are asking to upload.
   let body: { ext?: string; clientId?: string; size?: number };

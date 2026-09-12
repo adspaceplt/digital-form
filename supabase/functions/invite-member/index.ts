@@ -26,6 +26,7 @@ const ALLOWED_ORIGINS = [
   'http://127.0.0.1:8899'
 ];
 const SIGN_IN_PAGE = 'https://digital.adspace.me/admin/';
+const CLIENT_PAGE  = 'https://digital.adspace.me/client/';
 
 function cors(origin: string | null) {
   const allow = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
@@ -63,24 +64,35 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
   const { data: caller } = await admin.from('team_members')
-    .select('role, active').ilike('email', user.email).maybeSingle();
-  if (!caller || caller.role !== 'admin' || !caller.active) {
-    return json({ error: 'not_admin' }, 403, origin);
-  }
+    .select('role, is_admin, active, can_clients').ilike('email', user.email).maybeSingle();
+  if (!caller || !caller.active) return json({ error: 'not_admin' }, 403, origin);
 
-  // 3. What they want.
-  let body: { email?: string; name?: string } = {};
+  // 3. What they want. kind "client" invites a client contact to /client/
+  //    (anyone on the team who works the Clients section may do that); a team
+  //    invite stays an admin's alone.
+  let body: { email?: string; name?: string; kind?: string } = {};
   try { body = await req.json(); } catch { /* handled below */ }
   const email = String(body.email ?? '').trim().toLowerCase();
   const name = String(body.name ?? '').trim();
+  const kind = body.kind === 'client' ? 'client' : 'team';
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'bad_email' }, 400, origin);
+
+  const isAdmin = caller.is_admin === true || caller.role === 'admin';
+  if (kind === 'team' && !isAdmin) return json({ error: 'not_admin' }, 403, origin);
+  if (kind === 'client') {
+    if (!isAdmin && !caller.can_clients) return json({ error: 'not_admin' }, 403, origin);
+    // Only an address the console has marked for portal access is invited.
+    const { data: contact } = await admin.from('client_contacts')
+      .select('id').ilike('email', email).eq('portal_access', true).is('archived_at', null).limit(1).maybeSingle();
+    if (!contact) return json({ error: 'not_portal_contact' }, 403, origin);
+  }
 
   // 4. Invite. Supabase sends the email with the magic link; the person clicks
   //    it and lands on the sign-in page already signed in. An address that
   //    already has a login is not an error: the row exists, they can sign in.
   const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
     data: { name },
-    redirectTo: SIGN_IN_PAGE
+    redirectTo: kind === 'client' ? CLIENT_PAGE : SIGN_IN_PAGE
   });
   if (error) {
     const already = /already|exists|registered/i.test(error.message);

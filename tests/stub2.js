@@ -28,7 +28,7 @@
       { slug:'pkg-b', category:'Monthly packages', name:'Package B · 2 platforms · 4 contents', rate:2830, unit:'Per month, 6 month minimum', position:41, active:true },
       { slug:'koc-10', category:'KOC programmes', name:'KOC package · 10 creators', rate:4500, unit:'Per campaign', position:50, active:true },
       { slug:'koc-custom', category:'KOC programmes', name:'KOC custom list', rate:null, unit:'Costed list per creator', position:53, active:true }],
-    client_services: [], client_documents: [],
+    client_services: [], client_documents: [], client_requests: [],
     team_roles: [
       { slug:'admin', name:'Admin', is_admin:true, position:0, can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:true, can_billing:true, can_remove:true },
       { slug:'account', name:'Account', is_admin:false, position:1, can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:false, can_billing:true, can_remove:false },
@@ -184,6 +184,76 @@
                   market: cl.market || 'MY',
                   sst_applies: cl.sst_applies === undefined ? true : cl.sst_applies },
         options: opts }, error: null });
+    }
+    // ---- Client portal: the same three doors as the SQL ----
+    var who = function () { return String(session && session.user && session.user.email || '').toLowerCase(); };
+    var portalClients = function () {
+      var e = who();
+      return (DB.client_contacts || []).filter(function (c) {
+        return c.portal_access && !c.archived_at && c.email && String(c.email).toLowerCase() === e;
+      }).map(function (c) { return c.client_id; });
+    };
+    if (name === 'get_portal') {
+      DB.client_requests = DB.client_requests || [];
+      if (!who()) return Promise.resolve({ data: { error: 'not-signed-in' }, error: null });
+      var ids = portalClients();
+      var cid = ids.indexOf(args && args.p_client) > -1 ? args.p_client : ids[0];
+      if (!cid) return Promise.resolve({ data: { error: 'no-access' }, error: null });
+      var pc = DB.clients.filter(function (c) { return c.id === cid; })[0] || {};
+      var mine = (DB.client_contacts || []).filter(function (c) { return c.client_id === cid && !c.archived_at; });
+      var meRow = mine.filter(function (c) { return c.portal_access && String(c.email || '').toLowerCase() === who(); })[0] || {};
+      var pick = function (o, keys) { var out = {}; keys.forEach(function (k) { out[k] = o[k] === undefined ? null : o[k]; }); return out; };
+      return Promise.resolve({ data: {
+        clients: DB.clients.filter(function (c) { return ids.indexOf(c.id) > -1; }).map(function (c) { return { id: c.id, name: c.name }; }),
+        client: { id: pc.id, name: pc.name, legal_name: pc.legal_name || null, company_no: pc.company_no || null,
+          billing_address: pc.billing_address || null, market: pc.market || 'MY',
+          sst_applies: pc.sst_applies === undefined ? true : pc.sst_applies, stage: pc.stage, owner: pc.owner || null,
+          industry: pc.industry || null, website: pc.website || null, logo_url: pc.logo_url || null },
+        me: { id: meRow.id, name: meRow.name, email: meRow.email },
+        contacts: mine.map(function (c) { return pick(c, ['id', 'name', 'role', 'phone', 'email', 'is_primary', 'portal_access']); }),
+        services: (DB.client_services || []).filter(function (s) { return s.client_id === cid && !s.archived_at && (s.state === 'quoted' || s.state === 'confirmed'); })
+          .map(function (s) { return pick(s, ['id', 'label', 'unit', 'qty', 'rate', 'tenure', 'start_on', 'state', 'note']); }),
+        documents: (DB.client_documents || []).filter(function (d) { return d.client_id === cid && !d.voided_at; })
+          .map(function (d) { return pick(d, ['id', 'kind', 'number', 'issued_at', 'market', 'subtotal', 'tax', 'total', 'bill_to', 'lines', 'issued_by']); }),
+        requests: DB.client_requests.filter(function (r) { return r.client_id === cid; }).slice().reverse()
+          .map(function (r) { return pick(r, ['id', 'kind', 'service_label', 'note', 'state', 'fee', 'reply', 'created_at', 'withdrawn_at']); }),
+        review: (!pc.review_hidden && (DB.batches || []).some(function (b) { return b.client_id === cid && b.published; })) ? { token: pc.access_token } : null,
+        campaigns: (DB.campaigns || []).filter(function (m) { return m.client_id === cid && m.state !== 'draft'; })
+          .map(function (m) { return { id: m.id, title: m.title, title_zh: m.title_zh || null, state: m.state, deadline: m.deadline || null, token: m.access_token }; }),
+        access: mine.filter(function (c) { return c.portal_access; }).map(function (c) { return { name: c.name, email: c.email }; })
+      }, error: null });
+    }
+    if (name === 'portal_request') {
+      DB.client_requests = DB.client_requests || [];
+      if (!who()) return Promise.resolve({ data: { error: 'not-signed-in' }, error: null });
+      if (portalClients().indexOf(args.p_client) < 0) return Promise.resolve({ data: { error: 'no-access' }, error: null });
+      if (['upgrade', 'downgrade', 'cancel', 'details'].indexOf(args.p_kind) < 0) return Promise.resolve({ data: { error: 'bad-kind' }, error: null });
+      var svc = null;
+      if (args.p_kind !== 'details') {
+        svc = (DB.client_services || []).filter(function (s) { return s.id === args.p_service && s.client_id === args.p_client && !s.archived_at && s.state === 'confirmed'; })[0];
+        if (!svc) return Promise.resolve({ data: { error: 'not-found' }, error: null });
+      }
+      if (args.p_kind !== 'cancel' && !String(args.p_note || '').trim()) return Promise.resolve({ data: { error: 'note-required' }, error: null });
+      var meC = (DB.client_contacts || []).filter(function (c) { return c.client_id === args.p_client && c.portal_access && String(c.email || '').toLowerCase() === who(); })[0] || {};
+      var rq = { id: nid('r'), client_id: args.p_client, contact_id: meC.id || null, contact_name: meC.name || null, kind: args.p_kind,
+        service_id: svc ? svc.id : null, service_label: svc ? svc.label : null, note: String(args.p_note || '').trim() || null,
+        state: 'requested', fee: null, reply: null, withdrawn_at: null, created_at: new Date().toISOString() };
+      DB.client_requests.push(rq);
+      var pcl = DB.clients.filter(function (c) { return c.id === args.p_client; })[0] || {};
+      DB.activity_log.push({ id: nid('a'), actor: who(), action: 'request.raised', subject: pcl.name, detail: args.p_kind + (svc ? ' · ' + svc.label : ''), created_at: new Date().toISOString() });
+      persist();
+      return Promise.resolve({ data: { ok: true, id: rq.id }, error: null });
+    }
+    if (name === 'portal_withdraw') {
+      DB.client_requests = DB.client_requests || [];
+      var ids2 = portalClients();
+      var hit = DB.client_requests.filter(function (r) {
+        return r.id === args.p_id && ids2.indexOf(r.client_id) > -1 && r.state === 'requested' && (!r.withdrawn_at) === !args.p_undo;
+      })[0];
+      if (!hit) return Promise.resolve({ data: { error: 'not-found' }, error: null });
+      hit.withdrawn_at = args.p_undo ? null : new Date().toISOString();
+      persist();
+      return Promise.resolve({ data: { ok: true }, error: null });
     }
     if (name === 'me') {
       var email = session && session.user && session.user.email;

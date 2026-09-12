@@ -1491,3 +1491,266 @@ alter table public.client_services add column if not exists start_on text;   -- 
 -- The billing contact is one of the client's contacts; the main contact
 -- stands in when none is chosen.
 alter table public.clients add column if not exists bill_contact_id uuid references public.client_contacts(id) on delete set null;
+
+-- ===========================================================================
+-- CLIENT PORTAL
+-- A client signs in with an email link to /client/ and sees one client: the
+-- company as registered, the people, the confirmed and quoted services, the
+-- letters issued, the Content Review and Creator Campaign pages, and the
+-- requests they have raised. Nothing on the portal writes to a client's
+-- record directly: a request is a row the team acts on in the console.
+--
+-- Access is one switch on a contact (portal_access); the contact's email is
+-- the sign-in address. The portal reads and writes only through the three
+-- security definer functions below, which check the signed-in email against
+-- client_contacts on every call. A client account never touches a table.
+-- ===========================================================================
+alter table public.client_contacts add column if not exists portal_access boolean not null default false;
+
+-- Is the signed-in person on the team at all? Clients now have logins too,
+-- so "authenticated" no longer means "one of us". Every policy that used to
+-- say using (true) for authenticated says is_team() instead.
+create or replace function public.is_team()
+returns boolean
+language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from public.team_members t
+    where t.active and lower(t.email) = lower(auth.jwt() ->> 'email'))
+$$;
+grant execute on function public.is_team() to authenticated;
+
+drop policy if exists team_read on public.team_members;
+create policy team_read on public.team_members for select to authenticated using (public.is_team());
+drop policy if exists roles_read on public.team_roles;
+create policy roles_read on public.team_roles for select to authenticated using (public.is_team());
+drop policy if exists services_read on public.services;
+create policy services_read on public.services for select to authenticated using (public.is_team());
+drop policy if exists activity_write on public.activity_log;
+create policy activity_write on public.activity_log for insert to authenticated with check (public.is_team());
+drop policy if exists viewers_read on public.activity_viewers;
+create policy viewers_read on public.activity_viewers for select to authenticated using (public.is_team());
+do $$
+begin
+  if exists (select 1 from storage.buckets where id = 'content') then
+    drop policy if exists content_team_write on storage.objects;
+    create policy content_team_write on storage.objects
+      for all to authenticated
+      using (bucket_id = 'content' and public.is_team())
+      with check (bucket_id = 'content' and public.is_team());
+  end if;
+end $$;
+
+-- Deleting a client is the team's alone, whatever the code says.
+create or replace function public.delete_client(p_client uuid, p_code text)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  want text;
+  who  text := auth.jwt() ->> 'email';
+begin
+  if who is null then
+    raise exception 'Not signed in';
+  end if;
+  if not public.is_team() then
+    raise exception 'Not allowed';
+  end if;
+  select value into want from public.app_secrets where key = 'delete_code';
+  if want is not null and want <> '' then
+    if p_code is null or p_code <> want then
+      return 'wrong-code';
+    end if;
+  end if;
+  delete from public.clients where id = p_client;
+  if not found then
+    return 'not-found';
+  end if;
+  return 'deleted';
+end $$;
+
+-- What a client asks for from the portal. The team moves it through
+-- Requested → Reviewing → Approved or Declined → Applied and may set a fee
+-- and a reply the client reads. Approval never changes a service line by
+-- itself; a person applies it in the console. A client withdraws only while
+-- the request is still Requested.
+create table if not exists public.client_requests (
+  id            uuid primary key default gen_random_uuid(),
+  client_id     uuid not null references public.clients(id) on delete cascade,
+  contact_id    uuid references public.client_contacts(id) on delete set null,
+  contact_name  text,
+  kind          text not null,                    -- upgrade | downgrade | cancel | details
+  service_id    uuid references public.client_services(id) on delete set null,
+  service_label text,
+  note          text,
+  state         text not null default 'requested', -- requested | reviewing | approved | declined | applied
+  fee           numeric(12,2),
+  reply         text,
+  decided_by    text,
+  withdrawn_at  timestamptz,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+create index if not exists client_requests_client_idx on public.client_requests(client_id, created_at desc);
+alter table public.client_requests enable row level security;
+drop policy if exists client_requests_team on public.client_requests;
+create policy client_requests_team on public.client_requests for all to authenticated
+  using (public.allowed('clients')) with check (public.allowed('clients'));
+drop trigger if exists client_requests_touch on public.client_requests;
+create trigger client_requests_touch before update on public.client_requests
+  for each row execute function public.touch_updated_at();
+
+-- The clients the signed-in email may open.
+create or replace function public.portal_clients()
+returns setof uuid
+language sql security definer stable set search_path = public as $$
+  select distinct c.client_id from public.client_contacts c
+  where c.portal_access and c.archived_at is null and c.email is not null
+    and lower(c.email) = lower(auth.jwt() ->> 'email')
+$$;
+revoke all on function public.portal_clients() from public;
+grant execute on function public.portal_clients() to authenticated;
+
+-- Everything the portal shows, for one client, in one call.
+create or replace function public.get_portal(p_client uuid default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  who text := lower(auth.jwt() ->> 'email');
+  cid uuid;
+  cl  public.clients%rowtype;
+  me  public.client_contacts%rowtype;
+begin
+  if who is null then return jsonb_build_object('error', 'not-signed-in'); end if;
+  select p into cid from public.portal_clients() p
+    order by (p = p_client) desc nulls last limit 1;
+  if cid is null then return jsonb_build_object('error', 'no-access'); end if;
+  select * into cl from public.clients where id = cid;
+  select * into me from public.client_contacts
+    where client_id = cid and portal_access and archived_at is null and lower(email) = who
+    order by is_primary desc limit 1;
+
+  return jsonb_build_object(
+    'clients', coalesce((
+      select jsonb_agg(jsonb_build_object('id', c.id, 'name', c.name) order by c.name)
+      from public.clients c where c.id in (select public.portal_clients())), '[]'::jsonb),
+    'client', jsonb_build_object(
+      'id', cl.id, 'name', cl.name, 'legal_name', cl.legal_name, 'company_no', cl.company_no,
+      'billing_address', cl.billing_address, 'market', coalesce(cl.market, 'MY'),
+      'sst_applies', coalesce(cl.sst_applies, true), 'stage', cl.stage, 'owner', cl.owner,
+      'industry', cl.industry, 'website', cl.website, 'logo_url', cl.logo_url),
+    'me', jsonb_build_object('id', me.id, 'name', me.name, 'email', me.email),
+    'contacts', coalesce((
+      select jsonb_agg(jsonb_build_object('id', k.id, 'name', k.name, 'role', k.role, 'phone', k.phone,
+        'email', k.email, 'is_primary', k.is_primary, 'portal_access', k.portal_access)
+        order by k.is_primary desc, k.name)
+      from public.client_contacts k where k.client_id = cid and k.archived_at is null), '[]'::jsonb),
+    'services', coalesce((
+      select jsonb_agg(jsonb_build_object('id', s.id, 'label', s.label, 'unit', s.unit, 'qty', s.qty,
+        'rate', s.rate, 'tenure', s.tenure, 'start_on', s.start_on, 'state', s.state, 'note', s.note)
+        order by s.created_at)
+      from public.client_services s
+      where s.client_id = cid and s.archived_at is null and s.state in ('quoted', 'confirmed')), '[]'::jsonb),
+    'documents', coalesce((
+      select jsonb_agg(jsonb_build_object('id', d.id, 'kind', d.kind, 'number', d.number,
+        'issued_at', d.issued_at, 'market', d.market, 'subtotal', d.subtotal, 'tax', d.tax,
+        'total', d.total, 'bill_to', d.bill_to, 'lines', d.lines, 'issued_by', d.issued_by)
+        order by d.created_at desc)
+      from public.client_documents d where d.client_id = cid and d.voided_at is null), '[]'::jsonb),
+    'requests', coalesce((
+      select jsonb_agg(jsonb_build_object('id', r.id, 'kind', r.kind, 'service_label', r.service_label,
+        'note', r.note, 'state', r.state, 'fee', r.fee, 'reply', r.reply,
+        'created_at', r.created_at, 'withdrawn_at', r.withdrawn_at)
+        order by r.created_at desc)
+      from public.client_requests r where r.client_id = cid), '[]'::jsonb),
+    'review', case
+      when cl.review_hidden is not true
+       and exists (select 1 from public.batches b where b.client_id = cid and b.published)
+      then jsonb_build_object('token', cl.access_token) end,
+    'campaigns', coalesce((
+      select jsonb_agg(jsonb_build_object('id', m.id, 'title', m.title, 'title_zh', m.title_zh,
+        'state', m.state, 'deadline', m.deadline, 'token', m.access_token)
+        order by m.created_at desc)
+      from public.campaigns m where m.client_id = cid and m.state <> 'draft'), '[]'::jsonb),
+    'access', coalesce((
+      select jsonb_agg(jsonb_build_object('name', k.name, 'email', k.email) order by k.is_primary desc, k.name)
+      from public.client_contacts k
+      where k.client_id = cid and k.archived_at is null and k.portal_access), '[]'::jsonb)
+  );
+end $$;
+
+-- A request from the portal. The service must be one of this client's
+-- confirmed lines; a change of details carries no line.
+create or replace function public.portal_request(
+  p_client uuid, p_kind text, p_service uuid default null, p_note text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  who text := lower(auth.jwt() ->> 'email');
+  cl  public.clients%rowtype;
+  me  public.client_contacts%rowtype;
+  sv  public.client_services%rowtype;
+  rid uuid;
+begin
+  if who is null then return jsonb_build_object('error', 'not-signed-in'); end if;
+  if p_client is null or p_client not in (select public.portal_clients()) then
+    return jsonb_build_object('error', 'no-access');
+  end if;
+  if p_kind not in ('upgrade', 'downgrade', 'cancel', 'details') then
+    return jsonb_build_object('error', 'bad-kind');
+  end if;
+  select * into cl from public.clients where id = p_client;
+  select * into me from public.client_contacts
+    where client_id = p_client and portal_access and archived_at is null and lower(email) = who
+    order by is_primary desc limit 1;
+  if p_kind <> 'details' then
+    select * into sv from public.client_services
+      where id = p_service and client_id = p_client and archived_at is null and state = 'confirmed';
+    if sv.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  end if;
+  if p_kind <> 'cancel' and coalesce(btrim(p_note), '') = '' then
+    return jsonb_build_object('error', 'note-required');
+  end if;
+  insert into public.client_requests (client_id, contact_id, contact_name, kind, service_id, service_label, note)
+  values (p_client, me.id, me.name, p_kind, sv.id, sv.label, nullif(btrim(p_note), ''))
+  returning id into rid;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, 'request.raised', cl.name, p_kind || coalesce(' · ' || sv.label, ''));
+  return jsonb_build_object('ok', true, 'id', rid);
+end $$;
+
+-- Withdraw while still Requested; p_undo puts it back within the same state.
+create or replace function public.portal_withdraw(p_id uuid, p_undo boolean default false)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  who text := lower(auth.jwt() ->> 'email');
+  n int;
+begin
+  if who is null then return jsonb_build_object('error', 'not-signed-in'); end if;
+  update public.client_requests
+     set withdrawn_at = case when p_undo then null else now() end
+   where id = p_id and client_id in (select public.portal_clients())
+     and state = 'requested'
+     and (withdrawn_at is null) = (not p_undo);
+  get diagnostics n = row_count;
+  if n = 0 then return jsonb_build_object('error', 'not-found'); end if;
+  return jsonb_build_object('ok', true);
+end $$;
+
+revoke all on function public.get_portal(uuid) from public;
+revoke all on function public.portal_request(uuid, text, uuid, text) from public;
+revoke all on function public.portal_withdraw(uuid, boolean) from public;
+grant execute on function public.get_portal(uuid) to authenticated;
+grant execute on function public.portal_request(uuid, text, uuid, text) to authenticated;
+grant execute on function public.portal_withdraw(uuid, boolean) to authenticated;

@@ -15,6 +15,7 @@ const CRM = seedOf('crmshot.js');
 const CAMP = seedOf('head.js');
 const CLIENT = seedOf('client.js');
 const CPROD = seedOf('cprod.js');
+const PORTAL = seedOf('portal.js');
 const QR = 'window.QRCode=function(){};window.QRCode.CorrectLevel={H:2};';
 
 const FAIL = new Set(['overflow', 'orphan', 'padding', 'cols', 'stack', 'type', 'wrap', 'clip', 'row-height', 'row-width', 'target', 'label', 'icon-label', 'accent', 'contrast', 'boundary', 'focus']);
@@ -275,7 +276,7 @@ async function walk(b, coarse) {
   };
 
   // Console
-  let p = await page(CRM + CAMP);
+  let p = await page(CRM + CAMP + PORTAL);
   await p.goto('http://127.0.0.1:8899/admin/', { waitUntil: 'networkidle' });
   await report('admin sign-in ' + tag, p, coarse);
   await p.evaluate(() => window.__signIn('adspacestudios@gmail.com'));
@@ -284,6 +285,11 @@ async function walk(b, coarse) {
   await report('admin clients ' + tag, p, coarse);
   await p.locator('.crm-row').first().click(); await p.waitForTimeout(700);
   await report('admin client record ' + tag, p, coarse);
+  // The record with contacts, lines, a letter and a request from the portal.
+  await p.evaluate(() => window.__DB.client_requests.length || window.__DB.client_requests.push({ id: 'rqa', client_id: 'c1', kind: 'cancel', service_id: 'pv1', service_label: 'Package B · 2 platforms · 4 contents', note: 'Ending in December.', state: 'requested', contact_name: 'Mr Lim', created_at: '2026-09-12T00:00:00Z', withdrawn_at: null }) && window.__persist());
+  await p.locator('#crmBack').click(); await p.waitForTimeout(400);
+  await p.locator('.crm-row', { hasText: 'Laman Citra' }).first().click(); await p.waitForTimeout(700);
+  await report('admin client record full ' + tag, p, coarse);
   await nav(p, 'review');
   await report('admin content review ' + tag, p, coarse);
   await nav(p, 'campaigns');
@@ -310,6 +316,22 @@ async function walk(b, coarse) {
   await p.locator('#crmCancel').click(); await p.waitForTimeout(200);
   await nav(p, 'team');
   await report('admin team ' + tag, p, coarse);
+  await p.close();
+
+  // Client portal
+  p = await page(PORTAL);
+  await p.route('**/pdf-lib*', r => r.fulfill({ contentType: 'application/javascript', body: 'window.PDFLib={};' }));
+  await p.route('**/fontkit*', r => r.fulfill({ contentType: 'application/javascript', body: '' }));
+  await p.goto('http://127.0.0.1:8899/client/', { waitUntil: 'networkidle' }); await p.waitForTimeout(400);
+  await report('client sign-in ' + tag, p, coarse);
+  await p.evaluate(() => window.__signIn('lim@lc.com')); await p.waitForTimeout(700);
+  await p.evaluate(() => window.__DB.client_requests.length || window.supabase.createClient().rpc('portal_request', { p_client: 'c1', p_kind: 'cancel', p_service: 'pv1', p_note: 'Ending in December.' }));
+  await p.goto('http://127.0.0.1:8899/client/', { waitUntil: 'networkidle' });
+  await p.evaluate(() => window.__signIn('lim@lc.com')); await p.waitForTimeout(700);
+  await report('client portal ' + tag, p, coarse);
+  await p.locator('#ovRequest').click(); await p.waitForTimeout(300);
+  await report('client request sheet ' + tag, p, coarse);
+  await p.locator('#reqCancel').click(); await p.waitForTimeout(200);
   await p.close();
 
   // Client-facing

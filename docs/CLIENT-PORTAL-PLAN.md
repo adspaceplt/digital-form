@@ -1,8 +1,21 @@
 # Letters from templates, and a client portal
 
-A plan, not yet built. Two ideas from the same session, in the order they
-should be built: letters first (small, proven pieces), then the client
-portal on top of the same records.
+Section 2 is built (PR #58): sign-in, the read-only portal, requests with a
+fee and a reply, the two client pages linked, English and Chinese. What
+differs from the plan below is marked **Built:**. Section 1 (letters from
+templates) is not built; the user chose the portal first.
+
+**Built:** the portal reads and writes through three security definer
+functions (`get_portal`, `portal_request`, `portal_withdraw`) keyed on the
+signed-in email, not through per-table policies; a client account never
+touches a table. Access is one switch on a contact
+(`client_contacts.portal_access`), not a `client_users` table; the email on
+the contact is the sign-in address. There is no owner / member split: the
+console grants and removes access. The fee on a request is set by the team
+when they reply, not computed from a `service_terms` table (no terms exist
+as data yet). Invoices and proof of payment are not built; Payment shows
+the bank line once `ADSPACE_ORG.bank` is set. Requests carry Withdraw with
+Undo while still Requested.
 
 ## 1. Letters from templates
 
