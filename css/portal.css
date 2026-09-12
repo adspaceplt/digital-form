@@ -2189,6 +2189,10 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
   .kactions .btn,
   .linkbox .btn,
   .row > .btn { flex: 1 1 138px; min-width: 0; }
+  /* Two navigation buttons whose labels do not fit half a phone: one per line,
+     the full width of the view. */
+  .viewhead .crm-engage-actions { flex: 1 1 100%; }
+  .crm-engage-actions .btn { flex: 1 1 100%; min-width: 0; }
   /* A borderless tertiary button left alone at the end of a wrapped row read
      as a stray word. It takes the whole last line instead. */
   .kactions > .btn-quiet:last-child,

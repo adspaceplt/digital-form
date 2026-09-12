@@ -729,11 +729,13 @@
       box.innerHTML = '<div class="empty">Available once the client is active.</div>';
       return;
     }
+    var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+    var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
     act.innerHTML =
       (c.review_hidden
-        ? '<button class="btn btn-sm" id="crmReviewOn" type="button">Add to Content Review</button>'
-        : '<button class="btn btn-sm" id="crmGoReview" type="button">Open in Content Review</button>') +
-      '<button class="btn btn-sm" id="crmGoCampaign" type="button">New campaign</button>';
+        ? '<button class="btn btn-icon" id="crmReviewOn" type="button">' + PLUS + '<span>Enable Content Review</span></button>'
+        : '<button class="btn btn-icon" id="crmGoReview" type="button"><span>Open Content Review</span>' + OUT + '</button>') +
+      '<button class="btn btn-icon" id="crmGoCampaign" type="button">' + PLUS + '<span>New campaign</span></button>';
     var on = $('crmReviewOn');
     if (on) on.addEventListener('click', function () {
       db.from('clients').update({ review_hidden: false }).eq('id', c.id).then(function () {
@@ -757,7 +759,7 @@
     box.innerHTML = '';
     camps.forEach(function (k) {
       box.appendChild(workRow(k.title, 'Creator campaign · ' + (CAMP_WORD[k.state] || k.state) +
-        ' · ' + k.slots + ' slots', '/admin/?s=campaigns&campaign=' + encodeURIComponent(k.id)));
+        ' · ' + k.slots + ' creator' + (k.slots === 1 ? '' : 's'), '/admin/?s=campaigns&campaign=' + encodeURIComponent(k.id)));
     });
     sets.forEach(function (b) {
       box.appendChild(workRow(b.title || 'Content set',

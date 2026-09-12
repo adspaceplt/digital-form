@@ -588,7 +588,7 @@
     };
     db.from('campaigns').update(patch).eq('id', c.id).select('*, clients(name, market, sst_applies)').single().then(function (r) {
       if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
-      log('campaign.edited', title, slots + ' slots');
+      log('campaign.edited', title, slots + ' creators');
       shutCampForm();
       openCampaign(r.data);
     });
@@ -610,7 +610,7 @@
       created_by: who() || null
     }).select('*, clients(name, market, sst_applies)').single().then(function (r) {
       if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
-      log('campaign.created', title, slots + ' slots');
+      log('campaign.created', title, slots + ' creators');
       shutCampForm();
       openCampaign(r.data);
     });
