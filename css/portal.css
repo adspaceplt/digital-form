@@ -2450,6 +2450,37 @@ body > .shell { width: 100%; }
 .crm-table .crm-row:last-child { border-bottom: 0; }
 #crmList { background: none; border: 0; padding: 0; overflow: visible; }
 .crm-links { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+
+/* ---------- Services ----------
+   The rate card, and the lines a client has asked for. One row per line:
+   name, the numbers, a ⋯. */
+.svc-row {
+  display: grid; align-items: center; gap: 0 12px;
+  grid-template-columns: minmax(0, 1fr) 130px minmax(0, 1fr) var(--ctl-h);
+  padding: 10px 15px; border-bottom: 1px solid var(--line-soft);
+}
+.svc-row:last-child { border-bottom: 0; }
+.svc-row.is-off { opacity: .55; }
+.svc-name { display: flex; flex-direction: column; min-width: 0; }
+.svc-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+.svc-name small { font-size: 12px; color: var(--ink-mute); }
+.svc-rate { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; font-size: 13.5px; }
+.svc-unit { font-size: 13px; color: var(--ink-mute); min-width: 0; }
+.svc-state { text-align: center; }
+/* A client's lines: name, state, qty × rate, amount, ⋯ */
+.csv-row { grid-template-columns: minmax(0, 1fr) 140px 150px 130px var(--ctl-h); }
+.csv-total {
+  display: flex; justify-content: flex-end; gap: 28px; flex-wrap: wrap;
+  padding: 11px 15px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-mute);
+}
+.csv-total b { color: var(--ink); font-variant-numeric: tabular-nums; margin-left: 6px; }
+.csv-total .is-total b { font-size: 15px; }
+@media (max-width: 640px) {
+  .svc-row, .csv-row { grid-template-columns: minmax(0, 1fr) var(--ctl-h); gap: 4px 12px; padding: 12px 15px; }
+  .svc-row > .team-act { grid-column: 2; grid-row: 1; align-items: start; }
+  .svc-rate, .svc-unit, .svc-state { grid-column: 1; text-align: left; }
+  .csv-total { justify-content: space-between; gap: 12px; }
+}
 .crm-links:empty { display: none; }
 .notice.is-warn { border-color: #efd7b6; background: var(--warn-bg); margin: 14px 0 0; }
 .notice.is-warn svg { color: var(--warn); }

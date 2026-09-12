@@ -174,7 +174,7 @@
     return Boolean(me['can_' + flag]);
   }
   var SECTION_FLAG = { clients: 'clients', review: 'review', campaigns: 'campaigns',
-                       links: 'links', team: 'admin' };
+                       links: 'links', services: 'clients', team: 'admin' };
   function sectionAllowed(name) {
     if (name === 'team') return Boolean(me && (me.is_admin || me.role === 'admin'));
     return may(SECTION_FLAG[name] || name);
@@ -231,11 +231,12 @@
     review: 'Content Review',
     campaigns: 'Creator Campaigns',
     links: 'Short Links',
+    services: 'Services',
     team: 'Team'
   };
   // The first section this person is allowed, for when the one asked for is not.
   function firstAllowed() {
-    var order = ['clients', 'review', 'campaigns', 'links', 'team'];
+    var order = ['clients', 'review', 'campaigns', 'links', 'services', 'team'];
     for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
     return 'clients';
   }
@@ -250,6 +251,7 @@
     $('sectionReview').hidden    = name !== 'review';
     $('sectionCampaigns').hidden = name !== 'campaigns';
     $('sectionLinks').hidden     = name !== 'links';
+    $('sectionServices').hidden  = name !== 'services';
     $('sectionTeam').hidden      = name !== 'team';
     $('sectionTitle').textContent = SECTION_TITLE[name];
     // The tab said Content Review Internal whichever section you were in.
@@ -275,6 +277,12 @@
     if (name === 'team') {
       if (!window.ADspaceTeam) { enterLater = 'team'; return; }
       window.ADspaceTeam.enter();
+      setUrl();
+      return;
+    }
+    if (name === 'services') {
+      if (!window.ADspaceCRM) { enterLater = 'services'; return; }
+      window.ADspaceCRM.enterServices();
       setUrl();
       return;
     }
@@ -475,6 +483,14 @@
     'review.removed':        ['Removed from Content Review', 'is-danger', 'review'],
     'client.edited':         ['Client edited', '', 'clients'],
     'client.billing':        ['Billing details saved', '', 'clients'],
+    'client.brand':          ['Brand profile saved', '', 'clients'],
+    'client.service':        ['Service line added', 'is-ok', 'clients'],
+    'client.service_changed': ['Service line changed', '', 'clients'],
+    'client.service_removed': ['Service line removed', 'is-danger', 'clients'],
+    'service.added':         ['Rate card line added', 'is-ok', 'clients'],
+    'service.changed':       ['Rate card line changed', '', 'clients'],
+    'service.off':           ['Rate card line retired', 'is-warn', 'clients'],
+    'service.on':            ['Rate card line restored', 'is-ok', 'clients'],
     'client.touch':          ['Call or visit logged', '', 'clients'],
     'client.review_on':      ['Added to Content Review', 'is-ok', 'clients'],
     'contact.added':         ['Contact added', 'is-ok', 'clients'],
@@ -2079,6 +2095,11 @@
       window.ADspaceCampaigns.enter();
     },
     crmReady: function () {
+      if (enterLater === 'services' && section === 'services') {
+        enterLater = '';
+        window.ADspaceCRM.enterServices();
+        return;
+      }
       if (enterLater !== 'clients' || section !== 'clients') return;
       enterLater = '';
       window.ADspaceCRM.enter();

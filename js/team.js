@@ -59,8 +59,17 @@
       shutMenus();
       menu.hidden = !open;
       btn.setAttribute('aria-expanded', String(open));
+      // Placed on the viewport, so the table's overflow cannot clip it.
+      if (open) {
+        var r = btn.getBoundingClientRect();
+        menu.style.position = 'fixed';
+        menu.style.top = (r.bottom + 4) + 'px';
+        menu.style.right = 'auto';
+        menu.style.left = Math.max(8, r.right - menu.offsetWidth) + 'px';
+      }
     });
   }
+  window.addEventListener('scroll', shutMenus, true);
   document.addEventListener('click', function (e) {
     if (!e.target.closest || !e.target.closest('#sectionTeam .team-act')) shutMenus();
   });

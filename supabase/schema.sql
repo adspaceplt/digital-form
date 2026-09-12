@@ -1373,3 +1373,84 @@ drop policy if exists roles_admin on public.team_roles;
 create policy roles_read  on public.team_roles for select to authenticated using (true);
 create policy roles_admin on public.team_roles for all to authenticated
   using (public.allowed('admin')) with check (public.allowed('admin'));
+
+-- ============================================================================
+-- SERVICES: the rate card, and what each client has asked for.
+-- ============================================================================
+-- One row per line on the rate card. Admins edit prices here; every section
+-- that quotes reads from here. Seeded from Rate Card v2.0.2; a re-run never
+-- overwrites a price an admin has changed (on conflict do nothing).
+create table if not exists public.services (
+  slug      text primary key,
+  category  text not null,
+  name      text not null,
+  rate      numeric(12,2),                 -- null: quoted case by case
+  unit      text,
+  position  int not null default 0,
+  active    boolean not null default true,
+  note      text
+);
+alter table public.services enable row level security;
+drop policy if exists services_read  on public.services;
+drop policy if exists services_admin on public.services;
+create policy services_read  on public.services for select to authenticated using (true);
+create policy services_admin on public.services for all to authenticated
+  using (public.allowed('admin')) with check (public.allowed('admin'));
+
+insert into public.services (slug, category, name, rate, unit, position) values
+  ('static-graphic',   'Content',            'Static graphic',                       360,  'Per post',                          10),
+  ('gif',              'Content',            'GIF',                                  450,  'Per GIF',                           11),
+  ('carousel',         'Content',            'Carousel',                             600,  'Per set',                           12),
+  ('reels-30',         'Content',            'Reels, up to 30 seconds',              550,  'Per video',                         13),
+  ('reels-60',         'Content',            'Reels, up to 60 seconds',              800,  'Per video',                         14),
+  ('short-video-120',  'Content',            'Short video, up to 120 seconds',       1200, 'Per video',                         15),
+  ('mgmt-meta',        'Account management', 'Meta (Facebook and Instagram)',        500,  'Per post',                          20),
+  ('mgmt-tiktok',      'Account management', 'TikTok / Douyin',                      500,  'Per GIF',                           21),
+  ('mgmt-xhs',         'Account management', 'RedNote (XHS)',                        600,  'Per set',                           22),
+  ('mgmt-linkedin',    'Account management', 'LinkedIn',                             700,  'Per video, up to 30 seconds',       23),
+  ('verify-meta',      'Verification',       'Meta Verified (blue tick)',            200,  'Per account, plus Meta subscription', 30),
+  ('verify-xhs',       'Verification',       'RedNote Professional (blue tick)',     1299, 'Per account, RM 450 platform fee included', 31),
+  ('pkg-a',            'Monthly packages',   'Package A · 1 platform · 2 contents',  1310, 'Per month, 6 month minimum',        40),
+  ('pkg-b',            'Monthly packages',   'Package B · 2 platforms · 4 contents', 2830, 'Per month, 6 month minimum',        41),
+  ('pkg-c',            'Monthly packages',   'Package C · 3 platforms · 8 contents', 5300, 'Per month, 6 month minimum',        42),
+  ('pkg-d',            'Monthly packages',   'Package D · 1 platform · 4 contents · ads', 2690, 'Per month, 6 month minimum',   43),
+  ('pkg-e',            'Monthly packages',   'Package E · 2 platforms · 6 contents · ads', 3980, 'Per month, 6 month minimum',  44),
+  ('pkg-f',            'Monthly packages',   'Package F · 3 platforms · 10 contents · ads', 5830, 'Per month, 6 month minimum', 45),
+  ('ads-8k',           'Monthly packages',   'Ad budget cover, up to RM 8,000',      400,  'Per month',                         46),
+  ('ads-14k',          'Monthly packages',   'Ad budget cover, up to RM 14,000',     800,  'Per month',                         47),
+  ('ads-20k',          'Monthly packages',   'Ad budget cover, up to RM 20,000',     1200, 'Per month',                         48),
+  ('koc-10',           'KOC programmes',     'KOC package · 10 creators',            4500, 'Per campaign',                      50),
+  ('koc-15',           'KOC programmes',     'KOC package · 15 creators',            6500, 'Per campaign',                      51),
+  ('koc-20',           'KOC programmes',     'KOC package · 20 creators',            8200, 'Per campaign',                      52),
+  ('koc-custom',       'KOC programmes',     'KOC custom list',                      null, 'Costed list per creator',           53),
+  ('kol-mgmt',         'KOL programmes',     'KOL management fee',                   null, '12% to 18% of talent fee, per talent', 60),
+  ('rev-minor',        'Add-ons',            'Minor revision',                       200,  'Per asset, per round',              70),
+  ('rev-major',        'Add-ons',            'Major revision',                       350,  'Per asset, per round',              71),
+  ('urgent',           'Add-ons',            'Urgent fee',                           150,  'Per affected asset, per round',     72),
+  ('translation',      'Add-ons',            'Translation',                          200,  'Per asset, per language',           73),
+  ('resize',           'Add-ons',            'Adaptation / resizing',                100,  'Per asset',                         74),
+  ('shoot',            'Add-ons',            'Ad hoc on-site shoot',                 450,  'Per trip, from',                    75),
+  ('working-files',    'Add-ons',            'Working files',                        250,  'Per asset',                         76),
+  ('raw-footage',      'Add-ons',            'Raw footage',                          350,  'Per shoot',                         77)
+on conflict (slug) do nothing;
+
+-- What a client asked for, was quoted, or confirmed. A line keeps its own
+-- label and rate, so a later price change does not rewrite history.
+create table if not exists public.client_services (
+  id           uuid primary key default gen_random_uuid(),
+  client_id    uuid not null references public.clients(id) on delete cascade,
+  service_slug text references public.services(slug) on delete set null,
+  label        text not null,
+  qty          numeric(10,2) not null default 1,
+  rate         numeric(12,2) not null default 0,
+  unit         text,
+  state        text not null default 'enquired',   -- enquired | quoted | confirmed
+  note         text,
+  created_at   timestamptz not null default now(),
+  archived_at  timestamptz
+);
+create index if not exists client_services_client_idx on public.client_services(client_id);
+alter table public.client_services enable row level security;
+drop policy if exists client_services_rw on public.client_services;
+create policy client_services_rw on public.client_services for all to authenticated
+  using (public.allowed('clients')) with check (public.allowed('clients'));
