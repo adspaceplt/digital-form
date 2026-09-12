@@ -113,7 +113,7 @@
     if (!state.rows.length) { box.innerHTML = '<div class="empty">No team members.</div>'; return; }
     var head = document.createElement('div');
     head.className = 'team-head';
-    head.innerHTML = '<span>Person</span><span>Group</span><span></span>';
+    head.innerHTML = '<span>Person</span><span>Group</span><span>State</span><span></span>';
     box.appendChild(head);
     state.rows.forEach(function (m) { box.appendChild(memberRow(m)); });
   }
@@ -126,23 +126,22 @@
       '<span class="team-who"><b>' + esc(m.name) + (self ? ' <i>you</i>' : '') + '</b>' +
         '<small>' + esc(m.email || '') + '</small></span>' +
       '<span><select class="select select-sm" data-f="role" aria-label="Group">' + roleOptions(m.role) + '</select></span>' +
-      menuBtn(
-        (m.active && m.email ? menuItem('invite', 'Invite') : '') +
-        (m.active
-          ? menuItem('off', 'Deactivate', self ? '' : 'is-danger', self)
-          : menuItem('on', 'Reactivate')));
+      // The state is a value, so it is a select; a person cannot switch themselves off.
+      '<span><select class="select select-sm state-select ' + (m.active ? 'is-ok' : 'is-off') + '" data-f="active" aria-label="State"' +
+        (self ? ' disabled' : '') + '>' +
+        '<option value="on"' + (m.active ? ' selected' : '') + '>Active</option>' +
+        '<option value="off"' + (m.active ? '' : ' selected') + '>Inactive</option></select></span>' +
+      (m.active && m.email ? menuBtn(menuItem('invite', 'Invite')) : '<span class="team-act"></span>');
 
     wireMenu(el);
     el.querySelector('[data-f="role"]').addEventListener('change', function () {
       saveMember(m, { role: this.value });
     });
-    var off = el.querySelector('[data-a="off"]');
-    if (off) off.addEventListener('click', function () {
-      if (!confirm('Deactivate ' + m.name + '?\n\nAccess is removed until reactivated.')) return;
-      saveMember(m, { active: false });
+    el.querySelector('[data-f="active"]').addEventListener('change', function () {
+      var on = this.value === 'on';
+      if (!on && !confirm('Deactivate ' + m.name + '?\n\nAccess is removed until reactivated.')) { this.value = 'on'; return; }
+      saveMember(m, { active: on });
     });
-    var on = el.querySelector('[data-a="on"]');
-    if (on) on.addEventListener('click', function () { saveMember(m, { active: true }); });
     var inv = el.querySelector('[data-a="invite"]');
     if (inv) inv.addEventListener('click', function () { reinvite(m); });
     return el;

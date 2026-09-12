@@ -147,6 +147,80 @@ Rules:
     before hard delete.
 - Chinese UI text uses the same tokens; `lang="zh"` swaps the font stack only.
 
+## Components to reuse
+
+A new screen is built from these, never from a new pattern. Same class,
+same markup, same behaviour everywhere.
+
+| Need | Component |
+|---|---|
+| Section heading with its one action | `.viewhead` > `.headmark h2` + `.btn.btn-primary` with icon |
+| Text facts about a thing | `dl.facts` (label over value, five per row, two on a phone) |
+| Counts and money | `.tallies` > `.tallygroup` > `.kstep-title` + `.tally` > `.tally-cell` (`is-total`, `is-warn`) |
+| Rows of records | `.crm-table` > `.crm-row` / `.svc-row` (grid columns, `.team-act` ⋯ cell last); stacked cards under 640px |
+| One record with steps | `.kcard` > `.kcard-head` (name, chips, ⋯) + `.kstep` blocks |
+| Rare or destructive actions | `.kmenu-btn` + `.kmenu` > `.kmenu-item` (name only; `is-danger`) |
+| A form to add or edit | `.panel` > `.panelhead h3` + `.row` fields + Save / Cancel row + `.msg` |
+| Optional detail on a record | `.panel.panel-collapse` > `.disclosure` (title, summary on the right) + `.disclosure-body` |
+| Status | `.tone` / `.chip-state` with a word (`is-ok`, `is-warn`, `is-danger`) |
+| Full page state | `.cover` > `.cover-inner` > `.cover-panel` |
+| Modal | `.sheet` > `.sheet-card` (fixed height when its content filters) |
+| Empty list | `.empty` with two words ("No entries.", "No documents.") |
+
+## Recurring rules
+
+Learned once, applied everywhere. Each of these was asked for after it was
+missed; none should need asking again.
+
+- A form opens where the thing it edits lives. Edit replaces the record's
+  head and Cancel returns to the record; Add opens on the list. Never a
+  form over a list of other records.
+- A value from a catalogue (a rate, a name) is prefilled, never fixed.
+  The line keeps its own copy so the catalogue can change later.
+- A status is a value, so it changes through a `select.state-select` on
+  the row or the head, tinted like its chip (`is-ok`, `is-warn`,
+  `is-off`), never through menu items: client stage, service line state,
+  document Issued / Void, team member Active / Inactive, rate card line
+  Active / Retired. The ⋯ beside it holds only what is not a status
+  (Edit, Invite, Download, Remove, Delete). A gate on a status (Active
+  needs billing) puts the select back and opens what is missing. Campaign
+  creator stages are the exception: each step needs data, so they step
+  through the one green forward button and Revert.
+- Every action reverses: Revert for a stage, Restore for a removed record,
+  Undo bar for a removal, Void then Delete for an issued document (delete
+  only after void; a number is never reused).
+- A ⋯ menu in a table row is placed on the viewport by its button, because
+  the table's overflow and any faded (`opacity`) ancestor would hide it.
+  A faded row fades its content, never its ⋯. A card menu stays absolute
+  inside `.kcard`.
+- One global click handler closes menus; it must spare `.kcard-head`,
+  `.kmenu` and `.team-act` or every row menu closes as it opens.
+- A modal that filters its content keeps one height.
+- Intake asks for what is known on day one; everything else lives on the
+  record in the order the work happens. Sections that cannot apply yet
+  (engagements before Active) stay hidden, not disabled.
+- A stage moves by itself when the record shows the event (first call or
+  visit makes a lead Contacted); a person can still set it by hand.
+- Money on a phone: two across with the total spanning; counts three
+  across; a value never wraps; a row's buttons share a width.
+- The same kind of data looks the same in every section: a client's
+  service lines, the rate card and the documents are all `.svc-row`
+  tables; campaign counts and campaign results are both `.tally` cells.
+- Numbers: `AQTYYMMDDXXX`, `AINVYYMMDDXXX`, invoices on campaigns as the
+  client's own reference. Rates on the rate card are RM; a Singapore line
+  starts from the RM figure and is edited on the line.
+- Dates read `12 Sept 2026`, months `Oct 2026`, money `RM 8,490.00` with
+  two decimals wherever a total is shown.
+
+## When adding a section
+
+Check every one before the push:
+nav item with icon and `data-section`; `SECTION_TITLE`, `SECTION_FLAG`
+and the `firstAllowed` order in `js/admin.js`; `?s=` state; a `Ready`
+hook if its script loads late; the activity record labels for its actions;
+the stub tables in the test suite; a walk in `uxaudit`; a screenshot at
+1280 and 390 reviewed against the phone checklist; a line in this file.
+
 ## Console structure
 
 - Sections, in order: Clients (default), Content Review, Creator Campaigns,
@@ -179,12 +253,25 @@ Rules:
   uneven card padding.
 - Documents (`js/documents.js`): a quotation takes quoted and confirmed
   lines; an invoice takes confirmed lines and is offered only when the
-  client is Active with billing complete. Numbers are `AQTYYMMDDXXX` and
-  `AINVYYMMDDXXX`, sequence per day. Each is stored as issued
-  (`client_documents`: bill-to, lines, totals) and redrawn from that
-  snapshot; Void and Restore, never delete. The PDF is drawn in the browser
-  with pdf-lib in Helvetica, English only; the issuer block comes from
-  `ADSPACE_ORG` in `js/config.js`.
+  client is Active with billing complete. Numbers: quotation
+  `AQT/INT/YYMMXXX` (internal, sequence per month), invoice
+  `AINVYYMMDDXXX` (sequence per day); the file name swaps `/` for `-`.
+  Each is stored as issued (`client_documents`: bill-to, lines, totals)
+  and redrawn from that snapshot; Void, then Delete only after Void; a
+  number is never reused.
+- The PDF follows the reference invoice: mark, title, the document's facts
+  (number, date of issue, date due or valid until, SST registration),
+  issuer left and Bill to right, the amount and its date in one bold line,
+  lines as Description / Qty / Unit price / Tax / Amount with the period
+  under a termed line, totals as Subtotal, Total excluding tax, SST 8% on
+  the subtotal, Total (and Amount due on an invoice), terms in small
+  print, an acceptance block on a quotation, page x of y. The mark and
+  fonts come from `ADSPACE_ORG.logo`, `.font`, `.fontBold` in
+  `js/config.js` (files served with CORS); blank falls back to the
+  wordmark and Helvetica.
+- The rate card reads as two tables, Services and Add-ons, with the
+  categories as sub-headings inside (`.svc-cat`), never a card per
+  category.
 - URL carries state: `?s=clients|review|campaigns|links|team`, `client=`,
   `campaign=`, `tab=`, `set=`, `new=<clientId>`. A refresh lands where the
   person was, with what they typed.
