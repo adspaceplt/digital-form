@@ -218,7 +218,8 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   await p.locator('#crmServices .svc-row:not(.crm-head)').first().locator('select[data-f="state"]').selectOption('confirmed'); await p.waitForTimeout(900);
   check('confirming the second line adds it up', (await p.locator('#crmFacts').innerText()).includes('28,490'));
 
-  // a Letter of Intent from those lines, numbered for the month, kept as issued
+  // a Letter of Offer from the quoted lines only, numbered for the month, kept as issued
+  await p.locator('#crmServices .svc-row:not(.crm-head)').first().locator('select[data-f="state"]').selectOption('quoted'); await p.waitForTimeout(900);
   const dl = p.waitForEvent('download', { timeout: 8000 }).catch(() => null);
   await p.locator('#crmCover').click();
   const got = await dl; await p.waitForTimeout(600);
@@ -226,19 +227,23 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   const yymm = ymd.slice(0, 4);
   check('the letter downloads under its number', !!got && got.suggestedFilename() === 'AQT-INT-' + yymm + '001.pdf',
     got ? got.suggestedFilename() : 'no download');
-  check('the letter is kept as issued, with the contact, the deal and who prepared it', await p.evaluate(() => {
+  check('the letter carries the quoted lines only, the contact and who signed it', await p.evaluate(() => {
     const d = window.__DB.client_documents[0];
-    return !!d && d.kind === 'intent' && d.issued_by === 'ADspace' && d.lines.length === 2 && d.total === 28490 && d.tax === 0 &&
-      d.bill_to.contact === 'Mr Lim' && d.bill_to.owner === 'Qiao Rou' && /Package B/.test(d.bill_to.enquiry) &&
-      d.lines.every(l => l.state === 'confirmed');
+    return !!d && d.kind === 'offer' && d.issued_by === 'ADspace' && d.lines.length === 1 && d.lines[0].state === 'quoted' &&
+      d.total === 8490 && d.tax === 0 && d.bill_to.contact === 'Mr Lim' && d.bill_to.owner === 'Qiao Rou';
   }));
-  check('the PDF carries the number, the client, the contact and the total',
-    await p.evaluate(yymm => window.__drawn.some(s => s === 'AQT/INT/' + yymm + '001') && window.__drawn.some(s => /Star Living/i.test(s)) &&
-      window.__drawn.some(s => /Mr Lim/.test(s)) && window.__drawn.some(s => /28,490/.test(s)) && window.__drawn.some(s => /LETTER OF INTENT/.test(s)) && window.__drawn.some(s => /intends to engage/.test(s)), yymm));
+  check('the PDF carries the number, the client, the contact, the total and the acceptance block',
+    await p.evaluate(yymm => { const all = window.__drawn.join(' ');
+      return window.__drawn.some(s => s === 'AQT/INT/' + yymm + '001') && /Star Living/i.test(all) && /Mr Lim/.test(all) && /8,490/.test(all) &&
+        /LETTER OF OFFER/.test(all) && /pleased to set out/.test(all) && /Confirmed and accepted/.test(all); }, yymm));
   check('the document is listed', await p.locator('#crmDocuments .doc-row:not(.crm-head)').count() === 1);
   await p.locator('#crmCover').click(); await p.waitForTimeout(800);
   check('the next one this month takes the next number',
     await p.evaluate(yymm => window.__DB.client_documents.some(d => d.number === 'AQT/INT/' + yymm + '002'), yymm));
+  await p.locator('#crmServices .svc-row:not(.crm-head)').first().locator('select[data-f="state"]').selectOption('confirmed'); await p.waitForTimeout(900);
+  await p.locator('#crmCover').click(); await p.waitForTimeout(600);
+  check('with nothing quoted there is no letter to issue', /No quoted lines/.test(await p.locator('#crmDocMsg').innerText()) &&
+    await p.evaluate(() => window.__DB.client_documents.length === 2));
 
   // the billing contact is one of the contacts, the main one unless chosen
   await p.locator('#crmBack').click(); await p.waitForTimeout(600);
@@ -259,9 +264,9 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
     (await p.locator('#crmServices').innerText()).includes('6 months from 12 Oct 2026'));
   check('engagements show on an active client', await p.locator('#crmEngage').isVisible());
   await p.locator('#crmCover').click(); await p.waitForTimeout(900);
-  check('the letter counts quoted and confirmed lines, with SST', await p.evaluate(() => {
+  check('the letter takes the quoted line only, with SST', await p.evaluate(() => {
     const d = window.__DB.client_documents.find(x => x.client_id === 'c1');
-    return !!d && d.lines.length === 2 && d.subtotal === 6660 && d.tax === 532.8 && d.total === 7192.8 && d.bill_to.email === 'lim@lc.com';
+    return !!d && d.lines.length === 1 && d.subtotal === 2160 && d.tax === 172.8 && d.total === 2332.8 && d.bill_to.email === 'lim@lc.com';
   }));
   await p.locator('#crmDocuments .doc-row:not(.crm-head)').first().locator('select[data-f="state"]').selectOption('void'); await p.waitForTimeout(600);
   check('a document can be voided and stays listed', await p.locator('#crmDocuments .doc-row.is-off').count() === 1 &&

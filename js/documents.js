@@ -1,10 +1,10 @@
 /*
- * Documents — the Letter of Intent as a PDF.
+ * Documents — the Letter of Offer as a PDF.
  *
- * Sales issues a Letter of Intent from a lead's record: who the client is,
- * who to bill, the deal, a statement of what the lead needs, and every
- * service line with its state and amount. The team that issues the formal
- * quotation works from it. Drawn in the
+ * Sales issues a Letter of Offer to the client from the record: the quoted
+ * service lines with their fees, the total with SST, and a block for the
+ * client to sign. Once the client signs, the formal quotation and invoice
+ * follow outside the portal. Drawn in the
  * browser and kept as a snapshot in client_documents, so it can be
  * downloaded again exactly as issued whatever the record does afterwards.
  *
@@ -13,8 +13,8 @@
  * The layout is the ADspace letterhead: wordmark, registration and address
  * left, the monogram and the office contact right, PRIVATE & CONFIDENTIAL,
  * Our Ref / Date / To / Attn, the subject, the salutation, the body with the
- * lines and totals, Yours sincerely, the Company Profile QR bottom right, the
- * monogram bottom centre and the page count. Fonts and images come from
+ * lines and totals, Yours sincerely, the acceptance block, the monogram
+ * bottom centre and the page count. Fonts and images come from
  * ADSPACE_ORG; blanks fall back to Helvetica and the wordmark.
  */
 (function () {
@@ -30,9 +30,9 @@
   var actor = bridge.actorName || bridge.actor || function () { return ''; };
 
   var KIND = {
-    intent: { prefix: 'AQT/INT/', title: 'Letter of Intent', word: 'Reference', per: 'month' }
+    offer: { prefix: 'AQT/INT/', title: 'Letter of Offer', word: 'Reference', per: 'month', validDays: 30 }
   };
-  KIND.cover = KIND.intent;   // rows issued before the rename
+  KIND.intent = KIND.cover = KIND.offer;   // rows issued before the rename
   var STATE_WORD = { enquired: 'Enquired', quoted: 'Quoted', confirmed: 'Confirmed' };
 
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -40,6 +40,7 @@
   function yymmdd(d) { return yymm(d) + pad(d.getDate()); }
   function dayOf(s) { s = String(s || ''); return s.length === 7 ? s + '-01' : s; }
   function dateOf(s) { var d = new Date(dayOf(s).slice(0, 10) + 'T00:00:00'); return isNaN(d.getTime()) ? null : d; }
+  function plusDays(s, n) { var d = dateOf(s); if (!d) return ''; d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
   function longDate(s) {
     var d = dateOf(s);
     return d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : String(s || '');
@@ -62,7 +63,7 @@
      over what has already been issued in that period. The unique index on
      number catches a clash and the caller retries once. */
   function nextNumber(kind, then) {
-    var k = KIND[kind] || KIND.intent;
+    var k = KIND[kind] || KIND.offer;
     var pre = k.prefix + (k.per === 'month' ? yymm(new Date()) : yymmdd(new Date()));
     db.from('client_documents').select('number').ilike('number', pre + '%').then(function (r) {
       var used = (r.data || []).map(function (d) { return Number(String(d.number).slice(pre.length)) || 0; });
@@ -75,15 +76,16 @@
      row) or null; lines: the service lines; deal: what the record knows
      that the client row does not spell out (owner, source, stage words). */
   function issue(kind, client, contact, lines, deal, then) {
-    var use = (lines || []).filter(function (l) { return !l.archived_at; });
-    if (!use.length) { then({ error: 'No service lines.' }); return; }
+    // The offer carries the quoted lines only: enquired lines are not yet
+    // priced for the client and confirmed lines are already past this step.
+    var use = (lines || []).filter(function (l) { return !l.archived_at && l.state === 'quoted'; });
+    if (!use.length) { then({ error: 'No quoted lines.' }); return; }
     deal = deal || {};
-    var counted = use.filter(function (l) { return l.state === 'quoted' || l.state === 'confirmed'; });
-    var subtotal = counted.reduce(function (s, l) { return s + amountOf(l); }, 0);
+    var subtotal = use.reduce(function (s, l) { return s + amountOf(l); }, 0);
     var taxOn = client.sst_applies !== false;
     var tax = MON.taxOf(subtotal, client.market, taxOn);
     var doc = {
-      client_id: client.id, kind: kind || 'intent',
+      client_id: client.id, kind: kind || 'offer',
       issued_at: new Date().toISOString().slice(0, 10),
       market: client.market || 'MY',
       subtotal: subtotal, tax: tax, total: Math.round((subtotal + tax) * 100) / 100,
@@ -192,14 +194,14 @@
   function render(doc) {
     var PDF = window.PDFLib;
     if (!PDF) return Promise.reject(new Error('PDF library not loaded'));
-    var k = KIND[doc.kind] || KIND.intent;
+    var k = KIND[doc.kind] || KIND.offer;
     var W = 595.28, H = 841.89, M = 48;
     var pdf, fonts, logo;
     return PDF.PDFDocument.create().then(function (p) {
       pdf = p;
-      return Promise.all([embedFonts(pdf, PDF), embedLogo(pdf), embedImage(pdf, ORG.profileQr)]);
+      return Promise.all([embedFonts(pdf, PDF), embedLogo(pdf)]);
     }).then(function (got) {
-      fonts = got[0]; logo = got[1]; var qr = got[2];
+      fonts = got[0]; logo = got[1];
       var font = fonts.font, bold = fonts.bold, markFont = fonts.mark || bold;
       var ink = PDF.rgb(0.075, 0.094, 0.102), mute = PDF.rgb(0.39, 0.43, 0.44), line = PDF.rgb(0.87, 0.89, 0.89);
       var pages = [];
@@ -270,23 +272,14 @@
       text(String(k.title).toUpperCase(), M, y, BODY, bold); y -= 29;
       text('Dear ' + (b.contact || 'Sir/Madam') + ',', M, y, BODY); y -= 29;
 
-      // The body: the intent, the enquiry, the lines, the totals, the terms.
-      var sumOf = function (st) {
-        return (doc.lines || []).filter(function (l) { return l.state === st; })
-          .reduce(function (s, l) { return s + amountOf(l); }, 0);
-      };
-      para((b.legal_name || b.name || 'The client') + (b.legal_name && b.name && b.legal_name !== b.name ? ' (' + b.name + ')' : '') +
-        ' intends to engage ' + (ORG.name || 'ADSPACE PLT') + ' for the services set out below' +
-        (b.contact ? ', with ' + b.contact + (b.contact_role ? ', ' + b.contact_role + ',' : '') + ' as the point of contact' : '') +
-        '. This letter records that intent for the preparation of the formal quotation.');
-      if (b.enquiry) para('Enquiry as received: ' + b.enquiry);
+      // The offer: the services and fees, the total, the terms, the acceptance.
+      para('Thank you for your interest in ' + (ORG.name || 'ADSPACE PLT') + '. Further to our discussion, we are pleased to set out below the services and fees proposed for ' +
+        (b.name || b.legal_name || 'your company') + '.');
 
-      // Lines, as a table inside the letter.
-      var cols = { desc: M, state: R - 230, qty: R - 165, unit: R - 90, amt: R };
-      var descW = cols.state - cols.desc - 60;
+      var cols = { desc: M, qty: R - 190, unit: R - 100, amt: R };
+      var descW = cols.qty - cols.desc - 40;
       var thead = function () {
         text('Description', cols.desc, y, 9, bold, mute);
-        text('State', cols.state - 52, y, 9, bold, mute);
         right('Qty', cols.qty, y, 9, bold, mute); right('Unit price', cols.unit, y, 9, bold, mute); right('Amount', cols.amt, y, 9, bold, mute);
         y -= 7; rule(y); y -= 15;
       };
@@ -294,11 +287,10 @@
       (doc.lines || []).forEach(function (l) {
         var ls = wrap(l.label, descW, 10);
         var sub = [periodOf(l), l.unit, l.note].filter(Boolean).join('  ');
-        var subs = sub ? wrap(sub, descW + 60, 8.5) : [];
+        var subs = sub ? wrap(sub, descW + 40, 8.5) : [];
         if (y - (ls.length * 13 + subs.length * 11 + 8) < 70) { newPage(); head(); thead(); }
         var q = Number(l.qty || 0), n = Math.max(1, Number(l.tenure || 1));
         text(ls[0] || '', cols.desc, y, 10);
-        text(STATE_WORD[l.state] || l.state || '', cols.state - 52, y, 10, font, l.state === 'confirmed' ? ink : mute);
         right((q % 1 ? q.toFixed(2) : String(q)) + (n > 1 ? ' x ' + n + ' mo' : ''), cols.qty, y, 10);
         right(MON.money2(l.rate, doc.market), cols.unit, y, 10);
         right(MON.money2(amountOf(l), doc.market), cols.amt, y, 10);
@@ -309,47 +301,40 @@
       });
       rule(y); y -= 16;
 
-      need(96);
+      need(66);
       var lx = R - 230;
       var trow = function (label, value, strong) {
         text(label, lx, y, strong ? 10.5 : 10, strong ? bold : font, strong ? ink : mute);
         right(value, R, y, strong ? 10.5 : 10, strong ? bold : font);
         y -= 15;
       };
-      trow('Confirmed', MON.money2(sumOf('confirmed'), doc.market));
-      trow('Quoted', MON.money2(sumOf('quoted'), doc.market));
       trow('Subtotal', MON.money2(doc.subtotal, doc.market));
       trow(Number(doc.tax) ? 'SST Malaysia 8% on ' + MON.money2(doc.subtotal, doc.market) : 'SST not applicable', MON.money2(doc.tax, doc.market));
       y += 4; rule(y, lx, R, true); y -= 14;
       trow('Total', MON.money2(doc.total, doc.market), true);
       y -= 12;
 
-      para('Confirmed lines total ' + MON.money2(sumOf('confirmed'), doc.market) + ' and quoted lines total ' +
-        MON.money2(sumOf('quoted'), doc.market) + '. ' +
-        (Number(doc.tax) ? 'With SST at 8% on the subtotal, the amount for the formal quotation is ' + MON.money2(doc.total, doc.market) + '.'
-                         : 'SST does not apply; the amount for the formal quotation is ' + MON.money2(doc.total, doc.market) + '.'));
-      var deal = [
-        b.owner ? 'Account owner ' + b.owner : '', b.source ? 'Source ' + b.source : '', b.industry ? 'Industry ' + b.industry : '',
-        'Market ' + (doc.market === 'SG' ? 'Singapore' : 'Malaysia') + ' (' + MON.market(doc.market).sign + ')', b.stage ? 'Stage ' + b.stage : ''
-      ].filter(Boolean).join('  ·  ');
-      wrap(deal, R - M, 9, font).forEach(function (ln) { need(LH); text(ln, M, y, 9, font, mute); y -= 12; });
-      y -= 22;
+      para('The total of ' + MON.money2(doc.total, doc.market) +
+        (Number(doc.tax) ? ' is inclusive of SST at 8%. ' : ' carries no SST. ') +
+        'This offer is valid until ' + longDate(plusDays(doc.issued_at, k.validDays)) +
+        '. Upon acceptance, ' + (ORG.name || 'ADSPACE PLT') + ' will issue the formal quotation and invoice, and work will commence on the dates agreed.');
+      para('Kindly confirm your acceptance by signing below and returning a copy of this letter to us.');
 
-      // Closing, as the reference signs off.
-      need(60);
+      // Closing, as the reference signs off: the sales person's name under the company.
+      need(100);
       text('Yours sincerely,', M, y, BODY); y -= LH;
       text(ORG.name || 'ADSPACE PLT', M, y, BODY, bold); y -= LH;
       if (doc.issued_by) { text(doc.issued_by, M, y, BODY); y -= LH; }
+      y -= 16;
 
-      // Company Profile and its QR, bottom right of the last page.
-      // Company Profile and its QR: bottom right where the reference has it,
-      // lower when the letter runs long, on a new page only when it must.
-      if (qr) {
-        var labelTop = Math.max(684, (H - y) + 12);
-        if (labelTop + 75 > H - 55) { newPage(); head(); labelTop = 684; }
-        text('Company Profile', R - width('Company Profile', BODY), T(labelTop), BODY);
-        page.drawImage(qr, { x: R - 66, y: T(labelTop + 73), width: 64, height: 64 });
-      }
+      // Acceptance: the client signs this copy, on one page with the closing.
+      if ((H - y) + 100 > H - 55) { newPage(); head(); }
+      text('Confirmed and accepted for and on behalf of ' + (b.legal_name || b.name || '').toUpperCase(), M, y, BODY, bold); y -= 36;
+      var half = (R - M - 24) / 2;
+      [['Signature and company stamp', M], ['Name', M + half + 24]].forEach(function (f) { rule(y, f[1], f[1] + half); text(f[0], f[1], y - 11, 8.5, font, mute); });
+      y -= 34;
+      [['Designation', M], ['Date', M + half + 24]].forEach(function (f) { rule(y, f[1], f[1] + half); text(f[0], f[1], y - 11, 8.5, font, mute); });
+      y -= 14;
 
       pages.forEach(function (pg, i) { page = pg; foot(i, pages.length); });
       return pdf.save();
