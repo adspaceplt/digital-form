@@ -34,7 +34,37 @@
     ['can_remove',    'Remove']
   ];
 
-  var state = { rows: [], roles: [] };
+  var state = { rows: [], roles: [], editing: null };
+
+  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+  function menuItem(action, label, cls, disabled) {
+    return '<button class="kmenu-item ' + (cls || '') + '" data-a="' + action + '" type="button"' +
+      (disabled ? ' disabled' : '') + '><b>' + esc(label) + '</b></button>';
+  }
+  function menuBtn(items) {
+    return '<span class="team-act">' +
+      '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+      '<div class="kmenu" data-menu hidden>' + items + '</div></span>';
+  }
+  function shutMenus() {
+    Array.prototype.forEach.call(document.querySelectorAll('#sectionTeam .kmenu'), function (m) { m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll('#sectionTeam .kmenu-btn'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+  }
+  function wireMenu(el) {
+    var btn = el.querySelector('[data-a="menu"]'), menu = el.querySelector('[data-menu]');
+    if (!btn || !menu) return;
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = menu.hidden;
+      shutMenus();
+      menu.hidden = !open;
+      btn.setAttribute('aria-expanded', String(open));
+    });
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('#sectionTeam .team-act')) shutMenus();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutMenus(); });
 
   function load() {
     $('teamList').innerHTML = '<div class="empty">Loading…</div>';
@@ -48,6 +78,7 @@
           if (q.error) { $('teamList').innerHTML = '<div class="empty">' + esc(q.error.message) + '</div>'; return; }
           state.rows = q.data || [];
           paintMembers();
+          paintGroups();   // member counts and Delete depend on the rows
         });
     });
   }
@@ -86,14 +117,13 @@
       '<span class="team-who"><b>' + esc(m.name) + (self ? ' <i>you</i>' : '') + '</b>' +
         '<small>' + esc(m.email || '') + '</small></span>' +
       '<span><select class="select select-sm" data-f="role" aria-label="Group">' + roleOptions(m.role) + '</select></span>' +
-      '<span class="team-act">' +
-        (m.active && m.email ? '<button class="btn btn-quiet btn-sm" data-a="invite" type="button">Invite</button>' : '') +
+      menuBtn(
+        (m.active && m.email ? menuItem('invite', 'Invite') : '') +
         (m.active
-          ? '<button class="btn btn-quiet btn-sm' + (self ? '' : ' is-danger') + '" data-a="off" type="button"' +
-            (self ? ' disabled' : '') + '>Deactivate</button>'
-          : '<button class="btn btn-quiet btn-sm" data-a="on" type="button">Reactivate</button>') +
-      '</span>';
+          ? menuItem('off', 'Deactivate', self ? '' : 'is-danger', self)
+          : menuItem('on', 'Reactivate')));
 
+    wireMenu(el);
     el.querySelector('[data-f="role"]').addEventListener('change', function () {
       saveMember(m, { role: this.value });
     });
@@ -138,31 +168,27 @@
     var used = state.rows.some(function (m) { return m.role === r.slug; });
     var el = document.createElement('div');
     el.className = 'group-row';
+    var members = state.rows.filter(function (m) { return m.role === r.slug; }).length;
     el.innerHTML =
-      '<span class="group-name"><input class="input input-sm" data-f="name" value="' + esc(r.name) + '"' +
-        (locked ? ' disabled' : '') + ' aria-label="Group name"></span>' +
+      '<span class="group-name"><b>' + esc(r.name) + '</b><small>' + members + ' member' + (members === 1 ? '' : 's') + '</small></span>' +
       FLAGS.map(function (f) {
         return '<span class="team-flag" data-label="' + esc(f[1]) + '"><input type="checkbox" data-f="' + f[0] + '"' +
           (r[f[0]] ? ' checked' : '') + (locked ? ' disabled' : '') + ' aria-label="' + esc(f[1]) + '"></span>';
       }).join('') +
       '<span class="team-flag" data-label="Admin"><input type="checkbox" data-f="is_admin"' +
         (r.is_admin ? ' checked' : '') + (locked ? ' disabled' : '') + ' aria-label="Admin"></span>' +
-      '<span class="team-act">' +
-        (locked || used ? '' : '<button class="btn btn-quiet btn-sm is-danger" data-a="del" type="button">Delete</button>') +
-      '</span>';
+      (locked ? '<span class="team-act"></span>'
+        : menuBtn(menuItem('rename', 'Rename') + (used ? '' : menuItem('del', 'Delete', 'is-danger'))));
 
+    wireMenu(el);
     Array.prototype.forEach.call(el.querySelectorAll('input[type="checkbox"]'), function (cb) {
       cb.addEventListener('change', function () {
         var patch = {}; patch[cb.getAttribute('data-f')] = cb.checked;
         saveGroup(r, patch);
       });
     });
-    var name = el.querySelector('[data-f="name"]');
-    name.addEventListener('change', function () {
-      var v = name.value.trim();
-      if (!v) { name.value = r.name; return; }
-      saveGroup(r, { name: v });
-    });
+    var ren = el.querySelector('[data-a="rename"]');
+    if (ren) ren.addEventListener('click', function () { openGroupBox(r); });
     var del = el.querySelector('[data-a="del"]');
     if (del) del.addEventListener('click', function () {
       if (!confirm('Delete the ' + r.name + ' group?')) return;
@@ -189,16 +215,27 @@
     });
   }
 
-  $('groupAdd').addEventListener('click', function () {
+  // One panel adds a group or renames one.
+  function openGroupBox(r) {
+    state.editing = r || null;
+    $('grTitle').textContent = r ? 'Rename group' : 'New group';
+    $('grSave').textContent = r ? 'Save' : 'Add';
     $('groupAddBox').hidden = false;
-    $('grName').value = '';
+    $('grName').value = r ? r.name : '';
     msg('grMsg', '');
     $('grName').focus();
-  });
-  $('grCancel').addEventListener('click', function () { $('groupAddBox').hidden = true; });
+  }
+  $('groupAdd').addEventListener('click', function () { openGroupBox(null); });
+  $('grCancel').addEventListener('click', function () { $('groupAddBox').hidden = true; state.editing = null; });
   $('grSave').addEventListener('click', function () {
     var name = ($('grName').value || '').trim();
     if (!name) { msg('grMsg', 'A name is required.', 'err'); return; }
+    if (state.editing) {
+      var r = state.editing;
+      $('groupAddBox').hidden = true; state.editing = null;
+      if (name !== r.name) saveGroup(r, { name: name });
+      return;
+    }
     var slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     if (!slug) { msg('grMsg', 'Use letters or numbers in the name.', 'err'); return; }
     if (state.roles.some(function (r) { return r.slug === slug; })) { msg('grMsg', 'That group already exists.', 'err'); return; }
