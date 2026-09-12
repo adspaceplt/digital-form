@@ -205,7 +205,7 @@
       '<span class="crm-c crm-c-name">' + esc(c.name || '') + '</span>' +
       '<span class="crm-c crm-c-stage"><span class="tone ' + w[2] + '">' + esc(w[1]) + '</span></span>' +
       '<span class="crm-c crm-c-ind">' + esc(c.industry || '—') + '</span>' +
-      '<span class="crm-c crm-c-mkt">' + esc(c.deal_value ? MON.money(c.deal_value, c.market) : MON.market(c.market).sign) + '</span>' +
+      '<span class="crm-c crm-c-mkt">' + (c.deal_value ? esc(MON.money(c.deal_value, c.market)) : '<span class="muted">' + esc(MON.market(c.market).sign) + '</span>') + '</span>' +
       '<span class="crm-c crm-c-own">' + esc(c.owner || 'Unassigned') + '</span>' +
       '<span class="crm-c crm-c-meta">' +
         [c.industry, MON.market(c.market).sign, c.owner || 'Unassigned']

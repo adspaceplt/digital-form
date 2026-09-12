@@ -158,7 +158,7 @@
       passText: 'Enter the access code provided.',
       passWrong: 'Incorrect access code.',
       loading: 'Loading…',
-      noneYet: 'Creators will appear here once confirmed.'
+      noneYet: 'No creators.'
     },
     zh: {
       kicker: '博主选择',
@@ -259,7 +259,7 @@
       passText: '请输入访问码。',
       passWrong: '访问码不正确。',
       loading: '加载中…',
-      noneYet: '博主确认后将显示在此。'
+      noneYet: '暂无博主。'
     }
   };
 
