@@ -17,7 +17,7 @@ const CLIENT = seedOf('client.js');
 const CPROD = seedOf('cprod.js');
 const QR = 'window.QRCode=function(){};window.QRCode.CorrectLevel={H:2};';
 
-const FAIL = new Set(['overflow', 'orphan', 'padding', 'stack', 'type', 'wrap', 'clip', 'row-height', 'row-width', 'target', 'label', 'icon-label', 'accent', 'contrast', 'boundary', 'focus']);
+const FAIL = new Set(['overflow', 'orphan', 'padding', 'cols', 'stack', 'type', 'wrap', 'clip', 'row-height', 'row-width', 'target', 'label', 'icon-label', 'accent', 'contrast', 'boundary', 'focus']);
 let fails = 0, warns = 0;
 
 /* Runs inside the page. Returns [[kind, detail], ...]. */
@@ -66,6 +66,21 @@ function inPage(coarse) {
     const tr = t.getBoundingClientRect(), fr = kids[0].getBoundingClientRect(), lr = kids[kids.length - 1].getBoundingClientRect();
     const top = fr.top - tr.top, bottom = tr.bottom - lr.bottom;
     if (Math.abs(top - bottom) > 2) F.push(['padding', desc(t) + ': ' + Math.round(top) + 'px above the first row, ' + Math.round(bottom) + 'px below the last']);
+  });
+
+  // 2c a header cell sits over its column: same left edge as the first row's cell
+  document.querySelectorAll('.crm-table > .crm-head, .team-table > .team-head').forEach(h => {
+    if (!vis(h)) return;
+    const row = [...h.parentElement.children].find(k => k !== h && vis(k) && k.matches('.crm-row, .svc-row, .team-row'));
+    if (!row) return;
+    const shown = el => getComputedStyle(el).display !== 'none';
+    const hc = [...h.children].filter(shown), rc = [...row.children].filter(shown);
+    if (hc.length !== rc.length) { F.push(['cols', desc(h) + ': ' + hc.length + ' header cells over ' + rc.length + ' row cells']); return; }
+    hc.forEach((c, i) => {
+      if (!c.textContent.trim()) return;
+      const a = c.getBoundingClientRect(), b = rc[i].getBoundingClientRect();
+      if (Math.abs(a.left - b.left) > 2 || Math.abs(a.right - b.right) > 2) F.push(['cols', desc(h) + ': "' + c.textContent.trim() + '" at ' + Math.round(a.left) + '..' + Math.round(a.right) + 'px over a column at ' + Math.round(b.left) + '..' + Math.round(b.right) + 'px']);
+    });
   });
 
   // 3 values that wrap or clip

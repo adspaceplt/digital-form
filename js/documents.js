@@ -273,7 +273,7 @@
       text('Dear ' + (b.contact || 'Sir/Madam') + ',', M, y, BODY); y -= 29;
 
       // The offer: the services and fees, the total, the terms, the acceptance.
-      para('Thank you for your interest in ' + (ORG.name || 'ADSPACE PLT') + '. Further to our discussion, we are pleased to set out below the services and fees proposed for ' +
+      para('Thank you for your interest in our marketing services. Further to our discussion, we are pleased to set out below the services and fees proposed for ' +
         (b.name || b.legal_name || 'your company') + '.');
 
       var cols = { desc: M, qty: R - 190, unit: R - 100, amt: R };
@@ -314,10 +314,7 @@
       trow('Total', MON.money2(doc.total, doc.market), true);
       y -= 12;
 
-      para('The total of ' + MON.money2(doc.total, doc.market) +
-        (Number(doc.tax) ? ' is inclusive of SST at 8%. ' : ' carries no SST. ') +
-        'This offer is valid until ' + longDate(plusDays(doc.issued_at, k.validDays)) +
-        '. Upon acceptance, ' + (ORG.name || 'ADSPACE PLT') + ' will issue the formal quotation and invoice, and work will commence on the dates agreed.');
+      para('This offer is valid until ' + letterDate(plusDays(doc.issued_at, k.validDays)) + '.');
       para('Kindly confirm your acceptance by signing below and returning a copy of this letter to us.');
 
       // Closing, as the reference signs off: the sales person's name under the company.
