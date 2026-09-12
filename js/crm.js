@@ -1108,10 +1108,10 @@
   }
 
   // ---- Documents ------------------------------------------------------------
-  /* The cover letter: the deal as it stands, for the team that issues the
-     formal quotation. Each is kept as issued. */
+  /* The Letter of Intent: the deal as it stands, for the team that issues
+     the formal quotation. Each is kept as issued. */
   var DOCS = window.ADspaceDocs;
-  var DOC_WORD = { cover: 'Cover letter', quotation: 'Quotation', invoice: 'Invoice' };
+  var DOC_WORD = { intent: 'Letter of Intent', cover: 'Letter of Intent', quotation: 'Quotation', invoice: 'Invoice' };
 
   function loadDocuments() {
     var box = $('crmDocuments');
@@ -1178,7 +1178,7 @@
       stage: stageWord(c.stage || 'lead')[1], enquiry: c.deal_note || '',
       finance_email: c.finance_email || '', sst_no: c.sst_no || '', company_no_old: c.company_no_old || ''
     };
-    DOCS.issue('cover', c, billContact(c), state.services, deal, function (r) {
+    DOCS.issue('intent', c, billContact(c), state.services, deal, function (r) {
       if (r.error) { msg('crmDocMsg', r.error, 'err'); return; }
       msg('crmDocMsg', r.warn ? r.doc.number + ' issued. ' + r.warn : r.doc.number + ' issued.', r.warn ? 'warn' : 'ok');
       loadDocuments();

@@ -1,9 +1,10 @@
 /*
- * Documents — the cover letter as a PDF.
+ * Documents — the Letter of Intent as a PDF.
  *
- * Sales issues a cover letter from a client's record: who the client is,
- * who to bill, the deal, and every service line with its state and amount.
- * The team that issues the formal quotation works from it. Drawn in the
+ * Sales issues a Letter of Intent from a lead's record: who the client is,
+ * who to bill, the deal, a statement of what the lead needs, and every
+ * service line with its state and amount. The team that issues the formal
+ * quotation works from it. Drawn in the
  * browser and kept as a snapshot in client_documents, so it can be
  * downloaded again exactly as issued whatever the record does afterwards.
  *
@@ -24,11 +25,12 @@
   var CFG = window.ADSPACE_CONFIG || {};
   var bridge = window.ADspaceAdmin || {};
   var log = bridge.log || function () {};
-  var actor = bridge.actor || function () { return ''; };
+  var actor = bridge.actorName || bridge.actor || function () { return ''; };
 
   var KIND = {
-    cover: { prefix: 'AQT/INT/', title: 'Cover letter', word: 'Reference', per: 'month' }
+    intent: { prefix: 'AQT/INT/', title: 'Letter of Intent', word: 'Reference', per: 'month' }
   };
+  KIND.cover = KIND.intent;   // rows issued before the rename
   var STATE_WORD = { enquired: 'Enquired', quoted: 'Quoted', confirmed: 'Confirmed' };
 
   function pad(n) { return String(n).padStart(2, '0'); }
@@ -58,7 +60,7 @@
      over what has already been issued in that period. The unique index on
      number catches a clash and the caller retries once. */
   function nextNumber(kind, then) {
-    var k = KIND[kind] || KIND.cover;
+    var k = KIND[kind] || KIND.intent;
     var pre = k.prefix + (k.per === 'month' ? yymm(new Date()) : yymmdd(new Date()));
     db.from('client_documents').select('number').ilike('number', pre + '%').then(function (r) {
       var used = (r.data || []).map(function (d) { return Number(String(d.number).slice(pre.length)) || 0; });
@@ -79,7 +81,7 @@
     var taxOn = client.sst_applies !== false;
     var tax = MON.taxOf(subtotal, client.market, taxOn);
     var doc = {
-      client_id: client.id, kind: kind || 'cover',
+      client_id: client.id, kind: kind || 'intent',
       issued_at: new Date().toISOString().slice(0, 10),
       market: client.market || 'MY',
       subtotal: subtotal, tax: tax, total: Math.round((subtotal + tax) * 100) / 100,
@@ -172,7 +174,7 @@
   function render(doc) {
     var PDF = window.PDFLib;
     if (!PDF) return Promise.reject(new Error('PDF library not loaded'));
-    var k = KIND[doc.kind] || KIND.cover;
+    var k = KIND[doc.kind] || KIND.intent;
     var W = 595.28, H = 841.89, M = 48;
     var pdf, fonts, logo;
     return PDF.PDFDocument.create().then(function (p) {
@@ -260,12 +262,34 @@
         deal.forEach(function (f) { text(f[0].toUpperCase(), dx, y, 7.5, bold, mute); text(f[1], dx, y - 12, 9); dx += dw; });
         y -= 30;
       }
-      if (b.enquiry) {
-        text('ENQUIRY', M, y, 7.5, bold, mute); y -= 12;
-        wrap(b.enquiry, W - 2 * M, 9).forEach(function (s) { text(s, M, y, 9); y -= 12; });
+      // The statement: what the lead needs, in sentences the quotation team
+      // can read without the table.
+      var sumOf = function (st) {
+        return (doc.lines || []).filter(function (l) { return l.state === st; })
+          .reduce(function (s, l) { return s + amountOf(l); }, 0);
+      };
+      var para = function (s, size) {
+        wrap(s, W - 2 * M, size || 9.5).forEach(function (ln) { need(14); text(ln, M, y, size || 9.5); y -= 13; });
         y -= 6;
-      }
-      y -= 8;
+      };
+      text('STATEMENT', M, y, 7.5, bold, mute); y -= 14;
+      para((b.legal_name || b.name || 'The client') + (b.legal_name && b.name && b.legal_name !== b.name ? ' (' + b.name + ')' : '') +
+        ' intends to engage ' + (ORG.name || 'ADSPACE PLT') + ' for the services set out below' +
+        (b.contact ? ', with ' + b.contact + (b.contact_role ? ', ' + b.contact_role + ',' : '') + ' as the point of contact' : '') + '.');
+      if (b.enquiry) para('Enquiry as received: ' + b.enquiry);
+      (doc.lines || []).forEach(function (l) {
+        var q = Number(l.qty || 0), n = Math.max(1, Number(l.tenure || 1));
+        para((q % 1 ? q.toFixed(2) : String(q)) + ' x ' + l.label + (l.unit ? ', ' + l.unit.toLowerCase() : '') +
+          (n > 1 ? ', ' + n + ' months' : '') + (l.start_on ? ' from ' + longDate(l.start_on) : '') +
+          ' at ' + MON.money2(l.rate, doc.market) + (n > 1 || q !== 1 ? ' each' : '') + ': ' +
+          MON.money2(amountOf(l), doc.market) + ' (' + (STATE_WORD[l.state] || l.state || '').toLowerCase() + ').' +
+          (l.note ? ' ' + l.note : ''));
+      });
+      para('Confirmed lines total ' + MON.money2(sumOf('confirmed'), doc.market) + ' and quoted lines total ' +
+        MON.money2(sumOf('quoted'), doc.market) + '. ' +
+        (Number(doc.tax) ? 'With SST at 8% on the subtotal, the amount for the formal quotation is ' + MON.money2(doc.total, doc.market) + '.'
+                         : 'SST does not apply; the amount for the formal quotation is ' + MON.money2(doc.total, doc.market) + '.'));
+      y -= 4;
 
       // Lines.
       var cols = { desc: M, state: W - M - 250, qty: W - M - 180, unit: W - M - 100, amt: W - M };
@@ -299,10 +323,6 @@
       // Totals, right. Confirmed and quoted are shown apart, then together.
       need(110);
       var lx = W - M - 230;
-      var sumOf = function (st) {
-        return (doc.lines || []).filter(function (l) { return l.state === st; })
-          .reduce(function (s, l) { return s + amountOf(l); }, 0);
-      };
       var trow = function (label, value, strong) {
         text(label, lx, y, strong ? 10.5 : 9.5, strong ? bold : font, strong ? ink : mute);
         right(value, cols.amt, y, strong ? 10.5 : 9.5, strong ? bold : font);
@@ -318,11 +338,11 @@
       y -= 16;
 
       // Sign-off: the person who prepared it and the person who checks it.
-      need(80);
-      y -= 12;
+      need(62);
+      y -= 8;
       var half = (W - 2 * M - 24) / 2;
       [['Prepared by', M], ['Checked by', M + half + 24]].forEach(function (f) { rule(y, f[1], f[1] + half); text(f[0], f[1], y - 11, 8, font, mute); });
-      y -= 44;
+      y -= 40;
       [['Date', M], ['Date', M + half + 24]].forEach(function (f) { rule(y, f[1], f[1] + half); text(f[0], f[1], y - 11, 8, font, mute); });
 
       // Every page: the number bottom left, the page count top right.

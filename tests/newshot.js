@@ -23,7 +23,7 @@ const OUT = process.argv[3] || (process.argv[2] + '/walk');
         { id: 's1', client_id: 'c1', service_slug: 'pkg-b', label: 'Package B · 2 platforms · 4 contents', unit: 'Per month, 6 month minimum', qty: 1, rate: 2830, tenure: 6, start_on: '2026-10-12', state: 'confirmed' },
         { id: 's2', client_id: 'c1', service_slug: 'koc-10', label: 'KOC package · 10 creators', unit: 'Per campaign', qty: 1, rate: 4500, tenure: 1, start_on: null, state: 'quoted' },
         { id: 's3', client_id: 'c1', service_slug: null, label: 'Launch video', unit: null, qty: 1, rate: 20000, tenure: 1, start_on: null, state: 'enquired', note: 'One on-site shoot' });
-      D.client_documents.push({ id: 'd1', client_id: 'c1', kind: 'cover', number: 'AQT/INT/2609001', issued_at: '2026-09-12', market: 'MY', subtotal: 21480, tax: 1718.4, total: 23198.4, bill_to: {}, lines: [], issued_by: 'adspacestudios@gmail.com', created_at: '2026-09-12T08:00:00Z', voided_at: null });
+      D.client_documents.push({ id: 'd1', client_id: 'c1', kind: 'intent', number: 'AQT/INT/2609001', issued_at: '2026-09-12', market: 'MY', subtotal: 21480, tax: 1718.4, total: 23198.4, bill_to: {}, lines: [], issued_by: 'adspacestudios@gmail.com', created_at: '2026-09-12T08:00:00Z', voided_at: null });
       window.__signIn('adspacestudios@gmail.com');
     });
     await p.waitForTimeout(800);

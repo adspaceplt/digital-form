@@ -73,7 +73,7 @@ Scale: 4, 8, 12, 16, 24, 32. Nothing else.
 | Where | Value |
 |---|---|
 | Section head (`.viewhead`) | 24px above, 12px below (phone 22 / 12) |
-| Blocks stacked inside a section (a table, a panel, a fold, an empty state, a message) | 12px between every pair, whatever the block is |
+| Blocks stacked inside a section (a table, a panel, a fold, an empty state, a card, the Undo bar) | 12px between every pair, whatever the block is; `uxaudit` fails a section whose gaps differ (`stack`) |
 | Sections in a list (`.crm-group`) | 24px |
 | Panel padding | 18px 20px (phone 14px) |
 | Fold head (`.disclosure`) | 16px 22px (phone 12px 14px) |
@@ -181,7 +181,7 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
 - The sale: support keys in the lead → sales logs the first call or
   visit (Contacted by itself) → billing details and brand profile as the
   deal firms → service lines with price, months, start date, confirmed →
-  the internal letter for the quotation team (Proposal sent) → billing
+  the Letter of Intent for the quotation team (Proposal sent) → billing
   complete and Active → engagements.
 - The client record top to bottom follows that order; every section
   edits itself with its own Save; Edit replaces the head and Cancel
@@ -195,7 +195,7 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   per-person switches; a policy on `team_members` never queries itself.
 - Data: PDPA 2010 (MY) and PDPA 2012 (SG): collect what the page needs,
   a client sees only its own data, soft remove before hard delete.
-- Numbering: internal letter `AQT/INT/YYMMXXX` (per month); campaign
+- Numbering: Letter of Intent `AQT/INT/YYMMXXX` (per month); campaign
   invoice reference `AINV2XXXXXX` entered by the team.
 - Reversibility: Revert for a stage, Restore for a record, Undo for a
   removal (log entry, contact, service line, uploaded PDF), Void then

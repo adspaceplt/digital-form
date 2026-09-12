@@ -17,7 +17,7 @@ const CLIENT = seedOf('client.js');
 const CPROD = seedOf('cprod.js');
 const QR = 'window.QRCode=function(){};window.QRCode.CorrectLevel={H:2};';
 
-const FAIL = new Set(['overflow', 'orphan', 'padding', 'wrap', 'clip', 'row-height', 'row-width', 'target', 'label', 'icon-label', 'accent', 'contrast', 'boundary', 'focus']);
+const FAIL = new Set(['overflow', 'orphan', 'padding', 'stack', 'wrap', 'clip', 'row-height', 'row-width', 'target', 'label', 'icon-label', 'accent', 'contrast', 'boundary', 'focus']);
 let fails = 0, warns = 0;
 
 /* Runs inside the page. Returns [[kind, detail], ...]. */
@@ -93,6 +93,27 @@ function inPage(coarse) {
         if (Math.max(...ws) - Math.min(...ws) > 2) F.push(['row-width', desc(row) + ': ' + ws.join('/') + 'px wide in one row']);
       }
     });
+  });
+
+  // 4b the stack: every block that follows a section head sits the same distance from the next
+  document.querySelectorAll('.viewhead').forEach(h => {
+    if (!vis(h)) return;
+    // A label (.kstep-title, .field-label) belongs to the block under it.
+    const blocks = [];
+    let n = h.nextElementSibling, labelTop = null;
+    while (n) {
+      if (n.matches('.viewhead') || n.querySelector('.viewhead')) break;
+      const r = n.getBoundingClientRect();
+      if (vis(n) && r.height > 1) {
+        if (n.matches('.kstep-title, .field-label, .sectionlabel')) { if (labelTop === null) labelTop = r.top; }
+        else { blocks.push({ top: labelTop === null ? r.top : labelTop, bottom: r.bottom }); labelTop = null; }
+      }
+      n = n.nextElementSibling;
+    }
+    const gaps = [];
+    for (let i = 1; i < blocks.length; i++) gaps.push(Math.round(blocks[i].top - blocks[i - 1].bottom));
+    if (gaps.length > 1 && Math.max(...gaps) - Math.min(...gaps) > 2) F.push(['stack', desc(h) + ': blocks below it sit ' + gaps.join(' / ') + 'px apart']);
+    if (blocks.length && Math.round(blocks[0].top - h.getBoundingClientRect().bottom) > 16) F.push(['stack', desc(h) + ': first block ' + Math.round(blocks[0].top - h.getBoundingClientRect().bottom) + 'px under the head']);
   });
 
   // 5 target size

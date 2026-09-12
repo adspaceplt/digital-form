@@ -218,23 +218,23 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   await p.locator('#crmServices .svc-row:not(.crm-head)').first().locator('select[data-f="state"]').selectOption('confirmed'); await p.waitForTimeout(900);
   check('confirming the second line adds it up', (await p.locator('#crmFacts').innerText()).includes('28,490'));
 
-  // a cover letter from those lines, numbered for the month, kept as issued
+  // a Letter of Intent from those lines, numbered for the month, kept as issued
   const dl = p.waitForEvent('download', { timeout: 8000 }).catch(() => null);
   await p.locator('#crmCover').click();
   const got = await dl; await p.waitForTimeout(600);
   const ymd = new Date().toISOString().slice(2, 10).replace(/-/g, '');
   const yymm = ymd.slice(0, 4);
-  check('the cover letter downloads under its number', !!got && got.suggestedFilename() === 'AQT-INT-' + yymm + '001.pdf',
+  check('the letter downloads under its number', !!got && got.suggestedFilename() === 'AQT-INT-' + yymm + '001.pdf',
     got ? got.suggestedFilename() : 'no download');
-  check('the cover letter is kept as issued, with the contact and the deal', await p.evaluate(() => {
+  check('the letter is kept as issued, with the contact, the deal and who prepared it', await p.evaluate(() => {
     const d = window.__DB.client_documents[0];
-    return !!d && d.kind === 'cover' && d.lines.length === 2 && d.total === 28490 && d.tax === 0 &&
+    return !!d && d.kind === 'intent' && d.issued_by === 'ADspace' && d.lines.length === 2 && d.total === 28490 && d.tax === 0 &&
       d.bill_to.contact === 'Mr Lim' && d.bill_to.owner === 'Qiao Rou' && /Package B/.test(d.bill_to.enquiry) &&
       d.lines.every(l => l.state === 'confirmed');
   }));
   check('the PDF carries the number, the client, the contact and the total',
     await p.evaluate(yymm => window.__drawn.some(s => s === 'AQT/INT/' + yymm + '001') && window.__drawn.some(s => /Star Living/i.test(s)) &&
-      window.__drawn.some(s => /Mr Lim/.test(s)) && window.__drawn.some(s => /28,490/.test(s)) && window.__drawn.some(s => /Cover letter/.test(s)), yymm));
+      window.__drawn.some(s => /Mr Lim/.test(s)) && window.__drawn.some(s => /28,490/.test(s)) && window.__drawn.some(s => /Letter of Intent/.test(s)) && window.__drawn.some(s => /intends to engage/.test(s)), yymm));
   check('the document is listed', await p.locator('#crmDocuments .doc-row:not(.crm-head)').count() === 1);
   await p.locator('#crmCover').click(); await p.waitForTimeout(800);
   check('the next one this month takes the next number',
@@ -259,7 +259,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
     (await p.locator('#crmServices').innerText()).includes('6 months from 12 Oct 2026'));
   check('engagements show on an active client', await p.locator('#crmEngage').isVisible());
   await p.locator('#crmCover').click(); await p.waitForTimeout(900);
-  check('the cover letter counts quoted and confirmed lines, with SST', await p.evaluate(() => {
+  check('the letter counts quoted and confirmed lines, with SST', await p.evaluate(() => {
     const d = window.__DB.client_documents.find(x => x.client_id === 'c1');
     return !!d && d.lines.length === 2 && d.subtotal === 6660 && d.tax === 532.8 && d.total === 7192.8 && d.bill_to.email === 'lim@lc.com';
   }));

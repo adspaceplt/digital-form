@@ -626,10 +626,10 @@ a { color: inherit; }
    ========================================================================= */
 .panel {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
-  box-shadow: var(--shadow); padding: 18px 20px; margin-bottom: 16px;
+  box-shadow: var(--shadow); padding: 18px 20px; margin-bottom: 12px;
 }
 .panel.narrow { max-width: 520px; margin-top: 48px; }
-.cards + .panel { margin-top: 22px; }
+.cards + .panel { margin-top: 24px; }
 .panel h3 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 4px; }
 .panel .hint { color: var(--ink-mute); font-size: 13px; margin-bottom: 13px; }
 .panel code {
@@ -637,14 +637,14 @@ a { color: inherit; }
   background: var(--line-soft); padding: 1px 5px; border-radius: 4px;
 }
 
-.viewhead { display: flex; align-items: center; gap: 12px; margin: 24px 0 13px; }
+.viewhead { display: flex; align-items: center; gap: 12px; margin: 24px 0 12px; }
 .viewhead h2, .viewhead h3 { flex: 1 1 auto; }
 .viewhead h2 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
 .viewhead h3 { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
 .viewhead .btn { flex: 0 0 auto; }
 .sectionlabel {
   font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
-  color: var(--ink-mute); font-weight: 600; margin: 28px 0 10px;
+  color: var(--ink-mute); font-weight: 600; margin: 24px 0 12px;
 }
 
 /* Bottom alignment dropped the label of any field standing next to a taller
@@ -1579,7 +1579,7 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 .tally-cell.is-total { border-color: var(--ink); }
 .tally-cell.is-total b { color: var(--ink); }
 /* Labelled groups of cells side by side; one under the other on a phone. */
-.tallies { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin: 4px 0 0; }
+.tallies { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 24px; margin: 0; }
 .tallygroup .tally { margin-top: 6px; }
 @media (max-width: 900px) { .tallies { grid-template-columns: 1fr; } }
 
@@ -1806,7 +1806,7 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 .kcard {
   position: relative;              /* the actions menu positions against this */
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 /* No overflow clipping here: the actions menu is positioned against the card
    and has to be allowed out of it. The last section rounds itself instead. */
@@ -2111,7 +2111,7 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 .facts {
   display: grid; gap: 14px 24px;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  margin: 6px 0 16px;
+  margin: 6px 0 12px;
 }
 /* The column count follows the cell count, so no fact sits alone. */
 .facts:has(> :nth-child(6)) { grid-template-columns: repeat(6, minmax(0, 1fr)); }
@@ -2144,7 +2144,7 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 
 /* ---------- Campaign header, in order ----------
    Name, then what it is for, then the facts, then the numbers. */
-.camp-purpose { font-size: 14.5px; color: var(--ink-soft); margin: 0 0 14px; }
+.camp-purpose { font-size: 14.5px; color: var(--ink-soft); margin: 0 0 12px; }
 .camp-purpose[hidden] { display: none; }
 
 /* Counts and money on one line, small enough to be read as a row rather than
@@ -2445,15 +2445,18 @@ body > .shell { width: 100%; }
 }
 
 /* ---------- CRM: groups, links, the gate, the log ---------- */
-.crm-group { margin-bottom: 26px; }
-.crm-group-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 0 0 8px; }
+.crm-group { margin-bottom: 24px; }
+.crm-group-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
 .crm-group-head h3 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 .crm-group-head h3 span { font-weight: 500; color: var(--ink-mute); margin-left: 4px; }
 .crm-group-head .hint { margin: 0; flex: 1 1 260px; }
 .crm-table {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
-  overflow: hidden;
+  overflow: hidden; margin-bottom: 12px;
 }
+/* Blocks stacked in a section sit 12px apart whatever they are: a table, a
+   panel, a fold, an empty state, a card. The section head carries 24 above. */
+#crmWork .empty, #campWork .empty, #svcList .empty, .crm-removed-toggle { margin-bottom: 12px; }
 /* The pad above the first row exists for the column header only. */
 .crm-table:has(> .crm-head) { padding-top: 12px; }
 .crm-table .crm-row:last-child { border-bottom: 0; }
@@ -2543,7 +2546,7 @@ body > .shell { width: 100%; }
   .csv-total { justify-content: space-between; gap: 12px; }
 }
 .crm-links:empty { display: none; }
-.notice.is-warn { border-color: #efd7b6; background: var(--warn-bg); margin: 14px 0 0; }
+.notice.is-warn { border-color: #efd7b6; background: var(--warn-bg); margin: 12px 0 0; }
 .notice.is-warn svg { color: var(--warn); }
 .notice.is-warn b { color: var(--warn); }
 .crm-caps { text-transform: uppercase; }
@@ -2615,7 +2618,7 @@ body > .shell { width: 100%; }
 /* A single line with Undo on it, for the few seconds when a person realises. */
 .undobar {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  margin: -6px 0 16px; padding: 9px 14px;
+  margin: 0 0 12px; padding: 9px 14px;
   background: var(--ink); color: #fff; border-radius: var(--radius-sm); font-size: 13px;
 }
 .undobar .btn { background: #fff; border-color: #fff; color: var(--ink); min-height: 32px; }
