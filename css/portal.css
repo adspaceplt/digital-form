@@ -2309,10 +2309,7 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
    has already used and the eye reads a column faster than it hunts across a
    wide row. Columns align down the page; everything about one client sits
    together on its line. */
-.crm-head, .crm-row {
-  display: grid; align-items: center; gap: 0 16px;
-  grid-template-columns: minmax(0, 2.4fr) 128px minmax(0, 1fr) 74px minmax(0, 1.1fr);
-}
+.crm-head, .crm-row { display: grid; align-items: center; gap: 0 16px; }
 .crm-c-meta { display: none; }
 .crm-head {
   padding: 0 15px 8px; border-bottom: 1px solid var(--line);
@@ -2477,6 +2474,8 @@ body > .shell { width: 100%; }
    itself put the menu inside a faded stacking context, behind the next row. */
 .svc-row.is-off > :not(.team-act), .team-row.is-off > :not(.team-act), .group-row.is-off > :not(.team-act) { opacity: .55; }
 .svc-row.crm-head { padding: 0 15px 8px; border-bottom: 1px solid var(--line); }
+/* A header cell keeps the header's type whatever column class it carries. */
+.svc-row.crm-head > * { font-size: inherit; font-weight: inherit; color: inherit; }
 .svc-name { display: flex; flex-direction: column; min-width: 0; }
 .svc-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
 .svc-name b .tone { margin-left: 6px; vertical-align: 1px; }
@@ -2627,11 +2626,13 @@ body > .shell { width: 100%; }
 .crm-group-worth { font-size: 13px; font-weight: 600; color: var(--ink-soft); font-variant-numeric: tabular-nums; margin-left: auto; }
 .touch-actions { grid-area: del; display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 .touch-next.is-done { color: var(--ink-mute); text-decoration: line-through; }
-.crm-head, .crm-row { grid-template-columns: minmax(0, 2.2fr) 128px minmax(0, 1fr) 110px minmax(0, 1.1fr); }
+/* The client list's columns. A header row in any other table is a
+   `.svc-row` and takes that row's grid, so each label sits over its column. */
+.crm-head:not(.svc-row), .crm-row { grid-template-columns: minmax(0, 2.2fr) 128px minmax(0, 1fr) 110px minmax(0, 1.1fr); }
 /* Restated after the desktop template above, or the five columns win on a
    phone and the name is squeezed to a letter. */
 @media (max-width: 640px) {
-  .crm-head, .crm-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .crm-head:not(.svc-row), .crm-row { grid-template-columns: minmax(0, 1fr) auto; }
 }
 
 /* ---------- Team ----------
