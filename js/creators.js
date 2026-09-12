@@ -85,7 +85,7 @@
       viewProfile: 'View profile',
       viewOn: function (platform) { return 'View ' + platform + ' profile'; },
       platform: { xhs: 'RedNote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' },
-      full: 'All slots taken',
+      full: 'All creators chosen',
       confirm: 'Confirm selection',
       confirmHeading: 'Confirm your selection',
       confirmBlurb: 'Your selection will be confirmed under the name entered below.',
