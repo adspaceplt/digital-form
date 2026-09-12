@@ -14,6 +14,7 @@ const SEED = `
   if (D.client_services.some(function (s) { return s.id === 'pv1'; })) return;
   D.client_contacts.forEach(function (c) { if (c.id === 'ct1') { c.portal_access = true; c.email = 'lim@lc.com'; } });
   D.client_contacts.push({ id:'pct2', client_id:'c1', name:'Ms Tan', role:'Finance', phone:'0198887777', email:'tan@lc.com', lang:'zh', is_primary:false, portal_access:false });
+  D.client_contacts.push({ id:'pct3', client_id:'c1', name:'Ms Ng', role:'Marketing', email:'fail@lc.com', lang:'en', is_primary:false, portal_access:false });
   D.client_services.push({ id:'pv1', client_id:'c1', service_slug:'pkg-b', label:'Package B · 2 platforms · 4 contents', unit:'Per month, 6 month minimum', qty:1, rate:2830, tenure:6, start_on:'2026-10-12', state:'confirmed', created_at:'2026-09-01T00:00:00Z' });
   D.client_services.push({ id:'pv2', client_id:'c1', service_slug:'koc-10', label:'KOC package · 10 creators', unit:'Per campaign', qty:1, rate:4500, tenure:1, start_on:null, state:'quoted', created_at:'2026-09-02T00:00:00Z' });
   D.client_services.push({ id:'pv3', client_id:'c1', service_slug:null, label:'Launch video', unit:'One on-site shoot', qty:1, rate:20000, tenure:1, state:'enquired', created_at:'2026-09-03T00:00:00Z' });
@@ -73,7 +74,7 @@ const SEED = `
   check('the account manager and the status', facts.includes('Qiao Rou') && facts.includes('Active'));
   check('one company: no company select', await p.locator('#clientPick').isHidden());
   check('contacts listed with the main contact and portal marks',
-    await p.locator('#ovContacts .ct-row:not(.crm-head)').count() === 2 &&
+    await p.locator('#ovContacts .ct-row:not(.crm-head)').count() === 3 &&
     (await p.locator('#ovContacts').innerText()).includes('Main contact') &&
     (await p.locator('#ovContacts').innerText()).includes('Portal'));
   check('no ⋯ on a contact row', await p.locator('#ovContacts .kmenu-btn').count() === 0);
@@ -184,8 +185,17 @@ const SEED = `
   const tan = a.locator('#crmContacts .ct-row:not(.crm-head)', { hasText: 'Ms Tan' });
   await tan.locator('[data-a="menu"]').scrollIntoViewIfNeeded(); await a.waitForTimeout(300);
   await tan.locator('[data-a="menu"]').click(); await a.waitForTimeout(200);
-  await a.locator('#crmContacts [data-a="portal"]').click(); await a.waitForTimeout(500);
+  await tan.locator('[data-a="portal"]').click(); await a.waitForTimeout(500);
   check('a second contact can be let in', await a.evaluate(() => window.__DB.client_contacts.find(c => c.id === 'pct2').portal_access === true));
+  check('and told the invitation went', (await a.locator('#crmWorkMsg').innerText()).includes('Invitation sent to tan@lc.com'));
+  const ng = a.locator('#crmContacts .ct-row:not(.crm-head)', { hasText: 'Ms Ng' });
+  await ng.locator('[data-a="menu"]').scrollIntoViewIfNeeded(); await a.waitForTimeout(300);
+  await ng.locator('[data-a="menu"]').click(); await a.waitForTimeout(200);
+  await ng.locator('[data-a="portal"]').click(); await a.waitForTimeout(500);
+  check('a failed invitation says why, in the function\'s own words', (await a.locator('#crmWorkMsg').innerText()).includes('Error sending invite email') &&
+    await a.evaluate(() => window.__DB.client_contacts.find(c => c.id === 'pct3').portal_access === true));
+  await ng.locator('[data-a="menu"]').click(); await a.waitForTimeout(200);
+  await ng.locator('[data-a="unportal"]').click(); await a.waitForTimeout(400);
   await tan.locator('[data-a="menu"]').scrollIntoViewIfNeeded(); await a.waitForTimeout(300);
   await tan.locator('[data-a="menu"]').click(); await a.waitForTimeout(200);
   await tan.locator('[data-a="unportal"]').click(); await a.waitForTimeout(500);

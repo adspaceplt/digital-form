@@ -305,7 +305,14 @@
     return { from: builder, rpc: rpc,
       functions: { invoke: function (name, opts) {
         window.__signed = (window.__signed || []).concat([{ name: name, body: opts && opts.body }]);
-        if (name === 'invite-member') return Promise.resolve({ data: { ok: true, already: false }, error: null });
+        if (name === 'invite-member') {
+          // The real client hides the function's answer behind a generic
+          // message; the body is on error.context, as it is here.
+          if (/^fail/.test(String(opts && opts.body && opts.body.email || ''))) return Promise.resolve({ data: null,
+            error: { message: 'Edge Function returned a non-2xx status code',
+                     context: { json: function () { return Promise.resolve({ error: 'invite_failed', detail: 'Error sending invite email' }); } } } });
+          return Promise.resolve({ data: { ok: true, already: false }, error: null });
+        }
         return Promise.resolve({ data: { uploadUrl: 'https://s3.test/put/inv.pdf',
           publicUrl: 'https://mycdn.adspace.me/content/c1/inv-' + Date.now() + '.pdf' }, error: null });
       } },

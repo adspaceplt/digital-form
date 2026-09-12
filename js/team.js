@@ -289,15 +289,15 @@
         // The row is theirs; now the login. The function holds the key the
         // browser must not, and emails them the sign-in link.
         msg('teamMsg', name + ' added. Sending invitation…', 'ok');
-        db.functions.invoke('invite-member', { body: { email: email, name: name } })
+        API.invokeFn('invite-member', { email: email, name: name })
           .then(function (r) {
             var d = r.data || {};
-            if (r.error || d.error) {
+            if (r.error) {
               var why = (d.error === 'not_admin') ? 'Only an admin can send invitations.'
-                : (r.error && /not found|404|Failed to send/i.test(String(r.error.message || r.error)))
+                : /not deployed/.test(r.why)
                   ? 'The invite-member function is not deployed. Add the login under Supabase ' +
                     'Authentication, or deploy the function and use Invite.'
-                  : 'Invitation could not be sent: ' + (d.detail || (r.error && r.error.message) || d.error);
+                  : 'Invitation could not be sent: ' + r.why;
               msg('teamMsg', name + ' added. ' + why, 'warn');
               return;
             }
@@ -312,10 +312,10 @@
   function reinvite(m) {
     if (!m.email) { msg('teamMsg', m.name + ' has no email on record.', 'err'); return; }
     msg('teamMsg', 'Sending an invitation to ' + m.email + '…', 'ok');
-    db.functions.invoke('invite-member', { body: { email: m.email, name: m.name } })
+    API.invokeFn('invite-member', { email: m.email, name: m.name })
       .then(function (r) {
         var d = r.data || {};
-        if (r.error || d.error) { msg('teamMsg', 'Could not send: ' + (d.detail || d.error || (r.error && r.error.message)), 'err'); return; }
+        if (r.error) { msg('teamMsg', 'Could not send: ' + r.why, 'err'); return; }
         log('team.invited', m.name, m.email);
         msg('teamMsg', d.already ? m.name + ' already has a login.'
                                  : 'Invitation sent to ' + m.email + '.', 'ok');

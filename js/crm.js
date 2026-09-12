@@ -577,11 +577,10 @@
       loadContacts();
       loadRequests();
       if (!on) { undoBar(ct.name + ': portal access removed.', function () { setPortal(ct, true); }); return; }
-      db.functions.invoke('invite-member', { body: { email: ct.email, name: ct.name, kind: 'client' } })
-        .then(function (res) {
-          var d = (res && res.data) || {};
-          if ((res && res.error) || d.error) msg('crmWorkMsg', 'Access granted. Invite not sent: ' + ((res && res.error && res.error.message) || d.detail || d.error) + '.', 'warn');
-        }, function (e) { msg('crmWorkMsg', 'Access granted. Invite not sent: ' + ((e && e.message) || e) + '.', 'warn'); });
+      API.invokeFn('invite-member', { email: ct.email, name: ct.name, kind: 'client' }).then(function (res) {
+        if (res.error) { msg('crmWorkMsg', 'Access granted. Invitation not sent: ' + res.why, 'warn'); return; }
+        msg('crmWorkMsg', res.data.already ? 'Access granted. A login already exists.' : 'Access granted. Invitation sent to ' + ct.email + '.', 'ok');
+      });
     });
   }
 
