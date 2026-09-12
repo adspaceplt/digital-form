@@ -1454,3 +1454,31 @@ alter table public.client_services enable row level security;
 drop policy if exists client_services_rw on public.client_services;
 create policy client_services_rw on public.client_services for all to authenticated
   using (public.allowed('clients')) with check (public.allowed('clients'));
+
+-- ============================================================================
+-- DOCUMENTS: quotations and invoices, kept as issued.
+-- ============================================================================
+-- A snapshot of the lines and the bill-to at the moment of issue, so the PDF
+-- can be drawn again later exactly as sent. Numbers: AQTYYMMDDXXX for a
+-- quotation, AINVYYMMDDXXX for an invoice; the sequence restarts each day.
+create table if not exists public.client_documents (
+  id         uuid primary key default gen_random_uuid(),
+  client_id  uuid not null references public.clients(id) on delete cascade,
+  kind       text not null,                       -- quotation | invoice
+  number     text not null unique,
+  issued_at  date not null default current_date,
+  market     text not null default 'MY',
+  subtotal   numeric(12,2) not null default 0,
+  tax        numeric(12,2) not null default 0,
+  total      numeric(12,2) not null default 0,
+  bill_to    jsonb,
+  lines      jsonb not null default '[]'::jsonb,
+  issued_by  text,
+  created_at timestamptz not null default now(),
+  voided_at  timestamptz
+);
+create index if not exists client_documents_client_idx on public.client_documents(client_id);
+alter table public.client_documents enable row level security;
+drop policy if exists client_documents_rw on public.client_documents;
+create policy client_documents_rw on public.client_documents for all to authenticated
+  using (public.allowed('clients')) with check (public.allowed('clients'));

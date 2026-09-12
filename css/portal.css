@@ -2469,6 +2469,8 @@ body > .shell { width: 100%; }
 .svc-state { text-align: center; }
 /* A client's lines: name, state, qty × rate, amount, ⋯ */
 .csv-row { grid-template-columns: minmax(0, 1fr) 140px 150px 130px var(--ctl-h); }
+/* A document: number and kind, state, total, ⋯ */
+.doc-row { grid-template-columns: minmax(0, 1fr) 140px 150px var(--ctl-h); }
 .csv-total {
   display: flex; justify-content: flex-end; gap: 28px; flex-wrap: wrap;
   padding: 11px 15px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-mute);

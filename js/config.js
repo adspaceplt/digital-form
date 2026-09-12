@@ -10,6 +10,17 @@
  * The anon key is safe to publish. Every table is protected by row level
  * security and clients can only reach data through the token-checked functions.
  */
+/* The issuer printed on quotations and invoices. Blank lines are left out. */
+window.ADSPACE_ORG = {
+  name: 'ADSPACE PLT',
+  regno: '',      // business registration no.
+  sst: '',        // SST registration no.
+  address: '',
+  email: '',
+  phone: '',
+  bank: ''        // bank, account number and account name, on one line
+};
+
 window.ADSPACE_CONFIG = {
   supabaseUrl: 'https://hwwuigvdfubuymchsvyx.supabase.co',
   supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh3d3VpZ3ZkZnVidXltY2hzdnl4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg5Mzg4NzIsImV4cCI6MjEwNDUxNDg3Mn0.c4g_r0W3zeA0rmQ-qYFVE2Iw3l4uAg5ub0EfKBgSsUs',

@@ -165,6 +165,14 @@ Rules:
 - Every section on the record edits itself with its own Save. Choosing
   Active in Edit with billing missing saves the rest, keeps the stage and
   opens Billing details on the first missing field.
+- Documents (`js/documents.js`): a quotation takes quoted and confirmed
+  lines; an invoice takes confirmed lines and is offered only when the
+  client is Active with billing complete. Numbers are `AQTYYMMDDXXX` and
+  `AINVYYMMDDXXX`, sequence per day. Each is stored as issued
+  (`client_documents`: bill-to, lines, totals) and redrawn from that
+  snapshot; Void and Restore, never delete. The PDF is drawn in the browser
+  with pdf-lib in Helvetica, English only; the issuer block comes from
+  `ADSPACE_ORG` in `js/config.js`.
 - URL carries state: `?s=clients|review|campaigns|links|team`, `client=`,
   `campaign=`, `tab=`, `set=`, `new=<clientId>`. A refresh lands where the
   person was, with what they typed.

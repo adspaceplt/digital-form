@@ -375,6 +375,7 @@
     shutService();
     loadContacts();
     loadServices();
+    loadDocuments();
     loadTouches();
     loadWork();
     setUrl();
@@ -1041,6 +1042,73 @@
         db.from('clients').update({ deal_value: v }).eq('id', state.client.id).then(done, done);
       });
   }
+
+  // ---- Documents ------------------------------------------------------------
+  /* Quotations and invoices issued from the lines above. A quotation takes
+     quoted and confirmed lines; an invoice takes confirmed lines and needs an
+     Active client with billing complete. Each is kept as issued. */
+  var DOCS = window.ADspaceDocs;
+  var DOC_WORD = { quotation: 'Quotation', invoice: 'Invoice' };
+
+  function loadDocuments() {
+    var box = $('crmDocuments');
+    var c = state.client;
+    $('crmInvoice').hidden = !(c.stage === 'active' && !billingMissing(c).length);
+    if (!DOCS) { box.innerHTML = ''; return; }
+    box.innerHTML = '<div class="empty">Loading…</div>';
+    DOCS.list(c.id, function (rows, err) {
+      if (err) { box.innerHTML = '<div class="empty">' + esc(err.message || err) + '</div>'; return; }
+      box.innerHTML = '';
+      if (!rows.length) { box.innerHTML = '<div class="empty">No documents.</div>'; return; }
+      var table = document.createElement('div');
+      table.className = 'crm-table';
+      rows.forEach(function (d) { table.appendChild(documentRow(d)); });
+      box.appendChild(table);
+    });
+  }
+
+  function documentRow(d) {
+    var row = document.createElement('div');
+    row.className = 'svc-row doc-row' + (d.voided_at ? ' is-off' : '');
+    row.innerHTML =
+      '<span class="svc-name"><b>' + esc(d.number) + '</b><small>' + esc(DOC_WORD[d.kind] || d.kind) + ' · ' + esc(niceDate(d.issued_at)) +
+        (d.issued_by ? ' · ' + esc(d.issued_by) : '') + '</small></span>' +
+      '<span class="svc-state">' + (d.voided_at ? '<span class="tone">Void</span>' : '<span class="tone is-ok">Issued</span>') + '</span>' +
+      '<span class="svc-rate"><b>' + esc(MON.money2(d.total, d.market)) + '</b></span>' +
+      '<span class="team-act">' +
+        '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+        '<div class="kmenu" data-menu hidden>' +
+          '<button class="kmenu-item" data-a="download" type="button"><b>Download</b></button>' +
+          (d.voided_at
+            ? '<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>'
+            : '<button class="kmenu-item is-danger" data-a="void" type="button"><b>Void</b></button>') +
+        '</div>' +
+      '</span>';
+    wireMenu(row);
+    var on = function (a, fn) { var el = row.querySelector('[data-a="' + a + '"]'); if (el) el.addEventListener('click', fn); };
+    on('download', function () { DOCS.download(d, function (warn) { if (warn) msg('crmDocMsg', warn, 'err'); }); });
+    on('void', function () {
+      DOCS.setVoid(d, true, function (err) {
+        if (err) { msg('crmDocMsg', err.message, 'err'); return; }
+        undoBar(d.number + ' voided.', function () { DOCS.setVoid(d, false, loadDocuments); });
+        loadDocuments();
+      });
+    });
+    on('restore', function () { DOCS.setVoid(d, false, function () { loadDocuments(); }); });
+    return row;
+  }
+
+  function issueDoc(kind) {
+    if (!DOCS) return;
+    msg('crmDocMsg', '');
+    DOCS.issue(kind, state.client, state.services, function (r) {
+      if (r.error) { msg('crmDocMsg', r.error, 'err'); return; }
+      msg('crmDocMsg', r.warn ? r.doc.number + ' issued. ' + r.warn : r.doc.number + ' issued.', r.warn ? 'warn' : 'ok');
+      loadDocuments();
+    });
+  }
+  $('crmQuote').addEventListener('click', function () { issueDoc('quotation'); });
+  $('crmInvoice').addEventListener('click', function () { issueDoc('invoice'); });
 
   // ---- Rate card (the Services section) ------------------------------------
   var editingSvc = null;
