@@ -1482,3 +1482,7 @@ alter table public.client_documents enable row level security;
 drop policy if exists client_documents_rw on public.client_documents;
 create policy client_documents_rw on public.client_documents for all to authenticated
   using (public.allowed('clients')) with check (public.allowed('clients'));
+
+-- A line can run for a term: qty × rate × months, from a start month.
+alter table public.client_services add column if not exists tenure   int  not null default 1;
+alter table public.client_services add column if not exists start_on text;   -- YYYY-MM

@@ -2445,8 +2445,10 @@ body > .shell { width: 100%; }
 .crm-group-head .hint { margin: 0; flex: 1 1 260px; }
 .crm-table {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
-  padding-top: 12px; overflow: hidden;
+  overflow: hidden;
 }
+/* The pad above the first row exists for the column header only. */
+.crm-table:has(> .crm-head) { padding-top: 12px; }
 .crm-table .crm-row:last-child { border-bottom: 0; }
 #crmList { background: none; border: 0; padding: 0; overflow: visible; }
 .crm-links { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }

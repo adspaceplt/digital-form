@@ -28,7 +28,17 @@
     var d = new Date(String(s).slice(0, 10) + 'T00:00:00');
     return isNaN(d.getTime()) ? String(s) : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   }
-  function amountOf(l) { return Number(l.qty || 0) * Number(l.rate || 0); }
+  function amountOf(l) { return Number(l.qty || 0) * Number(l.rate || 0) * Math.max(1, Number(l.tenure || 1)); }
+  function monthWord(ym) {
+    if (!ym) return '';
+    var d = new Date(String(ym).slice(0, 7) + '-01T00:00:00');
+    return isNaN(d.getTime()) ? String(ym) : d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  }
+  function termWord(l) {
+    var n = Math.max(1, Number(l.tenure || 1));
+    if (n === 1 && !l.start_on) return '';
+    return (n > 1 ? n + ' months' : '') + (l.start_on ? (n > 1 ? ' from ' : 'From ') + monthWord(l.start_on) : '');
+  }
 
   /* The next number for today: prefix, YYMMDD, then a three digit sequence
      over what has already been issued today. The unique index on number
@@ -62,7 +72,8 @@
         contact: client.bill_contact || '', email: client.bill_contact_email || ''
       },
       lines: use.map(function (l) {
-        return { label: l.label, unit: l.unit || '', note: l.note || '', qty: Number(l.qty || 0), rate: Number(l.rate || 0) };
+        return { label: l.label, unit: l.unit || '', note: l.note || '', qty: Number(l.qty || 0), rate: Number(l.rate || 0),
+                 tenure: Math.max(1, Number(l.tenure || 1)), start_on: l.start_on || '' };
       }),
       issued_by: actor() || null
     };
@@ -180,13 +191,13 @@
             var ls = wrap(l.label, descW, 9.5);
             text(String(i + 1), cols.no, y, 9.5, font, mute);
             text(ls[0] || '', cols.desc, y, 9.5);
-            var q = Number(l.qty || 0);
-            right(q % 1 ? q.toFixed(2) : String(q), cols.qty, y, 9.5);
+            var q = Number(l.qty || 0), n = Math.max(1, Number(l.tenure || 1));
+            right((q % 1 ? q.toFixed(2) : String(q)) + (n > 1 ? ' x ' + n + ' mo' : ''), cols.qty, y, 9.5);
             right(MON.money2(l.rate, doc.market), cols.rate, y, 9.5);
             right(MON.money2(amountOf(l), doc.market), cols.amt, y, 9.5);
             y -= 13;
             ls.slice(1).forEach(function (s) { text(s, cols.desc, y, 9.5); y -= 13; });
-            var sub = [l.unit, l.note].filter(Boolean).join('  ');
+            var sub = [l.unit, termWord(l), l.note].filter(Boolean).join('  ');
             if (sub) wrap(sub, descW + 40, 8.5).forEach(function (s) { text(s, cols.desc, y, 8.5, font, mute); y -= 11; });
             y -= 5;
           });
@@ -207,6 +218,17 @@
             wrap(s, W - 2 * M, 8.5).forEach(function (ln) { text(ln, M, y, 8.5, font, mute); y -= 11; });
             y -= 3;
           });
+
+          // Acceptance, on a quotation: the client signs this copy.
+          if (doc.kind !== 'invoice') {
+            if (y < 150) newPage();
+            y -= 10;
+            text('ACCEPTED FOR AND ON BEHALF OF ' + safe(b.name || '').toUpperCase(), M, y, 8, bold, mute); y -= 44;
+            var half = (W - 2 * M - 24) / 2;
+            [['Signature', M], ['Date', M + half + 24]].forEach(function (f) { rule(y, f[1], f[1] + half); text(f[0], f[1], y - 11, 8, font, mute); });
+            y -= 44;
+            [['Name', M], ['Designation', M + half + 24]].forEach(function (f) { rule(y, f[1], f[1] + half); text(f[0], f[1], y - 11, 8, font, mute); });
+          }
 
           // Foot.
           text((ORG.name || 'ADSPACE PLT') + '  ' + doc.number, M, 40, 8, font, mute);

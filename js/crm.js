@@ -49,8 +49,9 @@
      is grouped by it: leads being worked at the top, the clients we are
      serving below, and the ones that have ended at the bottom. */
   var STAGES = [
-    ['lead',     'Lead',          '',        'leads'],
-    ['proposal', 'Proposal sent', 'is-warn', 'leads'],
+    ['lead',      'Lead',          '',        'leads'],
+    ['contacted', 'Contacted',     '',        'leads'],
+    ['proposal',  'Proposal sent', 'is-warn', 'leads'],
     ['active',   'Active',        'is-ok',   'active'],
     ['paused',   'Paused',        'is-warn', 'ended'],
     ['past',     'Past',          '',        'ended']
@@ -244,11 +245,23 @@
     $('crmLeadOnly').hidden = Boolean(c);
     ['crmContactName', 'crmContactPhone', 'crmContactEmail', 'crmEnquiry'].forEach(function (id) { $(id).value = ''; });
     msg('crmMsg', '');
-    $('crmAddBox').hidden = false;
+    // Editing happens on the record, in place of its head; adding happens on
+    // the list. One form, moved to where the person is.
+    var box = $('crmAddBox');
+    if (c) {
+      var head = $('crmWork').querySelector('section.panel');
+      $('crmWork').insertBefore(box, head);
+      head.hidden = true;
+    } else {
+      $('crmListView').insertBefore(box, $('crmDue'));
+    }
+    box.hidden = false;
     $('crmName').focus();
   }
   function shutForm() {
     $('crmAddBox').hidden = true;
+    var head = $('crmWork').querySelector('section.panel');
+    if (head) head.hidden = false;
     state.editing = null;
   }
   $('crmNew').addEventListener('click', function () { openForm(null); });
@@ -393,10 +406,6 @@
     showList();          // the list and the next actions above it, together
   });
   $('crmEdit').addEventListener('click', function () {
-    $('crmWork').hidden = true;
-    $('crmListView').hidden = false;
-    // After a refresh straight into a client the list behind the form has
-    // never been painted, so paint it rather than open the form over nothing.
     if (!state.clients.length) loadClients();
     openForm(state.client);
   });
@@ -749,6 +758,17 @@
           KIND_WORD[row.kind] + (row.next_action ? ' · next: ' + row.next_action : ''));
       shutTouch();
       loadTouches();
+      // The first call or visit is what makes a lead contacted.
+      if (!editingTouch && (state.client.stage || 'lead') === 'lead') {
+        db.from('clients').update({ stage: 'contacted' }).eq('id', state.client.id).then(function (q) {
+          if (q.error) return;
+          state.client.stage = 'contacted';
+          var mine = state.clients.filter(function (x) { return x.id === state.client.id; })[0];
+          if (mine) mine.stage = 'contacted';
+          log('client.edited', state.client.name, 'contacted');
+          openClient(state.client);
+        });
+      }
     };
     if (editingTouch) {
       row.updated_at = new Date().toISOString();
@@ -785,11 +805,9 @@
     var c = state.client;
     var box = $('crmWorkList');
     var act = $('crmEngageActions');
-    if (c.stage !== 'active') {
-      act.innerHTML = '';
-      box.innerHTML = '<div class="empty">Available once Active.</div>';
-      return;
-    }
+    // Nothing to engage until the client is active, so the section waits.
+    $('crmEngage').hidden = c.stage !== 'active';
+    if (c.stage !== 'active') { act.innerHTML = ''; box.innerHTML = ''; return; }
     var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
     var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
     act.innerHTML =
@@ -878,7 +896,18 @@
     }, function () { catalog = []; then(catalog); });
   }
   function svcById(slug) { return (catalog || []).filter(function (s) { return s.slug === slug; })[0]; }
-  function amountOf(l) { return Number(l.qty || 0) * Number(l.rate || 0); }
+  // qty × rate × months. A one-off line has one month.
+  function amountOf(l) { return Number(l.qty || 0) * Number(l.rate || 0) * Math.max(1, Number(l.tenure || 1)); }
+  function monthWord(ym) {
+    if (!ym) return '';
+    var d = new Date(String(ym).slice(0, 7) + '-01T00:00:00');
+    return isNaN(d.getTime()) ? String(ym) : d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+  }
+  function termWord(l) {
+    var n = Math.max(1, Number(l.tenure || 1));
+    if (n === 1 && !l.start_on) return '';
+    return (n > 1 ? n + ' months' : '') + (l.start_on ? (n > 1 ? ' from ' : 'From ') + monthWord(l.start_on) : '');
+  }
 
   function loadServices() {
     var box = $('crmServices');
@@ -926,9 +955,10 @@
     row.className = 'svc-row csv-row';
     row.innerHTML =
       '<span class="svc-name"><b>' + esc(l.label) + '</b>' +
-        (l.note || l.unit ? '<small>' + esc([l.unit, l.note].filter(Boolean).join(' · ')) + '</small>' : '') + '</span>' +
+        (l.note || l.unit || termWord(l) ? '<small>' + esc([l.unit, termWord(l), l.note].filter(Boolean).join(' · ')) + '</small>' : '') + '</span>' +
       '<span class="svc-state"><span class="tone ' + w[1] + '">' + esc(w[0]) + '</span></span>' +
-      '<span class="svc-rate">' + esc(Number(l.qty) + ' × ' + MON.money2(l.rate, c.market)) + '</span>' +
+      '<span class="svc-rate">' + esc(Number(l.qty) + ' × ' + MON.money2(l.rate, c.market) +
+        (Number(l.tenure || 1) > 1 ? ' × ' + Number(l.tenure) + ' mo' : '')) + '</span>' +
       '<span class="svc-rate"><b>' + esc(MON.money2(amountOf(l), c.market)) + '</b></span>' +
       '<span class="team-act">' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
@@ -979,6 +1009,8 @@
       $('svQty').value = l ? Number(l.qty || 1) : 1;
       $('svRate').value = l ? Number(l.rate || 0) : '';
       $('svState').value = l ? (l.state || 'enquired') : 'enquired';
+      $('svTenure').value = l ? Math.max(1, Number(l.tenure || 1)) : 1;
+      $('svStart').value = l ? (l.start_on || '') : '';
       $('svNote').value = l ? (l.note || '') : '';
       syncPick(!l);
       msg('svMsg', '');
@@ -1001,6 +1033,7 @@
     var row = {
       service_slug: s ? s.slug : null, label: label, unit: s ? (s.unit || null) : null,
       qty: Number(val('svQty') || 1), rate: Number(val('svRate') || 0),
+      tenure: Math.max(1, Number(val('svTenure') || 1)), start_on: val('svStart') || null,
       state: $('svState').value, note: val('svNote') || null
     };
     if (editingService) { saveService(editingService, row); return; }

@@ -13,23 +13,23 @@
      CDN rather than the website builder's, so a site rebuild cannot break it. -->
 <link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
 <link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
-<link rel="stylesheet" href="/css/portal.css?v=20260912c">
+<link rel="stylesheet" href="/css/portal.css?v=20260912d">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<script src="/js/config.js?v=20260912c"></script>
-<script src="/js/api.js?v=20260912c"></script>
-<script src="/js/money.js?v=20260912c"></script>
-<script src="/js/mockups.js?v=20260912c"></script>
+<script src="/js/config.js?v=20260912d"></script>
+<script src="/js/api.js?v=20260912d"></script>
+<script src="/js/money.js?v=20260912d"></script>
+<script src="/js/mockups.js?v=20260912d"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260912c" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260912d" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -224,7 +224,7 @@
 
         <!-- The people. A company does not answer the phone. -->
         <div class="viewhead">
-          <span class="headmark"><h2>Contacts</h2></span>
+          <span class="headmark"><h2>Client details</h2></span>
           <button class="btn btn-primary" id="crmAddContact" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add contact</button>
         </div>
         <div class="panel" id="crmContactBox" hidden>
@@ -257,97 +257,6 @@
           <div class="msg" id="ctMsg"></div>
         </div>
         <div id="crmContacts"></div>
-
-        <!-- What they asked for, were quoted, and confirmed. Lines come from
-             the rate card and keep their own price. -->
-        <div class="viewhead">
-          <span class="headmark"><h2>Services</h2></span>
-          <button class="btn btn-primary" id="crmAddService" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
-        </div>
-        <div class="panel" id="crmServiceBox" hidden>
-          <div class="panelhead"><h3 id="crmServiceTitle">New service</h3></div>
-          <div class="row">
-            <div><label class="field-label" for="svPick">Service</label>
-              <select class="select" id="svPick"></select></div>
-            <div style="flex:0 0 110px"><label class="field-label" for="svQty">Qty</label>
-              <input class="input" id="svQty" type="number" min="0" step="1" value="1"></div>
-            <div style="flex:0 0 170px"><label class="field-label" for="svRate">Rate</label>
-              <input class="input" id="svRate" type="number" min="0" step="10" placeholder="0"></div>
-            <div style="flex:0 0 170px"><label class="field-label" for="svState">State</label>
-              <select class="select" id="svState">
-                <option value="enquired">Enquired</option>
-                <option value="quoted">Quoted</option>
-                <option value="confirmed">Confirmed</option>
-              </select></div>
-          </div>
-          <div class="row" style="margin-top:12px" id="svLabelRow" hidden>
-            <div><label class="field-label" for="svLabel">Name</label>
-              <input class="input" id="svLabel" placeholder="Service name"></div>
-          </div>
-          <div class="row" style="margin-top:12px">
-            <div><label class="field-label" for="svNote">Note</label>
-              <input class="input" id="svNote" placeholder="Note"></div>
-          </div>
-          <div class="row" style="margin-top:14px">
-            <button class="btn btn-primary" id="svSave" type="button">Save</button>
-            <button class="btn btn-quiet" id="svCancel" type="button" style="flex:0 0 auto">Cancel</button>
-          </div>
-          <div class="msg" id="svMsg"></div>
-        </div>
-        <div class="msg" id="crmServiceMsg"></div>
-        <div id="crmServices"></div>
-
-        <!-- Quotations and invoices issued from the lines above, kept as issued. -->
-        <div class="viewhead">
-          <span class="headmark"><h2>Documents</h2></span>
-          <div class="crm-engage-actions">
-            <button class="btn btn-icon" id="crmQuote" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg><span>Issue quotation</span></button>
-            <button class="btn btn-icon" id="crmInvoice" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg><span>Issue invoice</span></button>
-          </div>
-        </div>
-        <div class="msg" id="crmDocMsg"></div>
-        <div id="crmDocuments"></div>
-
-        <!-- Every call, visit and message, newest first. -->
-        <div class="viewhead">
-          <span class="headmark"><h2>Calls and visits</h2></span>
-          <button class="btn btn-primary" id="crmAddTouch" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add entry</button>
-        </div>
-        <div class="panel" id="crmTouchBox" hidden>
-          <div class="panelhead"><h3 id="crmTouchTitle">New entry</h3></div>
-          <div class="row">
-            <div style="flex:0 0 170px"><label class="field-label" for="tcKind">Type</label>
-              <select class="select" id="tcKind">
-                <option value="call">Call</option>
-                <option value="visit">Site visit</option>
-                <option value="meeting">Meeting</option>
-                <option value="whatsapp">WhatsApp</option>
-                <option value="email">Email</option>
-                <option value="note">Note</option>
-              </select></div>
-            <div style="flex:0 0 170px"><label class="field-label" for="tcDate">Date</label>
-              <input class="input" id="tcDate" type="date"></div>
-            <div><label class="field-label" for="tcWith">With</label>
-              <input class="input" id="tcWith" list="crmContactNames" placeholder="John Doe">
-              <datalist id="crmContactNames"></datalist></div>
-          </div>
-          <div class="row" style="margin-top:12px">
-            <div><label class="field-label" for="tcSummary">Summary</label>
-              <textarea class="input textarea" id="tcSummary" rows="3" placeholder="Summary"></textarea></div>
-          </div>
-          <div class="row" style="margin-top:12px">
-            <div><label class="field-label" for="tcNext">Next action</label>
-              <input class="input" id="tcNext" placeholder="Next action"></div>
-            <div style="flex:0 0 170px"><label class="field-label" for="tcNextAt">Due</label>
-              <input class="input" id="tcNextAt" type="date"></div>
-          </div>
-          <div class="row" style="margin-top:14px">
-            <button class="btn btn-primary" id="tcSave" type="button">Save</button>
-            <button class="btn btn-quiet" id="tcCancel" type="button" style="flex:0 0 auto">Cancel</button>
-          </div>
-          <div class="msg" id="tcMsg"></div>
-        </div>
-        <div id="crmTouches"></div>
 
         <!-- Billing: every field an e-invoice needs, mandatory before Active. -->
         <section class="panel panel-collapse">
@@ -432,6 +341,102 @@
           </div>
         </section>
 
+        <!-- Every call, visit and message, newest first. -->
+        <div class="viewhead">
+          <span class="headmark"><h2>Calls and visits</h2></span>
+          <button class="btn btn-primary" id="crmAddTouch" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add entry</button>
+        </div>
+        <div class="panel" id="crmTouchBox" hidden>
+          <div class="panelhead"><h3 id="crmTouchTitle">New entry</h3></div>
+          <div class="row">
+            <div style="flex:0 0 170px"><label class="field-label" for="tcKind">Type</label>
+              <select class="select" id="tcKind">
+                <option value="call">Call</option>
+                <option value="visit">Site visit</option>
+                <option value="meeting">Meeting</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="email">Email</option>
+                <option value="note">Note</option>
+              </select></div>
+            <div style="flex:0 0 170px"><label class="field-label" for="tcDate">Date</label>
+              <input class="input" id="tcDate" type="date"></div>
+            <div><label class="field-label" for="tcWith">With</label>
+              <input class="input" id="tcWith" list="crmContactNames" placeholder="John Doe">
+              <datalist id="crmContactNames"></datalist></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div><label class="field-label" for="tcSummary">Summary</label>
+              <textarea class="input textarea" id="tcSummary" rows="3" placeholder="Summary"></textarea></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div><label class="field-label" for="tcNext">Next action</label>
+              <input class="input" id="tcNext" placeholder="Next action"></div>
+            <div style="flex:0 0 170px"><label class="field-label" for="tcNextAt">Due</label>
+              <input class="input" id="tcNextAt" type="date"></div>
+          </div>
+          <div class="row" style="margin-top:14px">
+            <button class="btn btn-primary" id="tcSave" type="button">Save</button>
+            <button class="btn btn-quiet" id="tcCancel" type="button" style="flex:0 0 auto">Cancel</button>
+          </div>
+          <div class="msg" id="tcMsg"></div>
+        </div>
+        <div id="crmTouches"></div>
+
+        <!-- What they asked for, were quoted, and confirmed. Lines come from
+             the rate card and keep their own price. -->
+        <div class="viewhead">
+          <span class="headmark"><h2>Services</h2></span>
+          <button class="btn btn-primary" id="crmAddService" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
+        </div>
+        <div class="panel" id="crmServiceBox" hidden>
+          <div class="panelhead"><h3 id="crmServiceTitle">New service</h3></div>
+          <div class="row">
+            <div><label class="field-label" for="svPick">Service</label>
+              <select class="select" id="svPick"></select></div>
+            <div style="flex:0 0 110px"><label class="field-label" for="svQty">Qty</label>
+              <input class="input" id="svQty" type="number" min="0" step="1" value="1"></div>
+            <div style="flex:0 0 170px"><label class="field-label" for="svRate">Rate</label>
+              <input class="input" id="svRate" type="number" min="0" step="10" placeholder="0"></div>
+            <div style="flex:0 0 130px"><label class="field-label" for="svTenure">Months</label>
+              <input class="input" id="svTenure" type="number" min="1" step="1" value="1"></div>
+            <div style="flex:0 0 170px"><label class="field-label" for="svStart">Start</label>
+              <input class="input" id="svStart" type="month"></div>
+            <div style="flex:0 0 170px"><label class="field-label" for="svState">State</label>
+              <select class="select" id="svState">
+                <option value="enquired">Enquired</option>
+                <option value="quoted">Quoted</option>
+                <option value="confirmed">Confirmed</option>
+              </select></div>
+          </div>
+          <div class="row" style="margin-top:12px" id="svLabelRow" hidden>
+            <div><label class="field-label" for="svLabel">Name</label>
+              <input class="input" id="svLabel" placeholder="Service name"></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div><label class="field-label" for="svNote">Note</label>
+              <input class="input" id="svNote" placeholder="Note"></div>
+          </div>
+          <div class="row" style="margin-top:14px">
+            <button class="btn btn-primary" id="svSave" type="button">Save</button>
+            <button class="btn btn-quiet" id="svCancel" type="button" style="flex:0 0 auto">Cancel</button>
+          </div>
+          <div class="msg" id="svMsg"></div>
+        </div>
+        <div class="msg" id="crmServiceMsg"></div>
+        <div id="crmServices"></div>
+
+        <!-- Quotations and invoices issued from the lines above, kept as issued. -->
+        <div class="viewhead">
+          <span class="headmark"><h2>Documents</h2></span>
+          <div class="crm-engage-actions">
+            <button class="btn btn-icon" id="crmQuote" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg><span>Issue quotation</span></button>
+            <button class="btn btn-icon" id="crmInvoice" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg><span>Issue invoice</span></button>
+          </div>
+        </div>
+        <div class="msg" id="crmDocMsg"></div>
+        <div id="crmDocuments"></div>
+
+        <div id="crmEngage" hidden>
         <!-- The work, last, because none of it exists until the client is
              active. Each engagement says where it is and opens in its section. -->
         <div class="viewhead">
@@ -439,6 +444,7 @@
           <div class="crm-engage-actions" id="crmEngageActions"></div>
         </div>
         <div id="crmWorkList"></div>
+        </div>
       </div>
     </div>
 
@@ -1115,10 +1121,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260912c"></script>
-<script src="/js/documents.js?v=20260912c"></script>
-<script src="/js/crm.js?v=20260912c"></script>
-<script src="/js/team.js?v=20260912c"></script>
-<script src="/js/campaigns.js?v=20260912c"></script>
+<script src="/js/admin.js?v=20260912d"></script>
+<script src="/js/documents.js?v=20260912d"></script>
+<script src="/js/crm.js?v=20260912d"></script>
+<script src="/js/team.js?v=20260912d"></script>
+<script src="/js/campaigns.js?v=20260912d"></script>
 </body>
 </html>
