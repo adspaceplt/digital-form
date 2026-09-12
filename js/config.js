@@ -10,7 +10,7 @@
  * The anon key is safe to publish. Every table is protected by row level
  * security and clients can only reach data through the token-checked functions.
  */
-/* The issuer printed on quotations and invoices. Blank lines are left out. */
+/* The issuer printed on the Letter of Intent. Blank lines are left out. */
 window.ADSPACE_ORG = {
   name: 'ADSPACE PLT',
   regno: '202304002162',      // business registration no.
@@ -19,12 +19,13 @@ window.ADSPACE_ORG = {
   email: 'advertise@adspacestudios.com',
   phone: '60187625233',
   bank: '',       // bank, account number and account name, on one line
-  // The mark and the brand font on quotations and invoices. PNG or JPG for
-  // the logo; TTF or OTF for the fonts, served with CORS. Blank falls back to
-  // the wordmark and Helvetica.
+  // The mark and the brand fonts on the Letter of Intent. Files, not font
+  // names: PNG or JPG for the mark, TTF or OTF for the fonts, same origin or
+  // served with CORS. Blank mark uses brandLogo below; blank fonts fall back
+  // to Helvetica.
   logo: 'https://mycdn.adspace.me/adspace-brandname.png',
-  font: 'Slate Book, Inter, Helvetica, Arial',
-  fontBold: 'Slate Medium'
+  font: '/css/SlateBook.TTF',
+  fontBold: '/css/SlateRg.TTF'
 };
 
 window.ADSPACE_CONFIG = {
