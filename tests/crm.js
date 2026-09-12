@@ -234,7 +234,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   }));
   check('the PDF carries the number, the client, the contact and the total',
     await p.evaluate(yymm => window.__drawn.some(s => s === 'AQT/INT/' + yymm + '001') && window.__drawn.some(s => /Star Living/i.test(s)) &&
-      window.__drawn.some(s => /Mr Lim/.test(s)) && window.__drawn.some(s => /28,490/.test(s)) && window.__drawn.some(s => /Letter of Intent/.test(s)) && window.__drawn.some(s => /intends to engage/.test(s)), yymm));
+      window.__drawn.some(s => /Mr Lim/.test(s)) && window.__drawn.some(s => /28,490/.test(s)) && window.__drawn.some(s => /LETTER OF INTENT/.test(s)) && window.__drawn.some(s => /intends to engage/.test(s)), yymm));
   check('the document is listed', await p.locator('#crmDocuments .doc-row:not(.crm-head)').count() === 1);
   await p.locator('#crmCover').click(); await p.waitForTimeout(800);
   check('the next one this month takes the next number',
