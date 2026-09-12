@@ -10,21 +10,22 @@
  * The anon key is safe to publish. Every table is protected by row level
  * security and clients can only reach data through the token-checked functions.
  */
-/* The issuer printed on the cover letter. Blank lines are left out. */
+/* The issuer printed on the Letter of Intent. Blank lines are left out. */
 window.ADSPACE_ORG = {
   name: 'ADSPACE PLT',
-  regno: '',      // business registration no.
-  sst: '',        // SST registration no.
-  address: '',
-  email: '',
-  phone: '',
+  regno: '202304002162',      // business registration no.
+  sst: 'J31-2401-32100002',        // SST registration no.
+  address: '61-02, Jalan Mutiara Emas 2A, Taman Mount Austin, 81100 Johor Bahru, Johor, Malaysia',
+  email: 'advertise@adspacestudios.com',
+  phone: '60187625233',
   bank: '',       // bank, account number and account name, on one line
-  // The mark on the cover letter: blank uses brandLogo below, the header's
-  // own mark. TTF or OTF for the fonts. Every file is fetched, so it must
-  // be served with CORS. Blank fonts fall back to Helvetica.
-  logo: '',
-  font: '',
-  fontBold: ''
+  // The mark and the brand fonts on the Letter of Intent. Files, not font
+  // names: PNG or JPG for the mark, TTF or OTF for the fonts, same origin or
+  // served with CORS. Blank mark uses brandLogo below; blank fonts fall back
+  // to Helvetica.
+  logo: 'https://mycdn.adspace.me/adspace-brandname.png',
+  font: '/css/SlateBook.TTF',
+  fontBold: '/css/SlateRg.TTF'
 };
 
 window.ADSPACE_CONFIG = {
@@ -63,7 +64,7 @@ window.ADSPACE_CONFIG = {
 
   brandLogo: 'https://mycdn.adspace.me/adspace-brandname.png',
   agencyName: 'ADspace',
-  supportEmail: 'adspacestudios@gmail.com',
+  supportEmail: 'advertise@adspacestudios.com',
 
   // Reply-to on anything the portal sends on the team's behalf.
   accountEmail: 'marketing@adspacestudios.com'
