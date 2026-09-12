@@ -13,18 +13,18 @@
 /* The issuer printed on quotations and invoices. Blank lines are left out. */
 window.ADSPACE_ORG = {
   name: 'ADSPACE PLT',
-  regno: '',      // business registration no.
-  sst: '',        // SST registration no.
-  address: '',
-  email: '',
-  phone: '',
+  regno: '202304002162',      // business registration no.
+  sst: 'J31-2401-32100002',        // SST registration no.
+  address: '61-02, Jalan Mutiara Emas 2A, Taman Mount Austin, 81100 Johor Bahru, Johor, Malaysia',
+  email: 'advertise@adspacestudios.com',
+  phone: '60187625233',
   bank: '',       // bank, account number and account name, on one line
   // The mark and the brand font on quotations and invoices. PNG or JPG for
   // the logo; TTF or OTF for the fonts, served with CORS. Blank falls back to
   // the wordmark and Helvetica.
-  logo: '',
-  font: '',
-  fontBold: ''
+  logo: 'https://mycdn.adspace.me/adspace-brandname.png',
+  font: 'Slate Book, Inter, Helvetica, Arial',
+  fontBold: 'Slate Medium'
 };
 
 window.ADSPACE_CONFIG = {
@@ -63,7 +63,7 @@ window.ADSPACE_CONFIG = {
 
   brandLogo: 'https://mycdn.adspace.me/adspace-brandname.png',
   agencyName: 'ADspace',
-  supportEmail: 'adspacestudios@gmail.com',
+  supportEmail: 'advertise@adspacestudios.com',
 
   // Reply-to on anything the portal sends on the team's behalf.
   accountEmail: 'marketing@adspacestudios.com'
