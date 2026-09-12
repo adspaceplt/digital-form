@@ -156,15 +156,27 @@ Rules:
   Contact person (required), phone, email, Enquiry. Owner, Industry and
   Market sit beside them. Nothing else at intake: no website, socials,
   billing or deal value. Those live on the record.
-- The client record, top to bottom, follows the sale: head (Source, Owner,
-  Industry, Market, Value, Added; Edit changes only these and the stage),
-  Contacts, Services (lines from the rate card with Enquired / Quoted /
+- The sale, in order: support keys in the lead (Lead); sales logs the
+  first call or visit (the record moves to Contacted by itself); billing
+  details and brand profile are filled as the deal firms up; sales adds
+  service lines with price, months and start month and confirms them; a
+  quotation is issued for the client to sign (Proposal sent); billing
+  complete and Active; only then engagements.
+- The client record, top to bottom, follows that order: head (Source,
+  Owner, Industry, Market, Value, Added; Edit opens in place of the head
+  and changes only these and the stage), Client details (contacts, then
+  the Billing details and Brand profile folds), Calls and visits, Services
+  (lines from the rate card with qty × rate × months, Enquired / Quoted /
   Confirmed; the confirmed total, else the quoted total, is the Value),
-  Calls and visits, Billing details (fold, required before Active), Brand
-  profile (fold: website, office phone, socials, brand notes), Engagements.
+  Documents (quotation, invoice), Engagements (shown only once Active).
+- Stages: Lead, Contacted, Proposal sent, Active, Paused, Past.
 - Every section on the record edits itself with its own Save. Choosing
   Active in Edit with billing missing saves the rest, keeps the stage and
   opens Billing details on the first missing field.
+- A table with no column header has no pad above its first row; the
+  first row sits as far from the top as the last does from the bottom
+  (`.crm-table:has(> .crm-head)` carries the pad). The audit fails on
+  uneven card padding.
 - Documents (`js/documents.js`): a quotation takes quoted and confirmed
   lines; an invoice takes confirmed lines and is offered only when the
   client is Active with billing complete. Numbers are `AQTYYMMDDXXX` and
