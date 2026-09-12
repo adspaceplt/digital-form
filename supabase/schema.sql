@@ -1459,13 +1459,13 @@ create policy client_services_rw on public.client_services for all to authentica
 -- DOCUMENTS: quotations and invoices, kept as issued.
 -- ============================================================================
 -- A snapshot of the deal at the moment of issue, so the PDF can be drawn
--- again later exactly as issued. The cover letter is numbered
+-- again later exactly as issued. The Letter of Intent is numbered
 -- AQT/INT/YYMMXXX; the sequence restarts each month. bill_to holds the
 -- client, contact and deal facts as they stood.
 create table if not exists public.client_documents (
   id         uuid primary key default gen_random_uuid(),
   client_id  uuid not null references public.clients(id) on delete cascade,
-  kind       text not null,                       -- cover (earlier rows: quotation | invoice)
+  kind       text not null,                       -- intent (earlier rows: cover | quotation | invoice)
   number     text not null unique,
   issued_at  date not null default current_date,
   market     text not null default 'MY',

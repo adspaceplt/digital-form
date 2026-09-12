@@ -1,0 +1,4 @@
+tests/walk/
+tests/pdfx/node_modules/
+tests/*.png
+tests/*.pdf

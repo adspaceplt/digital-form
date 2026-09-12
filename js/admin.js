@@ -2087,6 +2087,7 @@
     iconBtn: iconBtn,
     log: logAction,
     actor: function () { return actor; },
+    actorName: function () { return (me && me.name) || actor; },
     // The signed PUT to S3, so an invoice PDF travels the same road as media.
     putToS3: putToS3,
     // Where you are, and how far down. The address bar is shared property.
