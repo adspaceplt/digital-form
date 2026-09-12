@@ -72,23 +72,37 @@
     return STAGES[0];
   }
 
-  /* What an e-invoice needs. A client is not active until all of it is here.
-     Field id, column, label. */
+  /* What an invoice needs. Field id, column, label, required. A client is
+     not active until the required ones are here. The billing contact is one
+     of the client's contacts, the main contact unless another is chosen. */
   var BILLING = [
-    ['crmLegalName',        'legal_name',         'Company name as registered'],
-    ['crmCompanyNo',        'company_no',         'Business registration no.'],
-    ['crmCompanyNoOld',     'company_no_old',     'Old registration no.'],
-    ['crmTin',              'tin',                'TIN'],
-    ['crmSstNo',            'sst_no',             'SST registration no.'],
-    ['crmBillContact',      'bill_contact',       'Contact person'],
-    ['crmBillContactEmail', 'bill_contact_email', 'Contact person email'],
-    ['crmBillContactPhone', 'bill_contact_phone', 'Contact person mobile'],
-    ['crmFinanceEmail',     'finance_email',      'Finance department email'],
-    ['crmBillAddr',         'billing_address',    'Company billing address']
+    ['crmLegalName',    'legal_name',      'Company name as registered', true],
+    ['crmCompanyNo',    'company_no',      'Business registration no.',  true],
+    ['crmCompanyNoOld', 'company_no_old',  'Old registration no.'],
+    ['crmTin',          'tin',             'TIN'],
+    ['crmSstNo',        'sst_no',          'SST registration no.'],
+    ['crmBillContact',  'bill_contact_id', 'Billing contact', true],
+    ['crmFinanceEmail', 'finance_email',   'Finance department email'],
+    ['crmBillAddr',     'billing_address', 'Company billing address', true]
   ];
+  var BILLING_REQUIRED = BILLING.filter(function (f) { return f[3]; });
+  function billContact(c) {
+    var list = state.contacts || [];
+    return list.filter(function (x) { return x.id === c.bill_contact_id; })[0] ||
+           list.filter(function (x) { return x.is_primary; })[0] || null;
+  }
   function billingMissing(c) {
-    return BILLING.filter(function (f) { return !String(c[f[1]] || '').trim(); })
-                  .map(function (f) { return f[2]; });
+    return BILLING_REQUIRED.filter(function (f) {
+      return f[1] === 'bill_contact_id' ? !billContact(c) : !String(c[f[1]] || '').trim();
+    }).map(function (f) { return f[2]; });
+  }
+  /* A ring for how much of a group is filled, with the count beside it. */
+  function ring(done, total) {
+    var r = 8, len = 2 * Math.PI * r, off = len * (1 - (total ? done / total : 0));
+    return '<span class="ringline"><svg class="ring' + (done >= total ? ' is-ok' : '') + '" viewBox="0 0 20 20" aria-hidden="true">' +
+      '<circle class="ring-track" cx="10" cy="10" r="' + r + '"/>' +
+      '<circle class="ring-arc" cx="10" cy="10" r="' + r + '" stroke-dasharray="' + len.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '"/>' +
+      '</svg>' + (done >= total ? 'Complete' : done + ' of ' + total) + '</span>';
   }
 
   var state = { clients: [], team: [], client: null, editing: null, contacts: [], touches: [], services: [] };
@@ -307,6 +321,7 @@
 
   // ---- One client ---------------------------------------------------------
   function openClient(c, restoring) {
+    if (!state.client || state.client.id !== c.id) state.contacts = [];
     state.client = c;
     $('crmListView').hidden = true;
     $('crmWork').hidden = false;
@@ -343,18 +358,10 @@
     });
     $('crmLinks').innerHTML = links.join('');
 
-    // The gate, stated once, with what is missing.
-    var missing = billingMissing(c);
-    $('crmGate').hidden = c.stage === 'active' || c.stage === 'past';
-    $('crmGateText').textContent = missing.length
-      ? 'Billing details required before Active: ' + missing.join(', ') + '.'
-      : 'Billing details complete. Set the stage to Active from Edit.';
-
     BILLING.forEach(function (f) { $(f[0]).value = c[f[1]] || ''; });
     $('crmSstApplies').checked = c.sst_applies !== false;
     $('crmSstLabel').textContent = 'Charge ' + MON.taxLabel() + ' on this client\'s quotes';
-    $('crmBillSummary').textContent = missing.length
-      ? missing.length + ' of ' + BILLING.length + ' still needed' : 'Complete';
+    paintBilling(c);
     BRAND.forEach(function (f) { $(f[0]).value = c[f[1]] || ''; });
     $('crmNotes').value = c.brand_notes || '';
     var linksOn = BRAND.filter(function (f) { return c[f[1]]; }).length;
@@ -418,6 +425,23 @@
   });
 
   // ---- Billing and notes --------------------------------------------------
+  /* The gate, stated once, with what is missing; the fold's ring; the
+     billing contact picked from the client's contacts. Painted again when
+     the contacts arrive, since the contact is one of them. */
+  function paintBilling(c) {
+    var missing = billingMissing(c);
+    $('crmGate').hidden = c.stage === 'active' || c.stage === 'past';
+    $('crmGateText').textContent = missing.length
+      ? 'Billing details required before Active: ' + missing.join(', ') + '.'
+      : 'Billing details complete.';
+    $('crmBillSummary').innerHTML = ring(BILLING_REQUIRED.length - missing.length, BILLING_REQUIRED.length);
+    var pick = billContact(c);
+    $('crmBillContact').innerHTML = '<option value="">None</option>' + (state.contacts || []).map(function (ct) {
+      return '<option value="' + esc(ct.id) + '"' + (pick && pick.id === ct.id ? ' selected' : '') + '>' + esc(ct.name) +
+        (ct.is_primary ? ' · Main contact' : '') + '</option>';
+    }).join('');
+  }
+
   // The registered name goes on an invoice in capitals, so it is kept that way.
   $('crmLegalName').addEventListener('input', function () {
     var pos = this.selectionStart;
@@ -437,8 +461,8 @@
       openClient(state.client);
       setOpen('crmBillToggle', 'crmBillBody', true);
       msg('crmBillMsg', still.length
-        ? 'Saved. Still required: ' + still.join(', ') + '.'
-        : 'Saved. Billing details complete.',
+        ? 'Saved. Required before Active: ' + still.join(', ') + '.'
+        : 'Saved.',
         still.length ? 'warn' : 'ok');
     });
   });
@@ -471,14 +495,21 @@
         var all = r.data || [];
         state.contacts = all.filter(function (c) { return !c.archived_at; });
         var gone = all.filter(function (c) { return c.archived_at; });
+        paintBilling(state.client);
         $('crmContactNames').innerHTML = state.contacts.map(function (ct) {
           return '<option value="' + esc(ct.name) + '"></option>';
         }).join('');
         box.innerHTML = '';
-        if (!state.contacts.length) {
+        var shown = state.contacts.concat(showRemovedContacts ? gone : []);
+        if (!shown.length) {
           box.innerHTML = '<div class="empty">No contacts.</div>';
+        } else {
+          var table = document.createElement('div');
+          table.className = 'crm-table';
+          table.innerHTML = '<div class="crm-head svc-row ct-row"><span>Contact</span><span>Reach</span><span></span></div>';
+          shown.forEach(function (ct) { table.appendChild(contactRow(ct, Boolean(ct.archived_at))); });
+          box.appendChild(table);
         }
-        state.contacts.forEach(function (ct) { box.appendChild(contactRow(ct, false)); });
         if (gone.length) {
           var t = document.createElement('button');
           t.type = 'button'; t.className = 'linkish crm-removed-toggle';
@@ -486,43 +517,37 @@
             ' removed contact' + (gone.length === 1 ? '' : 's');
           t.addEventListener('click', function () { showRemovedContacts = !showRemovedContacts; loadContacts(); });
           box.appendChild(t);
-          if (showRemovedContacts) gone.forEach(function (ct) { box.appendChild(contactRow(ct, true)); });
         }
       });
   }
 
+  /* A contact is a row: who, how to reach them, a ⋯. The main contact
+     carries the word. */
   function contactRow(ct, removed) {
     var row = document.createElement('div');
-    row.className = 'kcard' + (removed ? ' is-off' : '');
+    row.className = 'svc-row ct-row' + (removed ? ' is-off' : '');
     var wa = String(ct.whatsapp || ct.phone || '').replace(/[^0-9]/g, '');
+    var sub = [ct.role, 'Writes in ' + (LANG_WORD[ct.lang] || 'English')].filter(Boolean).join(' · ');
     row.innerHTML =
-      '<header class="kcard-head">' +
-        '<span class="kcard-name">' + esc(ct.name) + '</span>' +
-        (removed ? '<span class="tone">Removed</span>' : '') +
-        (ct.is_primary && !removed ? '<span class="tone is-ok">Main contact</span>' : '') +
-        (ct.role ? '<span class="tone">' + esc(ct.role) + '</span>' : '') +
-        '<span class="crm-lang">Writes in ' + esc(LANG_WORD[ct.lang] || 'English') + '</span>' +
-        '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
-          '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>' +
-        '</button>' +
-      '</header>' +
-      '<div class="kmenu" data-menu hidden>' +
-        (removed
-          ? '<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>'
-          : '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
-            (ct.is_primary ? '' :
-              '<button class="kmenu-item" data-a="primary" type="button"><b>Main contact</b></button>') +
-            '<button class="kmenu-item is-danger" data-a="del" data-soft type="button"><b>Remove</b></button>') +
-      '</div>' +
-      '<div class="kstep kstep-terms">' +
-        '<span class="kstep-label">Reach</span>' +
-        '<span class="crm-reach">' +
-          (ct.phone ? '<a class="plink" href="tel:' + esc(ct.phone) + '">' + esc(ct.phone) + '</a>' : '') +
-          (wa ? '<a class="plink" href="https://wa.me/' + esc(wa) + '" target="_blank" rel="noopener">WhatsApp</a>' : '') +
-          (ct.email ? '<a class="plink" href="mailto:' + esc(ct.email) + '">' + esc(ct.email) + '</a>' : '') +
-          (!ct.phone && !ct.email ? '<span class="muted">Nothing recorded</span>' : '') +
-        '</span>' +
-      '</div>';
+      '<span class="svc-name"><b>' + esc(ct.name) +
+        (removed ? ' <span class="tone">Removed</span>' : ct.is_primary ? ' <span class="tone is-ok">Main contact</span>' : '') +
+        '</b><small>' + esc(sub) + '</small></span>' +
+      '<span class="crm-reach">' +
+        (ct.phone ? '<a class="plink" href="tel:' + esc(ct.phone) + '">' + esc(ct.phone) + '</a>' : '') +
+        (wa ? '<a class="plink" href="https://wa.me/' + esc(wa) + '" target="_blank" rel="noopener">WhatsApp</a>' : '') +
+        (ct.email ? '<a class="plink" href="mailto:' + esc(ct.email) + '">' + esc(ct.email) + '</a>' : '') +
+      '</span>' +
+      '<span class="team-act">' +
+        '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+        '<div class="kmenu" data-menu hidden>' +
+          (removed
+            ? '<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>'
+            : '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
+              (ct.is_primary ? '' :
+                '<button class="kmenu-item" data-a="primary" type="button"><b>Main contact</b></button>') +
+              '<button class="kmenu-item is-danger" data-a="del" data-soft type="button"><b>Remove</b></button>') +
+        '</div>' +
+      '</span>';
     wireMenu(row);
     var on = function (a, fn) { var el = row.querySelector('[data-a="' + a + '"]'); if (el) el.addEventListener('click', fn); };
     on('edit',    function () { openContact(ct); });
@@ -905,15 +930,12 @@
   function svcById(slug) { return (catalog || []).filter(function (s) { return s.slug === slug; })[0]; }
   // qty × rate × months. A one-off line has one month.
   function amountOf(l) { return Number(l.qty || 0) * Number(l.rate || 0) * Math.max(1, Number(l.tenure || 1)); }
-  function monthWord(ym) {
-    if (!ym) return '';
-    var d = new Date(String(ym).slice(0, 7) + '-01T00:00:00');
-    return isNaN(d.getTime()) ? String(ym) : d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
-  }
+  /* A start kept as a month (older lines) reads as its first day. */
+  function startDay(s) { s = String(s || ''); return s.length === 7 ? s + '-01' : s; }
   function termWord(l) {
     var n = Math.max(1, Number(l.tenure || 1));
     if (n === 1 && !l.start_on) return '';
-    return (n > 1 ? n + ' months' : '') + (l.start_on ? (n > 1 ? ' from ' : 'From ') + monthWord(l.start_on) : '');
+    return (n > 1 ? n + ' months' : '') + (l.start_on ? (n > 1 ? ' from ' : 'From ') + niceDate(startDay(l.start_on)) : '');
   }
 
   function loadServices() {
@@ -941,6 +963,8 @@
     }
     var table = document.createElement('div');
     table.className = 'crm-table';
+    table.innerHTML = '<div class="crm-head svc-row csv-row"><span>Service</span><span class="svc-rate">Qty × rate</span>' +
+      '<span class="svc-rate">Amount</span><span>State</span><span></span></div>';
     rows.forEach(function (l) { table.appendChild(serviceRow(l)); });
     var sum = function (st) {
       return rows.filter(function (l) { return l.state === st; }).reduce(function (s, l) { return s + amountOf(l); }, 0);
@@ -963,13 +987,13 @@
     row.innerHTML =
       '<span class="svc-name"><b>' + esc(l.label) + '</b>' +
         (l.note || l.unit || termWord(l) ? '<small>' + esc([l.unit, termWord(l), l.note].filter(Boolean).join(' · ')) + '</small>' : '') + '</span>' +
+      '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + MON.money2(l.rate, c.market) +
+        (Number(l.tenure || 1) > 1 ? ' × ' + Number(l.tenure) + ' mo' : '')) + '</span>' +
+      '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(amountOf(l), c.market)) + '</b></span>' +
       '<span class="svc-state"><select class="select select-sm state-select ' +w[1] + '" data-f="state" aria-label="State">' +
         Object.keys(SV_STATE).map(function (k) {
           return '<option value="' + k + '"' + (k === l.state ? ' selected' : '') + '>' + esc(SV_STATE[k][0]) + '</option>';
         }).join('') + '</select></span>' +
-      '<span class="svc-rate">' + esc(Number(l.qty) + ' × ' + MON.money2(l.rate, c.market) +
-        (Number(l.tenure || 1) > 1 ? ' × ' + Number(l.tenure) + ' mo' : '')) + '</span>' +
-      '<span class="svc-rate"><b>' + esc(MON.money2(amountOf(l), c.market)) + '</b></span>' +
       '<span class="team-act">' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
@@ -1084,16 +1108,14 @@
   }
 
   // ---- Documents ------------------------------------------------------------
-  /* Quotations and invoices issued from the lines above. A quotation takes
-     quoted and confirmed lines; an invoice takes confirmed lines and needs an
-     Active client with billing complete. Each is kept as issued. */
+  /* The cover letter: the deal as it stands, for the team that issues the
+     formal quotation. Each is kept as issued. */
   var DOCS = window.ADspaceDocs;
-  var DOC_WORD = { quotation: 'Quotation', invoice: 'Invoice' };
+  var DOC_WORD = { cover: 'Cover letter', quotation: 'Quotation', invoice: 'Invoice' };
 
   function loadDocuments() {
     var box = $('crmDocuments');
     var c = state.client;
-    $('crmInvoice').hidden = !(c.stage === 'active' && !billingMissing(c).length);
     if (!DOCS) { box.innerHTML = ''; return; }
     box.innerHTML = '<div class="empty">Loading…</div>';
     DOCS.list(c.id, function (rows, err) {
@@ -1102,6 +1124,7 @@
       if (!rows.length) { box.innerHTML = '<div class="empty">No documents.</div>'; return; }
       var table = document.createElement('div');
       table.className = 'crm-table';
+      table.innerHTML = '<div class="crm-head svc-row doc-row"><span>Document</span><span class="svc-rate">Total</span><span>State</span><span></span></div>';
       rows.forEach(function (d) { table.appendChild(documentRow(d)); });
       box.appendChild(table);
     });
@@ -1113,10 +1136,10 @@
     row.innerHTML =
       '<span class="svc-name"><b>' + esc(d.number) + '</b><small>' + esc(DOC_WORD[d.kind] || d.kind) + ' · ' + esc(niceDate(d.issued_at)) +
         (d.issued_by ? ' · ' + esc(d.issued_by) : '') + '</small></span>' +
+      '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(d.total, d.market)) + '</b></span>' +
       '<span class="svc-state"><select class="select select-sm state-select ' +(d.voided_at ? 'is-off' : 'is-ok') + '" data-f="state" aria-label="State">' +
         '<option value="issued"' + (d.voided_at ? '' : ' selected') + '>Issued</option>' +
         '<option value="void"' + (d.voided_at ? ' selected' : '') + '>Void</option></select></span>' +
-      '<span class="svc-rate"><b>' + esc(MON.money2(d.total, d.market)) + '</b></span>' +
       '<span class="team-act">' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
@@ -1146,17 +1169,21 @@
     return row;
   }
 
-  function issueDoc(kind) {
+  $('crmCover').addEventListener('click', function () {
     if (!DOCS) return;
     msg('crmDocMsg', '');
-    DOCS.issue(kind, state.client, state.services, function (r) {
+    var c = state.client;
+    var deal = {
+      owner: c.owner || '', source: c.source ? sourceWord(c.source) : '', industry: c.industry || '',
+      stage: stageWord(c.stage || 'lead')[1], enquiry: c.deal_note || '',
+      finance_email: c.finance_email || '', sst_no: c.sst_no || '', company_no_old: c.company_no_old || ''
+    };
+    DOCS.issue('cover', c, billContact(c), state.services, deal, function (r) {
       if (r.error) { msg('crmDocMsg', r.error, 'err'); return; }
       msg('crmDocMsg', r.warn ? r.doc.number + ' issued. ' + r.warn : r.doc.number + ' issued.', r.warn ? 'warn' : 'ok');
       loadDocuments();
     });
-  }
-  $('crmQuote').addEventListener('click', function () { issueDoc('quotation'); });
-  $('crmInvoice').addEventListener('click', function () { issueDoc('invoice'); });
+  });
 
   // ---- Rate card (the Services section) ------------------------------------
   var editingSvc = null;
@@ -1189,7 +1216,8 @@
       var sec = document.createElement('section');
       sec.className = 'crm-group';
       sec.innerHTML = '<div class="crm-group-head"><h3>' + esc(t[0]) + ' <span>' + n + '</span></h3></div>' +
-        '<div class="crm-table"></div>';
+        '<div class="crm-table"><div class="crm-head svc-row cat-row"><span>Service</span><span class="svc-rate">Rate</span>' +
+        '<span>Unit</span><span>State</span><span></span></div></div>';
       var table = sec.querySelector('.crm-table');
       cats.forEach(function (k) {
         var cat = document.createElement('div');
@@ -1211,8 +1239,8 @@
       '<span class="svc-state">' + (isAdmin()
         ? '<select class="select select-sm state-select ' +(s.active === false ? 'is-off' : 'is-ok') + '" data-f="active" aria-label="State">' +
             '<option value="on"' + (s.active === false ? '' : ' selected') + '>Active</option>' +
-            '<option value="off"' + (s.active === false ? ' selected' : '') + '>Retired</option></select>'
-        : (s.active === false ? '<span class="tone">Retired</span>' : '')) + '</span>' +
+            '<option value="off"' + (s.active === false ? ' selected' : '') + '>Inactive</option></select>'
+        : (s.active === false ? '<span class="tone">Inactive</span>' : '')) + '</span>' +
       '<span class="team-act">' + (isAdmin()
         ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +

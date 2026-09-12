@@ -29,6 +29,7 @@
      the moment a field is focused. */
   --ctl-h:      38px;
   --ctl-h-sm:   32px;
+  --state-w:    124px;   /* every status select, every table */
   --ctl-text:   13px;
   --field-text: 14px;
   --shadow:     0 1px 2px rgba(19,24,26,.05);
@@ -2112,6 +2113,12 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   margin: 6px 0 16px;
 }
+/* The column count follows the cell count, so no fact sits alone. */
+.facts:has(> :nth-child(6)) { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+@media (max-width: 640px) {
+  .facts:has(> :nth-child(6)) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .facts:has(> :nth-child(5):last-child) > :last-child { grid-column: 1 / -1; }
+}
 .facts dt {
   font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
   color: var(--ink-mute); margin-bottom: 3px;
@@ -2465,18 +2472,22 @@ body > .shell { width: 100%; }
 /* A retired or voided row fades its content, never its ⋯: fading the row
    itself put the menu inside a faded stacking context, behind the next row. */
 .svc-row.is-off > :not(.team-act), .team-row.is-off > :not(.team-act), .group-row.is-off > :not(.team-act) { opacity: .55; }
+.svc-row.crm-head { padding: 0 15px 8px; border-bottom: 1px solid var(--line); }
 .svc-name { display: flex; flex-direction: column; min-width: 0; }
 .svc-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+.svc-name b .tone { margin-left: 6px; vertical-align: 1px; }
 .svc-name small { font-size: 12px; color: var(--ink-mute); }
 .svc-rate { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; font-size: 13.5px; }
 .svc-unit { font-size: 13px; color: var(--ink-mute); min-width: 0; }
-.svc-state { text-align: center; }
-/* A client's lines: name, state, qty × rate, amount, ⋯ */
-.csv-row { grid-template-columns: minmax(0, 1fr) 140px 150px 130px var(--ctl-h); }
-/* A document: number and kind, state, total, ⋯ */
-.doc-row { grid-template-columns: minmax(0, 1fr) 140px 150px var(--ctl-h); }
-/* A rate card line: name, rate, unit, state, ⋯ */
-.cat-row { grid-template-columns: minmax(0, 1fr) 130px minmax(0, 1fr) 120px var(--ctl-h); }
+.svc-calc { font-size: 12.5px; color: var(--ink-mute); }
+/* The state column is one width everywhere, so the selects line up down a
+   table and across sections. It sits last before the ⋯. */
+.svc-state { text-align: left; }
+.csv-row { grid-template-columns: minmax(0, 1fr) 160px 130px var(--state-w) var(--ctl-h); }
+.doc-row { grid-template-columns: minmax(0, 1fr) 130px var(--state-w) var(--ctl-h); }
+.cat-row { grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1fr) var(--state-w) var(--ctl-h); }
+.ct-row  { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) var(--ctl-h); }
+.ct-row .crm-reach { justify-content: flex-start; }
 /* A category heading inside the table, between its lines. */
 .svc-cat {
   padding: 14px 15px 6px; font-size: 11px; font-weight: 600; letter-spacing: .06em;
@@ -2486,25 +2497,49 @@ body > .shell { width: 100%; }
 .svc-cat:first-child { padding-top: 12px; }
 /* A status is a value, so it is a select on the row, tinted like its chip.
    The ⋯ beside it holds only what is not a status. */
-.state-select {
-  width: 100%; min-width: 0; padding: 0 26px 0 10px;
-  font-size: 12.5px; font-weight: 600; line-height: 1.4;
+.state-select, .select.state-select, .select-sm.state-select {
+  width: var(--state-w); min-width: 0; height: var(--ctl-h-sm); min-height: var(--ctl-h-sm);
+  padding: 0 26px 0 10px; font-size: 12.5px; font-weight: 600; line-height: 1.4;
   background-size: 13px; background-position: right 8px center;
 }
 .state-select.is-ok   { color: var(--ok);   border-color: var(--ok);   background-color: var(--ok-bg); }
 .state-select.is-warn { color: var(--warn); border-color: var(--warn); background-color: var(--warn-bg); }
 .state-select.is-off  { color: var(--ink-mute); }
-.crm-title .state-select { width: auto; flex: 0 0 auto; }
+.crm-title .state-select { flex: 0 0 auto; }
+/* How much of a group is filled: a ring and the count. */
+.ringline { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.ring { width: 18px; height: 18px; flex: 0 0 auto; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 2.6; }
+.ring-track { stroke: var(--line); }
+.ring-arc { stroke: var(--ink-soft); stroke-linecap: round; }
+.ring.is-ok .ring-arc { stroke: var(--ok); }
 .csv-total {
   display: flex; justify-content: flex-end; gap: 28px; flex-wrap: wrap;
   padding: 11px 15px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-mute);
 }
 .csv-total b { color: var(--ink); font-variant-numeric: tabular-nums; margin-left: 6px; }
 .csv-total .is-total b { font-size: 15px; }
+/* On a phone a row is two or three lines: the name with its ⋯, the small
+   facts, then the money on the left and the state on the right. */
 @media (max-width: 640px) {
-  .svc-row, .csv-row { grid-template-columns: minmax(0, 1fr) var(--ctl-h); gap: 4px 12px; padding: 12px 15px; }
-  .svc-row > .team-act { grid-column: 2; grid-row: 1; align-items: start; }
-  .svc-rate, .svc-unit, .svc-state { grid-column: 1; text-align: left; }
+  .svc-row.crm-head { display: none; }
+  .svc-row, .csv-row, .doc-row, .cat-row, .ct-row {
+    grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 12px 15px;
+    grid-template-areas: "name act" "calc calc" "amt state";
+  }
+  .cat-row { grid-template-areas: "name act" "unit unit" "rate state"; }
+  .doc-row { grid-template-areas: "name act" "amt state"; }
+  .ct-row  { grid-template-areas: "name act" "reach reach"; }
+  .svc-row > .svc-name { grid-area: name; }
+  .svc-row > .team-act { grid-area: act; align-self: start; }
+  .svc-row > .svc-calc { grid-area: calc; text-align: left; }
+  .svc-row > .svc-unit { grid-area: unit; }
+  .svc-row > .svc-amt, .cat-row > .svc-rate { text-align: left; align-self: center; }
+  .svc-row > .svc-amt { grid-area: amt; }
+  .cat-row > .svc-rate { grid-area: rate; }
+  .svc-row > .svc-state { grid-area: state; justify-self: end; }
+  .ct-row > .crm-reach { grid-area: reach; }
+  .ct-row .plink { flex: 1 1 0; justify-content: center; }
   .csv-total { justify-content: space-between; gap: 12px; }
 }
 .crm-links:empty { display: none; }
@@ -2606,7 +2641,7 @@ body > .shell { width: 100%; }
 /* Members: who, which group, what to do with them. */
 .team-head, .team-row {
   display: grid; align-items: center; gap: 0 10px;
-  grid-template-columns: minmax(200px, 1.6fr) 200px 130px var(--ctl-h);
+  grid-template-columns: minmax(200px, 1.6fr) 200px var(--state-w) var(--ctl-h);
   padding: 0 15px;
 }
 /* Groups: one row per group, a column per switch. */
@@ -2639,7 +2674,7 @@ body > .shell { width: 100%; }
 .team-flag input { width: 18px; height: 18px; accent-color: var(--accent); }
 .team-flag input:disabled { opacity: .45; }
 .team-act { text-align: right; }
-.select-sm { min-height: 36px; min-width: 0; padding-right: 28px; font-size: 13px; width: 100%; }
+.select-sm { min-height: var(--ctl-h-sm); height: var(--ctl-h-sm); min-width: 0; padding-right: 28px; font-size: 13px; width: 100%; }
 
 /* ---------- Access ----------
    What a person may not do is not drawn. The database refuses it anyway;

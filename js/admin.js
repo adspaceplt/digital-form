@@ -491,10 +491,10 @@
     'document.voided':       ['Document voided', 'is-danger', 'clients'],
     'document.restored':     ['Document restored', 'is-ok', 'clients'],
     'document.deleted':      ['Document deleted', 'is-danger', 'clients'],
-    'service.added':         ['Rate card line added', 'is-ok', 'clients'],
-    'service.changed':       ['Rate card line changed', '', 'clients'],
-    'service.off':           ['Rate card line retired', 'is-warn', 'clients'],
-    'service.on':            ['Rate card line restored', 'is-ok', 'clients'],
+    'service.added':         ['Rate card line added', 'is-ok', 'services'],
+    'service.changed':       ['Rate card line changed', '', 'services'],
+    'service.off':           ['Rate card line set inactive', 'is-warn', 'services'],
+    'service.on':            ['Rate card line set active', 'is-ok', 'services'],
     'client.touch':          ['Call or visit logged', '', 'clients'],
     'client.review_on':      ['Added to Content Review', 'is-ok', 'clients'],
     'contact.added':         ['Contact added', 'is-ok', 'clients'],
@@ -542,7 +542,7 @@
     'creator.removed':       ['Creator removed', 'is-danger', 'campaigns']
   };
   var ACT_SECTION = { all: 'Everything', clients: 'Clients', team: 'Team', review: 'Content Review',
-                      campaigns: 'Creator Campaigns', links: 'Short Links' };
+                      campaigns: 'Creator Campaigns', links: 'Short Links', services: 'Services' };
 
   /* The section only appears for people on the viewer list. The database
      enforces this too, so hiding it here is convenience rather than the
