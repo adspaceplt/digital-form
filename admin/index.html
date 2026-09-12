@@ -13,21 +13,21 @@
      CDN rather than the website builder's, so a site rebuild cannot break it. -->
 <link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
 <link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
-<link rel="stylesheet" href="/css/portal.css?v=20260912">
+<link rel="stylesheet" href="/css/portal.css?v=20260912b">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="/js/config.js?v=20260912"></script>
-<script src="/js/api.js?v=20260912"></script>
-<script src="/js/money.js?v=20260912"></script>
-<script src="/js/mockups.js?v=20260912"></script>
+<script src="/js/config.js?v=20260912b"></script>
+<script src="/js/api.js?v=20260912b"></script>
+<script src="/js/money.js?v=20260912b"></script>
+<script src="/js/mockups.js?v=20260912b"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260912" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260912b" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -89,6 +89,9 @@
       <button class="navitem" data-section="links" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.6-5.7l-1.7 1.7"/><path d="M14 10.5a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.6 5.7l1.7-1.7"/></svg><span>Short Links</span>
       </button>
+      <button class="navitem" data-section="services" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg><span>Services</span>
+      </button>
       <button class="navitem" data-section="team" type="button" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/><path d="m17.5 5.5 1 1 2-2"/></svg><span>Team</span>
       </button>
@@ -133,15 +136,17 @@
             <option value="all">Everyone</option>
           </select>
           <span class="count" id="crmCount"></span>
-          <button class="btn btn-primary" id="crmNew" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add client</button>
+          <button class="btn btn-primary" id="crmNew" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add lead</button>
         </div>
 
         <div class="panel" id="crmAddBox" hidden>
-          <div class="panelhead"><h3 id="crmFormTitle">New client</h3></div>
+          <div class="panelhead"><h3 id="crmFormTitle">New lead</h3></div>
           <div class="row">
             <div><label class="field-label" for="crmName">Client name</label>
               <input class="input" id="crmName" placeholder="Company name"></div>
-            <div style="flex:0 0 170px"><label class="field-label" for="crmFormStage">Stage</label>
+            <div style="flex:0 0 190px"><label class="field-label" for="crmSource">Source</label>
+              <select class="select" id="crmSource"></select></div>
+            <div style="flex:0 0 170px" id="crmStageWrap"><label class="field-label" for="crmFormStage">Stage</label>
               <select class="select" id="crmFormStage"></select></div>
           </div>
           <div class="row" style="margin-top:12px">
@@ -155,27 +160,25 @@
                 <option value="MY">Malaysia · RM</option>
                 <option value="SG">Singapore · S$</option>
               </select></div>
-            <div style="flex:0 0 170px"><label class="field-label" for="crmDeal">Deal value</label>
-              <input class="input" id="crmDeal" type="number" min="0" step="100" placeholder="0"></div>
           </div>
-          <div class="row" style="margin-top:12px">
-            <div><label class="field-label" for="crmWebsite">Website</label>
-              <input class="input" id="crmWebsite" type="url" placeholder="https://"></div>
-            <div style="flex:0 0 200px"><label class="field-label" for="crmPhone">Main phone</label>
-              <input class="input" id="crmPhone" type="tel" placeholder="03-xxxx xxxx"></div>
-          </div>
-          <div class="row" style="margin-top:12px">
-            <div><label class="field-label" for="crmSocialIg">Instagram</label>
-              <input class="input" id="crmSocialIg" placeholder="@handle or link"></div>
-            <div><label class="field-label" for="crmSocialFb">Facebook</label>
-              <input class="input" id="crmSocialFb" placeholder="page link"></div>
-            <div><label class="field-label" for="crmSocialTiktok">TikTok</label>
-              <input class="input" id="crmSocialTiktok" placeholder="@handle"></div>
-            <div><label class="field-label" for="crmSocialXhs">RedNote</label>
-              <input class="input" id="crmSocialXhs" placeholder="profile link"></div>
+          <!-- A new lead is a person who asked for something. The company's
+               links, billing and notes come later, on the record. -->
+          <div id="crmLeadOnly">
+            <div class="row" style="margin-top:12px">
+              <div><label class="field-label" for="crmContactName">Contact person</label>
+                <input class="input" id="crmContactName" placeholder="John Doe"></div>
+              <div style="flex:0 0 200px"><label class="field-label" for="crmContactPhone">Phone / WhatsApp</label>
+                <input class="input" id="crmContactPhone" type="tel" placeholder="01x-xxx xxxx"></div>
+              <div><label class="field-label" for="crmContactEmail">Email</label>
+                <input class="input" id="crmContactEmail" type="email" placeholder="john@company.com"></div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <div><label class="field-label" for="crmEnquiry">Enquiry</label>
+                <textarea class="input textarea" id="crmEnquiry" rows="2" placeholder="Service or package enquired"></textarea></div>
+            </div>
           </div>
           <div class="row" style="margin-top:14px">
-            <button class="btn btn-primary" id="crmSave" type="button">Add client</button>
+            <button class="btn btn-primary" id="crmSave" type="button">Add lead</button>
             <button class="btn btn-quiet" id="crmCancel" type="button" style="flex:0 0 auto">Cancel</button>
           </div>
           <div class="msg" id="crmMsg"></div>
@@ -217,71 +220,6 @@
         </section>
         <div class="undobar" id="crmUndo" hidden></div>
 
-        <!-- Billing: every field an e-invoice needs, mandatory before Active. -->
-        <section class="panel panel-collapse">
-          <button class="disclosure" id="crmBillToggle" type="button" aria-expanded="false">
-            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
-            <span>Billing details</span>
-            <span class="muted" id="crmBillSummary"></span>
-          </button>
-          <div class="disclosure-body" id="crmBillBody" hidden>
-            <p class="hint">Required for e-invoice submission and before the client can be set to Active.</p>
-            <div class="row">
-              <div><label class="field-label" for="crmLegalName">Company name, as registered (capitals)</label>
-                <input class="input crm-caps" id="crmLegalName" placeholder="COMPANY NAME SDN BHD" autocapitalize="characters"></div>
-            </div>
-            <div class="row" style="margin-top:12px">
-              <div style="flex:0 0 220px"><label class="field-label" for="crmCompanyNo">Business registration no.</label>
-                <input class="input" id="crmCompanyNo" placeholder="202201012345"></div>
-              <div style="flex:0 0 200px"><label class="field-label" for="crmCompanyNoOld">Old registration no.</label>
-                <input class="input" id="crmCompanyNoOld" placeholder="1234567-A"></div>
-              <div style="flex:0 0 200px"><label class="field-label" for="crmTin">TIN</label>
-                <input class="input" id="crmTin" placeholder="C 1234567890"></div>
-              <div style="flex:0 0 220px"><label class="field-label" for="crmSstNo">SST registration no.</label>
-                <input class="input" id="crmSstNo" placeholder="W10-1808-12345678"></div>
-            </div>
-            <div class="row" style="margin-top:12px">
-              <div><label class="field-label" for="crmBillContact">Contact person</label>
-                <input class="input" id="crmBillContact" placeholder="John Doe"></div>
-              <div><label class="field-label" for="crmBillContactEmail">Contact person email</label>
-                <input class="input" id="crmBillContactEmail" type="email" placeholder="john@company.com"></div>
-              <div style="flex:0 0 200px"><label class="field-label" for="crmBillContactPhone">Contact person mobile</label>
-                <input class="input" id="crmBillContactPhone" type="tel" placeholder="01x-xxx xxxx"></div>
-            </div>
-            <div class="row" style="margin-top:12px">
-              <div><label class="field-label" for="crmFinanceEmail">Finance department email</label>
-                <input class="input" id="crmFinanceEmail" type="email" placeholder="accounts@company.com"></div>
-            </div>
-            <div class="row" style="margin-top:12px">
-              <div><label class="field-label" for="crmBillAddr">Company billing address</label>
-                <textarea class="input textarea" id="crmBillAddr" rows="3"></textarea></div>
-            </div>
-            <label class="tickline" style="margin-top:12px">
-              <input type="checkbox" id="crmSstApplies"> <span id="crmSstLabel">Charge SST 8% on this client's quotes</span>
-            </label>
-            <p class="hint" style="margin-top:6px">Malaysian service tax (8%) applies to all clients, including Singapore. Untick only if exempt.</p>
-            <div class="row" style="margin-top:14px">
-              <button class="btn btn-primary" id="crmBillSave" type="button">Save</button>
-            </div>
-            <div class="msg" id="crmBillMsg"></div>
-          </div>
-        </section>
-
-        <section class="panel panel-collapse">
-          <button class="disclosure" id="crmNotesToggle" type="button" aria-expanded="false">
-            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
-            <span>Brand notes</span>
-            <span class="muted" id="crmNotesSummary"></span>
-          </button>
-          <div class="disclosure-body" id="crmNotesBody" hidden>
-            <textarea class="input textarea" id="crmNotes" rows="5"></textarea>
-            <div class="row" style="margin-top:12px">
-              <button class="btn btn-primary" id="crmNotesSave" type="button">Save</button>
-            </div>
-            <div class="msg" id="crmNotesMsg"></div>
-          </div>
-        </section>
-
         <!-- The people. A company does not answer the phone. -->
         <div class="viewhead">
           <span class="headmark"><h2>Contacts</h2></span>
@@ -318,13 +256,52 @@
         </div>
         <div id="crmContacts"></div>
 
+        <!-- What they asked for, were quoted, and confirmed. Lines come from
+             the rate card and keep their own price. -->
+        <div class="viewhead">
+          <span class="headmark"><h2>Services</h2></span>
+          <button class="btn btn-primary" id="crmAddService" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
+        </div>
+        <div class="panel" id="crmServiceBox" hidden>
+          <div class="panelhead"><h3 id="crmServiceTitle">New service</h3></div>
+          <div class="row">
+            <div><label class="field-label" for="svPick">Service</label>
+              <select class="select" id="svPick"></select></div>
+            <div style="flex:0 0 110px"><label class="field-label" for="svQty">Qty</label>
+              <input class="input" id="svQty" type="number" min="0" step="1" value="1"></div>
+            <div style="flex:0 0 170px"><label class="field-label" for="svRate">Rate</label>
+              <input class="input" id="svRate" type="number" min="0" step="10" placeholder="0"></div>
+            <div style="flex:0 0 170px"><label class="field-label" for="svState">State</label>
+              <select class="select" id="svState">
+                <option value="enquired">Enquired</option>
+                <option value="quoted">Quoted</option>
+                <option value="confirmed">Confirmed</option>
+              </select></div>
+          </div>
+          <div class="row" style="margin-top:12px" id="svLabelRow" hidden>
+            <div><label class="field-label" for="svLabel">Name</label>
+              <input class="input" id="svLabel" placeholder="Service name"></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div><label class="field-label" for="svNote">Note</label>
+              <input class="input" id="svNote" placeholder="Note"></div>
+          </div>
+          <div class="row" style="margin-top:14px">
+            <button class="btn btn-primary" id="svSave" type="button">Save</button>
+            <button class="btn btn-quiet" id="svCancel" type="button" style="flex:0 0 auto">Cancel</button>
+          </div>
+          <div class="msg" id="svMsg"></div>
+        </div>
+        <div class="msg" id="crmServiceMsg"></div>
+        <div id="crmServices"></div>
+
         <!-- Every call, visit and message, newest first. -->
         <div class="viewhead">
           <span class="headmark"><h2>Calls and visits</h2></span>
           <button class="btn btn-primary" id="crmAddTouch" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add entry</button>
         </div>
         <div class="panel" id="crmTouchBox" hidden>
-          <div class="panelhead"><h3 id="crmTouchTitle">What happened</h3></div>
+          <div class="panelhead"><h3 id="crmTouchTitle">New entry</h3></div>
           <div class="row">
             <div style="flex:0 0 170px"><label class="field-label" for="tcKind">Type</label>
               <select class="select" id="tcKind">
@@ -337,18 +314,18 @@
               </select></div>
             <div style="flex:0 0 170px"><label class="field-label" for="tcDate">Date</label>
               <input class="input" id="tcDate" type="date"></div>
-            <div><label class="field-label" for="tcWith">Who on their side</label>
+            <div><label class="field-label" for="tcWith">With</label>
               <input class="input" id="tcWith" list="crmContactNames" placeholder="John Doe">
               <datalist id="crmContactNames"></datalist></div>
           </div>
           <div class="row" style="margin-top:12px">
-            <div><label class="field-label" for="tcSummary">What was discussed</label>
-              <textarea class="input textarea" id="tcSummary" rows="3" placeholder="Summary of the discussion"></textarea></div>
+            <div><label class="field-label" for="tcSummary">Summary</label>
+              <textarea class="input textarea" id="tcSummary" rows="3" placeholder="Summary"></textarea></div>
           </div>
           <div class="row" style="margin-top:12px">
             <div><label class="field-label" for="tcNext">Next action</label>
               <input class="input" id="tcNext" placeholder="Next action"></div>
-            <div style="flex:0 0 170px"><label class="field-label" for="tcNextAt">By when</label>
+            <div style="flex:0 0 170px"><label class="field-label" for="tcNextAt">Due</label>
               <input class="input" id="tcNextAt" type="date"></div>
           </div>
           <div class="row" style="margin-top:14px">
@@ -358,6 +335,89 @@
           <div class="msg" id="tcMsg"></div>
         </div>
         <div id="crmTouches"></div>
+
+        <!-- Billing: every field an e-invoice needs, mandatory before Active. -->
+        <section class="panel panel-collapse">
+          <button class="disclosure" id="crmBillToggle" type="button" aria-expanded="false">
+            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
+            <span>Billing details</span>
+            <span class="muted" id="crmBillSummary"></span>
+          </button>
+          <div class="disclosure-body" id="crmBillBody" hidden>
+            <div class="row" style="margin-top:14px">
+              <div><label class="field-label" for="crmLegalName">Company name, as registered (capitals)</label>
+                <input class="input crm-caps" id="crmLegalName" placeholder="COMPANY NAME SDN BHD" autocapitalize="characters"></div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <div style="flex:0 0 220px"><label class="field-label" for="crmCompanyNo">Business registration no.</label>
+                <input class="input" id="crmCompanyNo" placeholder="202201012345"></div>
+              <div style="flex:0 0 200px"><label class="field-label" for="crmCompanyNoOld">Old registration no.</label>
+                <input class="input" id="crmCompanyNoOld" placeholder="1234567-A"></div>
+              <div style="flex:0 0 200px"><label class="field-label" for="crmTin">TIN</label>
+                <input class="input" id="crmTin" placeholder="C 1234567890"></div>
+              <div style="flex:0 0 220px"><label class="field-label" for="crmSstNo">SST registration no.</label>
+                <input class="input" id="crmSstNo" placeholder="W10-1808-12345678"></div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <div><label class="field-label" for="crmBillContact">Contact person</label>
+                <input class="input" id="crmBillContact" placeholder="John Doe"></div>
+              <div><label class="field-label" for="crmBillContactEmail">Contact person email</label>
+                <input class="input" id="crmBillContactEmail" type="email" placeholder="john@company.com"></div>
+              <div style="flex:0 0 200px"><label class="field-label" for="crmBillContactPhone">Contact person mobile</label>
+                <input class="input" id="crmBillContactPhone" type="tel" placeholder="01x-xxx xxxx"></div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <div><label class="field-label" for="crmFinanceEmail">Finance department email</label>
+                <input class="input" id="crmFinanceEmail" type="email" placeholder="accounts@company.com"></div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <div><label class="field-label" for="crmBillAddr">Company billing address</label>
+                <textarea class="input textarea" id="crmBillAddr" rows="3"></textarea></div>
+            </div>
+            <label class="tickline" style="margin-top:12px">
+              <input type="checkbox" id="crmSstApplies"> <span id="crmSstLabel">Charge SST 8% on this client's quotes</span>
+            </label>
+            <div class="row" style="margin-top:14px">
+              <button class="btn btn-primary" id="crmBillSave" type="button">Save</button>
+            </div>
+            <div class="msg" id="crmBillMsg"></div>
+          </div>
+        </section>
+
+        <!-- The brand as a thing to open and a thing to read: links, then notes. -->
+        <section class="panel panel-collapse">
+          <button class="disclosure" id="crmBrandToggle" type="button" aria-expanded="false">
+            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
+            <span>Brand profile</span>
+            <span class="muted" id="crmBrandSummary"></span>
+          </button>
+          <div class="disclosure-body" id="crmBrandBody" hidden>
+            <div class="row" style="margin-top:14px">
+              <div><label class="field-label" for="crmWebsite">Website</label>
+                <input class="input" id="crmWebsite" type="url" placeholder="https://"></div>
+              <div style="flex:0 0 200px"><label class="field-label" for="crmPhone">Office phone</label>
+                <input class="input" id="crmPhone" type="tel" placeholder="03-xxxx xxxx"></div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <div><label class="field-label" for="crmSocialIg">Instagram</label>
+                <input class="input" id="crmSocialIg" placeholder="@handle or link"></div>
+              <div><label class="field-label" for="crmSocialFb">Facebook</label>
+                <input class="input" id="crmSocialFb" placeholder="Page link"></div>
+              <div><label class="field-label" for="crmSocialTiktok">TikTok</label>
+                <input class="input" id="crmSocialTiktok" placeholder="@handle"></div>
+              <div><label class="field-label" for="crmSocialXhs">RedNote</label>
+                <input class="input" id="crmSocialXhs" placeholder="Profile link"></div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <div><label class="field-label" for="crmNotes">Brand notes</label>
+                <textarea class="input textarea" id="crmNotes" rows="4" placeholder="Tone of voice, key products, hashtags, words to avoid"></textarea></div>
+            </div>
+            <div class="row" style="margin-top:14px">
+              <button class="btn btn-primary" id="crmBrandSave" type="button">Save</button>
+            </div>
+            <div class="msg" id="crmBrandMsg"></div>
+          </div>
+        </section>
 
         <!-- The work, last, because none of it exists until the client is
              active. Each engagement says where it is and opens in its section. -->
@@ -871,6 +931,34 @@
       <div class="team-table" id="groupList"></div>
     </div>
 
+    <!-- ---- Services: the rate card every quote reads from ---- -->
+    <div class="console-body" id="sectionServices" hidden>
+      <div class="viewhead">
+        <span class="headmark"><h2>Rate card</h2></span>
+        <button class="btn btn-primary" id="svcAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
+      </div>
+      <div class="panel" id="svcBox" hidden>
+        <div class="panelhead"><h3 id="svcTitle">New service</h3></div>
+        <div class="row">
+          <div style="flex:0 0 220px"><label class="field-label" for="svcCat">Category</label>
+            <select class="select" id="svcCat"></select></div>
+          <div><label class="field-label" for="svcName">Name</label>
+            <input class="input" id="svcName" placeholder="Service name"></div>
+          <div style="flex:0 0 160px"><label class="field-label" for="svcRate">Rate</label>
+            <input class="input" id="svcRate" type="number" min="0" step="10" placeholder="0"></div>
+          <div style="flex:0 0 240px"><label class="field-label" for="svcUnit">Unit</label>
+            <input class="input" id="svcUnit" placeholder="Per post"></div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn btn-primary" id="svcSave" type="button">Save</button>
+          <button class="btn btn-quiet" id="svcCancel" type="button" style="flex:0 0 auto">Cancel</button>
+        </div>
+        <div class="msg" id="svcMsg"></div>
+      </div>
+      <div class="msg" id="svcListMsg"></div>
+      <div id="svcList"></div>
+    </div>
+
     <div class="console-body" id="sectionLinks" hidden>
 
       <!-- The bar above already says Short Links. Repeating it pushed the
@@ -1014,9 +1102,9 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260912"></script>
-<script src="/js/crm.js?v=20260912"></script>
-<script src="/js/team.js?v=20260912"></script>
-<script src="/js/campaigns.js?v=20260912"></script>
+<script src="/js/admin.js?v=20260912b"></script>
+<script src="/js/crm.js?v=20260912b"></script>
+<script src="/js/team.js?v=20260912b"></script>
+<script src="/js/campaigns.js?v=20260912b"></script>
 </body>
 </html>

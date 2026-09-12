@@ -90,7 +90,7 @@
                   .map(function (f) { return f[2]; });
   }
 
-  var state = { clients: [], team: [], client: null, editing: null, contacts: [], touches: [] };
+  var state = { clients: [], team: [], client: null, editing: null, contacts: [], touches: [], services: [] };
 
   // ---- List ---------------------------------------------------------------
   function fillSelect(el, rows, all) {
@@ -206,21 +206,43 @@
   });
 
   // ---- Create and edit ----------------------------------------------------
+  /* The head of the record: who they are and where they came from. */
   var FORM = [
     ['crmName', 'name'], ['crmIndustry', 'industry'], ['crmOwnerPick', 'owner'],
+    ['crmSource', 'source']
+  ];
+  /* The brand as a thing to open. Edited on the record, not at intake. */
+  var BRAND = [
     ['crmWebsite', 'website'], ['crmPhone', 'phone'],
     ['crmSocialIg', 'social_ig'], ['crmSocialFb', 'social_fb'],
     ['crmSocialTiktok', 'social_tiktok'], ['crmSocialXhs', 'social_xhs']
   ];
+  var SOURCES = [
+    ['referral', 'Referral'], ['website', 'Website'], ['instagram', 'Instagram'],
+    ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['rednote', 'RedNote'],
+    ['whatsapp', 'WhatsApp'], ['walk_in', 'Walk-in'], ['event', 'Event'],
+    ['outreach', 'Outreach'], ['other', 'Other']
+  ];
+  function sourceWord(v) {
+    for (var i = 0; i < SOURCES.length; i++) if (SOURCES[i][0] === v) return SOURCES[i][1];
+    return v || '';
+  }
+  var SV_STATE = { enquired: ['Enquired', ''], quoted: ['Quoted', 'is-warn'], confirmed: ['Confirmed', 'is-ok'] };
+  var CATS = ['Content', 'Account management', 'Verification', 'Monthly packages',
+              'KOC programmes', 'KOL programmes', 'Add-ons'];
 
   function openForm(c) {
     state.editing = c || null;
     $('crmFormTitle').textContent = c ? 'Edit client' : 'New lead';
-    $('crmSave').textContent = c ? 'Save changes' : 'Add lead';
+    $('crmSave').textContent = c ? 'Save' : 'Add lead';
     FORM.forEach(function (f) { $(f[0]).value = c ? (c[f[1]] || '') : ''; });
+    if (!c) $('crmSource').value = 'referral';
     $('crmFormStage').value = c ? (c.stage || 'lead') : 'lead';
+    $('crmStageWrap').hidden = !c;
     $('crmMarket').value = c ? (c.market || 'MY') : 'MY';
-    $('crmDeal').value = c && c.deal_value ? c.deal_value : '';
+    // The person who asked, and what for. Only a new lead needs this here.
+    $('crmLeadOnly').hidden = Boolean(c);
+    ['crmContactName', 'crmContactPhone', 'crmContactEmail', 'crmEnquiry'].forEach(function (id) { $(id).value = ''; });
     msg('crmMsg', '');
     $('crmAddBox').hidden = false;
     $('crmName').focus();
@@ -235,10 +257,13 @@
   $('crmSave').addEventListener('click', function () {
     var name = val('crmName');
     if (!name) { msg('crmMsg', 'A client needs a name.', 'err'); $('crmName').focus(); return; }
-    var patch = { stage: $('crmFormStage').value, market: $('crmMarket').value };
+    var patch = { stage: state.editing ? $('crmFormStage').value : 'lead', market: $('crmMarket').value };
     FORM.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
     patch.name = name;
-    patch.deal_value = val('crmDeal') ? Number(val('crmDeal')) : null;
+    // A lead is a person who asked for something.
+    var contactName = state.editing ? '' : val('crmContactName');
+    if (!state.editing && !contactName) { msg('crmMsg', 'A contact person is required.', 'err'); $('crmContactName').focus(); return; }
+    if (!state.editing) patch.deal_note = val('crmEnquiry') || null;
 
     /* The one rule with teeth: nobody becomes active until we can invoice
        them. Said at the moment it matters, naming what is missing. */
@@ -281,9 +306,13 @@
     patch.access_token = token();
     db.from('clients').insert(patch).select().single().then(function (r) {
       if (r.error) { msg('crmMsg', r.error.message, 'err'); return; }
-      log('client.added', name, patch.stage);
-      shutForm();
-      loadClients(function () { openClient(r.data); });
+      log('client.added', name, sourceWord(patch.source) + (contactName ? ' · ' + contactName : ''));
+      var open = function () { shutForm(); loadClients(function () { openClient(r.data); }); };
+      var phone = val('crmContactPhone');
+      db.from('client_contacts').insert({
+        client_id: r.data.id, name: contactName, phone: phone || null, whatsapp: phone || null,
+        email: val('crmContactEmail') || null, lang: 'en', is_primary: true
+      }).then(open, open);
     });
   });
 
@@ -299,11 +328,11 @@
 
     var mk = MON.market(c.market);
     $('crmFacts').innerHTML = [
+      ['Source',   c.source ? sourceWord(c.source) : '<span class="muted">Not set</span>'],
+      ['Owner',    c.owner || '<span class="muted">Unassigned</span>'],
       ['Industry', c.industry || '<span class="muted">Not set</span>'],
       ['Market',   (c.market === 'SG' ? 'Singapore' : 'Malaysia') + ' · ' + mk.sign],
-      ['Owner',    c.owner || '<span class="muted">Unassigned</span>'],
       ['Value',    c.deal_value ? MON.money(c.deal_value, c.market) : '<span class="muted">Not set</span>'],
-      ['Tax',      c.sst_applies === false ? 'Not charged' : MON.taxLabel()],
       ['Added',    c.created_at ? niceDate(c.created_at) : '']
     ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
       return '<div><dt>' + f[0] + '</dt><dd>' +
@@ -332,14 +361,20 @@
     $('crmSstLabel').textContent = 'Charge ' + MON.taxLabel() + ' on this client\'s quotes';
     $('crmBillSummary').textContent = missing.length
       ? missing.length + ' of ' + BILLING.length + ' still needed' : 'Complete';
+    BRAND.forEach(function (f) { $(f[0]).value = c[f[1]] || ''; });
     $('crmNotes').value = c.brand_notes || '';
-    $('crmNotesSummary').textContent = c.brand_notes ? 'Written' : 'None yet';
+    var linksOn = BRAND.filter(function (f) { return c[f[1]]; }).length;
+    $('crmBrandSummary').textContent =
+      [linksOn ? linksOn + ' link' + (linksOn === 1 ? '' : 's') : '', c.brand_notes ? 'Notes' : '']
+        .filter(Boolean).join(' · ') || 'Empty';
     setOpen('crmBillToggle', 'crmBillBody', false);
-    setOpen('crmNotesToggle', 'crmNotesBody', false);
-    msg('crmWorkMsg', ''); msg('crmBillMsg', ''); msg('crmNotesMsg', '');
+    setOpen('crmBrandToggle', 'crmBrandBody', false);
+    msg('crmWorkMsg', ''); msg('crmBillMsg', ''); msg('crmBrandMsg', ''); msg('crmServiceMsg', '');
     shutContact();
     shutTouch();
+    shutService();
     loadContacts();
+    loadServices();
     loadTouches();
     loadWork();
     setUrl();
@@ -391,14 +426,17 @@
     });
   });
 
-  $('crmNotesSave').addEventListener('click', function () {
-    var notes = val('crmNotes') || null;
-    db.from('clients').update({ brand_notes: notes }).eq('id', state.client.id)
+  $('crmBrandSave').addEventListener('click', function () {
+    var patch = { brand_notes: val('crmNotes') || null };
+    BRAND.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
+    db.from('clients').update(patch).eq('id', state.client.id)
       .then(function (r) {
-        if (r.error) { msg('crmNotesMsg', r.error.message, 'err'); return; }
-        state.client.brand_notes = notes;
-        msg('crmNotesMsg', 'Saved.', 'ok');
-        $('crmNotesSummary').textContent = notes ? 'Written' : 'None yet';
+        if (r.error) { msg('crmBrandMsg', r.error.message, 'err'); return; }
+        Object.keys(patch).forEach(function (k) { state.client[k] = patch[k]; });
+        log('client.brand', state.client.name, '');
+        openClient(state.client);
+        setOpen('crmBrandToggle', 'crmBrandBody', true);
+        msg('crmBrandMsg', 'Saved.', 'ok');
       });
   });
 
@@ -421,7 +459,7 @@
         }).join('');
         box.innerHTML = '';
         if (!state.contacts.length) {
-          box.innerHTML = '<div class="empty">No contacts recorded.</div>';
+          box.innerHTML = '<div class="empty">No contacts.</div>';
         }
         state.contacts.forEach(function (ct) { box.appendChild(contactRow(ct, false)); });
         if (gone.length) {
@@ -453,15 +491,11 @@
       '</header>' +
       '<div class="kmenu" data-menu hidden>' +
         (removed
-          ? '<button class="kmenu-item" data-a="restore" type="button"><b>Put back</b>' +
-            '<span>Restore to the contact list.</span></button>'
-          : '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b>' +
-            '<span>Edit details.</span></button>' +
+          ? '<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>'
+          : '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
             (ct.is_primary ? '' :
-              '<button class="kmenu-item" data-a="primary" type="button"><b>Make main contact</b>' +
-              '<span>Default contact.</span></button>') +
-            '<button class="kmenu-item is-danger" data-a="del" data-soft type="button"><b>Remove</b>' +
-            '<span>Hidden. Can be restored.</span></button>') +
+              '<button class="kmenu-item" data-a="primary" type="button"><b>Main contact</b></button>') +
+            '<button class="kmenu-item is-danger" data-a="del" data-soft type="button"><b>Remove</b></button>') +
       '</div>' +
       '<div class="kstep kstep-terms">' +
         '<span class="kstep-label">Reach</span>' +
@@ -481,22 +515,36 @@
     return row;
   }
 
+  /* A menu in a table row would be clipped by the table, so it is placed on
+     the viewport under its button. It closes on scroll, as a card menu does
+     not need to. */
   function wireMenu(row) {
     var menu = row.querySelector('[data-menu]');
-    row.querySelector('[data-a="menu"]').addEventListener('click', function () {
+    var btn = row.querySelector('[data-a="menu"]');
+    btn.addEventListener('click', function () {
       var open = menu.hidden;
       Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
       menu.hidden = !open;
       this.setAttribute('aria-expanded', String(open));
+      if (open && btn.closest('.team-act')) {
+        var r = btn.getBoundingClientRect();
+        menu.style.position = 'fixed';
+        menu.style.top = (r.bottom + 4) + 'px';
+        menu.style.right = 'auto';
+        menu.style.left = Math.max(8, r.right - menu.offsetWidth) + 'px';
+      }
     });
   }
+  window.addEventListener('scroll', function () {
+    Array.prototype.forEach.call(document.querySelectorAll('.team-act .kmenu'), function (m) { m.hidden = true; });
+  }, true);
 
   var editingContact = null;
   function openContact(ct) {
     editingContact = ct || null;
     $('crmContactBox').hidden = false;
     $('crmContactTitle').textContent = ct ? 'Edit contact' : 'New contact';
-    $('ctSave').textContent = ct ? 'Save changes' : 'Save contact';
+    $('ctSave').textContent = 'Save';
     $('ctName').value = ct ? (ct.name || '') : '';
     $('ctRole').value = ct ? (ct.role || '') : '';
     $('ctPhone').value = ct ? (ct.phone || '') : '';
@@ -589,7 +637,7 @@
         var gone = all.filter(function (t) { return t.archived_at; });
         box.innerHTML = '';
         if (!state.touches.length) {
-          box.innerHTML = '<div class="empty">No calls or visits logged.</div>';
+          box.innerHTML = '<div class="empty">No entries.</div>';
         }
         state.touches.forEach(function (tc) { box.appendChild(touchRow(tc, false)); });
         if (gone.length) {
@@ -664,8 +712,8 @@
   function openTouch(tc) {
     editingTouch = tc || null;
     $('crmTouchBox').hidden = false;
-    $('crmTouchTitle').textContent = tc ? 'Edit entry' : 'What happened';
-    $('tcSave').textContent = tc ? 'Save changes' : 'Save to the log';
+    $('crmTouchTitle').textContent = tc ? 'Edit entry' : 'New entry';
+    $('tcSave').textContent = 'Save';
     $('tcKind').value = tc ? (tc.kind || 'call') : 'call';
     $('tcDate').value = tc ? (tc.happened_at || today()) : today();
     $('tcWith').value = tc ? (tc.contact_name || '') : '';
@@ -685,7 +733,7 @@
 
   $('tcSave').addEventListener('click', function () {
     var summary = val('tcSummary');
-    if (!summary) { msg('tcMsg', 'Write what was discussed.', 'err'); $('tcSummary').focus(); return; }
+    if (!summary) { msg('tcMsg', 'A summary is required.', 'err'); $('tcSummary').focus(); return; }
     var row = {
       kind: $('tcKind').value,
       happened_at: $('tcDate').value || today(),
@@ -738,7 +786,7 @@
     var act = $('crmEngageActions');
     if (c.stage !== 'active') {
       act.innerHTML = '';
-      box.innerHTML = '<div class="empty">Available once the client is active.</div>';
+      box.innerHTML = '<div class="empty">Available once Active.</div>';
       return;
     }
     var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
@@ -765,7 +813,7 @@
     });
 
     if (!sets.length && !camps.length) {
-      box.innerHTML = '<div class="empty">No engagements yet.</div>';
+      box.innerHTML = '<div class="empty">No engagements.</div>';
       return;
     }
     box.innerHTML = '';
@@ -811,12 +859,289 @@
     $(toggleId).classList.toggle('is-open', open);
   }
   disclose('crmBillToggle', 'crmBillBody');
-  disclose('crmNotesToggle', 'crmNotesBody');
+  disclose('crmBrandToggle', 'crmBrandBody');
+
+  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+
+  // ---- Services on a client -----------------------------------------------
+  /* What the client asked for, was quoted, and confirmed. Each line keeps its
+     own label and rate, so a later price change does not rewrite history. The
+     confirmed total (else the quoted total) is written back to deal_value, so
+     the list and the pipeline carry it without a join. */
+  var catalog = null;
+  function loadCatalog(then) {
+    if (catalog) { then(catalog); return; }
+    db.from('services').select('*').order('position').then(function (r) {
+      catalog = r.data || [];
+      then(catalog);
+    }, function () { catalog = []; then(catalog); });
+  }
+  function svcById(slug) { return (catalog || []).filter(function (s) { return s.slug === slug; })[0]; }
+  function amountOf(l) { return Number(l.qty || 0) * Number(l.rate || 0); }
+
+  function loadServices() {
+    var box = $('crmServices');
+    box.innerHTML = '<div class="empty">Loading…</div>';
+    loadCatalog(function () {
+      db.from('client_services').select('*').eq('client_id', state.client.id)
+        .is('archived_at', null).order('created_at').then(function (r) {
+          if (r.error) { box.innerHTML = '<div class="empty">' + esc(r.error.message) + '</div>'; return; }
+          state.services = r.data || [];
+          paintServices();
+        });
+    });
+  }
+
+  function paintServices() {
+    var box = $('crmServices');
+    var rows = state.services;
+    var c = state.client;
+    box.innerHTML = '';
+    if (!rows.length) {
+      // The enquiry as typed at intake stands in until a line is added.
+      box.innerHTML = '<div class="empty">' + (c.deal_note ? esc(c.deal_note) : 'No services.') + '</div>';
+      return;
+    }
+    var table = document.createElement('div');
+    table.className = 'crm-table';
+    rows.forEach(function (l) { table.appendChild(serviceRow(l)); });
+    var sum = function (st) {
+      return rows.filter(function (l) { return l.state === st; }).reduce(function (s, l) { return s + amountOf(l); }, 0);
+    };
+    var quoted = sum('quoted'), confirmed = sum('confirmed');
+    var tot = document.createElement('div');
+    tot.className = 'csv-total';
+    tot.innerHTML =
+      (quoted ? '<span>Quoted<b>' + esc(MON.money2(quoted, c.market)) + '</b></span>' : '') +
+      '<span class="is-total">Confirmed<b>' + esc(MON.money2(confirmed, c.market)) + '</b></span>';
+    table.appendChild(tot);
+    box.appendChild(table);
+  }
+
+  function serviceRow(l) {
+    var c = state.client;
+    var w = SV_STATE[l.state] || SV_STATE.enquired;
+    var row = document.createElement('div');
+    row.className = 'svc-row csv-row';
+    row.innerHTML =
+      '<span class="svc-name"><b>' + esc(l.label) + '</b>' +
+        (l.note || l.unit ? '<small>' + esc([l.unit, l.note].filter(Boolean).join(' · ')) + '</small>' : '') + '</span>' +
+      '<span class="svc-state"><span class="tone ' + w[1] + '">' + esc(w[0]) + '</span></span>' +
+      '<span class="svc-rate">' + esc(Number(l.qty) + ' × ' + MON.money2(l.rate, c.market)) + '</span>' +
+      '<span class="svc-rate"><b>' + esc(MON.money2(amountOf(l), c.market)) + '</b></span>' +
+      '<span class="team-act">' +
+        '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+        '<div class="kmenu" data-menu hidden>' +
+          '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
+          (l.state !== 'quoted' ? '<button class="kmenu-item" data-a="quoted" type="button"><b>Quoted</b></button>' : '') +
+          (l.state !== 'confirmed' ? '<button class="kmenu-item" data-a="confirmed" type="button"><b>Confirmed</b></button>' : '') +
+          (l.state !== 'enquired' ? '<button class="kmenu-item" data-a="enquired" type="button"><b>Revert to enquired</b></button>' : '') +
+          '<button class="kmenu-item is-danger" data-a="del" data-soft type="button"><b>Remove</b></button>' +
+        '</div>' +
+      '</span>';
+    wireMenu(row);
+    var on = function (a, fn) { var el = row.querySelector('[data-a="' + a + '"]'); if (el) el.addEventListener('click', fn); };
+    on('edit', function () { openService(l); });
+    ['quoted', 'confirmed', 'enquired'].forEach(function (st) { on(st, function () { saveService(l, { state: st }); }); });
+    on('del', function () { saveService(l, { archived_at: new Date().toISOString() }, true); });
+    return row;
+  }
+
+  var editingService = null;
+  function fillServicePick() {
+    var groups = {};
+    (catalog || []).filter(function (s) { return s.active !== false; }).forEach(function (s) {
+      (groups[s.category] = groups[s.category] || []).push(s);
+    });
+    var cats = CATS.concat(Object.keys(groups).filter(function (k) { return CATS.indexOf(k) < 0; }));
+    $('svPick').innerHTML = cats.filter(function (k) { return groups[k]; }).map(function (k) {
+      return '<optgroup label="' + esc(k) + '">' + groups[k].map(function (s) {
+        return '<option value="' + esc(s.slug) + '">' + esc(s.name) +
+          (s.rate != null ? ' · ' + MON.money(s.rate, 'MY') : '') + '</option>';
+      }).join('') + '</optgroup>';
+    }).join('') + '<option value="custom">Custom</option>';
+  }
+  function syncPick(fill) {
+    var slug = $('svPick').value;
+    var s = svcById(slug);
+    $('svLabelRow').hidden = slug !== 'custom';
+    if (fill && s) $('svRate').value = s.rate != null ? Number(s.rate) : '';
+  }
+  function openService(l) {
+    editingService = l || null;
+    loadCatalog(function () {
+      fillServicePick();
+      $('crmServiceTitle').textContent = l ? 'Edit service' : 'New service';
+      var first = $('svPick').options[0] ? $('svPick').options[0].value : 'custom';
+      $('svPick').value = l ? (l.service_slug && svcById(l.service_slug) ? l.service_slug : 'custom') : first;
+      $('svLabel').value = l ? (l.label || '') : '';
+      $('svQty').value = l ? Number(l.qty || 1) : 1;
+      $('svRate').value = l ? Number(l.rate || 0) : '';
+      $('svState').value = l ? (l.state || 'enquired') : 'enquired';
+      $('svNote').value = l ? (l.note || '') : '';
+      syncPick(!l);
+      msg('svMsg', '');
+      $('crmServiceBox').hidden = false;
+      $('svPick').focus();
+    });
+  }
+  function shutService() { $('crmServiceBox').hidden = true; editingService = null; }
+  $('svPick').addEventListener('change', function () {
+    syncPick(true);
+    if ($('svPick').value === 'custom') $('svLabel').focus();
+  });
+  $('crmAddService').addEventListener('click', function () { openService(null); });
+  $('svCancel').addEventListener('click', shutService);
+  $('svSave').addEventListener('click', function () {
+    var slug = $('svPick').value;
+    var s = svcById(slug);
+    var label = slug === 'custom' ? val('svLabel') : (s ? s.name : '');
+    if (!label) { msg('svMsg', 'A name is required.', 'err'); $('svLabel').focus(); return; }
+    var row = {
+      service_slug: s ? s.slug : null, label: label, unit: s ? (s.unit || null) : null,
+      qty: Number(val('svQty') || 1), rate: Number(val('svRate') || 0),
+      state: $('svState').value, note: val('svNote') || null
+    };
+    if (editingService) { saveService(editingService, row); return; }
+    row.client_id = state.client.id;
+    db.from('client_services').insert(row).then(function (r) {
+      if (r.error) { msg('svMsg', r.error.message, 'err'); return; }
+      log('client.service', state.client.name, label + ' · ' + SV_STATE[row.state][0]);
+      shutService();
+      syncValue();
+    });
+  });
+  function saveService(l, patch, removed) {
+    db.from('client_services').update(patch).eq('id', l.id).then(function (r) {
+      if (r.error) { msg('crmServiceMsg', r.error.message, 'err'); return; }
+      log(removed ? 'client.service_removed' : 'client.service_changed', state.client.name,
+          l.label + (patch.state ? ' · ' + SV_STATE[patch.state][0] : ''));
+      if (removed) undoBar(l.label + ' removed.', function () { saveService(l, { archived_at: null }); });
+      shutService();
+      syncValue();
+    });
+  }
+  /* The confirmed total, else the quoted total, is the client's value. */
+  function syncValue() {
+    db.from('client_services').select('*').eq('client_id', state.client.id).is('archived_at', null)
+      .then(function (r) {
+        var rows = r.data || [];
+        var sum = function (st) {
+          return rows.filter(function (l) { return l.state === st; }).reduce(function (s, l) { return s + amountOf(l); }, 0);
+        };
+        var v = sum('confirmed') || sum('quoted') || null;
+        var was = state.client.deal_value == null ? null : Number(state.client.deal_value);
+        var done = function () {
+          state.client.deal_value = v;
+          var mine = state.clients.filter(function (x) { return x.id === state.client.id; })[0];
+          if (mine) mine.deal_value = v;
+          openClient(state.client);
+        };
+        if (v === was) { done(); return; }
+        db.from('clients').update({ deal_value: v }).eq('id', state.client.id).then(done, done);
+      });
+  }
+
+  // ---- Rate card (the Services section) ------------------------------------
+  var editingSvc = null;
+  function isAdmin() { return Boolean(bridge.may && bridge.may('admin')); }
+  function enterServices() {
+    catalog = null;
+    $('svcAdd').hidden = !isAdmin();
+    $('svcBox').hidden = true;
+    msg('svcListMsg', '');
+    $('svcList').innerHTML = '<div class="empty">Loading…</div>';
+    loadCatalog(paintCatalog);
+  }
+  function paintCatalog() {
+    var box = $('svcList');
+    box.innerHTML = '';
+    var rows = catalog || [];
+    if (!rows.length) { box.innerHTML = '<div class="empty">No services.</div>'; return; }
+    var extra = rows.map(function (s) { return s.category; })
+      .filter(function (k, i, a) { return CATS.indexOf(k) < 0 && a.indexOf(k) === i; });
+    CATS.concat(extra).forEach(function (k) {
+      var mine = rows.filter(function (s) { return s.category === k; });
+      if (!mine.length) return;
+      var sec = document.createElement('section');
+      sec.className = 'crm-group';
+      sec.innerHTML = '<div class="crm-group-head"><h3>' + esc(k) + ' <span>' + mine.length + '</span></h3></div>' +
+        '<div class="crm-table"></div>';
+      var table = sec.querySelector('.crm-table');
+      mine.forEach(function (s) { table.appendChild(catalogRow(s)); });
+      box.appendChild(sec);
+    });
+  }
+  function catalogRow(s) {
+    var row = document.createElement('div');
+    row.className = 'svc-row' + (s.active === false ? ' is-off' : '');
+    row.innerHTML =
+      '<span class="svc-name"><b>' + esc(s.name) + '</b>' + (s.note ? '<small>' + esc(s.note) + '</small>' : '') + '</span>' +
+      '<span class="svc-rate">' + (s.rate != null ? esc(MON.money2(s.rate, 'MY')) : '<span class="muted">On quote</span>') + '</span>' +
+      '<span class="svc-unit">' + esc(s.unit || '') + '</span>' +
+      '<span class="team-act">' + (isAdmin()
+        ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+          '<div class="kmenu" data-menu hidden>' +
+            '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
+            (s.active === false
+              ? '<button class="kmenu-item" data-a="on" type="button"><b>Restore</b></button>'
+              : '<button class="kmenu-item is-danger" data-a="off" type="button"><b>Retire</b></button>') +
+          '</div>'
+        : '') + '</span>';
+    if (isAdmin()) {
+      wireMenu(row);
+      var on = function (a, fn) { var el = row.querySelector('[data-a="' + a + '"]'); if (el) el.addEventListener('click', fn); };
+      on('edit', function () { openSvc(s); });
+      on('off',  function () { patchSvc(s, { active: false }, 'service.off'); });
+      on('on',   function () { patchSvc(s, { active: true }, 'service.on'); });
+    }
+    return row;
+  }
+  function patchSvc(s, patch, action) {
+    db.from('services').update(patch).eq('slug', s.slug).then(function (r) {
+      if (r.error) { msg('svcListMsg', r.error.message, 'err'); return; }
+      log(action, s.name, '');
+      enterServices();
+    });
+  }
+  function openSvc(s) {
+    editingSvc = s || null;
+    $('svcCat').innerHTML = CATS.map(function (k) { return '<option value="' + esc(k) + '">' + esc(k) + '</option>'; }).join('');
+    $('svcTitle').textContent = s ? 'Edit service' : 'New service';
+    $('svcCat').value = s ? s.category : CATS[0];
+    $('svcName').value = s ? s.name : '';
+    $('svcRate').value = s && s.rate != null ? Number(s.rate) : '';
+    $('svcUnit').value = s ? (s.unit || '') : '';
+    msg('svcMsg', '');
+    $('svcBox').hidden = false;
+    $('svcName').focus();
+  }
+  $('svcAdd').addEventListener('click', function () { openSvc(null); });
+  $('svcCancel').addEventListener('click', function () { $('svcBox').hidden = true; editingSvc = null; });
+  $('svcSave').addEventListener('click', function () {
+    var name = val('svcName');
+    if (!name) { msg('svcMsg', 'A name is required.', 'err'); $('svcName').focus(); return; }
+    var row = { category: $('svcCat').value, name: name,
+                rate: val('svcRate') === '' ? null : Number(val('svcRate')), unit: val('svcUnit') || null };
+    var after = function (r) {
+      if (r.error) { msg('svcMsg', r.error.message, 'err'); return; }
+      log(editingSvc ? 'service.changed' : 'service.added', name, row.category);
+      $('svcBox').hidden = true; editingSvc = null;
+      enterServices();
+    };
+    if (editingSvc) { db.from('services').update(row).eq('slug', editingSvc.slug).then(after); return; }
+    row.slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || ('svc-' + Date.now());
+    row.position = (catalog || []).length
+      ? Math.max.apply(null, catalog.map(function (s) { return Number(s.position || 0); })) + 1 : 1;
+    row.active = true;
+    db.from('services').insert(row).then(after);
+  });
 
   // ---- Entry --------------------------------------------------------------
   fillSelect($('crmStage'), STAGES.map(function (s) { return [s[0], s[1]]; }), 'Every stage');
   fillSelect($('crmFormStage'), STAGES.map(function (s) { return [s[0], s[1]]; }));
   fillSelect($('crmIndustry'), INDUSTRIES.map(function (i) { return [i, i]; }), 'Not set');
+  fillSelect($('crmSource'), SOURCES);
 
   window.ADspaceCRM = {
     urlState: function () { return { client: state.client ? state.client.id : '' }; },
@@ -840,7 +1165,10 @@
       db.from('clients').select('*').eq('stage', 'active').order('name')
         .then(function (r) { then(r.data || []); }, function () { then([]); });
     },
-    billingMissing: billingMissing
+    billingMissing: billingMissing,
+    // The rate card lives in this module because it is what a client's lines
+    // are made of.
+    enterServices: enterServices
   };
 
   function showList() {

@@ -150,8 +150,21 @@ Rules:
 ## Console structure
 
 - Sections, in order: Clients (default), Content Review, Creator Campaigns,
-  Short Links, Team (admin only). Clients is first because everything else
-  hangs off a client.
+  Short Links, Services (the rate card; admins edit, everyone reads), Team
+  (admin only). Clients is first because everything else hangs off a client.
+- A new lead is a person who asked for something: Client name, Source,
+  Contact person (required), phone, email, Enquiry. Owner, Industry and
+  Market sit beside them. Nothing else at intake: no website, socials,
+  billing or deal value. Those live on the record.
+- The client record, top to bottom, follows the sale: head (Source, Owner,
+  Industry, Market, Value, Added; Edit changes only these and the stage),
+  Contacts, Services (lines from the rate card with Enquired / Quoted /
+  Confirmed; the confirmed total, else the quoted total, is the Value),
+  Calls and visits, Billing details (fold, required before Active), Brand
+  profile (fold: website, office phone, socials, brand notes), Engagements.
+- Every section on the record edits itself with its own Save. Choosing
+  Active in Edit with billing missing saves the rest, keeps the stage and
+  opens Billing details on the first missing field.
 - URL carries state: `?s=clients|review|campaigns|links|team`, `client=`,
   `campaign=`, `tab=`, `set=`, `new=<clientId>`. A refresh lands where the
   person was, with what they typed.
@@ -188,7 +201,8 @@ Rules:
   icon-only button without a name, more than one green action in a view,
   text under 4.5:1, a control border under 3:1, a control that takes focus
   without a ring. A red audit blocks the push.
-- Every page's stylesheet and script tags carry `?v=YYYYMMDD`. Bump it in
+- Every page's stylesheet and script tags carry `?v=YYYYMMDD` (a second
+  push on the same day appends a letter: `20260912b`). Bump it in
   every page on a push that changes CSS or JS (one `sed` over
   `admin/index.html creators/index.html review/index.html
   docs/PAGE-TEMPLATE.html admin/drive-test/index.html`), so a deploy is

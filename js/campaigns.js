@@ -1341,7 +1341,7 @@
     });
   }
   document.addEventListener('click', function (e) {
-    if (!e.target.closest || !e.target.closest('.kcard-head, .kmenu')) shutMenus();
+    if (!e.target.closest || !e.target.closest('.kcard-head, .kmenu, .team-act')) shutMenus();
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutMenus(); });
 
