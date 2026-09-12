@@ -22,14 +22,13 @@ window.ADSPACE_ORG = {
   bank: '',       // bank, account number and account name, on one line
   // The letterhead: the monogram top right and bottom centre, the wordmark
   // set in Optima, the text in Slate Book, the heavier lines in Slate
-  // Regular, the Company Profile QR (https://go.adspace.me/co) bottom right.
+  // Regular.
   // Files, not font names, same origin or served with CORS. A blank mark
   // uses brandLogo below; blank fonts fall back to Helvetica.
   logo: '/css/adspace-mark.png',
   font: '/css/SlateBook.TTF',
   fontBold: '/css/SlateRg.TTF',
-  fontMark: '/css/OPTIMA.TTF',
-  profileQr: '/css/adspace-profile-qr.png'
+  fontMark: '/css/OPTIMA.TTF'
 };
 
 window.ADSPACE_CONFIG = {

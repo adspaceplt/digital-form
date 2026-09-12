@@ -64,7 +64,7 @@ with the state word. Status selects are tinted like their chip:
 | Floor | 11px | Nothing in the portal is set smaller; the audit fails on it (`type`). The review mockups reproduce each platform and are exempt |
 Monospace (`ui-monospace, SFMono-Regular, Menlo`) 12.5px for slugs, tokens and code only.
 
-Print (the Letter of Intent) follows the ADspace letterhead: wordmark
+Print (the Letter of Offer) follows the ADspace letterhead: wordmark
 "ADspace" in Optima 14pt (`ADSPACE_ORG.fontMark` = `/css/OPTIMA.TTF`), body
 in Slate Book 11pt on a 14.5pt line with 14pt between paragraphs
 (`ADSPACE_ORG.font` = `/css/SlateBook.TTF`), the heavier lines (PRIVATE &
@@ -72,8 +72,7 @@ CONFIDENTIAL, the subject, ADSPACE PLT) in Slate Regular
 (`ADSPACE_ORG.fontBold` = `/css/SlateRg.TTF`; no Medium file exists),
 registration 9pt, table 10pt, notes 8.5pt, page count 7.5pt. Margins 54pt.
 The monogram (`/css/adspace-mark.png`) sits 21pt tall top right and 20pt
-bottom centre; the Company Profile QR (`/css/adspace-profile-qr.png`) 64pt
-bottom right. The web UI stays on the system stack. Config holds file
+bottom centre. No Company Profile QR on a letter. The web UI stays on the system stack. Config holds file
 paths, never font names.
 
 ### Spacing scale and vertical rhythm
@@ -199,7 +198,8 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
 - The sale: support keys in the lead → sales logs the first call or
   visit (Contacted by itself) → billing details and brand profile as the
   deal firms → service lines with price, months, start date, confirmed →
-  the Letter of Intent for the quotation team (Proposal sent) → billing
+  the Letter of Offer to the client, who signs it (Proposal sent); then
+  the formal quotation and invoice outside the portal → billing
   complete and Active → engagements.
 - The client record top to bottom follows that order; every section
   edits itself with its own Save; Edit replaces the head and Cancel
@@ -213,7 +213,7 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   per-person switches; a policy on `team_members` never queries itself.
 - Data: PDPA 2010 (MY) and PDPA 2012 (SG): collect what the page needs,
   a client sees only its own data, soft remove before hard delete.
-- Numbering: Letter of Intent `AQT/INT/YYMMXXX` (per month); campaign
+- Numbering: Letter of Offer `AQT/INT/YYMMXXX` (per month); campaign
   invoice reference `AINV2XXXXXX` entered by the team.
 - Reversibility: Revert for a stage, Restore for a record, Undo for a
   removal (log entry, contact, service line, uploaded PDF), Void then
