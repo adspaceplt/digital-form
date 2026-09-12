@@ -5,7 +5,7 @@ stand-in (`stub2.js`). Run from the repo root. See CLAUDE.md, section 1,
 for the order that has to run before a push.
 
     setsid nohup npx --yes http-server -p 8899 -s . >/dev/null 2>&1 &
-    for s in run camp client cprod bar newbadge prod qr regress backup keyin state race chrome crm sgd team; do node tests/$s.js tests; done
+    for s in run camp client cprod bar newbadge prod qr regress backup keyin state race chrome crm sgd team portal; do node tests/$s.js tests; done
     node tests/uxaudit.js tests
     SHOTS=1 node tests/uxaudit.js tests       # screenshots only, into tests/walk/
     node tests/newshot.js tests               # client record, billing fold, rate card at 1280 and 390

@@ -17,6 +17,7 @@
   var bridge = window.ADspaceAdmin || {};
   var log = bridge.log || function () {};
   var actor = bridge.actor || function () { return ''; };
+  var actorName = bridge.actorName || actor;
   var setUrl = bridge.setUrl || function () {};
   var restoreScroll = bridge.restoreScroll || function () {};
   var MON = window.ADspaceMoney;
@@ -377,6 +378,7 @@
     loadContacts();
     loadServices();
     loadDocuments();
+    loadRequests();
     loadTouches();
     loadWork();
     setUrl();
@@ -531,6 +533,7 @@
     row.innerHTML =
       '<span class="svc-name"><b>' + esc(ct.name) +
         (removed ? ' <span class="tone">Removed</span>' : ct.is_primary ? ' <span class="tone is-ok">Main contact</span>' : '') +
+        (!removed && ct.portal_access ? ' <span class="tone">Portal</span>' : '') +
         '</b><small>' + esc(sub) + '</small></span>' +
       '<span class="crm-reach">' +
         (ct.phone ? '<a class="plink" href="tel:' + esc(ct.phone) + '">' + esc(ct.phone) + '</a>' : '') +
@@ -545,6 +548,9 @@
             : '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
               (ct.is_primary ? '' :
                 '<button class="kmenu-item" data-a="primary" type="button"><b>Main contact</b></button>') +
+              (ct.portal_access
+                ? '<button class="kmenu-item" data-a="unportal" type="button"><b>Remove portal access</b></button>'
+                : '<button class="kmenu-item" data-a="portal" type="button"><b>Portal access</b></button>') +
               '<button class="kmenu-item is-danger" data-a="del" data-soft type="button"><b>Remove</b></button>') +
         '</div>' +
       '</span>';
@@ -552,9 +558,31 @@
     var on = function (a, fn) { var el = row.querySelector('[data-a="' + a + '"]'); if (el) el.addEventListener('click', fn); };
     on('edit',    function () { openContact(ct); });
     on('primary', function () { makePrimary(ct); });
+    on('portal',   function () { setPortal(ct, true); });
+    on('unportal', function () { setPortal(ct, false); });
     on('del',     function () { archiveContact(ct, true); });
     on('restore', function () { archiveContact(ct, false); });
     return row;
+  }
+
+  /* Portal access is one switch on the contact; the email is the sign-in
+     address. Granting it also asks the invite function to create the login,
+     so the person can sign in whether or not sign-ups are open. */
+  function setPortal(ct, on) {
+    if (on && !ct.email) { msg('ctMsg', 'An email is required.', 'err'); openContact(ct); return; }
+    db.from('client_contacts').update({ portal_access: on }).eq('id', ct.id).then(function (r) {
+      if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
+      log(on ? 'contact.portal_on' : 'contact.portal_off', state.client.name + ' · ' + ct.name, ct.email || '');
+      msg('crmWorkMsg', '');
+      loadContacts();
+      loadRequests();
+      if (!on) { undoBar(ct.name + ': portal access removed.', function () { setPortal(ct, true); }); return; }
+      db.functions.invoke('invite-member', { body: { email: ct.email, name: ct.name, kind: 'client' } })
+        .then(function (res) {
+          var d = (res && res.data) || {};
+          if ((res && res.error) || d.error) msg('crmWorkMsg', 'Access granted. Invite not sent: ' + ((res && res.error && res.error.message) || d.detail || d.error) + '.', 'warn');
+        }, function (e) { msg('crmWorkMsg', 'Access granted. Invite not sent: ' + ((e && e.message) || e) + '.', 'warn'); });
+    });
   }
 
   /* A menu in a table row would be clipped by the table, so it is placed on
@@ -1105,6 +1133,99 @@
         if (v === was) { done(); return; }
         db.from('clients').update({ deal_value: v }).eq('id', state.client.id).then(done, done);
       });
+  }
+
+  // ---- Requests from the portal ---------------------------------------------
+  /* The client asks; the team answers. A request moves Requested → Reviewing
+     → Approved or Declined → Applied, and the person may set a fee and a
+     reply the client reads. Approval changes nothing by itself: a person
+     applies it to the service line. The section shows once the client has
+     portal access or a request exists. */
+  var RQ_STATE = { requested: ['Requested', 'is-warn'], reviewing: ['Reviewing', 'is-warn'], approved: ['Approved', 'is-ok'],
+                   declined: ['Declined', 'is-off'], applied: ['Applied', 'is-ok'] };
+  var RQ_KIND = { upgrade: 'Upgrade', downgrade: 'Downgrade', cancel: 'Cancel', details: 'Change of details' };
+
+  function loadRequests() {
+    var box = $('crmRequestList');
+    var wrap = $('crmRequests');
+    var id = state.client.id;
+    db.from('client_contacts').select('id').eq('client_id', id).eq('portal_access', true).is('archived_at', null).then(function (pr) {
+      var anyPortal = Boolean((pr.data || []).length);
+      return db.from('client_requests').select('*').eq('client_id', id).order('created_at', { ascending: false }).then(function (r) {
+        if (r.error || state.client.id !== id) { wrap.hidden = true; return; }
+        state.requests = r.data || [];
+        wrap.hidden = !state.requests.length && !anyPortal;
+        if (wrap.hidden) return;
+        box.innerHTML = '';
+        if (!state.requests.length) { box.innerHTML = '<div class="empty">No requests.</div>'; return; }
+        var table = document.createElement('div');
+        table.className = 'crm-table';
+        table.innerHTML = '<div class="crm-head svc-row doc-row"><span>Request</span><span class="svc-rate">Fee</span><span>State</span><span></span></div>';
+        state.requests.forEach(function (q) { table.appendChild(requestRow(q)); });
+        box.appendChild(table);
+      });
+    }).then(null, function () { wrap.hidden = true; });
+  }
+
+  function requestRow(q) {
+    var c = state.client;
+    var gone = Boolean(q.withdrawn_at);
+    var w = RQ_STATE[q.state] || RQ_STATE.requested;
+    var row = document.createElement('div');
+    row.className = 'svc-row doc-row' + (gone ? ' is-off' : '');
+    var sub = [q.contact_name, niceDate(q.created_at), q.note].filter(Boolean).join(' · ');
+    row.innerHTML =
+      '<span class="svc-name"><b>' + esc((RQ_KIND[q.kind] || q.kind) + (q.service_label ? ' · ' + q.service_label : '')) + '</b>' +
+        (sub ? '<small>' + esc(sub) + '</small>' : '') +
+        (q.reply ? '<small>' + esc('Reply: ' + q.reply) + '</small>' : '') + '</span>' +
+      '<span class="svc-rate svc-amt">' + (q.fee != null && q.fee !== '' ? '<b>' + esc(MON.money2(q.fee, c.market)) + '</b>'
+        : '<span class="muted">' + esc(MON.sign(c.market)) + '</span>') + '</span>' +
+      '<span class="svc-state">' + (gone ? '<span class="chip-state">Withdrawn</span>'
+        : '<select class="select select-sm state-select ' + w[1] + '" data-f="state" aria-label="State">' +
+          Object.keys(RQ_STATE).map(function (k) {
+            return '<option value="' + k + '"' + (k === q.state ? ' selected' : '') + '>' + esc(RQ_STATE[k][0]) + '</option>';
+          }).join('') + '</select>') + '</span>' +
+      '<span class="team-act">' +
+        (gone ? '' :
+        '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+        '<div class="kmenu" data-menu hidden>' +
+          '<button class="kmenu-item" data-a="reply" type="button"><b>Reply</b></button>' +
+        '</div>') +
+      '</span>';
+    if (!gone) {
+      wireMenu(row);
+      row.querySelector('[data-a="reply"]').addEventListener('click', function () { openReply(q); });
+      row.querySelector('[data-f="state"]').addEventListener('change', function () { saveRequest(q, { state: this.value }, 'request.changed'); });
+    }
+    return row;
+  }
+
+  var replying = null;
+  function openReply(q) {
+    replying = q;
+    $('crmReplyTitle').textContent = (RQ_KIND[q.kind] || q.kind) + (q.service_label ? ' · ' + q.service_label : '');
+    $('rqFee').value = q.fee != null && q.fee !== '' ? Number(q.fee) : '';
+    $('rqReply').value = q.reply || '';
+    msg('rqMsg', '');
+    $('crmReplyBox').hidden = false;
+    $('rqFee').focus();
+  }
+  function shutReply() { $('crmReplyBox').hidden = true; replying = null; }
+  $('rqCancel').addEventListener('click', shutReply);
+  $('rqSave').addEventListener('click', function () {
+    if (!replying) return;
+    var fee = val('rqFee');
+    saveRequest(replying, { fee: fee === '' ? null : Number(fee), reply: val('rqReply') || null }, 'request.replied');
+  });
+  function saveRequest(q, patch, action) {
+    patch.decided_by = actorName();
+    db.from('client_requests').update(patch).eq('id', q.id).then(function (r) {
+      if (r.error) { msg(replying ? 'rqMsg' : 'crmReqMsg', r.error.message, 'err'); return; }
+      log(action, state.client.name, (RQ_KIND[q.kind] || q.kind) + (q.service_label ? ' · ' + q.service_label : '') +
+        (patch.state ? ' · ' + RQ_STATE[patch.state][0] : '') + (patch.fee != null ? ' · ' + MON.money2(patch.fee, state.client.market) : ''));
+      shutReply();
+      loadRequests();
+    });
   }
 
   // ---- Documents ------------------------------------------------------------

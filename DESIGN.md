@@ -178,8 +178,13 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
 - One status vocabulary on console and client page: Confirmed, Pending
   visit, Pending draft, Reviewing, Changes requested, Scheduled, Posted,
   Completed, Withdrawn; client stages Lead, Contacted, Proposal sent,
-  Active, Paused, Past; on/off pairs are Active / Inactive. Pending and
+  Active, Paused, Past; requests Requested, Reviewing, Approved,
+  Declined, Applied, Withdrawn (kinds Upgrade, Downgrade, Cancel, Change
+  of details); on/off pairs are Active / Inactive. Pending and
   reviewing are warn colour.
+- A value the client only reads is a chip in the state column; the same
+  row shape as the console, the select swapped for the chip, the ⋯ kept
+  only where the client has an action.
 - Count creators, not slots. A campaign card shows the client's amount,
   not the invoice number. RedNote, never Xiaohongshu; Post, never Note.
 - Placeholders: the field's name or John Doe, john@adspacestudios.com,
@@ -211,6 +216,16 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
 - Access is enforced by the database: one user group per person
   (`team_roles` → trigger → `team_members` → `allowed(flag)`); never
   per-person switches; a policy on `team_members` never queries itself.
+- A client signs in with an email link to `/client/` and reaches its
+  data only through `get_portal`, `portal_request` and
+  `portal_withdraw`, keyed on the signed-in email against
+  `client_contacts.portal_access`. A signed-in account is not the team:
+  every team table is gated by `is_team()`, never by `authenticated`
+  alone. The portal never writes a record; a request is a row the team
+  applies in the console. A client sees one client.
+- Client pages: Content Review and Creator Selection keep their token
+  links (a manager forwards a link); the portal opens them by the same
+  links. Pages: `/admin/`, `/client/`, `/creators/`, `/review/`.
 - Data: PDPA 2010 (MY) and PDPA 2012 (SG): collect what the page needs,
   a client sees only its own data, soft remove before hard delete.
 - Numbering: Letter of Offer `AQT/INT/YYMMXXX` (per month); campaign
