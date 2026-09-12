@@ -67,7 +67,7 @@ alter table public.clients add column if not exists updated_at timestamptz not n
 alter table public.clients add column if not exists legal_name        text;
 alter table public.clients add column if not exists company_no_old    text;   -- the pre-2019 format
 alter table public.clients add column if not exists tin               text;
-alter table public.clients add column if not exists bill_contact      text;
+alter table public.clients add column if not exists bill_contact      text;   -- superseded by bill_contact_id
 alter table public.clients add column if not exists bill_contact_email text;
 alter table public.clients add column if not exists bill_contact_phone text;
 alter table public.clients add column if not exists finance_email     text;
@@ -1458,13 +1458,14 @@ create policy client_services_rw on public.client_services for all to authentica
 -- ============================================================================
 -- DOCUMENTS: quotations and invoices, kept as issued.
 -- ============================================================================
--- A snapshot of the lines and the bill-to at the moment of issue, so the PDF
--- can be drawn again later exactly as sent. Numbers: AQTYYMMDDXXX for a
--- quotation, AINVYYMMDDXXX for an invoice; the sequence restarts each day.
+-- A snapshot of the deal at the moment of issue, so the PDF can be drawn
+-- again later exactly as issued. The cover letter is numbered
+-- AQT/INT/YYMMXXX; the sequence restarts each month. bill_to holds the
+-- client, contact and deal facts as they stood.
 create table if not exists public.client_documents (
   id         uuid primary key default gen_random_uuid(),
   client_id  uuid not null references public.clients(id) on delete cascade,
-  kind       text not null,                       -- quotation | invoice
+  kind       text not null,                       -- cover (earlier rows: quotation | invoice)
   number     text not null unique,
   issued_at  date not null default current_date,
   market     text not null default 'MY',
@@ -1485,4 +1486,8 @@ create policy client_documents_rw on public.client_documents for all to authenti
 
 -- A line can run for a term: qty × rate × months, from a start month.
 alter table public.client_services add column if not exists tenure   int  not null default 1;
-alter table public.client_services add column if not exists start_on text;   -- YYYY-MM
+alter table public.client_services add column if not exists start_on text;   -- YYYY-MM-DD (older lines YYYY-MM)
+
+-- The billing contact is one of the client's contacts; the main contact
+-- stands in when none is chosen.
+alter table public.clients add column if not exists bill_contact_id uuid references public.client_contacts(id) on delete set null;

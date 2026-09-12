@@ -155,9 +155,10 @@ same markup, same behaviour everywhere.
 | Need | Component |
 |---|---|
 | Section heading with its one action | `.viewhead` > `.headmark h2` + `.btn.btn-primary` with icon |
-| Text facts about a thing | `dl.facts` (label over value, five per row, two on a phone) |
+| Text facts about a thing | `dl.facts` (label over value; the column count follows the cell count, two on a phone with the fifth spanning) |
 | Counts and money | `.tallies` > `.tallygroup` > `.kstep-title` + `.tally` > `.tally-cell` (`is-total`, `is-warn`) |
-| Rows of records | `.crm-table` > `.crm-row` / `.svc-row` (grid columns, `.team-act` ⋯ cell last); stacked cards under 640px |
+| Rows of records | `.crm-table` > `.crm-head` + `.crm-row` / `.svc-row` (grid columns; state column `var(--state-w)` second last, `.team-act` ⋯ cell last); on a phone two or three lines by `grid-template-areas`, never a stack of one field per line |
+| How much of a group is filled | `.ringline` > `.ring` (SVG arc, `is-ok` when complete) + "2 of 4" or "Complete" |
 | One record with steps | `.kcard` > `.kcard-head` (name, chips, ⋯) + `.kstep` blocks |
 | Rare or destructive actions | `.kmenu-btn` + `.kmenu` > `.kmenu-item` (name only; `is-danger`) |
 | A form to add or edit | `.panel` > `.panelhead h3` + `.row` fields + Save / Cancel row + `.msg` |
@@ -181,11 +182,18 @@ missed; none should need asking again.
   the row or the head, tinted like its chip (`is-ok`, `is-warn`,
   `is-off`), never through menu items: client stage, service line state,
   document Issued / Void, team member Active / Inactive, rate card line
-  Active / Retired. The ⋯ beside it holds only what is not a status
+  Active / Inactive. The ⋯ beside it holds only what is not a status
   (Edit, Invite, Download, Remove, Delete). A gate on a status (Active
   needs billing) puts the select back and opens what is missing. Campaign
   creator stages are the exception: each step needs data, so they step
   through the one green forward button and Revert.
+- Every status select is the same size everywhere: `var(--state-w)` wide
+  (124px), `var(--ctl-h-sm)` tall (32px, 44px touch), on the head as in a
+  row. The on/off pair is always Active / Inactive, never Retired,
+  Disabled or Archived.
+- A person is stored once. Anything that needs a person (the billing
+  contact, who a call was with) picks from Contacts, prefilled with the
+  main contact, and never asks for the name, phone or email again.
 - Every action reverses: Revert for a stage, Restore for a removed record,
   Undo bar for a removal, Void then Delete for an issued document (delete
   only after void; a number is never reused).
@@ -206,11 +214,13 @@ missed; none should need asking again.
 - The same kind of data looks the same in every section: a client's
   service lines, the rate card and the documents are all `.svc-row`
   tables; campaign counts and campaign results are both `.tally` cells.
-- Numbers: `AQTYYMMDDXXX`, `AINVYYMMDDXXX`, invoices on campaigns as the
-  client's own reference. Rates on the rate card are RM; a Singapore line
-  starts from the RM figure and is edited on the line.
-- Dates read `12 Sept 2026`, months `Oct 2026`, money `RM 8,490.00` with
-  two decimals wherever a total is shown.
+- Numbers: the cover letter `AQT/INT/YYMMXXX` (sequence per month);
+  invoices on campaigns carry the client's own reference. Rates on the
+  rate card are RM; a Singapore line starts from the RM figure and is
+  edited on the line.
+- Dates read `12 Sept 2026` and are entered with a date field, never a
+  month field; money `RM 8,490.00` with two decimals wherever a total is
+  shown.
 
 ## When adding a section
 
@@ -233,16 +243,24 @@ the stub tables in the test suite; a walk in `uxaudit`; a screenshot at
 - The sale, in order: support keys in the lead (Lead); sales logs the
   first call or visit (the record moves to Contacted by itself); billing
   details and brand profile are filled as the deal firms up; sales adds
-  service lines with price, months and start month and confirms them; a
-  quotation is issued for the client to sign (Proposal sent); billing
-  complete and Active; only then engagements.
+  service lines with price, months and start date and confirms them; a
+  cover letter is issued for the quotation team, who issue the formal
+  quotation outside the portal (Proposal sent); billing complete and
+  Active; only then engagements.
 - The client record, top to bottom, follows that order: head (Source,
   Owner, Industry, Market, Value, Added; Edit opens in place of the head
-  and changes only these and the stage), Client details (contacts, then
-  the Billing details and Brand profile folds), Calls and visits, Services
-  (lines from the rate card with qty × rate × months, Enquired / Quoted /
-  Confirmed; the confirmed total, else the quoted total, is the Value),
-  Documents (quotation, invoice), Engagements (shown only once Active).
+  and changes only these and the stage), Client details (contacts as a
+  table, then the Billing details and Brand profile folds), Calls and
+  visits, Services (lines from the rate card with qty × rate × months,
+  Enquired / Quoted / Confirmed; the confirmed total, else the quoted
+  total, is the Value), Documents (the cover letter), Engagements (shown
+  only once Active).
+- Billing details: Company name as registered, Business registration no.,
+  Billing contact (a select over Contacts, the main contact by default)
+  and Company billing address are required before Active; Old
+  registration no., TIN, SST registration no. and Finance department
+  email are optional. The fold's summary is the ring with "n of 4" or
+  "Complete".
 - Stages: Lead, Contacted, Proposal sent, Active, Paused, Past.
 - Every section on the record edits itself with its own Save. Choosing
   Active in Edit with billing missing saves the rest, keeps the stage and
@@ -251,24 +269,26 @@ the stub tables in the test suite; a walk in `uxaudit`; a screenshot at
   first row sits as far from the top as the last does from the bottom
   (`.crm-table:has(> .crm-head)` carries the pad). The audit fails on
   uneven card padding.
-- Documents (`js/documents.js`): a quotation takes quoted and confirmed
-  lines; an invoice takes confirmed lines and is offered only when the
-  client is Active with billing complete. Numbers: quotation
-  `AQT/INT/YYMMXXX` (internal, sequence per month), invoice
-  `AINVYYMMDDXXX` (sequence per day); the file name swaps `/` for `-`.
-  Each is stored as issued (`client_documents`: bill-to, lines, totals)
-  and redrawn from that snapshot; Void, then Delete only after Void; a
-  number is never reused.
-- The PDF follows the reference invoice: mark, title, the document's facts
-  (number, date of issue, date due or valid until, SST registration),
-  issuer left and Bill to right, the amount and its date in one bold line,
-  lines as Description / Qty / Unit price / Tax / Amount with the period
-  under a termed line, totals as Subtotal, Total excluding tax, SST 8% on
-  the subtotal, Total (and Amount due on an invoice), terms in small
-  print, an acceptance block on a quotation, page x of y. The mark and
-  fonts come from `ADSPACE_ORG.logo`, `.font`, `.fontBold` in
-  `js/config.js` (files served with CORS); blank falls back to the
-  wordmark and Helvetica.
+- Documents (`js/documents.js`): the portal issues no quotation and no
+  invoice. It issues the **cover letter**, an internal document sales
+  hands to the team that prepares the formal quotation. It takes every
+  service line with its state; quoted and confirmed lines make the
+  subtotal. Number `AQT/INT/YYMMXXX` (sequence per month); the file name
+  swaps `/` for `-`. Each is stored as issued (`client_documents.bill_to`:
+  client, billing contact, deal facts; `lines`; totals) and redrawn from
+  that snapshot; Void, then Delete only after Void; a number is never
+  reused.
+- The cover letter's PDF follows the reference document: mark, title, the
+  document's facts (reference, date, prepared by, account owner), Client
+  left (registered name, trading name, registration numbers, TIN, SST no.,
+  billing address) and Billing contact right (name, role, phone, email,
+  finance email), the deal as a line of facts (source, industry, market,
+  stage, SST), the enquiry, lines as Description / State / Qty / Unit
+  price / Amount with the period under a termed line, totals as
+  Confirmed, Quoted, Subtotal, SST 8% on the subtotal, Total, a Prepared
+  by / Checked by sign-off, page x of y. The mark and fonts come from
+  `ADSPACE_ORG.logo`, `.font`, `.fontBold` in `js/config.js` (files served
+  with CORS); blank falls back to the wordmark and Helvetica.
 - The rate card reads as two tables, Services and Add-ons, with the
   categories as sub-headings inside (`.svc-cat`), never a card per
   category.
@@ -276,16 +296,21 @@ the stub tables in the test suite; a walk in `uxaudit`; a screenshot at
   `campaign=`, `tab=`, `set=`, `new=<clientId>`. A refresh lands where the
   person was, with what they typed.
 - Only active clients appear in Content Review and campaign pickers.
-- Activity record is a table (when, tag, subject, detail, who), grouped by day,
-  filterable by section. Records removals and visibility changes only.
+- Activity record is a table (when, tag, subject, detail, who), grouped by
+  day, filterable by section (Clients, Team, Content Review, Creator
+  Campaigns, Short Links, Services). Every add, change, state change,
+  removal and restore on a client's services, documents and contacts is
+  recorded under Clients; rate card changes under Services.
 
 ## Data
 
 - Currency follows the client (`market` MY → RM, SG → S$). Tax is Malaysian
   SST 8% for every client (ADspace is a Malaysian entity) unless
   `sst_applies` is false. `js/money.js` is the only place money is formatted.
-- Stage → Active requires all ten e-invoice billing fields; company legal
-  name is stored in capitals.
+- Stage → Active requires the four required billing fields (registered
+  name, registration no., billing contact, billing address); company legal
+  name is stored in capitals. `clients.bill_contact_id` points at a
+  contact; the older `bill_contact*` text columns are unused.
 - Access is enforced by the database. A person belongs to one **user group**
   (`team_roles`: Admin, Account, Sales built in; admins can add more). The
   group holds the seven `can_*` switches and `is_admin`; a trigger copies
