@@ -13,21 +13,23 @@
      CDN rather than the website builder's, so a site rebuild cannot break it. -->
 <link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
 <link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
-<link rel="stylesheet" href="/css/portal.css?v=20260912b">
+<link rel="stylesheet" href="/css/portal.css?v=20260912c">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="/js/config.js?v=20260912b"></script>
-<script src="/js/api.js?v=20260912b"></script>
-<script src="/js/money.js?v=20260912b"></script>
-<script src="/js/mockups.js?v=20260912b"></script>
+<!-- Quotations and invoices are drawn in the browser. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="/js/config.js?v=20260912c"></script>
+<script src="/js/api.js?v=20260912c"></script>
+<script src="/js/money.js?v=20260912c"></script>
+<script src="/js/mockups.js?v=20260912c"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260912b" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260912c" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -294,6 +296,17 @@
         </div>
         <div class="msg" id="crmServiceMsg"></div>
         <div id="crmServices"></div>
+
+        <!-- Quotations and invoices issued from the lines above, kept as issued. -->
+        <div class="viewhead">
+          <span class="headmark"><h2>Documents</h2></span>
+          <div class="crm-engage-actions">
+            <button class="btn btn-icon" id="crmQuote" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg><span>Issue quotation</span></button>
+            <button class="btn btn-icon" id="crmInvoice" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg><span>Issue invoice</span></button>
+          </div>
+        </div>
+        <div class="msg" id="crmDocMsg"></div>
+        <div id="crmDocuments"></div>
 
         <!-- Every call, visit and message, newest first. -->
         <div class="viewhead">
@@ -1102,9 +1115,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260912b"></script>
-<script src="/js/crm.js?v=20260912b"></script>
-<script src="/js/team.js?v=20260912b"></script>
-<script src="/js/campaigns.js?v=20260912b"></script>
+<script src="/js/admin.js?v=20260912c"></script>
+<script src="/js/documents.js?v=20260912c"></script>
+<script src="/js/crm.js?v=20260912c"></script>
+<script src="/js/team.js?v=20260912c"></script>
+<script src="/js/campaigns.js?v=20260912c"></script>
 </body>
 </html>
