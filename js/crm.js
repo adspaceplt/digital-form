@@ -242,10 +242,11 @@
 
     /* The one rule with teeth: nobody becomes active until we can invoice
        them. Said at the moment it matters, naming what is missing. */
+    var missing = [];
     if (patch.stage === 'active') {
       var probe = Object.assign({}, state.editing || {}, patch);
-      var missing = billingMissing(probe);
-      if (missing.length) {
+      missing = billingMissing(probe);
+      if (missing.length && !state.editing) {
         msg('crmMsg', 'Billing details required before Active: ' + missing.join(', ') + '.', 'err');
         return;
       }
@@ -253,13 +254,24 @@
 
     if (state.editing) {
       var id = state.editing.id;
+      // The billing fields live on the record, not in this form. Everything
+      // else is saved, the stage stays where it was, and the record opens
+      // on the fields that are still needed.
+      var held = missing.length ? state.editing.stage : null;
+      if (held) patch.stage = held;
       db.from('clients').update(patch).eq('id', id).then(function (r) {
         if (r.error) { msg('crmMsg', r.error.message, 'err'); return; }
         log('client.edited', name, patch.stage);
         shutForm();
         loadClients(function () {
           var found = state.clients.filter(function (x) { return x.id === id; })[0];
-          if (found) openClient(found);
+          if (!found) return;
+          openClient(found);
+          if (!held) return;
+          setOpen('crmBillToggle', 'crmBillBody', true);
+          msg('crmBillMsg', 'Billing details required before Active: ' + missing.join(', ') + '.', 'err');
+          var first = BILLING.filter(function (f) { return missing.indexOf(f[2]) > -1; })[0];
+          if (first && $(first[0])) $(first[0]).focus();
         });
       });
       return;

@@ -57,7 +57,8 @@ Tokens (`:root`):
 | `--ink` | `#13181a` | Text, primary buttons |
 | `--ink-soft` | `#4b5457` | Secondary text, default button text |
 | `--ink-mute` | `#7e888b` | Labels, hints, quiet buttons |
-| `--line` / `--line-soft` | `#dee3e3` / `#eef1f1` | Borders, dividers |
+| `--line` / `--line-soft` | `#dee3e3` / `#eef1f1` | Card borders, dividers |
+| `--line-ctl` | `#868b8b` | Control boundaries (input, select, textarea, outline button): 3:1 on every background |
 | `--page` / `--card` / `--sunk` | `#f4f6f6` / `#ffffff` / `#f7f9f9` | Page, panels, inset areas |
 | `--accent`, `--ok` | `#1f7a4d` (bg `#ecf5f0`) | The one green: go actions, live states, focus ring |
 | `--warn` | `#9c5c16` (bg `#fbf2e6`) | Caution, unpublish, pending |
@@ -185,8 +186,12 @@ Rules:
   different heights (or widths on a phone), a control under 38px (44px
   touch; `.btn-sm` and `.input-sm` may be 32px on desktop), a field or
   icon-only button without a name, more than one green action in a view,
-  text under 4.5:1, a control that takes focus without a ring. A red audit
-  blocks the push. Control borders under 3:1 (`--line` on white) are
-  reported as warnings until the border token is decided.
+  text under 4.5:1, a control border under 3:1, a control that takes focus
+  without a ring. A red audit blocks the push.
+- Every page's stylesheet and script tags carry `?v=YYYYMMDD`. Bump it in
+  every page on a push that changes CSS or JS (one `sed` over
+  `admin/index.html creators/index.html review/index.html
+  docs/PAGE-TEMPLATE.html admin/drive-test/index.html`), so a deploy is
+  seen at once rather than after the host's ten minute cache.
 - The review page's post mockups reproduce each platform's own UI and are
   outside the audit.

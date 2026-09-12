@@ -9,6 +9,7 @@
   --ink:        #13181a;
   --ink-soft:   #4b5457;
   --ink-mute:   #646e71;
+  --line-ctl:   #868b8b;   /* control boundaries: 3:1 on every page background */
   --line:       #dee3e3;
   --line-soft:  #eef1f1;
   --page:       #f4f6f6;
@@ -99,7 +100,7 @@ a { color: inherit; }
 .field-label { display: block; font-size: 12px; color: var(--ink-mute); margin-bottom: 5px; }
 .select, .input, .textarea {
   font: inherit; font-size: var(--field-text); color: var(--ink); background: #fff;
-  border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 12px;
+  border: 1px solid var(--line-ctl); border-radius: var(--radius-sm); padding: 8px 12px;
 }
 .select, .input { min-height: var(--ctl-h); padding-block: 0; }
 /* The native control drew its own chrome, so a select sat a few pixels taller
@@ -196,7 +197,7 @@ a { color: inherit; }
 .btn {
   flex: 1; border-radius: var(--radius-sm); padding: 0 16px;
   min-height: var(--ctl-h); font-size: var(--ctl-text); font-weight: 500;
-  border: 1px solid var(--line); background: #fff; color: var(--ink-soft);
+  border: 1px solid var(--line-ctl); background: #fff; color: var(--ink-soft);
   transition: background .2s, color .2s, border-color .2s;
   /* Width came entirely from the label, so a row of buttons stepped up and
      down with the length of the words. A floor evens them out and centres
@@ -1464,6 +1465,9 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 .sheet-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
 .sheet-head h3 { flex: 1 1 auto; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
 .sheet-body { overflow: auto; margin: 0 -24px; padding: 0 24px 18px; }
+/* The activity record keeps one height whatever the filter shows; the list
+   scrolls inside it rather than the card growing and shrinking. */
+#activitySheet .sheet-card { height: min(82vh, 720px); }
 
 /* ---------- Notice ---------- */
 .notice {
@@ -1835,7 +1839,7 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 
 .kmenu-btn {
   margin-left: auto; flex: 0 0 auto;
-  width: 28px; height: 28px; display: grid; place-items: center;
+  width: var(--ctl-h); height: var(--ctl-h); display: grid; place-items: center;
   border: 1px solid transparent; border-radius: var(--radius-sm);
   background: none; color: var(--ink-mute);
 }
@@ -2373,6 +2377,7 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
    then everything else. */
 @media (max-width: 760px) {
   .crm-head { display: none; }
+  .crm-table { padding-top: 0; }
   .crm-row {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas: "name stage" "meta meta";
@@ -2544,15 +2549,21 @@ body > .shell { width: 100%; }
 /* Members: who, which group, what to do with them. */
 .team-head, .team-row {
   display: grid; align-items: center; gap: 0 10px;
-  grid-template-columns: minmax(200px, 1.6fr) 180px minmax(180px, .8fr);
+  grid-template-columns: minmax(200px, 1.6fr) 200px var(--ctl-h);
   padding: 0 15px;
 }
 /* Groups: one row per group, a column per switch. */
 .group-head, .group-row {
   display: grid; align-items: center; gap: 0 10px; min-width: 900px;
-  grid-template-columns: minmax(150px, 1.3fr) repeat(7, minmax(72px, .7fr)) 70px 90px;
+  grid-template-columns: minmax(150px, 1.3fr) repeat(7, minmax(72px, .7fr)) 70px var(--ctl-h);
   padding: 0 15px;
 }
+.group-name { display: flex; flex-direction: column; min-width: 0; }
+.group-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+.group-name small { font-size: 12px; color: var(--ink-mute); }
+/* The ⋯ menu hangs from its own cell, not from the table. */
+.team-act { position: relative; display: flex; justify-content: flex-end; }
+.team-act .kmenu { top: calc(var(--ctl-h) + 4px); right: 0; width: 200px; }
 .team-head, .group-head {
   padding-bottom: 8px; border-bottom: 1px solid var(--line);
   font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
@@ -2597,11 +2608,14 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   .team-head, .group-head { display: none; }
   .team-row, .group-row {
     min-width: 0; grid-template-columns: 1fr 1fr; gap: 8px 12px;
-    padding: 14px 15px; align-items: stretch;
+    padding: 12px 15px; align-items: stretch;
   }
-  .team-row > span:nth-child(1), .team-row > span:nth-child(2), .team-act,
-  .group-row > span:nth-child(1) { grid-column: 1 / -1; }
-  .team-row > span:nth-child(2), .group-row > span:nth-child(1) { margin-bottom: 4px; }
+  /* Who or which group on the left, the ⋯ on the right, the rest below. */
+  .team-row { grid-template-columns: minmax(0, 1fr) var(--ctl-h); }
+  .team-row > span:nth-child(2) { grid-column: 1 / -1; }
+  .group-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .group-row > .group-name { grid-column: 1; grid-row: 1; }
+  .team-row > .team-act, .group-row > .team-act { grid-column: 2; grid-row: 1; align-items: start; }
   .team-flag {
     display: flex; align-items: center; gap: 10px; text-align: left;
     min-height: var(--ctl-h); font-size: 13px; color: var(--ink-soft);
