@@ -44,7 +44,12 @@
     var d = dateOf(s);
     return d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : String(s || '');
   }
-  function amountOf(l) { return Number(l.qty || 0) * Number(l.rate || 0) * Math.max(1, Number(l.tenure || 1)); }
+  /* The rate a line is billed at, which is the catalogue rate carrying its
+     term adjustment: six months is the baseline, a shorter term holds margin
+     and a longer one earns a discount. One definition, in money.js, so the
+     console, the letter and the client's page cannot disagree. */
+  function rateOf(l) { return MON.rateFor(l.rate, l.tenure); }
+  function amountOf(l) { return Number(l.qty || 0) * rateOf(l) * Math.max(1, Number(l.tenure || 1)); }
 
   /* One price, worked the same way when the letter is issued and when it is
      drawn again later, so the stored total and the printed one never drift.
@@ -57,7 +62,7 @@
     var ns = lines.map(function (l) { return Math.max(1, Number(l.tenure || 1)); });
     var term = (ns.length && ns[0] > 1 && ns.every(function (x) { return x === ns[0]; })) ? ns[0] : 0;
     var each = lines.reduce(function (s, l) {
-      return s + Number(l.qty || 0) * Number(l.rate || 0) * (term ? 1 : Math.max(1, Number(l.tenure || 1)));
+      return s + Number(l.qty || 0) * rateOf(l) * (term ? 1 : Math.max(1, Number(l.tenure || 1)));
     }, 0);
     var eachTax = MON.taxOf(each, market, taxOn);
     var eachTotal = Math.round((each + eachTax) * 100) / 100;
@@ -71,7 +76,7 @@
   }
   // What one line puts on the invoice the Amount column is totalling.
   function lineAmount(l, term) {
-    return Number(l.qty || 0) * Number(l.rate || 0) * (term ? 1 : Math.max(1, Number(l.tenure || 1)));
+    return Number(l.qty || 0) * rateOf(l) * (term ? 1 : Math.max(1, Number(l.tenure || 1)));
   }
   /* "12 October 2026 to 11 April 2027" for a termed line, "12 October 2026"
      for a dated one, "6 months" for a term without a start. */
@@ -341,13 +346,16 @@
         String(l.detail || '').split(/\r?\n/).forEach(function (d) {
           if (d.replace(/\s/g, '')) incl = incl.concat(wrap(d, descW, 8.5));
         });
-        var metaWord = [l.unit, periodOf(l), l.note].filter(Boolean).join('  ·  ');
+        var metaWord = [l.unit, MON.termWord(l.tenure), periodOf(l), l.note].filter(Boolean).join('  ·  ');
         var meta = metaWord ? wrap(metaWord, descW, 8.5) : [];
         var split = incl.length && meta.length ? 4 : 0;
         if (y - (names.length * LROW + (incl.length + meta.length) * LSUB + split + LGAP) < 70) { newPage(); head(); thead(); }
         text(names[0] || '', cols.desc, y, 10, bold);
-        right(q === 1 ? MON.money2(l.rate, doc.market)
-                      : (q % 1 ? q.toFixed(2) : String(q)) + ' × ' + MON.money2(l.rate, doc.market),
+        // The rate the client is billed, term adjustment included, because that
+        // is the figure they are accepting. Why it differs from the rate card
+        // is named on the mute line below, never left to be discovered.
+        right(q === 1 ? MON.money2(rateOf(l), doc.market)
+                      : (q % 1 ? q.toFixed(2) : String(q)) + ' × ' + MON.money2(rateOf(l), doc.market),
               cols.rate, y, 10);
         right(MON.money2(lineAmount(l, price.term), doc.market), cols.amt, y, 10);
         var amtNote = price.term ? 'per month' : (n > 1 ? n + ' months' : '');
