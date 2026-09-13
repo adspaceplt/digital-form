@@ -235,6 +235,11 @@ const say = s => console.log(s);
   await p.locator('.kmenu [data-a="unbook"]').first().click();
   await p.waitForTimeout(800);
   say('option states after the revert: ' + await p.evaluate(() => window.__DB.campaign_options.map(o => o.state).join(',')));
+  const backOpen = await p.evaluate(() => window.__DB.campaigns[0].state) === 'open';
+  say('nobody in production, so the campaign is open again: ' + backOpen +
+      ' | head reads "' + await p.locator('#campState').innerText() +
+      '" and offers "' + await p.locator('#campPublish').innerText() + '"');
+  if (!backOpen) { console.log('FAIL the campaign leaves production with its last creator'); }
   const goneHere = await p.locator('#invoicePanel').isHidden();
   const goneThere = await p.evaluate(async t => {
     const c = (await window.__rpc('get_campaign', { p_token: t })).data.campaign;

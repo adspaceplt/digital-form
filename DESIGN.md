@@ -7,30 +7,93 @@ checked against this file.
 
 ### Register
 Apple / Cloudflare: clarity, deference, depth by layering not by
-shadow. Flat, quiet, one accent, corporate. Never "AI SaaS": no rainbow
-gradients, no decorative shadows, no coloured dots for status, no
-explanatory blurbs.
+shadow. Flat, quiet, one accent, corporate, warm neutrals. Never "AI
+SaaS": no rainbow gradients, no decorative shadows, no coloured dots for
+status, no explanatory blurbs, no highlighter colours.
+
+This is a portal a team works in all day, not a page read for forty
+seconds, so it is tuned for the long session: few visible lines, light
+boundaries, generous space, full text contrast, and a theme that follows
+the reader's system.
 
 ### Colour tokens (`css/portal.css` `:root`)
 
-| Token | Value | Use |
-|---|---|---|
-| `--ink` | `#13181a` | Text, primary buttons |
-| `--ink-soft` | `#4b5457` | Secondary text, default button text |
-| `--ink-mute` | `#646e71` | Labels, hints, quiet buttons (4.5:1 on every background) |
-| `--line` | `#dee3e3` | Card borders, table rules |
-| `--line-soft` | `#eef1f1` | Row dividers |
-| `--line-ctl` | `#868b8b` | Input, select, textarea and outline button borders: 3:1 on every background |
-| `--page` / `--card` / `--sunk` | `#f4f6f6` / `#ffffff` / `#f7f9f9` | Page, panels, inset areas and table sub-headings |
-| `--accent` = `--ok` | `#1f7a4d`, bg `#ecf5f0` | The one green: go action, live state, focus ring, complete ring |
-| `--warn` | `#9c5c16`, bg `#fbf2e6` | Caution, unpublish, pending and reviewing states |
-| error text | `#b3261e` | `.msg.err` only; never a red button |
-| `--shadow` | `0 1px 2px rgba(19,24,26,.05)` | Panels only |
-| `--shadow-lift` | menus only | Nothing else casts a shadow |
+Neutrals are **warm**, not cool. A low saturation grey with a blue-green
+cast reads clinical, which is the wrong register for somewhere a team
+sits all day; a few degrees towards yellow reads considered instead, and
+is what the quiet corporate sites this portal takes after actually use.
 
-Chips: `.tone` (neutral, `is-ok`, `is-warn`, `is-danger`), `.chip-state`
-with the state word. Status selects are tinted like their chip:
-`state-select is-ok / is-warn / is-off`.
+What is lowered to make a long session comfortable is the **weight of
+the boundaries**, never the contrast of the text. Apple's body text is
+about 16:1; the calm of those pages comes from few visible lines and
+generous space, not from dim type. Every pair below clears WCAG AA and
+`uxaudit` measures it on the real page in both themes, so a "softer"
+palette can never be bought with legibility.
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `--ink` | `#1b1a17` | `#eff0ea` | Text |
+| `--ink-soft` | `#524e47` | `#c6c8be` | Secondary text, default button text |
+| `--ink-mute` | `#6b6760` | `#a6a89e` | Labels, hints, quiet buttons (4.5:1 on every background) |
+| `--line` | `#e2dfd8` | `#3a3c36` | Card borders, table rules |
+| `--line-soft` | `#eeece7` | `#2d2f2a` | Row dividers, the selected fill |
+| `--line-ctl` | `#8e8a80` | `#83857c` | Input, select, textarea and outline button borders: 3:1 on every background |
+| `--page` | `#f6f5f2` | `#161814` | The ground |
+| `--card` | `#ffffff` | `#1e201d` | Panels, tables, rows |
+| `--sunk` | `#faf9f6` | `#262824` | Inset areas, table sub-headings, hover |
+| `--fill` / `--on-fill` | `#1b1a17` / `#ffffff` | `#eff0ea` / `#191b17` | The solid ink surface and its text: primary button, selected `.acttab`, progress, the Undo bar |
+| `--accent` = `--ok` | `#1f7a4d` | `#4aa876` | The one green: go action, live state, complete ring |
+| `--ok-bg` | `#ecf5f0` | `#17281f` | Its tint |
+| `--ok-solid` / `--on-ok` | `#1f7a4d` / `#ffffff` | `#4aa876` / `#07150e` | A green **fill** and its text |
+| `--warn` / `--warn-bg` | `#9c5c16` / `#fbf2e6` | `#cf9350` / `#2a2217` | Caution, unpublish, pending and reviewing states |
+| `--warn-solid` / `--on-warn` | `#9c5c16` / `#ffffff` | `#cf9350` / `#1d1408` | A warn fill and its text |
+| `--err` / `--err-bg` / `--err-line` / `--err-hi` | `#b3261e` / `#fdeceb` / `#e9b9b5` / `#8c1d18` | `#e8837a` / `#2e1d1b` / `#6a3a35` / `#f2a9a2` | `.msg.err`, danger menu items, the one danger button; `--err-hi` is the pressed step, never a second red |
+| `--focus` | `rgba(31,122,77,.18)` | `rgba(74,168,118,.30)` | The focus ring, on every control, never removed |
+| `--chrome` | `rgba(255,255,255,.88)` | `rgba(22,24,20,.88)` | The translucent sticky bars (top bar, console head, confirm bar) |
+| `--scrim` | `rgba(0,0,0,.42)` | `rgba(0,0,0,.62)` | Behind a sheet |
+| `--shadow` | `0 1px 2px rgba(19,24,26,.05)` | `0 1px 2px rgba(0,0,0,.5)` | Panels only |
+| `--shadow-lift` | menus only | menus only | Nothing else casts a shadow |
+
+**Every colour is a token.** A colour written into a rule cannot follow
+the theme, and that is exactly how a light top bar and black button text
+survived into dark: `rgba(255,255,255,.88)` on `.topbar`, and a native
+`button` taking the platform's own `buttontext`. Hence `color-scheme:
+light dark` on `:root` and `color: inherit` on `button`, so what the
+browser draws (select popups, scrollbars, the caret) follows too.
+
+**A fill and its text are always a pair.** In dark the fill is light, so
+`color: #fff` on it disappears. Never `background: var(--ink); color:
+#fff`; always `var(--fill)` / `var(--on-fill)`, `var(--ok-solid)` /
+`var(--on-ok)`. A hover that used to be a darker hex is `filter:
+brightness()` on the same token, so one value still drives both themes.
+
+**One value per semantic colour where it can do both jobs.** In dark,
+`--ok` is legible as text on every surface *and* deep enough to carry
+dark text as a fill, so there is still one green. A paler mint passed the
+same checks and read as a highlighter pen, which is not this register.
+
+### Themes
+
+Dark follows the reader's system and nothing else: no toggle, no stored
+preference, no third state to get wrong. Only the colours move; every
+size, space and shape is the same screen, so a layout that is right in
+one theme is right in the other. All four pages have it (`/admin/`,
+`/client/`, `/creators/`, `/review/`), because a client opens their link
+at night on the same phone the team does.
+
+Two things deliberately stay light in both themes:
+- **The post mockups** (`.mk-*`, `.fb-*`, `.ig-*`, `.xhs-*` and the
+  `.card-stage` they sit on) reproduce each platform's own UI. Instagram's
+  feed is white; a dark one would stop being a preview of what the
+  client's audience sees. They are outside the audit for the same reason.
+- **The client logo disc** (`.bigcard-logo`, `.logopreview`, the mockup
+  avatar). The logo is the client's artwork, usually dark on transparent,
+  and it is not ours to invert. The ADspace wordmark is one flat colour
+  on transparent, so that one *is* inverted rather than shipped twice.
+
+`uxaudit` walks every page and state in **both themes at both widths**.
+Contrast is the rule most easily broken by a colour written into a rule,
+and a theme nobody audits is a theme that quietly fails AA.
 
 ### Shape and size tokens
 
@@ -292,6 +355,16 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   removal (log entry, contact, service line, uploaded PDF), Void then
   Delete for an issued document, a number never reused. Anything a
   person can upload or attach, a person can remove.
+- **Every forward move is walked backwards before it ships.** A state
+  that is derived from data is derived in one place and recomputed on
+  every load, never written once by the action that caused it: a
+  campaign is In production because at least one creator is in
+  production, so reverting, withdrawing or replacing the last of them
+  puts it back to Open for selection (`syncCampState`, off `loadOptions`,
+  not off each of the three menu actions). The two deliberate exceptions
+  are decisions a person owns and a trigger must not: voiding a Letter of
+  Offer does not pull the client back from Proposal sent, and approving a
+  client request never edits a service line.
 - Row ⋯ menus are placed on the viewport by their button; a faded row
   fades its content, never its ⋯; the global click handler spares
   `.kcard-head`, `.kmenu`, `.team-act`. A modal that filters keeps one
