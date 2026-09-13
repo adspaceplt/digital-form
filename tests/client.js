@@ -139,6 +139,21 @@ const SEED = `
   say('390 overflow: ' + (d.sw > d.cw ? 'YES ' + d.sw + '>' + d.cw : 'none'));
   await p.screenshot({ path: process.argv[2] + '/client-390.png', fullPage: true });
 
+  /* A client page is opened by its token and by nothing else. The console
+     carries a readable slug in its address, so this is the line that must
+     hold: a guessed client name opens nothing here. */
+  let leaks = 0;
+  for (const q of ['?client=laman-citra', '?k=laman-citra', '?client=star-living', '?slug=laman-citra', '']) {
+    await p.goto('http://127.0.0.1:8899/creators/' + q, { waitUntil: 'networkidle' });
+    await p.waitForTimeout(500);
+    const shown = await p.locator('#app').isVisible().catch(() => false);
+    const title = await p.locator('#stateTitle').innerText().catch(() => '');
+    if (shown) leaks++;
+    say('guess "' + q + '" -> app ' + (shown ? 'OPEN' : 'closed') + ', cover "' + title + '"');
+  }
+  if (leaks) { say('FAIL a guessable address opened a client page'); process.exitCode = 1; }
+  else say('a guessed name opens nothing: ok');
+
   await b.close();
   say('--- errors ---');
   say(errs.length ? errs.join('\n') : 'none');

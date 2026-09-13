@@ -3,7 +3,7 @@ const fs = require('fs');
 const STUB = fs.readFileSync(process.argv[2] + '/stub2.js', 'utf8');
 const SEED = `(function(){ var D = window.__DB; if (D.clients.length > 2) return;
   ['Star Living','HKL Lim Motorsport','Dale & Cecil','Niro Granite','The Mill International'].forEach(function(n,i){
-    D.clients.push({ id:'cs'+i, name:n, stage:['active','proposal','lead','active','past'][i],
+    D.clients.push({ id:'cs'+i, slug:n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''), name:n, stage:['active','proposal','lead','active','past'][i],
       market: i===2 ? 'SG':'MY', owner:['Qiao Rou','Aisyah','Qiao Rou','Aisyah','Qiao Rou'][i],
       industry:['Retail','Automotive','Lifestyle','Retail','Property'][i], sst_applies:true,
       access_token:'t'+i });

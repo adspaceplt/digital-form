@@ -1,8 +1,8 @@
 /* Supabase stand-in with just enough query builder + the campaign RPCs. */
 (function () {
   var DB = {
-    clients: [{ id: 'c1', name: 'Laman Citra', logo_url: null, stage: 'active', market: 'MY', owner: 'Qiao Rou', industry: 'Property', sst_applies: true, review_hidden: false, legal_name:'LAMAN CITRA SDN BHD', company_no:'202201012345', company_no_old:'1234567-A', tin:'C 123', sst_no:'W10-1', bill_contact:'Mr Lim', bill_contact_email:'lim@lc.com', bill_contact_phone:'0123', finance_email:'acc@lc.com', billing_address:'JB' },
-              { id: 'c2', name: 'Furiku Matcha', logo_url: null, stage: 'proposal', market: 'SG', owner: 'Aisyah', industry: 'F&B', sst_applies: true }],
+    clients: [{ id: 'c1', slug: 'laman-citra', name: 'Laman Citra', logo_url: null, stage: 'active', market: 'MY', owner: 'Qiao Rou', industry: 'Property', sst_applies: true, review_hidden: false, legal_name:'LAMAN CITRA SDN BHD', company_no:'202201012345', company_no_old:'1234567-A', tin:'C 123', sst_no:'W10-1', bill_contact:'Mr Lim', bill_contact_email:'lim@lc.com', bill_contact_phone:'0123', finance_email:'acc@lc.com', billing_address:'JB' },
+              { id: 'c2', slug: 'furiku-matcha', name: 'Furiku Matcha', logo_url: null, stage: 'proposal', market: 'SG', owner: 'Aisyah', industry: 'F&B', sst_applies: true }],
     creators: [
       { id: 'k1', name: '香香的爆米花 🍿', followers: 12400, cost_rate: 280, client_rate: 360, industries: 'lifestyle' },
       { id: 'k2', name: '恩比', followers: 8100, cost_rate: 300, client_rate: 360, industries: 'F&B' },

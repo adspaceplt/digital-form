@@ -313,7 +313,7 @@
       if (!state.client) return;
       try {
         sessionStorage.setItem(PLACE, JSON.stringify({
-          client: state.client.id,
+          client: clientKey(state.client),
           set: state.batch ? state.batch.id : null,
           y: Math.round(window.scrollY),
           drawer: !$('advancedBody').hidden
@@ -344,11 +344,26 @@
   /* The address bar is where you are: the section, and whatever is open
      inside it. A refresh, a reopened tab or a pasted link all land there.
      What you were typing is not here; that is the form's own memory. */
+  /* A client's address is its slug, the readable one the Clients section
+     writes. Older links carrying a UUID still resolve, so nothing shared
+     before this stops working. Both live in js/crm.js, which owns clients. */
+  function clientKey(c) {
+    var CRM = window.ADspaceCRM;
+    return (CRM && CRM.keyOf ? CRM.keyOf(c) : '') || (c && c.id) || '';
+  }
+  function clientByKey(key, then) {
+    var CRM = window.ADspaceCRM;
+    if (CRM && CRM.byKey) { CRM.byKey(key, then); return; }
+    db.from('clients').select('*').eq('id', key).single()
+      .then(function (r) { then(r.error ? null : (r.data || null)); }, function () { then(null); });
+  }
+
   function setUrl() {
     var q = [];
     if (section !== 'clients') q.push('s=' + section);
     if (section === 'review') {
-      if (state.client) q.push('client=' + state.client.id);
+      // The same readable address the Clients section uses.
+      if (state.client) q.push('client=' + encodeURIComponent(clientKey(state.client)));
       if (state.batch)  q.push('set=' + state.batch.id);
     } else if (section === 'campaigns' && window.ADspaceCampaigns) {
       var sub = window.ADspaceCampaigns.urlState();
@@ -404,9 +419,9 @@
     var samePlace = place && place.client === clientId;
     if (samePlace) pendingScroll = place.y || 0;
 
-    db.from('clients').select('*').eq('id', clientId).single().then(function (r) {
-      if (r.error || !r.data) { showClients(); return; }
-      openClient(r.data);
+    clientByKey(clientId, function (c) {
+      if (!c) { showClients(); return; }
+      openClient(c);
       if (samePlace && place.drawer) openDrawer(true);
       if (!setId) return;
       db.from('batches').select('*').eq('id', setId).single().then(function (bt) {

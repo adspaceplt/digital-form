@@ -148,7 +148,7 @@ const SEED = `
   // --- the console side, in the same tab so the stand-in's data is shared ---
   await p.route('**/qrcode*.js', r => r.fulfill({ contentType: 'application/javascript', body: 'window.QRCode=function(){};window.QRCode.CorrectLevel={H:2};' }));
   const a = p;
-  await a.goto('http://127.0.0.1:8899/admin/?s=clients&client=c1', { waitUntil: 'networkidle' });
+  await a.goto('http://127.0.0.1:8899/admin/?s=clients&client=laman-citra', { waitUntil: 'networkidle' });
   await a.evaluate(() => window.__signIn('adspacestudios@gmail.com')); await a.waitForTimeout(900);
   check('the console shows the requests', await a.locator('#crmRequests').isVisible() &&
     await a.locator('#crmRequestList .doc-row:not(.crm-head)').count() === 2);
