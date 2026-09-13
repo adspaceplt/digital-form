@@ -46,6 +46,34 @@
     return d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : String(s || '');
   }
   function amountOf(l) { return Number(l.qty || 0) * Number(l.rate || 0) * Math.max(1, Number(l.tenure || 1)); }
+
+  /* One price, worked the same way when the letter is issued and when it is
+     drawn again later, so the stored total and the printed one never drift.
+
+     A letter whose lines all run the same term is priced per month, because
+     that is how it is invoiced and how the client thinks about it. `each` is
+     then one month's invoice and the commitment is that month times the term.
+     Mixed or one off lines have no monthly figure, so `each` is the amount. */
+  function priceOf(lines, market, taxOn) {
+    var ns = lines.map(function (l) { return Math.max(1, Number(l.tenure || 1)); });
+    var term = (ns.length && ns[0] > 1 && ns.every(function (x) { return x === ns[0]; })) ? ns[0] : 0;
+    var each = lines.reduce(function (s, l) {
+      return s + Number(l.qty || 0) * Number(l.rate || 0) * (term ? 1 : Math.max(1, Number(l.tenure || 1)));
+    }, 0);
+    var eachTax = MON.taxOf(each, market, taxOn);
+    var eachTotal = Math.round((each + eachTax) * 100) / 100;
+    var n = term || 1;
+    return {
+      term: term, each: each, eachTax: eachTax, eachTotal: eachTotal,
+      subtotal: Math.round(each * n * 100) / 100,
+      tax: Math.round(eachTax * n * 100) / 100,
+      total: Math.round(eachTotal * n * 100) / 100
+    };
+  }
+  // What one line puts on the invoice the Amount column is totalling.
+  function lineAmount(l, term) {
+    return Number(l.qty || 0) * Number(l.rate || 0) * (term ? 1 : Math.max(1, Number(l.tenure || 1)));
+  }
   /* "12 October 2026 to 11 April 2027" for a termed line, "12 October 2026"
      for a dated one, "6 months" for a term without a start. */
   function periodOf(l) {
@@ -81,14 +109,15 @@
     var use = (lines || []).filter(function (l) { return !l.archived_at && l.state === 'quoted'; });
     if (!use.length) { then({ error: 'No quoted lines.' }); return; }
     deal = deal || {};
-    var subtotal = use.reduce(function (s, l) { return s + amountOf(l); }, 0);
     var taxOn = client.sst_applies !== false;
-    var tax = MON.taxOf(subtotal, client.market, taxOn);
+    // The stored figures are the whole commitment, which is what the record
+    // and the pipeline are worth. The letter headlines the month.
+    var price = priceOf(use, client.market, taxOn);
     var doc = {
       client_id: client.id, kind: kind || 'offer',
       issued_at: new Date().toISOString().slice(0, 10),
       market: client.market || 'MY',
-      subtotal: subtotal, tax: tax, total: Math.round((subtotal + tax) * 100) / 100,
+      subtotal: price.subtotal, tax: price.tax, total: price.total,
       bill_to: {
         name: client.name || '', legal_name: client.legal_name || '', address: client.billing_address || '',
         regno: client.company_no || '', regno_old: deal.company_no_old || client.company_no_old || '',
@@ -185,14 +214,6 @@
     if (d.length === 11 && d.indexOf('60') === 0) return '(60)' + d.slice(2, 4) + ' ' + d.slice(4, 7) + ' ' + d.slice(7);
     return String(p || '');
   }
-  /* The term every line shares, when they share one and it is longer than a
-     month. Only then does a single monthly figure mean anything; a letter
-     mixing a six month package with a one off shoot has no monthly price. */
-  function monthlyTerm(doc) {
-    var ns = (doc.lines || []).map(function (l) { return Math.max(1, Number(l.tenure || 1)); });
-    if (ns.length < 1 || ns[0] < 2) return 0;
-    return ns.every(function (x) { return x === ns[0]; }) ? ns[0] : 0;
-  }
   function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
   function letterDate(s) {
     var d = dateOf(s);
@@ -267,6 +288,12 @@
       head();
 
       var b = doc.bill_to || {};
+      /* Worked from the snapshot, by the same function that stored it, so a
+         letter drawn again a year later prints the figures it was issued
+         with. Older rows carry no per line tax flag; the stored tax says. */
+      var lineTax = (doc.lines && doc.lines.length && 'tax' in doc.lines[0])
+        ? Boolean(doc.lines[0].tax) : Number(doc.tax) > 0;
+      var price = priceOf(doc.lines || [], doc.market, lineTax);
       text('PRIVATE & CONFIDENTIAL', M, y, BODY, bold); y -= 24;
 
       // Our Ref / Date / To / Attn, the colons in one column.
@@ -323,8 +350,9 @@
         right(q === 1 ? MON.money2(l.rate, doc.market)
                       : (q % 1 ? q.toFixed(2) : String(q)) + ' × ' + MON.money2(l.rate, doc.market),
               cols.rate, y, 10);
-        right(MON.money2(amountOf(l), doc.market), cols.amt, y, 10);
-        if (n > 1) right(n + ' months', cols.amt, y - LROW, 8.5, font, mute);
+        right(MON.money2(lineAmount(l, price.term), doc.market), cols.amt, y, 10);
+        var amtNote = price.term ? 'per month' : (n > 1 ? n + ' months' : '');
+        if (amtNote) right(amtNote, cols.amt, y - LROW, 8.5, font, mute);
         y -= LROW;
         names.slice(1).forEach(function (s2) { text(s2, cols.desc, y, 10, bold); y -= LROW; });
         incl.forEach(function (s2) { text(s2, cols.desc, y, 8.5, font, mute); y -= LSUB; });
@@ -334,34 +362,36 @@
       });
       rule(y); y -= 14;
 
-      var term = monthlyTerm(doc);
-      need(term ? 82 : 66);
+      /* The figures the client is accepting are the ones they will be
+         invoiced: a month at a time where the services run by the month.
+         The whole commitment is a term below, in words, so it is disclosed
+         without being the number in bold. */
+      need(66);
       var lx = R - 230;
       var trow = function (label, value, kind) {
-        var strong = kind === 'strong', quiet = kind === 'quiet';
-        var size = strong ? 10.5 : quiet ? 9 : 10;
+        var strong = kind === 'strong';
+        var size = strong ? 10.5 : 10;
         var f = strong ? bold : font;
         text(label, lx, y, size, f, strong ? ink : mute);
-        right(value, R, y, size, f, quiet ? mute : ink);
-        y -= quiet ? 13 : 15;
+        right(value, R, y, size, f, ink);
+        y -= 15;
       };
-      trow('Subtotal', MON.money2(doc.subtotal, doc.market));
-      trow(Number(doc.tax) ? 'SST 8%' : 'SST not applicable', MON.money2(doc.tax, doc.market));
+      trow('Subtotal', MON.money2(price.each, doc.market));
+      trow(Number(price.eachTax) ? 'SST 8%' : 'SST not applicable', MON.money2(price.eachTax, doc.market));
       y += 4; rule(y, lx, R, true); y -= 14;
-      trow('Total', MON.money2(doc.total, doc.market), 'strong');
-      /* What the client pays each month, under the figure it divides. It is
-         mute and smaller, so the total stays the one bold amount. */
-      if (term) {
-        trow('Monthly over ' + term + ' months',
-             MON.money2(Math.round((doc.total / term) * 100) / 100, doc.market), 'quiet');
-      }
+      trow(price.term ? 'Payable monthly' : 'Total', MON.money2(price.eachTotal, doc.market), 'strong');
       y -= 12;
 
       /* The conditions in one block instead of a sentence here and a sentence
          there. The label matches the table's, so the letter has one voice for
-         "this is a heading". */
+         "this is a heading". The commitment line is what the client signs
+         off: a monthly figure alone is not a figure anyone can be held to. */
       var terms = [];
-      if (term) terms.push('Fees are quoted per month and billed monthly in advance. The amounts above are for the full term.');
+      if (price.term) {
+        terms.push('Fees are billed monthly in advance for a minimum term of ' + price.term + ' months.');
+        terms.push('The total payable over the ' + price.term + ' month term is ' +
+                   MON.money2(price.total, doc.market) + (Number(price.tax) ? ' including SST.' : '.'));
+      }
       terms.push('This offer is valid until ' + letterDate(plusDays(doc.issued_at, k.validDays)) + '.');
       need(24 + terms.length * 26);
       text('TERMS', M, y, 9, bold, mute); y -= 15;
