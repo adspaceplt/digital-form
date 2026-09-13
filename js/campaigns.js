@@ -660,8 +660,7 @@
     // Not the form's input of the same name: this is the line under the title.
     $('campPurposeLine').textContent = c.purpose || '';
     $('campPurposeLine').hidden = !c.purpose;
-    $('campState').textContent = STATE_WORD[c.state] || c.state;
-    $('campState').classList.toggle('is-live', c.state !== 'draft');
+    paintCampState(c);
     $('campFacts').innerHTML = [
       ['Client',            (c.clients && c.clients.name) || ''],
       ['Push format',       FORMAT_WORD[c.push_format] || c.push_format || ''],
@@ -677,14 +676,21 @@
     // The invoice panel depends on who is confirmed, so it is painted once the
     // creators are in (paintOptions), never from the stale list.
     $('invoicePanel').hidden = true;
-    // Publishing is the forward move and carries the weight. Unpublishing and
-    // reopening are warnings, drawn as such.
-    var move = publishMove(c.state);
-    $('campPublish').innerHTML = move.icon + esc(move.label);
-    $('campPublish').className = 'btn ' + move.cls;
     msg('campWorkMsg', '');
     loadOptions();
     if (restoring) { campDraft.restore(); ncDraft.restore(); restoreScroll(); }
+  }
+
+  /* The state word and the one forward action are the same two things wherever
+     the state moves, so they are painted in one place. Publishing is the
+     forward move and carries the weight; unpublishing and reopening are
+     warnings, drawn as such. */
+  function paintCampState(c) {
+    $('campState').textContent = STATE_WORD[c.state] || c.state;
+    $('campState').classList.toggle('is-live', c.state !== 'draft');
+    var move = publishMove(c.state);
+    $('campPublish').innerHTML = move.icon + esc(move.label);
+    $('campPublish').className = 'btn ' + move.cls;
   }
 
   $('campBack').addEventListener('click', function () {
@@ -767,8 +773,26 @@
     db.from('campaign_options').select('*, creators(name, creator_profiles(platform, url))')
       .eq('campaign_id', state.campaign.id).order('position').then(function (r) {
         state.options = (r.data) || [];
+        syncCampState();
         paintOptions();
       });
+  }
+
+  /* In production is not a flag somebody sets and forgets: it means at least
+     one creator is in production. Reverting, withdrawing or replacing the last
+     of them puts the campaign back where the client can still choose, so the
+     card stops reading In production over a list with nobody in it. Derived
+     here rather than in each of the three menu actions, because it is one
+     fact about the campaign and not three. */
+  function syncCampState() {
+    var c = state.campaign;
+    if (!c || c.state !== 'production' || state.options.some(isLive)) return;
+    db.from('campaigns').update({ state: 'open' }).eq('id', c.id).then(function (r) {
+      if (r.error) return;
+      c.state = 'open';
+      log('campaign.opened', c.title, 'no creators in production');
+      paintCampState(c);
+    });
   }
 
   function paintOptions() {

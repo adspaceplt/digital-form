@@ -286,11 +286,13 @@ async function report(name, p, coarse) {
   warn.forEach(f => console.log('       ~' + f[0] + ': ' + f[1]));
 }
 
-async function walk(b, coarse) {
-  const tag = coarse ? '390' : '1280';
-  const ctx = await b.newContext(coarse
-    ? { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }
-    : { viewport: { width: 1280, height: 900 } });
+async function walk(b, coarse, dark) {
+  const tag = (coarse ? '390' : '1280') + (dark ? ' dark' : '');
+  const ctx = await b.newContext(Object.assign(
+    { colorScheme: dark ? 'dark' : 'light' },
+    coarse
+      ? { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }
+      : { viewport: { width: 1280, height: 900 } }));
   const errs = [];
   const page = async (seed) => {
     const p = await ctx.newPage();
@@ -402,7 +404,14 @@ async function walk(b, coarse) {
 
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
-  const errs = [...await walk(b, false), ...await walk(b, true)];
+  /* Dark is the same geometry with different colours, so it could in principle
+     be measured once. It is walked in full at both widths anyway: contrast is
+     the rule most easily broken by a colour written into a rule, and a theme
+     nobody audits is a theme that quietly fails AA. */
+  const errs = [
+    ...await walk(b, false, false), ...await walk(b, true, false),
+    ...await walk(b, false, true),  ...await walk(b, true, true)
+  ];
   await b.close();
   console.log('=== errors ===\n' + (errs.join('\n') || 'none'));
   console.log(fails ? 'uxaudit: PROBLEM (' + fails + ' fail, ' + warns + ' warn)' : 'uxaudit: ok (' + warns + ' warn)');
