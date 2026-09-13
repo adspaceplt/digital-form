@@ -546,11 +546,11 @@
   });
   $('cancelAddCamp').addEventListener('click', shutCampForm);
 
-  // Every invoice starts AINV2, so the field carries it and only the rest is
+  // Every invoice starts AINV, so the field carries it and only the rest is
   // typed. Stored whole, because that is what is on the document.
   function invoiceNo() {
-    var rest = ($('invNo').value || '').trim().replace(/^AINV2/i, '');
-    return rest ? 'AINV2' + rest : null;
+    var rest = ($('invNo').value || '').trim().replace(/^AINV/i, '');
+    return rest ? 'AINV' + rest : null;
   }
 
   $('addCamp').addEventListener('click', function () {
@@ -674,7 +674,9 @@
     $('campLink').value = campaignUrl(c);
     $('campOpen').href = campaignUrl(c);
     if (!same) setOpen('invoiceToggle', 'invoiceBody', false);
-    paintInvoice(c);
+    // The invoice panel depends on who is confirmed, so it is painted once the
+    // creators are in (paintOptions), never from the stale list.
+    $('invoicePanel').hidden = true;
     // Publishing is the forward move and carries the weight. Unpublishing and
     // reopening are warnings, drawn as such.
     var move = publishMove(c.state);
@@ -823,6 +825,7 @@
     if (!working.length) $('bulkBox').hidden = true;
     $('bulkTitle').textContent = (isDelivery() ? 'Delivery' : 'Shoot') + ' date for all';
     paintRollup(working);
+    paintInvoice(c);
   }
 
   function cardRank(o) {
@@ -1545,13 +1548,24 @@
   }
   disclose('invoiceToggle', 'invoiceBody');
 
-  // ---- Invoice: raised after confirmation, attached here -----------------
+  /* ---- Invoice: raised after confirmation, attached here -----------------
+     An invoice follows an accepted booking, so the panel is not there to fill
+     in before one exists. Accepted means at least one creator is in
+     production: reverting the last of them back to options takes the panel
+     away again, on this page and on the client's. */
+  function accepted() {
+    return (state.options || []).some(function (o) { return IN_PRODUCTION.indexOf(o.state) > -1; });
+  }
+
   function paintInvoice(c) {
+    var on = accepted();
+    $('invoicePanel').hidden = !on;
+    if (!on) { setOpen('invoiceToggle', 'invoiceBody', false); return; }
     // The closed panel says what it holds, and opens itself once it holds something.
     $('invoiceSummary').textContent = c.invoice_url
       ? (c.invoice_no ? c.invoice_no + ' · PDF attached' : 'PDF attached')
       : (c.invoice_no ? c.invoice_no + ' · no PDF' : 'Not issued');
-    $('invNo').value = String(c.invoice_no || '').replace(/^AINV2/i, '');
+    $('invNo').value = String(c.invoice_no || '').replace(/^AINV/i, '');
     $('invFile').value = '';
     var cur = $('invCurrent');
     if (c.invoice_url) {
@@ -1587,52 +1601,55 @@
       if (r.error) { msg('invMsg', r.error.message, 'err'); return; }
       c.invoice_url = url; c.invoice_uploaded_at = stamp;
       log(url ? 'campaign.invoice_file' : 'campaign.invoice_removed', c.title, c.invoice_no || '');
-      openCampaign(c);
+      paintInvoice(c);
       if (!url) undoBar('Invoice PDF removed.', function () { setInvoiceFile(c, was.url, was.stamp); });
     });
   }
 
-  $('invSaveNo').addEventListener('click', function () {
-    var c = state.campaign;
-    var no = invoiceNo();
-    db.from('campaigns').update({ invoice_no: no }).eq('id', c.id).then(function (r) {
-      if (r.error) { msg('invMsg', r.error.message, 'err'); return; }
-      c.invoice_no = no;
-      log('campaign.invoice', c.title, no || 'cleared');
-      openCampaign(c);
-      msg('invMsg', no ? 'Invoice number saved.' : 'Invoice number cleared.', 'ok');
-    });
-  });
-
-  /* The PDF goes to S3 by the same signed path media takes, and the campaign
-     keeps the public URL. Only the URL is ours to store; the file is the
+  /* The number and the PDF are one invoice, so they are saved together. The
+     PDF goes to S3 by the same signed path media takes, and the campaign keeps
+     the public URL. Only the URL is ours to store; the file is the
      accountant's. */
-  $('invUpload').addEventListener('click', function () {
+  $('invSave').addEventListener('click', function () {
     var c = state.campaign;
+    if (!accepted()) { msg('invMsg', 'Confirm the creators first.', 'err'); return; }
+    var no = invoiceNo();
     var file = $('invFile').files && $('invFile').files[0];
-    if (!file) { msg('invMsg', 'Choose the invoice PDF first.', 'err'); return; }
-    if (!/pdf$/i.test(file.type) && !/\.pdf$/i.test(file.name)) {
+    if (file && !/pdf$/i.test(file.type) && !/\.pdf$/i.test(file.name)) {
       msg('invMsg', 'The invoice has to be a PDF.', 'err'); return;
     }
-    if (!putToS3) { msg('invMsg', 'Uploads are not available on this page.', 'err'); return; }
-    msg('invMsg', 'Uploading…');
-    db.functions.invoke((cfg.s3 && cfg.s3.functionName) || 'sign-upload', {
-      body: { ext: 'pdf', clientId: c.client_id, size: file.size }
-    }).then(function (r) {
-      if (r.error) throw new Error('Could not start the upload. ' + r.error.message);
-      if (!r.data || !r.data.uploadUrl) throw new Error('Upload was refused: ' + ((r.data && r.data.error) || 'unknown reason'));
-      return putToS3(r.data.uploadUrl, file, 'application/pdf').then(function () { return r.data.publicUrl; });
-    }).then(function (url) {
-      var stamp = new Date().toISOString();
-      return db.from('campaigns').update({ invoice_url: url, invoice_uploaded_at: stamp })
-        .eq('id', c.id).then(function (r) {
-          if (r.error) throw new Error(r.error.message);
-          c.invoice_url = url; c.invoice_uploaded_at = stamp;
-          log('campaign.invoice_file', c.title, c.invoice_no || '');
-          openCampaign(c);
-          msg('invMsg', 'Invoice uploaded.', 'ok');
-        });
+    if (file && !putToS3) { msg('invMsg', 'Uploads are not available on this page.', 'err'); return; }
+
+    msg('invMsg', file ? 'Uploading…' : 'Saving…');
+    var step = file
+      ? db.functions.invoke((cfg.s3 && cfg.s3.functionName) || 'sign-upload', {
+          body: { ext: 'pdf', clientId: c.client_id, size: file.size }
+        }).then(function (r) {
+          if (r.error) throw new Error('Could not start the upload. ' + r.error.message);
+          if (!r.data || !r.data.uploadUrl) throw new Error('Upload was refused: ' + ((r.data && r.data.error) || 'unknown reason'));
+          return putToS3(r.data.uploadUrl, file, 'application/pdf').then(function () { return r.data.publicUrl; });
+        })
+      : Promise.resolve(null);
+
+    step.then(function (url) {
+      var patch = { invoice_no: no };
+      var stamp = null;
+      if (url) { stamp = new Date().toISOString(); patch.invoice_url = url; patch.invoice_uploaded_at = stamp; }
+      return db.from('campaigns').update(patch).eq('id', c.id).then(function (r) {
+        if (r.error) throw new Error(r.error.message);
+        c.invoice_no = no;
+        if (url) { c.invoice_url = url; c.invoice_uploaded_at = stamp; }
+        log(url ? 'campaign.invoice_file' : 'campaign.invoice', c.title, no || 'cleared');
+        paintInvoice(c);
+        msg('invMsg', 'Saved.', 'ok');
+      });
     }).catch(function (e) { msg('invMsg', e.message, 'err'); });
+  });
+
+  // Cancel puts back what is stored, so a typed number that was never saved
+  // leaves no trace.
+  $('invCancel').addEventListener('click', function () {
+    paintInvoice(state.campaign);
   });
 
   // ---- Locking the selection ---------------------------------------------

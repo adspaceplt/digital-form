@@ -164,24 +164,50 @@ const say = s => console.log(s);
 
   say('=== invoice, after the fact ===');
   say('stats: ' + (await p.locator('#campTally').innerText()).replace(/\n/g, ' / '));
+  const noPanel = await p.locator('#invoicePanel').isHidden();
+  say('nothing confirmed: no invoice section at all: ' + noPanel);
+  if (!noPanel) { console.log('FAIL the invoice section is offered before a creator is confirmed'); }
+
+  say('=== confirm a creator, then the invoice ===');
+  const card = p.locator('#creatorList .kcard').first();
+  await card.locator('.kmenu-btn').scrollIntoViewIfNeeded();
+  await card.locator('.kmenu-btn').click(); await p.waitForTimeout(250);
+  await p.locator('.kmenu [data-a="pick"]').first().click();
+  await p.waitForTimeout(600);
+  await p.locator('#campLock').click(); await p.waitForTimeout(300);
+  await p.fill('#lockPerson', 'Wei Ling');
+  await p.locator('#lockGo').click();
+  await p.waitForTimeout(900);
+  say('option states: ' + await p.evaluate(() => window.__DB.campaign_options.map(o => o.state).join(',')));
+  const hasPanel = await p.locator('#invoicePanel').isVisible();
+  say('invoice section arrives with the confirmation: ' + hasPanel);
+  if (!hasPanel) { console.log('FAIL the invoice section is missing after a creator is confirmed'); }
+
   await p.locator('#invoiceToggle').click(); await p.waitForTimeout(200);
   say('invoice panel opened by hand: ' + await p.locator('#invoiceBody').isVisible());
   await p.fill('#invNo', '026114');
-  await p.locator('#invSaveNo').click();
-  await p.waitForTimeout(500);
+  await p.locator('#invCancel').click(); await p.waitForTimeout(300);
+  say('cancel puts back what is stored: "' + await p.locator('#invNo').inputValue() + '"');
+  await p.fill('#invNo', '026114');
+  await p.locator('#invSave').click();
+  await p.waitForTimeout(600);
   say('summary now: ' + await p.locator('#invoiceSummary').innerText() + ' | panel stays open=' + await p.locator('#invoiceBody').isVisible());
-  await p.locator('#invUpload').click();
-  await p.waitForTimeout(250);
-  say('no file: ' + await p.locator('#invMsg').innerText());
   await p.route('https://s3.test/**', r => r.fulfill({ status: 200, body: '' }));
   let putSeen = false;
   p.on('request', r => { if (r.method() === 'PUT' && r.url().startsWith('https://s3.test/')) putSeen = true; });
-  await p.setInputFiles('#invFile', { name: 'AINV2026114.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 test') });
-  await p.locator('#invUpload').click();
-  await p.waitForTimeout(900);
+  await p.setInputFiles('#invFile', { name: 'AINV026114.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 test') });
+  await p.fill('#invNo', '026115');
+  await p.locator('#invSave').click();
+  await p.waitForTimeout(1100);
   say('signed as: ' + await p.evaluate(() => JSON.stringify((window.__signed || []).slice(-1)[0])));
   say('PUT went to S3: ' + putSeen);
   say('msg: ' + await p.locator('#invMsg').innerText());
+  const both = await p.evaluate(() => {
+    const c = window.__DB.campaigns[0];
+    return c.invoice_no === 'AINV026115' && !!c.invoice_url;
+  });
+  say('one Save stored the number and the PDF together: ' + both);
+  if (!both) { console.log('FAIL Save covers the number and the PDF'); }
   say('stored url: ' + await p.evaluate(() => window.__DB.campaigns[0].invoice_url));
   say('current shows link: ' + await p.locator('#invCurrent a').count() + ' -> ' + await p.locator('#invCurrent').innerText());
   say('summary with PDF: ' + await p.locator('#invoiceSummary').innerText());
@@ -194,6 +220,41 @@ const say = s => console.log(s);
   say('undo put it back: ' + back + ' | link shown again: ' + await p.locator('#invCurrent a').count());
   if (!back) { console.log('FAIL undo restores the invoice PDF'); }
   say('tally: ' + (await p.locator('#campTally').innerText()).replace(/\n/g, ' / '));
+
+  say('=== the client only sees an invoice once one is due ===');
+  const tok = await p.evaluate(() => window.__DB.campaigns[0].access_token);
+  const shownNow = await p.evaluate(async t =>
+    (await window.__rpc('get_campaign', { p_token: t })).data.campaign.invoice_no, tok);
+  say('confirmed, so the client reads: ' + shownNow);
+
+  // Revert the confirmation: the invoice has to leave both pages with it.
+  p.once('dialog', d => d.accept());
+  const live = p.locator('#creatorList .kcard').first();
+  await live.locator('.kmenu-btn').scrollIntoViewIfNeeded();
+  await live.locator('.kmenu-btn').click(); await p.waitForTimeout(250);
+  await p.locator('.kmenu [data-a="unbook"]').first().click();
+  await p.waitForTimeout(800);
+  say('option states after the revert: ' + await p.evaluate(() => window.__DB.campaign_options.map(o => o.state).join(',')));
+  const goneHere = await p.locator('#invoicePanel').isHidden();
+  const goneThere = await p.evaluate(async t => {
+    const c = (await window.__rpc('get_campaign', { p_token: t })).data.campaign;
+    return c.invoice_no == null && c.invoice_url == null;
+  }, tok);
+  say('invoice section gone from the console: ' + goneHere + ' | withheld from the client: ' + goneThere);
+  say('the number is kept, not thrown away: ' + await p.evaluate(() => window.__DB.campaigns[0].invoice_no));
+  if (!goneHere || !goneThere) { console.log('FAIL reverting the confirmation takes the invoice back'); }
+
+  // Confirm again: the same invoice comes back, nothing retyped.
+  const again = p.locator('#creatorList .kcard').first();
+  await again.locator('.kmenu-btn').scrollIntoViewIfNeeded();
+  await again.locator('.kmenu-btn').click(); await p.waitForTimeout(250);
+  await p.locator('.kmenu [data-a="pick"]').first().click();
+  await p.waitForTimeout(600);
+  await p.locator('#campLock').click(); await p.waitForTimeout(300);
+  await p.fill('#lockPerson', 'Wei Ling');
+  await p.locator('#lockGo').click(); await p.waitForTimeout(900);
+  say('confirmed again, the client reads: ' + await p.evaluate(async t =>
+    (await window.__rpc('get_campaign', { p_token: t })).data.campaign.invoice_no, tok));
 
   await p.locator('#campPublish').click();
   await p.waitForTimeout(400);

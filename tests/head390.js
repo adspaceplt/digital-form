@@ -2,7 +2,7 @@ const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const fs = require('fs');
 const STUB = fs.readFileSync(process.argv[2] + '/stub2.js', 'utf8');
 const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
-  D.campaigns.push({ id:'cmp1', client_id:'c1', title:'Promote New Launch Project', invoice_no:'AINV2026114',
+  D.campaigns.push({ id:'cmp1', client_id:'c1', title:'Promote New Launch Project', invoice_no:'AINV026114',
     slots:2, deadline:'2026-09-22', owner:'Qiao Rou', push_format:'site_visit', deliverable:'video',
     state:'open', access_token:'HDR', created_at:'2026-09-11T03:00:00Z' });
   D.campaign_options.push({ id:'o1', campaign_id:'cmp1', creator_id:'k1', rate:8640, platforms:'RedNote', state:'shortlisted', position:0 });

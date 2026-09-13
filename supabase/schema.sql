@@ -752,10 +752,23 @@ as $$
 declare
   c campaigns%rowtype;
   cl clients%rowtype;
+  billable boolean;
 begin
   select * into c from campaigns where access_token = p_token;
   if not found then return jsonb_build_object('error', 'not-found'); end if;
   select * into cl from clients where id = c.client_id;
+
+  -- An invoice belongs to an accepted booking. Until the client has chosen and
+  -- the team has confirmed at least one creator, the number and the PDF stay
+  -- off the client's page, and reverting the last confirmation takes them off
+  -- it again. The gate is here rather than on the page so nothing the client
+  -- can open carries what it should not show.
+  select exists (
+    select 1 from campaign_options o
+     where o.campaign_id = c.id
+       and o.state in ('confirmed', 'pending_visit', 'pending_draft', 'reviewing',
+                       'changes', 'scheduled', 'posted', 'completed')
+  ) into billable;
 
   if c.passcode is not null and c.passcode <> '' then
     if p_passcode is null or p_passcode <> c.passcode then
@@ -769,7 +782,8 @@ begin
       'purpose', c.purpose, 'purpose_zh', c.purpose_zh, 'slots', c.slots,
       'deadline', c.deadline, 'state', c.state, 'deliverable', c.deliverable,
       'push_format', c.push_format, 'brief', c.brief, 'brief_zh', c.brief_zh,
-      'invoice_no', c.invoice_no, 'invoice_url', c.invoice_url),
+      'invoice_no', case when billable then c.invoice_no end,
+      'invoice_url', case when billable then c.invoice_url end),
     -- Currency and tax travel with the campaign, because the client's page
     -- prints both and must not assume Malaysia.
     'client', jsonb_build_object('name', cl.name, 'logo_url', cl.logo_url,

@@ -231,6 +231,10 @@ async function hoverState(p, coarse) {
     if (!await off.isVisible().catch(() => false)) continue;
     const read = l => l.evaluate(el => getComputedStyle(el).backgroundColor);
     const onBg = await read(on);
+    // A selected state that is an underline rather than a fill has no
+    // background for hover to collide with, so comparing backgrounds proves
+    // nothing about it.
+    if (/rgba\(0, 0, 0, 0\)|transparent/.test(onBg)) continue;
     await off.hover().catch(() => {});
     await p.waitForTimeout(260);   // past the .15s background transition
     const offBg = await read(off);
@@ -320,7 +324,11 @@ async function walk(b, coarse) {
   await report('admin content review ' + tag, p, coarse);
   await nav(p, 'campaigns');
   await report('admin campaigns ' + tag, p, coarse);
-  await p.locator('#campCards .bigcard').first().click(); await p.waitForTimeout(700);
+  // The campaign with someone waiting to be confirmed, so the walk sees the
+  // confirm sheet and the invoice that follows it.
+  const camp = p.locator('#campCards .bigcard', { hasText: 'Promote New Launch' });
+  await (await camp.count() ? camp.first() : p.locator('#campCards .bigcard').first()).click();
+  await p.waitForTimeout(700);
   await report('admin campaign head ' + tag, p, coarse);
   if (await p.locator('#campLock').isVisible().catch(() => false)) {
     await p.locator('#campLock').click(); await p.waitForTimeout(300);
@@ -328,6 +336,13 @@ async function walk(b, coarse) {
       await report('admin confirm sheet ' + tag, p, coarse);
       await p.locator('#lockGo').click(); await p.waitForTimeout(900);
     }
+  }
+  // The invoice fold only exists once a creator is confirmed, which the lock
+  // above has just done.
+  if (await p.locator('#invoicePanel').isVisible().catch(() => false)) {
+    await p.locator('#invoiceToggle').click(); await p.waitForTimeout(350);
+    await report('admin campaign invoice ' + tag, p, coarse);
+    await p.locator('#invoiceToggle').click(); await p.waitForTimeout(250);
   }
   if (await p.locator('.kcard .kfold').count()) { await p.locator('.kcard').first().locator('.kfold').click(); await p.waitForTimeout(300); }
   await report('admin campaign cards ' + tag, p, coarse);
