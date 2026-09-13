@@ -38,6 +38,39 @@
     return Array.from(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
   }
   function val(id) { return ($(id).value || '').trim(); }
+
+  /* A client's address. The record used to travel in the URL as a UUID, which
+     nobody reads or recognises; the slug is the name, lowercased and hyphened.
+     It is set once from the name and never follows a rename, because an
+     address that moves under the people holding it is worse than one that
+     reads a little out of date. */
+  function slugify(s) {
+    return String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/, '');
+  }
+  // A clash takes a number rather than failing; the database index is the
+  // final word, so a race loses the insert and not the slug.
+  function uniqueSlug(name, then) {
+    var want = slugify(name) || 'client';
+    db.from('clients').select('slug').ilike('slug', want + '%').then(function (r) {
+      var used = {};
+      (r.data || []).forEach(function (x) { if (x.slug) used[String(x.slug).toLowerCase()] = true; });
+      if (!used[want]) { then(want); return; }
+      for (var i = 2; i < 300; i++) { if (!used[want + '-' + i]) { then(want + '-' + i); return; } }
+      then(want + '-' + Date.now().toString(36));
+    }, function () { then(want); });
+  }
+  var UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  /* What the address carries: a slug now, a UUID in anything shared before
+     this. Asked of the right column either way, because Postgres refuses a
+     non-UUID against a uuid column. */
+  function clientByKey(key, then) {
+    if (!key) { then(null); return; }
+    db.from('clients').select('*').eq(UUID.test(key) ? 'id' : 'slug', key).single()
+      .then(function (r) { then(r.error ? null : (r.data || null)); }, function () { then(null); });
+  }
+  // The address of a client, wherever one is built.
+  function keyOf(c) { return (c && (c.slug || c.id)) || ''; }
   function niceDate(d) {
     if (!d) return '';
     var dt = new Date(String(d).slice(0, 10) + 'T00:00:00');
@@ -308,6 +341,8 @@
     // Every client carries its own review link from the moment it exists, so
     // Content Review has nothing left to create.
     patch.access_token = token();
+    uniqueSlug(name, function (slug) {
+    patch.slug = slug;
     db.from('clients').insert(patch).select().single().then(function (r) {
       if (r.error) { msg('crmMsg', r.error.message, 'err'); return; }
       log('client.added', name, sourceWord(patch.source) + (contactName ? ' · ' + contactName : ''));
@@ -317,6 +352,7 @@
         client_id: r.data.id, name: contactName, phone: phone || null, whatsapp: phone || null,
         email: val('crmContactEmail') || null, lang: 'en', is_primary: true
       }).then(open, open);
+    });
     });
   });
 
@@ -879,12 +915,12 @@
       db.from('clients').update({ review_hidden: false }).eq('id', c.id).then(function () {
         c.review_hidden = false;
         log('client.review_on', c.name, '');
-        location.href = '/admin/?s=review&client=' + encodeURIComponent(c.id);
+        location.href = '/admin/?s=review&client=' + encodeURIComponent(keyOf(c));
       });
     });
     var go = $('crmGoReview');
     if (go) go.addEventListener('click', function () {
-      location.href = '/admin/?s=review&client=' + encodeURIComponent(c.id);
+      location.href = '/admin/?s=review&client=' + encodeURIComponent(keyOf(c));
     });
     $('crmGoCampaign').addEventListener('click', function () {
       location.href = '/admin/?s=campaigns&new=' + encodeURIComponent(c.id);
@@ -902,7 +938,7 @@
     sets.forEach(function (b) {
       box.appendChild(workRow(b.title || 'Content set',
         'Content Review · ' + (b.state === 'published' ? 'With the client' : 'Draft'),
-        '/admin/?s=review&client=' + encodeURIComponent(c.id) + '&set=' + encodeURIComponent(b.id)));
+        '/admin/?s=review&client=' + encodeURIComponent(keyOf(c)) + '&set=' + encodeURIComponent(b.id)));
     });
   }
 
@@ -1435,15 +1471,17 @@
   fillSelect($('crmSource'), SOURCES);
 
   window.ADspaceCRM = {
-    urlState: function () { return { client: state.client ? state.client.id : '' }; },
+    urlState: function () { return { client: keyOf(state.client) }; },
+    byKey: clientByKey,
+    keyOf: keyOf,
     enter: function () {
       var params = new URLSearchParams(location.search);
-      var id = params.get('client');
+      var key = params.get('client');
       loadTeam();
-      if (id && !(state.client && state.client.id === id)) {
-        db.from('clients').select('*').eq('id', id).single().then(function (r) {
-          if (r.error || !r.data) { state.client = null; showList(); return; }
-          openClient(r.data, true);
+      if (key && !(state.client && (state.client.slug === key || state.client.id === key))) {
+        clientByKey(key, function (c) {
+          if (!c) { state.client = null; showList(); return; }
+          openClient(c, true);
         });
         return;
       }

@@ -1776,3 +1776,37 @@ alter table public.client_services  add column if not exists detail     text;
 -- package. This states it as data so a line prefills with the right term.
 update public.services set min_months = 6
   where category = 'Monthly packages' and slug like 'pkg-%' and min_months = 1;
+
+-- ---------------------------------------------------------------------------
+-- A readable address for a client.
+--
+-- The console carried the record in the address as a UUID
+-- (/admin/?s=clients&client=8f3a1b2c-...), which nobody can read, recognise
+-- or paste into a message and have a colleague know where it goes. A slug
+-- taken from the name does all three: /admin/?s=clients&client=hkl-lim-team.
+--
+-- It is set once, from the name, and does not follow a rename: an address
+-- that changes under the people who have it is worse than one that reads a
+-- little out of date. A UUID in an older link still resolves.
+-- ---------------------------------------------------------------------------
+alter table public.clients add column if not exists slug text;
+create unique index if not exists clients_slug_idx
+  on public.clients(lower(slug)) where slug is not null and slug <> '';
+
+-- Backfill from the name, numbering a clash rather than failing on it. A name
+-- with no latin letters (a Chinese trading name) leaves an empty base, so it
+-- falls back to "client".
+with base as (
+  select id, created_at,
+         coalesce(nullif(btrim(regexp_replace(lower(name), '[^a-z0-9]+', '-', 'g'), '-'), ''), 'client') as b
+  from public.clients
+  where slug is null or slug = ''
+), numbered as (
+  select id, b, row_number() over (partition by b order by created_at, id) as n from base
+)
+update public.clients c
+   set slug = numbered.b || case when numbered.n > 1 then '-' || numbered.n else '' end
+  from numbered
+ where c.id = numbered.id
+   and not exists (select 1 from public.clients o
+                   where lower(o.slug) = lower(numbered.b || case when numbered.n > 1 then '-' || numbered.n else '' end));

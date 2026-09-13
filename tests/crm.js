@@ -104,8 +104,10 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
 
   // refresh keeps you inside the client
   const url = p.url();
-  const newId = await p.evaluate(() => (window.__DB.clients.find(c => c.name === 'Star Living') || {}).id);
-  check('the address carries this client', url.indexOf('client=' + newId) > -1, url + ' vs ' + newId);
+  const made = await p.evaluate(() => window.__DB.clients.find(c => c.name === 'Star Living') || {});
+  // A record travels in the address by a name anyone can read, not a UUID.
+  check('a new client takes a slug from its name', made.slug === 'star-living', JSON.stringify(made.slug));
+  check('the address carries this client', url.indexOf('client=star-living') > -1, url);
   await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(1100);
   check('a refresh lands back inside the client',
     await p.locator('#crmWork').isVisible() &&

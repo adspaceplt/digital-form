@@ -263,6 +263,18 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
 - Client pages: Content Review and Creator Selection keep their token
   links (a manager forwards a link); the portal opens them by the same
   links. Pages: `/admin/`, `/client/`, `/creators/`, `/review/`.
+- **A readable address never carries access.** A client's `slug`
+  (`hkl-lim-team`, set once from the name, never following a rename)
+  travels in the console address only: `/admin/?s=clients&client=<slug>`,
+  behind Supabase Auth and RLS, where guessing a name reaches a sign-in
+  page and nothing else. `/creators/` and `/review/` are opened by the
+  random `?k=` token and read no other parameter; `/client/` reads none
+  at all and is keyed on the signed-in email. Never put a slug, a name or
+  a sequential number where a token is the access control. `tests/client.js`
+  opens `/creators/` with guessed names and fails the sweep if any of them
+  shows a page. `clientByKey()` asks the column the key's shape implies,
+  because Postgres refuses a non-UUID against a uuid column; a UUID in a
+  link shared before slugs existed still resolves.
 - Data: PDPA 2010 (MY) and PDPA 2012 (SG): collect what the page needs,
   a client sees only its own data, soft remove before hard delete.
 - Numbering: Letter of Offer `AQT/INT/YYMMXXX` (per month); campaign
