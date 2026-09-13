@@ -236,6 +236,14 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
       d.total === 50940 && d.tax === 0 && d.bill_to.contact === 'Mr Lim' && d.bill_to.owner === 'Qiao Rou' &&
       d.lines[0].tenure === 6 && /4 contents each month/.test(d.lines[0].detail || '');
   }));
+  // The client accepts a monthly figure; the whole commitment is disclosed
+  // in the terms, in words, so it is never the number in bold.
+  check('the PDF headlines the month and discloses the commitment', await p.evaluate(() => {
+    const all = window.__drawn.join(' ');
+    return /Payable monthly/.test(all) && /8,490\.00/.test(all) && !/^Total$/m.test(all) &&
+      /billed monthly in advance for a minimum term of 6 months/.test(all) &&
+      /total payable over the 6 month term is S\$ 50,940\.00/.test(all);
+  }));
   check('the PDF carries the number, the client, the contact, the total and the acceptance block',
     await p.evaluate(yymm => { const all = window.__drawn.join(' ');
       return window.__drawn.some(s => s === 'AQT/INT/' + yymm + '001') && /Star Living/i.test(all) && /Mr Lim/.test(all) && /50,940/.test(all) &&

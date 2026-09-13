@@ -87,11 +87,25 @@ mute line: what they get, then the terms of it (Gestalt proximity).
 Weight carries the reading order, so the name is Slate Regular at 10pt,
 the amounts 10pt, everything qualifying them 8.5pt mute; lines under a
 name sit 11pt apart and services 10pt further, so each service reads as
-one block. Totals are Subtotal, SST 8%, then Total as the one bold
-amount, with the monthly figure mute beneath it when every line shares a
-term. Conditions go in one **TERMS** block (label 9pt bold mute, the
-table header's style; body 9.5pt), never a sentence here and a sentence
-there; the validity line lives there too.
+one block.
+
+**The client accepts the figure they will be invoiced.** Where every line
+runs the same term the letter is priced by the month: every Amount is one
+month's, noted `per month`, and the bold line reads **Payable monthly**.
+Never head a monthly engagement with the whole contract value, which asks
+a client to accept a number they will never be billed. The commitment is
+disclosed instead, in the **TERMS** block, in a plain sentence naming the
+term and the figure ("The total payable over the 6 month term is
+RM 18,338.40 including SST."), so nobody can say the letter showed only a
+small monthly sum. A letter of one off or mixed lines has no monthly
+figure, so it reads Total as it stands and carries no term sentence.
+`js/documents.js` `priceOf()` works this out once for both the stored
+snapshot and the drawing, so the two never drift; the stored
+`subtotal`/`tax`/`total` stay the whole commitment, which is what the
+record and the pipeline are worth. Conditions go in that one TERMS block
+(label 9pt bold mute, the table header's style; body 9.5pt), three short
+sentences at most, never a sentence here and a sentence there; the
+validity line lives there too.
 
 ### Spacing scale and vertical rhythm
 Scale for gaps between blocks and sections: 4, 8, 12, 16, 24, 32. Component paddings are the values in the table below and nothing else.
