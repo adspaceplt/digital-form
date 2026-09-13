@@ -38,7 +38,7 @@ palette can never be bought with legibility.
 | `--line` | `#e2dfd8` | `#3a3c36` | Card borders, table rules |
 | `--line-soft` | `#eeece7` | `#2d2f2a` | Row dividers, the selected fill |
 | `--line-ctl` | `#8e8a80` | `#83857c` | Input, select, textarea and outline button borders: 3:1 on every background |
-| `--page` | `#f6f5f2` | `#161814` | The ground |
+| `--page` | `#f5f5f5` | `#161814` | The ground. ADspace's own off white, the one paired with `#1a1a1a` on the website: a brand value, not a tuned one, and never "corrected" back to a warm grey |
 | `--card` | `#ffffff` | `#1e201d` | Panels, tables, rows |
 | `--sunk` | `#faf9f6` | `#262824` | Inset areas, table sub-headings, hover |
 | `--fill` / `--on-fill` | `#1b1a17` / `#ffffff` | `#eff0ea` / `#191b17` | The solid ink surface and its text: primary button, selected `.acttab`, progress, the Undo bar |
@@ -71,6 +71,13 @@ brightness()` on the same token, so one value still drives both themes.
 `--ok` is legible as text on every surface *and* deep enough to carry
 dark text as a fill, so there is still one green. A paler mint passed the
 same checks and read as a highlighter pen, which is not this register.
+
+**The grounds are neutral; the warmth is in the marks.** `--page` is the
+brand's own `#f5f5f5` and `--card` is white, so the two largest surfaces
+agree with each other, and the warm cast lives where it does the work: the
+borders, the text and the inset surfaces. A warm page under white cards
+was the mixed half of the first pass. `#f5f5f5` and the tuned `#f6f5f2`
+it replaced have identical luminance, so nothing about contrast moved.
 
 ### Themes
 
@@ -163,6 +170,13 @@ term and the figure ("The total payable over the 6 month term is
 RM 18,338.40 including SST."), so nobody can say the letter showed only a
 small monthly sum. A letter of one off or mixed lines has no monthly
 figure, so it reads Total as it stands and carries no term sentence.
+The closing and the acceptance block are **reserved together** before either
+is drawn, because they are one thing: a page carrying nothing but a stamp
+box is what the client is being asked to sign, and it has to stay attached
+to the words it accepts. Reserving only the closing separated the two the
+moment services carried their full inclusions, so the reservation is the
+height of both.
+
 `js/documents.js` `priceOf()` works this out once for both the stored
 snapshot and the drawing, so the two never drift; the stored
 `subtotal`/`tax`/`total` stay the whole commitment, which is what the
@@ -212,7 +226,7 @@ measures the table whenever its header is not on screen (`padding`).
 | The chosen one of several options | A filled shape, one language per component and never a shadow: the sidebar `.navitem.is-on` takes the `--line-soft` fill and weight 600, a `.tab.is-on` an ink underline and weight 600, an `.acttab.is-on` the ink fill with white text, a `.crow.is-on` the `--line-soft` fill, a `.bigcard.is-on` an ink border. Hover is always one step lighter than selected (`--sunk` where selected is `--line-soft`), never equal to it, and lives inside `@media (hover: hover)` so a phone cannot leave it stuck on the last thing tapped. `uxaudit` hovers an unselected option and fails when it renders the selected one's background (`hover`) |
 | Form to add or edit | `.panel` > `.panelhead h3` + `.row` fields + Save / secondary / Cancel + `.msg`; one Save covers everything in the form, a file included, so a number and its PDF are never two saves, and Cancel repaints from what is stored. What is attached now sits with the field that changes it, above the actions, never stranded under them |
 | Optional detail | `.panel.panel-collapse` > `.disclosure` (title, summary right) + `.disclosure-body` |
-| Full-page state | `.cover` > `.cover-inner` > `.cover-panel`, centred, title then one line, `body.is-plain`, footer on the floor |
+| Full-page state | `.cover` > `.cover-inner` > `.cover-panel`, centred, title then one line, `body.is-plain`, footer on the floor. **The line never restates the title**: the title says what happened, the line says what to do about it ("Selection closed" / "Please contact your ADspace account manager for any changes.", not "Selection is closed. Please contact…"). Both languages, every cover |
 | Modal | `.sheet` > `.sheet-card`, from the bottom on a phone, fixed height when it filters |
 | Undo | `.undobar` with one `Undo` button, eight seconds |
 | Message | `.msg` (`ok`, `warn`, `err`) as one line under the control, never a card |
@@ -273,7 +287,9 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
 ### Copy and microcopy (part of the design system)
 - No explanatory copy: no hints, blurbs, notices, role descriptions or
   empty states that explain what a section is for. The heading and the
-  controls are the explanation. Where a line is unavoidable, one short
+  controls are the explanation. Nothing says the same thing twice: a
+  cover's line never repeats its title, a message never repeats the
+  button it sits under, a chip never repeats the column it sits in. Where a line is unavoidable, one short
   neutral sentence in corporate register; no "we", no "you should". The
   sign-in page is a title, a field and a button; a section head is a
   heading and its one action; a hint under a destructive control states
@@ -286,14 +302,30 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   record; Reinstate brings back a person; never "Return".
 - One status vocabulary on console and client page: Confirmed, Pending
   visit, Pending draft, Reviewing, Changes requested, Scheduled, Posted,
-  Completed, Withdrawn; client stages Lead, Contacted, Proposal sent,
+  Completed, Withdrawn; service lines Enquired, To quote, Confirmed;
+  client stages Lead, Contacted, Proposal sent,
   Active, Paused, Past; requests Requested, Reviewing, Approved,
   Declined, Applied, Withdrawn (kinds Upgrade, Downgrade, Cancel, Change
   of details); on/off pairs are Active / Inactive. Pending and
   reviewing are warn colour.
+- **A state is named for what is true when it is set, not for what it
+  hopes to become.** A service line reads **To quote**, never Quoted: the
+  flag is set while choosing what goes into the Letter of Offer, before
+  any letter exists, so the past tense would claim the quotation had
+  already gone out. Whether it has is the document's state, in Documents,
+  and never the line's. Chinese follows the same tense (`待报价`, not
+  `已报价`).
 - A value the client only reads is a chip in the state column; the same
   row shape as the console, the select swapped for the chip, the ⋯ kept
   only where the client has an action.
+- **A line addresses the client only where the client is the one who
+  acts.** The state chip says where the work is; the Next line says what
+  comes after it, in the team's words unless the next move is theirs.
+  Pending draft reads "Draft in progress", never "Draft for your review":
+  nothing has reached them yet, and a line naming them sends them looking
+  for a link that does not exist until the team uploads it and the step
+  becomes Reviewing. Reviewing ("Your approval") and Changes requested are
+  the only steps that are theirs.
 - Count creators, not slots. A campaign card shows the client's amount,
   not the invoice number. RedNote, never Xiaohongshu; Post, never Note.
 - Placeholders: the field's name or John Doe, john@adspacestudios.com,

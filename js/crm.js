@@ -142,6 +142,21 @@
   var state = { clients: [], team: [], client: null, editing: null, contacts: [], touches: [], services: [] };
 
   // ---- List ---------------------------------------------------------------
+  /* The people on a record come from the team list, not from typing: a name
+     keyed by hand is a name spelled two ways by Friday. A value already on a
+     record that is no longer on the team is kept as its own option, so opening
+     an old record and saving it cannot quietly unassign the person who owns
+     it. Used for the client's and the campaign's Person in charge alike. */
+  function peopleSelect(el, team, current) {
+    if (!el) return;
+    var keep = current != null ? current : el.value;
+    var names = team.map(function (m) { return m.name; });
+    if (keep && names.indexOf(keep) < 0) names.push(keep);
+    el.innerHTML = '<option value="">Unassigned</option>' +
+      names.map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
+    el.value = keep || '';
+  }
+
   function fillSelect(el, rows, all) {
     if (!el) return;
     var keep = el.value;
@@ -155,9 +170,7 @@
   function loadTeam(then) {
     db.from('team_members').select('*').eq('active', true).order('name').then(function (r) {
       state.team = (r.data) || [];
-      $('crmTeamList').innerHTML = state.team.map(function (m) {
-        return '<option value="' + esc(m.name) + '"></option>';
-      }).join('');
+      peopleSelect($('crmOwnerPick'), state.team);
       fillSelect($('crmOwner'), state.team.map(function (m) { return [m.name, m.name]; }), 'Everyone');
       if (then) then();
     }, function () { if (then) then(); });
@@ -218,7 +231,7 @@
           (worthText ? '<span class="crm-group-worth">' + esc(worthText) + '</span>' : '') +
         '</div>' +
         '<div class="crm-table">' +
-          '<div class="crm-head">' + ['Client', 'Stage', 'Industry', 'Value', 'Owner']
+          '<div class="crm-head">' + ['Client', 'Stage', 'Industry', 'Value', 'Person in charge']
             .map(function (h) { return '<span>' + h + '</span>'; }).join('') + '</div>' +
         '</div>';
       var table = sec.querySelector('.crm-table');
@@ -276,7 +289,11 @@
     for (var i = 0; i < SOURCES.length; i++) if (SOURCES[i][0] === v) return SOURCES[i][1];
     return v || '';
   }
-  var SV_STATE = { enquired: ['Enquired', ''], quoted: ['Quoted', 'is-warn'], confirmed: ['Confirmed', 'is-ok'] };
+  /* To quote, not Quoted: the flag is set while choosing what goes into the
+     Letter of Offer, before any letter exists. Past tense would claim the
+     quotation had already gone out. Whether it has is the document's state,
+     in Documents, not the line's. */
+  var SV_STATE = { enquired: ['Enquired', ''], quoted: ['To quote', 'is-warn'], confirmed: ['Confirmed', 'is-ok'] };
   var CATS = ['Content', 'Account management', 'Verification', 'Monthly packages',
               'KOC programmes', 'KOL programmes', 'Add-ons'];
 
@@ -285,6 +302,9 @@
     $('crmFormTitle').textContent = c ? 'Edit client' : 'New lead';
     $('crmSave').textContent = c ? 'Save' : 'Add lead';
     FORM.forEach(function (f) { $(f[0]).value = c ? (c[f[1]] || '') : ''; });
+    // Rebuilt against this record, so an owner who has since left the team is
+    // still the option that is selected rather than silently cleared on save.
+    peopleSelect($('crmOwnerPick'), state.team, c ? (c.owner || '') : '');
     if (!c) $('crmSource').value = 'referral';
     $('crmMarket').value = c ? (c.market || 'MY') : 'MY';
     // The person who asked, and what for. Only a new lead needs this here.
@@ -375,7 +395,7 @@
     var mk = MON.market(c.market);
     $('crmFacts').innerHTML = [
       ['Source',   c.source ? sourceWord(c.source) : '<span class="muted">Not set</span>'],
-      ['Owner',    c.owner || '<span class="muted">Unassigned</span>'],
+      ['Person in charge', c.owner || '<span class="muted">Unassigned</span>'],
       ['Industry', c.industry || '<span class="muted">Not set</span>'],
       ['Market',   (c.market === 'SG' ? 'Singapore' : 'Malaysia') + ' · ' + mk.sign],
       ['Value',    c.deal_value ? MON.money(c.deal_value, c.market) : '<span class="muted">Not set</span>'],
@@ -1036,7 +1056,7 @@
     var tot = document.createElement('div');
     tot.className = 'csv-total';
     tot.innerHTML =
-      (quoted ? '<span>Quoted<b>' + esc(MON.money2(quoted, c.market)) + '</b></span>' : '') +
+      (quoted ? '<span>To quote<b>' + esc(MON.money2(quoted, c.market)) + '</b></span>' : '') +
       '<span class="is-total">Confirmed<b>' + esc(MON.money2(confirmed, c.market)) + '</b></span>';
     table.appendChild(tot);
     box.appendChild(table);

@@ -63,7 +63,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   check('a lead must have a contact person', /contact/i.test(await p.locator('#crmMsg').innerText()));
   await p.selectOption('#crmSource', 'referral');
   await p.selectOption('#crmMarket', 'SG');
-  await p.fill('#crmOwnerPick', 'Qiao Rou');
+  await p.selectOption('#crmOwnerPick', 'Qiao Rou');
   await p.fill('#crmContactName', 'Mr Lim');
   await p.fill('#crmContactPhone', '012-345 6789');
   await p.fill('#crmEnquiry', 'Launch video and three months of Package B');
@@ -256,7 +256,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
     await p.evaluate(yymm => window.__DB.client_documents.some(d => d.number === 'AQT/INT/' + yymm + '002'), yymm));
   await p.locator('#crmServices .svc-row:not(.crm-head)').first().locator('select[data-f="state"]').selectOption('confirmed'); await p.waitForTimeout(900);
   await p.locator('#crmCover').click(); await p.waitForTimeout(600);
-  check('with nothing quoted there is no letter to issue', /No quoted lines/.test(await p.locator('#crmDocMsg').innerText()) &&
+  check('with nothing quoted there is no letter to issue', /No lines to quote/.test(await p.locator('#crmDocMsg').innerText()) &&
     await p.evaluate(() => window.__DB.client_documents.length === 2));
 
   // the billing contact is one of the contacts, the main one unless chosen

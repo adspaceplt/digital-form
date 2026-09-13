@@ -119,9 +119,14 @@
       stageLabel: 'Stage',
       revisionLabel: 'Revision',
       nextLabel: 'Next',
+      /* Next names the client only where the client is the one who acts. At
+         pending_draft nothing has arrived yet, so a line reading "for your
+         review" sends them looking for a link that is not there; the draft
+         reaches them when the team uploads it and the step becomes reviewing.
+         Only that step, and changes requested, are theirs. */
       nextUp: {
         confirmed: 'Shoot date to be scheduled', pending_visit: 'Filming',
-        pending_draft: 'Draft for your review', reviewing: 'Your approval',
+        pending_draft: 'Draft in progress', reviewing: 'Your approval',
         changes: 'Revision in progress', scheduled: 'Goes live',
         posted: 'Results in 7 days'
       },
@@ -151,7 +156,7 @@
       placements: 'Placements', cpe: 'Cost per engagement',
       impressions: 'Impressions', engagements: 'Engagements', views: 'Views',
       closed: 'Selection closed',
-      closedText: 'Selection is closed. Please contact your ADspace account manager for any changes.',
+      closedText: 'Please contact your ADspace account manager for any changes.',
       notFound: 'Link not recognised',
       notFoundText: 'Please check the link or contact your ADspace account manager.',
       passTitle: 'Access code',
@@ -222,7 +227,7 @@
       nextLabel: '下一步',
       nextUp: {
         confirmed: '安排拍摄日期', pending_visit: '拍摄',
-        pending_draft: '初稿待您审阅', reviewing: '等您确认',
+        pending_draft: '初稿制作中', reviewing: '等您确认',
         changes: '修改中', scheduled: '即将发布',
         posted: '7 天后提供数据'
       },
@@ -252,7 +257,7 @@
       placements: '发布数', cpe: '单次互动成本',
       impressions: '曝光', engagements: '互动', views: '播放',
       closed: '选择已结束',
-      closedText: '选择已结束。如需调整，请联系您的 ADspace 客户经理。',
+      closedText: '如需调整，请联系您的 ADspace 客户经理。',
       notFound: '链接无效',
       notFoundText: '请检查链接，或联系您的 ADspace 客户经理。',
       passTitle: '访问码',

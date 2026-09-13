@@ -1824,3 +1824,54 @@ update public.clients c
  where c.id = numbered.id
    and not exists (select 1 from public.clients o
                    where lower(o.slug) = lower(numbered.b || case when numbered.n > 1 then '-' || numbered.n else '' end));
+
+-- ============================================================================
+-- RATE CARD: what each service includes, from Rate Card & Packages v2.0.2.
+-- Re-runnable, and it overwrites, because the rate card is the source and this
+-- table is the copy. `detail` is one item per line: the client record shows it
+-- under the line and the Letter of Offer prints it under the name.
+-- Rows the rate card gives no inclusions for are left alone rather than filled
+-- with invented text.
+-- ============================================================================
+update public.services set detail = v.detail from (values
+  -- Content. The page 2 note applies to every ala carte deliverable; a graphic
+  -- carries only the revision terms, a video carries the shoot and the export.
+  ('static-graphic',  E'Two revision rounds per deliverable\nCorrections, captions, tagging, trims and sequence adjustments'),
+  ('gif',             E'Two revision rounds per deliverable\nCorrections, captions, tagging, trims and sequence adjustments'),
+  ('carousel',        E'Two revision rounds per deliverable\nCorrections, captions, tagging, trims and sequence adjustments'),
+  ('reels-30',        E'One on-site shoot included\nEditing and brand styling to your tone of voice\nFinal export ready to post\nTwo revision rounds per deliverable\nRaw footage on request at an additional charge'),
+  ('reels-60',        E'One on-site shoot included\nEditing and brand styling to your tone of voice\nFinal export ready to post\nTwo revision rounds per deliverable\nRaw footage on request at an additional charge'),
+  ('short-video-120', E'One on-site shoot included\nEditing and brand styling to your tone of voice\nFinal export ready to post\nTwo revision rounds per deliverable\nRaw footage on request at an additional charge'),
+
+  ('verify-meta',     E'Meta subscription fee billed separately'),
+  ('verify-xhs',      E'RM 450 platform fee included'),
+
+  -- Monthly packages without ads.
+  ('pkg-a', E'1 platform\n2 contents each month: 1 graphic and 1 reels up to 60s\nDedicated account management and content posting\nStrategic content planning for every deliverable\nProfessional copywriting for every planned deliverable\nOne-time on-site shoot for Reels content\nBasic accounts analytics report'),
+  ('pkg-b', E'Up to 2 platforms\n4 contents each month: 1 graphic and 3 reels up to 60s, or 4 reels up to 60s\nDedicated account management and content posting\nStrategic content planning for every deliverable\nProfessional copywriting for every planned deliverable\nOne-time on-site shoot for Reels content\nBasic accounts analytics report'),
+  ('pkg-c', E'Up to 3 platforms\n8 contents each month: 3 graphics and 4 reels up to 60s, or 8 reels up to 60s\nDedicated account management and content posting\nStrategic content planning for every deliverable\nProfessional copywriting for every planned deliverable\nOne-time on-site shoot for Reels content\nBasic accounts analytics report'),
+
+  -- Monthly packages with ads. The included advertising budget is deliberately
+  -- not listed here: the budget row on the rate card could not be read off with
+  -- certainty, and a budget figure printed in a letter is a commercial promise.
+  -- The cover tiers below are the separate line items the team adds.
+  ('pkg-d', E'1 platform\n4 contents each month: 2 graphics and 2 reels up to 60s\nDedicated account management and content posting\nStrategic content planning for every deliverable\nProfessional copywriting for every planned deliverable\nOne-time on-site shoot for Reels content\nFull advertising campaign setup and ongoing management\nWeekly advertising performance snapshot\nComprehensive monthly performance report'),
+  ('pkg-e', E'Up to 2 platforms\n6 contents each month: 2 graphics and 4 reels up to 60s\nDedicated account management and content posting\nStrategic content planning for every deliverable\nProfessional copywriting for every planned deliverable\nOne-time on-site shoot for Reels content\nFull advertising campaign setup and ongoing management\nWeekly advertising performance snapshot\nComprehensive monthly performance report'),
+  ('pkg-f', E'Up to 3 platforms\n10 contents each month: 4 graphics and 6 reels up to 60s\nDedicated account management and content posting\nStrategic content planning for every deliverable\nProfessional copywriting for every planned deliverable\nOne-time on-site shoot for Reels content\nFull advertising campaign setup and ongoing management\nWeekly advertising performance snapshot\nComprehensive monthly performance report'),
+
+  ('ads-8k',  E'Advertising budget is billed separately from the service fee\nPlatform charges, platform SST and withholding taxes are borne by the client'),
+  ('ads-14k', E'Advertising budget is billed separately from the service fee\nPlatform charges, platform SST and withholding taxes are borne by the client'),
+  ('ads-20k', E'Advertising budget is billed separately from the service fee\nPlatform charges, platform SST and withholding taxes are borne by the client'),
+
+  -- KOC. The pool is ours and the rate is fixed, which is what separates the
+  -- package from the costed list.
+  ('koc-10', E'Average RM 450 per creator\nSourced and booked from the ADspace KOC pool at a fixed rate\nMatched to your industry and campaign goal\nMinimum 2,000 followers per creator\nTwo revision rounds per deliverable\nLead time 3 to 4 weeks'),
+  ('koc-15', E'Average RM 430 per creator\nSourced and booked from the ADspace KOC pool at a fixed rate\nMatched to your industry and campaign goal\nMinimum 2,000 followers per creator\nTwo revision rounds per deliverable\nLead time 3 to 4 weeks'),
+  ('koc-20', E'Average RM 410 per creator\nSourced and booked from the ADspace KOC pool at a fixed rate\nMatched to your industry and campaign goal\nMinimum 2,000 followers per creator\nTwo revision rounds per deliverable\nLead time 3 to 4 weeks'),
+  ('koc-custom', E'You select the creators you want to engage\nA costed list of available KOCs is issued\nProfile and individual rate shown for each\nTwo revision rounds per deliverable\nLead time 4 to 5 weeks'),
+
+  ('kol-mgmt', E'Talent fee passed through at the creator''s own rate, no markup\nCreator sourcing and shortlisting\nRate negotiation and quotation handling\nCampaign briefing and content direction\nScheduling and posting coordination\nContent review and revision cycles\nPublication verification and reporting'),
+
+  ('shoot', E'Additional shoots are quoted by location')
+) as v(slug, detail)
+where public.services.slug = v.slug;
