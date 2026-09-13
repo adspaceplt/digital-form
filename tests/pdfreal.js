@@ -16,7 +16,7 @@ const STUB = fs.readFileSync(process.argv[2] + '/stub2.js', 'utf8');
   await p.waitForTimeout(700);
   console.log('pdf-lib loaded: ' + await p.evaluate(() => !!window.PDFLib));
   await p.locator('.crm-row').filter({ hasText: 'Laman Citra' }).click(); await p.waitForTimeout(800);
-  for (const [pick, qty, state, label, rate, months, start] of [['pkg-b', '3', 'confirmed'], ['custom', '1', 'confirmed', 'Launch video, up to 60 seconds, one on-site shoot included', '20000'], ['pkg-b', '1', 'quoted', '', '', '6', '2026-10']]) {
+  for (const [pick, qty, state, label, rate, months, start] of [['pkg-b', '3', 'confirmed'], ['custom', '1', 'confirmed', 'Launch video, up to 60 seconds, one on-site shoot included', '20000'], ['pkg-b', '1', 'quoted', '', '', '3', '2026-10']]) {
     await p.locator('#crmAddService').click(); await p.waitForTimeout(300);
     await p.selectOption('#svPick', pick); await p.fill('#svQty', qty); await p.selectOption('#svState', state);
     if (label) { await p.fill('#svLabel', label); await p.fill('#svRate', rate); }

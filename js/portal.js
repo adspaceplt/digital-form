@@ -124,7 +124,11 @@
     if (isNaN(dt.getTime())) return String(d);
     return dt.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   }
-  function amountOf(l) { return Number(l.qty || 0) * Number(l.rate || 0) * Math.max(1, Number(l.tenure || 1)); }
+  /* The billed rate, term adjustment included, from the same one definition
+     the console and the letter read. A client must never be shown a different
+     figure from the one on the letter they signed. */
+  function rateOf(l) { return MON.rateFor(l.rate, l.tenure); }
+  function amountOf(l) { return Number(l.qty || 0) * rateOf(l) * Math.max(1, Number(l.tenure || 1)); }
   function startDay(s) { s = String(s || ''); return s.length === 7 ? s + '-01' : s; }
   function termWord(l) {
     var n = Math.max(1, Number(l.tenure || 1));
@@ -333,11 +337,11 @@
       lines.forEach(function (l) {
         var row = document.createElement('div');
         row.className = 'svc-row csv-row';
-        var sub = [l.unit, termWord(l), l.note].filter(Boolean).join(' · ');
+        var sub = [l.unit, MON.termWord(l.tenure), termWord(l), l.note].filter(Boolean).join(' · ');
         var items = l.state === 'confirmed' ? [['upgrade', w.upgrade], ['downgrade', w.downgrade], ['cancel', w.cancel, true]] : [];
         row.innerHTML =
           '<span class="svc-name"><b>' + esc(l.label) + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' +
-          '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + money2(l.rate) + (Number(l.tenure || 1) > 1 ? ' × ' + Number(l.tenure) + ' ' + w.mo : '')) + '</span>' +
+          '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + money2(rateOf(l)) + (Number(l.tenure || 1) > 1 ? ' × ' + Number(l.tenure) + ' ' + w.mo : '')) + '</span>' +
           '<span class="svc-rate svc-amt"><b>' + esc(money2(amountOf(l))) + '</b></span>' +
           '<span class="svc-state">' + chip(w.svState[l.state] || l.state, l.state === 'confirmed' ? 'is-ok' : 'is-warn') + '</span>' +
           menuCell(items);

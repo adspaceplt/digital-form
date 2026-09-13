@@ -223,6 +223,37 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   await p.locator('#crmServices .svc-row:not(.crm-head)').first().locator('select[data-f="state"]').selectOption('confirmed'); await p.waitForTimeout(900);
   check('confirming the second line adds it up', (await p.locator('#crmFacts').innerText()).includes('70,940'));
 
+  // The term the client commits to changes the rate they are billed: six
+  // months is the baseline, three holds the margin a longer term would have
+  // earned. RM 2,830 over three months is 2,830 / 0.9 = RM 3,144.44 a month.
+  console.log('=== the term prices the line ===');
+  await p.locator('#crmServices .svc-row:not(.crm-head)').first().locator('[data-a="menu"]').click();
+  await p.waitForTimeout(250);
+  await p.locator('#crmServices [data-a="edit"]').first().click(); await p.waitForTimeout(400);
+  await p.fill('#svTenure', '3');
+  await p.locator('#svSave').click(); await p.waitForTimeout(900);
+  const three = await p.locator('#crmServices').innerText();
+  check('three months is billed at the short term rate', three.includes('3,144.44'), three.split('\n').slice(0, 6).join(' / '));
+  check('and the line says why it is not the rate card figure', three.includes('3 month term, 10% short term adjustment'));
+  /* 3 x RM 3,144.44 x 3 months = RM 28,299.96, not RM 28,300.00: the rate is
+     rounded to the cent where it is charged, because that is the figure that
+     goes on each monthly invoice, and the total has to be the sum of them. */
+  check('the amount is the sum of the invoices, not the unrounded maths', three.includes('28,299.96'));
+  await p.locator('#crmServices .svc-row:not(.crm-head)').first().locator('[data-a="menu"]').click();
+  await p.waitForTimeout(250);
+  await p.locator('#crmServices [data-a="edit"]').first().click(); await p.waitForTimeout(400);
+  await p.fill('#svTenure', '12');
+  await p.locator('#svSave').click(); await p.waitForTimeout(900);
+  const twelve = await p.locator('#crmServices').innerText();
+  check('twelve months earns the discount', twelve.includes('2,688.50') && twelve.includes('12 month term, 5% discount'));
+  await p.locator('#crmServices .svc-row:not(.crm-head)').first().locator('[data-a="menu"]').click();
+  await p.waitForTimeout(250);
+  await p.locator('#crmServices [data-a="edit"]').first().click(); await p.waitForTimeout(400);
+  await p.fill('#svTenure', '6');
+  await p.locator('#svSave').click(); await p.waitForTimeout(900);
+  const six = await p.locator('#crmServices').innerText();
+  check('six months is the baseline and says nothing', six.includes('2,830.00') && !six.includes('term,'));
+
   // a Letter of Offer from the quoted lines only, numbered for the month, kept as issued
   await p.locator('#crmServices .svc-row:not(.crm-head)').first().locator('select[data-f="state"]').selectOption('quoted'); await p.waitForTimeout(900);
   const dl = p.waitForEvent('download', { timeout: 8000 }).catch(() => null);

@@ -1011,8 +1011,11 @@
     }, function () { catalog = []; then(catalog); });
   }
   function svcById(slug) { return (catalog || []).filter(function (s) { return s.slug === slug; })[0]; }
-  // qty × rate × months. A one-off line has one month.
-  function amountOf(l) { return Number(l.qty || 0) * Number(l.rate || 0) * Math.max(1, Number(l.tenure || 1)); }
+  /* qty × the billed rate × months. A one-off line has one month. The billed
+     rate is the catalogue rate carrying its term adjustment, worked out once
+     in money.js so this, the letter and the client's page cannot disagree. */
+  function rateOf(l) { return MON.rateFor(l.rate, l.tenure); }
+  function amountOf(l) { return Number(l.qty || 0) * rateOf(l) * Math.max(1, Number(l.tenure || 1)); }
   /* A start kept as a month (older lines) reads as its first day. */
   function startDay(s) { s = String(s || ''); return s.length === 7 ? s + '-01' : s; }
   function termWord(l) {
@@ -1020,6 +1023,9 @@
     if (n === 1 && !l.start_on) return '';
     return (n > 1 ? n + ' months' : '') + (l.start_on ? (n > 1 ? ' from ' : 'From ') + niceDate(startDay(l.start_on)) : '');
   }
+  // Named where the figure changes, so a rate that is not the rate card's is
+  // never something the reader has to work out for themselves.
+  function adjWord(l) { return MON.termWord(l.tenure); }
 
   function loadServices() {
     var box = $('crmServices');
@@ -1069,8 +1075,9 @@
     row.className = 'svc-row csv-row';
     row.innerHTML =
       '<span class="svc-name"><b>' + esc(l.label) + '</b>' +
-        (l.note || l.unit || termWord(l) ? '<small>' + esc([l.unit, termWord(l), l.note].filter(Boolean).join(' · ')) + '</small>' : '') + '</span>' +
-      '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + MON.money2(l.rate, c.market) +
+        (l.note || l.unit || termWord(l) || adjWord(l)
+          ? '<small>' + esc([l.unit, adjWord(l), termWord(l), l.note].filter(Boolean).join(' · ')) + '</small>' : '') + '</span>' +
+      '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + MON.money2(rateOf(l), c.market) +
         (Number(l.tenure || 1) > 1 ? ' × ' + Number(l.tenure) + ' mo' : '')) + '</span>' +
       '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(amountOf(l), c.market)) + '</b></span>' +
       '<span class="svc-state"><select class="select select-sm state-select ' +w[1] + '" data-f="state" aria-label="State">' +

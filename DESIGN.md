@@ -36,11 +36,11 @@ palette can never be bought with legibility.
 | `--ink-soft` | `#524e47` | `#c6c8be` | Secondary text, default button text |
 | `--ink-mute` | `#6b6760` | `#a6a89e` | Labels, hints, quiet buttons (4.5:1 on every background) |
 | `--line` | `#e2dfd8` | `#3a3c36` | Card borders, table rules |
-| `--line-soft` | `#eeece7` | `#2d2f2a` | Row dividers, the selected fill |
+| `--line-soft` | `#ececec` | `#2e2e2e` | Row dividers, the selected fill |
 | `--line-ctl` | `#8e8a80` | `#83857c` | Input, select, textarea and outline button borders: 3:1 on every background |
 | `--page` | `#f5f5f5` | `#161814` | The ground. ADspace's own off white, the one paired with `#1a1a1a` on the website: a brand value, not a tuned one, and never "corrected" back to a warm grey |
 | `--card` | `#ffffff` | `#1e201d` | Panels, tables, rows |
-| `--sunk` | `#faf9f6` | `#262824` | Inset areas, table sub-headings, hover |
+| `--sunk` | `#f9f9f9` | `#272727` | Inset areas, table sub-headings, hover |
 | `--fill` / `--on-fill` | `#1b1a17` / `#ffffff` | `#eff0ea` / `#191b17` | The solid ink surface and its text: primary button, selected `.acttab`, progress, the Undo bar |
 | `--accent` = `--ok` | `#1f7a4d` | `#4aa876` | The one green: go action, live state, complete ring |
 | `--ok-bg` | `#ecf5f0` | `#17281f` | Its tint |
@@ -74,10 +74,19 @@ same checks and read as a highlighter pen, which is not this register.
 
 **The grounds are neutral; the warmth is in the marks.** `--page` is the
 brand's own `#f5f5f5` and `--card` is white, so the two largest surfaces
-agree with each other, and the warm cast lives where it does the work: the
-borders, the text and the inset surfaces. A warm page under white cards
-was the mixed half of the first pass. `#f5f5f5` and the tuned `#f6f5f2`
-it replaced have identical luminance, so nothing about contrast moved.
+agree with each other. **Every filled surface follows them**: `--sunk` and
+`--line-soft`, which paint inset areas, hover and the selected nav item,
+are neutral greys at the same lightness as the warm ones they replaced, so
+the selected item keeps exactly the contrast it had and simply stops being
+the one warm patch on a neutral screen. The warmth stays on the marks:
+`--line` (borders) and the whole ink ramp.
+
+A filled surface is **not** set to `--page`. `#f5f5f5` is the page's own
+value, and the sidebar it would sit on is white: selected would fall from
+1.18:1 to 1.09:1 against that white and the gap to hover would collapse
+from 1.12 to 1.04, which is the law that hover is never equal to selected.
+Same lightness, neutral hue, is the change; the brand value is not a
+paint to reach for wherever a grey is needed.
 
 ### Themes
 
@@ -191,6 +200,27 @@ Weight carries the reading order, so the name is Slate Regular at 10pt,
 the amounts 10pt, everything qualifying them 8.5pt mute; lines under a
 name sit 11pt apart and services 10pt further, so each service reads as
 one block.
+
+**The term prices the line.** Six months is the minimum a monthly service
+is sold on, so it is the baseline and costs nothing. A shorter term carries
+the margin a longer one would have earned and a longer commitment earns a
+discount, and the two are not the same operation: a short term **divides**
+(RM 1,000 over three months is `1,000 / 0.9` = RM 1,111.11 a month, holding
+the margin) and a long term **multiplies** (12 months is `rate × 0.95`).
+Writing "+10%" and "−5%" in one column hides that difference. The factors
+live in `js/money.js` (`TERMS`, `rateFor`, `termWord`) and nowhere else, so
+the console, the letter and the client's page read one definition and
+cannot drift; a term the rate card does not name costs nothing, because a
+rule nobody has written is not one to invent at quoting time.
+
+The adjusted figure is what the **Rate** column shows, because it is what
+the client is billed, and the mute line under the name says why it is not
+the rate card's figure ("Per month, 6 month minimum · 3 month term, 10%
+short term adjustment"): the minimum and the departure from it read as
+cause and effect. The rate is rounded to the cent **where it is charged**,
+so a total is always the sum of the invoices that make it up
+(3 × RM 3,144.44 × 3 months is RM 28,299.96, not the unrounded
+RM 28,300.00).
 
 **The client accepts the figure they will be invoiced.** Where every line
 runs the same term the letter is priced by the month: every Amount is one
