@@ -697,7 +697,9 @@ a { color: inherit; }
   display: flex; flex-direction: column; gap: 4px;
   transition: border-color .2s, transform .15s;
 }
-.bigcard:hover { border-color: var(--ink); transform: translateY(-1px); }
+@media (hover: hover) {
+  .bigcard:hover { border-color: var(--ink); transform: translateY(-1px); }
+}
 .bigcard.is-on { border-color: var(--ink); }
 .bigcard-top { display: flex; align-items: center; gap: 9px; min-width: 0; }
 /* Same treatment as a profile picture in the previews, so what the team sees
@@ -1370,7 +1372,13 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
   transition: background .15s, color .15s;
 }
 .navitem svg { width: 17px; height: 17px; flex: 0 0 auto; stroke-width: 1.7; color: var(--ink-mute); }
-.navitem:hover { background: var(--line-soft); color: var(--ink); }
+/* Selected is the darker fill and the heavier word; hover is one step
+   lighter, so the section you are in never has a twin. Hover exists only
+   where a pointer hovers: a phone keeps :hover on the last thing tapped,
+   which left two sections looking open at once. */
+@media (hover: hover) {
+  .navitem:hover { background: var(--sunk); color: var(--ink); }
+}
 .navitem.is-on { background: var(--line-soft); color: var(--ink); font-weight: 600; }
 .navitem.is-on svg { color: var(--ink); }
 
@@ -1545,7 +1553,9 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
   font-size: 13.5px; font-weight: 500; color: var(--ink-mute);
   border-bottom: 2px solid transparent; margin-bottom: -1px;
 }
-.tab:hover { color: var(--ink); background: var(--line-soft); }
+@media (hover: hover) {
+  .tab:hover { color: var(--ink); background: var(--sunk); }
+}
 .tab.is-on { color: var(--ink); font-weight: 600; border-bottom-color: var(--ink); }
 
 /* ---------- Tally ----------
@@ -2290,7 +2300,9 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
   background: none; padding: 6px 11px; font-size: 12.5px; font-weight: 500;
   color: var(--ink-mute); white-space: nowrap;
 }
-.acttab:hover { background: var(--line-soft); color: var(--ink); }
+@media (hover: hover) {
+  .acttab:hover { background: var(--line-soft); color: var(--ink); }
+}
 .acttab.is-on { background: var(--ink); border-color: var(--ink); color: #fff; }
 .act-day {
   position: sticky; top: 0; z-index: 2;
@@ -2324,7 +2336,9 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
   border: 0; border-bottom: 1px solid var(--line-soft); border-radius: 0;
   padding: 13px 15px; min-height: 52px;
 }
-.crm-row:hover { background: var(--sunk); }
+@media (hover: hover) {
+  .crm-row:hover { background: var(--sunk); }
+}
 .crm-row:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
 .crm-c { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 13.5px; color: var(--ink-mute); }

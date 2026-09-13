@@ -18,7 +18,7 @@ const CPROD = seedOf('cprod.js');
 const PORTAL = seedOf('portal.js');
 const QR = 'window.QRCode=function(){};window.QRCode.CorrectLevel={H:2};';
 
-const FAIL = new Set(['overflow', 'orphan', 'padding', 'cols', 'stack', 'type', 'wrap', 'clip', 'row-height', 'row-width', 'target', 'label', 'icon-label', 'accent', 'contrast', 'boundary', 'focus']);
+const FAIL = new Set(['overflow', 'orphan', 'padding', 'cols', 'stack', 'hover', 'type', 'wrap', 'clip', 'row-height', 'row-width', 'target', 'label', 'icon-label', 'accent', 'contrast', 'boundary', 'focus']);
 let fails = 0, warns = 0;
 
 /* Runs inside the page. Returns [[kind, detail], ...]. */
@@ -218,6 +218,28 @@ function inPage(coarse) {
   return F;
 }
 
+/* Hover never looks like selected. When it does you cannot tell which option
+   you are on, and a phone that keeps :hover on the last thing tapped shows
+   two of them at once. Only a pointer that hovers is asked. */
+async function hoverState(p, coarse) {
+  if (coarse) return [];
+  const out = [];
+  for (const sel of ['.navitem', '.tab', '.acttab']) {
+    const on = p.locator(sel + '.is-on').first();
+    const off = p.locator(sel + ':not(.is-on)').first();
+    if (!await on.isVisible().catch(() => false)) continue;
+    if (!await off.isVisible().catch(() => false)) continue;
+    const read = l => l.evaluate(el => getComputedStyle(el).backgroundColor);
+    const onBg = await read(on);
+    await off.hover().catch(() => {});
+    await p.waitForTimeout(260);   // past the .15s background transition
+    const offBg = await read(off);
+    if (onBg === offBg) out.push(['hover', sel + ' hovered reads the same as ' + sel + '.is-on (' + onBg + ')']);
+  }
+  await p.mouse.move(0, 0).catch(() => {});
+  return out;
+}
+
 async function focusRing(p) {
   const out = [];
   const seen = new Set();
@@ -252,6 +274,7 @@ async function report(name, p, coarse) {
   }
   const F = await p.evaluate(inPage, coarse);
   F.push(...await focusRing(p));
+  F.push(...await hoverState(p, coarse));
   const bad = F.filter(f => FAIL.has(f[0])), warn = F.filter(f => !FAIL.has(f[0]));
   fails += bad.length; warns += warn.length;
   console.log((bad.length ? 'FAIL ' : 'ok   ') + name + (bad.length ? ' (' + bad.length + ')' : '') + (warn.length ? ' warn ' + warn.length : ''));

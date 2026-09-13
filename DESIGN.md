@@ -113,6 +113,7 @@ measures the table whenever its header is not on screen (`padding`).
 | One record with steps | `.kcard` > `.kcard-head` (name, chips, ⋯) + `.kstep` blocks; folds to one line in lists of ten or more |
 | Rare or destructive actions | `.kmenu-btn` ⋯ + `.kmenu` > `.kmenu-item` (name only; `is-danger`) |
 | Status | `select.state-select` (tinted) for a value that changes; `.tone` / `.chip-state` with a word for a value that is only read |
+| The chosen one of several options | A filled shape, one language per component and never a shadow: the sidebar `.navitem.is-on` takes the `--line-soft` fill and weight 600, a `.tab.is-on` an ink underline and weight 600, an `.acttab.is-on` the ink fill with white text, a `.crow.is-on` the `--line-soft` fill, a `.bigcard.is-on` an ink border. Hover is always one step lighter than selected (`--sunk` where selected is `--line-soft`), never equal to it, and lives inside `@media (hover: hover)` so a phone cannot leave it stuck on the last thing tapped. `uxaudit` hovers an unselected option and fails when it renders the selected one's background (`hover`) |
 | Form to add or edit | `.panel` > `.panelhead h3` + `.row` fields + Save / secondary / Cancel + `.msg` |
 | Optional detail | `.panel.panel-collapse` > `.disclosure` (title, summary right) + `.disclosure-body` |
 | Full-page state | `.cover` > `.cover-inner` > `.cover-panel`, centred, title then one line, `body.is-plain`, footer on the floor |
@@ -259,7 +260,9 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   select; nothing invented; the shapes of rework.com style operations
   software.
 - **Von Restorff**: one accent. Green is the go action and the live state;
-  warn is caution; ink outline is the total; nothing else coloured.
+  warn is caution; ink outline is the total; nothing else coloured. Being
+  chosen is a fill, not a colour and never a shadow: `--shadow` stays on
+  panels and `--shadow-lift` on menus, as the colour table says.
 - **Tesler**: the console carries the complexity; the client page does not.
 - **Doherty**: feedback under 400ms; a saving state on the button; never a
   page reload; optimistic where safe.
