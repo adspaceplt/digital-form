@@ -2311,8 +2311,11 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
    together on its line. */
 .crm-head, .crm-row { display: grid; align-items: center; gap: 0 16px; }
 .crm-c-meta { display: none; }
+/* The pad above the first row belongs to the header, not to the table, so it
+   leaves with the header when a phone hides it. Padding the table instead
+   left a 12px gap over the first row on a phone, with nothing in it. */
 .crm-head {
-  padding: 0 15px 8px; border-bottom: 1px solid var(--line);
+  padding: 12px 15px 8px; border-bottom: 1px solid var(--line);
   font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
   color: var(--ink-mute);
 }
@@ -2382,7 +2385,6 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
    then everything else. */
 @media (max-width: 760px) {
   .crm-head { display: none; }
-  .crm-table { padding-top: 0; }
   .crm-row {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas: "name stage" "meta meta";
@@ -2459,8 +2461,6 @@ body > .shell { width: 100%; }
 #app > .empty, #app .empty, #crmRequests .empty { margin-bottom: 12px; }
 .viewhead > .select { flex: 0 0 auto; width: auto; min-width: 180px; }
 .sheet-card > .facts { margin: 8px 0 16px; }
-/* The pad above the first row exists for the column header only. */
-.crm-table:has(> .crm-head) { padding-top: 12px; }
 .crm-table .crm-row:last-child { border-bottom: 0; }
 #crmList { background: none; border: 0; padding: 0; overflow: visible; }
 .crm-links { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
@@ -2477,7 +2477,7 @@ body > .shell { width: 100%; }
 /* A retired or voided row fades its content, never its ⋯: fading the row
    itself put the menu inside a faded stacking context, behind the next row. */
 .svc-row.is-off > :not(.team-act), .team-row.is-off > :not(.team-act), .group-row.is-off > :not(.team-act) { opacity: .55; }
-.svc-row.crm-head { padding: 0 15px 8px; border-bottom: 1px solid var(--line); }
+.svc-row.crm-head { padding: 12px 15px 8px; border-bottom: 1px solid var(--line); }
 /* A header cell keeps the header's type whatever column class it carries. */
 .svc-row.crm-head > * { font-size: inherit; font-weight: inherit; color: inherit; }
 .svc-name { display: flex; flex-direction: column; min-width: 0; }

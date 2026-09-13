@@ -96,6 +96,10 @@ always the same distance apart, no matter which block. A table sitting
 against a fold with no gap, or a fold with a larger gap than the table
 above it, is a bug. A table with no header carries no header pad; the
 first row sits as far from the top as the last does from the bottom.
+A header the phone hides is not a header: its pad belongs to the header
+row itself (`.crm-head` padding `12px 15px 8px`), never to the table, so
+it leaves with the header at whichever breakpoint hides it. `uxaudit`
+measures the table whenever its header is not on screen (`padding`).
 
 ### Components (the only ones; a new screen is built from these)
 

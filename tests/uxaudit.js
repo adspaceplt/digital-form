@@ -63,7 +63,10 @@ function inPage(coarse) {
   document.querySelectorAll('.crm-table, .team-table').forEach(t => {
     if (!vis(t)) return;
     const kids = [...t.children].filter(vis).filter(k => !k.matches('.crm-head, .team-head, .group-head'));
-    if (kids.length < 1 || t.querySelector(':scope > .crm-head, :scope > .team-head, :scope > .group-head')) return;
+    // A header the phone hides is not a header: the table must then sit as
+    // evenly as a headerless one, or a pad is left over the first row.
+    const head = [...t.children].find(k => k.matches('.crm-head, .team-head, .group-head') && vis(k));
+    if (kids.length < 1 || head) return;
     const tr = t.getBoundingClientRect(), fr = kids[0].getBoundingClientRect(), lr = kids[kids.length - 1].getBoundingClientRect();
     const top = fr.top - tr.top, bottom = tr.bottom - lr.bottom;
     if (Math.abs(top - bottom) > 2) F.push(['padding', desc(t) + ': ' + Math.round(top) + 'px above the first row, ' + Math.round(bottom) + 'px below the last']);
