@@ -43,6 +43,7 @@ with the state word. Status selects are tinted like their chip:
 | `--ctl-text` / `--field-text` | 13px / 14px (16px coarse, stops iOS zoom) | Control label / field text |
 | Button min width | 116px | So a row of buttons does not step |
 | Icon glyph | 15px stroke, 1.8 | Same glyph for the same action everywhere; never mix outline and filled |
+| Icon button box | 38px (44px coarse) | `.iconbtn`, `.kfold`, `.kmenu-btn`, `.btn-icononly`: the glyph stays 16px, the target never shrinks with it |
 | Ring | 18px, stroke 2.6 | `.ring` completeness indicator |
 
 ### Typography (system stack; `--font`: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial; Chinese adds PingFang SC, Microsoft YaHei by `lang="zh"`)
@@ -146,7 +147,7 @@ measures the table whenever its header is not on screen (`padding`).
 | Rare or destructive actions | `.kmenu-btn` ⋯ + `.kmenu` > `.kmenu-item` (name only; `is-danger`) |
 | Status | `select.state-select` (tinted) for a value that changes; `.tone` / `.chip-state` with a word for a value that is only read |
 | The chosen one of several options | A filled shape, one language per component and never a shadow: the sidebar `.navitem.is-on` takes the `--line-soft` fill and weight 600, a `.tab.is-on` an ink underline and weight 600, an `.acttab.is-on` the ink fill with white text, a `.crow.is-on` the `--line-soft` fill, a `.bigcard.is-on` an ink border. Hover is always one step lighter than selected (`--sunk` where selected is `--line-soft`), never equal to it, and lives inside `@media (hover: hover)` so a phone cannot leave it stuck on the last thing tapped. `uxaudit` hovers an unselected option and fails when it renders the selected one's background (`hover`) |
-| Form to add or edit | `.panel` > `.panelhead h3` + `.row` fields + Save / secondary / Cancel + `.msg` |
+| Form to add or edit | `.panel` > `.panelhead h3` + `.row` fields + Save / secondary / Cancel + `.msg`; one Save covers everything in the form, a file included, so a number and its PDF are never two saves, and Cancel repaints from what is stored. What is attached now sits with the field that changes it, above the actions, never stranded under them |
 | Optional detail | `.panel.panel-collapse` > `.disclosure` (title, summary right) + `.disclosure-body` |
 | Full-page state | `.cover` > `.cover-inner` > `.cover-panel`, centred, title then one line, `body.is-plain`, footer on the floor |
 | Modal | `.sheet` > `.sheet-card`, from the bottom on a phone, fixed height when it filters |
@@ -154,6 +155,11 @@ measures the table whenever its header is not on screen (`padding`).
 | Message | `.msg` (`ok`, `warn`, `err`) as one line under the control, never a card |
 | Empty list | `.empty` with two words ("No entries.", "No links.", "No matches.", "Access not assigned."); never "yet", never a sentence |
 | Links to reach a person | `.plink` chips (phone, WhatsApp, email); equal widths on a phone |
+
+A field the browser draws itself (file, date, time, select) is reskinned
+to our box: same height, same border, and its inner button is one of ours
+(`::file-selector-button`: outline, `--line-ctl`, centred on the field's
+line), never the platform's grey slab floating on a baseline of its own.
 
 Buttons: `.btn` outline, `.btn-primary` ink, `.btn-go` accent (the one
 forward action in a view), `.btn-warn` outline warn (reversible caution:
@@ -174,7 +180,10 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
 - Phone checklist (read on every screenshot): no cell alone on its row;
   no value wrapping inside a cell; buttons that share a row share a
   width; the primary action nearest the thumb; a row of a table is two
-  or three lines, not a stack.
+  or three lines, not a stack; a field standing alone in a sheet or panel
+  fills its container rather than sizing itself to its placeholder; a
+  width pinned in a `style` attribute never survives the phone
+  breakpoint.
 
 ### Fallbacks and error states
 - Brand mark: the header uses `brandLogo` and shows the wordmark if it
@@ -278,7 +287,7 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
 - Data: PDPA 2010 (MY) and PDPA 2012 (SG): collect what the page needs,
   a client sees only its own data, soft remove before hard delete.
 - Numbering: Letter of Offer `AQT/INT/YYMMXXX` (per month); campaign
-  invoice reference `AINV2XXXXXX` entered by the team.
+  invoice reference `AINVXXXXXX` entered by the team.
 - Reversibility: Revert for a stage, Restore for a record, Undo for a
   removal (log entry, contact, service line, uploaded PDF), Void then
   Delete for an issued document, a number never reused. Anything a
@@ -312,7 +321,11 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   page reload; optimistic where safe.
 - **Progressive disclosure**: folded cards, one open at a time; a step
   appears when its stage is reached; sections that cannot apply yet stay
-  hidden, not disabled.
+  hidden, not disabled. A section that arrives with a state leaves again
+  when that state is reverted, on the console and on the client's page
+  alike: the campaign invoice arrives with the first confirmed creator
+  and goes when the last one is reverted. What the client may not see is
+  withheld by the security definer function, never only by the page.
 - **Consistency**: same width and height for controls in a row; same order
   Save / secondary / Cancel; same glyph for the same action; same status
   words and colours on both sides.

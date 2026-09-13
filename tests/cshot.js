@@ -4,7 +4,7 @@ const STUB = fs.readFileSync(process.argv[2] + '/stub2.js', 'utf8');
 const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   D.campaigns.push({ id:'cmp1', client_id:'c1', title:'Promote Newly Launch Project',
     slots:4, state:'production', deliverable:'video', push_format:'site_visit',
-    access_token:'CPROD', invoice_no:'AINV2026114', invoice_url:'https://mycdn.adspace.me/content/c1/inv.pdf' });
+    access_token:'CPROD', invoice_no:'AINV026114', invoice_url:'https://mycdn.adspace.me/content/c1/inv.pdf' });
   // one waiting on the client, one live with numbers, one still filming, one on offer
   D.campaign_options.push({ id:'o1', campaign_id:'cmp1', creator_id:'k1', rate:360,
     platforms:'RedNote, Instagram', state:'reviewing', revision_round:1,

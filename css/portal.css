@@ -115,6 +115,23 @@ a { color: inherit; }
 }
 /* Date and time fields bring their own chrome too, and it is taller. */
 .input[type="date"], .input[type="time"] { line-height: 1.5; min-height: var(--ctl-h); }
+/* A file field arrives as the browser's own grey button floating on a baseline
+   of its own. Same box as every other field, and the button inside it is one of
+   ours: outline, our border, centred on the field's line. */
+.input[type="file"] {
+  display: flex; align-items: center; gap: 10px; padding-inline: 8px;
+  font-size: 13px; color: var(--ink-mute); cursor: pointer;
+}
+.input[type="file"]::file-selector-button {
+  flex: 0 0 auto; height: 28px; margin: 0; padding: 0 12px;
+  font: inherit; font-size: 12.5px; font-weight: 500;
+  color: var(--ink-soft); background: var(--card);
+  border: 1px solid var(--line-ctl); border-radius: var(--radius-sm); cursor: pointer;
+}
+@media (hover: hover) {
+  .input[type="file"]::file-selector-button:hover { background: var(--sunk); color: var(--ink); }
+}
+@media (pointer: coarse) { .input[type="file"]::file-selector-button { height: 34px; } }
 .textarea { width: 100%; resize: vertical; min-height: 84px; padding-block: 10px; }
 .input:focus, .select:focus, .textarea:focus {
   outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px rgba(31,122,77,.18);
@@ -875,12 +892,14 @@ a { color: inherit; }
 .saved-actions { grid-area: actions; display: flex; align-items: center; gap: 4px; }
 /* A round, quiet mark that only takes colour when you reach for it. */
 .iconbtn {
-  width: 34px; height: 34px; flex: 0 0 auto; padding: 0;
+  width: 38px; height: 38px; flex: 0 0 auto; padding: 0;
   display: inline-grid; place-items: center;
   border: 0; background: none; border-radius: 9px;
   color: var(--ink-mute); transition: background .15s, color .15s;
 }
 .iconbtn svg { width: 16px; height: 16px; stroke-width: 1.7; }
+/* A thumb needs the whole 44px even where the mark stays this size. */
+@media (pointer: coarse) { .iconbtn { width: 44px; height: 44px; } }
 .iconbtn:hover { background: var(--line-soft); color: var(--ink); }
 .iconbtn.is-danger:hover { background: #fdeceb; color: #b3261e; }
 .iconbtn.is-warn:hover { background: var(--warn-bg); color: var(--warn); }
@@ -1475,6 +1494,13 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
 .sheet-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
 .sheet-head h3 { flex: 1 1 auto; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
 .sheet-body { overflow: auto; margin: 0 -24px; padding: 0 24px 18px; }
+/* A field standing on its own in a sheet takes the sheet's width. Left to the
+   browser it sizes itself to its placeholder, which is how Name ended up at a
+   quarter of the card with its label floating above nothing. */
+.sheet-body > .input, .sheet-body > .select, .sheet-body > textarea.input { width: 100%; }
+/* The confirm list is a name and an amount, not the activity record's five
+   columns, whose first is 52px wide and clipped the name to three characters. */
+#lockList .act { grid-template-columns: minmax(0, 1fr) auto; }
 /* The activity record keeps one height whatever the filter shows; the list
    scrolls inside it rather than the card growing and shrinking. */
 #activitySheet .sheet-card { height: min(82vh, 720px); }
@@ -1929,11 +1955,12 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
    state, and one line of what matters. The header is the target; the
    buttons in it keep their own jobs. */
 .kfold {
-  flex: 0 0 auto; width: 28px; height: 28px; margin-left: -6px;
+  flex: 0 0 auto; width: 38px; height: 38px; margin-left: -10px;
   display: grid; place-items: center; border: 0; border-radius: var(--radius-sm);
   background: none; color: var(--ink-mute);
 }
 .kfold svg { width: 16px; height: 16px; transition: transform .16s ease; }
+@media (pointer: coarse) { .kfold { width: 44px; height: 44px; margin-left: -12px; } }
 .kfold[aria-expanded="true"] svg { transform: rotate(90deg); }
 .kfold:hover { background: var(--line-soft); color: var(--ink); }
 .kcard.is-live .kcard-head { cursor: pointer; }
@@ -2219,6 +2246,10 @@ body.is-plain .topbar { background: rgba(255,255,255,.9); }
      as a stray word. It takes the whole last line instead. */
   .kactions > .btn-quiet:last-child,
   .row > .btn-quiet:last-child { flex: 1 1 100%; }
+  /* A width pinned in a style attribute is what left Cancel a 70px stub beside
+     a full-width Confirm. On a phone the row decides, not the attribute. */
+  .row > .btn[style] { flex: 1 1 138px !important; }
+  .row > .btn-quiet[style]:last-child { flex: 1 1 100% !important; }
   .btn { padding-inline: 12px; }
 
   /* Fields stack rather than squeeze. A fixed flex-basis in a style attribute

@@ -50,6 +50,9 @@
   }
   window.__DB = DB;
   window.__persist = persist;
+  // The client-facing doors, so a test can ask what a client would be told
+  // without opening the client's page.
+  window.__rpc = function (name, args) { return rpc(name, args); };
   var seq = Number(sessionStorage.getItem('__stubseq') || 0);
   function nid(p) {
     seq++;
@@ -177,10 +180,18 @@
           posts: DB.option_posts.filter(function (p) { return p.option_id === o.id; })
         };
       });
+      // The same gate the SQL carries: no invoice until a creator is confirmed.
+      var LIVE = ['confirmed', 'pending_visit', 'pending_draft', 'reviewing',
+                  'changes', 'scheduled', 'posted', 'completed'];
+      var billable = DB.campaign_options.some(function (o) {
+        return o.campaign_id === c.id && LIVE.indexOf(o.state) > -1;
+      });
       return Promise.resolve({ data: {
         campaign: { title: c.title, title_zh: c.title_zh, purpose: c.purpose, slots: c.slots, deadline: c.deadline,
                     state: c.state, deliverable: c.deliverable, brief: c.brief,
-                    push_format: c.push_format, invoice_no: c.invoice_no, invoice_url: c.invoice_url },
+                    push_format: c.push_format,
+                    invoice_no: billable ? c.invoice_no : null,
+                    invoice_url: billable ? c.invoice_url : null },
         client: { name: cl.name, logo_url: cl.logo_url,
                   market: cl.market || 'MY',
                   sst_applies: cl.sst_applies === undefined ? true : cl.sst_applies },
