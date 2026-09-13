@@ -101,6 +101,7 @@
       },
       lines: use.map(function (l) {
         return { label: l.label, unit: l.unit || '', note: l.note || '', state: l.state || 'enquired',
+                 detail: l.detail || '',
                  qty: Number(l.qty || 0), rate: Number(l.rate || 0),
                  tenure: Math.max(1, Number(l.tenure || 1)), start_on: l.start_on || '', tax: taxOn };
       }),
@@ -184,6 +185,14 @@
     if (d.length === 11 && d.indexOf('60') === 0) return '(60)' + d.slice(2, 4) + ' ' + d.slice(4, 7) + ' ' + d.slice(7);
     return String(p || '');
   }
+  /* The term every line shares, when they share one and it is longer than a
+     month. Only then does a single monthly figure mean anything; a letter
+     mixing a six month package with a one off shoot has no monthly price. */
+  function monthlyTerm(doc) {
+    var ns = (doc.lines || []).map(function (l) { return Math.max(1, Number(l.tenure || 1)); });
+    if (ns.length < 1 || ns[0] < 2) return 0;
+    return ns.every(function (x) { return x === ns[0]; }) ? ns[0] : 0;
+  }
   function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
   function letterDate(s) {
     var d = dateOf(s);
@@ -244,7 +253,7 @@
         if (logo) { var mh = 21, mw = logo.width * (mh / logo.height); page.drawImage(logo, { x: R - mw, y: T(65), width: mw, height: mh }); }
         var ry = T(92);
         [phoneWord(ORG.phone), ORG.email, ORG.website].filter(Boolean).forEach(function (s) { right(s, R, ry, 11); ry -= 12.5; });
-        y = Math.min(ly, ry) - 12;
+        y = Math.min(ly, ry) - 10;
       };
       var foot = function (i, n) {
         if (logo) { var fh = 20, fw = logo.width * (fh / logo.height); page.drawImage(logo, { x: (W - fw) / 2, y: 30, width: fw, height: fh }); }
@@ -258,7 +267,7 @@
       head();
 
       var b = doc.bill_to || {};
-      text('PRIVATE & CONFIDENTIAL', M, y, BODY, bold); y -= 27;
+      text('PRIVATE & CONFIDENTIAL', M, y, BODY, bold); y -= 24;
 
       // Our Ref / Date / To / Attn, the colons in one column.
       var refs = [
@@ -267,7 +276,7 @@
         ['Attn', b.contact ? b.contact + (b.contact_role ? ', ' + b.contact_role : '') : '']
       ].filter(function (f) { return f[1]; });
       refs.forEach(function (f) { text(f[0], M, y, BODY); text(':', M + 72, y, BODY); text(f[1], M + 78, y, BODY); y -= LH; });
-      y -= 14;
+      y -= 12;
 
       text(String(k.title).toUpperCase(), M, y, BODY, bold); y -= 29;
       text('Dear ' + (b.contact || 'Sir/Madam') + ',', M, y, BODY); y -= 29;
@@ -276,45 +285,91 @@
       para('Thank you for your interest in our marketing services. Further to our discussion, we are pleased to set out below the services and fees proposed for ' +
         (b.name || b.legal_name || 'your company') + '.');
 
-      var cols = { desc: M, qty: R - 190, unit: R - 100, amt: R };
-      var descW = cols.qty - cols.desc - 40;
+      /* A service is quoted by the month, not sold by the piece, so the
+         columns are Description, Rate and Amount. Quantity rides inside the
+         rate cell on the lines where it is not one, which frees the width a
+         package needs to say what it includes. The term sits under the amount
+         it explains, so a figure larger than the rate is never a surprise.
+
+         Weight carries the reading order: the name heaviest, the amounts
+         next, everything qualifying them mute and smaller. The lines under a
+         name sit tighter to it than the gap to the next service, so each
+         service reads as one block. */
+      var cols = { desc: M, rate: R - 130, amt: R };
+      var descW = cols.rate - cols.desc - 74;
+      var LROW = 13, LSUB = 11, LGAP = 10;
       var thead = function () {
         text('Description', cols.desc, y, 9, bold, mute);
-        right('Qty', cols.qty, y, 9, bold, mute); right('Unit price', cols.unit, y, 9, bold, mute); right('Amount', cols.amt, y, 9, bold, mute);
+        right('Rate', cols.rate, y, 9, bold, mute);
+        right('Amount', cols.amt, y, 9, bold, mute);
         y -= 7; rule(y); y -= 15;
       };
       need(60); thead();
       (doc.lines || []).forEach(function (l) {
-        var ls = wrap(l.label, descW, 10);
-        var sub = [periodOf(l), l.unit, l.note].filter(Boolean).join('  ');
-        var subs = sub ? wrap(sub, descW + 40, 8.5) : [];
-        if (y - (ls.length * 13 + subs.length * 11 + 8) < 70) { newPage(); head(); thead(); }
         var q = Number(l.qty || 0), n = Math.max(1, Number(l.tenure || 1));
-        text(ls[0] || '', cols.desc, y, 10);
-        right((q % 1 ? q.toFixed(2) : String(q)) + (n > 1 ? ' x ' + n + ' mo' : ''), cols.qty, y, 10);
-        right(MON.money2(l.rate, doc.market), cols.unit, y, 10);
+        var names = wrap(l.label, descW, 10, bold);
+        /* What it includes sits with the name. How it is priced and when it
+           runs are a different kind of fact, so they sit a step below on one
+           line of their own: the eye reads the offer, then the terms of it. */
+        var incl = [];
+        String(l.detail || '').split(/\r?\n/).forEach(function (d) {
+          if (d.replace(/\s/g, '')) incl = incl.concat(wrap(d, descW, 8.5));
+        });
+        var metaWord = [l.unit, periodOf(l), l.note].filter(Boolean).join('  ·  ');
+        var meta = metaWord ? wrap(metaWord, descW, 8.5) : [];
+        var split = incl.length && meta.length ? 4 : 0;
+        if (y - (names.length * LROW + (incl.length + meta.length) * LSUB + split + LGAP) < 70) { newPage(); head(); thead(); }
+        text(names[0] || '', cols.desc, y, 10, bold);
+        right(q === 1 ? MON.money2(l.rate, doc.market)
+                      : (q % 1 ? q.toFixed(2) : String(q)) + ' × ' + MON.money2(l.rate, doc.market),
+              cols.rate, y, 10);
         right(MON.money2(amountOf(l), doc.market), cols.amt, y, 10);
-        y -= 13;
-        ls.slice(1).forEach(function (s2) { text(s2, cols.desc, y, 10); y -= 13; });
-        subs.forEach(function (s2) { text(s2, cols.desc, y, 8.5, font, mute); y -= 11; });
-        y -= 7;
+        if (n > 1) right(n + ' months', cols.amt, y - LROW, 8.5, font, mute);
+        y -= LROW;
+        names.slice(1).forEach(function (s2) { text(s2, cols.desc, y, 10, bold); y -= LROW; });
+        incl.forEach(function (s2) { text(s2, cols.desc, y, 8.5, font, mute); y -= LSUB; });
+        y -= split;
+        meta.forEach(function (s2) { text(s2, cols.desc, y, 8.5, font, mute); y -= LSUB; });
+        y -= LGAP;
       });
-      rule(y); y -= 16;
+      rule(y); y -= 14;
 
-      need(66);
+      var term = monthlyTerm(doc);
+      need(term ? 82 : 66);
       var lx = R - 230;
-      var trow = function (label, value, strong) {
-        text(label, lx, y, strong ? 10.5 : 10, strong ? bold : font, strong ? ink : mute);
-        right(value, R, y, strong ? 10.5 : 10, strong ? bold : font);
-        y -= 15;
+      var trow = function (label, value, kind) {
+        var strong = kind === 'strong', quiet = kind === 'quiet';
+        var size = strong ? 10.5 : quiet ? 9 : 10;
+        var f = strong ? bold : font;
+        text(label, lx, y, size, f, strong ? ink : mute);
+        right(value, R, y, size, f, quiet ? mute : ink);
+        y -= quiet ? 13 : 15;
       };
       trow('Subtotal', MON.money2(doc.subtotal, doc.market));
-      trow(Number(doc.tax) ? 'SST Malaysia 8% on ' + MON.money2(doc.subtotal, doc.market) : 'SST not applicable', MON.money2(doc.tax, doc.market));
+      trow(Number(doc.tax) ? 'SST 8%' : 'SST not applicable', MON.money2(doc.tax, doc.market));
       y += 4; rule(y, lx, R, true); y -= 14;
-      trow('Total', MON.money2(doc.total, doc.market), true);
+      trow('Total', MON.money2(doc.total, doc.market), 'strong');
+      /* What the client pays each month, under the figure it divides. It is
+         mute and smaller, so the total stays the one bold amount. */
+      if (term) {
+        trow('Monthly over ' + term + ' months',
+             MON.money2(Math.round((doc.total / term) * 100) / 100, doc.market), 'quiet');
+      }
       y -= 12;
 
-      para('This offer is valid until ' + letterDate(plusDays(doc.issued_at, k.validDays)) + '.');
+      /* The conditions in one block instead of a sentence here and a sentence
+         there. The label matches the table's, so the letter has one voice for
+         "this is a heading". */
+      var terms = [];
+      if (term) terms.push('Fees are quoted per month and billed monthly in advance. The amounts above are for the full term.');
+      terms.push('This offer is valid until ' + letterDate(plusDays(doc.issued_at, k.validDays)) + '.');
+      need(24 + terms.length * 26);
+      text('TERMS', M, y, 9, bold, mute); y -= 15;
+      terms.forEach(function (s2) {
+        wrap(s2, R - M, 9.5).forEach(function (ln) { text(ln, M, y, 9.5); y -= 13; });
+      });
+      y -= 14;
+
       para('Kindly confirm your acceptance by signing below and returning a copy of this letter to us.');
 
       // Closing, as the reference signs off: the sales person's name under the company.
@@ -326,10 +381,10 @@
 
       // Acceptance: the client signs this copy, on one page with the closing.
       if ((H - y) + 100 > H - 55) { newPage(); head(); }
-      text('Confirmed and accepted for and on behalf of ' + (b.legal_name || b.name || '').toUpperCase(), M, y, BODY, bold); y -= 36;
+      text('Confirmed and accepted for and on behalf of ' + (b.legal_name || b.name || '').toUpperCase(), M, y, BODY, bold); y -= 32;
       var half = (R - M - 24) / 2;
       [['Signature and company stamp', M], ['Name', M + half + 24]].forEach(function (f) { rule(y, f[1], f[1] + half); text(f[0], f[1], y - 11, 8.5, font, mute); });
-      y -= 34;
+      y -= 30;
       [['Designation', M], ['Date', M + half + 24]].forEach(function (f) { rule(y, f[1], f[1] + half); text(f[0], f[1], y - 11, 8.5, font, mute); });
       y -= 14;
 

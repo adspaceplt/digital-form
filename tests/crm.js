@@ -201,12 +201,15 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   check('the rate card is offered, grouped', await p.locator('#svPick optgroup').count() >= 2);
   await p.selectOption('#svPick', 'pkg-b'); await p.waitForTimeout(150);
   check('picking a package fills its rate', (await p.locator('#svRate').inputValue()) === '2830');
+  check('and the minimum term the rate card prints', (await p.locator('#svTenure').inputValue()) === '6');
+  check('and what the package includes', (await p.locator('#svDetail').inputValue()).includes('4 contents each month'));
   await p.fill('#svQty', '3');
   await p.selectOption('#svState', 'quoted');
   await p.locator('#svSave').click(); await p.waitForTimeout(900);
-  check('the line is listed with its amount', (await p.locator('#crmServices').innerText()).includes('8,490'));
+  // 3 x RM 2,830.00 x 6 months: the term is what the client commits to.
+  check('the line is listed with its amount', (await p.locator('#crmServices').innerText()).includes('50,940'));
   check('a quoted total is the value until something is confirmed',
-    (await p.locator('#crmFacts').innerText()).includes('8,490'));
+    (await p.locator('#crmFacts').innerText()).includes('50,940'));
   await p.locator('#crmAddService').click(); await p.waitForTimeout(400);
   await p.selectOption('#svPick', 'custom'); await p.waitForTimeout(150);
   check('a custom line asks for its name', await p.locator('#svLabelRow').isVisible());
@@ -216,7 +219,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   await p.locator('#svSave').click(); await p.waitForTimeout(900);
   check('confirmed lines set the value', (await p.locator('#crmFacts').innerText()).includes('20,000'));
   await p.locator('#crmServices .svc-row:not(.crm-head)').first().locator('select[data-f="state"]').selectOption('confirmed'); await p.waitForTimeout(900);
-  check('confirming the second line adds it up', (await p.locator('#crmFacts').innerText()).includes('28,490'));
+  check('confirming the second line adds it up', (await p.locator('#crmFacts').innerText()).includes('70,940'));
 
   // a Letter of Offer from the quoted lines only, numbered for the month, kept as issued
   await p.locator('#crmServices .svc-row:not(.crm-head)').first().locator('select[data-f="state"]').selectOption('quoted'); await p.waitForTimeout(900);
@@ -230,11 +233,12 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   check('the letter carries the quoted lines only, the contact and who signed it', await p.evaluate(() => {
     const d = window.__DB.client_documents[0];
     return !!d && d.kind === 'offer' && d.issued_by === 'ADspace' && d.lines.length === 1 && d.lines[0].state === 'quoted' &&
-      d.total === 8490 && d.tax === 0 && d.bill_to.contact === 'Mr Lim' && d.bill_to.owner === 'Qiao Rou';
+      d.total === 50940 && d.tax === 0 && d.bill_to.contact === 'Mr Lim' && d.bill_to.owner === 'Qiao Rou' &&
+      d.lines[0].tenure === 6 && /4 contents each month/.test(d.lines[0].detail || '');
   }));
   check('the PDF carries the number, the client, the contact, the total and the acceptance block',
     await p.evaluate(yymm => { const all = window.__drawn.join(' ');
-      return window.__drawn.some(s => s === 'AQT/INT/' + yymm + '001') && /Star Living/i.test(all) && /Mr Lim/.test(all) && /8,490/.test(all) &&
+      return window.__drawn.some(s => s === 'AQT/INT/' + yymm + '001') && /Star Living/i.test(all) && /Mr Lim/.test(all) && /50,940/.test(all) &&
         /LETTER OF OFFER/.test(all) && /pleased to set out/.test(all) && /Confirmed and accepted/.test(all); }, yymm));
   check('the document is listed', await p.locator('#crmDocuments .doc-row:not(.crm-head)').count() === 1);
   await p.locator('#crmCover').click(); await p.waitForTimeout(800);
@@ -289,7 +293,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
     await p.evaluate(() => { const c = window.__DB.clients.find(c => c.name === 'Star Living'); return c.social_ig === '@starliving' && /family/.test(c.brand_notes); }));
   check('the head shows the link', await p.locator('#crmLinks .plink').count() >= 1);
   await p.locator('#crmBack').click(); await p.waitForTimeout(800);
-  check('the pipeline group carries its value', (await p.locator('.crm-group-worth').first().innerText()).includes('28,490'));
+  check('the pipeline group carries its value', (await p.locator('.crm-group-worth').first().innerText()).includes('70,940'));
   check('next actions are gathered at the top of the list', await p.locator('#crmDue').isVisible() &&
     (await p.locator('.due-row').count()) >= 1);
   check('the overdue one is marked', await p.locator('.due-row.is-due').count() >= 1);

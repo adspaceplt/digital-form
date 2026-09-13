@@ -1054,7 +1054,13 @@
     var slug = $('svPick').value;
     var s = svcById(slug);
     $('svLabelRow').hidden = slug !== 'custom';
-    if (fill && s) $('svRate').value = s.rate != null ? Number(s.rate) : '';
+    /* Prefilled, not fixed: the catalogue seeds the price, the term and what
+       the package includes, and the line keeps its own copy from there. */
+    if (fill && s) {
+      $('svRate').value = s.rate != null ? Number(s.rate) : '';
+      $('svTenure').value = Math.max(1, Number(s.min_months || 1));
+      $('svDetail').value = s.detail || '';
+    }
   }
   function openService(l) {
     editingService = l || null;
@@ -1069,6 +1075,7 @@
       $('svState').value = l ? (l.state || 'enquired') : 'enquired';
       $('svTenure').value = l ? Math.max(1, Number(l.tenure || 1)) : 1;
       $('svStart').value = l ? (l.start_on || '') : '';
+      $('svDetail').value = l ? (l.detail || '') : '';
       $('svNote').value = l ? (l.note || '') : '';
       syncPick(!l);
       msg('svMsg', '');
@@ -1092,7 +1099,8 @@
       service_slug: s ? s.slug : null, label: label, unit: s ? (s.unit || null) : null,
       qty: Number(val('svQty') || 1), rate: Number(val('svRate') || 0),
       tenure: Math.max(1, Number(val('svTenure') || 1)), start_on: val('svStart') || null,
-      state: $('svState').value, note: val('svNote') || null
+      state: $('svState').value, note: val('svNote') || null,
+      detail: val('svDetail') || null
     };
     if (editingService) { saveService(editingService, row); return; }
     row.client_id = state.client.id;
@@ -1393,6 +1401,8 @@
     $('svcName').value = s ? s.name : '';
     $('svcRate').value = s && s.rate != null ? Number(s.rate) : '';
     $('svcUnit').value = s ? (s.unit || '') : '';
+    $('svcMin').value = s ? Math.max(1, Number(s.min_months || 1)) : 1;
+    $('svcDetail').value = s ? (s.detail || '') : '';
     msg('svcMsg', '');
     $('svcBox').hidden = false;
     $('svcName').focus();
@@ -1403,7 +1413,8 @@
     var name = val('svcName');
     if (!name) { msg('svcMsg', 'A name is required.', 'err'); $('svcName').focus(); return; }
     var row = { category: $('svcCat').value, name: name,
-                rate: val('svcRate') === '' ? null : Number(val('svcRate')), unit: val('svcUnit') || null };
+                rate: val('svcRate') === '' ? null : Number(val('svcRate')), unit: val('svcUnit') || null,
+                min_months: Math.max(1, Number(val('svcMin') || 1)), detail: val('svcDetail') || null };
     var after = function (r) {
       if (r.error) { msg('svcMsg', r.error.message, 'err'); return; }
       log(editingSvc ? 'service.changed' : 'service.added', name, row.category);
