@@ -288,11 +288,13 @@ async function report(name, p, coarse) {
 
 async function walk(b, coarse, dark) {
   const tag = (coarse ? '390' : '1280') + (dark ? ' dark' : '');
-  const ctx = await b.newContext(Object.assign(
-    { colorScheme: dark ? 'dark' : 'light' },
-    coarse
-      ? { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }
-      : { viewport: { width: 1280, height: 900 } }));
+  const ctx = await b.newContext(coarse
+    ? { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true }
+    : { viewport: { width: 1280, height: 900 } });
+  /* Dark is a choice the console remembers, not the system's setting, so it is
+     turned on the way a person turns it on: the stored preference, read by the
+     page's own head script before it paints. */
+  if (dark) await ctx.addInitScript(() => { try { localStorage.setItem('adspace-theme', 'dark'); } catch (e) {} });
   const errs = [];
   const page = async (seed) => {
     const p = await ctx.newPage();
@@ -360,6 +362,10 @@ async function walk(b, coarse, dark) {
   await nav(p, 'team');
   await report('admin team ' + tag, p, coarse);
   await p.close();
+  /* The client pages have no dark, by design: a client deciding on a proposal
+     should not be doing it in a register nobody chose for that conversation.
+     Walking them again in dark would measure the light theme twice. */
+  if (dark) { await ctx.close(); return errs; }
 
   // Client portal
   p = await page(PORTAL);
