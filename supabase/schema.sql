@@ -1754,3 +1754,25 @@ revoke all on function public.portal_withdraw(uuid, boolean) from public;
 grant execute on function public.get_portal(uuid) to authenticated;
 grant execute on function public.portal_request(uuid, text, uuid, text) to authenticated;
 grant execute on function public.portal_withdraw(uuid, boolean) to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- What a package actually includes, and how long it runs.
+--
+-- A rate card line carried a name and a unit and nothing else, so the Letter
+-- of Offer could only print "Package C · 3 platforms · 8 contents". The
+-- detail is what the client is buying and belongs on the letter; the minimum
+-- term is what makes the monthly rate honest, because a monthly figure with
+-- no term beside it understates what the client is committing to.
+--
+-- detail is plain text, one item per line. It is copied onto a service line
+-- when the line is added and stays editable there, so a later rate card edit
+-- never rewrites a letter already issued.
+-- ---------------------------------------------------------------------------
+alter table public.services         add column if not exists detail     text;
+alter table public.services         add column if not exists min_months int not null default 1;
+alter table public.client_services  add column if not exists detail     text;
+
+-- The rate card already prints "6 month minimum" against every monthly
+-- package. This states it as data so a line prefills with the right term.
+update public.services set min_months = 6
+  where category = 'Monthly packages' and slug like 'pkg-%' and min_months = 1;

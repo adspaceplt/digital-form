@@ -75,6 +75,24 @@ The monogram (`/css/adspace-mark.png`) sits 21pt tall top right and 20pt
 bottom centre. No Company Profile QR on a letter. The web UI stays on the system stack. Config holds file
 paths, never font names.
 
+A service is quoted by the month, never sold by the piece, so the lines
+table is **Description, Rate, Amount** and nothing else. Quantity rides
+inside the rate cell only where it is not one (`3 × RM 600.00`); a Qty
+column that always reads 1, or a Unit price column repeating the Amount,
+is a column saying nothing and is removed. The term sits mute under the
+Amount it explains (`6 months`), so a figure larger than the rate is
+never a surprise. Under the name come the inclusions (`detail`, one per
+line), then a 4pt step, then the pricing basis, period and note on one
+mute line: what they get, then the terms of it (Gestalt proximity).
+Weight carries the reading order, so the name is Slate Regular at 10pt,
+the amounts 10pt, everything qualifying them 8.5pt mute; lines under a
+name sit 11pt apart and services 10pt further, so each service reads as
+one block. Totals are Subtotal, SST 8%, then Total as the one bold
+amount, with the monthly figure mute beneath it when every line shares a
+term. Conditions go in one **TERMS** block (label 9pt bold mute, the
+table header's style; body 9.5pt), never a sentence here and a sentence
+there; the validity line lives there too.
+
 ### Spacing scale and vertical rhythm
 Scale for gaps between blocks and sections: 4, 8, 12, 16, 24, 32. Component paddings are the values in the table below and nothing else.
 
