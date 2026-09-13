@@ -1851,17 +1851,18 @@ update public.services set detail = v.detail from (values
   ('pkg-b', E'Up to 2 platforms\n4 contents each month: 1 graphic and 3 reels up to 60s, or 4 reels up to 60s\nDedicated account management and content posting\nStrategic content planning for every deliverable\nProfessional copywriting for every planned deliverable\nOne-time on-site shoot for Reels content\nBasic accounts analytics report'),
   ('pkg-c', E'Up to 3 platforms\n8 contents each month: 3 graphics and 4 reels up to 60s, or 8 reels up to 60s\nDedicated account management and content posting\nStrategic content planning for every deliverable\nProfessional copywriting for every planned deliverable\nOne-time on-site shoot for Reels content\nBasic accounts analytics report'),
 
-  -- Monthly packages with ads. The included advertising budget is deliberately
-  -- not listed here: the budget row on the rate card could not be read off with
-  -- certainty, and a budget figure printed in a letter is a commercial promise.
-  -- The cover tiers below are the separate line items the team adds.
-  ('pkg-d', E'1 platform\n4 contents each month: 2 graphics and 2 reels up to 60s\nDedicated account management and content posting\nStrategic content planning for every deliverable\nProfessional copywriting for every planned deliverable\nOne-time on-site shoot for Reels content\nFull advertising campaign setup and ongoing management\nWeekly advertising performance snapshot\nComprehensive monthly performance report'),
-  ('pkg-e', E'Up to 2 platforms\n6 contents each month: 2 graphics and 4 reels up to 60s\nDedicated account management and content posting\nStrategic content planning for every deliverable\nProfessional copywriting for every planned deliverable\nOne-time on-site shoot for Reels content\nFull advertising campaign setup and ongoing management\nWeekly advertising performance snapshot\nComprehensive monthly performance report'),
+  -- Monthly packages with ads. Each carries the advertising budget its service
+  -- fee covers; going past it is an add-on line, not a push up to the next
+  -- package, so a client on D who wants to spend RM 6,000 adds the cover tier
+  -- rather than being moved to F.
+  ('pkg-d', E'1 platform\n4 contents each month: 2 graphics and 2 reels up to 60s\nAdvertising budget up to RM 4,000 each month\nDedicated account management and content posting\nStrategic content planning for every deliverable\nProfessional copywriting for every planned deliverable\nOne-time on-site shoot for Reels content\nFull advertising campaign setup and ongoing management\nWeekly advertising performance snapshot\nComprehensive monthly performance report'),
+  ('pkg-e', E'Up to 2 platforms\n6 contents each month: 2 graphics and 4 reels up to 60s\nAdvertising budget up to RM 8,000 each month\nDedicated account management and content posting\nStrategic content planning for every deliverable\nProfessional copywriting for every planned deliverable\nOne-time on-site shoot for Reels content\nFull advertising campaign setup and ongoing management\nWeekly advertising performance snapshot\nComprehensive monthly performance report'),
   ('pkg-f', E'Up to 3 platforms\n10 contents each month: 4 graphics and 6 reels up to 60s\nDedicated account management and content posting\nStrategic content planning for every deliverable\nProfessional copywriting for every planned deliverable\nOne-time on-site shoot for Reels content\nFull advertising campaign setup and ongoing management\nWeekly advertising performance snapshot\nComprehensive monthly performance report'),
 
-  ('ads-8k',  E'Advertising budget is billed separately from the service fee\nPlatform charges, platform SST and withholding taxes are borne by the client'),
-  ('ads-14k', E'Advertising budget is billed separately from the service fee\nPlatform charges, platform SST and withholding taxes are borne by the client'),
-  ('ads-20k', E'Advertising budget is billed separately from the service fee\nPlatform charges, platform SST and withholding taxes are borne by the client'),
+  -- Added on top of the cover a package already carries, never instead of it.
+  ('ads-8k',  E'Raises the covered advertising budget to RM 8,000 each month\nAdded on top of a monthly package with ads\nAdvertising budget is billed separately from the service fee\nPlatform charges, platform SST and withholding taxes are borne by the client'),
+  ('ads-14k', E'Raises the covered advertising budget to RM 14,000 each month\nAdded on top of a monthly package with ads\nAdvertising budget is billed separately from the service fee\nPlatform charges, platform SST and withholding taxes are borne by the client'),
+  ('ads-20k', E'Raises the covered advertising budget to RM 20,000 each month\nAdded on top of a monthly package with ads\nAdvertising budget is billed separately from the service fee\nPlatform charges, platform SST and withholding taxes are borne by the client'),
 
   -- KOC. The pool is ours and the rate is fixed, which is what separates the
   -- package from the costed list.

@@ -65,17 +65,25 @@
   --shadow-lift: 0 1px 2px rgba(19,24,26,.06), 0 12px 32px rgba(19,24,26,.10);
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
           "PingFang SC", "Microsoft YaHei", sans-serif;
+  /* Headings only. Chinese has no Slate, so the stack falls through to the
+     system face and a zh heading is simply the system face at the same size. */
+  --font-head: "ADspace Slate", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
-/* Dark follows the reader's system and nothing else: no toggle, no stored
-   preference, no third state to get wrong. Only the colours move; every size,
-   space and shape above is the same screen. The ramp is the light one turned
-   over and kept warm, and the fills swap with their text, so the primary
-   button stays the highest contrast thing in the view rather than vanishing.
-   Depth cannot come from a grey shadow on a dark ground, so the shadows go
-   black and the surfaces step instead. */
-@media (prefers-color-scheme: dark) {
-  :root {
+/* Dark is the team's, and only ever by choice. It is not taken from the
+   system, because a client who happens to have their phone in dark mode would
+   be deciding on a proposal in a register nobody chose for that conversation,
+   and the mood a decision is made in is not ours to set by accident. So the
+   client pages have no dark at all, the console carries a toggle, and the
+   choice is this browser's alone.
+
+   Only the colours move; every size, space and shape above is the same screen.
+   The ramp is the light one turned over and kept warm, and the fills swap with
+   their text, so the primary button stays the highest contrast thing in the
+   view rather than vanishing. Depth cannot come from a grey shadow on a dark
+   ground, so the shadows go black and the surfaces step instead. */
+:root[data-theme="dark"] {
     --ink:        #eff0ea;
     --ink-soft:   #c6c8be;
     --ink-mute:   #a6a89e;
@@ -112,19 +120,34 @@
     --chrome:     rgba(22,24,20,.88);
     --shadow:     0 1px 2px rgba(0,0,0,.5);
     --shadow-lift: 0 1px 2px rgba(0,0,0,.5), 0 12px 32px rgba(0,0,0,.55);
-  }
-  /* The wordmark is one flat dark colour on transparent, so it is inverted
-     rather than shipped twice. A client logo is not: it is the client's
-     artwork and keeps its own colours on the white disc it already sits on. */
-  img.brand-logo { filter: invert(1) brightness(1.08); }
+  color-scheme: dark;
 }
+/* The wordmark is one flat dark colour on transparent, so it is inverted
+   rather than shipped twice. A client logo is not: it is the client's artwork
+   and keeps its own colours on the white disc it already sits on. */
+:root[data-theme="dark"] img.brand-logo { filter: invert(1) brightness(1.08); }
 
 @media (pointer: coarse) {
   :root { --ctl-h: 44px; --ctl-h-sm: 44px; --ctl-text: 14px; --field-text: 16px; }
 }
 
+/* The one brand face on screen. Slate is already in the repo for the letter,
+   so the portal and the paper it prints share a voice without a second asset
+   or a webfont service. It is used on headings only: body text stays on the
+   system stack, where it is tuned for the reader's own screen and needs no
+   download to be legible. swap keeps the heading readable while it loads. */
+@font-face {
+  font-family: "ADspace Slate";
+  /* WOFF2 first at 38KB against the TTF's 110KB; the TTF stays in the repo
+     because the letter's pdf-lib fetches it, and doubles as the fallback. */
+  src: url("/css/SlateRg.woff2") format("woff2"),
+       url("/css/SlateRg.TTF") format("truetype");
+  font-weight: 400 700;
+  font-display: swap;
+}
+
 * { box-sizing: border-box; margin: 0; }
-:root { color-scheme: light dark; }
+:root { color-scheme: light; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   font-family: var(--font);
@@ -740,6 +763,11 @@ a { color: inherit; }
 
 .viewhead { display: flex; align-items: center; gap: 12px; margin: 24px 0 12px; }
 .viewhead h2, .viewhead h3 { flex: 1 1 auto; }
+/* The display sizes carry the brand face; everything smaller stays on the
+   system stack, where a hinted system face beats a downloaded one at 12px. */
+.viewhead h2, .crm-title h2, .cover-panel h2, .camphead h1, .batch-title {
+  font-family: var(--font-head);
+}
 .viewhead h2 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
 .viewhead h3 { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
 .viewhead .btn { flex: 0 0 auto; }
@@ -1557,12 +1585,16 @@ body.is-plain .topbar { background: var(--chrome); }
   display: block; font-weight: 600; color: var(--ink-soft);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
 }
-.signout {
+.signout,
+.themetoggle {
   width: 100%; margin-top: 10px; min-width: 0;
   padding: 8px 12px; font-size: 12.5px; color: var(--ink-soft);
 }
-.signout svg { width: 15px; height: 15px; stroke-width: 1.7; }
-.signout:hover { border-color: var(--ink-mute); color: var(--ink); }
+.signout svg, .themetoggle svg { width: 15px; height: 15px; stroke-width: 1.7; }
+.signout:hover, .themetoggle:hover { border-color: var(--ink-mute); color: var(--ink); }
+/* It sits above Sign out so the thing that ends the session stays last, and it
+   keeps the same shape: a lighter border to make a preference read quieter put
+   the control boundary under 3:1, which is a floor, not a preference. */
 
 /* ---------- Sheet ----------
    Opens over the work and hands it straight back, so reading the record never

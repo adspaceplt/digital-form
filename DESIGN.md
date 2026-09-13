@@ -81,14 +81,29 @@ it replaced have identical luminance, so nothing about contrast moved.
 
 ### Themes
 
-Dark follows the reader's system and nothing else: no toggle, no stored
-preference, no third state to get wrong. Only the colours move; every
-size, space and shape is the same screen, so a layout that is right in
-one theme is right in the other. All four pages have it (`/admin/`,
-`/client/`, `/creators/`, `/review/`), because a client opens their link
-at night on the same phone the team does.
+**Light is the default everywhere. Dark is the console's, and only ever
+by choice.** It is deliberately not taken from `prefers-color-scheme`: a
+client who happens to keep their phone in dark mode would be deciding on
+a proposal in a register nobody chose for that conversation, and the mood
+a decision is made in is not ours to set by accident. So:
 
-Two things deliberately stay light in both themes:
+- `/client/`, `/creators/` and `/review/` have **no dark at all**. They
+  never carry `data-theme`, whatever is in that browser's storage.
+- `/admin/` carries a toggle in the sidebar foot, above Sign out, naming
+  the theme it switches to the way a light switch does. The choice is
+  kept in `localStorage` under `adspace-theme`, per browser, never on the
+  account.
+- A four-line script in the console's `<head>` applies the stored choice
+  before the stylesheet paints, so choosing dark does not flash white on
+  every load.
+- The palette hangs off `:root[data-theme="dark"]`, never a media query,
+  and `color-scheme` follows it so the browser's own chrome (select
+  popups, scrollbars, the caret) matches.
+
+Only the colours move; every size, space and shape is the same screen, so
+a layout that is right in one theme is right in the other.
+
+Two things deliberately stay light even inside the console:
 - **The post mockups** (`.mk-*`, `.fb-*`, `.ig-*`, `.xhs-*` and the
   `.card-stage` they sit on) reproduce each platform's own UI. Instagram's
   feed is white; a dark one would stop being a preview of what the
@@ -98,9 +113,12 @@ Two things deliberately stay light in both themes:
   and it is not ours to invert. The ADspace wordmark is one flat colour
   on transparent, so that one *is* inverted rather than shipped twice.
 
-`uxaudit` walks every page and state in **both themes at both widths**.
-Contrast is the rule most easily broken by a colour written into a rule,
-and a theme nobody audits is a theme that quietly fails AA.
+`uxaudit` walks the console in **both themes at both widths**, turning
+dark on the way a person does (the stored preference, read by the page's
+own head script). The client pages are walked in light only, because they
+have no other state; walking them twice would measure the same theme
+twice. Contrast is the rule most easily broken by a colour written into a
+rule, and a theme nobody audits is a theme that quietly fails AA.
 
 ### Shape and size tokens
 
@@ -143,8 +161,22 @@ CONFIDENTIAL, the subject, ADSPACE PLT) in Slate Regular
 (`ADSPACE_ORG.fontBold` = `/css/SlateRg.TTF`; no Medium file exists),
 registration 9pt, table 10pt, notes 8.5pt, page count 7.5pt. Margins 54pt.
 The monogram (`/css/adspace-mark.png`) sits 21pt tall top right and 20pt
-bottom centre. No Company Profile QR on a letter. The web UI stays on the system stack. Config holds file
+bottom centre. No Company Profile QR on a letter. Config holds file
 paths, never font names.
+
+**On screen, one brand face, on the display sizes only.** Slate Regular
+is already in the repo for the letter, so the portal and the paper it
+prints share a voice without a second asset or a webfont service:
+`@font-face { font-family: "ADspace Slate" }` served as
+`/css/SlateRg.woff2` (38KB against the TTF's 110KB; the TTF stays because
+pdf-lib fetches it, and doubles as the fallback), `font-display: swap`.
+It is applied through `--font-head` to `.viewhead h2`, `.crm-title h2`,
+`.cover-panel h2`, `.camphead h1` and `.batch-title` and nowhere else:
+body, labels, controls and chips stay on the system stack, where a hinted
+system face beats a downloaded one at 12px and needs no download to be
+legible at all. Chinese has no Slate, so a `zh` heading falls through the
+same stack to the system face at the same size. Optima is the letterhead
+wordmark and stays out of the portal.
 
 A service is quoted by the month, never sold by the piece, so the lines
 table is **Description, Rate, Amount** and nothing else. Quantity rides

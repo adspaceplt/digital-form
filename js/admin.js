@@ -89,6 +89,24 @@
     if (e.key === 'Enter') $('authSend').click();
   });
 
+  /* Dark is the console's and this browser's: chosen here, remembered here,
+     and never taken from the system. The head script has already applied it
+     before first paint; this only flips it and writes the choice down. The
+     button names the theme it switches to, as a light switch does. */
+  function paintTheme() {
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    $('themeWord').textContent = dark ? 'Light' : 'Dark';
+    $('themeToggle').setAttribute('aria-pressed', String(dark));
+  }
+  $('themeToggle').addEventListener('click', function () {
+    var dark = document.documentElement.getAttribute('data-theme') !== 'dark';
+    if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.removeAttribute('data-theme');
+    try { localStorage.setItem('adspace-theme', dark ? 'dark' : 'light'); } catch (e) {}
+    paintTheme();
+  });
+  paintTheme();
+
   $('signOut').addEventListener('click', function () {
     db.auth.signOut().then(function () { location.reload(); });
   });
