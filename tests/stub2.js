@@ -26,7 +26,7 @@
       { slug:'static-graphic', category:'Content', name:'Static graphic', rate:360, unit:'Per post', position:10, active:true },
       { slug:'reels-60', category:'Content', name:'Reels, up to 60 seconds', rate:800, unit:'Per video', position:14, active:true },
       { slug:'pkg-b', category:'Monthly packages', name:'Package B · 2 platforms · 4 contents', rate:2830, unit:'Per month, 6 month minimum', position:41, active:true,
-        min_months:6, detail:'Instagram and Facebook\n4 contents each month\nMonthly performance report' },
+        min_months:6, detail:'Up to 2 platforms\n4 contents each month: 1 graphic and 3 reels up to 60s, or 4 reels up to 60s\nDedicated account management and content posting\nStrategic content planning for every deliverable\nProfessional copywriting for every planned deliverable\nOne-time on-site shoot for Reels content\nBasic accounts analytics report' },
       { slug:'koc-10', category:'KOC programmes', name:'KOC package · 10 creators', rate:4500, unit:'Per campaign', position:50, active:true },
       { slug:'koc-custom', category:'KOC programmes', name:'KOC custom list', rate:null, unit:'Costed list per creator', position:53, active:true }],
     client_services: [], client_documents: [], client_requests: [],

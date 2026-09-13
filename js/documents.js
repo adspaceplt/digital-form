@@ -33,7 +33,6 @@
     offer: { prefix: 'AQT/INT/', title: 'Letter of Offer', word: 'Reference', per: 'month', validDays: 30 }
   };
   KIND.intent = KIND.cover = KIND.offer;   // rows issued before the rename
-  var STATE_WORD = { enquired: 'Enquired', quoted: 'Quoted', confirmed: 'Confirmed' };
 
   function pad(n) { return String(n).padStart(2, '0'); }
   function yymm(d) { return String(d.getFullYear()).slice(2) + pad(d.getMonth() + 1); }
@@ -107,7 +106,7 @@
     // The offer carries the quoted lines only: enquired lines are not yet
     // priced for the client and confirmed lines are already past this step.
     var use = (lines || []).filter(function (l) { return !l.archived_at && l.state === 'quoted'; });
-    if (!use.length) { then({ error: 'No quoted lines.' }); return; }
+    if (!use.length) { then({ error: 'No lines to quote.' }); return; }
     deal = deal || {};
     var taxOn = client.sst_applies !== false;
     // The stored figures are the whole commitment, which is what the record
@@ -402,15 +401,23 @@
 
       para('Kindly confirm your acceptance by signing below and returning a copy of this letter to us.');
 
-      // Closing, as the reference signs off: the sales person's name under the company.
-      need(100);
+      /* Closing, as the reference signs off: the sales person's name under the
+         company. The closing and the acceptance block are reserved together,
+         because they are one thing: a signature page carrying nothing but a
+         stamp box is what the client is being asked to sign, and it has to
+         stay attached to the words it accepts. Reserving only the closing put
+         the two on separate pages as soon as the services carried their full
+         inclusions. */
+      var closeH = LH * (doc.issued_by ? 3 : 2) + 16;
+      var acceptH = 32 + 30 + 14 + 11;
+      need(closeH + acceptH);
       text('Yours sincerely,', M, y, BODY); y -= LH;
       text(ORG.name || 'ADSPACE PLT', M, y, BODY, bold); y -= LH;
       if (doc.issued_by) { text(doc.issued_by, M, y, BODY); y -= LH; }
       y -= 16;
 
-      // Acceptance: the client signs this copy, on one page with the closing.
-      if ((H - y) + 100 > H - 55) { newPage(); head(); }
+      // Reserved with the closing above, so this never starts a page on its own.
+
       text('Confirmed and accepted for and on behalf of ' + (b.legal_name || b.name || '').toUpperCase(), M, y, BODY, bold); y -= 32;
       var half = (R - M - 24) / 2;
       [['Signature and company stamp', M], ['Name', M + half + 24]].forEach(function (f) { rule(y, f[1], f[1] + half); text(f[0], f[1], y - 11, 8.5, font, mute); });

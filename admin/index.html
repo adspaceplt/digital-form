@@ -13,7 +13,7 @@
      CDN rather than the website builder's, so a site rebuild cannot break it. -->
 <link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
 <link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
-<link rel="stylesheet" href="/css/portal.css?v=20260913g">
+<link rel="stylesheet" href="/css/portal.css?v=20260913i">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
@@ -21,16 +21,16 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260913g"></script>
-<script src="/js/api.js?v=20260913g"></script>
-<script src="/js/money.js?v=20260913g"></script>
-<script src="/js/mockups.js?v=20260913g"></script>
+<script src="/js/config.js?v=20260913i"></script>
+<script src="/js/api.js?v=20260913i"></script>
+<script src="/js/money.js?v=20260913i"></script>
+<script src="/js/mockups.js?v=20260913i"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260913g" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260913i" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -134,7 +134,7 @@
           <select class="select" id="crmStage" aria-label="Filter by stage">
             <option value="all">Every stage</option>
           </select>
-          <select class="select" id="crmOwner" aria-label="Filter by owner">
+          <select class="select" id="crmOwner" aria-label="Filter by person in charge">
             <option value="all">Everyone</option>
           </select>
           <span class="count" id="crmCount"></span>
@@ -152,9 +152,8 @@
           <div class="row" style="margin-top:12px">
             <div style="flex:0 0 200px"><label class="field-label" for="crmIndustry">Industry</label>
               <select class="select" id="crmIndustry"></select></div>
-            <div style="flex:0 0 180px"><label class="field-label" for="crmOwnerPick">Owner</label>
-              <input class="input" id="crmOwnerPick" list="crmTeamList" placeholder="Name">
-              <datalist id="crmTeamList"></datalist></div>
+            <div style="flex:0 0 180px"><label class="field-label" for="crmOwnerPick">Person in charge</label>
+              <select class="select" id="crmOwnerPick"></select></div>
             <div style="flex:0 0 160px"><label class="field-label" for="crmMarket">Market</label>
               <select class="select" id="crmMarket">
                 <option value="MY">Malaysia · RM</option>
@@ -727,7 +726,7 @@
                 <option value="graphic">Graphic</option>
               </select></div>
             <div><label class="field-label" for="campOwner">Person in charge</label>
-              <input class="input" id="campOwner" placeholder="Name"></div>
+              <select class="select" id="campOwner"></select></div>
           </div>
           <div class="row" style="margin-top:16px">
             <button class="btn btn-primary" id="addCamp" type="button">Create</button>
@@ -1149,10 +1148,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260913g"></script>
-<script src="/js/documents.js?v=20260913g"></script>
-<script src="/js/crm.js?v=20260913g"></script>
-<script src="/js/team.js?v=20260913g"></script>
-<script src="/js/campaigns.js?v=20260913g"></script>
+<script src="/js/admin.js?v=20260913i"></script>
+<script src="/js/documents.js?v=20260913i"></script>
+<script src="/js/crm.js?v=20260913i"></script>
+<script src="/js/team.js?v=20260913i"></script>
+<script src="/js/campaigns.js?v=20260913i"></script>
 </body>
 </html>

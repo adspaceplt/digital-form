@@ -131,7 +131,7 @@
     return null;
   }
 
-  var state = { tab: 'campaigns', campaign: null, creators: [], clients: [], options: [], editing: null };
+  var state = { tab: 'campaigns', campaign: null, creators: [], clients: [], options: [], team: [], editing: null };
 
   // ---- Tabs ---------------------------------------------------------------
   function showTab(name) {
@@ -413,7 +413,32 @@
   /* Only an active client can be proposed to, and the list of those is the
      CRM's. A campaign never creates a company; if the client is not on this
      list, they are not active yet and the CRM says why. */
+  /* The same list, the same rule, as the client record's Person in charge: the
+     team is chosen from, never typed, and a name already on a campaign that has
+     since left the team stays as its own option rather than being cleared by
+     the next save. */
+  function peopleSelect(el, team, current) {
+    if (!el) return;
+    var keep = current != null ? current : el.value;
+    var names = team.map(function (m) { return m.name; });
+    if (keep && names.indexOf(keep) < 0) names.push(keep);
+    el.innerHTML = '<option value="">Unassigned</option>' +
+      names.map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
+    el.value = keep || '';
+  }
+
+  function loadTeam(then) {
+    db.from('team_members').select('name').eq('active', true).order('name').then(function (r) {
+      state.team = (r.data) || [];
+      if (then) then();
+    }, function () { if (then) then(); });
+  }
+
   function loadClients(then) {
+    // The form needs both lists, and the team is small, so they travel together
+    // rather than leaving four call sites to remember the second one.
+    var inner = then;
+    then = function () { loadTeam(inner); };
     db.from('clients').select('id, name, market').eq('stage', 'active').order('name')
       .then(function (r) {
         state.clients = (r.data) || [];
@@ -529,7 +554,7 @@
     $('campDeadline').value = c ? (c.deadline || '') : '';
     $('campFormat').value = c ? (c.push_format || 'site_visit') : 'site_visit';
     $('campDeliverable').value = c ? (c.deliverable || 'video') : 'video';
-    $('campOwner').value = c ? (c.owner || '') : '';
+    peopleSelect($('campOwner'), state.team, c ? (c.owner || '') : '');
     msg('campMsg', '');
     $('addCampBox').hidden = false;
     if (!restoring) campDraft.note({ editing: c ? c.id : null });

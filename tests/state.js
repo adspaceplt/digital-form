@@ -60,7 +60,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.creators.length > 3) retur
   await p.fill('#campPurpose', 'Bring footfall back after the refit');
   await p.fill('#campSlots', '8');
   await p.selectOption('#campFormat', 'seeding');
-  await p.fill('#campOwner', 'Qiao Rou');
+  await p.selectOption('#campOwner', 'Qiao Rou');
   await p.waitForTimeout(200);
   await reload();
   say('form open=' + await p.locator('#addCampBox').isVisible() + ' | title=' + await p.locator('#campFormTitle').innerText() +

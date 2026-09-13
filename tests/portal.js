@@ -83,7 +83,7 @@ const SEED = `
   check('confirmed and quoted lines shown, the enquiry kept back',
     await p.locator('#svcBox .csv-row:not(.crm-head)').count() === 2 && !svc.includes('Launch video'));
   check('the term and the amount', svc.includes('6 months from 12 Oct 2026') && svc.includes('RM 16,980.00'));
-  check('the totals', svc.includes('Quoted') && svc.includes('RM 4,500.00') && svc.includes('Confirmed'));
+  check('the totals', svc.includes('To quote') && svc.includes('RM 4,500.00') && svc.includes('Confirmed'));
   check('a chip, not a select, for a state the client only reads', await p.locator('#svcBox select').count() === 0 &&
     await p.locator('#svcBox .chip-state').count() === 2);
   check('the confirmed line offers a change; the quoted one does not', await p.locator('#svcBox .kmenu-btn').count() === 1);
