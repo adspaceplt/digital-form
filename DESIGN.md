@@ -41,7 +41,7 @@ palette can never be bought with legibility.
 | `--page` | `#f5f5f5` | `#161814` | The ground. ADspace's own off white, the one paired with `#1a1a1a` on the website: a brand value, not a tuned one, and never "corrected" back to a warm grey |
 | `--card` | `#ffffff` | `#1e201d` | Panels, tables, rows |
 | `--sunk` | `#f9f9f9` | `#272727` | Inset areas, table sub-headings, hover |
-| `--fill` / `--on-fill` | `#1b1a17` / `#ffffff` | `#eff0ea` / `#191b17` | The solid ink surface and its text: primary button, selected `.acttab`, progress, the Undo bar |
+| `--fill` / `--on-fill` | `#1b1a17` / `#ffffff` | `#eff0ea` / `#191b17` | The solid ink surface and its text: primary button, selected `.acttab`, progress. **Not the Undo bar**: a full width ink slab a few pixels above an ink Add contact read as one enormous call to action, and the fill is what names the primary action |
 | `--accent` = `--ok` | `#1f7a4d` | `#4aa876` | The one green: go action, live state, complete ring |
 | `--ok-bg` | `#ecf5f0` | `#17281f` | Its tint |
 | `--ok-solid` / `--on-ok` | `#1f7a4d` / `#ffffff` | `#4aa876` / `#07150e` | A green **fill** and its text |
@@ -297,7 +297,7 @@ measures the table whenever its header is not on screen (`padding`).
 | Optional detail | `.panel.panel-collapse` > `.disclosure` (title, summary right) + `.disclosure-body` |
 | Full-page state | `.cover` > `.cover-inner` > `.cover-panel`, centred, title then one line, `body.is-plain`, footer on the floor. **The line never restates the title**: the title says what happened, the line says what to do about it ("Selection closed" / "Please contact your ADspace account manager for any changes.", not "Selection is closed. Please contact…"). Both languages, every cover |
 | Modal | `.sheet` > `.sheet-card`, from the bottom on a phone, fixed height when it filters |
-| Undo | `.undobar` with one `Undo` button, eight seconds. The button is **outlined on the fill**, never a filled slab: a way back is not the next thing to do, and a white block on a black bar reads as the page's primary action and pulls the eye off the work still in front of the person. It fills in on hover, where a press is being considered |
+| Undo | `.undobar` with one `Undo` button, eight seconds. A **quiet strip**: `--sunk` ground, a `--line` hairline, ordinary ink text, the ordinary outline `.btn-sm`. Never the ink fill: something was undone and there is a way back is a message, not the next thing to do, and a black bar the width of the page sitting above a black primary button reads as one enormous call to action whatever the button inside it looks like |
 | Message | `.msg` (`ok`, `warn`, `err`) as one line under the control, never a card |
 | Empty list | `.empty` with two words ("No entries.", "No links.", "No matches.", "Access not assigned."); never "yet", never a sentence |
 | Links to reach a person | `.plink` chips (phone, WhatsApp, email); equal widths on a phone |
@@ -342,6 +342,23 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   link or contact your ADspace account manager."; "Access code / Enter
   the access code provided."; "Unable to load / Please refresh…"; the
   Chinese set mirrors it.
+- **Granting access is all the team should have to do.** Sign-ups are closed on
+  the project, so a client whose auth login was never made is refused at the
+  door in Supabase's own words. Making that login at the moment access is
+  granted put the whole thing on one console call that nobody could see fail,
+  and a client hit a wall days later. `/client/` asks `portal-login` first: it
+  makes the login for an address that is a live contact with `portal_access`
+  and refuses every other one, which is what keeps a page anyone can open from
+  minting accounts, and it emails nothing, so the client gets the ordinary
+  sign-in link and no invitation they did not expect. A flat refusal is the
+  only answer the page acts on; anything else, the function not being deployed
+  included, falls through to Supabase rather than locking everybody out over a
+  call that was only ever a convenience.
+- **A person can be a contact at more than one client.** Access is a switch on
+  a contact, so one address holds it at as many clients as it is listed on:
+  `portal_clients()` returns every one, `get_portal` sends the list, and the
+  page shows a company select when there is more than one. A group of
+  companies under different registered names is one login and one page.
 - **A database's own words never reach a client.** The console shows the
   message a save failed with, because the person reading it can act on it; a
   client page shows ours. Supabase answers a sign-in for an address with no

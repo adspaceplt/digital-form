@@ -225,19 +225,10 @@
     return /signup|sign up|not allowed|not found|no user|invalid/i.test(m) ? t().signNoUser : t().signFail;
   }
 
-  function sendLink() {
-    var email = ($('signEmail').value || '').trim().toLowerCase();
-    if (!email) { msg('stateMsg', t().emailNeeded, 'err'); $('signEmail').focus(); return; }
-    $('signGo').disabled = true;
-    /* The login is made by the console when access is granted, never here:
-       a page anyone can open must not be able to create an account, so
-       shouldCreateUser is off and sign-ups stay closed on the project.
-
-       Supabase's own words for that refusal ("Signups not allowed for this
-       instance") are an internal message in the wrong register on a page a
-       client reads, and they name a cause the client can do nothing with, so
-       nothing the database says reaches this screen. What the client is told
-       is what to do next. */
+  function otp(email) {
+    /* Sign-ups are closed on the project and this page never makes an account
+       of its own, so the link is only ever sent to a login that exists. The
+       one before it is what puts it there. */
     db.auth.signInWithOtp({ email: email, options: {
       shouldCreateUser: false, emailRedirectTo: location.origin + '/client/' } })
       .then(function (r) {
@@ -245,6 +236,31 @@
         if (r.error) { msg('stateMsg', signWord(r.error), 'err'); return; }
         showState('sent', email);
       }, function (e) { $('signGo').disabled = false; msg('stateMsg', signWord(e), 'err'); });
+  }
+
+  function sendLink() {
+    var email = ($('signEmail').value || '').trim().toLowerCase();
+    if (!email) { msg('stateMsg', t().emailNeeded, 'err'); $('signEmail').focus(); return; }
+    $('signGo').disabled = true;
+    /* Granting access is all the team should have to do, so the login is made
+       here, on the way in, rather than depending on a call the console made
+       days ago and may have lost. portal-login refuses every address that is
+       not a live contact with portal access, which is what keeps a page
+       anyone can open from minting accounts; it emails nothing, so the client
+       gets the ordinary sign-in link and no invitation they did not expect.
+
+       A flat refusal is the one answer we act on. Anything else, including
+       the function not being deployed at all, falls through to Supabase:
+       better to let the sign-in speak for itself than to lock everybody out
+       over a call that was only ever a convenience. */
+    API.invokeFn('portal-login', { email: email }).then(function (res) {
+      if (res && res.data && res.data.ok === false) {
+        $('signGo').disabled = false;
+        msg('stateMsg', t().signNoUser, 'err');
+        return;
+      }
+      otp(email);
+    }, function () { otp(email); });
   }
   $('signGo').addEventListener('click', sendLink);
   $('signForm').addEventListener('submit', sendLink);

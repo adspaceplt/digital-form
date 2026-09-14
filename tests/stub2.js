@@ -346,6 +346,15 @@
     return { from: builder, rpc: rpc,
       functions: { invoke: function (name, opts) {
         window.__signed = (window.__signed || []).concat([{ name: name, body: opts && opts.body }]);
+        if (name === 'portal-login') {
+          // Only an address the team has marked for portal access gets a login.
+          var e = String((opts && opts.body && opts.body.email) || '').toLowerCase();
+          var ok = (DB.client_contacts || []).some(function (c) {
+            return c.portal_access && !c.archived_at && String(c.email || '').toLowerCase() === e;
+          });
+          if (ok) window.__logins = (window.__logins || []).concat([e]);
+          return Promise.resolve({ data: { ok: ok }, error: null });
+        }
         if (name === 'invite-member') {
           // The real client hides the function's answer behind a generic
           // message; the body is on error.context, as it is here.
@@ -366,7 +375,9 @@
          those, so the page has to be given one to map. */
       signInWithOtp: function (o) {
         var e = String((o && o.email) || '');
-        if (/^nologin/.test(e)) return Promise.resolve({ error: { message: 'Signups not allowed for this instance' } });
+        if (/^nologin/.test(e) && (window.__logins || []).indexOf(e.toLowerCase()) < 0) {
+          return Promise.resolve({ error: { message: 'Signups not allowed for this instance' } });
+        }
         window.__otp = (window.__otp || []).concat([o]);
         return Promise.resolve({ error: null });
       },
