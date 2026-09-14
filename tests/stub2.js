@@ -1,8 +1,14 @@
 /* Supabase stand-in with just enough query builder + the campaign RPCs. */
 (function () {
   var DB = {
-    clients: [{ id: 'c1', slug: 'laman-citra', name: 'Laman Citra', logo_url: null, stage: 'active', market: 'MY', owner: 'Qiao Rou', industry: 'Property', sst_applies: true, review_hidden: false, legal_name:'LAMAN CITRA SDN BHD', company_no:'202201012345', company_no_old:'1234567-A', tin:'C 123', sst_no:'W10-1', bill_contact:'Mr Lim', bill_contact_email:'lim@lc.com', bill_contact_phone:'0123', finance_email:'acc@lc.com', billing_address:'JB' },
-              { id: 'c2', slug: 'furiku-matcha', name: 'Furiku Matcha', logo_url: null, stage: 'proposal', market: 'SG', owner: 'Aisyah', industry: 'F&B', sst_applies: true }],
+    clients: [{ id: 'c1', slug: 'laman-citra', name: 'Laman Citra', logo_url: null, stage: 'active',
+                stage_since: new Date(Date.now() - 12 * 864e5).toISOString(),
+                stage_log: [{ stage:'lead', at: new Date(Date.now() - 40 * 864e5).toISOString() },
+                            { stage:'contacted', at: new Date(Date.now() - 38 * 864e5).toISOString() },
+                            { stage:'proposal', at: new Date(Date.now() - 29 * 864e5).toISOString() },
+                            { stage:'active', at: new Date(Date.now() - 12 * 864e5).toISOString() }], market: 'MY', owner: 'Qiao Rou', industry: 'Property', sst_applies: true, review_hidden: false, legal_name:'LAMAN CITRA SDN BHD', company_no:'202201012345', company_no_old:'1234567-A', tin:'C 123', sst_no:'W10-1', bill_contact:'Mr Lim', bill_contact_email:'lim@lc.com', bill_contact_phone:'0123', finance_email:'acc@lc.com', billing_address:'JB' },
+              { id: 'c2', slug: 'furiku-matcha', name: 'Furiku Matcha', logo_url: null, stage: 'proposal',
+                stage_since: new Date(Date.now() - 3 * 864e5).toISOString(), market: 'SG', owner: 'Aisyah', industry: 'F&B', sst_applies: true }],
     creators: [
       { id: 'k1', name: '香香的爆米花 🍿', followers: 12400, cost_rate: 280, client_rate: 360, industries: 'lifestyle' },
       { id: 'k2', name: '恩比', followers: 8100, cost_rate: 300, client_rate: 360, industries: 'F&B' },
@@ -60,6 +66,17 @@
     return p + 'x' + seq;
   }
 
+  /* The clients_stage_clock trigger, in the stand-in: only a real move
+     restarts the clock, and the history is appended where the move happens.
+     Without it a test would measure the page rather than the behaviour. */
+  function stageClock(table, row, patch) {
+    if (table !== 'clients' || !patch || !('stage' in patch)) return;
+    if (patch.stage === row.stage) return;
+    var now = new Date().toISOString();
+    patch.stage_since = now;
+    patch.stage_log = (row.stage_log || []).concat([{ stage: patch.stage, at: now }]);
+  }
+
   function hydrate(table, rows, sel) {
     sel = sel || '';
     return rows.map(function (r) {
@@ -107,7 +124,11 @@
         DB[table] = DB[table].filter(function (r) { return String(r[f]) !== String(v); });
         rows = [];
       } else if (mode === 'update') {
-        DB[table].forEach(function (r) { if (String(r[f]) === String(v)) Object.assign(r, pending); });
+        DB[table].forEach(function (r) {
+          if (String(r[f]) !== String(v)) return;
+          stageClock(table, r, pending);
+          Object.assign(r, pending);
+        });
         rows = DB[table].filter(function (r) { return String(r[f]) === String(v); });
       } else {
         rows = rows.filter(function (r) { return String(r[f]) === String(v); });
@@ -122,6 +143,11 @@
         x.id = x.id || nid(table[0]);
         // The real database stamps this by default.
         if (!x.created_at) x.created_at = new Date().toISOString();
+        if (table === 'clients') {
+          x.stage = x.stage || 'lead';
+          x.stage_since = x.stage_since || x.created_at;
+          x.stage_log = x.stage_log || [{ stage: x.stage, at: x.stage_since }];
+        }
         if (table === 'creator_profiles' && x.handle) {
           var clash = DB.creator_profiles.some(function (p) {
             return p.handle && p.platform === x.platform &&

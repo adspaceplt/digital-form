@@ -515,6 +515,7 @@
     'client.removed':        ['Client removed', 'is-danger', 'review'],
     'review.removed':        ['Removed from Content Review', 'is-danger', 'review'],
     'client.edited':         ['Client edited', '', 'clients'],
+    'client.stage':          ['Stage moved', '', 'clients'],
     'client.billing':        ['Billing details saved', '', 'clients'],
     'client.brand':          ['Brand profile saved', '', 'clients'],
     'client.service':        ['Service line added', 'is-ok', 'clients'],

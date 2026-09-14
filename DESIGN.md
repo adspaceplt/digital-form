@@ -441,6 +441,28 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   shows a page. `clientByKey()` asks the column the key's shape implies,
   because Postgres refuses a non-UUID against a uuid column; a UUID in a
   link shared before slugs existed still resolves.
+- **A stage carries a clock.** Speed to first contact is the number that
+  moves conversion and a deal stalls in a stage, so `clients.stage_since`
+  and `clients.stage_log` are stamped by the `clients_stage_clock`
+  trigger, never by a page: a value derived from a change belongs with
+  the change, and four call sites that each have to remember to stamp it
+  are three chances to forget. Only a real move restarts the clock, so
+  saving a record without touching its stage cannot make a stalled lead
+  look freshly worked. After a move the row is read back
+  (`refreshClient`), because a timestamp guessed in the browser is one
+  that disagrees with every other screen.
+
+  The **working number** (time in the current stage) sits with the stage
+  it times: a mute line under the chip in the Clients list, which is
+  where someone scans for who has gone cold, and costs no column the
+  phone has nowhere to put. The **retrospective** (Lead 2 days ·
+  Contacted 9 days · Proposal sent 17 days · Active 12 days so far) is
+  one mute line under the facts on the record, reading left to right as
+  the journey. Durations are in the units a sales cycle is discussed in:
+  Today, N days, then months once the exact day has stopped mattering.
+  A stage move is its own activity tag (`client.stage`), not the generic
+  `client.edited`, because the activity record can only show a history
+  it was told about.
 - Data: PDPA 2010 (MY) and PDPA 2012 (SG): collect what the page needs,
   a client sees only its own data, soft remove before hard delete.
 - Numbering: Letter of Offer `AQT/INT/YYMMXXX` (per month); campaign

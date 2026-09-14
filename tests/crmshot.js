@@ -6,6 +6,14 @@ const SEED = `(function(){ var D = window.__DB; if (D.clients.length > 2) return
     D.clients.push({ id:'cs'+i, slug:n.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''), name:n, stage:['active','proposal','lead','active','past'][i],
       market: i===2 ? 'SG':'MY', owner:['Qiao Rou','Aisyah','Qiao Rou','Aisyah','Qiao Rou'][i],
       industry:['Retail','Automotive','Lifestyle','Retail','Property'][i], sst_applies:true,
+      // Every row carries the clock, as the trigger and its backfill guarantee
+      // in the database: a fixture with some rows timed and some not would put
+      // uneven row heights into a screenshot that cannot happen in production.
+      stage_since: new Date(Date.now() - [46, 9, 2, 128, 400][i] * 864e5).toISOString(),
+      stage_log: [{ stage:'lead',      at: new Date(Date.now() - [74, 23, 2, 190, 520][i] * 864e5).toISOString() },
+                  { stage:'contacted', at: new Date(Date.now() - [70, 18, 2, 180, 500][i] * 864e5).toISOString() },
+                  { stage:['active','proposal','lead','active','past'][i],
+                    at: new Date(Date.now() - [46, 9, 2, 128, 400][i] * 864e5).toISOString() }],
       access_token:'t'+i });
   });
   D.client_contacts.push({ id:'k1', client_id:'c1', name:'Mr Lim', role:'Marketing Manager',
