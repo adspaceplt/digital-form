@@ -45,7 +45,7 @@
       signFail: 'The link could not be sent. Please try again, or contact your ADspace account manager.',
       failTitle: 'Unable to load', failText: 'Please refresh, or contact your ADspace account manager.',
       overview: 'Overview', requestChange: 'Request change', services: 'Services', requests: 'Requests', letters: 'Letters',
-      engagements: 'Engagements', payment: 'Payment', account: 'Account',
+      engagements: 'Engagements', payment: 'Payment', account: 'Portal access',
       legalName: 'Registered name', regNo: 'Registration no.', address: 'Billing address', market: 'Market',
       manager: 'Account manager', status: 'Status', notSet: 'Not set',
       my: 'Malaysia', sg: 'Singapore',
@@ -62,7 +62,8 @@
       document: 'Document', total: 'Total', issued: 'Issued', download: 'Download', noLetters: 'No letters.', offer: 'Letter of Offer',
       review: 'Content Review', open: 'Open', campaign: 'Creator campaign',
       campState: { open: 'Open', production: 'In production', completed: 'Completed' },
-      bank: 'Bank', reference: 'Payment reference', person: 'Person', email: 'Email', noAccessRows: 'No entries.',
+      bank: 'Bank', reference: 'Payment reference', person: 'Person', email: 'Email',
+      signInEmail: 'Sign-in email', noAccessRows: 'No entries.',
       reqTitle: function (k) { return T.en[k]; }, line: 'Service', note: 'Note', noteFor: { upgrade: 'What to change to', downgrade: 'What to change to', cancel: 'Reason (optional)', details: 'What to change' },
       send: 'Send request', close: 'Cancel', sent: 'Sent.', noteNeeded: 'A note is required.', company: 'Company'
     },
@@ -75,7 +76,7 @@
       signFail: '链接发送失败，请重试，或联系您的 ADspace 客户经理。',
       failTitle: '无法加载', failText: '请刷新页面，或联系您的 ADspace 客户经理。',
       overview: '公司概览', requestChange: '申请修改', services: '服务', requests: '申请', letters: '函件',
-      engagements: '进行中的项目', payment: '付款', account: '账户',
+      engagements: '进行中的项目', payment: '付款', account: '平台访问权限',
       legalName: '注册名称', regNo: '注册号码', address: '账单地址', market: '市场',
       manager: '客户经理', status: '状态', notSet: '未填写',
       my: '马来西亚', sg: '新加坡',
@@ -92,7 +93,8 @@
       document: '文件', total: '总额', issued: '已签发', download: '下载', noLetters: '暂无函件。', offer: '报价函',
       review: '内容审阅', open: '打开', campaign: '博主推广',
       campState: { open: '进行中', production: '制作中', completed: '已完成' },
-      bank: '银行', reference: '付款备注', person: '姓名', email: '电子邮箱', noAccessRows: '暂无记录。',
+      bank: '银行', reference: '付款备注', person: '姓名', email: '电子邮箱',
+      signInEmail: '登录邮箱', noAccessRows: '暂无记录。',
       reqTitle: function (k) { return T.zh[k]; }, line: '服务', note: '备注', noteFor: { upgrade: '希望更改为', downgrade: '希望更改为', cancel: '原因（可选）', details: '需要修改的内容' },
       send: '提交申请', close: '取消', sent: '已提交。', noteNeeded: '请填写备注。', company: '公司'
     }
@@ -465,12 +467,15 @@
         .map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('');
     }
 
-    // Account: who can sign in. Managed by ADspace.
+    /* Who can sign in, named for that. Headed "Account" it read as the
+       viewer's own settings and left them wondering why it was on the page;
+       the heading and the column are what say the section is about their
+       colleagues' access, so no line underneath has to explain it. */
     var abox = $('accBox');
     var acc = feed.access || [];
     if (!acc.length) empty(abox, w.noAccessRows);
     else {
-      var atb = table('<div class="crm-head svc-row ct-row"><span>' + esc(w.person) + '</span><span>' + esc(w.email) + '</span><span></span></div>');
+      var atb = table('<div class="crm-head svc-row ct-row"><span>' + esc(w.person) + '</span><span>' + esc(w.signInEmail) + '</span><span></span></div>');
       acc.forEach(function (a) {
         var row = document.createElement('div');
         row.className = 'svc-row ct-row';
