@@ -835,35 +835,13 @@
       menu.hidden = !open;
       this.setAttribute('aria-expanded', String(open));
       if (open && btn.closest('.team-act')) {
-        var r = btn.getBoundingClientRect(), mh = menu.offsetHeight;
-        menu.style.position = 'fixed';
-        menu.style.right = 'auto';
-        menu.style.left = Math.max(8, r.right - menu.offsetWidth) + 'px';
-        /* Upwards where the room is above: a ⋯ on the last row used to open
-           past the bottom of the window, which is nowhere a phone can reach. */
-        menu.style.top = (r.bottom + 4 + mh <= window.innerHeight - 8 || r.top - 4 - mh < 8)
-          ? (r.bottom + 4) + 'px' : (r.top - 4 - mh) + 'px';
-        held = { btn: btn, top: r.top };
+        window.ADspaceMenu.place(btn, menu);
       }
     });
   }
-  /* Clicking a ⋯ focuses it, and the browser scrolls whatever it has to in
-     order to reveal the focused button. That scroll arrives a frame after the
-     menu opened and used to close it again, so on a phone the ⋯ on the bottom
-     rows could not be opened at all. A scroll that has not moved the button the
-     menu is hanging off is that one, and is no reason to close anything; one
-     that has moved it has carried the menu away from its row, which is. */
-  var held = null;
-  function scrolledAway() {
-    if (!held) return true;
-    if (Math.abs(held.btn.getBoundingClientRect().top - held.top) < 2) return false;
-    held = null;
-    return true;
-  }
-  window.addEventListener('scroll', function () {
-    if (!scrolledAway()) return;
+  window.ADspaceMenu.onScroll(function () {
     Array.prototype.forEach.call(document.querySelectorAll('.team-act .kmenu'), function (m) { m.hidden = true; });
-  }, true);
+  });
 
   var editingContact = null;
   function openContact(ct) {
@@ -1633,7 +1611,7 @@
       sec.className = 'crm-group';
       sec.innerHTML = '<div class="crm-group-head"><h3>' + esc(t[0]) + ' <span>' + n + '</span></h3></div>' +
         '<div class="crm-table"><div class="crm-head svc-row cat-row"><span>Service</span><span class="svc-rate">Rate</span>' +
-        '<span>Unit</span><span>State</span><span></span></div></div>';
+        '<span>Unit</span><span></span></div></div>';
       var table = sec.querySelector('.crm-table');
       cats.forEach(function (k) {
         var cat = document.createElement('div');
@@ -1648,26 +1626,28 @@
   function catalogRow(s) {
     var row = document.createElement('div');
     row.className = 'svc-row' + (s.active === false ? ' is-off' : '');
+    var off = s.active === false;
+    /* Nearly every line on the card is active, so a green Active on every row
+       spent the one accent on the ordinary case and buried the price under a
+       control taller than it. The row is the name and what it costs; Inactive
+       is the exception, so that is what gets named. */
     row.innerHTML =
-      '<span class="svc-name"><b>' + esc(s.name) + '</b>' + (s.note ? '<small>' + esc(s.note) + '</small>' : '') + '</span>' +
+      '<span class="svc-name"><b>' + esc(s.name) + (off ? ' <span class="tone">Inactive</span>' : '') + '</b>' +
+        (s.note ? '<small>' + esc(s.note) + '</small>' : '') + '</span>' +
       '<span class="svc-rate">' + (s.rate != null ? esc(MON.money2(s.rate, 'MY')) : '<span class="muted">On quote</span>') + '</span>' +
       '<span class="svc-unit">' + esc(s.unit || '') + '</span>' +
-      '<span class="svc-state">' + (isAdmin()
-        ? '<select class="select select-sm state-select ' +(s.active === false ? 'is-off' : 'is-ok') + '" data-f="active" aria-label="State">' +
-            '<option value="on"' + (s.active === false ? '' : ' selected') + '>Active</option>' +
-            '<option value="off"' + (s.active === false ? ' selected' : '') + '>Inactive</option></select>'
-        : (s.active === false ? '<span class="tone">Inactive</span>' : '')) + '</span>' +
       '<span class="team-act">' + (isAdmin()
         ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
             '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
+            // Taking a line off the card is a decision of the year, not a select.
+            '<button class="kmenu-item" data-a="state" type="button"><b>' +
+              (off ? 'Set active' : 'Set inactive') + '</b></button>' +
             /* Inactive first, then gone, as it is for a letter and a contact:
                a line is taken off the card before it can be taken out of it.
                No data-soft, so body.no-remove holds it back from a group that
                does not carry can_remove. */
-            (s.active === false
-              ? '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete permanently</b></button>'
-              : '') +
+            (off ? '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete permanently</b></button>' : '') +
           '</div>'
         : '') + '</span>';
     row.classList.add('cat-row');
@@ -1676,9 +1656,9 @@
       row.querySelector('[data-a="edit"]').addEventListener('click', function () { openSvc(s); });
       var del = row.querySelector('[data-a="del"]');
       if (del) del.addEventListener('click', function () { purgeSvc(s); });
-      row.querySelector('[data-f="active"]').addEventListener('change', function () {
-        var on = this.value === 'on';
-        patchSvc(s, { active: on }, on ? 'service.on' : 'service.off');
+      row.querySelector('[data-a="state"]').addEventListener('click', function () {
+        Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
+        patchSvc(s, { active: off }, off ? 'service.on' : 'service.off');
       });
     }
     return row;

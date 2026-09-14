@@ -157,15 +157,7 @@
       menu.hidden = !open;
       btn.setAttribute('aria-expanded', String(open));
       if (open) {
-        var r = btn.getBoundingClientRect(), mh = menu.offsetHeight;
-        menu.style.position = 'fixed';
-        menu.style.right = 'auto';
-        menu.style.left = Math.max(8, r.right - menu.offsetWidth) + 'px';
-        /* Upwards where the room is above: a ⋯ on the last row used to open
-           past the bottom of the window, which is nowhere a phone can reach. */
-        menu.style.top = (r.bottom + 4 + mh <= window.innerHeight - 8 || r.top - 4 - mh < 8)
-          ? (r.bottom + 4) + 'px' : (r.top - 4 - mh) + 'px';
-        held = { btn: btn, top: r.top };
+        window.ADspaceMenu.place(btn, menu);
       }
     });
   }
@@ -173,23 +165,9 @@
     if (e.target.closest('.kmenu, .team-act')) return;
     Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
   });
-  /* Clicking a ⋯ focuses it, and the browser scrolls whatever it has to in
-     order to reveal the focused button. That scroll arrives a frame after the
-     menu opened and used to close it again, so on a phone the ⋯ on the bottom
-     rows could not be opened at all. A scroll that has not moved the button the
-     menu is hanging off is that one, and is no reason to close anything; one
-     that has moved it has carried the menu away from its row, which is. */
-  var held = null;
-  function scrolledAway() {
-    if (!held) return true;
-    if (Math.abs(held.btn.getBoundingClientRect().top - held.top) < 2) return false;
-    held = null;
-    return true;
-  }
-  window.addEventListener('scroll', function () {
-    if (!scrolledAway()) return;
+  window.ADspaceMenu.onScroll(function () {
     Array.prototype.forEach.call(document.querySelectorAll('.team-act .kmenu'), function (m) { m.hidden = true; });
-  }, true);
+  });
   function menuCell(items) {
     if (!items.length) return '<span class="team-act"></span>';
     return '<span class="team-act">' +

@@ -770,6 +770,10 @@ a { color: inherit; }
   .filterbar { gap: 10px; padding: 14px 0 12px; }
   .filterbar .select { flex: 1 1 140px; min-width: 0; }
   .filterbar .count { flex: 1 1 100%; margin-left: 0; }
+  /* The one action keeps its own width and sits at the end of the row,
+     as it does in a section head. Stretched across the screen above the
+     list, Add lead outweighed every client on it. */
+  .filterbar .btn { flex: 0 0 auto; margin-left: auto; }
   .filterbar .safetoggle { flex: 1 1 100%; }
 
 }
@@ -1666,13 +1670,16 @@ body.is-plain .topbar { background: var(--chrome); }
 .notice span { font-size: 13px; color: var(--ink-mute); }
 
 /* ---------- Short Links ---------- */
-.linksbar { display: flex; align-items: center; gap: 12px; margin: 20px 0 12px; flex-wrap: wrap; }
+/* 12px under the head like every other first block: 20px was off the scale
+   and the audit reads it as a stepped section. */
+.linksbar { display: flex; align-items: center; gap: 12px; margin: 12px 0; flex-wrap: wrap; }
 .linksbar .input { flex: 1 1 240px; min-width: 0; }
 .linksbar .muted { flex: 0 0 auto; white-space: nowrap; }
 .linksbar .btn { flex: 0 0 auto; }
 @media (max-width: 760px) {
   .linksbar .muted { order: 8; }
-  .linksbar .btn-primary { order: 10; flex: 1 1 100%; }
+  /* One action is an action, not a banner, here as in a section head. */
+  .linksbar .btn-primary { order: 10; flex: 0 0 auto; margin-left: auto; }
 }
 
 .slugfield { display: flex; align-items: stretch; }
@@ -2579,7 +2586,10 @@ body.is-plain .topbar { background: var(--chrome); }
 .crm-bar .btn-primary { flex: 0 0 auto; }
 @media (max-width: 760px) {
   .crm-bar .count { margin-left: 0; order: 9; }
-  .crm-bar .btn-primary { order: 10; flex: 1 1 100%; }
+  /* One action is an action, not a banner. Stretched across the screen it
+     outweighed every client on the list under it, and it is the list a
+     person came to read. It keeps its own width at the end of the row. */
+  .crm-bar .btn-primary { order: 10; flex: 0 0 auto; margin-left: auto; }
 }
 
 /* A checkbox with its label, sized to be tapped rather than aimed at. */
@@ -2703,7 +2713,12 @@ body > .shell { width: 100%; }
 .svc-state { text-align: left; }
 .csv-row { grid-template-columns: minmax(0, 1fr) 160px 130px var(--state-w) var(--ctl-h); }
 .doc-row { grid-template-columns: minmax(0, 1fr) 130px var(--state-w) var(--ctl-h); }
-.cat-row { grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1fr) var(--state-w) var(--ctl-h); }
+/* Service, what it costs, what that buys. Active is the ordinary case on this
+   card, so it costs no column: the exception is named beside the name. */
+.cat-row { grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1fr) var(--ctl-h); }
+/* A creator is a person with a fee, on the same row shape as everything else. */
+.cr-row { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr) 110px var(--ctl-h); }
+.cr-links { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
 .ct-row  { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) var(--ctl-h); }
 .ct-row .crm-reach { justify-content: flex-start; }
 /* A category heading inside the table, between its lines. */
@@ -2741,20 +2756,27 @@ body > .shell { width: 100%; }
    facts, then the money on the left and the state on the right. */
 @media (max-width: 640px) {
   .svc-row.crm-head { display: none; }
-  .svc-row, .csv-row, .doc-row, .cat-row, .ct-row {
+  .svc-row, .csv-row, .doc-row, .cat-row, .ct-row, .cr-row {
     grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 12px 15px;
     grid-template-areas: "name act" "calc calc" "amt state";
   }
-  .cat-row { grid-template-areas: "name act" "unit unit" "rate state"; }
+  /* The two things a person came for sit on the first line, and what qualifies
+     the money goes under it. Three lines with a control on the last one was a
+     row 310px tall: two and a half services on a screen out of thirty four. */
+  .cat-row, .cr-row {
+    grid-template-columns: minmax(0, 1fr) auto var(--ctl-h);
+    grid-template-areas: "name rate act" "meta meta meta";
+  }
   .doc-row { grid-template-areas: "name act" "amt state"; }
   .ct-row  { grid-template-areas: "name act" "reach reach"; }
   .svc-row > .svc-name { grid-area: name; }
   .svc-row > .team-act { grid-area: act; align-self: start; }
   .svc-row > .svc-calc { grid-area: calc; text-align: left; }
-  .svc-row > .svc-unit { grid-area: unit; }
-  .svc-row > .svc-amt, .cat-row > .svc-rate { text-align: left; align-self: center; }
-  .svc-row > .svc-amt { grid-area: amt; }
-  .cat-row > .svc-rate { grid-area: rate; }
+  .svc-row > .svc-unit, .cr-row > .cr-links { grid-area: meta; }
+  .svc-row > .svc-amt { text-align: left; align-self: center; grid-area: amt; }
+  .cat-row > .svc-rate, .cr-row > .svc-rate {
+    grid-area: rate; text-align: right; align-self: center; white-space: nowrap;
+  }
   .svc-row > .svc-state { grid-area: state; justify-self: end; }
   .ct-row > .crm-reach { grid-area: reach; }
   .ct-row .plink { flex: 1 1 0; justify-content: center; }
@@ -2868,7 +2890,7 @@ body > .shell { width: 100%; }
    heading they sit under, so the row does not repeat it. */
 .team-head, .team-row {
   display: grid; align-items: center; gap: 0 10px;
-  grid-template-columns: minmax(200px, 1fr) var(--state-w) var(--ctl-h);
+  grid-template-columns: minmax(200px, 1fr) var(--ctl-h);
   padding: 0 15px;
 }
 /* Groups: the group, then what it opens, in words. A column per switch made
@@ -2934,7 +2956,7 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
     grid-template-columns: minmax(0, 1fr) var(--ctl-h); gap: 8px 12px;
     padding: 12px 15px; align-items: stretch;
   }
-  .team-row > span:nth-child(2), .group-row > .group-grants { grid-column: 1 / -1; }
+  .group-row > .group-grants { grid-column: 1 / -1; }
   .team-row > .team-act, .group-row > .team-act { grid-column: 2; grid-row: 1; align-items: start; }
   .permgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .team-act { display: flex; gap: 8px; margin-top: 4px; }

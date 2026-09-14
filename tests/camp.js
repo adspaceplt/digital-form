@@ -26,7 +26,7 @@ const say = s => console.log(s);
   // ---- Roster
   await p.locator('#tabRoster').click();
   await p.waitForTimeout(400);
-  say('roster rows: ' + await p.locator('#rosterList .slink').count() + '  count=' + await p.locator('#rosterCount').innerText());
+  say('roster rows: ' + await p.locator('#rosterList .cr-row:not(.crm-head)').count() + '  count=' + await p.locator('#rosterCount').innerText());
 
   await p.locator('#showAddCreator').click();
   await p.fill('#crName', '测试博主');
@@ -53,7 +53,7 @@ const say = s => console.log(s);
   await p.fill('#crRate', '400');
   await p.locator('#saveCreator').click();
   await p.waitForTimeout(500);
-  say('roster after add: ' + await p.locator('#rosterList .slink').count() + ' rows');
+  say('roster after add: ' + await p.locator('#rosterList .cr-row:not(.crm-head)').count() + ' rows');
 
   // ---- Campaign
   await p.locator('#tabCampaigns').click();

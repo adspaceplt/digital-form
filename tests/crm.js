@@ -473,9 +473,16 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   await openMenu(svcRow('Urgent fee'));
   check('an active rate card line cannot be deleted',
     await svcRow('Urgent fee').locator('[data-a="del"]').count() === 0);
-  await p.keyboard.press('Escape');
-  await svcRow('Urgent fee').locator('select[data-f="active"]').selectOption('off');
+  /* Nearly every line is active, so Active costs no column and no accent:
+     the row is the name and the price, and Inactive is what gets named. */
+  check('no rate card row is painted with the accent',
+    await p.locator('#svcList .state-select').count() === 0);
+  check('and the state is changed from the \u22ef',
+    (await svcRow('Urgent fee').locator('[data-a="state"]').innerText()) === 'Set inactive');
+  await svcRow('Urgent fee').locator('[data-a="state"]').click();
   await p.waitForTimeout(600);
+  check('an inactive line names itself on the row',
+    /Inactive/.test(await svcRow('Urgent fee').innerText()));
   await openMenu(svcRow('Urgent fee'));
   check('an inactive one can', await svcRow('Urgent fee').locator('[data-a="del"]').isVisible());
   await svcRow('Urgent fee').locator('[data-a="del"]').click(); await p.waitForTimeout(600);
