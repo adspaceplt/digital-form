@@ -667,7 +667,14 @@
            sign-in: main contact is a designation, not something running, so
            it reads neutral and the accent is spent once. */
         (removed ? ' <span class="tone">Removed</span>' : ct.is_primary ? ' <span class="tone">Main contact</span>' : '') +
-        (!removed && ct.portal_access ? ' <span class="tone is-ok">Portal access</span>' : '') +
+        /* Access on without a login is a dead end, not a live sign-in: the
+           client reaches the page and Supabase refuses them. So the green
+           chip means they can actually get in, and the warn chip says the
+           login still has to be made. */
+        (!removed && ct.portal_access
+          ? (ct.portal_login_at ? ' <span class="tone is-ok">Portal access</span>'
+                                : ' <span class="tone is-warn">Sign-in pending</span>')
+          : '') +
         '</b><small>' + esc(sub) + '</small></span>' +
       '<span class="crm-reach">' +
         (ct.phone ? '<a class="plink" href="tel:' + esc(ct.phone) + '">' + esc(ct.phone) + '</a>' : '') +
@@ -683,7 +690,9 @@
               (ct.is_primary ? '' :
                 '<button class="kmenu-item" data-a="primary" type="button"><b>Main contact</b></button>') +
               (ct.portal_access
-                ? '<button class="kmenu-item" data-a="invite" type="button"><b>Send invitation</b></button>' +
+                ? (ct.portal_login_at ? '' :
+                    '<button class="kmenu-item" data-a="login" type="button"><b>Create login</b></button>') +
+                  '<button class="kmenu-item" data-a="invite" type="button"><b>Send invitation</b></button>' +
                   '<button class="kmenu-item" data-a="unportal" type="button"><b>Revoke portal access</b></button>'
                 : '<button class="kmenu-item" data-a="portal" type="button"><b>Enable portal access</b></button>') +
               '<button class="kmenu-item is-danger" data-a="del" data-soft type="button"><b>Remove</b></button>') +
@@ -694,7 +703,8 @@
     on('edit',    function () { openContact(ct); });
     on('primary', function () { makePrimary(ct); });
     on('portal',   function () { askPortal(ct); });
-    on('invite',   function () { sendInvite(ct); });
+    on('invite',   function () { sendInvite(ct, true); });
+    on('login',    function () { sendInvite(ct, false); });
     on('unportal', function () { setPortal(ct, false); });
     on('del',     function () { archiveContact(ct, true); });
     on('restore', function () { archiveContact(ct, false); });
@@ -730,21 +740,34 @@
     setPortal(ct, true, invite);
   });
 
-  /* The invitation on its own, for a contact who already has access: told on
-     a call today, emailed when they ask for it next week. */
-  function sendInvite(ct) {
+  /* The login on its own, for a contact who already has access: made silently
+     where it was never made, or emailed when they ask for the link next week.
+     Both paths end in a login, so both stamp the contact. */
+  function sendInvite(ct, notify) {
     // Nothing repaints after this one, so the menu it was chosen from has to
     // be put away here or it sits open over the answer.
     Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
     if (!ct.email) { msg('crmWorkMsg', 'An email is required.', 'err'); return; }
-    msg('crmWorkMsg', 'Sending…');
-    API.invokeFn('invite-member', { email: ct.email, name: ct.name, kind: 'client', notify: true })
+    msg('crmWorkMsg', notify ? 'Sending…' : 'Working…');
+    API.invokeFn('invite-member', { email: ct.email, name: ct.name, kind: 'client', notify: Boolean(notify) })
       .then(function (res) {
         if (res.error) { msg('crmWorkMsg', res.why, 'err'); return; }
-        log('contact.portal_invite', state.client.name + ' · ' + ct.name, ct.email);
-        msg('crmWorkMsg', res.data.already ? 'A login already exists. Sign-in link sent to ' + ct.email + '.'
+        stampLogin(ct);
+        if (notify) log('contact.portal_invite', state.client.name + ' · ' + ct.name, ct.email);
+        msg('crmWorkMsg', !notify ? 'Login created.'
+          : res.data.already ? 'A login already exists. Sign-in link sent to ' + ct.email + '.'
           : 'Invitation sent to ' + ct.email + '.', 'ok');
       });
+  }
+
+  /* The login exists from here on, whichever way it was made. Recorded on the
+     contact so the row can tell the difference between a client who can sign
+     in and one who only has the switch turned on. */
+  function stampLogin(ct) {
+    if (ct.portal_login_at) return;
+    ct.portal_login_at = new Date().toISOString();
+    db.from('client_contacts').update({ portal_login_at: ct.portal_login_at })
+      .eq('id', ct.id).then(function () { loadContacts(); }, function () {});
   }
 
   function setPortal(ct, on, invite) {
@@ -759,7 +782,12 @@
       if (!on) { undoBar(ct.name + ': portal access revoked.', function () { setPortal(ct, true, false); }); return; }
       API.invokeFn('invite-member', { email: ct.email, name: ct.name, kind: 'client', notify: Boolean(invite) })
         .then(function (res) {
-          if (res.error) { msg('crmWorkMsg', 'Access enabled. Login not created: ' + res.why, 'warn'); return; }
+          /* Not a warning. Sign-ups are closed, so a contact whose login was
+             not made cannot sign in at all: the switch is on and the door is
+             shut, which is the one outcome nobody must skim past. Create
+             login in the ⋯ is the way to try again. */
+          if (res.error) { msg('crmWorkMsg', 'Access enabled, but the login was not created: ' + res.why, 'err'); return; }
+          stampLogin(ct);
           msg('crmWorkMsg', invite
             ? (res.data.already ? 'Access enabled. A login already exists.' : 'Access enabled. Invitation sent to ' + ct.email + '.')
             : 'Access enabled.', 'ok');

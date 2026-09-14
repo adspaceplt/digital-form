@@ -342,6 +342,16 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   link or contact your ADspace account manager."; "Access code / Enter
   the access code provided."; "Unable to load / Please refresh…"; the
   Chinese set mirrors it.
+- **A database's own words never reach a client.** The console shows the
+  message a save failed with, because the person reading it can act on it; a
+  client page shows ours. Supabase answers a sign-in for an address with no
+  login with "Signups not allowed for this instance", which is an internal
+  message in the wrong register naming a cause the client can do nothing
+  with. `/client/` maps every sign-in failure to one of two lines: no account
+  for this address sends them to their account manager, anything else (a rate
+  limit, a network fault) says to try again. `signInWithOtp` also carries
+  `shouldCreateUser: false`, because a page anyone can open must not be able
+  to make an account.
 - A save failure shows the database message in `.msg.err` under the
   control; the page never reloads; the control keeps what was typed. A
   success message is one word or two ("Saved.", "Asset added."), never
