@@ -29,6 +29,87 @@ const STUB = fs.readFileSync(process.argv[2] + '/stub2.js', 'utf8');
   console.log('saved ' + got.suggestedFilename());
   await p.waitForTimeout(500);
   await p.screenshot({ path: process.argv[2] + '/docs-1280.png', fullPage: true });
+  /* Step 6 used to be a person remembering to decompress the streams by hand.
+     The letter is the one artefact a client signs, so what it says is checked
+     here instead. Each embedded font carries its own ToUnicode table and the
+     subsets collide, so a run is decoded against every table and the reading
+     with the fewest unknowns wins. */
+  const read = (file) => {
+    const d = fs.readFileSync(file);
+    const outs = [];
+    const zlib = require('zlib');
+    let i = 0;
+    while ((i = d.indexOf('stream', i)) >= 0) {
+      let a = i + 6; while (d[a] === 13 || d[a] === 10) a++;
+      const e = d.indexOf('endstream', a);
+      if (e < 0) break;
+      try { outs.push(zlib.inflateSync(d.slice(a, e))); } catch (err) { /* not deflate */ }
+      i = e + 9;
+    }
+    const all = Buffer.concat(outs).toString('latin1');
+    const maps = [];
+    for (const m of all.matchAll(/beginbfchar([\s\S]*?)endbfchar/g)) {
+      const t = {};
+      for (const c of m[1].matchAll(/<([0-9A-Fa-f]{4})>\s*<([0-9A-Fa-f]{4,})>/g)) {
+        t[parseInt(c[1], 16)] = String.fromCharCode(parseInt(c[2].slice(0, 4), 16));
+      }
+      maps.push(t);
+    }
+    const runs = [];
+    for (const blk of all.matchAll(/BT([\s\S]*?)ET/g)) {
+      const hexes = [...blk[1].matchAll(/<([0-9A-Fa-f]+)>\s*Tj/g)].map(x => x[1]);
+      if (!hexes.length) continue;
+      /* Fewest unknowns is not enough: a subset that happens to cover every
+         glyph id decodes cleanly into nonsense. Real text is mostly words, so
+         the reading with the most of its length inside runs of three or more
+         letters wins. */
+      let best = null;
+      for (const t of maps) {
+        const out = hexes.map(h => {
+          let s2 = '';
+          for (let j = 0; j < h.length; j += 4) s2 += t[parseInt(h.slice(j, j + 4), 16)] || '\uFFFD';
+          return s2;
+        }).join('');
+        const bad = (out.match(/\uFFFD/g) || []).length;
+        const words = (out.match(/[A-Za-z]{3,}/g) || []).join('').length;
+        const score = words / Math.max(1, out.length) - bad;
+        if (!best || score > best.score) best = { out, score };
+      }
+      if (best) runs.push(best.out);
+    }
+    return runs;
+  };
+
+  const runs = read(process.argv[2] + '/' + got.suggestedFilename());
+  const joined = runs.join('\n');
+  const num = (got.suggestedFilename().match(/AQT-INT-\d+/) || [''])[0].replace(/-/g, '/').replace('AQT/INT', 'AQT/INT');
+  const has = (re) => (joined.match(re) || []).length;
+  const pageCount = has(/Page \d+ of \d+/g);
+  const say = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (extra ? '  ' + extra : '')); if (!ok) errs.push(l); };
+
+  say('every page is numbered', pageCount >= 2, pageCount + ' pages');
+  /* A page lifted out of this letter still says which letter it came from. */
+  say('every page foot names the letter', has(new RegExp(num.replace(/\//g, '.'), 'g')) >= pageCount,
+    has(new RegExp(num.replace(/\//g, '.'), 'g')) + ' mentions of ' + num);
+  /* Initials on every page but the one that is signed: a letter whose
+     substance is on page one and whose signature is on page two can be
+     executed and then have page one swapped. */
+  say('every page but the last carries an initials line', has(/Initials/g) === pageCount - 1,
+    has(/Initials/g) + ' of ' + (pageCount - 1));
+  /* And the signed page says what it is signing, so a substituted page
+     disagrees with it. */
+  /* The wrapped tail of a sentence is a short run, and a short run is the one
+     case where two subsets both decode it cleanly, so the assertion is on the
+     part that carries the meaning rather than on the last few words. */
+  say('the signature page names the letter, the pages and the figure',
+    /This acceptance relates to Letter of Of+er/.test(joined) &&
+    new RegExp('Of+er ' + num.replace(/\//g, '.')).test(joined) &&
+    /comprising \d+ pages/.test(joined) &&
+    /at RM ?[\d,]+|totalling RM/.test(joined));
+  say('the money and the acceptance block are drawn',
+    /Payable monthly|Total/.test(joined) && /Conf(ir)?rmed and accepted for and on behalf of/.test(joined));
+
   console.log('errors: ' + (errs.join(' | ') || 'none'));
   await b.close();
+  process.exit(errs.length ? 1 : 0);
 })();

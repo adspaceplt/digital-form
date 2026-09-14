@@ -247,6 +247,24 @@ to the words it accepts. Reserving only the closing separated the two the
 moment services carried their full inclusions, so the reservation is the
 height of both.
 
+**A letter that is signed on its last page is protected against having its
+first one swapped.** The substance is on page one and the signature on page
+two, so a signed sheet on its own proves only that somebody signed something.
+Three marks, which is what ordinary commercial practice uses: every page foot
+carries the **reference**, so a page lifted out still says which letter it came
+from; every page but the one that is signed carries an **initials line**; and
+the signature page opens with a sentence naming the reference, the date, the
+number of pages and the figure ("This acceptance relates to Letter of Offer
+AQT/INT/2609001 dated 14th September 2026, comprising 2 pages, at RM 3,396.00
+per month over a 3 month term, RM 10,188.00 in total."), so a substituted page
+contradicts the page that was signed. That sentence is reserved with the
+closing and the acceptance block, because it is part of what is being accepted
+and never leaves it. `tests/pdfreal.js` decodes the drawn file and asserts all
+three, so step 6 is no longer a person remembering to decompress streams by
+hand. Slate folds `ff` and `fi` into one glyph, so extracted text reads "Ofer"
+and "Confrmed" while the page displays them correctly; the assertions allow
+for it.
+
 `js/documents.js` `priceOf()` works this out once for both the stored
 snapshot and the drawing, so the two never drift; the stored
 `subtotal`/`tax`/`total` stay the whole commitment, which is what the
