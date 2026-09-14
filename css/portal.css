@@ -2603,13 +2603,25 @@ body.is-plain .topbar { background: var(--chrome); }
    then everything else. */
 @media (max-width: 760px) {
   .crm-head { display: none; }
+  /* A state column, not a chip pushed to the right edge. Every row is its own
+     grid, so an `auto` track is sized by that row alone: "Proposal sent"
+     opened its column at 267px and "Active" at 308px, and forty one pixels of
+     drift down a list is what makes a status look unaligned. A fixed track is
+     the whole difference between a column and a right edge.
+     The state cell spans both lines, so the row is two clean columns: who they
+     are over what we know, and where they stand over how long they have stood
+     there. Top aligned, or the taller cell centres itself and pushes the name
+     10px down from a 12px pad.
+     120px is measured, not chosen: the widest the cell can ever draw is
+     "18 months · Overdue" at 119px, and a track narrower than its worst case
+     is a track that wraps on the one row somebody needs to read. */
   .crm-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "name stage" "meta meta";
-    gap: 5px 10px; padding: 12px 14px;
+    grid-template-columns: minmax(0, 1fr) 120px;
+    grid-template-areas: "name stage" "meta stage";
+    gap: 4px 12px; padding: 12px 14px; align-items: start;
   }
   .crm-c-name  { grid-area: name; white-space: normal; }
-  .crm-c-stage { grid-area: stage; }
+  .crm-c-stage { grid-area: stage; justify-self: start; align-self: start; }
   /* The three column cells give way to the one combined line. */
   .crm-c-ind, .crm-c-mkt, .crm-c-own { display: none; }
   .crm-c-meta { display: block; grid-area: meta; font-size: 12.5px; }
@@ -2719,6 +2731,19 @@ body > .shell { width: 100%; }
 /* A creator is a person with a fee, on the same row shape as everything else. */
 .cr-row { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr) 110px var(--ctl-h); }
 .cr-links { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
+/* The scanning handle. Four hundred rows of name, chip, number are four
+   hundred rows of the same shape; one character in a disc is what a contacts
+   list has always used to make a row findable by eye rather than by reading.
+   Neutral, never tinted per person: the character is what differs. */
+/* Two classes, because .svc-name stacks its children and is declared after. */
+.svc-name.cr-who { flex-direction: row; align-items: center; gap: 10px; }
+.cr-who > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.cr-mono {
+  flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%;
+  background: var(--sunk); border: 1px solid var(--line);
+  display: grid; place-items: center; line-height: 1;
+  font-size: 13px; font-weight: 600; color: var(--ink-soft);
+}
 .ct-row  { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) var(--ctl-h); }
 .ct-row .crm-reach { justify-content: flex-start; }
 /* A category heading inside the table, between its lines. */
@@ -2764,7 +2789,7 @@ body > .shell { width: 100%; }
      the money goes under it. Three lines with a control on the last one was a
      row 310px tall: two and a half services on a screen out of thirty four. */
   .cat-row, .cr-row {
-    grid-template-columns: minmax(0, 1fr) auto var(--ctl-h);
+    grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
     grid-template-areas: "name rate act" "meta meta meta";
   }
   .doc-row { grid-template-areas: "name act" "amt state"; }
@@ -2873,9 +2898,11 @@ body > .shell { width: 100%; }
    `.svc-row` and takes that row's grid, so each label sits over its column. */
 .crm-head:not(.svc-row), .crm-row { grid-template-columns: minmax(0, 2.2fr) 128px minmax(0, 1fr) 110px minmax(0, 1.1fr); }
 /* Restated after the desktop template above, or the five columns win on a
-   phone and the name is squeezed to a letter. */
+   phone and the name is squeezed to a letter. The state track is fixed here
+   too: this rule is the later one, so an `auto` here undid the column the
+   phone layout above had just set, and the chips went back to drifting. */
 @media (max-width: 640px) {
-  .crm-head:not(.svc-row), .crm-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .crm-head:not(.svc-row), .crm-row { grid-template-columns: minmax(0, 1fr) 120px; }
 }
 
 /* ---------- Team ----------

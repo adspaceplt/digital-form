@@ -18,7 +18,7 @@ const CPROD = seedOf('cprod.js');
 const PORTAL = seedOf('portal.js');
 const QR = 'window.QRCode=function(){};window.QRCode.CorrectLevel={H:2};';
 
-const FAIL = new Set(['head', 'overflow', 'orphan', 'padding', 'cols', 'stack', 'hover', 'type', 'wrap', 'clip', 'row-height', 'row-width', 'target', 'label', 'icon-label', 'accent', 'contrast', 'boundary', 'focus']);
+const FAIL = new Set(['head', 'overflow', 'orphan', 'padding', 'cols', 'column', 'stack', 'hover', 'type', 'wrap', 'clip', 'row-height', 'row-width', 'target', 'label', 'icon-label', 'accent', 'contrast', 'boundary', 'focus']);
 let fails = 0, warns = 0;
 
 /* Runs inside the page. Returns [[kind, detail], ...]. */
@@ -84,6 +84,35 @@ function inPage(coarse) {
       if (!c.textContent.trim()) return;
       const a = c.getBoundingClientRect(), b = rc[i].getBoundingClientRect();
       if (Math.abs(a.left - b.left) > 2 || Math.abs(a.right - b.right) > 2) F.push(['cols', desc(h) + ': "' + c.textContent.trim() + '" at ' + Math.round(a.left) + '..' + Math.round(a.right) + 'px over a column at ' + Math.round(b.left) + '..' + Math.round(b.right) + 'px']);
+    });
+  });
+
+  /* 2d a column is a column on every row of the table.
+     Each row is its own grid, so a track sized `auto` is sized by that row
+     alone: on the clients list "Proposal sent" opened its state column at
+     267px and "Active" at 308px, and a status that starts somewhere different
+     on every row is what reads as unaligned. 2c only compares the header to
+     the first row, and the phone hides the header, so this fault was invisible
+     to the audit on exactly the width where it happened. */
+  document.querySelectorAll('.crm-table, .team-table').forEach(t => {
+    if (!vis(t)) return;
+    const groups = new Map();
+    [...t.children].filter(vis).forEach(r => {
+      if (!r.matches('.crm-row, .svc-row, .team-row, .group-row') || r.matches('.crm-head')) return;
+      const key = r.className.replace(/\bis-off\b/g, '').trim();
+      (groups.get(key) || groups.set(key, []).get(key)).push(r);
+    });
+    groups.forEach((rows, key) => {
+      if (rows.length < 2) return;
+      const cellsOf = r => [...r.children].filter(c => getComputedStyle(c).display !== 'none' && vis(c));
+      const n = cellsOf(rows[0]).length;
+      if (!rows.every(r => cellsOf(r).length === n)) return;
+      for (let i = 0; i < n; i++) {
+        const lefts = rows.map(r => cellsOf(r)[i].getBoundingClientRect().left);
+        const drift = Math.max(...lefts) - Math.min(...lefts);
+        if (drift > 2) F.push(['column', desc(t) + ' ' + key + ': cell ' + (i + 1) +
+          ' starts ' + Math.round(drift) + 'px apart across ' + rows.length + ' rows']);
+      }
     });
   });
 

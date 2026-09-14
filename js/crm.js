@@ -343,8 +343,14 @@
       '<span class="crm-c crm-c-ind">' + esc(c.industry || '—') + '</span>' +
       '<span class="crm-c crm-c-mkt">' + (c.deal_value ? esc(MON.money(c.deal_value, c.market)) : '<span class="muted">' + esc(MON.market(c.market).sign) + '</span>') + '</span>' +
       '<span class="crm-c crm-c-own">' + esc(c.owner || 'Unassigned') + '</span>' +
+      /* The one line the phone gets, so it carries the value rather than the
+         currency it would be in. A bare RM with no amount is a fragment that
+         reads like a broken field, and it was shown even where the client had
+         a figure: the desktop column had the money and the phone line threw it
+         away for its sign. What is not known is left out rather than stood in
+         for, so the line is two or three facts, never a row of placeholders. */
       '<span class="crm-c crm-c-meta">' +
-        [c.industry, MON.market(c.market).sign, c.owner || 'Unassigned']
+        [c.industry, c.deal_value ? MON.money(c.deal_value, c.market) : '', c.owner]
           .filter(Boolean).map(esc).join(' · ') +
       '</span>';
     row.addEventListener('click', function () { openClient(c); });

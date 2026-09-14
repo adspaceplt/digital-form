@@ -367,6 +367,54 @@ is in Sales" only by reading every row. Members sit under their group as
 category, and moving somebody is Edit in the ⋯. **Where a list has a natural
 grouping, the grouping is a heading, never a column.**
 
+**A column is a column on every row, or it is not a column.** Every row in
+these tables is its own grid, so a track sized `auto` is sized by that row
+alone: on the clients list "Proposal sent" opened the state column at 267px and
+"Active" at 308px, and a status that starts somewhere different on every line
+is what reads as unaligned, however neatly each row is built. The phone
+template must fix every track it shares, **including the restatement lower in
+the file** — an `auto` in the later `max-width: 640px` rule quietly undid the
+column the `760px` rule had just set. A fixed track is measured, not chosen:
+the clients state column is 120px because the widest thing it can ever draw is
+"18 months · Overdue" at 119px, and a track narrower than its worst case is one
+that wraps on the row somebody most needs to read. `uxaudit` compares the same
+cell across every row of a table (`column`) and fails on more than 2px of
+drift; the older `cols` check only ever compared the header to the first row,
+and the phone hides the header, so this was invisible on exactly the width
+where it happened.
+
+**A phone list is a two column table, not a card with things pushed right.**
+The answer to "cards or a table on a phone" is that the card *is* the table
+row: the left column is who they are over what we know about them, the right
+column is where they stand over how long they have stood there, and both
+columns are fixed and top aligned (`"name stage" / "meta stage"`). Anything
+centred inside a row of unequal cells pushes the name off the top pad — 22px
+above and 12px below on a 12px padding, which is the "spacing inconsistent"
+nobody can name but everybody sees.
+
+**A placeholder is not data, and a row is not a form.** The clients list showed
+`F&B · S$ · Aisyah`: a bare currency sign standing in for a figure, on every
+row, including the rows that **had** a figure — the desktop column drew the
+money and the phone line threw it away for its sign. A fact that is not known
+is left out; the line carries the value when there is one and two facts when
+there is not. Counting the atoms in a row is the test for "too many messages":
+name, state, age, and two or three meta facts is the ceiling.
+
+**A list long enough to scroll needs a way to cut it and somewhere to be
+inside it.** Four hundred creators as one flat run of identical rows is a list
+you have to read rather than scan, and no amount of row polish fixes it. Three
+things together do: a **filter** on the axis the work fixes first (platform,
+because a campaign picks one before it picks anybody), **bands** that divide
+the list on the axis it is browsed by (fee, because every creator is in exactly
+one and budget is how a campaign is planned), and a **per row anchor** — one
+character in a neutral disc, the way every contacts list ever built makes a row
+findable by eye. The bands are `.svc-cat` sub-headings with their count, the
+same component the rate card and the Team page use. Stood down people are their
+own band at the foot: they are not booked, so they do not belong in a budget
+tier between two creators who are available. Alphabetical banding was weighed
+and rejected — most of this roster is Chinese names, so a first letter index
+puts nearly everything in one bucket or gives three hundred buckets of one.
+
 **A phone row spends its first line on what the person came for.** The rate
 card was three lines — the name with its ⋯, then the unit, then the price
 beside a green Active select — so a row stood 310px and two and a half services
