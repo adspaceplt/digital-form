@@ -1876,3 +1876,52 @@ update public.services set detail = v.detail from (values
   ('shoot', E'Additional shoots are quoted by location')
 ) as v(slug, detail)
 where public.services.slug = v.slug;
+
+-- ============================================================================
+-- STAGE TIMING: how long a client has sat where it is, and how it got there.
+-- Speed to first contact is the number that moves conversion, and a deal that
+-- stalls stalls in a stage, so the stage a client is in needs a clock on it.
+--
+-- Maintained by a trigger, not by the page: a value derived from a change
+-- belongs with the change, and four call sites that each have to remember to
+-- stamp it is three chances to forget. Nothing client-side writes these.
+-- ============================================================================
+alter table public.clients add column if not exists stage_since timestamptz;
+alter table public.clients add column if not exists stage_log   jsonb not null default '[]'::jsonb;
+
+create or replace function public.clients_stage_clock()
+returns trigger
+language plpgsql
+as $$
+begin
+  if tg_op = 'INSERT' then
+    new.stage_since := coalesce(new.stage_since, coalesce(new.created_at, now()));
+    if new.stage_log is null or jsonb_array_length(new.stage_log) = 0 then
+      new.stage_log := jsonb_build_array(
+        jsonb_build_object('stage', new.stage, 'at', new.stage_since));
+    end if;
+    return new;
+  end if;
+  -- Only a real move restarts the clock. Saving the record without touching
+  -- the stage must not make a stalled lead look freshly worked.
+  if new.stage is distinct from old.stage then
+    new.stage_since := now();
+    new.stage_log := coalesce(old.stage_log, '[]'::jsonb) ||
+      jsonb_build_array(jsonb_build_object('stage', new.stage, 'at', now()));
+  else
+    new.stage_since := old.stage_since;
+    new.stage_log := old.stage_log;
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists clients_stage_clock on public.clients;
+create trigger clients_stage_clock before insert or update on public.clients
+  for each row execute function public.clients_stage_clock();
+
+-- Rows that existed before the clock: they have been in their stage at least
+-- since they were created, which is the honest floor rather than "just now".
+update public.clients set stage_since = created_at where stage_since is null;
+update public.clients
+   set stage_log = jsonb_build_array(jsonb_build_object('stage', stage, 'at', created_at))
+ where stage_log is null or jsonb_array_length(stage_log) = 0;

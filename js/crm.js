@@ -106,6 +106,64 @@
     return STAGES[0];
   }
 
+  /* The stage clock is the database's to set, so after a move the row is read
+     back rather than patched from here: a guessed timestamp is a timestamp
+     that disagrees with the one every other screen will load. */
+  function refreshClient(c, then) {
+    db.from('clients').select('*').eq('id', c.id).single().then(function (r) {
+      if (r && r.data) {
+        c.stage_since = r.data.stage_since;
+        c.stage_log = r.data.stage_log;
+        var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
+        if (mine) { mine.stage_since = r.data.stage_since; mine.stage_log = r.data.stage_log; }
+      }
+      then();
+    }, then);
+  }
+
+  /* How long, in the units a sales cycle is actually discussed in. An hour's
+     precision on a two week stall is noise, and "487 days" is a number nobody
+     reads, so days give way to months once a stage has run long enough that
+     the exact day has stopped mattering. */
+  function daysSince(iso) {
+    if (!iso) return null;
+    var t = Date.parse(iso);
+    if (isNaN(t)) return null;
+    return Math.max(0, Math.floor((Date.now() - t) / 86400000));
+  }
+  function spanWord(days) {
+    if (days === null) return '';
+    if (days === 0) return 'Today';
+    if (days === 1) return '1 day';
+    if (days < 60) return days + ' days';
+    var m = Math.round(days / 30.44);
+    return m + (m === 1 ? ' month' : ' months');
+  }
+  function ageWord(c) { return spanWord(daysSince(c && c.stage_since)); }
+
+  /* The journey, left to right, as one line: how long each stage took and how
+     long the current one has been running. Read from the stamped history, not
+     from the activity record, because the record is a log of what people did
+     and this is a fact about the client. */
+  function journeyOf(c) {
+    var log = (c && c.stage_log) || [];
+    /* A record whose history predates the clock still knows when its current
+       stage began, so it says that much rather than nothing. */
+    if (!log.length && c && c.stage_since) log = [{ stage: c.stage || 'lead', at: c.stage_since }];
+    if (!log.length) return '';
+    var out = [];
+    for (var i = 0; i < log.length; i++) {
+      var at = Date.parse(log[i].at);
+      if (isNaN(at)) continue;
+      var next = i + 1 < log.length ? Date.parse(log[i + 1].at) : Date.now();
+      var days = Math.max(0, Math.floor((next - at) / 86400000));
+      var word = stageWord(log[i].stage)[1];
+      out.push(word + ' ' + (days === 0 ? 'same day' : spanWord(days).toLowerCase()) +
+        (i + 1 === log.length ? ' so far' : ''));
+    }
+    return out.join('  ·  ');
+  }
+
   /* What an invoice needs. Field id, column, label, required. A client is
      not active until the required ones are here. The billing contact is one
      of the client's contacts, the main contact unless another is chosen. */
@@ -250,7 +308,8 @@
     row.className = 'crm-row';
     row.innerHTML =
       '<span class="crm-c crm-c-name">' + esc(c.name || '') + '</span>' +
-      '<span class="crm-c crm-c-stage"><span class="tone ' + w[2] + '">' + esc(w[1]) + '</span></span>' +
+      '<span class="crm-c crm-c-stage"><span class="tone ' + w[2] + '">' + esc(w[1]) + '</span>' +
+        (ageWord(c) ? '<small class="crm-age">' + esc(ageWord(c)) + '</small>' : '') + '</span>' +
       '<span class="crm-c crm-c-ind">' + esc(c.industry || '—') + '</span>' +
       '<span class="crm-c crm-c-mkt">' + (c.deal_value ? esc(MON.money(c.deal_value, c.market)) : '<span class="muted">' + esc(MON.market(c.market).sign) + '</span>') + '</span>' +
       '<span class="crm-c crm-c-own">' + esc(c.owner || 'Unassigned') + '</span>' +
@@ -405,6 +464,10 @@
         (String(f[1]).indexOf('<span') === 0 ? f[1] : esc(f[1])) + '</dd></div>';
     }).join('');
 
+    var trip = journeyOf(c);
+    $('crmJourney').textContent = trip;
+    $('crmJourney').hidden = !trip;
+
     // Website, phone and the social pages, as things to open rather than read.
     var links = [];
     if (c.website) links.push(linkChip(c.website, 'Website', true));
@@ -474,11 +537,16 @@
     }
     db.from('clients').update({ stage: to }).eq('id', c.id).then(function (r) {
       if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); openClient(c); return; }
+      // Read before the local copy moves on: this is how long the stage being
+      // left actually ran, which is the fact worth keeping.
+      var spent = ageWord(c) || 'no time';
       c.stage = to;
       var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
       if (mine) mine.stage = to;
-      log('client.edited', c.name, to);
-      openClient(c);
+      log('client.stage', c.name, stageWord(to)[1] + ' after ' + spent);
+      // The clock and the history are stamped by the trigger, so the row has
+      // to come back from the database rather than be guessed at here.
+      refreshClient(c, function () { openClient(c); });
     });
   });
 
@@ -877,11 +945,12 @@
       if (!editingTouch && (state.client.stage || 'lead') === 'lead') {
         db.from('clients').update({ stage: 'contacted' }).eq('id', state.client.id).then(function (q) {
           if (q.error) return;
+          var spent = ageWord(state.client) || 'no time';
           state.client.stage = 'contacted';
           var mine = state.clients.filter(function (x) { return x.id === state.client.id; })[0];
           if (mine) mine.stage = 'contacted';
-          log('client.edited', state.client.name, 'contacted');
-          openClient(state.client);
+          log('client.stage', state.client.name, 'Contacted after ' + spent);
+          refreshClient(state.client, function () { openClient(state.client); });
         });
       }
     };

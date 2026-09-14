@@ -136,6 +136,27 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   await p.selectOption('#crmClientStage', 'lead'); await p.waitForTimeout(600);
   check('the page says what is missing', await p.locator('#crmGate').isVisible());
 
+  /* The stage clock. A move restarts it and appends to the history; saving the
+     record without touching the stage must not, or a stalled lead would look
+     freshly worked every time somebody opened it. */
+  console.log('=== the stage carries a clock ===');
+  const clock = await p.evaluate(() => {
+    const c = window.__DB.clients.find(x => x.name === 'Star Living') || {};
+    return { since: c.stage_since, steps: (c.stage_log || []).map(s => s.stage).join('>') };
+  });
+  check('a move stamps when it happened and what it moved to',
+    !!clock.since && /proposal>lead$/.test(clock.steps), clock.steps);
+  check('the record shows the journey, left to right',
+    /Lead|Proposal sent/.test(await p.locator('#crmJourney').innerText()),
+    (await p.locator('#crmJourney').innerText()).slice(0, 90));
+  const before = await p.evaluate(() => (window.__DB.clients.find(x => x.name === 'Star Living') || {}).stage_since);
+  await p.locator('#crmEdit').click(); await p.waitForTimeout(400);
+  await p.locator('#crmSave').click(); await p.waitForTimeout(700);
+  check('saving the record without moving the stage leaves the clock alone',
+    await p.evaluate(s => (window.__DB.clients.find(x => x.name === 'Star Living') || {}).stage_since === s, before));
+  check('a move is its own entry in the activity record, not a generic edit',
+    await p.evaluate(() => window.__DB.activity_log.some(a => a.action === 'client.stage')));
+
   // the list is grouped: leads on top, active below
   await p.locator('#crmBack').click(); await p.waitForTimeout(600);
   const groups = await p.locator('.crm-group-head h3').allInnerTexts();
