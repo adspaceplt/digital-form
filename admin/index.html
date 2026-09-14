@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260914l">
+<link rel="stylesheet" href="/css/portal.css?v=20260914m">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,17 +28,17 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260914l"></script>
-<script src="/js/words.js?v=20260914l"></script>
-<script src="/js/api.js?v=20260914l"></script>
-<script src="/js/money.js?v=20260914l"></script>
-<script src="/js/mockups.js?v=20260914l"></script>
+<script src="/js/config.js?v=20260914m"></script>
+<script src="/js/words.js?v=20260914m"></script>
+<script src="/js/api.js?v=20260914m"></script>
+<script src="/js/money.js?v=20260914m"></script>
+<script src="/js/mockups.js?v=20260914m"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260914l" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260914m" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -946,7 +946,7 @@
       </div>
 
       <div class="panel" id="teamAddBox" hidden>
-        <div class="panelhead"><h3>New team member</h3></div>
+        <div class="panelhead"><h3 id="tmTitle">New team member</h3></div>
         <div class="row">
           <div><label class="field-label" for="tmName">Name</label>
             <input class="input" id="tmName" placeholder="John Doe"></div>
@@ -975,6 +975,10 @@
         <div class="row">
           <div><label class="field-label" for="grName">Name</label>
             <input class="input" id="grName" placeholder="Group name"></div>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <div><span class="field-label">Access</span>
+            <div class="permgrid" id="grFlags"></div></div>
         </div>
         <div class="row" style="margin-top:14px">
           <button class="btn btn-primary" id="grSave" type="button">Add</button>
@@ -1187,10 +1191,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260914l"></script>
-<script src="/js/documents.js?v=20260914l"></script>
-<script src="/js/crm.js?v=20260914l"></script>
-<script src="/js/team.js?v=20260914l"></script>
-<script src="/js/campaigns.js?v=20260914l"></script>
+<script src="/js/admin.js?v=20260914m"></script>
+<script src="/js/documents.js?v=20260914m"></script>
+<script src="/js/crm.js?v=20260914m"></script>
+<script src="/js/team.js?v=20260914m"></script>
+<script src="/js/campaigns.js?v=20260914m"></script>
 </body>
 </html>

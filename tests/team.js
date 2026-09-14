@@ -32,21 +32,57 @@ const check = (l, ok, x) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (x ? ' 
   check('team table lists everyone', await p.locator('.team-row').count() === 3);
   check('the admin cannot deactivate themselves',
     await p.locator('.team-row').first().locator('select[data-f="active"]').isDisabled());
+
+  /* People sit under the group they are in, so the answer to "who is in
+     Sales" is a heading rather than a column of identical selects. */
+  // innerText would come back shouting: the heading is uppercased in CSS.
+  const cats = () => p.locator('#teamList .svc-cat').evaluateAll(els => els.map(e => e.textContent).join(','));
+  check('members are grouped under their group', await cats() === 'Admin,Account,Sales', await cats());
+  check('and the row no longer repeats the group', await p.locator('.team-row select[data-f="role"]').count() === 0);
+  const rowOrder = await p.locator('#teamList > div').evaluateAll(
+    els => els.filter(e => e.matches('.svc-cat, .team-row')).map(e => e.matches('.svc-cat') ? '[' + e.textContent + ']' : e.querySelector('b').textContent.trim().split(' ')[0]).join(' '));
+  check('each person sits under their own heading', rowOrder === '[Admin] ADspace [Account] Aisyah [Sales] Qiao', rowOrder);
+
   check('groups listed', await p.locator('.group-row').count() === 3);
-  check('the Admin group is locked', await p.locator('.group-row').first().locator('input[data-f="can_remove"]').isDisabled());
-  // a switch on the Account group saves at once
-  const account = p.locator('.group-row').nth(1);
-  await account.locator('input[data-f="can_activity"]').check(); await p.waitForTimeout(500);
-  check('a group switch saves at once', await p.evaluate(() => window.__DB.team_roles.find(r => r.slug === 'account').can_activity === true));
-  // move Aisyah to Sales
+  const grants = await p.locator('.group-grants').allInnerTexts();
+  check('a group states what it opens', grants[0] === 'Everything' && grants[1].startsWith('Clients · Content Review'), grants.join(' | '));
+  check('and no longer needs a column per switch', await p.locator('.group-row input[type=checkbox]').count() === 0);
+  check('the Admin group cannot be edited', await p.locator('.group-row').first().locator('.kmenu-btn').count() === 0);
+
+  // A switch now lives in the panel that edits the group, as a service does.
+  await p.locator('.group-row').nth(1).locator('[data-a="menu"]').click(); await p.waitForTimeout(150);
+  await p.locator('.group-row').nth(1).locator('[data-a="rename"]').click(); await p.waitForTimeout(250);
+  check('Edit opens the group with its switches set',
+    await p.locator('#grFlags input[data-f="can_clients"]').isChecked() &&
+    !(await p.locator('#grFlags input[data-f="can_activity"]').isChecked()));
+  await p.locator('#grFlags input[data-f="can_activity"]').check();
+  await p.locator('#grSave').click(); await p.waitForTimeout(500);
+  check('a group switch saves', await p.evaluate(() => window.__DB.team_roles.find(r => r.slug === 'account').can_activity === true));
+  check('and the row says so', (await p.locator('.group-grants').nth(1).innerText()).includes('Activity record'));
+
+  // Moving somebody between groups is Edit, where a rare action belongs.
   const aisyah = p.locator('.team-row').filter({ hasText: 'Aisyah' });
-  await aisyah.locator('select[data-f="role"]').selectOption('sales'); await p.waitForTimeout(500);
+  await aisyah.locator('[data-a="menu"]').click(); await p.waitForTimeout(150);
+  await aisyah.locator('[data-a="edit"]').click(); await p.waitForTimeout(250);
+  check('Edit opens the person as they stand',
+    await p.inputValue('#tmName') === 'Aisyah' && await p.inputValue('#tmRole') === 'account');
+  await p.selectOption('#tmRole', 'sales'); await p.locator('#tmSave').click(); await p.waitForTimeout(600);
   check('a member changes group', await p.evaluate(() => window.__DB.team_members.find(t => t.name === 'Aisyah').role === 'sales'));
+  check('and moves under the other heading', await cats() === 'Admin,Sales', await cats());
   // add a group
   await p.locator('#groupAdd').click(); await p.waitForTimeout(200);
-  await p.fill('#grName', 'Finance'); await p.locator('#grSave').click(); await p.waitForTimeout(500);
+  check('a new group starts on Clients and nothing else',
+    await p.locator('#grFlags input[data-f="can_clients"]').isChecked() &&
+    await p.locator('#grFlags input:checked').count() === 1);
+  await p.fill('#grName', 'Finance');
+  await p.locator('#grFlags input[data-f="can_billing"]').check();
+  await p.locator('#grSave').click(); await p.waitForTimeout(500);
   check('a group can be added', await p.locator('.group-row').count() === 4 && await p.evaluate(() => !!window.__DB.team_roles.find(r => r.slug === 'finance')));
+  check('with the switches it was given',
+    await p.evaluate(() => { const r = window.__DB.team_roles.find(x => x.slug === 'finance'); return r.can_clients === true && r.can_billing === true && r.can_review === false; }));
   check('an unused group can be deleted', await p.locator('.group-row').filter({ hasText: 'Finance' }).locator('[data-a="del"]').count() === 1);
+  // Aisyah was moved to Sales above; put her back before the counts below.
+  await p.evaluate(() => { window.__DB.team_members.find(t => t.name === 'Aisyah').role = 'account'; window.__persist && window.__persist(); });
   // add a person and invite
   await p.locator('#teamAdd').click(); await p.waitForTimeout(300);
   await p.fill('#tmName', 'Wei Ling'); await p.fill('#tmEmail', 'weiling@adspacestudios.com');

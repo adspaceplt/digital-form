@@ -461,6 +461,45 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   check('and a group with none over stays quiet',
     !/overdue/.test(await groupOf('Active clients').innerText()));
 
+  /* ---- Rate card: inactive, then gone -------------------------------------
+     A line can be taken off the card and then out of it, as a letter is voided
+     then deleted. What it cannot do is disappear from under a client who is
+     quoted on it. */
+  await p.goto('http://127.0.0.1:8899/admin/?s=services', { waitUntil: 'networkidle' });
+  await p.evaluate(() => window.__signIn('adspacestudios@gmail.com'));
+  await p.waitForTimeout(900);
+  const svcRow = (name) => p.locator('.svc-row').filter({ hasText: name }).first();
+  const openMenu = async (row) => { await row.locator('[data-a="menu"]').click(); await p.waitForTimeout(150); };
+  await openMenu(svcRow('Urgent fee'));
+  check('an active rate card line cannot be deleted',
+    await svcRow('Urgent fee').locator('[data-a="del"]').count() === 0);
+  await p.keyboard.press('Escape');
+  await svcRow('Urgent fee').locator('select[data-f="active"]').selectOption('off');
+  await p.waitForTimeout(600);
+  await openMenu(svcRow('Urgent fee'));
+  check('an inactive one can', await svcRow('Urgent fee').locator('[data-a="del"]').isVisible());
+  await svcRow('Urgent fee').locator('[data-a="del"]').click(); await p.waitForTimeout(600);
+  check('and it goes', await p.evaluate(() => !window.__DB.services.some(s => s.slug === 'urgent')));
+
+  // One a client is on is refused, with the count as the reason.
+  await p.evaluate(() => {
+    const s = window.__DB.services.find(x => x.slug === 'rev-minor');
+    s.active = false;
+    window.__DB.client_services.push({ id: 'cs-keep', client_id: window.__DB.clients[0].id,
+      service_slug: 'rev-minor', label: s.name, qty: 1, rate: s.rate, state: 'confirmed' });
+    window.__persist && window.__persist();
+  });
+  await p.reload({ waitUntil: 'networkidle' });
+  await p.evaluate(() => window.__signIn('adspacestudios@gmail.com'));
+  await p.waitForTimeout(900);
+  await openMenu(svcRow('Minor revision'));
+  await svcRow('Minor revision').locator('[data-a="del"]').click(); await p.waitForTimeout(600);
+  check('a line a client is quoted on is not deleted',
+    await p.evaluate(() => window.__DB.services.some(s => s.slug === 'rev-minor')));
+  check('and the message says how many lines hold it',
+    /is on 1 client service line/.test(await p.locator('#svcListMsg').innerText()),
+    await p.locator('#svcListMsg').innerText());
+
   console.log('=== errors ===\n' + (errs.join('\n') || 'none'));
   if (errs.length) bad++;
   await b.close();

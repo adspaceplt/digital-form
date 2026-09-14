@@ -228,6 +228,34 @@ insert into public.client_contacts (name, email, portal_access) values
   check('a team row can still be stood down',
     sql(`update public.team_members set active = false where email = 'kaylyn@adspacestudios.com'
          returning active`) === 'f');
+
+  /* ---- The rate card seeds once ----------------------------------------
+   * An admin can now delete a rate card line for good, and the seed used to
+   * run on every pass of the file, so the next schema change would have put
+   * the deleted line straight back. `on conflict do nothing` does not save
+   * it: the row is gone, so there is no conflict. Nothing in the browser
+   * suites runs the seed, which is why this is here. */
+  const seed = cut('-- The rate card is seeded once', '-- What a client asked for');
+  runFile('rates-setup.sql', `
+drop table if exists public.services cascade;
+create table public.services (
+  slug text primary key, category text not null, name text not null,
+  rate numeric(12,2), unit text, position int not null default 0,
+  active boolean not null default true, note text, detail text,
+  min_months int not null default 1);
+` + seed);
+  const seeded = Number(sql('select count(*) from public.services'));
+  check('the rate card seeds into an empty table', seeded > 20, seeded + ' lines');
+
+  sql("delete from public.services where slug = 'urgent'");
+  sql("update public.services set rate = 999 where slug = 'gif'");
+  runFile('rates-again.sql', seed);
+  check('a line an admin deleted stays deleted on the next run',
+    sql("select count(*) from public.services where slug = 'urgent'") === '0');
+  check('and a rate somebody corrected is not seeded back over',
+    sql("select rate from public.services where slug = 'gif'") === '999.00');
+  check('and the rest of the card is untouched',
+    Number(sql('select count(*) from public.services')) === seeded - 1);
 } catch (e) {
   console.log('FAIL ' + (e.stderr ? String(e.stderr).slice(0, 600) : e.message));
   fails++;

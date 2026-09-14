@@ -309,7 +309,8 @@ measures the table whenever its header is not on screen (`padding`).
 | Rows of records | `.crm-table` > `.crm-head` + `.crm-row` / `.svc-row` (`csv-row` service lines, `doc-row` documents, `cat-row` rate card, `ct-row` contacts, `team-row`); state column `var(--state-w)` second last, `.team-act` ⋯ cell last; the header row carries the same row classes (`crm-head svc-row csv-row`) so it shares the row's grid and every label sits over its column, one cell per column, empty over the ⋯; `uxaudit` fails a header cell off its column (`cols`); on a phone two or three lines by `grid-template-areas` (name and ⋯ / small facts / money left, state right), never one field per line |
 | Completeness of a group | `.ringline` > `.ring` (`is-ok` when full) + "2 of 4" or "Complete" |
 | One record with steps | `.kcard` > `.kcard-head` (name, chips, ⋯) + `.kstep` blocks; folds to one line in lists of ten or more |
-| Rare or destructive actions | `.kmenu-btn` ⋯ + `.kmenu` > `.kmenu-item` (name only; `is-danger`). An item that leaves the building and cannot be recalled asks first, with `confirm()` naming what goes where: **Send invitation** sits one place from Edit in the same menu. A menu row is a control and clears the control floor like any other (`--ctl-h`: 38px, 44px under a finger); padding alone left it at 43px on a phone and nothing caught it until the walk opened a ⋯. An item that does not repaint the row behind it closes the menu itself, or the ⋯ sits open over the answer or behind the sheet it just opened |
+| Rare or destructive actions | `.kmenu-btn` ⋯ + `.kmenu` > `.kmenu-item` (name only; `is-danger`). An item that leaves the building and cannot be recalled asks first, with `confirm()` naming what goes where: **Send invitation** sits one place from Edit in the same menu. A menu row is a control and clears the control floor like any other (`--ctl-h`: 38px, 44px under a finger); padding alone left it at 43px on a phone and nothing caught it until the walk opened a ⋯. An item that does not repaint the row behind it closes the menu itself, or the ⋯ sits open over the answer or behind the sheet it just opened. **The menu opens upwards where the room is above**, never past the bottom of the window, which is nowhere a phone can reach; and the scroll that closes it ignores the scroll the browser fires to reveal the button it has just focused, or the ⋯ closes itself the frame after it opens |
+| A rare change to a row | The row states the value; the ⋯ opens the panel that edits it, and the same panel adds a new one. A control drawn on every row for something changed once a quarter is Hick's law failing twice: it repeats on every line what one heading or one word could say, and it fills the row with the thing nobody came for. A group's seven switches, a member's group, a service's rate: all read on the row, all changed in a panel |
 | Status | `select.state-select` (tinted) for a value that changes; `.tone` / `.chip-state` with a word for a value that is only read |
 | The chosen one of several options | A filled shape, one language per component and never a shadow: the sidebar `.navitem.is-on` takes the `--line-soft` fill and weight 600, a `.tab.is-on` an ink underline and weight 600, an `.acttab.is-on` the ink fill with white text, a `.crow.is-on` the `--line-soft` fill, a `.bigcard.is-on` an ink border. Hover is always one step lighter than selected (`--sunk` where selected is `--line-soft`), never equal to it, and lives inside `@media (hover: hover)` so a phone cannot leave it stuck on the last thing tapped. `uxaudit` hovers an unselected option and fails when it renders the selected one's background (`hover`) |
 | Form to add or edit | `.panel` > `.panelhead h3` + `.row` fields + Save / secondary / Cancel + `.msg`; one Save covers everything in the form, a file included, so a number and its PDF are never two saves, and Cancel repaints from what is stored. What is attached now sits with the field that changes it, above the actions, never stranded under them |
@@ -334,6 +335,24 @@ of room: below 640 `.brand-kicker` is hidden rather than clipped to
 thing the bar is telling them. `uxaudit` measures the bar on every page of the
 walk and fails when one disagrees with the rest at the same width (`head`),
 because the fault was only ever visible by comparing two pages.
+
+**A matrix is a table that grows a column every time the product does.** The
+user groups were a grid of groups against the seven `can_*` switches plus
+Admin: nine columns, headings wrapping to two lines at 1440, a `min-width` of
+900px so the table scrolled sideways inside the console, and a row of
+disabled grey boxes on the locked Admin group that read as all-off rather than
+as always-on. A group is read far more often than it is changed, so the row
+now **says what the group opens in words** (`Clients · Content Review ·
+Billing`, `Everything` for an admin group, `No access` for one with nothing)
+and the switches live in the panel that edits it. Adding an eighth permission
+now costs a word in a line, not a column in a table.
+
+The same reading fixed the members table: a `Group` select on every row said
+what the groups table below already said, three times over, and answered "who
+is in Sales" only by reading every row. Members sit under their group as
+`.svc-cat` sub-headings, exactly as the rate card lists services under a
+category, and moving somebody is Edit in the ⋯. **Where a list has a natural
+grouping, the grouping is a heading, never a column.**
 
 A field the browser draws itself (file, date, time, select) is reskinned
 to our box: same height, same border, and its inner button is one of ours
@@ -646,7 +665,20 @@ still sits on top of the shared one.
   absence of `data-soft` on the item). It is safe to take the row out because
   both foreign keys to a contact are `on delete set null` and a request keeps
   the name it was raised under as text, so nothing that survives is left
-  pointing at a hole.
+  pointing at a hole. A **rate card line** follows the same two steps for the
+  same two reasons, with one addition: it is refused while a live client
+  service line names it, and the message says how many. A client's line keeps
+  its own label and rate, so taking the card row out costs a signed engagement
+  nothing; what it costs is the next quote, and a count is a better answer
+  than a silent deletion or a flat no.
+- **A seed is a first run, not a running list.** A migration that inserts
+  catalogue rows on every pass undoes the deletions and corrections the people
+  who own that catalogue made in the console, and `on conflict do nothing`
+  does not save a deleted row, because a row that is gone raises no conflict.
+  So the rate card seeds only into a database that has none, and `detail` only
+  where it is null. The cost is explicit: a line added to the seed list never
+  reaches an existing database, and a new service is added on the Services
+  page by the person whose card it is.
 - **Every forward move is walked backwards before it ships.** A state
   that is derived from data is derived in one place and recomputed on
   every load, never written once by the action that caused it: a
