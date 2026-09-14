@@ -158,8 +158,12 @@
       var next = i + 1 < log.length ? Date.parse(log[i + 1].at) : Date.now();
       var days = Math.max(0, Math.floor((next - at) / 86400000));
       var word = stageWord(log[i].stage)[1];
-      out.push(word + ' ' + (days === 0 ? 'same day' : spanWord(days).toLowerCase()) +
-        (i + 1 === log.length ? ' so far' : ''));
+      /* The stage it is in now is running, so it reads as a duration so far;
+         a stage that is over reads as how long it took. "Same day so far" was
+         both at once and said neither. */
+      var last = i + 1 === log.length;
+      if (last) out.push(word + ' ' + (days === 0 ? 'today' : spanWord(days).toLowerCase() + ' so far'));
+      else out.push(word + ' ' + (days === 0 ? 'same day' : spanWord(days).toLowerCase()));
     }
     return out.join('  ·  ');
   }
@@ -653,7 +657,10 @@
     var row = document.createElement('div');
     row.className = 'svc-row ct-row' + (removed ? ' is-off' : '');
     var wa = String(ct.whatsapp || ct.phone || '').replace(/[^0-9]/g, '');
-    var sub = [ct.role, 'Writes in ' + (LANG_WORD[ct.lang] || 'English')].filter(Boolean).join(' · ');
+    /* Their preference, not a claim about them: "Writes in English" reads as
+       a judgement on what the person can do, when all it records is which
+       language we write to them in. */
+    var sub = [ct.role, 'Prefers ' + (LANG_WORD[ct.lang] || 'English')].filter(Boolean).join(' · ');
     row.innerHTML =
       '<span class="svc-name"><b>' + esc(ct.name) +
         (removed ? ' <span class="tone">Removed</span>' : ct.is_primary ? ' <span class="tone is-ok">Main contact</span>' : '') +

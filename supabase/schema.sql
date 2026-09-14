@@ -1902,15 +1902,15 @@ begin
     end if;
     return new;
   end if;
-  -- Only a real move restarts the clock. Saving the record without touching
-  -- the stage must not make a stalled lead look freshly worked.
+  -- Only a real move restarts the clock. An update that does not mention the
+  -- stage already arrives with the old values on every other column, which is
+  -- what keeps a plain save from making a stalled lead look freshly worked;
+  -- forcing them back here as well also overwrote the backfill below in this
+  -- same file, so the clock never started on any row that already existed.
   if new.stage is distinct from old.stage then
     new.stage_since := now();
     new.stage_log := coalesce(old.stage_log, '[]'::jsonb) ||
       jsonb_build_array(jsonb_build_object('stage', new.stage, 'at', now()));
-  else
-    new.stage_since := old.stage_since;
-    new.stage_log := old.stage_log;
   end if;
   return new;
 end $$;
@@ -1925,3 +1925,24 @@ update public.clients set stage_since = created_at where stage_since is null;
 update public.clients
    set stage_log = jsonb_build_array(jsonb_build_object('stage', stage, 'at', created_at))
  where stage_log is null or jsonb_array_length(stage_log) = 0;
+
+-- A row whose history starts at the migration rather than at its creation: the
+-- client existed from created_at, as a lead, which is the column default and
+-- how every record reaches the portal. Where the first entry already is the
+-- lead stage, it is the timestamp on that entry that is wrong rather than an
+-- entry being missing, so it moves back instead of being duplicated.
+update public.clients c
+   set stage_log = case
+         when c.stage_log->0->>'stage' = 'lead'
+           then jsonb_set(c.stage_log, '{0,at}', to_jsonb(c.created_at))
+         else jsonb_build_array(jsonb_build_object('stage', 'lead', 'at', c.created_at)) || c.stage_log
+       end
+ where jsonb_array_length(coalesce(c.stage_log, '[]'::jsonb)) > 0
+   and c.created_at < (c.stage_log->0->>'at')::timestamptz;
+
+-- And a row still sitting in the stage it was created in has been there since
+-- it was created, not since the migration ran.
+update public.clients
+   set stage_since = created_at
+ where stage_since > created_at
+   and jsonb_array_length(coalesce(stage_log, '[]'::jsonb)) = 1;

@@ -156,6 +156,18 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
     await p.evaluate(s => (window.__DB.clients.find(x => x.name === 'Star Living') || {}).stage_since === s, before));
   check('a move is its own entry in the activity record, not a generic edit',
     await p.evaluate(() => window.__DB.activity_log.some(a => a.action === 'client.stage')));
+  /* The clock is the database's to keep, but a deliberate write to it has to
+     land: the trigger used to force the old values back on every update, which
+     silently threw away the migration that starts the clock on rows that
+     already existed. Nothing else in the portal writes these columns. */
+  check('a deliberate write to the clock is not thrown away', await p.evaluate(async () => {
+    const id = (window.__DB.clients.find(c => c.name === 'Star Living') || {}).id;
+    const when = '2026-01-02T03:04:05.000Z';
+    await window.__db.from('clients').update({ stage_since: when }).eq('id', id);
+    return (window.__DB.clients.find(c => c.id === id) || {}).stage_since === when;
+  }));
+  check('a stage running today reads as today, not "same day so far"',
+    !/same day so far/.test(await p.locator('#crmJourney').innerText()));
 
   // the list is grouped: leads on top, active below
   await p.locator('#crmBack').click(); await p.waitForTimeout(600);

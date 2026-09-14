@@ -377,6 +377,12 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   already gone out. Whether it has is the document's state, in Documents,
   and never the line's. Chinese follows the same tense (`待报价`, not
   `已报价`).
+- **A field about a person records what we do, not what they can do.** A
+  contact's language is a **Preferred language**, and the row reads
+  "Prefers English": "Writes in English" describes the person, and reads
+  as a judgement on their literacy when all the field holds is which
+  language we write to them in. The same test applies to anything kept
+  about a person.
 - A value the client only reads is a chip in the state column; the same
   row shape as the console, the select swapped for the chip, the ⋯ kept
   only where the client has an action.
@@ -451,6 +457,14 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   look freshly worked. After a move the row is read back
   (`refreshClient`), because a timestamp guessed in the browser is one
   that disagrees with every other screen.
+
+  **A trigger never forces a column back to its old value.** An update
+  that does not mention a column already arrives carrying the old one,
+  which is all that is needed to stop a plain save restarting the clock;
+  writing `new.col := old.col` in an else branch as well also blocks the
+  migration's own backfill, so the clock never started on a single row
+  that already existed and every suite stayed green because none of them
+  ran SQL. `tests/sql.js` runs the schema against a real Postgres now.
 
   The **working number** (time in the current stage) sits with the stage
   it times: a mute line under the chip in the Clients list, which is
