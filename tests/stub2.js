@@ -72,6 +72,9 @@
   function stageClock(table, row, patch) {
     if (table !== 'clients' || !patch || !('stage' in patch)) return;
     if (patch.stage === row.stage) return;
+    // A patch that sets the clock itself is left alone, the way the trigger
+    // now leaves a deliberate write alone: the migration writes these columns.
+    if ('stage_since' in patch || 'stage_log' in patch) return;
     var now = new Date().toISOString();
     patch.stage_since = now;
     patch.stage_log = (row.stage_log || []).concat([{ stage: patch.stage, at: now }]);
@@ -362,4 +365,7 @@
     } };
   } };
   window.__signIn = function (e) { session = { user: { email: e } }; if (listener) listener('SIGNED_IN', session); };
+  // The same door the page uses, so a test can write the way the migration
+  // does rather than reaching into the store behind the query builder.
+  window.__db = window.supabase.createClient();
 })();
