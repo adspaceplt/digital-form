@@ -169,6 +169,8 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   check('a stage running today reads as today, not "same day so far"',
     !/same day so far/.test(await p.locator('#crmJourney').innerText()));
 
+
+
   // the list is grouped: leads on top, active below
   await p.locator('#crmBack').click(); await p.waitForTimeout(600);
   const groups = await p.locator('.crm-group-head h3').allInnerTexts();
@@ -384,6 +386,45 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   check('Content Review lists only active clients', reviewNames.indexOf('Star Living') < 0 && reviewNames.indexOf('Laman Citra') > -1);
   await p.locator('#goToCrm').click(); await p.waitForTimeout(500);
   check('and sends you to the CRM instead', await p.locator('#sectionClients').isVisible());
+
+  /* Ageing. A lead has 48 hours to be contacted; a proposal may sit 21 days.
+     Calendar days, not working days: a lead that came in on Friday is just as
+     cold on Monday. Contacted has no limit set, so it is never marked. The
+     word rides with the colour, so the mark survives a reader who cannot tell
+     warn from mute. */
+  console.log('=== a stage that has run too long says so ===');
+  const age = async (name, stage, hours) => {
+    await p.evaluate(([n, st, h]) => {
+      const c = window.__DB.clients.find(x => x.name === n);
+      c.stage = st;
+      c.stage_since = new Date(Date.now() - h * 3600000).toISOString();
+      window.__persist();
+    }, [name, stage, hours]);
+    // Straight to the list: a reload restores whatever record was open.
+    await p.goto('http://127.0.0.1:8899/admin/?s=clients', { waitUntil: 'networkidle' });
+    await p.waitForTimeout(900);
+  };
+  const rowOf = n => p.locator('.crm-row', { hasText: n }).first();
+  const groupOf = n => p.locator('.crm-group', { hasText: n }).first();
+
+  await age('Star Living', 'lead', 40);
+  check('a lead inside 48 hours is not marked', !/Overdue/.test(await rowOf('Star Living').innerText()));
+  await age('Star Living', 'lead', 49);
+  check('a lead past 48 hours is overdue', /Overdue/.test(await rowOf('Star Living').innerText()));
+  check('the group counts them', /1 overdue/.test(await groupOf('Leads').innerText()));
+
+  await age('Furiku Matcha', 'proposal', 20 * 24);
+  check('a proposal inside 21 days is not marked', !/Overdue/.test(await rowOf('Furiku Matcha').innerText()));
+  await age('Furiku Matcha', 'proposal', 22 * 24);
+  check('a proposal past 21 days is overdue', /Overdue/.test(await rowOf('Furiku Matcha').innerText()));
+
+  await age('Star Living', 'contacted', 200 * 24);
+  check('contacted carries no limit, so it is never marked',
+    !/Overdue/.test(await rowOf('Star Living').innerText()));
+  await age('Laman Citra', 'active', 400 * 24);
+  check('an active client is never marked', !/Overdue/.test(await rowOf('Laman Citra').innerText()));
+  check('and a group with none over stays quiet',
+    !/overdue/.test(await groupOf('Active clients').innerText()));
 
   console.log('=== errors ===\n' + (errs.join('\n') || 'none'));
   if (errs.length) bad++;

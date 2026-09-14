@@ -141,6 +141,25 @@
   }
   function ageWord(c) { return spanWord(daysSince(c && c.stage_since)); }
 
+  /* When a stage has run longer than it should have.
+     Calendar days, not working days: a lead that came in on Friday is just as
+     cold on Monday morning, and a client waiting on a proposal does not count
+     our weekends. Lead is 48 hours, the window to make first contact, so it
+     is measured in hours rather than whole days or a lead keyed in this
+     morning would read overdue tomorrow. Proposal sent is 21 days, the
+     longest a proposal should sit unanswered; a week is normal, so nothing is
+     flagged before then without a second threshold saying so.
+     Contacted carries no limit until somebody sets one: a number nobody has
+     chosen is not one to invent at scanning time, and a wrong one trains the
+     team to ignore the mark. */
+  var STALE_H = { lead: 48, proposal: 21 * 24 };
+  function isStale(c) {
+    var limit = STALE_H[(c && c.stage) || 'lead'];
+    if (!limit || !c || !c.stage_since) return false;
+    var t = Date.parse(c.stage_since);
+    return !isNaN(t) && (Date.now() - t) / 3600000 >= limit;
+  }
+
   /* The journey, left to right, as one line: how long each stage took and how
      long the current one has been running. Read from the stamped history, not
      from the activity record, because the record is a log of what people did
@@ -286,10 +305,15 @@
         worth[k] = (worth[k] || 0) + Number(c.deal_value);
       });
       var worthText = Object.keys(worth).map(function (k) { return MON.money(worth[k], k); }).join(' + ');
+      var late = mine.filter(isStale).length;
       var sec = document.createElement('section');
       sec.className = 'crm-group';
       sec.innerHTML =
         '<div class="crm-group-head"><h3>' + esc(g[1]) + ' <span>' + mine.length + '</span></h3>' +
+          /* The count that makes somebody open the group, next to the one
+             that says how big it is. Absent where none has gone over, so a
+             healthy stage stays quiet. */
+          (late ? '<span class="tone is-warn">' + late + ' overdue</span>' : '') +
           (worthText ? '<span class="crm-group-worth">' + esc(worthText) + '</span>' : '') +
         '</div>' +
         '<div class="crm-table">' +
@@ -313,7 +337,10 @@
     row.innerHTML =
       '<span class="crm-c crm-c-name">' + esc(c.name || '') + '</span>' +
       '<span class="crm-c crm-c-stage"><span class="tone ' + w[2] + '">' + esc(w[1]) + '</span>' +
-        (ageWord(c) ? '<small class="crm-age">' + esc(ageWord(c)) + '</small>' : '') + '</span>' +
+        /* The word carries it, not the colour: the mark has to survive a
+           greyscale print and a reader who cannot tell warn from mute. */
+        (ageWord(c) ? '<small class="crm-age' + (isStale(c) ? ' is-late' : '') + '">' +
+          esc(ageWord(c) + (isStale(c) ? ' · Overdue' : '')) + '</small>' : '') + '</span>' +
       '<span class="crm-c crm-c-ind">' + esc(c.industry || '—') + '</span>' +
       '<span class="crm-c crm-c-mkt">' + (c.deal_value ? esc(MON.money(c.deal_value, c.market)) : '<span class="muted">' + esc(MON.market(c.market).sign) + '</span>') + '</span>' +
       '<span class="crm-c crm-c-own">' + esc(c.owner || 'Unassigned') + '</span>' +

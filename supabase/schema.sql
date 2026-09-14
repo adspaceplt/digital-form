@@ -1862,11 +1862,16 @@ update public.clients c
 
 -- ============================================================================
 -- RATE CARD: what each service includes, from Rate Card & Packages v2.0.2.
--- Re-runnable, and it overwrites, because the rate card is the source and this
--- table is the copy. `detail` is one item per line: the client record shows it
--- under the line and the Letter of Offer prints it under the name.
--- Rows the rate card gives no inclusions for are left alone rather than filled
--- with invented text.
+-- Seeds the inclusions once and never again. `detail` is one item per line:
+-- the client record shows it under the line and the Letter of Offer prints it
+-- under the name. Rows the rate card gives no inclusions for are left alone
+-- rather than filled with invented text.
+--
+-- It writes only where the row has none. The rate card is edited in the
+-- console by the people who own it, and an update that ran on every re-run
+-- would throw their corrections away the next time a schema change shipped:
+-- a migration seeds a value, it does not keep overruling the person who
+-- changed it afterwards.
 -- ============================================================================
 update public.services set detail = v.detail from (values
   -- Content. The page 2 note applies to every ala carte deliverable; a graphic
@@ -1910,7 +1915,7 @@ update public.services set detail = v.detail from (values
 
   ('shoot', E'Additional shoots are quoted by location')
 ) as v(slug, detail)
-where public.services.slug = v.slug;
+where public.services.slug = v.slug and public.services.detail is null;
 
 -- ============================================================================
 -- STAGE TIMING: how long a client has sat where it is, and how it got there.
