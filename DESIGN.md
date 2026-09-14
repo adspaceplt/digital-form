@@ -400,6 +400,14 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   as a judgement on their literacy when all the field holds is which
   language we write to them in. The same test applies to anything kept
   about a person.
+- **A section is named for what it tells you, not for the noun it holds.**
+  The client portal's list of who can sign in was headed **Account** and read
+  as the viewer's own settings, so the answer to "why is this here" was not on
+  the screen. It is **Portal access** over **Person** and **Sign-in email**
+  (`平台访问权限` / `姓名` / `登录邮箱`), and the purpose is then carried by the
+  heading and the column, which is where it belongs: a line underneath
+  explaining the section would be the explanatory copy this portal does not
+  have.
 - **Green is the live state, and it is spent once per row.** Where a row can
   carry two marks, the one that names something running takes the accent and
   the rest read neutral: a contact's **Portal access** is green because a

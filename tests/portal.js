@@ -85,6 +85,12 @@ const SEED = `
   check('the company as registered', facts.includes('LAMAN CITRA SDN BHD') && facts.includes('202201012345') && facts.includes('Malaysia · RM'));
   check('the account manager and the status', facts.includes('Qiao Rou') && facts.includes('Active'));
   check('one company: no company select', await p.locator('#clientPick').isHidden());
+  check('the section says what it is, not "Account"',
+    (await p.locator('#accHead').innerText()) === 'Portal access' &&
+    (await p.locator('#accBox').innerText()).includes('SIGN-IN EMAIL'));
+  check('and it names the people who can sign in, not every contact',
+    await p.locator('#accBox .ct-row:not(.crm-head)').count() === 1 &&
+    (await p.locator('#accBox').innerText()).includes('lim@lc.com'));
   check('contacts listed with the main contact and portal marks',
     await p.locator('#ovContacts .ct-row:not(.crm-head)').count() === 4 &&
     (await p.locator('#ovContacts').innerText()).includes('Main contact') &&
