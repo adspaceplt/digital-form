@@ -87,6 +87,54 @@ const check = (l, ok, x) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (x ? ' 
   check('the notice names them', (await p.locator('#noTeamWho').innerText()) === 'stranger@example.com');
   await p.close();
 
+  /* Signed in is not allowed in. The console chrome names every section of
+     the tool, and it used to be drawn the moment a session existed, for as
+     long as the me() call took, to anybody at all. Nothing is shown until the
+     database has said who this is. */
+  const SLOW = `(function () {
+    var make = window.supabase.createClient;
+    window.supabase.createClient = function () {
+      var c = make.apply(this, arguments), rpc = c.rpc;
+      c.rpc = function (name, args) {
+        var q = rpc.call(c, name, args);
+        if (name !== 'me') return q;
+        return new Promise(function (go) { setTimeout(function () { q.then(go); }, 1500); });
+      };
+      return c;
+    };
+  })();`;
+  p = await ctx.newPage();
+  p.on('pageerror', e => errs.push('PAGEERROR ' + e.message));
+  await p.route('**/supabase-js*/**', r => r.fulfill({ contentType: 'application/javascript', body: STUB + SLOW }));
+  await p.route('**/qrcode*.js', r => r.fulfill({ contentType: 'application/javascript', body: 'window.QRCode=function(){};window.QRCode.CorrectLevel={H:2};' }));
+  await p.route('https://mycdn.adspace.me/**', r => r.fulfill({ status: 404, body: '' }));
+  await p.goto('http://127.0.0.1:8899/admin/', { waitUntil: 'networkidle' });
+  await p.evaluate(() => window.__signIn('stranger@example.com'));
+  await p.waitForTimeout(500);
+  check('the console is not drawn while access is still being decided',
+    await p.locator('#console').isHidden() &&
+    !(await p.locator('.navitem').first().isVisible()) &&
+    !(await p.locator('#noTeamShell').isVisible()));
+  await p.waitForTimeout(1600);
+  check('and the cover arrives once it is', await p.locator('#noTeamShell').isVisible());
+  await p.close();
+
+  // The same wait must not blank the console for somebody who does belong.
+  p = await ctx.newPage();
+  p.on('pageerror', e => errs.push('PAGEERROR ' + e.message));
+  await p.route('**/supabase-js*/**', r => r.fulfill({ contentType: 'application/javascript', body: STUB + SLOW }));
+  await p.route('**/qrcode*.js', r => r.fulfill({ contentType: 'application/javascript', body: 'window.QRCode=function(){};window.QRCode.CorrectLevel={H:2};' }));
+  await p.route('https://mycdn.adspace.me/**', r => r.fulfill({ status: 404, body: '' }));
+  await p.goto('http://127.0.0.1:8899/admin/', { waitUntil: 'networkidle' });
+  await p.evaluate(() => window.__signIn('adspacestudios@gmail.com'));
+  await p.waitForTimeout(500);
+  check('a colleague waits too, rather than seeing it early',
+    await p.locator('#console').isHidden());
+  await p.waitForTimeout(1600);
+  check('and the console arrives whole',
+    await p.locator('#console').isVisible() && (await visibleNav(p)).includes('Team'));
+  await p.close();
+
   console.log('=== errors ===\n' + (errs.join('\n') || 'none'));
   if (errs.length) bad++;
   await b.close();
