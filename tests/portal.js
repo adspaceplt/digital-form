@@ -104,6 +104,30 @@ const SEED = `
   check('the account manager and the status', facts.includes('Qiao Rou') && facts.includes('Active'));
   check('one company: no company select', await p.locator('#clientPick').isHidden());
 
+  /* The shared vocabulary, checked as a structure rather than a screen: a word
+     added to one language and forgotten in the other, or a state given no
+     colour, is the drift js/words.js exists to stop. */
+  const gaps = await p.evaluate(() => {
+    const W = window.ADspaceWords, miss = [];
+    Object.keys(W.en).forEach((k) => {
+      if (typeof W.en[k] === 'string' && typeof W.zh[k] !== 'string') miss.push(k + ': no 中文');
+      if (W.en[k] && typeof W.en[k] === 'object') {
+        Object.keys(W.en[k]).forEach((j) => {
+          if (!W.zh[k] || !W.zh[k][j]) miss.push(k + '.' + j + ': no 中文');
+        });
+      }
+    });
+    ['step', 'svState', 'stage', 'rqState', 'campState'].forEach((g) => {
+      Object.keys(W.en[g]).forEach((k) => { if (!(k in W.TONE)) miss.push(g + '.' + k + ': no colour'); });
+    });
+    return miss;
+  });
+  check('every shared word carries both languages and every state a colour', gaps.length === 0, gaps.join('; '));
+  check('a page word still sits on top of the shared one', await p.evaluate(() => {
+    const T = window.ADspaceWords.of({ en: { noAccess: 'Mine' }, zh: {} });
+    return T.en.noAccess === 'Mine' && T.zh.noAccess === '无访问权限' && T.en.failTitle === 'Unable to load';
+  }));
+
   /* A group: one person, one address, two companies under it. The same login
      reaches both portals and picks between them, because access is a switch
      on a contact and a person can be a contact at more than one client. */

@@ -82,14 +82,13 @@
   /* Stage is the one word that tells the team how to treat someone. The list
      is grouped by it: leads being worked at the top, the clients we are
      serving below, and the ones that have ended at the bottom. */
-  var STAGES = [
-    ['lead',      'Lead',          '',        'leads'],
-    ['contacted', 'Contacted',     '',        'leads'],
-    ['proposal',  'Proposal sent', 'is-warn', 'leads'],
-    ['active',   'Active',        'is-ok',   'active'],
-    ['paused',   'Paused',        'is-warn', 'ended'],
-    ['past',     'Past',          '',        'ended']
-  ];
+  /* The word and the colour come from js/words.js, so a stage cannot read one
+     way here and another on the client's page. What stays here is the only
+     part the client page has no use for: which group of the list it falls in. */
+  var W = window.ADspaceWords;
+  var STAGES = [['lead', 'leads'], ['contacted', 'leads'], ['proposal', 'leads'],
+                ['active', 'active'], ['paused', 'ended'], ['past', 'ended']]
+    .map(function (g) { return [g[0], W.en.stage[g[0]], W.tone(g[0]), g[1]]; });
   var GROUPS = [
     ['leads',  'Leads'],
     ['active', 'Active clients'],
@@ -383,7 +382,9 @@
      Letter of Offer, before any letter exists. Past tense would claim the
      quotation had already gone out. Whether it has is the document's state,
      in Documents, not the line's. */
-  var SV_STATE = { enquired: ['Enquired', ''], quoted: ['To quote', 'is-warn'], confirmed: ['Confirmed', 'is-ok'] };
+  var SV_STATE = ['enquired', 'quoted', 'confirmed'].reduce(function (m, k) {
+    m[k] = [W.en.svState[k], W.tone(k)]; return m;
+  }, {});
   var CATS = ['Content', 'Account management', 'Verification', 'Monthly packages',
               'KOC programmes', 'KOL programmes', 'Add-ons'];
 
@@ -1389,9 +1390,10 @@
      reply the client reads. Approval changes nothing by itself: a person
      applies it to the service line. The section shows once the client has
      portal access or a request exists. */
-  var RQ_STATE = { requested: ['Requested', 'is-warn'], reviewing: ['Reviewing', 'is-warn'], approved: ['Approved', 'is-ok'],
-                   declined: ['Declined', 'is-off'], applied: ['Applied', 'is-ok'] };
-  var RQ_KIND = { upgrade: 'Upgrade', downgrade: 'Downgrade', cancel: 'Cancel', details: 'Change of details' };
+  var RQ_STATE = ['requested', 'reviewing', 'approved', 'declined', 'applied'].reduce(function (m, k) {
+    m[k] = [W.en.rqState[k], W.tone(k)]; return m;
+  }, {});
+  var RQ_KIND = W.en.rqKind;
 
   function loadRequests() {
     var box = $('crmRequestList');

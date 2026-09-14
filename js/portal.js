@@ -35,33 +35,29 @@
     '<path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
 
   // ---- Words, in both languages ------------------------------------------
-  var T = {
+  var T = window.ADspaceWords.of({
     en: {
       kicker: 'Client Portal', lang: '中文', signOut: 'Sign out',
       signTitle: 'Client sign-in', signText: 'Enter the email address on file with ADspace.', sendLink: 'Send link',
       sentTitle: 'Check your email', sentText: function (e) { return 'A sign-in link has been sent to ' + e + '.'; },
-      emailNeeded: 'An email is required.', noAccess: 'Access denied', noAccessText: 'Please contact your ADspace account manager.',
+      emailNeeded: 'An email is required.',
       signNoUser: 'Sign-in is not available for this address. Please contact your ADspace account manager.',
       signFail: 'The link could not be sent. Please try again, or contact your ADspace account manager.',
-      failTitle: 'Unable to load', failText: 'Please refresh, or contact your ADspace account manager.',
       overview: 'Overview', requestChange: 'Request change', services: 'Services', requests: 'Requests', letters: 'Letters',
       engagements: 'Engagements', payment: 'Payment', account: 'Portal access',
       legalName: 'Registered name', regNo: 'Registration no.', address: 'Billing address', market: 'Market',
       manager: 'Account manager', status: 'Status', notSet: 'Not set',
       my: 'Malaysia', sg: 'Singapore',
-      stage: { lead: 'Lead', contacted: 'Contacted', proposal: 'Proposal sent', active: 'Active', paused: 'Paused', past: 'Past' },
       contact: 'Contact', reach: 'Reach', mainContact: 'Main contact', portal: 'Portal', noContacts: 'No contacts.',
       service: 'Service', qtyRate: 'Qty × rate', amount: 'Amount', state: 'State', noServices: 'No services.',
-      svState: { quoted: 'To quote', confirmed: 'Confirmed' }, months: function (n) { return n + ' months'; }, from: 'from', mo: 'mo',
+      months: function (n) { return n + ' months'; }, from: 'from', mo: 'mo',
       quotedTotal: 'To quote', confirmedTotal: 'Confirmed',
       upgrade: 'Upgrade', downgrade: 'Downgrade', cancel: 'Cancel', details: 'Change of details',
       request: 'Request', fee: 'Fee', noRequests: 'No requests.', withdraw: 'Withdraw', undo: 'Undo',
       withdrawn: 'Withdrawn', withdrawnSay: 'Request withdrawn.',
-      rqState: { requested: 'Requested', reviewing: 'Reviewing', approved: 'Approved', declined: 'Declined', applied: 'Applied' },
       reply: 'Reply', more: 'More actions',
       document: 'Document', total: 'Total', issued: 'Issued', download: 'Download', noLetters: 'No letters.', offer: 'Letter of Offer',
       review: 'Content Review', open: 'Open', campaign: 'Creator campaign',
-      campState: { open: 'Open', production: 'In production', completed: 'Completed' },
       bank: 'Bank', reference: 'Payment reference', person: 'Person', email: 'Email',
       signInEmail: 'Sign-in email', noAccessRows: 'No entries.',
       reqTitle: function (k) { return T.en[k]; }, line: 'Service', note: 'Note', noteFor: { upgrade: 'What to change to', downgrade: 'What to change to', cancel: 'Reason (optional)', details: 'What to change' },
@@ -71,34 +67,30 @@
       kicker: '客户平台', lang: 'EN', signOut: '退出',
       signTitle: '客户登录', signText: '请输入在 ADspace 登记的电子邮箱。', sendLink: '发送链接',
       sentTitle: '请查收邮件', sentText: function (e) { return '登录链接已发送至 ' + e + '。'; },
-      emailNeeded: '请输入电子邮箱。', noAccess: '无访问权限', noAccessText: '请联系您的 ADspace 客户经理。',
+      emailNeeded: '请输入电子邮箱。',
       signNoUser: '该邮箱暂时无法登录，请联系您的 ADspace 客户经理。',
       signFail: '链接发送失败，请重试，或联系您的 ADspace 客户经理。',
-      failTitle: '无法加载', failText: '请刷新页面，或联系您的 ADspace 客户经理。',
       overview: '公司概览', requestChange: '申请修改', services: '服务', requests: '申请', letters: '函件',
       engagements: '进行中的项目', payment: '付款', account: '平台访问权限',
       legalName: '注册名称', regNo: '注册号码', address: '账单地址', market: '市场',
       manager: '客户经理', status: '状态', notSet: '未填写',
       my: '马来西亚', sg: '新加坡',
-      stage: { lead: '潜在客户', contacted: '已联系', proposal: '已发提案', active: '合作中', paused: '暂停', past: '已结束' },
       contact: '联系人', reach: '联系方式', mainContact: '主要联系人', portal: '平台', noContacts: '暂无联系人。',
       service: '服务', qtyRate: '数量 × 单价', amount: '金额', state: '状态', noServices: '暂无服务。',
-      svState: { quoted: '待报价', confirmed: '已确认' }, months: function (n) { return n + ' 个月'; }, from: '起', mo: '个月',
+      months: function (n) { return n + ' 个月'; }, from: '起', mo: '个月',
       quotedTotal: '待报价', confirmedTotal: '已确认',
       upgrade: '升级', downgrade: '降级', cancel: '取消', details: '资料变更',
       request: '申请', fee: '费用', noRequests: '暂无申请。', withdraw: '撤回', undo: '撤销',
       withdrawn: '已撤回', withdrawnSay: '申请已撤回。',
-      rqState: { requested: '已提交', reviewing: '审核中', approved: '已批准', declined: '未批准', applied: '已生效' },
       reply: '回复', more: '更多操作',
       document: '文件', total: '总额', issued: '已签发', download: '下载', noLetters: '暂无函件。', offer: '报价函',
       review: '内容审阅', open: '打开', campaign: '博主推广',
-      campState: { open: '进行中', production: '制作中', completed: '已完成' },
       bank: '银行', reference: '付款备注', person: '姓名', email: '电子邮箱',
       signInEmail: '登录邮箱', noAccessRows: '暂无记录。',
       reqTitle: function (k) { return T.zh[k]; }, line: '服务', note: '备注', noteFor: { upgrade: '希望更改为', downgrade: '希望更改为', cancel: '原因（可选）', details: '需要修改的内容' },
       send: '提交申请', close: '取消', sent: '已提交。', noteNeeded: '请填写备注。', company: '公司'
     }
-  };
+  });
   var lang = 'en';
   function t() { return T[lang]; }
   var LANG_KEY = 'adspace.portal.lang';
