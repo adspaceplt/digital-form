@@ -1427,7 +1427,16 @@ create policy services_read  on public.services for select to authenticated usin
 create policy services_admin on public.services for all to authenticated
   using (public.allowed('admin')) with check (public.allowed('admin'));
 
-insert into public.services (slug, category, name, rate, unit, position) values
+-- The rate card is seeded once, on a database that has none, and never again.
+-- The people who own it edit it in the console, deletions included, and a seed
+-- that ran on every re-run would put a deleted line back the next time a schema
+-- change shipped. Same reason `detail` below seeds only where it is null.
+-- So a line added to the list here reaches an existing database not at all: a
+-- new service is added on the Services page, by the person whose card it is.
+do $seed$
+begin
+  if exists (select 1 from public.services) then return; end if;
+  insert into public.services (slug, category, name, rate, unit, position) values
   ('static-graphic',   'Content',            'Static graphic',                       360,  'Per post',                          10),
   ('gif',              'Content',            'GIF',                                  450,  'Per GIF',                           11),
   ('carousel',         'Content',            'Carousel',                             600,  'Per set',                           12),
@@ -1462,7 +1471,8 @@ insert into public.services (slug, category, name, rate, unit, position) values
   ('shoot',            'Add-ons',            'Ad hoc on-site shoot',                 450,  'Per trip, from',                    75),
   ('working-files',    'Add-ons',            'Working files',                        250,  'Per asset',                         76),
   ('raw-footage',      'Add-ons',            'Raw footage',                          350,  'Per shoot',                         77)
-on conflict (slug) do nothing;
+  on conflict (slug) do nothing;
+end $seed$;
 
 -- What a client asked for, was quoted, or confirmed. A line keeps its own
 -- label and rate, so a later price change does not rewrite history.

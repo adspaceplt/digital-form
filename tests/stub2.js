@@ -34,7 +34,9 @@
       { slug:'pkg-b', category:'Monthly packages', name:'Package B · 2 platforms · 4 contents', rate:2830, unit:'Per month, 6 month minimum', position:41, active:true,
         min_months:6, detail:'Up to 2 platforms\n4 contents each month: 1 graphic and 3 reels up to 60s, or 4 reels up to 60s\nDedicated account management and content posting\nStrategic content planning for every deliverable\nProfessional copywriting for every planned deliverable\nOne-time on-site shoot for Reels content\nBasic accounts analytics report' },
       { slug:'koc-10', category:'KOC programmes', name:'KOC package · 10 creators', rate:4500, unit:'Per campaign', position:50, active:true },
-      { slug:'koc-custom', category:'KOC programmes', name:'KOC custom list', rate:null, unit:'Costed list per creator', position:53, active:true }],
+      { slug:'koc-custom', category:'KOC programmes', name:'KOC custom list', rate:null, unit:'Costed list per creator', position:53, active:true },
+      { slug:'rev-minor', category:'Add-ons', name:'Minor revision', rate:200, unit:'Per asset, per round', position:70, active:true },
+      { slug:'urgent', category:'Add-ons', name:'Urgent fee', rate:150, unit:'Per affected asset, per round', position:72, active:true }],
     client_services: [], client_documents: [], client_requests: [],
     team_roles: [
       { slug:'admin', name:'Admin', is_admin:true, position:0, can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:true, can_billing:true, can_remove:true },

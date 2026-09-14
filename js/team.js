@@ -57,19 +57,36 @@
       e.stopPropagation();
       var open = menu.hidden;
       shutMenus();
+      // Placed on the viewport, so the table's overflow cannot clip it.
       menu.hidden = !open;
       btn.setAttribute('aria-expanded', String(open));
-      // Placed on the viewport, so the table's overflow cannot clip it.
       if (open) {
-        var r = btn.getBoundingClientRect();
+        var r = btn.getBoundingClientRect(), mh = menu.offsetHeight;
         menu.style.position = 'fixed';
-        menu.style.top = (r.bottom + 4) + 'px';
         menu.style.right = 'auto';
         menu.style.left = Math.max(8, r.right - menu.offsetWidth) + 'px';
+        /* Upwards where the room is above: a ⋯ on the last row used to open
+           past the bottom of the window, which is nowhere a phone can reach. */
+        menu.style.top = (r.bottom + 4 + mh <= window.innerHeight - 8 || r.top - 4 - mh < 8)
+          ? (r.bottom + 4) + 'px' : (r.top - 4 - mh) + 'px';
+        held = { btn: btn, top: r.top };
       }
     });
   }
-  window.addEventListener('scroll', shutMenus, true);
+  /* Clicking a ⋯ focuses it, and the browser scrolls whatever it has to in
+     order to reveal the focused button. That scroll arrives a frame after the
+     menu opened and used to close it again, so on a phone the ⋯ on the bottom
+     rows could not be opened at all. A scroll that has not moved the button the
+     menu is hanging off is that one, and is no reason to close anything; one
+     that has moved it has carried the menu away from its row, which is. */
+  var held = null;
+  function scrolledAway() {
+    if (!held) return true;
+    if (Math.abs(held.btn.getBoundingClientRect().top - held.top) < 2) return false;
+    held = null;
+    return true;
+  }
+  window.addEventListener('scroll', function () { if (scrolledAway()) shutMenus(); }, true);
   document.addEventListener('click', function (e) {
     if (!e.target.closest || !e.target.closest('#sectionTeam .team-act')) shutMenus();
   });
@@ -107,15 +124,45 @@
   }
 
   // ---- Members ------------------------------------------------------------
+  /* People are listed under the group they belong to, the way the rate card
+     lists services under a category. A column of identical Group selects said
+     the same thing the groups table below already says, three times over, and
+     answered "who is in Sales" only by reading every row. The heading answers
+     it, and moving somebody is Edit in the ⋯, where a rare action belongs. */
   function paintMembers() {
     var box = $('teamList');
     box.innerHTML = '';
     if (!state.rows.length) { box.innerHTML = '<div class="empty">No team members.</div>'; return; }
     var head = document.createElement('div');
     head.className = 'team-head';
-    head.innerHTML = '<span>Person</span><span>Group</span><span>State</span><span></span>';
+    head.innerHTML = '<span>Person</span><span>State</span><span></span>';
     box.appendChild(head);
-    state.rows.forEach(function (m) { box.appendChild(memberRow(m)); });
+    var placed = {};
+    state.roles.forEach(function (r) {
+      var mine = state.rows.filter(function (m) { return m.role === r.slug; });
+      if (!mine.length) return;   // a group nobody is in draws no heading
+      mine.forEach(function (m) { placed[m.id] = true; });
+      box.appendChild(catHead(r.name));
+      byName(mine).forEach(function (m) { box.appendChild(memberRow(m)); });
+    });
+    // A person whose group was deleted under them still has to be reachable.
+    var loose = state.rows.filter(function (m) { return !placed[m.id]; });
+    if (loose.length) {
+      box.appendChild(catHead('No group'));
+      byName(loose).forEach(function (m) { box.appendChild(memberRow(m)); });
+    }
+  }
+  function byName(a) {
+    return a.slice().sort(function (x, y) {
+      if (Boolean(x.active) !== Boolean(y.active)) return x.active ? -1 : 1;
+      return String(x.name || '').localeCompare(String(y.name || ''));
+    });
+  }
+  function catHead(name) {
+    var el = document.createElement('div');
+    el.className = 'svc-cat';
+    el.textContent = name;
+    return el;
   }
 
   function memberRow(m) {
@@ -125,23 +172,24 @@
     el.innerHTML =
       '<span class="team-who"><b>' + esc(m.name) + (self ? ' <i>you</i>' : '') + '</b>' +
         '<small>' + esc(m.email || '') + '</small></span>' +
-      '<span><select class="select select-sm" data-f="role" aria-label="Group">' + roleOptions(m.role) + '</select></span>' +
       // The state is a value, so it is a select; a person cannot switch themselves off.
       '<span><select class="select select-sm state-select ' + (m.active ? 'is-ok' : 'is-off') + '" data-f="active" aria-label="State"' +
         (self ? ' disabled' : '') + '>' +
         '<option value="on"' + (m.active ? ' selected' : '') + '>Active</option>' +
         '<option value="off"' + (m.active ? '' : ' selected') + '>Inactive</option></select></span>' +
-      (m.active && m.email ? menuBtn(menuItem('invite', 'Invite')) : '<span class="team-act"></span>');
+      /* Mail leaves the building and cannot be recalled, so Send invitation
+         sits one place from Edit and asks first, as it does on a contact. */
+      menuBtn(menuItem('edit', 'Edit') +
+              (m.active && m.email ? menuItem('invite', 'Send invitation') : ''));
 
     wireMenu(el);
-    el.querySelector('[data-f="role"]').addEventListener('change', function () {
-      saveMember(m, { role: this.value });
-    });
     el.querySelector('[data-f="active"]').addEventListener('change', function () {
       var on = this.value === 'on';
       if (!on && !confirm('Deactivate ' + m.name + '?\n\nAccess is removed until reactivated.')) { this.value = 'on'; return; }
       saveMember(m, { active: on });
     });
+    var ed = el.querySelector('[data-a="edit"]');
+    if (ed) ed.addEventListener('click', function () { openMemberBox(m); });
     var inv = el.querySelector('[data-a="invite"]');
     if (inv) inv.addEventListener('click', function () { reinvite(m); });
     return el;
@@ -159,16 +207,28 @@
   }
 
   // ---- Groups -------------------------------------------------------------
+  /* A group is read far more often than it is changed: somebody deciding which
+     group a new colleague goes in wants to know what each one opens. Eight
+     columns of checkboxes answered that only by counting ticks across a table
+     that had to scroll sideways to fit, and every switch added another column.
+     So the row states the group in words and the ⋯ opens the switches, which
+     is how a service and a contact are already edited. */
   function paintGroups() {
     var box = $('groupList');
     box.innerHTML = '';
     var head = document.createElement('div');
     head.className = 'group-head';
-    head.innerHTML = '<span>Group</span>' +
-      FLAGS.map(function (f) { return '<span>' + esc(f[1]) + '</span>'; }).join('') +
-      '<span>Admin</span><span></span>';
+    head.innerHTML = '<span>Group</span><span>Access</span><span></span>';
     box.appendChild(head);
     state.roles.forEach(function (r) { box.appendChild(groupRow(r)); });
+  }
+
+  // What the group opens, in its own words. An admin group opens everything,
+  // and listing eight things it can do is a longer way of saying so.
+  function grantWord(r) {
+    if (r.is_admin) return 'Everything';
+    var on = FLAGS.filter(function (f) { return r[f[0]]; }).map(function (f) { return f[1]; });
+    return on.length ? on.join(' · ') : 'No access';
   }
 
   function groupRow(r) {
@@ -179,22 +239,11 @@
     var members = state.rows.filter(function (m) { return m.role === r.slug; }).length;
     el.innerHTML =
       '<span class="group-name"><b>' + esc(r.name) + '</b><small>' + members + ' member' + (members === 1 ? '' : 's') + '</small></span>' +
-      FLAGS.map(function (f) {
-        return '<span class="team-flag" data-label="' + esc(f[1]) + '"><input type="checkbox" data-f="' + f[0] + '"' +
-          (r[f[0]] ? ' checked' : '') + (locked ? ' disabled' : '') + ' aria-label="' + esc(f[1]) + '"></span>';
-      }).join('') +
-      '<span class="team-flag" data-label="Admin"><input type="checkbox" data-f="is_admin"' +
-        (r.is_admin ? ' checked' : '') + (locked ? ' disabled' : '') + ' aria-label="Admin"></span>' +
+      '<span class="group-grants">' + esc(grantWord(r)) + '</span>' +
       (locked ? '<span class="team-act"></span>'
-        : menuBtn(menuItem('rename', 'Rename') + (used ? '' : menuItem('del', 'Delete', 'is-danger'))));
+        : menuBtn(menuItem('rename', 'Edit') + (used ? '' : menuItem('del', 'Delete', 'is-danger'))));
 
     wireMenu(el);
-    Array.prototype.forEach.call(el.querySelectorAll('input[type="checkbox"]'), function (cb) {
-      cb.addEventListener('change', function () {
-        var patch = {}; patch[cb.getAttribute('data-f')] = cb.checked;
-        saveGroup(r, patch);
-      });
-    });
     var ren = el.querySelector('[data-a="rename"]');
     if (ren) ren.addEventListener('click', function () { openGroupBox(r); });
     var del = el.querySelector('[data-a="del"]');
@@ -223,13 +272,27 @@
     });
   }
 
-  // One panel adds a group or renames one.
+  // The switches, drawn once into the panel that adds a group and edits one.
+  var SWITCHES = FLAGS.concat([['is_admin', 'Admin']]);
+  $('grFlags').innerHTML = SWITCHES.map(function (f) {
+    return '<label class="perm"><input type="checkbox" data-f="' + f[0] + '"><span>' + esc(f[1]) + '</span></label>';
+  }).join('');
+  function flagBoxes() { return Array.prototype.slice.call($('grFlags').querySelectorAll('input')); }
+
+  // One panel adds a group or edits one, as one panel adds a service.
   function openGroupBox(r) {
+    shutMenus();   // it was chosen from a ⋯, which does not repaint behind it
     state.editing = r || null;
-    $('grTitle').textContent = r ? 'Rename group' : 'New group';
+    $('grTitle').textContent = r ? 'Edit group' : 'New group';
     $('grSave').textContent = r ? 'Save' : 'Add';
     $('groupAddBox').hidden = false;
     $('grName').value = r ? r.name : '';
+    // A new group starts on the section everybody needs and nothing else.
+    flagBoxes().forEach(function (cb) {
+      var k = cb.getAttribute('data-f');
+      cb.checked = r ? Boolean(r[k]) : k === 'can_clients';
+      cb.disabled = Boolean(r && r.slug === 'admin');
+    });
     msg('grMsg', '');
     $('grName').focus();
   }
@@ -238,20 +301,23 @@
   $('grSave').addEventListener('click', function () {
     var name = ($('grName').value || '').trim();
     if (!name) { msg('grMsg', 'A name is required.', 'err'); return; }
+    var flags = {};
+    flagBoxes().forEach(function (cb) { flags[cb.getAttribute('data-f')] = cb.checked; });
     if (state.editing) {
       var r = state.editing;
+      var patch = {};
+      if (name !== r.name) patch.name = name;
+      Object.keys(flags).forEach(function (k) { if (Boolean(r[k]) !== flags[k]) patch[k] = flags[k]; });
       $('groupAddBox').hidden = true; state.editing = null;
-      if (name !== r.name) saveGroup(r, { name: name });
+      if (Object.keys(patch).length) saveGroup(r, patch);
       return;
     }
     var slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     if (!slug) { msg('grMsg', 'Use letters or numbers in the name.', 'err'); return; }
     if (state.roles.some(function (r) { return r.slug === slug; })) { msg('grMsg', 'That group already exists.', 'err'); return; }
-    db.from('team_roles').insert({
-      slug: slug, name: name, position: state.roles.length,
-      can_clients: true, can_review: false, can_campaigns: false, can_links: false,
-      can_billing: false, can_activity: false, can_remove: false, is_admin: false
-    }).then(function (q) {
+    var row = { slug: slug, name: name, position: state.roles.length };
+    Object.keys(flags).forEach(function (k) { row[k] = flags[k]; });
+    db.from('team_roles').insert(row).then(function (q) {
       if (q.error) { msg('grMsg', q.error.message, 'err'); return; }
       log('team.group_added', name, '');
       $('groupAddBox').hidden = true;
@@ -260,15 +326,22 @@
     });
   });
 
-  // ---- Add a person -------------------------------------------------------
-  $('teamAdd').addEventListener('click', function () {
+  // ---- Add or edit a person -----------------------------------------------
+  var editingMember = null;
+  function openMemberBox(m) {
+    shutMenus();
+    editingMember = m || null;
+    $('tmTitle').textContent = m ? 'Edit member' : 'New team member';
+    $('tmSave').textContent = m ? 'Save' : 'Add';
     $('teamAddBox').hidden = false;
-    $('tmName').value = ''; $('tmEmail').value = '';
-    fillRolePick(); $('tmRole').value = 'account';
+    $('tmName').value = m ? (m.name || '') : '';
+    $('tmEmail').value = m ? (m.email || '') : '';
+    fillRolePick(); $('tmRole').value = m ? m.role : 'account';
     msg('tmMsg', '');
     $('tmName').focus();
-  });
-  $('tmCancel').addEventListener('click', function () { $('teamAddBox').hidden = true; });
+  }
+  $('teamAdd').addEventListener('click', function () { openMemberBox(null); });
+  $('tmCancel').addEventListener('click', function () { $('teamAddBox').hidden = true; editingMember = null; });
   $('tmSave').addEventListener('click', function () {
     var name = ($('tmName').value || '').trim();
     var email = ($('tmEmail').value || '').trim().toLowerCase();
@@ -276,6 +349,27 @@
     if (!name) { msg('tmMsg', 'A name is required.', 'err'); return; }
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg('tmMsg', 'A valid email is required.', 'err'); return; }
     if (!role) { msg('tmMsg', 'A group is required.', 'err'); return; }
+    if (editingMember) {
+      var m = editingMember;
+      /* The row's email is the address the console signs in with, so moving it
+         moves the door. The login itself stays where it was until somebody is
+         invited at the new address. */
+      if (email !== String(m.email || '').toLowerCase() &&
+          !confirm('Change the sign-in address to ' + email + '?\n\n' + m.name +
+                   ' signs in with the new address. Send an invitation so the login is made.')) return;
+      $('teamAddBox').hidden = true; editingMember = null;
+      db.from('team_members').update({ name: name, email: email, role: role }).eq('id', m.id).then(function (r) {
+        if (r.error) {
+          msg('teamMsg', /duplicate|unique/i.test(r.error.message)
+            ? 'That email is already on the list.' : r.error.message, 'err');
+          return;
+        }
+        log('team.edited', name, email + ' · ' + roleName(role));
+        msg('teamMsg', 'Saved.', 'ok');
+        load();
+      });
+      return;
+    }
     db.from('team_members').insert({ name: name, email: email, role: role, active: true })
       .then(function (r) {
         if (r.error) {
@@ -296,7 +390,7 @@
               var why = (d.error === 'not_admin') ? 'Only an admin can send invitations.'
                 : /not deployed/.test(r.why)
                   ? 'The invite-member function is not deployed. Add the login under Supabase ' +
-                    'Authentication, or deploy the function and use Invite.'
+                    'Authentication, or deploy the function and use Send invitation.'
                   : 'Invitation could not be sent: ' + r.why;
               msg('teamMsg', name + ' added. ' + why, 'warn');
               return;
@@ -310,7 +404,10 @@
   });
 
   function reinvite(m) {
+    // The ⋯ it was chosen from would otherwise sit open over the answer.
+    shutMenus();
     if (!m.email) { msg('teamMsg', m.name + ' has no email on record.', 'err'); return; }
+    if (!confirm('Send a sign-in invitation to ' + m.email + '?')) return;
     msg('teamMsg', 'Sending an invitation to ' + m.email + '…', 'ok');
     API.invokeFn('invite-member', { email: m.email, name: m.name })
       .then(function (r) {

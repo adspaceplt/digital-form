@@ -73,9 +73,9 @@ function inPage(coarse) {
   });
 
   // 2c a header cell sits over its column: same left edge as the first row's cell
-  document.querySelectorAll('.crm-table > .crm-head, .team-table > .team-head').forEach(h => {
+  document.querySelectorAll('.crm-table > .crm-head, .team-table > .team-head, .team-table > .group-head').forEach(h => {
     if (!vis(h)) return;
-    const row = [...h.parentElement.children].find(k => k !== h && vis(k) && k.matches('.crm-row, .svc-row, .team-row'));
+    const row = [...h.parentElement.children].find(k => k !== h && vis(k) && k.matches('.crm-row, .svc-row, .team-row, .group-row'));
     if (!row) return;
     const shown = el => getComputedStyle(el).display !== 'none';
     const hc = [...h.children].filter(shown), rc = [...row.children].filter(shown);
@@ -395,6 +395,11 @@ async function walk(b, coarse, dark) {
   await p.locator('#crmCancel').click(); await p.waitForTimeout(200);
   await nav(p, 'team');
   await report('admin team ' + tag, p, coarse);
+  // The switches moved off the row and into this panel, so this is where they
+  // are now measured: a label on each, and a target a finger can hit.
+  await p.locator('#groupAdd').click(); await p.waitForTimeout(300);
+  await report('admin user group ' + tag, p, coarse);
+  await p.locator('#grCancel').click(); await p.waitForTimeout(150);
   await p.close();
   /* The client pages have no dark, by design: a client deciding on a proposal
      should not be doing it in a register nobody chose for that conversation.

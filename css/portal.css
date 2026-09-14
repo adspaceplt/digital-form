@@ -2857,37 +2857,41 @@ body > .shell { width: 100%; }
 }
 
 /* ---------- Team ----------
-   A grid of people against permissions. One row per person, a column per
-   switch, so a glance answers "who can see the activity record" the same way
-   a glance at the client table answers "who owns Star Living". */
+   Two tables. People, under the group they belong to, and the groups, each
+   stating in words what it opens. Permissions are a property of the group,
+   never of the person, so they are read on three rows rather than on nine. */
 .team-table {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 12px 0 4px; overflow-x: auto;
+  padding: 12px 0 4px;
 }
-/* Members: who, which group, what to do with them. */
+/* Members: who they are and whether they are working. Which group is the
+   heading they sit under, so the row does not repeat it. */
 .team-head, .team-row {
   display: grid; align-items: center; gap: 0 10px;
-  grid-template-columns: minmax(200px, 1.6fr) 200px var(--state-w) var(--ctl-h);
+  grid-template-columns: minmax(200px, 1fr) var(--state-w) var(--ctl-h);
   padding: 0 15px;
 }
-/* Groups: one row per group, a column per switch. */
+/* Groups: the group, then what it opens, in words. A column per switch made
+   the table wider than the console and grew with every switch added. */
 .group-head, .group-row {
-  display: grid; align-items: center; gap: 0 10px; min-width: 900px;
-  grid-template-columns: minmax(150px, 1.3fr) repeat(7, minmax(72px, .7fr)) 70px var(--ctl-h);
+  display: grid; align-items: center; gap: 0 16px;
+  grid-template-columns: minmax(150px, 260px) minmax(0, 1fr) var(--ctl-h);
   padding: 0 15px;
 }
+.group-grants { font-size: 13px; color: var(--ink-soft); }
 .group-name { display: flex; flex-direction: column; min-width: 0; }
 .group-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
 .group-name small { font-size: 12px; color: var(--ink-mute); }
 /* The ⋯ menu hangs from its own cell, not from the table. */
 .team-act { position: relative; display: flex; justify-content: flex-end; }
 .team-act .kmenu { top: calc(var(--ctl-h) + 4px); right: 0; width: 200px; }
+/* Every label starts where its column's content starts, as a rate card
+   heading does; centring left "STATE" floating over the left edge of a select. */
 .team-head, .group-head {
   padding-bottom: 8px; border-bottom: 1px solid var(--line);
   font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
-  color: var(--ink-mute); text-align: center;
+  color: var(--ink-mute); text-align: left;
 }
-.team-head > span:first-child, .group-head > span:first-child { text-align: left; }
 .team-row, .group-row { padding-top: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line-soft); }
 .team-row:last-child, .group-row:last-child { border-bottom: 0; }
 .group-name .input { width: 100%; }
@@ -2896,9 +2900,16 @@ body > .shell { width: 100%; }
 .team-who b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
 .team-who b i { font-style: normal; font-size: 11px; font-weight: 600; color: var(--accent); margin-left: 6px; }
 .team-who small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.team-flag { text-align: center; }
-.team-flag input { width: 18px; height: 18px; accent-color: var(--accent); }
-.team-flag input:disabled { opacity: .45; }
+/* The switches, in the panel that edits a group. The label is the target, so
+   the row clears the control floor even though the box in it is 18px. */
+.permgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 18px; margin-top: 4px; }
+.perm {
+  display: flex; align-items: center; gap: 10px; min-height: var(--ctl-h);
+  font-size: 13px; color: var(--ink-soft); cursor: pointer;
+}
+.perm input { flex: 0 0 auto; width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+.perm input:disabled { opacity: .45; }
+.perm:has(input:disabled) { cursor: default; color: var(--ink-mute); }
 .team-act { text-align: right; }
 .select-sm { min-height: var(--ctl-h-sm); height: var(--ctl-h-sm); min-width: 0; padding-right: 28px; font-size: 13px; width: 100%; }
 
@@ -2910,35 +2921,22 @@ body.no-remove #campDangerRow,
 body.no-remove .slink-actions [data-a="del"],
 body.no-remove .kmenu-item[data-a="del"].is-danger:not([data-soft]) { display: none !important; }
 body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; }
-/* On a phone the role select and the switches meet the same target as
-   everything else. The switch cell is the target, not the 18px box in it. */
 @media (pointer: coarse) {
   .select-sm { min-height: var(--ctl-h); }
-  .team-flag { min-height: var(--ctl-h); display: grid; place-items: center; }
-  .team-flag input { width: 22px; height: 22px; }
+  .perm input { width: 22px; height: 22px; }
 }
-/* A phone cannot show ten columns, and a table that scrolls sideways hides
-   the switches it exists to show. So each person becomes a card: who, role,
-   the switches two abreast with their names beside them, then the actions. */
+/* A phone takes two lines a row: who or which group with the ⋯ beside it,
+   then the state or what the group opens underneath. */
 @media (max-width: 640px) {
-  .team-table { overflow: visible; padding: 0; }
+  .team-table { padding: 0; }
   .team-head, .group-head { display: none; }
   .team-row, .group-row {
-    min-width: 0; grid-template-columns: 1fr 1fr; gap: 8px 12px;
+    grid-template-columns: minmax(0, 1fr) var(--ctl-h); gap: 8px 12px;
     padding: 12px 15px; align-items: stretch;
   }
-  /* Who or which group on the left, the ⋯ on the right, the rest below. */
-  .team-row { grid-template-columns: minmax(0, 1fr) var(--ctl-h); }
-  .team-row > span:nth-child(2), .team-row > span:nth-child(3) { grid-column: 1 / -1; }
-  .group-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
-  .group-row > .group-name { grid-column: 1; grid-row: 1; }
+  .team-row > span:nth-child(2), .group-row > .group-grants { grid-column: 1 / -1; }
   .team-row > .team-act, .group-row > .team-act { grid-column: 2; grid-row: 1; align-items: start; }
-  .team-flag {
-    display: flex; align-items: center; gap: 10px; text-align: left;
-    min-height: var(--ctl-h); font-size: 13px; color: var(--ink-soft);
-  }
-  .team-flag::after { content: attr(data-label); }
-  .team-flag input { flex: 0 0 auto; margin: 0; }
+  .permgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .team-act { display: flex; gap: 8px; margin-top: 4px; }
   .team-act .btn { flex: 1 1 0; min-height: var(--ctl-h); }
 }

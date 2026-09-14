@@ -835,15 +835,33 @@
       menu.hidden = !open;
       this.setAttribute('aria-expanded', String(open));
       if (open && btn.closest('.team-act')) {
-        var r = btn.getBoundingClientRect();
+        var r = btn.getBoundingClientRect(), mh = menu.offsetHeight;
         menu.style.position = 'fixed';
-        menu.style.top = (r.bottom + 4) + 'px';
         menu.style.right = 'auto';
         menu.style.left = Math.max(8, r.right - menu.offsetWidth) + 'px';
+        /* Upwards where the room is above: a ⋯ on the last row used to open
+           past the bottom of the window, which is nowhere a phone can reach. */
+        menu.style.top = (r.bottom + 4 + mh <= window.innerHeight - 8 || r.top - 4 - mh < 8)
+          ? (r.bottom + 4) + 'px' : (r.top - 4 - mh) + 'px';
+        held = { btn: btn, top: r.top };
       }
     });
   }
+  /* Clicking a ⋯ focuses it, and the browser scrolls whatever it has to in
+     order to reveal the focused button. That scroll arrives a frame after the
+     menu opened and used to close it again, so on a phone the ⋯ on the bottom
+     rows could not be opened at all. A scroll that has not moved the button the
+     menu is hanging off is that one, and is no reason to close anything; one
+     that has moved it has carried the menu away from its row, which is. */
+  var held = null;
+  function scrolledAway() {
+    if (!held) return true;
+    if (Math.abs(held.btn.getBoundingClientRect().top - held.top) < 2) return false;
+    held = null;
+    return true;
+  }
   window.addEventListener('scroll', function () {
+    if (!scrolledAway()) return;
     Array.prototype.forEach.call(document.querySelectorAll('.team-act .kmenu'), function (m) { m.hidden = true; });
   }, true);
 
@@ -1643,18 +1661,52 @@
         ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
             '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
+            /* Inactive first, then gone, as it is for a letter and a contact:
+               a line is taken off the card before it can be taken out of it.
+               No data-soft, so body.no-remove holds it back from a group that
+               does not carry can_remove. */
+            (s.active === false
+              ? '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete permanently</b></button>'
+              : '') +
           '</div>'
         : '') + '</span>';
     row.classList.add('cat-row');
     if (isAdmin()) {
       wireMenu(row);
       row.querySelector('[data-a="edit"]').addEventListener('click', function () { openSvc(s); });
+      var del = row.querySelector('[data-a="del"]');
+      if (del) del.addEventListener('click', function () { purgeSvc(s); });
       row.querySelector('[data-f="active"]').addEventListener('change', function () {
         var on = this.value === 'on';
         patchSvc(s, { active: on }, on ? 'service.on' : 'service.off');
       });
     }
     return row;
+  }
+  /* A rate card line a client is on stays, because the card is what a person
+     picks from and a line that vanishes mid-quote is a line somebody has to
+     find again. A client's own service line keeps its own label and rate, so
+     removing the card row costs a confirmed engagement nothing; what it costs
+     is the next quote, which is why the count is the answer rather than the
+     force. */
+  function purgeSvc(s) {
+    Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
+    db.from('client_services').select('id').eq('service_slug', s.slug).is('archived_at', null).then(function (q) {
+      if (q.error) { msg('svcListMsg', q.error.message, 'err'); return; }
+      var n = (q.data || []).length;
+      if (n) {
+        msg('svcListMsg', s.name + ' is on ' + n + ' client service line' + (n === 1 ? '' : 's') +
+            '. Remove those lines first.', 'warn');
+        return;
+      }
+      if (!confirm('Delete ' + s.name + ' permanently?\n\nThis cannot be undone. Letters already issued keep the line as it was written.')) return;
+      db.from('services').delete().eq('slug', s.slug).then(function (r) {
+        if (r.error) { msg('svcListMsg', r.error.message, 'err'); return; }
+        log('service.deleted', s.name, s.category || '');
+        enterServices();
+        msg('svcListMsg', 'Deleted.', 'ok');
+      });
+    });
   }
   function patchSvc(s, patch, action) {
     db.from('services').update(patch).eq('slug', s.slug).then(function (r) {
