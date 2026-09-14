@@ -596,20 +596,24 @@
   });
 
   // ---- Load ----------------------------------------------------------------
+  /* This page is English only (no language action in its chrome), so it takes
+     the English half of the shared words. The covers say the same thing here
+     as on /creators/ and /client/ because they are the same words, not
+     because three files were kept in step by hand. */
+  var W = window.ADspaceWords.en;
+
   function load() {
     if (!token && API.configured) {
-      showState('Link not recognised',
-        'Please check the link or contact your ' + cfg.agencyName + ' account manager.');
+      showState(W.notFound, W.notFoundText);
       return;
     }
     API.getReviewFeed(token, passcode).then(function (data) {
       if (!data || data.error === 'not_found') {
-        showState('Link not recognised',
-          'Please check the link or contact your ' + cfg.agencyName + ' account manager.');
+        showState(W.notFound, W.notFoundText);
         return;
       }
       if (data.error === 'passcode_required') {
-        showState('Access code', 'Enter the access code provided.', true);
+        showState(W.passTitle, W.passText, true);
         return;
       }
       feed = data;
@@ -620,14 +624,13 @@
       // had it run this. Written in one place so the two cannot drift apart.
       setPageTitle(feed.client.name + ' Content Review Portal by ADspace');
       if (!feed.batches.length) {
-        showState('No content pending review',
-          'The next content set will appear here when it is ready for review.');
+        showState(W.nothing, W.nothingText);
         return;
       }
       build();
     }).catch(function (err) {
       console.error(err);
-      showState('Unable to load', 'Please refresh. If the problem continues, contact ' + cfg.supportEmail + '.');
+      showState(W.failTitle, W.failText);
     });
   }
 

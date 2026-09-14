@@ -58,7 +58,7 @@
 
   /* Page furniture in both languages. Creator names are already Chinese and
      are never translated; only the words around them are. */
-  var T = {
+  var T = window.ADspaceWords.of({
     en: {
       kicker: 'Creator Selection',
       preparedFor: 'Prepared for',
@@ -104,12 +104,6 @@
       due: function (d) { return 'Campaign due ' + d; },
       yourCampaign: 'Your campaign',
       stillChoosing: 'Available creators',
-      chip: {
-        confirmed: 'Confirmed', pending_visit: 'Pending visit', pending_delivery: 'Pending delivery',
-        pending_draft: 'Pending draft', reviewing: 'Reviewing',
-        changes: 'Changes requested', scheduled: 'Scheduled', posted: 'Posted', completed: 'Completed',
-        withdrawn: 'Withdrawn'
-      },
       shootOn: 'Shoot',
       deliveryOn: 'Delivery',
       postedOn: 'Posted',
@@ -155,14 +149,6 @@
       resultsHead: 'Campaign results',
       placements: 'Placements', cpe: 'Cost per engagement',
       impressions: 'Impressions', engagements: 'Engagements', views: 'Views',
-      closed: 'Selection closed',
-      closedText: 'Please contact your ADspace account manager for any changes.',
-      notFound: 'Link not recognised',
-      notFoundText: 'Please check the link or contact your ADspace account manager.',
-      passTitle: 'Access code',
-      passText: 'Enter the access code provided.',
-      passWrong: 'Incorrect access code.',
-      loading: 'Loading…',
       noneYet: 'No creators.'
     },
     zh: {
@@ -210,12 +196,6 @@
       due: function (d) { return '合作截止 ' + d; },
       yourCampaign: '合作进度',
       stillChoosing: '可选博主',
-      chip: {
-        confirmed: '已确认', pending_visit: '待拍摄', pending_delivery: '待寄送',
-        pending_draft: '待初稿', reviewing: '审阅中',
-        changes: '需修改', scheduled: '已排期', posted: '已发布', completed: '已完成',
-        withdrawn: '已退出'
-      },
       shootOn: '拍摄',
       deliveryOn: '寄送',
       postedOn: '发布于',
@@ -256,17 +236,9 @@
       resultsHead: '合作成效',
       placements: '发布数', cpe: '单次互动成本',
       impressions: '曝光', engagements: '互动', views: '播放',
-      closed: '选择已结束',
-      closedText: '如需调整，请联系您的 ADspace 客户经理。',
-      notFound: '链接无效',
-      notFoundText: '请检查链接，或联系您的 ADspace 客户经理。',
-      passTitle: '访问码',
-      passText: '请输入访问码。',
-      passWrong: '访问码不正确。',
-      loading: '加载中…',
       noneYet: '暂无博主。'
     }
-  };
+  });
 
   var lang = 'en';
   function t() { return T[lang]; }
@@ -470,7 +442,7 @@
     var c = feed.campaign || {};
     var key = o.state;
     if (key === 'pending_visit' && c.push_format === 'seeding') key = 'pending_delivery';
-    return t().chip[key] || key;
+    return t().step[key] || key;
   }
 
   // The same colour the console gives the same state.

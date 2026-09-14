@@ -67,7 +67,7 @@ Suites live in `tests/` in the repo (`stub2.js` is the Supabase stand-in; add ev
 ### Folder and file rules
 - Root HTML files (`index.html`, `404.html`, `verify.html`, `ap01.html`, `ap02.html`, `ap03.html`, `ap-dale.html`, `accv-new.html`, `3pform.html`, `einvoiceinfo.html`, `interview-quiz.html`, `sales-program.html`, `supplier.html`) are the user's existing site. Never edit them, never edit `404.html`.
 - Portal pages are folders with an `index.html` and clean paths (`/admin/`, `/creators/`, `/review/`), never `.html` in a URL. New pages start from `docs/PAGE-TEMPLATE.html`.
-- One stylesheet `css/portal.css`; one script per section in `js/`; `js/api.js` is the only Supabase client; `js/money.js` the only money formatter; `js/chrome.js` the only header and footer. No build step, no framework, no bundler, ES5-style function scripts wrapped in an IIFE.
+- One stylesheet `css/portal.css`; one script per section in `js/`; `js/api.js` is the only Supabase client; `js/money.js` the only money formatter; `js/chrome.js` the only header and footer; **`js/words.js` the only copy of a word two pages share** (loaded before every page script). No build step, no framework, no bundler, ES5-style function scripts wrapped in an IIFE.
 - Docs for setup live in `docs/` (`CONTENT-REVIEW-SETUP.md`, `S3-UPLOAD-SETUP.md`, `DRIVE-IMPORT-CHECK.md`, `FIX-ACCESS-DENIED.md`).
 - Secrets never enter the repo. The Supabase anon key and the Google browser key are public by design and held back by their restrictions (Google key: websites `digital.adspace.me/*`, Drive API only). The delete code lives in the database.
 

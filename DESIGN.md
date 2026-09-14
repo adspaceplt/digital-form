@@ -381,6 +381,29 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   removed. `prefers-reduced-motion` turns transitions off.
 
 ### Copy and microcopy (part of the design system)
+
+**A word two pages share is written once.** `js/words.js` holds the covers
+(Link not recognised, Access code, Access denied, Unable to load, Selection
+closed, No content pending review), the whole status vocabulary (campaign
+steps, service line states, client stages, request states and kinds, campaign
+states) and the actions every screen carries, in both languages. A page keeps
+its own dictionary for what only it says and merges the shared one underneath
+with `ADspaceWords.of({ en, zh })`; `/review/` has no language action in its
+chrome, so it takes `ADspaceWords.en` directly. The console reads the same
+file: `STAGES`, `SV_STATE`, `RQ_STATE`, `RQ_KIND` in `js/crm.js` and
+`OPTION_WORD` in `js/campaigns.js` are built from it rather than typed again.
+
+The colour is the other half of a state and is not a language, so tones live
+once in `W.TONE` and `W.tone(key)`, which is what makes "same status words
+**and colours** on both sides" a fact about the code rather than a note in this
+file. Before this, "Link not recognised" was written three times (a dictionary
+in `creators.js`, another in `portal.js`, inline strings in `review.js`) and
+the status vocabulary four, so changing one phrase meant finding every page
+that said it, and one page quietly disagreeing with another was invisible
+until a client saw it. `tests/portal.js` asserts the structure: every shared
+word carries both languages, every state carries a colour, and a page word
+still sits on top of the shared one.
+
 - No explanatory copy: no hints, blurbs, notices, role descriptions or
   empty states that explain what a section is for. The heading and the
   controls are the explanation. Nothing says the same thing twice: a

@@ -778,21 +778,14 @@
   });
 
   // ---- Options ------------------------------------------------------------
-  var OPTION_WORD = {
-    option: ['Offered', ''],
-    shortlisted: ['Shortlisted', 'is-warn'],
-    backup: ['Backup', ''],
-    confirmed: ['Confirmed', 'is-ok'],
-    pending_visit: ['Pending visit', 'is-warn'],
-    pending_draft: ['Pending draft', 'is-warn'],
-    reviewing: ['Reviewing', 'is-warn'],
-    changes: ['Changes requested', 'is-warn'],
-    scheduled: ['Scheduled', 'is-ok'],
-    posted: ['Posted', 'is-ok'],
-    completed: ['Completed', 'is-ok'],
-    withdrawn: ['Withdrawn', 'is-danger'],
-    replaced: ['Replaced', 'is-danger']
-  };
+  /* The step words and their colours come from js/words.js, so the card here
+     and the chip on the client's page cannot drift. "Replaced" is the console's
+     alone: a client never sees that a creator was swapped, only who is on the
+     campaign now. */
+  var W = window.ADspaceWords;
+  var OPTION_WORD = Object.keys(W.en.step).reduce(function (m, k) {
+    m[k] = [W.en.step[k], W.tone(k)]; return m;
+  }, { replaced: ['Replaced', 'is-danger'] });
 
   function loadOptions() {
     db.from('campaign_options').select('*, creators(name, creator_profiles(platform, url))')
