@@ -2807,19 +2807,17 @@ body > .shell { width: 100%; }
 }
 
 /* A single line with Undo on it, for the few seconds when a person realises. */
+/* Something was undone and there is a way back. That is a message, not an
+   action to take, so the bar is a quiet strip: the ink fill belongs to the
+   primary button and to nothing else, and a full width black slab sitting a
+   few pixels above a black "Add contact" read as one enormous call to
+   action. Neutral ground, a hairline, ordinary text, and Undo as the outline
+   button it always was. */
 .undobar {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   margin: 0 0 12px; padding: 9px 14px;
-  background: var(--fill); color: var(--on-fill); border-radius: var(--radius-sm); font-size: 13px;
-}
-/* Undo is a way back, not the next thing to do. A filled button on the bar
-   reads as the page's primary action and pulls the eye off the work that is
-   still in front of the person, so it is outlined on the fill: unmistakably a
-   control, at the weight of the sentence it belongs to. It fills in on hover,
-   which is where a press is being considered. */
-.undobar .btn { background: transparent; border-color: var(--on-fill); color: var(--on-fill); min-height: 32px; }
-@media (hover: hover) {
-  .undobar .btn:hover { background: var(--on-fill); color: var(--fill); }
+  background: var(--sunk); color: var(--ink);
+  border: 1px solid var(--line); border-radius: var(--radius-sm); font-size: 13px;
 }
 .crm-removed-toggle { display: block; margin: 6px 0 12px; }
 .crm-group-worth { font-size: 13px; font-weight: 600; color: var(--ink-soft); font-variant-numeric: tabular-nums; margin-left: auto; }
