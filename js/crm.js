@@ -663,8 +663,11 @@
     var sub = [ct.role, 'Prefers ' + (LANG_WORD[ct.lang] || 'English')].filter(Boolean).join(' · ');
     row.innerHTML =
       '<span class="svc-name"><b>' + esc(ct.name) +
-        (removed ? ' <span class="tone">Removed</span>' : ct.is_primary ? ' <span class="tone is-ok">Main contact</span>' : '') +
-        (!removed && ct.portal_access ? ' <span class="tone">Portal</span>' : '') +
+        /* Green is the live state, and on this row the live thing is the
+           sign-in: main contact is a designation, not something running, so
+           it reads neutral and the accent is spent once. */
+        (removed ? ' <span class="tone">Removed</span>' : ct.is_primary ? ' <span class="tone">Main contact</span>' : '') +
+        (!removed && ct.portal_access ? ' <span class="tone is-ok">Portal access</span>' : '') +
         '</b><small>' + esc(sub) + '</small></span>' +
       '<span class="crm-reach">' +
         (ct.phone ? '<a class="plink" href="tel:' + esc(ct.phone) + '">' + esc(ct.phone) + '</a>' : '') +
@@ -680,8 +683,9 @@
               (ct.is_primary ? '' :
                 '<button class="kmenu-item" data-a="primary" type="button"><b>Main contact</b></button>') +
               (ct.portal_access
-                ? '<button class="kmenu-item" data-a="unportal" type="button"><b>Remove portal access</b></button>'
-                : '<button class="kmenu-item" data-a="portal" type="button"><b>Portal access</b></button>') +
+                ? '<button class="kmenu-item" data-a="invite" type="button"><b>Send invitation</b></button>' +
+                  '<button class="kmenu-item" data-a="unportal" type="button"><b>Revoke portal access</b></button>'
+                : '<button class="kmenu-item" data-a="portal" type="button"><b>Enable portal access</b></button>') +
               '<button class="kmenu-item is-danger" data-a="del" data-soft type="button"><b>Remove</b></button>') +
         '</div>' +
       '</span>';
@@ -689,7 +693,8 @@
     var on = function (a, fn) { var el = row.querySelector('[data-a="' + a + '"]'); if (el) el.addEventListener('click', fn); };
     on('edit',    function () { openContact(ct); });
     on('primary', function () { makePrimary(ct); });
-    on('portal',   function () { setPortal(ct, true); });
+    on('portal',   function () { askPortal(ct); });
+    on('invite',   function () { sendInvite(ct); });
     on('unportal', function () { setPortal(ct, false); });
     on('del',     function () { archiveContact(ct, true); });
     on('restore', function () { archiveContact(ct, false); });
@@ -697,21 +702,68 @@
   }
 
   /* Portal access is one switch on the contact; the email is the sign-in
-     address. Granting it also asks the invite function to create the login,
-     so the person can sign in whether or not sign-ups are open. */
-  function setPortal(ct, on) {
-    if (on && !ct.email) { msg('ctMsg', 'An email is required.', 'err'); openContact(ct); return; }
+     address. Enabling it always asks the invite function to make the login,
+     so the person can sign in whether or not sign-ups are open and never has
+     to register anything. Whether the invitation goes out with it is asked,
+     because the client is often told on a call and an email arriving out of
+     nowhere is the account manager's conversation to time, not ours. */
+  var portalFor = null;
+
+  function askPortal(ct) {
+    // The ⋯ it was chosen from would otherwise sit open behind the sheet.
+    Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
+    if (!ct.email) { msg('ctMsg', 'An email is required.', 'err'); openContact(ct); return; }
+    portalFor = ct;
+    $('portalFacts').innerHTML = [['Person', ct.name], ['Sign-in email', ct.email]]
+      .map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>'; }).join('');
+    $('portalInvite').checked = true;
+    msg('portalMsg', '');
+    $('portalSheet').hidden = false;
+  }
+  function closePortal() { $('portalSheet').hidden = true; portalFor = null; }
+  $('portalClose').addEventListener('click', closePortal);
+  $('portalCancel').addEventListener('click', closePortal);
+  $('portalGo').addEventListener('click', function () {
+    if (!portalFor) return;
+    var ct = portalFor, invite = $('portalInvite').checked;
+    closePortal();
+    setPortal(ct, true, invite);
+  });
+
+  /* The invitation on its own, for a contact who already has access: told on
+     a call today, emailed when they ask for it next week. */
+  function sendInvite(ct) {
+    // Nothing repaints after this one, so the menu it was chosen from has to
+    // be put away here or it sits open over the answer.
+    Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
+    if (!ct.email) { msg('crmWorkMsg', 'An email is required.', 'err'); return; }
+    msg('crmWorkMsg', 'Sending…');
+    API.invokeFn('invite-member', { email: ct.email, name: ct.name, kind: 'client', notify: true })
+      .then(function (res) {
+        if (res.error) { msg('crmWorkMsg', res.why, 'err'); return; }
+        log('contact.portal_invite', state.client.name + ' · ' + ct.name, ct.email);
+        msg('crmWorkMsg', res.data.already ? 'A login already exists. Sign-in link sent to ' + ct.email + '.'
+          : 'Invitation sent to ' + ct.email + '.', 'ok');
+      });
+  }
+
+  function setPortal(ct, on, invite) {
     db.from('client_contacts').update({ portal_access: on }).eq('id', ct.id).then(function (r) {
       if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
       log(on ? 'contact.portal_on' : 'contact.portal_off', state.client.name + ' · ' + ct.name, ct.email || '');
       msg('crmWorkMsg', '');
       loadContacts();
       loadRequests();
-      if (!on) { undoBar(ct.name + ': portal access removed.', function () { setPortal(ct, true); }); return; }
-      API.invokeFn('invite-member', { email: ct.email, name: ct.name, kind: 'client' }).then(function (res) {
-        if (res.error) { msg('crmWorkMsg', 'Access granted. Invitation not sent: ' + res.why, 'warn'); return; }
-        msg('crmWorkMsg', res.data.already ? 'Access granted. A login already exists.' : 'Access granted. Invitation sent to ' + ct.email + '.', 'ok');
-      });
+      // Putting access back does not email again: the login already exists,
+      // and an undo is a correction, not a second announcement.
+      if (!on) { undoBar(ct.name + ': portal access revoked.', function () { setPortal(ct, true, false); }); return; }
+      API.invokeFn('invite-member', { email: ct.email, name: ct.name, kind: 'client', notify: Boolean(invite) })
+        .then(function (res) {
+          if (res.error) { msg('crmWorkMsg', 'Access enabled. Login not created: ' + res.why, 'warn'); return; }
+          msg('crmWorkMsg', invite
+            ? (res.data.already ? 'Access enabled. A login already exists.' : 'Access enabled. Invitation sent to ' + ct.email + '.')
+            : 'Access enabled.', 'ok');
+        });
     });
   }
 

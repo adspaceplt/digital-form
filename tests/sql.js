@@ -45,7 +45,15 @@ try {
   // Just the clock, on a clients table with the columns it touches. The rest
   // of the schema expects a live Supabase to already carry its tables.
   const whole = fs.readFileSync(T + '/../supabase/schema.sql', 'utf8');
-  const block = whole.slice(whole.indexOf('-- STAGE TIMING'));
+  /* Each section is taken by the words that head it, so a section that moves
+     or is renamed fails the suite loudly instead of testing an empty string. */
+  const cut = (from, to) => {
+    const a = whole.indexOf(from);
+    const b = to ? whole.indexOf(to) : whole.length;
+    if (a < 0 || b < a) throw new Error('schema marker moved: ' + from);
+    return whole.slice(a, b);
+  };
+  const block = cut('-- STAGE TIMING', '-- TEAM LIST REPAIR');
   const setup = `drop table if exists public.clients cascade;
 create table public.clients (
   id uuid primary key default gen_random_uuid(),
@@ -110,6 +118,77 @@ create table public.clients (
   asPg(`psql -h ${SOCK} -p ${PORT} -U postgres -d clock -v ON_ERROR_STOP=1 -q -f ${SOCK}/backfill.sql`);
   check('and running it again changes nothing',
     sql(`select jsonb_array_length(stage_log) from public.clients where name='Damaged'`) === '2');
+
+  /* The team list, and who is allowed onto it.
+   *
+   * Clients have logins now, so auth.users is not a list of colleagues. The
+   * cutover sweep took every address in it, which handed a client's contact
+   * an active team row the moment they were granted portal access: read and
+   * write over every client, and a name in the Person in charge list. Both
+   * the guard and the repair are asserted here against a real Postgres,
+   * because both are plain SQL that nothing in the browser suites can run. */
+  const sweep = cut('/* The cutover, and only the cutover', '-- The first admin.');
+  const repair = cut('-- TEAM LIST REPAIR');
+  const runFile = (name, body) => {
+    fs.writeFileSync(SOCK + '/' + name, body);
+    execFileSync('bash', ['-c', `chmod 644 ${SOCK}/${name}`]);
+    asPg(`psql -h ${SOCK} -p ${PORT} -U postgres -d clock -v ON_ERROR_STOP=1 -q -f ${SOCK}/${name}`);
+  };
+
+  runFile('team-setup.sql', `
+create schema if not exists auth;
+drop table if exists auth.users cascade;
+create table auth.users (id uuid primary key default gen_random_uuid(),
+  email text, raw_user_meta_data jsonb);
+drop table if exists public.team_members cascade;
+create table public.team_members (
+  id uuid primary key default gen_random_uuid(), name text not null, email text,
+  role text not null default 'sales', active boolean not null default true,
+  is_admin boolean not null default false, can_clients boolean not null default true,
+  created_at timestamptz not null default now());
+drop table if exists public.client_contacts cascade;
+create table public.client_contacts (
+  id uuid primary key default gen_random_uuid(), name text not null, email text,
+  portal_access boolean not null default false, archived_at timestamptz);
+insert into auth.users (email, raw_user_meta_data) values
+  ('adspacestudios@gmail.com', '{"name":"Admin"}'::jsonb),
+  ('sean@example.com', '{"name":"Sean"}'::jsonb);
+insert into public.client_contacts (name, email, portal_access) values
+  ('Sean', 'sean@example.com', true);
+`);
+
+  runFile('team-sweep.sql', sweep);
+  check('the cutover sweep never takes a client contact onto the team',
+    sql(`select count(*) from public.team_members where lower(email)='sean@example.com'`) === '0');
+  check('and it still carries the team across on a fresh database',
+    sql(`select name from public.team_members`) === 'Admin');
+
+  // A second run must not resurrect anyone: the team list is no longer empty,
+  // so the sweep is finished for good.
+  sql(`insert into auth.users (email, raw_user_meta_data) values ('gone@example.com', '{}'::jsonb)`);
+  runFile('team-sweep.sql', sweep);
+  check('and it does not run again once the team list exists',
+    sql(`select count(*) from public.team_members`) === '1');
+
+  // The damage the old sweep already did, and the two rows the repair must
+  // not touch: an admin, and one of our own addresses.
+  sql(`insert into public.team_members (name, email, role, is_admin) values
+        ('Sean', 'sean@example.com', 'account', false),
+        ('Boss', 'boss@example.com', 'admin', true),
+        ('Kaylyn', 'kaylyn@adspacestudios.com', 'account', false)`);
+  sql(`insert into public.client_contacts (name, email, portal_access) values
+        ('Boss', 'boss@example.com', true),
+        ('Kaylyn', 'kaylyn@adspacestudios.com', true)`);
+  runFile('team-repair.sql', repair);
+  check('the repair stands a client contact down off the team',
+    sql(`select active from public.team_members where email='sean@example.com'`) === 'f');
+  check('and leaves an admin and one of our own addresses active',
+    sql(`select count(*) from public.team_members where active and email in
+         ('boss@example.com','kaylyn@adspacestudios.com')`) === '2');
+
+  runFile('team-repair.sql', repair);
+  check('and running the repair again changes nothing',
+    sql(`select count(*) from public.team_members where active`) === '3');
 } catch (e) {
   console.log('FAIL ' + (e.stderr ? String(e.stderr).slice(0, 600) : e.message));
   fails++;

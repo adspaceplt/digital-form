@@ -352,7 +352,8 @@
           if (/^fail/.test(String(opts && opts.body && opts.body.email || ''))) return Promise.resolve({ data: null,
             error: { message: 'Edge Function returned a non-2xx status code',
                      context: { json: function () { return Promise.resolve({ error: 'invite_failed', detail: 'Error sending invite email' }); } } } });
-          return Promise.resolve({ data: { ok: true, already: false }, error: null });
+          return Promise.resolve({ data: { ok: true, already: false,
+            sent: !(opts && opts.body && opts.body.notify === false) }, error: null });
         }
         return Promise.resolve({ data: { uploadUrl: 'https://s3.test/put/inv.pdf',
           publicUrl: 'https://mycdn.adspace.me/content/c1/inv-' + Date.now() + '.pdf' }, error: null });

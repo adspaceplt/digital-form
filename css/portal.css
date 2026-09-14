@@ -143,7 +143,13 @@
   src: url("/css/SlateRg.woff2") format("woff2"),
        url("/css/SlateRg.TTF") format("truetype");
   font-weight: 400 700;
-  font-display: swap;
+  /* `optional`, not `swap`, and preloaded in every page head. Swap paints the
+     heading in the system face and then flips it, which is the page visibly
+     correcting itself while somebody is already reading; optional gives the
+     font a brief window and, if it misses it, simply leaves that one load in
+     the fallback and never swaps. The preload means it almost never misses,
+     and after the first visit it is cached and always in time. */
+  font-display: optional;
 }
 
 * { box-sizing: border-box; margin: 0; }
@@ -2013,14 +2019,18 @@ body.is-plain .topbar { background: var(--chrome); }
   border-radius: var(--radius); box-shadow: var(--shadow-lift);
   padding: 5px; display: flex; flex-direction: column;
 }
+/* A menu row is a control, so it clears the control floor like every other
+   one: 38px on a desktop, 44px under a finger. Padding alone left it at 43px
+   on a phone, which nothing caught until the ⋯ was opened during the walk. */
 .kmenu-item {
-  display: flex; flex-direction: column; gap: 1px; text-align: left;
+  display: flex; flex-direction: column; gap: 1px; justify-content: center;
+  text-align: left; min-height: var(--ctl-h);
   padding: 9px 11px; border: 0; border-radius: var(--radius-sm); background: none;
 }
 .kmenu-item b { font-size: 13.5px; font-weight: 600; color: var(--ink); }
 .kmenu-item span { font-size: 12px; line-height: 1.45; color: var(--ink-mute); }
 .kmenu-item:hover { background: var(--line-soft); }
-.kmenu-item.is-danger b { color: #a3312a; }
+.kmenu-item.is-danger b { color: var(--err); }
 
 /* A step inside the card. Recessed ground, hairline above. */
 .kstep { border-top: 1px solid var(--line-soft); padding: 11px 16px 13px; background: var(--sunk); }
@@ -2798,7 +2808,15 @@ body > .shell { width: 100%; }
   margin: 0 0 12px; padding: 9px 14px;
   background: var(--fill); color: var(--on-fill); border-radius: var(--radius-sm); font-size: 13px;
 }
-.undobar .btn { background: var(--on-fill); border-color: var(--on-fill); color: var(--fill); min-height: 32px; }
+/* Undo is a way back, not the next thing to do. A filled button on the bar
+   reads as the page's primary action and pulls the eye off the work that is
+   still in front of the person, so it is outlined on the fill: unmistakably a
+   control, at the weight of the sentence it belongs to. It fills in on hover,
+   which is where a press is being considered. */
+.undobar .btn { background: transparent; border-color: var(--on-fill); color: var(--on-fill); min-height: 32px; }
+@media (hover: hover) {
+  .undobar .btn:hover { background: var(--on-fill); color: var(--fill); }
+}
 .crm-removed-toggle { display: block; margin: 6px 0 12px; }
 .crm-group-worth { font-size: 13px; font-weight: 600; color: var(--ink-soft); font-variant-numeric: tabular-nums; margin-left: auto; }
 .touch-actions { grid-area: del; display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }

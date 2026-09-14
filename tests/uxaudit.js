@@ -324,6 +324,19 @@ async function walk(b, coarse, dark) {
   await p.locator('#crmBack').click(); await p.waitForTimeout(400);
   await p.locator('.crm-row', { hasText: 'Laman Citra' }).first().click(); await p.waitForTimeout(700);
   await report('admin client record full ' + tag, p, coarse);
+  // Letting a contact into the client portal: the sheet that asks which
+  // address becomes their sign-in and whether the invitation goes now.
+  const noAccess = p.locator('#crmContacts .ct-row:not(.crm-head)').filter({ hasNot: p.locator('.tone.is-ok') }).first();
+  if (await noAccess.count()) {
+    await noAccess.locator('[data-a="menu"]').scrollIntoViewIfNeeded(); await p.waitForTimeout(250);
+    await noAccess.locator('[data-a="menu"]').click(); await p.waitForTimeout(250);
+    const enable = noAccess.locator('[data-a="portal"]');
+    if (await enable.isVisible().catch(() => false)) {
+      await enable.click(); await p.waitForTimeout(350);
+      await report('admin portal access sheet ' + tag, p, coarse);
+      await p.locator('#portalCancel').click(); await p.waitForTimeout(250);
+    }
+  }
   await nav(p, 'review');
   await report('admin content review ' + tag, p, coarse);
   await nav(p, 'campaigns');

@@ -178,7 +178,14 @@ is already in the repo for the letter, so the portal and the paper it
 prints share a voice without a second asset or a webfont service:
 `@font-face { font-family: "ADspace Slate" }` served as
 `/css/SlateRg.woff2` (38KB against the TTF's 110KB; the TTF stays because
-pdf-lib fetches it, and doubles as the fallback), `font-display: swap`.
+pdf-lib fetches it, and doubles as the fallback), `font-display: optional`
+with `<link rel="preload" as="font" crossorigin>` in every page head. Not
+`swap`: swap paints the heading in the system face and flips it a moment
+later, which is the page correcting itself while somebody is already reading.
+Optional gives the face a brief window and, if it misses, leaves that one load
+in the fallback rather than swapping under the reader; the preload starts the
+fetch with the stylesheet instead of after it, so it almost never misses, and
+after the first visit it is cached.
 It is applied through `--font-head` to `.viewhead h2`, `.crm-title h2`,
 `.cover-panel h2`, `.camphead h1` and `.batch-title` and nowhere else:
 body, labels, controls and chips stay on the system stack, where a hinted
@@ -283,14 +290,14 @@ measures the table whenever its header is not on screen (`padding`).
 | Rows of records | `.crm-table` > `.crm-head` + `.crm-row` / `.svc-row` (`csv-row` service lines, `doc-row` documents, `cat-row` rate card, `ct-row` contacts, `team-row`); state column `var(--state-w)` second last, `.team-act` ⋯ cell last; the header row carries the same row classes (`crm-head svc-row csv-row`) so it shares the row's grid and every label sits over its column, one cell per column, empty over the ⋯; `uxaudit` fails a header cell off its column (`cols`); on a phone two or three lines by `grid-template-areas` (name and ⋯ / small facts / money left, state right), never one field per line |
 | Completeness of a group | `.ringline` > `.ring` (`is-ok` when full) + "2 of 4" or "Complete" |
 | One record with steps | `.kcard` > `.kcard-head` (name, chips, ⋯) + `.kstep` blocks; folds to one line in lists of ten or more |
-| Rare or destructive actions | `.kmenu-btn` ⋯ + `.kmenu` > `.kmenu-item` (name only; `is-danger`) |
+| Rare or destructive actions | `.kmenu-btn` ⋯ + `.kmenu` > `.kmenu-item` (name only; `is-danger`). A menu row is a control and clears the control floor like any other (`--ctl-h`: 38px, 44px under a finger); padding alone left it at 43px on a phone and nothing caught it until the walk opened a ⋯. An item that does not repaint the row behind it closes the menu itself, or the ⋯ sits open over the answer or behind the sheet it just opened |
 | Status | `select.state-select` (tinted) for a value that changes; `.tone` / `.chip-state` with a word for a value that is only read |
 | The chosen one of several options | A filled shape, one language per component and never a shadow: the sidebar `.navitem.is-on` takes the `--line-soft` fill and weight 600, a `.tab.is-on` an ink underline and weight 600, an `.acttab.is-on` the ink fill with white text, a `.crow.is-on` the `--line-soft` fill, a `.bigcard.is-on` an ink border. Hover is always one step lighter than selected (`--sunk` where selected is `--line-soft`), never equal to it, and lives inside `@media (hover: hover)` so a phone cannot leave it stuck on the last thing tapped. `uxaudit` hovers an unselected option and fails when it renders the selected one's background (`hover`) |
 | Form to add or edit | `.panel` > `.panelhead h3` + `.row` fields + Save / secondary / Cancel + `.msg`; one Save covers everything in the form, a file included, so a number and its PDF are never two saves, and Cancel repaints from what is stored. What is attached now sits with the field that changes it, above the actions, never stranded under them |
 | Optional detail | `.panel.panel-collapse` > `.disclosure` (title, summary right) + `.disclosure-body` |
 | Full-page state | `.cover` > `.cover-inner` > `.cover-panel`, centred, title then one line, `body.is-plain`, footer on the floor. **The line never restates the title**: the title says what happened, the line says what to do about it ("Selection closed" / "Please contact your ADspace account manager for any changes.", not "Selection is closed. Please contact…"). Both languages, every cover |
 | Modal | `.sheet` > `.sheet-card`, from the bottom on a phone, fixed height when it filters |
-| Undo | `.undobar` with one `Undo` button, eight seconds |
+| Undo | `.undobar` with one `Undo` button, eight seconds. The button is **outlined on the fill**, never a filled slab: a way back is not the next thing to do, and a white block on a black bar reads as the page's primary action and pulls the eye off the work still in front of the person. It fills in on hover, where a press is being considered |
 | Message | `.msg` (`ok`, `warn`, `err`) as one line under the control, never a card |
 | Empty list | `.empty` with two words ("No entries.", "No links.", "No matches.", "Access not assigned."); never "yet", never a sentence |
 | Links to reach a person | `.plink` chips (phone, WhatsApp, email); equal widths on a phone |
@@ -383,6 +390,10 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   as a judgement on their literacy when all the field holds is which
   language we write to them in. The same test applies to anything kept
   about a person.
+- **Green is the live state, and it is spent once per row.** Where a row can
+  carry two marks, the one that names something running takes the accent and
+  the rest read neutral: a contact's **Portal access** is green because a
+  sign-in is live, and **Main contact** is a designation, so it is not.
 - A value the client only reads is a chip in the state column; the same
   row shape as the console, the select swapped for the chip, the ⋯ kept
   only where the client has an action.
@@ -425,6 +436,18 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
 - Access is enforced by the database: one user group per person
   (`team_roles` → trigger → `team_members` → `allowed(flag)`); never
   per-person switches; a policy on `team_members` never queries itself.
+- **A login is not a colleague.** `auth.users` carries clients as well now, so
+  nothing derives team membership from it. The cutover sweep in
+  `supabase/schema.sql` runs only while `team_members` is still empty and
+  never takes an address recorded as a client contact: without both guards,
+  granting a contact portal access created their login and the next run of the
+  file made them an active Account, which is read and write over every client
+  and a name in the Person in charge list. A person joins the team from the
+  Team page, where somebody decides it. A row that should not be there is
+  stood down (`active = false`), never deleted, because `is_team()`,
+  `allowed()` and the Person in charge list all ask whether the row is active,
+  and Inactive on the Team page shows what a migration changed and puts it
+  back with one click.
 - A client signs in with an email link to `/client/` and reaches its
   data only through `get_portal`, `portal_request` and
   `portal_withdraw`, keyed on the signed-in email against
