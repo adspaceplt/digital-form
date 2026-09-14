@@ -510,6 +510,21 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   A stage move is its own activity tag (`client.stage`), not the generic
   `client.edited`, because the activity record can only show a history
   it was told about.
+
+  **A stage that has run past its limit says so, in a word.** `STALE_H` in
+  `js/crm.js` holds the limits in hours and nothing else does: **Lead 48
+  hours** (the window to make first contact, measured in hours or a lead
+  keyed in this morning reads overdue tomorrow) and **Proposal sent 21 days**
+  (the longest a proposal should sit; a week is normal, so nothing is flagged
+  before then). Calendar days, not working days: a lead that came in on
+  Friday is just as cold on Monday, and a client waiting on a proposal does
+  not count our weekends. **Contacted carries no limit**, because none has
+  been set, and a threshold nobody has chosen is not one to invent at
+  scanning time: a wrong one trains the team to ignore the mark. The age line
+  under the chip turns warn and reads "2 days · Overdue", the word carrying
+  it so the mark survives greyscale and a reader who cannot tell warn from
+  mute, and the group head counts them ("Leads 3 · 1 overdue") so a stage
+  with none over stays silent.
 - Data: PDPA 2010 (MY) and PDPA 2012 (SG): collect what the page needs,
   a client sees only its own data, soft remove before hard delete.
 - Numbering: Letter of Offer `AQT/INT/YYMMXXX` (per month); campaign
