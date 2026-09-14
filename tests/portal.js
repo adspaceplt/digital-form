@@ -92,7 +92,7 @@ const SEED = `
 
   // --- an email not on any client ---
   await p.evaluate(() => window.__signIn('nobody@example.com')); await p.waitForTimeout(500);
-  check('an unlisted email gets Access not assigned', (await p.locator('#stateTitle').innerText()) === 'Access not assigned' &&
+  check('an unlisted email gets Access denied', (await p.locator('#stateTitle').innerText()) === 'Access denied' &&
     await p.locator('#app').isHidden());
   check('sign out is offered to the unlisted person', await p.locator('#portalOut').isVisible());
 
@@ -286,6 +286,16 @@ const SEED = `
     (await ng.innerText()).includes('Portal access'));
   await ng.locator('[data-a="menu"]').scrollIntoViewIfNeeded(); await a.waitForTimeout(300);
   await ng.locator('[data-a="menu"]').click(); await a.waitForTimeout(200);
+  /* Mail leaves the building and cannot be recalled, and Send invitation sits
+     one place away from Edit in the same menu. */
+  a.removeAllListeners('dialog');
+  a.once('dialog', d => d.dismiss());
+  await ng.locator('[data-a="invite"]').click(); await a.waitForTimeout(400);
+  check('a dismissed confirmation sends nothing',
+    await a.evaluate(() => !(window.__signed || []).some(s => s.name === 'invite-member' && s.body.email === 'fail@lc.com')));
+  a.on('dialog', d => d.accept());
+  await ng.locator('[data-a="menu"]').scrollIntoViewIfNeeded(); await a.waitForTimeout(300);
+  await ng.locator('[data-a="menu"]').click(); await a.waitForTimeout(200);
   await ng.locator('[data-a="invite"]').click(); await a.waitForTimeout(500);
   check('a failed invitation says why, in the function\'s own words',
     (await a.locator('#crmWorkMsg').innerText()).includes('Error sending invite email'));
@@ -303,7 +313,7 @@ const SEED = `
   // the portal reads the answer; without the switch the same email is not let in
   await p.goto('http://127.0.0.1:8899/client/', { waitUntil: 'networkidle' });
   await p.evaluate(() => window.__signIn('lim@lc.com')); await p.waitForTimeout(600);
-  check('without the switch the same email is not let in', (await p.locator('#stateTitle').innerText()) === 'Access not assigned');
+  check('without the switch the same email is not let in', (await p.locator('#stateTitle').innerText()) === 'Access denied');
   await p.evaluate(() => { window.__DB.client_contacts.find(c => c.id === 'ct1').portal_access = true; window.__persist(); });
   await p.goto('http://127.0.0.1:8899/client/', { waitUntil: 'networkidle' });
   await p.evaluate(() => window.__signIn('lim@lc.com')); await p.waitForTimeout(600);

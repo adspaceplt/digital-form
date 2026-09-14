@@ -290,7 +290,7 @@ measures the table whenever its header is not on screen (`padding`).
 | Rows of records | `.crm-table` > `.crm-head` + `.crm-row` / `.svc-row` (`csv-row` service lines, `doc-row` documents, `cat-row` rate card, `ct-row` contacts, `team-row`); state column `var(--state-w)` second last, `.team-act` ⋯ cell last; the header row carries the same row classes (`crm-head svc-row csv-row`) so it shares the row's grid and every label sits over its column, one cell per column, empty over the ⋯; `uxaudit` fails a header cell off its column (`cols`); on a phone two or three lines by `grid-template-areas` (name and ⋯ / small facts / money left, state right), never one field per line |
 | Completeness of a group | `.ringline` > `.ring` (`is-ok` when full) + "2 of 4" or "Complete" |
 | One record with steps | `.kcard` > `.kcard-head` (name, chips, ⋯) + `.kstep` blocks; folds to one line in lists of ten or more |
-| Rare or destructive actions | `.kmenu-btn` ⋯ + `.kmenu` > `.kmenu-item` (name only; `is-danger`). A menu row is a control and clears the control floor like any other (`--ctl-h`: 38px, 44px under a finger); padding alone left it at 43px on a phone and nothing caught it until the walk opened a ⋯. An item that does not repaint the row behind it closes the menu itself, or the ⋯ sits open over the answer or behind the sheet it just opened |
+| Rare or destructive actions | `.kmenu-btn` ⋯ + `.kmenu` > `.kmenu-item` (name only; `is-danger`). An item that leaves the building and cannot be recalled asks first, with `confirm()` naming what goes where: **Send invitation** sits one place from Edit in the same menu. A menu row is a control and clears the control floor like any other (`--ctl-h`: 38px, 44px under a finger); padding alone left it at 43px on a phone and nothing caught it until the walk opened a ⋯. An item that does not repaint the row behind it closes the menu itself, or the ⋯ sits open over the answer or behind the sheet it just opened |
 | Status | `select.state-select` (tinted) for a value that changes; `.tone` / `.chip-state` with a word for a value that is only read |
 | The chosen one of several options | A filled shape, one language per component and never a shadow: the sidebar `.navitem.is-on` takes the `--line-soft` fill and weight 600, a `.tab.is-on` an ink underline and weight 600, an `.acttab.is-on` the ink fill with white text, a `.crow.is-on` the `--line-soft` fill, a `.bigcard.is-on` an ink border. Hover is always one step lighter than selected (`--sunk` where selected is `--line-soft`), never equal to it, and lives inside `@media (hover: hover)` so a phone cannot leave it stuck on the last thing tapped. `uxaudit` hovers an unselected option and fails when it renders the selected one's background (`hover`) |
 | Form to add or edit | `.panel` > `.panelhead h3` + `.row` fields + Save / secondary / Cancel + `.msg`; one Save covers everything in the form, a file included, so a number and its PDF are never two saves, and Cancel repaints from what is stored. What is attached now sits with the field that changes it, above the actions, never stranded under them |
@@ -299,7 +299,7 @@ measures the table whenever its header is not on screen (`padding`).
 | Modal | `.sheet` > `.sheet-card`, from the bottom on a phone, fixed height when it filters |
 | Undo | `.undobar` with one `Undo` button, eight seconds. A **quiet strip**: `--sunk` ground, a `--line` hairline, ordinary ink text, the ordinary outline `.btn-sm`. Never the ink fill: something was undone and there is a way back is a message, not the next thing to do, and a black bar the width of the page sitting above a black primary button reads as one enormous call to action whatever the button inside it looks like |
 | Message | `.msg` (`ok`, `warn`, `err`) as one line under the control, never a card |
-| Empty list | `.empty` with two words ("No entries.", "No links.", "No matches.", "Access not assigned."); never "yet", never a sentence |
+| Empty list | `.empty` with two words ("No entries.", "No links.", "No matches.", "Access denied."); never "yet", never a sentence |
 | Links to reach a person | `.plink` chips (phone, WhatsApp, email); equal widths on a phone |
 
 A field the browser draws itself (file, date, time, select) is reskinned
@@ -417,6 +417,11 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   as a judgement on their literacy when all the field holds is which
   language we write to them in. The same test applies to anything kept
   about a person.
+- **A cover title names the outcome, not the paperwork.** The client page
+  refusing an address reads **Access denied** (`无访问权限`), not "Access not
+  assigned": the second describes our admin state, which is not the reader's
+  business and does not sound like a decision. Sentence case, like every other
+  cover title.
 - **A section is named for what it tells you, not for the noun it holds.**
   The client portal's list of who can sign in was headed **Account** and read
   as the viewer's own settings, so the answer to "why is this here" was not on
@@ -483,6 +488,21 @@ in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
   `allowed()` and the Person in charge list all ask whether the row is active,
   and Inactive on the Team page shows what a migration changed and puts it
   back with one click.
+- **One person, one side.** The team list and a client's contacts answer two
+  different questions and neither used to ask the other, which is how a client
+  contact became an Account with read and write over every client. The database
+  refuses the overlap now (`no_team_client_overlap` on both tables), and where
+  one exists anyway the **client portal is the side that yields**
+  (`portal_clients()` excludes an active team address): a colleague losing a
+  client's own page costs them nothing they cannot see in the console, where a
+  client reaching the console costs every other client. The trigger fires only
+  on the move into the overlap, so a legacy row stays editable rather than
+  frozen; the repair is what clears those.
+- **Signed in is not allowed in.** `/admin/` keeps the console hidden until
+  `me()` has answered. Its chrome names every section of the tool, and drawing
+  it the moment a session existed showed that shape to anybody at all for as
+  long as the call took. `/client/` already worked this way: `#app` starts
+  hidden and only `get_portal` opens it.
 - A client signs in with an email link to `/client/` and reaches its
   data only through `get_portal`, `portal_request` and
   `portal_withdraw`, keyed on the signed-in email against

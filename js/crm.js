@@ -769,6 +769,9 @@
     // be put away here or it sits open over the answer.
     Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
     if (!ct.email) { msg('crmWorkMsg', 'An email is required.', 'err'); return; }
+    // Mail leaves the building and cannot be recalled, and this sits one
+    // place away from Edit in the same menu.
+    if (!confirm('Send a sign-in invitation to ' + ct.email + '?')) return;
     msg('crmWorkMsg', notify ? 'Sending…' : 'Working…');
     API.invokeFn('invite-member', { email: ct.email, name: ct.name, kind: 'client', notify: Boolean(notify) })
       .then(function (res) {

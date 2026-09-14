@@ -2013,3 +2013,74 @@ update public.team_members t
    and exists (select 1 from public.client_contacts c
                 where lower(c.email) = lower(t.email)
                   and c.archived_at is null);
+
+-- ============================================================================
+-- ONE PERSON, ONE SIDE: the team or a client's portal, never both.
+-- ============================================================================
+-- Nothing in the portal reads auth.users to decide anything, so one address
+-- can sit in both lists without either knowing. That is how a client contact
+-- became an Account with read and write over every client: the two lists
+-- answer two different questions and neither asked the other.
+--
+-- So the database refuses the overlap outright. It fires only where a row is
+-- moving into it (granted portal access, made active, or the address changed),
+-- which leaves any legacy row editable rather than frozen; the repair above is
+-- what clears those.
+create or replace function public.no_team_client_overlap()
+returns trigger language plpgsql as $$
+declare clash text;
+begin
+  if tg_table_name = 'client_contacts' then
+    if tg_op = 'UPDATE'
+       and old.portal_access is not distinct from new.portal_access
+       and lower(coalesce(old.email, '')) = lower(coalesce(new.email, '')) then
+      return new;
+    end if;
+    if new.portal_access is not true or new.email is null or new.archived_at is not null then
+      return new;
+    end if;
+    select t.name into clash from public.team_members t
+      where t.active and t.email is not null and lower(t.email) = lower(new.email) limit 1;
+    if clash is not null then
+      raise exception 'That address is on the team (%). A colleague cannot also hold a client portal sign-in.', clash;
+    end if;
+  else
+    if tg_op = 'UPDATE'
+       and old.active is not distinct from new.active
+       and lower(coalesce(old.email, '')) = lower(coalesce(new.email, '')) then
+      return new;
+    end if;
+    if new.active is not true or new.email is null then return new; end if;
+    select c.name into clash from public.client_contacts c
+      where c.portal_access and c.archived_at is null and c.email is not null
+        and lower(c.email) = lower(new.email) limit 1;
+    if clash is not null then
+      raise exception 'That address holds a client portal sign-in (%). A client contact cannot also be on the team.', clash;
+    end if;
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists client_contacts_no_overlap on public.client_contacts;
+create trigger client_contacts_no_overlap before insert or update on public.client_contacts
+  for each row execute function public.no_team_client_overlap();
+
+drop trigger if exists team_members_no_overlap on public.team_members;
+create trigger team_members_no_overlap before insert or update on public.team_members
+  for each row execute function public.no_team_client_overlap();
+
+-- And if an overlap ever exists anyway, the client portal is the side that
+-- yields: a colleague losing a client's own page costs them nothing they
+-- cannot see in the console, where a client reaching the console costs every
+-- other client. So the guarantee holds whatever is in the tables.
+create or replace function public.portal_clients()
+returns setof uuid
+language sql security definer stable set search_path = public as $$
+  select distinct c.client_id from public.client_contacts c
+  where c.portal_access and c.archived_at is null and c.email is not null
+    and lower(c.email) = lower(auth.jwt() ->> 'email')
+    and not exists (
+      select 1 from public.team_members t
+      where t.active and t.email is not null
+        and lower(t.email) = lower(auth.jwt() ->> 'email'))
+$$;

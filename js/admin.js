@@ -125,10 +125,16 @@
     var inApp = Boolean(session);
     // Signed out is a plain page, white to the edges. Signed in is the console,
     // which brings its own chrome and does not want the page header as well.
-    document.body.classList.toggle('is-plain', !inApp);
-    $('topbar').hidden = inApp;
+    /* Signed in is not the same as allowed in. Until the database has said
+       who this is, the console stays hidden: its chrome names every section
+       of the tool, and somebody with no team row was seeing that shape for as
+       long as the me() call took before it was swapped for the cover. So the
+       in-between looks like the plain page, and the console appears once, to
+       the person it belongs to. */
+    document.body.classList.toggle('is-plain', !inApp || !meLoaded);
+    $('topbar').hidden = inApp && meLoaded;
     $('publicShell').hidden = inApp;
-    $('console').hidden = !inApp;
+    $('console').hidden = true;
     $('authPanel').hidden = inApp;
     $('signOut').hidden = !inApp;
     $('whoami').textContent = inApp ? session.user.email : '';
@@ -136,10 +142,14 @@
 
     if (!inApp) {
       entered = false;
+      meLoaded = false;
+      $('noTeamShell').hidden = true;
       $('clientsView').hidden = true;
       $('workspace').hidden = true;
       return;
     }
+    // Already decided: a token refresh must not blank the console.
+    if (meLoaded) { $('console').hidden = Boolean(!me); return; }
     if (entered) return;
     entered = true;
     /* Who this person is on the team decides what the console draws. The
@@ -157,6 +167,9 @@
         $('noTeamWho').textContent = actor;
         return;
       }
+      $('console').hidden = false;
+      $('topbar').hidden = true;
+      document.body.classList.remove('is-plain');
       // A session kept in local storage answers before the scripts below this
       // one have run. Restoring then would write the address with nothing
       // open and lose the tab or campaign it named, so wait for the page.
@@ -714,7 +727,7 @@
       .order('created_at', { ascending: false }).limit(200)
       .then(function (r) {
         if (r.error) {
-          box.innerHTML = '<div class="empty">Access not assigned.</div>';
+          box.innerHTML = '<div class="empty">Access denied.</div>';
           return;
         }
         actRows = r.data || [];

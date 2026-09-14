@@ -128,7 +128,9 @@ create table public.clients (
    * the guard and the repair are asserted here against a real Postgres,
    * because both are plain SQL that nothing in the browser suites can run. */
   const sweep = cut('/* The cutover, and only the cutover', '-- The first admin.');
-  const repair = cut('-- TEAM LIST REPAIR');
+  const repair = cut('-- TEAM LIST REPAIR', '-- ONE PERSON, ONE SIDE');
+  const overlap = cut('create or replace function public.no_team_client_overlap',
+                      '-- And if an overlap ever exists anyway');
   const runFile = (name, body) => {
     fs.writeFileSync(SOCK + '/' + name, body);
     execFileSync('bash', ['-c', `chmod 644 ${SOCK}/${name}`]);
@@ -189,6 +191,43 @@ insert into public.client_contacts (name, email, portal_access) values
   runFile('team-repair.sql', repair);
   check('and running the repair again changes nothing',
     sql(`select count(*) from public.team_members where active`) === '3');
+
+  /* One person, one side. The two lists answer different questions, so
+     nothing stopped an address sitting in both: that is exactly how a client
+     contact became an Account with read and write over every client. */
+  runFile('overlap.sql', overlap);
+  const refuses = (q) => {
+    try { sql(q); return false; } catch (e) { return /cannot also/.test(String(e.stderr || e.message)); }
+  };
+  check('a colleague cannot be given a client portal sign-in',
+    refuses(`insert into public.client_contacts (name, email, portal_access)
+             values ('Kaylyn', 'kaylyn@adspacestudios.com', true)`));
+  check('and a client portal contact cannot be put on the team',
+    refuses(`insert into public.team_members (name, email, active)
+             values ('Sean', 'sean@example.com', true)`));
+  // A contact may exist with the same address; it is turning access on that
+  // is refused, because that is the moment the two sides would overlap.
+  sql(`insert into public.client_contacts (name, email, portal_access)
+       values ('Admin at a client', 'adspacestudios@gmail.com', false)`);
+  check('a colleague may be listed as a contact without portal access',
+    sql(`select portal_access from public.client_contacts where email='adspacestudios@gmail.com'`) === 'f');
+  check('turning access on later is refused the same way',
+    refuses(`update public.client_contacts set portal_access = true
+             where email = 'adspacestudios@gmail.com'`));
+
+  // An address on one side only is untouched, and so is an ordinary edit.
+  sql(`insert into public.client_contacts (name, email, portal_access)
+       values ('Ms Fresh', 'fresh@example.com', true)`);
+  check('an address on one side only is let through',
+    sql(`select portal_access from public.client_contacts where email='fresh@example.com'`) === 't');
+  sql(`update public.client_contacts set name = 'Ms Fresher' where email = 'fresh@example.com'`);
+  check('and an edit that does not touch access or the address still saves',
+    sql(`select name from public.client_contacts where email='fresh@example.com'`) === 'Ms Fresher');
+
+  // Standing a team row down is how the repair works, so it must stay allowed.
+  check('a team row can still be stood down',
+    sql(`update public.team_members set active = false where email = 'kaylyn@adspacestudios.com'
+         returning active`) === 'f');
 } catch (e) {
   console.log('FAIL ' + (e.stderr ? String(e.stderr).slice(0, 600) : e.message));
   fails++;
