@@ -1537,6 +1537,25 @@ alter table public.clients add column if not exists bill_contact_id uuid referen
 -- ===========================================================================
 alter table public.client_contacts add column if not exists portal_access boolean not null default false;
 
+/* Access is the team's decision; the login is what makes it usable, and they
+   are not the same fact. Sign-ups are closed on the project, so a client whose
+   login was never created reaches the sign-in page and is refused by Supabase
+   itself: the console has to be able to say that access is on but the person
+   still cannot get in, rather than showing a green chip over a dead end.
+
+   Added and backfilled together, once: rows that predate the column were
+   always invited by the console, so they carry a login. Doing the backfill as
+   a plain re-runnable update would instead mark every pending contact ready
+   the next time this file runs. */
+do $$ begin
+  if not exists (select 1 from information_schema.columns
+                  where table_schema = 'public' and table_name = 'client_contacts'
+                    and column_name = 'portal_login_at') then
+    alter table public.client_contacts add column portal_login_at timestamptz;
+    update public.client_contacts set portal_login_at = now() where portal_access;
+  end if;
+end $$;
+
 -- Is the signed-in person on the team at all? Clients now have logins too,
 -- so "authenticated" no longer means "one of us". Every policy that used to
 -- say using (true) for authenticated says is_team() instead.

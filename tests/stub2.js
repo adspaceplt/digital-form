@@ -361,7 +361,15 @@
       auth: {
       getSession: function () { return Promise.resolve({ data: { session: session } }); },
       onAuthStateChange: function (fn) { listener = fn; return { data: {} }; },
-      signInWithOtp: function () { return Promise.resolve({ error: null }); },
+      /* Sign-ups are closed on the real project, so an address with no login
+         is refused by Supabase in its own words. A client must never read
+         those, so the page has to be given one to map. */
+      signInWithOtp: function (o) {
+        var e = String((o && o.email) || '');
+        if (/^nologin/.test(e)) return Promise.resolve({ error: { message: 'Signups not allowed for this instance' } });
+        window.__otp = (window.__otp || []).concat([o]);
+        return Promise.resolve({ error: null });
+      },
       signOut: function () { session = null; return Promise.resolve({}); }
     } };
   } };

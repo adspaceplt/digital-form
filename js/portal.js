@@ -41,6 +41,8 @@
       signTitle: 'Client sign-in', signText: 'Enter the email address on file with ADspace.', sendLink: 'Send link',
       sentTitle: 'Check your email', sentText: function (e) { return 'A sign-in link has been sent to ' + e + '.'; },
       emailNeeded: 'An email is required.', noAccess: 'Access not assigned', noAccessText: 'Please contact your ADspace account manager.',
+      signNoUser: 'Sign-in is not available for this address. Please contact your ADspace account manager.',
+      signFail: 'The link could not be sent. Please try again, or contact your ADspace account manager.',
       failTitle: 'Unable to load', failText: 'Please refresh, or contact your ADspace account manager.',
       overview: 'Overview', requestChange: 'Request change', services: 'Services', requests: 'Requests', letters: 'Letters',
       engagements: 'Engagements', payment: 'Payment', account: 'Account',
@@ -69,6 +71,8 @@
       signTitle: '客户登录', signText: '请输入在 ADspace 登记的电子邮箱。', sendLink: '发送链接',
       sentTitle: '请查收邮件', sentText: function (e) { return '登录链接已发送至 ' + e + '。'; },
       emailNeeded: '请输入电子邮箱。', noAccess: '尚未开通访问', noAccessText: '请联系您的 ADspace 客户经理。',
+      signNoUser: '该邮箱暂时无法登录，请联系您的 ADspace 客户经理。',
+      signFail: '链接发送失败，请重试，或联系您的 ADspace 客户经理。',
       failTitle: '无法加载', failText: '请刷新页面，或联系您的 ADspace 客户经理。',
       overview: '公司概览', requestChange: '申请修改', services: '服务', requests: '申请', letters: '函件',
       engagements: '进行中的项目', payment: '付款', account: '账户',
@@ -211,16 +215,34 @@
   }
 
   // ---- Sign in ---------------------------------------------------------------
+  /* No account for this address, whichever way Supabase phrases it, reads as
+     one line; anything else (a rate limit, a network fault) is worth trying
+     again, so it says so rather than sending the client to a person. */
+  function signWord(err) {
+    var m = String((err && err.message) || err || '');
+    return /signup|sign up|not allowed|not found|no user|invalid/i.test(m) ? t().signNoUser : t().signFail;
+  }
+
   function sendLink() {
     var email = ($('signEmail').value || '').trim().toLowerCase();
     if (!email) { msg('stateMsg', t().emailNeeded, 'err'); $('signEmail').focus(); return; }
     $('signGo').disabled = true;
-    db.auth.signInWithOtp({ email: email, options: { emailRedirectTo: location.origin + '/client/' } })
+    /* The login is made by the console when access is granted, never here:
+       a page anyone can open must not be able to create an account, so
+       shouldCreateUser is off and sign-ups stay closed on the project.
+
+       Supabase's own words for that refusal ("Signups not allowed for this
+       instance") are an internal message in the wrong register on a page a
+       client reads, and they name a cause the client can do nothing with, so
+       nothing the database says reaches this screen. What the client is told
+       is what to do next. */
+    db.auth.signInWithOtp({ email: email, options: {
+      shouldCreateUser: false, emailRedirectTo: location.origin + '/client/' } })
       .then(function (r) {
         $('signGo').disabled = false;
-        if (r.error) { msg('stateMsg', r.error.message, 'err'); return; }
+        if (r.error) { msg('stateMsg', signWord(r.error), 'err'); return; }
         showState('sent', email);
-      }, function (e) { $('signGo').disabled = false; msg('stateMsg', (e && e.message) || String(e), 'err'); });
+      }, function (e) { $('signGo').disabled = false; msg('stateMsg', signWord(e), 'err'); });
   }
   $('signGo').addEventListener('click', sendLink);
   $('signForm').addEventListener('submit', sendLink);

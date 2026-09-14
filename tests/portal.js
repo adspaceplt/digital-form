@@ -12,7 +12,7 @@ const SEED = `
   var D = window.__DB;
   D.client_requests = D.client_requests || [];
   if (D.client_services.some(function (s) { return s.id === 'pv1'; })) return;
-  D.client_contacts.forEach(function (c) { if (c.id === 'ct1') { c.portal_access = true; c.email = 'lim@lc.com'; } });
+  D.client_contacts.forEach(function (c) { if (c.id === 'ct1') { c.portal_access = true; c.portal_login_at = '2026-09-01T00:00:00Z'; c.email = 'lim@lc.com'; } });
   D.client_contacts.push({ id:'pct2', client_id:'c1', name:'Ms Tan', role:'Finance', phone:'0198887777', email:'tan@lc.com', lang:'zh', is_primary:false, portal_access:false });
   D.client_contacts.push({ id:'pct3', client_id:'c1', name:'Ms Ng', role:'Marketing', email:'fail@lc.com', lang:'en', is_primary:false, portal_access:false });
   D.client_contacts.push({ id:'pct4', client_id:'c1', name:'Ms Wong', role:'Operations', email:'wong@lc.com', lang:'en', is_primary:false, portal_access:false });
@@ -60,6 +60,17 @@ const SEED = `
   await p.locator('#signGo').click(); await p.waitForTimeout(300);
   check('the link is sent and the page says where', (await p.locator('#stateTitle').innerText()) === 'Check your email' &&
     (await p.locator('#stateText').innerText()).includes('lim@lc.com'));
+  check('the page never creates an account of its own',
+    await p.evaluate(() => (window.__otp || []).every(o => o.options && o.options.shouldCreateUser === false)));
+
+  // An address with no login: Supabase's own words never reach the client.
+  await p.goto('http://127.0.0.1:8899/client/', { waitUntil: 'networkidle' }); await p.waitForTimeout(400);
+  await p.fill('#signEmail', 'nologin@lc.com');
+  await p.locator('#signGo').click(); await p.waitForTimeout(300);
+  const refused = await p.locator('#stateMsg').innerText();
+  check('a refused sign-in reads in our words, not the database\'s',
+    refused.includes('Sign-in is not available for this address') && !/Signups not allowed/i.test(refused) &&
+    (await p.locator('#stateTitle').innerText()) === 'Client sign-in');
 
   // --- an email not on any client ---
   await p.evaluate(() => window.__signIn('nobody@example.com')); await p.waitForTimeout(500);
@@ -218,15 +229,24 @@ const SEED = `
     await a.evaluate(() => (window.__signed || []).some(s => s.name === 'invite-member' && s.body.email === 'wong@lc.com' && s.body.notify === true)) &&
     (await a.locator('#crmWorkMsg').innerText()).includes('Invitation sent to wong@lc.com'));
 
+  /* A login that could not be made is a dead end, not a warning: sign-ups are
+     closed, so the switch is on and the client still cannot get in. */
   const ng = a.locator('#crmContacts .ct-row:not(.crm-head)', { hasText: 'Ms Ng' });
   await ng.locator('[data-a="menu"]').scrollIntoViewIfNeeded(); await a.waitForTimeout(300);
   await ng.locator('[data-a="menu"]').click(); await a.waitForTimeout(200);
   await ng.locator('[data-a="portal"]').click(); await a.waitForTimeout(400);
   await a.locator('#portalGo').click(); await a.waitForTimeout(500);
-  check('a failed invitation says why, in the function\'s own words',
+  check('a failed login says why, in the function\'s own words, as an error',
     (await a.locator('#crmWorkMsg').innerText()).includes('Error sending invite email') &&
+    (await a.locator('#crmWorkMsg').getAttribute('class')).includes('err') &&
     await a.evaluate(() => window.__DB.client_contacts.find(c => c.id === 'pct3').portal_access === true));
+  check('and the row says the sign-in is still pending, not that access is live',
+    (await ng.innerText()).includes('Sign-in pending') && !(await ng.innerText()).includes('Portal access'));
+  check('a contact whose login was made reads the other way',
+    (await wong.innerText()).includes('Portal access') &&
+    await a.evaluate(() => !!window.__DB.client_contacts.find(c => c.id === 'pct4').portal_login_at));
   await ng.locator('[data-a="menu"]').click(); await a.waitForTimeout(200);
+  check('and the ⋯ offers to make the login again', await ng.locator('[data-a="login"]').isVisible());
   await ng.locator('[data-a="unportal"]').click(); await a.waitForTimeout(400);
   await wong.locator('[data-a="menu"]').scrollIntoViewIfNeeded(); await a.waitForTimeout(300);
   await wong.locator('[data-a="menu"]').click(); await a.waitForTimeout(200);
