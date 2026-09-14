@@ -134,6 +134,7 @@ rule, and a theme nobody audits is a theme that quietly fails AA.
 | Token | Value | Use |
 |---|---|---|
 | `--radius` / `--radius-sm` | 10px / 7px | Panels and cards / controls and chips |
+| `--head-h` | 64px (56px on a phone) | The chrome bar, on every page. `.topbar-inner` takes `calc(var(--head-h) - 1px)` because `.topbar` carries the hairline outside its box while `.console-head` carries it inside, and without that the two differ by exactly the border |
 | `--ctl-h` | 38px (44px coarse pointer) | Every button, input, select, icon button |
 | `--ctl-h-sm` | 32px (44px coarse) | `.btn-sm`, `.input-sm`, `.select-sm`, every status select |
 | `--state-w` | 124px | Every status select, on a head as in a row |
@@ -301,6 +302,20 @@ measures the table whenever its header is not on screen (`padding`).
 | Message | `.msg` (`ok`, `warn`, `err`) as one line under the control, never a card |
 | Empty list | `.empty` with two words ("No entries.", "No links.", "No matches.", "Access denied."); never "yet", never a sentence |
 | Links to reach a person | `.plink` chips (phone, WhatsApp, email); equal widths on a phone |
+
+**The bar at the top of every page is one bar, so it is one height.** It used
+to have none of its own: 14px of padding above and below whatever was tallest
+inside, so `/admin` signed out (a 26px wordmark) stood 55px and `/client` (a
+38px button) 67px; both changed again at the 640 breakpoint as somebody
+resized, and the client bar wrapped to two rows and 105px at 390. A bar
+measured by its contents is a different bar on every page. It takes `--head-h`
+now, never wraps, and the page label is what gives way when the row runs out
+of room: below 640 `.brand-kicker` is hidden rather than clipped to
+"Client Po…", which reads as a fault rather than as a name, while
+"Prepared for {client}" stays, because on a client's own page that is the one
+thing the bar is telling them. `uxaudit` measures the bar on every page of the
+walk and fails when one disagrees with the rest at the same width (`head`),
+because the fault was only ever visible by comparing two pages.
 
 A field the browser draws itself (file, date, time, select) is reskinned
 to our box: same height, same border, and its inner button is one of ours
@@ -601,6 +616,19 @@ still sits on top of the shared one.
   removal (log entry, contact, service line, uploaded PDF), Void then
   Delete for an issued document, a number never reused. Anything a
   person can upload or attach, a person can remove.
+- **Removed is not deleted, and both are wanted, for opposite reasons.** A
+  person leaves a company and the calls we logged with them, the letter
+  addressed to them and the billing contact they were still have to read
+  correctly, so Remove hides the row and keeps all of that intact. PDPA pulls
+  the other way: personal data we no longer need should not be kept for ever,
+  and a contact keyed in by mistake should be able to go. So a contact follows
+  the letter's pattern, Void then Delete: Remove first, then **Delete
+  permanently** in the ⋯ of the removed row, behind a confirmation and behind
+  `can_remove` (an admin's by default, through `body.no-remove` and the
+  absence of `data-soft` on the item). It is safe to take the row out because
+  both foreign keys to a contact are `on delete set null` and a request keeps
+  the name it was raised under as text, so nothing that survives is left
+  pointing at a hole.
 - **Every forward move is walked backwards before it ships.** A state
   that is derived from data is derived in one place and recomputed on
   every load, never written once by the action that caused it: a

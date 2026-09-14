@@ -233,6 +233,41 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   await p.locator('#crmContacts [data-a="restore"]').click(); await p.waitForTimeout(600);
   check('a removed contact can be put back', await p.locator('#crmContacts .ct-row:not(.is-off):not(.crm-head)').count() === 2);
 
+  /* Remove keeps the row so calls, letters and the billing contact still make
+     sense; Delete is the second step, for a contact keyed in by mistake or a
+     person whose data we should not be keeping. Admin only, and asked first. */
+  // A throwaway, so the letter and billing tests below keep their people.
+  await p.locator('#crmAddContact').click(); await p.waitForTimeout(300);
+  await p.fill('#ctName', 'Ms Temp');
+  await p.locator('#ctSave').click(); await p.waitForTimeout(700);
+  const temp = p.locator('#crmContacts .ct-row:not(.crm-head)', { hasText: 'Ms Temp' });
+  await temp.locator('[data-a="menu"]').click(); await p.waitForTimeout(250);
+  check('a live contact is not offered a permanent delete',
+    await temp.locator('[data-a="del"][data-soft]').count() === 1 &&
+    await temp.locator('[data-a="del"]:not([data-soft])').count() === 0);
+  await temp.locator('[data-a="del"]').click(); await p.waitForTimeout(600);
+  // The toggle may already be open from the restore above; clicking it blind
+  // would close it and hide the row this block is about.
+  if (await p.locator('#crmContacts .ct-row.is-off').count() === 0) {
+    await p.locator('.crm-removed-toggle').click(); await p.waitForTimeout(400);
+  }
+  const gone = p.locator('#crmContacts .ct-row.is-off', { hasText: 'Ms Temp' });
+  const wasCount = await p.evaluate(() => window.__DB.client_contacts.length);
+  await gone.locator('[data-a="menu"]').click(); await p.waitForTimeout(250);
+  check('a removed one is', await gone.locator('[data-a="del"]').count() === 1);
+  p.removeAllListeners('dialog');
+  p.once('dialog', d => d.dismiss());
+  await gone.locator('[data-a="del"]').click(); await p.waitForTimeout(400);
+  check('a dismissed confirmation deletes nothing',
+    await p.evaluate(() => window.__DB.client_contacts.length) === wasCount);
+  p.on('dialog', d => d.accept());
+  await gone.locator('[data-a="menu"]').click(); await p.waitForTimeout(250);
+  await gone.locator('[data-a="del"]').click(); await p.waitForTimeout(700);
+  check('confirmed, the row is gone for good and logged',
+    await p.evaluate(() => window.__DB.client_contacts.length) === wasCount - 1 &&
+    await p.evaluate(() => !window.__DB.client_contacts.some(c => c.name === 'Ms Temp')) &&
+    await p.evaluate(() => window.__DB.activity_log.some(a => a.action === 'contact.deleted')));
+
   // services: a line from the rate card, then a custom line, confirmed; the value follows
   await p.locator('#crmAddService').click(); await p.waitForTimeout(400);
   check('the rate card is offered, grouped', await p.locator('#svPick optgroup').count() >= 2);

@@ -56,6 +56,12 @@
      next to each other line up instead of stepping. Touch devices get the
      44px target Apple asks for, and 16px text so iOS stops zooming the page
      the moment a field is focused. */
+  /* The chrome bar has a height of its own. It used to have none: 14px of
+     padding above and below whatever was tallest inside it, so /admin (a 26px
+     wordmark) came out 55px and /client (a 38px button) 67px, both changed
+     again at the 640 breakpoint, and the client bar wrapped to two rows at
+     390. A bar measured by its contents is a different bar on every page. */
+  --head-h:     64px;
   --ctl-h:      38px;
   --ctl-h-sm:   32px;
   --state-w:    124px;   /* every status select, every table */
@@ -179,9 +185,18 @@ a { color: inherit; }
   border-bottom: 1px solid var(--line);
 }
 .topbar-inner {
-  max-width: 1240px; margin: 0 auto; padding: 14px 24px;
-  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  max-width: 1240px; margin: 0 auto; padding: 0 24px;
+  /* Less the hairline, which sits on .topbar outside this box while
+     .console-head carries its own inside: without it the two bars differ by
+     exactly the border and the eye still catches the step. */
+  min-height: calc(var(--head-h) - 1px);
+  display: flex; align-items: center; gap: 16px; flex-wrap: nowrap;
 }
+/* The actions keep their size and the name gives way, rather than the row
+   folding onto a second line and doubling the bar. */
+.chrome-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.chrome-actions .btn, .chrome-actions .pill { min-width: 0; }
+.brand-kicker, .brand-for { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
 .brand-logo { height: 26px; width: auto; }
 .brand-wordmark { font-size: 16px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
@@ -735,7 +750,16 @@ a { color: inherit; }
 
 @media (max-width: 640px) {
   .shell { padding: 0 16px 72px; }
-  .topbar-inner { padding: 12px 16px; }
+  :root { --head-h: 56px; }
+  .topbar-inner { padding: 0 16px; }
+  /* The page label gives way before the bar does. At 390 the mark, the label
+     and two actions do not fit, and a label clipped to "Client Po…" reads as
+     a fault rather than as a name; the heading under the bar says where you
+     are anyway. "Prepared for {client}" stays, because on a client's own page
+     that is the one thing the bar is telling them. */
+  .brand-kicker { display: none; }
+  .brand-meta:empty, .brand-meta:not(:has(.brand-for)) + .brand-divider { display: none; }
+  .brand:not(:has(.brand-for)) .brand-divider { display: none; }
   /* #whoami used to sit in the top bar, where it pushed sign out onto a second
      row. It lives in the sidebar footer now, which has room for it, so hiding
      it only left the drawer saying "Logged in as" and nothing else. */
@@ -1535,7 +1559,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .console-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
 .console-head {
   display: flex; align-items: center; gap: 12px;
-  padding: 0 28px; height: 56px; flex: 0 0 auto;
+  padding: 0 28px; height: var(--head-h); flex: 0 0 auto;
   border-bottom: 1px solid var(--line);
   background: var(--chrome); backdrop-filter: saturate(180%) blur(14px);
   position: sticky; top: 0; z-index: 30;
