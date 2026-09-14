@@ -164,24 +164,41 @@
     });
   }
 
+  /* A roster is a few hundred people, so it needs the two things a list that
+     long always needs: a way to cut it down, and somewhere to be inside it.
+     The cut is the platform, because that is the first thing a campaign
+     fixes. The bands are the fee, because that is the second, because every
+     creator is in exactly one, and because a flat four hundred rows with one
+     heading at the top tells you nothing about where you are. */
+  var BANDS = [
+    ['Up to RM 300',    function (r) { return r > 0 && r <= 300; }],
+    ['RM 301 to 500',   function (r) { return r > 300 && r <= 500; }],
+    ['RM 501 to 800',   function (r) { return r > 500 && r <= 800; }],
+    ['Above RM 800',    function (r) { return r > 800; }],
+    ['On quote',        function (r) { return !r; }]
+  ];
+
   function paintRoster() {
     var box = $('rosterList');
     if (!box) return;
     var q = ($('rosterSearch').value || '').trim().toLowerCase();
-    var shown = !q ? state.creators : state.creators.filter(function (c) {
+    var plat = $('rosterPlatform') ? $('rosterPlatform').value : 'all';
+    var shown = state.creators.filter(function (c) {
+      if (plat !== 'all' && !(c.creator_profiles || []).some(function (p) { return p.platform === plat; })) return false;
+      if (!q) return true;
       var hay = c.name + ' ' +
         (c.creator_profiles || []).map(function (p) { return p.handle || p.url; }).join(' ');
       return hay.toLowerCase().indexOf(q) > -1;
     });
+    var narrowed = q || plat !== 'all';
     $('rosterCount').textContent = !state.creators.length ? '' :
-      (q ? shown.length + ' of ' + state.creators.length
-         : state.creators.length + (state.creators.length === 1 ? ' creator' : ' creators'));
+      (narrowed ? shown.length + ' of ' + state.creators.length
+                : state.creators.length + (state.creators.length === 1 ? ' creator' : ' creators'));
 
     box.innerHTML = '';
     if (!shown.length) {
       box.innerHTML = '<div class="empty">' +
-        (state.creators.length ? 'Nothing matches that search.'
-                               : 'No creators yet.') + '</div>';
+        (state.creators.length ? 'No matches.' : 'No creators yet.') + '</div>';
       return;
     }
     /* A creator is a person with a fee, so the row is the one this console
@@ -196,7 +213,45 @@
       '<span class="svc-rate">Fee</span><span></span>';
     box.appendChild(head);
 
-    shown.forEach(function (c) {
+    /* Stood down people are not booked, so they are not in the budget bands:
+       they are one group at the foot, where they can still be edited and put
+       back without sitting between two creators who are available. */
+    var live = shown.filter(function (c) { return c.active !== false; });
+    var down = shown.filter(function (c) { return c.active === false; });
+    var byName = function (a) {
+      return a.slice().sort(function (x, y) { return String(x.name || '').localeCompare(String(y.name || '')); });
+    };
+    BANDS.forEach(function (band) {
+      var mine = byName(live.filter(function (c) { return band[1](Number(c.client_rate || 0)); }));
+      if (!mine.length) return;
+      box.appendChild(bandHead(band[0], mine.length));
+      mine.forEach(function (c) { box.appendChild(rosterRow(c)); });
+    });
+    if (down.length) {
+      box.appendChild(bandHead('Inactive', down.length));
+      byName(down).forEach(function (c) { box.appendChild(rosterRow(c)); });
+    }
+  }
+
+  function bandHead(name, n) {
+    var el = document.createElement('div');
+    el.className = 'svc-cat';
+    el.innerHTML = esc(name) + ' <span>' + n + '</span>';
+    return el;
+  }
+
+  /* One character in a disc, the way every contacts list a person has ever
+     used marks a row. Four hundred rows of name, chip, number are four hundred
+     rows of the same shape, and a list you cannot tell apart is a list you
+     have to read rather than scan. Neutral, never tinted per person: the
+     character is what differs, and the accent is spent elsewhere. */
+  function monogram(name) {
+    var ch = Array.from(String(name || '').trim())[0] || '?';
+    return '<span class="cr-mono" aria-hidden="true">' + esc(ch.toUpperCase()) + '</span>';
+  }
+
+  function rosterRow(c) {
+    {
       var row = document.createElement('div');
       var off = c.active === false;
       row.className = 'svc-row cr-row' + (off ? ' is-off' : '');
@@ -213,7 +268,7 @@
           (h && h.length <= 18 ? ' <b>' + esc(h) + '</b>' : '') + '</a>';
       }).join('');
       row.innerHTML =
-        '<span class="svc-name"><b>' + esc(c.name) +
+        '<span class="svc-name cr-who">' + monogram(c.name) + '<b>' + esc(c.name) +
           (off ? ' <span class="tone">Inactive</span>' : '') + '</b></span>' +
         '<span class="cr-links">' + (chips || '<span class="muted">No profile links</span>') + '</span>' +
         '<span class="svc-rate">' + (c.client_rate ? esc(money(c.client_rate))
@@ -239,8 +294,8 @@
           loadRoster();
         });
       });
-      box.appendChild(row);
-    });
+      return row;
+    }
   }
 
   /* The roster's ⋯ hangs off a table row, so it is placed on the viewport
@@ -384,6 +439,7 @@
   });
   $('addProfRow').addEventListener('click', function () { $('profRows').appendChild(profRow(null, ROSTER_CTX)); });
   $('rosterSearch').addEventListener('input', paintRoster);
+  $('rosterPlatform').addEventListener('change', paintRoster);
   $('crName').addEventListener('input', function () { warnDupes(ROSTER_CTX); });
 
   $('saveCreator').addEventListener('click', function () {
