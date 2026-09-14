@@ -547,6 +547,7 @@
     'contact.portal_on':     ['Portal access granted', 'is-ok', 'clients'],
     'contact.portal_off':    ['Portal access revoked', 'is-warn', 'clients'],
     'contact.portal_invite': ['Invitation sent', '', 'clients'],
+    'contact.deleted':       ['Contact deleted', 'is-danger', 'clients'],
     'request.raised':        ['Request raised', 'is-warn', 'clients'],
     'request.changed':       ['Request changed', '', 'clients'],
     'request.replied':       ['Request replied', '', 'clients'],

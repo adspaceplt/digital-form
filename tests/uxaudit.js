@@ -18,7 +18,7 @@ const CPROD = seedOf('cprod.js');
 const PORTAL = seedOf('portal.js');
 const QR = 'window.QRCode=function(){};window.QRCode.CorrectLevel={H:2};';
 
-const FAIL = new Set(['overflow', 'orphan', 'padding', 'cols', 'stack', 'hover', 'type', 'wrap', 'clip', 'row-height', 'row-width', 'target', 'label', 'icon-label', 'accent', 'contrast', 'boundary', 'focus']);
+const FAIL = new Set(['head', 'overflow', 'orphan', 'padding', 'cols', 'stack', 'hover', 'type', 'wrap', 'clip', 'row-height', 'row-width', 'target', 'label', 'icon-label', 'accent', 'contrast', 'boundary', 'focus']);
 let fails = 0, warns = 0;
 
 /* Runs inside the page. Returns [[kind, detail], ...]. */
@@ -265,6 +265,22 @@ async function focusRing(p) {
   return out;
 }
 
+/* The bar at the top of every page is one bar, so it is one height. It had
+   none of its own: padding above and below whatever was tallest inside it, so
+   a page with a button in the bar stood 12px taller than one without, the
+   height changed again at 640, and the client bar wrapped to two rows at 390.
+   Measured here across the whole walk rather than per page, because the fault
+   was only ever visible by comparing two pages. */
+const HEADS = {};
+function headHeight(name, h) {
+  if (!h) return [];
+  const at = name.replace(/^.*?\b(\d{3,4})\b.*$/, '$1');
+  const seen = HEADS[at];
+  if (seen === undefined) { HEADS[at] = h; return []; }
+  if (seen === h) return [];
+  return [['head', name + ': the chrome bar is ' + h + 'px here and ' + seen + 'px on the rest of the walk at ' + at]];
+}
+
 async function report(name, p, coarse) {
   // SHOTS=1 turns the walk into a picture of every state for a human
   // review and measures nothing: a full page capture resizes the phone
@@ -279,6 +295,11 @@ async function report(name, p, coarse) {
   const F = await p.evaluate(inPage, coarse);
   F.push(...await focusRing(p));
   F.push(...await hoverState(p, coarse));
+  F.push(...headHeight(name, await p.evaluate(() => {
+    var el = [...document.querySelectorAll('.topbar, .console-head')]
+      .filter((e) => e.offsetParent !== null)[0];
+    return el ? Math.round(el.getBoundingClientRect().height) : 0;
+  })));
   const bad = F.filter(f => FAIL.has(f[0])), warn = F.filter(f => !FAIL.has(f[0]));
   fails += bad.length; warns += warn.length;
   console.log((bad.length ? 'FAIL ' : 'ok   ') + name + (bad.length ? ' (' + bad.length + ')' : '') + (warn.length ? ' warn ' + warn.length : ''));

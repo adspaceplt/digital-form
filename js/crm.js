@@ -708,7 +708,11 @@
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
           (removed
-            ? '<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>'
+            ? '<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>' +
+              /* The hard delete, once the soft one has been made. No data-soft,
+                 so body.no-remove hides it from anyone whose group does not
+                 carry can_remove: an admin's by default. */
+              '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete permanently</b></button>'
             : '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
               (ct.is_primary ? '' :
                 '<button class="kmenu-item" data-a="primary" type="button"><b>Main contact</b></button>') +
@@ -728,6 +732,7 @@
     on('unportal', function () { setPortal(ct, false); });
     on('del',     function () { archiveContact(ct, true); });
     on('restore', function () { archiveContact(ct, false); });
+    if (removed) on('del', function () { purgeContact(ct); });
     return row;
   }
 
@@ -910,6 +915,28 @@
       log(away ? 'contact.removed' : 'contact.restored', state.client.name + ' · ' + ct.name, '');
       if (away) undoBar(ct.name + ' removed.', function () { archiveContact(ct, false); });
       loadContacts();
+    });
+  }
+
+  /* Removed is not deleted, and both are wanted for different reasons.
+     A person leaves a company and the record of the calls we had with them,
+     the letter addressed to them and the billing contact they were still have
+     to make sense, so Remove hides the row and keeps all of that readable.
+     PDPA pulls the other way: personal data we no longer need should not be
+     kept for ever, and a contact keyed in by mistake should be able to go.
+     So it is Void then Delete, as it is for a letter: remove first, then an
+     admin can take the row out for good. Both foreign keys to a contact are
+     `on delete set null`, and a request keeps the name it was raised under as
+     text, so nothing that survives is left pointing at a hole. */
+  function purgeContact(ct) {
+    Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
+    if (!confirm('Delete ' + ct.name + ' permanently?\n\nThis cannot be undone. Calls, letters and requests keep the name as it was written.')) return;
+    db.from('client_contacts').delete().eq('id', ct.id).then(function (r) {
+      if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
+      log('contact.deleted', state.client.name + ' · ' + ct.name, ct.email || '');
+      msg('crmWorkMsg', 'Deleted.', 'ok');
+      loadContacts();
+      loadRequests();
     });
   }
 
