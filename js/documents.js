@@ -280,9 +280,22 @@
         [phoneWord(ORG.phone), ORG.email, ORG.website].filter(Boolean).forEach(function (s) { right(s, R, ry, 11); ry -= 12.5; });
         y = Math.min(ly, ry) - 10;
       };
+      /* Every page names the letter it belongs to, and every page but the one
+         that is signed carries a line for the client's initials.
+
+         A letter whose substance is on page one and whose signature is on
+         page two can be executed and then have page one swapped: the signed
+         sheet proves only that somebody signed something. Initials on each
+         page is the ordinary commercial answer, and the reference in the foot
+         means a page lifted out of this letter still says which letter it is. */
       var foot = function (i, n) {
         if (logo) { var fh = 20, fw = logo.width * (fh / logo.height); page.drawImage(logo, { x: (W - fw) / 2, y: 30, width: fw, height: fh }); }
+        text(doc.number, M, 30, 7.5, font, mute);
         right('Page ' + (i + 1) + ' of ' + n, R, 30, 7.5, font, mute);
+        if (i < n - 1) {
+          rule(56, M, M + 96);
+          text('Initials', M, 45, 7.5, font, mute);
+        }
       };
       var LH = 14.5, PARA = 14, BODY = 11;
       var para = function (s, f, size) {
@@ -418,13 +431,29 @@
          inclusions. */
       var closeH = LH * (doc.issued_by ? 3 : 2) + 16;
       var acceptH = 32 + 30 + 14 + 11;
-      need(closeH + acceptH);
+      // Two lines for the sentence that says what is being signed, which is
+      // part of the acceptance and never leaves it.
+      need(closeH + acceptH + 38);
       text('Yours sincerely,', M, y, BODY); y -= LH;
       text(ORG.name || 'ADSPACE PLT', M, y, BODY, bold); y -= LH;
       if (doc.issued_by) { text(doc.issued_by, M, y, BODY); y -= LH; }
       y -= 16;
 
       // Reserved with the closing above, so this never starts a page on its own.
+
+      /* The signature page says what is being signed. Without it the sheet
+         the client puts their stamp on carries a company name and nothing
+         else, and nothing on it contradicts a different page one. Naming the
+         reference, the date, the number of pages and the figure means a
+         substituted page disagrees with the page that was signed. */
+      var says = 'This acceptance relates to Letter of Offer ' + doc.number +
+        ' dated ' + letterDate(doc.issued_at) + ', comprising ' + (pages.length) + ' pages';
+      says += price.term
+        ? ', at ' + MON.money2(price.eachTotal, doc.market) + ' per month over a ' + price.term +
+          ' month term, ' + MON.money2(price.total, doc.market) + ' in total.'
+        : ', totalling ' + MON.money2(price.eachTotal, doc.market) + '.';
+      wrap(says, R - M, 9.5).forEach(function (ln) { text(ln, M, y, 9.5, font, mute); y -= 13; });
+      y -= 12;
 
       text('Confirmed and accepted for and on behalf of ' + (b.legal_name || b.name || '').toUpperCase(), M, y, BODY, bold); y -= 32;
       var half = (R - M - 24) / 2;
