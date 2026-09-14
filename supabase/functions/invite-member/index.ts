@@ -70,11 +70,17 @@ Deno.serve(async (req) => {
   // 3. What they want. kind "client" invites a client contact to /client/
   //    (anyone on the team who works the Clients section may do that); a team
   //    invite stays an admin's alone.
-  let body: { email?: string; name?: string; kind?: string } = {};
+  let body: { email?: string; name?: string; kind?: string; notify?: boolean } = {};
   try { body = await req.json(); } catch { /* handled below */ }
   const email = String(body.email ?? '').trim().toLowerCase();
   const name = String(body.name ?? '').trim();
   const kind = body.kind === 'client' ? 'client' : 'team';
+  // The login is always created; only the email is a choice. A contact who is
+  // given access without an invitation must still be able to sign in later,
+  // and signInWithOtp cannot make an account of its own while sign-ups are
+  // closed, so "do not send" creates the account silently rather than
+  // creating nothing at all.
+  const notify = body.notify !== false;
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'bad_email' }, 400, origin);
 
   const isAdmin = caller.is_admin === true || caller.role === 'admin';
@@ -87,17 +93,24 @@ Deno.serve(async (req) => {
     if (!contact) return json({ error: 'not_portal_contact' }, 403, origin);
   }
 
-  // 4. Invite. Supabase sends the email with the magic link; the person clicks
-  //    it and lands on the sign-in page already signed in. An address that
-  //    already has a login is not an error: the row exists, they can sign in.
-  const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-    data: { name },
-    redirectTo: kind === 'client' ? CLIENT_PAGE : SIGN_IN_PAGE
-  });
+  // 4. Make the login. Invited, Supabase sends the magic link and the person
+  //    clicks it straight into the page, already signed in: there is no form
+  //    to fill in and no password to choose. Unnotified, the account is made
+  //    the same way but nothing leaves the building, and the first magic link
+  //    they ask for signs them in. An address that already has a login is not
+  //    an error either way: the account exists, they can sign in.
+  const { data, error } = notify
+    ? await admin.auth.admin.inviteUserByEmail(email, {
+        data: { name },
+        redirectTo: kind === 'client' ? CLIENT_PAGE : SIGN_IN_PAGE
+      })
+    : await admin.auth.admin.createUser({
+        email, email_confirm: true, user_metadata: { name }
+      });
   if (error) {
     const already = /already|exists|registered/i.test(error.message);
-    if (already) return json({ ok: true, already: true }, 200, origin);
+    if (already) return json({ ok: true, already: true, sent: notify }, 200, origin);
     return json({ error: 'invite_failed', detail: error.message }, 500, origin);
   }
-  return json({ ok: true, already: false, id: data.user?.id ?? null }, 200, origin);
+  return json({ ok: true, already: false, sent: notify, id: data.user?.id ?? null }, 200, origin);
 });

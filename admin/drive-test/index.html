@@ -9,7 +9,11 @@
      CDN rather than the website builder's, so a site rebuild cannot break it. -->
 <link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
 <link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
-<link rel="stylesheet" href="/css/portal.css?v=20260914c">
+<!-- The one brand face, fetched alongside the stylesheet rather than after
+     it: a heading that paints in the system face and flips a moment later
+     is the page correcting itself in front of the reader. -->
+<link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
+<link rel="stylesheet" href="/css/portal.css?v=20260914d">
 <style>
   .res { margin-top: 22px; }
   .check { display: flex; gap: 12px; align-items: flex-start; padding: 13px 0;

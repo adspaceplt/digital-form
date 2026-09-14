@@ -13,7 +13,11 @@
      CDN rather than the website builder's, so a site rebuild cannot break it. -->
 <link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
 <link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
-<link rel="stylesheet" href="/css/portal.css?v=20260914c">
+<!-- The one brand face, fetched alongside the stylesheet rather than after
+     it: a heading that paints in the system face and flips a moment later
+     is the page correcting itself in front of the reader. -->
+<link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
+<link rel="stylesheet" href="/css/portal.css?v=20260914d">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -24,16 +28,16 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260914c"></script>
-<script src="/js/api.js?v=20260914c"></script>
-<script src="/js/money.js?v=20260914c"></script>
-<script src="/js/mockups.js?v=20260914c"></script>
+<script src="/js/config.js?v=20260914d"></script>
+<script src="/js/api.js?v=20260914d"></script>
+<script src="/js/money.js?v=20260914d"></script>
+<script src="/js/mockups.js?v=20260914d"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260914c" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260914d" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -1113,6 +1117,30 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
+<!-- Enabling portal access for a contact: which address becomes their sign-in,
+     and whether the invitation goes out now. The login is made either way. -->
+<div class="sheet" id="portalSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="portalHeading">
+    <div class="sheet-head">
+      <h3 id="portalHeading">Enable portal access</h3>
+      <button class="iconbtn" id="portalClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <dl class="facts" id="portalFacts"></dl>
+      <label class="tickline" style="margin-top:14px">
+        <input type="checkbox" id="portalInvite" checked> <span>Send invitation email</span>
+      </label>
+      <div class="row" style="margin-top:16px;margin-bottom:14px">
+        <button class="btn btn-primary" id="portalGo" type="button">Enable</button>
+        <button class="btn" id="portalCancel" type="button" style="flex:0 0 auto">Cancel</button>
+      </div>
+      <div class="msg" id="portalMsg"></div>
+    </div>
+  </div>
+</div>
+
 <!-- QR codes for one short link. -->
 <div class="sheet" id="qrSheet" hidden>
   <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="qrHeading">
@@ -1158,10 +1186,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260914c"></script>
-<script src="/js/documents.js?v=20260914c"></script>
-<script src="/js/crm.js?v=20260914c"></script>
-<script src="/js/team.js?v=20260914c"></script>
-<script src="/js/campaigns.js?v=20260914c"></script>
+<script src="/js/admin.js?v=20260914d"></script>
+<script src="/js/documents.js?v=20260914d"></script>
+<script src="/js/crm.js?v=20260914d"></script>
+<script src="/js/team.js?v=20260914d"></script>
+<script src="/js/campaigns.js?v=20260914d"></script>
 </body>
 </html>

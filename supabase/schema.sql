@@ -1092,13 +1092,29 @@ alter table public.team_members add column if not exists updated_at    timestamp
 create unique index if not exists team_members_email_idx
   on public.team_members(lower(email)) where email is not null;
 
--- Everyone who can already sign in carries over as Account. Nobody is locked
--- out by this file; someone is only ever narrowed from the Team page.
-insert into public.team_members (name, email, role)
-  select coalesce(u.raw_user_meta_data ->> 'name', split_part(u.email, '@', 1)), u.email, 'account'
-  from auth.users u
-  where u.email is not null
-    and not exists (select 1 from public.team_members t where lower(t.email) = lower(u.email));
+/* The cutover, and only the cutover: when this file first ran, everyone who
+   could already sign in became an Account so nobody was locked out.
+
+   It must never run again. Clients have logins now, so auth.users is no
+   longer a list of colleagues: granting a contact portal access creates their
+   login, and a sweep of auth.users would hand that contact an active team row
+   with can_clients, can_review, can_campaigns, can_links and can_billing on
+   it, which is read and write over every client in the console. Hence two
+   guards that cannot both be got round: the sweep runs only while the team
+   list is empty, and it never takes an address that belongs to a client
+   contact. A login that should be on the team is added from the Team page,
+   where a person decides it. */
+do $$ begin
+  if not exists (select 1 from public.team_members) then
+    insert into public.team_members (name, email, role)
+      select coalesce(u.raw_user_meta_data ->> 'name', split_part(u.email, '@', 1)),
+             u.email, 'account'
+      from auth.users u
+      where u.email is not null
+        and not exists (select 1 from public.client_contacts c
+                         where lower(c.email) = lower(u.email));
+  end if;
+end $$;
 
 -- The first admin. Change the address if the owner's login is a different one.
 update public.team_members
@@ -1946,3 +1962,30 @@ update public.clients
    set stage_since = created_at
  where stage_since > created_at
    and jsonb_array_length(coalesce(stage_log, '[]'::jsonb)) = 1;
+
+-- ============================================================================
+-- TEAM LIST REPAIR: a client's contact is not a colleague.
+-- ============================================================================
+-- The cutover sweep above used to take every address in auth.users. Once a
+-- client contact was granted portal access their login existed, so the next
+-- run of this file added them to the team as an active Account: read and
+-- write over every client, and a name in the Person in charge list. The sweep
+-- is guarded now; this clears up what it already did.
+--
+-- Deactivated rather than deleted. Standing the row down is what closes the
+-- hole, because is_team(), allowed() and the Person in charge list all ask
+-- whether the row is active; leaving it on the Team page as Inactive shows
+-- the person who re-runs this file exactly what changed and lets them put
+-- anyone back with one click, which a delete would not. Never an admin and
+-- never one of our own addresses, so a colleague who is also recorded as a
+-- contact somewhere is only ever stood down, never lost.
+update public.team_members t
+   set active = false
+ where t.active
+   and t.email is not null
+   and coalesce(t.is_admin, false) = false
+   and t.role <> 'admin'
+   and t.email not ilike '%@adspacestudios.com'
+   and exists (select 1 from public.client_contacts c
+                where lower(c.email) = lower(t.email)
+                  and c.archived_at is null);
