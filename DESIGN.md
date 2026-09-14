@@ -67,6 +67,19 @@ browser draws (select popups, scrollbars, the caret) follows too.
 `var(--on-ok)`. A hover that used to be a darker hex is `filter:
 brightness()` on the same token, so one value still drives both themes.
 
+**The accent marks the exception, not the norm.** Green is the live state, but
+a state that is true of nearly every row carries no information, and painting
+it green spends the one accent on the ordinary case. Thirty two of the thirty
+four rate card lines are Active and so is every colleague: a column of green
+Active selects made the default the loudest thing on the screen, louder than
+the price beside it, and left the two rows that were **not** active looking
+like all the others. Where a state is the default for its list, the row says
+nothing while it holds and names the exception when it does not (`Inactive` as
+a neutral chip, the row faded). Where a state is a real position in a pipeline
+— a client stage, a campaign step, a request — green still marks a milestone
+only a minority of rows have reached, and stays. The test is not "is this
+live", it is "would marking it tell anybody anything".
+
 **One value per semantic colour where it can do both jobs.** In dark,
 `--ok` is legible as text on every surface *and* deep enough to carry
 dark text as a fill, so there is still one green. A paler mint passed the
@@ -311,7 +324,7 @@ measures the table whenever its header is not on screen (`padding`).
 | One record with steps | `.kcard` > `.kcard-head` (name, chips, ⋯) + `.kstep` blocks; folds to one line in lists of ten or more |
 | Rare or destructive actions | `.kmenu-btn` ⋯ + `.kmenu` > `.kmenu-item` (name only; `is-danger`). An item that leaves the building and cannot be recalled asks first, with `confirm()` naming what goes where: **Send invitation** sits one place from Edit in the same menu. A menu row is a control and clears the control floor like any other (`--ctl-h`: 38px, 44px under a finger); padding alone left it at 43px on a phone and nothing caught it until the walk opened a ⋯. An item that does not repaint the row behind it closes the menu itself, or the ⋯ sits open over the answer or behind the sheet it just opened. **The menu opens upwards where the room is above**, never past the bottom of the window, which is nowhere a phone can reach; and the scroll that closes it ignores the scroll the browser fires to reveal the button it has just focused, or the ⋯ closes itself the frame after it opens |
 | A rare change to a row | The row states the value; the ⋯ opens the panel that edits it, and the same panel adds a new one. A control drawn on every row for something changed once a quarter is Hick's law failing twice: it repeats on every line what one heading or one word could say, and it fills the row with the thing nobody came for. A group's seven switches, a member's group, a service's rate: all read on the row, all changed in a panel |
-| Status | `select.state-select` (tinted) for a value that changes; `.tone` / `.chip-state` with a word for a value that is only read |
+| Status | `select.state-select` (tinted) for a state that **moves as part of the work** — a campaign step, a client stage, a request — where changing it is why somebody opened the page. A **lifecycle flag flipped once** (Active / Inactive on a rate card line, a colleague, a creator) is a chip on the row and a `Set inactive` / `Set active` item in the ⋯: a 124px tinted select on every line, for a decision taken once in the life of the row, was taller than the price it sat beside and painted the whole list one colour. `.tone` / `.chip-state` with a word for a value that is only read |
 | The chosen one of several options | A filled shape, one language per component and never a shadow: the sidebar `.navitem.is-on` takes the `--line-soft` fill and weight 600, a `.tab.is-on` an ink underline and weight 600, an `.acttab.is-on` the ink fill with white text, a `.crow.is-on` the `--line-soft` fill, a `.bigcard.is-on` an ink border. Hover is always one step lighter than selected (`--sunk` where selected is `--line-soft`), never equal to it, and lives inside `@media (hover: hover)` so a phone cannot leave it stuck on the last thing tapped. `uxaudit` hovers an unselected option and fails when it renders the selected one's background (`hover`) |
 | Form to add or edit | `.panel` > `.panelhead h3` + `.row` fields + Save / secondary / Cancel + `.msg`; one Save covers everything in the form, a file included, so a number and its PDF are never two saves, and Cancel repaints from what is stored. What is attached now sits with the field that changes it, above the actions, never stranded under them |
 | Optional detail | `.panel.panel-collapse` > `.disclosure` (title, summary right) + `.disclosure-body` |
@@ -353,6 +366,42 @@ is in Sales" only by reading every row. Members sit under their group as
 `.svc-cat` sub-headings, exactly as the rate card lists services under a
 category, and moving somebody is Edit in the ⋯. **Where a list has a natural
 grouping, the grouping is a heading, never a column.**
+
+**A phone row spends its first line on what the person came for.** The rate
+card was three lines — the name with its ⋯, then the unit, then the price
+beside a green Active select — so a row stood 310px and two and a half services
+of thirty four fitted on a screen. The name and the money share the first line,
+what qualifies the money (the unit, the platforms) goes under it, and the ⋯
+ends the first line where the thumb already is. Ninety five pixels, and the
+whole card on one screen. The same shape now carries the rate card and the
+creator roster (`.cat-row`, `.cr-row`: `"name rate act" / "meta meta meta"`).
+
+**A component is borrowed for its shape, never for its convenience.** The
+creator roster was drawn with `.slink`, the Short Links row, so a person's name
+came out in the slug's monospace face and the phone layout put the two icon
+buttons on a line of their own: three creators filled 810px with the actions
+floating in the dead space. A creator is a person with a fee, so the row is the
+one every other list of records uses, and edit and delete went into the ⋯ where
+a destructive action belongs. Before reaching for a component, check that what
+it was built to say is what this screen says.
+
+**One action is an action, not a banner.** The rule the section head already
+carried (`.viewhead .btn:only-of-type`) was missed by every other bar, so on a
+phone `Add lead` stretched the full width above the client list and `Add
+creator` and the short links action did the same: the heaviest thing on the
+screen was the way to add a record, sitting on top of the records somebody came
+to read. `.crm-bar`, `.filterbar` and `.linksbar` keep the action at its own
+width at the end of the row.
+
+**Nothing a phone cannot reach carries meaning.** A creator profile with no
+handle was marked by a half opacity `·` carrying a `title` attribute: a hover
+tooltip, on the device with no hover, doing the work of saying "short link, no
+identity". Where the absence of something is the information, show what is
+there and let the gap speak — the chip reads `Instagram popcorn.xx` where there
+is a handle and `RedNote` where there is not. A handle is shown only where it
+reads as a name (18 characters or fewer); RedNote keeps a profile id in that
+field, and `5e3262fd00000000010015b6` is longer than the creator it belongs to
+and says nothing to anybody.
 
 A field the browser draws itself (file, date, time, select) is reskinned
 to our box: same height, same border, and its inner button is one of ours

@@ -30,8 +30,17 @@ const check = (l, ok, x) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (x ? ' 
   check('admin sees the activity record', await p.locator('#activityOpen').isVisible());
   await p.locator('.navitem[data-section="team"]').click(); await p.waitForTimeout(600);
   check('team table lists everyone', await p.locator('.team-row').count() === 3);
-  check('the admin cannot deactivate themselves',
-    await p.locator('.team-row').first().locator('select[data-f="active"]').isDisabled());
+  /* Everyone here is active, so Active earns no column and no accent: the row
+     names the exception and the ⋯ carries the change. */
+  check('no row carries a state select',
+    await p.locator('.team-row select[data-f="active"]').count() === 0);
+  check('and no row is painted with the accent',
+    await p.locator('#teamList .state-select').count() === 0);
+  const selfRow = p.locator('.team-row').first();
+  await selfRow.locator('[data-a="menu"]').click(); await p.waitForTimeout(200);
+  check('a person cannot stand themselves down',
+    await selfRow.locator('[data-a="state"]').count() === 0);
+  await p.keyboard.press('Escape');
 
   /* People sit under the group they are in, so the answer to "who is in
      Sales" is a heading rather than a column of identical selects. */
@@ -93,6 +102,23 @@ const check = (l, ok, x) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (x ? ' 
   check('an invitation was requested for them', invited.length === 1 && invited[0].body.email === 'weiling@adspacestudios.com');
   console.log('  message: ' + await p.locator('#teamMsg').innerText());
   check('the message says the invitation went out', /invitation sent to/i.test(await p.locator('#teamMsg').innerText()));
+
+  // Standing somebody down, and putting them back, both from the ⋯.
+  const wl = () => p.locator('.team-row').filter({ hasText: 'Wei Ling' });
+  await wl().locator('[data-a="menu"]').click(); await p.waitForTimeout(200);
+  check('another person is set inactive from the \u22ef',
+    (await wl().locator('[data-a="state"]').innerText()) === 'Set inactive');
+  await wl().locator('[data-a="state"]').click(); await p.waitForTimeout(600);
+  check('the change is stored',
+    await p.evaluate(() => window.__DB.team_members.find(t => t.name === 'Wei Ling').active === false));
+  check('and the row names it rather than colouring it',
+    /Inactive/.test(await wl().innerText()) && await p.locator('#teamList .state-select').count() === 0);
+  await wl().locator('[data-a="menu"]').click(); await p.waitForTimeout(200);
+  check('and the same item puts them back',
+    (await wl().locator('[data-a="state"]').innerText()) === 'Set active');
+  await wl().locator('[data-a="state"]').click(); await p.waitForTimeout(600);
+  check('back on',
+    await p.evaluate(() => window.__DB.team_members.find(t => t.name === 'Wei Ling').active === true));
   await p.screenshot({ path: process.argv[2] + '/d-team.png' });
   await p.close();
 

@@ -14,7 +14,6 @@
 
   var bridge = window.ADspaceAdmin || {};
   var ICON    = bridge.ICON || {};
-  var iconBtn = bridge.iconBtn || function () { return ''; };
   var log     = bridge.log || function () {};
   var who     = bridge.actor || function () { return ''; };
   var putToS3 = bridge.putToS3;
@@ -185,27 +184,77 @@
                                : 'No creators yet.') + '</div>';
       return;
     }
+    /* A creator is a person with a fee, so the row is the one this console
+       uses for every list of records: name heaviest, the money next, the rest
+       mute. It used to borrow the Short Links row, which set the name in the
+       slug's monospace face and pushed two icon buttons onto a line of their
+       own, so a card three facts deep stood 270px tall on a phone and only
+       three fitted on a screen. */
+    var head = document.createElement('div');
+    head.className = 'crm-head svc-row cr-row';
+    head.innerHTML = '<span>Creator</span><span>Profiles</span>' +
+      '<span class="svc-rate">Fee</span><span></span>';
+    box.appendChild(head);
+
     shown.forEach(function (c) {
       var row = document.createElement('div');
-      row.className = 'slink';
+      var off = c.active === false;
+      row.className = 'svc-row cr-row' + (off ? ' is-off' : '');
+      /* The handle is what a person searches by, so it is on the row, but only
+         where it reads as a name: RedNote keeps a profile id in that field, and
+         5e3262fd00000000010015b6 is longer than the creator it belongs to and
+         says nothing to anybody. Without one the chip is the platform alone,
+         and that absence is the information the half opacity dot used to carry
+         in a title attribute, which a phone has no way to reach. */
       var chips = (c.creator_profiles || []).map(function (p) {
+        var h = String(p.handle || '');
         return '<a class="pchip" href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
           esc(PLATFORM_LABEL[p.platform] || p.platform) +
-          (p.handle ? '' : ' <span class="pchip-anon" title="Short link, no identity">·</span>') + '</a>';
+          (h && h.length <= 18 ? ' <b>' + esc(h) + '</b>' : '') + '</a>';
       }).join('');
       row.innerHTML =
-        '<div class="slink-body">' +
-          '<span class="slink-slug">' + esc(c.name) + '</span>' +
-          '<span class="slink-target">' + (chips || '<span class="muted">No profile links</span>') +
-            (c.client_rate ? ' &nbsp;·&nbsp; ' + money(c.client_rate) : '') + '</span>' +
-        '</div>' +
-        '<div class="slink-actions">' +
-          iconBtn('pencil', 'edit', 'Edit creator') +
-          iconBtn('trash', 'del', 'Remove creator', 'is-danger') +
-        '</div>';
+        '<span class="svc-name"><b>' + esc(c.name) +
+          (off ? ' <span class="tone">Inactive</span>' : '') + '</b></span>' +
+        '<span class="cr-links">' + (chips || '<span class="muted">No profile links</span>') + '</span>' +
+        '<span class="svc-rate">' + (c.client_rate ? esc(money(c.client_rate))
+                                                   : '<span class="muted">RM</span>') + '</span>' +
+        '<span class="team-act">' +
+          '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+          '<div class="kmenu" data-menu hidden>' +
+            menuItem('edit', 'Edit') +
+            /* Standing a creator down was named by the error you got when a
+               delete was refused and existed nowhere on the page. */
+            menuItem('state', off ? 'Set active' : 'Set inactive') +
+            menuItem('del', 'Remove', 'is-danger') +
+          '</div>' +
+        '</span>';
+      rowMenu(row);
       row.querySelector('[data-a="edit"]').addEventListener('click', function () { openCreator(c); });
       row.querySelector('[data-a="del"]').addEventListener('click', function () { removeCreator(c); });
+      row.querySelector('[data-a="state"]').addEventListener('click', function () {
+        shutMenus();
+        db.from('creators').update({ active: off }).eq('id', c.id).then(function (r) {
+          if (r.error) { alert(r.error.message); return; }
+          log(off ? 'creator.on' : 'creator.off', c.name, '');
+          loadRoster();
+        });
+      });
       box.appendChild(row);
+    });
+  }
+
+  /* The roster's ⋯ hangs off a table row, so it is placed on the viewport
+     rather than inside the row that would clip it. */
+  function rowMenu(row) {
+    var btn = row.querySelector('[data-a="menu"]'), menu = row.querySelector('[data-menu]');
+    if (!btn || !menu) return;
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = menu.hidden;
+      shutMenus();
+      menu.hidden = !open;
+      btn.setAttribute('aria-expanded', String(open));
+      if (open) window.ADspaceMenu.place(btn, menu);
     });
   }
 
@@ -1388,6 +1437,8 @@
   document.addEventListener('click', function (e) {
     if (!e.target.closest || !e.target.closest('.kcard-head, .kmenu, .team-act')) shutMenus();
   });
+  // A roster ⋯ is placed on the viewport, so a scroll that really moved closes it.
+  window.ADspaceMenu.onScroll(shutMenus);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutMenus(); });
 
   /* One step back up the line. Posts and results stay where they are, so

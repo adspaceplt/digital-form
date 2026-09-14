@@ -384,6 +384,11 @@ async function walk(b, coarse, dark) {
   }
   if (await p.locator('.kcard .kfold').count()) { await p.locator('.kcard').first().locator('.kfold').click(); await p.waitForTimeout(300); }
   await report('admin campaign cards ' + tag, p, coarse);
+  // The roster: a list of people with a fee, never walked until it was rebuilt
+  // off the Short Links row it had been borrowing.
+  await p.locator('#tabRoster').click(); await p.waitForTimeout(500);
+  await report('admin creator roster ' + tag, p, coarse);
+  await p.locator('#tabCampaigns').click(); await p.waitForTimeout(400);
   await nav(p, 'links');
   await report('admin short links ' + tag, p, coarse);
   await nav(p, 'services');

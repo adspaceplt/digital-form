@@ -596,7 +596,9 @@
     'campaign.bulk':         ['Shoot dates applied', '', 'campaigns'],
     'creator.added':         ['Creator added', 'is-ok', 'campaigns'],
     'creator.updated':       ['Creator edited', '', 'campaigns'],
-    'creator.removed':       ['Creator removed', 'is-danger', 'campaigns']
+    'creator.removed':       ['Creator removed', 'is-danger', 'campaigns'],
+    'creator.off':           ['Creator set inactive', 'is-warn', 'campaigns'],
+    'creator.on':            ['Creator set active', 'is-ok', 'campaigns']
   };
   var ACT_SECTION = { all: 'Everything', clients: 'Clients', team: 'Team', review: 'Content Review',
                       campaigns: 'Creator Campaigns', links: 'Short Links', services: 'Services' };

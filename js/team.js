@@ -61,32 +61,11 @@
       menu.hidden = !open;
       btn.setAttribute('aria-expanded', String(open));
       if (open) {
-        var r = btn.getBoundingClientRect(), mh = menu.offsetHeight;
-        menu.style.position = 'fixed';
-        menu.style.right = 'auto';
-        menu.style.left = Math.max(8, r.right - menu.offsetWidth) + 'px';
-        /* Upwards where the room is above: a ⋯ on the last row used to open
-           past the bottom of the window, which is nowhere a phone can reach. */
-        menu.style.top = (r.bottom + 4 + mh <= window.innerHeight - 8 || r.top - 4 - mh < 8)
-          ? (r.bottom + 4) + 'px' : (r.top - 4 - mh) + 'px';
-        held = { btn: btn, top: r.top };
+        window.ADspaceMenu.place(btn, menu);
       }
     });
   }
-  /* Clicking a ⋯ focuses it, and the browser scrolls whatever it has to in
-     order to reveal the focused button. That scroll arrives a frame after the
-     menu opened and used to close it again, so on a phone the ⋯ on the bottom
-     rows could not be opened at all. A scroll that has not moved the button the
-     menu is hanging off is that one, and is no reason to close anything; one
-     that has moved it has carried the menu away from its row, which is. */
-  var held = null;
-  function scrolledAway() {
-    if (!held) return true;
-    if (Math.abs(held.btn.getBoundingClientRect().top - held.top) < 2) return false;
-    held = null;
-    return true;
-  }
-  window.addEventListener('scroll', function () { if (scrolledAway()) shutMenus(); }, true);
+  window.ADspaceMenu.onScroll(shutMenus);
   document.addEventListener('click', function (e) {
     if (!e.target.closest || !e.target.closest('#sectionTeam .team-act')) shutMenus();
   });
@@ -135,7 +114,7 @@
     if (!state.rows.length) { box.innerHTML = '<div class="empty">No team members.</div>'; return; }
     var head = document.createElement('div');
     head.className = 'team-head';
-    head.innerHTML = '<span>Person</span><span>State</span><span></span>';
+    head.innerHTML = '<span>Person</span><span></span>';
     box.appendChild(head);
     var placed = {};
     state.roles.forEach(function (r) {
@@ -170,23 +149,27 @@
     var el = document.createElement('div');
     el.className = 'team-row' + (m.active ? '' : ' is-off');
     el.innerHTML =
-      '<span class="team-who"><b>' + esc(m.name) + (self ? ' <i>you</i>' : '') + '</b>' +
+      /* Everyone on this list is active, so a green Active on every row spends
+         the one accent on the ordinary case and leaves the exception looking
+         like everything else. The row says nothing when a person is working
+         and names it when they are not. */
+      '<span class="team-who"><b>' + esc(m.name) + (self ? ' <i>you</i>' : '') +
+        (m.active ? '' : ' <span class="tone">Inactive</span>') + '</b>' +
         '<small>' + esc(m.email || '') + '</small></span>' +
-      // The state is a value, so it is a select; a person cannot switch themselves off.
-      '<span><select class="select select-sm state-select ' + (m.active ? 'is-ok' : 'is-off') + '" data-f="active" aria-label="State"' +
-        (self ? ' disabled' : '') + '>' +
-        '<option value="on"' + (m.active ? ' selected' : '') + '>Active</option>' +
-        '<option value="off"' + (m.active ? '' : ' selected') + '>Inactive</option></select></span>' +
       /* Mail leaves the building and cannot be recalled, so Send invitation
-         sits one place from Edit and asks first, as it does on a contact. */
+         sits one place from Edit and asks first, as it does on a contact.
+         Standing somebody down happens once in a job, so it is here rather
+         than a select on every row. A person cannot switch themselves off. */
       menuBtn(menuItem('edit', 'Edit') +
-              (m.active && m.email ? menuItem('invite', 'Send invitation') : ''));
+              (m.active && m.email ? menuItem('invite', 'Send invitation') : '') +
+              (self ? '' : menuItem('state', m.active ? 'Set inactive' : 'Set active')));
 
     wireMenu(el);
-    el.querySelector('[data-f="active"]').addEventListener('change', function () {
-      var on = this.value === 'on';
-      if (!on && !confirm('Deactivate ' + m.name + '?\n\nAccess is removed until reactivated.')) { this.value = 'on'; return; }
-      saveMember(m, { active: on });
+    var st = el.querySelector('[data-a="state"]');
+    if (st) st.addEventListener('click', function () {
+      shutMenus();
+      if (m.active && !confirm('Set ' + m.name + ' inactive?\n\nAccess is removed until they are set active again.')) return;
+      saveMember(m, { active: !m.active });
     });
     var ed = el.querySelector('[data-a="edit"]');
     if (ed) ed.addEventListener('click', function () { openMemberBox(m); });
