@@ -453,6 +453,19 @@ tier between two creators who are available. Alphabetical banding was weighed
 and rejected — most of this roster is Chinese names, so a first letter index
 puts nearly everything in one bucket or gives three hundred buckets of one.
 
+**A list of people is told apart by what they have done, not by a device put
+in front of their name.** The creators list gave every row a neutral monogram
+disc, on the reasoning that a contacts list has always used one. It does not
+work here and the reason was already written two paragraphs up: most of this
+roster is Chinese names, so a first character index puts nearly everything in
+one bucket, and 是yy呀 and 是甜甜啊 draw the same grey circle. Five identical
+discs over five identical `RedNote` chips over five identical `RM 360` is
+decoration standing exactly where information should be. The disc is gone and
+the row carries the **record** instead: where they post, how many campaigns
+they have run for us, when they last shot, and an `On a campaign` chip while
+one is live. A device that was added to make rows distinguishable and leaves
+them identical is not a device to restyle, it is one to remove.
+
 **A phone row spends its first line on what the person came for.** The rate
 card was three lines — the name with its ⋯, then the unit, then the price
 beside a green Active select — so a row stood 310px and two and a half services

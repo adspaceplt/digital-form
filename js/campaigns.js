@@ -173,9 +173,51 @@
         return;
       }
       state.creators = r.data || [];
-      paintRoster();
-      if (then) then();
+      loadRecord(function () { paintRoster(); if (then) then(); });
     });
+  }
+
+  /* What tells two creators apart is not what they are, it is what they have
+     done. Five rows reading RedNote · RM 360 differ in nothing but a name, and
+     a monogram cannot rescue that: most of this roster is Chinese names, so a
+     first character disc gave 是yy呀 and 是甜甜啊 the same grey circle. The
+     record is the differentiator a campaign is planned on, so the row carries
+     it: how many campaigns they have run for us, when they last shot, and
+     whether they are on one right now. */
+  var LIVE_STATES = ['confirmed', 'pending_visit', 'pending_delivery', 'pending_draft',
+                     'reviewing', 'changes', 'scheduled'];
+  var DONE_STATES = LIVE_STATES.concat(['posted', 'completed']);
+
+  function loadRecord(then) {
+    state.record = {};
+    db.from('campaign_options').select('creator_id, state, visit_date, added_at')
+      .then(function (r) {
+        (r.data || []).forEach(function (o) {
+          if (DONE_STATES.indexOf(o.state) < 0) return;
+          var rec = state.record[o.creator_id] ||
+            (state.record[o.creator_id] = { n: 0, live: 0, last: '' });
+          rec.n++;
+          if (LIVE_STATES.indexOf(o.state) > -1) rec.live++;
+          var when = o.visit_date || (o.added_at || '').slice(0, 10);
+          if (when > rec.last) rec.last = when;
+        });
+        then();
+      });
+  }
+
+  // "4 campaigns · last Aug 2026", or nothing but the platforms for a new name.
+  function recordLine(c) {
+    var rec = state.record && state.record[c.id];
+    if (!rec) return 'No campaigns yet';
+    var out = rec.n + ' campaign' + (rec.n === 1 ? '' : 's');
+    if (rec.last) out += ' · last ' + monthOf(rec.last);
+    return out;
+  }
+  function monthOf(d) {
+    var t = new Date(d + 'T00:00:00');
+    if (isNaN(t)) return d;
+    return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct',
+            'Nov', 'Dec'][t.getMonth()] + ' ' + t.getFullYear();
   }
 
   /* The creators list is a few hundred people, so it needs the two things a
@@ -254,49 +296,51 @@
     return el;
   }
 
-  /* One character in a disc, the way every contacts list a person has ever
-     used marks a row. Four hundred rows of name, chip, number are four hundred
-     rows of the same shape, and a list you cannot tell apart is a list you
-     have to read rather than scan. Neutral, never tinted per person: the
-     character is what differs, and the accent is spent elsewhere. */
-  function monogram(name) {
-    var ch = Array.from(String(name || '').trim())[0] || '?';
-    return '<span class="cr-mono" aria-hidden="true">' + esc(ch.toUpperCase()) + '</span>';
-  }
+  /* The monogram is gone. It was put here to make a row findable by eye, the
+     way every contacts list does it, and on this roster it cannot: a first
+     character disc is the same index that was already rejected for the bands,
+     and it fails for the same reason. Five identical grey circles over five
+     identical platform chips is decoration standing where information should
+     be. The name starts the row now, and what follows it is what differs. */
 
   function rosterRow(c) {
     {
       var row = document.createElement('div');
       var off = c.active === false;
       row.className = 'svc-row cr-row' + (off ? ' is-off' : '');
-      /* The handle is what a person searches by, so it is on the row, but only
-         where it reads as a name: RedNote keeps a profile id in that field, and
-         5e3262fd00000000010015b6 is longer than the creator it belongs to and
-         says nothing to anybody. Without one the chip is the platform alone,
-         and that absence is the information the half opacity dot used to carry
-         in a title attribute, which a phone has no way to reach. */
-      /* A profile opens somebody else's site, so it wears the portal's outbound
-         link and carries the mark that says it leaves the page, exactly as a
-         contact's phone and email do and as the client facing page already
-         does. It used to be a grey 999px pill, which is the costume of a
-         status chip: nothing on it said it was a link, let alone an external
-         one. */
-      var chips = (c.creator_profiles || []).map(function (p) {
+      /* One line under the name carrying everything that differs: where they
+         post, who they are there, and what they have done for us. The profile
+         used to be a column of outbound buttons, which on a phone took a third
+         line of its own and left a row 110px tall with an empty half; the
+         platform is a word here and opening the profile is an item in the ⋯,
+         because on this screen a creator is a record being managed rather than
+         a profile being browsed. The handle rides along only where it reads as
+         a name: RedNote keeps a profile id in that field and
+         5e3262fd00000000010015b6 is longer than the creator it belongs to. */
+      var profs = c.creator_profiles || [];
+      var where = profs.map(function (p) {
         var h = String(p.handle || '');
-        return '<a class="plink" href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
-          esc(PLATFORM_LABEL[p.platform] || p.platform) +
-          (h && h.length <= 18 ? ' <b>' + esc(h) + '</b>' : '') + EXT + '</a>';
-      }).join('');
+        return (PLATFORM_LABEL[p.platform] || p.platform) +
+          (h && h.length <= 18 ? ' ' + h : '');
+      });
+      var rec = (state.record && state.record[c.id]) || null;
       row.innerHTML =
-        '<span class="svc-name cr-who">' + monogram(c.name) + '<b>' + esc(c.name) +
-          (off ? ' <span class="tone">Inactive</span>' : '') + '</b></span>' +
-        '<span class="cr-links">' + (chips || '<span class="muted">No profile links</span>') + '</span>' +
+        '<span class="svc-name cr-who"><b>' + esc(c.name) +
+          (off ? ' <span class="tone">Inactive</span>' : '') +
+          (!off && rec && rec.live ? ' <span class="tone is-ok">On a campaign</span>' : '') +
+          '</b><small>' + esc(where.join(' · ') || 'No profile links') + '</small>' +
+          '<small>' + esc(recordLine(c)) + '</small></span>' +
         '<span class="svc-rate">' + (c.client_rate ? esc(money(c.client_rate))
                                                    : '<span class="muted">RM</span>') + '</span>' +
         '<span class="team-act">' +
           '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
             menuItem('edit', 'Edit') +
+            profs.map(function (p, i) {
+              return '<a class="kmenu-item" href="' + esc(p.url) + '" target="_blank" ' +
+                'rel="noopener" data-a="prof' + i + '">Open ' +
+                esc(PLATFORM_LABEL[p.platform] || p.platform) + ' profile</a>';
+            }).join('') +
             /* Standing a creator down was named by the error you got when a
                delete was refused and existed nowhere on the page. */
             menuItem('state', off ? 'Set active' : 'Set inactive') +

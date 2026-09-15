@@ -40,7 +40,7 @@
     client_services: [], client_documents: [], client_requests: [],
     team_roles: [
       { slug:'admin', name:'Admin', is_admin:true, position:0, can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:true, can_billing:true, can_remove:true },
-      { slug:'account', name:'Account', is_admin:false, position:1, can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:false, can_billing:true, can_remove:false },
+      { slug:'account', name:'Marketing', is_admin:false, position:1, can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:false, can_billing:true, can_remove:false },
       { slug:'sales', name:'Sales', is_admin:false, position:2, can_clients:true, can_review:false, can_campaigns:false, can_links:false, can_activity:false, can_billing:true, can_remove:false }],
     team_members: [
       { id:'t0', name:'ADspace', email:'adspacestudios@gmail.com', active:true, role:'admin', is_admin:true, can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:true, can_billing:true, can_remove:true },

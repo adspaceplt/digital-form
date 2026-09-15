@@ -27,6 +27,15 @@ const say = s => console.log(s);
   await p.locator('#tabRoster').click();
   await p.waitForTimeout(400);
   say('roster rows: ' + await p.locator('#rosterList .cr-row:not(.crm-head)').count() + '  count=' + await p.locator('#rosterCount').innerText());
+  /* Two creators whose names begin with the same character are two rows that
+     have to read differently. The disc that used to start the row gave both
+     the same grey circle, so what the row carries is the record instead. */
+  say('no monogram: ' + (await p.locator('#rosterList .cr-mono').count() === 0));
+  say('every row states a record: ' +
+    (await p.locator('#rosterList .cr-row:not(.crm-head) .cr-who small').nth(1).innerText()));
+  const hs = await p.locator('#rosterList .cr-row:not(.crm-head)').evaluateAll(
+    l => l.map(r => Math.round(r.getBoundingClientRect().height)));
+  say('rows share one height: ' + (Math.max(...hs) - Math.min(...hs) <= 2) + ' ' + hs.join(','));
 
   await p.locator('#showAddCreator').click();
   await p.fill('#crName', '测试博主');

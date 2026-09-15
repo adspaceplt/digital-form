@@ -2821,21 +2821,15 @@ body > .shell { width: 100%; }
    card, so it costs no column: the exception is named beside the name. */
 .cat-row { grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1fr) var(--ctl-h); }
 /* A creator is a person with a fee, on the same row shape as everything else. */
-.cr-row { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr) 110px var(--ctl-h); }
-.cr-links { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
-/* The scanning handle. Four hundred rows of name, chip, number are four
-   hundred rows of the same shape; one character in a disc is what a contacts
-   list has always used to make a row findable by eye rather than by reading.
-   Neutral, never tinted per person: the character is what differs. */
-/* Two classes, because .svc-name stacks its children and is declared after. */
-.svc-name.cr-who { flex-direction: row; align-items: center; gap: 10px; }
+.cr-row { grid-template-columns: minmax(0, 1fr) 110px var(--ctl-h); }
+/* Name over record, the shape every other list of people in this portal uses.
+   The disc that used to start this row is gone: it was there to make a row
+   findable by eye, and on a roster of Chinese names a first character index
+   gives 是yy呀 and 是甜甜啊 the same circle, which is the very failure that
+   ruled out an alphabetical band. What differs between two creators is their
+   record, so that is what the second line carries. */
 .cr-who > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.cr-mono {
-  flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%;
-  background: var(--sunk); border: 1px solid var(--line);
-  display: grid; place-items: center; line-height: 1;
-  font-size: 13px; font-weight: 600; color: var(--ink-soft);
-}
+.cr-who > small { font-size: 12px; color: var(--ink-mute); }
 .ct-row  { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) var(--ctl-h); }
 .ct-row .crm-reach { justify-content: flex-start; }
 /* A category heading inside the table, between its lines. */
@@ -2880,19 +2874,30 @@ body > .shell { width: 100%; }
   /* The two things a person came for sit on the first line, and what qualifies
      the money goes under it. Three lines with a control on the last one was a
      row 310px tall: two and a half services on a screen out of thirty four. */
-  .cat-row, .cr-row {
+  .cat-row {
     grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
     grid-template-areas: "name rate act" "meta meta meta";
+  }
+  /* The creator row is already two lines inside its name cell, so it needs no
+     second grid row: name over record on the left, fee and ⋯ on the right. */
+  .cr-row {
+    grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
+    grid-template-areas: "name rate act";
   }
   .doc-row { grid-template-areas: "name act" "amt state"; }
   .ct-row  { grid-template-areas: "name act" "reach reach"; }
   .svc-row > .svc-name { grid-area: name; }
   .svc-row > .team-act { grid-area: act; align-self: start; }
   .svc-row > .svc-calc { grid-area: calc; text-align: left; }
-  .svc-row > .svc-unit, .cr-row > .cr-links { grid-area: meta; }
+  .svc-row > .svc-unit { grid-area: meta; }
   .svc-row > .svc-amt { text-align: left; align-self: center; grid-area: amt; }
-  .cat-row > .svc-rate, .cr-row > .svc-rate {
+  .cat-row > .svc-rate {
     grid-area: rate; text-align: right; align-self: center; white-space: nowrap;
+  }
+  /* Against a name over two meta lines the fee belongs on the name's own line,
+     not floating halfway down the row. */
+  .cr-row > .svc-rate {
+    grid-area: rate; text-align: right; align-self: start; white-space: nowrap;
   }
   .svc-row > .svc-state { grid-area: state; justify-self: end; }
   .ct-row > .crm-reach { grid-area: reach; }
