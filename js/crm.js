@@ -366,7 +366,7 @@
   /* The head of the record: who they are and where they came from. */
   var FORM = [
     ['crmName', 'name'], ['crmIndustry', 'industry'], ['crmOwnerPick', 'owner'],
-    ['crmSource', 'source']
+    ['crmSource', 'source'], ['crmCommence', 'commence']
   ];
   /* The brand as a thing to open. Edited on the record, not at intake. */
   var BRAND = [
@@ -374,6 +374,17 @@
     ['crmSocialIg', 'social_ig'], ['crmSocialFb', 'social_fb'],
     ['crmSocialTiktok', 'social_tiktok'], ['crmSocialXhs', 'social_xhs']
   ];
+  /* When the client wants to start. Three bands, because a lead gives you a
+     rough answer and a date nobody has agreed is a false precision. No dash in
+     the words: "1 to 3 months", as the copy rules have it everywhere else. */
+  var COMMENCE = [
+    ['1_3', '1 to 3 months'], ['3_6', '3 to 6 months'], ['6_plus', '6 months or more']
+  ];
+  function commenceWord(v) {
+    var m = COMMENCE.filter(function (x) { return x[0] === v; })[0];
+    return m ? m[1] : '';
+  }
+
   var SOURCES = [
     ['referral', 'Referral'], ['website', 'Website'], ['instagram', 'Instagram'],
     ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['rednote', 'RedNote'],
@@ -406,7 +417,9 @@
     $('crmMarket').value = c ? (c.market || 'MY') : 'MY';
     // The person who asked, and what for. Only a new lead needs this here.
     $('crmLeadOnly').hidden = Boolean(c);
-    ['crmContactName', 'crmContactPhone', 'crmContactEmail', 'crmEnquiry'].forEach(function (id) { $(id).value = ''; });
+    ['crmContactName', 'crmContactPhone', 'crmContactEmail'].forEach(function (id) { $(id).value = ''; });
+    // What they asked for is a fact about the client, so editing shows it.
+    $('crmEnquiry').value = c ? (c.deal_note || '') : '';
     msg('crmMsg', '');
     // Editing happens on the record, in place of its head; adding happens on
     // the list. One form, moved to where the person is.
@@ -440,7 +453,8 @@
     // record's head, not here.
     var contactName = state.editing ? '' : val('crmContactName');
     if (!state.editing && !contactName) { msg('crmMsg', 'A contact person is required.', 'err'); $('crmContactName').focus(); return; }
-    if (!state.editing) { patch.stage = 'lead'; patch.deal_note = val('crmEnquiry') || null; }
+    patch.deal_note = val('crmEnquiry') || null;
+    if (!state.editing) patch.stage = 'lead';
 
     if (state.editing) {
       var id = state.editing.id;
@@ -496,6 +510,7 @@
       ['Industry', c.industry || '<span class="muted">Not set</span>'],
       ['Market',   (c.market === 'SG' ? 'Singapore' : 'Malaysia') + ' · ' + mk.sign],
       ['Value',    c.deal_value ? MON.money(c.deal_value, c.market) : '<span class="muted">Not set</span>'],
+      ['To commence', c.commence ? commenceWord(c.commence) : '<span class="muted">Not set</span>'],
       ['Added',    c.created_at ? niceDate(c.created_at) : '']
     ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
       return '<div><dt>' + f[0] + '</dt><dd>' +
@@ -1741,6 +1756,13 @@
   fillSelect($('crmStage'), STAGES.map(function (s) { return [s[0], s[1]]; }), 'Every stage');
   fillSelect($('crmIndustry'), INDUSTRIES.map(function (i) { return [i, i]; }), 'Not set');
   fillSelect($('crmSource'), SOURCES);
+  /* Not fillSelect's "all" option: that is the filter idiom, and here the empty
+     choice is a value that gets stored, so it is an empty string and saves as
+     null like every other unset field. */
+  $('crmCommence').innerHTML = '<option value="">Not set</option>' +
+    COMMENCE.map(function (r) {
+      return '<option value="' + esc(r[0]) + '">' + esc(r[1]) + '</option>';
+    }).join('');
 
   window.ADspaceCRM = {
     urlState: function () { return { client: keyOf(state.client) }; },

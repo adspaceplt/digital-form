@@ -1455,6 +1455,13 @@ a { color: inherit; }
 /* Groups inside the client settings drawer, so handles, profile and the
    destructive pair read as three separate things rather than one long form. */
 .subsection + .subsection { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--line-soft); }
+/* Two jobs in one panel: each carries its own eyebrow, and the second is
+   ruled off from the first rather than running on from it. */
+.pickhead { display: flex; align-items: baseline; gap: 12px; margin: 16px 0 10px; }
+.pickhead .sectionlabel { margin: 0; }
+.pickhead .muted { margin-left: auto; font-size: 12.5px; white-space: nowrap; }
+#addOptionBox .subsection { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line-soft); }
+#addOptionBox .pickhead:first-of-type { margin-top: 6px; }
 .subsection > h4 {
   font-size: 12.5px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 3px;
 }
@@ -1794,9 +1801,18 @@ body.is-plain .topbar { background: var(--chrome); }
 
 /* ---------- Roster picker ---------- */
 .optionpick { max-height: 320px; overflow: auto; margin-top: 12px; }
+/* The scrolling list was a bare overflow box with no boundary, so "where is
+   the existing listing" was a fair question: it looked like loose rows under
+   a loose field. A border makes it a container, and the count above it says
+   what is in it. */
+/* The section's own field fills it rather than sizing itself to its
+   placeholder, which left a 208px box under a full width heading. */
+#optionSearch { width: 100%; }
+.optionpick { border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.optionpick .empty { margin: 0; border: 0; }
 .pickrow {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 9px 2px; border-bottom: 1px solid var(--line-soft); font-size: 13px;
+  padding: 9px 12px; border-bottom: 1px solid var(--line-soft); font-size: 13px;
 }
 .pickrow:last-child { border-bottom: 0; }
 .pickrow.is-in { opacity: .5; }

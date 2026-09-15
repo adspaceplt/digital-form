@@ -670,6 +670,16 @@ alter table public.campaigns add column if not exists invoice_url         text;
 alter table public.campaigns add column if not exists invoice_uploaded_at timestamptz;
 -- What the campaign is for, under its name. The name is the handle the team
 -- uses; the purpose is what the client reads.
+/* Backups are the team's to offer, not the page's to assume. A client who has
+   filled every slot was still shown every creator nobody picked, each with a
+   Backup button, because the page offered backups whenever there were spare
+   options. Off by default: the team opens them on the campaign when it wants
+   names in reserve, and otherwise the choosing is over when the slots are. */
+alter table public.campaigns add column if not exists backups_open boolean not null default false;
+-- When the client wants to start. A lead that needs to commence this month is
+-- worked before one that is looking at next year, and the stage clock cannot
+-- say that: it measures how long we have taken, not how long they will wait.
+alter table public.clients add column if not exists commence text;   -- 1_3 | 3_6 | 6_plus
 alter table public.campaigns add column if not exists purpose    text;
 alter table public.campaigns add column if not exists purpose_zh text;
 
@@ -780,6 +790,7 @@ begin
     'campaign', jsonb_build_object(
       'title', c.title, 'title_zh', c.title_zh,
       'purpose', c.purpose, 'purpose_zh', c.purpose_zh, 'slots', c.slots,
+      'backups_open', coalesce(c.backups_open, false),
       'deadline', c.deadline, 'state', c.state, 'deliverable', c.deliverable,
       'push_format', c.push_format, 'brief', c.brief, 'brief_zh', c.brief_zh,
       'invoice_no', case when billable then c.invoice_no end,
@@ -904,7 +915,9 @@ begin
     update campaign_options set state = 'shortlisted'
      where campaign_id = c.id and id = any(p_selected) and state = 'option';
   end if;
-  if coalesce(array_length(p_backup, 1), 0) > 0 then
+  -- Only where the team opened them: the page hides the control, and this is
+  -- what makes that a fact rather than a courtesy.
+  if coalesce(c.backups_open, false) and coalesce(array_length(p_backup, 1), 0) > 0 then
     update campaign_options set state = 'backup'
      where campaign_id = c.id and id = any(p_backup) and state = 'option';
   end if;

@@ -104,6 +104,7 @@
       due: function (d) { return 'Campaign due ' + d; },
       yourCampaign: 'Your campaign',
       stillChoosing: 'Available creators',
+      backupsHead: 'Backup creators',
       shootOn: 'Shoot',
       deliveryOn: 'Delivery',
       postedOn: 'Posted',
@@ -196,6 +197,7 @@
       due: function (d) { return '合作截止 ' + d; },
       yourCampaign: '合作进度',
       stillChoosing: '可选博主',
+      backupsHead: '备选博主',
       shootOn: '拍摄',
       deliveryOn: '寄送',
       postedOn: '发布于',
@@ -387,7 +389,7 @@
 
     $('bookingWrap').hidden = !rows.length;
     $('chooseHead').hidden = !rows.length;
-    $('chooseHead').textContent = t().stillChoosing;
+    $('chooseHead').textContent = backupStage() ? t().backupsHead : t().stillChoosing;
     $('bookingHead').textContent = t().yourCampaign;
     if (!rows.length) return;
 
@@ -622,6 +624,7 @@
   /* Two backups, unless there are not two spare creators to choose from. A
      client with exactly ten options for ten slots cannot be asked for more. */
   function backupsWanted() {
+    if (!backupsOpen()) return 0;
     var spare = choosable().length - countSelected();
     return Math.max(0, Math.min(BACKUPS_WANTED, spare));
   }
@@ -638,13 +641,27 @@
   function slotsLeft() {
     return Math.max(0, ((feed.campaign || {}).slots || 0) - countBooked());
   }
-  // What is still choosable. A booked creator has left the shelf; a withdrawn
-  // one has too, and its slot has already been handed back.
+  // Whether the team has asked this client for names in reserve.
+  function backupsOpen() { return Boolean((feed.campaign || {}).backups_open); }
+
+  /* What is still choosable. A booked creator has left the shelf; a withdrawn
+     one has too, and its slot has already been handed back.
+
+     Once every slot is taken the offer is over, so the creators nobody picked
+     are not an offer any more: they are a long list of disabled ticks under
+     the campaign, which is what the client's page looked like the moment the
+     team confirmed. They come back by themselves if a slot reopens, because
+     the count is what decides. Backups are the one reason to keep the list
+     alive past that, and only where the team opened them. */
   function choosable() {
-    return (feed.options || []).filter(function (o) {
+    var live = (feed.options || []).filter(function (o) {
       return ['option', 'shortlisted', 'backup'].indexOf(o.state) > -1;
     });
+    if (slotsLeft() > 0) return live;
+    return backupsOpen() ? live : [];
   }
+  // True once the slots are full and the list is only still there for backups.
+  function backupStage() { return slotsLeft() <= 0 && backupsOpen() && choosable().length > 0; }
 
   function paintCards() {
     var grid = $('optionGrid');
@@ -714,15 +731,18 @@
         '</div>' +
         '<div class="crow-links">' + links + '</div>' +
         '<div class="crow-rate">' + money(o.rate) + '</div>' +
-        '<button class="crow-backup' + (pick === 'backup' ? ' is-on' : '') + '" type="button">' +
-          esc(pick === 'backup' ? t().isBackup : t().backup) + '</button>';
+        (backupsOpen()
+          ? '<button class="crow-backup' + (pick === 'backup' ? ' is-on' : '') + '" type="button">' +
+            esc(pick === 'backup' ? t().isBackup : t().backup) + '</button>'
+          : '');
 
       row.querySelector('.crow-tick').addEventListener('click', function () {
         if (chosen[o.id] === 'selected') delete chosen[o.id];
         else if (countSelected() < slots) chosen[o.id] = 'selected';
         redraw();
       });
-      row.querySelector('.crow-backup').addEventListener('click', function () {
+      var bk = row.querySelector('.crow-backup');
+      if (bk) bk.addEventListener('click', function () {
         if (chosen[o.id] === 'backup') delete chosen[o.id];
         else chosen[o.id] = 'backup';
         redraw();

@@ -323,7 +323,7 @@
     var row = document.createElement('div');
     row.className = 'profrow';
     row.innerHTML =
-      '<input class="input prof-url" placeholder="https://www.xiaohongshu.com/user/profile/…">' +
+      '<input class="input prof-url" aria-label="Profile link" placeholder="https://www.xiaohongshu.com/user/profile/…">' +
       '<span class="prof-read muted"></span>' +
       '<button class="iconbtn is-danger" type="button" title="Remove" aria-label="Remove">' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" ' +
@@ -659,6 +659,7 @@
     $('campDeadline').value = c ? (c.deadline || '') : '';
     $('campFormat').value = c ? (c.push_format || 'site_visit') : 'site_visit';
     $('campDeliverable').value = c ? (c.deliverable || 'video') : 'video';
+    $('campBackups').checked = c ? Boolean(c.backups_open) : false;
     peopleSelect($('campOwner'), state.team, c ? (c.owner || '') : '');
     msg('campMsg', '');
     $('addCampBox').hidden = false;
@@ -714,7 +715,8 @@
       deadline: $('campDeadline').value || null,
       push_format: $('campFormat').value,
       deliverable: $('campDeliverable').value,
-      owner: ($('campOwner').value || '').trim() || null
+      owner: ($('campOwner').value || '').trim() || null,
+      backups_open: $('campBackups').checked
     };
     db.from('campaigns').update(patch).eq('id', c.id).select('*, clients(name, market, sst_applies)').single().then(function (r) {
       if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
@@ -733,6 +735,7 @@
       push_format: $('campFormat').value,
       deliverable: $('campDeliverable').value,
       owner: ($('campOwner').value || '').trim() || null,
+      backups_open: $('campBackups').checked,
       access_token: token(),
       // Stated rather than left to the column default. The object we go on to
       // work with is the one we sent, so it has to be complete on its own.
@@ -768,7 +771,17 @@
     var d = ncDraft.read();
     if (!d || !d.open || !(d.meta && state.campaign && d.meta.campaign === state.campaign.id)) return;
     $('addOptionBox').hidden = false;
-    loadRoster(function () { ncDraft.fill(d); paintPicker(); warnDupes(NC_CTX); });
+    loadRoster(function () {
+      ncDraft.fill(d);
+      /* A half typed creator restored into a folded form is a draft nobody can
+         see: the fold opens for the work that is already in it. */
+      var typed = ($('ncName').value || '').trim() || ($('ncRate').value || '').trim() ||
+        Array.prototype.some.call(document.querySelectorAll('#ncProfRows .prof-url'),
+          function (i) { return (i.value || '').trim(); });
+      $('ncBox').hidden = !typed;
+      $('ncToggle').setAttribute('aria-expanded', String(Boolean(typed)));
+      paintPicker(); warnDupes(NC_CTX);
+    });
   };
   document.addEventListener('input', function (e) {
     if (e.target.closest && e.target.closest('#ncProfRows, #ncPlatforms')) ncDraft.save();
@@ -1063,10 +1076,25 @@
   });
   $('showAddOption').addEventListener('click', function () {
     $('addOptionBox').hidden = false;
+    $('ncBox').hidden = true;
+    $('ncToggle').setAttribute('aria-expanded', 'false');
     resetNc();
     ncDraft.note({ campaign: state.campaign.id });
     loadRoster(paintPicker);
     $('optionSearch').focus();
+  });
+  /* Keying somebody in is the rarer of the two jobs, so it is folded: the
+     panel opens on the roster, which is what it is usually for. */
+  $('ncToggle').addEventListener('click', function () {
+    var open = $('ncBox').hidden;
+    $('ncBox').hidden = !open;
+    this.setAttribute('aria-expanded', String(open));
+    if (open) $('ncName').focus();
+  });
+  $('ncClose').addEventListener('click', function () {
+    $('ncBox').hidden = true;
+    $('ncToggle').setAttribute('aria-expanded', 'false');
+    resetNc();
   });
   $('optionSearch').addEventListener('input', paintPicker);
 
@@ -1080,6 +1108,10 @@
       if (!q) return true;
       return c.name.toLowerCase().indexOf(q) > -1;
     });
+
+    var free = list.filter(function (c) { return !already[c.id]; }).length;
+    $('optionCount').textContent = !state.creators.length ? ''
+      : free + ' to add';
 
     box.innerHTML = '';
     if (!list.length) {
@@ -1098,7 +1130,8 @@
         (inCamp ? '<span class="muted">Already offered</span>'
                 : '<span class="pickadd">' + platformBoxes(uniq) +
                   '<span class="slugfield"><span class="slugfield-pre">RM</span>' +
-                  '<input class="input pickrate" type="number" min="0" step="10" value="' +
+                  '<input class="input pickrate" type="number" min="0" step="10" ' +
+                  'aria-label="Rate for ' + esc(c.name) + ' on this campaign" value="' +
                   (c.client_rate || '') + '" placeholder="rate"></span>' +
                   '<button class="btn btn-sm btn-primary" type="button">Add</button></span>');
       if (!inCamp) {

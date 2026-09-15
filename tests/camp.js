@@ -121,6 +121,10 @@ const say = s => console.log(s);
   say('first option row shows: ' + await p.locator('#creatorList .kstep-sum').first().innerText());
 
   say('=== new creator from inside the campaign ===');
+  /* Keying somebody in is the rarer of the panel's two jobs, so it is folded
+     shut and the panel opens on the roster. */
+  say('keyed-in form starts folded: ' + await p.locator('#ncBox').isHidden());
+  await p.locator('#ncToggle').click(); await p.waitForTimeout(250);
   await p.fill('#ncName', '阿May日常');
   await p.fill('#ncRate', '420');
   await p.fill('#ncProfRows .prof-url', 'https://instagram.com/popcorn.xx');

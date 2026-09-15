@@ -67,6 +67,8 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   await p.fill('#crmContactName', 'Mr Lim');
   await p.fill('#crmContactPhone', '012-345 6789');
   await p.fill('#crmEnquiry', 'Launch video and three months of Package B');
+  // When they want to start: a lead that commences this month is worked first.
+  await p.selectOption('#crmCommence', '1_3');
   await p.locator('#crmSave').click(); await p.waitForTimeout(900);
   check('opens the client it just created',
     (await p.locator('#crmClientName').innerText()) === 'Star Living');
@@ -115,10 +117,30 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
 
   // editing happens on the record, not over the list
   check('engagements wait for Active', await p.locator('#crmEngage').isHidden());
+  check('the record says when they want to start',
+    (await p.locator('#crmFacts').innerText()).includes('1 to 3 months'),
+    (await p.locator('#crmFacts').innerText()).replace(/\n/g, ' | '));
   await p.locator('#crmEdit').click(); await p.waitForTimeout(400);
   check('edit opens on the record in place of its head',
     await p.locator('#crmWork #crmAddBox').isVisible() && await p.locator('#crmListView').isHidden() &&
     await p.locator('#crmClientName').isHidden());
+  /* What the client asked for is a fact about the client, so it is editable
+     like the rest. It used to sit inside the intake-only block with the
+     contact fields, so it could be typed once at the door and never again. */
+  check('editing shows the enquiry as it stands',
+    (await p.locator('#crmEnquiry').inputValue()).includes('Package B'),
+    await p.locator('#crmEnquiry').inputValue());
+  check('and the contact fields stay at intake', await p.locator('#crmLeadOnly').isHidden());
+  check('and editing shows the urgency as it stands',
+    await p.locator('#crmCommence').inputValue() === '1_3');
+  await p.selectOption('#crmCommence', '3_6');
+  await p.fill('#crmEnquiry', 'Package B and a launch video, three months');
+  await p.locator('#crmSave').click(); await p.waitForTimeout(700);
+  check('an edited urgency is stored',
+    await p.evaluate(() => (window.__DB.clients.find(c => c.name === 'Star Living') || {}).commence === '3_6'));
+  check('an edited enquiry is stored',
+    await p.evaluate(() => (window.__DB.clients.find(c => c.name === 'Star Living') || {}).deal_note === 'Package B and a launch video, three months'));
+  await p.locator('#crmEdit').click(); await p.waitForTimeout(400);
   await p.locator('#crmCancel').click(); await p.waitForTimeout(300);
   check('cancel stays on the record', await p.locator('#crmWork').isVisible() && await p.locator('#crmClientName').isVisible());
 
