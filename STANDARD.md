@@ -569,12 +569,14 @@ Update this section only with verified, durable facts. Keep entries short and re
 - **2026-09-15** — A campaign creator moves Confirmed → Pending visit → Pending draft → Reviewing → Changes requested → Scheduled → Posted → Completed. Each step is gated by its data and every forward move has a Revert. "In production" is derived on every load, never written by the action that caused it.
 - **2026-09-15** — A creator may upload only at `pending_draft` or `changes`. Handing in moves the step to `reviewing` and is what the team sees. The payment form (AP01) is named once the work is approved, not when it is handed in, so a reshoot does not put a bill in the ledger against work nobody accepted.
 - **2026-09-15** — Reversibility vocabulary: Revert a state, Restore a record, Reinstate a person, Undo a removal, Void then Delete an issued document. A number is never reused.
+- **2026-09-15** — A creator uploads up to 300 MB a file (`ADSPACE_CONFIG.s3.maxUploadMB`) and as many files as a booking needs. The file is not uploaded until `creator_add_file` has written the row, so every step's failure is the whole file's failure and is named on the page.
 
 ### Technical constraints
 
 - **2026-09-15** — Static site, vanilla ES5-style IIFE scripts, no build step, no framework, no bundler. GitHub Pages at digital.adspace.me. There is therefore no path routing (`404.html` is the user's own site and is never edited); state travels in `?s=`.
 - **2026-09-15** — Server-side work runs in Supabase Edge Functions (`sign-upload`, `invite-member`, `portal-login`), deployed by the user with the Supabase CLI. GitHub Pages cannot hold a secret or receive a webhook.
 - **2026-09-15** — `supabase/schema.sql` is re-runnable and applied by hand in the SQL editor after every schema change. A seed is a first run, not a running list: catalogue rows seed only into an empty table, or a deletion made in the console comes back.
+- **2026-09-15** — Two failure modes that hid a production outage for two rounds, both now covered by tests. (1) PL/pgSQL resolves a declared variable against an unqualified column **at run time**, so a function that shadows a column (`declare id uuid` + `where id = p_option`) creates cleanly and fails on every call: declared names never match a column, and lookups are qualified. (2) `promise.then(onOk, onFail)` does not route what `onOk` throws to `onFail`; a check written that way reports nothing. Use `.then(...).catch(...)` wherever a handler can throw.
 
 ### Verification commands and environments
 

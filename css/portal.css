@@ -3281,9 +3281,14 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .booking-deliver .field-label { display: block; margin: 12px 0 5px; }
 .booking-deliver .input { width: 100%; }
 .booking-deliver .kactions { margin-top: 12px; }
-.uprow { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
-.uprow .progress-track { flex: 1 1 auto; }
-.uprow .muted { flex: 0 0 auto; font-size: 12px; }
+/* The same progress the console draws on Content Review, so a creator sending
+   a 300 MB video is told what is moving and how far, and the label can say it
+   is saving once every byte is out and S3 has still to answer. */
+.booking-deliver .progress { margin: 12px 0 0; }
+.booking-deliver .progress-head { gap: 12px; }
+.booking-deliver .progress-head span:first-child {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
 /* The code field is the whole sign-in, so it is set like one thing to type:
    wide letter spacing, the monospace figures, and upper case as you go. */

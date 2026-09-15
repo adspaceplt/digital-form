@@ -49,7 +49,12 @@ window.ADSPACE_CONFIG = {
   // Leave enabled false to keep using Supabase storage.
   s3: {
     enabled: true,
-    functionName: 'sign-upload'
+    functionName: 'sign-upload',
+
+    // What a creator may upload in one file. Video, so it is generous; the
+    // edge function's own ceiling is higher, and this is the figure the
+    // creator's page refuses on, before a single byte moves.
+    maxUploadMB: 300
   },
   /* Google Drive import.
 

@@ -120,6 +120,35 @@ const say = s => console.log(s);
     window.__DB.campaign_deliverables.filter(d => d.option_id === 'oA').length === 2 &&
     !window.__DB.campaign_deliverables.some(d => d.option_id === 'oB')));
 
+  /* ---- The failure that was invisible ---------------------------------------
+     creator_add_file failed in production on an ambiguous column, and this page
+     threw from inside a fulfilment handler whose sibling rejection handler
+     cannot catch it. Nothing was said, the bar stood at 100%, and Submit then
+     refused because no file had been recorded. */
+  await p.evaluate(() => { window.__refuseAdd = true; });
+  await p.locator('input[type=file]').setInputFiles(
+    { name: 'refused.mp4', mimeType: 'video/mp4', buffer: Buffer.from('a video') });
+  await p.waitForTimeout(900);
+  const refusedMsg = await card.locator('[data-msg]').innerText();
+  check('a save the database refuses is reported by name', refusedMsg.includes('refused.mp4'), refusedMsg);
+  check('and the progress row does not stand there full',
+    await card.locator('[data-up]').isHidden());
+  check('and Submit is usable again', !(await card.locator('[data-a="submit"]').isDisabled()));
+  check('and nothing was recorded for it', await p.evaluate(() =>
+    !window.__DB.campaign_deliverables.some(d => d.name === 'refused.mp4')));
+  await p.evaluate(() => { window.__refuseAdd = false; });
+
+  // A file over the ceiling is refused by name before a byte moves.
+  await p.evaluate(() => { window.ADSPACE_CONFIG.s3.maxUploadMB = 0.000001; });
+  const putsBefore = puts.length;
+  await p.locator('input[type=file]').setInputFiles(
+    { name: 'huge.mp4', mimeType: 'video/mp4', buffer: Buffer.from('bigger than nothing') });
+  await p.waitForTimeout(600);
+  const bigMsg = await card.locator('[data-msg]').innerText();
+  check('a file over the limit is named and refused before it is uploaded',
+    bigMsg.includes('huge.mp4') && bigMsg.includes('MB') && puts.length === putsBefore, bigMsg);
+  await p.evaluate(() => { window.ADSPACE_CONFIG.s3.maxUploadMB = 300; });
+
   // Anything a person can attach, a person can remove.
   await p.locator('.filecard [data-a="rm"]').first().click(); await p.waitForTimeout(600);
   check('a file can be taken back off', await p.locator('.filecard').count() === 1,
@@ -175,6 +204,22 @@ const say = s => console.log(s);
   await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(700);
   check('standing a creator down closes their page', await p.locator('#app').isHidden() &&
     await p.locator('#codeRow').isHidden(), await p.locator('#stateTitle').innerText());
+
+  /* ---- And the team sees it, on the same database ----------------------------
+     An upload nobody on our side can open is the Drive folder again with extra
+     steps, so the console is opened on the campaign the creator just delivered
+     to and the file and the caption are read off the card. */
+  await p.goto('http://127.0.0.1:8899/admin/?s=campaigns&campaign=cmA', { waitUntil: 'networkidle' });
+  await p.evaluate(() => window.__signIn('adspacestudios@gmail.com'));
+  await p.waitForTimeout(1000);
+  const theirs = p.locator('#creatorList .kcard').filter({ hasText: '恩比' }).first();
+  await theirs.locator('.kcard-head').click();
+  await p.waitForTimeout(400);
+  const seen = await theirs.innerText();
+  check('the team sees the file the creator uploaded', seen.includes('cover.jpg'),
+    seen.replace(/\n/g, ' | ').slice(0, 220));
+  check('and the caption they wrote',
+    (await theirs.locator('[data-f="draft_caption"]').inputValue()).includes('Laman Citra'));
 
   console.log(errs.length ? errs.join('\n') : 'no page errors');
   console.log(fails + ' FAIL');

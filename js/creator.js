@@ -32,15 +32,15 @@
   var T = window.ADspaceWords.of({
     en: {
       preparedFor: 'Signed in as',
-      codeTitle: 'Your access code',
-      codeText: 'Enter the code from the link we sent you.',
-      codeWrong: 'That code is not one of ours.',
+      codeTitle: 'Access code',
+      codeText: 'Enter the access code provided.',
+      codeWrong: 'This code is invalid.',
       standDown: 'No bookings',
       standDownText: 'Please contact your ADspace account manager.',
       lang: '中文',
       work: 'Your bookings',
       none: 'Nothing booked yet',
-      noneText: 'A campaign will appear here once it is confirmed.',
+      noneText: 'Confirmed campaigns appear here.',
       signOut: 'Forget this device',
       shootOn: 'Shoot', deliveryOn: 'Delivery', goLive: 'Publish on',
       whereAt: 'Location', contact: 'On the day', tracking: 'Tracking no.',
@@ -49,13 +49,17 @@
       deliverHead: 'Submission',
       changesHead: 'Changes requested',
       addFiles: 'Files', captionLabel: 'Caption',
-      captionHint: 'The caption to be published with this.',
+      captionHint: 'Caption to publish with this post.',
       submit: 'Submit', submitting: 'Submitting…',
-      needFiles: 'Attach at least one file before submitting.',
-      uploading: 'Uploading', remove: 'Remove',
+      needFiles: 'Attach at least one file.',
+      uploading: 'Uploading', saving: 'Saving', remove: 'Remove',
       filesHead: 'Submitted files',
-      uploadFailed: 'That file could not be saved. Please try again, or contact your ADspace account manager.',
-      
+      uploaded: 'Uploaded.',
+      sizeOne: '{file} is larger than {mb} MB.',
+      sizeMany: '{n} files are larger than {mb} MB.',
+      failOne: '{file} could not be uploaded. Please try again.',
+      failMany: '{n} files could not be uploaded. Please try again.',
+
       payHead: 'Payment details', payLine: 'Approved. Please complete your payment details.',
       payGo: 'Fill in the form',
       ended: 'This booking has ended.',
@@ -73,9 +77,9 @@
     },
     zh: {
       preparedFor: '登录身份',
-      codeTitle: '您的访问码',
-      codeText: '请输入我们发送给您的访问码。',
-      codeWrong: '访问码不正确。',
+      codeTitle: '访问码',
+      codeText: '请输入您收到的访问码。',
+      codeWrong: '访问码无效。',
       standDown: '暂无合作',
       standDownText: '请联系您的 ADspace 客户经理。',
       lang: 'English',
@@ -92,11 +96,15 @@
       addFiles: '文件', captionLabel: '文案',
       captionHint: '将随作品一同发布的文案。',
       submit: '提交', submitting: '提交中…',
-      needFiles: '请先上传至少一个文件再提交。',
-      uploading: '上传中', remove: '移除',
+      needFiles: '请至少上传一个文件。',
+      uploading: '上传中', saving: '保存中', remove: '移除',
       filesHead: '已提交文件',
-      uploadFailed: '该文件未能保存，请重试，或联系您的 ADspace 客户经理。',
-      
+      uploaded: '已上传。',
+      sizeOne: '{file} 超过 {mb} MB 上限。',
+      sizeMany: '{n} 个文件超过 {mb} MB 上限。',
+      failOne: '{file} 上传失败，请重试。',
+      failMany: '{n} 个文件上传失败，请重试。',
+
       payHead: '付款资料', payLine: '已通过。请填写您的付款资料。',
       payGo: '填写表单',
       ended: '此合作已结束。',
@@ -313,8 +321,14 @@
       '<label class="field-label" for="pick-' + esc(b.id) + '">' + esc(t().addFiles) + '</label>' +
       '<input class="input" type="file" id="pick-' + esc(b.id) + '" multiple ' +
         'accept="image/*,video/*,.pdf" data-a="pick">' +
-      '<div class="uprow" data-up hidden><div class="progress-track"><div class="progress-fill" data-bar></div></div>' +
-        '<span class="muted" data-uptext></span></div>' +
+      /* The same progress the console draws on Content Review: what is going
+         up on the left, how far on the right, one bar under both. A thin bar
+         with "Uploading 1/1" beside it said neither how far it had got nor
+         what it was waiting for, so a 300 MB video looked identical whether
+         it was moving or dead. */
+      '<div class="progress" data-up hidden>' +
+        '<div class="progress-head"><span data-uptext></span><span data-uppct></span></div>' +
+        '<div class="progress-track"><div class="progress-fill" data-bar></div></div></div>' +
       '<label class="field-label" for="cap-' + esc(b.id) + '">' + esc(t().captionLabel) + '</label>' +
       '<textarea class="input textarea" id="cap-' + esc(b.id) + '" rows="4" data-cap ' +
         'placeholder="' + esc(t().captionHint) + '">' + esc(b.caption || '') + '</textarea>' +
@@ -331,87 +345,203 @@
     return 'file';
   }
 
+  /* A creator hands in video, so the ceiling is the one the team quoted them
+     and not whatever the browser will attempt. Refused here, before a single
+     byte moves, because a file that is turned away after a ten minute upload
+     is a file uploaded twice. */
+  function maxBytes() {
+    var cfg = window.ADSPACE_CONFIG || {};
+    return (((cfg.s3 && cfg.s3.maxUploadMB) || 300)) * 1024 * 1024;
+  }
+
+  function fill(s, map) {
+    return String(s).replace(/\{(\w+)\}/g, function (m, k) {
+      return map[k] == null ? m : map[k];
+    });
+  }
+
+  /* No total deadline: 300 MB up a Malaysian home line is slow, not stuck.
+     Silence is stuck, so the attempt ends when no byte has moved for two
+     minutes, with a reason rather than a bar nobody can leave. */
+  var STALL_MS = 120000;
+
   function putToS3(url, blob, contentType, onProgress) {
     return new Promise(function (resolve, reject) {
       var xhr = new XMLHttpRequest();
+      var timer;
+      function stop() { clearTimeout(timer); }
+      function tick() {
+        stop();
+        timer = setTimeout(function () {
+          try { xhr.abort(); } catch (e) {}
+          reject(new Error('stalled'));
+        }, STALL_MS);
+      }
       xhr.open('PUT', url, true);
       xhr.setRequestHeader('Content-Type', contentType || 'application/octet-stream');
       xhr.setRequestHeader('Cache-Control', 'public, max-age=31536000, immutable');
       xhr.upload.onprogress = function (e) {
+        tick();
         if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total);
       };
+      // Every byte is out; S3 has still to answer, which is its own wait.
+      xhr.upload.onload = function () { tick(); if (onProgress) onProgress(1); };
       xhr.onload = function () {
-        if (xhr.status >= 200 && xhr.status < 300) { if (onProgress) onProgress(1); resolve(); }
-        else reject(new Error('Storage rejected the upload (HTTP ' + xhr.status + ').'));
+        stop();
+        if (xhr.status >= 200 && xhr.status < 300) resolve();
+        else reject(new Error('storage rejected the upload (HTTP ' + xhr.status + ')'));
       };
-      xhr.onerror = function () { reject(new Error('The connection dropped part way through.')); };
+      xhr.onerror = function () { stop(); reject(new Error('the connection dropped')); };
       xhr.send(blob);
+      tick();
     });
+  }
+
+  /* A write with no deadline is how a page comes to sit on a full bar for ever.
+     Supabase's fetch has none of its own, so one is put on it here. */
+  function within(p, ms) {
+    return new Promise(function (resolve, reject) {
+      var done = false;
+      var timer = setTimeout(function () {
+        if (!done) { done = true; reject(new Error('timed out')); }
+      }, ms);
+      p.then(function (v) {
+        if (done) return; done = true; clearTimeout(timer); resolve(v);
+      }, function (e) {
+        if (done) return; done = true; clearTimeout(timer); reject(e);
+      });
+    });
+  }
+
+  // The card a repaint has just rebuilt, found again by the booking it is for.
+  function sayOn(id, text, cls) {
+    var el = document.querySelector('.booking[data-id="' + id + '"] [data-msg]');
+    if (!el) return;
+    el.textContent = text || '';
+    el.className = 'msg' + (cls ? ' ' + cls : '');
   }
 
   function wireDeliver(card, b) {
     var msgBox = card.querySelector('[data-msg]');
-    var up = card.querySelector('[data-up]');
-    var bar = card.querySelector('[data-bar]');
+    var up     = card.querySelector('[data-up]');
+    var bar    = card.querySelector('[data-bar]');
     var upText = card.querySelector('[data-uptext]');
+    var upPct  = card.querySelector('[data-uppct]');
+    var pick   = card.querySelector('[data-a="pick"]');
+    var send   = card.querySelector('[data-a="submit"]');
+    var busy   = false;
 
     function say(text, cls) {
       msgBox.textContent = text || '';
       msgBox.className = 'msg' + (cls ? ' ' + cls : '');
     }
 
-    card.querySelector('[data-a="pick"]').addEventListener('change', function () {
-      var files = Array.prototype.slice.call(this.files || []);
-      this.value = '';
-      if (!files.length) return;
-      say('');
+    /* Submit is shut while files are still going up, or the creator is told to
+       attach a file they are watching upload. That is the error they reported. */
+    function lock(on) {
+      busy = on;
+      send.disabled = on;
+      pick.disabled = on;
+    }
+
+    function show(i, n, file, pct, saving) {
       up.hidden = false;
-      var done = 0;
-      var next = function () {
-        if (!files.length) {
-          up.hidden = true;
-          return db.rpc('get_creator', { p_code: code }).then(function (r) {
-            if (r.data && !r.data.error) { feed = r.data; paint(); }
-          });
-        }
-        var file = files.shift();
-        done++;
-        upText.textContent = t().uploading + ' ' + done + '/' + (done + files.length);
-        bar.style.width = '0%';
-        var ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
-        return db.functions.invoke('sign-upload', {
-          body: { ext: ext || 'bin', size: file.size, creatorCode: code, optionId: b.id }
-        }).then(function (r) {
-          if (r.error) throw new Error(r.error.message);
-          if (!r.data || !r.data.uploadUrl) throw new Error((r.data && r.data.error) || 'refused');
-          return putToS3(r.data.uploadUrl, file, file.type, function (p) {
-            bar.style.width = Math.round(p * 100) + '%';
-          }).then(function () {
-            return db.rpc('creator_add_file', {
-              p_code: code, p_option: b.id, p_url: r.data.publicUrl,
-              p_name: file.name, p_kind: kindOf(file), p_bytes: file.size
-            });
-          });
-        }).then(function (r) {
-          /* The file reaching storage is only half of it: until this row is
-             written the upload is invisible to everybody. Unchecked, a refused
-             insert let the queue carry on, so a creator watched the bar reach
-             100% and then saw nothing, with no reason given anywhere. */
-          var bad = (r && r.error) || (r && r.data && r.data.error);
-          if (bad) throw new Error(typeof bad === 'string' ? bad : (bad.message || 'save_failed'));
-          return next();
-        }, function (e) {
-          up.hidden = true;
-          // Ours to the creator; the cause stays in the console for the team.
-          if (window.console) console.warn('[creator upload]', e);
-          say(t().uploadFailed, 'err');
+      upText.textContent = (n > 1 ? i + '/' + n + ' · ' : '') + file.name;
+      upPct.textContent = saving ? t().saving : Math.round(pct * 100) + '%';
+      bar.style.width = Math.round(pct * 100) + '%';
+    }
+
+    // One file: signed, sent, then recorded. It is not uploaded until the row
+    // exists, so every step's failure is a failure of the whole file.
+    function sendOne(file, i, n) {
+      show(i, n, file, 0, false);
+      var ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '');
+      return db.functions.invoke('sign-upload', {
+        body: { ext: ext || 'bin', size: file.size, creatorCode: code, optionId: b.id }
+      }).then(function (r) {
+        if (r.error) throw new Error(r.error.message || 'could not be signed');
+        if (!r.data || !r.data.uploadUrl) throw new Error((r.data && r.data.error) || 'refused');
+        return putToS3(r.data.uploadUrl, file, file.type, function (p) {
+          show(i, n, file, p, p >= 1);
+        }).then(function () {
+          show(i, n, file, 1, true);
+          return within(db.rpc('creator_add_file', {
+            p_code: code, p_option: b.id, p_url: r.data.publicUrl,
+            p_name: file.name, p_kind: kindOf(file), p_bytes: file.size
+          }), 60000);
         });
-      };
-      next();
+      }).then(function (res) {
+        /* The file reaching storage is only half of it: until this row is
+           written the upload is invisible to everybody. This check existed and
+           threw from inside a fulfilment handler whose sibling rejection
+           handler cannot catch it, so the one error worth reporting went
+           nowhere: the bar stood at 100% and Submit then said no file was
+           attached. Every failure below reaches the .catch on the queue. */
+        var bad = (res && res.error) || (res && res.data && res.data.error);
+        if (bad) throw new Error(typeof bad === 'string' ? bad : (bad.message || 'not saved'));
+      });
+    }
+
+    pick.addEventListener('change', function () {
+      var picked = Array.prototype.slice.call(this.files || []);
+      this.value = '';
+      if (busy || !picked.length) return;
+      say('');
+
+      var cap = maxBytes();
+      var big = picked.filter(function (f) { return f.size > cap; });
+      var queue = picked.filter(function (f) { return f.size <= cap; });
+      var mb = Math.round(cap / 1048576);
+      var tooBig = big.length === 1
+        ? fill(t().sizeOne, { file: big[0].name, mb: mb })
+        : fill(t().sizeMany, { n: big.length, mb: mb });
+
+      if (!queue.length) { say(tooBig, 'err'); return; }
+
+      lock(true);
+      var total = queue.length, ok = 0, failed = [];
+
+      function run(i) {
+        if (i >= total) return Promise.resolve();
+        return sendOne(queue[i], i + 1, total).then(function () { ok++; }, function (e) {
+          // One bad file does not abandon the rest of the batch.
+          failed.push(queue[i].name);
+          if (window.console) console.warn('[creator upload] ' + queue[i].name, e);
+        }).then(function () { return run(i + 1); });
+      }
+
+      run(0).then(function () {
+        up.hidden = true;
+        lock(false);
+
+        var cls = 'err', text;
+        if (failed.length) {
+          text = (big.length ? tooBig + ' ' : '') + (failed.length === 1
+            ? fill(t().failOne, { file: failed[0] })
+            : fill(t().failMany, { n: failed.length }));
+        } else if (big.length) {
+          text = tooBig;
+        } else {
+          text = t().uploaded; cls = 'ok';
+        }
+
+        /* Repainted from the database, so the page shows what we actually
+           hold rather than what the browser believes it sent. The repaint
+           replaces this card, so the answer is written onto the new one: said
+           before it, the one line explaining what happened was thrown away by
+           the redraw that followed. */
+        return db.rpc('get_creator', { p_code: code }).then(function (r) {
+          if (r.data && !r.data.error) { feed = r.data; paint(); sayOn(b.id, text, cls); }
+          else say(failed.length || big.length ? text : t().failText, 'err');
+        }, function () {
+          say(failed.length || big.length ? text : t().failText, 'err');
+        });
+      });
     });
 
-    card.querySelector('[data-a="submit"]').addEventListener('click', function () {
+    send.addEventListener('click', function () {
       var btn = this;
+      if (busy) return;
       var cap = card.querySelector('[data-cap]').value;
       btn.disabled = true;
       var was = btn.textContent;

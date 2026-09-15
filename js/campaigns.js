@@ -1022,11 +1022,18 @@
       .eq('campaign_id', state.campaign.id).order('position').then(function (r) {
         state.options = (r.data) || [];
         syncCampState();
-        // What each creator handed in on their own page, so the team reviews it
-        // here rather than opening a folder somebody had to find.
+        /* What each creator uploaded on their own page, so the team reviews it
+           here rather than opening a folder somebody had to find. Scoped to
+           this campaign's bookings: an unfiltered read takes the first page of
+           every deliverable in the database, so once the archive passes a
+           thousand files the newest campaign is the one that comes back
+           empty. */
+        var ids = state.options.map(function (o) { return o.id; });
+        state.files = {};
+        if (!ids.length) { paintOptions(); return; }
         db.from('campaign_deliverables').select('*').is('removed_at', null)
+          .in('option_id', ids).order('uploaded_at')
           .then(function (d) {
-            state.files = {};
             (d.data || []).forEach(function (f) {
               (state.files[f.option_id] || (state.files[f.option_id] = [])).push(f);
             });
@@ -1681,6 +1688,11 @@
       if (menu) {
         menu.hidden = !open;
         this.setAttribute('aria-expanded', String(open));
+        /* Placed on the viewport, like every other ⋯ in this portal. This card
+           was the one that never called in, so a creator low on the list opened
+           a menu that ran past the bottom of the window, which is nowhere a
+           phone can reach. */
+        if (open) window.ADspaceMenu.place(this, menu);
       }
     });
 
