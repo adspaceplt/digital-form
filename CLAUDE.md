@@ -8,7 +8,10 @@ digital.adspace.me (CNAME in the repo). Pages: `admin/` (console),
 `creators/` (client-facing creator selection), `review/` (client-facing
 content review). Supabase behind `js/api.js`; schema in
 `supabase/schema.sql` (re-runnable; the user runs it by hand in the SQL
-editor after every schema change and must be told when).
+editor, and must be told when). A change confined to one function or one
+column ships instead as a dated file in `supabase/migrations/`, narrowly
+scoped and safe to run twice, so a live database is not put through fifteen
+unrelated data migrations to replace one function body.
 
 The design system, the components, the laws and the copy rules are in
 `DESIGN.md`. The general engineering and design standard, the working method
@@ -77,7 +80,8 @@ Suites live in `tests/` in the repo (`stub2.js` is the Supabase stand-in; add ev
 - Root HTML files (`index.html`, `404.html`, `verify.html`, `ap01.html`, `ap02.html`, `ap03.html`, `ap-dale.html`, `accv-new.html`, `3pform.html`, `einvoiceinfo.html`, `interview-quiz.html`, `sales-program.html`, `supplier.html`) are the user's existing site. Never edit them, never edit `404.html`.
 - Portal pages are folders with an `index.html` and clean paths (`/admin/`, `/creators/`, `/review/`), never `.html` in a URL. New pages start from `docs/PAGE-TEMPLATE.html`.
 - One stylesheet `css/portal.css`; one script per section in `js/`; `js/api.js` is the only Supabase client; `js/money.js` the only money formatter; `js/chrome.js` the only header and footer; `js/menu.js` the only copy of where a row ⋯ opens and what closes it; `js/copy.js` the only copy of what a Copy button says when it has copied (four buttons each said it differently: one swapped its label, one a span inside itself, one wrote into a `.msg` line, one tinted itself); **`js/words.js` the only copy of a word two pages share** (loaded before every page script). No build step, no framework, no bundler, ES5-style function scripts wrapped in an IIFE.
-- Docs for setup live in `docs/` (`CONTENT-REVIEW-SETUP.md`, `S3-UPLOAD-SETUP.md`, `DRIVE-IMPORT-CHECK.md`, `FIX-ACCESS-DENIED.md`).
+- Docs for setup live in `docs/` (`CONTENT-REVIEW-SETUP.md`, `S3-UPLOAD-SETUP.md`, `DRIVE-IMPORT-CHECK.md`, `FIX-ACCESS-DENIED.md`, `CREATOR-UPLOAD-CHECK.md`).
+- **A change to one database function ships as a file in `supabase/migrations/`, not as a re-run of the whole schema.** `supabase/schema.sql` carries fifteen top-level data migrations (team roles and their defaults, the rate card minimums and inclusions, client slugs, the stage clock backfill, the team stand-down repair, the Marketing and rednote renames) and drops and recreates fifty-six policies, triggers and indexes. Every one of those is idempotent and several are guarded, but re-running all of it on a live database to replace one function body is unnecessary exposure. A migration file is dated, narrowly scoped, safe to run twice, carries its own rollback, and is applied standalone by `tests/sql.js`.
 - Secrets never enter the repo. The Supabase anon key and the Google browser key are public by design and held back by their restrictions (Google key: websites `digital.adspace.me/*`, Drive API only). The delete code lives in the database.
 
 ### Infrastructure and assets (established, do not re-ask)

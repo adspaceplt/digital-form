@@ -352,6 +352,24 @@ create or replace function public.is_team() returns boolean language sql stable 
       'https://x/4.jpg', 'no.jpg', 'image', 900)`)));
   check('and cannot sign an upload',
     sql(`select public.creator_may_upload('ZZZZZZZZ', '${opt}')`) === 'f');
+
+  /* The migration that ships this fix is applied by hand, so it has to stand
+     on its own and be safe to run twice. Re-running the whole schema for one
+     function would also re-apply fifteen unrelated data migrations and drop
+     and recreate fifty-six policies and triggers on a live database, which is
+     why the narrow file exists. */
+  const mig = fs.readFileSync(T + '/../supabase/migrations/2026-09-15-creator-add-file.sql', 'utf8');
+  runFile('creator-migration.sql', mig);
+  runFile('creator-migration.sql', mig);
+  sql(`update public.campaign_options set state = 'pending_draft'`);
+  check('the migration applies on its own, and again',
+    /"id"/.test(sql(`select public.creator_add_file('${code}', '${opt}',
+      'https://mycdn.adspace.me/content/creator/big.mp4', 'again.mp4', 'video', 314572800)`)));
+  check('and a 300 MB file is recorded to the byte',
+    sql(`select bytes from public.campaign_deliverables where name = 'again.mp4'`) === '314572800');
+  check('and the grant survives the replace',
+    sql(`select has_function_privilege('anon',
+      'public.creator_add_file(text, uuid, text, text, text, bigint)', 'execute')`) === 't');
 } catch (e) {
   console.log('FAIL ' + (e.stderr ? String(e.stderr).slice(0, 600) : e.message));
   fails++;
