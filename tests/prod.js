@@ -10,7 +10,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
     access_token:'PROD', deadline:'2026-09-30' });
   D.creators.forEach(function(cr,i){
     D.campaign_options.push({ id:'o'+(i+1), campaign_id:'cmp1', creator_id:cr.id,
-      rate:cr.client_rate, platforms:'RedNote, Instagram',
+      rate:cr.client_rate, platforms:'rednote, Instagram',
       state: i < 2 ? 'shortlisted' : 'option', revision_round:0, position:i }); });
   window.__persist && window.__persist();
 })();`;

@@ -18,6 +18,10 @@
     + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
     + '<path d="M14 4h6v6"/><path d="M20 4 11 13"/>'
     + '<path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+  var LINK_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/>' +
+    '<path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>';
   var bridge = window.ADspaceAdmin || {};
   var ICON    = bridge.ICON || {};
   var log     = bridge.log || function () {};
@@ -98,14 +102,14 @@
      sits inside it. That identity is what makes two links the same creator;
      a short link has none, so it can be stored but never matched. */
   var PLATFORMS = [
-    { id: 'xhs',       label: 'RedNote',   re: /xiaohongshu\.com\/user\/profile\/([0-9a-zA-Z]{8,40})/i },
-    { id: 'xhs',       label: 'RedNote',   re: /xhslink\.(?:com|cn)\/\S+/i, anonymous: true },
+    { id: 'xhs',       label: 'rednote',   re: /xiaohongshu\.com\/user\/profile\/([0-9a-zA-Z]{8,40})/i },
+    { id: 'xhs',       label: 'rednote',   re: /xhslink\.(?:com|cn)\/\S+/i, anonymous: true },
     { id: 'instagram', label: 'Instagram', re: /instagram\.com\/([A-Za-z0-9._]{1,40})/i },
     { id: 'tiktok',    label: 'TikTok',    re: /tiktok\.com\/@([A-Za-z0-9._]{1,40})/i },
     { id: 'facebook',  label: 'Facebook',  re: /facebook\.com\/([A-Za-z0-9.]{2,60})/i }
   ];
-  var PLATFORM_LABEL = { xhs: 'RedNote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' };
-  var PLATFORM_NAMES = ['RedNote', 'Instagram', 'TikTok', 'Facebook'];
+  var PLATFORM_LABEL = { xhs: 'rednote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' };
+  var PLATFORM_NAMES = ['rednote', 'Instagram', 'TikTok', 'Facebook'];
 
   /* Where she posts for THIS campaign is proposed by us, one tick per
      platform. Her profile links only decide which boxes start ticked; a
@@ -178,7 +182,7 @@
   }
 
   /* What tells two creators apart is not what they are, it is what they have
-     done. Five rows reading RedNote · RM 360 differ in nothing but a name, and
+     done. Five rows reading rednote · RM 360 differ in nothing but a name, and
      a monogram cannot rescue that: most of this roster is Chinese names, so a
      first character disc gave 是yy呀 and 是甜甜啊 the same grey circle. The
      record is the differentiator a campaign is planned on, so the row carries
@@ -315,13 +319,13 @@
          platform is a word here and opening the profile is an item in the ⋯,
          because on this screen a creator is a record being managed rather than
          a profile being browsed. The handle rides along only where it reads as
-         a name: RedNote keeps a profile id in that field and
+         a name: rednote keeps a profile id in that field and
          5e3262fd00000000010015b6 is longer than the creator it belongs to. */
       /* The profile is a link on the row again, as the word and the mark that
          says it leaves the page, without the chip's border: a creator is
          looked up constantly and a link folded into the ⋯ costs two taps for
          the commonest thing on this screen. The handle rides along only where
-         it reads as a name, because RedNote keeps a profile id in that field
+         it reads as a name, because rednote keeps a profile id in that field
          and 5e3262fd00000000010015b6 says nothing to anybody. */
       var profs = c.creator_profiles || [];
       var links = profs.map(function (p) {
@@ -521,11 +525,7 @@
   }
   if ($('crCodeCopy')) {
     $('crCodeCopy').addEventListener('click', function () {
-      var v = $('crCodeLink').value;
-      var done = function () { msg('crCodeMsg', 'Copied.', 'ok'); };
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(v).then(done, done);
-      } else { $('crCodeLink').select(); document.execCommand('copy'); done(); }
+      window.ADspaceCopy.to(this, $('crCodeLink').value);
     });
   }
   /* Resetting is how a code that has been forwarded to the wrong person is
@@ -964,11 +964,7 @@
   });
 
   $('campCopy').addEventListener('click', function () {
-    navigator.clipboard.writeText($('campLink').value).then(function () {
-      var b = $('campCopy').querySelector('span');
-      b.textContent = 'Copied';
-      setTimeout(function () { b.textContent = 'Copy link'; }, 1600);
-    });
+    window.ADspaceCopy.to(this, $('campLink').value);
   });
 
   /* The campaign moves forward and back. A locked selection the client wants to
@@ -1022,7 +1018,7 @@
   }, { replaced: ['Replaced', 'is-danger'] });
 
   function loadOptions() {
-    db.from('campaign_options').select('*, creators(name, creator_profiles(platform, url))')
+    db.from('campaign_options').select('*, creators(name, access_code, creator_profiles(platform, url))')
       .eq('campaign_id', state.campaign.id).order('position').then(function (r) {
         state.options = (r.data) || [];
         syncCampState();
@@ -1037,6 +1033,41 @@
             paintOptions();
           }, paintOptions);
       });
+  }
+
+  /* The Draft step has two routes into it and only ever named one. A field
+     labelled "Draft link" beside nothing else read as the only way, so nobody
+     was reminded that the creator can send it themselves, and the Drive
+     shuffle carried on. The step says which route it is waiting on, and names
+     the paste field as the fallback it is. */
+  function draftGuide(o) {
+    var files = (state.files && state.files[o.id]) || [];
+    if (files.length || o.draft_url) return '';
+    return hint('draft-route',
+      'Send ' + ((o.creators || {}).name || 'the creator') + ' their portal link and they upload here ' +
+      'themselves. Paste a link below only if they cannot.');
+  }
+
+  /* An instruction is for the first few times somebody meets a screen, and
+     after that it is furniture: this portal carries no explanatory copy for
+     exactly that reason. So it opens by itself while the step is still new and
+     retires behind its own mark once it has been read three times, where it
+     can still be opened by anybody who wants it. A button and not a `title`,
+     because a hover tooltip is unreachable on the device most of this is read
+     on. */
+  var HINT_SHOWS = 3;
+  function bumpHint(id) {
+    try { localStorage.setItem('adspace-hint-' + id, String(hintSeen(id) + 1)); } catch (e) {}
+  }
+  function hintSeen(id) {
+    try { return Number(localStorage.getItem('adspace-hint-' + id) || 0); } catch (e) { return HINT_SHOWS; }
+  }
+  function hint(id, text) {
+    var open = hintSeen(id) < HINT_SHOWS;
+    return '<div class="hintline" data-hint="' + esc(id) + '">' +
+      '<button class="hintbtn" type="button" data-a="hint" aria-expanded="' + open + '" ' +
+      'aria-label="What happens at this step">?</button>' +
+      '<p class="hinttext"' + (open ? '' : ' hidden') + '>' + esc(text) + '</p></div>';
   }
 
   /* What the creator sent from their own page, and the caption they wrote with
@@ -1547,6 +1578,14 @@
         (o.is_replacement ? '<span class="tone is-warn">Replacement</span>' : '') +
         (o.goodwill ? '<span class="tone is-warn">Goodwill</span>' : '') +
         (sum ? '<span class="kcard-sum">' + esc(sum) + '</span>' : '') +
+        /* Sending a creator their link is the everyday action on this card, so
+           it is a control on the card and not three steps away inside their
+           record. Sent again costs nothing and saves the creator digging
+           through WhatsApp for a message from three weeks ago. */
+        (!dead && cr.access_code
+          ? '<button class="iconbtn kcard-link" data-a="copylink" type="button" ' +
+            'aria-label="Copy portal link for ' + esc(cr.name || '') + '" ' +
+            'title="Copy portal link">' + LINK_ICON + '</button>' : '') +
         (dead ? '' : '<button class="kmenu-btn" data-a="menu" type="button" ' +
           'aria-label="More actions" aria-expanded="false">' + DOTS + '</button>') +
       '</header>' +
@@ -1578,9 +1617,10 @@
       (drafting ?
       '<div class="kstep kstep-work">' +
         '<div class="kstep-title">Draft</div>' +
+        draftGuide(o) +
         handedIn(o) +
         '<div class="kfields">' +
-          '<label class="kfield kfield-wide"><span>Draft link</span>' +
+          '<label class="kfield kfield-wide"><span>Or paste a link, if they cannot upload</span>' +
             '<input class="input" data-f="draft_url" value="' + esc(o.draft_url || '') +
             '" placeholder="https://"></label>' +
         '</div>' +
@@ -1614,6 +1654,25 @@
       var el = card.querySelector('[data-a="' + sel + '"]');
       if (el) el.addEventListener('click', fn);
     };
+
+    /* Copied in place, and the button says so for a moment rather than
+       opening a bar or a sheet over the card it belongs to. */
+    var hb = card.querySelector('[data-a="hint"]');
+    if (hb) {
+      var line = hb.parentNode;
+      var id = line.getAttribute('data-hint');
+      var body = line.querySelector('.hinttext');
+      // Shown by itself counts: three readings and it steps back.
+      if (!body.hidden) bumpHint(id);
+      hb.addEventListener('click', function () {
+        body.hidden = !body.hidden;
+        hb.setAttribute('aria-expanded', String(!body.hidden));
+      });
+    }
+
+    on('copylink', function () {
+      window.ADspaceCopy.to(this, creatorLink((o.creators || {}).access_code));
+    });
 
     var menu = card.querySelector('[data-menu]');
     on('menu', function () {

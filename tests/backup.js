@@ -10,7 +10,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   ['A','B','C','D','E','F'].forEach(function(n,i){
     D.creators.push({ id:'b'+i, name:'Creator '+n, client_rate:300+i*10 });
     D.campaign_options.push({ id:'ob'+i, campaign_id:'cmp1', creator_id:'b'+i, rate:300+i*10,
-      platforms:'RedNote', state:'option', position:i });
+      platforms:'rednote', state:'option', position:i });
   });
   window.__persist && window.__persist();
 })();`;

@@ -46,25 +46,26 @@
       whereAt: 'Location', contact: 'On the day', tracking: 'Tracking no.',
       fee: 'Your fee', platformsLabel: 'Posting on', tbc: 'To be confirmed',
       briefHead: 'The brief',
-      deliverHead: 'Hand in your work',
+      deliverHead: 'Submission',
       changesHead: 'Changes requested',
-      addFiles: 'Add files', captionLabel: 'Your caption',
-      captionHint: 'The caption you would post with this.',
-      submit: 'Hand in', submitting: 'Sending…',
-      needFiles: 'Add at least one file first.',
+      addFiles: 'Files', captionLabel: 'Caption',
+      captionHint: 'The caption to be published with this.',
+      submit: 'Submit', submitting: 'Submitting…',
+      needFiles: 'Attach at least one file before submitting.',
       uploading: 'Uploading', remove: 'Remove',
-      handedIn: 'Handed in', filesHead: 'What you handed in',
-      withUs: 'With ADspace for review',
-      payHead: 'Payment details', payLine: 'Approved. Please send us your payment details.',
+      filesHead: 'Submitted files',
+      uploadFailed: 'That file could not be saved. Please try again, or contact your ADspace account manager.',
+      
+      payHead: 'Payment details', payLine: 'Approved. Please complete your payment details.',
       payGo: 'Fill in the form',
       ended: 'This booking has ended.',
       nextUp: {
         confirmed: 'We will confirm the shoot date with you.',
         pending_visit: 'Your shoot is booked.',
         pending_delivery: 'The product is on its way to you.',
-        pending_draft: 'We are waiting for your draft.',
-        reviewing: 'We are reviewing your draft.',
-        changes: 'Please make the changes below and hand in again.',
+        pending_draft: 'Your submission is due.',
+        reviewing: 'Your submission is under review.',
+        changes: 'Please revise as noted below and submit again.',
         scheduled: 'Approved and scheduled.',
         posted: 'Posted. Thank you.',
         completed: 'Completed. Thank you.'
@@ -86,15 +87,16 @@
       whereAt: '地点', contact: '当天联系人', tracking: '快递单号',
       fee: '您的费用', platformsLabel: '发布平台', tbc: '待确认',
       briefHead: '合作简介',
-      deliverHead: '提交作品',
+      deliverHead: '作品提交',
       changesHead: '需要修改',
-      addFiles: '添加文件', captionLabel: '您的文案',
-      captionHint: '您计划随作品发布的文案。',
+      addFiles: '文件', captionLabel: '文案',
+      captionHint: '将随作品一同发布的文案。',
       submit: '提交', submitting: '提交中…',
-      needFiles: '请先添加至少一个文件。',
+      needFiles: '请先上传至少一个文件再提交。',
       uploading: '上传中', remove: '移除',
-      handedIn: '已提交', filesHead: '已提交内容',
-      withUs: 'ADspace 审阅中',
+      filesHead: '已提交文件',
+      uploadFailed: '该文件未能保存，请重试，或联系您的 ADspace 客户经理。',
+      
       payHead: '付款资料', payLine: '已通过。请填写您的付款资料。',
       payGo: '填写表单',
       ended: '此合作已结束。',
@@ -102,8 +104,8 @@
         confirmed: '我们会与您确认拍摄日期。',
         pending_visit: '拍摄已安排。',
         pending_delivery: '产品正在寄送中。',
-        pending_draft: '我们正在等待您的初稿。',
-        reviewing: '我们正在审阅您的初稿。',
+        pending_draft: '请提交您的作品。',
+        reviewing: '您的提交正在审阅中。',
         changes: '请按以下说明修改后重新提交。',
         scheduled: '已通过并排期。',
         posted: '已发布，谢谢。',
@@ -132,8 +134,8 @@
   }
 
   // The console stores the placement by its printed name; older rows carry the key.
-  var PLAT_KEY = { RedNote: 'xhs', Instagram: 'instagram', TikTok: 'tiktok', Facebook: 'facebook' };
-  var PLAT = { en: { xhs: 'RedNote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' },
+  var PLAT_KEY = { rednote: 'xhs', Instagram: 'instagram', TikTok: 'tiktok', Facebook: 'facebook' };
+  var PLAT = { en: { xhs: 'rednote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' },
                zh: { xhs: '小红书', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' } };
   function platsOf(s) {
     return String(s || '').split(',').map(function (x) { return x.trim(); })
@@ -390,9 +392,19 @@
               p_name: file.name, p_kind: kindOf(file), p_bytes: file.size
             });
           });
-        }).then(next, function (e) {
+        }).then(function (r) {
+          /* The file reaching storage is only half of it: until this row is
+             written the upload is invisible to everybody. Unchecked, a refused
+             insert let the queue carry on, so a creator watched the bar reach
+             100% and then saw nothing, with no reason given anywhere. */
+          var bad = (r && r.error) || (r && r.data && r.data.error);
+          if (bad) throw new Error(typeof bad === 'string' ? bad : (bad.message || 'save_failed'));
+          return next();
+        }, function (e) {
           up.hidden = true;
-          say(String((e && e.message) || e), 'err');
+          // Ours to the creator; the cause stays in the console for the team.
+          if (window.console) console.warn('[creator upload]', e);
+          say(t().uploadFailed, 'err');
         });
       };
       next();

@@ -17,15 +17,15 @@ const SEED = `
     deliverable:'One video', brief:'One reel at the showroom.' + String.fromCharCode(10) + 'Golden hour if you can.' });
   D.campaigns.push({ id:'cmDraft', client_id:'c1', title:'Unannounced thing', state:'draft', slots:2 });
   D.campaign_options.push({ id:'oA', campaign_id:'cmA', creator_id:'k2', rate:380,
-    platforms:'RedNote, Instagram', state:'pending_draft', revision_round:0,
+    platforms:'rednote, Instagram', state:'pending_draft', revision_round:0,
     visit_date:'2026-09-22', visit_time:'10am', visit_location:'Laman Citra showroom',
     visit_pic:'Aisyah', visit_pic_phone:'012-345 6789', planned_publish:'2026-09-28' });
   D.campaign_options.push({ id:'oB', campaign_id:'cmA', creator_id:'k1', rate:360,
-    platforms:'RedNote', state:'option' });
+    platforms:'rednote', state:'option' });
   D.campaign_options.push({ id:'oC', campaign_id:'cmA', creator_id:'k3', rate:500,
-    platforms:'RedNote', state:'scheduled', visit_date:'2026-08-01' });
+    platforms:'rednote', state:'scheduled', visit_date:'2026-08-01' });
   D.campaign_options.push({ id:'oD', campaign_id:'cmDraft', creator_id:'k2', rate:300,
-    platforms:'RedNote', state:'confirmed' });
+    platforms:'rednote', state:'confirmed' });
   D.campaign_deliverables.push({ id:'dA', option_id:'oC', url:'https://mycdn.adspace.me/x.jpg',
     name:'cover.jpg', kind:'image', bytes:12345, round:1 });
   window.__persist();
@@ -86,7 +86,7 @@ const say = s => console.log(s);
   check('their own fee, not the client\'s amount', txt.includes('RM 380'), (txt.match(/RM [\d,.]+/g) || []).join(' '));
   check('the shoot, the place and who to ask for',
     txt.includes('22 Sept 2026') && txt.includes('showroom') && txt.includes('Aisyah'));
-  check('the placements the fee covers', txt.includes('RedNote · Instagram'));
+  check('the placements the fee covers', txt.includes('rednote · Instagram'));
   check('the brief', txt.includes('showroom') && txt.includes('Golden hour'));
   /* A campaign still being put together, and an offer nobody has confirmed,
      are both our business and not the creator's. */
@@ -96,7 +96,7 @@ const say = s => console.log(s);
 
   // ---- Handing in ------------------------------------------------------------
   check('the step they are on says what we are waiting for',
-    txt.includes('waiting for your draft'), txt.split('\n').find(l => /waiting|review/i.test(l)));
+    txt.includes('submission is due'), txt.split('\n').find(l => /waiting|review/i.test(l)));
   check('and the hand-in is open', await card.locator('[data-a="submit"]').isVisible());
 
   // Nothing attached is refused, before anything is written.
@@ -135,7 +135,7 @@ const say = s => console.log(s);
   check('the hand-in closes once it is ours', await p.locator('[data-a="submit"]').count() === 0);
   check('and a handed-in file can no longer be pulled back off',
     await p.locator('.filecard [data-a="rm"]').count() === 0);
-  check('and the card says where it now is', after.includes('reviewing your draft'),
+  check('and the card says where it now is', after.includes('under review'),
     after.replace(/\n/g, ' | '));
 
   // ---- The payment form is named on approval, not on submit ------------------
@@ -165,7 +165,7 @@ const say = s => console.log(s);
   await p.locator('#langToggle').click(); await p.waitForTimeout(400);
   const zh = await p.locator('#workList').innerText();
   say('zh: ' + zh.replace(/\n/g, ' | '));
-  check('the page is localised, and RedNote is 小红书 there', zh.includes('小红书'));
+  check('the page is localised, and rednote is 小红书 there', zh.includes('小红书'));
 
   // ---- A creator stood down loses the page -----------------------------------
   await p.evaluate(() => {

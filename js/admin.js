@@ -27,7 +27,7 @@
     ['facebook:reel',      'Facebook Reels'],
     ['facebook:story',     'Facebook Story'],
     ['tiktok:reel',        'TikTok video'],
-    ['xhs:note',           'RedNote post'],
+    ['xhs:note',           'rednote post'],
     ['cover:image',        'Cover image']
   ];
 
@@ -926,10 +926,7 @@
   });
 
   $('copyLink').addEventListener('click', function () {
-    navigator.clipboard.writeText($('clientLink').value).then(function () {
-      $('copyLink').textContent = 'Copied';
-      setTimeout(function () { $('copyLink').textContent = 'Copy link'; }, 1600);
-    });
+    window.ADspaceCopy.to(this, $('clientLink').value);
   });
 
   // ---- Content sets -------------------------------------------------------

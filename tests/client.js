@@ -16,7 +16,7 @@ const SEED = `
   var names = ['香香的爆米花 🍿','恩比','小熊爱睡觉'];
   D.creators.forEach(function(cr,i){
     D.campaign_options.push({ id:'o'+(i+1), campaign_id:'cmp1', creator_id:cr.id,
-      rate:cr.client_rate, platforms:'RedNote, Instagram', state:'option',
+      rate:cr.client_rate, platforms:'rednote, Instagram', state:'option',
       is_replacement: i===2, position:i });
   });
   // a fourth, to test the slot cap and NEW badge
@@ -24,14 +24,14 @@ const SEED = `
   D.creator_profiles.push({ id:'p9', creator_id:'k4', platform:'xhs',
     url:'https://www.xiaohongshu.com/user/profile/5b151d89e8ac2b76c0776e85', handle:'5b151d89e8ac2b76c0776e85' });
   D.campaign_options.push({ id:'o4', campaign_id:'cmp1', creator_id:'k4', rate:360,
-    platforms:'RedNote', state:'option', is_replacement:false, position:3 });
+    platforms:'rednote', state:'option', is_replacement:false, position:3 });
 
   // a second campaign with only two slots, to exercise the cap
   D.campaigns.push({ id:'cmp2', client_id:'c1', title:'Small push', slots:2, backups_open:true,
     state:'open', deliverable:'video', access_token:'CAPTOKEN' });
   D.creators.forEach(function(cr,i){
     D.campaign_options.push({ id:'q'+(i+1), campaign_id:'cmp2', creator_id:cr.id,
-      rate:cr.client_rate, platforms:'RedNote', state:'option', position:i });
+      rate:cr.client_rate, platforms:'rednote', state:'option', position:i });
   });
   window.__persist && window.__persist();
 })();

@@ -6,7 +6,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
     state:'open', deliverable:'video', access_token:'ROLL' });
   D.creators.slice(0,2).forEach(function(cr,i){
     D.campaign_options.push({ id:'o'+(i+1), campaign_id:'cmp1', creator_id:cr.id,
-      rate:cr.client_rate, platforms:'RedNote', state:'option', position:i }); });
+      rate:cr.client_rate, platforms:'rednote', state:'option', position:i }); });
   window.__persist && window.__persist();
 })();`;
 (async () => {
@@ -26,10 +26,10 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   await p.evaluate(() => {
     var D = window.__DB;
     D.campaign_options.push({ id:'o3', campaign_id:'cmp1', creator_id:'k3', rate:500,
-      platforms:'RedNote', state:'option', position:2 });
+      platforms:'rednote', state:'option', position:2 });
     D.creators.push({ id:'k9', name:'是甜甜啊', followers:4400, client_rate:360 });
     D.campaign_options.push({ id:'o4', campaign_id:'cmp1', creator_id:'k9', rate:360,
-      platforms:'RedNote', state:'option', position:3 });
+      platforms:'rednote', state:'option', position:3 });
     window.__persist();
   });
   await p.reload({ waitUntil: 'networkidle' });

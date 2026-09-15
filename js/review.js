@@ -244,12 +244,9 @@
         syncOpenRows();
       });
       requestAnimationFrame(function () { measureCopy(copy); });
-      copy.querySelector('.copy-btn').addEventListener('click', function (e) {
-        navigator.clipboard.writeText([post.title, post.caption, post.caption_zh]
-          .filter(Boolean).join('\n\n')).then(function () {
-            e.target.textContent = 'Copied';
-            setTimeout(function () { e.target.textContent = 'Copy text'; }, 1600);
-          });
+      copy.querySelector('.copy-btn').addEventListener('click', function () {
+        window.ADspaceCopy.to(this, [post.title, post.caption, post.caption_zh]
+          .filter(Boolean).join('\n\n'));
       });
       card.appendChild(copy);
     }

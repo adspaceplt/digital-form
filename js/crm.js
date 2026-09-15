@@ -387,7 +387,7 @@
 
   var SOURCES = [
     ['referral', 'Referral'], ['website', 'Website'], ['instagram', 'Instagram'],
-    ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['rednote', 'RedNote'],
+    ['facebook', 'Facebook'], ['tiktok', 'TikTok'], ['rednote', 'rednote'],
     ['whatsapp', 'WhatsApp'], ['walk_in', 'Walk-in'], ['event', 'Event'],
     ['outreach', 'Outreach'], ['other', 'Other']
   ];
@@ -526,7 +526,7 @@
     if (c.website) links.push(linkChip(c.website, 'Website', true));
     if (c.phone)   links.push(linkChip('tel:' + c.phone, c.phone, false));
     [['social_ig', 'Instagram'], ['social_fb', 'Facebook'],
-     ['social_tiktok', 'TikTok'], ['social_xhs', 'RedNote']].forEach(function (p) {
+     ['social_tiktok', 'TikTok'], ['social_xhs', 'rednote']].forEach(function (p) {
       if (c[p[0]]) links.push(linkChip(c[p[0]], p[1], true));
     });
     $('crmLinks').innerHTML = links.join('');

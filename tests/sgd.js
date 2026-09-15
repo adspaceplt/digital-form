@@ -9,9 +9,9 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
     deliverable:'video', push_format:'site_visit', access_token:'MYR1' });
   D.creators.forEach(function(cr,i){
     D.campaign_options.push({ id:'so'+i, campaign_id:'cmpSG', creator_id:cr.id, rate:400,
-      platforms:'RedNote', state:'option', position:i });
+      platforms:'rednote', state:'option', position:i });
     D.campaign_options.push({ id:'mo'+i, campaign_id:'cmpMY', creator_id:cr.id, rate:400,
-      platforms:'RedNote', state:'option', position:i });
+      platforms:'rednote', state:'option', position:i });
   });
   window.__persist && window.__persist(); })();`;
 let bad = 0;

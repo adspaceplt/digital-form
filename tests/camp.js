@@ -104,7 +104,7 @@ const say = s => console.log(s);
   await p.waitForTimeout(400);
   say('picker rows: ' + await p.locator('#optionPick .pickrow').count());
   say('rate prefilled from usual rate: ' + await p.locator('#optionPick .pickrate').first().inputValue());
-  // her links are RedNote + Instagram, so both start ticked; this campaign is RedNote only
+  // her links are rednote + Instagram, so both start ticked; this campaign is rednote only
   /* Ticking a platform a creator has no link for used to mean leaving the
      campaign, adding the link on the creators list, and coming back. The tick
      opens into the field in place, and what is typed is saved to the creator. */
@@ -137,11 +137,11 @@ const say = s => console.log(s);
   say('platforms pre-ticked: ' + (await first.locator('.pbox input:checked').evaluateAll(l => l.map(i => i.value))).join(', '));
   await first.locator('.pbox input[value="Instagram"]').uncheck();
   // none ticked is refused before the rate is even looked at
-  await first.locator('.pbox input[value="RedNote"]').uncheck();
+  await first.locator('.pbox input[value="rednote"]').uncheck();
   await first.locator('button').click();
   await p.waitForTimeout(250);
   say('no platform refused: ' + await p.locator('#optionMsg').innerText());
-  await first.locator('.pbox input[value="RedNote"]').check();
+  await first.locator('.pbox input[value="rednote"]').check();
   // the first one is offered at a campaign-specific rate, not her usual one
   await first.locator('.pickrate').fill('555');
   await first.locator('button').click();
