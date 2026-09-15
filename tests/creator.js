@@ -294,6 +294,24 @@ const say = s => console.log(s);
     (await card2.locator('.kcard-sum').innerText()).includes('file'),
     await card2.locator('.kcard-sum').innerText());
 
+  /* A console standing behind its database. The Submitted migration was
+     applied before the code that knows the word, and the booking could not be
+     moved or even reverted: every action on the card is built for a live row,
+     and an unknown state is not one. It must always keep a way back. */
+  await p.evaluate(() => {
+    window.__DB.campaign_options.find(o => o.id === 'oA').state = 'from_the_future';
+    window.__persist();
+  });
+  await p.reload({ waitUntil: 'networkidle' });
+  await p.evaluate(() => window.__signIn('adspacestudios@gmail.com'));
+  await p.waitForTimeout(1200);
+  const odd = p.locator('#creatorList .kcard').filter({ hasText: '恩比' }).first();
+  check('a state this console does not know still offers a way back',
+    await odd.locator('[data-a="back"]').count() === 1);
+  check('and says what it does not understand',
+    (await odd.locator('[data-msg]').innerText()).includes('from_the_future'),
+    await odd.locator('[data-msg]').innerText());
+
   console.log(errs.length ? errs.join('\n') : 'no page errors');
   console.log(fails + ' FAIL');
   await b.close();

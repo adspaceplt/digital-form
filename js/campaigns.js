@@ -1574,8 +1574,20 @@
     var agreed = live || o.state === 'shortlisted';
     var canEdit = ['option', 'backup', 'shortlisted'].indexOf(o.state) > -1;
     var plats = platformsOf(o).join(' · ');
+    /* A state this console has never heard of is a console standing behind
+       its database, which is what the minutes between running a migration and
+       deploying the code look like. Every action on this card is built only
+       for a live row, so an unknown state took the advance button, Revert and
+       the whole draft step with it and left a chip nobody could act on. It
+       happened for real: the Submitted migration was applied before the code
+       that knows the word, and a creator's booking could not be moved or even
+       reverted. An unknown state is treated as live and always keeps a way
+       back, so a row is never stranded by the order two deploys happened in. */
+    var known = !!OPTION_WORD[o.state];
+    if (!known && !dead) live = true;
+
     var advance = live ? nextState(o.state) : null;
-    var back = live ? prevState(o.state, o) : null;
+    var back = live ? (prevState(o.state, o) || 'pending_draft') : null;
 
     // The draft is a step of its own: it exists only once filming is done.
     var stage = PIPELINE.indexOf(o.state === 'changes'
@@ -1677,7 +1689,9 @@
               'Request changes</button>' : '') +
           (back ? '<button class="btn btn-sm btn-quiet" data-a="back" type="button">Revert</button>' : '') +
         '</div>' +
-        '<div class="msg" data-msg></div>' +
+        '<div class="msg' + (known ? '' : ' warn') + '" data-msg>' +
+          (known ? '' : esc('Unknown step "' + o.state + '". Reload the page.')) +
+        '</div>' +
       '</div>' : '') +
 
       '<div data-posts></div>' +
