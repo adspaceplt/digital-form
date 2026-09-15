@@ -1611,35 +1611,104 @@
   // ---- Rate card (the Services section) ------------------------------------
   var editingSvc = null;
   function isAdmin() { return Boolean(bridge.may && bridge.may('admin')); }
+  /* What is typed in the command bar. Kept out of the URL: a search is what
+     somebody is doing this minute, not where they are. */
+  var svcFind = '', svcCat = '';
+
   function enterServices() {
     catalog = null;
     $('svcAdd').hidden = !isAdmin();
     $('svcBox').hidden = true;
     msg('svcListMsg', '');
-    $('svcList').innerHTML = '<div class="empty">Loading…</div>';
-    loadCatalog(paintCatalog);
+    skeleton($('svcList'), 6);
+    loadCatalog(function () { fillSvcFilter(); paintCatalog(); });
   }
+
+  /* Loading is the shape of what is coming, not the word for it: a line of
+     text that is replaced by rows makes the page jump by its own height. */
+  function skeleton(box, n) {
+    var html = '';
+    for (var i = 0; i < n; i++) html += '<div class="skel-row"></div>';
+    box.innerHTML = '<div class="softpanel"><div class="skel">' + html + '</div></div>';
+  }
+
+  // The tiers the card is read in, and the categories inside each.
+  function svcTiers(rows) {
+    var extra = rows.map(function (s) { return s.category; })
+      .filter(function (k, i, a) { return CATS.indexOf(k) < 0 && a.indexOf(k) === i; });
+    return [
+      ['Services', ['Content', 'Account management', 'Monthly packages',
+                    'KOC programmes', 'KOL programmes'].concat(extra)],
+      ['Add-ons',  ['Verification', 'Add-ons']]
+    ];
+  }
+
+  function fillSvcFilter() {
+    var sel = $('svcFilter');
+    if (!sel) return;
+    var rows = catalog || [];
+    var seen = [];
+    svcTiers(rows).forEach(function (t) {
+      t[1].forEach(function (k) {
+        if (seen.indexOf(k) < 0 && rows.some(function (s) { return s.category === k; })) seen.push(k);
+      });
+    });
+    sel.innerHTML = '<option value="">All categories</option>' + seen.map(function (k) {
+      return '<option value="' + esc(k) + '">' + esc(k) + '</option>';
+    }).join('');
+    sel.value = svcCat;
+  }
+
+  /* Name, what it includes and the unit: a search on the card is somebody
+     looking for a line to quote, and they rarely remember its exact title. */
+  function svcMatch(s) {
+    if (!svcCat && !svcFind) return true;
+    if (svcCat && s.category !== svcCat) return false;
+    if (!svcFind) return true;
+    var hay = [s.name, s.note, s.unit, s.detail, s.category].join(' ').toLowerCase();
+    return hay.indexOf(svcFind) > -1;
+  }
+
   function paintCatalog() {
     var box = $('svcList');
     box.innerHTML = '';
-    var rows = catalog || [];
-    if (!rows.length) { box.innerHTML = '<div class="empty">No services.</div>'; return; }
+    var all = catalog || [];
+    var rows = all.filter(svcMatch);
+    var count = $('svcCount');
+    if (count) {
+      count.textContent = !all.length ? ''
+        : rows.length === all.length ? all.length + ' services'
+        : rows.length + ' of ' + all.length;
+    }
+
+    if (!all.length) {
+      box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
+        '<b>The rate card is empty.</b>' +
+        (isAdmin() ? '<button class="btn btn-sm" data-a="first" type="button">Add the first service</button>' : '') +
+        '</div></div>';
+      var first = box.querySelector('[data-a="first"]');
+      if (first) first.addEventListener('click', function () { openSvc(null); });
+      return;
+    }
+    if (!rows.length) {
+      box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
+        '<b>No matches.</b><button class="btn btn-sm" data-a="clear" type="button">Clear the filters</button>' +
+        '</div></div>';
+      box.querySelector('[data-a="clear"]').addEventListener('click', clearSvcFilters);
+      return;
+    }
+
     // Two tables, not a card per category: what is sold, and what is added
     // to it. Categories are sub-headings inside each.
-    var extra = rows.map(function (s) { return s.category; })
-      .filter(function (k, i, a) { return CATS.indexOf(k) < 0 && a.indexOf(k) === i; });
-    var TIERS = [
-      ['Services', ['Content', 'Account management', 'Monthly packages', 'KOC programmes', 'KOL programmes'].concat(extra)],
-      ['Add-ons',  ['Verification', 'Add-ons']]
-    ];
-    TIERS.forEach(function (t) {
+    svcTiers(all).forEach(function (t) {
       var cats = t[1].filter(function (k) { return rows.some(function (s) { return s.category === k; }); });
       if (!cats.length) return;
       var n = rows.filter(function (s) { return cats.indexOf(s.category) > -1; }).length;
       var sec = document.createElement('section');
       sec.className = 'crm-group';
       sec.innerHTML = '<div class="crm-group-head"><h3>' + esc(t[0]) + ' <span>' + n + '</span></h3></div>' +
-        '<div class="crm-table"><div class="crm-head svc-row cat-row"><span>Service</span><span class="svc-rate">Rate</span>' +
+        '<div class="crm-table softpanel"><div class="crm-head svc-row cat-row">' +
+        '<span>Service</span><span class="svc-rate">Rate</span>' +
         '<span>Unit</span><span></span></div></div>';
       var table = sec.querySelector('.crm-table');
       cats.forEach(function (k) {
@@ -1647,11 +1716,28 @@
         cat.className = 'svc-cat';
         cat.textContent = k;
         table.appendChild(cat);
-        rows.filter(function (s) { return s.category === k; }).forEach(function (s) { table.appendChild(catalogRow(s)); });
+        rows.filter(function (s) { return s.category === k; })
+            .forEach(function (s) { table.appendChild(catalogRow(s)); });
       });
       box.appendChild(sec);
     });
   }
+
+  function clearSvcFilters() {
+    svcFind = ''; svcCat = '';
+    if ($('svcFind')) $('svcFind').value = '';
+    if ($('svcFilter')) $('svcFilter').value = '';
+    paintCatalog();
+  }
+
+  if ($('svcFind')) $('svcFind').addEventListener('input', function () {
+    svcFind = this.value.trim().toLowerCase();
+    paintCatalog();
+  });
+  if ($('svcFilter')) $('svcFilter').addEventListener('change', function () {
+    svcCat = this.value;
+    paintCatalog();
+  });
   function catalogRow(s) {
     var row = document.createElement('div');
     row.className = 'svc-row' + (s.active === false ? ' is-off' : '');

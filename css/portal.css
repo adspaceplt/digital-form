@@ -52,6 +52,17 @@
   --chrome:     rgba(255,255,255,.88);   /* the translucent sticky bar */
   --radius:     10px;
   --radius-sm:  7px;
+  /* Soft Precision. A soft corner is not a reason to put another card on the
+     page: these are for the surfaces that already earn a container. 10px on a
+     compact control, 14px on a bounded section, 18px on a sheet or dialog.
+     Applied route by route as each one migrates, never in one sweep. */
+  --radius-ctl:   10px;
+  --radius-panel: 14px;
+  --radius-lg:    18px;
+  /* Two steps above the existing 4/8/12/16/24/32, for separating whole
+     sections of a migrated route. Nothing below 40 changes. */
+  --sp-40: 40px;
+  --sp-64: 64px;
   /* One height for every control, so a button, a select and an input standing
      next to each other line up instead of stepping. Touch devices get the
      44px target Apple asks for, and 16px text so iOS stops zooming the page
@@ -2859,7 +2870,19 @@ body > .shell { width: 100%; }
 .doc-row { grid-template-columns: minmax(0, 1fr) 130px var(--state-w) var(--ctl-h); }
 /* Service, what it costs, what that buys. Active is the ordinary case on this
    card, so it costs no column: the exception is named beside the name. */
-.cat-row { grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1fr) var(--ctl-h); }
+/* The rate card's own columns. Unit used to take every pixel the name did
+   not, so a three word unit sat in a track four hundred wide and the ⋯ was
+   marooned at the far edge with nothing beside it. The name takes the slack,
+   the money is a fixed track so every amount lines up on the same right edge,
+   and the unit is as wide as the longest one it has to carry. */
+.cat-row { grid-template-columns: minmax(0, 1fr) 118px 232px var(--ctl-h); }
+.cat-row > .svc-unit {
+  color: var(--ink-mute); font-size: 13px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cat-row.crm-head > .svc-unit { color: inherit; }
+/* On quote is not an amount, so it does not pretend to be one. */
+.cat-row > .svc-rate .muted { font-variant-numeric: normal; }
 /* A creator is a person with a fee, on the same row shape as everything else. */
 /* Creator · Profiles · Campaigns · Fee · ⋯ — a table with columns, because a
    list whose every value is stacked against the left margin has to be read
@@ -3366,3 +3389,83 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .hintbtn:hover { background: var(--sunk); color: var(--ink); }
 .hintbtn:active { transform: scale(.92); }
 .hinttext { font-size: 12.5px; line-height: 1.5; color: var(--ink-mute); margin: 0; }
+
+/* ==========================================================================
+   SOFT PRECISION PRIMITIVES
+   Built for the routes being migrated one at a time. Nothing here restyles an
+   existing component: a legacy screen keeps its own classes until its turn.
+   ========================================================================== */
+
+/* The command bar. One row: what you are looking for on the left, how you
+   are cutting the list in the middle, the one action at the end. It replaces
+   the section head's lone black slab, which on a phone stretched the full
+   width above the records somebody came to read. */
+.cmdbar {
+  display: flex; align-items: center; gap: 10px;
+  margin: 0 0 12px;
+}
+/* `width: 100%` is set on these controls elsewhere, so a select with
+   `flex: 0 0 auto` took the whole bar and crushed the search box to nothing.
+   Both ends are stated here. */
+.cmdbar-find { position: relative; flex: 1 1 240px; min-width: 190px; }
+.cmdbar-find .input { width: 100%; padding-left: 34px; border-radius: var(--radius-ctl); }
+.cmdbar-find svg {
+  position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+  width: 15px; height: 15px; stroke: var(--ink-mute); stroke-width: 1.8; fill: none;
+  pointer-events: none;
+}
+.cmdbar .select {
+  flex: 0 0 auto; width: auto; min-width: 172px; max-width: 220px;
+  border-radius: var(--radius-ctl);
+}
+.cmdbar .btn { flex: 0 0 auto; width: auto; border-radius: var(--radius-ctl); }
+/* The count sits with the list it counts; the one action ends the row. */
+.cmdbar-count {
+  flex: 0 0 auto; margin-left: auto; font-size: 12px; color: var(--ink-mute);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .cmdbar { flex-wrap: wrap; }
+  .cmdbar-find { flex: 1 1 100%; }
+  .cmdbar .select { flex: 1 1 auto; max-width: none; }
+  .cmdbar .btn { flex: 1 1 auto; }
+  .cmdbar-count { order: 9; width: 100%; }
+}
+
+/* A bounded section, softly. One 1px hairline and a 14px corner, no shadow:
+   a border and a shadow together is a thing pretending to float. */
+.softpanel {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius-panel); overflow: hidden;
+}
+.softpanel + .softpanel { margin-top: 12px; }
+
+/* Loading, as the shape of what is coming rather than the word for it. */
+.skel { padding: 4px 0; }
+.skel-row {
+  height: 14px; margin: 14px 15px; border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--line-soft) 0%, var(--sunk) 50%, var(--line-soft) 100%);
+  background-size: 200% 100%;
+  animation: skel 1.4s var(--ease) infinite;
+}
+.skel-row:nth-child(2n) { width: 62%; }
+.skel-row:nth-child(3n) { width: 78%; }
+@keyframes skel { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skel-row { animation: none; } }
+
+/* Nothing there, and nothing there after a filter. A line and the way out,
+   never a large dashed rectangle. */
+.emptyline {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 18px 15px; font-size: 13.5px; color: var(--ink-mute);
+}
+.emptyline b { color: var(--ink); font-weight: 600; }
+.emptyline .btn { flex: 0 0 auto; }
+
+/* Something failed, said where it failed rather than where the page ends. */
+.errline {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 16px 15px; font-size: 13.5px; color: var(--err);
+  background: var(--err-bg); border-bottom: 1px solid var(--err-line);
+}
+.errline .btn { flex: 0 0 auto; }
