@@ -97,12 +97,12 @@ create table if not exists public.client_touches (
 create index if not exists client_touches_client_idx on public.client_touches(client_id, happened_at desc);
 alter table public.client_touches enable row level security;
 do $$ begin
-  if not exists (select 1 from pg_policies
-                 where tablename = 'client_touches' and policyname = 'touches staff') then
-    create policy "touches staff" on public.client_touches
-      for all to authenticated using (true) with check (true);
-  end if;
 end $$;
+/* No policy here. The fifteen gated tables take theirs in one place, at the
+   foot of this file, where `allowed()` exists to be called: select, insert,
+   update and delete separately, each asking for the group flag that owns the
+   table. A permissive one created here and repaired later is a permissive one
+   that exists, and this file used to create fifteen of them. */
 
 -- Nothing in the CRM is deleted by a click. A contact or a log entry that is
 -- removed is hidden with a timestamp and can be put back; a next action that
@@ -153,11 +153,6 @@ alter table public.client_contacts enable row level security;
 alter table public.team_members enable row level security;
 
 do $$ begin
-  if not exists (select 1 from pg_policies
-                 where tablename = 'client_contacts' and policyname = 'contacts staff') then
-    create policy "contacts staff" on public.client_contacts
-      for all to authenticated using (true) with check (true);
-  end if;
   if not exists (select 1 from pg_policies
                  where tablename = 'team_members' and policyname = 'team staff') then
     create policy "team staff" on public.team_members
@@ -296,7 +291,9 @@ alter table public.reviews enable row level security;
 do $$
 declare t text;
 begin
-  foreach t in array array['clients','batches','posts','reviews','drive_assets'] loop
+  /* `clients` only. batches, posts, reviews and drive_assets take theirs at
+     the foot of this file, per command, off the `review` flag. */
+  foreach t in array array['clients'] loop
     execute format('drop policy if exists team_all on public.%I', t);
     execute format(
       'create policy team_all on public.%I for all to authenticated using (true) with check (true)', t);
@@ -318,9 +315,11 @@ create policy clients_update on public.clients for update to authenticated using
 -- Short links are internal: the team manages them, anonymous visitors get no
 -- direct table access at all. When the redirector is built it reads this table
 -- with the service role, not with the anon key, so nothing here has to open up.
-drop policy if exists links_team on public.links;
-create policy links_team on public.links
-  for all to authenticated using (true) with check (true);
+/* No policy here. The fifteen gated tables take theirs in one place, at the
+   foot of this file, where `allowed()` exists to be called: select, insert,
+   update and delete separately, each asking for the group flag that owns the
+   table. A permissive one created here and repaired later is a permissive one
+   that exists, and this file used to create fifteen of them. */
 
 -- Kept honest in the database rather than trusted to every caller.
 create or replace function public.touch_updated_at()
@@ -726,21 +725,13 @@ create index if not exists campaign_conf_camp on public.campaign_confirmations(c
 
 -- Team only. Clients reach campaigns through the token-checked functions
 -- below and never touch these tables directly.
-drop policy if exists creators_team on public.creators;
-create policy creators_team on public.creators
-  for all to authenticated using (true) with check (true);
-drop policy if exists creator_profiles_team on public.creator_profiles;
-create policy creator_profiles_team on public.creator_profiles
-  for all to authenticated using (true) with check (true);
-drop policy if exists campaigns_team on public.campaigns;
-create policy campaigns_team on public.campaigns
-  for all to authenticated using (true) with check (true);
-drop policy if exists campaign_options_team on public.campaign_options;
-create policy campaign_options_team on public.campaign_options
-  for all to authenticated using (true) with check (true);
-drop policy if exists campaign_conf_team on public.campaign_confirmations;
-create policy campaign_conf_team on public.campaign_confirmations
-  for all to authenticated using (true) with check (true);
+/* No policy here. The fifteen gated tables take theirs in one place, at the
+   foot of this file, where `allowed()` exists to be called: select, insert,
+   update and delete separately, each asking for the group flag that owns the
+   table. A permissive one created here and repaired later is a permissive one
+   that exists, and this file used to create fifteen of them. */
+/* No policy here either: campaign_options and campaign_confirmations take
+   theirs at the foot of this file, per command, off the `campaigns` flag. */
 
 drop trigger if exists creators_touch on public.creators;
 create trigger creators_touch before update on public.creators
@@ -1027,9 +1018,11 @@ alter table public.link_qrs add constraint link_qrs_code_shape
 alter table public.link_qrs enable row level security;
 create index if not exists link_qrs_slug_idx on public.link_qrs(slug, created_at);
 
-drop policy if exists link_qrs_team on public.link_qrs;
-create policy link_qrs_team on public.link_qrs
-  for all to authenticated using (true) with check (true);
+/* No policy here. The fifteen gated tables take theirs in one place, at the
+   foot of this file, where `allowed()` exists to be called: select, insert,
+   update and delete separately, each asking for the group flag that owns the
+   table. A permissive one created here and repaired later is a permissive one
+   that exists, and this file used to create fifteen of them. */
 
 -- ===========================================================================
 -- CREATOR CAMPAIGNS, PHASES 2 AND 3
@@ -1116,12 +1109,11 @@ create table if not exists public.option_reviews (
 alter table public.option_reviews enable row level security;
 create index if not exists option_reviews_owner on public.option_reviews(option_id, created_at desc);
 
-drop policy if exists option_posts_team on public.option_posts;
-create policy option_posts_team on public.option_posts
-  for all to authenticated using (true) with check (true);
-drop policy if exists option_reviews_team on public.option_reviews;
-create policy option_reviews_team on public.option_reviews
-  for all to authenticated using (true) with check (true);
+/* No policy here. The fifteen gated tables take theirs in one place, at the
+   foot of this file, where `allowed()` exists to be called: select, insert,
+   update and delete separately, each asking for the group flag that owns the
+   table. A permissive one created here and repaired later is a permissive one
+   that exists, and this file used to create fifteen of them. */
 
 -- ===========================================================================
 -- ACCESS

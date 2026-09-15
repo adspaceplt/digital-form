@@ -75,6 +75,41 @@ try {
     asPg(`psql -h ${SOCK} -p ${PORT} -U postgres -d rls -v ON_ERROR_STOP=1 -q -f ${SOCK}/${name}`);
   };
 
+  /* ---- The schema file itself ------------------------------------------
+     A permissive policy created early and repaired late is a permissive
+     policy that exists, and this file used to create fifteen of them. The
+     check is on the text of supabase/schema.sql, so it fails whether or not
+     anything later would have replaced them. */
+  {
+    const GATED_NAMES = ['batches','posts','reviews','drive_assets','campaigns',
+      'campaign_options','campaign_confirmations','option_posts','option_reviews',
+      'creators','creator_profiles','client_contacts','client_touches','links','link_qrs'];
+    const loose = [];
+    const re = /create policy\s+"?([\w ]+?)"?\s+on\s+public\.(\w+)([\s\S]{0,260}?);/g;
+    let m;
+    while ((m = re.exec(whole))) {
+      if (GATED_NAMES.indexOf(m[2]) > -1 &&
+          /using\s*\(\s*true\s*\)|with check\s*\(\s*true\s*\)/.test(m[3])) {
+        loose.push(m[2] + '.' + m[1]);
+      }
+    }
+    // and the `execute format(... array[...] loop ...)` form
+    const loopRe = /array\[([^\]]+)\] loop([\s\S]{0,400}?)end loop/g;
+    while ((m = loopRe.exec(whole))) {
+      if (/using \(true\)/.test(m[2])) {
+        (m[1].match(/'(\w+)'/g) || []).forEach(q => {
+          const t = q.replace(/'/g, '');
+          if (GATED_NAMES.indexOf(t) > -1) loose.push(t + '.team_all');
+        });
+      }
+    }
+    check('the schema file never creates an unrestricted policy on a gated table',
+      loose.length === 0, loose.join(', ') || 'none');
+    check('and it still carries the full hardened definitions for a new database',
+      /_read/.test(whole) && /_write/.test(whole) && /_edit/.test(whole) &&
+      /allowed\(''remove''::text\)|allowed\(''remove''\)/.test(whole));
+  }
+
   // The two functions every policy below rests on, taken from the real file.
   const isTeam = cut('create or replace function public.is_team()', 'grant execute on function public.is_team()');
   const allowed = cut('create or replace function public.allowed(flag text)', 'grant execute on function public.allowed');
@@ -361,6 +396,42 @@ grant execute on function public.demo_token_read(text) to anon, authenticated;`)
   check('a signed-in client page still reads through its own function',
     asRole('authenticated', 'a.person@clienta.test',
       `select public.demo_token_read('goodtoken')->>'creators'`) === '1');
+
+  /* ---- The production migration: the revoke, and nothing else ----------
+     The live policies are already correct, so the only thing left to change
+     is the privilege anon holds directly. The file refuses to run if the
+     policies are not in the state the preflight verified, because taking
+     privileges away while they are wrong could leave a table nobody can
+     reach. */
+  const revoke = fs.readFileSync(
+    T + '/../supabase/migrations/2026-09-15-revoke-anon-table-privileges.sql', 'utf8');
+  sql(`grant all on all tables in schema public to anon`);
+  check('anon holds direct privileges again, as production did',
+    Number(sql(`select count(*) from information_schema.role_table_grants
+                where table_schema='public' and grantee='anon'
+                and table_name = any(array[${GATED.map(t => `'${t}'`).join(',')}])`)) > 0);
+
+  sql(`drop policy links_read on public.links`);
+  let stopped = false;
+  try { runFile('revoke.sql', revoke); }
+  catch (e) { stopped = /Expected 60 correct policies/.test(String(e.stderr || e.message)); }
+  check('the revoke refuses to run while the policies are not right', stopped);
+  check('and anon still holds what it held',
+    Number(sql(`select count(*) from information_schema.role_table_grants
+                where table_schema='public' and grantee='anon' and table_name='links'`)) > 0);
+  runFile('rls-policies.sql', policies);   // puts links_read back
+  sql(`grant all on all tables in schema public to anon`);
+
+  runFile('revoke.sql', revoke);
+  runFile('revoke.sql', revoke);           // idempotent
+  check('with the policies right it revokes, and runs twice unchanged',
+    sql(`select count(*) from information_schema.role_table_grants
+         where table_schema='public' and grantee='anon'
+         and table_name = any(array[${GATED.map(t => `'${t}'`).join(',')}])`) === '0');
+  check('and authenticated keeps its grants',
+    Number(sql(`select count(*) from information_schema.role_table_grants
+                where table_schema='public' and grantee='authenticated'
+                and table_name = any(array[${GATED.map(t => `'${t}'`).join(',')}])`)) > 0);
 
   /* ---- The preflight itself --------------------------------------------
      Its first version compared policy NAMES against a pattern of its own and
