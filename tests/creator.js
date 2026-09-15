@@ -14,6 +14,7 @@ const SEED = `
   if (D.campaigns.length) return;
   D.campaigns.push({ id:'cmA', client_id:'c1', title:'Laman Citra Launch',
     title_zh:'新项目推广', state:'production', slots:4, push_format:'visit',
+    access_token:'CMATOK',
     deliverable:'One video', brief:'One reel at the showroom.' + String.fromCharCode(10) + 'Golden hour if you can.' });
   D.campaigns.push({ id:'cmDraft', client_id:'c1', title:'Unannounced thing', state:'draft', slots:2 });
   D.campaign_options.push({ id:'oA', campaign_id:'cmA', creator_id:'k2', rate:380,
@@ -156,8 +157,13 @@ const say = s => console.log(s);
 
   await p.locator('[data-cap]').fill('New launch at Laman Citra ✨');
   await p.locator('[data-a="submit"]').click(); await p.waitForTimeout(800);
-  check('handing in moves the step to Reviewing', await p.evaluate(() =>
-    window.__DB.campaign_options.find(o => o.id === 'oA').state) === 'reviewing');
+  /* Submitting reaches the team, not the client. It used to go straight to
+     Reviewing, which on the client's page reads "Your approval": the chip
+     asked them to decide the moment the creator uploaded, over files they
+     cannot read. */
+  check('submitting moves the step to Submitted, which is ours', await p.evaluate(() =>
+    window.__DB.campaign_options.find(o => o.id === 'oA').state) === 'submitted',
+    await p.evaluate(() => window.__DB.campaign_options.find(o => o.id === 'oA').state));
   check('and keeps the caption they wrote', await p.evaluate(() =>
     window.__DB.campaign_options.find(o => o.id === 'oA').draft_caption) === 'New launch at Laman Citra ✨');
   const after = await cards().first().innerText();
@@ -166,6 +172,41 @@ const say = s => console.log(s);
     await p.locator('.filecard [data-a="rm"]').count() === 0);
   check('and the card says where it now is', after.includes('under review'),
     after.replace(/\n/g, ' | '));
+
+  /* ---- The client is not asked to approve what has not been released -------- */
+  await p.goto('http://127.0.0.1:8899/creators/?k=CMATOK', { waitUntil: 'networkidle' });
+  await p.waitForTimeout(800);
+  const beforeRelease = await p.locator('#bookingList').innerText().catch(() => '');
+  check('the client is told Pending draft, never Your approval',
+    beforeRelease.includes('Pending draft') && !beforeRelease.includes('Your approval'),
+    beforeRelease.replace(/\n/g, ' | ').slice(0, 200));
+  check('and has nothing to review yet',
+    await p.locator('.booking-cta').count() === 0);
+
+  // The team releases it. Only now is it theirs to decide on.
+  await p.evaluate(() => {
+    window.__DB.campaign_options.find(o => o.id === 'oA').state = 'reviewing';
+    window.__persist();
+  });
+  await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(800);
+  const released = await p.locator('#bookingList').innerText();
+  check('once released the client is asked to approve',
+    released.includes('Reviewing') && released.includes('Your approval'),
+    released.replace(/\n/g, ' | ').slice(0, 200));
+  check('and there is something to open', await p.locator('.booking-cta').count() === 1);
+  await p.locator('.booking-cta').first().click(); await p.waitForTimeout(400);
+  const sheet = await p.locator('#draftSheet').innerText();
+  check('the sheet shows the creator\'s own file, not a pasted link',
+    sheet.includes('cover.jpg'), sheet.replace(/\n/g, ' | ').slice(0, 200));
+  check('and the caption they wrote', sheet.includes('New launch at Laman Citra'));
+
+  // Back to the creator's page for the rest of the run.
+  await p.goto('http://127.0.0.1:8899/creator/', { waitUntil: 'networkidle' });
+  await p.waitForTimeout(700);
+  await p.evaluate(() => {
+    window.__DB.campaign_options.find(o => o.id === 'oA').state = 'reviewing';
+    window.__persist();
+  });
 
   // ---- The payment form is named on approval, not on submit ------------------
   check('no payment form while it is still being reviewed',
@@ -220,6 +261,38 @@ const say = s => console.log(s);
     seen.replace(/\n/g, ' | ').slice(0, 220));
   check('and the caption they wrote',
     (await theirs.locator('[data-f="draft_caption"]').inputValue()).includes('Laman Citra'));
+
+  // At Submitted the card offers the two moves that are the team's: release it,
+  // or send it back to the creator without the client ever seeing the round.
+  await p.evaluate(() => {
+    window.__DB.campaign_options.find(o => o.id === 'oA').state = 'submitted';
+    window.__persist();
+  });
+  await p.reload({ waitUntil: 'networkidle' });
+  await p.evaluate(() => window.__signIn('adspacestudios@gmail.com'));
+  await p.waitForTimeout(1200);
+  const card2 = p.locator('#creatorList .kcard').filter({ hasText: '恩比' }).first();
+  // No click: a card waiting on us is open already. That is the fix.
+  check('the team can release it to the client',
+    (await card2.locator('[data-a="advance"]').innerText()).includes('Release to client'),
+    await card2.locator('[data-a="advance"]').innerText());
+  check('and can send it back to the creator instead',
+    await card2.locator('[data-a="sendback"]').count() === 1);
+  /* The card that is waiting on us opens by itself. Folded it was a name, a
+     chip and a summary line, so the files, the caption and both actions sat
+     behind a fold nobody knew to open: a booking with no next action. */
+  check('the card waiting on us is open without being asked',
+    await card2.locator('[data-body]').isVisible());
+  check('and is marked as waiting even when folded',
+    (await card2.evaluate(el => el.className)).includes('is-waiting'));
+  const open2 = await card2.innerText();
+  check('the files the creator sent are on it',
+    open2.includes('raya') || open2.includes('cover.jpg'), open2.replace(/\n/g, ' | ').slice(0, 180));
+  check('and the caption they wrote',
+    (await card2.locator('[data-f="draft_caption"]').inputValue()).includes('Laman Citra'));
+  check('and the folded line says how much arrived',
+    (await card2.locator('.kcard-sum').innerText()).includes('file'),
+    await card2.locator('.kcard-sum').innerText());
 
   console.log(errs.length ? errs.join('\n') : 'no page errors');
   console.log(fails + ' FAIL');

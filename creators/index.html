@@ -17,19 +17,19 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260915g">
+<link rel="stylesheet" href="/css/portal.css?v=20260915i">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/js/config.js?v=20260915g"></script>
-<script src="/js/words.js?v=20260915g"></script>
-<script src="/js/copy.js?v=20260915g"></script>
-<script src="/js/api.js?v=20260915g"></script>
-<script src="/js/money.js?v=20260915g"></script>
+<script src="/js/config.js?v=20260915i"></script>
+<script src="/js/words.js?v=20260915i"></script>
+<script src="/js/copy.js?v=20260915i"></script>
+<script src="/js/api.js?v=20260915i"></script>
+<script src="/js/money.js?v=20260915i"></script>
 </head>
 <body>
 
 <!-- Header and footer come from the shared chrome, so a new page gets them
      by including one script rather than copying this markup. -->
-<script src="/js/chrome.js?v=20260915g" data-kicker="Creator Selection" data-for data-actions="lang"></script>
+<script src="/js/chrome.js?v=20260915i" data-kicker="Creator Selection" data-for data-actions="lang"></script>
 
 <main class="shell">
 
@@ -145,6 +145,11 @@
       </button>
     </div>
     <p class="hint" id="draftBlurb"></p>
+    <div class="filegrid" id="draftFiles" hidden></div>
+    <div id="draftCaptionWrap" hidden>
+      <div class="field-label" id="draftCaptionLabel"></div>
+      <p class="draft-caption" id="draftCaption"></p>
+    </div>
     <a class="btn btn-icon" id="draftOpen" target="_blank" rel="noopener"></a>
     <label class="field-label" for="draftNote" style="margin-top:16px" id="draftNoteLabel"></label>
     <textarea class="input textarea" id="draftNote" rows="4"></textarea>
@@ -159,6 +164,6 @@
   </div>
 </div>
 
-<script src="/js/creators.js?v=20260915g"></script>
+<script src="/js/creators.js?v=20260915i"></script>
 </body>
 </html>

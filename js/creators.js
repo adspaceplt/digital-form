@@ -134,6 +134,7 @@
       goLive: 'Going live',
       viewPost: 'View post',
       reviewDraft: 'Review draft',
+      captionLabel: 'Caption',
       draftHeading: 'Review draft',
       draftBlurb: 'Open the draft, then approve it or request changes.',
       openDraft: 'Open the draft ↗',
@@ -222,6 +223,7 @@
       goLive: '发布日期',
       viewPost: '查看帖子',
       reviewDraft: '查看初稿',
+      captionLabel: '文案',
       draftHeading: '查看初稿',
       draftBlurb: '请打开初稿，然后通过或提出修改。',
       openDraft: '打开初稿 ↗',
@@ -503,10 +505,10 @@
       factsHtml +
       (o.state === 'withdrawn' ? '<div class="booking-meta">' + esc(t().unavailable) + '</div>' : '') +
       (resultsOf(posts) || '') +
-      (mine && o.draft_url ? '<button class="btn btn-sm btn-primary booking-cta" type="button">' +
+      (mine && hasDraft(o) ? '<button class="btn btn-sm btn-primary booking-cta" type="button">' +
         esc(t().reviewDraft) + '</button>' : '');
 
-    if (mine && o.draft_url) {
+    if (mine && hasDraft(o)) {
       row.querySelector('.booking-cta').addEventListener('click', function () { openDraft(o); });
     }
     return row;
@@ -562,13 +564,34 @@
   // ---- Draft review -------------------------------------------------------
   var reviewing = null;
 
+  /* A draft the team released is the creator's own files, a pasted link, or
+     both. get_campaign sends neither until the release, so a card with
+     nothing to open is a card the client is not being asked to decide on. */
+  function hasDraft(o) { return !!(o.draft_url || (o.files || []).length); }
+
+  function fileCard(f) {
+    var ext = String(f.name || '').split('.').pop().toUpperCase() || 'FILE';
+    return '<a class="filecard" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
+      (f.kind === 'image'
+        ? '<img src="' + esc(f.url) + '" alt="" loading="lazy">'
+        : '<span class="filecard-kind">' + esc(ext) + '</span>') +
+      '<span class="filecard-name">' + esc(f.name) + '</span></a>';
+  }
+
   function openDraft(o) {
     reviewing = o;
     $('draftHeading').textContent = t().draftHeading + ' · ' + o.name;
     $('draftBlurb').textContent = t().draftBlurb +
       (o.revision_round >= 2 ? '  ' + t().lastRound : '');
+    var files = o.files || [];
+    $('draftFiles').innerHTML = files.map(fileCard).join('');
+    $('draftFiles').hidden = !files.length;
+    $('draftCaption').textContent = o.caption || '';
+    $('draftCaptionLabel').textContent = t().captionLabel;
+    $('draftCaptionWrap').hidden = !o.caption;
     $('draftOpen').href = absUrl(o.draft_url);
     $('draftOpen').textContent = t().openDraft;
+    $('draftOpen').hidden = !o.draft_url;
     $('draftNoteLabel').textContent = t().noteLabel;
     $('draftByLabel').textContent = t().byLabel;
     $('draftApprove').textContent = t().approve;

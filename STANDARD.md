@@ -588,6 +588,10 @@ Update this section only with verified, durable facts. Keep entries short and re
 - **2026-09-15** — Audit: `node tests/uxaudit.js tests` → `uxaudit: ok`. Screenshots: `SHOTS=1 node tests/uxaudit.js tests` into `tests/walk/`.
 - **2026-09-15** — **Differs from §12 of this file.** The viewport matrix is 1280 and 390 with a coarse pointer, and the console again in dark at both. 390 is narrower than the 375 this file asks for and is the real floor the portal supports; the desktop console is not used below 1024, so 768 and 1024 are not walked. Widening the matrix is a genuine open item, recorded below.
 
+### Open security findings
+
+- **2026-09-15 — HIGH, not yet fixed.** Row level security on the CRM and campaign tables still reads `to authenticated using (true) with check (true)`: `clients`, `batches`, `posts`, `reviews`, `drive_assets`, `client_contacts`, `client_touches`, `links`, `link_qrs`, `creators`, `creator_profiles`, `campaigns`, `campaign_options`, `campaign_confirmations`, `option_posts`, `option_reviews`. Clients hold real `authenticated` logins now (`/client/`, `portal-login`), and the anon key is public by design, so a signed-in client can reach PostgREST directly and read every other client's record, contacts and content, every creator's fee, and every campaign — and write to several of them. The `is_team()` sweep at the foot of `supabase/schema.sql` tightened `team_members`, `team_roles`, `services`, `activity_log`, `activity_viewers`, the `content` bucket and `campaign_deliverables`, and stopped there. The fix is to reissue those policies as `using (public.is_team()) with check (public.is_team())`; every client-facing path already goes through a security definer function and so is unaffected. It is held back from the release-step PR deliberately: an `is_team()` that answers false would lock the whole team out of Clients, Content Review and Campaigns at once, so it needs its own change and its own live check.
+
 ### Accepted known issues
 
 - **2026-09-15** — The audit walk does not cover 320, 768 or 1024 (see above). Risk: a layout fault between 640 and 1280 would not be caught. Not yet scheduled.

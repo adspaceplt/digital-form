@@ -87,10 +87,13 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
     const adv = body.locator('[data-a="advance"]');
     if (await adv.count() === 0) break;
     const label = (await adv.innerText()).trim();
-    // Each step is gated on what it needs; prove the gate, then satisfy it.
-    if (label === 'Reviewing' && i === 2) {
+    /* Each step is gated on what it needs; prove the gate, then satisfy it.
+       Keyed on the button's own word rather than on the position in the walk:
+       a creator's submission now lands on Submitted, which is the team's step,
+       and Reviewing is the one after it, where the client is asked. */
+    if (label === 'Mark submitted') {
       await adv.click(); await p.waitForTimeout(300);
-      say('reviewing refused without a draft: ' + await body.locator('[data-msg]').innerText());
+      say('submitted refused without a draft: ' + await body.locator('[data-msg]').innerText());
       await body.locator('[data-f="draft_url"]').fill('drive.google.com/file/d/abc');
     }
     if (label === 'Scheduled') {

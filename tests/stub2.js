@@ -204,8 +204,8 @@
        campaign's commercial state, or what the client is paying. */
     var CR_DELIVER = ['pending_draft', 'changes'];
     var CR_SHOW = ['confirmed', 'pending_visit', 'pending_delivery', 'pending_draft',
-                   'reviewing', 'changes', 'scheduled', 'posted', 'completed',
-                   'withdrawn', 'replaced'];
+                   'submitted', 'reviewing', 'changes', 'scheduled', 'posted',
+                   'completed', 'withdrawn', 'replaced'];
     function creatorBy(code) {
       return DB.creators.filter(function (c) {
         return c.access_code && c.access_code === String(code || '').toUpperCase();
@@ -287,7 +287,8 @@
       var n = DB.campaign_deliverables.filter(function (d) {
         return d.option_id === oS.id && !d.removed_at; }).length;
       if (!n) return Promise.resolve({ data: { error: 'empty' }, error: null });
-      oS.state = 'reviewing';
+      oS.state = 'submitted';        // ours to review, not the client's to approve
+      oS.changes_by = null;
       oS.draft_caption = args.p_caption;
       oS.submitted_at = new Date().toISOString();
       persist();
@@ -304,13 +305,27 @@
         return o.campaign_id === c.id && o.state !== 'replaced';
       }).map(function (o) {
         var cr = DB.creators.filter(function (x) { return x.id === o.creator_id; })[0] || {};
+        /* The same withholding the SQL does: a draft sitting with the team is
+           reported as Pending draft, and its files and caption are not sent. */
+        var shown = o.state === 'submitted' ? 'pending_draft'
+          : (o.state === 'changes' && (o.changes_by || 'client') === 'team') ? 'pending_draft'
+          : o.state;
+        var released = ['reviewing', 'changes', 'scheduled', 'posted', 'completed']
+          .indexOf(shown) > -1;
+        var mine = DB.campaign_deliverables.filter(function (d) {
+          return d.option_id === o.id && !d.removed_at;
+        });
+        var top = mine.reduce(function (m, d) { return Math.max(m, d.round || 1); }, 0);
         return {
           id: o.id, name: cr.name, followers: cr.followers, rate: o.rate,
-          platforms: o.platforms, state: o.state, is_replacement: o.is_replacement,
+          platforms: o.platforms, state: shown, is_replacement: o.is_replacement,
           visit_date: o.visit_date, visit_time: o.visit_time,
           visit_location: o.visit_location, visit_pic: o.visit_pic,
           visit_pic_phone: o.visit_pic_phone, tracking_no: o.tracking_no,
-          draft_url: o.draft_url, revision_round: o.revision_round,
+          draft_url: released ? o.draft_url : null,
+          revision_round: o.revision_round,
+          files: released ? mine.filter(function (d) { return (d.round || 1) === top; }) : [],
+          caption: released ? o.draft_caption : null,
           planned_publish: o.planned_publish,
           profiles: DB.creator_profiles.filter(function (p) { return p.creator_id === cr.id; })
                      .map(function (p) { return { platform: p.platform, url: p.url }; }),
@@ -318,8 +333,8 @@
         };
       });
       // The same gate the SQL carries: no invoice until a creator is confirmed.
-      var LIVE = ['confirmed', 'pending_visit', 'pending_draft', 'reviewing',
-                  'changes', 'scheduled', 'posted', 'completed'];
+      var LIVE = ['confirmed', 'pending_visit', 'pending_draft', 'submitted',
+                  'reviewing', 'changes', 'scheduled', 'posted', 'completed'];
       var billable = DB.campaign_options.some(function (o) {
         return o.campaign_id === c.id && LIVE.indexOf(o.state) > -1;
       });
@@ -444,7 +459,10 @@
       DB.option_reviews.push({ option_id: oo.id, round: Math.max(n, 1),
         decision: args.p_decision, note: args.p_note, reviewer: args.p_reviewer });
       if (args.p_decision === 'approved') oo.state = 'scheduled';
-      else { oo.state = 'changes'; oo.revision_round = Math.max(n, 1) + 1; }
+      else {
+        oo.state = 'changes'; oo.revision_round = Math.max(n, 1) + 1;
+        oo.changes_by = 'client';       // theirs, so their page keeps the chip
+      }
       persist();
       return Promise.resolve({ data: { ok: true, decision: args.p_decision }, error: null });
     }

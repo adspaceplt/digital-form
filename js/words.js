@@ -43,7 +43,8 @@
       option: 'Offered', shortlisted: 'Shortlisted', backup: 'Backup',
       confirmed: 'Confirmed', pending_visit: 'Pending visit',
       pending_delivery: 'Pending delivery', pending_draft: 'Pending draft',
-      reviewing: 'Reviewing', changes: 'Changes requested', scheduled: 'Scheduled',
+      submitted: 'Submitted', reviewing: 'Reviewing',
+      changes: 'Changes requested', scheduled: 'Scheduled',
       posted: 'Posted', completed: 'Completed', withdrawn: 'Withdrawn'
     },
     svState: { enquired: 'Enquired', quoted: 'To quote', confirmed: 'Confirmed' },
@@ -85,7 +86,8 @@
       option: '候选', shortlisted: '已入围', backup: '备选',
       confirmed: '已确认', pending_visit: '待拍摄',
       pending_delivery: '待寄送', pending_draft: '待初稿',
-      reviewing: '审阅中', changes: '需修改', scheduled: '已排期',
+      submitted: '已提交', reviewing: '审阅中',
+      changes: '需修改', scheduled: '已排期',
       posted: '已发布', completed: '已完成', withdrawn: '已退出'
     },
     svState: { enquired: '已询价', quoted: '待报价', confirmed: '已确认' },
@@ -112,7 +114,7 @@
   W.TONE = {
     option: '', shortlisted: 'is-warn', backup: '',
     confirmed: 'is-ok', pending_visit: 'is-warn', pending_delivery: 'is-warn',
-    pending_draft: 'is-warn', reviewing: 'is-warn', changes: 'is-warn',
+    pending_draft: 'is-warn', submitted: 'is-warn', reviewing: 'is-warn', changes: 'is-warn',
     scheduled: 'is-ok', posted: 'is-ok', completed: 'is-ok', withdrawn: 'is-danger',
     enquired: '', quoted: 'is-warn',
     lead: '', contacted: '', proposal: 'is-warn', active: 'is-ok', paused: 'is-warn', past: '',

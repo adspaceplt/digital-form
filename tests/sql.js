@@ -282,7 +282,10 @@ create table public.creators (
 create table public.campaigns (
   id uuid primary key default gen_random_uuid(), client_id uuid references public.clients(id),
   title text not null, title_zh text, state text not null default 'open',
-  brief text, brief_zh text, due_date date, push_format text);
+  brief text, brief_zh text, due_date date, push_format text,
+  purpose text, purpose_zh text, slots int default 4, backups_open boolean default false,
+  deadline date, deliverable text, invoice_no text, invoice_url text,
+  access_token text, passcode text);
 create table public.campaign_options (
   id uuid primary key default gen_random_uuid(),
   campaign_id uuid references public.campaigns(id), creator_id uuid references public.creators(id),
@@ -293,6 +296,11 @@ create table public.campaign_options (
   planned_publish date, drop_reason text);
 create table public.creator_profiles (id uuid primary key default gen_random_uuid(),
   creator_id uuid references public.creators(id), platform text, url text);
+drop table if exists public.option_reviews cascade;
+create table public.option_reviews (
+  id uuid primary key default gen_random_uuid(),
+  option_id uuid references public.campaign_options(id), round int, decision text,
+  note text, reviewer text, at timestamptz not null default now());
 create table public.option_posts (id uuid primary key default gen_random_uuid(),
   option_id uuid references public.campaign_options(id), platform text, post_url text,
   published_at date, window_days int, impressions bigint, engagements bigint, views bigint,
@@ -331,12 +339,12 @@ create or replace function public.is_team() returns boolean language sql stable 
   check('several files can be added to one booking',
     sql(`select count(*) from public.campaign_deliverables where removed_at is null`) === '2');
 
-  check('submitting moves the step to reviewing',
+  check('submitting reaches the team, not the client',
     /"ok": true/.test(sql(`select public.creator_submit('${code}', '${opt}', 'Raya at home')`)));
   check('and the caption they wrote is kept',
     sql(`select draft_caption from public.campaign_options`) === 'Raya at home');
-  check('and the team sees the step change',
-    sql(`select state from public.campaign_options`) === 'reviewing');
+  check('and the step is Submitted, which is ours',
+    sql(`select state from public.campaign_options`) === 'submitted');
 
   // Closed once it is in: a × on a submitted file would empty a review.
   check('a file cannot be taken back once it is submitted',
@@ -370,6 +378,94 @@ create or replace function public.is_team() returns boolean language sql stable 
   check('and the grant survives the replace',
     sql(`select has_function_privilege('anon',
       'public.creator_add_file(text, uuid, text, text, text, bigint)', 'execute')`) === 't');
+
+  /* ---- The team releases the draft, not the creator --------------------
+   * creator_submit used to move the step straight to `reviewing`, which on
+   * the client's page reads "Your approval": the chip asked them to decide
+   * the moment a creator uploaded, while the files are team-only and there
+   * was nothing there for them to open. What the client may not see is
+   * withheld by get_campaign, so it is get_campaign that is asserted. */
+  const release = fs.readFileSync(
+    T + '/../supabase/migrations/2026-09-15-team-releases-the-draft.sql', 'utf8');
+  runFile('release.sql', release);
+  runFile('release.sql', release);
+  console.log('ok   the release migration applies on its own, and again');
+
+  sql(`update public.campaigns set access_token = 'TOK1'`);
+  sql(`update public.campaign_options set state = 'pending_draft', revision_round = 0,
+       changes_by = null, draft_url = null`);
+  sql(`select public.creator_submit('${code}', '${opt}', 'Raya at home')`);
+  check('a creator submitting lands on Submitted',
+    sql(`select state from public.campaign_options`) === 'submitted');
+
+  const shown = () => sql(`select public.get_campaign('TOK1')->'options'->0->>'state'`);
+  const files = () => sql(`select jsonb_array_length(public.get_campaign('TOK1')->'options'->0->'files')`);
+  const cap = () => sql(`select public.get_campaign('TOK1')->'options'->0->>'caption'`);
+
+  check('the client is told Pending draft, not that it is theirs to approve',
+    shown() === 'pending_draft', shown());
+  check('and is sent none of the files', files() === '0', files());
+  check('and none of the caption', cap() === '', JSON.stringify(cap()));
+
+  // The team sends it back. The client must not learn the round happened.
+  sql(`update public.campaign_options
+          set state = 'changes', changes_by = 'team', revision_round = 2,
+              drop_reason = 'Reshoot the opening'`);
+  check('a round the team sent back still reads Pending draft to the client',
+    shown() === 'pending_draft', shown());
+  check('and still carries no files', files() === '0');
+
+  // The creator uploads again into round 2 and submits; the team releases.
+  sql(`select public.creator_add_file('${code}', '${opt}',
+       'https://mycdn.adspace.me/content/creator/r2.mp4', 'round-two.mp4', 'video', 2048)`);
+  sql(`select public.creator_submit('${code}', '${opt}', 'Second cut')`);
+  check('re-submitting clears whose round it was',
+    sql(`select coalesce(changes_by, 'none') from public.campaign_options`) === 'none');
+  check('and the client still sees Pending draft',
+    shown() === 'pending_draft', shown());
+
+  sql(`update public.campaign_options set state = 'reviewing'`);   // the team releases
+  check('once released the client is asked to approve', shown() === 'reviewing', shown());
+  check('and is sent the newest round only', files() === '1', files());
+  check('and it is the round two file',
+    sql(`select public.get_campaign('TOK1')->'options'->0->'files'->0->>'name'`) === 'round-two.mp4');
+  check('and the caption that goes out with it', cap() === 'Second cut');
+
+  // The client's own rejection is theirs, and stays on their page.
+  check('the client can rule on a released draft',
+    /"ok": true/.test(sql(`select public.review_draft('TOK1', '${opt}', 'changes', 'Brighter', 'Ms Lim')`)));
+  check('and it is stamped as theirs',
+    sql(`select changes_by from public.campaign_options`) === 'client');
+  check('so their page keeps the Changes requested chip', shown() === 'changes', shown());
+  check('and they can still see what they turned down', files() === '1');
+
+  // A draft still with the team cannot be ruled on at all.
+  sql(`update public.campaign_options set state = 'submitted', changes_by = null`);
+  check('a draft the team has not released cannot be approved by the client',
+    /"error": "not-reviewing"/.test(
+      sql(`select public.review_draft('TOK1', '${opt}', 'approved', null, 'Ms Lim')`)));
+
+  /* The team sends it back: the creator must land somewhere they can work,
+     with what they already sent still there and the note readable. Losing a
+     creator's files to a round of feedback is how a reshoot gets billed
+     twice. */
+  const before = sql(`select count(*) from public.campaign_deliverables where removed_at is null`);
+  sql(`update public.campaign_options
+          set state = 'changes', changes_by = 'team', revision_round = 3,
+              drop_reason = 'Reshoot the opening two seconds'`);
+  check('a creator sent back can upload again',
+    sql(`select public.creator_can_deliver(state) from public.campaign_options`) === 't');
+  check('and keeps every file they had sent',
+    sql(`select count(*) from public.campaign_deliverables where removed_at is null`) === before,
+    before);
+  check('and can take one of them back off',
+    /"ok": true/.test(sql(`select public.creator_remove_file('${code}',
+      (select id from public.campaign_deliverables where removed_at is null limit 1))`)));
+  check('and reads the note the team wrote',
+    sql(`select public.get_creator('${code}')->'bookings'->0->>'change_note'`)
+      === 'Reshoot the opening two seconds');
+  check('while the client is still told Pending draft', shown() === 'pending_draft', shown());
+  check('and is sent none of it', files() === '0');
 } catch (e) {
   console.log('FAIL ' + (e.stderr ? String(e.stderr).slice(0, 600) : e.message));
   fails++;
