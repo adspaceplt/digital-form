@@ -10,7 +10,7 @@ const SEED = `
   var D = window.__DB;
   if (D.campaigns.length) return;   // already seeded and restored
   D.campaigns.push({ id:'cmp1', client_id:'c1', title:'Promote Newly Launch Project',
-    title_zh:'新项目推广', slots:10, deadline:'2026-09-22', state:'open', deliverable:'video',
+    title_zh:'新项目推广', slots:10, deadline:'2026-09-22', state:'open', deliverable:'video', backups_open:true,
     brief:'One video per creator, posted on the placements shown.',
     brief_zh:'每位博主一条视频，按所示平台发布。', access_token:'TESTTOKEN' });
   var names = ['香香的爆米花 🍿','恩比','小熊爱睡觉'];
@@ -27,7 +27,7 @@ const SEED = `
     platforms:'RedNote', state:'option', is_replacement:false, position:3 });
 
   // a second campaign with only two slots, to exercise the cap
-  D.campaigns.push({ id:'cmp2', client_id:'c1', title:'Small push', slots:2,
+  D.campaigns.push({ id:'cmp2', client_id:'c1', title:'Small push', slots:2, backups_open:true,
     state:'open', deliverable:'video', access_token:'CAPTOKEN' });
   D.creators.forEach(function(cr,i){
     D.campaign_options.push({ id:'q'+(i+1), campaign_id:'cmp2', creator_id:cr.id,
@@ -70,6 +70,17 @@ const SEED = `
   say('server states: ' + await p.evaluate(() => window.__DB.campaign_options
         .filter(o => o.campaign_id === 'cmp1').map(o => o.state).join(',')));
 
+  /* Backups are the team's to offer. With the switch off the control is not
+     drawn at all, so the client is never asked for something nobody wanted. */
+  await p.evaluate(() => { window.__DB.campaigns.find(c => c.id === 'cmp1').backups_open = false;
+                           window.__persist && window.__persist(); });
+  await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(900);
+  say('backups closed -> backup buttons: ' + await p.locator('.crow-backup').count());
+  await p.evaluate(() => { window.__DB.campaigns.find(c => c.id === 'cmp1').backups_open = true;
+                           window.__persist && window.__persist(); });
+  await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(900);
+  say('backups open -> backup buttons: ' + await p.locator('.crow-backup').count());
+
   // backup
   await p.locator('.crow-backup').nth(3).click();
   await p.waitForTimeout(250);
@@ -107,6 +118,34 @@ const SEED = `
   await p.waitForTimeout(300);
   say('after 2 backups: ' + await p.locator('#progBackup').innerText() + ' | confirm enabled=' + !(await p.locator('#confirmBtn').isDisabled()));
   await p.waitForTimeout(800);
+
+  /* The offer is over when the slots are. Confirming the two picks fills the
+     campaign, and the creators nobody chose stop being a list of disabled
+     ticks underneath it: the team saw that on every confirmed campaign. */
+  await p.evaluate(() => {
+    const D = window.__DB;
+    D.campaigns.find(x => x.id === 'cmp2').backups_open = false;
+    D.campaign_options.filter(o => o.campaign_id === 'cmp2' && o.state === 'shortlisted')
+      .forEach(o => { o.state = 'confirmed'; });
+    window.__persist && window.__persist();
+  });
+  await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(900);
+  say('CONFIRMED, backups closed -> rows left to choose: ' + await p.locator('.crow').count() +
+      ' | progress card hidden: ' + await p.locator('#progressCard').isHidden());
+  // Opening backups is the one reason the list stays past that.
+  await p.evaluate(() => { window.__DB.campaigns.find(x => x.id === 'cmp2').backups_open = true;
+                           window.__persist && window.__persist(); });
+  await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(900);
+  say('CONFIRMED, backups open -> rows left: ' + await p.locator('.crow').count() +
+      ' | head: ' + await p.locator('#chooseHead').innerText());
+  // Put it back for the revisit check below.
+  await p.evaluate(() => {
+    const D = window.__DB;
+    D.campaigns.find(x => x.id === 'cmp2').backups_open = true;
+    D.campaign_options.filter(o => o.campaign_id === 'cmp2' && o.state === 'confirmed')
+      .forEach(o => { o.state = 'shortlisted'; });
+    window.__persist && window.__persist();
+  });
 
   // returning to the link should show what was left
   await p.reload({ waitUntil: 'networkidle' });

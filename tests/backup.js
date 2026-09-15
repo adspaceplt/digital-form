@@ -6,7 +6,7 @@ const say = s => console.log(s);
 // 3 slots, 6 options. Client picks 3 and marks 2 backups, gets locked, then one withdraws.
 const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   D.campaigns.push({ id:'cmp1', client_id:'c1', title:'Backups', slots:3, state:'open',
-    deliverable:'video', push_format:'site_visit', access_token:'BK' });
+    deliverable:'video', push_format:'site_visit', backups_open:true, access_token:'BK' });
   ['A','B','C','D','E','F'].forEach(function(n,i){
     D.creators.push({ id:'b'+i, name:'Creator '+n, client_rate:300+i*10 });
     D.campaign_options.push({ id:'ob'+i, campaign_id:'cmp1', creator_id:'b'+i, rate:300+i*10,

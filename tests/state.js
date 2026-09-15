@@ -86,6 +86,9 @@ const SEED = `(function(){ var D = window.__DB; if (D.creators.length > 3) retur
 
   say('=== a creator being added inside the campaign survives ===');
   await p.locator('#showAddOption').click(); await p.waitForTimeout(500);
+  // The keyed-in form is folded: the panel opens on the roster, which is what
+  // it is usually for.
+  await p.locator('#ncToggle').click(); await p.waitForTimeout(250);
   await p.fill('#ncName', '新博主');
   await p.fill('#ncRate', '480');
   await p.fill('#ncProfRows .prof-url', 'https://instagram.com/brand.new');
@@ -93,6 +96,8 @@ const SEED = `(function(){ var D = window.__DB; if (D.creators.length > 3) retur
   await p.locator('#ncPlatforms .pbox input[value="TikTok"]').check();
   await p.waitForTimeout(250);
   await reload();
+  // A restored draft opens its own fold, or the work is there and invisible.
+  say('keyed-in form reopened for the draft: ' + await p.locator('#ncBox').isVisible());
   say('add box open=' + await p.locator('#addOptionBox').isVisible() + ' | name=' + await p.locator('#ncName').inputValue() +
       ' | rate=' + await p.locator('#ncRate').inputValue() + ' | link=' + await p.locator('#ncProfRows .prof-url').first().inputValue() +
       ' | ticked=' + (await p.locator('#ncPlatforms .pbox input:checked').evaluateAll(l => l.map(i => i.value))).join(','));

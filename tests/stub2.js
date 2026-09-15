@@ -219,6 +219,7 @@
       });
       return Promise.resolve({ data: {
         campaign: { title: c.title, title_zh: c.title_zh, purpose: c.purpose, slots: c.slots, deadline: c.deadline,
+                    backups_open: Boolean(c.backups_open),
                     state: c.state, deliverable: c.deliverable, brief: c.brief,
                     push_format: c.push_format,
                     invoice_no: billable ? c.invoice_no : null,
