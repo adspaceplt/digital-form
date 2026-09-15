@@ -88,6 +88,28 @@ const say = s => console.log(s);
   say('picker rows: ' + await p.locator('#optionPick .pickrow').count());
   say('rate prefilled from usual rate: ' + await p.locator('#optionPick .pickrate').first().inputValue());
   // her links are RedNote + Instagram, so both start ticked; this campaign is RedNote only
+  /* Ticking a platform a creator has no link for used to mean leaving the
+     campaign, adding the link on the creators list, and coming back. The field
+     opens on the row, and what is typed is saved to the creator. */
+  const need = p.locator('#optionPick .pickrow').filter({ hasText: '恩比' }).first();
+  say('no link field before the tick: ' + await need.locator('.pickneed').isHidden());
+  await need.locator('.pbox input[value="Instagram"]').check();
+  await p.waitForTimeout(250);
+  say('asks for the link it now needs: ' + (await need.locator('.needrow span').allInnerTexts()).join(','));
+  await need.locator('.pbox input[value="Instagram"]').uncheck();
+  await p.waitForTimeout(200);
+  say('and puts it away when the tick goes: ' + await need.locator('.pickneed').isHidden());
+  await need.locator('.pbox input[value="Instagram"]').check();
+  await p.waitForTimeout(250);
+  await need.locator('.needrow input[data-p="Instagram"]').fill('https://instagram.com/enbi.my');
+  await need.locator('.pickrate').fill('380');
+  await need.locator('button').click();
+  await p.waitForTimeout(500);
+  const kept = await p.evaluate(() => (window.__DB.creator_profiles || []).filter(
+    r => r.platform === 'instagram' && r.handle === 'enbi.my'));
+  say('link kept on the creator: ' + JSON.stringify(kept.map(r => r.url)));
+  if (kept.length !== 1) { console.log('FAIL the link typed on the picker row is not saved to the creator'); }
+
   const first = p.locator('#optionPick .pickrow').first();
   say('platforms pre-ticked: ' + (await first.locator('.pbox input:checked').evaluateAll(l => l.map(i => i.value))).join(', '));
   await first.locator('.pbox input[value="Instagram"]').uncheck();

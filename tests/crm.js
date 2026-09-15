@@ -400,6 +400,20 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
     (await p.locator('#crmServices').innerText()).includes('2,160') &&
     (await p.locator('#crmServices').innerText()).includes('6 months from 12 Oct 2026'));
   check('engagements show on an active client', await p.locator('#crmEngage').isVisible());
+  await p.evaluate(() => {
+    window.__DB.campaigns.push({ id: 'cmp1', client_id: 'c1', title: 'Promote Newly Launch Project',
+      state: 'open', slots: 10, created_at: '2026-09-01T00:00:00Z' });
+    window.__persist();
+  });
+  await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(900);
+  /* The campaign's state on the record is the campaigns page's own word, from
+     js/words.js, drawn as the chip every other state is. A private map here
+     is how "With the client" came to mean "Open for selection" on one screen
+     and nothing on the other. */
+  check('the campaign state reads the shared vocabulary as a chip', await p.evaluate(() => {
+    const row = document.querySelector('#crmEngage .work-row-name .tone');
+    return !!row && row.textContent === window.ADspaceWords.en.campState.open;
+  }), await p.locator('#crmEngage').innerText());
   await p.locator('#crmCover').click(); await p.waitForTimeout(900);
   check('the letter takes the quoted line only, with SST', await p.evaluate(() => {
     const d = window.__DB.client_documents.find(x => x.client_id === 'c1');

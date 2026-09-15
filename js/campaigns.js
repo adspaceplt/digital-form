@@ -12,6 +12,12 @@
   var db  = API && API.client;
   if (!db) return;
 
+  var W = window.ADspaceWords;   // read by STATE_WORD below, so it is set first
+  // The mark that says a link leaves the page.
+  var EXT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" '
+    + 'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+    + '<path d="M14 4h6v6"/><path d="M20 4 11 13"/>'
+    + '<path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
   var bridge = window.ADspaceAdmin || {};
   var ICON    = bridge.ICON || {};
   var log     = bridge.log || function () {};
@@ -149,12 +155,12 @@
     b.addEventListener('click', function () { showTab(b.getAttribute('data-tab')); });
   });
 
-  // ---- Roster -------------------------------------------------------------
+  // ---- Creators list ------------------------------------------------------
   function loadRoster(then) {
     db.from('creators').select('*, creator_profiles(*)').order('name').then(function (r) {
       if (r.error) {
         state.creators = [];
-        $('rosterList').innerHTML = '<div class="empty">Could not load the roster. ' +
+        $('rosterList').innerHTML = '<div class="empty">Could not load the creators list. ' +
           esc(r.error.message) + '</div>';
         return;
       }
@@ -164,11 +170,11 @@
     });
   }
 
-  /* A roster is a few hundred people, so it needs the two things a list that
-     long always needs: a way to cut it down, and somewhere to be inside it.
-     The cut is the platform, because that is the first thing a campaign
-     fixes. The bands are the fee, because that is the second, because every
-     creator is in exactly one, and because a flat four hundred rows with one
+  /* The creators list is a few hundred people, so it needs the two things a
+     list that long always needs: a way to cut it down, and somewhere to be
+     inside it. The cut is the platform, because that is the first thing a
+     campaign fixes. The bands are the fee, because that is the second, because
+     every creator is in exactly one, and because a flat four hundred rows with one
      heading at the top tells you nothing about where you are. */
   var BANDS = [
     ['Up to RM 300',    function (r) { return r > 0 && r <= 300; }],
@@ -261,11 +267,17 @@
          says nothing to anybody. Without one the chip is the platform alone,
          and that absence is the information the half opacity dot used to carry
          in a title attribute, which a phone has no way to reach. */
+      /* A profile opens somebody else's site, so it wears the portal's outbound
+         link and carries the mark that says it leaves the page, exactly as a
+         contact's phone and email do and as the client facing page already
+         does. It used to be a grey 999px pill, which is the costume of a
+         status chip: nothing on it said it was a link, let alone an external
+         one. */
       var chips = (c.creator_profiles || []).map(function (p) {
         var h = String(p.handle || '');
-        return '<a class="pchip" href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
+        return '<a class="plink" href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
           esc(PLATFORM_LABEL[p.platform] || p.platform) +
-          (h && h.length <= 18 ? ' <b>' + esc(h) + '</b>' : '') + '</a>';
+          (h && h.length <= 18 ? ' <b>' + esc(h) + '</b>' : '') + EXT + '</a>';
       }).join('');
       row.innerHTML =
         '<span class="svc-name cr-who">' + monogram(c.name) + '<b>' + esc(c.name) +
@@ -298,7 +310,7 @@
     }
   }
 
-  /* The roster's ⋯ hangs off a table row, so it is placed on the viewport
+  /* A creators list ⋯ hangs off a table row, so it is placed on the viewport
      rather than inside the row that would clip it. */
   function rowMenu(row) {
     var btn = row.querySelector('[data-a="menu"]'), menu = row.querySelector('[data-menu]');
@@ -314,7 +326,7 @@
   }
 
   // ---- Profile link rows --------------------------------------------------
-  // Two forms build these: the roster's, and the one inside a campaign. Each
+  // Two forms build these: the creators list's, and the one inside a campaign. Each
   // names its own rows, name field and warning line.
   var ROSTER_CTX = { rows: 'profRows',   name: 'crName', warn: 'dupeWarn' };
   var NC_CTX     = { rows: 'ncProfRows', name: 'ncName', warn: 'ncDupe' };
@@ -371,7 +383,7 @@
       });
     });
     if (hits.length) {
-      msg(ctx.warn, 'Already in the roster as ' + hits.join(', ') + '. Saving will be refused.', 'err');
+      msg(ctx.warn, 'Already in the creators list as ' + hits.join(', ') + '. Saving will be refused.', 'err');
       return;
     }
     // Nothing identical. Names close enough to be worth a second look.
@@ -383,7 +395,7 @@
         return o && (o.indexOf(name) > -1 || name.indexOf(o) > -1);
       }).map(function (c) { return c.name; });
       if (near.length) {
-        msg(ctx.warn, 'Similar name already in the roster: ' + near.join(', ') + '.', 'warn');
+        msg(ctx.warn, 'Similar name already in the creators list: ' + near.join(', ') + '.', 'warn');
         return;
       }
     }
@@ -501,7 +513,7 @@
   });
 
   function removeCreator(c) {
-    if (!confirm('Remove ' + c.name + ' from the roster?\n\nExisting campaign records are kept.')) return;
+    if (!confirm('Remove ' + c.name + ' from the creators list?\n\nExisting campaign records are kept.')) return;
     db.from('creators').delete().eq('id', c.id).then(function (r) {
       if (r.error) {
         alert(/foreign key|violates/i.test(r.error.message)
@@ -607,7 +619,9 @@
   var CHARGED = ['shortlisted', 'confirmed', 'pending_visit', 'pending_draft', 'reviewing',
                  'changes', 'scheduled', 'posted', 'completed'];
 
-  var STATE_WORD = { draft: 'Draft', open: 'Open for selection', production: 'In production', completed: 'Completed' };
+  /* One vocabulary, from the file that holds it. This map, the one in crm.js
+     and the one in words.js each said something different for `open`. */
+  var STATE_WORD = W.en.campState;
   var FORMAT_WORD = {
     site_visit: 'Site visit', event: 'Event', seeding: 'Product seeding',
     tenant_trail: 'Tenant trail', teaser: 'Pre-launch teaser', always_on: 'Always-on review'
@@ -900,7 +914,6 @@
      and the chip on the client's page cannot drift. "Replaced" is the console's
      alone: a client never sees that a creator was swapped, only who is on the
      campaign now. */
-  var W = window.ADspaceWords;
   var OPTION_WORD = Object.keys(W.en.step).reduce(function (m, k) {
     m[k] = [W.en.step[k], W.tone(k)]; return m;
   }, { replaced: ['Replaced', 'is-danger'] });
@@ -1084,7 +1097,7 @@
     $('optionSearch').focus();
   });
   /* Keying somebody in is the rarer of the two jobs, so it is folded: the
-     panel opens on the roster, which is what it is usually for. */
+     panel opens on the creators list, which is what it is usually for. */
   $('ncToggle').addEventListener('click', function () {
     var open = $('ncBox').hidden;
     $('ncBox').hidden = !open;
@@ -1133,17 +1146,46 @@
                   '<input class="input pickrate" type="number" min="0" step="10" ' +
                   'aria-label="Rate for ' + esc(c.name) + ' on this campaign" value="' +
                   (c.client_rate || '') + '" placeholder="rate"></span>' +
-                  '<button class="btn btn-sm btn-primary" type="button">Add</button></span>');
+                  '<button class="btn btn-sm btn-primary" type="button">Add</button></span>' +
+                  '<div class="pickneed" hidden></div>');
       if (!inCamp) {
+        /* Ticking a platform this creator has no link for used to mean leaving
+           the campaign, opening the creators list, adding the link, and coming
+           back; or ticking it and never adding one at all, which is how a
+           client ends up looking at a platform with nowhere to go. The field
+           for it opens here, on the row, at the moment the tick makes it
+           necessary, and what is typed is saved to the creator so it is asked
+           for once and never again. */
+        var need = row.querySelector('.pickneed');
+        var have = {};
+        (c.creator_profiles || []).forEach(function (pr) { have[PLATFORM_LABEL[pr.platform] || pr.platform] = true; });
+        var askLinks = function () {
+          var missing = readBoxes(row).filter(function (n) { return !have[n]; });
+          need.hidden = !missing.length;
+          if (!missing.length) { need.innerHTML = ''; return; }
+          var was = {};
+          Array.prototype.forEach.call(need.querySelectorAll('input'), function (i) { was[i.getAttribute('data-p')] = i.value; });
+          need.innerHTML = missing.map(function (n) {
+            return '<label class="needrow"><span>' + esc(n) + ' link</span>' +
+              '<input class="input input-sm" data-p="' + esc(n) + '" value="' + esc(was[n] || '') +
+              '" placeholder="Profile URL, optional"></label>';
+          }).join('');
+        };
+        Array.prototype.forEach.call(row.querySelectorAll('.pbox input'), function (b) {
+          b.addEventListener('change', askLinks);
+        });
         row.querySelector('button').addEventListener('click', function () {
-          addOption(c, readBoxes(row), Number(row.querySelector('.pickrate').value || 0));
+          var links = Array.prototype.slice.call(need.querySelectorAll('input'))
+            .map(function (i) { return { name: i.getAttribute('data-p'), url: (i.value || '').trim() }; })
+            .filter(function (x) { return x.url; });
+          addOption(c, readBoxes(row), Number(row.querySelector('.pickrate').value || 0), links);
         });
       }
       box.appendChild(row);
     });
   }
 
-  function addOption(c, platformNames, rate) {
+  function addOption(c, platformNames, rate, links) {
     if (!platformNames.length) {
       msg('optionMsg', 'Tick at least one platform for ' + c.name + ' to post on.', 'err');
       return;
@@ -1166,8 +1208,19 @@
         return;
       }
       msg('optionMsg', c.name + ' added at ' + money(rate) + '.', 'ok');
-      loadOptions();
-      setTimeout(paintPicker, 150);
+      /* A link typed here belongs to the creator, not to this campaign: the
+         next campaign asks nobody for it again. */
+      /* readProfile is what already turns a URL into a platform and an identity
+         everywhere else, so a link typed here is read the same way and a URL
+         that is not a profile we recognise is simply not recorded. */
+      var rows = (links || []).map(function (x) { return readProfile(x.url); })
+        .filter(Boolean)
+        .map(function (pr) {
+          return { creator_id: c.id, platform: pr.platform, url: pr.url, handle: pr.handle };
+        });
+      var after = function () { loadOptions(); loadRoster(paintPicker); };
+      if (rows.length) db.from('creator_profiles').insert(rows).then(after, after);
+      else { loadOptions(); setTimeout(paintPicker, 150); }
     });
   }
 
@@ -1209,7 +1262,7 @@
     var plats = readBoxes($('ncPlatforms'));
     if (!plats.length) { msg('ncMsg', 'Select at least one platform.', 'err'); return; }
 
-    // Kept in the roster with this as her usual rate, since it is the only
+    // Kept in the creators list with this as her usual rate, since it is the only
     // number known for her yet. The offer carries it independently.
     db.from('creators').insert({ name: name, client_rate: rate, created_by: who() || null })
       .select().single().then(function (r) {
@@ -1526,7 +1579,7 @@
   document.addEventListener('click', function (e) {
     if (!e.target.closest || !e.target.closest('.kcard-head, .kmenu, .team-act')) shutMenus();
   });
-  // A roster ⋯ is placed on the viewport, so a scroll that really moved closes it.
+  // A creators list ⋯ is placed on the viewport, so a scroll that really moved closes it.
   window.ADspaceMenu.onScroll(shutMenus);
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutMenus(); });
 

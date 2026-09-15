@@ -56,7 +56,7 @@
       declined: 'Declined', applied: 'Applied', withdrawn: 'Withdrawn'
     },
     rqKind: { upgrade: 'Upgrade', downgrade: 'Downgrade', cancel: 'Cancel', details: 'Change of details' },
-    campState: { open: 'Open', production: 'In production', completed: 'Completed' },
+    campState: { draft: 'Draft', open: 'Open for selection', production: 'In production', completed: 'Completed' },
 
     // The actions that appear on more than one screen.
     act: {
@@ -98,7 +98,7 @@
       declined: '未批准', applied: '已生效', withdrawn: '已撤回'
     },
     rqKind: { upgrade: '升级', downgrade: '降级', cancel: '取消', details: '资料变更' },
-    campState: { open: '进行中', production: '制作中', completed: '已完成' },
+    campState: { draft: '草稿', open: '待客户选择', production: '制作中', completed: '已完成' },
 
     act: {
       save: '保存', cancel: '取消', back: '返回', undo: '撤销',
@@ -117,7 +117,7 @@
     enquired: '', quoted: 'is-warn',
     lead: '', contacted: '', proposal: 'is-warn', active: 'is-ok', paused: 'is-warn', past: '',
     requested: 'is-warn', approved: 'is-ok', declined: '', applied: 'is-ok',
-    open: '', production: 'is-warn'
+    draft: '', open: '', production: 'is-warn'
   };
   W.tone = function (key) { return W.TONE[key] || ''; };
 

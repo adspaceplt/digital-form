@@ -540,7 +540,18 @@ its own dictionary for what only it says and merges the shared one underneath
 with `ADspaceWords.of({ en, zh })`; `/review/` has no language action in its
 chrome, so it takes `ADspaceWords.en` directly. The console reads the same
 file: `STAGES`, `SV_STATE`, `RQ_STATE`, `RQ_KIND` in `js/crm.js` and
-`OPTION_WORD` in `js/campaigns.js` are built from it rather than typed again.
+`OPTION_WORD` and `STATE_WORD` in `js/campaigns.js` are built from it rather
+than typed again.
+
+**A campaign has one state and therefore one word for it.** `W.campState`
+(Draft, Open for selection, In production, Completed) is that word, and the
+Engagements row on a client record draws it as the `.tone` chip every other
+state on that page is, not as mute text in a `·` joined line. It used to keep
+a private map in `js/crm.js` saying "With the client" where the campaigns page
+said "Open for selection", so one screen named a state the other screen did not
+have. `tests/crm.js` reads the chip off the rendered row and compares it with
+`ADspaceWords.en.campState`, so a private map put back is a failure rather than
+a screenshot somebody has to notice.
 
 The colour is the other half of a state and is not a language, so tones live
 once in `W.TONE` and `W.tone(key)`, which is what makes "same status words
@@ -583,6 +594,13 @@ still sits on top of the shared one.
   already gone out. Whether it has is the document's state, in Documents,
   and never the line's. Chinese follows the same tense (`待报价`, not
   `已报价`).
+- **A control is named for what it does, not for the conversation around it.**
+  The campaign switch that opens backups read "Ask the client for backups",
+  which is an instruction to a colleague about a phone call and not a name for
+  a setting; it is **Enable backup selection**. The same test retired "Key in a
+  creator" for **Add creator**, and "roster" for **Creators List**: a house word
+  the team happens to use is not the word on the screen unless it is also plain
+  corporate English.
 - **A field about a person records what we do, not what they can do.** A
   contact's language is a **Preferred language**, and the row reads
   "Prefers English": "Writes in English" describes the person, and reads

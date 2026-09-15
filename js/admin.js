@@ -575,7 +575,7 @@
     'shortlink.updated':     ['Short link changed', 'is-warn', 'links'],
     'shortlink.deleted':     ['Short link deleted', 'is-danger', 'links'],
     'shortlink.imported':    ['Short links imported', 'is-ok', 'links'],
-    // Creator campaigns and the roster behind them.
+    // Creator campaigns and the creators list behind them.
     'campaign.created':      ['Campaign created', 'is-ok', 'campaigns'],
     'campaign.edited':       ['Campaign edited', '', 'campaigns'],
     'campaign.opened':       ['Sent to client', 'is-ok', 'campaigns'],
