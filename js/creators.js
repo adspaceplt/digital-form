@@ -477,8 +477,7 @@
         facts.push([seeding ? t().deliveryOn : t().shootOn,
           o.visit_date ? fmtDate(o.visit_date) + (o.visit_time ? ', ' + o.visit_time : '') : t().tbc]);
       }
-      var plats = String(o.platforms || '').split(',').map(function (s) { return s.trim(); })
-        .filter(Boolean).map(platLabel);
+      var plats = platsOf(o);
       if (plats.length) facts.push([t().platformsLabel, plats.join(' · ')]);
       if (o.planned_publish && !live) facts.push([t().goLive, fmtDate(o.planned_publish)]);
       if ((o.state === 'changes' || o.state === 'reviewing') && o.revision_round > 1) {
@@ -715,6 +714,11 @@
           esc(t().viewOn(name)) + EXT_ICON + '</a>';
       }).join('');
 
+      /* The fee is for a stated set of platforms, so the rate beside it cannot
+         be read without them. It sits under the name as the row's meta line,
+         where every other list in the portal puts what qualifies the money. */
+      var plats = platsOf(o);
+
       row.innerHTML =
         '<span class="rowno crow-no">' + (idx + 1) + '</span>' +
         '<button class="crow-tick' + (full ? ' is-full' : '') + '" type="button"' +
@@ -728,6 +732,10 @@
           (isNew(o) ? '<span class="tag-new">NEW</span>' : '') +
           (priority && pick === 'backup' ? '<span class="tag-pri">' + esc(t().priority) + '</span>' : '') +
           (o.is_replacement ? '<span class="tag-rep">' + esc(t().replacement) + '</span>' : '') +
+          (plats.length
+            ? '<span class="crow-plat"><span>' + esc(t().platformsLabel) + '</span> ' +
+              esc(plats.join(' · ')) + '</span>'
+            : '') +
         '</div>' +
         '<div class="crow-links">' + links + '</div>' +
         '<div class="crow-rate">' + money(o.rate) + '</div>' +
@@ -755,6 +763,18 @@
 
   function platLabel(p) {
     return { xhs: 'RedNote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' }[p] || p;
+  }
+
+  /* What the creator is booked to post on, which is not the same list as the
+     profiles they can be looked up on: one fee covers the platforms agreed for
+     it, and another creator charges for a second. Read in the reader's own
+     language, the way the profile buttons on the same row already are. */
+  function platsOf(o) {
+    // The console stores the placement by its printed name ("RedNote, Instagram"),
+    // and older rows carry the key, so both resolve to the same word.
+    var key = { RedNote: 'xhs', Instagram: 'instagram', TikTok: 'tiktok', Facebook: 'facebook' };
+    return String(o.platforms || '').split(',').map(function (s) { return s.trim(); })
+      .filter(Boolean).map(function (p) { return t().platform[key[p] || p] || p; });
   }
 
   function redraw() { paintCards(); paintProgress(); save(); }

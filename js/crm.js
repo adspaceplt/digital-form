@@ -1119,8 +1119,11 @@
   });
 
   // ---- Engagements --------------------------------------------------------
-  var CAMP_WORD = { draft: 'Draft', open: 'With the client', production: 'In production',
-                    completed: 'Completed' };
+  /* The campaign's state, from the one file that holds it. This was a private
+     map saying "With the client" where the campaign page said "Open for
+     selection" and js/words.js said "Open": three words for one state, because
+     the shared one was written and then never read. */
+  var CAMP_WORD = W.en.campState;
 
   function loadWork() {
     var box = $('crmWorkList');
@@ -1175,22 +1178,27 @@
     }
     box.innerHTML = '';
     camps.forEach(function (k) {
-      box.appendChild(workRow(k.title, 'Creator campaign · ' + (CAMP_WORD[k.state] || k.state) +
-        ' · ' + k.slots + ' creator' + (k.slots === 1 ? '' : 's'), '/admin/?s=campaigns&campaign=' + encodeURIComponent(k.id)));
+      box.appendChild(workRow(k.title,
+        'Creator campaign · ' + k.slots + ' creator' + (k.slots === 1 ? '' : 's'),
+        '/admin/?s=campaigns&campaign=' + encodeURIComponent(k.id),
+        [CAMP_WORD[k.state] || k.state, W.tone(k.state)]));
     });
     sets.forEach(function (b) {
-      box.appendChild(workRow(b.title || 'Content set',
-        'Content Review · ' + (b.state === 'published' ? 'With the client' : 'Draft'),
-        '/admin/?s=review&client=' + encodeURIComponent(keyOf(c)) + '&set=' + encodeURIComponent(b.id)));
+      var live = b.state === 'published';
+      box.appendChild(workRow(b.title || 'Content set', 'Content Review',
+        '/admin/?s=review&client=' + encodeURIComponent(keyOf(c)) + '&set=' + encodeURIComponent(b.id),
+        [live ? 'With the client' : 'Draft', live ? 'is-ok' : '']));
     });
   }
 
-  function workRow(title, meta, href) {
+  function workRow(title, meta, href, chip) {
     var row = document.createElement('button');
     row.type = 'button';
     row.className = 'work-row';
     row.innerHTML =
-      '<span class="work-row-name">' + esc(title) + '</span>' +
+      '<span class="work-row-name">' + esc(title) +
+        (chip ? ' <span class="tone ' + esc(chip[1] || '') + '">' + esc(chip[0]) + '</span>' : '') +
+      '</span>' +
       '<span class="work-row-meta">' + esc(meta) + '</span>' +
       '<svg class="work-row-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
         'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +

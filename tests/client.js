@@ -56,6 +56,8 @@ const SEED = `
   say('progress: "' + await p.locator('#progLabel').innerText() + '" / "' + await p.locator('#progCount').innerText() + '" / "' + await p.locator('#progSay').innerText() + '"');
   say('replacement badges: ' + await p.locator('.tag-rep').count());
   say('profile buttons on row 1: ' + (await p.locator('.crow').first().locator('.plink').allInnerTexts()).join(' | '));
+  // The fee is for a stated set of placements, so the row has to name them.
+  say('posting on: ' + (await p.locator('.crow-plat').allInnerTexts()).join(' | '));
   say('due pill: ' + (await p.locator('#engageFacts').innerText()).replace(/\n/g, ' '));
   say('confirm bar hidden at 0: ' + await p.locator('#confirmBar').isHidden());
 
@@ -94,6 +96,8 @@ const SEED = `
   say('campaign: ' + await p.locator('#campTitle').innerText());
   say('progress: ' + await p.locator('#progCount').innerText() + ' / ' + await p.locator('#progSay').innerText());
   say('due: ' + (await p.locator('#engageFacts').innerText()).replace(/\n/g, ' '));
+  // The placement is stored by its English name, so it has to be looked up, not printed.
+  say('posting on: ' + await p.locator('.crow-plat').first().innerText());
   await p.locator('#langToggle').click();
   await p.waitForTimeout(300);
 

@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260915a">
+<link rel="stylesheet" href="/css/portal.css?v=20260915b">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,18 +28,18 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260915a"></script>
-<script src="/js/words.js?v=20260915a"></script>
-<script src="/js/menu.js?v=20260915a"></script>
-<script src="/js/api.js?v=20260915a"></script>
-<script src="/js/money.js?v=20260915a"></script>
-<script src="/js/mockups.js?v=20260915a"></script>
+<script src="/js/config.js?v=20260915b"></script>
+<script src="/js/words.js?v=20260915b"></script>
+<script src="/js/menu.js?v=20260915b"></script>
+<script src="/js/api.js?v=20260915b"></script>
+<script src="/js/money.js?v=20260915b"></script>
+<script src="/js/mockups.js?v=20260915b"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260915a" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260915b" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -751,7 +751,7 @@
           </div>
           <div class="row" style="margin-top:12px">
             <label class="tickline"><input type="checkbox" id="campBackups">
-              <span>Ask the client for backups</span></label>
+              <span>Enable backup selection</span></label>
           </div>
           <div class="row" style="margin-top:16px">
             <button class="btn btn-primary" id="addCamp" type="button">Create</button>
@@ -867,8 +867,8 @@
 
 
         <!-- Two jobs, and the panel used to run them together under one head:
-             pick somebody the roster already has, or key in somebody it does
-             not. Each carries its own eyebrow now, the roster list says how
+             pick somebody the creators list already has, or key in somebody it
+             does not. Each carries its own eyebrow now, the list says how
              many it is showing, and the second job is folded shut because it
              is the rarer one. -->
         <div class="panel" id="addOptionBox" hidden>
@@ -877,7 +877,7 @@
           </div>
 
           <div class="pickhead">
-            <span class="sectionlabel">From the roster</span>
+            <span class="sectionlabel">Existing creators</span>
             <span class="muted" id="optionCount"></span>
           </div>
           <label class="field-label" for="optionSearch">Search by name</label>
@@ -887,9 +887,9 @@
 
           <div class="subsection">
             <div class="pickhead">
-              <span class="sectionlabel">Not on the roster</span>
+              <span class="sectionlabel">New creators</span>
             </div>
-            <button class="btn btn-sm" id="ncToggle" type="button" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Key in a creator</button>
+            <button class="btn btn-sm" id="ncToggle" type="button" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creator</button>
             <div id="ncBox" hidden style="margin-top:12px">
               <div class="row">
                 <div><label class="field-label" for="ncName">Name</label>
@@ -923,7 +923,7 @@
 
       </div>
 
-      <!-- ---- Roster ---- -->
+      <!-- ---- Creators list ---- -->
       <div id="rosterView" hidden>
         <div class="viewhead">
           <span class="headmark"><h2>Creators</h2></span>
@@ -1226,10 +1226,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260915a"></script>
-<script src="/js/documents.js?v=20260915a"></script>
-<script src="/js/crm.js?v=20260915a"></script>
-<script src="/js/team.js?v=20260915a"></script>
-<script src="/js/campaigns.js?v=20260915a"></script>
+<script src="/js/admin.js?v=20260915b"></script>
+<script src="/js/documents.js?v=20260915b"></script>
+<script src="/js/crm.js?v=20260915b"></script>
+<script src="/js/team.js?v=20260915b"></script>
+<script src="/js/campaigns.js?v=20260915b"></script>
 </body>
 </html>

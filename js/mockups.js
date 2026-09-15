@@ -7,7 +7,12 @@
   const SVG = {
     heart: '<path d="M12 21s-7.5-4.9-9.6-9A5.4 5.4 0 0 1 12 6.2 5.4 5.4 0 0 1 21.6 12c-2.1 4.1-9.6 9-9.6 9z"/>',
     comment: '<path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 9.5 9.5 0 0 1-3.6-.7L3 21l1.9-5a8.2 8.2 0 0 1-.9-3.8 8.4 8.4 0 0 1 9-8.4 8.4 8.4 0 0 1 8 7.7z"/>',
-    send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/>',
+    /* One concave dart, the shape Instagram actually draws. Feather's `send`
+       is a quadrilateral plus a separate crease line from the same apex, and
+       at 22px with a round cap the two strokes pile up at that corner: it
+       stopped reading as a paper plane and started reading as a filled arrow
+       with a spike. The fold is the notch in the outline, not a second path. */
+    send: '<path d="M22 2 2 9.8l8.6 3.6L14.2 22z"/>',
     bookmark: '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
     dots: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
     music: '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
