@@ -257,7 +257,9 @@
     const left = el('div', 'mk-actions-left');
     items.forEach(function (name) { left.appendChild(el('span', 'mk-act', icon(name))); });
     row.appendChild(left);
-    row.appendChild(el('span', 'mk-act', icon('bookmark')));
+    // Save hangs off the far right on every one of these apps; against Share it
+    // reads as a fourth icon in the group rather than the one that is separate.
+    row.appendChild(el('span', 'mk-act mk-act-save', icon('bookmark')));
     return row;
   }
 
@@ -598,8 +600,12 @@
     const toggle = wrap.querySelector('.mk-morebtn');
     if (!node || !toggle) return;
     if (!node.clientHeight) return;                       // not laid out yet
-    if (node.classList.contains('is-open')) { toggle.hidden = false; return; }
+    if (node.classList.contains('is-open')) {
+      toggle.hidden = false; wrap.classList.remove('is-clamped'); return;
+    }
     toggle.hidden = node.scrollHeight <= node.clientHeight + 2;
+    // Only a caption that is actually cut carries the toggle on its last line.
+    wrap.classList.toggle('is-clamped', !toggle.hidden);
   }
 
   /* A cover image is an asset, not a post, so it gets a plain frame with no

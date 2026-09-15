@@ -110,10 +110,18 @@
   /* Where she posts for THIS campaign is proposed by us, one tick per
      platform. Her profile links only decide which boxes start ticked; a
      creator with two accounts may still be booked for one of them. */
-  function platformBoxes(ticked) {
+  /* With `links`, each box carries the field the tick may make necessary,
+     folded to nothing inside the box itself. A labelled field arriving after
+     the Add button put what you type downstream of the button that sends it,
+     and reflowed the row every time a tick moved. */
+  function platformBoxes(ticked, links) {
     return '<span class="pboxes">' + PLATFORM_NAMES.map(function (name) {
-      return '<label class="pbox"><input type="checkbox" value="' + name + '"' +
-        (ticked.indexOf(name) > -1 ? ' checked' : '') + '>' + name + '</label>';
+      return '<span class="pbox">' +
+        '<label class="pbox-tick"><input type="checkbox" value="' + name + '"' +
+        (ticked.indexOf(name) > -1 ? ' checked' : '') + '><span>' + name + '</span></label>' +
+        (links ? '<input class="input input-sm pbox-link" data-p="' + name + '" disabled' +
+          ' aria-label="' + name + ' profile URL" placeholder="Profile URL">' : '') +
+        '</span>';
     }).join('') + '</span>';
   }
   function readBoxes(container) {
@@ -1141,41 +1149,37 @@
         '<div><b>' + esc(c.name) + '</b>' +
         '<span class="muted"> ' + (uniq.join(', ') || 'no links') + '</span></div>' +
         (inCamp ? '<span class="muted">Already offered</span>'
-                : '<span class="pickadd">' + platformBoxes(uniq) +
+                : '<span class="pickadd">' + platformBoxes(uniq, true) +
                   '<span class="slugfield"><span class="slugfield-pre">RM</span>' +
                   '<input class="input pickrate" type="number" min="0" step="10" ' +
                   'aria-label="Rate for ' + esc(c.name) + ' on this campaign" value="' +
                   (c.client_rate || '') + '" placeholder="rate"></span>' +
-                  '<button class="btn btn-sm btn-primary" type="button">Add</button></span>' +
-                  '<div class="pickneed" hidden></div>');
+                  '<button class="btn btn-sm btn-primary" type="button">Add</button></span>');
       if (!inCamp) {
         /* Ticking a platform this creator has no link for used to mean leaving
            the campaign, opening the creators list, adding the link, and coming
            back; or ticking it and never adding one at all, which is how a
-           client ends up looking at a platform with nowhere to go. The field
-           for it opens here, on the row, at the moment the tick makes it
-           necessary, and what is typed is saved to the creator so it is asked
-           for once and never again. */
-        var need = row.querySelector('.pickneed');
+           client ends up looking at a platform with nowhere to go. The tick
+           opens into the field instead, in place, and what is typed is saved
+           to the creator so it is asked for once and never again. */
         var have = {};
         (c.creator_profiles || []).forEach(function (pr) { have[PLATFORM_LABEL[pr.platform] || pr.platform] = true; });
         var askLinks = function () {
-          var missing = readBoxes(row).filter(function (n) { return !have[n]; });
-          need.hidden = !missing.length;
-          if (!missing.length) { need.innerHTML = ''; return; }
-          var was = {};
-          Array.prototype.forEach.call(need.querySelectorAll('input'), function (i) { was[i.getAttribute('data-p')] = i.value; });
-          need.innerHTML = missing.map(function (n) {
-            return '<label class="needrow"><span>' + esc(n) + ' link</span>' +
-              '<input class="input input-sm" data-p="' + esc(n) + '" value="' + esc(was[n] || '') +
-              '" placeholder="Profile URL, optional"></label>';
-          }).join('');
+          Array.prototype.forEach.call(row.querySelectorAll('.pbox'), function (box) {
+            var tick = box.querySelector('.pbox-tick input');
+            var field = box.querySelector('.pbox-link');
+            if (!field) return;
+            var need = tick.checked && !have[tick.value];
+            box.classList.toggle('needs-link', need);
+            field.disabled = !need;
+            if (!need) field.value = '';
+          });
         };
-        Array.prototype.forEach.call(row.querySelectorAll('.pbox input'), function (b) {
+        Array.prototype.forEach.call(row.querySelectorAll('.pbox-tick input'), function (b) {
           b.addEventListener('change', askLinks);
         });
         row.querySelector('button').addEventListener('click', function () {
-          var links = Array.prototype.slice.call(need.querySelectorAll('input'))
+          var links = Array.prototype.slice.call(row.querySelectorAll('.pbox.needs-link .pbox-link'))
             .map(function (i) { return { name: i.getAttribute('data-p'), url: (i.value || '').trim() }; })
             .filter(function (x) { return x.url; });
           addOption(c, readBoxes(row), Number(row.querySelector('.pickrate').value || 0), links);

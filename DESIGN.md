@@ -157,6 +157,44 @@ rule, and a theme nobody audits is a theme that quietly fails AA.
 | Icon button box | 38px (44px coarse) | `.iconbtn`, `.kfold`, `.kmenu-btn`, `.btn-icononly`: the glyph stays 16px, the target never shrinks with it |
 | Ring | 18px, stroke 2.6 | `.ring` completeness indicator |
 
+### Motion
+
+**Motion drifts exactly the way colour does, so it is tokens too.** Nineteen
+transitions had been written at their point of use, in **nine durations**
+(`.14s`, `.15s`, `.16s`, `.18s`, `.2s`, `.22s`, `.25s`, `.28s`, `.32s`) and
+three curves (`ease`, `cubic-bezier(.4,0,.2,1)`, and whatever the browser
+does by default), so no two things on one screen moved alike and a portal
+somebody works in all day felt assembled from parts. Three durations and two
+curves now, in `:root`, and nothing outside this table.
+
+| Token | Value | Use |
+|---|---|---|
+| `--t-fast` | `.12s` | A colour, a border, a press: the pointer has not left yet |
+| `--t` | `.2s` | The ordinary state change |
+| `--t-slow` | `.34s` | A size, a position, a surface opening |
+| `--ease` | `cubic-bezier(.32,.72,0,1)` | A **move**: something changes place or size. Fast away, long settle, which is what reads as unhurried rather than springy |
+| `--ease-out` | `cubic-bezier(.22,.61,.36,1)` | Something **arriving**: decelerates, never overshoots |
+
+**A press is felt, not just seen.** Every control takes the same
+`transform: scale(.97)` on `:active` at `--t-fast`, so the whole portal
+answers alike under a finger: `.btn`, `.iconbtn`, `.kmenu-btn`, `.kmenu-item`,
+`.navitem`, `.tab`, `.acttab`, `.crow-tick`, `.crow-backup`, `.langtoggle`,
+`.plink`, `.pbox`, `.state-select`. The exception is a control that fills the
+width of a phone: a slab that shrinks reads as a wobble, so it dims to `.72`
+instead.
+
+**A surface arrives; it does not blink into place.** The ⋯ menu comes from its
+button (`translateY(-5px) scale(.97)`, origin top right), the sheet fades its
+scrim and lifts its card, and on a phone the card comes up from the floor it
+is anchored to. `offsetHeight` is a layout measure and no transform touches
+it, so `ADspaceMenu.place()` still reads the same number it always did. The
+Undo bar slides down from the row it belongs to.
+
+**Nothing moves for a reader who has asked for stillness.** One
+`prefers-reduced-motion` block zeroes every duration and every press
+transform. This file had claimed that behaviour for months while the code
+carried three scattered rules that only ever quietened two carets.
+
 ### Typography (system stack; `--font`: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial; Chinese adds PingFang SC, Microsoft YaHei by `lang="zh"`)
 
 | Level | Size / weight / tracking | Where |
@@ -423,6 +461,19 @@ what qualifies the money (the unit, the platforms) goes under it, and the ⋯
 ends the first line where the thumb already is. Ninety five pixels, and the
 whole card on one screen. The same shape now carries the rate card and the
 creator roster (`.cat-row`, `.cr-row`: `"name rate act" / "meta meta meta"`).
+
+**A control that creates a need answers it in place.** Ticking a platform a
+creator has no profile link for used to open a labelled field *after* the Add
+button: what you type sat downstream of the control that sends it, the row
+reflowed on every tick, and the creator's name wrapped to two lines to make
+room. The tick **becomes** the field instead: the box grows from 92px to 281px
+in place, keeping its own name on it, and shuts again when the tick goes. Both
+ends of the width are stated, because a width of `auto` does not animate. A
+box that carries a field is a control, so it clears the small control floor
+(`--ctl-h-sm`) like everything else in that row, and on a phone it takes the
+line it needs while the boxes around it wrap — with `flex-wrap` on the
+container that follows them, or a full width box pushes the rate and Add past
+the screen edge.
 
 **A component is borrowed for its shape, never for its convenience.** The
 creator roster was drawn with `.slink`, the Short Links row, so a person's name

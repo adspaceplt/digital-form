@@ -69,6 +69,18 @@
   --field-text: 14px;
   --shadow:     0 1px 2px rgba(19,24,26,.05);
   --shadow-lift: 0 1px 2px rgba(19,24,26,.06), 0 12px 32px rgba(19,24,26,.10);
+
+  /* Motion. Three durations and two curves, the way there are six spaces and
+     one accent: nineteen transitions had been typed at their point of use, in
+     nine durations and three curves, so no two things on one screen moved
+     alike. `--ease` is the long settle a thing takes when it changes place or
+     size, which is what reads as unhurried rather than springy; `--ease-out`
+     is for something arriving, which decelerates and never overshoots. */
+  --t-fast: .12s;   /* a colour, a border: the pointer has not left yet */
+  --t:      .2s;    /* the ordinary state change */
+  --t-slow: .34s;   /* a size, a position, a surface opening */
+  --ease:     cubic-bezier(.32,.72,0,1);
+  --ease-out: cubic-bezier(.22,.61,.36,1);
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
           "PingFang SC", "Microsoft YaHei", sans-serif;
   /* Headings only. Chinese has no Slate, so the stack falls through to the
@@ -212,7 +224,7 @@ a { color: inherit; }
   border: 1px solid var(--line); background: var(--card); color: var(--ink-soft);
   border-radius: 999px; min-height: var(--ctl-h); padding: 0 14px; font-size: 13px;
   display: inline-flex; align-items: center; gap: 7px;
-  transition: border-color .2s, background .2s, color .2s;
+  transition: border-color var(--t) var(--ease-out), background var(--t) var(--ease-out), color var(--t) var(--ease-out), transform var(--t-fast) var(--ease-out);
 }
 .pill:hover { border-color: var(--ink); color: var(--ink); }
 .pill svg { width: 15px; height: 15px; }
@@ -343,7 +355,7 @@ a { color: inherit; }
   flex: 1; border-radius: var(--radius-sm); padding: 0 16px;
   min-height: var(--ctl-h); font-size: var(--ctl-text); font-weight: 500;
   border: 1px solid var(--line-ctl); background: var(--card); color: var(--ink-soft);
-  transition: background .2s, color .2s, border-color .2s;
+  transition: background var(--t) var(--ease-out), color var(--t) var(--ease-out), border-color var(--t) var(--ease-out), transform var(--t-fast) var(--ease-out);
   /* Width came entirely from the label, so a row of buttons stepped up and
      down with the length of the words. A floor evens them out and centres
      the label in the space rather than leaving it padded to one side. */
@@ -465,7 +477,7 @@ a { color: inherit; }
 .mk-carousel-sized .mk-slide,
 .mk-carousel-sized .mk-media { height: 100%; }
 .mk-carousel-sized .mk-media { aspect-ratio: auto; }
-.mk-carousel-track { display: flex; transition: transform .32s cubic-bezier(.4,0,.2,1); }
+.mk-carousel-track { display: flex; transition: transform var(--t-slow) var(--ease); }
 .mk-slide { flex: 0 0 100%; }
 .mk-arrow {
   position: absolute; top: 50%; transform: translateY(-50%);
@@ -526,11 +538,15 @@ a { color: inherit; }
 .mk-actions { display: flex; align-items: center; padding: 9px 12px 4px; color: #262626; }
 .mk-actions-left { display: flex; gap: 14px; }
 .mk-act { display: inline-flex; }
+/* Save sits on the far right of the row, never against Share. */
+.mk-act-save { margin-left: auto; }
 .mk-likes { padding: 0 12px; font-weight: 600; font-size: 13px; }
 .mk-caption { padding: 4px 12px 0; line-height: 1.45; }
 .mk-caption-top { padding: 0 12px; }
 .mk-tag { color: #00376b; }
-.mk-time { padding: 5px 12px 12px; color: #737373; font-size: 12px; }
+/* Likes, caption and comments are one block of text, so the three gaps that
+   separate them are one value: 4px, the same step the action row ends on. */
+.mk-time { padding: 4px 12px 12px; color: #737373; font-size: 12px; }
 
 .mk-clampwrap { position: relative; }
 .mk-clamp {
@@ -538,12 +554,31 @@ a { color: inherit; }
   -webkit-line-clamp: var(--mk-lines, 2); overflow: hidden;
 }
 .mk-clamp.is-open { -webkit-line-clamp: 999; }
+/* A blank line between paragraphs is a line of the clamp, so a two line
+   preview spent one of them on nothing and printed its ellipsis on an empty
+   row. The break comes back the moment the caption is opened, which is when
+   the client is reading the paragraphs rather than the preview. */
+.mk-clamp br + br { display: none; }
+.mk-clamp.is-open br + br { display: inline; }
 /* -webkit-line-clamp clips at the content box, overflow:hidden at the padding box,
    so any bottom padding lets a partial extra line bleed through. */
 .mk-clamp { padding-bottom: 0; }
 .mk-fb .mk-clampwrap { padding-bottom: 9px; }
 .mk-morebtn {
   border: 0; background: none; padding: 0 12px; color: #737373; font-size: 13px;
+}
+/* These apps set the toggle at the end of the truncated line. On a row of its
+   own it tripled the height of a two line caption and read as a third
+   paragraph, which is what made the block look loose. It sits on the last line
+   over a short fade, and drops back into the flow once the caption is open. */
+.mk-clampwrap.is-clamped > .mk-morebtn {
+  position: absolute; right: 0; bottom: 0; padding: 0 12px 0 24px;
+  background: linear-gradient(to right, transparent, var(--mk-fade, #fff) 16px);
+}
+/* The one dark surface: a fade needs a flat ground and the reel foot is over
+   the video, so the toggle stays in the flow there. */
+.mk-vfoot .mk-clampwrap.is-clamped > .mk-morebtn {
+  position: static; padding: 0; background: none;
 }
 
 /* Instagram */
@@ -574,7 +609,7 @@ a { color: inherit; }
 .fb-ad-carousel { position: relative; overflow: hidden; background: #fff; padding: 0 0 10px; }
 .fb-ad-track {
   display: flex; gap: 8px; padding: 0 8px;
-  transition: transform .32s cubic-bezier(.4,0,.2,1);
+  transition: transform var(--t-slow) var(--ease);
 }
 .fb-ad-card {
   flex: 0 0 86%; min-width: 0;
@@ -858,7 +893,7 @@ a { color: inherit; }
   text-align: left; background: var(--card); border: 1px solid var(--line);
   border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px;
   display: flex; flex-direction: column; gap: 4px;
-  transition: border-color .2s, transform .15s;
+  transition: border-color var(--t) var(--ease-out), transform var(--t-fast) var(--ease-out);
 }
 @media (hover: hover) {
   .bigcard:hover { border-color: var(--ink); transform: translateY(-1px); }
@@ -897,7 +932,7 @@ a { color: inherit; }
 /* Upload */
 .drop {
   border: 1.5px dashed var(--line); border-radius: var(--radius); padding: 34px 22px;
-  text-align: center; cursor: pointer; transition: border-color .2s, background .2s;
+  text-align: center; cursor: pointer; transition: border-color var(--t) var(--ease-out), background var(--t) var(--ease-out);
   display: flex; flex-direction: column; gap: 4px;
 }
 .drop b { font-size: 14.5px; font-weight: 600; color: var(--ink); }
@@ -1010,7 +1045,7 @@ a { color: inherit; }
   grid-template-areas: "thumb body actions";
   align-items: center;
   border: 1px solid var(--line); border-radius: 12px; background: var(--card); margin-bottom: 8px;
-  transition: border-color .15s, box-shadow .15s;
+  transition: border-color var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out);
 }
 .saved:hover { border-color: #d9d9d9; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
 .saved-thumb {
@@ -1043,7 +1078,7 @@ a { color: inherit; }
   width: 38px; height: 38px; flex: 0 0 auto; padding: 0;
   display: inline-grid; place-items: center;
   border: 0; background: none; border-radius: 9px;
-  color: var(--ink-mute); transition: background .15s, color .15s;
+  color: var(--ink-mute); transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
 }
 .iconbtn svg { width: 16px; height: 16px; stroke-width: 1.7; }
 /* A thumb needs the whole 44px even where the mark stays this size. */
@@ -1102,7 +1137,7 @@ a { color: inherit; }
 .batch-head:hover .batch-title { color: var(--ink); }
 .fold-caret {
   align-self: center; color: var(--ink-mute); font-size: 12px;
-  transition: transform .18s ease;
+  transition: transform var(--t) var(--ease);
 }
 .batch.is-folded .fold-caret { transform: rotate(-90deg); }
 .batch-progress {
@@ -1150,7 +1185,7 @@ a { color: inherit; }
 .progress-track { height: 6px; border-radius: 999px; background: var(--line); overflow: hidden; }
 .progress-fill {
   height: 100%; width: 0; border-radius: 999px; background: var(--fill);
-  transition: width .25s ease;
+  transition: width var(--t-slow) var(--ease);
 }
 
 /* What the file actually is */
@@ -1375,7 +1410,7 @@ a { color: inherit; }
 }
 .disclosure:hover { color: var(--ink); background: var(--sunk); }
 .disclosure .muted { margin-left: auto; font-weight: 400; }
-.disclosure-caret { font-size: 10px; color: var(--ink-mute); transition: transform .18s ease; }
+.disclosure-caret { font-size: 10px; color: var(--ink-mute); transition: transform var(--t) var(--ease); }
 .disclosure.is-open .disclosure-caret { transform: rotate(90deg); }
 .disclosure-body { padding: 4px 22px 20px; border-top: 1px solid var(--line-soft); }
 .disclosure-body .hint { margin: 14px 0 16px; }
@@ -1545,7 +1580,7 @@ body.is-plain .topbar { background: var(--chrome); }
   width: 100%; min-height: var(--ctl-h); text-align: left; border: 0; background: none;
   padding: 9px 10px; border-radius: 9px;
   font-size: 13.5px; font-weight: 500; color: var(--ink-soft);
-  transition: background .15s, color .15s;
+  transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
 }
 .navitem svg { width: 17px; height: 17px; flex: 0 0 auto; stroke-width: 1.7; color: var(--ink-mute); }
 /* Selected is the darker fill and the heavier word; hover is one step
@@ -1591,7 +1626,7 @@ body.is-plain .topbar { background: var(--chrome); }
 @media (max-width: 860px) {
   .sidebar {
     position: fixed; left: 0; top: 0; z-index: 60; width: 244px; flex-basis: 244px;
-    transform: translateX(-100%); transition: transform .22s ease;
+    transform: translateX(-100%); transition: transform var(--t-slow) var(--ease);
     box-shadow: 0 0 40px rgba(0,0,0,.12);
   }
   .sidebar.is-open { transform: none; }
@@ -1791,12 +1826,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .prof-read.ok  { color: var(--ok); }
 .prof-read.err { color: var(--err); }
 
-/* The link a tick has just made necessary, asked for on the row rather than on
-   another page. */
-.pickneed { flex: 1 1 100%; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-.needrow { display: flex; align-items: center; gap: 8px; flex: 1 1 260px; min-width: 0; }
-.needrow > span { flex: 0 0 auto; font-size: 12px; color: var(--ink-mute); }
-.needrow .input { flex: 1 1 auto; min-width: 0; }
+/* The link a tick makes necessary is asked for inside the tick: see .pbox. */
 
 /* .pchip is gone: a 999px grey pill is the costume of a status chip, and the
    only thing wearing it was an outbound profile link. Those are .plink now,
@@ -1855,7 +1885,7 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 .progress-card .progress-fill {
   height: 100%; background: var(--fill); border-radius: 999px;
-  transition: width .28s ease;
+  transition: width var(--t-slow) var(--ease);
 }
 .progress-card.is-done .progress-fill { background: var(--ok); }
 .progress-say { font-size: 13.5px; margin-top: 10px; }
@@ -1894,7 +1924,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .crow-tick::before {
   content: ''; grid-area: 1 / 1; width: 24px; height: 24px; box-sizing: border-box;
   border: 1.5px solid var(--line); border-radius: 7px; background: var(--card);
-  transition: background .14s, border-color .14s;
+  transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
 }
 .crow-tick svg { grid-area: 1 / 1; width: 14px; height: 14px; position: relative; }
 .crow-tick:hover:not([disabled])::before { border-color: var(--ink-mute); }
@@ -2144,7 +2174,7 @@ body.is-plain .topbar { background: var(--chrome); }
   display: grid; place-items: center; border: 0; border-radius: var(--radius-sm);
   background: none; color: var(--ink-mute);
 }
-.kfold svg { width: 16px; height: 16px; transition: transform .16s ease; }
+.kfold svg { width: 16px; height: 16px; transition: transform var(--t) var(--ease); }
 @media (pointer: coarse) { .kfold { width: 44px; height: 44px; margin-left: -12px; } }
 .kfold[aria-expanded="true"] svg { transform: rotate(90deg); }
 .kfold:hover { background: var(--line-soft); color: var(--ink); }
@@ -2159,7 +2189,7 @@ body.is-plain .topbar { background: var(--chrome); }
 @media (max-width: 640px) {
   .kcard-sum { flex: 1 1 100%; order: 10; padding-left: 22px; white-space: normal; }
 }
-@media (prefers-reduced-motion: reduce) { .kfold svg { transition: none; } }
+
 
 /* ---------- Client-facing bookings ----------
    One card per confirmed creator, in the same language as the console's
@@ -2265,13 +2295,13 @@ body.is-plain .topbar { background: var(--chrome); }
   min-height: var(--ctl-h); background: none; border: 0; padding: 0; cursor: pointer;
   font: 600 14px/1.3 inherit; color: var(--ink); text-align: left;
 }
-.amountfold-btn svg { flex: 0 0 auto; width: 14px; height: 14px; color: var(--ink-mute); transition: transform .16s ease; }
+.amountfold-btn svg { flex: 0 0 auto; width: 14px; height: 14px; color: var(--ink-mute); transition: transform var(--t) var(--ease); }
 .amountfold-btn.is-open svg { transform: rotate(90deg); }
 .amountfold-btn:hover svg { color: var(--ink); }
 .amountfold-link { flex: 0 0 auto; font-size: 13px; font-weight: 500; color: var(--ink-soft); text-decoration: none; }
 .amountfold-link:hover { color: var(--ink); text-decoration: underline; }
 .amountfold .totals { margin: 6px 0 8px; max-width: none; }
-@media (prefers-reduced-motion: reduce) { .amountfold-btn svg { transition: none; } }
+
 .booking-posts { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
 .booking-results {
   display: flex; flex-direction: column; gap: 3px;
@@ -2314,20 +2344,56 @@ body.is-plain .topbar { background: var(--chrome); }
 
 @media (max-width: 640px) {
   .pickrow { flex-wrap: wrap; }
-  .pickadd { flex: 1 1 100%; }
+  /* The boxes take the whole line here, so what follows them has to be allowed
+     onto the next one or the rate and Add are pushed past the screen edge. */
+  .pickadd { flex: 1 1 100%; flex-wrap: wrap; row-gap: 10px; }
   .pickadd .slugfield { flex: 1 1 auto; width: auto; }
 }
 
 /* Which platforms an offer covers, ticked by us. */
-.pboxes { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+/* A flex item will not shrink below its content unless it is told it may, and
+   an opened box is wide enough to push the rate and Add off a phone. */
+.pboxes { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; min-width: 0; max-width: 100%; }
 .pbox {
-  display: inline-flex; align-items: center; gap: 5px;
-  border: 1px solid var(--line); border-radius: 7px; padding: 4px 8px;
-  font-size: 12px; color: var(--ink-soft); background: var(--card); cursor: pointer;
-  user-select: none;
+  display: inline-flex; align-items: stretch;
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  min-height: var(--ctl-h-sm);
+  font-size: 12px; color: var(--ink-soft); background: var(--card);
+  transition: border-color var(--t) var(--ease-out), color var(--t) var(--ease-out),
+              background var(--t) var(--ease-out);
 }
-.pbox input { margin: 0; accent-color: var(--ink); }
-.pbox:has(input:checked) { border-color: var(--ink); color: var(--ink); }
+.pbox-tick {
+  display: inline-flex; align-items: center; gap: 5px; padding: 0 9px;
+  cursor: pointer; user-select: none;
+}
+.pbox input[type="checkbox"] { margin: 0; accent-color: var(--ink); }
+.pbox:has(.pbox-tick input:checked) { border-color: var(--ink); color: var(--ink); }
+.pbox:active { transform: scale(.97); }
+
+/* The tick opens into the field it makes necessary, inside its own box. The
+   field used to arrive as a labelled row after the Add button: downstream of
+   the button that sends it, and reflowing the whole row on every tick. Both
+   ends of the width are stated, because a width of `auto` does not animate. */
+/* Two classes, because `.input-sm` sets the 32px floor further down the file
+   and the box itself is what carries the height here. */
+.pbox .pbox-link {
+  flex: 0 0 auto; width: 0; min-width: 0; opacity: 0;
+  padding: 0; border: 0; border-left: 1px solid transparent; border-radius: 0;
+  background: none; min-height: 0; font-size: 12px;
+  transition: width var(--t-slow) var(--ease), opacity var(--t) var(--ease-out),
+              padding var(--t-slow) var(--ease), border-color var(--t) var(--ease-out);
+}
+.pbox.needs-link { border-color: var(--ink); color: var(--ink); }
+.pbox.needs-link .pbox-link {
+  width: 190px; opacity: 1; padding: 0 10px; border-left-color: var(--line);
+}
+/* On a phone the pill takes the line it needs rather than pushing the row
+   sideways: the boxes already wrap. */
+@media (max-width: 640px) {
+  .pickadd .pboxes { flex: 1 1 100%; }
+  .pbox.needs-link { flex: 1 1 100%; min-width: 0; }
+  .pbox.needs-link .pbox-link { flex: 1 1 auto; width: auto; min-width: 0; }
+}
 
 /* ---------- Facts ----------
    Label over value, in columns. Reads as a record rather than a caption. */
@@ -3014,4 +3080,67 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   .permgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .team-act { display: flex; gap: 8px; margin-top: 4px; }
   .team-act .btn { flex: 1 1 0; min-height: var(--ctl-h); }
+}
+
+/* =========================================================================
+   MOTION
+   One place, because motion drifts exactly the way colour does: nineteen
+   transitions had been written at their point of use in nine durations and
+   three curves, so nothing on one screen moved like anything else. The
+   durations and curves are tokens in :root; what follows is where they apply.
+   ========================================================================= */
+
+/* A press is felt, not just seen. Every control gives the same small give
+   under the finger, on the fast curve, so the whole portal answers alike. */
+.btn:active:not([disabled]),
+.iconbtn:active:not([disabled]),
+.kmenu-btn:active,
+.kmenu-item:active,
+.navitem:active,
+.tab:active,
+.acttab:active,
+.crow-tick:active:not([disabled]),
+.crow-backup:active,
+.langtoggle:active,
+.plink:active,
+.state-select:active { transform: scale(.97); }
+.kmenu-item, .navitem, .tab, .acttab, .plink, .langtoggle, .crow-backup, .state-select {
+  transition: background var(--t) var(--ease-out), color var(--t) var(--ease-out),
+              border-color var(--t) var(--ease-out), transform var(--t-fast) var(--ease-out);
+}
+/* A full width control on a phone is a slab, and a slab that shrinks reads as
+   a wobble rather than a press. It dims instead. */
+@media (max-width: 640px) {
+  .viewhead .btn:only-of-type:active, .team-act .btn:active { transform: none; opacity: .72; }
+}
+
+/* A surface arrives; it does not blink into place. The menu comes from its
+   button, the sheet from under the scrim, and on a phone the sheet comes up
+   from the floor it is anchored to. */
+@keyframes mk-menu-in { from { opacity: 0; transform: translateY(-5px) scale(.97); } }
+@keyframes mk-scrim-in { from { opacity: 0; } }
+@keyframes mk-sheet-in { from { opacity: 0; transform: translateY(10px) scale(.985); } }
+@keyframes mk-sheet-up { from { transform: translateY(100%); } }
+.kmenu { transform-origin: top right; animation: mk-menu-in var(--t) var(--ease-out); }
+.sheet { animation: mk-scrim-in var(--t) var(--ease-out); }
+.sheet-card { animation: mk-sheet-in var(--t-slow) var(--ease); }
+@media (max-width: 640px) {
+  .sheet-card { animation: mk-sheet-up var(--t-slow) var(--ease); }
+}
+/* The Undo bar is an answer to something that just happened, so it slides in
+   under the row it belongs to rather than appearing over it. */
+@keyframes mk-undo-in { from { opacity: 0; transform: translateY(-6px); } }
+.undobar { animation: mk-undo-in var(--t) var(--ease-out); }
+
+/* Nothing moves for a reader who has asked for stillness. This replaces three
+   scattered rules that only ever quietened two carets, while DESIGN.md said
+   the whole portal obeyed it. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important; animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important; scroll-behavior: auto !important;
+  }
+  .btn:active, .iconbtn:active, .kmenu-item:active, .navitem:active, .tab:active,
+  .acttab:active, .crow-tick:active, .crow-backup:active, .langtoggle:active,
+  .plink:active, .state-select:active, .pbox:active { transform: none; }
 }

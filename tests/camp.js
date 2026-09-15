@@ -89,21 +89,27 @@ const say = s => console.log(s);
   say('rate prefilled from usual rate: ' + await p.locator('#optionPick .pickrate').first().inputValue());
   // her links are RedNote + Instagram, so both start ticked; this campaign is RedNote only
   /* Ticking a platform a creator has no link for used to mean leaving the
-     campaign, adding the link on the creators list, and coming back. The field
-     opens on the row, and what is typed is saved to the creator. */
+     campaign, adding the link on the creators list, and coming back. The tick
+     opens into the field in place, and what is typed is saved to the creator. */
   const need = p.locator('#optionPick .pickrow').filter({ hasText: '恩比' }).first();
-  say('no link field before the tick: ' + await need.locator('.pickneed').isHidden());
-  await need.locator('.pbox input[value="Instagram"]').check();
-  await p.waitForTimeout(250);
-  say('asks for the link it now needs: ' + (await need.locator('.needrow span').allInnerTexts()).join(','));
-  await need.locator('.pbox input[value="Instagram"]').uncheck();
-  await p.waitForTimeout(200);
-  say('and puts it away when the tick goes: ' + await need.locator('.pickneed').isHidden());
-  await need.locator('.pbox input[value="Instagram"]').check();
-  await p.waitForTimeout(250);
-  await need.locator('.needrow input[data-p="Instagram"]').fill('https://instagram.com/enbi.my');
+  const igbox = need.locator('.pbox').filter({ hasText: 'Instagram' }).first();
+  const wide = async () => Math.round((await igbox.boundingBox()).width);
+  const shut = await wide();
+  say('the box is a tick before it is ticked: ' + shut + 'px, field off the tab order: ' +
+    await igbox.locator('.pbox-link').isDisabled());
+  await need.locator('.pbox-tick input[value="Instagram"]').check();
+  await p.waitForTimeout(500);
+  const open = await wide();
+  say('ticking opens it into the field: ' + open + 'px, ' + (open > shut + 100 ? 'in place' : 'DID NOT OPEN'));
+  say('and the row still holds one line: ' + (Math.round((await need.boundingBox()).height) < 70));
+  await need.locator('.pbox-tick input[value="Instagram"]').uncheck();
+  await p.waitForTimeout(500);
+  say('unticking shuts it again: ' + (Math.round(await wide()) === shut));
+  await need.locator('.pbox-tick input[value="Instagram"]').check();
+  await p.waitForTimeout(400);
+  await igbox.locator('.pbox-link').fill('https://instagram.com/enbi.my');
   await need.locator('.pickrate').fill('380');
-  await need.locator('button').click();
+  await need.locator(".pickadd > button").click();
   await p.waitForTimeout(500);
   const kept = await p.evaluate(() => (window.__DB.creator_profiles || []).filter(
     r => r.platform === 'instagram' && r.handle === 'enbi.my'));
