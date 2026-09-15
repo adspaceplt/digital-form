@@ -2457,3 +2457,88 @@ grant execute on function public.reset_creator_code(uuid) to authenticated;
 -- a name somebody has since chosen themselves.
 update public.services set name = replace(name, 'RedNote', 'rednote')
  where name like '%RedNote%';
+
+-- ============================================================================
+-- LEAST PRIVILEGE ON THE CRM AND CAMPAIGN TABLES
+--
+-- Fifteen tables carried `for all to authenticated using (true)`. That was
+-- written when `authenticated` meant the team, and it has not since /client/
+-- began signing clients in with real Supabase accounts: a client's own JWT
+-- would have read every other client's record, contacts, content and
+-- approvals, every creator's fee, and every campaign. The same policies also
+-- ignored the user groups, so a Sales member with can_campaigns false could
+-- read and write every campaign the console hid from them.
+--
+-- Each table is gated on the group flag that owns it, and select, insert,
+-- update and delete are separate, so reading a row and destroying it stopped
+-- being the same grant. No client-facing page loses anything: /client/,
+-- /creators/, /creator/ and /review/ make no direct table call at all and
+-- reach their data through security definer functions, which are not subject
+-- to RLS. tests/rls.js proves both halves against a real Postgres.
+--
+-- This block sits at the foot of the file on purpose. Policies are additive,
+-- so a permissive one created earlier has to be dropped rather than sat
+-- beside, and the drops below name every policy this schema has ever made on
+-- these tables.
+-- ============================================================================
+
+/* One shape for all fifteen, so a table cannot quietly differ from its
+   neighbour. `flag` is what may write, `also_read` is a neighbouring section
+   that may read, and `del_flag` is what may delete.
+
+   Every existing policy on these tables is dropped first, whatever it is
+   called, rather than the handful of names this schema happens to remember.
+   Policies are permissive and additive: one left behind under a name nobody
+   listed keeps the table open, and that is the whole failure being repaired
+   here. Idempotent, because the drop is driven by what is actually there. */
+do $$
+declare r record; p record;
+begin
+  for r in
+    select * from (values
+      ('batches',                'review',    'clients',  'review'),
+      ('posts',                  'review',    null,       'review'),
+      ('reviews',                'review',    null,       'review'),
+      ('drive_assets',           'review',    null,       'review'),
+      ('campaigns',              'campaigns', 'clients',  'campaigns'),
+      ('campaign_options',       'campaigns', null,       'campaigns'),
+      ('campaign_confirmations', 'campaigns', null,       'campaigns'),
+      ('option_posts',           'campaigns', null,       'campaigns'),
+      ('option_reviews',         'campaigns', null,       'campaigns'),
+      ('creators',               'campaigns', null,       'campaigns'),
+      ('creator_profiles',       'campaigns', null,       'campaigns'),
+      ('client_contacts',        'clients',   null,       'remove'),
+      ('client_touches',         'clients',   null,       'clients'),
+      ('links',                  'links',     null,       'links'),
+      ('link_qrs',               'links',     null,       'links')
+    ) as t(tbl, flag, also_read, del_flag)
+  loop
+    execute format('alter table public.%I enable row level security', r.tbl);
+
+    for p in select policyname from pg_policies
+              where schemaname = 'public' and tablename = r.tbl
+    loop
+      execute format('drop policy if exists %I on public.%I', p.policyname, r.tbl);
+    end loop;
+
+    execute format(
+      'create policy %I on public.%I for select to authenticated using (%s)',
+      r.tbl || '_sel', r.tbl,
+      case when r.also_read is null
+           then format('public.allowed(%L)', r.flag)
+           else format('public.allowed(%L) or public.allowed(%L)', r.flag, r.also_read) end);
+
+    execute format(
+      'create policy %I on public.%I for insert to authenticated with check (public.allowed(%L))',
+      r.tbl || '_ins', r.tbl, r.flag);
+
+    execute format(
+      'create policy %I on public.%I for update to authenticated '
+      'using (public.allowed(%L)) with check (public.allowed(%L))',
+      r.tbl || '_upd', r.tbl, r.flag, r.flag);
+
+    execute format(
+      'create policy %I on public.%I for delete to authenticated using (public.allowed(%L))',
+      r.tbl || '_del', r.tbl, r.del_flag);
+  end loop;
+end $$;
