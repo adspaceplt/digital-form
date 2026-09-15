@@ -2482,18 +2482,60 @@ update public.services set name = replace(name, 'RedNote', 'rednote')
 -- these tables.
 -- ============================================================================
 
-/* One shape for all fifteen, so a table cannot quietly differ from its
-   neighbour. `flag` is what may write, `also_read` is a neighbouring section
-   that may read, and `del_flag` is what may delete.
-
-   Every existing policy on these tables is dropped first, whatever it is
-   called, rather than the handful of names this schema happens to remember.
-   Policies are permissive and additive: one left behind under a name nobody
-   listed keeps the table open, and that is the whole failure being repaired
-   here. Idempotent, because the drop is driven by what is actually there. */
+/* The guard, the replacement and the revoke, exactly as
+   supabase/migrations/2026-09-15-rls-tenant-isolation.sql runs them. One
+   `do` block is one statement, so the drops and the creates land together
+   and there is no instant in which a table is readable with no policy on it.
+   It refuses to run at all if it finds a policy on one of these tables that
+   nobody has reviewed, because it drops by what is there rather than by a
+   list of remembered names. */
 do $$
-declare r record; p record;
+declare
+  r record;
+  p record;
+  /* Every policy name this schema has ever created on these fifteen tables,
+     read off supabase/schema.sql on 2026-09-15. Anything else is a surprise
+     and stops the migration. */
+  reviewed constant text[] := array[
+    'team_all', 'campaigns_team', 'campaign_options_team', 'campaign_conf_team',
+    'option_posts_team', 'option_reviews_team', 'creators_team',
+    'creator_profiles_team', 'contacts staff', 'touches staff',
+    'links_team', 'link_qrs_team'
+  ];
+  /* Add a policy name here once you have looked at it in the preflight output
+     and decided it should go. Leave it empty until then. */
+  reviewed_extra constant text[] := array[]::text[];
+  odd text;
 begin
+  /* ---- 1. Refuse to delete anything nobody has looked at ---------------- */
+  select string_agg(format('%s.%s (%s %s)', x.tablename, x.policyname, x.cmd,
+                           coalesce(x.roles::text, '')), ', ' order by x.tablename)
+    into odd
+    from pg_policies x
+   where x.schemaname = 'public'
+     and x.tablename in ('batches','posts','reviews','drive_assets','campaigns',
+       'campaign_options','campaign_confirmations','option_posts','option_reviews',
+       'creators','creator_profiles','client_contacts','client_touches','links','link_qrs')
+     and not (x.policyname = any(reviewed))
+     and not (x.policyname = any(reviewed_extra))
+     -- what this file itself creates, so a second run is not a surprise
+     and x.policyname !~ ('^' || x.tablename || '_(sel|ins|upd|del)$');
+
+  if odd is not null then
+    raise exception
+      'Unreviewed policy on a gated table, so nothing was changed: %. Read it, then add its name to reviewed_extra in this file and run again.', odd;
+  end if;
+
+  /* ---- 2. Replace ------------------------------------------------------- */
+  /* One shape for all fifteen, so a table cannot quietly differ from its
+     neighbour. `flag` is what may write, `also_read` is a neighbouring section
+     that may read, and `del_flag` is what may delete.
+
+     Every existing policy on these tables is dropped by what is actually
+     there, not by a list of remembered names: policies are permissive and
+     additive, so one left behind under an unlisted name keeps the table open,
+     and that is the failure being repaired. The guard above is what makes
+     that safe. */
   for r in
     select * from (values
       ('batches',                'review',    'clients',  'review'),
@@ -2540,5 +2582,11 @@ begin
     execute format(
       'create policy %I on public.%I for delete to authenticated using (public.allowed(%L))',
       r.tbl || '_del', r.tbl, r.del_flag);
+
+    /* ---- 3. Defence in depth ------------------------------------------- */
+    /* Nothing anonymous reads these tables directly. The token and code pages
+       go through security definer functions, which run as the owner and need
+       no privilege from their caller. */
+    execute format('revoke all on public.%I from anon', r.tbl);
   end loop;
 end $$;

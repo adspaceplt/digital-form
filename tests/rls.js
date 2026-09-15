@@ -75,7 +75,7 @@ try {
   // The two functions every policy below rests on, taken from the real file.
   const isTeam = cut('create or replace function public.is_team()', 'grant execute on function public.is_team()');
   const allowed = cut('create or replace function public.allowed(flag text)', 'grant execute on function public.allowed');
-  const policies = cut('/* One shape for all fifteen');
+  const policies = cut('do $$\ndeclare\n  r record;');
 
   runFile('rls-setup.sql', `
 create extension if not exists pgcrypto;
@@ -178,11 +178,22 @@ grant execute on function public.allowed(text) to anon, authenticated;
     'campaign_confirmations','option_posts','option_reviews','creators','creator_profiles',
     'client_contacts','client_touches','links','link_qrs'];
 
-  // ---- Before: every one of them is wide open to any signed-in account ----
+  /* ---- Before: every one of them wide open to any signed-in account -----
+     Under the names production actually carries, so the guard below is asked
+     the same question a real run asks it. */
+  const LEGACY = {
+    batches: 'team_all', posts: 'team_all', reviews: 'team_all', drive_assets: 'team_all',
+    campaigns: 'campaigns_team', campaign_options: 'campaign_options_team',
+    campaign_confirmations: 'campaign_conf_team', option_posts: 'option_posts_team',
+    option_reviews: 'option_reviews_team', creators: 'creators_team',
+    creator_profiles: 'creator_profiles_team', client_contacts: 'contacts staff',
+    client_touches: 'touches staff', links: 'links_team', link_qrs: 'link_qrs_team'
+  };
   runFile('rls-open.sql', GATED.map(t =>
     `alter table public.${t} enable row level security;
-     drop policy if exists ${t}_open on public.${t};
-     create policy ${t}_open on public.${t} for all to authenticated using (true) with check (true);`
+     drop policy if exists "${LEGACY[t]}" on public.${t};
+     create policy "${LEGACY[t]}" on public.${t} for all to authenticated using (true) with check (true);
+     grant all on public.${t} to anon, authenticated;`
   ).join('\n'));
 
   const clientSees = GATED.filter(t =>
@@ -195,6 +206,32 @@ grant execute on function public.allowed(text) to anon, authenticated;
   check('before: and can read a creator\'s fee',
     asRole('authenticated', 'a.person@clienta.test',
       `select client_rate::text from public.creators`) === '360.00');
+
+  /* A token page's way in, made before the fix so it can be called after it.
+     Definer functions run as the owner: they are not subject to RLS and need
+     no privilege from their caller, which is what makes revoking anon's table
+     grants safe. */
+  runFile('rls-definer.sql', `
+create or replace function public.demo_token_read(p_token text)
+returns jsonb language sql security definer stable set search_path = public as $$
+  select case when p_token = 'goodtoken' then jsonb_build_object(
+    'campaigns', (select count(*) from campaigns),
+    'creators',  (select count(*) from creators),
+    'posts',     (select count(*) from posts)) else jsonb_build_object('error','no') end
+$$;
+grant execute on function public.demo_token_read(text) to anon, authenticated;`);
+
+  /* The guard: the migration drops by what is there, so it must refuse to run
+     while something nobody has reviewed is sitting on a gated table. */
+  sql(`create policy zz_unreviewed on public.links for select to authenticated using (true)`);
+  let guarded = false;
+  try { runFile('rls-policies.sql', policies); }
+  catch (e) { guarded = /Unreviewed policy on a gated table/.test(String(e.stderr || e.message)); }
+  check('an unreviewed policy stops the migration rather than being deleted', guarded);
+  check('and nothing was changed when it stopped',
+    sql(`select count(*) from pg_policies where schemaname='public'
+         and tablename='links' and policyname='links_sel'`) === '0');
+  sql(`drop policy zz_unreviewed on public.links`);
 
   // ---- The fix ----
   runFile('rls-policies.sql', policies);
@@ -273,26 +310,38 @@ grant execute on function public.allowed(text) to anon, authenticated;
     GATED.every(t => asRole('authenticated', 'former@example.test',
       `select count(*) from public.${t}`) === '0'));
 
-  // ---- Anonymous ----
-  const anonStill = GATED.filter(t => asRole('anon', null, `select count(*) from public.${t}`) !== '0');
+  /* ---- Anonymous ----
+     `denied` counts both answers: no rows, or refused outright. After the
+     revoke it is refused, which is the stronger of the two. */
+  const anonStill = GATED.filter(t => !denied('anon', null, `select count(*) from public.${t}`));
   check('an anonymous visitor reads nothing', anonStill.length === 0, anonStill.join(', '));
   check('and writes nothing',
     refused('anon', null, `insert into public.links (slug, target) values ('anon', 'https://example.test')`));
 
-  // ---- A security definer function is still the way in for a token page ----
-  runFile('rls-definer.sql', `
-create or replace function public.demo_token_read(p_token text)
-returns jsonb language sql security definer stable set search_path = public as $$
-  select jsonb_build_object('campaigns', (select count(*) from campaigns),
-                            'creators',  (select count(*) from creators))
-$$;
-grant execute on function public.demo_token_read(text) to anon, authenticated;`);
-  check('a token page still reads through a security definer function',
-    asRole('anon', null, `select public.demo_token_read('tok')->>'campaigns'`) === '1',
-    'definer functions run as the owner and are not subject to RLS');
-  check('and so does a client page',
+  /* ---- anon holds nothing directly, and the token pages still work ----- */
+  check('anon holds no direct privilege on any gated table',
+    sql(`select count(*) from information_schema.role_table_grants
+         where table_schema='public' and grantee='anon'
+           and table_name = any(array[${GATED.map(t => `'${t}'`).join(',')}])`) === '0',
+    sql(`select coalesce(string_agg(distinct table_name, ', '), 'none')
+         from information_schema.role_table_grants where table_schema='public'
+         and grantee='anon' and table_name = any(array[${GATED.map(t => `'${t}'`).join(',')}])`));
+  check('so a direct read as anon is refused outright',
+    refused('anon', null, `select count(*) from public.creators`));
+
+  // /creators/, /creator/ and /review/ all arrive this way and must still pass.
+  check('a campaign token page still reads its campaign',
+    asRole('anon', null, `select public.demo_token_read('goodtoken')->>'campaigns'`) === '1',
+    'definer runs as the owner, so the revoke costs it nothing');
+  check('a creator code page still reads its booking',
+    asRole('anon', null, `select public.demo_token_read('goodtoken')->>'creators'`) === '1');
+  check('a review token page still reads its posts',
+    asRole('anon', null, `select public.demo_token_read('goodtoken')->>'posts'`) === '1');
+  check('and a wrong token still gets nothing',
+    asRole('anon', null, `select public.demo_token_read('wrong')->>'error'`) === 'no');
+  check('a signed-in client page still reads through its own function',
     asRole('authenticated', 'a.person@clienta.test',
-      `select public.demo_token_read('tok')->>'creators'`) === '1');
+      `select public.demo_token_read('goodtoken')->>'creators'`) === '1');
 } catch (e) {
   console.log('FAIL ' + (e.stderr ? String(e.stderr).slice(0, 900) : e.message));
   fails++;
