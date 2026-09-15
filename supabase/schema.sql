@@ -776,8 +776,8 @@ begin
   select exists (
     select 1 from campaign_options o
      where o.campaign_id = c.id
-       and o.state in ('confirmed', 'pending_visit', 'pending_draft', 'reviewing',
-                       'changes', 'scheduled', 'posted', 'completed')
+       and o.state in ('confirmed', 'pending_visit', 'pending_draft', 'submitted',
+                       'reviewing', 'changes', 'scheduled', 'posted', 'completed')
   ) into billable;
 
   if c.passcode is not null and c.passcode <> '' then
@@ -799,18 +799,43 @@ begin
     -- prints both and must not assume Malaysia.
     'client', jsonb_build_object('name', cl.name, 'logo_url', cl.logo_url,
       'market', coalesce(cl.market, 'MY'), 'sst_applies', coalesce(cl.sst_applies, true)),
+    /* A draft reaches the client when the team releases it, and not a moment
+       before. `submitted` is the team's own step, so it is reported as
+       `pending_draft`: the client is not asked to approve something they
+       cannot open, and does not learn that a round exists. A `changes` the
+       team raised is the same round going back to the creator, so it is
+       withheld the same way; a `changes` the client raised is their own and
+       is reported as it is. The mapping is here and not on the page, because
+       what a client may not see is withheld by this function. */
     'options', coalesce((
       select jsonb_agg(jsonb_build_object(
         'id', o.id, 'name', cr.name,
-        'rate', o.rate, 'platforms', o.platforms, 'state', o.state,
+        'rate', o.rate, 'platforms', o.platforms, 'state', s.shown,
         'is_replacement', o.is_replacement, 'added_at', o.added_at,
         -- Production. Present once a creator is locked; null before that, so
         -- the page can tell "not started" from "nothing to say".
         'visit_date', o.visit_date, 'visit_time', o.visit_time,
         'visit_location', o.visit_location, 'visit_pic', o.visit_pic,
         'visit_pic_phone', o.visit_pic_phone, 'tracking_no', o.tracking_no,
-        'draft_url', o.draft_url, 'revision_round', o.revision_round,
+        'draft_url', case when s.released then o.draft_url end,
+        'revision_round', o.revision_round,
         'planned_publish', o.planned_publish,
+        /* What the creator uploaded, once it has been released: the newest
+           round handed in, which at `changes` is the one the client turned
+           down and wants to refer back to. Never the round sitting with the
+           team. */
+        'files', case when s.released then coalesce((
+            select jsonb_agg(jsonb_build_object(
+              'id', d.id, 'url', d.url, 'name', d.name, 'kind', d.kind,
+              'bytes', d.bytes) order by d.uploaded_at)
+            from campaign_deliverables d
+            where d.option_id = o.id and d.removed_at is null
+              and d.round = (select max(d2.round) from campaign_deliverables d2
+                             where d2.option_id = o.id and d2.removed_at is null)
+          ), '[]'::jsonb) else '[]'::jsonb end,
+        -- The caption is part of what is being approved, so it travels with
+        -- the files and is withheld with them.
+        'caption', case when s.released then o.draft_caption end,
         'profiles', coalesce((
           select jsonb_agg(jsonb_build_object('platform', p.platform, 'url', p.url))
           from creator_profiles p where p.creator_id = cr.id), '[]'::jsonb),
@@ -825,6 +850,17 @@ begin
         order by o.position, o.added_at)
       from campaign_options o
       join creators cr on cr.id = o.creator_id
+      cross join lateral (
+        select sh.shown,
+               sh.shown in ('reviewing', 'changes', 'scheduled', 'posted', 'completed')
+                 as released
+        from (select case
+                       when o.state = 'submitted' then 'pending_draft'
+                       when o.state = 'changes'
+                            and coalesce(o.changes_by, 'client') = 'team' then 'pending_draft'
+                       else o.state
+                     end as shown) sh
+      ) s
       where o.campaign_id = c.id and o.state <> 'replaced'), '[]'::jsonb)
   );
 end $$;
@@ -872,7 +908,8 @@ begin
     update campaign_options set state = 'scheduled' where id = p_option;
   else
     update campaign_options
-       set state = 'changes', revision_round = greatest(n, 1) + 1
+       set state = 'changes', revision_round = greatest(n, 1) + 1,
+           changes_by = 'client'
      where id = p_option;
   end if;
 
@@ -2200,6 +2237,17 @@ create policy campaign_deliverables_team on public.campaign_deliverables
 alter table public.campaign_options add column if not exists draft_caption text;
 alter table public.campaign_options add column if not exists submitted_at  timestamptz;
 
+/* Who asked for the changes. `changes` serves two rounds that look alike from
+   the row and are opposite from the client's seat: one the client raised on a
+   draft they were shown, and one the team raised on a draft the client has
+   never seen. Without this column the second leaks the first's chip onto their
+   page, and with it `get_campaign` reports an internal round as
+   `pending_draft`. Rows that predate the column can only have come from the
+   client, because the team had no way to raise one. */
+alter table public.campaign_options add column if not exists changes_by text;
+update public.campaign_options set changes_by = 'client'
+ where state = 'changes' and changes_by is null;
+
 -- A creator may upload only while we are actually waiting for their draft.
 create or replace function public.creator_can_deliver(p_state text)
 returns boolean language sql immutable as $$
@@ -2274,8 +2322,8 @@ begin
         where o.creator_id = cr.id
           and c.state <> 'draft'
           and o.state in ('confirmed', 'pending_visit', 'pending_delivery',
-                          'pending_draft', 'reviewing', 'changes', 'scheduled',
-                          'posted', 'completed', 'withdrawn', 'replaced')
+                          'pending_draft', 'submitted', 'reviewing', 'changes',
+                          'scheduled', 'posted', 'completed', 'withdrawn', 'replaced')
       ) rows), '[]'::jsonb));
 end $$;
 
@@ -2351,8 +2399,14 @@ begin
    where option_id = p_option and removed_at is null;
   if n = 0 then return jsonb_build_object('error', 'empty'); end if;
 
+  /* `submitted` is ours, not the client's. It used to move straight to
+     `reviewing`, which on the client's page reads "Your approval": the chip
+     asked them to act the moment a creator uploaded, while the files are
+     team-only, so there was nothing there for them to open. The team reviews
+     it and releases it. */
   update campaign_options
-     set state = 'reviewing', draft_caption = p_caption, submitted_at = now()
+     set state = 'submitted', draft_caption = p_caption, submitted_at = now(),
+         changes_by = null          -- that round is over, whoever raised it
    where id = p_option;
   return jsonb_build_object('ok', true, 'files', n);
 end $$;

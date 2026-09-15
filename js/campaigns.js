@@ -719,8 +719,8 @@
   }
 
   // The states whose rate the client pays for.
-  var CHARGED = ['shortlisted', 'confirmed', 'pending_visit', 'pending_draft', 'reviewing',
-                 'changes', 'scheduled', 'posted', 'completed'];
+  var CHARGED = ['shortlisted', 'confirmed', 'pending_visit', 'pending_draft',
+                 'submitted', 'reviewing', 'changes', 'scheduled', 'posted', 'completed'];
 
   /* One vocabulary, from the file that holds it. This map, the one in crm.js
      and the one in words.js each said something different for `open`. */
@@ -1467,9 +1467,20 @@
   /* The line forward. `changes` is deliberately not on it: it is a branch the
      client causes off `reviewing`, not a step towards being done. Putting it
      in the sequence made "next" walk reviewing → changes → reviewing forever. */
-  var PIPELINE = ['confirmed', 'pending_visit', 'pending_draft', 'reviewing',
-                  'scheduled', 'posted', 'completed'];
+  var PIPELINE = ['confirmed', 'pending_visit', 'pending_draft', 'submitted',
+                  'reviewing', 'scheduled', 'posted', 'completed'];
   var IN_PRODUCTION = PIPELINE.concat(['changes']);
+
+  /* The step is named for where the work is; the button is named for what
+     pressing it does. "Reviewing →" on a card sitting at Submitted says
+     nothing about who is about to see it, and releasing a draft to a client
+     is the one move on this card that cannot be taken back quietly. */
+  var ADVANCE_WORD = { submitted: 'Mark submitted', reviewing: 'Release to client' };
+
+  /* Whose round a `changes` is. The client's own decision is stamped by
+     review_draft; a round the team sent back is stamped here. Rows that
+     predate the column can only be the client's. */
+  function changesBy(o) { return o.changes_by || 'client'; }
 
   // Product seeding has no visit. Asking for a location would mean typing N/A
   // into a box forever, so the same fields are labelled for what they are.
@@ -1479,7 +1490,8 @@
   function visitWord() { return isDelivery() ? 'Delivery' : 'Visit'; }
 
   function nextState(s) {
-    if (s === 'changes') return 'reviewing';           // re-submitted after edits
+    // Re-uploaded after edits, which lands with us again and not with the client.
+    if (s === 'changes') return 'submitted';
     var i = PIPELINE.indexOf(s);
     return i > -1 && i < PIPELINE.length - 1 ? PIPELINE[i + 1] : null;
   }
@@ -1487,8 +1499,9 @@
   /* Every step forward has a step back. Things go wrong, a status gets clicked
      twice, a client asks to undo: none of that should mean deleting the
      campaign and building it again. */
-  function prevState(s) {
-    if (s === 'changes') return 'reviewing';           // the branch folds back
+  function prevState(s, o) {
+    // The branch folds back to whichever side raised it.
+    if (s === 'changes') return (o && changesBy(o) === 'team') ? 'submitted' : 'reviewing';
     var i = PIPELINE.indexOf(s);
     return i > 0 ? PIPELINE[i - 1] : null;             // confirmed is the floor
   }
@@ -1556,10 +1569,11 @@
     var canEdit = ['option', 'backup', 'shortlisted'].indexOf(o.state) > -1;
     var plats = platformsOf(o).join(' · ');
     var advance = live ? nextState(o.state) : null;
-    var back = live ? prevState(o.state) : null;
+    var back = live ? prevState(o.state, o) : null;
 
     // The draft is a step of its own: it exists only once filming is done.
-    var stage = PIPELINE.indexOf(o.state === 'changes' ? 'reviewing' : o.state);
+    var stage = PIPELINE.indexOf(o.state === 'changes'
+      ? (changesBy(o) === 'team' ? 'submitted' : 'reviewing') : o.state);
     var drafting = live && stage >= PIPELINE.indexOf('pending_draft');
     var open = !live || !!openCards[o.id];
 
@@ -1636,7 +1650,12 @@
         '<div class="kactions">' +
           '<button class="btn btn-sm btn-primary" data-a="save" type="button">Save</button>' +
           (advance ? '<button class="btn btn-sm btn-go" data-a="advance" type="button">' +
-            esc(wordFor(advance)) + CHEV + '</button>' : '') +
+            esc(ADVANCE_WORD[advance] || wordFor(advance)) + CHEV + '</button>' : '') +
+          /* Back to the creator without the client ever seeing the round.
+             Warn and outlined: it is reversible and it is not the way out. */
+          (o.state === 'submitted'
+            ? '<button class="btn btn-sm btn-warn" data-a="sendback" type="button">' +
+              'Request changes</button>' : '') +
           (back ? '<button class="btn btn-sm btn-quiet" data-a="back" type="button">Revert</button>' : '') +
         '</div>' +
         '<div class="msg" data-msg></div>' +
@@ -1729,7 +1748,8 @@
       delete patch.id;
       advanceOption(o, to, patch);
     });
-    on('back',      function () { stepBack(o, prevState(o.state)); });
+    on('back',      function () { stepBack(o, prevState(o.state, o)); });
+    on('sendback',  function () { sendBack(o, card); });
 
     on('save', function () {
       db.from('campaign_options').update(readCard(card)).eq('id', o.id).then(function (r) {
@@ -1757,7 +1777,9 @@
        somebody pasted a link: the gate is that something arrived, not which
        route it came by. */
     var files = (state.files && state.files[p.id]) || [];
-    if (to === 'reviewing' && !p.draft_url && !files.length) return 'Draft link or files required.';
+    if ((to === 'submitted' || to === 'reviewing') && !p.draft_url && !files.length) {
+      return 'Draft link or files required.';
+    }
     if (to === 'scheduled' && !p.planned_publish) return 'Publish date required.';
     if (to === 'posted') {
       if (!p.planned_publish) return 'Publish date required.';
@@ -1800,7 +1822,9 @@
   function stepBack(o, to) {
     var name = (o.creators || {}).name || 'this creator';
     if (!to || !confirm('Revert ' + name + ' to ' + wordFor(to) + '?')) return;
-    db.from('campaign_options').update({ state: to }).eq('id', o.id).then(function (r) {
+    var patch = { state: to };
+    if (o.state === 'changes') patch.changes_by = null;   // the round is over
+    db.from('campaign_options').update(patch).eq('id', o.id).then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
       log('campaign.stage', name, 'back to ' + to);
       msg('campWorkMsg', name + ': ' + wordFor(to) + '.', 'ok');
@@ -1837,8 +1861,30 @@
 
   /* Moving to posted needs somewhere for the numbers to go, and there is one
      row per platform because two placements are two posts. */
+  /* A round the team turns down. It goes back to the creator with a note and
+     a fresh revision number, exactly as a client's rejection does, but the
+     client's page never learns the round happened: `changes_by` is what
+     get_campaign reads to report it as Pending draft instead. */
+  function sendBack(o, card) {
+    var m = card.querySelector('[data-msg]');
+    var why = prompt('What needs changing? The creator reads this.');
+    if (why === null) return;
+    why = why.trim();
+    if (!why) { m.textContent = 'A note is required.'; m.className = 'msg err'; return; }
+    db.from('campaign_options').update({
+      state: 'changes', changes_by: 'team', drop_reason: why,
+      revision_round: Math.max(o.revision_round || 0, 1) + 1
+    }).eq('id', o.id).then(function (r) {
+      if (r.error) { m.textContent = r.error.message; m.className = 'msg err'; return; }
+      log('campaign.stage', (o.creators || {}).name || '', 'changes requested');
+      loadOptions();
+    });
+  }
+
   function advanceOption(o, to, fields) {
     var patch = Object.assign({}, fields || {}, { state: to });
+    // Leaving `changes` ends that round, so whose it was goes with it.
+    if (o.state === 'changes') patch.changes_by = null;
     db.from('campaign_options').update(patch).eq('id', o.id).then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
       log('campaign.stage', (o.creators || {}).name || '', to);
