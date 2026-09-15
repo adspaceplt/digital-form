@@ -5,7 +5,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   D.campaigns.push({ id:'cmp1', client_id:'c1', title:'Keyed', slots:2, state:'open',
     deliverable:'video', push_format:'site_visit', access_token:'KEY' });
   D.creators.forEach(function(cr,i){ D.campaign_options.push({ id:'ok'+i, campaign_id:'cmp1',
-    creator_id:cr.id, rate:cr.client_rate, platforms:'RedNote', state:'option', position:i }); });
+    creator_id:cr.id, rate:cr.client_rate, platforms:'rednote', state:'option', position:i }); });
   window.__persist && window.__persist();
 })();`;
 (async () => {

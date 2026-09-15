@@ -5,11 +5,11 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   D.campaigns.push({ id:'cmp1', client_id:'c1', title:'Mixed', slots:4, state:'production',
     deliverable:'video', push_format:'site_visit', access_token:'BAR' });
   D.campaign_options.push({ id:'o1', campaign_id:'cmp1', creator_id:'k1', rate:360,
-    platforms:'RedNote', state:'posted', position:0 });
+    platforms:'rednote', state:'posted', position:0 });
   D.campaign_options.push({ id:'o2', campaign_id:'cmp1', creator_id:'k2', rate:360,
-    platforms:'RedNote', state:'pending_visit', position:1 });
+    platforms:'rednote', state:'pending_visit', position:1 });
   D.campaign_options.push({ id:'o3', campaign_id:'cmp1', creator_id:'k3', rate:500,
-    platforms:'RedNote', state:'option', position:2 });
+    platforms:'rednote', state:'option', position:2 });
   window.__persist && window.__persist();
 })();`;
 (async () => {

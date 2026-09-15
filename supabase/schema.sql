@@ -616,11 +616,11 @@ create table if not exists public.creators (
 alter table public.creators enable row level security;
 create index if not exists creators_name_idx on public.creators(name);
 
--- One row per profile link. A creator may hold several: RedNote, Instagram,
+-- One row per profile link. A creator may hold several: rednote, Instagram,
 -- TikTok, Facebook, or two accounts on one platform.
 --
 -- `handle` is the canonical identity pulled out of the URL: the id after
--- /user/profile/ on RedNote, the handle elsewhere. A xhslink.com short link
+-- /user/profile/ on rednote, the handle elsewhere. A xhslink.com short link
 -- carries no identity, so it is stored with handle null and simply cannot
 -- take part in matching.
 create table if not exists public.creator_profiles (
@@ -1458,10 +1458,10 @@ begin
   ('short-video-120',  'Content',            'Short video, up to 120 seconds',       1200, 'Per video',                         15),
   ('mgmt-meta',        'Account management', 'Meta (Facebook and Instagram)',        500,  'Per post',                          20),
   ('mgmt-tiktok',      'Account management', 'TikTok / Douyin',                      500,  'Per GIF',                           21),
-  ('mgmt-xhs',         'Account management', 'RedNote (XHS)',                        600,  'Per set',                           22),
+  ('mgmt-xhs',         'Account management', 'rednote (XHS)',                        600,  'Per set',                           22),
   ('mgmt-linkedin',    'Account management', 'LinkedIn',                             700,  'Per video, up to 30 seconds',       23),
   ('verify-meta',      'Verification',       'Meta Verified (blue tick)',            200,  'Per account, plus Meta subscription', 30),
-  ('verify-xhs',       'Verification',       'RedNote Professional (blue tick)',     1299, 'Per account, RM 450 platform fee included', 31),
+  ('verify-xhs',       'Verification',       'rednote Professional (blue tick)',     1299, 'Per account, RM 450 platform fee included', 31),
   ('pkg-a',            'Monthly packages',   'Package A · 1 platform · 2 contents',  1310, 'Per month, 6 month minimum',        40),
   ('pkg-b',            'Monthly packages',   'Package B · 2 platforms · 4 contents', 2830, 'Per month, 6 month minimum',        41),
   ('pkg-c',            'Monthly packages',   'Package C · 3 platforms · 8 contents', 5300, 'Per month, 6 month minimum',        42),
@@ -2391,3 +2391,10 @@ begin
   return jsonb_build_object('code', fresh);
 end $$;
 grant execute on function public.reset_creator_code(uuid) to authenticated;
+
+-- The brand sets its name in lower case: rednote. The rate card seeds only
+-- into an empty database, so a card that already exists is corrected here
+-- instead. Guarded on the old spelling, so it fires once and never overwrites
+-- a name somebody has since chosen themselves.
+update public.services set name = replace(name, 'RedNote', 'rednote')
+ where name like '%RedNote%';

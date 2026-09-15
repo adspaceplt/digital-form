@@ -84,7 +84,7 @@
       replacement: 'Replacement',
       viewProfile: 'View profile',
       viewOn: function (platform) { return 'View ' + platform + ' profile'; },
-      platform: { xhs: 'RedNote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' },
+      platform: { xhs: 'rednote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' },
       full: 'All creators chosen',
       confirm: 'Confirm selection',
       confirmHeading: 'Confirm your selection',
@@ -762,7 +762,7 @@
   }
 
   function platLabel(p) {
-    return { xhs: 'RedNote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' }[p] || p;
+    return { xhs: 'rednote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' }[p] || p;
   }
 
   /* What the creator is booked to post on, which is not the same list as the
@@ -770,9 +770,9 @@
      it, and another creator charges for a second. Read in the reader's own
      language, the way the profile buttons on the same row already are. */
   function platsOf(o) {
-    // The console stores the placement by its printed name ("RedNote, Instagram"),
+    // The console stores the placement by its printed name ("rednote, Instagram"),
     // and older rows carry the key, so both resolve to the same word.
-    var key = { RedNote: 'xhs', Instagram: 'instagram', TikTok: 'tiktok', Facebook: 'facebook' };
+    var key = { rednote: 'xhs', Instagram: 'instagram', TikTok: 'tiktok', Facebook: 'facebook' };
     return String(o.platforms || '').split(',').map(function (s) { return s.trim(); })
       .filter(Boolean).map(function (p) { return t().platform[key[p] || p] || p; });
   }

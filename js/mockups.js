@@ -46,7 +46,7 @@
       .replace(/\n/g, '<br>');
   }
 
-  /* Instagram, Facebook and RedNote each accept a range of shapes, so the
+  /* Instagram, Facebook and rednote each accept a range of shapes, so the
      frame follows the real file rather than a hardcoded square. Values are the
      narrowest and widest each platform actually renders. */
   const SHAPES = {
@@ -174,7 +174,7 @@
 
   /* Each platform shows a different account name, so use the one set on the
      client and fall back to the brand name rather than inventing a handle. */
-  /* Instagram and TikTok use @ handles. Facebook Pages and RedNote accounts do
+  /* Instagram and TikTok use @ handles. Facebook Pages and rednote accounts do
      not, and a Facebook Reel is still a Page, so the @ depends on the account
      rather than on the format being vertical. */
   /* Applied at every surface that shows an account, not just some of them:
@@ -549,7 +549,7 @@
     return phone;
   }
 
-  // ---- RedNote post ---------------------------------------------------------
+  // ---- rednote post ---------------------------------------------------------
   function xhsNote(post, cfg) {
     const frame = el('article', 'mk mk-xhs');
     frame.appendChild(carouselNode(post.media || [], { shape: SHAPES['xhs:note'] }));
@@ -648,8 +648,8 @@
     'facebook:reel':      ['Facebook Reels', '1080 x 1920'],
     'tiktok:reel':        ['TikTok', '1080 x 1920'],
     'tiktok:feed':        ['TikTok', '1080 x 1920'],
-    'xhs:note':           ['RedNote Post', '1080 x 1440'],
-    'xhs:feed':           ['RedNote Post', '1080 x 1440'],
+    'xhs:note':           ['rednote Post', '1080 x 1440'],
+    'xhs:feed':           ['rednote Post', '1080 x 1440'],
     'cover:image':        ['Cover Image', '']
   };
 

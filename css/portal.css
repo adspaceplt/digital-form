@@ -1485,7 +1485,12 @@ a { color: inherit; }
   width: 18px; height: 18px; flex: 0 0 auto; color: var(--ink-mute); stroke-width: 1.7;
 }
 .viewhead .headmark { display: flex; align-items: center; gap: 9px; flex: 1 1 auto; }
-.viewhead .headmark h2 { flex: 0 1 auto; }
+/* Same rule for a record's own head: the title takes the slack so the state it
+   carries goes to the end of the line rather than trailing the words. Held at
+   `flex: 0 1 auto` the chip sat 222px in and 599px short of the edge, moving
+   with every title, and a page of campaign heads could not be read down for
+   what state each was in. */
+.viewhead .headmark h2 { flex: 1 1 auto; min-width: 0; }
 .disclosure svg.disclosure-mark {
   width: 16px; height: 16px; flex: 0 0 auto; color: var(--ink-mute); stroke-width: 1.7;
 }
@@ -2503,6 +2508,7 @@ body.is-plain .topbar { background: var(--chrome); }
   .viewhead .btn:only-of-type { flex: 0 0 auto; margin-left: auto; }
   .viewhead .btn-sm { min-height: var(--ctl-h); font-size: var(--ctl-text); }
 
+
   /* Action rows: a button keeps a readable width and wraps to the next line
      rather than squeezing its label onto three. */
   .kactions .btn,
@@ -2691,7 +2697,12 @@ body.is-plain .topbar { background: var(--chrome); }
 
 /* Name, state and the control that changes them, together. */
 .crm-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
-.crm-title h2 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
+/* The name takes the slack, so the stage and Edit land in the same place on
+   every client. Sized to its content the stage sat straight after the name and
+   moved with it: 115px in on Furiku Matcha, 98px on Laman Citra, and 700px
+   short of the edge on both. State second from the end and the action last is
+   where this portal's tables already put them. */
+.crm-title h2 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; flex: 1 1 auto; min-width: 0; }
 .crm-title .btn { flex: 0 0 auto; margin-left: auto; }
 
 /* Search, filters, count and the one action on a single line: everything that
@@ -2902,6 +2913,15 @@ body > .shell { width: 100%; }
 /* On a phone a row is two or three lines: the name with its ⋯, the small
    facts, then the money on the left and the state on the right. */
 @media (max-width: 640px) {
+  /* A record head on a phone: the name and its state share the first line with
+     the state at the end, and the action that edits the record takes the next
+     one. Left to wrap on its own the state landed after the name on one client
+     and at the edge on the next, because whether Edit still fitted depended on
+     how long the name was. The basis is the line less the state and the gap,
+     so the action is always the thing that wraps. */
+  .crm-title h2 { flex: 1 1 calc(100% - var(--state-w) - 10px); }
+  .crm-title .state-select { margin-left: auto; }
+  .crm-title .btn { margin-left: auto; }
   .svc-row.crm-head { display: none; }
   .svc-row, .csv-row, .doc-row, .cat-row, .ct-row, .cr-row {
     grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 12px 15px;
@@ -3281,3 +3301,44 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .handedin .filegrid { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
 .handedin .filecard { text-decoration: none; }
 .handedin .kfield { margin-top: 10px; }
+
+/* Copied, said on the button that did it. */
+.kcard-link.is-done { background: var(--ok-bg); color: var(--ok); }
+
+/* A value that is only read is not a field to type in.
+   The creator's code, their link and a client link were all readonly inputs,
+   which draw the same box as every editable field on the page: a person is
+   invited to change something that cannot change, and the one thing they
+   actually want to do with it, copy it, is not what the box suggests. Same
+   height and same alignment as the field it sits beside, so a row still reads
+   as one line, with the affordance taken away rather than the shape. */
+.readfield {
+  background: var(--sunk); border-color: transparent; color: var(--ink-soft);
+  cursor: default; text-overflow: ellipsis;
+}
+.readfield:focus {
+  border-color: transparent; background: var(--sunk);
+}
+/* An access code is a string of characters somebody reads out, so it is set
+   the way this portal sets every other token. */
+.readfield.is-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .08em; color: var(--ink);
+}
+
+/* An instruction, for as long as it is still needed.
+   A line that explains a step is right the first few times somebody meets it
+   and furniture ever after, which is why this portal carries no explanatory
+   copy. It opens by itself while the step is new, retires behind its own mark
+   once it has been read three times, and is a button rather than a `title`,
+   because a hover tooltip cannot be reached on a phone. */
+.hintline { display: flex; align-items: flex-start; gap: 8px; margin: 2px 0 10px; }
+.hintbtn {
+  flex: 0 0 auto; width: 18px; height: 18px; margin-top: 1px; border-radius: 50%;
+  border: 1px solid var(--line-ctl); background: var(--card); color: var(--ink-mute);
+  font-size: 11px; font-weight: 600; line-height: 1; display: grid; place-items: center;
+  transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
+}
+.hintbtn:hover { background: var(--sunk); color: var(--ink); }
+.hintbtn:active { transform: scale(.92); }
+.hinttext { font-size: 12.5px; line-height: 1.5; color: var(--ink-mute); margin: 0; }

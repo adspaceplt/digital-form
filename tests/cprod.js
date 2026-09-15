@@ -10,21 +10,21 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
     access_token:'CPROD', invoice_no:'AINV026114', invoice_url:'https://mycdn.adspace.me/content/c1/inv.pdf' });
   // one waiting on the client, one live with numbers, one still filming, one on offer
   D.campaign_options.push({ id:'o1', campaign_id:'cmp1', creator_id:'k1', rate:360,
-    platforms:'RedNote, Instagram', state:'reviewing', revision_round:1,
+    platforms:'rednote, Instagram', state:'reviewing', revision_round:1,
     draft_url:'https://drive.google.com/drive/folders/abc', visit_date:'2026-10-14',
     visit_time:'2pm', position:0 });
   D.campaign_options.push({ id:'o2', campaign_id:'cmp1', creator_id:'k2', rate:360,
-    platforms:'RedNote', state:'posted', revision_round:1, position:1 });
-  D.option_posts.push({ id:'pp1', option_id:'o2', platform:'RedNote',
+    platforms:'rednote', state:'posted', revision_round:1, position:1 });
+  D.option_posts.push({ id:'pp1', option_id:'o2', platform:'rednote',
     post_url:'https://xiaohongshu.com/explore/xyz', published_at:'2026-10-20',
     window_days:7, impressions:48000, engagements:3200, views:41000 });
   // shoot booked for the 9th, listed third: it must come out first
   D.campaign_options.push({ id:'o3', campaign_id:'cmp1', creator_id:'k3', rate:500,
-    platforms:'RedNote', state:'pending_visit', visit_date:'2026-10-09',
+    platforms:'rednote', state:'pending_visit', visit_date:'2026-10-09',
     visit_time:'10am', position:2 });
   D.creators.push({ id:'k7', name:'泡芙小姐姐', followers:5100, client_rate:360 });
   D.campaign_options.push({ id:'o4', campaign_id:'cmp1', creator_id:'k7', rate:360,
-    platforms:'RedNote', state:'option', position:3 });
+    platforms:'rednote', state:'option', position:3 });
   window.__persist && window.__persist();
 })();`;
 

@@ -459,7 +459,7 @@ disc, on the reasoning that a contacts list has always used one. It does not
 work here and the reason was already written two paragraphs up: most of this
 roster is Chinese names, so a first character index puts nearly everything in
 one bucket, and 是yy呀 and 是甜甜啊 draw the same grey circle. Five identical
-discs over five identical `RedNote` chips over five identical `RM 360` is
+discs over five identical `rednote` chips over five identical `RM 360` is
 decoration standing exactly where information should be. The disc is gone and
 the row carries the **record** instead: where they post, how many campaigns
 they have run for us, when they last shot, and an `On a campaign` chip while
@@ -474,6 +474,32 @@ what qualifies the money (the unit, the platforms) goes under it, and the ⋯
 ends the first line where the thumb already is. Ninety five pixels, and the
 whole card on one screen. The same shape now carries the rate card and the
 creator roster (`.cat-row`, `.cr-row`: `"name rate act" / "meta meta meta"`).
+
+**An instruction lasts as long as it is needed, and a tooltip is not one.**
+This portal carries no explanatory copy, because a line that explains a step is
+right the first few times somebody meets it and furniture ever after. Where a
+step genuinely needs one, it goes behind a `?` (`.hintline`): open by itself
+while the screen is new, retired behind its own mark once it has been read
+three times, and still openable by anybody who wants it. A **button, never a
+`title`**, because a hover tooltip cannot be reached on the device most of this
+is read on — the same rule that retired the half opacity dot on a creator
+profile.
+
+**A value that is only read is not a field to type in.** The creator's access
+code, their portal link and the client links were `readonly` inputs, which draw
+the same box as every editable field on the page: a person is invited to change
+something that cannot change, and the one thing they actually want to do with
+it — copy it — is not what the box suggests. `.readfield` keeps the height and
+the alignment, so a row still reads as one line, and takes the affordance away
+rather than the shape.
+
+**Copied is said one way.** Four buttons copied something and each answered
+differently: one swapped its own label, one a span inside itself, one wrote a
+message into a `.msg` line under the panel, one tinted itself. `js/copy.js` is
+the only copy of that feedback now, so somebody who has learned what Copy link
+does on Content Review does not learn it again on a campaign. An icon-only
+button has no label to swap, so it takes the tick and the accent for the same
+moment instead.
 
 **A state hangs off the end of the line, never off the end of the name.** A
 chip written straight after a title starts at a different x on every card,
@@ -524,8 +550,8 @@ handle was marked by a half opacity `·` carrying a `title` attribute: a hover
 tooltip, on the device with no hover, doing the work of saying "short link, no
 identity". Where the absence of something is the information, show what is
 there and let the gap speak — the chip reads `Instagram popcorn.xx` where there
-is a handle and `RedNote` where there is not. A handle is shown only where it
-reads as a name (18 characters or fewer); RedNote keeps a profile id in that
+is a handle and `rednote` where there is not. A handle is shown only where it
+reads as a name (18 characters or fewer); rednote keeps a profile id in that
 field, and `5e3262fd00000000010015b6` is longer than the creator it belongs to
 and says nothing to anybody.
 
@@ -714,7 +740,7 @@ still sits on top of the shared one.
   becomes Reviewing. Reviewing ("Your approval") and Changes requested are
   the only steps that are theirs.
 - Count creators, not slots. A campaign card shows the client's amount,
-  not the invoice number. RedNote, never Xiaohongshu; Post, never Note.
+  not the invoice number. rednote (lower case, the brand sets it that way), never Xiaohongshu and never RedNote; Post, never Note.
 - Placeholders: the field's name or John Doe, john@adspacestudios.com,
   COMPANY NAME SDN BHD; never a real client or creator.
 - Brand names exactly: ADspace, S P Setia, CraftStone, Home Leader, The
