@@ -256,6 +256,120 @@ create table public.services (
     sql("select rate from public.services where slug = 'gif'") === '999.00');
   check('and the rest of the card is untouched',
     Number(sql('select count(*) from public.services')) === seeded - 1);
+
+  /* ---- What a creator hands in ----------------------------------------
+   * creator_add_file declared a variable called `id` and then looked the
+   * booking up with an unqualified `where id = p_option`. PL/pgSQL raises
+   * that ambiguity at run time, not at create time, so the schema applied
+   * cleanly, every browser suite stayed green against the stand-in, and
+   * every upload in production failed. The whole delivery path is run here
+   * for real: sign the upload, record the file, submit, read it back. */
+  const deliver = cut('-- CREATOR ACCESS AND DELIVERY', '-- Taking a code back.');
+  runFile('creator-setup.sql', `
+drop table if exists public.campaign_deliverables cascade;
+drop table if exists public.campaign_options cascade;
+drop table if exists public.creator_profiles cascade;
+drop table if exists public.option_posts cascade;
+drop table if exists public.campaigns cascade;
+drop table if exists public.creators cascade;
+do $$ begin
+  if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon; end if;
+  if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated; end if;
+end $$;
+create table public.creators (
+  id uuid primary key default gen_random_uuid(), name text not null,
+  access_code text, code_issued_at timestamptz, active boolean not null default true);
+create table public.campaigns (
+  id uuid primary key default gen_random_uuid(), client_id uuid references public.clients(id),
+  title text not null, title_zh text, state text not null default 'open',
+  brief text, brief_zh text, due_date date, push_format text);
+create table public.campaign_options (
+  id uuid primary key default gen_random_uuid(),
+  campaign_id uuid references public.campaigns(id), creator_id uuid references public.creators(id),
+  rate numeric(12,2), platforms text, state text not null default 'confirmed',
+  is_replacement boolean default false, added_at timestamptz default now(), position int default 0,
+  visit_date date, visit_time text, visit_location text, visit_pic text, visit_pic_phone text,
+  tracking_no text, draft_url text, revision_round integer not null default 0,
+  planned_publish date, drop_reason text);
+create table public.creator_profiles (id uuid primary key default gen_random_uuid(),
+  creator_id uuid references public.creators(id), platform text, url text);
+create table public.option_posts (id uuid primary key default gen_random_uuid(),
+  option_id uuid references public.campaign_options(id), platform text, post_url text,
+  published_at date, window_days int, impressions bigint, engagements bigint, views bigint,
+  measured_at timestamptz);
+alter table public.clients add column if not exists logo_url text;
+alter table public.clients add column if not exists market text default 'MY';
+alter table public.clients add column if not exists sst_applies boolean default true;
+create or replace function public.is_team() returns boolean language sql stable as $$ select true $$;
+` + deliver);
+  console.log('ok   the creator delivery block applies to a real Postgres');
+
+  sql(`insert into public.creators (name) values ('Ah Girl')`);
+  sql(`insert into public.clients (name) values ('HKL Lim')`);
+  sql(`insert into public.campaigns (client_id, title) select id, 'Raya' from public.clients where name='HKL Lim'`);
+  sql(`insert into public.campaign_options (campaign_id, creator_id, rate, platforms, state)
+       select c.id, cr.id, 360, 'rednote, Instagram', 'pending_draft'
+       from public.campaigns c, public.creators cr where cr.name = 'Ah Girl'`);
+  const code = sql(`select access_code from public.creators where name='Ah Girl'`);
+  const opt = sql(`select id from public.campaign_options limit 1`);
+  check('every creator is issued a code', /^[A-Z0-9]{8}$/.test(code), code);
+  check('the edge function is told the upload is allowed',
+    sql(`select public.creator_may_upload('${code}', '${opt}')`) === 't');
+
+  // The defect: this returned an ambiguity error, the page swallowed it, and
+  // the creator watched a full progress bar over an empty submission.
+  const added = sql(`select public.creator_add_file('${code}', '${opt}',
+    'https://mycdn.adspace.me/content/creator/x.mp4', 'reel.mp4', 'video', 314572800)`);
+  check('a file a creator uploads is recorded', /"id"/.test(added), added);
+  check('and lands in the round being worked on',
+    sql(`select round from public.campaign_deliverables`) === '1');
+  check('the team reads it back off the table they query',
+    sql(`select name from public.campaign_deliverables where removed_at is null`) === 'reel.mp4');
+
+  // Several files per booking: a post is a cover and four slides.
+  sql(`select public.creator_add_file('${code}', '${opt}', 'https://x/2.jpg', 'slide.jpg', 'image', 900)`);
+  check('several files can be added to one booking',
+    sql(`select count(*) from public.campaign_deliverables where removed_at is null`) === '2');
+
+  check('submitting moves the step to reviewing',
+    /"ok": true/.test(sql(`select public.creator_submit('${code}', '${opt}', 'Raya at home')`)));
+  check('and the caption they wrote is kept',
+    sql(`select draft_caption from public.campaign_options`) === 'Raya at home');
+  check('and the team sees the step change',
+    sql(`select state from public.campaign_options`) === 'reviewing');
+
+  // Closed once it is in: a × on a submitted file would empty a review.
+  check('a file cannot be taken back once it is submitted',
+    /"error": "not-found"/.test(sql(`select public.creator_remove_file('${code}',
+      (select id from public.campaign_deliverables limit 1))`)));
+  check('and no further file can be added',
+    /"error": "closed"/.test(sql(`select public.creator_add_file('${code}', '${opt}',
+      'https://x/3.jpg', 'late.jpg', 'image', 900)`)));
+
+  // An invalid code reaches nothing at all.
+  check('an invalid code is refused',
+    /"error": "not-found"/.test(sql(`select public.creator_add_file('ZZZZZZZZ', '${opt}',
+      'https://x/4.jpg', 'no.jpg', 'image', 900)`)));
+  check('and cannot sign an upload',
+    sql(`select public.creator_may_upload('ZZZZZZZZ', '${opt}')`) === 'f');
+
+  /* The migration that ships this fix is applied by hand, so it has to stand
+     on its own and be safe to run twice. Re-running the whole schema for one
+     function would also re-apply fifteen unrelated data migrations and drop
+     and recreate fifty-six policies and triggers on a live database, which is
+     why the narrow file exists. */
+  const mig = fs.readFileSync(T + '/../supabase/migrations/2026-09-15-creator-add-file.sql', 'utf8');
+  runFile('creator-migration.sql', mig);
+  runFile('creator-migration.sql', mig);
+  sql(`update public.campaign_options set state = 'pending_draft'`);
+  check('the migration applies on its own, and again',
+    /"id"/.test(sql(`select public.creator_add_file('${code}', '${opt}',
+      'https://mycdn.adspace.me/content/creator/big.mp4', 'again.mp4', 'video', 314572800)`)));
+  check('and a 300 MB file is recorded to the byte',
+    sql(`select bytes from public.campaign_deliverables where name = 'again.mp4'`) === '314572800');
+  check('and the grant survives the replace',
+    sql(`select has_function_privilege('anon',
+      'public.creator_add_file(text, uuid, text, text, text, bigint)', 'execute')`) === 't');
 } catch (e) {
   console.log('FAIL ' + (e.stderr ? String(e.stderr).slice(0, 600) : e.message));
   fails++;

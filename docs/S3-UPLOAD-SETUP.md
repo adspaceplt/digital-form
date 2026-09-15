@@ -265,6 +265,32 @@ If the upload fails:
 - Uploads are stored with a one year immutable cache header. Filenames are random and never
   reused, so CloudFront can hold them indefinitely and repeat views cost nothing.
 
+## The creator's own upload, and the 300 MB ceiling
+
+A creator uploads from `/creator/` with an access code and no account, so `sign-upload`
+checks the code against the booking (`creator_may_upload`) instead of a session, and builds
+the key from the option id it verified. The file goes browser to S3 exactly as the console's
+does. The ceiling is 300 MB a file, and it has to hold at every layer it passes:
+
+| Layer | Limit | Where it is set |
+|---|---|---|
+| Browser | 300 MB, refused by name before a byte moves | `ADSPACE_CONFIG.s3.maxUploadMB` in `js/config.js` |
+| Signing function | 2 GB | `MAX_BYTES` in `supabase/functions/sign-upload/index.ts`. Only JSON metadata reaches it; the file never does |
+| Supabase | not in the path | The 50 MB storage cap is `ADSPACE_CONFIG.maxUploadMB` and applies only while S3 is off. The creator page never reads it |
+| S3 | 5 GB for a single PUT | AWS. The PUT goes straight to `{bucket}.s3.{region}.amazonaws.com` |
+| CloudFront | not in the path | It serves reads only; uploads do not pass through it |
+| Timeout | no total deadline; 120 seconds of silence ends the attempt | `STALL_MS` in `js/creator.js`. A slow line is not a stall, so only silence is treated as one |
+| Presigned URL | `X-Amz-Expires` on the signed URL | aws4fetch sets this when the function signs. S3 checks it when the request **starts**, so a long upload that began in time completes |
+| Database | `bigint` | `campaign_deliverables.bytes` |
+
+To raise or lower the ceiling, change `maxUploadMB` in `js/config.js` and nothing else,
+until it passes 2 GB — at which point `MAX_BYTES` in the function has to move too, and the
+function has to be redeployed.
+
+To confirm the signed URL's own expiry on a live project, upload one file from `/creator/`
+with the browser's network tab open and read `X-Amz-Expires` off the PUT request's query
+string. Anything at or above 3600 is comfortable for 300 MB on a domestic line.
+
 ## Why not put AWS keys in the page
 
 A static site has no secrets. Anything in `config.js` is readable by anyone who opens the

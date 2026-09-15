@@ -121,6 +121,12 @@
       rows = rows.filter(function (r) { return v === null ? (r[f] === null || r[f] === undefined) : r[f] === v; });
       return api;
     };
+    // .in(field, [..]) — how a read is scoped to one campaign's bookings.
+    api.in = function (f, vals) {
+      var set = (vals || []).map(String);
+      rows = rows.filter(function (r) { return set.indexOf(String(r[f])) > -1; });
+      return api;
+    };
     api.not = function (f, op, v) {
       if (op === 'is' && v === null) rows = rows.filter(function (r) { return r[f] !== null && r[f] !== undefined; });
       return api;
@@ -246,6 +252,11 @@
                                        bookings: books }, error: null });
     }
     if (name === 'creator_add_file') {
+      /* The database refusing this call is what happened in production, and the
+         page said nothing. The suite turns it on deliberately. */
+      if (window.__refuseAdd) {
+        return Promise.resolve({ data: null, error: { message: 'column reference "id" is ambiguous' } });
+      }
       var cA = creatorBy(args.p_code);
       var oA = DB.campaign_options.filter(function (o) { return o.id === args.p_option; })[0];
       if (!cA || !oA || oA.creator_id !== cA.id) return Promise.resolve({ data: { error: 'not-found' }, error: null });
