@@ -1,9 +1,12 @@
 /* Authorization, run against a real Postgres.
  *
- * Fifteen tables carried `for all to authenticated using (true)`, written when
- * `authenticated` meant the team. It has not since /client/ began signing
- * clients in with real Supabase accounts: a client's own JWT would have read
- * every other client's record, every creator's fee and every campaign.
+ * supabase/schema.sql creates `for all to authenticated using (true)` on
+ * fifteen tables, written when `authenticated` meant the team. It has not
+ * since /client/ began signing clients in with real Supabase accounts: a
+ * client's own JWT reads every other client's record, every creator's fee and
+ * every campaign. The live database was hardened against that before this
+ * suite existed; what this proves is that re-running the schema file can no
+ * longer undo it, and that the shape it lands on is the live one.
  *
  * Nothing in the browser suites can test a policy, because the stand-in has no
  * RLS at all. This starts a throwaway cluster, applies the real policy block
@@ -91,6 +94,9 @@ create or replace function auth.jwt() returns jsonb language sql stable as $$
   select coalesce(nullif(current_setting('request.jwt.claims', true), '')::jsonb, '{}'::jsonb)
 $$;
 
+-- The login list, which the preflight checks each colleague against.
+create table auth.users (id uuid primary key default gen_random_uuid(), email text);
+
 create table public.team_members (
   id uuid primary key default gen_random_uuid(), name text not null, email text,
   role text not null default 'sales', active boolean not null default true,
@@ -150,6 +156,9 @@ grant execute on function public.allowed(text) to anon, authenticated;
         ('Sales One',  'sales@example.test',     'sales', false, true, false, false, false, false),
         ('Left Us',    'former@example.test',    'account', false, true, true,  true,  true,  true)`);
   sql(`update public.team_members set active = false where email = 'former@example.test'`);
+  sql(`insert into auth.users (email) values
+        ('admin@example.test'), ('marketing@example.test'),
+        ('sales@example.test'), ('former@example.test')`);
   sql(`insert into public.clients (name) values ('Client A Sdn Bhd'), ('Client B Sdn Bhd')`);
   const cA = sql(`select id from public.clients where name like 'Client A%'`);
   const cB = sql(`select id from public.clients where name like 'Client B%'`);
@@ -230,7 +239,7 @@ grant execute on function public.demo_token_read(text) to anon, authenticated;`)
   check('an unreviewed policy stops the migration rather than being deleted', guarded);
   check('and nothing was changed when it stopped',
     sql(`select count(*) from pg_policies where schemaname='public'
-         and tablename='links' and policyname='links_sel'`) === '0');
+         and tablename='links' and policyname='links_read'`) === '0');
   sql(`drop policy zz_unreviewed on public.links`);
 
   // ---- The fix ----
@@ -266,9 +275,15 @@ grant execute on function public.demo_token_read(text) to anon, authenticated;`)
     asRole('authenticated', 'marketing@example.test', `select count(*) from public.posts`) === '1');
   check('but cannot delete a contact, which needs the remove switch',
     denied('authenticated', 'marketing@example.test', `delete from public.client_contacts returning 1`));
+  check('nor a campaign option, which needs it too',
+    denied('authenticated', 'marketing@example.test', `delete from public.campaign_options returning 1`));
   check('while it can still edit one',
     asRole('authenticated', 'marketing@example.test',
       `update public.client_contacts set name = 'Ah Meng Jr' returning name`).includes('Ah Meng Jr'));
+  check('and every delete on all fifteen asks for remove',
+    sql(`select count(*) from pg_policies where schemaname='public' and cmd='DELETE'
+         and qual like '%remove%'
+         and tablename = any(array[${GATED.map(t => `'${t}'`).join(',')}])`) === '15');
 
   // ---- Sales: the console hides those sections, and now so does the database ----
   check('Sales cannot read campaign options',
@@ -277,11 +292,15 @@ grant execute on function public.demo_token_read(text) to anon, authenticated;`)
     denied('authenticated', 'sales@example.test', `select count(*) from public.creators`));
   check('nor the content of a review',
     denied('authenticated', 'sales@example.test', `select count(*) from public.posts`));
-  check('but still sees Engagements on a client record',
-    asRole('authenticated', 'sales@example.test', `select count(*) from public.campaigns`) === '1');
-  check('and the content sets listed beside them',
-    asRole('authenticated', 'sales@example.test', `select count(*) from public.batches`) === '1');
-  check('and cannot write a campaign it may read',
+  /* Engagements on a client record read campaigns and content sets, and the
+     live policies gate both on their own section. A Sales member therefore
+     sees an empty Engagements list rather than a broken page. Asserted so the
+     behaviour is recorded rather than discovered. */
+  check('Sales does not read campaigns either, so Engagements comes back empty',
+    denied('authenticated', 'sales@example.test', `select count(*) from public.campaigns`));
+  check('nor the content sets listed beside them',
+    denied('authenticated', 'sales@example.test', `select count(*) from public.batches`));
+  check('and cannot write a campaign',
     refused('authenticated', 'sales@example.test',
       `insert into public.campaigns (client_id, title) values ('${cA}', 'Mine now')`));
 
@@ -342,6 +361,76 @@ grant execute on function public.demo_token_read(text) to anon, authenticated;`)
   check('a signed-in client page still reads through its own function',
     asRole('authenticated', 'a.person@clienta.test',
       `select public.demo_token_read('goodtoken')->>'creators'`) === '1');
+
+  /* ---- The preflight itself --------------------------------------------
+     Its first version compared policy NAMES against a pattern of its own and
+     called forty-five correct least-privilege policies UNREVIEWED, which is
+     how a report came to say production was exposed when it was not. It
+     compares conditions now, and a name is not what grants anything: the
+     check below gives `links_read` exactly the right name and `using (true)`,
+     and requires the preflight to still call it unsafe. */
+  const preflight = fs.readFileSync(
+    T + '/../supabase/migrations/2026-09-15-rls-preflight.sql', 'utf8');
+  const ask = () => {
+    fs.writeFileSync(SOCK + '/pre.sql', preflight);
+    execFileSync('bash', ['-c', `chmod 644 ${SOCK}/pre.sql`]);
+    /* stderr too: without ON_ERROR_STOP psql exits 0 on a failed query, so a
+       broken preflight would come back as an empty string and every check
+       below would pass vacuously. */
+    return asPg(`psql -h ${SOCK} -p ${PORT} -U postgres -d rls -tAq -f ${SOCK}/pre.sql 2>&1`);
+  };
+
+  let seen = ask();
+  const verdicts = seen.split('\n').filter(Boolean).map(l => l.split('|').pop());
+  check('the preflight runs at all', /policy contract/.test(seen), seen.slice(0, 200));
+  check('the preflight reads a correct database as correct',
+    verdicts.length > 0 && !verdicts.some(v => v.startsWith('UNSAFE')),
+    verdicts.filter(v => v.startsWith('UNSAFE')).slice(0, 3).join(' / ') || 'none unsafe');
+  check('and counts all sixty policies',
+    /60 of 60 policies correct/.test(seen), (seen.match(/\d+ of 60 policies correct/) || ['?'])[0]);
+  check('and says so in one line', /safe to proceed/.test(seen));
+
+  // The right name, the wrong condition.
+  sql(`drop policy links_read on public.links`);
+  sql(`create policy links_read on public.links for select to authenticated using (true)`);
+  seen = ask();
+  check('a policy with the correct name but USING (true) is still unsafe',
+    /links\.links_read\|.*UNSAFE: unrestricted, the name grants nothing/.test(seen),
+    (seen.split('\n').find(l => l.includes('links.links_read')) || '(row missing)').slice(0, 130));
+  check('and the summary refuses to proceed', /STOP: /.test(seen));
+  check('and the count falls to fifty nine', /59 of 60 policies correct/.test(seen));
+
+  // The right name, the right condition, but the wrong permission.
+  sql(`drop policy links_read on public.links`);
+  sql(`create policy links_read on public.links for select to authenticated
+       using (public.allowed('clients'))`);
+  seen = ask();
+  check('a policy asking for the wrong permission is unsafe too',
+    /links\.links_read\|.*UNSAFE: USING must be/.test(seen),
+    (seen.split('\n').find(l => l.includes('links.links_read')) || '(row missing)').slice(0, 130));
+
+  // A DELETE that forgot the remove switch.
+  sql(`drop policy links_del on public.links`);
+  sql(`create policy links_del on public.links for delete to authenticated
+       using (public.allowed('links'))`);
+  seen = ask();
+  check('a DELETE that drops the remove requirement is unsafe',
+    /links\.links_del\|.*UNSAFE: USING must be/.test(seen),
+    (seen.split('\n').find(l => l.includes('links.links_del')) || '(row missing)').slice(0, 130));
+
+  // And a policy nobody asked for.
+  sql(`create policy zz_extra on public.links for select to authenticated using (true)`);
+  seen = ask();
+  check('a policy outside the contract is reported on its own',
+    /links\.zz_extra\|.*UNSAFE: unrestricted and unexpected/.test(seen),
+    (seen.split('\n').find(l => l.includes('zz_extra')) || '(row missing)').slice(0, 130));
+
+  // Put it back and confirm the preflight goes quiet again.
+  sql(`drop policy zz_extra on public.links`);
+  runFile('rls-policies.sql', policies);
+  seen = ask();
+  check('and the preflight goes quiet once the policies are right again',
+    /60 of 60 policies correct/.test(seen) && /safe to proceed/.test(seen));
 } catch (e) {
   console.log('FAIL ' + (e.stderr ? String(e.stderr).slice(0, 900) : e.message));
   fails++;

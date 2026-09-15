@@ -2482,20 +2482,34 @@ update public.services set name = replace(name, 'RedNote', 'rednote')
 -- these tables.
 -- ============================================================================
 
-/* The guard, the replacement and the revoke, exactly as
-   supabase/migrations/2026-09-15-rls-tenant-isolation.sql runs them. One
-   `do` block is one statement, so the drops and the creates land together
-   and there is no instant in which a table is readable with no policy on it.
-   It refuses to run at all if it finds a policy on one of these tables that
-   nobody has reviewed, because it drops by what is there rather than by a
-   list of remembered names. */
+/* The policies this database actually carries, reproduced so that re-running
+   this file can never replace them with something weaker.
+
+   The fifteen tables below were hardened in the live database before this
+   block existed, under the names _read, _write, _edit and _del. The earlier
+   sections of this file still create the permissive `using (true)` policies
+   they replaced, so a full re-run without this block would reinstate the
+   exposure: every other client's record, contacts, content and approvals, and
+   every creator's fee, readable by any signed-in account, because /client/
+   signs clients in with real Supabase accounts and the anon key is public by
+   design.
+
+   Select, insert, update and delete are four separate policies, so reading a
+   row and destroying it are not one grant, and delete additionally asks for
+   `remove` — the switch the console already holds Delete permanently behind.
+
+   One `do` block is one statement, so the drops and the creates land
+   together: there is no instant in which a table is readable with no policy
+   on it. It refuses to run at all if it meets a policy nobody has reviewed,
+   because it drops by what is there rather than by a list of remembered
+   names. */
 do $$
 declare
   r record;
   p record;
-  /* Every policy name this schema has ever created on these fifteen tables,
-     read off supabase/schema.sql on 2026-09-15. Anything else is a surprise
-     and stops the migration. */
+  /* Every policy name this schema, or the hardening already applied to the
+     live database, has created on these fifteen tables. Anything else stops
+     the migration so that a person looks at it first. */
   reviewed constant text[] := array[
     'team_all', 'campaigns_team', 'campaign_options_team', 'campaign_conf_team',
     'option_posts_team', 'option_reviews_team', 'creators_team',
@@ -2507,7 +2521,6 @@ declare
   reviewed_extra constant text[] := array[]::text[];
   odd text;
 begin
-  /* ---- 1. Refuse to delete anything nobody has looked at ---------------- */
   select string_agg(format('%s.%s (%s %s)', x.tablename, x.policyname, x.cmd,
                            coalesce(x.roles::text, '')), ', ' order by x.tablename)
     into odd
@@ -2518,42 +2531,32 @@ begin
        'creators','creator_profiles','client_contacts','client_touches','links','link_qrs')
      and not (x.policyname = any(reviewed))
      and not (x.policyname = any(reviewed_extra))
-     -- what this file itself creates, so a second run is not a surprise
-     and x.policyname !~ ('^' || x.tablename || '_(sel|ins|upd|del)$');
+     -- what this block itself creates, so a second run is not a surprise
+     and x.policyname !~ ('^' || x.tablename || '_(read|write|edit|del)$');
 
   if odd is not null then
     raise exception
       'Unreviewed policy on a gated table, so nothing was changed: %. Read it, then add its name to reviewed_extra in this file and run again.', odd;
   end if;
 
-  /* ---- 2. Replace ------------------------------------------------------- */
-  /* One shape for all fifteen, so a table cannot quietly differ from its
-     neighbour. `flag` is what may write, `also_read` is a neighbouring section
-     that may read, and `del_flag` is what may delete.
-
-     Every existing policy on these tables is dropped by what is actually
-     there, not by a list of remembered names: policies are permissive and
-     additive, so one left behind under an unlisted name keeps the table open,
-     and that is the failure being repaired. The guard above is what makes
-     that safe. */
   for r in
     select * from (values
-      ('batches',                'review',    'clients',  'review'),
-      ('posts',                  'review',    null,       'review'),
-      ('reviews',                'review',    null,       'review'),
-      ('drive_assets',           'review',    null,       'review'),
-      ('campaigns',              'campaigns', 'clients',  'campaigns'),
-      ('campaign_options',       'campaigns', null,       'campaigns'),
-      ('campaign_confirmations', 'campaigns', null,       'campaigns'),
-      ('option_posts',           'campaigns', null,       'campaigns'),
-      ('option_reviews',         'campaigns', null,       'campaigns'),
-      ('creators',               'campaigns', null,       'campaigns'),
-      ('creator_profiles',       'campaigns', null,       'campaigns'),
-      ('client_contacts',        'clients',   null,       'remove'),
-      ('client_touches',         'clients',   null,       'clients'),
-      ('links',                  'links',     null,       'links'),
-      ('link_qrs',               'links',     null,       'links')
-    ) as t(tbl, flag, also_read, del_flag)
+      ('batches',                'review'),
+      ('posts',                  'review'),
+      ('reviews',                'review'),
+      ('drive_assets',           'review'),
+      ('campaigns',              'campaigns'),
+      ('campaign_options',       'campaigns'),
+      ('campaign_confirmations', 'campaigns'),
+      ('option_posts',           'campaigns'),
+      ('option_reviews',         'campaigns'),
+      ('creators',               'campaigns'),
+      ('creator_profiles',       'campaigns'),
+      ('client_contacts',        'clients'),
+      ('client_touches',         'clients'),
+      ('links',                  'links'),
+      ('link_qrs',               'links')
+    ) as t(tbl, flag)
   loop
     execute format('alter table public.%I enable row level security', r.tbl);
 
@@ -2564,29 +2567,30 @@ begin
     end loop;
 
     execute format(
-      'create policy %I on public.%I for select to authenticated using (%s)',
-      r.tbl || '_sel', r.tbl,
-      case when r.also_read is null
-           then format('public.allowed(%L)', r.flag)
-           else format('public.allowed(%L) or public.allowed(%L)', r.flag, r.also_read) end);
+      'create policy %I on public.%I for select to authenticated using (public.allowed(%L))',
+      r.tbl || '_read', r.tbl, r.flag);
 
     execute format(
       'create policy %I on public.%I for insert to authenticated with check (public.allowed(%L))',
-      r.tbl || '_ins', r.tbl, r.flag);
+      r.tbl || '_write', r.tbl, r.flag);
 
     execute format(
       'create policy %I on public.%I for update to authenticated '
       'using (public.allowed(%L)) with check (public.allowed(%L))',
-      r.tbl || '_upd', r.tbl, r.flag, r.flag);
+      r.tbl || '_edit', r.tbl, r.flag, r.flag);
 
+    /* Destroying a row asks for the section AND the remove switch, which is
+       what the console already holds Delete permanently behind. */
     execute format(
-      'create policy %I on public.%I for delete to authenticated using (public.allowed(%L))',
-      r.tbl || '_del', r.tbl, r.del_flag);
+      'create policy %I on public.%I for delete to authenticated '
+      'using (public.allowed(%L) and public.allowed(''remove''))',
+      r.tbl || '_del', r.tbl, r.flag);
 
-    /* ---- 3. Defence in depth ------------------------------------------- */
-    /* Nothing anonymous reads these tables directly. The token and code pages
+    /* Nothing anonymous reads these tables directly: the token and code pages
        go through security definer functions, which run as the owner and need
-       no privilege from their caller. */
+       no privilege from their caller. Row level security already denies anon,
+       because no policy here names that role, but a table it cannot reach at
+       all is one fewer thing resting on a policy being right. */
     execute format('revoke all on public.%I from anon', r.tbl);
   end loop;
 end $$;
