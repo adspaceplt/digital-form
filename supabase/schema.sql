@@ -1306,7 +1306,7 @@ insert into public.team_roles
   (slug, name, is_admin, can_clients, can_review, can_campaigns, can_links, can_activity, can_billing, can_remove, position)
 values
   ('admin',   'Admin',   true,  true, true,  true,  true,  true,  true, true,  0),
-  ('account', 'Account', false, true, true,  true,  true,  false, true, false, 1),
+  ('account', 'Marketing', false, true, true,  true,  true,  false, true, false, 1),
   ('sales',   'Sales',   false, true, false, false, false, false, true, false, 2)
 on conflict (slug) do nothing;
 
@@ -2107,3 +2107,11 @@ language sql security definer stable set search_path = public as $$
       where t.active and t.email is not null
         and lower(t.email) = lower(auth.jwt() ->> 'email'))
 $$;
+
+-- The group that handles clients is Marketing, not Account: "Account" is the
+-- word for a login, and the Team page had a group named after one. The slug is
+-- what `team_members.role` points at, so it does not move; only the name a
+-- person reads does. Guarded on the old name, so it fires once and never
+-- overwrites a name somebody has since chosen themselves.
+update public.team_roles set name = 'Marketing'
+ where slug = 'account' and name = 'Account';

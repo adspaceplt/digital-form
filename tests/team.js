@@ -46,11 +46,11 @@ const check = (l, ok, x) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (x ? ' 
      Sales" is a heading rather than a column of identical selects. */
   // innerText would come back shouting: the heading is uppercased in CSS.
   const cats = () => p.locator('#teamList .svc-cat').evaluateAll(els => els.map(e => e.textContent).join(','));
-  check('members are grouped under their group', await cats() === 'Admin,Account,Sales', await cats());
+  check('members are grouped under their group', await cats() === 'Admin,Marketing,Sales', await cats());
   check('and the row no longer repeats the group', await p.locator('.team-row select[data-f="role"]').count() === 0);
   const rowOrder = await p.locator('#teamList > div').evaluateAll(
     els => els.filter(e => e.matches('.svc-cat, .team-row')).map(e => e.matches('.svc-cat') ? '[' + e.textContent + ']' : e.querySelector('b').textContent.trim().split(' ')[0]).join(' '));
-  check('each person sits under their own heading', rowOrder === '[Admin] ADspace [Account] Aisyah [Sales] Qiao', rowOrder);
+  check('each person sits under their own heading', rowOrder === '[Admin] ADspace [Marketing] Aisyah [Sales] Qiao', rowOrder);
 
   check('groups listed', await p.locator('.group-row').count() === 3);
   const grants = await p.locator('.group-grants').allInnerTexts();
