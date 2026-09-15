@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260915d">
+<link rel="stylesheet" href="/css/portal.css?v=20260915e">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,18 +28,18 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260915d"></script>
-<script src="/js/words.js?v=20260915d"></script>
-<script src="/js/menu.js?v=20260915d"></script>
-<script src="/js/api.js?v=20260915d"></script>
-<script src="/js/money.js?v=20260915d"></script>
-<script src="/js/mockups.js?v=20260915d"></script>
+<script src="/js/config.js?v=20260915e"></script>
+<script src="/js/words.js?v=20260915e"></script>
+<script src="/js/menu.js?v=20260915e"></script>
+<script src="/js/api.js?v=20260915e"></script>
+<script src="/js/money.js?v=20260915e"></script>
+<script src="/js/mockups.js?v=20260915e"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260915d" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260915e" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -948,6 +948,21 @@
             <button class="btn btn-quiet btn-sm" id="addProfRow" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
           </div>
 
+          <!-- A creator's own key. Shown on the record it belongs to rather
+               than on every row of the list, and only once they exist. -->
+          <div class="subsection" id="crCodeBox" hidden>
+            <h4>Creator portal</h4>
+            <div class="row">
+              <div><label class="field-label" for="crCodeLink">Their link</label>
+                <input class="input" id="crCodeLink" readonly></div>
+              <div style="flex:0 0 150px"><label class="field-label" for="crCode">Access code</label>
+                <input class="input" id="crCode" readonly></div>
+              <button class="btn" id="crCodeCopy" type="button" style="flex:0 0 auto">Copy link</button>
+              <button class="btn btn-warn" id="crCodeReset" type="button" style="flex:0 0 auto">Reset code</button>
+            </div>
+            <div class="msg" id="crCodeMsg"></div>
+          </div>
+
           <div class="msg" id="dupeWarn"></div>
           <div class="row" style="margin-top:16px">
             <button class="btn btn-primary" id="saveCreator" type="button">Create</button>
@@ -967,7 +982,7 @@
           </select>
           <span class="muted" id="rosterCount"></span>
         </div>
-        <div id="rosterList"></div>
+        <div class="crm-table" id="rosterList"></div>
       </div>
 
     </div>
@@ -1226,10 +1241,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260915d"></script>
-<script src="/js/documents.js?v=20260915d"></script>
-<script src="/js/crm.js?v=20260915d"></script>
-<script src="/js/team.js?v=20260915d"></script>
-<script src="/js/campaigns.js?v=20260915d"></script>
+<script src="/js/admin.js?v=20260915e"></script>
+<script src="/js/documents.js?v=20260915e"></script>
+<script src="/js/crm.js?v=20260915e"></script>
+<script src="/js/team.js?v=20260915e"></script>
+<script src="/js/campaigns.js?v=20260915e"></script>
 </body>
 </html>

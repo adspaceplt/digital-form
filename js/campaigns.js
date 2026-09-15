@@ -184,9 +184,12 @@
      record is the differentiator a campaign is planned on, so the row carries
      it: how many campaigns they have run for us, when they last shot, and
      whether they are on one right now. */
-  var LIVE_STATES = ['confirmed', 'pending_visit', 'pending_delivery', 'pending_draft',
-                     'reviewing', 'changes', 'scheduled'];
-  var DONE_STATES = LIVE_STATES.concat(['posted', 'completed']);
+  /* Confirmed onwards is what counts as having worked with us: an offer
+     nobody took up is not a campaign they have run. There is deliberately no
+     "on a campaign" mark, because a creator is often on several at once, so
+     the chip was true of nearly every row and told nobody anything. */
+  var DONE_STATES = ['confirmed', 'pending_visit', 'pending_delivery', 'pending_draft',
+                     'reviewing', 'changes', 'scheduled', 'posted', 'completed'];
 
   function loadRecord(then) {
     state.record = {};
@@ -195,9 +198,8 @@
         (r.data || []).forEach(function (o) {
           if (DONE_STATES.indexOf(o.state) < 0) return;
           var rec = state.record[o.creator_id] ||
-            (state.record[o.creator_id] = { n: 0, live: 0, last: '' });
+            (state.record[o.creator_id] = { n: 0, last: '' });
           rec.n++;
-          if (LIVE_STATES.indexOf(o.state) > -1) rec.live++;
           var when = o.visit_date || (o.added_at || '').slice(0, 10);
           if (when > rec.last) rec.last = when;
         });
@@ -208,10 +210,8 @@
   // "4 campaigns · last Aug 2026", or nothing but the platforms for a new name.
   function recordLine(c) {
     var rec = state.record && state.record[c.id];
-    if (!rec) return 'No campaigns yet';
-    var out = rec.n + ' campaign' + (rec.n === 1 ? '' : 's');
-    if (rec.last) out += ' · last ' + monthOf(rec.last);
-    return out;
+    if (!rec) return 'None yet';
+    return rec.n + (rec.last ? ' · last ' + monthOf(rec.last) : '');
   }
   function monthOf(d) {
     var t = new Date(d + 'T00:00:00');
@@ -265,7 +265,7 @@
        three fitted on a screen. */
     var head = document.createElement('div');
     head.className = 'crm-head svc-row cr-row';
-    head.innerHTML = '<span>Creator</span><span>Profiles</span>' +
+    head.innerHTML = '<span>Creator</span><span>Profiles</span><span>Campaigns</span>' +
       '<span class="svc-rate">Fee</span><span></span>';
     box.appendChild(head);
 
@@ -317,30 +317,30 @@
          a profile being browsed. The handle rides along only where it reads as
          a name: RedNote keeps a profile id in that field and
          5e3262fd00000000010015b6 is longer than the creator it belongs to. */
+      /* The profile is a link on the row again, as the word and the mark that
+         says it leaves the page, without the chip's border: a creator is
+         looked up constantly and a link folded into the ⋯ costs two taps for
+         the commonest thing on this screen. The handle rides along only where
+         it reads as a name, because RedNote keeps a profile id in that field
+         and 5e3262fd00000000010015b6 says nothing to anybody. */
       var profs = c.creator_profiles || [];
-      var where = profs.map(function (p) {
+      var links = profs.map(function (p) {
         var h = String(p.handle || '');
-        return (PLATFORM_LABEL[p.platform] || p.platform) +
-          (h && h.length <= 18 ? ' ' + h : '');
-      });
-      var rec = (state.record && state.record[c.id]) || null;
+        return '<a class="plink plink-bare" href="' + esc(p.url) + '" target="_blank" rel="noopener">' +
+          esc(PLATFORM_LABEL[p.platform] || p.platform) +
+          (h && h.length <= 18 ? ' <b>' + esc(h) + '</b>' : '') + EXT + '</a>';
+      }).join('');
       row.innerHTML =
         '<span class="svc-name cr-who"><b>' + esc(c.name) +
-          (off ? ' <span class="tone">Inactive</span>' : '') +
-          (!off && rec && rec.live ? ' <span class="tone is-ok">On a campaign</span>' : '') +
-          '</b><small>' + esc(where.join(' · ') || 'No profile links') + '</small>' +
-          '<small>' + esc(recordLine(c)) + '</small></span>' +
+          (off ? ' <span class="tone">Inactive</span>' : '') + '</b></span>' +
+        '<span class="cr-links">' + (links || '<span class="muted">No links</span>') + '</span>' +
+        '<span class="cr-rec">' + esc(recordLine(c)) + '</span>' +
         '<span class="svc-rate">' + (c.client_rate ? esc(money(c.client_rate))
                                                    : '<span class="muted">RM</span>') + '</span>' +
         '<span class="team-act">' +
           '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
             menuItem('edit', 'Edit') +
-            profs.map(function (p, i) {
-              return '<a class="kmenu-item" href="' + esc(p.url) + '" target="_blank" ' +
-                'rel="noopener" data-a="prof' + i + '">Open ' +
-                esc(PLATFORM_LABEL[p.platform] || p.platform) + ' profile</a>';
-            }).join('') +
             /* Standing a creator down was named by the error you got when a
                delete was refused and existed nowhere on the page. */
             menuItem('state', off ? 'Set active' : 'Set inactive') +
@@ -491,10 +491,61 @@
     var ps = (c && c.creator_profiles) || [];
     if (!ps.length) rows.appendChild(profRow(null, ROSTER_CTX));
     else ps.forEach(function (p) { rows.appendChild(profRow(p, ROSTER_CTX)); });
+    paintCode(c);
     msg('creatorMsg', ''); msg('dupeWarn', '');
     $('addCreatorBox').hidden = false;
     if (!restoring) rosterDraft.note({ editing: c ? c.id : null });
     $('crName').focus();
+  }
+
+  /* The code reads in two groups of four, because it is meant to be read down
+     a phone. The stored value has no dash in it, and the page strips whatever
+     a creator types, so the grouping is presentation and nothing depends on
+     it. */
+  function prettyCode(c) {
+    var v = String(c || '');
+    return v.length === 8 ? v.slice(0, 4) + '-' + v.slice(4) : v;
+  }
+  function creatorLink(c) {
+    return location.origin + '/creator/?k=' + encodeURIComponent(c || '');
+  }
+  function paintCode(c) {
+    var box = $('crCodeBox');
+    if (!box) return;
+    // Nothing to show until the row exists: the code is made when it is saved.
+    box.hidden = !(c && c.access_code);
+    msg('crCodeMsg', '');
+    if (box.hidden) return;
+    $('crCode').value = prettyCode(c.access_code);
+    $('crCodeLink').value = creatorLink(c.access_code);
+  }
+  if ($('crCodeCopy')) {
+    $('crCodeCopy').addEventListener('click', function () {
+      var v = $('crCodeLink').value;
+      var done = function () { msg('crCodeMsg', 'Copied.', 'ok'); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(v).then(done, done);
+      } else { $('crCodeLink').select(); document.execCommand('copy'); done(); }
+    });
+  }
+  /* Resetting is how a code that has been forwarded to the wrong person is
+     taken back, so it asks first: the creator's old link stops working and
+     they have to be sent the new one. */
+  if ($('crCodeReset')) {
+    $('crCodeReset').addEventListener('click', function () {
+      var c = state.editing;
+      if (!c) return;
+      if (!confirm('Reset the access code for ' + c.name + '? Their current link stops working.')) return;
+      db.rpc('reset_creator_code', { p_creator: c.id }).then(function (r) {
+        if (r.error) { msg('crCodeMsg', r.error.message, 'err'); return; }
+        var code = (r.data && r.data.code) || '';
+        c.access_code = code;
+        paintCode(c);
+        msg('crCodeMsg', 'New code issued. Send them the new link.', 'ok');
+        log('creator.code', c.name, '');
+        loadRoster();
+      });
+    });
   }
 
   $('showAddCreator').addEventListener('click', function () { openCreator(null); });
@@ -975,8 +1026,42 @@
       .eq('campaign_id', state.campaign.id).order('position').then(function (r) {
         state.options = (r.data) || [];
         syncCampState();
-        paintOptions();
+        // What each creator handed in on their own page, so the team reviews it
+        // here rather than opening a folder somebody had to find.
+        db.from('campaign_deliverables').select('*').is('removed_at', null)
+          .then(function (d) {
+            state.files = {};
+            (d.data || []).forEach(function (f) {
+              (state.files[f.option_id] || (state.files[f.option_id] = [])).push(f);
+            });
+            paintOptions();
+          }, paintOptions);
       });
+  }
+
+  /* What the creator sent from their own page, and the caption they wrote with
+     it. Drawn above the Draft link rather than instead of it: a link pasted by
+     hand still works, and an older campaign has nothing else. */
+  function handedIn(o) {
+    var files = (state.files && state.files[o.id]) || [];
+    if (!files.length && !o.draft_caption) return '';
+    return '<div class="handedin">' +
+      (files.length
+        ? '<div class="filegrid">' + files.map(function (f) {
+            return '<a class="filecard" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
+              (f.kind === 'image'
+                ? '<img src="' + esc(f.url) + '" alt="" loading="lazy">'
+                : '<span class="filecard-kind">' +
+                  esc(String(f.name || '').split('.').pop().toUpperCase()) + '</span>') +
+              '<span class="filecard-name">' + esc(f.name) + '</span></a>';
+          }).join('') + '</div>'
+        : '') +
+      (o.draft_caption
+        ? '<label class="kfield kfield-wide"><span>Their caption</span>' +
+          '<textarea class="input textarea" rows="3" data-f="draft_caption">' +
+          esc(o.draft_caption) + '</textarea></label>'
+        : '') +
+      '</div>';
   }
 
   /* In production is not a flag somebody sets and forgets: it means at least
@@ -1493,6 +1578,7 @@
       (drafting ?
       '<div class="kstep kstep-work">' +
         '<div class="kstep-title">Draft</div>' +
+        handedIn(o) +
         '<div class="kfields">' +
           '<label class="kfield kfield-wide"><span>Draft link</span>' +
             '<input class="input" data-f="draft_url" value="' + esc(o.draft_url || '') +
@@ -1565,9 +1651,11 @@
     on('advance', function () {
       var to = nextState(o.state);
       var patch = readCard(card);
+      patch.id = o.id;                      // so the gate can see what was handed in
       var why = blockAdvance(to, patch);
       var m = card.querySelector('[data-msg]');
       if (why) { m.textContent = why; m.className = 'msg err'; return; }
+      delete patch.id;
       advanceOption(o, to, patch);
     });
     on('back',      function () { stepBack(o, prevState(o.state)); });
@@ -1594,7 +1682,11 @@
   }
 
   function blockAdvance(to, p) {
-    if (to === 'reviewing' && !p.draft_url) return 'Draft link required.';
+    /* A draft is a draft whether the creator uploaded it on their own page or
+       somebody pasted a link: the gate is that something arrived, not which
+       route it came by. */
+    var files = (state.files && state.files[p.id]) || [];
+    if (to === 'reviewing' && !p.draft_url && !files.length) return 'Draft link or files required.';
     if (to === 'scheduled' && !p.planned_publish) return 'Publish date required.';
     if (to === 'posted') {
       if (!p.planned_publish) return 'Publish date required.';

@@ -20,6 +20,9 @@ window.ADSPACE_ORG = {
   phone: '60187625233',
   website: 'adspacestudios.com',
   bank: '',       // bank, account number and account name, on one line
+  // The KOC job form a creator fills in for payment, named on their own page
+  // once their work has been approved.
+  ap01: '/ap01.html',
   // The letterhead: the monogram top right and bottom centre, the wordmark
   // set in Optima, the text in Slate Book, the heavier lines in Slate
   // Regular.
