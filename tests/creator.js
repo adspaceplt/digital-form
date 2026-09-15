@@ -272,12 +272,27 @@ const say = s => console.log(s);
   await p.evaluate(() => window.__signIn('adspacestudios@gmail.com'));
   await p.waitForTimeout(1200);
   const card2 = p.locator('#creatorList .kcard').filter({ hasText: '恩比' }).first();
-  await card2.locator('.kcard-head').click(); await p.waitForTimeout(400);
+  // No click: a card waiting on us is open already. That is the fix.
   check('the team can release it to the client',
     (await card2.locator('[data-a="advance"]').innerText()).includes('Release to client'),
     await card2.locator('[data-a="advance"]').innerText());
   check('and can send it back to the creator instead',
     await card2.locator('[data-a="sendback"]').count() === 1);
+  /* The card that is waiting on us opens by itself. Folded it was a name, a
+     chip and a summary line, so the files, the caption and both actions sat
+     behind a fold nobody knew to open: a booking with no next action. */
+  check('the card waiting on us is open without being asked',
+    await card2.locator('[data-body]').isVisible());
+  check('and is marked as waiting even when folded',
+    (await card2.evaluate(el => el.className)).includes('is-waiting'));
+  const open2 = await card2.innerText();
+  check('the files the creator sent are on it',
+    open2.includes('raya') || open2.includes('cover.jpg'), open2.replace(/\n/g, ' | ').slice(0, 180));
+  check('and the caption they wrote',
+    (await card2.locator('[data-f="draft_caption"]').inputValue()).includes('Laman Citra'));
+  check('and the folded line says how much arrived',
+    (await card2.locator('.kcard-sum').innerText()).includes('file'),
+    await card2.locator('.kcard-sum').innerText());
 
   console.log(errs.length ? errs.join('\n') : 'no page errors');
   console.log(fails + ' FAIL');

@@ -444,6 +444,28 @@ create or replace function public.is_team() returns boolean language sql stable 
   check('a draft the team has not released cannot be approved by the client',
     /"error": "not-reviewing"/.test(
       sql(`select public.review_draft('TOK1', '${opt}', 'approved', null, 'Ms Lim')`)));
+
+  /* The team sends it back: the creator must land somewhere they can work,
+     with what they already sent still there and the note readable. Losing a
+     creator's files to a round of feedback is how a reshoot gets billed
+     twice. */
+  const before = sql(`select count(*) from public.campaign_deliverables where removed_at is null`);
+  sql(`update public.campaign_options
+          set state = 'changes', changes_by = 'team', revision_round = 3,
+              drop_reason = 'Reshoot the opening two seconds'`);
+  check('a creator sent back can upload again',
+    sql(`select public.creator_can_deliver(state) from public.campaign_options`) === 't');
+  check('and keeps every file they had sent',
+    sql(`select count(*) from public.campaign_deliverables where removed_at is null`) === before,
+    before);
+  check('and can take one of them back off',
+    /"ok": true/.test(sql(`select public.creator_remove_file('${code}',
+      (select id from public.campaign_deliverables where removed_at is null limit 1))`)));
+  check('and reads the note the team wrote',
+    sql(`select public.get_creator('${code}')->'bookings'->0->>'change_note'`)
+      === 'Reshoot the opening two seconds');
+  check('while the client is still told Pending draft', shown() === 'pending_draft', shown());
+  check('and is sent none of it', files() === '0');
 } catch (e) {
   console.log('FAIL ' + (e.stderr ? String(e.stderr).slice(0, 600) : e.message));
   fails++;

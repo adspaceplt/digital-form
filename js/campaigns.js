@@ -1086,11 +1086,17 @@
     return '<div class="handedin">' +
       (files.length
         ? '<div class="filegrid">' + files.map(function (f) {
+            /* A thumbnail that cannot load shows what the file is rather than
+               the browser's broken image mark, which tells a reviewer the
+               creator's work is gone when only the preview failed. The
+               creator's own page has done this since it shipped; the console
+               was drawing the broken mark. */
+            var ext = esc(String(f.name || '').split('.').pop().toUpperCase() || 'FILE');
             return '<a class="filecard" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
               (f.kind === 'image'
-                ? '<img src="' + esc(f.url) + '" alt="" loading="lazy">'
-                : '<span class="filecard-kind">' +
-                  esc(String(f.name || '').split('.').pop().toUpperCase()) + '</span>') +
+                ? '<img src="' + esc(f.url) + '" alt="" loading="lazy" ' +
+                  'onerror="this.remove()"><span class="filecard-kind">' + ext + '</span>'
+                : '<span class="filecard-kind">' + ext + '</span>') +
               '<span class="filecard-name">' + esc(f.name) + '</span></a>';
           }).join('') + '</div>'
         : '') +
@@ -1575,15 +1581,28 @@
     var stage = PIPELINE.indexOf(o.state === 'changes'
       ? (changesBy(o) === 'team' ? 'submitted' : 'reviewing') : o.state);
     var drafting = live && stage >= PIPELINE.indexOf('pending_draft');
-    var open = !live || !!openCards[o.id];
+
+    /* Submitted is the one step that is waiting on us, so the card opens by
+       itself. Folded, it was a name, a chip and a summary line: the files the
+       creator sent, the caption they wrote, Release to client and Request
+       changes were all behind a fold nobody knew to open, which read as a
+       booking with no next action at all. Deliberately folding it is still
+       remembered, because openCards stores the false. */
+    var waiting = o.state === 'submitted';
+    var open = !live || (waiting ? openCards[o.id] !== false : !!openCards[o.id]);
 
     var card = document.createElement('article');
     card.className = 'kcard' + (live ? ' is-live' : '') + (dead ? ' is-off' : '') +
-      (o.state === 'reviewing' ? ' is-waiting' : '') + (live && !open ? ' is-folded' : '');
+      (waiting ? ' is-waiting' : '') + (live && !open ? ' is-folded' : '');
     card.setAttribute('data-state', o.state);
 
-    // Folded, the card is one line: the date, the platforms, the money.
+    /* Folded, the card is one line: the date, the platforms, the money. A card
+       waiting on us leads with what arrived, because how much was sent is the
+       first thing anybody wants to know before opening it. */
+    var waitFiles = (state.files && state.files[o.id]) || [];
     var sum = live ? [
+      waiting && waitFiles.length
+        ? waitFiles.length + ' file' + (waitFiles.length === 1 ? '' : 's') : '',
       o.visit_date ? niceDate(o.visit_date) + (o.visit_time ? ', ' + o.visit_time : '')
                    : visitWord() + ' TBC',
       plats, money(o.rate)

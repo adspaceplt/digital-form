@@ -2064,6 +2064,12 @@ body.is-plain .topbar { background: var(--chrome); }
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
   margin-bottom: 12px;
 }
+/* A booking waiting on us, marked so a folded one in a list of ten still reads
+   as needing somebody. The chip carries the word, so the edge is the second
+   signal and never the only one. It is the left rule rather than a tint,
+   because being chosen in this portal is a fill and this is not chosen. */
+.kcard.is-waiting { border-left: 3px solid var(--warn); }
+
 /* No overflow clipping here: the actions menu is positioned against the card
    and has to be allowed out of it. The last section rounds itself instead. */
 .kcard > *:last-child {
