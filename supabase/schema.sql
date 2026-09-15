@@ -2115,3 +2115,279 @@ $$;
 -- overwrites a name somebody has since chosen themselves.
 update public.team_roles set name = 'Marketing'
  where slug = 'account' and name = 'Account';
+
+-- =========================================================================
+-- CREATOR ACCESS AND DELIVERY
+--
+-- Creators were the one party in this operation with no page of their own.
+-- Drafts arrived in a Google Drive folder somebody had to find, paste a link
+-- to, and chase; a creator asking "when am I shooting" asked on WhatsApp.
+--
+-- A creator is not a client and not a colleague, so neither sign-in fits. An
+-- SMS one time code costs money on every message, for ever, to let somebody
+-- open a page four times a campaign, and we hold phone numbers rather than
+-- addresses anyway. The key is therefore a code they keep: eight characters
+-- from an alphabet with no 0/O/1/I/L in it, readable down a phone line,
+-- carried in the link we send so one tap is enough, and stored by the browser
+-- so it is asked for once. 31^8 is 852 billion, which is six orders of
+-- magnitude past the six digit code a bank is content to send by SMS.
+-- =========================================================================
+
+alter table public.creators add column if not exists access_code    text;
+alter table public.creators add column if not exists code_issued_at timestamptz;
+create unique index if not exists creators_code_idx
+  on public.creators(access_code) where access_code is not null;
+
+create or replace function public.new_creator_code()
+returns text language plpgsql volatile set search_path = public as $$
+declare
+  alphabet constant text := '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
+  out text;
+  i integer;
+begin
+  loop
+    out := '';
+    for i in 1..8 loop
+      out := out || substr(alphabet, 1 + floor(random() * length(alphabet))::int, 1);
+    end loop;
+    exit when not exists (select 1 from creators where access_code = out);
+  end loop;
+  return out;
+end $$;
+
+-- Every creator carries one from now on, including the ones already keyed in.
+update public.creators
+   set access_code = public.new_creator_code(), code_issued_at = now()
+ where access_code is null;
+
+create or replace function public.creators_code_default()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if new.access_code is null then
+    new.access_code := public.new_creator_code();
+    new.code_issued_at := now();
+  end if;
+  return new;
+end $$;
+drop trigger if exists creators_code on public.creators;
+create trigger creators_code before insert on public.creators
+  for each row execute function public.creators_code_default();
+
+-- What a creator hands in. Several files per booking, because one post is a
+-- cover and four slides, and a revision is a new round rather than an
+-- overwrite: the team has to be able to see what changed.
+create table if not exists public.campaign_deliverables (
+  id          uuid primary key default gen_random_uuid(),
+  option_id   uuid not null references public.campaign_options(id) on delete cascade,
+  url         text not null,
+  name        text not null,
+  kind        text not null default 'file',    -- image | video | file
+  bytes       bigint,
+  round       integer not null default 1,
+  uploaded_at timestamptz not null default now(),
+  removed_at  timestamptz
+);
+alter table public.campaign_deliverables enable row level security;
+create index if not exists campaign_deliverables_option
+  on public.campaign_deliverables(option_id, uploaded_at);
+drop policy if exists campaign_deliverables_team on public.campaign_deliverables;
+create policy campaign_deliverables_team on public.campaign_deliverables
+  for all to authenticated using (public.is_team()) with check (public.is_team());
+
+-- The caption the creator wrote is part of the draft: it is what the client
+-- approves alongside the visual, and retyping it into a content set by hand is
+-- how a caption comes to differ from the one that was agreed.
+alter table public.campaign_options add column if not exists draft_caption text;
+alter table public.campaign_options add column if not exists submitted_at  timestamptz;
+
+-- A creator may upload only while we are actually waiting for their draft.
+create or replace function public.creator_can_deliver(p_state text)
+returns boolean language sql immutable as $$
+  select p_state in ('pending_draft', 'changes')
+$$;
+
+-- What the creator is shown.
+--
+-- Deliberately not everything the console holds. A creator never sees the
+-- client's stage, the campaign's commercial state, what the client is paying,
+-- who else was offered the campaign, or the team's own notes on the row: a
+-- creator reading that we are still waiting on a client is being handed our
+-- position in somebody else's negotiation. They see their own booking, which
+-- is the brand, the brief, their platforms, their fee, the dates and where
+-- their own work has got to.
+create or replace function public.get_creator(p_code text)
+returns jsonb
+language plpgsql security definer stable set search_path = public as $$
+declare
+  cr creators%rowtype;
+begin
+  if p_code is null or length(trim(p_code)) < 8 then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  select * into cr from creators
+   where access_code = upper(regexp_replace(p_code, '[^A-Za-z0-9]', '', 'g'));
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  if not cr.active then return jsonb_build_object('error', 'inactive'); end if;
+
+  return jsonb_build_object(
+    'creator', jsonb_build_object('name', cr.name, 'code', cr.access_code),
+    'bookings', coalesce((
+      select jsonb_agg(b order by b->>'sort')
+      from (
+        select jsonb_build_object(
+          'id', o.id,
+          'sort', coalesce(o.visit_date::text, '9999') || c.title,
+          'campaign', c.title,
+          'campaign_zh', c.title_zh,
+          'brand', cl.name,
+          'brief', c.brief,
+          'brief_zh', c.brief_zh,
+          'deliverable', c.deliverable,
+          'push_format', c.push_format,
+          'platforms', o.platforms,
+          'rate', o.rate,
+          'currency', case when coalesce(cl.market, 'MY') = 'SG' then 'SGD' else 'MYR' end,
+          'state', o.state,
+          'visit_date', o.visit_date,
+          'visit_time', o.visit_time,
+          'visit_location', o.visit_location,
+          'visit_pic', o.visit_pic,
+          'visit_pic_phone', o.visit_pic_phone,
+          'tracking_no', o.tracking_no,
+          'planned_publish', o.planned_publish,
+          'revision_round', o.revision_round,
+          'change_note', case when o.state = 'changes' then o.drop_reason end,
+          'caption', o.draft_caption,
+          'submitted_at', o.submitted_at,
+          'can_deliver', public.creator_can_deliver(o.state),
+          'files', coalesce((
+            select jsonb_agg(jsonb_build_object(
+              'id', d.id, 'url', d.url, 'name', d.name, 'kind', d.kind,
+              'bytes', d.bytes, 'round', d.round)
+              order by d.uploaded_at)
+            from campaign_deliverables d
+             where d.option_id = o.id and d.removed_at is null), '[]'::jsonb)
+        ) as b
+        from campaign_options o
+        join campaigns c on c.id = o.campaign_id
+        join clients cl on cl.id = c.client_id
+        where o.creator_id = cr.id
+          and c.state <> 'draft'
+          and o.state in ('confirmed', 'pending_visit', 'pending_delivery',
+                          'pending_draft', 'reviewing', 'changes', 'scheduled',
+                          'posted', 'completed', 'withdrawn', 'replaced')
+      ) rows), '[]'::jsonb));
+end $$;
+
+-- The creator's own writes. Each one re-checks the code and that the booking
+-- is theirs, because a page anyone can open is not allowed to take the page's
+-- word for whose booking it is.
+create or replace function public.creator_add_file(
+  p_code text, p_option uuid, p_url text, p_name text, p_kind text, p_bytes bigint)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  cr creators%rowtype;
+  o  campaign_options%rowtype;
+  id uuid;
+begin
+  select * into cr from creators where access_code = upper(p_code) and active;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  select * into o from campaign_options where id = p_option and creator_id = cr.id;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.creator_can_deliver(o.state) then
+    return jsonb_build_object('error', 'closed');
+  end if;
+  insert into campaign_deliverables (option_id, url, name, kind, bytes, round)
+  values (p_option, p_url, p_name, coalesce(p_kind, 'file'), p_bytes,
+          greatest(o.revision_round, 1))
+  returning campaign_deliverables.id into id;
+  return jsonb_build_object('id', id);
+end $$;
+
+create or replace function public.creator_remove_file(p_code text, p_file uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  cr creators%rowtype;
+  n  integer;
+begin
+  select * into cr from creators where access_code = upper(p_code) and active;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  update campaign_deliverables d set removed_at = now()
+   where d.id = p_file and d.removed_at is null
+     and exists (select 1 from campaign_options o
+                  where o.id = d.option_id and o.creator_id = cr.id
+                    and public.creator_can_deliver(o.state));
+  get diagnostics n = row_count;
+  if n = 0 then return jsonb_build_object('error', 'not-found'); end if;
+  return jsonb_build_object('ok', true);
+end $$;
+
+-- Handing it in is what moves the step, so nobody has to notice that files
+-- appeared. Reviewing is the team's word for "ours now", which is exactly
+-- what has happened.
+create or replace function public.creator_submit(p_code text, p_option uuid, p_caption text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  cr creators%rowtype;
+  o  campaign_options%rowtype;
+  n  integer;
+begin
+  select * into cr from creators where access_code = upper(p_code) and active;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  select * into o from campaign_options where id = p_option and creator_id = cr.id;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.creator_can_deliver(o.state) then
+    return jsonb_build_object('error', 'closed');
+  end if;
+  select count(*) into n from campaign_deliverables
+   where option_id = p_option and removed_at is null;
+  if n = 0 then return jsonb_build_object('error', 'empty'); end if;
+
+  update campaign_options
+     set state = 'reviewing', draft_caption = p_caption, submitted_at = now()
+   where id = p_option;
+  return jsonb_build_object('ok', true, 'files', n);
+end $$;
+
+-- Asked by the sign-upload edge function before it signs anything: this code,
+-- this booking, and a step we are actually waiting on a draft for. The
+-- function builds the S3 key from the option id it checked here, so a real
+-- code cannot be pointed at somebody else's folder.
+create or replace function public.creator_may_upload(p_code text, p_option uuid)
+returns boolean
+language sql security definer stable set search_path = public as $$
+  select exists (
+    select 1 from campaign_options o
+    join creators cr on cr.id = o.creator_id
+    where o.id = p_option and cr.active
+      and cr.access_code = upper(p_code)
+      and public.creator_can_deliver(o.state))
+$$;
+
+grant execute on function public.get_creator(text) to anon, authenticated;
+grant execute on function public.creator_add_file(text, uuid, text, text, text, bigint) to anon, authenticated;
+grant execute on function public.creator_remove_file(text, uuid) to anon, authenticated;
+grant execute on function public.creator_submit(text, uuid, text) to anon, authenticated;
+grant execute on function public.creator_may_upload(text, uuid) to anon, authenticated;
+
+-- Taking a code back. A link forwarded to the wrong person is the only way one
+-- leaks, so the answer is a new code rather than a lecture: the old link stops
+-- working the moment this runs. Team only, like every other write.
+create or replace function public.reset_creator_code(p_creator uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  fresh text;
+begin
+  if not public.is_team() then
+    return jsonb_build_object('error', 'not-allowed');
+  end if;
+  fresh := public.new_creator_code();
+  update creators set access_code = fresh, code_issued_at = now() where id = p_creator;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  return jsonb_build_object('code', fresh);
+end $$;
+grant execute on function public.reset_creator_code(uuid) to authenticated;

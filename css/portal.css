@@ -361,6 +361,9 @@ a { color: inherit; }
      the label in the space rather than leaving it padded to one side. */
   display: inline-flex; align-items: center; justify-content: center; gap: 7px;
   min-width: 116px; text-align: center;
+  /* An <a class="btn"> takes the browser's underline otherwise, so the same
+     button reads differently depending on which element drew it. */
+  text-decoration: none;
 }
 .btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
 .btn:hover { border-color: var(--ink); color: var(--ink); }
@@ -2073,6 +2076,15 @@ body.is-plain .topbar { background: var(--chrome); }
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   padding: 13px 14px 13px 16px;
 }
+/* The state sits second from the end, beside the ⋯, which is where this
+   portal's tables already put it. Trailing the name it started at a different
+   x on every card, so a column of cards could not be read down for where each
+   one has got to. `order` rather than a move in the markup, because name then
+   state then summary is still the right reading order. */
+.kcard-head > .tone { order: 2; margin-left: auto; }
+.kcard-head > .tone ~ .tone { margin-left: 0; }
+.kcard-head > .kcard-sum { order: 1; }
+.kcard-head > .kmenu-btn { order: 3; }
 .kcard-name {
   font-size: 15px; font-weight: 600; letter-spacing: -.012em; color: var(--ink);
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -2201,7 +2213,14 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 .booking.is-off { opacity: .6; }
 .booking-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
-.booking-head b { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; }
+.booking-head b { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; min-width: 0; }
+/* The state hangs off the right of the card, not off the end of the name.
+   Trailing the name it started at a different x on every card — 恩比 put it at
+   205px and Vini168小队长 at 325px — so a column of cards could not be read
+   down for where each one has got to, which is the one thing the chip is for.
+   Whatever follows it (a Replacement tag) travels with it. */
+.booking-head > .chip-state, .booking-head > .tone { margin-left: auto; }
+.booking-head > .chip-state ~ *, .booking-head > .tone ~ * { margin-left: 0; }
 /* The same words and the same colours as the console's state chips. */
 .chip-state {
   font-size: 11.5px; font-weight: 600; line-height: 1.5; padding: 2px 8px; border-radius: 5px;
@@ -2659,6 +2678,10 @@ body.is-plain .topbar { background: var(--chrome); }
   padding: 12px 15px; margin-bottom: 8px;
 }
 .work-row:hover { border-color: var(--ink-mute); }
+/* Same rule as the cards: the state hangs off the end of the line rather than
+   off the end of the name, so it is in one place down the list. */
+.work-row-name { display: flex; align-items: center; gap: 9px; }
+.work-row-name > .tone { margin-left: auto; flex: 0 0 auto; }
 .work-row-name {
   grid-area: name; font-size: 14px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -2821,23 +2844,36 @@ body > .shell { width: 100%; }
    card, so it costs no column: the exception is named beside the name. */
 .cat-row { grid-template-columns: minmax(0, 1fr) 110px minmax(0, 1fr) var(--ctl-h); }
 /* A creator is a person with a fee, on the same row shape as everything else. */
-.cr-row { grid-template-columns: minmax(0, 1fr) 110px var(--ctl-h); }
-/* Name over record, the shape every other list of people in this portal uses.
-   The disc that used to start this row is gone: it was there to make a row
-   findable by eye, and on a roster of Chinese names a first character index
-   gives 是yy呀 and 是甜甜啊 the same circle, which is the very failure that
-   ruled out an alphabetical band. What differs between two creators is their
-   record, so that is what the second line carries. */
+/* Creator · Profiles · Campaigns · Fee · ⋯ — a table with columns, because a
+   list whose every value is stacked against the left margin has to be read
+   line by line before it can be scanned. The disc that used to start the row
+   is gone: it was there to make a row findable by eye, and on a roster of
+   Chinese names a first character index gives 是yy呀 and 是甜甜啊 the same
+   circle, which is the very failure that ruled out an alphabetical band. */
+.cr-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) 120px 96px var(--ctl-h); }
+.cr-links { display: flex; flex-wrap: wrap; gap: 4px 14px; min-width: 0; }
+.cr-rec { font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 .cr-who > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.cr-who > small { font-size: 12px; color: var(--ink-mute); }
+
+/* The same outbound link, without the chip: on a row that carries two or three
+   of them a bordered pill each turns the cell into a row of buttons. The word
+   and the mark that says it leaves the page are the whole control. */
+.plink-bare {
+  border: 0; background: none; padding: 5px 0; gap: 5px; color: var(--ink-soft);
+}
+.plink-bare:hover { color: var(--ink); text-decoration: underline; }
+.plink-bare b { font-weight: 600; }
 .ct-row  { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) var(--ctl-h); }
 .ct-row .crm-reach { justify-content: flex-start; }
 /* A category heading inside the table, between its lines. */
 .svc-cat {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
   padding: 14px 15px 6px; font-size: 11px; font-weight: 600; letter-spacing: .06em;
   text-transform: uppercase; color: var(--ink-mute); background: var(--sunk);
   border-bottom: 1px solid var(--line-soft);
 }
+/* The count is a number, not part of the band's name. */
+.svc-cat > span { letter-spacing: 0; font-variant-numeric: tabular-nums; }
 .svc-cat:first-child { padding-top: 12px; }
 /* A status is a value, so it is a select on the row, tinted like its chip.
    The ⋯ beside it holds only what is not a status. */
@@ -2878,16 +2914,37 @@ body > .shell { width: 100%; }
     grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
     grid-template-areas: "name rate act" "meta meta meta";
   }
-  /* The creator row is already two lines inside its name cell, so it needs no
-     second grid row: name over record on the left, fee and ⋯ on the right. */
+  /* On a phone the head wraps, and what wraps is the summary, not the state:
+     the state belongs on the name's line where it can be read down the list.
+     Left to wrap it landed on a line of its own with an empty half beside it. */
+  .kcard-head > .tone { order: 1; }
+  .kcard-head > .kmenu-btn { order: 2; }
+  .kcard-head > .kcard-sum { order: 3; flex: 1 1 100%; }
+  /* Two lines, not four: who and what they cost, then where to find them with
+     their record at the end of the same line. A grid row each for the links
+     and the record put a 120px row on the screen, which is five creators on a
+     phone. */
   .cr-row {
     grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
-    grid-template-areas: "name rate act";
+    grid-template-areas: "name rate act" "links rec rec";
+    row-gap: 4px; align-items: start;
   }
+  .cr-row > .svc-name { align-self: center; }
+  .cr-row > .cr-links { grid-area: links; align-self: center; }
+  .cr-row > .cr-rec { grid-area: rec; text-align: right; align-self: center; }
+  /* The ⋯ acts on the whole row, so it spans the whole row. Left on the first
+     line it set that line's height to its own 38px and pushed the row to
+     100px for the sake of a 22px name. */
   .doc-row { grid-template-areas: "name act" "amt state"; }
   .ct-row  { grid-template-areas: "name act" "reach reach"; }
   .svc-row > .svc-name { grid-area: name; }
   .svc-row > .team-act { grid-area: act; align-self: start; }
+  /* The ⋯ keeps its full target and stops setting the first line's height:
+     its 38px box pushed a row carrying a 22px name to 100px. The negative
+     block margin is the same trick the selection tick uses, so the footprint
+     is the name's and the thing under a thumb is still 38px (44 on a touch
+     screen). */
+  .cr-row > .team-act { align-self: center; margin-block: calc((22px - var(--ctl-h)) / 2); }
   .svc-row > .svc-calc { grid-area: calc; text-align: left; }
   .svc-row > .svc-unit { grid-area: meta; }
   .svc-row > .svc-amt { text-align: left; align-self: center; grid-area: amt; }
@@ -3149,3 +3206,78 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   .acttab:active, .crow-tick:active, .crow-backup:active, .langtoggle:active,
   .plink:active, .state-select:active, .pbox:active { transform: none; }
 }
+
+/* =========================================================================
+   CREATOR PORTAL  (/creator/)
+   A creator's own page: their bookings, and where they hand work in. Built
+   from the components the client pages already use, so nothing here invents
+   a shape. Only what the client pages had no need for is below.
+   ========================================================================= */
+
+.booking-brand { font-size: 12.5px; color: var(--ink-mute); margin-top: 2px; }
+.booking-next { font-size: 13px; color: var(--ink-soft); margin-top: 10px; }
+
+/* The brief, and the changes asked for, read as quoted matter rather than as
+   more of the card: an inset ground and a rule down the side. */
+.booking-brief, .booking-pay, .booking-files, .booking-deliver {
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft);
+}
+.booking-brief p { font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); margin-top: 4px; }
+.booking-brief.is-warn p { color: var(--warn); }
+.booking-pay p { font-size: 13.5px; color: var(--ink-soft); margin: 4px 0 10px; }
+
+/* What has been handed in, as thumbnails rather than a list of file names: a
+   creator checking they sent the right cut should not have to read. */
+.filegrid { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); margin-top: 8px; }
+.filecard {
+  position: relative; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  overflow: hidden; background: var(--sunk); aspect-ratio: 1; display: flex;
+  flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px;
+}
+.filecard img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+/* The kind sits under the thumbnail and shows through when the image cannot
+   load, so a failed preview reads as the file it is rather than as a broken
+   image mark telling a creator their work is gone. */
+.filecard-kind {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 12px; font-weight: 600; color: var(--ink-mute);
+}
+.filecard-name {
+  position: relative; z-index: 2; align-self: stretch; margin-top: auto; font-size: 11px;
+  color: var(--ink-soft); background: var(--chrome); border-radius: 4px; padding: 2px 4px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Anything a person can attach, a person can remove. */
+.filecard-x {
+  position: absolute; top: 4px; right: 4px; z-index: 2;
+  width: var(--ctl-h-sm); height: var(--ctl-h-sm); border-radius: 50%;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink-soft);
+  font-size: 15px; line-height: 1; display: grid; place-items: center;
+  transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
+}
+.filecard-x:hover { background: var(--err-bg); color: var(--err); border-color: var(--err-line); }
+.filecard-x:active { transform: scale(.94); }
+
+.booking-deliver .field-label { display: block; margin: 12px 0 5px; }
+.booking-deliver .input { width: 100%; }
+.booking-deliver .kactions { margin-top: 12px; }
+.uprow { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.uprow .progress-track { flex: 1 1 auto; }
+.uprow .muted { flex: 0 0 auto; font-size: 12px; }
+
+/* The code field is the whole sign-in, so it is set like one thing to type:
+   wide letter spacing, the monospace figures, and upper case as you go. */
+#codeRow { display: flex; gap: 10px; margin-top: 14px; }
+#codeInput {
+  flex: 1 1 auto; min-width: 0; text-align: center; letter-spacing: .18em;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: uppercase;
+}
+#signOutLine { margin-top: 22px; }
+
+/* What the creator handed in, on the campaign card. The same thumbnails their
+   own page draws, because it is the same files and a reviewer should recognise
+   what they were sent. */
+.handedin { margin: 2px 0 12px; }
+.handedin .filegrid { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
+.handedin .filecard { text-decoration: none; }
+.handedin .kfield { margin-top: 10px; }

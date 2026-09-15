@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ADspace Creator Portal</title>
+<meta name="description" content="Your bookings with ADspace.">
+<meta property="og:site_name" content="ADspace">
+<meta property="og:title" content="Creator Portal by ADspace">
+<meta property="og:description" content="Your bookings, your dates and where to hand in your work.">
+<meta property="og:image" content="https://mycdn.adspace.me/adspace-favicon.png">
+<meta name="twitter:card" content="summary">
+<link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
+<link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
+<link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
+<link rel="stylesheet" href="/css/portal.css?v=20260915e">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/js/config.js?v=20260915e"></script>
+<script src="/js/words.js?v=20260915e"></script>
+<script src="/js/api.js?v=20260915e"></script>
+<script src="/js/money.js?v=20260915e"></script>
+</head>
+<body>
+
+<script src="/js/chrome.js?v=20260915e" data-kicker="Creator Portal" data-for data-actions="lang"></script>
+
+<main class="shell">
+
+  <!-- Every full page state this portal has: the code asked for, a code that
+       is not ours, a creator stood down, and a page that could not load. -->
+  <section class="cover" id="stateBox" hidden>
+    <div class="cover-inner">
+      <div class="cover-panel">
+        <h2 id="stateTitle"></h2>
+        <p id="stateText"></p>
+        <form id="codeRow" hidden onsubmit="return false">
+          <input class="input" id="codeInput" type="text" inputmode="latin"
+                 autocapitalize="characters" autocomplete="off" spellcheck="false"
+                 maxlength="9" placeholder="7K2M-9PQR" aria-label="Access code">
+          <button class="btn btn-primary" id="codeGo" type="button">Open</button>
+        </form>
+        <div class="msg" id="stateMsg"></div>
+      </div>
+    </div>
+  </section>
+
+  <div id="app" hidden>
+    <div class="camphead">
+      <h1 id="whoName"></h1>
+      <p id="whoLine"></p>
+    </div>
+
+    <h2 class="sectionhead" id="workHead" hidden></h2>
+    <div id="workList"></div>
+
+    <section class="cover-panel" id="noWork" hidden>
+      <h2 id="noWorkTitle"></h2>
+      <p id="noWorkText"></p>
+    </section>
+
+    <p class="listhint" id="signOutLine">
+      <button class="btn btn-quiet btn-sm" id="signOutBtn" type="button"></button>
+    </p>
+  </div>
+
+</main>
+
+<script src="/js/creator.js?v=20260915e"></script>
+</body>
+</html>

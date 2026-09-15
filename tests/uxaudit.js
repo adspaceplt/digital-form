@@ -16,6 +16,7 @@ const CAMP = seedOf('head.js');
 const CLIENT = seedOf('client.js');
 const CPROD = seedOf('cprod.js');
 const PORTAL = seedOf('portal.js');
+const CREATOR = seedOf('creator.js');
 const QR = 'window.QRCode=function(){};window.QRCode.CorrectLevel={H:2};';
 
 const FAIL = new Set(['head', 'overflow', 'orphan', 'padding', 'cols', 'column', 'stack', 'hover', 'type', 'wrap', 'clip', 'row-height', 'row-width', 'target', 'label', 'icon-label', 'accent', 'contrast', 'boundary', 'focus']);
@@ -477,6 +478,22 @@ async function walk(b, coarse, dark) {
   p = await page('');
   await p.goto('http://127.0.0.1:8899/creators/?k=NOPE', { waitUntil: 'networkidle' }); await p.waitForTimeout(400);
   await report('creators cover ' + tag, p, coarse);
+  await p.close();
+
+  /* The creator's own page: the code it asks for, a booking waiting on a
+     draft with the hand-in open, and one that has been approved and is asking
+     for payment details. */
+  p = await page(CREATOR);
+  await p.goto('http://127.0.0.1:8899/creator/', { waitUntil: 'networkidle' }); await p.waitForTimeout(500);
+  await report('creator sign-in ' + tag, p, coarse);
+  await p.close();
+  p = await page(CREATOR);
+  await p.goto('http://127.0.0.1:8899/creator/?k=K2BBBBBB', { waitUntil: 'networkidle' }); await p.waitForTimeout(700);
+  await report('creator hand-in ' + tag, p, coarse);
+  await p.close();
+  p = await page(CREATOR);
+  await p.goto('http://127.0.0.1:8899/creator/?k=K3CCCCCC', { waitUntil: 'networkidle' }); await p.waitForTimeout(700);
+  await report('creator approved ' + tag, p, coarse);
   await p.close();
   p = await ctx.newPage();
   p.on('pageerror', e => errs.push(tag + ' PAGEERROR ' + e.message));

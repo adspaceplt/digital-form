@@ -475,6 +475,20 @@ ends the first line where the thumb already is. Ninety five pixels, and the
 whole card on one screen. The same shape now carries the rate card and the
 creator roster (`.cat-row`, `.cr-row`: `"name rate act" / "meta meta meta"`).
 
+**A state hangs off the end of the line, never off the end of the name.** A
+chip written straight after a title starts at a different x on every card,
+because titles are different lengths: 恩比 put `Pending draft` at 205px and
+Vini168小队长 put it at 325px, so a column of cards could not be read down for
+where each one had got to, which is the one thing the chip is there for. Every
+card head pins it instead: `.booking-head` right-aligns it with `margin-left:
+auto`, and `.kcard-head` puts it **second from the end, beside the ⋯**, which
+is exactly where this portal's tables already put a state column. `.kcard-head`
+uses `order` rather than a move in the markup, because name then state then
+summary is still the right reading order for anybody not looking at it. On a
+phone the head wraps, and **what wraps is the summary, not the state**: left to
+itself the state took a line of its own with an empty half beside it, while the
+name it belongs to sat on the line above.
+
 **A control that creates a need answers it in place.** Ticking a platform a
 creator has no profile link for used to open a labelled field *after* the Add
 button: what you type sat downstream of the control that sends it, the row

@@ -10,9 +10,9 @@
               { id: 'c2', slug: 'furiku-matcha', name: 'Furiku Matcha', logo_url: null, stage: 'proposal',
                 stage_since: new Date(Date.now() - 3 * 864e5).toISOString(), market: 'SG', owner: 'Aisyah', industry: 'F&B', sst_applies: true }],
     creators: [
-      { id: 'k1', name: '香香的爆米花 🍿', followers: 12400, cost_rate: 280, client_rate: 360, industries: 'lifestyle' },
-      { id: 'k2', name: '恩比', followers: 8100, cost_rate: 300, client_rate: 360, industries: 'F&B' },
-      { id: 'k3', name: '小熊爱睡觉', followers: 30200, cost_rate: 400, client_rate: 500, industries: 'property' }
+      { id: 'k1', name: '香香的爆米花 🍿', followers: 12400, cost_rate: 280, client_rate: 360, industries: 'lifestyle', active: true, access_code: 'K1AAAAAA' },
+      { id: 'k2', name: '恩比', followers: 8100, cost_rate: 300, client_rate: 360, industries: 'F&B', active: true, access_code: 'K2BBBBBB' },
+      { id: 'k3', name: '小熊爱睡觉', followers: 30200, cost_rate: 400, client_rate: 500, industries: 'property', active: true, access_code: 'K3CCCCCC' }
     ],
     creator_profiles: [
       { id: 'p1', creator_id: 'k1', platform: 'xhs', url: 'https://www.xiaohongshu.com/user/profile/5e3262fd00000000010015b6', handle: '5e3262fd00000000010015b6' },
@@ -22,6 +22,7 @@
     ],
     campaigns: [],
     campaign_options: [],
+    campaign_deliverables: [],
     campaign_confirmations: [],
     option_posts: [],
     option_reviews: [],
@@ -160,6 +161,11 @@
           });
           if (clash) err = { message: 'duplicate key value violates unique constraint' };
         }
+        if (table === 'creators' && !x.access_code) {
+          var alpha2 = '23456789ABCDEFGHJKMNPQRSTUVWXYZ', o2 = '';
+          for (var z = 0; z < 8; z++) o2 += alpha2[Math.floor(Math.random() * alpha2.length)];
+          x.access_code = o2;
+        }
         if (table === 'campaign_options') {
           var dup = DB.campaign_options.some(function (o) {
             return o.campaign_id === x.campaign_id && o.creator_id === x.creator_id;
@@ -187,6 +193,95 @@
   var session = null, listener = null;
 
   function rpc(name, args) {
+    /* The creator's own page. Same shape and the same withholding as the SQL:
+       a creator sees their own bookings and never the client's stage, the
+       campaign's commercial state, or what the client is paying. */
+    var CR_DELIVER = ['pending_draft', 'changes'];
+    var CR_SHOW = ['confirmed', 'pending_visit', 'pending_delivery', 'pending_draft',
+                   'reviewing', 'changes', 'scheduled', 'posted', 'completed',
+                   'withdrawn', 'replaced'];
+    function creatorBy(code) {
+      return DB.creators.filter(function (c) {
+        return c.access_code && c.access_code === String(code || '').toUpperCase();
+      })[0];
+    }
+    if (name === 'reset_creator_code') {
+      var cc = DB.creators.filter(function (c) { return c.id === args.p_creator; })[0];
+      if (!cc) return Promise.resolve({ data: { error: 'not-found' }, error: null });
+      var alpha = '23456789ABCDEFGHJKMNPQRSTUVWXYZ', out = '';
+      for (var i = 0; i < 8; i++) out += alpha[Math.floor(Math.random() * alpha.length)];
+      cc.access_code = out;
+      persist();
+      return Promise.resolve({ data: { code: out }, error: null });
+    }
+    if (name === 'get_creator') {
+      var who = creatorBy(args.p_code);
+      if (!who) return Promise.resolve({ data: { error: 'not-found' }, error: null });
+      if (who.active === false) return Promise.resolve({ data: { error: 'inactive' }, error: null });
+      var books = DB.campaign_options.filter(function (o) {
+        if (o.creator_id !== who.id || CR_SHOW.indexOf(o.state) < 0) return false;
+        var cc = DB.campaigns.filter(function (x) { return x.id === o.campaign_id; })[0];
+        return cc && cc.state !== 'draft';
+      }).map(function (o) {
+        var cc = DB.campaigns.filter(function (x) { return x.id === o.campaign_id; })[0] || {};
+        var cl = DB.clients.filter(function (x) { return x.id === cc.client_id; })[0] || {};
+        return {
+          id: o.id, campaign: cc.title, campaign_zh: cc.title_zh, brand: cl.name,
+          brief: cc.brief, brief_zh: cc.brief_zh, deliverable: cc.deliverable,
+          push_format: cc.push_format, platforms: o.platforms, rate: o.rate,
+          currency: cl.market === 'SG' ? 'SGD' : 'MYR', state: o.state,
+          visit_date: o.visit_date, visit_time: o.visit_time,
+          visit_location: o.visit_location, visit_pic: o.visit_pic,
+          visit_pic_phone: o.visit_pic_phone, tracking_no: o.tracking_no,
+          planned_publish: o.planned_publish, revision_round: o.revision_round,
+          change_note: o.state === 'changes' ? o.drop_reason : null,
+          caption: o.draft_caption, submitted_at: o.submitted_at,
+          can_deliver: CR_DELIVER.indexOf(o.state) > -1,
+          files: DB.campaign_deliverables.filter(function (d) {
+            return d.option_id === o.id && !d.removed_at;
+          })
+        };
+      });
+      return Promise.resolve({ data: { creator: { name: who.name, code: who.access_code },
+                                       bookings: books }, error: null });
+    }
+    if (name === 'creator_add_file') {
+      var cA = creatorBy(args.p_code);
+      var oA = DB.campaign_options.filter(function (o) { return o.id === args.p_option; })[0];
+      if (!cA || !oA || oA.creator_id !== cA.id) return Promise.resolve({ data: { error: 'not-found' }, error: null });
+      if (CR_DELIVER.indexOf(oA.state) < 0) return Promise.resolve({ data: { error: 'closed' }, error: null });
+      var fid = 'd' + Math.random().toString(36).slice(2, 9);
+      DB.campaign_deliverables.push({ id: fid, option_id: oA.id, url: args.p_url,
+        name: args.p_name, kind: args.p_kind, bytes: args.p_bytes,
+        round: Math.max(oA.revision_round || 0, 1) });
+      persist();
+      return Promise.resolve({ data: { id: fid }, error: null });
+    }
+    if (name === 'creator_remove_file') {
+      var cR = creatorBy(args.p_code);
+      var f = DB.campaign_deliverables.filter(function (d) { return d.id === args.p_file; })[0];
+      var oR = f && DB.campaign_options.filter(function (o) { return o.id === f.option_id; })[0];
+      if (!cR || !f || !oR || oR.creator_id !== cR.id || CR_DELIVER.indexOf(oR.state) < 0) {
+        return Promise.resolve({ data: { error: 'not-found' }, error: null });
+      }
+      f.removed_at = new Date().toISOString();
+      persist();
+      return Promise.resolve({ data: { ok: true }, error: null });
+    }
+    if (name === 'creator_submit') {
+      var cS = creatorBy(args.p_code);
+      var oS = DB.campaign_options.filter(function (o) { return o.id === args.p_option; })[0];
+      if (!cS || !oS || oS.creator_id !== cS.id) return Promise.resolve({ data: { error: 'not-found' }, error: null });
+      if (CR_DELIVER.indexOf(oS.state) < 0) return Promise.resolve({ data: { error: 'closed' }, error: null });
+      var n = DB.campaign_deliverables.filter(function (d) {
+        return d.option_id === oS.id && !d.removed_at; }).length;
+      if (!n) return Promise.resolve({ data: { error: 'empty' }, error: null });
+      oS.state = 'reviewing';
+      oS.draft_caption = args.p_caption;
+      oS.submitted_at = new Date().toISOString();
+      persist();
+      return Promise.resolve({ data: { ok: true, files: n }, error: null });
+    }
     if (name === 'get_campaign') {
       var c = DB.campaigns.filter(function (x) { return x.access_token === args.p_token; })[0];
       if (!c) return Promise.resolve({ data: { error: 'not-found' }, error: null });
@@ -366,6 +461,24 @@
                      context: { json: function () { return Promise.resolve({ error: 'invite_failed', detail: 'Error sending invite email' }); } } } });
           return Promise.resolve({ data: { ok: true, already: false,
             sent: !(opts && opts.body && opts.body.notify === false) }, error: null });
+        }
+        /* The real function refuses a creator whose code does not hold that
+           booking, and builds the key from the option it checked rather than
+           from anything the browser sent. Both are mirrored here so a test
+           that loses the check fails. */
+        var bd = (opts && opts.body) || {};
+        if (bd.creatorCode) {
+          var okC = DB.campaign_options.some(function (o) {
+            var cr = DB.creators.filter(function (x) { return x.id === o.creator_id; })[0];
+            return o.id === bd.optionId && cr && cr.active !== false &&
+              cr.access_code === String(bd.creatorCode).toUpperCase() &&
+              ['pending_draft', 'changes'].indexOf(o.state) > -1;
+          });
+          if (!okC) return Promise.resolve({ data: { error: 'not_allowed' }, error: null });
+          var kk = 'content/creator/' + bd.optionId + '/' + Math.random().toString(36).slice(2) +
+            '.' + (bd.ext || 'bin');
+          return Promise.resolve({ data: { uploadUrl: 'https://s3.test/put/' + kk,
+            publicUrl: 'https://mycdn.adspace.me/' + kk }, error: null });
         }
         return Promise.resolve({ data: { uploadUrl: 'https://s3.test/put/inv.pdf',
           publicUrl: 'https://mycdn.adspace.me/content/c1/inv-' + Date.now() + '.pdf' }, error: null });

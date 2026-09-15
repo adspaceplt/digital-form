@@ -32,7 +32,15 @@ const say = s => console.log(s);
      the same grey circle, so what the row carries is the record instead. */
   say('no monogram: ' + (await p.locator('#rosterList .cr-mono').count() === 0));
   say('every row states a record: ' +
-    (await p.locator('#rosterList .cr-row:not(.crm-head) .cr-who small').nth(1).innerText()));
+    (await p.locator('#rosterList .cr-row:not(.crm-head) .cr-rec').allInnerTexts()).join(' / '));
+  // The profile is on the row, as the word and the mark that says it leaves.
+  say('the profile is a link on the row: ' +
+    (await p.locator('#rosterList .cr-row:not(.crm-head) .plink-bare').first().innerText()));
+  // Every column starts where its heading does, on every row.
+  say('header cells: ' + (await p.locator('#rosterList .crm-head span').count()) +
+    ' for ' + await p.evaluate(() => getComputedStyle(
+      document.querySelector('#rosterList .cr-row:not(.crm-head)')).gridTemplateColumns.split(' ').length) +
+    ' columns');
   const hs = await p.locator('#rosterList .cr-row:not(.crm-head)').evaluateAll(
     l => l.map(r => Math.round(r.getBoundingClientRect().height)));
   say('rows share one height: ' + (Math.max(...hs) - Math.min(...hs) <= 2) + ' ' + hs.join(','));
