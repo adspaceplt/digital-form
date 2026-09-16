@@ -147,7 +147,7 @@ async function measure(p, label, coarse) {
                      : bad('and focus goes back to the control that opened it', String(back));
 
   // The record's panes are buttons in a tablist, so they are reachable.
-  await p.locator('.crm-row').first().click(); await p.waitForTimeout(700);
+  await p.locator('#crmList .crm-row').first().click(); await p.waitForTimeout(700);
   const tabbed = await p.evaluate(() => {
     const t = document.querySelector('#crmTabs .tab[data-pane="billing"]');
     if (!t) return 'missing';

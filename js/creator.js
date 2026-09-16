@@ -276,7 +276,11 @@
         var when = b.visit_date ? fmtDate(b.visit_date) : (b.planned_publish ? fmtDate(b.planned_publish) : '');
         var el = document.createElement('button');
         el.type = 'button';
-        el.className = 'qrow' + (b.id === picked ? ' is-on' : '') + (liveBooking(b) ? '' : ' is-off');
+        /* The one waiting on them carries the warn edge this portal gives any
+           row that needs somebody, so a booking further down the queue still
+           reads as needing them without being opened. */
+        el.className = 'qrow' + (b.id === picked ? ' is-on' : '') +
+          (needsCreator(b) ? ' is-waiting' : '') + (liveBooking(b) ? '' : ' is-off');
         el.setAttribute('aria-current', b.id === picked ? 'true' : 'false');
         el.innerHTML =
           '<span class="qrow-name">' + esc(title || '') + '</span>' +

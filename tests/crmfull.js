@@ -14,13 +14,13 @@ const SEED = fs.readFileSync(process.argv[2] + '/crmshot.js', 'utf8').match(/con
     await p.evaluate(() => window.__signIn('adspacestudios@gmail.com'));
     await p.waitForTimeout(700);
     // an active client so the engagement actions render
-    const n = await p.locator('.crm-row').count();
+    const n = await p.locator('#crmList .crm-row').count();
     let opened = false;
     for (let i = 0; i < n; i++) {
-      const t = await p.locator('.crm-row').nth(i).innerText();
-      if (/active/i.test(t)) { await p.locator('.crm-row').nth(i).click(); opened = true; break; }
+      const t = await p.locator('#crmList .crm-row').nth(i).innerText();
+      if (/active/i.test(t)) { await p.locator('#crmList .crm-row').nth(i).click(); opened = true; break; }
     }
-    if (!opened) await p.locator('.crm-row').first().click();
+    if (!opened) await p.locator('#crmList .crm-row').first().click();
     await p.waitForTimeout(800);
     await p.locator('#crmEngageActions').scrollIntoViewIfNeeded().catch(() => {});
     await p.screenshot({ path: process.argv[2] + '/crm-engage-' + tag + '.png', fullPage: true });

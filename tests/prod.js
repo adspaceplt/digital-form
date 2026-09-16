@@ -37,7 +37,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   await p.waitForTimeout(400);
   await p.locator('.navitem[data-section="campaigns"]').click();
   await p.waitForTimeout(500);
-  await p.locator('#campCards .bigcard').first().click();
+  await p.locator('#campCards .crm-row').first().click();
   await p.waitForTimeout(600);
 
   say('=== lock ===');

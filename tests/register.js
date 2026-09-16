@@ -49,8 +49,11 @@ async function open(ctx, url, seed, shot) {
 
     /* ---- Populated ------------------------------------------------------ */
     let p = await open(ctx, '/admin/?s=clients');
+    /* Scoped to the clients list: Phase 2 made the campaign register and the
+       Content Review client list the same surface, so `.crm-register` is no
+       longer unique in the console. The claim here was always about this one. */
     check('one register surface, not a panel per stage',
-      await p.locator('.crm-register').count() === 1 &&
+      await p.locator('#crmList .crm-register').count() === 1 &&
       await p.locator('#crmList .crm-group').count() === 0);
     check('and one header over it',
       await p.locator('#crmList .crm-head').count() === 1);
@@ -58,7 +61,7 @@ async function open(ctx, url, seed, shot) {
     check('the stages are labelled divider rows inside it', bands.length >= 2,
       bands.map(s => s.replace(/\s+/g, ' ').trim()).join(' / '));
     check('a row is one control that opens the workspace',
-      await p.locator('.crm-row').first().evaluate(el =>
+      await p.locator('#crmList .crm-row').first().evaluate(el =>
         el.tagName === 'BUTTON' && !el.querySelector('button, a, select, input')));
     check('no sideways overflow', await p.evaluate(() =>
       document.documentElement.scrollWidth <= window.innerWidth));
@@ -78,7 +81,7 @@ async function open(ctx, url, seed, shot) {
     await p.locator('#crmList [data-a="go"]').click();
     await p.waitForTimeout(400);
     check('clearing them brings the register back',
-      await p.locator('.crm-row').count() > 0 &&
+      await p.locator('#crmList .crm-row').count() > 0 &&
       (await p.locator('#crmSearch').inputValue()) === '');
     await p.close();
 
@@ -90,7 +93,7 @@ async function open(ctx, url, seed, shot) {
     await p.screenshot({ path: T + '/reg-' + tag + '-loading.png' });
     await p.waitForTimeout(1400);
     check('and the register replaces it when the read lands',
-      await p.locator('.crm-row').count() > 0 &&
+      await p.locator('#crmList .crm-row').count() > 0 &&
       await p.locator('#crmList .skel').count() === 0);
     await p.close();
 
@@ -133,12 +136,14 @@ async function open(ctx, url, seed, shot) {
     check('the record opens on an identity mark',
       (await p.locator('#crmClientMark').innerText()).trim().length > 0 ||
       await p.locator('#crmClientMark img').count() === 1);
+    /* Scoped to the client record: the campaign record grew a rail of its own
+       in Phase 2, so `.rec-rail` matches two of them in the console now. */
     check('the rail carries the details block',
-      await p.locator('.rec-rail .railblock .facts').count() === 1);
+      await p.locator('#crmWork .rec-rail .railblock .facts').count() === 1);
     /* Every rail block leaves when the data behind it is not there, so the
        rule under the last one is set rather than left to `:last-child`. */
     const lastRule = await p.evaluate(() => {
-      const on = [...document.querySelectorAll('.rec-rail .railblock')].filter(b => !b.hidden);
+      const on = [...document.querySelectorAll('#crmWork .rec-rail .railblock')].filter(b => !b.hidden);
       if (!on.length) return 'none shown';
       const last = on[on.length - 1];
       return last.classList.contains('is-last') &&

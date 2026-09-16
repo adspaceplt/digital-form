@@ -43,20 +43,20 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
 
   await p.locator('.navitem[data-section="clients"]').click(); await p.waitForTimeout(600);
   check('Clients is a section of its own', await p.locator('#sectionClients').isVisible());
-  check('both clients listed', await p.locator('.crm-row').count() === 2,
+  check('both clients listed', await p.locator('#crmList .crm-row').count() === 2,
     await p.locator('#crmCount').innerText());
 
-  console.log('  rows: ' + (await p.locator('.crm-row').allInnerTexts()).map(t => t.replace(/\n/g, ' | ')).join('  //  '));
+  console.log('  rows: ' + (await p.locator('#crmList .crm-row').allInnerTexts()).map(t => t.replace(/\n/g, ' | ')).join('  //  '));
   check('the Singapore client is marked in S$',
-    (await p.locator('.crm-row').nth(0).innerText()).includes('S$') ||
-    (await p.locator('.crm-row').nth(1).innerText()).includes('S$'));
+    (await p.locator('#crmList .crm-row').nth(0).innerText()).includes('S$') ||
+    (await p.locator('#crmList .crm-row').nth(1).innerText()).includes('S$'));
 
   // filters
   await p.selectOption('#crmStage', 'active'); await p.waitForTimeout(300);
-  check('stage filters the list', await p.locator('.crm-row').count() === 1);
+  check('stage filters the list', await p.locator('#crmList .crm-row').count() === 1);
   await p.selectOption('#crmStage', 'all'); await p.waitForTimeout(300);
   await p.fill('#crmSearch', 'furiku'); await p.waitForTimeout(300);
-  check('search finds by name', await p.locator('.crm-row').count() === 1);
+  check('search finds by name', await p.locator('#crmList .crm-row').count() === 1);
   await p.fill('#crmSearch', ''); await p.waitForTimeout(300);
 
   // create
@@ -268,7 +268,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
       el.tagName === 'BUTTON' && el.querySelectorAll('button, a, input, select').length === 0));
 
   // the registered name is kept in capitals
-  await p.locator('.crm-row').filter({ hasText: 'Star Living' }).click(); await p.waitForTimeout(700);
+  await p.locator('#crmList .crm-row').filter({ hasText: 'Star Living' }).click(); await p.waitForTimeout(700);
   await pane('billing');
   await p.fill('#crmLegalName', 'star living sdn bhd');
   check('company name is forced to capitals', (await p.locator('#crmLegalName').inputValue()) === 'STAR LIVING SDN BHD');
@@ -458,7 +458,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
 
   // the billing contact is one of the contacts, the main one unless chosen
   await p.locator('#crmBack').click(); await p.waitForTimeout(600);
-  await p.locator('.crm-row').filter({ hasText: 'Laman Citra' }).click(); await p.waitForTimeout(800);
+  await p.locator('#crmList .crm-row').filter({ hasText: 'Laman Citra' }).click(); await p.waitForTimeout(800);
   await pane('billing');
   check('an active client with a main contact has billing complete', (await p.locator('#crmBillSummary').innerText()).includes('Complete'));
   check('the billing contact is prefilled with the main contact',
@@ -506,7 +506,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   check('a voided document can be deleted', await p.locator('#crmDocuments .doc-row:not(.crm-head)').count() === 0 &&
     await p.evaluate(() => window.__DB.client_documents.length === 2));
   await p.locator('#crmBack').click(); await p.waitForTimeout(600);
-  await p.locator('.crm-row').filter({ hasText: 'Star Living' }).click(); await p.waitForTimeout(800);
+  await p.locator('#crmList .crm-row').filter({ hasText: 'Star Living' }).click(); await p.waitForTimeout(800);
 
   // the brand profile is its own pane with its own save
   await pane('brand');
@@ -530,7 +530,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   check('Content Review no longer offers to create a client',
     await p.locator('#addClientBox').count() === 0 && await p.locator('#goToCrm').isVisible());
   await p.waitForTimeout(500);
-  const reviewNames = await p.locator('#clientCards .bigcard-name').allInnerTexts();
+  const reviewNames = await p.locator('#clientCards .crm-c-name').allInnerTexts();
   console.log('  content review lists: ' + reviewNames.join(', '));
   check('Content Review lists only active clients', reviewNames.indexOf('Star Living') < 0 && reviewNames.indexOf('Laman Citra') > -1);
   await p.locator('#goToCrm').click(); await p.waitForTimeout(500);
@@ -553,7 +553,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
     await p.goto('http://127.0.0.1:8899/admin/?s=clients', { waitUntil: 'networkidle' });
     await p.waitForTimeout(900);
   };
-  const rowOf = n => p.locator('.crm-row', { hasText: n }).first();
+  const rowOf = n => p.locator('#crmList .crm-row', { hasText: n }).first();
   const groupOf = n => p.locator('.crm-band', { hasText: n }).first();
 
   await age('Star Living', 'lead', 40);
