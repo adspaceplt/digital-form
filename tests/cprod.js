@@ -73,25 +73,34 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   await p.waitForTimeout(250);
   say('changes without a note: ' + await dec.locator('.approve-state').innerText());
   await dec.locator('.textarea').fill('Please cut the intro and show the facade earlier.');
-  await dec.locator('.approve-who .input').fill('Wei Ling');
+  /* The name is asked once, at the moment somebody decides, and kept. A field
+     on every card asked it of a reader who was not deciding anything. */
+  p.once('dialog', d => d.accept('Wei Ling'));
   await dec.locator('[data-act="send"]').click();
   await p.waitForTimeout(900);
   say('state after changes: ' + await p.evaluate(() => window.__DB.campaign_options[0].state));
   say('round now: ' + await p.evaluate(() => window.__DB.campaign_options[0].revision_round));
   say('review logged: ' + await p.evaluate(() => JSON.stringify(window.__DB.option_reviews[0])));
+  say('written to the activity record: ' + await p.evaluate(() =>
+    JSON.stringify((window.__DB.activity_log || []).filter(a => a.action === 'campaign.review'))));
   say('chip now: ' + (await p.locator('.chip-state').allInnerTexts()).join(' | '));
+  say('and the card says who asked: ' + await p.locator('.booking-decided').first().innerText());
 
   say('=== approve path ===');
   await p.evaluate(() => { window.__DB.campaign_options[0].state = 'reviewing'; window.__persist(); });
   await p.reload({ waitUntil: 'networkidle' });
   await p.waitForTimeout(700);
   say('reviewing card facts: ' + (await p.locator('.booking:has(.approve) .booking-facts').innerText()).replace(/\n/g, ' | '));
-  // The name is remembered from the round above, so it is typed once.
-  say('name carried over: "' + await p.locator('.approve-who .input').inputValue() + '"');
+  /* The name is remembered from the round above, so Approve goes straight
+     through: a second prompt here would fail the test rather than be answered. */
+  let asked = 0;
+  p.on('dialog', d => { asked++; d.accept('Should not be asked'); });
   await p.locator('.booking:has(.approve) [data-act="approve"]').click();
   await p.waitForTimeout(900);
+  say('asked for the name a second time: ' + asked);
   say('state after approve: ' + await p.evaluate(() => window.__DB.campaign_options[0].state));
   say('chips now: ' + (await p.locator('.chip-state').allInnerTexts()).join(' | '));
+  say('approval kept on the card: ' + await p.locator('.booking-decided').first().innerText());
 
   await p.screenshot({ path: process.argv[2] + '/cprod.png', fullPage: true });
 

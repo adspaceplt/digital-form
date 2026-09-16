@@ -63,7 +63,10 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   say('=== bulk logistics ===');
   await p.locator('#bulkToggle').click();
   await p.fill('#bulkDate', '2026-10-14');
-  await p.fill('#bulkTime', '2pm');
+  // A native time field takes a time, not a word. Filling it with "2pm" threw,
+  // and a suite that throws prints no FAIL line at all, so everything below
+  // this point had quietly stopped running.
+  await p.fill('#bulkTime', '14:00');
   await p.locator('#bulkApply').click();
   await p.waitForTimeout(700);
   say('bulk msg: ' + await p.locator('#bulkMsg').innerText());
@@ -77,13 +80,33 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   await p.locator('.kcard').first().locator('[data-f="visit_time"]').fill('4pm');
   await p.locator('.kcard').first().locator('[data-a="save"]').click();
   await p.waitForTimeout(600);
-  await p.fill('#bulkTime', '9am');
+  await p.fill('#bulkTime', '09:00');
   await p.locator('#bulkApply').click();
   await p.waitForTimeout(700);
   say('hand-set row kept: ' + await p.evaluate(() =>
     window.__DB.campaign_options.filter(o => o.state !== 'option')[0].visit_time));
   say('no location or PIC fields: ' + (await p.locator('[data-f="visit_location"], [data-f="visit_pic"], #bulkLoc, #bulkPic').count() === 0));
   say('bulk msg 2: ' + await p.locator('#bulkMsg').innerText());
+
+  /* Schedule has the same action, and the one panel goes to whichever pane
+     asked for it. It used to open inside the Creators pane, so pressing it on
+     Schedule appeared to do nothing and left the form waiting on a tab nobody
+     had asked for. */
+  await cpane('schedule');
+  say('panel closed on arrival: ' + await p.locator('#bulkBox').isHidden());
+  await p.locator('#schedBulk').click();
+  await p.waitForTimeout(300);
+  say('Schedule opens it where the button is: visible=' + await p.locator('#bulkBox').isVisible() +
+      ' inside=' + await p.evaluate(() =>
+        (document.getElementById('bulkBox').closest('.rec-pane') || {}).dataset?.pane));
+  await cpane('creators');
+  await p.locator('#bulkToggle').click();
+  await p.waitForTimeout(300);
+  say('and Creators takes it back: visible=' + await p.locator('#bulkBox').isVisible() +
+      ' inside=' + await p.evaluate(() =>
+        (document.getElementById('bulkBox').closest('.rec-pane') || {}).dataset?.pane));
+  await p.locator('#bulkCancel').click();
+  await p.waitForTimeout(200);
 
   say('=== pipeline ===');
   say('open card stays open across saves: ' +
