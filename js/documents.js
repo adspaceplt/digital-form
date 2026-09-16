@@ -91,84 +91,182 @@
     return longDate(l.start_on) + ' to ' + longDate(d.toISOString().slice(0, 10));
   }
 
-  /* The next number: prefix, the period stamp, then a three digit sequence
-     over what has already been issued in that period. The unique index on
-     number catches a clash and the caller retries once. */
-  function nextNumber(kind, then) {
-    var k = KIND[kind] || KIND.offer;
-    var pre = k.prefix + (k.per === 'month' ? yymm(new Date()) : yymmdd(new Date()));
-    db.from('client_documents').select('number').ilike('number', pre + '%').then(function (r) {
-      var used = (r.data || []).map(function (d) { return Number(String(d.number).slice(pre.length)) || 0; });
-      var n = used.length ? Math.max.apply(null, used) + 1 : 1;
-      then(pre + String(n).padStart(3, '0'));
-    }, function () { then(pre + '001'); });
+  /* ---- Issuing -----------------------------------------------------------
+     The serial and the letter are the database's to make, not the browser's.
+     `nextNumber` used to read MAX(number) here and insert, which two people
+     pressing Issue letter in the same second could both win; and the line set
+     was picked by one predicate, `state = 'quoted'`, so a line already sent to
+     a client on an earlier letter was silently carried into the next one.
+     `issue_letter` reserves the serial atomically, builds the snapshot from
+     the stored rows, records which services the letter captured, and answers
+     the same letter twice when the same submission arrives twice. */
+
+  /* One key per submission, so a double click, a retry after a dropped
+     connection and an impatient second press are all one letter. */
+  function idemKey() {
+    var r = '';
+    for (var i = 0; i < 4; i++) r += Math.random().toString(36).slice(2, 10);
+    return r.slice(0, 32);
   }
 
-  /* client: the record; contact: the billing contact (a client_contacts
-     row) or null; lines: the service lines; deal: what the record knows
-     that the client row does not spell out (owner, source, stage words). */
-  function issue(kind, client, contact, lines, deal, then) {
-    // The offer carries the quoted lines only: enquired lines are not yet
-    // priced for the client and confirmed lines are already past this step.
-    var use = (lines || []).filter(function (l) { return !l.archived_at && l.state === 'quoted'; });
-    if (!use.length) { then({ error: 'No lines to quote.' }); return; }
+  /* What the letter would be worth. Computed here because js/money.js is the
+     one definition of a term factor and its rounding, and duplicating that in
+     SQL is how the console and the letter would come to disagree. The lines
+     themselves are read back from the database inside the transaction, so a
+     figure sent from here can never change the words on the page. */
+  function quoteOf(client, lines) {
+    return priceOf(lines, client.market, client.sst_applies !== false);
+  }
+
+  /* client: the record. picked: the service rows the person chose. deal: the
+     display facts the record knows that the client row does not spell out.
+     opts: { idem, replaces, renewal }. */
+  function issue(kind, client, picked, deal, opts, then) {
+    opts = opts || {};
+    var use = (picked || []).filter(function (l) { return l && !l.archived_at; });
+    if (!use.length) { then({ error: 'Choose at least one service.' }); return; }
+    if (!String(client.client_code || '').trim()) {
+      then({ error: 'Add a Client ID to this client before issuing a letter.' });
+      return;
+    }
+    var price = quoteOf(client, use);
     deal = deal || {};
-    var taxOn = client.sst_applies !== false;
-    // The stored figures are the whole commitment, which is what the record
-    // and the pipeline are worth. The letter headlines the month.
-    var price = priceOf(use, client.market, taxOn);
-    var doc = {
-      client_id: client.id, kind: kind || 'offer',
-      issued_at: new Date().toISOString().slice(0, 10),
-      market: client.market || 'MY',
-      subtotal: price.subtotal, tax: price.tax, total: price.total,
-      bill_to: {
-        name: client.name || '', legal_name: client.legal_name || '', address: client.billing_address || '',
-        regno: client.company_no || '', regno_old: deal.company_no_old || client.company_no_old || '',
-        tin: client.tin || '', sst_no: deal.sst_no || client.sst_no || '', sst_applies: taxOn,
-        contact: contact ? (contact.name || '') : '', contact_role: contact ? (contact.role || '') : '',
-        phone: contact ? (contact.phone || '') : '', email: contact ? (contact.email || '') : '',
-        finance_email: deal.finance_email || client.finance_email || '',
-        owner: deal.owner || '', source: deal.source || '', industry: deal.industry || '',
-        stage: deal.stage || '', enquiry: deal.enquiry || ''
-      },
-      lines: use.map(function (l) {
-        return { label: l.label, unit: l.unit || '', note: l.note || '', state: l.state || 'enquired',
-                 detail: l.detail || '',
-                 qty: Number(l.qty || 0), rate: Number(l.rate || 0),
-                 tenure: Math.max(1, Number(l.tenure || 1)), start_on: l.start_on || '', tax: taxOn };
-      }),
-      issued_by: actor() || null
-    };
-    var attempt = function (left) {
-      nextNumber(doc.kind, function (number) {
-        doc.number = number;
-        db.from('client_documents').insert(doc).select().single().then(function (r) {
-          if (r.error && left > 0 && /duplicate|unique/i.test(r.error.message)) { attempt(left - 1); return; }
-          if (r.error) { then({ error: r.error.message }); return; }
-          log('document.issued', client.name, number + ' · ' + MON.money2(doc.total, doc.market));
-          download(r.data, function (warn) { then({ ok: true, doc: r.data, warn: warn }); });
+    db.rpc('issue_letter', {
+      p_client: client.id,
+      p_services: use.map(function (l) { return l.id; }),
+      p_idem: opts.idem || idemKey(),
+      p_subtotal: price.subtotal, p_tax: price.tax, p_total: price.total,
+      p_deal: { owner: deal.owner || '', source: deal.source || '', industry: deal.industry || '',
+                stage: deal.stage || '', enquiry: deal.enquiry || '' },
+      p_replaces: opts.replaces || null,
+      p_renewal: Boolean(opts.renewal)
+    }).then(function (r) {
+      /* The migration has to be in place before the site is. Until it is, the
+         function is missing and nothing is written at all — a half issued
+         letter cannot exist either way. */
+      if (r.error) { then({ error: missingWord(r.error.message) }); return; }
+      var out = r.data || {};
+      if (out.error) { then({ error: ISSUE_WORD[out.error] || out.error }); return; }
+      readBack(out.id, function (doc, err) {
+        if (err || !doc) { then({ ok: true, repeat: out.repeat, number: out.number, warn: 'Issued. The file could not be drawn.' }); return; }
+        download(doc, function (warn) {
+          then({ ok: true, repeat: out.repeat, doc: doc, number: out.number, warn: warn });
         });
       });
-    };
-    attempt(1);
+    }, function (e) { then({ error: missingWord(e && e.message) }); });
+  }
+
+  function readBack(id, then) {
+    db.from('client_documents').select('*').eq('id', id).single()
+      .then(function (r) { then(r.data, r.error); }, function (e) { then(null, e); });
+  }
+
+  /* The database answers in one word; the console says what it means. */
+  var ISSUE_WORD = {
+    'not-allowed': 'You do not have permission to issue a letter.',
+    'no-client-code': 'Add a Client ID to this client before issuing a letter.',
+    'no-client': 'That client could not be found.',
+    'no-lines': 'Choose at least one service.',
+    'bad-lines': 'One of those services cannot go on a letter. Refresh and try again.',
+    'already-quoted': 'One of those services is already on a letter that is still live. Void that letter, or use Replace.',
+    'no-replaces': 'The letter being replaced could not be found.',
+    'replaces-verified': 'A verified letter cannot be replaced.',
+    'not-found': 'That letter could not be found.',
+    'voided': 'That letter is void.',
+    'verified': 'That letter has already been verified.',
+    'superseded': 'That letter has been replaced.',
+    'not-signed': 'Mark the letter signed before verifying it.',
+    'no-mapping': 'This letter was issued before the change and cannot be verified. Confirm its services by hand.',
+    'clash': 'Two letters were issued at once. Try again.',
+    'reason-required': 'Say why.',
+    'bad-state': 'That is not a state a service can be in.'
+  };
+
+  function missingWord(m) {
+    m = String(m || '');
+    if (/could not find|does not exist|schema cache|function public\.issue_letter/i.test(m)) {
+      return 'The database has not been updated yet. Run the letter lifecycle migration, then try again.';
+    }
+    return m || 'The letter could not be issued.';
+  }
+
+  /* One shape for the three deliberate moves a letter makes. Each is a
+     server-side transaction; none of them touches a service except verify,
+     which touches only the ones this letter captured. */
+  function call(fn, args, then) {
+    db.rpc(fn, args).then(function (r) {
+      if (r.error) { then(missingWord(r.error.message)); return; }
+      var out = r.data || {};
+      if (out.error) { then(ISSUE_WORD[out.error] || out.error); return; }
+      then(null, out);
+    }, function (e) { then(missingWord(e && e.message)); });
+  }
+
+  function setSigned(doc, on, then) { call('letter_set_signed', { p_doc: doc.id, p_on: Boolean(on) }, then); }
+  function verify(doc, then)        { call('verify_letter',     { p_doc: doc.id }, then); }
+  function setVoidRpc(doc, on, then) { call('letter_set_void',  { p_doc: doc.id, p_on: Boolean(on) }, then); }
+
+  /* Which services a letter captured. A letter issued before the change has
+     none, which is what makes it history rather than something to verify. */
+  function mapOf(ids, then) {
+    if (!ids || !ids.length) { then({}); return; }
+    db.from('client_document_services').select('document_id, service_id').in('document_id', ids)
+      .then(function (r) {
+        var by = {};
+        (r.data || []).forEach(function (m) {
+          (by[m.document_id] = by[m.document_id] || []).push(m.service_id);
+        });
+        then(by);
+      }, function () { then({}); });
+  }
+
+  /* A letter is live while it can still become something: not void, not
+     replaced, not yet verified. A service on one of those is spoken for. */
+  function liveDoc(d) {
+    return d && !d.voided_at && !d.superseded_by && !d.verified_at;
+  }
+
+  /* Issued -> Signed, awaiting verification -> Verified, with Void and
+     Replaced off to the side. Derived from the timestamps, never stored as a
+     word, so no two screens can disagree about where a letter stands. */
+  function letterState(d) {
+    if (!d) return 'issued';
+    if (d.voided_at) return 'void';
+    if (d.superseded_by) return 'superseded';
+    if (d.verified_at) return 'verified';
+    if (d.signed_at) return 'signed';
+    return 'issued';
   }
 
   function fileName(doc) { return String(doc.number).replace(/\//g, '-') + '.pdf'; }
 
+  /* A letter that has been issued always reports itself, even when the file
+     cannot be drawn: the row exists in the database and the serial is spent,
+     so somebody has to be told. `render` reads `PDFLib.PDFDocument` at its
+     first line, which throws where the library never loaded — before any
+     promise exists, so the rejection handler beside it could not see it and
+     the caller was left with an open sheet and no message at all. A `.catch`
+     after the chain, and a try around the call, because a handler that can
+     throw is one whose sibling handler never runs. */
   function download(doc, then) {
-    render(doc).then(function (bytes) {
-      var blob = new Blob([bytes], { type: 'application/pdf' });
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = fileName(doc);
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
-      if (then) then(logoWarn);
-    }, function (e) {
-      if (then) then('PDF not drawn: ' + ((e && e.message) || e));
-    });
+    var said = false;
+    var say = function (w) { if (said) return; said = true; if (then) then(w); };
+    try {
+      render(doc).then(function (bytes) {
+        var blob = new Blob([bytes], { type: 'application/pdf' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName(doc);
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+        say(logoWarn);
+      }).catch(function (e) {
+        say('The file could not be drawn: ' + ((e && e.message) || e) + ' Download it from the row.');
+      });
+    } catch (e) {
+      say('The file could not be drawn: ' + ((e && e.message) || e) + ' Download it from the row.');
+    }
   }
 
   // ---- Brand assets ----------------------------------------------------------
@@ -472,13 +570,11 @@
       .then(function (r) { then(r.data || [], r.error); }, function (e) { then([], e); });
   }
 
-  function setVoid(doc, on, then) {
-    db.from('client_documents').update({ voided_at: on ? new Date().toISOString() : null }).eq('id', doc.id)
-      .then(function (r) {
-        if (!r.error) log(on ? 'document.voided' : 'document.restored', doc.number, '');
-        then(r.error);
-      });
-  }
+  /* Voiding went through PostgREST and could reach a verified letter, which is
+     the record of something a client signed and we accepted. It is a
+     transaction now, and that one it refuses. `setVoidRpc` above is what the
+     console calls; the shape of the callback is unchanged, so nothing that
+     used it had to learn anything new. */
 
   // Only a voided document can be deleted, and its number is never reused:
   // the next number counts from the highest issued, not from the count.
@@ -490,5 +586,10 @@
     });
   }
 
-  window.ADspaceDocs = { issue: issue, download: download, render: render, list: list, setVoid: setVoid, remove: remove, KIND: KIND, fileName: fileName };
+  window.ADspaceDocs = {
+    issue: issue, download: download, render: render, list: list,
+    setVoid: setVoidRpc, remove: remove, KIND: KIND, fileName: fileName,
+    setSigned: setSigned, verify: verify, mapOf: mapOf,
+    liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, idemKey: idemKey
+  };
 })();
