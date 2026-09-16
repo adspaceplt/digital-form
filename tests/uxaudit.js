@@ -206,13 +206,10 @@ function inPage(coarse) {
     if (!text && !el.getAttribute('aria-label') && !el.getAttribute('aria-labelledby') && !el.getAttribute('title')) F.push(['icon-label', desc(el) + ' icon-only without a name']);
   });
 
-  /* 7 blue is the action colour and it is spent sparingly: one prominent
-     action per view, two where a view genuinely offers two (publish and
-     confirm on the client-selection pane), never three. It used to count
-     `.btn-go` alone, which was the green forward button; now that blue carries
-     every filled action, the primary and the client's Approve are counted with
-     it, or a panel could show a green-rule-passing wall of blue. */
-  const goes = [...document.querySelectorAll('.btn-go, .btn-primary, .btn-approve')].filter(vis);
+  /* 7 blue is reserved for moving work to somebody else: one prominent
+     forward action per view, two only where a view genuinely offers two
+     forward decisions. Ordinary Add, Create and Save primaries are ink. */
+  const goes = [...document.querySelectorAll('.btn-go, .btn-approve')].filter(vis);
   const scopeOf = el => el.closest('.kcard, .booking, .crow, .bigcard, .card, .crm-row, .team-row, .sheet, .drawer, .batch, .panel, section, .console-body, main') || document.body;
   const by = new Map();
   goes.forEach(g => { const s = scopeOf(g); by.set(s, (by.get(s) || 0) + 1); });

@@ -42,7 +42,7 @@ palette can never be bought with legibility.
 | `--card` | `#ffffff` | `#1e201d` | Panels, tables, rows |
 | `--sunk` | `#f9f9f9` | `#272727` | Inset areas, table sub-headings, hover |
 | `--fill` / `--on-fill` | `#1b1a17` / `#ffffff` | `#eff0ea` / `#191b17` | The solid ink surface and its text: primary button, selected `.acttab`, progress. **Not the Undo bar**: a full width ink slab a few pixels above an ink Add contact read as one enormous call to action, and the fill is what names the primary action |
-| `--action` | `#0b57d0` | `#a8c7fa` | **Blue means action.** The filled primary, the forward action (Publish, Release, Submit) and the client's Approve. White on `#0b57d0` is 6.39:1 and clears AA for normal text; Apple's own `#007aff` manages 4.02:1 with white on it and is not an option for a button this size. In dark the fill is light, so the pair swaps like every other fill here |
+| `--action` | `#0b57d0` | `#a8c7fa` | **Blue means forward action.** Publish, Release, Submit and the client's Approve use it; ordinary Add, Create and Save operations use the ink fill. White on `#0b57d0` is 6.39:1 and clears AA for normal text; Apple's own `#007aff` manages 4.02:1 with white on it and is not an option for a button this size. In dark the fill is light, so the pair swaps like every other fill here |
 | `--action-hover` / `--action-pressed` | `#0847ae` / `#063989` | `#c2dafc` / `#d3e3fd` | Its hover and its pressed step, both stated, because a button that answers nothing under the pointer reads as furniture |
 | `--on-action` | `#ffffff` | `#062e6f` | Its text. 8.5:1 in dark |
 | `--action-ring` | `#8ab4f8` | `#8ab4f8` | The focus ring on everything a keyboard reaches. Ours, not the platform's: the console's focus colour used to be whatever the browser drew and differed between two machines looking at the same screen |
@@ -71,21 +71,18 @@ browser draws (select popups, scrollbars, the caret) follows too.
 `var(--on-ok)`. A hover that used to be a darker hex is `filter:
 brightness()` on the same token, so one value still drives both themes.
 
-**One colour per promise.** Blue moves, green reports, amber cautions, red
-destroys, and everything else is neutral. A view carries one prominent blue
-action, two where it genuinely offers two (Publish and Confirm on the campaign's
-client-selection pane), never three: `uxaudit` counts `.btn-go`, `.btn-primary`
-and `.btn-approve` together per scope and fails at more than two. Copy link,
-Preview, Edit, Cancel and every row-level action stay neutral — an Add button
-drawn on each of twenty rows is twenty filled slabs and leaves the panel's own
-primary nothing to be. The screen stays about nine tenths neutral, which is what
-makes the blue worth looking at.
+**One colour per promise.** Blue moves work to somebody else, green reports,
+amber cautions, red destroys, and everything else is neutral. Add, Create and
+Save are ink-primary operations; Publish, Release, Submit and Approve are blue
+forward actions. A view carries one prominent blue action, two only where it
+genuinely offers two forward decisions; `uxaudit` counts `.btn-go` and
+`.btn-approve` per scope and fails at more than two. Copy link, Preview, Edit,
+Cancel and every row-level action stay neutral. The screen stays about nine
+tenths neutral, which is what makes blue useful rather than decorative.
 
 **A hover state lives inside `@media (hover: hover)`, without exception.**
 `.btn:hover` did not, and it outranks `.btn-primary`: a tap on a phone leaves
-`:hover` on, so the moment the primary became a filled blue the ink text that
-rule sets landed on it and Add lead came out at 2.72:1 on the one button in the
-view. The bug predated the colour; only the colour made it visible. The same
+`:hover` on, so an ink-text hover can land on a filled primary. The same
 applies to `.btn-warn`, `.btn-danger` and `.btn-quiet`, whose hover fills would
 otherwise stay stuck on the last thing a finger touched.
 
