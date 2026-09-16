@@ -2477,11 +2477,19 @@
   }
 
   /* ---- Short Links -------------------------------------------------------
-     Short links for go.adspace.me. The redirector is not built and the domain
-     has not moved, so what this manages is the list it will serve. Entering
-     the existing slugs now means the switch is a DNS change and nothing more;
-     every slug keeps the address it already has printed on it. */
-  var LINK_HOST = 'go.adspace.me';
+     The redirector is not built and no domain has moved, so what this manages
+     is the list it will serve. Entering the existing slugs now means the
+     switch is a DNS change and nothing more; every slug keeps the address it
+     already has printed on it.
+
+     The host is one value in js/config.js, read here and written into the
+     field's prefix, because it was typed into this file and into the console's
+     markup and the two could disagree. `go.adspace.me` is deliberately not
+     retired: a QR code encodes the whole address, so the ones already printed
+     on slides keep working for as long as that host redirects. */
+  var LINK_HOST = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'go.adspace.me';
+  if ($('slugPrefix')) $('slugPrefix').textContent = LINK_HOST + '/';
+  if ($('linksHost')) $('linksHost').textContent = LINK_HOST;
   var links = [];
   var editingSlug = null;
 

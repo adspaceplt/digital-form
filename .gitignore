@@ -4,3 +4,8 @@ tests/geom/
 tests/pdfx/node_modules/
 tests/*.png
 tests/*.pdf
+
+# The behavioural suites and their artefacts were taken out of this public
+# repository on 2026-09-20. They are in the history at 02de7c9 if they are
+# ever wanted back: git checkout 02de7c9 -- tests
+tests/

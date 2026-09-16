@@ -801,7 +801,10 @@
        no name, offering to sign out of a session nobody had yet. */
     forgetBtn.querySelector('span').textContent = t().signOut;
     forgetBtn.hidden = true;
-    chromeActions.appendChild(forgetBtn);
+    /* First in the row, so it sits left of the language toggle exactly as the
+       client portal's does. Appended, it landed on the far right and the two
+       client-facing pages put the same two controls in opposite orders. */
+    chromeActions.insertBefore(forgetBtn, chromeActions.firstChild);
   }
   $('signOutBtn').addEventListener('click', function () { forget(); askCode(); });
 

@@ -517,10 +517,19 @@
   var CODE_OK = /^[A-Z0-9]{2,12}$/;
   function codeOf(v) { return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12); }
   /* The brand as a thing to open. Edited on the record, not at intake. */
+  /* The brand profile and Content Review's client settings were two sets of
+     fields over one client: `social_*` here and `handle_*` there, plus a logo
+     only that screen could set. A handle corrected on the record therefore
+     left the one printed on the client's own mockup untouched. There is one
+     set now — the `handle_*` columns the review page already reads and the
+     `logo_url` the mark and the mockups already draw — so the two screens
+     cannot disagree, because they are the same row. `social_*` is backfilled
+     into it and no longer written. */
   var BRAND = [
     ['crmWebsite', 'website'], ['crmPhone', 'phone'],
-    ['crmSocialIg', 'social_ig'], ['crmSocialFb', 'social_fb'],
-    ['crmSocialTiktok', 'social_tiktok'], ['crmSocialXhs', 'social_xhs']
+    ['crmSocialIg', 'handle_ig'], ['crmSocialFb', 'handle_fb'],
+    ['crmSocialTiktok', 'handle_tiktok'], ['crmSocialXhs', 'handle_xhs'],
+    ['crmLogo', 'logo_url']
   ];
   /* When the client wants to start. Three bands, because a lead gives you a
      rough answer and a date nobody has agreed is a false precision. No dash in
@@ -723,9 +732,14 @@
     var links = [];
     if (c.website) links.push(linkChip(c.website, 'Website', true));
     if (c.phone)   links.push(linkChip('tel:' + c.phone, c.phone, false));
-    [['social_ig', 'Instagram'], ['social_fb', 'Facebook'],
-     ['social_tiktok', 'TikTok'], ['social_xhs', 'rednote']].forEach(function (p) {
-      if (c[p[0]]) links.push(linkChip(c[p[0]], p[1], true));
+    /* The field holds a handle now, not a link, so where to open it is
+       derived per platform: `https://` + a handle gives `https://starliving`,
+       which is nothing. rednote addresses a profile by id, so a display name
+       stored there will not resolve — the chip still carries what we hold,
+       because showing it is what tells somebody it is the wrong shape. */
+    [['handle_ig', 'Instagram'], ['handle_fb', 'Facebook'],
+     ['handle_tiktok', 'TikTok'], ['handle_xhs', 'rednote']].forEach(function (p) {
+      if (c[p[0]]) links.push(linkChip(profileUrl(p[0], c[p[0]]), p[1], true));
     });
     $('crmLinks').innerHTML = links.join('');
 
@@ -735,9 +749,10 @@
     paintBilling(c);
     BRAND.forEach(function (f) { $(f[0]).value = c[f[1]] || ''; });
     $('crmNotes').value = c.brand_notes || '';
+    paintLogoPreview();
     var linksOn = BRAND.filter(function (f) { return c[f[1]]; }).length;
     $('crmBrandSummary').textContent =
-      [linksOn ? linksOn + ' link' + (linksOn === 1 ? '' : 's') : '', c.brand_notes ? 'Notes' : '']
+      [linksOn ? linksOn + ' of ' + BRAND.length : '', c.brand_notes ? 'Notes' : '']
         .filter(Boolean).join(' · ') || 'Empty';
     msg('crmWorkMsg', ''); msg('crmBillMsg', ''); msg('crmBrandMsg', ''); msg('crmServiceMsg', '');
     shutContact();
@@ -1206,6 +1221,20 @@
     block.hidden = false;
   }
 
+  /* A handle is what is stored; the address is each platform's own shape. A
+     value already pasted as a full URL is left as it is. */
+  var PROFILE_AT = {
+    handle_ig:     'https://instagram.com/',
+    handle_fb:     'https://facebook.com/',
+    handle_tiktok: 'https://tiktok.com/@',
+    handle_xhs:    'https://www.xiaohongshu.com/user/profile/'
+  };
+  function profileUrl(field, value) {
+    var v = String(value || '').trim();
+    if (/^https?:\/\//i.test(v)) return v;
+    return (PROFILE_AT[field] || 'https://') + v.replace(/^@/, '');
+  }
+
   function linkChip(href, label, external) {
     var url = /^https?:\/\/|^tel:|^mailto:/.test(href) ? href : 'https://' + href.replace(/^@/, '');
     return '<a class="plink" href="' + esc(url) + '"' +
@@ -1220,6 +1249,129 @@
     if (!state.clients.length) loadClients();
     openForm(state.client);
   });
+
+  /* ---- Deleting a client ---------------------------------------------------
+     Paused and Past are how a client leaves the working list, and that is the
+     everyday act. This is the other one: a lead keyed in twice, or a record
+     that should never have existed. It takes everything hanging off the
+     client with it, so the sheet counts what will go from the record already
+     loaded rather than describing it in the abstract, and the name is typed
+     back because a client carries no reference to type. `can_remove` draws
+     the menu item and `delete_client` checks the same permission again when
+     the button is pressed. */
+  var codeNeeded = null;                 // whether a delete code is set at all
+
+  function delCount(n, one, many) {
+    return n ? n + ' ' + (n === 1 ? one : (many || one + 's')) : '';
+  }
+
+  function openClientDelete() {
+    var c = state.client;
+    if (!c) return;
+    var gone = [
+      delCount((state.contacts || []).filter(function (x) { return !x.archived_at; }).length, 'contact'),
+      delCount((state.services || []).length, 'service line'),
+      delCount((state.documents || []).length, 'letter'),
+      delCount((state.touches || []).length, 'call or visit', 'calls and visits')
+    ].filter(Boolean);
+    $('cdelWhat').textContent = 'Deleting ' + c.name +
+      ' removes the record and everything filed under it. This is immediate and cannot be undone.';
+    $('cdelList').innerHTML = (gone.length
+      ? gone.map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('')
+      : '<li>Nothing has been filed under this client yet.</li>') +
+      '<li>Any content sets and campaigns on this client, with everything in them.</li>';
+    $('cdelConfirm').value = '';
+    if ($('cdelCode')) $('cdelCode').value = '';
+    msg('cdelMsg', '', '');
+    $('cdelSheet').hidden = false;
+
+    /* Whether a code is set is not a secret, and the sheet has to know which
+       question to ask before it asks it. Asked once and remembered. */
+    var showCode = function () { $('cdelCodeRow').hidden = !codeNeeded; };
+    if (codeNeeded === null) {
+      db.rpc('delete_code_set').then(function (r) {
+        codeNeeded = !!(r && r.data);
+        showCode();
+      }, function () { codeNeeded = false; showCode(); });
+    } else showCode();
+
+    $('cdelConfirm').focus();
+  }
+
+  (function wireClientDelete() {
+    var shut = function () { $('cdelSheet').hidden = true; };
+    ['cdelClose', 'cdelCancel'].forEach(function (id) {
+      var el = $(id); if (el) el.addEventListener('click', shut);
+    });
+    var sheet = $('cdelSheet');
+    if (sheet) sheet.addEventListener('click', function (e) { if (e.target === this) shut(); });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && sheet && !sheet.hidden) shut();
+    });
+
+    var btn = $('crmClientMenuBtn'), menu = $('crmClientMenu');
+    if (btn && menu) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = menu.hidden;
+        menu.hidden = !open;
+        btn.setAttribute('aria-expanded', String(open));
+        if (open && window.ADspaceMenu) ADspaceMenu.place(btn, menu);
+      });
+      menu.addEventListener('click', function (e) {
+        var it = e.target.closest && e.target.closest('[data-a="delclient"]');
+        if (!it) return;
+        menu.hidden = true;
+        btn.setAttribute('aria-expanded', 'false');
+        openClientDelete();
+      });
+      document.addEventListener('click', function () {
+        if (!menu.hidden) { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
+      });
+      // onScroll takes the shut itself: a scroll that has really moved the
+      // anchoring button is the one that closes an open menu.
+      if (window.ADspaceMenu) ADspaceMenu.onScroll(function () {
+        if (menu.hidden) return;
+        menu.hidden = true;
+        btn.setAttribute('aria-expanded', 'false');
+      });
+    }
+
+    var go = $('cdelGo');
+    if (go) go.addEventListener('click', function () {
+      var c = state.client;
+      if (!c) return;
+      var typed = String($('cdelConfirm').value || '').trim();
+      if (typed.toLowerCase() !== String(c.name || '').trim().toLowerCase()) {
+        msg('cdelMsg', 'The name does not match.', 'err');
+        $('cdelConfirm').focus();
+        return;
+      }
+      var code = codeNeeded ? String($('cdelCode').value || '') : null;
+      if (codeNeeded && !code) {
+        msg('cdelMsg', 'The delete code is required.', 'err');
+        $('cdelCode').focus();
+        return;
+      }
+      go.disabled = true;
+      var name = c.name;
+      db.rpc('delete_client', { p_client: c.id, p_code: code }).then(function (r) {
+        go.disabled = false;
+        if (r.error) { msg('cdelMsg', r.error.message, 'err'); return; }
+        var out = r.data;
+        if (out === 'wrong-code') { msg('cdelMsg', 'That delete code is not right.', 'err'); return; }
+        if (out === 'not-found') { msg('cdelMsg', 'That client is no longer there.', 'err'); return; }
+        if (out !== 'deleted') { msg('cdelMsg', String(out || 'Unable to delete.'), 'err'); return; }
+        shut();
+        log('client.deleted', name, '');
+        state.client = null;
+        showList();
+      }, function (e) {
+        go.disabled = false;
+        msg('cdelMsg', (e && e.message) || 'Unable to delete.', 'err');
+      });
+    });
+  })();
 
   /* The one rule with teeth: nobody becomes active until they can be
      invoiced. The select goes back and the record opens on what is missing. */
@@ -1296,6 +1448,22 @@
         still.length ? 'warn' : 'ok');
     });
   });
+
+  /* The disc is how the logo is judged, because that is the shape it is drawn
+     in on every mockup and on the record's own mark. A URL that will not load
+     says so by staying empty rather than by drawing the browser's broken
+     image mark over a client's brand. */
+  function paintLogoPreview() {
+    var img = $('crmLogoPreviewImg');
+    if (!img) return;
+    var url = val('crmLogo');
+    img.hidden = !url;
+    if (url) img.src = url;
+  }
+  if ($('crmLogo')) {
+    $('crmLogo').addEventListener('input', paintLogoPreview);
+    $('crmLogoPreviewImg').addEventListener('error', function () { this.hidden = true; });
+  }
 
   $('crmBrandSave').addEventListener('click', function () {
     var patch = { brand_notes: val('crmNotes') || null };
