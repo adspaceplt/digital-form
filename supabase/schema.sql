@@ -1244,6 +1244,7 @@ begin
     when 'activity'  then t.can_activity
     when 'billing'   then t.can_billing
     when 'remove'    then t.can_remove
+    when 'doc_void'  then t.can_doc_void
     when 'admin'     then false
   end, false);
 end $$;
@@ -1335,19 +1336,21 @@ create table if not exists public.team_roles (
   can_activity  boolean not null default false,
   can_billing   boolean not null default true,
   can_remove    boolean not null default false,
+  can_doc_void  boolean not null default false,
   position      integer not null default 0,
   created_at    timestamptz not null default now()
 );
 alter table public.team_roles enable row level security;
 insert into public.team_roles
-  (slug, name, is_admin, can_clients, can_review, can_campaigns, can_links, can_activity, can_billing, can_remove, position)
+  (slug, name, is_admin, can_clients, can_review, can_campaigns, can_links, can_activity, can_billing, can_remove, can_doc_void, position)
 values
-  ('admin',   'Admin',   true,  true, true,  true,  true,  true,  true, true,  0),
-  ('account', 'Marketing', false, true, true,  true,  true,  false, true, false, 1),
-  ('sales',   'Sales',   false, true, false, false, false, false, true, false, 2)
+  ('admin',   'Admin',   true,  true, true,  true,  true,  true,  true, true,  true,  0),
+  ('account', 'Marketing', false, true, true,  true,  true,  false, true, false, false, 1),
+  ('sales',   'Sales',   false, true, false, false, false, false, true, false, false, 2)
 on conflict (slug) do nothing;
 
 alter table public.team_members add column if not exists is_admin boolean not null default false;
+alter table public.team_members add column if not exists can_doc_void boolean not null default false;
 update public.team_members set role = 'account'
   where role is null or role not in (select slug from public.team_roles);
 do $$ begin
@@ -1372,7 +1375,7 @@ begin
   new.can_clients   := r.can_clients;   new.can_review   := r.can_review;
   new.can_campaigns := r.can_campaigns; new.can_links    := r.can_links;
   new.can_activity  := r.can_activity;  new.can_billing  := r.can_billing;
-  new.can_remove    := r.can_remove;
+  new.can_remove    := r.can_remove;    new.can_doc_void := r.can_doc_void;
   new.updated_at    := now();
   return new;
 end $$;
@@ -2566,6 +2569,21 @@ create policy cdseq_read on public.client_document_seq for select to authenticat
 -- ---------------------------------------------------------------------------
 -- 5. Issuing
 -- ---------------------------------------------------------------------------
+-- A letter is signed by a person, never by a permission. issued_by is the
+-- team row's name, so a row named "Superadmin" put that word under ADSPACE PLT
+-- on a client's letterhead. Defined before issue_letter, which calls it.
+create or replace function public.issuer_name_ok(p_name text)
+returns boolean
+language sql immutable set search_path = public as $$
+  select coalesce(btrim(p_name), '') <> ''
+     and position('@' in p_name) = 0
+     and lower(btrim(p_name)) not in (
+       'superadmin', 'super admin', 'admin', 'administrator', 'team member',
+       'team', 'marketing', 'sales', 'account', 'user', 'root', 'owner',
+       'staff', 'system', 'support', 'test');
+$$;
+grant execute on function public.issuer_name_ok(text) to authenticated;
+
 create or replace function public.issue_letter(
   p_client    uuid,
   p_services  uuid[],
@@ -2655,6 +2673,13 @@ begin
     where client_id = p_client and archived_at is null
     order by (id = cl.bill_contact_id) desc, is_primary desc, name limit 1;
   select * into me from public.team_members where lower(email) = who and active limit 1;
+
+  -- A letter is signed by a person. issued_by is this row's name, so a team
+  -- row named "Superadmin" printed that word under ADSPACE PLT on a client's
+  -- letterhead. Refuse rather than draw a permission as a signatory.
+  if not public.issuer_name_ok(me.name) then
+    return jsonb_build_object('error', 'issuer-name', 'name', coalesce(me.name, ''));
+  end if;
 
   -- The snapshot is built from the stored rows, never from what the browser
   -- sent: the words on a letter are the words the record held at that moment.
@@ -2906,3 +2931,130 @@ begin
 end $$;
 
 grant execute on function public.override_service_state(uuid, text, text) to authenticated;
+
+-- ===========================================================================
+-- VOIDING AND DELETING A LETTER
+--
+-- Two different authorities. A void reverses a confirmation, so it applies to
+-- a verified letter, needs a reason, and puts back only the service lines this
+-- letter alone was holding confirmed. A permanent deletion is the portal's
+-- existing hard-delete authority (can_remove) and takes the serial typed back
+-- plus a reason. There is no stored PDF and no signed upload for a letter, so
+-- a deletion has no storage side and nothing to quarantine: the row is the
+-- letter, and the console says the deletion is irreversible.
+-- ===========================================================================
+
+alter table public.client_documents add column if not exists voided_by   text;
+alter table public.client_documents add column if not exists void_reason text;
+
+-- What a permanent deletion leaves behind: enough to answer "what happened to
+-- AQL/AC173/260902", and none of the client's document content.
+create table if not exists public.client_document_deletions (
+  id          uuid primary key default gen_random_uuid(),
+  document_id uuid not null,
+  number      text not null,
+  client_id   uuid,
+  actor       text,
+  reason      text not null,
+  service_ids uuid[] not null default '{}',
+  deleted_at  timestamptz not null default now()
+);
+create index if not exists client_document_deletions_client_idx
+  on public.client_document_deletions (client_id);
+
+alter table public.client_document_deletions enable row level security;
+drop policy if exists client_document_deletions_read on public.client_document_deletions;
+create policy client_document_deletions_read on public.client_document_deletions
+  for select to authenticated using (public.allowed('clients'));
+-- No write policy: the audit row is written by letter_delete and nothing else.
+
+-- Which lines this letter alone is holding confirmed. A line mapped to a
+-- second verified, unvoided letter stays confirmed: that letter still says so.
+create or replace function public.letter_sole_services(p_doc uuid)
+returns uuid[]
+language sql security definer stable set search_path = public as $$
+  select coalesce(array_agg(m.service_id), '{}')
+    from public.client_document_services m
+    join public.client_services s on s.id = m.service_id
+   where m.document_id = p_doc
+     and s.state = 'confirmed'
+     and not exists (
+       select 1
+         from public.client_document_services m2
+         join public.client_documents d2 on d2.id = m2.document_id
+        where m2.service_id = m.service_id
+          and m2.document_id <> p_doc
+          and d2.verified_at is not null
+          and d2.voided_at is null);
+$$;
+grant execute on function public.letter_sole_services(uuid) to authenticated;
+
+drop function if exists public.letter_set_void(uuid, boolean);
+create or replace function public.letter_set_void(p_doc uuid, p_reason text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  who text := lower(auth.jwt() ->> 'email');
+  d   public.client_documents%rowtype;
+  cl  public.clients%rowtype;
+  ids uuid[];
+begin
+  if not public.allowed('doc_void') then return jsonb_build_object('error', 'not-allowed'); end if;
+  if coalesce(btrim(p_reason), '') = '' then return jsonb_build_object('error', 'reason-required'); end if;
+  select * into d from public.client_documents where id = p_doc;
+  if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if d.voided_at is not null then return jsonb_build_object('ok', true, 'repeat', true); end if;
+  if d.verified_at is null then return jsonb_build_object('error', 'not-verified'); end if;
+
+  ids := public.letter_sole_services(p_doc);
+
+  update public.client_documents
+     set voided_at = now(), voided_by = who, void_reason = btrim(p_reason)
+   where id = p_doc;
+  update public.client_services set state = 'quoted' where id = any(ids);
+
+  select * into cl from public.clients where id = d.client_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, 'document.voided', cl.name,
+          d.number || ' · ' || btrim(p_reason) || ' · ' ||
+          coalesce(array_length(ids, 1), 0) || ' service lines reverted');
+  return jsonb_build_object('ok', true, 'reverted', coalesce(array_length(ids, 1), 0));
+end $$;
+grant execute on function public.letter_set_void(uuid, text) to authenticated;
+
+create or replace function public.letter_delete(p_doc uuid, p_confirm text, p_reason text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  who text := lower(auth.jwt() ->> 'email');
+  d   public.client_documents%rowtype;
+  cl  public.clients%rowtype;
+  ids uuid[];
+begin
+  if not public.allowed('remove') then return jsonb_build_object('error', 'not-allowed'); end if;
+  if coalesce(btrim(p_reason), '') = '' then return jsonb_build_object('error', 'reason-required'); end if;
+  select * into d from public.client_documents where id = p_doc;
+  if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if btrim(coalesce(p_confirm, '')) <> d.number then
+    return jsonb_build_object('error', 'confirm-mismatch');
+  end if;
+
+  ids := public.letter_sole_services(p_doc);
+  update public.client_services set state = 'quoted' where id = any(ids);
+  update public.client_documents set superseded_by = null where superseded_by = p_doc;
+
+  insert into public.client_document_deletions
+    (document_id, number, client_id, actor, reason, service_ids)
+  values (d.id, d.number, d.client_id, who, btrim(p_reason), coalesce(ids, '{}'));
+
+  select * into cl from public.clients where id = d.client_id;
+  delete from public.client_documents where id = p_doc;
+
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, 'document.deleted', cl.name,
+          d.number || ' · ' || btrim(p_reason) || ' · ' ||
+          coalesce(array_length(ids, 1), 0) || ' service lines reverted');
+  return jsonb_build_object('ok', true, 'number', d.number,
+                            'reverted', coalesce(array_length(ids, 1), 0));
+end $$;
+grant execute on function public.letter_delete(uuid, text, text) to authenticated;

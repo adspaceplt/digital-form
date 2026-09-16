@@ -217,7 +217,7 @@
       if (r.error) {
         me = { role: 'admin', can_clients: true, can_review: true, can_campaigns: true,
                can_links: true, can_activity: false, can_billing: true, can_remove: true,
-               legacy: true };
+               can_doc_void: true, legacy: true };
       } else {
         me = r.data && r.data.id ? r.data : null;
       }
@@ -243,6 +243,7 @@
       b.hidden = !sectionAllowed(b.getAttribute('data-section'));
     });
     document.body.classList.toggle('no-remove', !may('remove'));
+    document.body.classList.toggle('no-docvoid', !may('doc_void'));
     document.body.classList.toggle('no-billing', !may('billing'));
   }
 

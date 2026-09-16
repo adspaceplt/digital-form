@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260917b">
+<link rel="stylesheet" href="/css/portal.css?v=20260918a">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,20 +28,20 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260917b"></script>
-<script src="/js/words.js?v=20260917b"></script>
-<script src="/js/copy.js?v=20260917b"></script>
-<script src="/js/state.js?v=20260917b"></script>
-<script src="/js/menu.js?v=20260917b"></script>
-<script src="/js/api.js?v=20260917b"></script>
-<script src="/js/money.js?v=20260917b"></script>
-<script src="/js/mockups.js?v=20260917b"></script>
+<script src="/js/config.js?v=20260918a"></script>
+<script src="/js/words.js?v=20260918a"></script>
+<script src="/js/copy.js?v=20260918a"></script>
+<script src="/js/state.js?v=20260918a"></script>
+<script src="/js/menu.js?v=20260918a"></script>
+<script src="/js/api.js?v=20260918a"></script>
+<script src="/js/money.js?v=20260918a"></script>
+<script src="/js/mockups.js?v=20260918a"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260917b" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260918a" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -509,6 +509,54 @@
              renewal is a decision somebody makes and never a default. It
              sits outside the panes: a sheet inside one would vanish, still
              open, the moment somebody switched tab behind it. -->
+        <!-- Voiding a verified letter reverses a confirmation, so it says
+             which service lines go back and asks why before it does. -->
+        <div class="sheet" id="voidSheet" hidden>
+          <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="voidTitle">
+            <div class="sheet-head">
+              <h3 id="voidTitle">Void letter</h3>
+              <button class="iconbtn" id="voidClose" type="button" aria-label="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              </button>
+            </div>
+            <div class="sheet-body">
+              <p class="hint" id="voidWhat"></p>
+              <label class="field-label" for="voidReason">Reason</label>
+              <textarea class="input" id="voidReason" rows="3" placeholder="Reason"></textarea>
+            </div>
+            <div class="sheet-foot">
+              <button class="btn btn-warn" id="voidGo" type="button">Void letter</button>
+              <button class="btn btn-quiet" id="voidCancel" type="button">Cancel</button>
+            </div>
+            <div class="msg" id="voidMsg"></div>
+          </div>
+        </div>
+
+        <!-- Permanent. The reference is typed back, because it is the one
+             thing that says which letter is about to stop existing. -->
+        <div class="sheet" id="delSheet" hidden>
+          <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="delTitle">
+            <div class="sheet-head">
+              <h3 id="delTitle">Delete letter permanently</h3>
+              <button class="iconbtn" id="delClose" type="button" aria-label="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              </button>
+            </div>
+            <div class="sheet-body">
+              <p class="hint" id="delWhat"></p>
+              <label class="field-label" for="delConfirm">Type the reference to confirm</label>
+              <input class="input" id="delConfirm" autocomplete="off" spellcheck="false" placeholder="Reference">
+              <label class="field-label" for="delReason" style="margin-top:12px">Reason</label>
+              <textarea class="input" id="delReason" rows="3" placeholder="Reason"></textarea>
+            </div>
+            <div class="sheet-foot">
+              <button class="btn btn-danger" id="delGo" type="button">Delete permanently</button>
+              <button class="btn btn-quiet" id="delCancel" type="button">Cancel</button>
+            </div>
+            <div class="msg" id="delMsg"></div>
+          </div>
+        </div>
+
         <div class="sheet" id="pickSheet" hidden>
           <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
             <div class="sheet-head">
@@ -1518,10 +1566,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260917b"></script>
-<script src="/js/documents.js?v=20260917b"></script>
-<script src="/js/crm.js?v=20260917b"></script>
-<script src="/js/team.js?v=20260917b"></script>
-<script src="/js/campaigns.js?v=20260917b"></script>
+<script src="/js/admin.js?v=20260918a"></script>
+<script src="/js/documents.js?v=20260918a"></script>
+<script src="/js/crm.js?v=20260918a"></script>
+<script src="/js/team.js?v=20260918a"></script>
+<script src="/js/campaigns.js?v=20260918a"></script>
 </body>
 </html>

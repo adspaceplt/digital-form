@@ -512,11 +512,16 @@ alter table public.clients add column if not exists bill_contact_id uuid;
 create table if not exists public.activity_log (
   id uuid primary key default gen_random_uuid(), actor text, action text not null,
   subject text, detail text, created_at timestamptz not null default now());
-create table if not exists public.t_who (email text, clients boolean, billing boolean, admin boolean);
-insert into public.t_who values ('sales@adspacestudios.com', true, true, false);
+create table if not exists public.t_who (email text, clients boolean, billing boolean, admin boolean,
+                                        remove boolean default false, doc_void boolean default false);
+insert into public.t_who values ('sales@adspacestudios.com', true, true, false, false, false);
 create or replace function public.allowed(flag text) returns boolean
   language sql stable set search_path = public as $$
-  select case flag when 'clients' then w.clients when 'billing' then w.billing else false end
+  select case flag when 'clients'  then w.clients
+                   when 'billing'  then w.billing
+                   when 'remove'   then coalesce(w.remove, false)
+                   when 'doc_void' then coalesce(w.doc_void, false)
+                   else false end
     from public.t_who w limit 1 $$;
 create schema if not exists auth;
 create or replace function auth.jwt() returns jsonb
@@ -605,9 +610,14 @@ insert into public.team_members (name, email, active, role, is_admin)
   check('verifying twice confirms nothing more',
     /"repeat" *: *true/.test(sql(`select public.verify_letter('${doc1}')`)));
 
-  // 8. A verified letter is the record of something accepted: it cannot be voided.
-  check('a verified letter refuses to be voided',
-    /verified/.test(sql(`select public.letter_set_void('${doc1}', true)`)));
+  // 8. Voiding is its own authority, applies to a verified letter, and needs
+  //    a reason. Nobody without can_doc_void reaches it at all.
+  check('voiding is refused without the capability',
+    /not-allowed/.test(sql(`select public.letter_set_void('${doc1}', 'wrong client')`)));
+  sql(`update public.t_who set doc_void=true`);
+  check('and refused with the capability but no reason',
+    /reason-required/.test(sql(`select public.letter_set_void('${doc1}', '   ')`)));
+  sql(`update public.t_who set doc_void=false`);
 
   // 12. The sequence is per client and per month, and never reused.
   const r2 = issue([svOther], { idem: 'k3' });
@@ -686,6 +696,135 @@ insert into public.team_members (name, email, active, role, is_admin)
       select public.issue_letter('${LC}', array['${raceB}'::uuid], 'r2', 1, 0, 1)->>'number') q`);
   check('two issuances produce distinct consecutive serials',
     both.split(',').length === 2 && both.split(',')[0] !== both.split(',')[1], both);
+
+  // ---- 17. Voiding and deleting a letter -----------------------------------
+  //      Two authorities. A void reverses a confirmation and needs a reason;
+  //      a deletion is the portal's hard-delete authority and needs the serial
+  //      typed back. Neither may touch a service line another live letter is
+  //      still holding confirmed.
+  sql(`update public.t_who set clients=true, billing=true, remove=false, doc_void=false, admin=false`);
+  sql(`update public.team_members set is_admin=false where email='sales@adspacestudios.com'`);
+
+  // A client whose two verified letters both confirm one shared line, so the
+  // "only what this letter alone confirmed" rule has something to get wrong.
+  sql(`insert into public.clients (name, market, client_code) values ('Voidco', 'MY', 'VD1')`);
+  const VD = sql(`select id from public.clients where name='Voidco'`);
+  sql(`insert into public.client_contacts (client_id, name, is_primary)
+       values ('${VD}', 'Lim', true)`);
+  const mk = (label) => {
+    sql(`insert into public.client_services (client_id, label, rate, tenure, state)
+         values ('${VD}', '${label}', 500, 6, 'quoted')`);
+    return sql(`select id from public.client_services where client_id='${VD}' and label='${label}'`);
+  };
+  const vSole = mk('Sole line');
+  const vShared = mk('Shared line');
+
+  const issueVD = (ids, idem, renewal) =>
+    sql(`select public.issue_letter('${VD}', array[${ids.map(i => `'${i}'::uuid`).join(',')}], '${idem}', 10, 1, 11, null, null, ${renewal ? 'true' : 'false'})`);
+
+  const vA = JSON.parse(issueVD([vSole, vShared], 'v1'));
+  const docA = sql(`select id from public.client_documents where number='${vA.number}'`);
+  sql(`select public.letter_set_signed('${docA}', true)`);
+  sql(`select public.verify_letter('${docA}')`);
+  check('both lines are confirmed by the first letter',
+    stateOf(vSole) === 'confirmed' && stateOf(vShared) === 'confirmed');
+
+  // A second verified letter that also carries the shared line, as a renewal.
+  const vB = JSON.parse(issueVD([vShared], 'v2', true));
+  const docB = sql(`select id from public.client_documents where number='${vB.number}'`);
+  sql(`select public.letter_set_signed('${docB}', true)`);
+  sql(`select public.verify_letter('${docB}')`);
+
+  // An ordinary user reaches neither action, whatever the letter's state.
+  check('an ordinary user cannot void a verified letter',
+    /not-allowed/.test(sql(`select public.letter_set_void('${docA}', 'mistake')`)));
+  check('and cannot delete one',
+    /not-allowed/.test(sql(`select public.letter_delete('${docA}', '${vA.number}', 'mistake')`)));
+
+  // Void: the capability, a reason, and only what this letter alone held.
+  sql(`update public.t_who set doc_void=true`);
+  const vr = sql(`select public.letter_set_void('${docA}', 'Client changed the scope')`);
+  check('a user with the void capability voids a verified letter',
+    /"ok" *: *true/.test(vr), vr);
+  check('and it reverts the line only this letter confirmed',
+    stateOf(vSole) === 'quoted', stateOf(vSole));
+  check('while the line another verified letter still holds stays confirmed',
+    stateOf(vShared) === 'confirmed', stateOf(vShared));
+  check('the void records who and why',
+    sql(`select voided_by || '|' || void_reason from public.client_documents where id='${docA}'`)
+      === 'sales@adspacestudios.com|Client changed the scope');
+  check('and writes the reason to the activity record',
+    /Client changed the scope/.test(
+      sql(`select detail from public.activity_log where action='document.voided' order by created_at desc limit 1`)));
+  check('voiding twice changes nothing more',
+    /"repeat" *: *true/.test(sql(`select public.letter_set_void('${docA}', 'again')`)));
+  check('the void capability alone does not permit deletion',
+    /not-allowed/.test(sql(`select public.letter_delete('${docA}', '${vA.number}', 'tidy')`)));
+
+  // An issued letter has confirmed nothing, so there is nothing to void.
+  const vC = JSON.parse(issueVD([vSole], 'v3'));
+  const docC = sql(`select id from public.client_documents where number='${vC.number}'`);
+  check('an issued letter cannot be voided, only deleted',
+    /not-verified/.test(sql(`select public.letter_set_void('${docC}', 'keyed in twice')`)));
+
+  // Deletion: can_remove, the exact serial, and a reason.
+  sql(`update public.t_who set remove=true`);
+  check('deletion refuses a serial that does not match',
+    /confirm-mismatch/.test(sql(`select public.letter_delete('${docC}', 'AQL/VD1/000000', 'typo')`)));
+  check('and refuses an empty reason',
+    /reason-required/.test(sql(`select public.letter_delete('${docC}', '${vC.number}', '  ')`)));
+  const del = sql(`select public.letter_delete('${docC}', '${vC.number}', 'Issued against the wrong client')`);
+  check('an issued letter is deleted with the serial and a reason',
+    /"ok" *: *true/.test(del), del);
+  check('and the row is gone',
+    sql(`select count(*) from public.client_documents where id='${docC}'`) === '0');
+  check('its mapping went with it',
+    sql(`select count(*) from public.client_document_services where document_id='${docC}'`) === '0');
+
+  // The audit event: enough to explain the gap, none of the document.
+  const au = sql(`select number || '|' || actor || '|' || reason from public.client_document_deletions where document_id='${docC}'`);
+  check('a deletion leaves a minimal audit event',
+    au === vC.number + '|sales@adspacestudios.com|Issued against the wrong client', au);
+  check('and that audit event carries no document content',
+    sql(`select count(*) from information_schema.columns
+          where table_name='client_document_deletions'
+            and column_name in ('lines','bill_to','total','subtotal','tax')`) === '0');
+
+  // A voided letter may still be deleted, and the shared line survives both.
+  const del2 = sql(`select public.letter_delete('${docA}', '${vA.number}', 'Removing the voided duplicate')`);
+  check('a voided letter can be permanently deleted', /"ok" *: *true/.test(del2), del2);
+  check('and the shared line is still confirmed by the letter that remains',
+    stateOf(vShared) === 'confirmed', stateOf(vShared));
+
+  // Deleting the last letter holding a line does revert it.
+  const del3 = sql(`select public.letter_delete('${docB}', '${vB.number}', 'Cancelled engagement')`);
+  check('deleting the last verified letter reverts the line it alone held',
+    /"ok" *: *true/.test(del3) && stateOf(vShared) === 'quoted', stateOf(vShared));
+
+  // Serials are spent for ever, voided and deleted alike.
+  const after = JSON.parse(issueVD([vSole], 'v4'));
+  check('a deleted serial is never handed out again',
+    after.number !== vA.number && after.number !== vB.number && after.number !== vC.number,
+    [vA.number, vB.number, vC.number, after.number].join(' '));
+
+  // Losing the permission between opening the dialog and pressing the button.
+  sql(`update public.t_who set remove=false, doc_void=false`);
+  const docD = sql(`select id from public.client_documents where number='${after.number}'`);
+  check('a permission removed before submission refuses the delete',
+    /not-allowed/.test(sql(`select public.letter_delete('${docD}', '${after.number}', 'late')`)));
+
+  // ---- 18. A letter is signed by a person, never by a permission ----------
+  sql(`update public.t_who set clients=true, billing=true`);
+  sql(`update public.team_members set name='Superadmin' where email='sales@adspacestudios.com'`);
+  const bad = sql(`select public.issue_letter('${VD}', array['${vShared}'::uuid], 'v5', 10, 1, 11)`);
+  check('a letter is refused when the issuer is named for a role',
+    /issuer-name/.test(bad), bad);
+  sql(`update public.team_members set name='Qiao Rou' where email='sales@adspacestudios.com'`);
+  const good = sql(`select public.issue_letter('${VD}', array['${vShared}'::uuid], 'v6', 10, 1, 11)`);
+  check('but issued once the name is a person\'s',
+    /"ok" *: *true/.test(good), good);
+  check('and the letter is signed with that name',
+    sql(`select issued_by from public.client_documents order by created_at desc limit 1`) === 'Qiao Rou');
 } catch (e) {
   console.log('FAIL ' + (e.stderr ? String(e.stderr).slice(0, 600) : e.message));
   fails++;

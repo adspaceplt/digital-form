@@ -16,6 +16,14 @@ const CAMP = seedOf('head.js');
 const CLIENT = seedOf('client.js');
 const CPROD = seedOf('cprod.js');
 const PORTAL = seedOf('portal.js');
+/* Void is offered on a verified letter and nowhere else, and no seed carries
+   one. This marks the seeded letter verified before the page paints, because
+   switching panes does not re-read the record and a mutation after the row is
+   drawn never reaches it. */
+const LETTER = `(function(){ var d = (window.__DB.client_documents || [])[0];
+  if (d) { d.signed_at = '2026-09-13T00:00:00Z'; d.verified_at = '2026-09-14T00:00:00Z';
+           d.verified_by = 'adspacestudios@gmail.com'; }
+  window.__persist && window.__persist(); })();`;
 const CREATOR = seedOf('creator.js');
 const QR = 'window.QRCode=function(){};window.QRCode.CorrectLevel={H:2};';
 
@@ -361,7 +369,7 @@ async function walk(b, coarse, dark) {
   };
 
   // Console
-  let p = await page(CRM + CAMP + PORTAL);
+  let p = await page(CRM + CAMP + PORTAL + LETTER);
   await p.goto('http://127.0.0.1:8899/admin/', { waitUntil: 'networkidle' });
   await report('admin sign-in ' + tag, p, coarse);
   await p.evaluate(() => window.__signIn('adspacestudios@gmail.com'));
@@ -380,6 +388,29 @@ async function walk(b, coarse, dark) {
   for (const key of ['contacts', 'billing', 'brand', 'services', 'documents', 'activity']) {
     await p.locator('#crmTabs .tab[data-pane="' + key + '"]').click(); await p.waitForTimeout(450);
     await report('admin client ' + key + ' ' + tag, p, coarse);
+  }
+  /* The two sheets that end a letter. Both are reached from a document row's
+     ⋯, so the walk issues one first; a record with no letter has no row to
+     open and the states are simply not reported rather than failing. */
+  await p.locator('#crmTabs .tab[data-pane="documents"]').click(); await p.waitForTimeout(400);
+  const docRow = p.locator('#crmDocuments .doc-row:not(.crm-head)').first();
+  if (await docRow.count()) {
+    /* Void is offered on a verified letter and nowhere else, so the walk takes
+       one there first. This is the last thing done with the client record in
+       the walk, so the confirmations it moves cost the reports nothing. */
+    for (const [act, sheet, cancel, name] of [['void', '#voidSheet', '#voidCancel', 'void letter sheet'],
+                                              ['del', '#delSheet', '#delCancel', 'delete letter sheet']]) {
+      await docRow.locator('[data-a="menu"]').scrollIntoViewIfNeeded(); await p.waitForTimeout(200);
+      await docRow.locator('[data-a="menu"]').click(); await p.waitForTimeout(220);
+      const item = docRow.locator('[data-a="' + act + '"]');
+      if (await item.isVisible().catch(() => false)) {
+        await item.click(); await p.waitForTimeout(350);
+        await report('admin ' + name + ' ' + tag, p, coarse);
+        await p.locator(cancel).click(); await p.waitForTimeout(250);
+      } else {
+        await p.keyboard.press('Escape'); await p.waitForTimeout(150);
+      }
+    }
   }
   await p.locator('#crmTabs .tab[data-pane="contacts"]').click(); await p.waitForTimeout(400);
   // Letting a contact into the client portal: the sheet that asks which

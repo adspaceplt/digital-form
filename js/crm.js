@@ -2258,10 +2258,15 @@
           (st === 'issued' ? '<button class="kmenu-item" data-a="sign" type="button"><b>Mark signed</b></button>' : '') +
           (st === 'signed' ? '<button class="kmenu-item" data-a="unsign" type="button"><b>Not signed after all</b></button>' : '') +
           (canVerify ? '<button class="kmenu-item" data-a="verify" type="button"><b>Verify signed letter</b></button>' : '') +
-          (st === 'issued' || st === 'signed'
-            ? '<button class="kmenu-item is-danger" data-a="void" data-soft type="button"><b>Void</b></button>' : '') +
-          (st === 'void' ? '<button class="kmenu-item" data-a="unvoid" type="button"><b>Restore</b></button>' : '') +
-          (st === 'void' ? '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete</b></button>' : '') +
+          /* Void reverses a confirmation, so it is offered on a verified
+             letter and nowhere else: an issued or signed letter has confirmed
+             nothing and there is nothing to put back. `data-soft` is absent
+             from both, so `body.no-remove` and `body.no-docvoid` are what
+             decide whether either is drawn at all — and the database decides
+             again when the button is pressed. */
+          (st === 'verified'
+            ? '<button class="kmenu-item is-danger" data-a="void" type="button"><b>Void letter</b></button>' : '') +
+          '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete permanently</b></button>' +
         '</div>' +
       '</span>';
     wireMenu(row);
@@ -2298,25 +2303,126 @@
         loadServices();
       });
     });
-    on('void', function () {
-      shut();
-      DOCS.setVoid(d, true, function (err) {
-        if (err) { msg('crmDocMsg', err, 'err'); loadDocuments(); return; }
-        undoBar(d.number + ' voided.', function () { DOCS.setVoid(d, false, done); });
-        loadDocuments();
-      });
-    });
-    on('unvoid', function () { shut(); DOCS.setVoid(d, false, done); });
-    // A voided document can go for good. The number is not reused.
-    on('del', function () {
-      shut();
-      if (!confirm('Delete ' + d.number + '?')) return;
-      DOCS.remove(d, function (err) {
-        if (err) { msg('crmDocMsg', err.message || err, 'err'); return; }
-        loadDocuments();
-      });
-    });
+    /* Both of these ask in a sheet rather than a confirm(): each needs a
+       reason typed, and one of them needs the reference typed back. Neither
+       is a question a browser dialog can carry. */
+    on('void', function () { shut(); openVoid(d, mapped.length); });
+    on('del', function () { shut(); openDelete(d, mapped.length); });
     return row;
+  }
+
+  /* ---- Voiding and deleting a letter -------------------------------------
+     Two different acts with two different authorities, so two sheets. A void
+     reverses a confirmation and says how many service lines go back; a
+     deletion ends the record and takes the reference typed back, because the
+     reference is the one thing that identifies which letter stops existing.
+
+     Neither of them trusts this page: the switch that draws the menu item is
+     a convenience, and `letter_set_void` and `letter_delete` check the
+     signed-in person's live permission when the button is pressed. A
+     permission taken away while this sheet is open is a refusal here, not a
+     deletion that already happened. */
+  var voiding = null, deleting = null;
+
+  function linesWord(n) {
+    return n === 1 ? '1 service line' : n + ' service lines';
+  }
+
+  function openVoid(d, mapped) {
+    voiding = d;
+    $('voidWhat').textContent =
+      /* A letter issued before the mapping table carries none, and "of 0
+         service lines on it" is a clause that says nothing. */
+      'Voiding ' + d.number + ' puts back the service lines this letter alone confirmed' +
+      (mapped ? ', of ' + linesWord(mapped) + ' on it' : '') + '. ' +
+      'A line another verified letter still holds stays confirmed. ' +
+      'The letter and its reference are kept, and the reference is never reused.';
+    $('voidReason').value = '';
+    msg('voidMsg', '', '');
+    $('voidSheet').hidden = false;
+    $('voidReason').focus();
+  }
+
+  function openDelete(d, mapped) {
+    deleting = d;
+    $('delWhat').textContent =
+      'Deleting ' + d.number + ' removes the letter record, its service mapping and the ' +
+      'client’s access to it, and puts back the service lines this letter alone confirmed' +
+      (mapped ? ', of ' + linesWord(mapped) + ' on it' : '') + '. ' +
+      'The file is drawn from the record on Download and is not stored, ' +
+      'so nothing is left to recover: this is immediate and cannot be undone. ' +
+      'The reference is never reused.';
+    $('delConfirm').value = '';
+    $('delReason').value = '';
+    msg('delMsg', '', '');
+    $('delSheet').hidden = false;
+    $('delConfirm').focus();
+  }
+
+  function wireLetterSheets() {
+    var shutVoid = function () { voiding = null; $('voidSheet').hidden = true; };
+    var shutDel = function () { deleting = null; $('delSheet').hidden = true; };
+    ['voidClose', 'voidCancel'].forEach(function (id) {
+      var el = $(id); if (el) el.addEventListener('click', shutVoid);
+    });
+    ['delClose', 'delCancel'].forEach(function (id) {
+      var el = $(id); if (el) el.addEventListener('click', shutDel);
+    });
+
+    var go = $('voidGo');
+    if (go) go.addEventListener('click', function () {
+      if (!voiding) return;
+      var why = String($('voidReason').value || '').trim();
+      if (!why) { msg('voidMsg', 'A reason is required.', 'err'); $('voidReason').focus(); return; }
+      var d = voiding;
+      go.disabled = true;
+      DOCS.setVoid(d, why, function (err, out) {
+        go.disabled = false;
+        if (err) { msg('voidMsg', err, 'err'); return; }
+        shutVoid();
+        var n = (out && out.reverted) || 0;
+        msg('crmDocMsg', d.number + ' voided. ' +
+          (n ? linesWord(n) + ' put back to To quote.' : 'No service line changed.'), 'ok');
+        loadDocuments();
+        loadServices();
+      });
+    });
+
+    ['voidSheet', 'delSheet'].forEach(function (id) {
+      var el = $(id);
+      if (el) el.addEventListener('click', function (e) {
+        if (e.target === this) (id === 'voidSheet' ? shutVoid() : shutDel());
+      });
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      if (!$('voidSheet').hidden) shutVoid();
+      else if (!$('delSheet').hidden) shutDel();
+    });
+
+    var dgo = $('delGo');
+    if (dgo) dgo.addEventListener('click', function () {
+      if (!deleting) return;
+      var typed = String($('delConfirm').value || '').trim();
+      var why = String($('delReason').value || '').trim();
+      if (typed !== deleting.number) {
+        msg('delMsg', 'Type ' + deleting.number + ' to confirm.', 'err');
+        $('delConfirm').focus(); return;
+      }
+      if (!why) { msg('delMsg', 'A reason is required.', 'err'); $('delReason').focus(); return; }
+      var d = deleting;
+      dgo.disabled = true;
+      DOCS.remove(d, typed, why, function (err, out) {
+        dgo.disabled = false;
+        if (err) { msg('delMsg', err, 'err'); return; }
+        shutDel();
+        var n = (out && out.reverted) || 0;
+        msg('crmDocMsg', d.number + ' deleted. ' +
+          (n ? linesWord(n) + ' put back to To quote.' : 'No service line changed.'), 'ok');
+        loadDocuments();
+        loadServices();
+      });
+    });
   }
 
   /* ---- Choosing what goes on the letter ---------------------------------
@@ -2412,6 +2518,7 @@
     $('pickGo').disabled = false;
     $('pickGo').textContent = 'Issue letter';
   }
+  wireLetterSheets();
   $('pickClose').addEventListener('click', shutPick);
   $('pickCancel').addEventListener('click', shutPick);
   $('pickSheet').addEventListener('click', function (e) { if (e.target === this) shutPick(); });
