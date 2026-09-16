@@ -47,14 +47,14 @@
   --err-hi:     #8c1d18;   /* the pressed / heavier step, never a second red */
   --err-solid:  #b3261e;
   --on-err:     #ffffff;
-  /* Blue means action. Green had been carrying two jobs at once — the forward
-     button and the live state — so a page could not say "this is the thing to
-     press" and "this is running" in two different voices. Blue is the one that
-     moves, green is the one that reports, amber cautions and red destroys.
+  /* Blue means forward action. Green had been carrying two jobs at once — the
+     forward button and the live state — so a page could not say "send this on"
+     and "this is running" in two different voices. Blue moves work to somebody
+     else, green reports, amber cautions and red destroys.
      #0B57D0 carries white at 6.39:1 and clears AA for normal text; Apple's own
      #007AFF manages 4.02:1 with white on it and is not an option for a button
-     this size. Secondary actions stay neutral: the screen is still about
-     nine tenths neutral, and blue is what is left for guiding the eye. */
+     this size. Add, Create and Save use the ink fill; blue stays rare enough
+     to guide the eye to Publish, Release, Submit and Approve. */
   --action:         #0b57d0;
   --action-hover:   #0847ae;
   --action-pressed: #063989;
@@ -415,13 +415,18 @@ a { color: inherit; }
      button reads differently depending on which element drew it. */
   text-decoration: none;
 }
-.btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.btn svg {
+  width: 15px; height: 15px; flex: 0 0 auto;
+  /* Most button marks are stroked paths. At the browser's default 1px they
+     faded into a filled surface long before the label did, especially at
+     zoom. The mark and the word now carry comparable visual weight. */
+  stroke-width: 1.8;
+}
 /* Inside `@media (hover: hover)`, which is where this portal puts every hover
    state so a phone cannot leave one stuck on the last thing tapped. Left
    outside it, a tapped `.btn` kept `.btn:hover` — and `.btn:hover` outranks
-   `.btn-primary`, so the moment the primary became a blue fill the ink text
-   this rule sets landed on it: 2.72:1 on a touch device, on the one button in
-   the view. The bug was always there; only the colours made it visible. */
+   `.btn-primary`, so its ink text could land on the filled primary and lose
+   contrast on a touch device. */
 @media (hover: hover) {
   .btn:hover { border-color: var(--ink); color: var(--ink); }
 }
@@ -448,17 +453,18 @@ a { color: inherit; }
 .approve-row .btn-changes[aria-pressed="true"] {
   background: var(--warn-solid); border-color: var(--warn-solid); color: var(--on-warn); font-weight: 600;
 }
-/* The one thing to press in a view. Hover, pressed and disabled are all
-   stated, because a button that answers nothing under the pointer reads as
-   furniture and a disabled one that only fades reads as a rendering fault. */
+/* The primary operation is an ink fill, not a second accent. Add, Create and
+   Save are ordinary operations; blue is reserved for the one action that
+   advances work to somebody else (`.btn-go`). This gives a row hierarchy
+   without turning every filled button into the same blue slab. */
 .btn-primary {
-  background: var(--action); border-color: var(--action);
-  color: var(--on-action); flex: 0 0 auto; font-weight: 600;
+  background: var(--fill); border-color: var(--fill);
+  color: var(--on-fill); flex: 0 0 auto; font-weight: 600;
 }
 @media (hover: hover) {
-  .btn-primary:hover { background: var(--action-hover); border-color: var(--action-hover); color: var(--on-action); }
+  .btn-primary:hover { background: var(--fill); border-color: var(--fill); color: var(--on-fill); filter: brightness(.86); }
 }
-.btn-primary:active { background: var(--action-pressed); border-color: var(--action-pressed); color: var(--on-action); }
+.btn-primary:active { background: var(--fill); border-color: var(--fill); color: var(--on-fill); filter: brightness(.74); }
 /* Not a colour of its own: a disabled control is the same control, dimmed and
    inert, and a second grey here is a second thing to keep in step. */
 .btn[disabled], .btn[aria-disabled="true"] {
