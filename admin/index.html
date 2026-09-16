@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260916n">
+<link rel="stylesheet" href="/css/portal.css?v=20260917c">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,20 +28,20 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260916n"></script>
-<script src="/js/words.js?v=20260916n"></script>
-<script src="/js/copy.js?v=20260916n"></script>
-<script src="/js/state.js?v=20260916n"></script>
-<script src="/js/menu.js?v=20260916n"></script>
-<script src="/js/api.js?v=20260916n"></script>
-<script src="/js/money.js?v=20260916n"></script>
-<script src="/js/mockups.js?v=20260916n"></script>
+<script src="/js/config.js?v=20260917c"></script>
+<script src="/js/words.js?v=20260917c"></script>
+<script src="/js/copy.js?v=20260917c"></script>
+<script src="/js/state.js?v=20260917c"></script>
+<script src="/js/menu.js?v=20260917c"></script>
+<script src="/js/api.js?v=20260917c"></script>
+<script src="/js/money.js?v=20260917c"></script>
+<script src="/js/mockups.js?v=20260917c"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260916n" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260917c" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -187,7 +187,16 @@
                 <option value="MY">Malaysia · RM</option>
                 <option value="SG">Singapore · S$</option>
               </select></div>
+            <!-- The Client ID staff own, which is what a letter's serial is
+                 built from. Uppercase letters and digits: it travels inside
+                 AQL/AC180/260901, so a slash or a space would break the format
+                 it is part of. Left blank on a lead and asked for at the door
+                 of the first letter. -->
+            <div style="flex:0 0 150px"><label class="field-label" for="crmClientCode">Client ID</label>
+              <input class="input" id="crmClientCode" maxlength="12" autocapitalize="characters"
+                     spellcheck="false" placeholder="AC180"></div>
           </div>
+          <p class="hint" id="crmCodeWarn" hidden></p>
           <!-- A new lead is a person who asked for something. The company's
                links, billing and notes come later, on the record. -->
           <!-- The person who asked belongs to intake only: after that they are a
@@ -493,6 +502,30 @@
         <div class="msg" id="crmDocMsg"></div>
         <div id="crmDocuments"></div>
           </div>
+
+        <!-- What goes on the letter, chosen before it is issued. To quote
+             lines that are not already on a live letter are ticked; a
+             confirmed line is listed apart and stays unticked, because a
+             renewal is a decision somebody makes and never a default. It
+             sits outside the panes: a sheet inside one would vanish, still
+             open, the moment somebody switched tab behind it. -->
+        <div class="sheet" id="pickSheet" hidden>
+          <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
+            <div class="sheet-head">
+              <h3 id="pickTitle">Issue letter</h3>
+              <button class="iconbtn" id="pickClose" type="button" aria-label="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              </button>
+            </div>
+            <div class="sheet-body" id="pickBody"></div>
+            <div class="sheet-foot">
+              <span class="lpicksum" id="pickSum"></span>
+              <button class="btn btn-primary" id="pickGo" type="button">Issue letter</button>
+              <button class="btn btn-quiet" id="pickCancel" type="button">Cancel</button>
+            </div>
+            <div class="msg" id="pickMsg"></div>
+          </div>
+        </div>
 
           <div class="rec-pane" data-pane="activity" hidden>
         <!-- Every call, visit and message, newest first. -->
@@ -1521,10 +1554,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260916n"></script>
-<script src="/js/documents.js?v=20260916n"></script>
-<script src="/js/crm.js?v=20260916n"></script>
-<script src="/js/team.js?v=20260916n"></script>
-<script src="/js/campaigns.js?v=20260916n"></script>
+<script src="/js/admin.js?v=20260917c"></script>
+<script src="/js/documents.js?v=20260917c"></script>
+<script src="/js/crm.js?v=20260917c"></script>
+<script src="/js/team.js?v=20260917c"></script>
+<script src="/js/campaigns.js?v=20260917c"></script>
 </body>
 </html>

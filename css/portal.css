@@ -1838,6 +1838,43 @@ body.is-plain .topbar { background: var(--chrome); }
    browser it sizes itself to its placeholder, which is how Name ended up at a
    quarter of the card with its label floating above nothing. */
 .sheet-body > .input, .sheet-body > .select, .sheet-body > textarea.input { width: 100%; }
+
+/* ---------- Choosing what goes on a letter ----------
+   A letter is issued for the services somebody chose, so the choice is a
+   screen rather than a predicate nobody can see. Ticked by default where the
+   line is free to be quoted; shown and refused where it is already on a live
+   letter, because the reason belongs on the screen with the thing it stops. */
+.sheet-foot {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding-top: 14px; border-top: 1px solid var(--line-soft);
+}
+.lpicksum { flex: 1 1 auto; font-size: 13px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.lpickgroup + .lpickgroup { margin-top: 14px; }
+.lpickgroup .svc-cat { padding: 0 0 6px; }
+.lpickrow {
+  display: grid; align-items: center; gap: 0 12px;
+  grid-template-columns: 18px minmax(0, 1fr) auto;
+  padding: 10px 0; border-bottom: 1px solid var(--line-soft);
+  min-height: var(--ctl-h); cursor: pointer;
+}
+.lpickrow:last-child { border-bottom: 0; }
+.lpickrow input { width: 18px; height: 18px; accent-color: var(--accent); }
+.lpickname { min-width: 0; display: grid; gap: 1px; font-size: 13.5px; }
+.lpickname b { font-weight: 600; }
+.lpickname small { font-size: 12.5px; color: var(--ink-mute); }
+.lpickamt { font-size: 13.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* A line already spoken for reads as a fact, not as something to argue with. */
+.lpickrow.is-held { cursor: default; }
+.lpickrow.is-held .lpickname b, .lpickrow.is-held .lpickamt { color: var(--ink-mute); }
+.lpicknote { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+@media (max-width: 640px) {
+  .lpickrow { grid-template-columns: 18px minmax(0, 1fr); grid-template-areas: "tick name" ". amt"; gap: 2px 12px; }
+  .lpickrow input { grid-area: tick; }
+  .lpickname { grid-area: name; }
+  .lpickamt { grid-area: amt; }
+  .sheet-foot .btn { flex: 1 1 auto; }
+  .lpicksum { flex: 1 1 100%; }
+}
 /* The confirm list is a name and an amount, not the activity record's five
    columns, whose first is 52px wide and clipped the name to three characters. */
 #lockList .act { grid-template-columns: minmax(0, 1fr) auto; }
@@ -3154,6 +3191,13 @@ body > .shell { width: 100%; }
     grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 12px 15px;
     grid-template-areas: "name act" "calc calc" "amt state";
   }
+  /* A service line draws a select while it can still move and a chip once a
+     verified letter has confirmed it, and the two are not the same width. On
+     an `auto` track that put the state column 51px further left on the
+     confirmed rows, which is the fault this portal calls a column that is not
+     a column. The track is the state's own width on every row, and what sits
+     in it ends at the same edge whichever shape it is. */
+  .csv-row { grid-template-columns: minmax(0, 1fr) var(--state-w); }
   /* The two things a person came for sit on the first line, and what qualifies
      the money goes under it. Three lines with a control on the last one was a
      row 310px tall: two and a half services on a screen out of thirty four. */
@@ -3216,6 +3260,15 @@ body > .shell { width: 100%; }
     grid-area: rate; text-align: right; align-self: start; white-space: nowrap;
   }
   .svc-row > .svc-state { grid-area: state; justify-self: end; }
+  /* A service line draws a select while it can still move and a chip once a
+     verified letter has confirmed it, and the two are not the same width. End
+     justified in an `auto` track that put the state column 51px further left
+     on the confirmed rows, which is the fault this portal calls a column that
+     is not a column. The track above is the state's own width; the cell fills
+     it, so it starts at the same x on every row, and the chip is what ends at
+     the edge. Restated here because `.svc-row > .svc-state` comes later in the
+     file and would otherwise win on the same specificity. */
+  .svc-row.csv-row > .svc-state { justify-self: stretch; text-align: right; }
   .ct-row > .crm-reach { grid-area: reach; }
   .ct-row .plink { flex: 1 1 0; justify-content: center; }
   .csv-total { justify-content: space-between; gap: 12px; }
