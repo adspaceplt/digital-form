@@ -106,6 +106,8 @@ For each workflow, define:
 
 Examples include lead qualification, opportunity stages, task assignment, approval, invoice status, client onboarding, document collection, ticket escalation, and record archiving.
 
+- **2026-09-16** — Two authorities over a letter. `can_doc_void` (new, Admin only by default) voids a verified letter. `can_remove` — the portal's existing hard-delete authority over contacts and rate card lines — now also permanently deletes a letter. No parallel permission system was created and no hard-coded role check is relied on: both go through `allowed()` and are re-checked server-side on every call.
+
 ### Workflow invariants
 
 - The server enforces authorization. Hiding a button is not access control.
@@ -564,6 +566,10 @@ Update this section only with verified, durable facts. Keep entries short and re
 - **2026-09-16** — A released client draft is reviewed in its booking card: portrait video uses a 9:16 inline player with native play, pause and fullscreen controls, and the caption sits with it. The decision sheet contains decisions only and closes with one X, not an X plus Cancel.
 - **2026-09-16** — Client and campaign Activity panes use one three-column audit row: timestamp, event with its detail, and actor with a monogram. At narrow component widths the event owns the first line and date plus actor share the second. Activity never inherits the generic service-row phone grid; that collision stacked every cell at the same coordinates.
 
+- **2026-09-16** — A letter's PDF is never stored and there is no signed upload: `client_documents` holds the snapshot and the file is redrawn on Download. A permanent deletion therefore has **no storage side, no object queue and no quarantine** — the row is the letter — and the console says the deletion is immediate and irreversible. Decided with the user on 2026-09-16 after the alternative (building a signed-letter upload first) was weighed and deferred.
+- **2026-09-16** — The letter's closing carries the issuer's **name only**; no designation field was added. The guard against an internal role reaching a client's letterhead is therefore a refusal at issue time (`issuer_name_ok`), not a second field. Decided with the user on 2026-09-16.
+- **2026-09-16** — Voiding a letter applies to a **verified** letter only and has no restore. An issued or signed letter has confirmed nothing, so there is nothing to reverse; removing one is a deletion. This narrows what the old `letter_set_void` accepted, and is a deliberate capability change rather than a regression.
+
 ### Design system
 
 - **2026-09-15** — Tokens live in `css/portal.css` `:root`: colour, `--radius`, `--head-h`, `--ctl-h`, `--ctl-h-sm`, `--state-w`, `--ctl-text`, `--field-text`, `--shadow`, `--shadow-lift`, and the motion set `--t-fast` / `--t` / `--t-slow` / `--ease` / `--ease-out`. The full table and the reasoning are in `DESIGN.md`.
@@ -590,6 +596,8 @@ Update this section only with verified, durable facts. Keep entries short and re
 - **2026-09-15** — Reversibility vocabulary: Revert a state, Restore a record, Reinstate a person, Undo a removal, Void then Delete an issued document. A number is never reused.
 - **2026-09-15** — A creator uploads up to 300 MB a file (`ADSPACE_CONFIG.s3.maxUploadMB`) and as many files as a booking needs. The file is not uploaded until `creator_add_file` has written the row, so every step's failure is the whole file's failure and is named on the page.
 
+- **2026-09-16** — Voiding or deleting a letter reverts **only the service lines that letter alone was holding confirmed** (`letter_sole_services`). A line another verified, unvoided letter also maps stays confirmed, because that letter still says so. A voided or deleted serial is never reused: the counter only increments, and a deletion leaves a `client_document_deletions` row carrying the serial, the actor, the reason and the service ids, and no document content.
+
 ### Technical constraints
 
 - **2026-09-15** — Static site, vanilla ES5-style IIFE scripts, no build step, no framework, no bundler. GitHub Pages at digital.adspace.me. There is therefore no path routing (`404.html` is the user's own site and is never edited); state travels in `?s=`.
@@ -610,11 +618,14 @@ Update this section only with verified, durable facts. Keep entries short and re
 - **2026-09-16** — `tests/stub2.js` can now refuse or delay a read: `window.__failRead = { clients: 'permission denied' }` and `window.__slowRead = { clients: 1500 }`. Every list in the console has a failed and a loading state and neither could be reached before, because the stand-in resolved in a microtask and could never say no.
 - **2026-09-16** — The matrix is now both axes. `uxaudit` walks **every** page and state at 1280 and 390 with a coarse pointer, and the console again in dark at both; `tests/matrix.js` takes a representative screen from every route across **320, 375, 390, 768, 1024, 1280 and 1440**, and again at 1280 and 1440 under 200% browser zoom. Browser zoom is the CSS viewport halved, not the `zoom` property: Ctrl + is what a reader presses and it fires the media queries. `matrix.js` reads `uxaudit`'s own `inPage()` out of that file rather than copying it, so the two cannot drift.
 
+- **2026-09-16** — PDF geometry: `node tests/pdfcases.js tests` → `pdfcases: ok` draws the letter against its extremes and asserts, with pdf.js glyph positions, that nothing drawn crosses the margins, that the four AcroForm fields are widgets with valid rectangles, and that the execution block stays on one page. `node tests/pdfshot.js tests <file.pdf>` rasterises a letter so its pages can be read. Both need `npm i pdfjs-dist@3.11.174 --prefix tests/pdfx` and the local server; they print SKIP loudly rather than passing quietly when pdf.js is missing. A text assertion cannot see a clipped line: the Attn line ran off the right edge of a real letter and decoded perfectly.
+
 ### Open security findings
 
 - **2026-09-15 — HIGH, not yet fixed.** Row level security on the CRM and campaign tables still reads `to authenticated using (true) with check (true)`: `clients`, `batches`, `posts`, `reviews`, `drive_assets`, `client_contacts`, `client_touches`, `links`, `link_qrs`, `creators`, `creator_profiles`, `campaigns`, `campaign_options`, `campaign_confirmations`, `option_posts`, `option_reviews`. Clients hold real `authenticated` logins now (`/client/`, `portal-login`), and the anon key is public by design, so a signed-in client can reach PostgREST directly and read every other client's record, contacts and content, every creator's fee, and every campaign — and write to several of them. The `is_team()` sweep at the foot of `supabase/schema.sql` tightened `team_members`, `team_roles`, `services`, `activity_log`, `activity_viewers`, the `content` bucket and `campaign_deliverables`, and stopped there. The fix is to reissue those policies as `using (public.is_team()) with check (public.is_team())`; every client-facing path already goes through a security definer function and so is unaffected. It is held back from the release-step PR deliberately: an `is_team()` that answers false would lock the whole team out of Clients, Content Review and Campaigns at once, so it needs its own change and its own live check.
 
 ### Accepted known issues
+- **2026-09-16** — The letterhead is drawn on page 1 and on any page the services table spills onto (`js/documents.js`, the `newPage(); head(); thead();` in the lines loop), but not on a page created by any other overflow — so a two page letter has no letterhead on its acceptance page while a three page one does on its middle page. Exposed by `tests/pdfcases.js`'s multi-page case, pre-existing, cosmetic, and deliberately not changed in the hotfix that found it: making it uniform changes every letter's layout budget. Not yet scheduled.
 
 - **2026-09-16 — closed.** The gap between 640 and 1280 is covered by `tests/matrix.js`, and it was a real gap: the clients row kept five desktop columns between 640 and 760 while its header was already hidden, and `.cmdbar` did not wrap until 640, so a 1440px window at 200% zoom scrolled sideways. Both fixed.
 - **2026-09-16** — Keyboard inspection is automated: `uxaudit` tabs every focusable control and fails one that takes focus without a ring, and checks labels, names and contrast; `tests/matrix.js` drives the keyboard through every control that opens a dialog and asserts Enter opens it, the dialog names itself, Escape closes it and focus goes back to the control that opened it. Neither replaces a real screen-reader pass, which has not been done.

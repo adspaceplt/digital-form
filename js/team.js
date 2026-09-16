@@ -31,7 +31,11 @@
     ['can_links',     'Short Links'],
     ['can_billing',   'Billing'],
     ['can_activity',  'Activity record'],
-    ['can_remove',    'Remove']
+    ['can_doc_void',  'Void client letters'],
+    /* can_remove is this portal's hard-delete authority across contacts, rate
+       card lines and now letters, so it is named for what it does rather than
+       for the newest thing it governs. */
+    ['can_remove',    'Permanently delete records']
   ];
 
   var state = { rows: [], roles: [], editing: null };

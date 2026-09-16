@@ -317,6 +317,63 @@ to the words it accepts. Reserving only the closing separated the two the
 moment services carried their full inclusions, so the reservation is the
 height of both.
 
+**One name for the whole letter.** `To`, the opening paragraph and the
+acceptance block each resolved the client's name themselves, and two of them
+used the opposite precedence: `legal_name || name` in the header and
+`name || legal_name` one paragraph below it. A client whose registered name and
+trading name differ was therefore addressed as one in the header and the other
+in the sentence beneath. A letter is an agreement, so the name on it is the
+legal entity, resolved once (`legalName`) and used everywhere.
+
+**Every line in the letter wraps, because a registered name is longer than the
+column.** The reference block and the acceptance heading were drawn with a
+single `text()` call, so `PERBADANAN PEMBANGUNAN PERUMAHAN DAN HARTANAH
+NUSAJAYA SELATAN BERHAD` and an Attn line carrying a full job title ran off the
+right edge and the tail was simply not on the page. Both wrap to the column
+they started in. `tests/pdfcases.js` reads the glyph positions back with pdf.js
+and fails anything crossing the margins, because a clipped string is clipped by
+the media box and not by the stream: it decodes perfectly and is invisible to
+every text assertion.
+
+**The closing is reserved alone; the acceptance is its own page.** They used to
+be reserved together, on the reasoning that a signature page carrying nothing
+but a stamp box has to stay attached to the words it accepts. The effect once
+services carried their full inclusions was that both moved, and page two opened
+with three orphaned lines of sign-off before anything the client could act on.
+The closing is reserved on its own and drawn where it falls, so the letter reads
+as finished at the foot of its last page of substance; the acceptance follows as
+a separate act. What keeps the two honest is not adjacency but the sentence and
+the page count inside the acceptance itself.
+
+**A signature is an area, not a ruled line.** 32mm of blank page labelled
+`Authorised signatory and company stamp`, then Name, Designation and Date, each
+a full width baseline with 10mm to write on, and the whole block kept on one
+page. Every one of the four is also a real AcroForm field
+(`acceptance_authorised_signatory`, `acceptance_name`, `acceptance_designation`,
+`acceptance_date`), transparent and borderless so the drawn rule and its label
+still show on paper — pdf-lib fills a field white and borders it black unless
+the key is present, and that white default painted over the label under the
+signing area. The appearance font is Helvetica, not the letter's own face: a
+subsetted custom font carries only the glyphs the letter drew, so a recipient
+typing a character the letter never used would get an appearance stream the
+reader cannot build. The fields are widgets on the page and in the AcroForm
+tree, so they do not depend on `NeedAppearances`. A typed field is a
+convenience, not a certificate backed signature, and nothing in the portal says
+otherwise.
+
+**The figures a client accepts are a table, not prose.** `Acceptance of offer`,
+one sentence naming the letter and its date, then Monthly fee, Contract term
+and Total contract value from the same `priceOf()` object the price table was
+drawn from, so the letter cannot quote itself two different totals. Agreement
+prose takes a plain date (`16 September 2026`): an ordinal is a letterhead
+flourish and this is the operative sentence.
+
+**The initials go where the hand that writes them rests**, which is the side of
+the page the signature is on: bottom right on every page but the signed one,
+with the reference bottom left, the monogram bottom centre and the page number a
+row below the initials, so the only two marks in the right of the foot cannot
+collide.
+
 **A letter that is signed on its last page is protected against having its
 first one swapped.** The substance is on page one and the signature on page
 two, so a signed sheet on its own proves only that somebody signed something.
@@ -379,6 +436,7 @@ measures the table whenever its header is not on screen (`padding`).
 | Rows of records | `.crm-table` > `.crm-head` + `.crm-row` / `.svc-row` (`csv-row` service lines, `doc-row` documents, `cat-row` rate card, `ct-row` contacts, `team-row`); state column `var(--state-w)` second last, `.team-act` ⋯ cell last; the header row carries the same row classes (`crm-head svc-row csv-row`) so it shares the row's grid and every label sits over its column, one cell per column, empty over the ⋯; `uxaudit` fails a header cell off its column (`cols`); on a phone two or three lines by `grid-template-areas` (name and ⋯ / small facts / money left, state right), never one field per line |
 | Completeness of a group | `.ringline` > `.ring` (`is-ok` when full) + "2 of 4" or "Complete" |
 | One record with steps | `.kcard` > `.kcard-head` (name, chips, ⋯) + `.kstep` blocks; folds to one line in lists of ten or more |
+| An act that cannot be taken back | A **sheet**, never `confirm()`, whenever something has to be typed: voiding a letter takes a reason, deleting one takes the reason and the reference typed back. The sheet says what the act will do in the record's own terms (which service lines go back, what is removed, whether it can be undone) before it asks. The menu item that opens it is drawn behind the capability (`body.no-docvoid`, `body.no-remove`) and the database checks the same permission again when the button is pressed, so a permission taken away while the sheet is open is a refusal and not something that already happened |
 | Rare or destructive actions | `.kmenu-btn` ⋯ + `.kmenu` > `.kmenu-item` (name only; `is-danger`). An item that leaves the building and cannot be recalled asks first, with `confirm()` naming what goes where: **Send invitation** sits one place from Edit in the same menu. A menu row is a control and clears the control floor like any other (`--ctl-h`: 38px, 44px under a finger); padding alone left it at 43px on a phone and nothing caught it until the walk opened a ⋯. An item that does not repaint the row behind it closes the menu itself, or the ⋯ sits open over the answer or behind the sheet it just opened. **The menu opens upwards where the room is above**, never past the bottom of the window, which is nowhere a phone can reach; and the scroll that closes it ignores the scroll the browser fires to reveal the button it has just focused, or the ⋯ closes itself the frame after it opens |
 | A rare change to a row | The row states the value; the ⋯ opens the panel that edits it, and the same panel adds a new one. A control drawn on every row for something changed once a quarter is Hick's law failing twice: it repeats on every line what one heading or one word could say, and it fills the row with the thing nobody came for. A group's seven switches, a member's group, a service's rate: all read on the row, all changed in a panel |
 | Status | One shape everywhere, including the review page: a chip with the word in it. `.status` on `/review/`, the Drive import rows and the saved posts drew a **coloured disc beside a word of the same colour**, which said nothing the word did not and is the one shape this system rules out for a status. `select.state-select` (tinted) for a state that **moves as part of the work** — a campaign step, a client stage, a request — where changing it is why somebody opened the page. A **lifecycle flag flipped once** (Active / Inactive on a rate card line, a colleague, a creator) is a chip on the row and a `Set inactive` / `Set active` item in the ⋯: a 124px tinted select on every line, for a decision taken once in the life of the row, was taller than the price it sat beside and painted the whole list one colour. `.tone` / `.chip-state` with a word for a value that is only read |

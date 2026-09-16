@@ -189,13 +189,23 @@ const docs = p => p.evaluate(() => window.__DB.client_documents
   check('the row reads Signed',
     /Signed/.test(await p.locator('#crmDocuments').innerText()));
 
+  /* The client's value is the confirmed total, and verifying is what confirms
+     a line, so verifying is what moves it. It was not moving: verify repainted
+     the documents and the services and never called syncValue, so the record
+     kept the old figure until something else happened to save a line. */
+  const valueNow = async () => {
+    const t = await p.locator('#crmFacts').innerText();
+    return t.replace(/\s+/g, ' ');
+  };
+  const valueBefore = await valueNow();
+
   p.once('dialog', d => d.accept());
   await openMenu(rowIdx);
   await p.evaluate(i => {
     const rows = [...document.querySelectorAll('#crmDocuments .doc-row')].filter(r => !r.classList.contains('crm-head'));
     rows[i].querySelector('[data-a="verify"]').click();
   }, rowIdx);
-  await p.waitForTimeout(1100);
+  await p.waitForTimeout(1400);
   check('verifying confirms the line the letter captured',
     (await svcState(p, 'sv_new')) === 'confirmed');
   check('and nothing else', (await svcState(p, 'sv_two')) === 'quoted');
@@ -203,6 +213,10 @@ const docs = p => p.evaluate(() => window.__DB.client_documents
   check('and the enquired one is untouched', (await svcState(p, 'sv_enq')) === 'enquired');
   list = await docs(p);
   check('the letter reads Verified', list[0].verified === true);
+  const valueAfter = await valueNow();
+  check('and the client\'s value follows the confirmation',
+    valueAfter !== valueBefore && /24,200/.test(valueAfter),
+    'before: ' + valueBefore.slice(0, 110) + '  ||  after: ' + valueAfter.slice(0, 110));
 
   // ---- The legacy letter stays history ------------------------------------
   const legacy = await p.evaluate(() => {
@@ -256,6 +270,143 @@ const docs = p => p.evaluate(() => window.__DB.client_documents
   check('and a confirmed line reads as a chip instead',
     await p.evaluate(() => [...document.querySelectorAll('#crmServices .csv-row')]
       .some(r => /Social media management/.test(r.innerText) && r.querySelector('.svc-state .tone'))));
+
+
+  // ---- Voiding and deleting, as the console drives them --------------------
+  // Both ask in a sheet: one needs a reason, the other needs the reference
+  // typed back. Neither is a question a browser confirm() can carry.
+  await p.close();
+  p = await open(ctx, SEED + `(function(){
+    window.__DB.clients.filter(function(c){ return c.id === 'c1'; })[0].client_code = 'AC180';
+    window.__persist && window.__persist(); })();`);
+  await pane(p, 'documents');
+  await p.locator('#crmCover').click();
+  await p.waitForTimeout(500);
+  await p.locator('#pickGo').click();
+  await p.waitForTimeout(1200);
+
+  const rowOf = () => p.evaluate(() => [...document.querySelectorAll('#crmDocuments .doc-row')]
+    .filter(r => !r.classList.contains('crm-head'))
+    .findIndex(r => /AQL\//.test(r.innerText)));
+  const items = async () => {
+    const i = await rowOf();
+    return p.evaluate(n => {
+      const rows = [...document.querySelectorAll('#crmDocuments .doc-row')].filter(r => !r.classList.contains('crm-head'));
+      return [...rows[n].querySelectorAll('.kmenu-item')]
+        .filter(x => getComputedStyle(x).display !== 'none')
+        .map(x => x.innerText.trim()).join('|');
+    }, i);
+  };
+  const act = async (a) => {
+    const i = await rowOf();
+    await p.evaluate(([n, name]) => {
+      const rows = [...document.querySelectorAll('#crmDocuments .doc-row')].filter(r => !r.classList.contains('crm-head'));
+      rows[n].querySelector('[data-a="menu"]').click();
+      rows[n].querySelector('[data-a="' + name + '"]').click();
+    }, [i, a]);
+    await p.waitForTimeout(400);
+  };
+
+  check('an issued letter offers Delete permanently and not Void',
+    /Delete permanently/.test(await items()) && !/Void letter/.test(await items()), await items());
+
+  // Signed, then verified, so there is a confirmation to reverse.
+  await act('sign'); await p.waitForTimeout(600);
+  p.once('dialog', d => d.accept());
+  await act('verify'); await p.waitForTimeout(900);
+  check('the line is confirmed by the verification', (await svcState(p, 'sv_new')) === 'confirmed');
+  check('a verified letter offers Void letter', /Void letter/.test(await items()), await items());
+
+  // Void: the sheet, the reason, and what it says it will do.
+  await act('void');
+  check('voiding opens a sheet rather than a browser dialog',
+    !(await p.locator('#voidSheet').evaluate(e => e.hidden)));
+  check('and the sheet says what goes back',
+    /puts back the service lines/.test(await p.locator('#voidWhat').innerText()));
+  await p.locator('#voidGo').click();
+  await p.waitForTimeout(400);
+  check('it refuses an empty reason',
+    /reason is required/i.test(await p.locator('#voidMsg').innerText()),
+    (await p.locator('#voidMsg').innerText()).trim());
+  check('and the letter is untouched', (await svcState(p, 'sv_new')) === 'confirmed');
+  await p.locator('#voidReason').fill('Client changed the scope');
+  await p.locator('#voidGo').click();
+  await p.waitForTimeout(1200);
+  check('a reason voids it', (await docs(p))[0].voided === true);
+  check('and the line it alone confirmed goes back to To quote',
+    (await svcState(p, 'sv_new')) === 'quoted', await svcState(p, 'sv_new'));
+  check('the line confirmed months ago is untouched', (await svcState(p, 'sv_old')) === 'confirmed');
+  check('the reason is kept with the letter',
+    (await p.evaluate(() => window.__DB.client_documents
+      .filter(d => /AQL\//.test(d.number))[0].void_reason)) === 'Client changed the scope');
+  check('a voided letter is no longer offered Void',
+    !/Void letter/.test(await items()), await items());
+
+  // Delete: the reference typed back, exactly.
+  const number = (await docs(p))[0].number;
+  await act('del');
+  check('deleting opens its own sheet',
+    !(await p.locator('#delSheet').evaluate(e => e.hidden)));
+  check('and says the deletion cannot be undone',
+    /cannot be undone/.test(await p.locator('#delWhat').innerText()));
+  await p.locator('#delConfirm').fill('AQL/AC180/999999');
+  await p.locator('#delReason').fill('Wrong client');
+  await p.locator('#delGo').click();
+  await p.waitForTimeout(400);
+  check('a reference that does not match is refused',
+    /Type AQL/.test(await p.locator('#delMsg').innerText()),
+    (await p.locator('#delMsg').innerText()).trim());
+  check('and the letter is still there', (await docs(p)).length === 1);
+  await p.locator('#delConfirm').fill(number);
+  await p.locator('#delReason').fill('');
+  await p.locator('#delGo').click();
+  await p.waitForTimeout(400);
+  check('an empty reason is refused even with the right reference',
+    /reason is required/i.test(await p.locator('#delMsg').innerText()));
+  await p.locator('#delReason').fill('Issued against the wrong client');
+  await p.locator('#delGo').click();
+  await p.waitForTimeout(1400);
+  check('the reference and a reason delete it', (await docs(p)).length === 0,
+    JSON.stringify(await docs(p)));
+  check('and a minimal audit event is left behind',
+    await p.evaluate(n => (window.__DB.client_document_deletions || [])
+      .some(x => x.number === n && x.reason === 'Issued against the wrong client' && !('lines' in x)), number));
+
+  // A serial that has been spent is never handed out again.
+  await p.locator('#crmCover').click();
+  await p.waitForTimeout(500);
+  await p.locator('#pickGo').click();
+  await p.waitForTimeout(1200);
+  check('the next letter takes a new serial',
+    (await docs(p))[0].number !== number, (await docs(p))[0].number + ' vs ' + number);
+
+  // ---- Neither action is offered to somebody who may not take it ----------
+  await p.close();
+  p = await open(ctx, SEED + `(function(){
+    window.__DB.clients.filter(function(c){ return c.id === 'c1'; })[0].client_code = 'AC180';
+    window.__persist && window.__persist(); })();`);
+  await pane(p, 'documents');
+  await p.evaluate(() => {
+    document.body.classList.add('no-remove');
+    document.body.classList.add('no-docvoid');
+  });
+  await p.locator('#crmCover').click();
+  await p.waitForTimeout(500);
+  await p.locator('#pickGo').click();
+  await p.waitForTimeout(1200);
+  check('a person without either capability is offered no removal at all',
+    !/Delete permanently|Void letter/.test(await items()), await items());
+  // And the database refuses it even when the page is made to ask.
+  await p.evaluate(() => { window.__teamCan.remove = false; window.__teamCan.doc_void = false; });
+  const refused = await p.evaluate(async () => {
+    const d = window.__DB.client_documents.filter(x => /AQL\//.test(x.number))[0];
+    const r = await window.ADspaceAPI.client.rpc('letter_delete',
+      { p_doc: d.id, p_confirm: d.number, p_reason: 'trying it on' });
+    return JSON.stringify(r.data);
+  });
+  check('and a direct call is refused by the database', /not-allowed/.test(refused), refused);
+  check('so the letter is still there',
+    (await p.evaluate(() => window.__DB.client_documents.filter(x => /AQL\//.test(x.number)).length)) === 1);
 
   await ctx.close();
   console.log('=== errors ===');

@@ -26,6 +26,8 @@
   var ICON    = bridge.ICON || {};
   var log     = bridge.log || function () {};
   var who     = bridge.actor || function () { return ''; };
+  /* A logged address read as a person, through the console's one map. */
+  var whoName = bridge.whoName || function (e) { return e || ''; };
   var putToS3 = bridge.putToS3;
   var cfg     = window.ADSPACE_CONFIG || {};
   var setUrl  = bridge.setUrl || function () {};
