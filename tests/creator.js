@@ -213,8 +213,8 @@ const say = s => console.log(s);
   check('the client is told Pending draft, never Your approval',
     beforeRelease.includes('Pending draft') && !beforeRelease.includes('Your approval'),
     beforeRelease.replace(/\n/g, ' | ').slice(0, 200));
-  check('and has nothing to review yet',
-    await p.locator('.booking-cta').count() === 0);
+  check('and has nothing to decide on yet',
+    await p.locator('.approve').count() === 0);
 
   // The team releases it. Only now is it theirs to decide on.
   await p.evaluate(() => {
@@ -226,12 +226,19 @@ const say = s => console.log(s);
   check('once released the client is asked to approve',
     released.includes('Reviewing') && released.includes('Your approval'),
     released.replace(/\n/g, ' | ').slice(0, 200));
-  check('and there is something to open', await p.locator('.booking-cta').count() === 1);
-  await p.locator('.booking-cta').first().click(); await p.waitForTimeout(400);
-  const sheet = await p.locator('#draftSheet').innerText();
-  check('the sheet shows the creator\'s own file, not a pasted link',
-    sheet.includes('cover.jpg'), sheet.replace(/\n/g, ' | ').slice(0, 200));
-  check('and the caption they wrote', sheet.includes('New launch at Laman Citra'));
+  /* The decision is on the card, beside the work, the way Content Review
+     decides on a post. There is no window to open first and none to dismiss. */
+  check('and the decision is on the card itself', await p.locator('.approve').count() === 1);
+  check('with Approve and Request changes, and nothing to open first',
+    await p.locator('.approve [data-act="approve"]').count() === 1 &&
+    await p.locator('.approve [data-act="changes"]').count() === 1 &&
+    await p.locator('#draftSheet').count() === 0);
+  const decCard = await p.locator('.booking:has(.approve)').innerText();
+  check('the card shows the creator\'s own file, not a pasted link',
+    await p.locator('.client-draft-preview img, .client-draft-preview video').count() > 0 &&
+    await p.locator('.client-draft-preview a').count() === 0,
+    decCard.replace(/\n/g, ' | ').slice(0, 200));
+  check('and the caption they wrote', decCard.includes('New launch at Laman Citra'));
 
   // Back to the creator's page for the rest of the run.
   await p.goto('http://127.0.0.1:8899/creator/', { waitUntil: 'networkidle' });
