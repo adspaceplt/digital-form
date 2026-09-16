@@ -50,14 +50,15 @@
   --focus:      rgba(31,122,77,.18);
   --scrim:      rgba(0,0,0,.42);
   --chrome:     rgba(255,255,255,.88);   /* the translucent sticky bar */
-  --radius:     10px;
-  --radius-sm:  7px;
-  /* Soft Precision. A soft corner is not a reason to put another card on the
-     page: these are for the surfaces that already earn a container. 10px on a
-     compact control, 14px on a bounded section, 18px on a sheet or dialog.
-     Applied route by route as each one migrates, never in one sweep. */
-  --radius-ctl:   10px;
-  --radius-panel: 14px;
+  /* Soft Precision. Two corners and nothing between them: 10px on anything a
+     finger operates, 14px on a bounded section, 18px on a sheet. A table at
+     10px sitting between two panels at 14 is the mismatch nobody can name and
+     everybody sees, so `--radius` and `--radius-sm` are those two values
+     rather than a third pair beside them. */
+  --radius:     14px;
+  --radius-sm:  10px;
+  --radius-ctl:   var(--radius-sm);
+  --radius-panel: var(--radius);
   --radius-lg:    18px;
   /* Two steps above the existing 4/8/12/16/24/32, for separating whole
      sections of a migrated route. Nothing below 40 changes. */
@@ -878,10 +879,16 @@ a { color: inherit; }
 .msg { font-size: 13px; margin-top: 12px; }
 .msg.err { color: var(--err); }
 .msg.ok  { color: var(--ok); }
+/* Nothing there, said as a line inside the panel the list would have filled.
+   It was a 26px dashed rectangle with the words centred in it, so four empty
+   sections on one record drew four large dashed boxes down the page and the
+   heading above each one was the smaller mark. A bounded line reads as the
+   list that has nothing in it, which is what it is. */
 .empty {
   grid-column: 1 / -1;
-  border: 1px dashed var(--line); border-radius: var(--radius);
-  padding: 26px; text-align: center; color: var(--ink-mute); font-size: 13px;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius-panel);
+  padding: 18px 15px; text-align: left; color: var(--ink-mute); font-size: 13.5px;
 }
 /* Sat flush against the page with almost nothing to aim at. */
 .backlink {
@@ -1429,9 +1436,9 @@ a { color: inherit; }
 .disclosure-body { padding: 4px 22px 20px; border-top: 1px solid var(--line-soft); }
 .disclosure-body .hint { margin: 14px 0 16px; }
 
-@media (max-width: 640px) {
-  .disclosure .muted { display: none; }
-}
+/* The summary is the reason to open the fold: "0 of 4" is what says whether
+   billing has been filled in. Hiding it on a phone left a row with a title
+   and a caret and nothing to decide on. */
 
 /* Activity record */
 /* Two lines, named rather than left to auto placement. The old version let
@@ -2518,7 +2525,13 @@ body.is-plain .topbar { background: var(--chrome); }
      the next one equally. Two buttons of different widths and heights side by
      side was the thing that read as unfinished. */
   .viewhead { flex-wrap: wrap; gap: 10px; margin: 22px 0 12px; }
-  .viewhead h2, .viewhead h3, .viewhead .headmark { flex: 1 1 100%; min-width: 0; }
+  .viewhead > h2, .viewhead > h3 { flex: 1 1 100%; min-width: 0; }
+  /* A heading and its one action share the line where they fit, the way the
+     desktop head does. Taking the whole row for the heading spent a line on
+     four words and put four actions on four lines of their own down the
+     record. The heading still wraps under a wide pair of buttons. */
+  .viewhead .headmark { flex: 1 1 auto; min-width: 0; }
+  .viewhead:has(.btn + .btn) .headmark { flex: 1 1 100%; }
   /* Two actions share the line. One action is an action, not a banner: it
      keeps its own width and sits at the end of the row. */
   .viewhead .btn { flex: 1 1 0; min-width: 0; }
@@ -2556,11 +2569,11 @@ body.is-plain .topbar { background: var(--chrome); }
   .panel { padding: 15px 16px; margin-bottom: 12px; }
   .panel-collapse { padding: 0; }
   .disclosure { padding: 12px 14px; gap: 9px; flex-wrap: wrap; }
-  .disclosure .muted { margin-left: 0; flex: 1 1 100%; padding-left: 27px; font-size: 12px; }
+  .disclosure .muted { font-size: 12px; }
   .disclosure-body { padding: 4px 14px 16px; }
   .panel .hint { font-size: 12.5px; line-height: 1.5; }
   .subsection + .subsection { margin-top: 18px; padding-top: 16px; }
-  .empty { padding: 20px 16px; }
+  .empty { padding: 16px 15px; }
 
   /* Creator cards: the head keeps the name and status on one line with the
      menu pinned right, and the field grid drops to two columns. */

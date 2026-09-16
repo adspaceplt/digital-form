@@ -265,6 +265,18 @@
     box.innerHTML = '<div class="softpanel"><div class="skel">' + s + '</div></div>';
   }
 
+  /* A read that failed is not an empty list. "No contacts." over a network
+     fault sends somebody to key in a person who is already there, so the
+     failure says what could not be loaded, what the database said, and offers
+     the one thing that helps. */
+  function failLine(box, what, why, again) {
+    box.innerHTML = '<div class="softpanel"><div class="errline">' +
+      '<b>' + esc(what) + ' could not be loaded.</b>' +
+      (why ? '<span>' + esc(why) + '</span>' : '') +
+      '<button class="btn btn-sm" data-a="retry" type="button">Try again</button></div></div>';
+    box.querySelector('[data-a="retry"]').addEventListener('click', again);
+  }
+
   function loadClients(then) {
     var box = $('crmList');
     if (!state.clients.length) skeleton(box, 6);
@@ -697,10 +709,10 @@
 
   function loadContacts() {
     var box = $('crmContacts');
-    box.innerHTML = '<div class="empty">Loading…</div>';
+    if (!box.querySelector('.crm-table')) skeleton(box, 3);
     db.from('client_contacts').select('*').eq('client_id', state.client.id)
       .order('is_primary', { ascending: false }).order('name').then(function (r) {
-        if (r.error) { box.innerHTML = '<div class="empty">Could not load contacts.</div>'; return; }
+        if (r.error) { failLine(box, 'Contacts', r.error.message, loadContacts); return; }
         var all = r.data || [];
         state.contacts = all.filter(function (c) { return !c.archived_at; });
         var gone = all.filter(function (c) { return c.archived_at; });
@@ -1004,11 +1016,11 @@
 
   function loadTouches() {
     var box = $('crmTouches');
-    box.innerHTML = '<div class="empty">Loading…</div>';
+    if (!box.querySelector('.touch')) skeleton(box, 3);
     db.from('client_touches').select('*').eq('client_id', state.client.id)
       .order('happened_at', { ascending: false }).order('created_at', { ascending: false })
       .then(function (r) {
-        if (r.error) { box.innerHTML = '<div class="empty">Could not load the log.</div>'; return; }
+        if (r.error) { failLine(box, 'Calls and visits', r.error.message, loadTouches); return; }
         var all = r.data || [];
         state.touches = all.filter(function (t) { return !t.archived_at; });
         var gone = all.filter(function (t) { return t.archived_at; });
@@ -1157,7 +1169,7 @@
 
   function loadWork() {
     var box = $('crmWorkList');
-    box.innerHTML = '<div class="empty">Loading…</div>';
+    if (!box.querySelector('.crm-table')) skeleton(box, 2);
     var c = state.client;
     var out = { sets: null, camps: null };
     var done = function () {
@@ -1290,11 +1302,11 @@
 
   function loadServices() {
     var box = $('crmServices');
-    box.innerHTML = '<div class="empty">Loading…</div>';
+    if (!box.querySelector('.crm-table')) skeleton(box, 3);
     loadCatalog(function () {
       db.from('client_services').select('*').eq('client_id', state.client.id)
         .is('archived_at', null).order('created_at').then(function (r) {
-          if (r.error) { box.innerHTML = '<div class="empty">' + esc(r.error.message) + '</div>'; return; }
+          if (r.error) { failLine(box, 'Services', r.error.message, loadServices); return; }
           state.services = r.data || [];
           paintServices();
         });
@@ -1570,9 +1582,9 @@
     var box = $('crmDocuments');
     var c = state.client;
     if (!DOCS) { box.innerHTML = ''; return; }
-    box.innerHTML = '<div class="empty">Loading…</div>';
+    if (!box.querySelector('.crm-table')) skeleton(box, 2);
     DOCS.list(c.id, function (rows, err) {
-      if (err) { box.innerHTML = '<div class="empty">' + esc(err.message || err) + '</div>'; return; }
+      if (err) { failLine(box, 'Documents', err.message || String(err), loadDocuments); return; }
       box.innerHTML = '';
       if (!rows.length) { box.innerHTML = '<div class="empty">No documents.</div>'; return; }
       var table = document.createElement('div');
