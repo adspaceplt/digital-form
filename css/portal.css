@@ -338,13 +338,9 @@ a { color: inherit; }
 .card.is-vertical .mk-phone { max-width: none; border: 0; border-radius: 0; box-shadow: none; }
 .card.is-vertical .mk-coverwrap { max-width: none; }
 
-/* Was a grey block in capitals that shouted louder than the placement it sat
-   beside. A dot and the word, at the size of the text around them. */
-.badge {
-  margin-left: auto; flex: 0 0 auto; font-size: 12px; font-weight: 500;
-  padding: 0; background: none;
-}
-.badge .status-dot { width: 7px; height: 7px; }
+/* The state hangs off the end of the card head, as it does on every row in
+   this portal. The chip shape comes from `.status`. */
+.badge { margin-left: auto; }
 
 /* Copy block under the mockup: the caption is half the deliverable. */
 .copyblock { border-top: 1px solid var(--line-soft); padding: 16px; }
@@ -1051,17 +1047,20 @@ a { color: inherit; }
 /* Status, everywhere it appears. A dot and a word, sized like the text around
    it, rather than a grey block in capitals shouting over the thing it labels.
    Colour alone never carries it: the word is always there. */
-.status-dot {
-  width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto;
-  background: currentColor; margin-right: 7px;
-}
-/* The dot carries the colour, so the word does not also need weight. */
+/* A state is a chip with a word in it, everywhere in this portal. Three
+   screens drew a coloured disc beside a word of the same colour instead: the
+   disc said nothing the word did not already say, and it was the one shape
+   this design system rules out for a status. Same component as the console
+   and the client portal now, so one vocabulary has one look. */
 .status {
-  display: inline-flex; align-items: center; font-weight: 500; white-space: nowrap;
+  display: inline-flex; align-items: center; flex: 0 0 auto; white-space: nowrap;
+  font-size: 11.5px; font-weight: 600; line-height: 1.5;
+  padding: 2px 8px; border-radius: 5px;
+  background: var(--line-soft); color: var(--ink-soft);
 }
-.status-pending  { color: var(--warn); }
-.status-approved { color: var(--ok); }
-.status-changes  { color: var(--err); }
+.status-pending  { background: var(--warn-bg); color: var(--warn); }
+.status-approved { background: var(--ok-bg);   color: var(--ok); }
+.status-changes  { background: var(--err-bg);  color: var(--err); }
 
 /* Posts already saved into the set.
 
@@ -1324,6 +1323,9 @@ a { color: inherit; }
 .cover-panel { padding: 38px 8px 34px; }
 .cover-panel h2 { font-size: 24px; font-weight: 600; letter-spacing: -.02em; margin-bottom: 10px; }
 .cover-panel p { color: var(--ink-soft); font-size: 14px; line-height: 1.65; }
+/* A cover is the whole page and its one line is the only thing to read on it,
+   so on the client pages it takes the reading size the rest of them do. */
+:root[data-face="client"] .cover-panel p { font-size: 16px; }
 .cover-panel form { margin-top: 18px; display: flex; gap: 8px; }
 .cover-panel form .input { flex: 1; min-width: 0; }
 @media (max-width: 640px) {
@@ -1938,7 +1940,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .crow-plat {
   flex: 1 1 100%; margin-top: -1px; font-size: 12px; color: var(--ink-soft);
 }
-.crow-plat > span { color: var(--ink-mute); margin-right: 3px; }
+.crow-plat > span { color: var(--ink-mute); margin-right: 6px; }
 
 /* The thing they came to click, so it looks like something to click. */
 .crow-links { grid-area: links; display: flex; gap: 6px; flex-wrap: wrap; }

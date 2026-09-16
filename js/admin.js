@@ -1896,7 +1896,7 @@
         '<span class="dfile-meta"><b>' + esc(f.name) + '</b>' +
           '<span class="dfile-status status ' +
             (f.done ? 'status-approved' : 'status-pending') + '">' +
-            '<i class="status-dot"></i>' + (f.done ? 'Imported' : 'Not imported') + '</span>' +
+            (f.done ? 'Imported' : 'Not imported') + '</span>' +
           (spec ? '<span class="muted">' + spec + '</span>' : '') +
         '</span>';
       // Drive has no thumbnail for every file. Fall back to the file type
@@ -2243,7 +2243,7 @@
              : review.decision === 'approved' ? 'approved' : 'changes';
     var word = kind === 'pending' ? 'Pending'
              : kind === 'approved' ? 'Approved' : 'Changes requested';
-    return '<span class="status status-' + kind + '"><i class="status-dot"></i>' + word + '</span>';
+    return '<span class="status status-' + kind + '">' + word + '</span>';
   }
 
   function savedRow(p, review) {

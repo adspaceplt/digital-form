@@ -759,7 +759,7 @@
           (priority && pick === 'backup' ? '<span class="tag-pri">' + esc(t().priority) + '</span>' : '') +
           (o.is_replacement ? '<span class="tag-rep">' + esc(t().replacement) + '</span>' : '') +
           (plats.length
-            ? '<span class="crow-plat"><span>' + esc(t().platformsLabel) + '</span> ' +
+            ? '<span class="crow-plat"><span>' + esc(t().platformsLabel) + '</span>' +
               esc(plats.join(' · ')) + '</span>'
             : '') +
         '</div>' +
