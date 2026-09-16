@@ -816,12 +816,17 @@
           var el = document.createElement('div');
           el.className = 'svc-row log-row';
           var actor = x.actor || '';
+          /* Main resolves stored emails to team display names with whoName().
+             Keep that resolution when present, while older deployments still
+             have a safe actor/System fallback. */
+          var actorLabel = typeof whoName === 'function' ? whoName(actor) : actor;
           el.innerHTML =
             '<time class="log-when" datetime="' + esc(x.created_at || '') + '">' + esc(activityStamp(x.created_at)) + '</time>' +
             '<span class="log-event"><b class="log-what">' + esc(logWord(x.action)) + '</b>' +
               (x.detail ? '<span class="log-detail">' + esc(x.detail) + '</span>' : '') + '</span>' +
             '<span class="log-who"><span class="log-avatar" aria-hidden="true">' +
-              esc(actorInitial(actor)) + '</span><span class="log-person">' + esc(actor || 'System') + '</span></span>';
+              esc(actorInitial(actorLabel)) + '</span><span class="log-person">' +
+              esc(actorLabel || 'System') + '</span></span>';
           t.appendChild(el);
         });
         box.innerHTML = '';

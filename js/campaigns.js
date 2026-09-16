@@ -1575,13 +1575,17 @@
           var el = document.createElement('div');
           el.className = 'svc-row log-row';
           var actor = x.actor || '';
+          /* Preserve main's email-to-name resolver through conflict merges;
+             fall back to the stored actor on older deployments. */
+          var actorLabel = typeof whoName === 'function' ? whoName(actor) : actor;
           el.innerHTML =
             '<time class="log-when" datetime="' + esc(x.created_at || '') + '">' + esc(logDate(x.created_at)) + '</time>' +
             '<span class="log-event"><b class="log-what">' +
               esc((A[x.action] || [])[0] || String(x.action || '').replace(/[._]/g, ' ')) + '</b>' +
               (x.detail ? '<span class="log-detail">' + esc(x.detail) + '</span>' : '') + '</span>' +
             '<span class="log-who"><span class="log-avatar" aria-hidden="true">' +
-              esc(actorInitial(actor)) + '</span><span class="log-person">' + esc(actor || 'System') + '</span></span>';
+              esc(actorInitial(actorLabel)) + '</span><span class="log-person">' +
+              esc(actorLabel || 'System') + '</span></span>';
           t.appendChild(el);
         });
         box.innerHTML = '';
