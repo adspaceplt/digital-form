@@ -405,6 +405,17 @@ async function walk(b, coarse, dark) {
   await (await camp.count() ? camp.first() : p.locator('#campCards .bigcard').first()).click();
   await p.waitForTimeout(700);
   await report('admin campaign head ' + tag, p, coarse);
+  /* Every pane of the command centre, because a pane nobody walks is a pane
+     whose alignment, contrast and touch targets nobody measured. */
+  const cpane = async (k) => {
+    await p.locator('#campTabs .tab[data-pane="' + k + '"]').click();
+    await p.waitForTimeout(400);
+  };
+  for (const key of ['schedule', 'deliverables', 'client', 'finance', 'activity']) {
+    await cpane(key);
+    await report('admin campaign ' + key + ' ' + tag, p, coarse);
+  }
+  await cpane('client');
   if (await p.locator('#campLock').isVisible().catch(() => false)) {
     await p.locator('#campLock').click(); await p.waitForTimeout(300);
     if (await p.locator('#lockGo').isVisible().catch(() => false)) {
@@ -414,11 +425,11 @@ async function walk(b, coarse, dark) {
   }
   // The invoice fold only exists once a creator is confirmed, which the lock
   // above has just done.
-  if (await p.locator('#invoicePanel').isVisible().catch(() => false)) {
-    await p.locator('#invoiceToggle').click(); await p.waitForTimeout(350);
+  if (!(await p.locator('#invoicePanel').evaluate(e => e.hidden).catch(() => true))) {
+    await cpane('finance');
     await report('admin campaign invoice ' + tag, p, coarse);
-    await p.locator('#invoiceToggle').click(); await p.waitForTimeout(250);
   }
+  await cpane('creators');
   if (await p.locator('.kcard .kfold').count()) { await p.locator('.kcard').first().locator('.kfold').click(); await p.waitForTimeout(300); }
   await report('admin campaign cards ' + tag, p, coarse);
   /* The panel that adds creators to a campaign runs two jobs, and was never

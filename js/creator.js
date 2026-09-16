@@ -39,6 +39,9 @@
       standDownText: 'Please contact your ADspace account manager.',
       lang: '中文',
       work: 'Your bookings',
+      /* The queue names the one that needs them, so nothing on it has to be
+         opened to find out whether it does. */
+      needsYou: 'Needs you',
       none: 'Nothing booked yet',
       noneText: 'Confirmed campaigns appear here.',
       signOut: 'Forget this device',
@@ -85,6 +88,7 @@
       standDownText: '请联系您的 ADspace 客户经理。',
       lang: 'English',
       work: '您的合作',
+      needsYou: '待您处理',
       none: '暂无合作安排',
       noneText: '合作确认后将显示在此处。',
       signOut: '退出此设备',
@@ -214,10 +218,99 @@
     $('noWorkTitle').textContent = t().none;
     $('noWorkText').textContent = t().noneText;
 
-    var box = $('workList');
-    box.innerHTML = '';
-    rows.forEach(function (b) { box.appendChild(bookingCard(b)); });
+    paintQueue(rows);
   }
+
+  /* ---- The work queue ---------------------------------------------------
+     Four bookings used to be four full cards stacked down the page, each with
+     its own upload box, and the one that needed them today was wherever it
+     happened to fall. The queue is what they have; the card under it is the
+     one they are working on, and the booking that is waiting on them is the
+     one that opens by itself. */
+  var picked = null;
+
+  function needsCreator(b) {
+    return b.state === 'pending_draft' || b.state === 'changes';
+  }
+  function liveBooking(b) {
+    return b.state !== 'withdrawn' && b.state !== 'replaced';
+  }
+  /* Ordered by what has to be done, not by when it was created: what is
+     waiting on them, then what is running, then what is over. */
+  function queueOrder(a, b) {
+    var rank = function (x) {
+      if (needsCreator(x)) return 0;
+      if (!liveBooking(x)) return 2;
+      return 1;
+    };
+    var d = rank(a) - rank(b);
+    if (d) return d;
+    return String(a.visit_date || '9999').localeCompare(String(b.visit_date || '9999'));
+  }
+
+  function pickFrom(rows) {
+    var fromHash = (location.hash || '').replace(/^#b=/, '');
+    var byHash = rows.filter(function (b) { return b.id === fromHash; })[0];
+    if (byHash) return byHash.id;
+    var mine = rows.filter(needsCreator)[0];
+    if (mine) return mine.id;
+    var live = rows.filter(liveBooking)[0];
+    return (live || rows[0] || {}).id || null;
+  }
+
+  function paintQueue(rows) {
+    var q = $('workQueue');
+    var box = $('workList');
+    q.innerHTML = '';
+    box.innerHTML = '';
+    if (!rows.length) { q.hidden = true; return; }
+
+    var order = rows.slice().sort(queueOrder);
+    if (!picked || !rows.some(function (b) { return b.id === picked; })) picked = pickFrom(order);
+
+    /* One booking is not a queue: the card is the page. */
+    q.hidden = order.length < 2;
+    if (!q.hidden) {
+      order.forEach(function (b) {
+        var title = (lang === 'zh' && b.campaign_zh) ? b.campaign_zh : b.campaign;
+        var when = b.visit_date ? fmtDate(b.visit_date) : (b.planned_publish ? fmtDate(b.planned_publish) : '');
+        var el = document.createElement('button');
+        el.type = 'button';
+        el.className = 'qrow' + (b.id === picked ? ' is-on' : '') + (liveBooking(b) ? '' : ' is-off');
+        el.setAttribute('aria-current', b.id === picked ? 'true' : 'false');
+        el.innerHTML =
+          '<span class="qrow-name">' + esc(title || '') + '</span>' +
+          (needsCreator(b) ? '<span class="tone is-warn qrow-flag">' + esc(t().needsYou) + '</span>' : '') +
+          '<span class="qrow-meta">' + esc([b.brand || '', when].filter(Boolean).join(' · ')) + '</span>';
+        el.addEventListener('click', function () {
+          if (picked === b.id) return;
+          picked = b.id;
+          try { location.hash = 'b=' + b.id; } catch (e) {}
+          paintQueue(rows);
+        });
+        q.appendChild(el);
+      });
+    }
+
+    var one = order.filter(function (b) { return b.id === picked; })[0] || order[0];
+    box.appendChild(bookingCard(one));
+  }
+
+  /* Back and Forward move between bookings, because the booking is in the
+     address and the address is what the browser remembers. */
+  window.addEventListener('hashchange', function () {
+    if (!feed || $('app').hidden) return;
+    var rows = feed.bookings || [];
+    if (!rows.length) return;
+    var want = (location.hash || '').replace(/^#b=/, '');
+    /* An empty address is not "stay where you are": it is the address the
+       page opened on, so Back off the first pick puts that pick back. */
+    if (!want) want = pickFrom(rows.slice().sort(queueOrder));
+    if (!want || want === picked) return;
+    if (!rows.some(function (b) { return b.id === want; })) return;
+    picked = want;
+    paintQueue(rows);
+  });
 
   function chip(state) {
     return '<span class="tone ' + esc(W.tone(state)) + '">' +

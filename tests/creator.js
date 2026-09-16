@@ -17,6 +17,11 @@ const SEED = `
     access_token:'CMATOK',
     deliverable:'One video', brief:'One reel at the showroom.' + String.fromCharCode(10) + 'Golden hour if you can.' });
   D.campaigns.push({ id:'cmDraft', client_id:'c1', title:'Unannounced thing', state:'draft', slots:2 });
+  /* A second live campaign for the same creator, so the work queue has more
+     than one row to order and the walk sees it. */
+  D.campaigns.push({ id:'cmB', client_id:'c1', title:'Raya Table Tents',
+    title_zh:'开斋节桌卡', state:'production', slots:2, push_format:'seeding',
+    access_token:'CMBTOK', deliverable:'One video', brief:'Unbox the tin on camera.' });
   D.campaign_options.push({ id:'oA', campaign_id:'cmA', creator_id:'k2', rate:380,
     platforms:'rednote, Instagram', state:'pending_draft', revision_round:0,
     visit_date:'2026-09-22', visit_time:'10am', visit_location:'Laman Citra showroom',
@@ -27,6 +32,8 @@ const SEED = `
     platforms:'rednote', state:'scheduled', visit_date:'2026-08-01' });
   D.campaign_options.push({ id:'oD', campaign_id:'cmDraft', creator_id:'k2', rate:300,
     platforms:'rednote', state:'confirmed' });
+  D.campaign_options.push({ id:'oE', campaign_id:'cmB', creator_id:'k2', rate:420,
+    platforms:'rednote', state:'scheduled', visit_date:'2026-10-06', planned_publish:'2026-10-12' });
   D.campaign_deliverables.push({ id:'dA', option_id:'oC', url:'https://mycdn.adspace.me/x.jpg',
     name:'cover.jpg', kind:'image', bytes:12345, round:1 });
   window.__persist();
@@ -44,6 +51,12 @@ const say = s => console.log(s);
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
   const p = await b.newPage({ viewport: { width: 1280, height: 900 } });
+  /* The campaign record is a command centre with panes now, so a section's
+     controls are in the pane that owns them. */
+  const cpane = async (k) => {
+    await p.locator('#campTabs .tab[data-pane="' + k + '"]').click();
+    await p.waitForTimeout(250);
+  };
   p.on('pageerror', e => errs.push('PAGEERROR ' + e.message));
   p.on('console', m => { if (m.type() === 'error' && !/favicon|404|ERR_/i.test(m.text())) errs.push('CONSOLE ' + m.text()); });
   await p.route('**/supabase-js*/**', r => r.fulfill({ contentType: 'application/javascript', body: STUB }));
@@ -76,6 +89,26 @@ const say = s => console.log(s);
   check('the right code opens the page', await p.locator('#app').isVisible());
   check('and it is their name on it', (await p.locator('#whoName').innerText()) === '恩比',
     await p.locator('#whoName').innerText());
+
+  /* ---- The work queue ------------------------------------------------------
+     Two live bookings, so the page is a queue and one card, not two cards
+     stacked with two upload boxes. The one waiting on them opens by itself. */
+  check('the queue lists both bookings', await p.locator('#workQueue .qrow').count() === 2,
+    String(await p.locator('#workQueue .qrow').count()));
+  check('the one waiting on them is first', (await p.locator('#workQueue .qrow').first().innerText()).includes('Laman Citra Launch'),
+    await p.locator('#workQueue .qrow').first().innerText());
+  check('and is marked as needing them', await p.locator('#workQueue .qrow .tone.is-warn').count() === 1);
+  check('one card is open, not both', await p.locator('#workList .booking').count() === 1);
+  check('and it is the one that needs them',
+    (await p.locator('#workList .booking').innerText()).includes('Laman Citra Launch'));
+  await p.locator('#workQueue .qrow').nth(1).click(); await p.waitForTimeout(400);
+  check('picking another opens it in place',
+    (await p.locator('#workList .booking').innerText()).includes('Raya Table Tents') &&
+    await p.locator('#workList .booking').count() === 1);
+  check('the booking travels in the address', p.url().indexOf('#b=') > -1, p.url());
+  await p.goBack(); await p.waitForTimeout(400);
+  check('Back returns to the booking before it',
+    (await p.locator('#workList .booking').innerText()).includes('Laman Citra Launch'), p.url());
 
   // ---- Only their own booking, and only what a creator may see ---------------
   const cards = () => p.locator('#workList .booking');
@@ -253,6 +286,7 @@ const say = s => console.log(s);
   await p.goto('http://127.0.0.1:8899/admin/?s=campaigns&campaign=cmA', { waitUntil: 'networkidle' });
   await p.evaluate(() => window.__signIn('adspacestudios@gmail.com'));
   await p.waitForTimeout(1000);
+  await cpane('creators');
   const theirs = p.locator('#creatorList .kcard').filter({ hasText: '恩比' }).first();
   await theirs.locator('.kcard-head').click();
   await p.waitForTimeout(400);
@@ -271,6 +305,7 @@ const say = s => console.log(s);
   await p.reload({ waitUntil: 'networkidle' });
   await p.evaluate(() => window.__signIn('adspacestudios@gmail.com'));
   await p.waitForTimeout(1200);
+  await cpane('creators');
   const card2 = p.locator('#creatorList .kcard').filter({ hasText: '恩比' }).first();
   // No click: a card waiting on us is open already. That is the fix.
   check('the team can release it to the client',

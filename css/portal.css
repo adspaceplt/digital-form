@@ -841,7 +841,10 @@ a { color: inherit; }
 .panel.narrow { max-width: 520px; margin-top: 48px; }
 .cards + .panel { margin-top: 24px; }
 .panel h3 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; margin-bottom: 4px; }
-.panel .hint { color: var(--ink-mute); font-size: 13px; margin-bottom: 13px; }
+/* A hint is 13px wherever it is. It was scoped to `.panel`, so the moment a
+   form moved into a sheet its hint jumped to the 14px body and came out
+   larger than the heading above it. */
+.hint { color: var(--ink-mute); font-size: 13px; margin-bottom: 13px; }
 .panel code {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
   background: var(--line-soft); padding: 1px 5px; border-radius: 4px;
@@ -2569,7 +2572,7 @@ body.is-plain .topbar { background: var(--chrome); }
   .disclosure { padding: 12px 14px; gap: 9px; flex-wrap: wrap; }
   .disclosure .muted { font-size: 12px; }
   .disclosure-body { padding: 4px 14px 16px; }
-  .panel .hint { font-size: 12.5px; line-height: 1.5; }
+  .hint { font-size: 12.5px; line-height: 1.5; }
   .subsection + .subsection { margin-top: 18px; padding-top: 16px; }
   .empty { padding: 16px 15px; }
 
@@ -3629,3 +3632,107 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   .log-row > .log-detail:empty, .log-row > .log-who:empty { display: none; }
   .crm-head.log-row { display: none; }
 }
+
+/* ---------- The campaign command centre ----------
+   One campaign is a booking desk, a schedule, a set of deliverables, a
+   conversation with the client and an invoice. All five used to be one column,
+   with the invoice above the creators and the dates inside each card. */
+
+/* What it is waiting on us for, derived on every repaint and never stored, so
+   reverting a step cannot leave it lying. */
+.camp-next {
+  margin: 8px 0 0; padding: 8px 12px;
+  border-left: 2px solid var(--warn); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--warn-bg); color: var(--warn);
+  font-size: 13px; font-weight: 600;
+}
+
+/* Four columns, not five. The pane is about 590px beside the rail, and a
+   fifth track squeezed the creator's name to two lines and pushed the state
+   header over the one before it. Where they post is on the Creators cards and
+   on Client selection, so the Schedule answers only when. */
+.sched-row { grid-template-columns: minmax(0, 1.5fr) 128px 116px 124px; }
+.sched-when { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.sched-plat, .pick-plat { font-size: 13px; color: var(--ink-mute); min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sched-state, .pick-state { min-width: 0; }
+.pick-row { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr) 96px 124px; }
+
+@media (max-width: 640px) {
+  /* Two lines: who and where they stand, then the dates under them. */
+  .sched-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "who state" "when when" "pub pub";
+    gap: 2px 10px;
+  }
+  .sched-row > .sched-who { grid-area: who; }
+  .sched-row > .sched-state { grid-area: state; }
+  .sched-row > .sched-when:nth-of-type(2) { grid-area: when; }
+  .sched-row > .sched-when:nth-of-type(3) { grid-area: pub; }
+  .pick-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "who state" "plat rate";
+    gap: 2px 10px;
+  }
+  .pick-row > .pick-who { grid-area: who; }
+  .pick-row > .pick-state { grid-area: state; }
+  .pick-row > .pick-plat { grid-area: plat; }
+  .pick-row > .svc-rate { grid-area: rate; text-align: right; }
+  .crm-head.sched-row, .crm-head.pick-row { display: none; }
+}
+
+/* What a creator handed in. One block per creator, the files as things to
+   open, the caption as the text it is. */
+.deliv { padding: 14px 15px; margin-bottom: 12px; }
+.deliv-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.deliv-head b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+.deliv-head .tone { margin-left: auto; }
+.deliv-files { display: flex; flex-direction: column; gap: 6px; }
+.deliv-file {
+  display: flex; align-items: center; gap: 10px; min-height: var(--ctl-h);
+  padding: 0 12px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--card); font-size: 13px; text-decoration: none;
+  transition: border-color var(--t-fast) var(--ease-out);
+}
+@media (hover: hover) { .deliv-file:hover { border-color: var(--ink-mute); } }
+.deliv-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deliv-kind {
+  margin-left: auto; flex: 0 0 auto;
+  font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.deliv-caption {
+  margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--line-soft);
+  font-size: 13.5px; color: var(--ink-soft); line-height: 1.55; white-space: pre-wrap;
+}
+
+/* ---------- The creator's work queue ----------
+   Four bookings used to be four full cards stacked down the page, each with
+   its own upload box, and the one that needed them today was wherever it
+   happened to fall. */
+.cwork { display: grid; align-items: start; gap: 16px; }
+@media (min-width: 900px) {
+  .cwork { grid-template-columns: minmax(240px, 1fr) minmax(0, 1.618fr); gap: 0 24px; }
+}
+.queue { display: flex; flex-direction: column; gap: 6px; }
+.qrow {
+  display: grid; align-items: center; gap: 2px 10px; width: 100%; text-align: left;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name flag" "meta meta";
+  padding: 11px 14px; border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--card);
+  transition: border-color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out);
+}
+.qrow-name {
+  grid-area: name; font-size: 14px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.qrow-flag { grid-area: flag; }
+.qrow-meta { grid-area: meta; font-size: 12.5px; color: var(--ink-mute); }
+@media (hover: hover) { .qrow:hover { background: var(--sunk); } }
+/* Chosen is a fill and a border, never a shadow, like every other selected
+   thing in this portal. */
+.qrow.is-on { background: var(--line-soft); border-color: var(--ink-mute); }
+.qrow.is-off { opacity: .6; }
+.qrow:active { transform: scale(.97); }
+@media (prefers-reduced-motion: reduce) { .qrow:active { transform: none; } }
