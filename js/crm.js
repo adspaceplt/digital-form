@@ -1202,6 +1202,11 @@
       return;
     }
     box.innerHTML = '';
+    /* One panel with rows in it, as every other section of this record is. */
+    var list = document.createElement('div');
+    list.className = 'work-list';
+    box.appendChild(list);
+    box = list;
     /* A row with no name is a row nobody can pick out, and one campaign is
        live called `0`. The record is never renamed behind anybody's back; it
        is drawn under a stand in and stays editable in Creator Campaigns. */
@@ -1228,8 +1233,12 @@
     row.type = 'button';
     row.className = 'work-row';
     row.innerHTML =
-      '<span class="work-row-name">' + esc(title) +
-        (chip ? ' <span class="tone ' + esc(chip[1] || '') + '">' + esc(chip[0]) + '</span>' : '') +
+      /* The name is what gives way when the row runs out of room; the state
+         is the one thing the row exists to tell you. Both used to sit in one
+         clipped box, so "Open for selection" came out as "Open for selectio"
+         on a phone while the name it belonged to had room to spare. */
+      '<span class="work-row-name"><span class="work-row-title">' + esc(title) + '</span>' +
+        (chip ? '<span class="tone ' + esc(chip[1] || '') + '">' + esc(chip[0]) + '</span>' : '') +
       '</span>' +
       '<span class="work-row-meta">' + esc(meta) + '</span>' +
       '<svg class="work-row-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +

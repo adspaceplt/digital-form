@@ -1759,9 +1759,16 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 .slugfield .input { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; min-width: 0; flex: 1 1 auto; }
 
+/* A sheet comes up from the floor and is as tall as what is in it. `height:
+   100%` made every one of them full screen, so a confirmation with two lines
+   and two buttons drew four hundred pixels of empty white under them. The one
+   sheet that filters keeps its own height, stated where it is built. */
 @media (max-width: 640px) {
-  .sheet { padding: 0; }
-  .sheet-card { max-height: 100vh; height: 100%; width: 100%; border-radius: 0; }
+  .sheet { padding: 0; align-items: flex-end; }
+  .sheet-card {
+    width: 100%; max-height: 92vh;
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
 }
 
 .iconbtn.is-done { color: var(--ok); background: var(--ok-bg); }
@@ -2586,12 +2593,9 @@ body.is-plain .topbar { background: var(--chrome); }
   .plink { padding: 8px 11px; font-size: 12.5px; }
   .crow-links { flex: 1 1 100%; }
 
-  /* Sheets are full-height on a phone, not a card floating in a dark room. */
-  .sheet { padding: 0; align-items: flex-end; }
-  .sheet-card {
-    width: 100%; max-height: 92vh; border-radius: var(--radius) var(--radius) 0 0;
-    padding: 18px 16px 8px;
-  }
+  /* A sheet sits on the floor of a phone rather than floating in a dark room;
+     the shape is set at 640, and this is the gutter it takes below that. */
+  .sheet-card { padding: 18px 16px 8px; }
 }
 
 /* A tap target is never smaller than a finger, whatever the width. */
@@ -2682,22 +2686,31 @@ body.is-plain .topbar { background: var(--chrome); }
 
 /* What is running for this client. A row, with the chevron that says it
    goes somewhere, because it does. */
+/* One panel with rows in it, the shape every other section of the record now
+   uses. Four bordered cards with gaps between them was a second language for
+   a list, on the one page where five other lists are tables. */
+.work-list {
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  overflow: hidden; margin-bottom: 12px;
+}
 .work-row {
   display: grid; align-items: center; gap: 2px 14px; width: 100%; text-align: left;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas: "name go" "meta go";
-  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 12px 15px; margin-bottom: 8px;
+  background: var(--card); border: 0; border-bottom: 1px solid var(--line-soft);
+  border-radius: 0; padding: 13px 15px;
 }
-.work-row:hover { border-color: var(--ink-mute); }
+.work-row:last-child { border-bottom: 0; }
+@media (hover: hover) { .work-row:hover { background: var(--sunk); } }
 /* Same rule as the cards: the state hangs off the end of the line rather than
    off the end of the name, so it is in one place down the list. */
-.work-row-name { display: flex; align-items: center; gap: 9px; }
-.work-row-name > .tone { margin-left: auto; flex: 0 0 auto; }
 .work-row-name {
-  grid-area: name; font-size: 14px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  grid-area: name; display: flex; align-items: center; gap: 9px; min-width: 0;
+  font-size: 14px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
 }
+.work-row-name > .tone { margin-left: auto; flex: 0 0 auto; }
+/* The name gives way, never the state. */
+.work-row-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .work-row-meta { grid-area: meta; font-size: 12.5px; color: var(--ink-mute); }
 .work-row-go { grid-area: go; width: 15px; height: 15px; color: var(--ink-mute); }
 
