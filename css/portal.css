@@ -193,6 +193,13 @@ body {
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
+/* 14px is the console's, and it is a departure this portal documents: a dense
+   operations tool read all day at a desk. A client reads one page once, often
+   on a phone, and is being asked to decide something on it, so the four
+   client facing pages take the 16px this standard asks for everywhere else.
+   Only what inherits moves: controls, labels and chips state their own size,
+   so the shapes are the same on both sides and only the reading text grows. */
+:root[data-face="client"] body { font-size: 16px; }
 img, video { display: block; max-width: 100%; }
 /* Author rules beat the UA [hidden] default, so state it explicitly. */
 [hidden] { display: none !important; }
@@ -1741,18 +1748,6 @@ body.is-plain .topbar { background: var(--chrome); }
 .notice span { font-size: 13px; color: var(--ink-mute); }
 
 /* ---------- Short Links ---------- */
-/* 12px under the head like every other first block: 20px was off the scale
-   and the audit reads it as a stepped section. */
-.linksbar { display: flex; align-items: center; gap: 12px; margin: 12px 0; flex-wrap: wrap; }
-.linksbar .input { flex: 1 1 240px; min-width: 0; }
-.linksbar .muted { flex: 0 0 auto; white-space: nowrap; }
-.linksbar .btn { flex: 0 0 auto; }
-@media (max-width: 760px) {
-  .linksbar .muted { order: 8; }
-  /* One action is an action, not a banner, here as in a section head. */
-  .linksbar .btn-primary { order: 10; flex: 0 0 auto; margin-left: auto; }
-}
-
 .slugfield { display: flex; align-items: stretch; }
 .slugfield-pre {
   display: inline-flex; align-items: center; padding: 0 10px; min-height: var(--ctl-h);
@@ -1762,31 +1757,7 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 .slugfield .input { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; min-width: 0; flex: 1 1 auto; }
 
-.slink {
-  display: grid; align-items: center; gap: 4px 14px;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "body actions";
-  border: 1px solid var(--line); border-radius: var(--radius);
-  background: var(--card); padding: 13px 15px; margin-bottom: 8px;
-}
-.slink-body { grid-area: body; min-width: 0; }
-.slink-slug {
-  font-weight: 600; font-size: 13.5px; letter-spacing: -.01em;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-.slink-label { font-size: 12.5px; color: var(--ink-soft); margin-left: 8px; }
-.slink-target {
-  display: block; font-size: 12.5px; color: var(--ink-mute); margin-top: 3px;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.slink-actions { grid-area: actions; display: flex; gap: 6px; align-items: center; }
-.slink.is-off { opacity: .55; }
-
 @media (max-width: 640px) {
-  .slink { grid-template-columns: 1fr; grid-template-areas: "body" "actions"; }
-  .slink-actions { justify-content: flex-end; margin-top: 8px; }
-  .linksbar { flex-wrap: wrap; }
-  .linksbar .input { flex: 1 1 100%; }
   .sheet { padding: 0; }
   .sheet-card { max-height: 100vh; height: 100%; width: 100%; border-radius: 0; }
 }
@@ -3182,7 +3153,6 @@ body > .shell { width: 100%; }
    this stops the screen offering what will be refused. */
 body.no-remove #deleteClient,
 body.no-remove #campDangerRow,
-body.no-remove .slink-actions [data-a="del"],
 body.no-remove .kmenu-item[data-a="del"].is-danger:not([data-soft]) { display: none !important; }
 body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; }
 @media (pointer: coarse) {

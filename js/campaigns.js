@@ -149,6 +149,8 @@
   }
 
   var state = { tab: 'campaigns', campaign: null, creators: [], clients: [], options: [], team: [], editing: null };
+  /* Loading, empty and failed are said one way across the console. */
+  var UI = window.ADspaceState;
 
   // ---- Tabs ---------------------------------------------------------------
   function showTab(name) {
@@ -169,11 +171,11 @@
 
   // ---- Creators list ------------------------------------------------------
   function loadRoster(then) {
+    if (!state.creators.length) UI.skeleton($('rosterList'), 4);
     db.from('creators').select('*, creator_profiles(*)').order('name').then(function (r) {
       if (r.error) {
         state.creators = [];
-        $('rosterList').innerHTML = '<div class="empty">Could not load the creators list. ' +
-          esc(r.error.message) + '</div>';
+        UI.failLine($('rosterList'), 'The creators list', r.error.message, function () { loadRoster(then); });
         return;
       }
       state.creators = r.data || [];
@@ -256,11 +258,25 @@
                 : state.creators.length + (state.creators.length === 1 ? ' creator' : ' creators'));
 
     box.innerHTML = '';
-    if (!shown.length) {
-      box.innerHTML = '<div class="empty">' +
-        (state.creators.length ? 'No matches.' : 'No creators yet.') + '</div>';
+    if (!state.creators.length) {
+      UI.emptyLine(box, 'No creators yet.', 'Add the first creator', function () {
+        $('showAddCreator').click();
+      });
       return;
     }
+    if (!shown.length) {
+      UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
+        $('rosterSearch').value = '';
+        if ($('rosterPlatform')) $('rosterPlatform').value = 'all';
+        paintRoster();
+      });
+      return;
+    }
+    /* The panel is what draws the boundary; the rows sit inside it. */
+    var table = document.createElement('div');
+    table.className = 'crm-table softpanel';
+    box.appendChild(table);
+    box = table;
     /* A creator is a person with a fee, so the row is the one this console
        uses for every list of records: name heaviest, the money next, the rest
        mute. It used to borrow the Short Links row, which set the name in the
@@ -676,8 +692,6 @@
   }
 
   var campFind = '', campStateFilter = 'all', campSums = {};
-  /* Loading, empty and failed are said one way across the console. */
-  var UI = window.ADspaceState;
 
   function loadCampaigns() {
     var box = $('campCards');
@@ -1209,8 +1223,8 @@
     // Two labelled groups of cells, the same cells as the results card.
     $('campTally').innerHTML =
       '<div class="tallygroup"><div class="kstep-title">Selection</div><div class="tally">' +
-        tallyCell('Creators', c.slots) +
-        tallyCell('Options', live.length) +
+        tallyCell(c.slots === 1 ? 'Creator' : 'Creators', c.slots) +
+        tallyCell(live.length === 1 ? 'Option' : 'Options', live.length) +
         tallyCell('Selected', chosen.length + ' of ' + c.slots) +
         (booked > c.slots
           ? '<div class="tally-cell is-warn"><b>' + booked + '</b><span>Booked · ' +
