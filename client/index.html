@@ -61,50 +61,65 @@
          manager's name was a scroll away from the letter that names them.
          Below the workspace width it is one column again, in the same order,
          because a rail on a phone is a second column of nothing. -->
-    <div class="rec cportal">
-      <aside class="rec-rail" aria-label="Your account">
-        <!-- Overview heads the facts it names, and Request change is the one
-             action on them. Left above both columns it read as a heading for
-             Services, which is the section that actually follows it. -->
-        <div class="viewhead">
-          <span class="headmark"><h2 id="ovHead">Overview</h2></span>
-          <select class="select" id="clientPick" aria-label="Company" hidden></select>
+    <!-- The page opens on who it is for. It used to start straight in on
+         Services: a client signed in and the first thing they read was a table
+         of their own line items, with their company name nowhere on the page
+         and the one action they have buried at the top of the second column.
+         The same identity area both console records open on. -->
+    <section class="panel rec-head" id="cpHead">
+      <div class="rec-id">
+        <span class="rec-mark" id="cpMark" aria-hidden="true"></span>
+        <div class="crm-title">
+          <h2 id="cpName"></h2>
+          <span class="tone" id="cpState" hidden></span>
+          <select class="select select-sm" id="clientPick" aria-label="Company" hidden></select>
           <button class="btn btn-primary" id="ovRequest" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg><span id="ovRequestWord">Request change</span></button>
         </div>
-        <section class="panel">
+        <p class="rec-id-meta" id="cpMeta"></p>
+      </div>
+    </section>
+
+    <div class="rec cportal">
+      <!-- One block per question, the way both console records carry theirs. -->
+      <aside class="rec-rail" aria-label="Your account">
+        <div class="railblock">
+          <h3 class="railtitle" id="ovHead">Overview</h3>
           <dl class="facts" id="ovFacts"></dl>
-        </section>
-        <div id="ovContacts"></div>
+        </div>
+        <div class="railblock is-last">
+          <h3 class="railtitle" id="ctHead">Contacts</h3>
+          <div id="ovContacts"></div>
+        </div>
       </aside>
       <div class="rec-pane" data-pane="all">
 
-    <div class="viewhead"><span class="headmark"><h2 id="svcHead">Services</h2></span></div>
+    <div class="viewhead"><span class="headmark"><h3 id="svcHead">Services</h3></span></div>
     <div id="svcBox"></div>
 
     <div id="rqWrap" hidden>
-      <div class="viewhead"><span class="headmark"><h2 id="rqHead">Requests</h2></span></div>
+      <div class="viewhead"><span class="headmark"><h3 id="rqHead">Requests</h3></span></div>
       <div class="undobar" id="rqUndo" hidden></div>
       <div class="msg" id="rqMsg"></div>
       <div id="rqBox"></div>
     </div>
 
-    <div class="viewhead"><span class="headmark"><h2 id="docHead">Letters</h2></span></div>
+    <div class="viewhead"><span class="headmark"><h3 id="docHead">Letters</h3></span></div>
     <div class="msg" id="docMsg"></div>
     <div id="docBox"></div>
 
     <div id="engWrap" hidden>
-      <div class="viewhead"><span class="headmark"><h2 id="engHead">Engagements</h2></span></div>
+      <div class="viewhead"><span class="headmark"><h3 id="engHead">Engagements</h3></span></div>
       <div id="engBox"></div>
     </div>
 
     <div id="payWrap" hidden>
-      <div class="viewhead"><span class="headmark"><h2 id="payHead">Payment</h2></span></div>
+      <div class="viewhead"><span class="headmark"><h3 id="payHead">Payment</h3></span></div>
       <section class="panel">
         <dl class="facts" id="payFacts"></dl>
       </section>
     </div>
 
-    <div class="viewhead"><span class="headmark"><h2 id="accHead">Portal access</h2></span></div>
+    <div class="viewhead"><span class="headmark"><h3 id="accHead">Portal access</h3></span></div>
     <div id="accBox"></div>
 
       </div>

@@ -1972,9 +1972,13 @@ body.is-plain .topbar { background: var(--chrome); }
    Determinate, because the slot count is known and fixed by the invoice. It
    leads with what is left to do; a tally alone makes the reader do the
    subtraction before they know whether to act. */
+/* Inside the summary band the progress is a section, not a second card: one
+   bounded surface, its parts divided by the hairline this system already uses
+   between the sections of a record. */
+.engage-band { padding: 16px 18px; }
+.engage-band > .booking-facts { margin-top: 0; }
 .progress-card {
-  border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
-  padding: 16px 18px; margin: 20px 0 18px;
+  padding: 16px 18px; border-top: 1px solid var(--line-soft);
 }
 .progress-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .progress-top b { font-size: 14px; font-weight: 600; }
@@ -2024,7 +2028,12 @@ body.is-plain .topbar { background: var(--chrome); }
 .crow-head > * { font-size: inherit; font-weight: inherit; letter-spacing: inherit;
   text-transform: inherit; color: inherit; }
 .crow-head .crow-plat > span { margin: 0; }
-.crow-head .crow-links { justify-content: flex-end; }
+/* Left aligned, like the two columns before it. Right aligned, the cell ended
+   at the same x but *started* wherever its contents happened to: the creator
+   with two profile buttons began at 703px and the three with one began at
+   868px, so a column built to be compared down could not be. A column starts
+   at the same x on every row or it is not a column. */
+.crow-head .crow-links { justify-content: flex-start; }
 .crow-tick-cell { grid-area: tick; }
 .crow-backup-cell { grid-area: backup; text-align: center; }
 .crow:last-child { border-bottom: 0; }
@@ -2063,7 +2072,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .crow-plat > span { color: var(--ink-mute); margin-right: 6px; }
 
 /* The thing they came to click, so it looks like something to click. */
-.crow-links { grid-area: links; display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; justify-content: flex-end; }
+.crow-links { grid-area: links; display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; justify-content: flex-start; }
 /* The thing they came to click, named in full and marked as leaving the page. */
 .plink {
   display: inline-flex; align-items: center; gap: 6px;
@@ -2431,7 +2440,7 @@ body.is-plain .topbar { background: var(--chrome); }
    invoice and the money. "Your campaign" below is then only the creators. */
 .engage-card {
   border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
-  padding: 14px 16px 8px; margin-top: 16px;
+  padding: 0; margin: 16px 0 12px;
 }
 .engage-card .booking-facts { margin: 0; }
 .engage-card .amountfold {
@@ -4128,15 +4137,27 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 @media (min-width: 900px) {
   .cwork { grid-template-columns: minmax(240px, 1fr) minmax(0, 1.618fr); gap: 0 24px; }
 }
-.queue { display: flex; flex-direction: column; gap: 6px; }
+/* The queue is one list, so it is one surface with hairlines between its rows,
+   not four floating cards with page ground showing between bookings that
+   belong to each other. The open booking beside it is the object being worked
+   on and keeps its own boundary. */
+.queue {
+  display: flex; flex-direction: column;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  overflow: hidden;
+}
 .qrow {
   display: grid; align-items: center; gap: 2px 10px; width: 100%; text-align: left;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas: "name flag" "meta meta";
-  padding: 11px 14px; border: 1px solid var(--line); border-radius: var(--radius);
-  background: var(--card);
-  transition: border-color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out);
+  padding: 12px 14px; border: 0; border-bottom: 1px solid var(--line-soft);
+  border-radius: 0; background: var(--card);
+  transition: background var(--t-fast) var(--ease-out);
 }
+.qrow:last-child { border-bottom: 0; }
+/* The one waiting on them keeps a warn edge, which is the mark this portal
+   already gives a row that needs somebody. */
+.qrow.is-waiting { border-left: 3px solid var(--warn); }
 .qrow-name {
   grid-area: name; font-size: 14px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -4146,7 +4167,14 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 @media (hover: hover) { .qrow:hover { background: var(--sunk); } }
 /* Chosen is a fill and a border, never a shadow, like every other selected
    thing in this portal. */
-.qrow.is-on { background: var(--line-soft); border-color: var(--ink-mute); }
+.qrow.is-on { background: var(--line-soft); }
+/* Inside one surface a selected row is a fill and an edge on the side it is
+   read from, never a border that would double the hairline above it. */
+.qrow.is-on::after {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--ink);
+}
+.qrow { position: relative; }
+.qrow.is-on.is-waiting::after { background: var(--warn); }
 .qrow.is-off { opacity: .6; }
 .qrow:active { transform: scale(.97); }
 @media (prefers-reduced-motion: reduce) { .qrow:active { transform: none; } }
@@ -4221,9 +4249,32 @@ body.is-canvas { overflow: hidden; }
 .rec.cportal { grid-template-areas: "pane rail"; }
 .cportal > .rec-pane > .viewhead:first-child,
 .cportal > .rec-rail > .viewhead:first-child { margin-top: 0; }
-/* The company select is a page level control, so it keeps its own width
-   rather than filling the rail. */
-.cportal .rec-rail .viewhead .select { flex: 0 0 auto; width: auto; min-width: 150px; }
+/* The company select is a page level control on the identity line, so it keeps
+   its own width rather than stretching. */
+#cpHead .crm-title .select { flex: 0 0 auto; width: auto; min-width: 150px; }
+/* The rail's blocks are flat under their eyebrow titles, so the contacts read
+   as the block's rows rather than as a card sitting inside one. A bounded
+   surface inside a bounded surface is the nested card this system rules out,
+   and it was the one thing in the rail wearing a border. */
+.cportal .rec-rail .railblock .crm-table {
+  background: none; border: 0; border-radius: 0; margin: 0;
+}
+.cportal .rec-rail .railblock .crm-head { padding-inline: 0; }
+.cportal .rec-rail .railblock .svc-row { padding-inline: 0; }
+.cportal .rec-rail .railblock .svc-row:last-child { border-bottom: 0; padding-bottom: 0; }
+/* Reach is a short list of ways to contact one person, not a row of states.
+   Four bordered pills per contact, sixteen down the block, spent the shape
+   this portal gives a status on an address and a phone number. */
+.cportal .rec-rail .crm-reach { gap: 4px 14px; }
+.cportal .rec-rail .crm-reach .plink {
+  min-height: 0; padding: 0; border: 0; background: none; border-radius: 0;
+  color: var(--ink-soft); text-decoration: underline; text-underline-offset: 2px;
+  font-size: 13px; justify-content: flex-start;
+}
+@media (hover: hover) { .cportal .rec-rail .crm-reach .plink:hover { color: var(--ink); background: none; } }
+/* A finger still gets a target: the link keeps the row's own line height and
+   the rows are 14px apart, which is the gap this portal gives stacked links. */
+@media (pointer: coarse) { .cportal .rec-rail .crm-reach .plink { min-height: 30px; align-items: center; } }
 @media (max-width: 1100px) {
   .rec.cportal { grid-template-areas: "rail" "pane"; }
 }
