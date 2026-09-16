@@ -2690,11 +2690,19 @@ body.is-plain .topbar { background: var(--chrome); }
      four words and put four actions on four lines of their own down the
      record. The heading still wraps under a wide pair of buttons. */
   .viewhead .headmark { flex: 1 1 auto; min-width: 0; }
-  .viewhead:has(.btn + .btn) .headmark { flex: 1 1 100%; }
-  /* Two actions share the line. One action is an action, not a banner: it
-     keeps its own width and sits at the end of the row. */
+  /* A hidden button is not a second action. Both `:only-of-type` and
+     `:has(.btn + .btn)` counted one, so the Creators pane — whose Bulk dates
+     button is hidden until somebody is booked — gave its heading the whole row
+     and stretched Add creators into a full width slab across the phone, which
+     is the banner this rule exists to stop. Now that the primary is a filled
+     blue that slab was the loudest thing on the screen. */
+  .viewhead:has(.btn:not([hidden]) ~ .btn:not([hidden])) .headmark { flex: 1 1 100%; }
+  /* Two visible actions share the line. One action is an action, not a banner:
+     it keeps its own width and sits at the end of the row. */
   .viewhead .btn { flex: 1 1 0; min-width: 0; }
-  .viewhead .btn:only-of-type { flex: 0 0 auto; margin-left: auto; }
+  .viewhead:not(:has(.btn:not([hidden]) ~ .btn:not([hidden]))) .btn {
+    flex: 0 0 auto; margin-left: auto;
+  }
   .viewhead .btn-sm { min-height: var(--ctl-h); font-size: var(--ctl-text); }
 
 
@@ -2944,7 +2952,14 @@ body.is-plain .topbar { background: var(--chrome); }
      no area in the template, so it took an implicit third row of its own and
      printed the same date the meta line already carried. */
   .crm-c-ind, .crm-c-mkt, .crm-c-own, .crm-c-seen { display: none; }
-  .crm-c-meta { display: block; grid-area: meta; font-size: 12.5px; }
+  /* The one line the phone gets is a summary, not a value cell, so it wraps
+     rather than being cut: "Laman Citra · 10 creators · RM 8,640.00" came out
+     as "Laman Citra · 10 creators · R…", which loses the figure that is the
+     reason the line carries it. */
+  .crm-c-meta {
+    display: block; grid-area: meta; font-size: 12.5px;
+    white-space: normal; overflow: visible; text-overflow: clip;
+  }
 }
 @media (max-width: 560px) {
   .crm-reach .plink { flex: 1 1 auto; justify-content: center; }
@@ -3527,7 +3542,8 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 /* A full width control on a phone is a slab, and a slab that shrinks reads as
    a wobble rather than a press. It dims instead. */
 @media (max-width: 640px) {
-  .viewhead .btn:only-of-type:active, .team-act .btn:active { transform: none; opacity: .72; }
+  .viewhead:not(:has(.btn:not([hidden]) ~ .btn:not([hidden]))) .btn:active,
+  .team-act .btn:active { transform: none; opacity: .72; }
 }
 
 /* A surface arrives; it does not blink into place. The menu comes from its
