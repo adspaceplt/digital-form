@@ -964,6 +964,18 @@
     return badTitle(c && c.title) ? 'Untitled campaign' : String(c.title).trim();
   }
 
+  /* What a campaign's own entry is filed under. The Activity pane reads
+     `activity_log` by subject, and every per-creator event was written under
+     the creator's name instead of the campaign's: a step moved, a shoot date
+     changed, a fee corrected — none of it reached the pane, which showed the
+     invoice and the lock and nothing else. The campaign is the subject and the
+     creator is named in the detail, which is also how it reads in the global
+     record. It is the raw title, because that is the value the pane queries
+     with. */
+  function logSubject() {
+    return (state.campaign && state.campaign.title) || '';
+  }
+
   $('addCamp').addEventListener('click', function () {
     var title = ($('campTitle').value || '').trim();
     var clientId = $('campClient').value;
@@ -1457,7 +1469,7 @@
           db.from('campaign_options').update(patch).eq('id', o.id).then(function (r) {
             if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
             Object.keys(patch).forEach(function (k) { o[k] = patch[k]; });
-            log('campaign.dates', (o.creators || {}).name || '', 'schedule updated');
+            log('campaign.dates', logSubject(), ((o.creators || {}).name || 'A creator') + ' · schedule updated');
             paintOptions();
           });
         });
@@ -1918,7 +1930,7 @@
       db.from('campaign_options').update({ rate: rate, platforms: plats.join(', ') })
         .eq('id', o.id).then(function (r) {
           if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-          log('campaign.rate', (o.creators || {}).name || '',
+          log('campaign.rate', logSubject(), ((o.creators || {}).name || 'A creator') + ' · ' +
               money(o.rate) + ' → ' + money(rate) + ' · ' + plats.join(', '));
           msg('campWorkMsg', '');
           loadOptions();
@@ -2584,7 +2596,7 @@
     if (o.state === 'changes') patch.changes_by = null;   // the round is over
     db.from('campaign_options').update(patch).eq('id', o.id).then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-      log('campaign.stage', name, 'back to ' + to);
+      log('campaign.stage', logSubject(), name + ' · back to ' + wordFor(to));
       msg('campWorkMsg', name + ': ' + wordFor(to) + '.', 'ok');
       loadOptions();
     });
@@ -2597,7 +2609,7 @@
     if (!confirm('Revert ' + name + ' to options?\n\nDates and notes are kept.')) return;
     db.from('campaign_options').update({ state: 'option' }).eq('id', o.id).then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-      log('campaign.unbooked', name, '');
+      log('campaign.unbooked', logSubject(), name);
       msg('campWorkMsg', name + ' reverted to options.', 'ok');
       loadOptions();
     });
@@ -2611,7 +2623,7 @@
       .update({ state: 'confirmed', drop_reason: null, goodwill: false })
       .eq('id', o.id).then(function (r) {
         if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-        log('campaign.reinstated', name, '');
+        log('campaign.reinstated', logSubject(), name);
         msg('campWorkMsg', name + ' reinstated.', 'ok');
         loadOptions();
       });
@@ -2634,7 +2646,7 @@
       revision_round: Math.max(o.revision_round || 0, 1) + 1
     }).eq('id', o.id).then(function (r) {
       if (r.error) { m.textContent = r.error.message; m.className = 'msg err'; return; }
-      log('campaign.stage', (o.creators || {}).name || '', 'changes requested');
+      log('campaign.stage', logSubject(), ((o.creators || {}).name || 'A creator') + ' · changes requested');
       loadOptions();
     });
   }
@@ -2645,7 +2657,7 @@
     if (o.state === 'changes') patch.changes_by = null;
     db.from('campaign_options').update(patch).eq('id', o.id).then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-      log('campaign.stage', (o.creators || {}).name || '', to);
+      log('campaign.stage', logSubject(), ((o.creators || {}).name || 'A creator') + ' · ' + wordFor(to));
       if (to !== 'posted') { loadOptions(); return; }
       seedPosts(o, function () { loadOptions(); });
     });

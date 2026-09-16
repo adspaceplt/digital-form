@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260919a">
+<link rel="stylesheet" href="/css/portal.css?v=20260920a">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,20 +28,20 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260919a"></script>
-<script src="/js/words.js?v=20260919a"></script>
-<script src="/js/copy.js?v=20260919a"></script>
-<script src="/js/state.js?v=20260919a"></script>
-<script src="/js/menu.js?v=20260919a"></script>
-<script src="/js/api.js?v=20260919a"></script>
-<script src="/js/money.js?v=20260919a"></script>
-<script src="/js/mockups.js?v=20260919a"></script>
+<script src="/js/config.js?v=20260920a"></script>
+<script src="/js/words.js?v=20260920a"></script>
+<script src="/js/copy.js?v=20260920a"></script>
+<script src="/js/state.js?v=20260920a"></script>
+<script src="/js/menu.js?v=20260920a"></script>
+<script src="/js/api.js?v=20260920a"></script>
+<script src="/js/money.js?v=20260920a"></script>
+<script src="/js/mockups.js?v=20260920a"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260919a" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260920a" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -258,6 +258,18 @@
               <h2 id="crmClientName"></h2>
               <select class="select state-select" id="crmClientStage" aria-label="Stage"></select>
               <button class="btn btn-quiet btn-sm" id="crmEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg>Edit</button>
+              <!-- Taking a client out of the working list is a stage (Paused,
+                   Past). Removing the record itself happens once in its life
+                   and cannot be undone, so it lives where every other rare and
+                   destructive action does. -->
+              <div class="kmenu-wrap" id="crmClientMenuWrap">
+                <button class="kmenu-btn" id="crmClientMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More">
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                </button>
+                <div class="kmenu" id="crmClientMenu" hidden role="menu">
+                  <button class="kmenu-item is-danger" type="button" role="menuitem" data-a="delclient">Delete client</button>
+                </div>
+              </div>
             </div>
             <p class="rec-id-meta" id="crmIdMeta"></p>
           </div>
@@ -397,15 +409,32 @@
               <div style="flex:0 0 200px"><label class="field-label" for="crmPhone">Office phone</label>
                 <input class="input" id="crmPhone" type="tel" placeholder="03-xxxx xxxx"></div>
             </div>
+            <!-- The same four handles and the same logo Content Review draws
+                 on a mockup: one row, edited in either place. They were two
+                 sets of fields on one client, so a handle corrected here left
+                 the one on the client's own post unchanged. -->
+            <!-- Two and two. Four across wrapped to three then one inside the
+                 record pane, which leaves rednote alone on a row of its own. -->
             <div class="row" style="margin-top:12px">
               <div><label class="field-label" for="crmSocialIg">Instagram</label>
-                <input class="input" id="crmSocialIg" placeholder="@handle or link"></div>
-              <div><label class="field-label" for="crmSocialFb">Facebook</label>
-                <input class="input" id="crmSocialFb" placeholder="Page link"></div>
+                <input class="input" id="crmSocialIg" placeholder="@handle"></div>
+              <div><label class="field-label" for="crmSocialFb">Facebook page</label>
+                <input class="input" id="crmSocialFb" placeholder="Page name"></div>
+            </div>
+            <div class="row" style="margin-top:12px">
               <div><label class="field-label" for="crmSocialTiktok">TikTok</label>
                 <input class="input" id="crmSocialTiktok" placeholder="@handle"></div>
               <div><label class="field-label" for="crmSocialXhs">rednote</label>
-                <input class="input" id="crmSocialXhs" placeholder="Profile link"></div>
+                <input class="input" id="crmSocialXhs" placeholder="Name"></div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <div><label class="field-label" for="crmLogo">Logo</label>
+                <div class="logorow">
+                  <span class="logopreview" id="crmLogoPreview" title="How it will look as a profile picture">
+                    <img id="crmLogoPreviewImg" alt="" hidden>
+                  </span>
+                  <input class="input" id="crmLogo" type="url" placeholder="https://"></div>
+              </div>
             </div>
             <div class="row" style="margin-top:12px">
               <div><label class="field-label" for="crmNotes">Brand notes</label>
@@ -552,6 +581,36 @@
               <button class="btn btn-quiet" id="delCancel" type="button">Cancel</button>
             </div>
             <div class="msg" id="delMsg"></div>
+          </div>
+        </div>
+
+        <!-- Deleting a client takes everything hanging off it: the people, the
+             calls, the letters, the content and the campaigns. The sheet counts
+             them from the record rather than describing them in the abstract,
+             and asks for the name because a client has no reference to type. -->
+        <div class="sheet" id="cdelSheet" hidden>
+          <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="cdelTitle">
+            <div class="sheet-head">
+              <h3 id="cdelTitle">Delete client</h3>
+              <button class="iconbtn" id="cdelClose" type="button" aria-label="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              </button>
+            </div>
+            <div class="sheet-body">
+              <p class="hint" id="cdelWhat"></p>
+              <ul class="dellist" id="cdelList"></ul>
+              <label class="field-label" for="cdelConfirm">Type the client name to confirm</label>
+              <input class="input" id="cdelConfirm" autocomplete="off" spellcheck="false" placeholder="Client name">
+              <div id="cdelCodeRow" hidden>
+                <label class="field-label" for="cdelCode" style="margin-top:12px">Delete code</label>
+                <input class="input" id="cdelCode" type="password" autocomplete="off" placeholder="Delete code">
+              </div>
+            </div>
+            <div class="sheet-foot">
+              <button class="btn btn-danger" id="cdelGo" type="button">Delete permanently</button>
+              <button class="btn btn-quiet" id="cdelCancel" type="button">Cancel</button>
+            </div>
+            <div class="msg" id="cdelMsg"></div>
           </div>
         </div>
 
@@ -1431,7 +1490,7 @@
           <div style="flex:0 0 210px">
             <label class="field-label" for="newSlug">Short link</label>
             <div class="slugfield">
-              <span class="slugfield-pre" id="slugPrefix">go.adspace.me/</span>
+              <span class="slugfield-pre" id="slugPrefix"></span>
               <input class="input" id="newSlug" placeholder="spring-launch" autocapitalize="off"
                      autocorrect="off" spellcheck="false">
             </div>
@@ -1484,7 +1543,7 @@ raya-2026        https://example.com/raya"></textarea>
 
       <div id="linkList"></div>
       <p class="routenote" id="linksNotice"><b>Not live yet.</b>
-        Links redirect once <code>go.adspace.me</code> is moved.</p>
+        Links redirect once <code id="linksHost"></code> points here.</p>
     </div>
 
   </div>
@@ -1590,10 +1649,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260919a"></script>
-<script src="/js/documents.js?v=20260919a"></script>
-<script src="/js/crm.js?v=20260919a"></script>
-<script src="/js/team.js?v=20260919a"></script>
-<script src="/js/campaigns.js?v=20260919a"></script>
+<script src="/js/admin.js?v=20260920a"></script>
+<script src="/js/documents.js?v=20260920a"></script>
+<script src="/js/crm.js?v=20260920a"></script>
+<script src="/js/team.js?v=20260920a"></script>
+<script src="/js/campaigns.js?v=20260920a"></script>
 </body>
 </html>

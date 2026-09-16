@@ -72,10 +72,64 @@ alter table public.clients add column if not exists bill_contact_email text;
 alter table public.clients add column if not exists bill_contact_phone text;
 alter table public.clients add column if not exists finance_email     text;
 alter table public.clients add column if not exists phone             text;
+/* Superseded by `handle_*` above. The brand profile and Content Review's
+   client settings were two sets of fields over one client, so a handle
+   corrected on the record left the one printed on the client's own mockup
+   untouched. The console edits `handle_*` in both places now; these columns
+   keep what they held and are no longer written. */
 alter table public.clients add column if not exists social_ig         text;
 alter table public.clients add column if not exists social_fb         text;
 alter table public.clients add column if not exists social_tiktok     text;
 alter table public.clients add column if not exists social_xhs        text;
+
+/* What a brand field was holding. A bare handle is taken as typed. A pasted
+   profile URL gives up its last path segment, but only when that segment
+   reads like a name: `instagram.com/p/DXyz` would otherwise print a route
+   fragment on a client's post, which is worse than printing nothing. */
+create or replace function public.handle_of(p_value text)
+returns text
+language plpgsql
+immutable
+set search_path = public
+as $$
+declare
+  v     text := btrim(coalesce(p_value, ''));
+  parts text[];
+  last  text;
+  ROUTE_WORDS constant text[] := array['p', 'profile', 'profiles', 'pages', 'page',
+                    'user', 'users', 'home', 'reel', 'video', 'explore', 'share'];
+begin
+  if v = '' then return null; end if;
+  if v !~* '^https?://' then return v; end if;
+
+  v := rtrim(split_part(split_part(v, '?', 1), '#', 1), '/');
+  parts := regexp_split_to_array(v, '/');
+  last := parts[array_length(parts, 1)];
+  if last is null or btrim(last) = '' then return null; end if;
+  last := ltrim(btrim(last), '@');
+
+  /* A route, not a person — either as the last segment, or as the one before
+     it, which makes the last an id: `instagram.com/p/DXyz123` is a post and
+     printing `DXyz123` on a client's own mockup is worse than printing
+     nothing and being asked for the handle. */
+  if lower(last) = any (ROUTE_WORDS) then return null; end if;
+  if array_length(parts, 1) > 1
+     and lower(ltrim(btrim(parts[array_length(parts, 1) - 1]), '@')) = any (ROUTE_WORDS)
+  then return null; end if;
+  if last !~ '^[A-Za-z0-9._-]{1,40}$' then return null; end if;
+  return last;
+end $$;
+
+-- One-time, and only where the handle is still empty, so a correction made in
+-- the console is never overwritten by a re-run.
+update public.clients set handle_ig = public.handle_of(social_ig)
+ where coalesce(btrim(handle_ig), '') = '' and public.handle_of(social_ig) is not null;
+update public.clients set handle_fb = public.handle_of(social_fb)
+ where coalesce(btrim(handle_fb), '') = '' and public.handle_of(social_fb) is not null;
+update public.clients set handle_tiktok = public.handle_of(social_tiktok)
+ where coalesce(btrim(handle_tiktok), '') = '' and public.handle_of(social_tiktok) is not null;
+update public.clients set handle_xhs = public.handle_of(social_xhs)
+ where coalesce(btrim(handle_xhs), '') = '' and public.handle_of(social_xhs) is not null;
 -- Removed from Content Review without being removed from the company list.
 alter table public.clients add column if not exists review_hidden boolean not null default false;
 
@@ -1676,7 +1730,11 @@ begin
   end if;
 end $$;
 
--- Deleting a client is the team's alone, whatever the code says.
+/* Deleting a client is the team's alone, whatever the code says, and within
+   the team it is the same authority that hard-deletes a contact, a rate card
+   line or a letter. Hiding the menu item is not access control, so the
+   capability is checked again here: a permission taken away while the sheet
+   was open is a refusal, not a deletion that already happened. */
 create or replace function public.delete_client(p_client uuid, p_code text)
 returns text
 language plpgsql
@@ -1691,6 +1749,9 @@ begin
     raise exception 'Not signed in';
   end if;
   if not public.is_team() then
+    raise exception 'Not allowed';
+  end if;
+  if not public.allowed('remove') then
     raise exception 'Not allowed';
   end if;
   select value into want from public.app_secrets where key = 'delete_code';

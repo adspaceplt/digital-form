@@ -1032,6 +1032,11 @@ a { color: inherit; }
   flex: 1 1 260px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
 }
 .linkbox .btn { flex: 0 0 auto; text-align: center; text-decoration: none; line-height: 1.5; }
+/* A chip in a row of 38px controls is the one item that is not 38px tall.
+   The row stretches its children by default, so the chip grew to the full
+   height and printed its word against the top of it, a few pixels above the
+   field and the buttons either side. */
+.linkbox .tone, .linkbox .chip, .linkbox .chip-state { flex: 0 0 auto; align-self: center; }
 .btn-wa { border-color: #25d366; color: #0f7a3d; }
 .btn-wa:hover { background: #25d366; border-color: #25d366; color: #fff; }
 
@@ -3602,7 +3607,13 @@ body > .shell { width: 100%; }
    this stops the screen offering what will be refused. */
 body.no-remove #deleteClient,
 body.no-remove #campDangerRow,
+body.no-remove #crmClientMenuWrap,
 body.no-remove .kmenu-item[data-a="del"].is-danger:not([data-soft]) { display: none !important; }
+/* What a deletion takes with it, counted from the record rather than
+   described. A list, because four facts in a sentence is a sentence nobody
+   finishes reading before pressing the button. */
+.dellist { margin: 10px 0 14px; padding-left: 18px; font-size: 13.5px; color: var(--ink-soft); }
+.dellist li { margin: 3px 0; }
 body.no-billing #crmTabs [data-needs-billing],
 body.no-billing .rec-pane[data-pane="billing"] { display: none !important; }
 /* Voiding a verified letter reverses a confirmation, so it is its own
