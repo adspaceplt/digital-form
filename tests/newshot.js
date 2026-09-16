@@ -1,4 +1,4 @@
-// Screenshots of the client record, the billing fold and the rate card at
+// Screenshots of the client record, billing details and the rate card at
 // 1280 and at 390 with a coarse pointer, with services and a document seeded.
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const fs = require('fs');
@@ -29,9 +29,8 @@ const OUT = process.argv[3] || (process.argv[2] + '/walk');
     await p.waitForTimeout(800);
     await p.locator('#crmList .crm-row').filter({ hasText: 'Laman Citra' }).click(); await p.waitForTimeout(900);
     await p.screenshot({ path: OUT + '/record-' + tag + '.png', fullPage: true });
-    await p.locator('#crmBillToggle').click(); await p.waitForTimeout(300);
+    await p.locator('#crmTabs [data-pane="billing"]').click(); await p.waitForTimeout(300);
     await p.locator('#crmBillBody').screenshot({ path: OUT + '/billing-' + tag + '.png' });
-    await p.locator('#crmBillToggle').click(); await p.waitForTimeout(200);
     if (tag === '390') { await p.locator('#navToggle').click(); await p.waitForTimeout(300); }
     await p.locator('.navitem[data-section="services"]').click(); await p.waitForTimeout(700);
     await p.screenshot({ path: OUT + '/ratecard-' + tag + '.png', fullPage: true });

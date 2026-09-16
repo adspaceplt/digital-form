@@ -1066,6 +1066,9 @@ alter table public.campaign_options add column if not exists visit_location  tex
 alter table public.campaign_options add column if not exists visit_pic       text;
 alter table public.campaign_options add column if not exists visit_pic_phone text;
 alter table public.campaign_options add column if not exists tracking_no     text;
+-- Seven days after a shoot by default. Delivery and no-visit campaigns can
+-- set the same deadline directly without inventing a shoot date.
+alter table public.campaign_options add column if not exists submission_due  date;
 
 -- Content. One deliverable per creator, so one draft link. It is a Drive URL
 -- pasted in, deliberately not an import: the content already lives in Drive
@@ -2302,6 +2305,7 @@ begin
           'visit_pic', o.visit_pic,
           'visit_pic_phone', o.visit_pic_phone,
           'tracking_no', o.tracking_no,
+          'submission_due', o.submission_due,
           'planned_publish', o.planned_publish,
           'revision_round', o.revision_round,
           'change_note', case when o.state = 'changes' then o.drop_reason end,

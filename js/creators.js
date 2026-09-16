@@ -512,6 +512,7 @@
       factsHtml +
       (o.state === 'withdrawn' ? '<div class="booking-meta">' + esc(t().unavailable) + '</div>' : '') +
       (resultsOf(posts) || '') +
+      (mine && hasDraft(o) ? draftPreview(o) : '') +
       (mine && hasDraft(o) ? '<button class="btn btn-sm btn-primary booking-cta" type="button">' +
         esc(t().reviewDraft) + '</button>' : '');
 
@@ -576,8 +577,33 @@
      nothing to open is a card the client is not being asked to decide on. */
   function hasDraft(o) { return !!(o.draft_url || (o.files || []).length); }
 
+  /* The work is visible before the decision sheet opens. A 9:16 video is the
+     main object being reviewed, not a thumbnail that asks for another tab. */
+  function draftPreview(o) {
+    var files = o.files || [];
+    var media = files.map(function (f) {
+      if (f.kind === 'video') {
+        return '<video controls playsinline preload="metadata" src="' + esc(f.url) + '"></video>';
+      }
+      if (f.kind === 'image') return '<img src="' + esc(f.url) + '" alt="" loading="lazy">';
+      return '<a class="btn btn-sm" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
+        esc(f.name || 'Open file') + '</a>';
+    }).join('');
+    return '<div class="client-draft-preview">' +
+      (media ? '<div class="client-draft-media">' + media + '</div>' : '') +
+      (o.caption ? '<div class="draft-caption"><span class="field-label">' + esc(t().captionLabel) +
+        '</span><p>' + esc(o.caption).replace(/\n/g, '<br>') + '</p></div>' : '') +
+      (o.draft_url ? '<a class="btn btn-sm" href="' + esc(absUrl(o.draft_url)) +
+        '" target="_blank" rel="noopener">' + esc(t().openDraft) + '</a>' : '') +
+      '</div>';
+  }
+
   function fileCard(f) {
     var ext = String(f.name || '').split('.').pop().toUpperCase() || 'FILE';
+    if (f.kind === 'video') {
+      return '<div class="filecard filecard-video"><video controls playsinline preload="metadata" src="' +
+        esc(f.url) + '"></video><span class="filecard-name">' + esc(f.name) + '</span></div>';
+    }
     return '<a class="filecard" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
       (f.kind === 'image'
         ? '<img src="' + esc(f.url) + '" alt="" loading="lazy">'
@@ -603,14 +629,12 @@
     $('draftByLabel').textContent = t().byLabel;
     $('draftApprove').textContent = t().approve;
     $('draftChanges').textContent = t().askChanges;
-    $('draftCancel').textContent = t().cancel;
     $('draftNote').value = '';
     msg('draftMsg', '');
     $('draftSheet').hidden = false;
   }
   function shutDraft() { $('draftSheet').hidden = true; reviewing = null; }
   $('draftClose').addEventListener('click', shutDraft);
-  $('draftCancel').addEventListener('click', shutDraft);
   $('draftSheet').addEventListener('click', function (e) {
     if (e.target === $('draftSheet')) shutDraft();
   });

@@ -2298,6 +2298,20 @@ body.is-plain .topbar { background: var(--chrome); }
   border-bottom-left-radius: calc(var(--radius) - 1px);
   border-bottom-right-radius: calc(var(--radius) - 1px);
 }
+/* The final row has two different bottom edges: its header when folded and
+   its body when open. Rounding only `*:last-child` always selected the hidden
+   body, leaving the visible folded header square. When open, merely rounding
+   the body did not clip the sunk step backgrounds inside it, so those also
+   painted square corners over the register. Keep overflow visible on the
+   card itself for its actions menu, and clip only the body that owns the
+   lower corners. */
+.bookreg .kcard:last-child.is-folded > .kcard-head {
+  border-bottom-left-radius: calc(var(--radius) - 1px);
+  border-bottom-right-radius: calc(var(--radius) - 1px);
+}
+.bookreg .kcard:last-child > .kcard-body {
+  overflow: hidden;
+}
 .kcard-lead { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .kcard-tags { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; min-width: 0; }
 .kcard-act { display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
@@ -3592,7 +3606,8 @@ body > .shell { width: 100%; }
 body.no-remove #deleteClient,
 body.no-remove #campDangerRow,
 body.no-remove .kmenu-item[data-a="del"].is-danger:not([data-soft]) { display: none !important; }
-body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; }
+body.no-billing #crmTabs [data-needs-billing],
+body.no-billing .rec-pane[data-pane="billing"] { display: none !important; }
 @media (pointer: coarse) {
   .select-sm { min-height: var(--ctl-h); }
   .perm input { width: 22px; height: 22px; }
@@ -3705,6 +3720,7 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px;
 }
 .filecard img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1; }
+.filecard-open { display: contents; color: inherit; text-decoration: none; }
 /* The kind sits under the thumbnail and shows through when the image cannot
    load, so a failed preview reads as the file it is rather than as a broken
    image mark telling a creator their work is gone. */
@@ -3810,6 +3826,32 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .hintbtn:hover { background: var(--sunk); color: var(--ink); }
 .hintbtn:active { transform: scale(.92); }
 .hinttext { font-size: 12.5px; line-height: 1.5; color: var(--ink-mute); margin: 0; }
+@media (pointer: coarse) {
+  .hintbtn { width: 44px; height: 44px; margin-top: -10px; margin-bottom: -10px; font-size: 13px; }
+}
+
+.due-countdown {
+  margin: 10px 0 0; padding: 8px 10px; border-left: 3px solid var(--action);
+  background: var(--sunk); color: var(--ink); font-size: 13px; font-weight: 600;
+}
+.due-countdown.is-late { border-color: var(--warn); background: var(--warn-bg); color: var(--warn); }
+.booking-caption { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.booking-caption p, .client-draft-preview .draft-caption p { margin: 4px 0 0; line-height: 1.55; white-space: normal; }
+.client-draft-preview { display: grid; gap: 12px; margin-top: 12px; }
+.client-draft-media {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 360px));
+  gap: 10px; align-items: start;
+}
+.client-draft-media video, .client-draft-media img {
+  width: min(100%, 360px); aspect-ratio: 9 / 16; object-fit: contain;
+  background: #000; border-radius: var(--radius-sm);
+}
+.filecard-video { width: min(100%, 360px); aspect-ratio: 9 / 16; }
+.filecard-video video { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: contain; background: #000; }
+@media (max-width: 520px) {
+  .client-draft-media { grid-template-columns: minmax(0, 1fr); }
+  .client-draft-media video, .client-draft-media img { width: 100%; max-height: 72vh; }
+}
 
 /* ==========================================================================
    SOFT PRECISION PRIMITIVES
@@ -4093,6 +4135,15 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .raildates dd.is-late { color: var(--warn); font-weight: 600; }
+.rail-date-edit {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 6px;
+  align-items: end; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft);
+}
+.rail-date-edit label {
+  grid-column: 1 / -1; font-size: 11px; font-weight: 600;
+  letter-spacing: .05em; text-transform: uppercase; color: var(--ink-mute);
+}
+.rail-date-edit .btn { min-width: 0; }
 
 .raillog { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .raillog li { display: grid; gap: 1px; font-size: 13px; min-width: 0; }
@@ -4125,6 +4176,21 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .rectabs::-webkit-scrollbar { display: none; }
 .rectabs .tab { flex: 0 0 auto; }
 .rec-pane { grid-area: pane; min-width: 0; }
+.pane-form { padding: 12px 0 0; }
+.pane-form-head { margin: 0 0 12px; }
+.camp-client-tools {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px;
+  align-items: center; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft);
+}
+.camp-client-tools .panelhead { display: none; }
+.camp-client-tools .linkbox { min-width: 0; }
+.camp-client-tools > .row { margin: 0 !important; flex-wrap: nowrap; }
+.finance-total { padding: 12px 0; border-bottom: 1px solid var(--line); margin-bottom: 12px; }
+.finance-total .railmoney { max-width: 420px; }
+@media (max-width: 760px) {
+  .camp-client-tools { grid-template-columns: minmax(0, 1fr); }
+  .camp-client-tools > .row { flex-wrap: wrap; }
+}
 /* The first block in a pane sits as far from the tabs as two blocks sit from
    each other: the law of the stack does not stop at a tab strip. */
 .rec-pane > :first-child { margin-top: 0; }
@@ -4177,25 +4243,57 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   .rec-rail .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-/* What the portal recorded about this client. Four columns, and on a phone
-   the two that matter with the rest under them. */
-.log-row { grid-template-columns: 132px minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, .9fr); }
-.log-when { font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
-.log-what { font-weight: 600; font-size: 13.5px; }
-.log-detail, .log-who { font-size: 13px; color: var(--ink-mute); min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Activity is an audit trail, not four unrelated values pushed to opposite
+   sides of a row. The event and its detail stay together; the date and actor
+   are stable, quiet columns. This selector deliberately includes the table:
+   `.is-narrow .svc-row` is the generic phone layout and must never claim this
+   component's named cells again. */
+.activity-list { overflow: hidden; }
+.activity-list .log-row {
+  grid-template-columns: 170px minmax(0, 1fr) minmax(150px, .52fr);
+  gap: 0 20px; align-items: center;
+}
+.activity-list .svc-row.log-row { min-height: 68px; padding: 13px 16px; }
+.activity-list .crm-head.log-row { min-height: 0; padding-block: 11px 9px; }
+.log-when {
+  font-size: 12.5px; line-height: 1.4; color: var(--ink-mute);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.log-event { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.log-what { font-weight: 600; font-size: 13.5px; line-height: 1.35; color: var(--ink); }
+.log-detail {
+  font-size: 13px; line-height: 1.4; color: var(--ink-mute);
+  min-width: 0; overflow-wrap: anywhere;
+}
+.log-who { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.log-avatar {
+  flex: 0 0 28px; width: 28px; height: 28px; display: grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 50%; background: var(--sunk);
+  color: var(--ink-soft); font-size: 11px; font-weight: 600; text-transform: uppercase;
+}
+.log-person {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 13px; color: var(--ink-soft);
+}
+.is-narrow .activity-list .log-row {
+  grid-template-columns: minmax(0, 1fr) minmax(110px, auto);
+  grid-template-areas: "event event" "when who";
+  gap: 9px 14px; align-items: center;
+}
+.is-narrow .activity-list .crm-head.log-row { display: none; }
+.is-narrow .activity-list .svc-row.log-row { min-height: 0; padding: 14px 15px; }
+.is-narrow .activity-list .log-event { grid-area: event; }
+.is-narrow .activity-list .log-when { grid-area: when; white-space: normal; }
+.is-narrow .activity-list .log-who { grid-area: who; justify-self: end; max-width: 100%; }
 @media (max-width: 640px) {
-  .log-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "what when" "detail detail" "who who";
-    gap: 2px 10px;
+  .activity-list .log-row {
+    grid-template-columns: minmax(0, 1fr) minmax(110px, auto);
+    grid-template-areas: "event event" "when who"; gap: 9px 14px;
   }
-  .log-row > .log-what   { grid-area: what; }
-  .log-row > .log-when   { grid-area: when; }
-  .log-row > .log-detail { grid-area: detail; white-space: normal; }
-  .log-row > .log-who    { grid-area: who; }
-  .log-row > .log-detail:empty, .log-row > .log-who:empty { display: none; }
-  .crm-head.log-row { display: none; }
+  .activity-list .crm-head.log-row { display: none; }
+  .activity-list .log-event { grid-area: event; }
+  .activity-list .log-when { grid-area: when; white-space: normal; }
+  .activity-list .log-who { grid-area: who; justify-self: end; }
 }
 
 /* ---------- The campaign command centre ----------
@@ -4216,8 +4314,12 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
    fifth track squeezed the creator's name to two lines and pushed the state
    header over the one before it. Where they post is on the Creators cards and
    on Client selection, so the Schedule answers only when. */
-.sched-row { grid-template-columns: minmax(0, 1.5fr) 128px 116px 124px; }
+.sched-row { grid-template-columns: minmax(140px, 1fr) minmax(220px, 1.1fr) 142px 142px 124px; }
 .sched-when { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.sched-edit { display: flex; align-items: center; gap: 6px; }
+.sched-edit .input { min-width: 0; padding-inline: 8px; }
+.sched-edit input[type="date"] { flex: 1 1 132px; }
+.sched-edit input[type="time"] { flex: 0 1 92px; }
 .sched-plat, .pick-plat { font-size: 13px; color: var(--ink-mute); min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sched-state, .pick-state { min-width: 0; }
@@ -4227,13 +4329,21 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 /* Two lines: who and where they stand, then the dates under them. */
 .is-narrow .sched-row {
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "who state" "when when" "pub pub";
+  grid-template-areas: "who state" "when when" "due due" "pub pub";
   gap: 2px 10px;
 }
+.is-narrow .sched-edit { align-items: stretch; flex-wrap: wrap; }
+.is-narrow .sched-edit .input { flex: 1 1 120px; }
 .is-narrow .sched-row > .sched-who { grid-area: who; }
 .is-narrow .sched-row > .sched-state { grid-area: state; }
 .is-narrow .sched-row > .sched-when:nth-of-type(2) { grid-area: when; }
-.is-narrow .sched-row > .sched-when:nth-of-type(3) { grid-area: pub; }
+.is-narrow .sched-row > .sched-when:nth-of-type(3) { grid-area: due; }
+.is-narrow .sched-row > .sched-when:nth-of-type(4) { grid-area: pub; }
+.is-narrow .sched-row > .sched-when::before {
+  flex: 0 0 72px; align-self: center; font-size: 11px; font-weight: 600;
+  letter-spacing: .05em; text-transform: uppercase; color: var(--ink-mute);
+}
+.is-narrow .sched-row > .sched-when::before { content: attr(data-label); }
 .is-narrow .pick-row {
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas: "who state" "plat rate";

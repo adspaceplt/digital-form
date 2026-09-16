@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260917d">
+<link rel="stylesheet" href="/css/portal.css?v=20260918e">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,20 +28,20 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260917d"></script>
-<script src="/js/words.js?v=20260917d"></script>
-<script src="/js/copy.js?v=20260917d"></script>
-<script src="/js/state.js?v=20260917d"></script>
-<script src="/js/menu.js?v=20260917d"></script>
-<script src="/js/api.js?v=20260917d"></script>
-<script src="/js/money.js?v=20260917d"></script>
-<script src="/js/mockups.js?v=20260917d"></script>
+<script src="/js/config.js?v=20260918e"></script>
+<script src="/js/words.js?v=20260918e"></script>
+<script src="/js/copy.js?v=20260918e"></script>
+<script src="/js/state.js?v=20260918e"></script>
+<script src="/js/menu.js?v=20260918e"></script>
+<script src="/js/api.js?v=20260918e"></script>
+<script src="/js/money.js?v=20260918e"></script>
+<script src="/js/mockups.js?v=20260918e"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260917d" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260918e" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -273,11 +273,11 @@
           <nav class="rectabs" id="crmTabs" role="tablist" aria-label="Client record">
             <button class="tab is-on" data-pane="overview" type="button" role="tab" aria-selected="true">Overview</button>
             <button class="tab" data-pane="contacts" type="button" role="tab" aria-selected="false">Contacts</button>
-            <button class="tab" data-pane="billing" type="button" role="tab" aria-selected="false">Billing</button>
+            <button class="tab" data-pane="billing" data-needs-billing type="button" role="tab" aria-selected="false">Billing</button>
             <button class="tab" data-pane="brand" type="button" role="tab" aria-selected="false">Brand</button>
             <button class="tab" data-pane="services" type="button" role="tab" aria-selected="false">Services</button>
             <button class="tab" data-pane="documents" type="button" role="tab" aria-selected="false">Documents</button>
-            <button class="tab" data-pane="activity" type="button" role="tab" aria-selected="false">Activity</button>
+            <button class="tab" data-pane="activity" data-needs-activity type="button" role="tab" aria-selected="false">Activity</button>
           </nav>
 
           <div class="rec-pane" data-pane="overview">
@@ -342,13 +342,12 @@
 
           <div class="rec-pane" data-pane="billing" hidden>
         <!-- Billing: every field an e-invoice needs, mandatory before Active. -->
-        <section class="panel panel-collapse">
-          <button class="disclosure" id="crmBillToggle" type="button" aria-expanded="false">
-            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
-            <span>Billing details</span>
+        <section class="pane-form">
+          <div class="viewhead pane-form-head">
+            <span class="headmark"><h2>Billing details</h2></span>
             <span class="muted" id="crmBillSummary"></span>
-          </button>
-          <div class="disclosure-body" id="crmBillBody" hidden>
+          </div>
+          <div id="crmBillBody">
             <div class="row" style="margin-top:14px">
               <div><label class="field-label" for="crmLegalName">Company name, as registered (capitals)</label>
                 <input class="input crm-caps" id="crmLegalName" placeholder="COMPANY NAME SDN BHD" autocapitalize="characters"></div>
@@ -386,13 +385,12 @@
 
           <div class="rec-pane" data-pane="brand" hidden>
         <!-- The brand as a thing to open and a thing to read: links, then notes. -->
-        <section class="panel panel-collapse">
-          <button class="disclosure" id="crmBrandToggle" type="button" aria-expanded="false">
-            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
-            <span>Brand profile</span>
+        <section class="pane-form">
+          <div class="viewhead pane-form-head">
+            <span class="headmark"><h2>Brand profile</h2></span>
             <span class="muted" id="crmBrandSummary"></span>
-          </button>
-          <div class="disclosure-body" id="crmBrandBody" hidden>
+          </div>
+          <div id="crmBrandBody">
             <div class="row" style="margin-top:14px">
               <div><label class="field-label" for="crmWebsite">Website</label>
                 <input class="input" id="crmWebsite" type="url" placeholder="https://"></div>
@@ -611,6 +609,12 @@
           <div class="railblock" id="crmDatesBlock" hidden>
             <h3 class="railtitle">Key dates</h3>
             <dl class="raildates" id="crmDates"></dl>
+            <div class="rail-date-edit">
+              <label for="crmSince">Client since</label>
+              <input class="input input-sm" id="crmSince" type="date">
+              <button class="btn btn-sm btn-quiet" id="crmSinceSave" type="button">Save</button>
+            </div>
+            <div class="msg" id="crmSinceMsg"></div>
           </div>
           <div class="railblock">
             <h3 class="railtitle">Details</h3>
@@ -962,6 +966,20 @@
           </div>
           <!-- The name is the handle; the purpose is what the client reads. -->
           <p class="camp-purpose" id="campPurposeLine"></p>
+        <section class="camp-client-tools" id="campClientTools">
+          <div class="panelhead"><h3>Client link</h3></div>
+          <div class="linkbox">
+            <input class="input readfield" id="campLink" readonly aria-label="Client link">
+            <button class="btn btn-icon" id="campCopy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
+            <a class="btn btn-icon" id="campOpen" target="_blank" rel="noopener">Preview
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+            </a>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn btn-go" id="campPublish" type="button">Publish to client</button>
+            <button class="btn btn-primary" id="campLock" type="button" hidden>Confirm creators</button>
+          </div>
+        </section>
           <p class="camp-next" id="campNext" hidden></p>
           <div class="msg" id="campWorkMsg"></div>
           </div>
@@ -973,10 +991,9 @@
             <button class="tab is-on" data-pane="overview" type="button" role="tab" aria-selected="true">Overview</button>
             <button class="tab" data-pane="creators" type="button" role="tab" aria-selected="false">Creators</button>
             <button class="tab" data-pane="schedule" type="button" role="tab" aria-selected="false">Schedule</button>
-            <button class="tab" data-pane="deliverables" type="button" role="tab" aria-selected="false">Deliverables</button>
             <button class="tab" data-pane="client" type="button" role="tab" aria-selected="false">Selection</button>
             <button class="tab" data-pane="finance" type="button" role="tab" aria-selected="false">Finance</button>
-            <button class="tab" data-pane="activity" type="button" role="tab" aria-selected="false">Activity</button>
+            <button class="tab" data-pane="activity" data-needs-activity type="button" role="tab" aria-selected="false">Activity</button>
           </nav>
 
           <div class="rec-pane" data-pane="overview">
@@ -1010,7 +1027,7 @@
             <div style="flex:0 0 160px"><label class="field-label" for="bulkDate">Date</label>
               <input class="input" id="bulkDate" type="date"></div>
             <div style="flex:0 0 130px"><label class="field-label" for="bulkTime">Time</label>
-              <input class="input" id="bulkTime" placeholder="2pm"></div>
+              <input class="input" id="bulkTime" type="time" aria-describedby="bulkTimeHint"><span class="field-hint" id="bulkTimeHint">Optional</span></div>
           </div>
           <div class="row" style="margin-top:14px">
             <button class="btn btn-primary" id="bulkApply" type="button">Apply</button>
@@ -1082,42 +1099,20 @@
         <div id="schedList"></div>
           </div>
 
-          <div class="rec-pane" data-pane="deliverables" hidden>
-        <div class="viewhead">
-          <span class="headmark"><h2>Deliverables</h2></span>
-        </div>
-        <!-- What each creator has handed in, gathered. The files and the
-             caption are the ones on the booking; opening the creator's card
-             shows the same rows with the actions beside them. -->
-        <div id="delivList"></div>
-          </div>
-
           <div class="rec-pane" data-pane="client" hidden>
         <div class="viewhead">
           <span class="headmark"><h2>Client selection</h2></span>
         </div>
-        <!-- The link the client opens and the two actions that move the
-             campaign between us and them, in one panel; what they chose in
-             the table under it. Two blocks, 12px apart, like every other
-             section of this console. -->
-        <section class="panel">
-          <div class="panelhead"><h3>Client link</h3></div>
-          <div class="linkbox">
-            <input class="input readfield" id="campLink" readonly aria-label="Client link">
-            <button class="btn btn-icon" id="campCopy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
-            <a class="btn btn-icon" id="campOpen" target="_blank" rel="noopener">Preview
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
-            </a>
-          </div>
-          <div class="row" style="margin-top:12px">
-            <button class="btn btn-go" id="campPublish" type="button">Publish to client</button>
-            <button class="btn btn-primary" id="campLock" type="button" hidden>Confirm creators</button>
-          </div>
-        </section>
+        <!-- The link and campaign actions stay in the identity area above;
+             this pane is only the client's offered and chosen sequence. -->
         <div id="pickList"></div>
           </div>
 
           <div class="rec-pane" data-pane="finance" hidden>
+        <section class="finance-total" id="campFinanceTotal" hidden>
+          <div class="viewhead pane-form-head"><span class="headmark"><h2>Campaign amount</h2></span></div>
+          <dl class="railmoney" id="campFinanceMoney"></dl>
+        </section>
         <!-- An invoice exists only once the client has confirmed and we have
              accepted, so the whole panel arrives with the confirmation and
              leaves again if the confirmation is reverted. -->
@@ -1167,6 +1162,10 @@
                can see it, and the facts that place it. A block leaves
                entirely when its data does not exist. -->
           <aside class="rec-rail" aria-label="Campaign facts">
+            <div class="railblock" id="campFactBlock">
+              <h3 class="railtitle">Details</h3>
+              <dl class="facts" id="campFacts"></dl>
+            </div>
             <div class="railblock" id="campPickBlock" hidden>
               <h3 class="railtitle">Selection</h3>
               <div id="campPickRail"></div>
@@ -1182,10 +1181,6 @@
             <div class="railblock" id="campLinkBlock" hidden>
               <h3 class="railtitle">Client link</h3>
               <div id="campLinkRail"></div>
-            </div>
-            <div class="railblock" id="campFactBlock">
-              <h3 class="railtitle">Details</h3>
-              <dl class="facts" id="campFacts"></dl>
             </div>
           </aside>
         </div>
@@ -1554,10 +1549,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260917d"></script>
-<script src="/js/documents.js?v=20260917d"></script>
-<script src="/js/crm.js?v=20260917d"></script>
-<script src="/js/team.js?v=20260917d"></script>
-<script src="/js/campaigns.js?v=20260917d"></script>
+<script src="/js/admin.js?v=20260918e"></script>
+<script src="/js/documents.js?v=20260918e"></script>
+<script src="/js/crm.js?v=20260918e"></script>
+<script src="/js/team.js?v=20260918e"></script>
+<script src="/js/campaigns.js?v=20260918e"></script>
 </body>
 </html>
