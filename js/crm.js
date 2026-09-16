@@ -25,6 +25,13 @@
   var restoreScroll = bridge.restoreScroll || function () {};
   var MON = window.ADspaceMoney;
 
+  function maySeeActivity() {
+    return Boolean(bridge.may && bridge.may('activity'));
+  }
+  function maySeeBilling() {
+    return Boolean(bridge.may && bridge.may('billing'));
+  }
+
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
@@ -659,6 +666,12 @@
     var same = Boolean(state.client && state.client.id === c.id);
     if (!same) { state.contacts = []; state.log = []; }
     state.client = c;
+    Array.prototype.forEach.call(document.querySelectorAll('#crmTabs [data-needs-activity]'), function (b) {
+      b.hidden = !maySeeActivity();
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#crmTabs [data-needs-billing]'), function (b) {
+      b.hidden = !maySeeBilling();
+    });
     $('crmListView').hidden = true;
     $('crmWork').hidden = false;
     $('crmClientName').textContent = c.name || '';
@@ -713,8 +726,6 @@
     $('crmBrandSummary').textContent =
       [linksOn ? linksOn + ' link' + (linksOn === 1 ? '' : 's') : '', c.brand_notes ? 'Notes' : '']
         .filter(Boolean).join(' · ') || 'Empty';
-    setOpen('crmBillToggle', 'crmBillBody', false);
-    setOpen('crmBrandToggle', 'crmBrandBody', false);
     msg('crmWorkMsg', ''); msg('crmBillMsg', ''); msg('crmBrandMsg', ''); msg('crmServiceMsg', '');
     shutContact();
     shutTouch();
@@ -724,7 +735,7 @@
     loadDocuments();
     loadRequests();
     loadTouches();
-    loadClientLog();
+    if (maySeeActivity()) loadClientLog();
     loadWork();
     showPane(restoring ? paneFromUrl() : (same ? pane : 'overview'));
     setUrl();
@@ -746,6 +757,8 @@
 
   function showPane(key) {
     if (PANES.indexOf(key) < 0) key = 'overview';
+    if (key === 'activity' && !maySeeActivity()) key = 'overview';
+    if (key === 'billing' && !maySeeBilling()) key = 'overview';
     pane = key;
     Array.prototype.forEach.call(document.querySelectorAll('#crmTabs .tab'), function (b) {
       var on = b.getAttribute('data-pane') === key;
@@ -755,14 +768,13 @@
     Array.prototype.forEach.call(document.querySelectorAll('.rec-pane'), function (el) {
       el.hidden = el.getAttribute('data-pane') !== key;
     });
-    /* A fold inside its own pane is furniture: the pane is the disclosure. */
-    if (key === 'billing') setOpen('crmBillToggle', 'crmBillBody', true);
-    if (key === 'brand') setOpen('crmBrandToggle', 'crmBrandBody', true);
     if (key === 'activity' && !(state.log || []).length) loadClientLog();
     if (key === 'overview') paintSummary();
   }
 
   Array.prototype.forEach.call(document.querySelectorAll('#crmTabs .tab'), function (b) {
+    if (b.hasAttribute('data-needs-activity')) b.hidden = !maySeeActivity();
+    if (b.hasAttribute('data-needs-billing')) b.hidden = !maySeeBilling();
     b.addEventListener('click', function () {
       if (b.getAttribute('data-pane') === pane) return;
       showPane(b.getAttribute('data-pane'));
@@ -797,16 +809,19 @@
         if (!rows.length) { box.innerHTML = '<div class="empty">No entries.</div>'; return; }
         var t = document.createElement('div');
         t.className = 'crm-table softpanel';
-        t.innerHTML = '<div class="crm-head svc-row log-row"><span>When</span><span>What</span>' +
-          '<span>Detail</span><span>Who</span></div>';
+        t.className += ' activity-list';
+        t.innerHTML = '<div class="crm-head svc-row log-row"><span>When</span><span>Activity</span>' +
+          '<span>By</span></div>';
         rows.forEach(function (x) {
           var el = document.createElement('div');
           el.className = 'svc-row log-row';
+          var actor = x.actor || '';
           el.innerHTML =
-            '<span class="log-when">' + esc(niceDate(x.created_at)) + '</span>' +
-            '<span class="log-what">' + esc(logWord(x.action)) + '</span>' +
-            '<span class="log-detail">' + esc(x.detail || '') + '</span>' +
-            '<span class="log-who">' + esc(x.actor || '') + '</span>';
+            '<time class="log-when" datetime="' + esc(x.created_at || '') + '">' + esc(activityStamp(x.created_at)) + '</time>' +
+            '<span class="log-event"><b class="log-what">' + esc(logWord(x.action)) + '</b>' +
+              (x.detail ? '<span class="log-detail">' + esc(x.detail) + '</span>' : '') + '</span>' +
+            '<span class="log-who"><span class="log-avatar" aria-hidden="true">' +
+              esc(actorInitial(actor)) + '</span><span class="log-person">' + esc(actor || 'System') + '</span></span>';
           t.appendChild(el);
         });
         box.innerHTML = '';
@@ -820,6 +835,15 @@
     var A = window.ADspaceAdmin && window.ADspaceAdmin.actionLabel;
     var hit = A && A[action];
     return (hit && hit[0]) || String(action || '').replace(/[._]/g, ' ');
+  }
+  function actorInitial(actor) {
+    var s = String(actor || 'S').trim();
+    return (s.match(/[A-Za-z0-9\u3400-\u9fff]/) || ['S'])[0].toUpperCase();
+  }
+  function activityStamp(iso) {
+    var d = new Date(iso);
+    return isNaN(d.getTime()) ? '' : niceDate(iso) + ' · ' +
+      d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   }
 
   /* ---- Identity ---------------------------------------------------------
@@ -1111,8 +1135,12 @@
     var last = live.map(function (t) { return t.happened_at; }).filter(Boolean).sort().pop();
     var nextAt = live.filter(function (t) { return t.next_action && !t.done_at && t.next_at; })
       .map(function (t) { return t.next_at; }).sort()[0];
+    var activeAt = (c.stage_log || []).filter(function (x) { return x.stage === 'active'; })
+      .map(function (x) { return x.at; }).pop();
+    if (!activeAt && c.stage === 'active') activeAt = c.stage_since || c.created_at;
     var rows = [
       ['Client since', c.created_at],
+      ['Active for', activeAt ? spanWord(daysSince(activeAt)) : ''],
       ['Last contact', last],
       ['Next follow up', nextAt]
     ].filter(function (r) { return r[1]; });
@@ -1120,10 +1148,29 @@
     box.innerHTML = rows.map(function (r) {
       var late = r[0] === 'Next follow up' && r[1] < today();
       return '<div><dt>' + esc(r[0]) + '</dt><dd' + (late ? ' class="is-late"' : '') + '>' +
-        esc(niceDate(r[1])) + '</dd></div>';
+        esc(r[0] === 'Active for' ? r[1] : niceDate(r[1])) + '</dd></div>';
     }).join('');
+    $('crmSince').value = c.created_at ? String(c.created_at).slice(0, 10) : '';
     block.hidden = false;
   }
+
+  /* Imported records may predate this portal. Their real start date is an
+     operational fact, so it can be corrected without falsifying the stage
+     clock or inventing a second stored date. */
+  $('crmSinceSave').addEventListener('click', function () {
+    var c = state.client, day = val('crmSince');
+    if (!c || !day) { msg('crmSinceMsg', 'Choose a date.', 'err'); return; }
+    var created = day + 'T00:00:00.000Z';
+    db.from('clients').update({ created_at: created }).eq('id', c.id).then(function (r) {
+      if (r.error) { msg('crmSinceMsg', r.error.message, 'err'); return; }
+      c.created_at = created;
+      var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
+      if (mine) mine.created_at = created;
+      railDates(c);
+      msg('crmSinceMsg', 'Saved.', 'ok');
+      log('client.edited', c.name, 'Client since ' + niceDate(created));
+    });
+  });
 
   /* The last few entries the portal wrote about this client. The whole record
      is one tab away; this is the excerpt, and it draws nothing at all until
@@ -1165,12 +1212,10 @@
       var missing = billingMissing(c);
       if (missing.length) {
         this.value = was;
-        /* The refusal has to land where the fix is: the Billing pane, with
-           the fold open and the first missing field focused. Opening a fold
-           that is two panes away is a message about a screen nobody is on. */
+        /* The refusal lands where the fix is, with the first missing field
+           focused instead of describing a different screen. */
         showPane('billing');
         setUrl();
-        setOpen('crmBillToggle', 'crmBillBody', true);
         msg('crmBillMsg', 'Billing details required before Active: ' + missing.join(', ') + '.', 'err');
         var first = BILLING.filter(function (f) { return missing.indexOf(f[2]) > -1; })[0];
         if (first && $(first[0])) $(first[0]).focus();
@@ -1227,7 +1272,6 @@
       var still = billingMissing(state.client);
       log('client.billing', state.client.name, still.length ? still.length + ' fields still needed' : 'complete');
       openClient(state.client);
-      setOpen('crmBillToggle', 'crmBillBody', true);
       msg('crmBillMsg', still.length
         ? 'Saved. Required before Active: ' + still.join(', ') + '.'
         : 'Saved.',
@@ -1244,7 +1288,6 @@
         Object.keys(patch).forEach(function (k) { state.client[k] = patch[k]; });
         log('client.brand', state.client.name, '');
         openClient(state.client);
-        setOpen('crmBrandToggle', 'crmBrandBody', true);
         msg('crmBrandMsg', 'Saved.', 'ok');
       });
   });
@@ -1813,25 +1856,6 @@
     row.addEventListener('click', function () { location.href = href; });
     return row;
   }
-
-  // ---- Disclosures --------------------------------------------------------
-  function disclose(toggleId, bodyId) {
-    var t = $(toggleId), b = $(bodyId);
-    if (!t || !b) return;
-    t.addEventListener('click', function () {
-      var open = b.hidden;
-      b.hidden = !open;
-      t.setAttribute('aria-expanded', String(open));
-      t.classList.toggle('is-open', open);
-    });
-  }
-  function setOpen(toggleId, bodyId, open) {
-    $(bodyId).hidden = !open;
-    $(toggleId).setAttribute('aria-expanded', String(open));
-    $(toggleId).classList.toggle('is-open', open);
-  }
-  disclose('crmBillToggle', 'crmBillBody');
-  disclose('crmBrandToggle', 'crmBrandBody');
 
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
 
