@@ -2800,8 +2800,11 @@ body.is-plain .topbar { background: var(--chrome); }
   }
   .crm-c-name  { grid-area: name; white-space: normal; }
   .crm-c-stage { grid-area: stage; justify-self: start; align-self: start; }
-  /* The three column cells give way to the one combined line. */
-  .crm-c-ind, .crm-c-mkt, .crm-c-own { display: none; }
+  /* The four column cells give way to the one combined line. Last activity
+     belongs on that line, not under it: left showing, it was a grid item with
+     no area in the template, so it took an implicit third row of its own and
+     printed the same date the meta line already carried. */
+  .crm-c-ind, .crm-c-mkt, .crm-c-own, .crm-c-seen { display: none; }
   .crm-c-meta { display: block; grid-area: meta; font-size: 12.5px; }
 }
 @media (max-width: 560px) {
@@ -3136,9 +3139,36 @@ body > .shell { width: 100%; }
 .crm-group-worth { font-size: 13px; font-weight: 600; color: var(--ink-soft); font-variant-numeric: tabular-nums; margin-left: auto; }
 .touch-actions { grid-area: del; display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
 .touch-next.is-done { color: var(--ink-mute); text-decoration: line-through; }
+/* ---------- The client register ----------
+   One continuous surface, not three floating cards. Three panels each carried
+   their own copy of the column names, put twenty four pixels of page ground
+   between rows that belong to one list, and made a client's stage something
+   you read from which card they were in rather than from the column that
+   already says it. The stages are divider rows inside the one table. */
+.crm-register { margin-bottom: 12px; }
+/* The same sub-heading the rate card, the Team page and the creators list
+   use, carrying what the separate card heads used to: the stage, the count,
+   how many have run over, and what the group is worth. */
+/* The count belongs to the stage it counts, so it sits against the name; the
+   worth ends the line, where a money column ends everywhere else. */
+.crm-band { justify-content: flex-start; gap: 8px; }
+.crm-band > span:first-of-type { font-weight: 500; }
+.crm-band-late { text-transform: none; letter-spacing: 0; }
+.crm-band-worth {
+  margin-left: auto; text-transform: none; letter-spacing: 0;
+  font-size: 12.5px; font-weight: 600; color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
 /* The client list's columns. A header row in any other table is a
    `.svc-row` and takes that row's grid, so each label sits over its column. */
-.crm-head:not(.svc-row), .crm-row { grid-template-columns: minmax(0, 2.2fr) 128px minmax(0, 1fr) 110px minmax(0, 1.1fr); }
+.crm-head:not(.svc-row), .crm-row {
+  grid-template-columns:
+    minmax(0, 1.9fr) 128px minmax(0, .9fr) 104px minmax(0, 1fr) 104px 18px;
+}
+.crm-c-seen { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+/* The mark that says the row goes somewhere, in the column the header leaves
+   empty — the same chevron an engagement row on the record already uses. */
+.crm-c-go { width: 15px; height: 15px; color: var(--ink-mute); justify-self: end; }
 /* Restated after the desktop template above, or the five columns win on a
    phone and the name is squeezed to a letter. The state track is fixed here
    too: this rule is the later one, so an `auto` here undid the column the
@@ -3151,6 +3181,12 @@ body > .shell { width: 100%; }
    and the row it heads leaves with it. */
 @media (max-width: 760px) {
   .crm-head:not(.svc-row), .crm-row { grid-template-columns: minmax(0, 1fr) 120px; }
+  /* A compact record row, not a stacked card: who they are over what we know,
+     the state over how long it has stood there. The chevron leaves with the
+     columns — the whole row is the target at this width. */
+  .crm-c-go { display: none; }
+  .crm-band { padding-right: 15px; }
+  .crm-band-worth { font-size: 12px; }
 }
 
 /* ---------- Team ----------
@@ -3619,6 +3655,9 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
    each other: the law of the stack does not stop at a tab strip. */
 .rec-pane > :first-child { margin-top: 0; }
 .rec-pane > .viewhead:first-child { margin-top: 12px; }
+/* The summary carries no heading of its own, so the card itself takes that
+   step off the tab strip. */
+#crmSummary:first-child { display: block; margin-top: 12px; }
 .rec-rail { grid-area: rail; min-width: 0; }
 .rec-rail > .facts { margin: 0 0 12px; }
 /* A 320px rail is two columns of facts, not six. */
@@ -3849,4 +3888,62 @@ body.is-canvas { overflow: hidden; }
 .cportal .rec-rail .viewhead .select { flex: 0 0 auto; width: auto; min-width: 150px; }
 @media (max-width: 1100px) {
   .rec.cportal { grid-template-areas: "rail" "pane"; }
+}
+
+/* ---------- The record's Summary ----------
+   Overview used to be the Engagements list, and for a lead nothing at all:
+   the pane you land on had less on it than any other. Sections and dividers,
+   never a row of decorative number tiles — this is one client, not a board. */
+.sumcard {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); overflow: hidden; margin-bottom: 12px;
+}
+.sumrow {
+  display: grid; align-items: baseline; gap: 4px 16px;
+  grid-template-columns: 120px minmax(0, 1fr) auto;
+  padding: 13px 15px; border-bottom: 1px solid var(--line-soft);
+}
+.sumrow:last-child { border-bottom: 0; }
+.sumrow-label {
+  font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.sumrow-body {
+  min-width: 0; display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap;
+  font-size: 13.5px; color: var(--ink-soft);
+}
+.sumrow-body b { font-weight: 600; color: var(--ink); }
+.sumrow-go { flex: 0 0 auto; align-self: center; }
+.sumdot { color: var(--line-ctl); }
+.summeta { font-size: 12.5px; color: var(--ink-mute); }
+/* An empty section is a line saying what would fill it, beside the way to do
+   it — not a dashed box and not a sentence explaining what the section is. */
+.sumnone { color: var(--ink-mute); }
+/* Two entries stacked inside one row, each reading as one line. */
+.sumline { flex: 1 1 100%; display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+.sumtext {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  color: var(--ink-soft);
+}
+.sumring { display: inline-flex; align-items: center; gap: 7px; }
+.sumrow .ringline { gap: 6px; }
+
+@media (max-width: 640px) {
+  /* The label sits over what it names, and the way in ends the row beside it.
+     Putting the button on the label's line instead read as label, button,
+     then the thing they were both about: the row said "NEXT — Add a line"
+     and only underneath "No service lines.", which is the answer printed
+     after the action it explains. */
+  .sumrow {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "label label" "body go";
+    align-items: center; gap: 4px 10px; padding: 12px 15px;
+  }
+  .sumrow > .sumrow-label { grid-area: label; }
+  .sumrow > .sumrow-body { grid-area: body; }
+  .sumrow > .sumrow-go { grid-area: go; align-self: center; }
+  /* A separator that lands at the end of a wrapped line reads as a typo, so
+     on a phone it is the break itself. */
+  .sumsplit { flex: 1 1 100%; height: 0; overflow: hidden; margin: 0; }
+  .sumtext { white-space: normal; }
 }

@@ -239,11 +239,33 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   check('Overview is the default, so it stays out of the address',
     p.url().indexOf('tab=') < 0, p.url());
 
-  // the list is grouped: leads on top, active below
+  /* One register, not three floating cards: one surface, one header, and the
+     stages as labelled divider rows inside it. Three panels repeated the
+     column names three times and put page ground between rows that belong to
+     one list. */
   await p.locator('#crmBack').click(); await p.waitForTimeout(600);
-  const groups = await p.locator('.crm-group-head h3').allInnerTexts();
-  console.log('  groups: ' + groups.map(g => g.replace(/\n/g, ' ')).join(' / '));
+  check('the register is one surface', await p.locator('#crmList .crm-register').count() === 1,
+    String(await p.locator('#crmList .crm-register').count()));
+  check('with one shared header', await p.locator('#crmList .crm-head').count() === 1,
+    String(await p.locator('#crmList .crm-head').count()));
+  check('and no separate panel per stage', await p.locator('#crmList .crm-group').count() === 0);
+  /* innerText would come back shouting: the band is uppercased in CSS. */
+  const groups = await p.locator('#crmList .crm-band')
+    .evaluateAll(els => els.map(e => e.textContent.replace(/\s+/g, ' ').trim()));
+  console.log('  bands: ' + groups.map(g => g.replace(/\n/g, ' ')).join(' / '));
   check('leads sit above active clients', groups[0].indexOf('Leads') === 0 && groups.some(g => g.indexOf('Active') === 0));
+  check('the bands are inside the register',
+    await p.locator('#crmList .crm-register > .crm-band').count() === groups.length);
+  const cols = await p.locator('#crmList .crm-head span')
+    .evaluateAll(els => els.map(e => e.textContent.trim()));
+  check('the header names every column',
+    cols.slice(0, 6).join(',') === 'Client,Stage,Industry,Value,Person in charge,Last activity',
+    cols.join(','));
+  check('and leaves the last one empty, over the mark that says a row opens',
+    cols.length === 7 && cols[6] === '');
+  check('a row is one control, so the whole of it opens the client',
+    await p.locator('#crmList .crm-row').first().evaluate(el =>
+      el.tagName === 'BUTTON' && el.querySelectorAll('button, a, input, select').length === 0));
 
   // the registered name is kept in capitals
   await p.locator('.crm-row').filter({ hasText: 'Star Living' }).click(); await p.waitForTimeout(700);
@@ -496,7 +518,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
     await p.evaluate(() => { const c = window.__DB.clients.find(c => c.name === 'Star Living'); return c.social_ig === '@starliving' && /family/.test(c.brand_notes); }));
   check('the head shows the link', await p.locator('#crmLinks .plink').count() >= 1);
   await p.locator('#crmBack').click(); await p.waitForTimeout(800);
-  check('the pipeline group carries its value', (await p.locator('.crm-group-worth').first().innerText()).includes('70,940'));
+  check('the stage band carries its value', (await p.locator('.crm-band-worth').first().innerText()).includes('70,940'));
   check('next actions are gathered at the top of the list', await p.locator('#crmDue').isVisible() &&
     (await p.locator('.due-row').count()) >= 1);
   check('the overdue one is marked', await p.locator('.due-row.is-due').count() >= 1);
@@ -532,7 +554,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
     await p.waitForTimeout(900);
   };
   const rowOf = n => p.locator('.crm-row', { hasText: n }).first();
-  const groupOf = n => p.locator('.crm-group', { hasText: n }).first();
+  const groupOf = n => p.locator('.crm-band', { hasText: n }).first();
 
   await age('Star Living', 'lead', 40);
   check('a lead inside 48 hours is not marked', !/Overdue/.test(await rowOf('Star Living').innerText()));

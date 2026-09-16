@@ -442,7 +442,49 @@ row, including the rows that **had** a figure — the desktop column drew the
 money and the phone line threw it away for its sign. A fact that is not known
 is left out; the line carries the value when there is one and two facts when
 there is not. Counting the atoms in a row is the test for "too many messages":
-name, state, age, and two or three meta facts is the ceiling.
+name, state, age, and two or three meta facts is the ceiling. **A missing value
+in a column takes the mark its neighbours take, never a sentence.** The Last
+activity column wrote "No calls yet" on all seven rows of a list where almost
+nobody has been called: a sentence repeated seven times where one character
+says it, under a heading that has already said what the cell is. The Industry
+cell beside it was already using a mute em dash, so that is what the cell takes.
+A null marker in a table cell is a convention, not copy, and is the one place
+the no-dashes rule does not reach.
+
+**A list is one surface, and the groups inside it are dividers.** Leads, Active
+clients and Paused and past were three floating panels, each carrying its own
+copy of the same five column headings, with 24px of page ground between rows
+that belong to one list and the third group pushed under the fold. A stage was
+then something you read from which card a client sat in, rather than from the
+column that already says it. One table, one header, and the groups as the
+`.svc-cat` sub-heading this portal already uses on the rate card, the Team page
+and the creators list. The test is whether two rows in different groups are
+still the same kind of thing: where they are, the groups are headings inside
+one table; where they are not, they are separate tables.
+
+**A whole row that opens a record is one control, with nothing inside it.** The
+register row is a `<button>` carrying only spans, so the whole of it is the
+target from a pointer and from the keyboard, there is no control nested in
+another control for a screen reader to trip over, and the chevron at the end is
+a mark rather than a second thing to press.
+
+**A phone template names every cell it keeps, and hides the rest.** A cell left
+showing with no area in `grid-template-areas` is not laid out, it is placed in
+an implicit row of its own: Last activity took a third line under every row and
+printed the same date the meta line already carried. Adding a column to a table
+is two edits, the desktop track and the phone template, and the second is the
+one that is forgotten.
+
+**A control in an empty state has to survive the repaint that pressing it
+causes.** Filtering the clients list to nothing and pressing Clear the filters
+did nothing at all: `input` and `change` both fire for one keystroke, and the
+second of them arrives on **blur**, so focusing the button made the search box
+fire `change` with the value it already had, the list repainted, and the button
+was detached between mousedown and click. A list repaints when its filter has
+actually changed and not otherwise. Two lessons: one control never carries two
+listeners that do the same work, and a test drives a control the way a person
+does — a dispatched `click` on the node the test is holding cannot see this,
+because the node a person presses is the one that was there a frame earlier.
 
 **A list long enough to scroll needs a way to cut it and somewhere to be
 inside it.** Four hundred creators as one flat run of identical rows is a list

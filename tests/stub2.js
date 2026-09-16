@@ -111,6 +111,11 @@
     var rows = (DB[table] || []).slice();
     var sel = '', single = false, pending = null, mode = null;
     var api = {};
+    /* A read the database refuses. Every list in the console has a failed
+       state and none of them was ever driven, because nothing here could say
+       no: `window.__failRead = { clients: 'permission denied' }` is how a
+       suite reaches that screen. */
+    if (window.__failRead && window.__failRead[table]) api.__err = { message: window.__failRead[table] };
     api.select = function (s) { sel = s || '*'; return api; };
     api.order = function () { return api; };
     api.limit = function () { return api; };
@@ -195,6 +200,12 @@
       var out = api.__err
         ? { data: null, error: api.__err }
         : { data: single ? (hydrate(table, rows, sel)[0] || null) : hydrate(table, rows, sel), error: null };
+      /* A read that takes a moment, so the loading state is a screen somebody
+         can actually be shown. Resolved in a microtask, every list in the
+         console painted its skeleton and replaced it in the same frame, and
+         the state nobody could reach was the state nobody checked. */
+      var wait = window.__slowRead && window.__slowRead[table];
+      if (wait) return new Promise(function (go) { setTimeout(function () { go(out); }, wait); }).then(ok, bad);
       return Promise.resolve(out).then(ok, bad);
     };
     return api;
