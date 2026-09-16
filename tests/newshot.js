@@ -27,7 +27,7 @@ const OUT = process.argv[3] || (process.argv[2] + '/walk');
       window.__signIn('adspacestudios@gmail.com');
     });
     await p.waitForTimeout(800);
-    await p.locator('.crm-row').filter({ hasText: 'Laman Citra' }).click(); await p.waitForTimeout(900);
+    await p.locator('#crmList .crm-row').filter({ hasText: 'Laman Citra' }).click(); await p.waitForTimeout(900);
     await p.screenshot({ path: OUT + '/record-' + tag + '.png', fullPage: true });
     await p.locator('#crmBillToggle').click(); await p.waitForTimeout(300);
     await p.locator('#crmBillBody').screenshot({ path: OUT + '/billing-' + tag + '.png' });

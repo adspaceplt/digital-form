@@ -394,7 +394,9 @@ a { color: inherit; }
   border-radius: 8px; padding: 0 12px; min-height: var(--ctl-h); font-size: 12px;
   color: var(--ink-soft);
 }
-.copy-btn:hover { border-color: var(--ink); color: var(--ink); }
+@media (hover: hover) {
+  .copy-btn:hover { border-color: var(--ink); color: var(--ink); }
+}
 
 /* ---------- Approval ---------- */
 .approve { border-top: 1px solid var(--line-soft); padding: 14px 16px; }
@@ -414,7 +416,15 @@ a { color: inherit; }
   text-decoration: none;
 }
 .btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
-.btn:hover { border-color: var(--ink); color: var(--ink); }
+/* Inside `@media (hover: hover)`, which is where this portal puts every hover
+   state so a phone cannot leave one stuck on the last thing tapped. Left
+   outside it, a tapped `.btn` kept `.btn:hover` — and `.btn:hover` outranks
+   `.btn-primary`, so the moment the primary became a blue fill the ink text
+   this rule sets landed on it: 2.72:1 on a touch device, on the one button in
+   the view. The bug was always there; only the colours made it visible. */
+@media (hover: hover) {
+  .btn:hover { border-color: var(--ink); color: var(--ink); }
+}
 /* Approve is the action we want the client to take, so it carries the weight.
    Request changes stays available but visually quiet. Blue while it is still a
    decision to make; the settled state below is green, because by then it is no
@@ -1286,8 +1296,10 @@ a { color: inherit; }
 .btn-sm { flex: 0 0 auto; padding: 0 13px; min-height: var(--ctl-h-sm); font-size: 12.5px; min-width: 92px; }
 .btn-sm svg { width: 13px; height: 13px; }
 .btn-danger { background: var(--err-solid); border-color: var(--err-solid); color: var(--on-err); flex: 0 0 auto; }
-.btn-danger:hover { background: var(--err-solid); border-color: var(--err-solid);
-  color: var(--on-err); filter: brightness(.88); }
+@media (hover: hover) {
+  .btn-danger:hover { background: var(--err-solid); border-color: var(--err-solid);
+    color: var(--on-err); filter: brightness(.88); }
+}
 .btn-icon { display: inline-flex; align-items: center; gap: 7px; }
 .btn-icon svg { width: 14px; height: 14px; }
 .dangerrow { display: flex; gap: 10px; align-items: center; }
@@ -1415,10 +1427,14 @@ a { color: inherit; }
 .btn-go:active { background: var(--action-pressed); border-color: var(--action-pressed); color: var(--on-action); }
 
 .btn-warn { background: var(--card); border-color: var(--warn); color: var(--warn); flex: 0 0 auto; }
-.btn-warn:hover { background: var(--warn-solid); border-color: var(--warn-solid); color: var(--on-warn); }
+@media (hover: hover) {
+  .btn-warn:hover { background: var(--warn-solid); border-color: var(--warn-solid); color: var(--on-warn); }
+}
 
 .btn-quiet { background: none; border-color: transparent; color: var(--ink-mute); flex: 0 0 auto; }
-.btn-quiet:hover { background: var(--line-soft); border-color: transparent; color: var(--ink); }
+@media (hover: hover) {
+  .btn-quiet:hover { background: var(--line-soft); border-color: transparent; color: var(--ink); }
+}
 .btn-quiet.is-danger { color: var(--err); }
 .btn-quiet.is-danger:hover { background: var(--err-bg); color: var(--err-hi); }
 
@@ -2194,7 +2210,12 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 .bookreg-head, .bookreg .kcard-head {
   display: grid; align-items: center; gap: 0 12px;
-  grid-template-columns: 44px minmax(0, 1.05fr) minmax(0, 1.25fr) var(--state-w) 82px;
+  /* Measured against the pane beside a rail at 1280, which is 591px: 44 for
+     the number, 124 for the widest step chip ("Changes requested"), 82 for the
+     two actions and 48 of gaps leaves 293 for the name and the summary. The
+     summary takes the larger share, because a creator's name is short and
+     "2 files · 22 Sept 2026, 10am" is not. */
+  grid-template-columns: 44px minmax(0, .9fr) minmax(0, 1.4fr) var(--state-w) 82px;
 }
 .bookreg-head {
   padding: 12px 14px 8px;

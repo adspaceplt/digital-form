@@ -1932,7 +1932,11 @@
                   '<input class="input pickrate" type="number" min="0" step="10" ' +
                   'aria-label="Rate for ' + esc(c.name) + ' on this campaign" value="' +
                   (c.client_rate || '') + '" placeholder="rate"></span>' +
-                  '<button class="btn btn-sm btn-primary" type="button">Add</button></span>');
+                  /* Neutral, not the filled action: this is one button per
+                     addable row, so a list of twenty creators drew twenty
+                     filled slabs and the panel's own primary — the one that
+                     actually finishes the job — had nothing left to be. */
+                  '<button class="btn btn-sm" type="button">Add</button></span>');
       if (!inCamp) {
         /* Ticking a platform this creator has no link for used to mean leaving
            the campaign, opening the creators list, adding the link, and coming
@@ -2204,13 +2208,17 @@
     /* Folded, the card is one line: the date, the platforms, the money. A card
        waiting on us leads with what arrived, because how much was sent is the
        first thing anybody wants to know before opening it. */
+    /* Four facts in one cell needed 280px and the column is 178: the line was
+       cut mid-figure, so the money a booking is worth read as "RM 8,0". Where
+       they post and what they cost are columns on the Overview's Bookings
+       table and rows in the Terms step one click below this, so the summary
+       carries what only it can: how much has arrived, and when the work is. */
     var waitFiles = (state.files && state.files[o.id]) || [];
     var sum = live ? [
       waiting && waitFiles.length
         ? waitFiles.length + ' file' + (waitFiles.length === 1 ? '' : 's') : '',
       o.visit_date ? niceDate(o.visit_date) + (o.visit_time ? ', ' + o.visit_time : '')
-                   : visitWord() + ' TBC',
-      plats, money(o.rate)
+                   : visitWord() + ' TBC'
     ].filter(Boolean).join(' · ') : '';
 
     /* The head is a register row: five stable cells on a stated grid, so the

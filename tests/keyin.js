@@ -25,7 +25,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   await p.evaluate(() => window.__signIn('adspacestudios@gmail.com'));
   await p.waitForTimeout(400);
   await p.locator('.navitem[data-section="campaigns"]').click(); await p.waitForTimeout(400);
-  await p.locator('#campCards .bigcard').first().click(); await p.waitForTimeout(600);
+  await p.locator('#campCards .crm-row').first().click(); await p.waitForTimeout(600);
   await cpane('client');
   console.log('lock hidden with nothing shortlisted:', await p.locator('#campLock').isHidden());
   await cpane('creators');

@@ -19,7 +19,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   await p.evaluate(() => window.__signIn('adspacestudios@gmail.com'));
   await p.waitForTimeout(400);
   await p.locator('#navToggle').click(); await p.waitForTimeout(400); await p.locator('.navitem[data-section="campaigns"]').click(); await p.waitForTimeout(400);
-  await p.locator('#campCards .bigcard').first().click(); await p.waitForTimeout(700);
+  await p.locator('#campCards .crm-row').first().click(); await p.waitForTimeout(700);
   await p.locator('#campWork > section.panel').first().screenshot({ path: process.argv[2] + '/head-390.png' });
   await b.close(); console.log('shots written'); return;
   await p.locator('#addOptionBox').screenshot({ path: process.argv[2] + '/addbox-390.png' });

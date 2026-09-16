@@ -406,8 +406,8 @@ async function walk(b, coarse, dark) {
   await report('admin campaigns ' + tag, p, coarse);
   // The campaign with someone waiting to be confirmed, so the walk sees the
   // confirm sheet and the invoice that follows it.
-  const camp = p.locator('#campCards .bigcard', { hasText: 'Promote New Launch' });
-  await (await camp.count() ? camp.first() : p.locator('#campCards .bigcard').first()).click();
+  const camp = p.locator('#campCards .crm-row', { hasText: 'Promote New Launch' });
+  await (await camp.count() ? camp.first() : p.locator('#campCards .crm-row').first()).click();
   await p.waitForTimeout(700);
   await report('admin campaign head ' + tag, p, coarse);
   /* Every pane of the command centre, because a pane nobody walks is a pane
