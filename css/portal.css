@@ -2722,19 +2722,6 @@ body.is-plain .topbar { background: var(--chrome); }
 .crm-title h2 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; flex: 1 1 auto; min-width: 0; }
 .crm-title .btn { flex: 0 0 auto; margin-left: auto; }
 
-/* Search, filters, count and the one action on a single line: everything that
-   changes what the list shows lives in one place. */
-.crm-bar { align-items: center; }
-.crm-bar .count { margin-left: auto; }
-.crm-bar .btn-primary { flex: 0 0 auto; }
-@media (max-width: 760px) {
-  .crm-bar .count { margin-left: 0; order: 9; }
-  /* One action is an action, not a banner. Stretched across the screen it
-     outweighed every client on the list under it, and it is the list a
-     person came to read. It keeps its own width at the end of the row. */
-  .crm-bar .btn-primary { order: 10; flex: 0 0 auto; margin-left: auto; }
-}
-
 /* A checkbox with its label, sized to be tapped rather than aimed at. */
 .tickline {
   display: inline-flex; align-items: center; gap: 9px; cursor: pointer;
@@ -2819,6 +2806,10 @@ body > .shell { width: 100%; }
 
 /* ---------- CRM: groups, links, the gate, the log ---------- */
 .crm-group { margin-bottom: 24px; }
+/* The group is one block, so the table inside it does not add its own 12px
+   on top of the 24 that separates two groups: 36px read as a section that
+   had lost its heading. */
+.crm-group > .crm-table:last-child { margin-bottom: 0; }
 .crm-group-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
 .crm-group-head h3 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 .crm-group-head h3 span { font-weight: 500; color: var(--ink-mute); margin-left: 4px; }
@@ -3116,6 +3107,11 @@ body > .shell { width: 100%; }
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 12px 0 4px;
 }
+/* Soft Precision: the panel draws the boundary, so the table inside stops
+   drawing a second one and stops padding the top — the header row has its
+   own, and two of them read as a blank band above the first column name. */
+.team-table.softpanel { border: 0; padding: 0; }
+.team-table.softpanel > .team-head { padding-top: 12px; }
 /* Members: who they are and whether they are working. Which group is the
    heading they sit under, so the row does not repeat it. */
 .team-head, .team-row {
@@ -3431,8 +3427,10 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   /* Never full width. An action stretched across a phone is the heaviest
      thing on the screen, sitting on top of the records somebody came to
      read; this portal's section heads have refused that for months. */
-  .cmdbar .btn { flex: 0 0 auto; }
-  .cmdbar-count { order: 9; width: 100%; margin-left: 0; }
+  .cmdbar .btn { flex: 0 0 auto; order: 10; margin-left: auto; }
+  /* The count shares the action's line rather than taking one of its own: a
+     phone spends four rows on the bar before the first record otherwise. */
+  .cmdbar-count { order: 9; margin-left: 0; }
 }
 
 /* A bounded section, softly. One 1px hairline and a 14px corner, no shadow:
@@ -3510,4 +3508,31 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   .link-row > .link-label  { grid-area: label; }
   .link-row > .link-label:empty { display: none; }
   .crm-head.link-row { display: none; }
+}
+
+/* The members row. The address used to sit under the name inside a track that
+   took the whole width, so a four hundred pixel column held two short lines
+   and the ⋯ was marooned at the far edge. It is a column of its own now. */
+.team-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 96px var(--ctl-h);
+}
+.team-head.team-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 96px var(--ctl-h); }
+.team-mail {
+  font-size: 13px; color: var(--ink-mute);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.team-state { min-width: 0; }
+
+@media (max-width: 640px) {
+  /* Two lines: who they are and where they stand, then the address. */
+  .team-row {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas: "who state act" "mail mail mail";
+    gap: 2px 10px;
+  }
+  .team-row > .team-who   { grid-area: who; }
+  .team-row > .team-state { grid-area: state; }
+  .team-row > .team-act   { grid-area: act; margin-block: calc((20px - var(--ctl-h)) / 2); }
+  .team-row > .team-mail  { grid-area: mail; }
+  .team-head.team-row { display: none; }
 }

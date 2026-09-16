@@ -256,11 +256,24 @@
     }, function () { if (then) then(); });
   }
 
+  /* Loading is the shape of what is coming, not the word for it, and a read
+     that failed is not an empty list: "No clients yet." over a network fault
+     sends somebody to add a client that is already there. */
+  function skeleton(box, n) {
+    var s = '';
+    for (var i = 0; i < n; i++) s += '<div class="skel-row"></div>';
+    box.innerHTML = '<div class="softpanel"><div class="skel">' + s + '</div></div>';
+  }
+
   function loadClients(then) {
+    var box = $('crmList');
+    if (!state.clients.length) skeleton(box, 6);
     db.from('clients').select('*').order('name').then(function (r) {
       if (r.error) {
-        $('crmList').innerHTML = '<div class="empty">Could not load clients. ' +
-          esc(r.error.message) + '</div>';
+        box.innerHTML = '<div class="softpanel"><div class="errline">' +
+          '<b>Clients could not be loaded.</b><span>' + esc(r.error.message) + '</span>' +
+          '<button class="btn btn-sm" data-a="retry" type="button">Try again</button></div></div>';
+        box.querySelector('[data-a="retry"]').addEventListener('click', function () { loadClients(then); });
         return;
       }
       state.clients = r.data || [];
@@ -284,13 +297,30 @@
 
   function paintList() {
     var rows = visible();
-    $('crmCount').textContent = rows.length + (rows.length === 1 ? ' client' : ' clients');
+    /* The same count everywhere: how many there are, or how many of them a
+       filter has left. It used to read "1 client" whether that was the whole
+       list or one of forty. */
+    $('crmCount').textContent = !state.clients.length ? ''
+      : rows.length === state.clients.length
+        ? state.clients.length + (state.clients.length === 1 ? ' client' : ' clients')
+        : rows.length + ' of ' + state.clients.length;
     var box = $('crmList');
     box.innerHTML = '';
     if (!rows.length) {
-      box.innerHTML = '<div class="empty">' +
-        (state.clients.length ? 'No client matches that.'
-                              : 'No clients yet.') + '</div>';
+      /* Nothing there and nothing left after a filter are two different
+         answers, so each carries its own way out. */
+      box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
+        (state.clients.length
+          ? '<b>No matches.</b><button class="btn btn-sm" data-a="clear" type="button">Clear the filters</button>'
+          : '<b>No clients yet.</b><button class="btn btn-sm" data-a="first" type="button">Add the first lead</button>') +
+        '</div></div>';
+      var clear = box.querySelector('[data-a="clear"]');
+      if (clear) clear.addEventListener('click', function () {
+        $('crmSearch').value = ''; $('crmStage').value = 'all'; $('crmOwner').value = 'all';
+        paintList();
+      });
+      var first = box.querySelector('[data-a="first"]');
+      if (first) first.addEventListener('click', function () { $('crmNew').click(); });
       return;
     }
     GROUPS.forEach(function (g) {
@@ -315,7 +345,7 @@
           (late ? '<span class="tone is-warn">' + late + ' overdue</span>' : '') +
           (worthText ? '<span class="crm-group-worth">' + esc(worthText) + '</span>' : '') +
         '</div>' +
-        '<div class="crm-table">' +
+        '<div class="crm-table softpanel">' +
           '<div class="crm-head">' + ['Client', 'Stage', 'Industry', 'Value', 'Person in charge']
             .map(function (h) { return '<span>' + h + '</span>'; }).join('') + '</div>' +
         '</div>';

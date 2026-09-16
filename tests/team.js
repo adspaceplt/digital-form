@@ -29,14 +29,14 @@ const check = (l, ok, x) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (x ? ' 
   check('admin sees Team', (await visibleNav(p)).includes('Team'));
   check('admin sees the activity record', await p.locator('#activityOpen').isVisible());
   await p.locator('.navitem[data-section="team"]').click(); await p.waitForTimeout(600);
-  check('team table lists everyone', await p.locator('.team-row').count() === 3);
+  check('team table lists everyone', await p.locator('.team-row:not(.team-head)').count() === 3);
   /* Everyone here is active, so Active earns no column and no accent: the row
      names the exception and the ⋯ carries the change. */
   check('no row carries a state select',
     await p.locator('.team-row select[data-f="active"]').count() === 0);
   check('and no row is painted with the accent',
     await p.locator('#teamList .state-select').count() === 0);
-  const selfRow = p.locator('.team-row').first();
+  const selfRow = p.locator('.team-row:not(.team-head)').first();
   await selfRow.locator('[data-a="menu"]').click(); await p.waitForTimeout(200);
   check('a person cannot stand themselves down',
     await selfRow.locator('[data-a="state"]').count() === 0);
@@ -48,8 +48,8 @@ const check = (l, ok, x) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (x ? ' 
   const cats = () => p.locator('#teamList .svc-cat').evaluateAll(els => els.map(e => e.textContent).join(','));
   check('members are grouped under their group', await cats() === 'Admin,Marketing,Sales', await cats());
   check('and the row no longer repeats the group', await p.locator('.team-row select[data-f="role"]').count() === 0);
-  const rowOrder = await p.locator('#teamList > div').evaluateAll(
-    els => els.filter(e => e.matches('.svc-cat, .team-row')).map(e => e.matches('.svc-cat') ? '[' + e.textContent + ']' : e.querySelector('b').textContent.trim().split(' ')[0]).join(' '));
+  const rowOrder = await p.locator('#teamList .team-table > div').evaluateAll(
+    els => els.filter(e => e.matches('.svc-cat, .team-row:not(.team-head)')).map(e => e.matches('.svc-cat') ? '[' + e.textContent + ']' : e.querySelector('b').textContent.trim().split(' ')[0]).join(' '));
   check('each person sits under their own heading', rowOrder === '[Admin] ADspace [Marketing] Aisyah [Sales] Qiao', rowOrder);
 
   check('groups listed', await p.locator('.group-row').count() === 3);
@@ -70,7 +70,7 @@ const check = (l, ok, x) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (x ? ' 
   check('and the row says so', (await p.locator('.group-grants').nth(1).innerText()).includes('Activity record'));
 
   // Moving somebody between groups is Edit, where a rare action belongs.
-  const aisyah = p.locator('.team-row').filter({ hasText: 'Aisyah' });
+  const aisyah = p.locator('.team-row:not(.team-head)').filter({ hasText: 'Aisyah' });
   await aisyah.locator('[data-a="menu"]').click(); await p.waitForTimeout(150);
   await aisyah.locator('[data-a="edit"]').click(); await p.waitForTimeout(250);
   check('Edit opens the person as they stand',
@@ -97,14 +97,14 @@ const check = (l, ok, x) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (x ? ' 
   await p.fill('#tmName', 'Wei Ling'); await p.fill('#tmEmail', 'weiling@adspacestudios.com');
   await p.selectOption('#tmRole', 'sales');
   await p.locator('#tmSave').click(); await p.waitForTimeout(800);
-  check('person added to the team', await p.locator('.team-row').count() === 4);
+  check('person added to the team', await p.locator('.team-row:not(.team-head)').count() === 4);
   const invited = await p.evaluate(() => (window.__signed || []).filter(x => x.name === 'invite-member'));
   check('an invitation was requested for them', invited.length === 1 && invited[0].body.email === 'weiling@adspacestudios.com');
   console.log('  message: ' + await p.locator('#teamMsg').innerText());
   check('the message says the invitation went out', /invitation sent to/i.test(await p.locator('#teamMsg').innerText()));
 
   // Standing somebody down, and putting them back, both from the ⋯.
-  const wl = () => p.locator('.team-row').filter({ hasText: 'Wei Ling' });
+  const wl = () => p.locator('.team-row:not(.team-head)').filter({ hasText: 'Wei Ling' });
   await wl().locator('[data-a="menu"]').click(); await p.waitForTimeout(200);
   check('another person is set inactive from the \u22ef',
     (await wl().locator('[data-a="state"]').innerText()) === 'Set inactive');
