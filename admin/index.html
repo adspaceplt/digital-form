@@ -507,6 +507,54 @@
              renewal is a decision somebody makes and never a default. It
              sits outside the panes: a sheet inside one would vanish, still
              open, the moment somebody switched tab behind it. -->
+        <!-- Voiding a verified letter reverses a confirmation, so it says
+             which service lines go back and asks why before it does. -->
+        <div class="sheet" id="voidSheet" hidden>
+          <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="voidTitle">
+            <div class="sheet-head">
+              <h3 id="voidTitle">Void letter</h3>
+              <button class="iconbtn" id="voidClose" type="button" aria-label="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              </button>
+            </div>
+            <div class="sheet-body">
+              <p class="hint" id="voidWhat"></p>
+              <label class="field-label" for="voidReason">Reason</label>
+              <textarea class="input" id="voidReason" rows="3" placeholder="Reason"></textarea>
+            </div>
+            <div class="sheet-foot">
+              <button class="btn btn-warn" id="voidGo" type="button">Void letter</button>
+              <button class="btn btn-quiet" id="voidCancel" type="button">Cancel</button>
+            </div>
+            <div class="msg" id="voidMsg"></div>
+          </div>
+        </div>
+
+        <!-- Permanent. The reference is typed back, because it is the one
+             thing that says which letter is about to stop existing. -->
+        <div class="sheet" id="delSheet" hidden>
+          <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="delTitle">
+            <div class="sheet-head">
+              <h3 id="delTitle">Delete letter permanently</h3>
+              <button class="iconbtn" id="delClose" type="button" aria-label="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              </button>
+            </div>
+            <div class="sheet-body">
+              <p class="hint" id="delWhat"></p>
+              <label class="field-label" for="delConfirm">Type the reference to confirm</label>
+              <input class="input" id="delConfirm" autocomplete="off" spellcheck="false" placeholder="Reference">
+              <label class="field-label" for="delReason" style="margin-top:12px">Reason</label>
+              <textarea class="input" id="delReason" rows="3" placeholder="Reason"></textarea>
+            </div>
+            <div class="sheet-foot">
+              <button class="btn btn-danger" id="delGo" type="button">Delete permanently</button>
+              <button class="btn btn-quiet" id="delCancel" type="button">Cancel</button>
+            </div>
+            <div class="msg" id="delMsg"></div>
+          </div>
+        </div>
+
         <div class="sheet" id="pickSheet" hidden>
           <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
             <div class="sheet-head">

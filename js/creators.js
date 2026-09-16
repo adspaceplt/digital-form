@@ -136,19 +136,17 @@
       pic: 'Contact',
       goLive: 'Going live',
       viewPost: 'View post',
-      reviewDraft: 'Review draft',
       captionLabel: 'Caption',
-      draftHeading: 'Review draft',
-      draftBlurb: 'Open the draft, then approve it or request changes.',
       openDraft: 'Open the draft ↗',
-      noteLabel: 'Anything to change (optional)',
+      noteLabel: 'Changes required',
       byLabel: 'Your name',
       approve: 'Approve',
       askChanges: 'Request changes',
+      sendRequest: 'Send request',
       roundOf: function (n) { return 'Revision round ' + n + ' of 2'; },
-      lastRound: 'Final included revision.',
       reviewThanks: 'Received. The team will follow up.',
       needNote: 'Please describe the changes required.',
+      saveFailed: 'Unable to save. Please try again.',
       unavailable: 'Unavailable. Please select a replacement below.',
       results: 'Results',
       resultsHead: 'Campaign results',
@@ -226,19 +224,17 @@
       pic: '联系人',
       goLive: '发布日期',
       viewPost: '查看帖子',
-      reviewDraft: '查看初稿',
       captionLabel: '文案',
-      draftHeading: '查看初稿',
-      draftBlurb: '请打开初稿，然后通过或提出修改。',
       openDraft: '打开初稿 ↗',
-      noteLabel: '需要修改的地方（选填）',
+      noteLabel: '需要修改的内容',
       byLabel: '您的姓名',
       approve: '通过',
       askChanges: '需要修改',
+      sendRequest: '提交修改',
       roundOf: function (n) { return '第 ' + n + ' 次修改（共 2 次）'; },
-      lastRound: '最后一次包含的修改。',
       reviewThanks: '已收到，团队将跟进处理。',
       needNote: '请说明需要修改的内容。',
+      saveFailed: '保存失败，请重试。',
       unavailable: '暂不可用，请在下方选择替补。',
       results: '数据',
       resultsHead: '合作成效',
@@ -627,6 +623,39 @@
       }
       load();
     });
+    box.querySelector('[data-act="cancel"]').addEventListener('click', function () {
+      box.classList.remove('is-open');
+      say('');
+    });
+    box.querySelector('[data-act="send"]').addEventListener('click', function () {
+      if (busy) return;
+      var text = (note.value || '').trim();
+      if (!text) { say(t().needNote, true); note.focus(); return; }
+      send('changes', text);
+    });
+
+    function send(decision, text) {
+      var name = (who.value || '').trim();
+      keepName(name);
+      lock(true);
+      say('');
+      db.rpc('review_draft', {
+        p_token: TOKEN, p_option: o.id, p_decision: decision,
+        p_note: text || null, p_reviewer: name || null, p_passcode: passcode
+      }).then(function (r) {
+        var d = (r && r.data) || {};
+        if ((r && r.error) || d.error) {
+          lock(false);
+          say((r.error && r.error.message) || d.error, true);
+          return;
+        }
+        say(t().reviewThanks);
+        load();                     // states have moved, so read them back
+      }).catch(function () {
+        lock(false);
+        say(t().saveFailed, true);
+      });
+    }
   }
 
   function fmtDate(d) {

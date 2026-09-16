@@ -179,12 +179,15 @@
     'no-mapping': 'This letter was issued before the change and cannot be verified. Confirm its services by hand.',
     'clash': 'Two letters were issued at once. Try again.',
     'reason-required': 'Say why.',
+    'not-verified': 'Only a verified letter is voided. An issued or signed letter is deleted instead.',
+    'confirm-mismatch': 'That is not this letter\'s reference.',
+    'issuer-name': 'A letter is signed by a person. Set your name on the Team page, then issue it.',
     'bad-state': 'That is not a state a service can be in.'
   };
 
   function missingWord(m) {
     m = String(m || '');
-    if (/could not find|does not exist|schema cache|function public\.issue_letter/i.test(m)) {
+    if (/could not find|does not exist|schema cache|function public\.(issue_letter|letter_delete|letter_set_void)/i.test(m)) {
       return 'The database has not been updated yet. Run the letter lifecycle migration, then try again.';
     }
     return m || 'The letter could not be issued.';
@@ -204,7 +207,15 @@
 
   function setSigned(doc, on, then) { call('letter_set_signed', { p_doc: doc.id, p_on: Boolean(on) }, then); }
   function verify(doc, then)        { call('verify_letter',     { p_doc: doc.id }, then); }
-  function setVoidRpc(doc, on, then) { call('letter_set_void',  { p_doc: doc.id, p_on: Boolean(on) }, then); }
+  /* A void is a reversal somebody has to account for, so it carries a reason
+     and is not a switch. There is no un-void: the reversal put service lines
+     back and reissuing is the way forward, not toggling the same row. */
+  function setVoidRpc(doc, reason, then) { call('letter_set_void', { p_doc: doc.id, p_reason: reason }, then); }
+  /* Permanent. The serial is typed back because it is the one thing that says
+     which letter is about to stop existing. */
+  function removeRpc(doc, confirmNo, reason, then) {
+    call('letter_delete', { p_doc: doc.id, p_confirm: confirmNo, p_reason: reason }, then);
+  }
 
   /* Which services a letter captured. A letter issued before the change has
      none, which is what makes it history rather than something to verify. */
@@ -327,7 +338,7 @@
     var PDF = window.PDFLib;
     if (!PDF) return Promise.reject(new Error('PDF library not loaded'));
     var k = KIND[doc.kind] || KIND.offer;
-    var W = 595.28, H = 841.89, M = 48;
+    var W = 595.28, H = 841.89, M = 54;
     var pdf, fonts, logo;
     return PDF.PDFDocument.create().then(function (p) {
       pdf = p;
@@ -359,7 +370,7 @@
         if (cur) out.push(cur);
         return out;
       };
-      var newPage = function () { page = pdf.addPage([W, H]); pages.push(page); y = H - 56; };
+      var newPage = function () { page = pdf.addPage([W, H]); pages.push(page); y = H - 57; };
       var need = function (h) { if (y - h < 64) newPage(); };
       newPage();
 
@@ -390,9 +401,13 @@
         if (logo) { var fh = 20, fw = logo.width * (fh / logo.height); page.drawImage(logo, { x: (W - fw) / 2, y: 30, width: fw, height: fh }); }
         text(doc.number, M, 30, 7.5, font, mute);
         right('Page ' + (i + 1) + ' of ' + n, R, 30, 7.5, font, mute);
+        /* The initials go where a hand rests to write them, which is the same
+           side of the page the signature is on. They sit a row above the page
+           number rather than beside it: the two are the only marks in the
+           right of the foot and a collision there is a page nobody can sign. */
         if (i < n - 1) {
-          rule(56, M, M + 96);
-          text('Initials', M, 45, 7.5, font, mute);
+          rule(56, R - 96, R);
+          right('Client initials', R, 45, 7.5, font, mute);
         }
       };
       var LH = 14.5, PARA = 14, BODY = 11;
@@ -403,6 +418,13 @@
       head();
 
       var b = doc.bill_to || {};
+      /* One name for the whole letter. `To`, the opening paragraph and the
+         acceptance block each resolved this themselves and two of them used
+         the opposite precedence, so a client whose registered name and
+         trading name differ was addressed as one in the header and the other
+         in the sentence beneath it. The letter is an agreement, so the name
+         on it is the legal entity, once, everywhere. */
+      var legalName = String(b.legal_name || b.name || '').trim();
       /* Worked from the snapshot, by the same function that stored it, so a
          letter drawn again a year later prints the figures it was issued
          with. Older rows carry no per line tax flag; the stored tax says. */
@@ -414,10 +436,24 @@
       // Our Ref / Date / To / Attn, the colons in one column.
       var refs = [
         ['Our Ref', doc.number], ['Date', letterDate(doc.issued_at)],
-        ['To', (b.legal_name || b.name || '').toUpperCase()],
+        ['To', legalName.toUpperCase()],
         ['Attn', b.contact ? b.contact + (b.contact_role ? ', ' + b.contact_role : '') : '']
       ].filter(function (f) { return f[1]; });
-      refs.forEach(function (f) { text(f[0], M, y, BODY); text(':', M + 72, y, BODY); text(f[1], M + 78, y, BODY); y -= LH; });
+      /* The value wraps to the column it started in. A registered name or an
+         Attn line carrying a full job title is longer than the page is wide,
+         and an unwrapped one ran off the right edge and was simply gone:
+         "Corporate Communications and B". The label and its colon stay on the
+         first line, because they belong to the whole value and not to its
+         first line. */
+      var REFX = M + 78;
+      refs.forEach(function (f) {
+        text(f[0], M, y, BODY);
+        text(':', M + 72, y, BODY);
+        wrap(f[1], R - REFX, BODY).forEach(function (ln, i) {
+          text(ln, REFX, y, BODY);
+          if (i < 99) y -= LH;
+        });
+      });
       y -= 12;
 
       text(String(k.title).toUpperCase(), M, y, BODY, bold); y -= 29;
@@ -425,7 +461,7 @@
 
       // The offer: the services and fees, the total, the terms, the acceptance.
       para('Thank you for your interest in our marketing services. Further to our discussion, we are pleased to set out below the services and fees proposed for ' +
-        (b.name || b.legal_name || 'your company') + '.');
+        (legalName || 'your company') + '.');
 
       /* A service is quoted by the month, not sold by the piece, so the
          columns are Description, Rate and Amount. Quantity rides inside the
@@ -520,48 +556,152 @@
 
       para('Kindly confirm your acceptance by signing below and returning a copy of this letter to us.');
 
-      /* Closing, as the reference signs off: the sales person's name under the
-         company. The closing and the acceptance block are reserved together,
-         because they are one thing: a signature page carrying nothing but a
-         stamp box is what the client is being asked to sign, and it has to
-         stay attached to the words it accepts. Reserving only the closing put
-         the two on separate pages as soon as the services carried their full
-         inclusions. */
+      /* Closing, as the reference signs off: the person's name under the
+         company. It is reserved on its own and drawn where it falls, because
+         the letter reads as finished at the foot of its last page of
+         substance; the acceptance is a separate act on a separate sheet.
+         Reserving the closing WITH the acceptance block, which is what this
+         did, moved both the moment the services carried their inclusions, and
+         page two then opened with three orphaned lines of sign-off before
+         anything a client could act on. */
       var closeH = LH * (doc.issued_by ? 3 : 2) + 16;
-      var acceptH = 32 + 30 + 14 + 11;
-      // Two lines for the sentence that says what is being signed, which is
-      // part of the acceptance and never leaves it.
-      need(closeH + acceptH + 38);
+      need(closeH);
       text('Yours sincerely,', M, y, BODY); y -= LH;
-      text(ORG.name || 'ADSPACE PLT', M, y, BODY, bold); y -= LH;
+      text('For and on behalf of ' + (ORG.name || 'ADSPACE PLT'), M, y, BODY, bold); y -= LH;
+      /* The name of the person who issued it, and nothing else. It is never a
+         permission: issue_letter refuses a team row named for a role, so
+         "Superadmin" cannot reach a client's letterhead. */
       if (doc.issued_by) { text(doc.issued_by, M, y, BODY); y -= LH; }
       y -= 16;
 
-      // Reserved with the closing above, so this never starts a page on its own.
+      /* ---- The acceptance -------------------------------------------------
+         What the client is agreeing to, in a sentence they can read once, and
+         then the figures as a table rather than buried in the prose. The
+         amounts come from the same `price` object the table above was drawn
+         from, so the letter cannot quote itself two different totals.
 
-      /* The signature page says what is being signed. Without it the sheet
-         the client puts their stamp on carries a company name and nothing
-         else, and nothing on it contradicts a different page one. Naming the
-         reference, the date, the number of pages and the figure means a
-         substituted page disagrees with the page that was signed. */
-      var says = 'This acceptance relates to Letter of Offer ' + doc.number +
-        ' dated ' + letterDate(doc.issued_at) + ', comprising ' + (pages.length) + ' pages';
-      says += price.term
-        ? ', at ' + MON.money2(price.eachTotal, doc.market) + ' per month over a ' + price.term +
-          ' month term, ' + MON.money2(price.total, doc.market) + ' in total.'
-        : ', totalling ' + MON.money2(price.eachTotal, doc.market) + '.';
-      wrap(says, R - M, 9.5).forEach(function (ln) { text(ln, M, y, 9.5, font, mute); y -= 13; });
-      y -= 12;
+         The whole of it is kept on one page: a stamp box on a sheet of its own
+         is a signature that proves nothing about what was signed. */
+      var moneyWord = function (v) {
+        return MON.money2(v, doc.market) + (Number(price.tax) ? ', including SST' : '');
+      };
+      var sumRows = price.term
+        ? [['Monthly fee', moneyWord(price.eachTotal)],
+           ['Contract term', price.term + ' months'],
+           ['Total contract value', moneyWord(price.total)]]
+        : [['Total payable', moneyWord(price.eachTotal)]];
 
-      text('Confirmed and accepted for and on behalf of ' + (b.legal_name || b.name || '').toUpperCase(), M, y, BODY, bold); y -= 32;
-      var half = (R - M - 24) / 2;
-      [['Signature and company stamp', M], ['Name', M + half + 24]].forEach(function (f) { rule(y, f[1], f[1] + half); text(f[0], f[1], y - 11, 8.5, font, mute); });
-      y -= 30;
-      [['Designation', M], ['Date', M + half + 24]].forEach(function (f) { rule(y, f[1], f[1] + half); text(f[0], f[1], y - 11, 8.5, font, mute); });
+      var SIGH = 91;          // 32mm of signing room, not a ruled line
+      var FIELDH = 29;        // 10mm for each of the three fields
+      var acceptH = 18 + LH   // heading
+        + LH * 2 + 10         // the sentence
+        + 14 + sumRows.length * 15 + 10   // the summary
+        + 26                  // the page count line
+        + LH + 14             // the execution heading
+        + SIGH + 30           // the signing area and its label
+        + 3 * (FIELDH + 26);  // name, designation, date
+      need(acceptH);
+
+      text('Acceptance of offer', M, y, BODY, bold); y -= LH + 8;
+
+      /* Plain prose, and a plain date: an ordinal reads as a letterhead
+         flourish and this sentence is the operative one. */
+      wrap('By signing below, the Client accepts Letter of Offer ' + doc.number +
+           ', dated ' + longDate(doc.issued_at) +
+           ', including the services, fees, and terms set out in this document.',
+           R - M, BODY).forEach(function (ln) { text(ln, M, y, BODY); y -= LH; });
+      y -= 10;
+
+      // The figures, from the same calculation the price table used.
+      var sumL = M, sumR = R;
+      text('Item', sumL, y, 9, bold, mute);
+      right('Value', sumR, y, 9, bold, mute);
+      y -= 7; rule(y); y -= 13;
+      sumRows.forEach(function (r) {
+        text(r[0], sumL, y, 10);
+        right(r[1], sumR, y, 10, bold);
+        y -= 15;
+      });
+      y -= 4; rule(y); y -= 12;
+
+      /* The page count stays: a letter signed on its last sheet is a letter
+         whose first sheet can be swapped, and the count is one of the three
+         marks that contradicts a substitution. The reference and the date are
+         in the sentence above, so this line carries what is left. */
+      text('This letter comprises ' + pages.length + ' pages.', M, y, 9, font, mute);
+      y -= 26;
+
+      /* A registered name can be longer than the column, and this line carries
+         one. Unwrapped it ran past the right margin and the tail simply was
+         not on the page. */
+      wrap('Confirmed and accepted for and on behalf of ' + legalName.toUpperCase(),
+           R - M, BODY, bold).forEach(function (ln) { text(ln, M, y, BODY, bold); y -= LH; });
       y -= 14;
 
+      /* ---- The execution block -------------------------------------------
+         A signature is a hand moving across a page, so the room for it is an
+         area and not a ruled line: 32mm, the width of the text column. The
+         three fields under it are the same width, far enough apart to write
+         between, and each carries its own baseline.
+
+         Every one of them is also a real AcroForm field, so the letter can be
+         filled in a PDF reader and returned without printing. The drawn rules
+         and labels stay underneath, because a printed copy is still the
+         fallback and a field is invisible on paper. */
+      var fieldBoxes = [];
+      var signTop = y;
+      rule(y - SIGH, M, R);
+      text('Authorised signatory and company stamp', M, y - SIGH - 11, 8.5, font, mute);
+      fieldBoxes.push(['acceptance_authorised_signatory', M, y - SIGH, R - M, SIGH, true]);
+      y -= SIGH + 44;
+
+      [['Name', 'acceptance_name'],
+       ['Designation', 'acceptance_designation'],
+       ['Date', 'acceptance_date']].forEach(function (f) {
+        rule(y, M, R);
+        text(f[0], M, y - 11, 8.5, font, mute);
+        fieldBoxes.push([f[1], M, y, R - M, FIELDH, false]);
+        y -= FIELDH + 26;
+      });
+      y -= 4;
+
+      var signPage = page;
       pages.forEach(function (pg, i) { page = pg; foot(i, pages.length); });
-      return pdf.save();
+
+      /* The fields are added last, once the page they belong to is settled.
+         Their appearance font is Helvetica rather than the letter's own face:
+         a subsetted custom font carries only the glyphs the letter drew, so a
+         recipient typing a character the letter never used would get an
+         appearance stream the reader cannot build. The fields are real widgets
+         on the page and in the AcroForm tree, so they do not depend on
+         NeedAppearances to be usable. */
+      return pdf.embedFont(PDF.StandardFonts.Helvetica).then(function (formFont) {
+        var form = pdf.getForm();
+        fieldBoxes.forEach(function (f) {
+          var fld = form.createTextField(f[0]);
+          if (f[5]) fld.enableMultiline();
+          /* addToPage is what writes the field's /DA, so the size is set after
+             it and not before: pdf-lib throws on a field that has no default
+             appearance yet, and the throw escaped into a download that never
+             came. */
+          /* Transparent, and with no border of its own: the rule and the
+             label under it are what a printed copy shows, and a field drawn
+             over them hides them. pdf-lib fills a field white and borders it
+             black unless the key is present, so both are passed explicitly as
+             undefined rather than left out. The white default is what painted
+             over "Authorised signatory and company stamp". */
+          fld.addToPage(signPage, {
+            x: f[1], y: f[2], width: f[3], height: f[4],
+            font: formFont,
+            borderWidth: 0,
+            borderColor: undefined,
+            backgroundColor: undefined
+          });
+          fld.setFontSize(11);
+        });
+        form.updateFieldAppearances(formFont);
+        return pdf.save();
+      });
     });
   }
 
@@ -578,17 +718,15 @@
 
   // Only a voided document can be deleted, and its number is never reused:
   // the next number counts from the highest issued, not from the count.
-  function remove(doc, then) {
-    if (!doc.voided_at) { then({ message: 'Void the document first.' }); return; }
-    db.from('client_documents').delete().eq('id', doc.id).then(function (r) {
-      if (!r.error) log('document.deleted', doc.number, '');
-      then(r.error);
-    });
-  }
+  /* Deleting went through PostgREST, which meant the browser decided who was
+     allowed to and what it took with it. It is a transaction now, gated on the
+     portal's own hard-delete permission, and it is the only path: there is no
+     stored PDF and no signed upload, so the row is the letter and removing it
+     removes the whole of it. */
 
   window.ADspaceDocs = {
     issue: issue, download: download, render: render, list: list,
-    setVoid: setVoidRpc, remove: remove, KIND: KIND, fileName: fileName,
+    setVoid: setVoidRpc, remove: removeRpc, KIND: KIND, fileName: fileName,
     setSigned: setSigned, verify: verify, mapOf: mapOf,
     liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, idemKey: idemKey
   };

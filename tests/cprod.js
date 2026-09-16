@@ -43,8 +43,8 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   say('sections: "' + await p.locator('#bookingHead').innerText() + '" / "' + await p.locator('#chooseHead').innerText() + '"');
   say('bookings: ' + await p.locator('.booking').count() + '  still choosable: ' + await p.locator('.crow:not(.crow-head)').count());
   say('chips: ' + (await p.locator('.chip-state').allInnerTexts()).join(' | '));
-  say('highlighted (theirs to act on): ' + await p.locator('.booking:has(.booking-cta)').count() +
-      ' -> ' + await p.locator('.booking:has(.booking-cta) .chip-state').innerText());
+  say('theirs to act on: ' + await p.locator('.booking:has(.approve)').count() +
+      ' -> ' + await p.locator('.booking:has(.approve) .chip-state').innerText());
   say('order (soonest shoot first): ' + (await p.locator('.booking .booking-head b').allInnerTexts()).join(' > '));
   say('first card facts: ' + (await p.locator('.booking').first().locator('.booking-facts').innerText()).replace(/\n/g, ' | '));
   say('progress: ' + await p.locator('#progCount').innerText() + ' / ' + await p.locator('#progSay').innerText());

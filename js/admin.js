@@ -67,6 +67,41 @@
     }).then(function () {}, function () {});
   }
 
+  /* The activity record stores who by the address they signed in with, which
+     is the stable identity: two colleagues can share a display name, nobody
+     shares a login, and the nine security definer functions that write the log
+     have `auth.jwt() ->> 'email'` and nothing else to hand.
+
+     A person reading the record wants the person, so the address is resolved
+     to a name here rather than stored as one. That way every entry ever
+     written reads as a name from the moment this ships, with no migration and
+     no audit row rewritten, and somebody who changes their name is recognised
+     in their old entries too.
+
+     Stood down colleagues are included deliberately: they still wrote what
+     they wrote. An address with no team row at all — a legacy entry, a
+     colleague whose row was deleted, `unknown` — keeps the address, because
+     the point is to say who and not to hide that we cannot. */
+  var whoBy = null;
+  function loadWho(then) {
+    db.from('team_members').select('email, name').then(function (r) {
+      var by = {};
+      (r.data || []).forEach(function (t) {
+        var e = String(t.email || '').trim().toLowerCase();
+        if (e && t.name) by[e] = t.name;
+      });
+      whoBy = by;
+      if (then) then();
+    }, function () { whoBy = whoBy || {}; if (then) then(); });
+  }
+  /* Never throws and never blanks a row: a failed read leaves every entry
+     reading exactly as it does today. */
+  function whoName(email) {
+    var e = String(email == null ? '' : email).trim();
+    if (!e || !whoBy) return e;
+    return whoBy[e.toLowerCase()] || e;
+  }
+
   function thisMonth() {
     return new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) + ' Content';
   }
@@ -184,6 +219,9 @@
     loadMe(function () {
       applyAccess();
       gateActivity();
+      // Who wrote what, by address. Fire and forget: the record reads as
+      // addresses until it lands, which is what it read as before.
+      if (me) loadWho(function () { if (!$('activitySheet').hidden) paintActivity(); });
       if (!me) {
         // A plain page like sign-in: the page header, white to the edges.
         $('console').hidden = true;
@@ -217,7 +255,7 @@
       if (r.error) {
         me = { role: 'admin', can_clients: true, can_review: true, can_campaigns: true,
                can_links: true, can_activity: false, can_billing: true, can_remove: true,
-               legacy: true };
+               can_doc_void: true, legacy: true };
       } else {
         me = r.data && r.data.id ? r.data : null;
       }
@@ -243,6 +281,7 @@
       b.hidden = !sectionAllowed(b.getAttribute('data-section'));
     });
     document.body.classList.toggle('no-remove', !may('remove'));
+    document.body.classList.toggle('no-docvoid', !may('doc_void'));
     document.body.classList.toggle('no-billing', !may('billing'));
   }
 
@@ -800,7 +839,7 @@
         '<span class="act-tagcell"><span class="act-tag ' + meta[1] + '">' + esc(meta[0]) + '</span></span>' +
         '<span class="act-subject">' + esc(a.subject || '') + '</span>' +
         '<span class="act-detail">' + esc(a.detail || '') + '</span>' +
-        '<span class="act-who">' + esc(a.actor || '') + '</span>';
+        '<span class="act-who">' + esc(whoName(a.actor)) + '</span>';
       box.appendChild(row);
     });
   }
@@ -2254,6 +2293,10 @@
     log: logAction,
     actor: function () { return actor; },
     actorName: function () { return (me && me.name) || actor; },
+    /* The client record and a campaign draw their own activity excerpt, so
+       they resolve a logged address through the same map rather than keeping
+       a second one that would answer differently. */
+    whoName: whoName,
     // The signed PUT to S3, so an invoice PDF travels the same road as media.
     putToS3: putToS3,
     // Where you are, and how far down. The address bar is shared property.

@@ -39,15 +39,15 @@
       { slug:'rev-minor', category:'Add-ons', name:'Minor revision', rate:200, unit:'Per asset, per round', position:70, active:true },
       { slug:'urgent', category:'Add-ons', name:'Urgent fee', rate:150, unit:'Per affected asset, per round', position:72, active:true }],
     client_services: [], client_documents: [], client_requests: [],
-    client_document_services: [], client_document_seq: [],
+    client_document_services: [], client_document_seq: [], client_document_deletions: [],
     team_roles: [
-      { slug:'admin', name:'Admin', is_admin:true, position:0, can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:true, can_billing:true, can_remove:true },
-      { slug:'account', name:'Marketing', is_admin:false, position:1, can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:false, can_billing:true, can_remove:false },
-      { slug:'sales', name:'Sales', is_admin:false, position:2, can_clients:true, can_review:false, can_campaigns:false, can_links:false, can_activity:false, can_billing:true, can_remove:false }],
+      { slug:'admin', name:'Admin', is_admin:true, position:0, can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:true, can_billing:true, can_remove:true, can_doc_void:true },
+      { slug:'account', name:'Marketing', is_admin:false, position:1, can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:false, can_billing:true, can_remove:false, can_doc_void:false },
+      { slug:'sales', name:'Sales', is_admin:false, position:2, can_clients:true, can_review:false, can_campaigns:false, can_links:false, can_activity:false, can_billing:true, can_remove:false, can_doc_void:false }],
     team_members: [
-      { id:'t0', name:'ADspace', email:'adspacestudios@gmail.com', active:true, role:'admin', is_admin:true, can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:true, can_billing:true, can_remove:true },
-      { id:'t1', name:'Qiao Rou', email:'qiaorou@adspacestudios.com', active:true, role:'sales', can_clients:true, can_review:false, can_campaigns:false, can_links:false, can_activity:false, can_billing:true, can_remove:false },
-      { id:'t2', name:'Aisyah', email:'aisyah@adspacestudios.com', active:true, role:'account', can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:false, can_billing:true, can_remove:false }],
+      { id:'t0', name:'ADspace', email:'adspacestudios@gmail.com', active:true, role:'admin', is_admin:true, can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:true, can_billing:true, can_remove:true, can_doc_void:true },
+      { id:'t1', name:'Qiao Rou', email:'qiaorou@adspacestudios.com', active:true, role:'sales', can_clients:true, can_review:false, can_campaigns:false, can_links:false, can_activity:false, can_billing:true, can_remove:false, can_doc_void:false },
+      { id:'t2', name:'Aisyah', email:'aisyah@adspacestudios.com', active:true, role:'account', can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:false, can_billing:true, can_remove:false, can_doc_void:false }],
     links: [
       { id:'l1', slug:'raya-2026', target_url:'https://adspacestudios.com/campaigns/raya-2026', title:'Raya landing', active:true },
       { id:'l2', slug:'menu-hkl', target_url:'https://hkllim.com/menu?utm_source=qr&utm_medium=table-tent', title:'Table tent QR', active:true },
@@ -219,7 +219,7 @@
      behaviour in the stand-in, so a browser suite exercises the rules rather
      than a page that happens to draw them. The refusals are the refusals the
      database gives, by the same names. */
-  var TEAM_CAN = { clients: true, billing: true, admin: true };
+  var TEAM_CAN = { clients: true, billing: true, admin: true, remove: true, doc_void: true };
   window.__teamCan = TEAM_CAN;
   function whoNow() { return String(session && session.user && session.user.email || '').toLowerCase(); }
 
@@ -355,16 +355,74 @@
     return { ok: true, confirmed: n };
   }
 
+  /* Which service lines this letter alone is holding confirmed. A line another
+     verified, unvoided letter also maps stays confirmed: that letter still
+     says so. Same rule as public.letter_sole_services. */
+  function soleServices(docId) {
+    return DB.client_document_services
+      .filter(function (m) { return m.document_id === docId; })
+      .filter(function (m) {
+        var l = DB.client_services.filter(function (x) { return x.id === m.service_id; })[0];
+        if (!l || l.state !== 'confirmed') return false;
+        return !DB.client_document_services.some(function (m2) {
+          if (m2.service_id !== m.service_id || m2.document_id === docId) return false;
+          var d2 = DB.client_documents.filter(function (x) { return x.id === m2.document_id; })[0];
+          return d2 && d2.verified_at && !d2.voided_at;
+        });
+      })
+      .map(function (m) { return m.service_id; });
+  }
+
   function letterSetVoid(a) {
-    if (!TEAM_CAN.clients) return { error: 'not-allowed' };
+    if (!TEAM_CAN.doc_void) return { error: 'not-allowed' };
+    if (!String(a.p_reason || '').trim()) return { error: 'reason-required' };
     var d = DB.client_documents.filter(function (x) { return x.id === a.p_doc; })[0];
     if (!d) return { error: 'not-found' };
-    if (d.verified_at) return { error: 'verified' };
-    var on = a.p_on !== false;
-    if (Boolean(d.voided_at) === on) return { ok: true, repeat: true };
-    d.voided_at = on ? new Date().toISOString() : null;
+    if (d.voided_at) return { ok: true, repeat: true };
+    if (!d.verified_at) return { error: 'not-verified' };
+    var ids = soleServices(d.id);
+    d.voided_at = new Date().toISOString();
+    d.voided_by = whoNow();
+    d.void_reason = String(a.p_reason).trim();
+    ids.forEach(function (id) {
+      var l = DB.client_services.filter(function (x) { return x.id === id; })[0];
+      if (l) l.state = 'quoted';
+    });
+    var cl = DB.clients.filter(function (c) { return c.id === d.client_id; })[0] || {};
+    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.voided', subject: cl.name,
+      detail: d.number + ' · ' + String(a.p_reason).trim() + ' · ' + ids.length + ' service lines reverted',
+      created_at: new Date().toISOString() });
     persist();
-    return { ok: true };
+    return { ok: true, reverted: ids.length };
+  }
+
+  /* Permanent, and the whole of it: there is no stored PDF and no signed
+     upload for a letter, so the row is the letter. The serial is typed back
+     and never handed out again; the audit row is what explains the gap. */
+  function letterDelete(a) {
+    if (!TEAM_CAN.remove) return { error: 'not-allowed' };
+    if (!String(a.p_reason || '').trim()) return { error: 'reason-required' };
+    var d = DB.client_documents.filter(function (x) { return x.id === a.p_doc; })[0];
+    if (!d) return { error: 'not-found' };
+    if (String(a.p_confirm || '').trim() !== d.number) return { error: 'confirm-mismatch' };
+    var ids = soleServices(d.id);
+    ids.forEach(function (id) {
+      var l = DB.client_services.filter(function (x) { return x.id === id; })[0];
+      if (l) l.state = 'quoted';
+    });
+    DB.client_documents.forEach(function (x) { if (x.superseded_by === d.id) x.superseded_by = null; });
+    DB.client_document_deletions.push({ id: nid('dd'), document_id: d.id, number: d.number,
+      client_id: d.client_id, actor: whoNow(), reason: String(a.p_reason).trim(),
+      service_ids: ids, deleted_at: new Date().toISOString() });
+    DB.client_document_services = DB.client_document_services
+      .filter(function (m) { return m.document_id !== d.id; });
+    DB.client_documents = DB.client_documents.filter(function (x) { return x.id !== d.id; });
+    var cl = DB.clients.filter(function (c) { return c.id === d.client_id; })[0] || {};
+    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.deleted', subject: cl.name,
+      detail: d.number + ' · ' + String(a.p_reason).trim() + ' · ' + ids.length + ' service lines reverted',
+      created_at: new Date().toISOString() });
+    persist();
+    return { ok: true, number: d.number, reverted: ids.length };
   }
 
   function overrideServiceState(a) {
@@ -389,6 +447,7 @@
     if (name === 'letter_set_signed')      return Promise.resolve({ data: letterSetSigned(args), error: null });
     if (name === 'verify_letter')          return Promise.resolve({ data: verifyLetter(args), error: null });
     if (name === 'letter_set_void')        return Promise.resolve({ data: letterSetVoid(args), error: null });
+    if (name === 'letter_delete')          return Promise.resolve({ data: letterDelete(args), error: null });
     if (name === 'override_service_state') return Promise.resolve({ data: overrideServiceState(args), error: null });
     /* The creator's own page. Same shape and the same withholding as the SQL:
        a creator sees their own bookings and never the client's stage, the
