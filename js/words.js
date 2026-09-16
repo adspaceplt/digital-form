@@ -123,7 +123,7 @@
     enquired: '', quoted: 'is-warn',
     lead: '', contacted: '', proposal: 'is-warn', active: 'is-ok', paused: 'is-warn', past: '',
     requested: 'is-warn', approved: 'is-ok', declined: '', applied: 'is-ok',
-    draft: '', open: '', production: 'is-warn'
+    draft: '', open: 'is-warn', production: 'is-warn'
   };
   W.tone = function (key) { return W.TONE[key] || ''; };
 

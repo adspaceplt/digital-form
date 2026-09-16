@@ -413,7 +413,7 @@ async function walk(b, coarse, dark) {
     await p.locator('#campTabs .tab[data-pane="' + k + '"]').click();
     await p.waitForTimeout(400);
   };
-  for (const key of ['schedule', 'deliverables', 'client', 'finance', 'activity']) {
+  for (const key of ['schedule', 'client', 'finance', 'activity']) {
     await cpane(key);
     await report('admin campaign ' + key + ' ' + tag, p, coarse);
   }

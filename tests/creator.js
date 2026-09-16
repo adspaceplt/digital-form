@@ -214,7 +214,7 @@ const say = s => console.log(s);
     beforeRelease.includes('Pending draft') && !beforeRelease.includes('Your approval'),
     beforeRelease.replace(/\n/g, ' | ').slice(0, 200));
   check('and has nothing to review yet',
-    await p.locator('.booking-cta').count() === 0);
+    await p.locator('.inline-review').count() === 0);
 
   // The team releases it. Only now is it theirs to decide on.
   await p.evaluate(() => {
@@ -226,12 +226,11 @@ const say = s => console.log(s);
   check('once released the client is asked to approve',
     released.includes('Reviewing') && released.includes('Your approval'),
     released.replace(/\n/g, ' | ').slice(0, 200));
-  check('and there is something to open', await p.locator('.booking-cta').count() === 1);
-  await p.locator('.booking-cta').first().click(); await p.waitForTimeout(400);
-  const sheet = await p.locator('#draftSheet').innerText();
-  check('the sheet shows the creator\'s own file, not a pasted link',
-    sheet.includes('cover.jpg'), sheet.replace(/\n/g, ' | ').slice(0, 200));
-  check('and the caption they wrote', sheet.includes('New launch at Laman Citra'));
+  check('and the review controls are inline', await p.locator('.inline-review').count() === 1);
+  const reviewCard = await p.locator('.booking:has(.inline-review)').innerText();
+  check('the card shows the creator\'s own file, not a second review sheet',
+    reviewCard.includes('cover.jpg'), reviewCard.replace(/\n/g, ' | ').slice(0, 200));
+  check('and the caption they wrote', reviewCard.includes('New launch at Laman Citra'));
 
   // Back to the creator's page for the rest of the run.
   await p.goto('http://127.0.0.1:8899/creator/', { waitUntil: 'networkidle' });
