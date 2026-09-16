@@ -639,6 +639,62 @@ line it needs while the boxes around it wrap — with `flex-wrap` on the
 container that follows them, or a full width box pushes the rate and Add past
 the screen edge.
 
+**A rule about a component asks the component's width, not the window's.**
+The record pane sits inside a 243px sidebar and beside a 380px rail, so a
+1280px window gives it 591px and a 1440px window 690px. Every
+`@media (max-width: 640px)` rule governing something *inside* that pane was
+therefore false at exactly the widths where it was needed: the client's
+Services row kept a five column grid in 591px, the name track collapsed to
+59px, and "Social media management for Instagram, Facebook and TikTok" came out
+one word per line in a 210px tall row. The same fault is latent in every pane
+row, and no viewport matrix can see it, because the viewport is not the number
+that is wrong.
+
+`ADspaceState.fit` measures `.console-body`, `.rec-pane` and `.rec-rail` with a
+`ResizeObserver` and writes `is-narrow` (≤640) and `is-tight` (≤460) onto them;
+the stylesheet keys on those instead of on a media query. One copy of each row
+template then serves the phone and the narrow pane, because on a phone the pane
+is narrow too.
+
+**Container queries are the obvious answer here and are the wrong one.**
+`container-type: inline-size` implies `contain: layout`, which makes the element
+a containing block for `position: fixed` descendants — and `ADspaceMenu.place()`
+positions every row ⋯ on the viewport with exactly that. Turning the pane into a
+container would put every menu in the console a few hundred pixels out. The
+measurement is done in script precisely so nothing gains containment.
+
+**Two thresholds, because two things break at two widths.** At 640 a row of
+four or five columns has to become two lines. At 460 even a two column row has
+to give up its summary line: the booking register keyed to the single 640
+threshold drew three line, 113px rows in a 591px pane that had room for one.
+
+**A declared minimum that cannot be honoured is worse than no minimum.** The
+services row states `minmax(180px, 1fr)` for the name and gives up 20px across
+its two money tracks so the fixed tracks and gaps come to 672 — which fits the
+690px pane a 1440px window leaves. Below that the row stacks on purpose rather
+than overflowing.
+
+**A phone row is two lines and its first line is a touch target.** 56 to 72px
+is the one line register row and it cannot also hold on a phone: 44px for the
+target, 20px for the state line and 24px of padding is 88px, and no arrangement
+of a name, a state, a date and two controls in 358px is shorter. The band is
+asserted where the row is one line; the phone is held to its own ceiling and to
+the same consistency.
+
+**A menu that is not a row menu still inherits the row menu's rules.** The
+account menu took `.kmenu`'s 320px width and `.kmenu-item`'s
+`flex-direction: column` — which exists so a row menu can stack a bold label
+over a description — so Theme and Sign out came out as an icon above a word
+above another word, centred, in a 320px panel. It states `flex-direction: row`,
+`justify-content: flex-start`, `text-align: left` and its own 260px width
+explicitly, and outranks `.kmenu` rather than merely disagreeing with it, because
+`.kmenu` comes later in the file.
+
+**A tab strip never wraps.** Wrapping put Activity alone on a second line and
+pushed the pane down by a tab's height. One row always, scrolling sideways below
+the width where the tabs fit, with `flex: 0 0 auto` on each so none is squeezed
+to avoid the scroll.
+
 **A template that claims every header in the console will claim the wrong one.**
 The clients list's seven columns hung off `.crm-head:not(.svc-row)`, which is a
 rule that says "any header not wearing one particular class". Short Links wore

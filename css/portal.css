@@ -1526,7 +1526,10 @@ a { color: inherit; }
 .disclosure .muted { margin-left: auto; font-weight: 400; }
 .disclosure-caret { font-size: 10px; color: var(--ink-mute); transition: transform var(--t) var(--ease); }
 .disclosure.is-open .disclosure-caret { transform: rotate(90deg); }
-.disclosure-body { padding: 4px 22px 20px; border-top: 1px solid var(--line-soft); }
+/* 16 to 20, on the 8px rhythm, and the same on both axes rather than 22 across
+   and 20 down: the invoice fold is a two field form and 22px of side padding
+   around it read as a card built for something larger. */
+.disclosure-body { padding: 16px 20px 20px; border-top: 1px solid var(--line-soft); }
 .disclosure-body .hint { margin: 14px 0 16px; }
 
 /* The summary is the reason to open the fold: "0 of 4" is what says whether
@@ -1729,7 +1732,24 @@ body.is-plain .topbar { background: var(--chrome); }
   .acct-btn:hover .acct-mark { color: var(--ink); }
 }
 .acct-btn[aria-expanded="true"] { background: var(--line-soft); border-color: var(--ink-mute); }
-.acct-menu { position: absolute; top: calc(var(--ctl-h) + 6px); right: 0; left: auto; min-width: 232px; }
+/* The account menu is a menu, not a panel. It inherited `.kmenu`'s 320px
+   width and, worse, `.kmenu-item`'s `flex-direction: column` — which exists so
+   a row menu can stack a bold label over a description — so Theme and Sign out
+   came out as an icon above a word above another word, centred, in a 320px
+   box. Each of those is overridden explicitly here rather than left to the
+   generic rule, because the generic rule is right for the menus it was written
+   for. */
+.kmenu.acct-menu {
+  position: absolute; top: calc(var(--ctl-h) + 6px); right: 0; left: auto;
+  width: 260px; min-width: 0; max-width: calc(100vw - 32px);
+}
+.acct-menu .kmenu-item {
+  flex-direction: row; align-items: center; justify-content: flex-start;
+  gap: 10px; text-align: left; min-height: 42px; padding: 8px 12px;
+}
+/* The label and its second line read as one row, not as two stacked items. */
+.acct-menu .kmenu-item b { font-weight: 600; }
+.acct-menu .kmenu-item span { margin-left: auto; text-align: right; }
 /* The address is read, never chosen, so it is a line above the items and not
    one of them. */
 .acct-who {
@@ -1743,7 +1763,7 @@ body.is-plain .topbar { background: var(--chrome); }
   font-size: 12.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--ink);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.acct-menu .kmenu-item { display: flex; align-items: center; gap: 9px; }
+
 .acct-menu .kmenu-item svg { width: 15px; height: 15px; stroke-width: 1.8; flex: 0 0 auto; color: var(--ink-mute); }
 
 .console-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
@@ -3099,7 +3119,16 @@ body > .shell { width: 100%; }
 /* The state column is one width everywhere, so the selects line up down a
    table and across sections. It sits last before the ⋯. */
 .svc-state { text-align: left; }
-.csv-row { grid-template-columns: minmax(0, 1fr) 160px 130px var(--state-w) var(--ctl-h); }
+/* The name track states a real minimum rather than `minmax(0, 1fr)`, which is
+   a track that will shrink to nothing: at the 690px pane a 1440px window
+   gives it, the name had 158px and "Social media management for Instagram,
+   Facebook and TikTok" broke one word per line into a 210px tall row. 180 is
+   the floor a service name is readable at; the two money tracks give up 20px
+   between them so the sum of the fixed tracks and the gaps (672) still fits
+   that 690. Below it the row stacks on purpose — see `.is-narrow` — rather
+   than overflowing, because a declared minimum that cannot be honoured is
+   worse than no minimum at all. */
+.csv-row { grid-template-columns: minmax(180px, 1fr) 150px 120px var(--state-w) var(--ctl-h); }
 .doc-row { grid-template-columns: minmax(0, 1fr) 130px var(--state-w) var(--ctl-h); }
 /* Service, what it costs, what that buys. Active is the ordinary case on this
    card, so it costs no column: the exception is named beside the name. */
@@ -3174,105 +3203,117 @@ body > .shell { width: 100%; }
 .csv-total .is-total b { font-size: 15px; }
 /* On a phone a row is two or three lines: the name with its ⋯, the small
    facts, then the money on the left and the state on the right. */
-@media (max-width: 640px) {
-  /* A record head on a phone: the name and its state share the first line with
-     the state at the end, and the action that edits the record takes the next
-     one. Left to wrap on its own the state landed after the name on one client
-     and at the edge on the next, because whether Edit still fitted depended on
-     how long the name was. The basis is the line less the state and the gap,
-     so the action is always the thing that wraps. */
-  .crm-title h2 { flex: 1 1 calc(100% - var(--state-w) - 10px); }
-  .crm-title .state-select { margin-left: auto; }
-  .crm-title .btn { margin-left: auto; }
-  /* The mark keeps its column on a phone but takes less of it, so the name
-     still has the width the state select is measured against. */
-  .svc-row.crm-head { display: none; }
-  .svc-row, .csv-row, .doc-row, .cat-row, .ct-row, .cr-row {
-    grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 12px 15px;
-    grid-template-areas: "name act" "calc calc" "amt state";
-  }
-  /* A service line draws a select while it can still move and a chip once a
-     verified letter has confirmed it, and the two are not the same width. On
-     an `auto` track that put the state column 51px further left on the
-     confirmed rows, which is the fault this portal calls a column that is not
-     a column. The track is the state's own width on every row, and what sits
-     in it ends at the same edge whichever shape it is. */
-  .csv-row { grid-template-columns: minmax(0, 1fr) var(--state-w); }
-  /* The two things a person came for sit on the first line, and what qualifies
-     the money goes under it. Three lines with a control on the last one was a
-     row 310px tall: two and a half services on a screen out of thirty four. */
-  .cat-row {
-    grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
-    grid-template-areas: "name rate act" "meta meta meta";
-  }
-  /* A header the phone hides is not a header, so it leaves and takes its own
-     padding with it. The row becomes three lines under the number: who, where
-     it has got to, and what the booking is. The state keeps a line it can be
-     read down rather than sharing one with a summary that would squeeze it. */
-  .bookreg-head { display: none; }
-  .bookreg .kcard-head {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: "lead name act" "lead tags tags" "lead sum sum";
-    gap: 5px 10px; align-items: start; padding: 12px 14px;
-  }
-  .bookreg .kcard-lead { grid-area: lead; align-self: center; }
-  .bookreg .kcard-name { grid-area: name; align-self: center; }
-  .bookreg .kcard-act  { grid-area: act; }
-  .bookreg .kcard-tags { grid-area: tags; }
-  .bookreg .kcard-sum  { grid-area: sum; white-space: normal; }
-  /* On a phone these are named areas, so an empty one is a blank line held
-     open by the gap and can safely leave. */
-  .bookreg .kcard-sum:empty, .bookreg .kcard-tags:empty { display: none; }
-  /* Two lines, not four: who and what they cost, then where to find them with
-     their record at the end of the same line. A grid row each for the links
-     and the record put a 120px row on the screen, which is five creators on a
-     phone. */
-  .cr-row {
-    grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
-    grid-template-areas: "name rate act" "links rec rec";
-    row-gap: 4px; align-items: start;
-  }
-  .cr-row > .svc-name { align-self: center; }
-  .cr-row > .cr-links { grid-area: links; align-self: center; }
-  .cr-row > .cr-rec { grid-area: rec; text-align: right; align-self: center; }
-  /* The ⋯ acts on the whole row, so it spans the whole row. Left on the first
-     line it set that line's height to its own 38px and pushed the row to
-     100px for the sake of a 22px name. */
-  .doc-row { grid-template-areas: "name act" "amt state"; }
-  .ct-row  { grid-template-areas: "name act" "reach reach"; }
-  .svc-row > .svc-name { grid-area: name; }
-  .svc-row > .team-act { grid-area: act; align-self: start; }
-  /* The ⋯ keeps its full target and stops setting the first line's height:
-     its 38px box pushed a row carrying a 22px name to 100px. The negative
-     block margin is the same trick the selection tick uses, so the footprint
-     is the name's and the thing under a thumb is still 38px (44 on a touch
-     screen). */
-  .cr-row > .team-act { align-self: center; margin-block: calc((22px - var(--ctl-h)) / 2); }
-  .svc-row > .svc-calc { grid-area: calc; text-align: left; }
-  .svc-row > .svc-unit { grid-area: meta; }
-  .svc-row > .svc-amt { text-align: left; align-self: center; grid-area: amt; }
-  .cat-row > .svc-rate {
-    grid-area: rate; text-align: right; align-self: center; white-space: nowrap;
-  }
-  /* Against a name over two meta lines the fee belongs on the name's own line,
-     not floating halfway down the row. */
-  .cr-row > .svc-rate {
-    grid-area: rate; text-align: right; align-self: start; white-space: nowrap;
-  }
-  .svc-row > .svc-state { grid-area: state; justify-self: end; }
-  /* A service line draws a select while it can still move and a chip once a
-     verified letter has confirmed it, and the two are not the same width. End
-     justified in an `auto` track that put the state column 51px further left
-     on the confirmed rows, which is the fault this portal calls a column that
-     is not a column. The track above is the state's own width; the cell fills
-     it, so it starts at the same x on every row, and the chip is what ends at
-     the edge. Restated here because `.svc-row > .svc-state` comes later in the
-     file and would otherwise win on the same specificity. */
-  .svc-row.csv-row > .svc-state { justify-self: stretch; text-align: right; }
-  .ct-row > .crm-reach { grid-area: reach; }
-  .ct-row .plink { flex: 1 1 0; justify-content: center; }
-  .csv-total { justify-content: space-between; gap: 12px; }
+/* ---- Rows, keyed on the width of the thing that holds them ----
+   Not `@media (max-width: 640px)`: the record pane is about 591px wide at a
+   1280px window, so every one of these rules was false exactly where it was
+   needed and the Services row kept a desktop grid in 591px — the name track
+   collapsed to 59px and a description came out one word per line. `is-narrow`
+   is set from the element's own width by `ADspaceState.fit`, so one copy of
+   each template serves the phone and the narrow pane alike. */
+/* A record head on a phone: the name and its state share the first line with
+   the state at the end, and the action that edits the record takes the next
+   one. Left to wrap on its own the state landed after the name on one client
+   and at the edge on the next, because whether Edit still fitted depended on
+   how long the name was. The basis is the line less the state and the gap,
+   so the action is always the thing that wraps. */
+.is-narrow .crm-title h2 { flex: 1 1 calc(100% - var(--state-w) - 10px); }
+.is-narrow .crm-title .state-select { margin-left: auto; }
+.is-narrow .crm-title .btn { margin-left: auto; }
+/* The mark keeps its column on a phone but takes less of it, so the name
+   still has the width the state select is measured against. */
+.is-narrow .svc-row.crm-head { display: none; }
+.is-narrow .svc-row, .is-narrow .csv-row, .is-narrow .doc-row, .is-narrow .cat-row, .is-narrow .ct-row, .is-narrow .cr-row {
+  grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 12px 15px;
+  grid-template-areas: "name act" "calc calc" "amt state";
 }
+/* A service line draws a select while it can still move and a chip once a
+   verified letter has confirmed it, and the two are not the same width. On
+   an `auto` track that put the state column 51px further left on the
+   confirmed rows, which is the fault this portal calls a column that is not
+   a column. The track is the state's own width on every row, and what sits
+   in it ends at the same edge whichever shape it is. */
+.is-narrow .csv-row { grid-template-columns: minmax(0, 1fr) var(--state-w); }
+/* The two things a person came for sit on the first line, and what qualifies
+   the money goes under it. Three lines with a control on the last one was a
+   row 310px tall: two and a half services on a screen out of thirty four. */
+.is-narrow .cat-row {
+  grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
+  grid-template-areas: "name rate act" "meta meta meta";
+}
+/* A header the phone hides is not a header, so it leaves and takes its own
+   padding with it. The row becomes three lines under the number: who, where
+   it has got to, and what the booking is. The state keeps a line it can be
+   read down rather than sharing one with a summary that would squeeze it. */
+.is-tight .bookreg-head { display: none; }
+/* Two lines, not three. The state and the summary share the second line — the
+   chip keeps its own width and the summary takes what is left — so a collapsed
+   booking on a phone is about 70px rather than 119, and six of them can be
+   read without scrolling past three. */
+.is-tight .bookreg .kcard-head {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "lead name act" "lead tags sum";
+  gap: 4px 10px; align-items: center; padding: 10px 14px;
+}
+.is-tight .bookreg .kcard-lead { grid-area: lead; }
+.is-tight .bookreg .kcard-name { grid-area: name; }
+.is-tight .bookreg .kcard-act { grid-area: act; justify-self: end; }
+.is-tight .bookreg .kcard-tags { grid-area: tags; justify-self: start; }
+.is-tight .bookreg .kcard-sum {
+  grid-area: sum; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; text-align: right;
+}
+/* On a phone these are named areas, so an empty one is a blank line held
+   open by the gap and can safely leave. */
+.is-tight .bookreg .kcard-sum:empty, .is-tight .bookreg .kcard-tags:empty { display: none; }
+/* Two lines, not four: who and what they cost, then where to find them with
+   their record at the end of the same line. A grid row each for the links
+   and the record put a 120px row on the screen, which is five creators on a
+   phone. */
+.is-narrow .cr-row {
+  grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
+  grid-template-areas: "name rate act" "links rec rec";
+  row-gap: 4px; align-items: start;
+}
+.is-narrow .cr-row > .svc-name { align-self: center; }
+.is-narrow .cr-row > .cr-links { grid-area: links; align-self: center; }
+.is-narrow .cr-row > .cr-rec { grid-area: rec; text-align: right; align-self: center; }
+/* The ⋯ acts on the whole row, so it spans the whole row. Left on the first
+   line it set that line's height to its own 38px and pushed the row to
+   100px for the sake of a 22px name. */
+.is-narrow .doc-row { grid-template-areas: "name act" "amt state"; }
+.is-narrow .ct-row { grid-template-areas: "name act" "reach reach"; }
+.is-narrow .svc-row > .svc-name { grid-area: name; }
+.is-narrow .svc-row > .team-act { grid-area: act; align-self: start; }
+/* The ⋯ keeps its full target and stops setting the first line's height:
+   its 38px box pushed a row carrying a 22px name to 100px. The negative
+   block margin is the same trick the selection tick uses, so the footprint
+   is the name's and the thing under a thumb is still 38px (44 on a touch
+   screen). */
+.is-narrow .cr-row > .team-act { align-self: center; margin-block: calc((22px - var(--ctl-h)) / 2); }
+.is-narrow .svc-row > .svc-calc { grid-area: calc; text-align: left; }
+.is-narrow .svc-row > .svc-unit { grid-area: meta; }
+.is-narrow .svc-row > .svc-amt { text-align: left; align-self: center; grid-area: amt; }
+.is-narrow .cat-row > .svc-rate {
+  grid-area: rate; text-align: right; align-self: center; white-space: nowrap;
+}
+/* Against a name over two meta lines the fee belongs on the name's own line,
+   not floating halfway down the row. */
+.is-narrow .cr-row > .svc-rate {
+  grid-area: rate; text-align: right; align-self: start; white-space: nowrap;
+}
+.is-narrow .svc-row > .svc-state { grid-area: state; justify-self: end; }
+/* A service line draws a select while it can still move and a chip once a
+   verified letter has confirmed it, and the two are not the same width. End
+   justified in an `auto` track that put the state column 51px further left
+   on the confirmed rows, which is the fault this portal calls a column that
+   is not a column. The track above is the state's own width; the cell fills
+   it, so it starts at the same x on every row, and the chip is what ends at
+   the edge. Restated here because `.svc-row > .svc-state` comes later in the
+   file and would otherwise win on the same specificity. */
+.is-narrow .svc-row.csv-row > .svc-state { justify-self: stretch; text-align: right; }
+.is-narrow .ct-row > .crm-reach { grid-area: reach; }
+.is-narrow .ct-row .plink { flex: 1 1 0; justify-content: center; }
+.is-narrow .csv-total { justify-content: space-between; gap: 12px; }
 .crm-links:empty { display: none; }
 .notice.is-warn { border-color: #efd7b6; background: var(--warn-bg); margin: 12px 0 0; }
 .notice.is-warn svg { color: var(--warn); }
@@ -4065,10 +4106,18 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   grid-template-rows: auto 1fr;
   grid-template-areas: "tabs rail" "pane rail";
 }
+/* One row, always. Wrapping put Activity alone on a second line and moved the
+   pane down by a tab's height; below the width where seven of them fit, the
+   strip scrolls sideways instead, which is what every tab strip on a phone
+   does. `flex: 0 0 auto` on the tabs, so none of them is squeezed to make the
+   row fit rather than scrolling. */
 .rectabs {
-  grid-area: tabs; display: flex; gap: 2px; flex-wrap: wrap;
+  grid-area: tabs; display: flex; gap: 2px; flex-wrap: nowrap;
+  overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
   border-bottom: 1px solid var(--line); margin-bottom: 4px;
 }
+.rectabs::-webkit-scrollbar { display: none; }
+.rectabs .tab { flex: 0 0 auto; }
 .rec-pane { grid-area: pane; min-width: 0; }
 /* The first block in a pane sits as far from the tabs as two blocks sit from
    each other: the law of the stack does not stop at a tab strip. */
@@ -4116,12 +4165,9 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 /* The tab strip scrolls sideways rather than wrapping to three rows: seven
    words at 390 is two and a half lines of chrome above the work. */
 @media (max-width: 640px) {
-  .rectabs {
-    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
-    margin-inline: -16px; padding-inline: 16px;
-  }
-  .rectabs::-webkit-scrollbar { display: none; }
-  .rectabs .tab { flex: 0 0 auto; }
+  /* The strip already scrolls; on a phone it also bleeds to the gutter, so a
+     tab is not clipped by the page padding. */
+  .rectabs { margin-inline: -16px; padding-inline: 16px; }
   .rec-rail .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -4171,28 +4217,27 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .sched-state, .pick-state { min-width: 0; }
 .pick-row { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr) 96px 124px; }
 
-@media (max-width: 640px) {
-  /* Two lines: who and where they stand, then the dates under them. */
-  .sched-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "who state" "when when" "pub pub";
-    gap: 2px 10px;
-  }
-  .sched-row > .sched-who { grid-area: who; }
-  .sched-row > .sched-state { grid-area: state; }
-  .sched-row > .sched-when:nth-of-type(2) { grid-area: when; }
-  .sched-row > .sched-when:nth-of-type(3) { grid-area: pub; }
-  .pick-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "who state" "plat rate";
-    gap: 2px 10px;
-  }
-  .pick-row > .pick-who { grid-area: who; }
-  .pick-row > .pick-state { grid-area: state; }
-  .pick-row > .pick-plat { grid-area: plat; }
-  .pick-row > .svc-rate { grid-area: rate; text-align: right; }
-  .crm-head.sched-row, .crm-head.pick-row { display: none; }
+/* The campaign's own rows, on the same component-width switch. */
+/* Two lines: who and where they stand, then the dates under them. */
+.is-narrow .sched-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "who state" "when when" "pub pub";
+  gap: 2px 10px;
 }
+.is-narrow .sched-row > .sched-who { grid-area: who; }
+.is-narrow .sched-row > .sched-state { grid-area: state; }
+.is-narrow .sched-row > .sched-when:nth-of-type(2) { grid-area: when; }
+.is-narrow .sched-row > .sched-when:nth-of-type(3) { grid-area: pub; }
+.is-narrow .pick-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "who state" "plat rate";
+  gap: 2px 10px;
+}
+.is-narrow .pick-row > .pick-who { grid-area: who; }
+.is-narrow .pick-row > .pick-state { grid-area: state; }
+.is-narrow .pick-row > .pick-plat { grid-area: plat; }
+.is-narrow .pick-row > .svc-rate { grid-area: rate; text-align: right; }
+.is-narrow .crm-head.sched-row, .is-narrow .crm-head.pick-row { display: none; }
 
 /* What a creator handed in. One block per creator, the files as things to
    open, the caption as the text it is. */
@@ -4444,50 +4489,50 @@ body.is-canvas { overflow: hidden; }
 .ovlog-when { font-size: 12.5px; color: var(--ink-mute); text-align: right; }
 .ovlog-when .ovmeta { display: block; margin: 0; }
 
-@media (max-width: 640px) {
-  .ovsec { padding: 14px 15px; }
-  .ovfacts { grid-template-columns: minmax(0, 1fr); gap: 10px; }
-  /* A header the phone hides is not a header, so the row carries its own
-     labels instead: name and money on the first line, what qualifies them on
-     the second — the shape every other list in this console takes. */
-  .ovhead { display: none; }
-  .ovrow-svc, .ovrow-doc {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "name amt" "dim state"; gap: 3px 12px;
-  }
-  .ovrow-svc > :nth-child(1), .ovrow-doc > :nth-child(1) { grid-area: name; }
-  .ovrow-svc > :nth-child(2), .ovrow-doc > :nth-child(2) { grid-area: dim; }
-  .ovrow-svc > :nth-child(3), .ovrow-doc > :nth-child(3) { grid-area: amt; justify-self: end; }
-  .ovrow-svc > :nth-child(4), .ovrow-doc > :nth-child(4) { grid-area: state; justify-self: end; }
-  /* Bookings: name and fee on the first line, where they post and where the
-     work has got to on the second. */
-  .ovrow-book {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "name amt" "dim state"; gap: 3px 12px;
-  }
-  .ovrow-book > :nth-child(1) { grid-area: name; }
-  .ovrow-book > :nth-child(2) { grid-area: dim; }
-  .ovrow-book > :nth-child(3) { grid-area: state; justify-self: end; }
-  .ovrow-book > :nth-child(4) { grid-area: amt; justify-self: end; }
-  /* The schedule keeps both dates, each under the caption the hidden header
-     would otherwise have given it. */
-  .ovrow-date {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-areas: "name name" "shoot pub"; gap: 6px 12px;
-  }
-  .ovrow-date > :nth-child(1) { grid-area: name; }
-  .ovrow-date > :nth-child(2) { grid-area: shoot; }
-  .ovrow-date > :nth-child(3) { grid-area: pub; }
-  .ovcap {
-    display: block; font-size: 11px; font-weight: 600; letter-spacing: .06em;
-    text-transform: uppercase; color: var(--ink-mute); margin-bottom: 2px;
-  }
-  .ovlog-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "kind when" "text text"; gap: 3px 12px;
-  }
-  .ovlog-kind { grid-area: kind; }
-  .ovlog-text { grid-area: text; white-space: normal; }
-  .ovlog-when { grid-area: when; }
-  .ovlog-when .ovmeta { display: inline; margin-left: 7px; }
+/* The Overview's rows are inside the pane as well, so they take the same
+   component-width switch rather than the window's. */
+.is-narrow .ovsec { padding: 14px 15px; }
+.is-narrow .ovfacts { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+/* A header the phone hides is not a header, so the row carries its own
+   labels instead: name and money on the first line, what qualifies them on
+   the second — the shape every other list in this console takes. */
+.is-narrow .ovhead { display: none; }
+.is-narrow .ovrow-svc, .is-narrow .ovrow-doc {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name amt" "dim state"; gap: 3px 12px;
 }
+.is-narrow .ovrow-svc > :nth-child(1), .is-narrow .ovrow-doc > :nth-child(1) { grid-area: name; }
+.is-narrow .ovrow-svc > :nth-child(2), .is-narrow .ovrow-doc > :nth-child(2) { grid-area: dim; }
+.is-narrow .ovrow-svc > :nth-child(3), .is-narrow .ovrow-doc > :nth-child(3) { grid-area: amt; justify-self: end; }
+.is-narrow .ovrow-svc > :nth-child(4), .is-narrow .ovrow-doc > :nth-child(4) { grid-area: state; justify-self: end; }
+/* Bookings: name and fee on the first line, where they post and where the
+   work has got to on the second. */
+.is-narrow .ovrow-book {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name amt" "dim state"; gap: 3px 12px;
+}
+.is-narrow .ovrow-book > :nth-child(1) { grid-area: name; }
+.is-narrow .ovrow-book > :nth-child(2) { grid-area: dim; }
+.is-narrow .ovrow-book > :nth-child(3) { grid-area: state; justify-self: end; }
+.is-narrow .ovrow-book > :nth-child(4) { grid-area: amt; justify-self: end; }
+/* The schedule keeps both dates, each under the caption the hidden header
+   would otherwise have given it. */
+.is-narrow .ovrow-date {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas: "name name" "shoot pub"; gap: 6px 12px;
+}
+.is-narrow .ovrow-date > :nth-child(1) { grid-area: name; }
+.is-narrow .ovrow-date > :nth-child(2) { grid-area: shoot; }
+.is-narrow .ovrow-date > :nth-child(3) { grid-area: pub; }
+.is-narrow .ovcap {
+  display: block; font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ink-mute); margin-bottom: 2px;
+}
+.is-narrow .ovlog-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "kind when" "text text"; gap: 3px 12px;
+}
+.is-narrow .ovlog-kind { grid-area: kind; }
+.is-narrow .ovlog-text { grid-area: text; white-space: normal; }
+.is-narrow .ovlog-when { grid-area: when; }
+.is-narrow .ovlog-when .ovmeta { display: inline; margin-left: 7px; }

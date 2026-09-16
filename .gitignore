@@ -1,5 +1,6 @@
 tests/walk/
 tests/p2/
+tests/geom/
 tests/pdfx/node_modules/
 tests/*.png
 tests/*.pdf
