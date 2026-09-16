@@ -222,7 +222,7 @@
       '</svg>' + (done >= total ? 'Complete' : done + ' of ' + total) + '</span>';
   }
 
-  var state = { clients: [], team: [], client: null, editing: null, contacts: [], touches: [], services: [], documents: [], lastSeen: {} };
+  var state = { clients: [], team: [], client: null, editing: null, contacts: [], touches: [], services: [], documents: [], log: [], lastSeen: {} };
 
   // ---- List ---------------------------------------------------------------
   /* The people on a record come from the team list, not from typing: a name
@@ -607,7 +607,7 @@
        call moves the stage, which reads the client back, and that used to
        throw somebody out of the pane they were working in. */
     var same = Boolean(state.client && state.client.id === c.id);
-    if (!same) state.contacts = [];
+    if (!same) { state.contacts = []; state.log = []; }
     state.client = c;
     $('crmListView').hidden = true;
     $('crmWork').hidden = false;
@@ -621,15 +621,18 @@
     }).join('');
     sel.className = 'select select-sm state-select ' + (w[2] || '');
 
+    paintIdentity(c);
+
     var mk = MON.market(c.market);
+    /* Person in charge has moved to the identity line and Added to Key dates,
+       so neither is stated twice: a rail that repeats the head is a rail
+       nobody reads. */
     $('crmFacts').innerHTML = [
       ['Source',   c.source ? sourceWord(c.source) : '<span class="muted">Not set</span>'],
-      ['Person in charge', c.owner || '<span class="muted">Unassigned</span>'],
       ['Industry', c.industry || '<span class="muted">Not set</span>'],
       ['Market',   (c.market === 'SG' ? 'Singapore' : 'Malaysia') + ' · ' + mk.sign],
       ['Value',    c.deal_value ? MON.money(c.deal_value, c.market) : '<span class="muted">Not set</span>'],
-      ['To commence', c.commence ? commenceWord(c.commence) : '<span class="muted">Not set</span>'],
-      ['Added',    c.created_at ? niceDate(c.created_at) : '']
+      ['To commence', c.commence ? commenceWord(c.commence) : '<span class="muted">Not set</span>']
     ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
       return '<div><dt>' + f[0] + '</dt><dd>' +
         (String(f[1]).indexOf('<span') === 0 ? f[1] : esc(f[1])) + '</dd></div>';
@@ -670,6 +673,7 @@
     loadDocuments();
     loadRequests();
     loadTouches();
+    loadClientLog();
     loadWork();
     showPane(restoring ? paneFromUrl() : (same ? pane : 'overview'));
     setUrl();
@@ -703,7 +707,7 @@
     /* A fold inside its own pane is furniture: the pane is the disclosure. */
     if (key === 'billing') setOpen('crmBillToggle', 'crmBillBody', true);
     if (key === 'brand') setOpen('crmBrandToggle', 'crmBrandBody', true);
-    if (key === 'activity') loadClientLog();
+    if (key === 'activity' && !(state.log || []).length) loadClientLog();
     if (key === 'overview') paintSummary();
   }
 
@@ -735,6 +739,10 @@
       .then(function (r) {
         if (r.error) { UI.failLine(box, 'The record of changes', r.error.message, loadClientLog); return; }
         var rows = r.data || [];
+        /* Kept so the rail can show the last three without a second read: the
+           record has already paid for this one. */
+        state.log = rows;
+        railLog();
         if (!rows.length) { box.innerHTML = '<div class="empty">No entries.</div>'; return; }
         var t = document.createElement('div');
         t.className = 'crm-table softpanel';
@@ -763,27 +771,84 @@
     return (hit && hit[0]) || String(action || '').replace(/[._]/g, ' ');
   }
 
-  /* ---- The record's Summary -------------------------------------------
+  /* ---- Identity ---------------------------------------------------------
+     The record opens on something that says which company this is. The mark
+     is the client's own logo where we hold one (`clients.logo_url`, already
+     read for the mockups) and their initials where we do not; the logo is the
+     client's artwork and is never inverted, which is why the disc behind it
+     stays light in both themes, exactly as the review mockups do. */
+  function initialsOf(name) {
+    var parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    /* A Chinese name is one word of two or three characters, so the first two
+       characters are the mark; a Latin name gives the first letter of the
+       first two words. */
+    if (/[㐀-鿿]/.test(parts[0])) return parts[0].slice(0, 2);
+    /* Only words that begin with a letter count, or "Dale & Cecil" comes out
+       as "D&" and "S P Setia" as "SP". */
+    var words = parts.filter(function (w) { return /^[A-Za-z]/.test(w); });
+    if (!words.length) return parts[0].charAt(0).toUpperCase();
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+    return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+  }
+
+  function paintIdentity(c) {
+    var mark = $('crmClientMark');
+    if (mark) {
+      if (c.logo_url) {
+        mark.className = 'rec-mark has-logo';
+        mark.innerHTML = '<img src="' + esc(c.logo_url) + '" alt="">';
+        var img = mark.querySelector('img');
+        img.addEventListener('error', function () {
+          mark.className = 'rec-mark';
+          mark.textContent = initialsOf(c.name);
+        });
+      } else {
+        mark.className = 'rec-mark';
+        mark.textContent = initialsOf(c.name);
+      }
+    }
+    /* What identifies the client rather than what describes them: who we
+       write to and in which language, and who here owns the account. Each
+       part is omitted when it is not known, so the line never stands in for
+       a fact nobody has recorded. */
+    var main = (state.contacts || []).filter(function (x) { return x.is_primary; })[0] ||
+               (state.contacts || [])[0];
+    var bits = [];
+    if (main && main.lang && LANG_WORD[main.lang]) bits.push('Prefers ' + LANG_WORD[main.lang]);
+    if (c.owner) bits.push('Person in charge: ' + c.owner);
+    var meta = $('crmIdMeta');
+    if (meta) {
+      meta.textContent = bits.join('  ·  ');
+      meta.hidden = !bits.length;
+    }
+  }
+
+  /* ---- The record's Overview -------------------------------------------
      Overview used to be the Engagements list and, for a lead, nothing at all:
-     the pane you land on had less on it than any other. It is a summary of
-     what the record has already loaded — the contacts, the service lines, the
-     calls, the documents and the billing ring — so it costs no read, stores
-     no number and invents no metric. Sections and dividers, not a row of
-     decorative tiles. */
+     the pane you land on had less on it than any other. It reads as an
+     operational record now — flat titled sections divided by hairlines, the
+     way the rest of this console draws a table — and every row in it comes
+     from what the record has already loaded: the contacts, the service lines,
+     the documents and the calls. No second read, no stored number, no
+     invented metric, and a section that has nothing says so in one line
+     rather than disappearing, because "no documents" is itself an answer. */
   function paintSummary() {
     var box = $('crmSummary');
     var c = state.client;
     if (!box || !c) return;
 
-    var out = [];
-    out.push(nextStep(c));
-    out.push(readiness(c));
-    out.push(whoToCall());
-    out.push(servicesLine(c));
-    out.push(recentTouches());
-    out.push(recentDocs());
-    box.innerHTML = '<div class="sumcard">' + out.filter(Boolean).join('') + '</div>';
+    box.innerHTML = '<div class="ovcard">' + [
+      ovContact(c), ovServices(c), ovDocuments(c), ovTouches()
+    ].join('') + '</div>';
 
+    wireGo(box);
+    paintRail(c);
+  }
+
+  /* One handler for every control that opens a pane, in the Overview and in
+     the rail alike, so the address follows wherever somebody entered. */
+  function wireGo(box) {
     Array.prototype.forEach.call(box.querySelectorAll('[data-go]'), function (b) {
       b.addEventListener('click', function () {
         showPane(b.getAttribute('data-go'));
@@ -792,126 +857,247 @@
     });
   }
 
-  /* Every section row's button is named for the pane it opens, because that is
-     what it does and because the tab strip above already teaches those six
-     words. Only the Next row carries an action word: it is the one row that is
-     telling somebody to do a thing rather than showing them where a thing
-     lives, and "Add a line" printed on two rows of one card was the same call
-     to action asked for twice. */
-  function sumRow(label, body, go, goWord) {
-    return '<div class="sumrow">' +
-      '<div class="sumrow-label">' + esc(label) + '</div>' +
-      '<div class="sumrow-body">' + body + '</div>' +
-      (go ? '<button class="btn btn-sm sumrow-go" type="button" data-go="' + esc(go) + '">' +
-        esc(goWord) + '</button>' : '') +
-    '</div>';
+  var CHEV = '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M9 18l6-6-6-6"/></svg>';
+
+  /* A section is a heading and the one control that opens what it summarises,
+     which is this portal's section head drawn flat rather than as a card. */
+  function ovSection(title, go, goWord, body) {
+    return '<section class="ovsec">' +
+      '<div class="ovsec-head"><h3>' + esc(title) + '</h3>' +
+      '<button class="btn btn-quiet btn-sm ovgo" type="button" data-go="' + esc(go) + '">' +
+        esc(goWord) + CHEV + '</button></div>' + body + '</section>';
   }
-  /* An empty section says what would fill it, in a line, beside the way to do
-     it. Not a dashed box and not a sentence explaining what the section is. */
-  function sumNone(text) { return '<span class="sumnone">' + esc(text) + '</span>'; }
+  /* Nothing there is a line, not a dashed box and not a sentence explaining
+     what the section would have held. */
+  function ovNone(text) { return '<p class="ovnone">' + esc(text) + '</p>'; }
+
+  function ovRows(pairs) {
+    return '<dl class="ovfacts">' + pairs.map(function (p) {
+      return '<div><dt>' + esc(p[0]) + '</dt><dd>' + p[1] + '</dd></div>';
+    }).join('') + '</dl>';
+  }
+
+  function ovContact(c) {
+    var list = state.contacts || [];
+    if (!list.length) {
+      return ovSection('Contact details', 'contacts', 'Contacts', ovNone('No contacts yet.'));
+    }
+    var m = list.filter(function (x) { return x.is_primary; })[0] || list[0];
+    var rows = [['Main contact', '<b>' + esc(m.name || '') + '</b>' +
+      (m.role ? '<span class="ovmeta">' + esc(m.role) + '</span>' : '')]];
+    if (m.phone) {
+      rows.push(['Phone', esc(m.phone) +
+        (m.whatsapp ? '<a class="ovlink" href="https://wa.me/' + esc(String(m.whatsapp).replace(/\D/g, '')) +
+          '" target="_blank" rel="noopener">WhatsApp</a>' : '')]);
+    }
+    if (m.email) rows.push(['Email', '<a class="ovlink" href="mailto:' + esc(m.email) + '">' + esc(m.email) + '</a>']);
+    if (m.lang && LANG_WORD[m.lang]) rows.push(['Preferred language', esc(LANG_WORD[m.lang])]);
+    /* Person in charge is on the identity line above and is not repeated
+       here; a record that states a fact twice is a record nobody reads. */
+    if (c.enquiry) rows.push(['Enquiry', esc(c.enquiry)]);
+    if (list.length > 1) {
+      rows.push(['Other contacts', (list.length - 1) + (list.length === 2 ? ' person' : ' people')]);
+    }
+    return ovSection('Contact details', 'contacts', 'Contacts', ovRows(rows));
+  }
+
+  /* The lines the client is paying for, or was quoted. Enquired lines are not
+     shown here for the same reason the letter leaves them out: nobody has put
+     a price on them yet. */
+  function ovServices(c) {
+    var all = state.services || [];
+    var rows = all.filter(function (l) { return l.state === 'confirmed' || l.state === 'quoted'; });
+    if (!rows.length) {
+      return ovSection('Services', 'services', 'Services',
+        ovNone(all.length ? all.length + (all.length === 1 ? ' line enquired, nothing quoted yet.' : ' lines enquired, nothing quoted yet.')
+                          : 'Nothing quoted or confirmed.'));
+    }
+    var body = '<div class="ovtable">' +
+      '<div class="ovhead ovrow-svc"><span>Service</span><span>Details</span><span>Amount</span><span>State</span></div>' +
+      rows.slice(0, 5).map(function (l) {
+        var st = SV_STATE[l.state] || ['', ''];
+        return '<div class="ovrow ovrow-svc">' +
+          '<span class="ovname">' + esc(l.label || '') + '</span>' +
+          '<span class="ovdim">' + esc(termWord(l) || '') + '</span>' +
+          '<span class="ovamt">' + esc(MON.money2(amountOf(l), c.market)) + '</span>' +
+          '<span><span class="tone ' + esc(st[1] || '') + '">' + esc(st[0] || l.state) + '</span></span>' +
+        '</div>';
+      }).join('') +
+      (rows.length > 5 ? '<p class="ovmore">' + (rows.length - 5) + ' more</p>' : '') +
+      '</div>';
+    return ovSection('Services', 'services', 'Services', body);
+  }
+
+  function ovDocuments() {
+    var rows = state.documents || [];
+    if (!rows.length) return ovSection('Letters', 'documents', 'Documents', ovNone('None issued.'));
+    var body = '<div class="ovtable">' +
+      '<div class="ovhead ovrow-doc"><span>Reference</span><span>Type</span><span>Issued</span><span>State</span></div>' +
+      rows.slice(0, 4).map(function (d) {
+        return '<div class="ovrow ovrow-doc">' +
+          '<span class="ovname">' + esc(d.number || '') + '</span>' +
+          '<span class="ovdim">' + esc(DOC_WORD[d.kind] || d.kind || '') + '</span>' +
+          '<span class="ovdim">' + esc(d.issued_at ? niceDate(d.issued_at) : '') + '</span>' +
+          '<span>' + (d.voided_at ? '<span class="tone">Void</span>' : '<span class="tone is-ok">Issued</span>') + '</span>' +
+        '</div>';
+      }).join('') +
+      (rows.length > 4 ? '<p class="ovmore">' + (rows.length - 4) + ' more</p>' : '') +
+      '</div>';
+    return ovSection('Letters', 'documents', 'Documents', body);
+  }
+
+  function ovTouches() {
+    var rows = state.touches || [];
+    if (!rows.length) return ovSection('Calls and visits', 'activity', 'Activity', ovNone('Nothing logged.'));
+    var body = '<ul class="ovlog">' + rows.slice(0, 3).map(function (t) {
+      return '<li class="ovlog-row">' +
+        '<span class="ovlog-kind">' + esc(KIND_WORD[t.kind] || t.kind || '') + '</span>' +
+        '<span class="ovlog-text">' + esc(t.summary || '') + '</span>' +
+        '<span class="ovlog-when">' + esc(niceDate(t.happened_at)) +
+          (t.contact_name ? '<span class="ovmeta">with ' + esc(t.contact_name) + '</span>' : '') + '</span>' +
+      '</li>';
+    }).join('') + '</ul>';
+    return ovSection('Calls and visits', 'activity', 'Activity', body);
+  }
+
+  /* ---- The rail ---------------------------------------------------------
+     What is true whichever pane is open. Every block leaves entirely when the
+     data behind it is not there, so nothing on it is a placeholder. */
+  function paintRail(c) {
+    railNext(c);
+    railDone(c);
+    railDates(c);
+    railLog();
+    wireGo($('crmNextBlock'));
+    wireGo($('crmDoneBlock'));
+    /* The rule under a block belongs to the last block actually drawn.
+       `:last-child` counts a hidden sibling, and every block here leaves when
+       the data behind it is not there. */
+    var rail = document.querySelector('.rec-rail');
+    if (!rail) return;
+    var shown = Array.prototype.filter.call(rail.querySelectorAll('.railblock'),
+      function (b) { return !b.hidden; });
+    shown.forEach(function (b, i) { b.classList.toggle('is-last', i === shown.length - 1); });
+  }
+
+  /* The next action somebody actually wrote on a call, with the date they set,
+     or failing that the step this record's own state implies. A written one
+     wins, because a person decided it and a derivation did not. */
+  function railNext(c) {
+    var block = $('crmNextBlock'), box = $('crmNext');
+    if (!block || !box) return;
+    var open = (state.touches || []).filter(function (t) { return t.next_action && !t.done_at; })
+      .sort(function (a, b) { return String(a.next_at || '9999') < String(b.next_at || '9999') ? -1 : 1; })[0];
+    if (open) {
+      var late = open.next_at && open.next_at < today();
+      box.innerHTML = '<button class="railnext" type="button" data-go="activity">' +
+        '<span class="railnext-text">' + esc(open.next_action) + '</span>' +
+        (open.next_at ? '<span class="railnext-when' + (late ? ' is-late' : '') + '">' +
+          esc((late ? 'Overdue · ' : 'Due ') + niceDate(open.next_at)) + '</span>' : '') +
+        CHEV + '</button>';
+      block.hidden = false;
+      return;
+    }
+    var step = nextStep(c);
+    if (!step) { block.hidden = true; box.innerHTML = ''; return; }
+    box.innerHTML = '<button class="railnext" type="button" data-go="' + esc(step.go) + '">' +
+      '<span class="railnext-text">' + esc(step.text) + '</span>' + CHEV + '</button>';
+    block.hidden = false;
+  }
 
   /* The one thing this record needs next, read off the same gate, stage and
-     lines every other part of the record reads. */
+     lines every other part of the record reads. The line states what is true;
+     the control opens the pane that changes it. */
   function nextStep(c) {
     var stage = c.stage || 'lead';
     var missing = billingMissing(c);
     var quoting = (state.services || []).filter(function (l) { return l.state === 'quoted'; }).length;
     var confirmed = (state.services || []).filter(function (l) { return l.state === 'confirmed'; }).length;
     var issued = (state.documents || []).filter(function (d) { return !d.voided_at; }).length;
-    var body, go = '', word = '';
 
-    /* The line states what is true; the button states the action. A sentence
-       that explains why the state matters is the explanatory copy this portal
-       does not carry, and a line that repeats its own button says one thing
-       twice. */
-    if (!state.contacts.length) { body = 'No contact on the record.'; go = 'contacts'; word = 'Add a contact'; }
-    else if (stage === 'lead') { body = 'No call or visit logged.'; go = 'activity'; word = 'Log a call'; }
-    else if (!(state.services || []).length) { body = 'No service lines.'; go = 'services'; word = 'Add a line'; }
-    else if (quoting && !issued) { body = quoting + (quoting === 1 ? ' line' : ' lines') + ' to quote, no letter issued.'; go = 'documents'; word = 'Issue letter'; }
-    else if (stage !== 'active' && stage !== 'paused' && stage !== 'past' && missing.length) {
-      body = missing.length + (missing.length === 1 ? ' billing field' : ' billing fields') + ' before Active.';
-      go = 'billing'; word = 'Billing';
-    } else if (stage === 'proposal' && issued) { body = 'Letter with the client, unsigned.'; }
-    else if (stage === 'active' && !confirmed) { body = 'Active with no confirmed line.'; go = 'services'; word = 'Services'; }
-    else return '';
-    return sumRow('Next', '<b>' + esc(body) + '</b>', go, word);
+    if (!state.contacts.length) return { text: 'No contact on the record.', go: 'contacts' };
+    if (stage === 'lead') return { text: 'No call or visit logged.', go: 'activity' };
+    if (!(state.services || []).length) return { text: 'No service lines.', go: 'services' };
+    if (quoting && !issued) {
+      return { text: quoting + (quoting === 1 ? ' line' : ' lines') + ' to quote, no letter issued.', go: 'documents' };
+    }
+    if (stage !== 'active' && stage !== 'paused' && stage !== 'past' && missing.length) {
+      return { text: missing.length + (missing.length === 1 ? ' billing field' : ' billing fields') +
+        ' before Active.', go: 'billing' };
+    }
+    if (stage === 'proposal' && issued) return { text: 'Letter with the client, unsigned.', go: 'documents' };
+    if (stage === 'active' && !confirmed) return { text: 'Active with no confirmed line.', go: 'services' };
+    return null;
   }
 
-  /* How complete the record is, from the same ring the Billing fold draws. */
-  function readiness(c) {
-    var missing = billingMissing(c);
-    var done = BILLING_REQUIRED.length - missing.length;
-    var brandOn = BRAND.filter(function (f) { return c[f[1]]; }).length + (c.brand_notes ? 1 : 0);
-    /* `ring()` already prints "0 of 4" or "Complete" beside its arc, so the
-       label names what is being counted and stops there. */
-    return sumRow('Record',
-      '<span class="sumring">Billing ' + ring(done, BILLING_REQUIRED.length) + '</span>' +
-      /* Two facts, joined on one line where there is room for one. On a phone
-         the dot becomes the line break instead of dangling at the end of the
-         first half, which reads as a typo. */
-      '<span class="sumdot sumsplit">·</span>' +
-      '<span>Brand profile ' + (brandOn ? brandOn + (brandOn === 1 ? ' entry' : ' entries') : 'empty') + '</span>',
-      /* Whichever half is short is where the button goes: "Brand profile
-         empty" with no way to the brand pane is a dead end on the one screen
-         that exists to say what is missing. */
-      missing.length ? 'billing' : (brandOn ? '' : 'brand'),
-      missing.length ? 'Billing' : (brandOn ? '' : 'Brand'));
+  /* How much of the record is filled in. A bar rather than a figure, because
+     the question anybody actually asks is whether this is nearly done, and
+     the line under it names what is still missing so the bar is never the
+     only thing said. Counted over what the record genuinely tracks. */
+  function railDone(c) {
+    var block = $('crmDoneBlock'), box = $('crmDone');
+    if (!block || !box) return;
+    var parts = [
+      ['Billing', BILLING_REQUIRED.length - billingMissing(c).length, BILLING_REQUIRED.length],
+      ['Brand profile', BRAND.filter(function (f) { return c[f[1]]; }).length + (c.brand_notes ? 1 : 0), BRAND.length + 1],
+      ['Contacts', Math.min((state.contacts || []).length, 1), 1],
+      ['Services', Math.min((state.services || []).length, 1), 1]
+    ];
+    var done = parts.reduce(function (t, p) { return t + p[1]; }, 0);
+    var all = parts.reduce(function (t, p) { return t + p[2]; }, 0);
+    var pct = all ? Math.round(done / all * 100) : 0;
+    var short = parts.filter(function (p) { return p[1] < p[2]; });
+    box.innerHTML =
+      '<p class="railpct"><b>' + pct + '% complete</b><span>' + done + ' of ' + all + '</span></p>' +
+      '<span class="railbar"><span class="railbar-fill" style="width:' + pct + '%"></span></span>' +
+      (short.length
+        ? '<button class="railmiss" type="button" data-go="' +
+            (short[0][0] === 'Billing' ? 'billing' : short[0][0] === 'Brand profile' ? 'brand' :
+             short[0][0] === 'Contacts' ? 'contacts' : 'services') + '">' +
+            esc('Still to fill in: ' + short.map(function (p) { return p[0].toLowerCase(); }).join(', ') + '.') +
+            CHEV + '</button>'
+        : '<p class="ovnone">Nothing outstanding.</p>');
+    block.hidden = false;
   }
 
-  function whoToCall() {
-    var list = state.contacts || [];
-    if (!list.length) return sumRow('Main contact', sumNone('No contacts yet.'), 'contacts', 'Contacts');
-    var main = list.filter(function (x) { return x.is_primary; })[0] || list[0];
-    /* One joiner for the whole mute half, or the line reads as broken
-       punctuation: "Mr Lim · Director  012 · lim@lc.com  2 more" separated
-       three different ways on one line. */
-    var meta = [main.phone, main.email, list.length > 1 ? (list.length - 1) + ' more' : '']
-      .filter(Boolean).join(' · ');
-    return sumRow('Main contact',
-      '<b>' + esc(main.name) + '</b>' + (main.role ? '<span class="sumdot">·</span><span>' + esc(main.role) + '</span>' : '') +
-      (meta ? '<span class="summeta">' + esc(meta) + '</span>' : ''),
-      'contacts', 'Contacts');
+  /* Dates the record holds. A row is left out when its date is not there. */
+  function railDates(c) {
+    var block = $('crmDatesBlock'), box = $('crmDates');
+    if (!block || !box) return;
+    var live = (state.touches || []).filter(function (t) { return !t.archived_at; });
+    var last = live.map(function (t) { return t.happened_at; }).filter(Boolean).sort().pop();
+    var nextAt = live.filter(function (t) { return t.next_action && !t.done_at && t.next_at; })
+      .map(function (t) { return t.next_at; }).sort()[0];
+    var rows = [
+      ['Client since', c.created_at],
+      ['Last contact', last],
+      ['Next follow up', nextAt]
+    ].filter(function (r) { return r[1]; });
+    if (!rows.length) { block.hidden = true; box.innerHTML = ''; return; }
+    box.innerHTML = rows.map(function (r) {
+      var late = r[0] === 'Next follow up' && r[1] < today();
+      return '<div><dt>' + esc(r[0]) + '</dt><dd' + (late ? ' class="is-late"' : '') + '>' +
+        esc(niceDate(r[1])) + '</dd></div>';
+    }).join('');
+    block.hidden = false;
   }
 
-  function servicesLine(c) {
-    var rows = state.services || [];
-    if (!rows.length) return sumRow('Services', sumNone('Nothing quoted or confirmed.'), 'services', 'Services');
-    var sum = function (st) {
-      return rows.filter(function (l) { return l.state === st; })
-        .reduce(function (t, l) { return t + amountOf(l); }, 0);
-    };
-    var conf = rows.filter(function (l) { return l.state === 'confirmed'; }).length;
-    var quo = rows.filter(function (l) { return l.state === 'quoted'; }).length;
-    var bits = [];
-    if (conf) bits.push('<b>' + esc(MON.money2(sum('confirmed'), c.market)) + '</b><span class="summeta">' +
-      conf + (conf === 1 ? ' line confirmed' : ' lines confirmed') + '</span>');
-    if (quo) bits.push('<span>' + esc(MON.money2(sum('quoted'), c.market)) + '</span><span class="summeta">' +
-      quo + (quo === 1 ? ' line to quote' : ' lines to quote') + '</span>');
-    if (!bits.length) bits.push(sumNone(rows.length + (rows.length === 1 ? ' line enquired' : ' lines enquired')));
-    return sumRow('Services', bits.join('<span class="sumdot">·</span>'), 'services', 'Services');
-  }
-
-  function recentTouches() {
-    var rows = (state.touches || []).slice(0, 2);
-    if (!rows.length) return sumRow('Calls and visits', sumNone('Nothing logged.'), 'activity', 'Activity');
-    return sumRow('Calls and visits',
-      rows.map(function (t) {
-        return '<span class="sumline"><b>' + esc(niceDate(t.happened_at)) + '</b>' +
-          '<span class="summeta">' + esc(KIND_WORD[t.kind] || t.kind || '') + '</span>' +
-          '<span class="sumtext">' + esc(t.summary || '') + '</span></span>';
-      }).join(''), 'activity', 'Activity');
-  }
-
-  function recentDocs() {
-    var rows = (state.documents || []).slice(0, 2);
-    if (!rows.length) return sumRow('Letters', sumNone('None issued.'), 'documents', 'Documents');
-    return sumRow('Letters',
-      rows.map(function (d) {
-        return '<span class="sumline"><b>' + esc(d.number || '') + '</b>' +
-          '<span class="summeta">' + esc(d.issued_at ? niceDate(d.issued_at) : '') + '</span>' +
-          (d.voided_at ? '<span class="tone">Void</span>' : '<span class="tone is-ok">Issued</span>') +
-        '</span>';
-      }).join(''), 'documents', 'Documents');
+  /* The last few entries the portal wrote about this client. The whole record
+     is one tab away; this is the excerpt, and it draws nothing at all until
+     that read has landed. */
+  function railLog() {
+    var block = $('crmRailLogBlock'), box = $('crmRailLog');
+    if (!block || !box) return;
+    var rows = (state.log || []).slice(0, 3);
+    if (!rows.length) { block.hidden = true; box.innerHTML = ''; return; }
+    box.innerHTML = '<ul class="raillog">' + rows.map(function (x) {
+      return '<li><span class="raillog-what">' + esc(logWord(x.action)) + '</span>' +
+        (x.detail ? '<span class="raillog-detail">' + esc(x.detail) + '</span>' : '') +
+        '<span class="raillog-when">' + esc(niceDate(x.created_at)) + '</span></li>';
+    }).join('') + '</ul>';
+    block.hidden = false;
   }
 
   function linkChip(href, label, external) {

@@ -557,6 +557,8 @@ Update this section only with verified, durable facts. Keep entries short and re
 - **2026-09-16** — The Clients directory is one Client Register: one surface, one header, and the stages as labelled divider rows inside it. Reason: three panels repeated the same five headings three times and made a client's stage something read from which card it sat in rather than from the column that already says it. A group is a heading inside one table wherever two rows in different groups are still the same kind of thing.
 - **2026-09-16** — The client record's Overview is a summary composed only from what the record has already loaded (contacts, the billing ring, service lines, touches, documents). No second read, no stored number, no invented metric. Reason: the pane somebody lands on had less on it than any other, and a metric nobody stores is a metric that goes stale silently.
 
+- **2026-09-16** — The client record opens on an identity area (mark, name, state, and the facts that identify rather than describe) and its Overview is the record itself: flat titled sections over the contacts, services, letters and calls the record has already read. The rail is one block per question and a block leaves when its data does not exist. Reason: the pane somebody lands on had less on it than any other, and a rail of headings over "Not set" is a rail nobody reads.
+
 ### Design system
 
 - **2026-09-15** — Tokens live in `css/portal.css` `:root`: colour, `--radius`, `--head-h`, `--ctl-h`, `--ctl-h-sm`, `--state-w`, `--ctl-text`, `--field-text`, `--shadow`, `--shadow-lift`, and the motion set `--t-fast` / `--t` / `--t-slow` / `--ease` / `--ease-out`. The full table and the reasoning are in `DESIGN.md`.
@@ -588,6 +590,7 @@ Update this section only with verified, durable facts. Keep entries short and re
 ### Verification commands and environments
 
 - **2026-09-15** — Server: `setsid nohup npx --yes http-server -p 8899 -s . >/dev/null 2>&1 &` from the repo root.
+- **2026-09-16** — Screens: `node tests/ovshot.js tests` draws the client record's Overview in the two shapes it has — a populated active client and a lead with almost nothing on it — at 1280 and 390. A section that reads well when it is full is not the one that has to be checked.
 - **2026-09-16** — Sweep: `for s in run camp client cprod bar newbadge prod qr regress backup keyin state race chrome crm sgd team portal creator canvas register; do node tests/$s.js tests; done` — every suite `0 FAIL`, no page errors. `canvas` covers the Review Canvas; `register` covers the Clients directory in all five of its states and the client record's Overview summary, at 1280 and 390.
 - **2026-09-15** — SQL: `node tests/sql.js tests` → `sql: ok`, required for any change to `supabase/schema.sql`. It runs the real file against a throwaway Postgres 16.
 - **2026-09-15** — Audit: `node tests/uxaudit.js tests` → `uxaudit: ok`. Screenshots: `SHOTS=1 node tests/uxaudit.js tests` into `tests/walk/`.

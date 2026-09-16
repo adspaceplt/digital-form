@@ -121,19 +121,46 @@ async function open(ctx, url, seed, shot) {
     await p.waitForTimeout(700);
     check('Overview is the pane it opens on',
       await p.locator(REC + '.rec-pane[data-pane="overview"]').isVisible());
-    const rows = await p.locator('#crmSummary .sumrow-label').allTextContents();
-    check('the summary is sections, not metric cards', rows.length >= 4,
+    const rows = await p.locator('#crmSummary .ovsec-head h3').allTextContents();
+    check('the Overview is titled sections, not metric cards', rows.length >= 4,
       rows.map(s => s.trim()).join(' / '));
+    check('and none of them is a decorative tile',
+      await p.locator('#crmSummary .tally, #crmSummary .tally-cell').count() === 0);
     check('every section says something',
-      await p.locator('#crmSummary .sumrow-body').evaluateAll(
+      await p.locator('#crmSummary .ovsec').evaluateAll(
         els => els.every(e => e.textContent.trim().length > 0)));
+    /* The identity area carries the record, not a thin title strip. */
+    check('the record opens on an identity mark',
+      (await p.locator('#crmClientMark').innerText()).trim().length > 0 ||
+      await p.locator('#crmClientMark img').count() === 1);
+    check('the rail carries the details block',
+      await p.locator('.rec-rail .railblock .facts').count() === 1);
+    /* Every rail block leaves when the data behind it is not there, so the
+       rule under the last one is set rather than left to `:last-child`. */
+    const lastRule = await p.evaluate(() => {
+      const on = [...document.querySelectorAll('.rec-rail .railblock')].filter(b => !b.hidden);
+      if (!on.length) return 'none shown';
+      const last = on[on.length - 1];
+      return last.classList.contains('is-last') &&
+        on.slice(0, -1).every(b => !b.classList.contains('is-last')) ? 'ok' : 'wrong block';
+    });
+    check('and the rule under it belongs to the last one drawn', lastRule === 'ok', lastRule);
+    /* The tab strip is its own height: a rail taller than tabs plus pane used
+       to have its extra shared between the two rows and push the pane down. */
+    const gap = await p.evaluate(() => {
+      const t = document.querySelector('#crmTabs');
+      const s = document.querySelector('#crmSummary');
+      if (!t || !s) return -1;
+      return Math.round(s.getBoundingClientRect().top - t.getBoundingClientRect().bottom);
+    });
+    check('the pane starts right under the tabs', gap >= 0 && gap <= 20, gap + 'px');
     check('no sideways overflow on the record', await p.evaluate(() =>
       document.documentElement.scrollWidth <= window.innerWidth));
     await p.screenshot({ path: T + '/rec-' + tag + '-overview.png' });
 
     /* A summary row that points somewhere takes you there, and the address
        follows, or a refresh lands back on Overview with nothing said. */
-    const go = p.locator('#crmSummary [data-go]').first();
+    const go = p.locator('#crmSummary .ovgo[data-go]').first();
     if (await go.count()) {
       const want = await go.getAttribute('data-go');
       await go.click(); await p.waitForTimeout(450);

@@ -514,6 +514,47 @@ they have run for us, when they last shot, and an `On a campaign` chip while
 one is live. A device that was added to make rows distinguishable and leaves
 them identical is not a device to restyle, it is one to remove.
 
+**A record opens on who it is, and its landing pane is the record.** The client
+record was a thin title strip over a six row shortcut card, so the pane
+somebody lands on carried less than any other and half the screen under it was
+empty. Two things fix that and neither of them is a metric tile. The identity
+area carries a mark (the client's own logo where we hold one, their initials
+where we do not), the name, the state and the one control that edits it, and a
+meta line of the facts that **identify** rather than describe — which language
+we write to them in, who here owns the account — each omitted when it is not
+known. The landing pane is then the record itself: flat titled sections divided
+by hairlines inside one bounded surface, a heading and the one control that
+opens each section's own pane, and concise real rows under it. Everything in it
+comes from what the record has already read, so the pane costs nothing and
+cannot hold a number that has gone stale; a section with nothing to show says
+so in a line, because "None issued." is an answer and a section that vanishes
+is a question.
+
+**A rail is one block per question, and a block with no data is not a block.**
+Each carries an eyebrow title and is divided from the next by the same hairline
+the sections use. The order is what somebody needs in the order they need it:
+what to do next, what is stopping the record, how much of it is filled in, the
+dates it holds, the facts, what has happened lately. Two rules keep it honest.
+**A written next action beats a derived one** — a person wrote it on a call and
+set its date; a derivation only inferred it. And **a row whose date nobody has
+recorded is left out**, never drawn as "Not set" in a list of dates, because a
+list of three dates where two say nothing is a list that has stopped being
+read. The rule under the last block is therefore set in the paint, not left to
+`:last-child`, which counts a hidden sibling and drew a hairline under nothing.
+
+**A completion figure is never the whole message.** "25% complete" tells
+somebody they are behind and not what to do, so the bar carries the count
+beside it and the line under it names what is still missing and opens it. It is
+counted over what the record genuinely tracks, and it is not a metric tile: it
+is one block in a rail with a control on it.
+
+**A column that spans two rows sizes the rows it spans.** The record grid puts
+the rail across both the tab row and the pane row. Left at `auto auto`, a rail
+taller than the two of them had its extra height shared between them, so a lead
+— a short pane beside a full rail — opened with sixty pixels of page ground
+between its tabs and its first section, and nothing in the pane could explain
+it. The row a strip of tabs sits in is `auto` and the row under it is `1fr`.
+
 **A phone row spends its first line on what the person came for.** The rate
 card was three lines — the name with its ⋯, then the unit, then the price
 beside a green Active select — so a row stood 310px and two and a half services

@@ -2993,6 +2993,8 @@ body > .shell { width: 100%; }
   .crm-title h2 { flex: 1 1 calc(100% - var(--state-w) - 10px); }
   .crm-title .state-select { margin-left: auto; }
   .crm-title .btn { margin-left: auto; }
+  /* The mark keeps its column on a phone but takes less of it, so the name
+     still has the width the state select is measured against. */
   .svc-row.crm-head { display: none; }
   .svc-row, .csv-row, .doc-row, .cat-row, .ct-row, .cr-row {
     grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 12px 15px;
@@ -3641,9 +3643,108 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .rec-head { margin-bottom: 12px; }
 .rec-head .crm-title { margin-bottom: 0; }
 .rec-head .msg:empty { display: none; }
+/* Identity: the mark, the name with its state and the one control that edits
+   the record, and under them the facts that say which company this is rather
+   than describe it. A grid, so the meta line sits under the name and not
+   under the mark. */
+.rec-id {
+  display: grid; align-items: center; gap: 3px 14px;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: "mark title" "mark meta";
+}
+.rec-id > .crm-title { grid-area: title; }
+.rec-id-meta {
+  grid-area: meta; margin: 0; font-size: 12.5px; color: var(--ink-mute); min-width: 0;
+}
+.rec-id-meta[hidden] { display: none; }
+/* The client's own logo where we hold one, their initials where we do not.
+   The disc stays light in both themes for the same reason the review mockups
+   do: the logo is the client's artwork and is not ours to invert. */
+.rec-mark {
+  grid-area: mark; width: 46px; height: 46px; flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%; overflow: hidden;
+  background: var(--line-soft); color: var(--ink-soft);
+  font-size: 15px; font-weight: 600; letter-spacing: -.01em;
+}
+.rec-mark.has-logo { background: #fff; border: 1px solid var(--line); }
+.rec-mark img { width: 100%; height: 100%; object-fit: contain; }
+@media (max-width: 640px) {
+  /* The mark tops out with the name rather than centring itself against a
+     head that has wrapped to three lines. This sits beside the rule it
+     overrides: written up with the other phone rules it came earlier in the
+     file than the base, and the base won. */
+  .rec-id { gap: 3px 11px; align-items: start; }
+  .rec-mark { width: 38px; height: 38px; font-size: 13px; }
+}
+
+/* ---------- The record's rail ----------
+   One block per question, each with its own title, divided by the same
+   hairline the Overview uses. A block leaves entirely when the data behind it
+   is not there, so the rail never carries a heading over nothing. */
+.railblock, .rec-rail > .notice {
+  padding-bottom: 14px; margin: 0 0 14px; border-bottom: 1px solid var(--line);
+}
+.rec-rail > .notice { padding: 13px 15px; margin-bottom: 14px; border: 1px solid #efd7b6; }
+/* Set in `paintRail`, because `:last-child` counts a hidden sibling and every
+   one of these blocks leaves when its data is not there. */
+.railblock.is-last { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
+.railblock[hidden] { display: none; }
+.railtitle {
+  margin: 0 0 9px; font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ink-mute);
+}
+/* A next action is a thing to go and do, so the whole block is the control
+   that opens where it is done. */
+.railnext, .railmiss {
+  display: grid; align-items: center; gap: 2px 10px; width: 100%; text-align: left;
+  grid-template-columns: minmax(0, 1fr) auto;
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--card); padding: 10px 11px; min-height: var(--ctl-h);
+  font-size: 13.5px; color: var(--ink);
+}
+@media (hover: hover) { .railnext:hover, .railmiss:hover { background: var(--sunk); } }
+.railnext-text { grid-column: 1; min-width: 0; font-weight: 600; }
+.railnext-when { grid-column: 1; font-size: 12.5px; font-weight: 400; color: var(--ink-mute); }
+.railnext-when.is-late { color: var(--warn); font-weight: 600; }
+.railnext > .ovgo-chev, .railmiss > .ovgo-chev {
+  grid-column: 2; grid-row: 1 / -1; width: 15px; height: 15px; color: var(--ink-mute);
+}
+.railmiss { font-size: 12.5px; color: var(--ink-soft); margin-top: 9px; font-weight: 400; }
+
+/* How much of the record is filled in. The bar is never the only thing said:
+   the line under it names what is still missing and opens it. */
+.railpct { display: flex; align-items: baseline; gap: 8px; margin: 0 0 7px; font-size: 13px; }
+.railpct b { font-weight: 600; }
+.railpct span { margin-left: auto; color: var(--ink-mute); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.railbar { display: block; height: 5px; border-radius: 3px; background: var(--line-soft); overflow: hidden; }
+.railbar-fill { display: block; height: 100%; background: var(--ok); border-radius: 3px; }
+
+.raildates { display: grid; gap: 8px; margin: 0; }
+.raildates > div { display: flex; align-items: baseline; gap: 12px; }
+.raildates dt { font-size: 13px; color: var(--ink-soft); }
+.raildates dd {
+  margin: 0 0 0 auto; font-size: 13px; color: var(--ink);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.raildates dd.is-late { color: var(--warn); font-weight: 600; }
+
+.raillog { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.raillog li { display: grid; gap: 1px; font-size: 13px; min-width: 0; }
+.raillog-what { font-weight: 600; }
+.raillog-detail {
+  color: var(--ink-soft); font-size: 12.5px; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.raillog-when { color: var(--ink-mute); font-size: 12px; }
 .rec {
   display: grid; align-items: start; gap: 0 24px;
   grid-template-columns: minmax(0, 1.618fr) minmax(280px, 1fr);
+  /* The tab strip is as tall as the tabs and the pane takes the rest. Left to
+     `auto auto`, a rail taller than tabs plus pane had its extra height shared
+     between the two rows, so a lead — a short pane beside a full rail — opened
+     with sixty pixels of nothing between its tabs and its first section. */
+  grid-template-rows: auto 1fr;
   grid-template-areas: "tabs rail" "pane rail";
 }
 .rectabs {
@@ -3660,8 +3761,15 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 #crmSummary:first-child { display: block; margin-top: 12px; }
 .rec-rail { grid-area: rail; min-width: 0; }
 .rec-rail > .facts { margin: 0 0 12px; }
-/* A 320px rail is two columns of facts, not six. */
+.rec-rail .railblock > .facts { margin: 0; }
+/* The journey is a sentence about the facts above it, not part of the last
+   value in them, so it keeps the step that says so. */
+.rec-rail .railblock > .crm-journey { margin: 12px 0 0; }
+.rec-rail .railblock > .crm-links { margin: 12px 0 0; }
+/* A 320px rail is two columns of facts, not six; an odd last one spans, or a
+   cell sits alone on its row with an empty half beside it. */
 .rec-rail .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.rec-rail .facts > div:nth-child(odd):last-child { grid-column: 1 / -1; }
 .rec-rail .crm-journey { margin-bottom: 12px; }
 .rec-rail .crm-links { margin-top: 0; margin-bottom: 12px; }
 .rec-rail .notice { margin-bottom: 12px; }
@@ -3671,9 +3779,12 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 @media (max-width: 1100px) {
   .rec {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
     grid-template-areas: "rail" "tabs" "pane";
   }
-  .rec-rail { margin-bottom: 4px; }
+  /* Stacked, the rail is a block above the tabs and takes the step between
+     two blocks, not the four pixels it had when it was a column beside them. */
+  .rec-rail { margin-bottom: 12px; }
   .rec-rail .facts { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 }
 /* The tab strip scrolls sideways rather than wrapping to three rows: seven
@@ -3890,64 +4001,95 @@ body.is-canvas { overflow: hidden; }
   .rec.cportal { grid-template-areas: "rail" "pane"; }
 }
 
-/* ---------- The record's Summary ----------
-   Overview used to be the Engagements list, and for a lead nothing at all:
-   the pane you land on had less on it than any other. Sections and dividers,
-   never a row of decorative number tiles — this is one client, not a board. */
-.sumcard {
+/* ---------- The client record's Overview ----------
+   The pane somebody lands on reads as an operational record: flat titled
+   sections divided by hairlines inside one bounded surface, which is how this
+   console already draws a table. It used to be a six row shortcut card, so
+   the pane you land on had less on it than any other, and under it sat half a
+   screen of nothing. Never a row of decorative number tiles — this is one
+   client, not a board. */
+.ovcard {
   background: var(--card); border: 1px solid var(--line);
   border-radius: var(--radius); overflow: hidden; margin-bottom: 12px;
 }
-.sumrow {
-  display: grid; align-items: baseline; gap: 4px 16px;
-  grid-template-columns: 120px minmax(0, 1fr) auto;
-  padding: 13px 15px; border-bottom: 1px solid var(--line-soft);
-}
-.sumrow:last-child { border-bottom: 0; }
-.sumrow-label {
+.ovsec { padding: 16px 18px; border-bottom: 1px solid var(--line-soft); }
+.ovsec:last-child { border-bottom: 0; }
+/* A heading and the one control that opens what it summarises: the section
+   head this portal already uses, drawn flat rather than as another card. */
+.ovsec-head { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.ovsec-head h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.ovgo { margin-left: auto; min-width: 0; padding: 0 6px 0 10px; gap: 2px; }
+.ovgo-chev { width: 14px; height: 14px; flex: 0 0 auto; }
+
+/* Label over value, two across, so six facts read as three lines rather than
+   six. The same shape as `.facts`, at the record's own density. */
+.ovfacts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 24px; margin: 0; }
+.ovfacts dt {
   font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
-  color: var(--ink-mute);
+  color: var(--ink-mute); margin-bottom: 2px;
 }
-.sumrow-body {
-  min-width: 0; display: flex; align-items: baseline; gap: 7px; flex-wrap: wrap;
-  font-size: 13.5px; color: var(--ink-soft);
+.ovfacts dd { margin: 0; font-size: 13.5px; color: var(--ink); min-width: 0; overflow-wrap: anywhere; }
+/* An odd last fact spans, or it sits alone with an empty half beside it. */
+.ovfacts > div:nth-child(odd):last-child { grid-column: 1 / -1; }
+.ovfacts dd b { font-weight: 600; }
+.ovmeta { color: var(--ink-mute); font-size: 12.5px; margin-left: 7px; }
+.ovlink { color: var(--ink-soft); text-decoration: underline; text-underline-offset: 2px; }
+.ovlink:hover { color: var(--ink); }
+.ovnone { margin: 0; font-size: 13.5px; color: var(--ink-mute); }
+.ovmore { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+
+/* A few real rows, on the record's own grid so every column starts at the
+   same x on every row — the rule the clients register already follows. */
+.ovtable { display: block; }
+.ovhead, .ovrow { display: grid; align-items: baseline; gap: 0 14px; }
+.ovhead {
+  font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-mute); padding-bottom: 7px; border-bottom: 1px solid var(--line-soft);
 }
-.sumrow-body b { font-weight: 600; color: var(--ink); }
-.sumrow-go { flex: 0 0 auto; align-self: center; }
-/* `--line-ctl` is the 3:1 control **border** token and this is text, so it
-   came out at 3.44:1 against the card. A separator is read like everything
-   else on the line and takes the mute text token, which clears 4.5:1 on every
-   background this portal draws. */
-.sumdot { color: var(--ink-mute); }
-.summeta { font-size: 12.5px; color: var(--ink-mute); }
-/* An empty section is a line saying what would fill it, beside the way to do
-   it — not a dashed box and not a sentence explaining what the section is. */
-.sumnone { color: var(--ink-mute); }
-/* Two entries stacked inside one row, each reading as one line. */
-.sumline { flex: 1 1 100%; display: flex; align-items: baseline; gap: 7px; min-width: 0; }
-.sumtext {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  color: var(--ink-soft);
+.ovrow { padding: 9px 0; border-bottom: 1px solid var(--line-soft); font-size: 13.5px; }
+.ovrow:last-child { border-bottom: 0; padding-bottom: 0; }
+.ovrow-svc { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) 104px 96px; }
+.ovrow-doc { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.2fr) 104px 80px; }
+.ovname { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+.ovdim { color: var(--ink-mute); font-size: 12.5px; min-width: 0; }
+.ovamt { font-variant-numeric: tabular-nums; }
+
+/* A call reads as one line: what it was, what was said, when and with whom. */
+.ovlog { list-style: none; margin: 0; padding: 0; }
+.ovlog-row {
+  display: grid; align-items: baseline; gap: 0 14px;
+  grid-template-columns: 92px minmax(0, 1fr) 150px;
+  padding: 9px 0; border-bottom: 1px solid var(--line-soft); font-size: 13.5px;
 }
-.sumring { display: inline-flex; align-items: center; gap: 7px; }
-.sumrow .ringline { gap: 6px; }
+.ovlog-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.ovlog-kind { font-weight: 600; }
+/* What was said is the point of the row, so it wraps rather than being cut
+   off mid-word: clipped text is a value the reader cannot have. */
+.ovlog-text { min-width: 0; color: var(--ink-soft); overflow-wrap: anywhere; }
+.ovlog-when { font-size: 12.5px; color: var(--ink-mute); text-align: right; }
+.ovlog-when .ovmeta { display: block; margin: 0; }
 
 @media (max-width: 640px) {
-  /* The label sits over what it names, and the way in ends the row beside it.
-     Putting the button on the label's line instead read as label, button,
-     then the thing they were both about: the row said "NEXT — Add a line"
-     and only underneath "No service lines.", which is the answer printed
-     after the action it explains. */
-  .sumrow {
+  .ovsec { padding: 14px 15px; }
+  .ovfacts { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  /* A header the phone hides is not a header, so the row carries its own
+     labels instead: name and money on the first line, what qualifies them on
+     the second — the shape every other list in this console takes. */
+  .ovhead { display: none; }
+  .ovrow-svc, .ovrow-doc {
     grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "label label" "body go";
-    align-items: center; gap: 4px 10px; padding: 12px 15px;
+    grid-template-areas: "name amt" "dim state"; gap: 3px 12px;
   }
-  .sumrow > .sumrow-label { grid-area: label; }
-  .sumrow > .sumrow-body { grid-area: body; }
-  .sumrow > .sumrow-go { grid-area: go; align-self: center; }
-  /* A separator that lands at the end of a wrapped line reads as a typo, so
-     on a phone it is the break itself. */
-  .sumsplit { flex: 1 1 100%; height: 0; overflow: hidden; margin: 0; }
-  .sumtext { white-space: normal; }
+  .ovrow-svc > :nth-child(1), .ovrow-doc > :nth-child(1) { grid-area: name; }
+  .ovrow-svc > :nth-child(2), .ovrow-doc > :nth-child(2) { grid-area: dim; }
+  .ovrow-svc > :nth-child(3), .ovrow-doc > :nth-child(3) { grid-area: amt; justify-self: end; }
+  .ovrow-svc > :nth-child(4), .ovrow-doc > :nth-child(4) { grid-area: state; justify-self: end; }
+  .ovlog-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "kind when" "text text"; gap: 3px 12px;
+  }
+  .ovlog-kind { grid-area: kind; }
+  .ovlog-text { grid-area: text; white-space: normal; }
+  .ovlog-when { grid-area: when; }
+  .ovlog-when .ovmeta { display: inline; margin-left: 7px; }
 }
