@@ -466,6 +466,226 @@ create or replace function public.is_team() returns boolean language sql stable 
       === 'Reshoot the opening two seconds');
   check('while the client is still told Pending draft', shown() === 'pending_draft', shown());
   check('and is sent none of it', files() === '0');
+
+  /* ---- The letter and the service are two lifecycles ---------------------
+     A letter is issued for the services somebody chose, and only a verified
+     signature confirms them. Before this, `client_services.state` was both
+     the commercial state and the selection set for the next letter, so a line
+     already sent on one letter was silently carried into the next. Every rule
+     operations stated is asserted here against the real functions. */
+  const letters = cut('-- THE LETTER AND THE SERVICE ARE TWO LIFECYCLES');
+  fs.writeFileSync(SOCK + '/letters.sql', `
+drop table if exists public.client_documents cascade;
+drop table if exists public.client_services cascade;
+drop table if exists public.client_contacts cascade;
+create table public.client_contacts (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid references public.clients(id) on delete cascade,
+  name text, role text, phone text, email text, is_primary boolean default false,
+  portal_access boolean not null default false,
+  archived_at timestamptz);
+create table public.client_services (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid references public.clients(id) on delete cascade,
+  service_slug text, label text not null, qty numeric(10,2) not null default 1,
+  rate numeric(12,2) not null default 0, unit text, detail text, note text,
+  state text not null default 'enquired', tenure int not null default 1, start_on text,
+  created_at timestamptz not null default now(), archived_at timestamptz);
+create table public.client_documents (
+  id uuid primary key default gen_random_uuid(),
+  client_id uuid references public.clients(id) on delete cascade,
+  kind text not null, number text not null unique,
+  issued_at date not null default current_date, market text not null default 'MY',
+  subtotal numeric(12,2) not null default 0, tax numeric(12,2) not null default 0,
+  total numeric(12,2) not null default 0, bill_to jsonb, lines jsonb not null default '[]'::jsonb,
+  issued_by text, created_at timestamptz not null default now(), voided_at timestamptz);
+alter table public.clients add column if not exists legal_name text;
+alter table public.clients add column if not exists company_no text;
+alter table public.clients add column if not exists company_no_old text;
+alter table public.clients add column if not exists tin text;
+alter table public.clients add column if not exists sst_no text;
+alter table public.clients add column if not exists billing_address text;
+alter table public.clients add column if not exists finance_email text;
+alter table public.clients add column if not exists bill_contact_id uuid;
+-- The permission gate and the signed-in address, as the live database has
+-- them. Flipped per assertion below, so the refusals are real refusals.
+create table if not exists public.activity_log (
+  id uuid primary key default gen_random_uuid(), actor text, action text not null,
+  subject text, detail text, created_at timestamptz not null default now());
+create table if not exists public.t_who (email text, clients boolean, billing boolean, admin boolean);
+insert into public.t_who values ('sales@adspacestudios.com', true, true, false);
+create or replace function public.allowed(flag text) returns boolean
+  language sql stable set search_path = public as $$
+  select case flag when 'clients' then w.clients when 'billing' then w.billing else false end
+    from public.t_who w limit 1 $$;
+create schema if not exists auth;
+create or replace function auth.jwt() returns jsonb
+  language sql stable as $$ select jsonb_build_object('email', (select email from public.t_who limit 1)) $$;
+alter table public.team_members add column if not exists is_admin boolean default false;
+insert into public.team_members (name, email, active, role, is_admin)
+  values ('Qiao Rou', 'sales@adspacestudios.com', true, 'sales', false)
+  on conflict do nothing;
+` + letters);
+  execFileSync('bash', ['-c', `chmod 644 ${SOCK}/letters.sql`]);
+  asPg(`psql -h ${SOCK} -p ${PORT} -U postgres -d clock -v ON_ERROR_STOP=1 -q -f ${SOCK}/letters.sql`);
+  console.log('ok   the letter lifecycle applies to a real Postgres');
+
+  sql(`insert into public.clients (name) values ('Laman Citra')`);
+  const LC = sql(`select id from public.clients where name='Laman Citra'`);
+  const mkSvc = (label, rate, state) => {
+    sql(`insert into public.client_services (client_id, label, rate, tenure, state)
+         values ('${LC}', '${label}', ${rate}, 6, '${state}')`);
+    return sql(`select id from public.client_services where client_id='${LC}' and label='${label}'`);
+  };
+  const issue = (ids, extra) => sql(`select public.issue_letter('${LC}',
+    array[${ids.map(i => `'${i}'::uuid`).join(',')}], ${extra && extra.idem ? `'${extra.idem}'` : 'null'},
+    1000, 80, 1080, '{}'::jsonb,
+    ${extra && extra.replaces ? `'${extra.replaces}'::uuid` : 'null'},
+    ${extra && extra.renewal ? 'true' : 'false'})`);
+  const stateOf = id => sql(`select state from public.client_services where id='${id}'`);
+
+  // 14. The Client ID: blocking, normalising, uniqueness, bad characters.
+  const svOld = mkSvc('Social media management', 3200, 'confirmed');
+  const svNew = mkSvc('Paid advertising', 1500, 'quoted');
+  const svOther = mkSvc('SEO retainer', 800, 'quoted');
+  check('a letter is refused while the client has no Client ID',
+    /no-client-code/.test(issue([svNew])), issue([svNew]));
+  check('a Client ID with a slash in it is refused by the database',
+    /violates check constraint/.test(
+      (() => { try { sql(`update public.clients set client_code='AQL/1' where id='${LC}'`); return 'accepted'; }
+               catch (e) { return String(e.stderr || e.message); } })()));
+  check('and one with a space in it is refused too',
+    /violates check constraint/.test(
+      (() => { try { sql(`update public.clients set client_code='AC 180' where id='${LC}'`); return 'accepted'; }
+               catch (e) { return String(e.stderr || e.message); } })()));
+  sql(`update public.clients set client_code='AC180' where id='${LC}'`);
+  sql(`insert into public.clients (name) values ('Second')`);
+  check('a Client ID is unique across clients',
+    /duplicate key|unique constraint/.test(
+      (() => { try { sql(`update public.clients set client_code='AC180' where name='Second'`); return 'accepted'; }
+               catch (e) { return String(e.stderr || e.message); } })()));
+
+  // 13. The serial, exactly as operations wrote it.
+  const r1 = issue([svNew], { idem: 'k1' });
+  const ym = sql(`select to_char(timezone('Asia/Kuala_Lumpur', now()), 'YYMM')`);
+  check('the first letter of the month reads AQL/AC180/' + ym + '01',
+    new RegExp('"number" *: *"AQL/AC180/' + ym + '01"').test(r1), r1);
+  const doc1 = sql(`select id from public.client_documents where number like 'AQL/%' order by created_at limit 1`);
+
+  // 1. and 3. Only the chosen line, and issuing confirms nothing.
+  check('the letter carries only the service that was chosen',
+    sql(`select count(*) from public.client_document_services where document_id='${doc1}'`) === '1');
+  check('and it is the new line, not the confirmed one',
+    sql(`select service_id from public.client_document_services where document_id='${doc1}'`) === svNew);
+  check('issuing confirms nothing', stateOf(svNew) === 'quoted', stateOf(svNew));
+  check('the old confirmed line is untouched', stateOf(svOld) === 'confirmed');
+  check('and a To quote line that was not on it stays To quote', stateOf(svOther) === 'quoted');
+
+  // 10. One submission, one letter, one serial.
+  const again = issue([svNew], { idem: 'k1' });
+  check('the same submission twice returns the first letter',
+    /"repeat" *: *true/.test(again) && new RegExp('AQL/AC180/' + ym + '01').test(again), again);
+  check('and spends no second serial',
+    sql(`select count(*) from public.client_documents where number like 'AQL/%'`) === '1');
+
+  // 2. A line already on a live letter is not silently offered again.
+  check('a line already on a live letter is refused, not re-quoted',
+    /already-quoted/.test(issue([svNew], { idem: 'k2' })), issue([svNew], { idem: 'k2' }));
+
+  // 4. Signing confirms nothing.
+  check('marking signed is accepted', /"ok" *: *true/.test(sql(`select public.letter_set_signed('${doc1}', true)`)));
+  check('and confirms nothing', stateOf(svNew) === 'quoted', stateOf(svNew));
+
+  // 5. and 6. Verification confirms only what the letter mapped.
+  const ver = sql(`select public.verify_letter('${doc1}')`);
+  check('verifying confirms the letter\'s own line', /"confirmed" *: *1/.test(ver), ver);
+  check('and that line is now Confirmed', stateOf(svNew) === 'confirmed');
+  check('the other To quote line is untouched', stateOf(svOther) === 'quoted');
+  check('and the already confirmed one is untouched', stateOf(svOld) === 'confirmed');
+  check('verifying twice confirms nothing more',
+    /"repeat" *: *true/.test(sql(`select public.verify_letter('${doc1}')`)));
+
+  // 8. A verified letter is the record of something accepted: it cannot be voided.
+  check('a verified letter refuses to be voided',
+    /verified/.test(sql(`select public.letter_set_void('${doc1}', true)`)));
+
+  // 12. The sequence is per client and per month, and never reused.
+  const r2 = issue([svOther], { idem: 'k3' });
+  check('the next letter for this client takes 02',
+    new RegExp('AQL/AC180/' + ym + '02').test(r2), r2);
+  sql(`update public.clients set client_code='ZZ9' where name='Second'`);
+  const S2 = sql(`select id from public.clients where name='Second'`);
+  sql(`insert into public.client_services (client_id, label, rate, state) values ('${S2}', 'Shoot', 900, 'quoted')`);
+  const s2sv = sql(`select id from public.client_services where client_id='${S2}'`);
+  const r3 = sql(`select public.issue_letter('${S2}', array['${s2sv}'::uuid], 'k4', 10, 1, 11)`);
+  check('another client starts its own month at 01',
+    new RegExp('AQL/ZZ9/' + ym + '01').test(r3), r3);
+  check('a serial is never reused once spent',
+    sql(`select next_val from public.client_document_seq where client_id='${LC}'`) === '3');
+
+  // 4. Two digits is the floor, not the ceiling.
+  sql(`update public.client_document_seq set next_val = 100 where client_id='${S2}'`);
+  sql(`insert into public.client_services (client_id, label, rate, state) values ('${S2}', 'Extra', 10, 'quoted')`);
+  const s2b = sql(`select id from public.client_services where client_id='${S2}' and label='Extra'`);
+  const wide = sql(`select public.issue_letter('${S2}', array['${s2b}'::uuid], 'k5', 10, 1, 11)`);
+  check('the hundredth letter of a month widens rather than wrapping',
+    new RegExp('AQL/ZZ9/' + ym + '100').test(wide), wide);
+
+  // 15. A letter from before this change has no mappings and is not verifiable.
+  sql(`insert into public.client_documents (client_id, kind, number, lines, signed_at)
+       values ('${LC}', 'offer', 'AQT/INT/2603001',
+         '[{"label":"Old line","qty":1,"rate":100}]'::jsonb, now())`);
+  const legacy = sql(`select id from public.client_documents where number='AQT/INT/2603001'`);
+  check('a legacy letter cannot be verified by accident',
+    /no-mapping/.test(sql(`select public.verify_letter('${legacy}')`)));
+  check('and is still readable exactly as it was',
+    sql(`select lines->0->>'label' from public.client_documents where id='${legacy}'`) === 'Old line');
+
+  // 9. Editing a service afterwards does not rewrite the snapshot.
+  sql(`update public.client_services set label='Renamed', rate=9999 where id='${svNew}'`);
+  check('editing a service does not rewrite the issued snapshot',
+    sql(`select lines->0->>'label' from public.client_documents where id='${doc1}'`) === 'Paid advertising');
+
+  // 3. A confirmed line is never carried in by itself, and only on a renewal.
+  check('a confirmed line is refused unless the renewal path is taken',
+    /bad-lines/.test(issue([svOld], { idem: 'k6' })));
+  check('and is accepted when a renewal is asked for deliberately',
+    /"ok" *: *true/.test(issue([svOld], { idem: 'k7', renewal: true })));
+
+  // 16. Permissions: the gate is the database's, not the page's.
+  sql(`update public.t_who set clients=false, billing=false`);
+  check('somebody without Clients cannot issue',
+    /not-allowed/.test(sql(`select public.issue_letter('${LC}', array['${svOther}'::uuid], 'k8', 1, 0, 1)`)));
+  check('nor mark a letter signed',
+    /not-allowed/.test(sql(`select public.letter_set_signed('${doc1}', false)`)));
+  sql(`update public.t_who set clients=true, billing=false`);
+  const doc2 = sql(`select id from public.client_documents where number like '%${ym}02'`);
+  sql(`select public.letter_set_signed('${doc2}', true)`);
+  check('and somebody without Billing cannot verify',
+    /not-allowed/.test(sql(`select public.verify_letter('${doc2}')`)));
+  check('the admin override refuses a non-admin',
+    /not-allowed/.test(sql(`select public.override_service_state('${svOther}', 'confirmed', 'legacy')`)));
+  sql(`update public.t_who set admin=true`);
+  sql(`update public.team_members set is_admin=true where email='sales@adspacestudios.com'`);
+  check('and refuses an admin who gives no reason',
+    /reason-required/.test(sql(`select public.override_service_state('${svOther}', 'enquired', '  ')`)));
+  check('but lets an admin through with one',
+    /"ok" *: *true/.test(sql(`select public.override_service_state('${svOther}', 'enquired', 'legacy tidy-up')`)));
+  check('and writes the reason to the activity record',
+    /legacy tidy-up/.test(sql(`select detail from public.activity_log where action='service.override' limit 1`)));
+
+  // 11. Two issuances racing: consecutive serials, no retry, no collision.
+  sql(`update public.t_who set clients=true, billing=true`);
+  sql(`insert into public.client_services (client_id, label, rate, state)
+       select '${LC}', 'Race ' || g, 100, 'quoted' from generate_series(1,2) g`);
+  const raceA = sql(`select id from public.client_services where label='Race 1'`);
+  const raceB = sql(`select id from public.client_services where label='Race 2'`);
+  const both = sql(`select string_agg(n, ',' order by n) from (
+      select public.issue_letter('${LC}', array['${raceA}'::uuid], 'r1', 1, 0, 1)->>'number' as n
+      union all
+      select public.issue_letter('${LC}', array['${raceB}'::uuid], 'r2', 1, 0, 1)->>'number') q`);
+  check('two issuances produce distinct consecutive serials',
+    both.split(',').length === 2 && both.split(',')[0] !== both.split(',')[1], both);
 } catch (e) {
   console.log('FAIL ' + (e.stderr ? String(e.stderr).slice(0, 600) : e.message));
   fails++;

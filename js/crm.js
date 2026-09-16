@@ -222,7 +222,7 @@
       '</svg>' + (done >= total ? 'Complete' : done + ' of ' + total) + '</span>';
   }
 
-  var state = { clients: [], team: [], client: null, editing: null, contacts: [], touches: [], services: [], documents: [], log: [], lastSeen: {} };
+  var state = { clients: [], team: [], client: null, editing: null, contacts: [], touches: [], services: [], documents: [], docMap: {}, log: [], lastSeen: {} };
 
   // ---- List ---------------------------------------------------------------
   /* The people on a record come from the team list, not from typing: a name
@@ -480,8 +480,22 @@
   /* The head of the record: who they are and where they came from. */
   var FORM = [
     ['crmName', 'name'], ['crmIndustry', 'industry'], ['crmOwnerPick', 'owner'],
-    ['crmSource', 'source'], ['crmCommence', 'commence']
+    ['crmSource', 'source'], ['crmCommence', 'commence'], ['crmClientCode', 'client_code']
   ];
+  /* The database's own words on the two rules it holds about a Client ID. */
+  function saveWord(m) {
+    m = String(m || '');
+    if (/clients_client_code_uidx|duplicate key/i.test(m)) return 'That Client ID is already used by another client.';
+    if (/clients_client_code_fmt/i.test(m)) return 'A Client ID is 2 to 12 letters or digits, with no spaces or slashes.';
+    return m;
+  }
+
+  /* The Client ID a letter's serial is built from. Uppercase letters and
+     digits only, because it travels inside AQL/AC180/260901 and a slash or a
+     space would break the format it is part of. The database holds the same
+     rule as a check constraint, so a bad one cannot arrive by any other door. */
+  var CODE_OK = /^[A-Z0-9]{2,12}$/;
+  function codeOf(v) { return String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12); }
   /* The brand as a thing to open. Edited on the record, not at intake. */
   var BRAND = [
     ['crmWebsite', 'website'], ['crmPhone', 'phone'],
@@ -535,6 +549,7 @@
     // What they asked for is a fact about the client, so editing shows it.
     $('crmEnquiry').value = c ? (c.deal_note || '') : '';
     msg('crmMsg', '');
+    codeWarn();
     // Editing happens on the record, in place of its head; adding happens on
     // the list. One form, moved to where the person is.
     var box = $('crmAddBox');
@@ -557,12 +572,47 @@
   $('crmNew').addEventListener('click', function () { openForm(null); });
   $('crmCancel').addEventListener('click', shutForm);
 
+  /* Typed the way it is stored, so nobody saves `ac180` and wonders why the
+     serial does not match what they wrote down. */
+  $('crmClientCode').addEventListener('input', function () {
+    var at = this.selectionStart, was = this.value;
+    this.value = codeOf(was);
+    try { this.setSelectionRange(at - (was.length - this.value.length), at - (was.length - this.value.length)); } catch (e) {}
+    codeWarn();
+  });
+
+  /* Changing a code after letters exist is allowed and says what it costs:
+     the serials already issued keep the code they were built with. */
+  function codeWarn() {
+    var el = $('crmCodeWarn');
+    if (!el) return;
+    var c = state.editing;
+    var had = c && String(c.client_code || '');
+    var now = val('crmClientCode');
+    var issued = (state.documents || []).filter(function (d) { return d.client_code; }).length;
+    var show = Boolean(c && had && now && now !== had && issued);
+    el.textContent = show
+      ? 'Changing the Client ID does not change the ' + issued +
+        (issued === 1 ? ' serial number already issued. It applies to letters issued from now on.'
+                      : ' serial numbers already issued. It applies to letters issued from now on.')
+      : '';
+    el.hidden = !show;
+  }
+
   $('crmSave').addEventListener('click', function () {
     var name = val('crmName');
     if (!name) { msg('crmMsg', 'A client needs a name.', 'err'); $('crmName').focus(); return; }
     var patch = { market: $('crmMarket').value };
     FORM.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
     patch.name = name;
+    if (patch.client_code) {
+      patch.client_code = codeOf(patch.client_code);
+      if (!CODE_OK.test(patch.client_code)) {
+        msg('crmMsg', 'A Client ID is 2 to 12 letters or digits, with no spaces or slashes.', 'err');
+        $('crmClientCode').focus();
+        return;
+      }
+    }
     // A lead is a person who asked for something. The stage lives on the
     // record's head, not here.
     var contactName = state.editing ? '' : val('crmContactName');
@@ -573,7 +623,7 @@
     if (state.editing) {
       var id = state.editing.id;
       db.from('clients').update(patch).eq('id', id).then(function (r) {
-        if (r.error) { msg('crmMsg', r.error.message, 'err'); return; }
+        if (r.error) { msg('crmMsg', saveWord(r.error.message), 'err'); return; }
         log('client.edited', name, '');
         shutForm();
         loadClients(function () {
@@ -628,6 +678,7 @@
        so neither is stated twice: a rail that repeats the head is a rail
        nobody reads. */
     $('crmFacts').innerHTML = [
+      ['Client ID', c.client_code || '<span class="muted">Not set</span>'],
       ['Source',   c.source ? sourceWord(c.source) : '<span class="muted">Not set</span>'],
       ['Industry', c.industry || '<span class="muted">Not set</span>'],
       ['Market',   (c.market === 'SG' ? 'Singapore' : 'Malaysia') + ' · ' + mk.sign],
@@ -1878,24 +1929,59 @@
       '<span class="svc-rate svc-calc">' + esc(Number(l.qty) + ' × ' + MON.money2(rateOf(l), c.market) +
         (Number(l.tenure || 1) > 1 ? ' × ' + Number(l.tenure) + ' mo' : '')) + '</span>' +
       '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(amountOf(l), c.market)) + '</b></span>' +
-      '<span class="svc-state"><select class="select select-sm state-select ' +w[1] + '" data-f="state" aria-label="State">' +
-        Object.keys(SV_STATE).map(function (k) {
-          return '<option value="' + k + '"' + (k === l.state ? ' selected' : '') + '>' + esc(SV_STATE[k][0]) + '</option>';
-        }).join('') + '</select></span>' +
+      /* Confirmed is not in this list. A service becomes Confirmed when a
+         signed letter is verified and at no other moment: a select on the row
+         let anybody confirm a line nobody had signed for, and it was the only
+         way it ever happened. A confirmed line still reads as a chip here,
+         because it is a state, just not one this control may set. */
+      '<span class="svc-state">' + (l.state === 'confirmed'
+        ? '<span class="tone ' + w[1] + '">' + esc(w[0]) + '</span>'
+        : '<select class="select select-sm state-select ' + w[1] + '" data-f="state" aria-label="State">' +
+          Object.keys(SV_STATE).filter(function (k) { return k !== 'confirmed'; }).map(function (k) {
+            return '<option value="' + k + '"' + (k === l.state ? ' selected' : '') + '>' + esc(SV_STATE[k][0]) + '</option>';
+          }).join('') + '</select>') + '</span>' +
       '<span class="team-act">' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
           '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
+          (isAdmin() ? '<button class="kmenu-item" data-a="force" type="button"><b>Set state by hand</b></button>' : '') +
           '<button class="kmenu-item is-danger" data-a="del" data-soft type="button"><b>Remove</b></button>' +
         '</div>' +
       '</span>';
     wireMenu(row);
     var on = function (a, fn) { var el = row.querySelector('[data-a="' + a + '"]'); if (el) el.addEventListener('click', fn); };
     on('edit', function () { openService(l); });
-    row.querySelector('[data-f="state"]').addEventListener('change', function () { saveService(l, { state: this.value }); });
+    var sel = row.querySelector('[data-f="state"]');
+    if (sel) sel.addEventListener('change', function () { saveService(l, { state: this.value }); });
+    /* The way back for a legacy line or an exception. An admin only, a reason
+       required, and it is written to the activity record with that reason, so
+       it is never a silent edit. */
+    on('force', function () {
+      Array.prototype.forEach.call(row.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
+      var to = prompt('Set ' + l.label + ' to which state?\n\nenquired, quoted or confirmed', l.state);
+      if (!to) return;
+      to = String(to).trim().toLowerCase();
+      var why = prompt('Why is this being set by hand?\n\nThis is written to the activity record.');
+      if (!why || !why.trim()) { msg('crmServiceMsg', 'A reason is required.', 'err'); return; }
+      db.rpc('override_service_state', { p_service: l.id, p_state: to, p_reason: why.trim() })
+        .then(function (r) {
+          var out = (r && r.data) || {};
+          if (r && r.error) { msg('crmServiceMsg', r.error.message, 'err'); return; }
+          if (out.error) { msg('crmServiceMsg', OVERRIDE_WORD[out.error] || out.error, 'err'); return; }
+          msg('crmServiceMsg', 'Set by hand.', 'ok');
+          loadServices();
+        }, function (e) { msg('crmServiceMsg', (e && e.message) || 'Could not set it.', 'err'); });
+    });
     on('del', function () { saveService(l, { archived_at: new Date().toISOString() }, true); });
     return row;
   }
+
+  var OVERRIDE_WORD = {
+    'not-allowed': 'Only an admin can set a service state by hand.',
+    'bad-state': 'A service is enquired, quoted or confirmed.',
+    'reason-required': 'A reason is required.',
+    'not-found': 'That line could not be found.'
+  };
 
   var editingService = null;
   function fillServicePick() {
@@ -2103,6 +2189,17 @@
   var DOCS = window.ADspaceDocs;
   var DOC_WORD = { offer: 'Letter of Offer', intent: 'Letter of Offer', cover: 'Letter of Offer', quotation: 'Quotation', invoice: 'Invoice' };
 
+  /* A letter's own lifecycle, drawn from its timestamps: Issued, Signed
+     awaiting verification, Verified, Void, Replaced. Never stored as a word,
+     so the record and the row cannot disagree about where one stands. */
+  var LETTER_WORD = {
+    issued:     ['Issued', 'is-ok'],
+    signed:     ['Signed', 'is-warn'],
+    verified:   ['Verified', 'is-ok'],
+    void:       ['Void', 'is-off'],
+    superseded: ['Replaced', 'is-off']
+  };
+
   function loadDocuments() {
     var box = $('crmDocuments');
     var c = state.client;
@@ -2110,73 +2207,249 @@
     if (!box.querySelector('.crm-table')) skeleton(box, 2);
     DOCS.list(c.id, function (rows, err) {
       if (err) { failLine(box, 'Documents', err.message || String(err), loadDocuments); return; }
+      if (!state.client || state.client.id !== c.id) return;
       /* Kept so the Summary can read them without a second call: the record
          has already paid for this. */
       state.documents = rows || [];
       paintSummary();
-      box.innerHTML = '';
-      if (!rows.length) { box.innerHTML = '<div class="empty">No documents.</div>'; return; }
-      var table = document.createElement('div');
-      table.className = 'crm-table';
-      table.innerHTML = '<div class="crm-head svc-row doc-row"><span>Document</span><span class="svc-rate">Total</span><span>State</span><span></span></div>';
-      rows.forEach(function (d) { table.appendChild(documentRow(d)); });
-      box.appendChild(table);
+      /* Which service lines each letter captured. A letter issued before this
+         change has none, which is what keeps it out of verification. */
+      DOCS.mapOf(rows.map(function (d) { return d.id; }), function (by) {
+        state.docMap = by || {};
+        box.innerHTML = '';
+        if (!rows.length) { box.innerHTML = '<div class="empty">No documents.</div>'; return; }
+        var table = document.createElement('div');
+        table.className = 'crm-table';
+        table.innerHTML = '<div class="crm-head svc-row doc-row"><span>Document</span><span class="svc-rate">Total</span><span>State</span><span></span></div>';
+        rows.forEach(function (d) { table.appendChild(documentRow(d)); });
+        box.appendChild(table);
+      });
     });
   }
 
+  /* The lines this letter captured, as they read on the letter. The snapshot
+     is what a person recognises; the mapping is what the database confirms. */
+  function docLines(d) {
+    return (d.lines || []).map(function (l) { return l.label; }).filter(Boolean);
+  }
+
   function documentRow(d) {
+    var st = DOCS.letterState(d);
+    var w = LETTER_WORD[st] || LETTER_WORD.issued;
+    var mapped = (state.docMap || {})[d.id] || [];
+    /* Verification is offered only where the letter knows exactly which lines
+       it carried. A legacy letter is history and is left as history. */
+    var canVerify = st === 'signed' && mapped.length && mapped.length === (d.lines || []).length;
     var row = document.createElement('div');
-    row.className = 'svc-row doc-row' + (d.voided_at ? ' is-off' : '');
+    row.className = 'svc-row doc-row' + (d.voided_at || d.superseded_by ? ' is-off' : '');
+    var sub = [DOC_WORD[d.kind] || d.kind, niceDate(d.issued_at), d.issued_by].filter(Boolean).join(' · ');
+    var lines = docLines(d);
     row.innerHTML =
-      '<span class="svc-name"><b>' + esc(d.number) + '</b><small>' + esc(DOC_WORD[d.kind] || d.kind) + ' · ' + esc(niceDate(d.issued_at)) +
-        (d.issued_by ? ' · ' + esc(d.issued_by) : '') + '</small></span>' +
+      '<span class="svc-name"><b>' + esc(d.number) + '</b><small>' + esc(sub) + '</small>' +
+        (lines.length ? '<small>' + esc(lines.join(' · ')) + '</small>' : '') +
+        (d.verified_at ? '<small>' + esc('Verified ' + niceDate(d.verified_at) +
+          (d.verified_by ? ' · ' + d.verified_by : '')) + '</small>' : '') + '</span>' +
       '<span class="svc-rate svc-amt"><b>' + esc(MON.money2(d.total, d.market)) + '</b></span>' +
-      '<span class="svc-state"><select class="select select-sm state-select ' +(d.voided_at ? 'is-off' : 'is-ok') + '" data-f="state" aria-label="State">' +
-        '<option value="issued"' + (d.voided_at ? '' : ' selected') + '>Issued</option>' +
-        '<option value="void"' + (d.voided_at ? ' selected' : '') + '>Void</option></select></span>' +
+      '<span class="svc-state"><span class="tone ' + w[1] + '">' + esc(w[0]) + '</span></span>' +
       '<span class="team-act">' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
           '<button class="kmenu-item" data-a="download" type="button"><b>Download</b></button>' +
-          (d.voided_at ? '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete</b></button>' : '') +
+          (st === 'issued' ? '<button class="kmenu-item" data-a="sign" type="button"><b>Mark signed</b></button>' : '') +
+          (st === 'signed' ? '<button class="kmenu-item" data-a="unsign" type="button"><b>Not signed after all</b></button>' : '') +
+          (canVerify ? '<button class="kmenu-item" data-a="verify" type="button"><b>Verify signed letter</b></button>' : '') +
+          (st === 'issued' || st === 'signed'
+            ? '<button class="kmenu-item is-danger" data-a="void" data-soft type="button"><b>Void</b></button>' : '') +
+          (st === 'void' ? '<button class="kmenu-item" data-a="unvoid" type="button"><b>Restore</b></button>' : '') +
+          (st === 'void' ? '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete</b></button>' : '') +
         '</div>' +
       '</span>';
     wireMenu(row);
     var on = function (a, fn) { var el = row.querySelector('[data-a="' + a + '"]'); if (el) el.addEventListener('click', fn); };
+    var shut = function () {
+      Array.prototype.forEach.call(row.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
+    };
+    var done = function (err) {
+      if (err) { msg('crmDocMsg', err, 'err'); loadDocuments(); return; }
+      loadDocuments();
+    };
     on('download', function () { DOCS.download(d, function (warn) { if (warn) msg('crmDocMsg', warn, 'err'); }); });
-    row.querySelector('[data-f="state"]').addEventListener('change', function () {
-      var toVoid = this.value === 'void';
-      DOCS.setVoid(d, toVoid, function (err) {
-        if (err) { msg('crmDocMsg', err.message, 'err'); loadDocuments(); return; }
-        if (toVoid) undoBar(d.number + ' voided.', function () { DOCS.setVoid(d, false, loadDocuments); });
+    on('sign', function () {
+      shut();
+      DOCS.setSigned(d, true, function (err) {
+        if (!err) msg('crmDocMsg', d.number + ' is signed, awaiting verification.', 'ok');
+        done(err);
+      });
+    });
+    on('unsign', function () { shut(); DOCS.setSigned(d, false, done); });
+    /* The one action in this portal that confirms a service, so it says what
+       it is about to do and names the letter it is about to do it for. */
+    on('verify', function () {
+      shut();
+      if (!confirm('Verify ' + d.number + '?\n\nThis confirms the ' + mapped.length +
+                   (mapped.length === 1 ? ' service on this letter' : ' services on this letter') +
+                   ' and nothing else.')) return;
+      DOCS.verify(d, function (err, out) {
+        if (err) { msg('crmDocMsg', err, 'err'); loadDocuments(); return; }
+        var n = (out && out.confirmed) || 0;
+        msg('crmDocMsg', d.number + ' verified. ' + n +
+          (n === 1 ? ' service confirmed.' : ' services confirmed.'), 'ok');
+        loadDocuments();
+        loadServices();
+      });
+    });
+    on('void', function () {
+      shut();
+      DOCS.setVoid(d, true, function (err) {
+        if (err) { msg('crmDocMsg', err, 'err'); loadDocuments(); return; }
+        undoBar(d.number + ' voided.', function () { DOCS.setVoid(d, false, done); });
         loadDocuments();
       });
     });
+    on('unvoid', function () { shut(); DOCS.setVoid(d, false, done); });
     // A voided document can go for good. The number is not reused.
     on('del', function () {
+      shut();
       if (!confirm('Delete ' + d.number + '?')) return;
       DOCS.remove(d, function (err) {
-        if (err) { msg('crmDocMsg', err.message, 'err'); return; }
+        if (err) { msg('crmDocMsg', err.message || err, 'err'); return; }
         loadDocuments();
       });
     });
     return row;
   }
 
-  $('crmCover').addEventListener('click', function () {
-    if (!DOCS) return;
-    msg('crmDocMsg', '');
+  /* ---- Choosing what goes on the letter ---------------------------------
+     A letter is issued for the services somebody chose. To quote lines that
+     are not already on a live letter are ticked; a line already on one is
+     listed with the letter that holds it and cannot be ticked, because the
+     way through is to void that letter or replace it. A confirmed line sits
+     apart, unticked, for a renewal somebody decides on deliberately. */
+  var picking = null;
+
+  function eligible() {
+    var live = {};
+    (state.documents || []).forEach(function (d) {
+      if (!DOCS.liveDoc(d)) return;
+      ((state.docMap || {})[d.id] || []).forEach(function (id) { live[id] = d.number; });
+    });
+    var out = { open: [], held: [], confirmed: [] };
+    (state.services || []).forEach(function (l) {
+      if (l.archived_at) return;
+      if (l.state === 'quoted') (live[l.id] ? out.held : out.open).push({ line: l, on: live[l.id] });
+      else if (l.state === 'confirmed') out.confirmed.push({ line: l, on: live[l.id] });
+    });
+    return out;
+  }
+
+  function pickBlock(title, rows, tick, note) {
+    if (!rows.length) return '';
     var c = state.client;
+    return '<div class="lpickgroup"><h4 class="svc-cat">' + esc(title) + '</h4>' +
+      rows.map(function (r) {
+        var l = r.line;
+        return '<label class="lpickrow' + (tick ? '' : ' is-held') + '">' +
+          '<input type="checkbox" value="' + esc(l.id) + '"' + (tick ? ' checked' : '') +
+            (tick === false && !r.on ? '' : '') + '>' +
+          '<span class="lpickname"><b>' + esc(l.label) + '</b>' +
+            '<small>' + esc([l.unit, termWord(l), r.on ? 'On ' + r.on : ''].filter(Boolean).join(' · ')) + '</small></span>' +
+          '<span class="lpickamt">' + esc(MON.money2(amountOf(l), c.market)) + '</span>' +
+        '</label>';
+      }).join('') +
+      (note ? '<p class="lpicknote">' + esc(note) + '</p>' : '') + '</div>';
+  }
+
+  function openPick() {
+    var c = state.client;
+    msg('crmDocMsg', '');
+    msg('pickMsg', '');
+    if (!String(c.client_code || '').trim()) {
+      msg('crmDocMsg', 'Add a Client ID to this client before issuing a letter. Edit the record to set one.', 'warn');
+      return;
+    }
+    var e = eligible();
+    picking = { replaces: null };
+    $('pickBody').innerHTML =
+      pickBlock('To quote', e.open, true, '') +
+      pickBlock('Already on a live letter', e.held, false,
+        'Void that letter, or issue a replacement from its ⋯, before quoting these again.') +
+      pickBlock('Confirmed', e.confirmed, false,
+        'Tick one only for a renewal, a variation or a replacement.') +
+      (e.open.length || e.confirmed.length ? '' : '<p class="lpicknote">Nothing to quote. Add a service line and mark it To quote.</p>');
+    /* A held line is shown so the reason is on the screen, and is refused so
+       the same letter cannot go out twice by accident. */
+    Array.prototype.forEach.call($('pickBody').querySelectorAll('.lpickrow.is-held input'), function (i) {
+      i.disabled = true;
+    });
+    Array.prototype.forEach.call($('pickBody').querySelectorAll('input[type="checkbox"]'), function (i) {
+      i.addEventListener('change', pickSum);
+    });
+    pickSum();
+    $('pickSheet').hidden = false;
+    var first = $('pickBody').querySelector('input:not([disabled])');
+    if (first) first.focus();
+  }
+
+  function pickedIds() {
+    return Array.prototype.filter.call($('pickBody').querySelectorAll('input[type="checkbox"]'),
+      function (i) { return i.checked && !i.disabled; }).map(function (i) { return i.value; });
+  }
+
+  function pickSum() {
+    var ids = pickedIds();
+    var c = state.client;
+    var rows = (state.services || []).filter(function (l) { return ids.indexOf(l.id) > -1; });
+    var price = rows.length ? DOCS.quoteOf(c, rows) : null;
+    $('pickSum').textContent = rows.length
+      ? rows.length + (rows.length === 1 ? ' service · ' : ' services · ') + MON.money2(price.total, c.market)
+      : 'Nothing chosen';
+    $('pickGo').disabled = !rows.length;
+  }
+
+  function shutPick() {
+    $('pickSheet').hidden = true;
+    picking = null;
+    $('pickGo').disabled = false;
+    $('pickGo').textContent = 'Issue letter';
+  }
+  $('pickClose').addEventListener('click', shutPick);
+  $('pickCancel').addEventListener('click', shutPick);
+  $('pickSheet').addEventListener('click', function (e) { if (e.target === this) shutPick(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('pickSheet').hidden) shutPick();
+  });
+
+  $('crmCover').addEventListener('click', function () { if (DOCS) openPick(); });
+
+  $('pickGo').addEventListener('click', function () {
+    if (!picking || !DOCS) return;
+    var ids = pickedIds();
+    if (!ids.length) return;
+    var c = state.client;
+    var rows = (state.services || []).filter(function (l) { return ids.indexOf(l.id) > -1; });
+    var renewal = rows.some(function (l) { return l.state === 'confirmed'; });
+    /* One key per press of this button, held while the request is in flight,
+       so a second press is the same submission and comes back as the same
+       letter rather than a second one. */
+    picking.idem = picking.idem || DOCS.idemKey();
+    var go = $('pickGo');
+    go.disabled = true;
+    go.textContent = 'Issuing…';
     var deal = {
       owner: c.owner || '', source: c.source ? sourceWord(c.source) : '', industry: c.industry || '',
-      stage: stageWord(c.stage || 'lead')[1], enquiry: c.deal_note || '',
-      finance_email: c.finance_email || '', sst_no: c.sst_no || '', company_no_old: c.company_no_old || ''
+      stage: stageWord(c.stage || 'lead')[1], enquiry: c.deal_note || ''
     };
-    DOCS.issue('offer', c, billContact(c), state.services, deal, function (r) {
-      if (r.error) { msg('crmDocMsg', r.error, 'err'); return; }
-      msg('crmDocMsg', r.warn ? r.doc.number + ' issued. ' + r.warn : r.doc.number + ' issued.', r.warn ? 'warn' : 'ok');
-      loadDocuments();
-    });
+    DOCS.issue('offer', c, rows, deal,
+      { idem: picking.idem, replaces: picking.replaces, renewal: renewal },
+      function (r) {
+        go.disabled = false;
+        go.textContent = 'Issue letter';
+        if (r.error) { msg('pickMsg', r.error, 'err'); return; }
+        shutPick();
+        msg('crmDocMsg', r.number + (r.repeat ? ' was already issued.' : ' issued.') +
+          (r.warn ? ' ' + r.warn : ''), r.warn ? 'warn' : 'ok');
+        loadDocuments();
+      });
   });
 
   // ---- Rate card (the Services section) ------------------------------------

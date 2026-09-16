@@ -39,6 +39,7 @@
       { slug:'rev-minor', category:'Add-ons', name:'Minor revision', rate:200, unit:'Per asset, per round', position:70, active:true },
       { slug:'urgent', category:'Add-ons', name:'Urgent fee', rate:150, unit:'Per affected asset, per round', position:72, active:true }],
     client_services: [], client_documents: [], client_requests: [],
+    client_document_services: [], client_document_seq: [],
     team_roles: [
       { slug:'admin', name:'Admin', is_admin:true, position:0, can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:true, can_billing:true, can_remove:true },
       { slug:'account', name:'Marketing', is_admin:false, position:1, can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:false, can_billing:true, can_remove:false },
@@ -213,7 +214,182 @@
 
   var session = null, listener = null;
 
+  /* ---- The letter's own lifecycle -----------------------------------------
+     The real thing is five security definer functions; this is the same
+     behaviour in the stand-in, so a browser suite exercises the rules rather
+     than a page that happens to draw them. The refusals are the refusals the
+     database gives, by the same names. */
+  var TEAM_CAN = { clients: true, billing: true, admin: true };
+  window.__teamCan = TEAM_CAN;
+  function whoNow() { return String(session && session.user && session.user.email || '').toLowerCase(); }
+
+  function kualaYM() {
+    // Asia/Kuala_Lumpur is UTC+8 all year: no daylight saving to reason about.
+    var d = new Date(Date.now() + 8 * 3600 * 1000);
+    return String(d.getUTCFullYear()).slice(2) + String(d.getUTCMonth() + 1).padStart(2, '0');
+  }
+
+  function issueLetter(a) {
+    if (!TEAM_CAN.clients) return { error: 'not-allowed' };
+    var ids = a.p_services || [];
+    if (!ids.length) return { error: 'no-lines' };
+    var cl = DB.clients.filter(function (c) { return c.id === a.p_client; })[0];
+    if (!cl) return { error: 'no-client' };
+    if (!String(cl.client_code || '').trim()) return { error: 'no-client-code' };
+
+    var idem = String(a.p_idem || '').trim();
+    if (idem) {
+      var had = DB.client_documents.filter(function (d) {
+        return d.client_id === a.p_client && d.idem_key === idem;
+      })[0];
+      if (had) return { ok: true, repeat: true, id: had.id, number: had.number };
+    }
+
+    var rows = ids.map(function (id) {
+      return DB.client_services.filter(function (l) {
+        return l.id === id && l.client_id === a.p_client && !l.archived_at;
+      })[0];
+    });
+    if (rows.some(function (l) { return !l; })) return { error: 'bad-lines' };
+    if (rows.some(function (l) { return ['quoted', 'confirmed'].indexOf(l.state) < 0; })) return { error: 'bad-lines' };
+    if (!a.p_renewal && rows.some(function (l) { return l.state === 'confirmed'; })) return { error: 'bad-lines' };
+
+    // A line already on a letter that can still become something.
+    var held = DB.client_document_services.filter(function (m) {
+      if (ids.indexOf(m.service_id) < 0) return false;
+      var d = DB.client_documents.filter(function (x) { return x.id === m.document_id; })[0];
+      if (!d || d.voided_at || d.superseded_by || d.verified_at) return false;
+      return !a.p_replaces || d.id !== a.p_replaces;
+    });
+    if (held.length) return { error: 'already-quoted' };
+
+    var prior = null;
+    if (a.p_replaces) {
+      prior = DB.client_documents.filter(function (d) {
+        return d.id === a.p_replaces && d.client_id === a.p_client;
+      })[0];
+      if (!prior) return { error: 'no-replaces' };
+      if (prior.verified_at) return { error: 'replaces-verified' };
+    }
+
+    var ym = kualaYM();
+    var seat = DB.client_document_seq.filter(function (q) {
+      return q.client_id === a.p_client && q.ym === ym;
+    })[0];
+    if (!seat) { seat = { client_id: a.p_client, ym: ym, next_val: 1 }; DB.client_document_seq.push(seat); }
+    var n = seat.next_val;
+    seat.next_val = n + 1;
+    // Two digits is the floor, not the ceiling.
+    var num = 'AQL/' + cl.client_code + '/' + ym + (n < 100 ? String(n).padStart(2, '0') : String(n));
+
+    var ct = DB.client_contacts.filter(function (x) {
+      return x.client_id === a.p_client && !x.archived_at;
+    }).sort(function (x, y) { return (y.is_primary ? 1 : 0) - (x.is_primary ? 1 : 0); })[0] || {};
+    var taxOn = cl.sst_applies !== false;
+    var doc = {
+      id: nid('doc'), client_id: a.p_client, kind: 'offer', number: num,
+      issued_at: new Date().toISOString().slice(0, 10), market: cl.market || 'MY',
+      subtotal: Number(a.p_subtotal || 0), tax: Number(a.p_tax || 0), total: Number(a.p_total || 0),
+      bill_to: {
+        name: cl.name || '', legal_name: cl.legal_name || '', address: cl.billing_address || '',
+        regno: cl.company_no || '', regno_old: cl.company_no_old || '', tin: cl.tin || '',
+        sst_no: cl.sst_no || '', sst_applies: taxOn,
+        contact: ct.name || '', contact_role: ct.role || '', phone: ct.phone || '', email: ct.email || '',
+        finance_email: cl.finance_email || '', client_code: cl.client_code,
+        owner: (a.p_deal || {}).owner || '', source: (a.p_deal || {}).source || '',
+        industry: (a.p_deal || {}).industry || '', stage: (a.p_deal || {}).stage || '',
+        enquiry: (a.p_deal || {}).enquiry || ''
+      },
+      lines: rows.map(function (l) {
+        return { label: l.label, unit: l.unit || '', note: l.note || '', detail: l.detail || '',
+                 state: l.state, qty: Number(l.qty || 0), rate: Number(l.rate || 0),
+                 tenure: Math.max(1, Number(l.tenure || 1)), start_on: l.start_on || '',
+                 tax: taxOn, service_id: l.id };
+      }),
+      issued_by: whoNow(), client_code: cl.client_code,
+      idem_key: idem || null, created_at: new Date().toISOString(),
+      voided_at: null, signed_at: null, verified_at: null, verified_by: null, superseded_by: null
+    };
+    DB.client_documents.push(doc);
+    ids.forEach(function (id) {
+      DB.client_document_services.push({ document_id: doc.id, service_id: id, created_at: new Date().toISOString() });
+    });
+    if (prior) prior.superseded_by = doc.id;
+    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'document.issued', subject: cl.name,
+      detail: num + ' · ' + ids.length + ' line' + (ids.length === 1 ? '' : 's'), created_at: new Date().toISOString() });
+    persist();
+    return { ok: true, id: doc.id, number: num };
+  }
+
+  function letterSetSigned(a) {
+    if (!TEAM_CAN.clients) return { error: 'not-allowed' };
+    var d = DB.client_documents.filter(function (x) { return x.id === a.p_doc; })[0];
+    if (!d) return { error: 'not-found' };
+    if (d.voided_at) return { error: 'voided' };
+    if (d.verified_at) return { error: 'verified' };
+    var on = a.p_on !== false;
+    if (Boolean(d.signed_at) === on) return { ok: true, repeat: true };
+    d.signed_at = on ? new Date().toISOString() : null;
+    persist();
+    return { ok: true };
+  }
+
+  function verifyLetter(a) {
+    if (!TEAM_CAN.billing) return { error: 'not-allowed' };
+    var d = DB.client_documents.filter(function (x) { return x.id === a.p_doc; })[0];
+    if (!d) return { error: 'not-found' };
+    if (d.voided_at) return { error: 'voided' };
+    if (d.superseded_by) return { error: 'superseded' };
+    if (!d.signed_at) return { error: 'not-signed' };
+    if (d.verified_at) return { ok: true, repeat: true, confirmed: 0 };
+    var map = DB.client_document_services.filter(function (m) { return m.document_id === d.id; });
+    if (!map.length || map.length !== (d.lines || []).length) return { error: 'no-mapping' };
+    var n = 0;
+    map.forEach(function (m) {
+      var l = DB.client_services.filter(function (x) { return x.id === m.service_id && !x.archived_at; })[0];
+      if (l && l.state !== 'confirmed') { l.state = 'confirmed'; n++; }
+    });
+    d.verified_at = new Date().toISOString();
+    d.verified_by = whoNow();
+    persist();
+    return { ok: true, confirmed: n };
+  }
+
+  function letterSetVoid(a) {
+    if (!TEAM_CAN.clients) return { error: 'not-allowed' };
+    var d = DB.client_documents.filter(function (x) { return x.id === a.p_doc; })[0];
+    if (!d) return { error: 'not-found' };
+    if (d.verified_at) return { error: 'verified' };
+    var on = a.p_on !== false;
+    if (Boolean(d.voided_at) === on) return { ok: true, repeat: true };
+    d.voided_at = on ? new Date().toISOString() : null;
+    persist();
+    return { ok: true };
+  }
+
+  function overrideServiceState(a) {
+    if (!TEAM_CAN.admin) return { error: 'not-allowed' };
+    if (['enquired', 'quoted', 'confirmed'].indexOf(a.p_state) < 0) return { error: 'bad-state' };
+    if (!String(a.p_reason || '').trim()) return { error: 'reason-required' };
+    var l = DB.client_services.filter(function (x) { return x.id === a.p_service && !x.archived_at; })[0];
+    if (!l) return { error: 'not-found' };
+    if (l.state === a.p_state) return { ok: true, repeat: true };
+    var was = l.state;
+    l.state = a.p_state;
+    var cl = DB.clients.filter(function (c) { return c.id === l.client_id; })[0] || {};
+    DB.activity_log.push({ id: nid('a'), actor: whoNow(), action: 'service.override', subject: cl.name,
+      detail: l.label + ' · ' + was + ' to ' + a.p_state + ' · ' + String(a.p_reason).trim(),
+      created_at: new Date().toISOString() });
+    persist();
+    return { ok: true };
+  }
+
   function rpc(name, args) {
+    if (name === 'issue_letter')           return Promise.resolve({ data: issueLetter(args), error: null });
+    if (name === 'letter_set_signed')      return Promise.resolve({ data: letterSetSigned(args), error: null });
+    if (name === 'verify_letter')          return Promise.resolve({ data: verifyLetter(args), error: null });
+    if (name === 'letter_set_void')        return Promise.resolve({ data: letterSetVoid(args), error: null });
+    if (name === 'override_service_state') return Promise.resolve({ data: overrideServiceState(args), error: null });
     /* The creator's own page. Same shape and the same withholding as the SQL:
        a creator sees their own bookings and never the client's stage, the
        campaign's commercial state, or what the client is paying. */
