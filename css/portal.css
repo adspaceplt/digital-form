@@ -328,6 +328,13 @@ a { color: inherit; }
 }
 .input:focus-visible, .select:focus-visible, .textarea:focus-visible { outline: none; }
 .count { color: var(--ink-mute); font-size: 13px; }
+.crm-group-more {
+  width: 100%; min-height: 46px; padding: 0 16px; border: 0;
+  border-top: 1px solid var(--line-soft); background: var(--sunk);
+  color: var(--ink-soft); font: inherit; font-size: 13px; font-weight: 600;
+  text-align: center;
+}
+@media (hover: hover) { .crm-group-more:hover { color: var(--ink); background: var(--fill); } }
 
 /* ---------- Batch ---------- */
 .batch { margin-bottom: 56px; }
@@ -4358,7 +4365,7 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
    fifth track squeezed the creator's name to two lines and pushed the state
    header over the one before it. Where they post is on the Creators cards and
    on Client selection, so the Schedule answers only when. */
-.sched-row { grid-template-columns: minmax(140px, 1fr) minmax(220px, 1.1fr) 142px 142px 124px; }
+.sched-row { grid-template-columns: minmax(140px, 1fr) minmax(220px, 1.1fr) 142px 142px; }
 .sched-when { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .sched-edit { display: flex; align-items: center; gap: 6px; }
 .sched-edit .input { min-width: 0; padding-inline: 8px; }
@@ -4366,20 +4373,19 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .sched-edit input[type="time"] { flex: 0 1 92px; }
 .sched-plat, .pick-plat { font-size: 13px; color: var(--ink-mute); min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sched-state, .pick-state { min-width: 0; }
+.pick-state { min-width: 0; }
 .pick-row { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr) 96px 124px; }
 
 /* The campaign's own rows, on the same component-width switch. */
 /* Two lines: who and where they stand, then the dates under them. */
 .is-narrow .sched-row {
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "who state" "when when" "due due" "pub pub";
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "who" "when" "due" "pub";
   gap: 2px 10px;
 }
 .is-narrow .sched-edit { align-items: stretch; flex-wrap: wrap; }
 .is-narrow .sched-edit .input { flex: 1 1 120px; }
 .is-narrow .sched-row > .sched-who { grid-area: who; }
-.is-narrow .sched-row > .sched-state { grid-area: state; }
 .is-narrow .sched-row > .sched-when:nth-of-type(2) { grid-area: when; }
 .is-narrow .sched-row > .sched-when:nth-of-type(3) { grid-area: due; }
 .is-narrow .sched-row > .sched-when:nth-of-type(4) { grid-area: pub; }
@@ -4452,7 +4458,7 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .qrow:last-child { border-bottom: 0; }
 /* The one waiting on them keeps a warn edge, which is the mark this portal
    already gives a row that needs somebody. */
-.qrow.is-waiting { border-left: 3px solid var(--warn); }
+.qrow.is-waiting { background: var(--warn-bg); }
 .qrow-name {
   grid-area: name; font-size: 14px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -4542,6 +4548,10 @@ body.is-canvas { overflow: hidden; }
    no tab strip, because a client reads the page once and should not have to
    go looking for the section they were told about. */
 .rec.cportal { grid-template-areas: "pane rail"; }
+#cpHead { margin-top: 24px; margin-bottom: 20px; }
+.rec.cportal { gap: 0 32px; }
+.cportal > .rec-pane { min-width: 0; }
+.cportal > .rec-pane > .viewhead { margin-top: 28px; }
 .cportal > .rec-pane > .viewhead:first-child,
 .cportal > .rec-rail > .viewhead:first-child { margin-top: 0; }
 /* The company select is a page level control on the identity line, so it keeps
@@ -4572,6 +4582,11 @@ body.is-canvas { overflow: hidden; }
 @media (pointer: coarse) { .cportal .rec-rail .crm-reach .plink { min-height: 30px; align-items: center; } }
 @media (max-width: 1100px) {
   .rec.cportal { grid-template-areas: "rail" "pane"; }
+  .rec.cportal { gap: 0; }
+}
+@media (max-width: 640px) {
+  #cpHead { margin-top: 16px; margin-bottom: 16px; }
+  .cportal > .rec-pane > .viewhead { margin-top: 24px; }
 }
 
 /* ---------- The client record's Overview ----------

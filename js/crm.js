@@ -359,11 +359,22 @@
     table.className = 'crm-table softpanel crm-register';
     table.appendChild(registerHead());
 
+    var groupLimit = 30;
     GROUPS.forEach(function (g) {
       var mine = rows.filter(function (c) { return stageWord(c.stage || 'lead')[3] === g[0]; });
       if (!mine.length) return;
       table.appendChild(band(g[1], mine));
-      mine.forEach(function (c) { table.appendChild(listRow(c)); });
+      mine.slice(0, groupLimit).forEach(function (c) { table.appendChild(listRow(c)); });
+      if (mine.length > groupLimit) {
+        var more = document.createElement('button');
+        more.type = 'button'; more.className = 'crm-group-more';
+        more.textContent = 'Show ' + (mine.length - groupLimit) + ' more ' + g[1].toLowerCase();
+        more.addEventListener('click', function () {
+          mine.slice(groupLimit).forEach(function (c) { table.insertBefore(listRow(c), more); });
+          more.remove();
+        });
+        table.appendChild(more);
+      }
     });
     box.appendChild(table);
   }
