@@ -430,6 +430,7 @@
           visit_date: o.visit_date, visit_time: o.visit_time,
           visit_location: o.visit_location, visit_pic: o.visit_pic,
           visit_pic_phone: o.visit_pic_phone, tracking_no: o.tracking_no,
+          submission_due: o.submission_due,
           planned_publish: o.planned_publish, revision_round: o.revision_round,
           change_note: o.state === 'changes' ? o.drop_reason : null,
           caption: o.draft_caption, submitted_at: o.submitted_at,

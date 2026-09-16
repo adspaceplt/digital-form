@@ -46,6 +46,7 @@
       noneText: 'Confirmed campaigns appear here.',
       signOut: 'Forget this device',
       shootOn: 'Shoot', deliveryOn: 'Delivery', goLive: 'Publish on',
+      draftDue: 'Draft due', dueToday: 'Due today', overdue: 'Overdue by {n}', dueIn: 'Due in {n}',
       whereAt: 'Location', contact: 'On the day', tracking: 'Tracking no.',
       fee: 'Your fee', platformsLabel: 'Posting on', tbc: 'To be confirmed',
       briefHead: 'The brief',
@@ -93,6 +94,7 @@
       noneText: '合作确认后将显示在此处。',
       signOut: '退出此设备',
       shootOn: '拍摄', deliveryOn: '寄送', goLive: '发布日期',
+      draftDue: '作品截止', dueToday: '今天截止', overdue: '已逾期 {n}', dueIn: '{n} 后截止',
       whereAt: '地点', contact: '当天联系人', tracking: '快递单号',
       fee: '您的费用', platformsLabel: '发布平台', tbc: '待确认',
       briefHead: '合作简介',
@@ -145,6 +147,16 @@
     if (lang === 'zh') return x.getFullYear() + '年' + (x.getMonth() + 1) + '月' + x.getDate() + '日';
     return x.getDate() + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'][x.getMonth()] +
       ' ' + x.getFullYear();
+  }
+
+  function dueWord(day) {
+    if (!day) return '';
+    var due = new Date(day + 'T00:00:00');
+    var now = new Date(); now.setHours(0, 0, 0, 0);
+    var n = Math.round((due.getTime() - now.getTime()) / 86400000);
+    if (n === 0) return t().dueToday;
+    var span = Math.abs(n) + (lang === 'zh' ? ' 天' : (Math.abs(n) === 1 ? ' day' : ' days'));
+    return fill(n < 0 ? t().overdue : t().dueIn, { n: span });
   }
 
   // The console stores the placement by its printed name; older rows carry the key.
@@ -209,7 +221,7 @@
     $('whoName').textContent = cr.name || '';
     $('whoLine').textContent = '';
     if (window.ADspaceChrome) window.ADspaceChrome.preparedFor(t().preparedFor, cr.name || '');
-    $('signOutBtn').textContent = t().signOut;
+    $('signOutBtn').querySelector('span').textContent = t().signOut;
 
     var rows = feed.bookings || [];
     $('workHead').hidden = !rows.length;
@@ -338,6 +350,7 @@
       var plats = platsOf(b.platforms);
       if (plats.length) facts.push([t().platformsLabel, plats.join(' · ')]);
       if (b.planned_publish) facts.push([t().goLive, fmtDate(b.planned_publish)]);
+      if (b.submission_due) facts.push([t().draftDue, fmtDate(b.submission_due)]);
       facts.push([t().fee, money(b.rate, b.currency)]);
     }
 
@@ -352,12 +365,17 @@
           return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
         }).join('') + '</dl>' : '') +
         (t().nextUp[b.state] ? '<p class="booking-next">' + esc(t().nextUp[b.state]) + '</p>' : '') +
+        (b.submission_due && ['pending_draft', 'changes'].indexOf(b.state) > -1
+          ? '<p class="due-countdown' + (b.submission_due < new Date().toISOString().slice(0, 10) ? ' is-late' : '') + '">' +
+            esc(dueWord(b.submission_due)) + '</p>' : '') +
         (brief ? '<div class="booking-brief"><div class="kstep-title">' + esc(t().briefHead) +
           '</div><p>' + esc(brief).replace(/\n/g, '<br>') + '</p></div>' : '') +
         (b.state === 'changes' && b.change_note
           ? '<div class="booking-brief is-warn"><div class="kstep-title">' + esc(t().changesHead) +
             '</div><p>' + esc(b.change_note) + '</p></div>' : '') +
         filesHtml(b) +
+        (b.caption && !b.can_deliver ? '<div class="booking-caption"><div class="kstep-title">' +
+          esc(t().captionLabel) + '</div><p>' + esc(b.caption).replace(/\n/g, '<br>') + '</p></div>' : '') +
         (b.can_deliver ? deliverHtml(b) : '') +
         (payDue(b.state) ? payHtml() : ''));
 
@@ -679,6 +697,14 @@
     $('langToggle').addEventListener('click', function () { setLang(lang === 'en' ? 'zh' : 'en'); });
   }
 
+  var chromeActions = window.ADspaceChrome && window.ADspaceChrome.actions();
+  if (chromeActions) {
+    var forgetBtn = document.createElement('button');
+    forgetBtn.className = 'pill';
+    forgetBtn.id = 'signOutBtn'; forgetBtn.type = 'button';
+    forgetBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M12 4h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/></svg><span></span>';
+    chromeActions.appendChild(forgetBtn);
+  }
   $('signOutBtn').addEventListener('click', function () { forget(); askCode(); });
 
   $('codeGo').addEventListener('click', function () {

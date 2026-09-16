@@ -512,11 +512,20 @@
       factsHtml +
       (o.state === 'withdrawn' ? '<div class="booking-meta">' + esc(t().unavailable) + '</div>' : '') +
       (resultsOf(posts) || '') +
-      (mine && hasDraft(o) ? '<button class="btn btn-sm btn-primary booking-cta" type="button">' +
-        esc(t().reviewDraft) + '</button>' : '');
+      (mine && hasDraft(o) ? draftPreview(o) : '') +
+      (mine && hasDraft(o) ? '<div class="inline-review">' +
+        '<label class="field-label">' + esc(t().noteLabel) +
+          '<textarea class="input textarea" data-review-note rows="3"></textarea></label>' +
+        '<label class="field-label">' + esc(t().byLabel) +
+          '<input class="input" data-review-by></label>' +
+        '<div class="row inline-review-actions"><button class="btn btn-go" data-review="approved" type="button">' +
+          esc(t().approve) + '</button><button class="btn btn-warn" data-review="changes" type="button">' +
+          esc(t().askChanges) + '</button></div><div class="msg" data-review-msg></div></div>' : '');
 
     if (mine && hasDraft(o)) {
-      row.querySelector('.booking-cta').addEventListener('click', function () { openDraft(o); });
+      Array.prototype.forEach.call(row.querySelectorAll('[data-review]'), function (button) {
+        button.addEventListener('click', function () { sendInlineReview(o, row, this.getAttribute('data-review')); });
+      });
     }
     return row;
   }
@@ -569,72 +578,56 @@
   }
 
   // ---- Draft review -------------------------------------------------------
-  var reviewing = null;
 
   /* A draft the team released is the creator's own files, a pasted link, or
      both. get_campaign sends neither until the release, so a card with
      nothing to open is a card the client is not being asked to decide on. */
   function hasDraft(o) { return !!(o.draft_url || (o.files || []).length); }
 
-  function fileCard(f) {
-    var ext = String(f.name || '').split('.').pop().toUpperCase() || 'FILE';
-    return '<a class="filecard" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
-      (f.kind === 'image'
-        ? '<img src="' + esc(f.url) + '" alt="" loading="lazy">'
-        : '<span class="filecard-kind">' + esc(ext) + '</span>') +
-      '<span class="filecard-name">' + esc(f.name) + '</span></a>';
-  }
-
-  function openDraft(o) {
-    reviewing = o;
-    $('draftHeading').textContent = t().draftHeading + ' · ' + o.name;
-    $('draftBlurb').textContent = t().draftBlurb +
-      (o.revision_round >= 2 ? '  ' + t().lastRound : '');
+  /* The work is visible before the decision sheet opens. A 9:16 video is the
+     main object being reviewed, not a thumbnail that asks for another tab. */
+  function draftPreview(o) {
     var files = o.files || [];
-    $('draftFiles').innerHTML = files.map(fileCard).join('');
-    $('draftFiles').hidden = !files.length;
-    $('draftCaption').textContent = o.caption || '';
-    $('draftCaptionLabel').textContent = t().captionLabel;
-    $('draftCaptionWrap').hidden = !o.caption;
-    $('draftOpen').href = absUrl(o.draft_url);
-    $('draftOpen').textContent = t().openDraft;
-    $('draftOpen').hidden = !o.draft_url;
-    $('draftNoteLabel').textContent = t().noteLabel;
-    $('draftByLabel').textContent = t().byLabel;
-    $('draftApprove').textContent = t().approve;
-    $('draftChanges').textContent = t().askChanges;
-    $('draftCancel').textContent = t().cancel;
-    $('draftNote').value = '';
-    msg('draftMsg', '');
-    $('draftSheet').hidden = false;
+    var media = files.map(function (f) {
+      if (f.kind === 'video') {
+        return '<video controls playsinline preload="metadata" src="' + esc(f.url) + '"></video>';
+      }
+      if (f.kind === 'image') return '<img src="' + esc(f.url) + '" alt="" loading="lazy">';
+      return '<a class="btn btn-sm" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
+        esc(f.name || 'Open file') + '</a>';
+    }).join('');
+    return '<div class="client-draft-preview">' +
+      (media ? '<div class="client-draft-media">' + media + '</div>' : '') +
+      (o.caption ? '<div class="draft-caption"><span class="field-label">' + esc(t().captionLabel) +
+        '</span><p>' + esc(o.caption).replace(/\n/g, '<br>') + '</p></div>' : '') +
+      (o.draft_url ? '<a class="btn btn-sm" href="' + esc(absUrl(o.draft_url)) +
+        '" target="_blank" rel="noopener">' + esc(t().openDraft) + '</a>' : '') +
+      '</div>';
   }
-  function shutDraft() { $('draftSheet').hidden = true; reviewing = null; }
-  $('draftClose').addEventListener('click', shutDraft);
-  $('draftCancel').addEventListener('click', shutDraft);
-  $('draftSheet').addEventListener('click', function (e) {
-    if (e.target === $('draftSheet')) shutDraft();
-  });
 
-  function sendReview(decision) {
-    if (!reviewing) return;
-    var note = ($('draftNote').value || '').trim();
-    if (decision === 'changes' && !note) { msg('draftMsg', t().needNote, 'err'); return; }
+  /* The media is already full-size in the booking. Decisions happen directly
+     beneath it, rather than reopening the same video in a second surface. */
+  function sendInlineReview(o, row, decision) {
+    var note = (row.querySelector('[data-review-note]').value || '').trim();
+    var by = (row.querySelector('[data-review-by]').value || '').trim();
+    var out = row.querySelector('[data-review-msg]');
+    if (decision === 'changes' && !note) {
+      out.textContent = t().needNote; out.className = 'msg err'; return;
+    }
+    Array.prototype.forEach.call(row.querySelectorAll('[data-review]'), function (b) { b.disabled = true; });
     db.rpc('review_draft', {
-      p_token: TOKEN, p_option: reviewing.id, p_decision: decision,
-      p_note: note || null, p_reviewer: ($('draftBy').value || '').trim() || null,
-      p_passcode: passcode
+      p_token: TOKEN, p_option: o.id, p_decision: decision,
+      p_note: note || null, p_reviewer: by || null, p_passcode: passcode
     }).then(function (r) {
       var d = (r && r.data) || {};
       if ((r && r.error) || d.error) {
-        msg('draftMsg', (r.error && r.error.message) || d.error, 'err');
+        out.textContent = (r.error && r.error.message) || d.error; out.className = 'msg err';
+        Array.prototype.forEach.call(row.querySelectorAll('[data-review]'), function (b) { b.disabled = false; });
         return;
       }
-      shutDraft();
-      load();                       // states have moved, so read them back
+      load();
     });
   }
-  $('draftApprove').addEventListener('click', function () { sendReview('approved'); });
-  $('draftChanges').addEventListener('click', function () { sendReview('changes'); });
 
   function fmtDate(d) {
     var dt = new Date(d + 'T00:00:00');

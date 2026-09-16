@@ -222,7 +222,7 @@ const say = s => console.log(s);
   // The counts and the money left the Overview for the rail in Phase 2. Same
   // figures, read where they now are.
   say('selection: ' + (await p.locator('#campPickRail').innerText()).replace(/\n/g, ' / '));
-  say('amount: ' + (await p.locator('#campMoneyRail').innerText()).replace(/\n/g, ' / '));
+  say('amount: ' + (await p.locator('#campFinanceMoney').innerText()).replace(/\n/g, ' / '));
   const noPanel = await p.locator('#invoicePanel').isHidden();
   say('nothing confirmed: no invoice section at all: ' + noPanel);
   if (!noPanel) { console.log('FAIL the invoice section is offered before a creator is confirmed'); }
@@ -283,7 +283,7 @@ const say = s => console.log(s);
   say('undo put it back: ' + back + ' | link shown again: ' + await p.locator('#invCurrent a').count());
   if (!back) { console.log('FAIL undo restores the invoice PDF'); }
   say('selection: ' + (await p.locator('#campPickRail').innerText()).replace(/\n/g, ' / '));
-  say('amount: ' + (await p.locator('#campMoneyRail').innerText()).replace(/\n/g, ' / '));
+  say('amount: ' + (await p.locator('#campFinanceMoney').innerText()).replace(/\n/g, ' / '));
 
   say('=== the client only sees an invoice once one is due ===');
   const tok = await p.evaluate(() => window.__DB.campaigns[0].access_token);
