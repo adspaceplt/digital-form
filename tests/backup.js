@@ -51,14 +51,14 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   say('progress: ' + await p.locator('#progCount').innerText() + ' / ' + await p.locator('#progSay').innerText());
   say('hint now: ' + await p.locator('#chooseHint').innerText());
   say('hint class: ' + await p.locator('#chooseHint').getAttribute('class'));
-  const order = await p.locator('.crow .crow-name b').allInnerTexts();
+  const order = await p.locator('.crow:not(.crow-head) .crow-name b').allInnerTexts();
   say('list order: ' + order.join(', '));
   say('priority tags: ' + await p.locator('.tag-pri').count() + ' on ' +
       (await p.locator('.crow:has(.tag-pri) .crow-name b').allInnerTexts()).join(', '));
   say('withdrawn shown in bookings as: ' + await p.locator('.booking.is-off .chip-state').innerText());
 
   // promote a backup into the slot
-  await p.locator('.crow').first().locator('.crow-tick').click();
+  await p.locator('.crow:not(.crow-head)').first().locator('.crow-tick').click();
   await p.waitForTimeout(300);
   say('after promoting one: ' + await p.locator('#progCount').innerText() + ' / ' + await p.locator('#progSay').innerText());
   say('backup line: ' + await p.locator('#progBackup').innerText());

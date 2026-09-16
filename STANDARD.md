@@ -588,7 +588,7 @@ Update this section only with verified, durable facts. Keep entries short and re
 - **2026-09-15** — Sweep: `for s in run camp client cprod bar newbadge prod qr regress backup keyin state race chrome crm sgd team portal creator; do node tests/$s.js tests; done` — every suite `0 FAIL`, no page errors.
 - **2026-09-15** — SQL: `node tests/sql.js tests` → `sql: ok`, required for any change to `supabase/schema.sql`. It runs the real file against a throwaway Postgres 16.
 - **2026-09-15** — Audit: `node tests/uxaudit.js tests` → `uxaudit: ok`. Screenshots: `SHOTS=1 node tests/uxaudit.js tests` into `tests/walk/`.
-- **2026-09-15** — **Differs from §12 of this file.** The viewport matrix is 1280 and 390 with a coarse pointer, and the console again in dark at both. 390 is narrower than the 375 this file asks for and is the real floor the portal supports; the desktop console is not used below 1024, so 768 and 1024 are not walked. Widening the matrix is a genuine open item, recorded below.
+- **2026-09-16** — The matrix is now both axes. `uxaudit` walks **every** page and state at 1280 and 390 with a coarse pointer, and the console again in dark at both; `tests/matrix.js` takes a representative screen from every route across **320, 375, 390, 768, 1024, 1280 and 1440**, and again at 1280 and 1440 under 200% browser zoom. Browser zoom is the CSS viewport halved, not the `zoom` property: Ctrl + is what a reader presses and it fires the media queries. `matrix.js` reads `uxaudit`'s own `inPage()` out of that file rather than copying it, so the two cannot drift.
 
 ### Open security findings
 
@@ -596,5 +596,5 @@ Update this section only with verified, durable facts. Keep entries short and re
 
 ### Accepted known issues
 
-- **2026-09-15** — The audit walk does not cover 320, 768 or 1024 (see above). Risk: a layout fault between 640 and 1280 would not be caught. Not yet scheduled.
-- **2026-09-15** — Keyboard-only and screen-reader inspection is partly automated: `uxaudit` tabs every focusable control and fails one that takes focus without a ring, and checks labels, names and contrast. It does not replace a real screen-reader pass, which has not been done.
+- **2026-09-16 — closed.** The gap between 640 and 1280 is covered by `tests/matrix.js`, and it was a real gap: the clients row kept five desktop columns between 640 and 760 while its header was already hidden, and `.cmdbar` did not wrap until 640, so a 1440px window at 200% zoom scrolled sideways. Both fixed.
+- **2026-09-16** — Keyboard inspection is automated: `uxaudit` tabs every focusable control and fails one that takes focus without a ring, and checks labels, names and contrast; `tests/matrix.js` drives the keyboard through every control that opens a dialog and asserts Enter opens it, the dialog names itself, Escape closes it and focus goes back to the control that opened it. Neither replaces a real screen-reader pass, which has not been done.

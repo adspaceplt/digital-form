@@ -1929,13 +1929,32 @@ body.is-plain .topbar { background: var(--chrome); }
    comparing rates, which a row puts side by side. */
 .listhint { font-size: 13px; color: var(--ink-mute); margin: -4px 0 12px; }
 .clist { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+/* A comparison, on a screen wide enough to compare on: the placements a fee
+   buys are their own column beside it rather than a line under the name, and
+   the columns are named, because a fee with nothing over it is a number the
+   client has to work out what to read against. */
 .crow {
   display: grid; align-items: center; gap: 4px 14px;
-  grid-template-columns: auto auto minmax(0, 1fr) auto auto auto;
-  grid-template-areas: "no tick name links rate backup";
+  /* Every track is stated, because a column sized `auto` is sized by its own
+     row: the creator with two profile buttons pushed the placements column
+     ninety pixels right of the rows under it, and a value that starts
+     somewhere different on every line is what reads as unaligned. */
+  grid-template-columns: 26px var(--ctl-h) minmax(0, 1.15fr) minmax(0, .95fr) minmax(0, 1.9fr) 84px 92px;
+  grid-template-areas: "no tick name plat links rate backup";
   padding: 11px 14px; background: var(--card);
   border-bottom: 1px solid var(--line-soft);
 }
+.crow-head {
+  padding: 11px 14px 8px; background: var(--sunk);
+  font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-mute); border-bottom: 1px solid var(--line);
+}
+.crow-head > * { font-size: inherit; font-weight: inherit; letter-spacing: inherit;
+  text-transform: inherit; color: inherit; }
+.crow-head .crow-plat > span { margin: 0; }
+.crow-head .crow-links { justify-content: flex-end; }
+.crow-tick-cell { grid-area: tick; }
+.crow-backup-cell { grid-area: backup; text-align: center; }
 .crow:last-child { border-bottom: 0; }
 .crow.is-on { background: var(--line-soft); }
 .crow.is-backup { background: repeating-linear-gradient(135deg, var(--card) 0 8px, var(--line-soft) 8px 16px); }
@@ -1963,12 +1982,16 @@ body.is-plain .topbar { background: var(--chrome); }
 .crow-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
 /* Its own line under the name: the meta a row's money is read against. */
 .crow-plat {
-  flex: 1 1 100%; margin-top: -1px; font-size: 12px; color: var(--ink-soft);
+  grid-area: plat; min-width: 0; font-size: 12.5px; color: var(--ink-soft);
 }
+.crow-plat:empty { display: none; }
+/* The label belongs to the phone layout, where the value has no column head
+   to sit under. */
+.crow:not(.crow-head) .crow-plat > span { display: none; }
 .crow-plat > span { color: var(--ink-mute); margin-right: 6px; }
 
 /* The thing they came to click, so it looks like something to click. */
-.crow-links { grid-area: links; display: flex; gap: 6px; flex-wrap: wrap; }
+.crow-links { grid-area: links; display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; justify-content: flex-end; }
 /* The thing they came to click, named in full and marked as leaving the page. */
 .plink {
   display: inline-flex; align-items: center; gap: 6px;
@@ -2599,9 +2622,14 @@ body.is-plain .topbar { background: var(--chrome); }
      two of them fit across instead of stacking. */
   .crow {
     grid-template-columns: auto auto minmax(0, 1fr) auto;
-    grid-template-areas: "no tick name rate" "no . links backup";
+    grid-template-areas: "no tick name rate" "no . plat plat" "no . links backup";
     gap: 9px 10px; padding: 12px 14px;
   }
+  /* Four labels over a 358px row is furniture, so the header leaves and the
+     placements go back under the name with their label. */
+  .crow-head { display: none; }
+  .crow:not(.crow-head) .crow-plat > span { display: inline; margin-right: 6px; color: var(--ink-mute); }
+  .crow-plat { font-size: 12px; margin-top: -2px; }
   /* The name carries a second line, so the fee sits against the first one
      rather than floating halfway down it. */
   .crow-rate { min-width: 0; align-self: start; }
@@ -3114,8 +3142,14 @@ body > .shell { width: 100%; }
 /* Restated after the desktop template above, or the five columns win on a
    phone and the name is squeezed to a letter. The state track is fixed here
    too: this rule is the later one, so an `auto` here undid the column the
-   phone layout above had just set, and the chips went back to drifting. */
-@media (max-width: 640px) {
+   phone layout above had just set, and the chips went back to drifting.
+
+   760, not 640, because that is where the header hides and where the two line
+   row takes over: between the two the header was gone and the row still had
+   five desktop columns, so a 720px window — which is what a 1440px one is at
+   200% zoom — scrolled sideways. A header the phone hides is not a header,
+   and the row it heads leaves with it. */
+@media (max-width: 760px) {
   .crm-head:not(.svc-row), .crm-row { grid-template-columns: minmax(0, 1fr) 120px; }
 }
 
@@ -3416,9 +3450,13 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
    the section head's lone black slab, which on a phone stretched the full
    width above the records somebody came to read. */
 .cmdbar {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
   margin: 0 0 12px;
 }
+/* It wraps at any width it has to, not only below the phone line: at 720 —
+   which is what a 1440px window is at 200% zoom — the search, two filters, a
+   count and the action came to eleven pixels more than the bar, and the page
+   scrolled sideways. */
 /* `width: 100%` is set on these controls elsewhere, so a select with
    `flex: 0 0 auto` took the whole bar and crushed the search box to nothing.
    Both ends are stated here. */
@@ -3442,7 +3480,6 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 @media (max-width: 640px) {
-  .cmdbar { flex-wrap: wrap; }
   .cmdbar-find { flex: 1 1 100%; max-width: none; }
   .cmdbar .select { flex: 1 1 auto; max-width: none; }
   /* Never full width. An action stretched across a phone is the heaviest
@@ -3736,3 +3773,80 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .qrow.is-off { opacity: .6; }
 .qrow:active { transform: scale(.97); }
 @media (prefers-reduced-motion: reduce) { .qrow:active { transform: none; } }
+
+/* ---------- The Review Canvas ----------
+   The gallery is how a client sees the month; the canvas is how they decide on
+   one post. The mockup at the size it deserves, and everything the decision
+   rests on beside it: what it is, the copy in full, what was said last time,
+   where it stands, and the one place to decide. */
+.canvas {
+  position: fixed; inset: 0; z-index: 95; display: flex;
+  align-items: center; justify-content: center; padding: 24px;
+  background: var(--scrim);
+  animation: mk-scrim-in var(--t) var(--ease-out);
+}
+.canvas[hidden] { display: none; }
+body.is-canvas { overflow: hidden; }
+.canvas-card {
+  display: flex; flex-direction: column;
+  width: min(1180px, 100%); max-height: min(92vh, 900px);
+  background: var(--card); border-radius: var(--radius-lg);
+  box-shadow: 0 24px 60px rgba(0,0,0,.25); overflow: hidden;
+  animation: mk-sheet-in var(--t-slow) var(--ease);
+}
+.canvas-head {
+  display: flex; align-items: center; gap: 10px; flex: 0 0 auto;
+  padding: 0 12px 0 20px; min-height: var(--head-h);
+  border-bottom: 1px solid var(--line);
+}
+.canvas-title { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+.canvas-dims { font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+/* Where you are in the set, so stepping through it is not counting cards. */
+.canvas-pos { margin-left: auto; font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.canvas-head .iconbtn[disabled] { opacity: .35; }
+.canvas-body {
+  flex: 1 1 auto; min-height: 0; display: grid;
+  grid-template-columns: minmax(0, 1.618fr) minmax(320px, 1fr);
+}
+/* The mockups reproduce each platform's own UI, so the stage stays light in
+   dark exactly as the cards behind it do. */
+.canvas-stage {
+  min-width: 0; overflow: auto; padding: 20px;
+  display: flex; align-items: flex-start; justify-content: center;
+  background: var(--sunk); border-right: 1px solid var(--line);
+}
+.canvas-stage > .card-stage { width: 100%; max-width: 460px; }
+.canvas-rail { min-width: 0; overflow: auto; padding: 18px 20px; }
+.canvas-rail > .badge { display: inline-flex; margin: 0 0 12px; }
+.canvas-rail > .copyblock { border-top: 0; padding: 0 0 14px; }
+.canvas-rail > .reask { margin: 0 0 14px; }
+/* The decision is the last thing in the rail and the only green on it. */
+.canvas-rail > .approve { border-top: 1px solid var(--line-soft); padding-top: 14px; }
+
+@media (max-width: 860px) {
+  /* One column: the mockup, then what the decision rests on, then the
+     decision. A rail beside a 9:16 mockup on a phone is two columns of
+     nothing. */
+  .canvas { padding: 0; align-items: flex-end; }
+  .canvas-card { width: 100%; max-height: 100vh; height: 100%; border-radius: 0; }
+  .canvas-body { grid-template-columns: minmax(0, 1fr); }
+  .canvas-stage { border-right: 0; border-bottom: 1px solid var(--line); padding: 14px; }
+  .canvas-rail { padding: 14px 16px 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .canvas, .canvas-card { animation: none; }
+}
+
+/* The client's own page takes the same workspace shape as the console's
+   records: what is true of the account beside the work, not above it. It has
+   no tab strip, because a client reads the page once and should not have to
+   go looking for the section they were told about. */
+.rec.cportal { grid-template-areas: "pane rail"; }
+.cportal > .rec-pane > .viewhead:first-child,
+.cportal > .rec-rail > .viewhead:first-child { margin-top: 0; }
+/* The company select is a page level control, so it keeps its own width
+   rather than filling the rail. */
+.cportal .rec-rail .viewhead .select { flex: 0 0 auto; width: auto; min-width: 150px; }
+@media (max-width: 1100px) {
+  .rec.cportal { grid-template-areas: "rail" "pane"; }
+}

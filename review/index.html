@@ -31,15 +31,15 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260916j">
+<link rel="stylesheet" href="/css/portal.css?v=20260916k">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="/js/config.js?v=20260916j"></script>
-<script src="/js/words.js?v=20260916j"></script>
-<script src="/js/copy.js?v=20260916j"></script>
-<script src="/js/state.js?v=20260916j"></script>
-<script src="/js/api.js?v=20260916j"></script>
-<script src="/js/mockups.js?v=20260916j"></script>
+<script src="/js/config.js?v=20260916k"></script>
+<script src="/js/words.js?v=20260916k"></script>
+<script src="/js/copy.js?v=20260916k"></script>
+<script src="/js/state.js?v=20260916k"></script>
+<script src="/js/api.js?v=20260916k"></script>
+<script src="/js/mockups.js?v=20260916k"></script>
 </head>
 <body>
 
@@ -48,7 +48,7 @@
 </div>
 
 <!-- Header and footer come from the shared chrome. -->
-<script src="/js/chrome.js?v=20260916j" data-kicker="Content Review" data-for data-actions="qr"></script>
+<script src="/js/chrome.js?v=20260916k" data-kicker="Content Review" data-for data-actions="qr"></script>
 
 <main class="shell">
   <div class="filterbar" id="filterbar" hidden>
@@ -81,6 +81,34 @@
   </section>
 </main>
 
+<!-- The Review Canvas. The gallery is how a client sees the month; this is
+     how they decide on one post, with the mockup at the size it deserves and
+     everything the decision rests on beside it. The blocks are moved out of
+     the card and put back on close, so there is one approve control in the
+     page and it cannot drift from the one in the gallery. -->
+<div class="canvas" id="canvas" hidden>
+  <div class="canvas-card" role="dialog" aria-modal="true" aria-labelledby="canvasTitle">
+    <header class="canvas-head">
+      <span class="canvas-title" id="canvasTitle"></span>
+      <span class="canvas-dims" id="canvasDims"></span>
+      <span class="canvas-pos" id="canvasPos"></span>
+      <button class="iconbtn" id="canvasPrev" type="button" aria-label="Previous post">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 6-6 6 6 6"/></svg>
+      </button>
+      <button class="iconbtn" id="canvasNext" type="button" aria-label="Next post">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg>
+      </button>
+      <button class="iconbtn" id="canvasClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </header>
+    <div class="canvas-body">
+      <div class="canvas-stage" id="canvasStage"></div>
+      <aside class="canvas-rail" id="canvasRail" aria-label="This post"></aside>
+    </div>
+  </div>
+</div>
+
 <div class="qr-modal" id="qrModal">
   <div class="qr-card">
     <h3>Review on mobile</h3>
@@ -90,6 +118,6 @@
   </div>
 </div>
 
-<script src="/js/review.js?v=20260916j"></script>
+<script src="/js/review.js?v=20260916k"></script>
 </body>
 </html>

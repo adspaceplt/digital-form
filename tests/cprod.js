@@ -41,7 +41,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   await p.waitForTimeout(700);
 
   say('sections: "' + await p.locator('#bookingHead').innerText() + '" / "' + await p.locator('#chooseHead').innerText() + '"');
-  say('bookings: ' + await p.locator('.booking').count() + '  still choosable: ' + await p.locator('.crow').count());
+  say('bookings: ' + await p.locator('.booking').count() + '  still choosable: ' + await p.locator('.crow:not(.crow-head)').count());
   say('chips: ' + (await p.locator('.chip-state').allInnerTexts()).join(' | '));
   say('highlighted (theirs to act on): ' + await p.locator('.booking:has(.booking-cta)').count() +
       ' -> ' + await p.locator('.booking:has(.booking-cta) .chip-state').innerText());

@@ -52,10 +52,10 @@ const SEED = `
   say('client: ' + await p.locator('#clientName').innerText());
   say('campaign: ' + await p.locator('#campTitle').innerText());
   say('due: ' + (await p.locator('#engageFacts').innerText()).replace(/\n/g, ' '));
-  say('cards: ' + await p.locator('.crow').count());
+  say('cards: ' + await p.locator('.crow:not(.crow-head)').count());
   say('progress: "' + await p.locator('#progLabel').innerText() + '" / "' + await p.locator('#progCount').innerText() + '" / "' + await p.locator('#progSay').innerText() + '"');
   say('replacement badges: ' + await p.locator('.tag-rep').count());
-  say('profile buttons on row 1: ' + (await p.locator('.crow').first().locator('.plink').allInnerTexts()).join(' | '));
+  say('profile buttons on row 1: ' + (await p.locator('.crow:not(.crow-head)').first().locator('.plink').allInnerTexts()).join(' | '));
   // The fee is for a stated set of placements, so the row has to name them.
   say('posting on: ' + (await p.locator('.crow-plat').allInnerTexts()).join(' | '));
   say('due pill: ' + (await p.locator('#engageFacts').innerText()).replace(/\n/g, ' '));
@@ -86,7 +86,7 @@ const SEED = `
   // backup
   await p.locator('.crow-backup').nth(3).click();
   await p.waitForTimeout(250);
-  say('backup card class: ' + await p.locator('.crow').nth(3).getAttribute('class'));
+  say('backup card class: ' + await p.locator('.crow:not(.crow-head)').nth(3).getAttribute('class'));
 
   // language
   await p.locator('#langToggle').click();
@@ -134,13 +134,13 @@ const SEED = `
     window.__persist && window.__persist();
   });
   await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(900);
-  say('CONFIRMED, backups closed -> rows left to choose: ' + await p.locator('.crow').count() +
+  say('CONFIRMED, backups closed -> rows left to choose: ' + await p.locator('.crow:not(.crow-head)').count() +
       ' | progress card hidden: ' + await p.locator('#progressCard').isHidden());
   // Opening backups is the one reason the list stays past that.
   await p.evaluate(() => { window.__DB.campaigns.find(x => x.id === 'cmp2').backups_open = true;
                            window.__persist && window.__persist(); });
   await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(900);
-  say('CONFIRMED, backups open -> rows left: ' + await p.locator('.crow').count() +
+  say('CONFIRMED, backups open -> rows left: ' + await p.locator('.crow:not(.crow-head)').count() +
       ' | head: ' + await p.locator('#chooseHead').innerText());
   // Put it back for the revisit check below.
   await p.evaluate(() => {
