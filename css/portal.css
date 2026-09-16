@@ -47,7 +47,22 @@
   --err-hi:     #8c1d18;   /* the pressed / heavier step, never a second red */
   --err-solid:  #b3261e;
   --on-err:     #ffffff;
-  --focus:      rgba(31,122,77,.18);
+  /* Blue means action. Green had been carrying two jobs at once — the forward
+     button and the live state — so a page could not say "this is the thing to
+     press" and "this is running" in two different voices. Blue is the one that
+     moves, green is the one that reports, amber cautions and red destroys.
+     #0B57D0 carries white at 6.39:1 and clears AA for normal text; Apple's own
+     #007AFF manages 4.02:1 with white on it and is not an option for a button
+     this size. Secondary actions stay neutral: the screen is still about
+     nine tenths neutral, and blue is what is left for guiding the eye. */
+  --action:         #0b57d0;
+  --action-hover:   #0847ae;
+  --action-pressed: #063989;
+  --on-action:      #ffffff;
+  /* The ring is the focus colour at the weight a ring is drawn, so one token
+     still drives every control. */
+  --action-ring:    #8ab4f8;
+  --focus:      rgba(11,87,208,.22);
   --scrim:      rgba(0,0,0,.42);
   --chrome:     rgba(255,255,255,.88);   /* the translucent sticky bar */
   /* Soft Precision. Two corners and nothing between them: 10px on anything a
@@ -145,7 +160,15 @@
     --err-hi:     #f2a9a2;
     --err-solid:  #e8837a;
     --on-err:     #2b100d;
-    --focus:      rgba(74,168,118,.30);
+    /* In dark the fill is light, so white on it disappears: the blue and its
+       text swap round the way every other fill in this file does. #062e6f on
+       #a8c7fa is 8.5:1, and #a8c7fa as a boundary on the page ground is 10.9:1. */
+    --action:         #a8c7fa;
+    --action-hover:   #c2dafc;
+    --action-pressed: #d3e3fd;
+    --on-action:      #062e6f;
+    --action-ring:    #8ab4f8;
+    --focus:      rgba(138,180,248,.34);
     --scrim:      rgba(0,0,0,.62);
     --chrome:     rgba(22,24,20,.88);
     --shadow:     0 1px 2px rgba(0,0,0,.5);
@@ -292,8 +315,18 @@ a { color: inherit; }
 @media (pointer: coarse) { .input[type="file"]::file-selector-button { height: 34px; } }
 .textarea { width: 100%; resize: vertical; min-height: 84px; padding-block: 10px; }
 .input:focus, .select:focus, .textarea:focus {
-  outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px var(--focus);
+  outline: none; border-color: var(--action); box-shadow: 0 0 0 3px var(--focus);
 }
+/* One ring, ours, on everything a keyboard can reach. It used to be the
+   browser's own on every button, which meant the console's focus colour was
+   whatever the platform happened to draw and changed between two machines
+   looking at the same screen. Blue, because focus is interactivity and that is
+   what blue means here; `focus-visible` rather than `focus`, so a pointer does
+   not leave a ring behind on the last thing it pressed. */
+:where(button, [role="button"], a[href], summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--action-ring); outline-offset: 2px; border-radius: var(--radius-sm);
+}
+.input:focus-visible, .select:focus-visible, .textarea:focus-visible { outline: none; }
 .count { color: var(--ink-mute); font-size: 13px; }
 
 /* ---------- Batch ---------- */
@@ -383,13 +416,21 @@ a { color: inherit; }
 .btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
 .btn:hover { border-color: var(--ink); color: var(--ink); }
 /* Approve is the action we want the client to take, so it carries the weight.
-   Request changes stays available but visually quiet. */
+   Request changes stays available but visually quiet. Blue while it is still a
+   decision to make; the settled state below is green, because by then it is no
+   longer an action but a fact about the post. */
 .approve-row .btn-approve {
   flex: 1.35; font-weight: 600;
-  background: var(--ok-solid); border-color: var(--ok-solid); color: var(--on-ok);
+  background: var(--action); border-color: var(--action); color: var(--on-action);
 }
-.approve-row .btn-approve:hover { background: var(--ok-solid); border-color: var(--ok-solid);
-  color: var(--on-ok); filter: brightness(.88); }
+@media (hover: hover) {
+  .approve-row .btn-approve:hover {
+    background: var(--action-hover); border-color: var(--action-hover); color: var(--on-action);
+  }
+}
+.approve-row .btn-approve:active {
+  background: var(--action-pressed); border-color: var(--action-pressed); color: var(--on-action);
+}
 .approve-row .btn-approve[aria-pressed="true"]::before { content: '\2713\00a0'; }
 
 .approve-row .btn-changes { flex: 1; color: var(--ink-mute); }
@@ -397,9 +438,22 @@ a { color: inherit; }
 .approve-row .btn-changes[aria-pressed="true"] {
   background: var(--warn-solid); border-color: var(--warn-solid); color: var(--on-warn); font-weight: 600;
 }
-.btn-primary { background: var(--fill); border-color: var(--fill); color: var(--on-fill); flex: 0 0 auto; }
-.btn-primary:hover { background: var(--ink); filter: brightness(1.35) saturate(.9); color: var(--on-fill); }
-.btn[disabled] { opacity: .5; cursor: default; }
+/* The one thing to press in a view. Hover, pressed and disabled are all
+   stated, because a button that answers nothing under the pointer reads as
+   furniture and a disabled one that only fades reads as a rendering fault. */
+.btn-primary {
+  background: var(--action); border-color: var(--action);
+  color: var(--on-action); flex: 0 0 auto; font-weight: 600;
+}
+@media (hover: hover) {
+  .btn-primary:hover { background: var(--action-hover); border-color: var(--action-hover); color: var(--on-action); }
+}
+.btn-primary:active { background: var(--action-pressed); border-color: var(--action-pressed); color: var(--on-action); }
+/* Not a colour of its own: a disabled control is the same control, dimmed and
+   inert, and a second grey here is a second thing to keep in step. */
+.btn[disabled], .btn[aria-disabled="true"] {
+  opacity: .42; cursor: default; pointer-events: none; filter: saturate(.55);
+}
 
 .changebox { margin-top: 12px; display: none; }
 .changebox.is-open { display: block; }
@@ -1200,7 +1254,8 @@ a { color: inherit; }
 }
 .copy-more:hover { color: var(--ink); }
 
-/* An approved post is settled: one wide outlined button, no second option */
+/* An approved post is settled: one wide outlined button, no second option.
+   Green, because this is a status and no longer an action. */
 .approve-row.is-settled .btn-approve {
   flex: 1; background: var(--card); border-color: var(--ok); color: var(--ok);
   opacity: 1; cursor: default; font-weight: 600;
@@ -1345,11 +1400,19 @@ a { color: inherit; }
      danger   solid red    destroys data
      quiet    borderless   incidental, never the point of the section
    ========================================================================= */
+/* Publish, Approve, Release, Submit. It used to be green, which put the word
+   for "go and do this" in the same colour as the word for "this is live", so a
+   row of green chips and a green button competed for the one accent. It is the
+   action colour now — the same blue as `.btn-primary`, because they are the
+   same promise — and a view still carries at most two of them. */
 .btn-go {
-  background: var(--ok-solid); border-color: var(--ok-solid); color: var(--on-ok); flex: 0 0 auto; font-weight: 600;
+  background: var(--action); border-color: var(--action); color: var(--on-action);
+  flex: 0 0 auto; font-weight: 600;
 }
-.btn-go:hover { background: var(--ok-solid); border-color: var(--ok-solid);
-  color: var(--on-ok); filter: brightness(.88); }
+@media (hover: hover) {
+  .btn-go:hover { background: var(--action-hover); border-color: var(--action-hover); color: var(--on-action); }
+}
+.btn-go:active { background: var(--action-pressed); border-color: var(--action-pressed); color: var(--on-action); }
 
 .btn-warn { background: var(--card); border-color: var(--warn); color: var(--warn); flex: 0 0 auto; }
 .btn-warn:hover { background: var(--warn-solid); border-color: var(--warn-solid); color: var(--on-warn); }
@@ -1682,7 +1745,16 @@ body.is-plain .topbar { background: var(--chrome); }
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .console-head > .headlink, .console-head > .acct { flex: 0 0 auto; }
-.console-body { padding: 0 28px 96px; }
+/* Every route starts the same distance under the bar. Three sections opened
+   with a `.viewhead` and its 24px, three opened straight on a command bar
+   flush against the chrome, so the first thing on the screen sat 24px lower
+   on half the console than on the other half — a shell that is a different
+   shell on every route. The step belongs to the body, so a route with a head
+   and a route without both get it, and the head's own top margin is dropped
+   where it is the first thing in the body. */
+.console-body { padding: 20px 28px 96px; }
+.console-body > .viewhead:first-child,
+.console-body > *:first-child > .viewhead:first-child { margin-top: 0; }
 /* The section's own views were written for a page with its own margins. */
 .console-body .shell { padding: 0; max-width: none; }
 
@@ -1707,7 +1779,7 @@ body.is-plain .topbar { background: var(--chrome); }
   .sidebar.is-open { transform: none; }
   .navtoggle { display: inline-grid; place-items: center; }
   .console-head { padding: 0 16px; }
-  .console-body { padding: 0 16px 72px; }
+  .console-body { padding: 16px 16px 72px; }
   /* Starts where the drawer ends. Dimming the area underneath an opaque
      drawer shows nothing, and it left the tappable region overlapping it. */
   .scrim {
@@ -2737,7 +2809,9 @@ body.is-plain .topbar { background: var(--chrome); }
 @media (hover: hover) {
   .crm-row:hover { background: var(--sunk); }
 }
-.crm-row:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+/* A whole row is the control, so its ring sits inside its own edge rather than
+   over the row above it. */
+.crm-row:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -3px; border-radius: 0; }
 .crm-c { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 13.5px; color: var(--ink-mute); }
 .crm-c-name { font-size: 14.5px; font-weight: 600; letter-spacing: -.012em; color: var(--ink); }
@@ -2827,9 +2901,11 @@ body.is-plain .topbar { background: var(--chrome); }
      "18 months · Overdue" at 119px, and a track narrower than its worst case
      is a track that wraps on the one row somebody needs to read. */
   .crm-row {
+    gap: 4px 12px; padding: 12px 14px; align-items: start;
+  }
+  .crm-row.client-row {
     grid-template-columns: minmax(0, 1fr) 120px;
     grid-template-areas: "name stage" "meta stage";
-    gap: 4px 12px; padding: 12px 14px; align-items: start;
   }
   .crm-c-name  { grid-area: name; white-space: normal; }
   .crm-c-stage { grid-area: stage; justify-self: start; align-self: start; }
@@ -3206,9 +3282,15 @@ body > .shell { width: 100%; }
   font-size: 12.5px; font-weight: 600; color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
-/* The client list's columns. A header row in any other table is a
-   `.svc-row` and takes that row's grid, so each label sits over its column. */
-.crm-head:not(.svc-row), .crm-row {
+/* The client list's columns, hung off the list's own row class rather than off
+   every `.crm-head` in the console. `.crm-head:not(.svc-row)` was a template
+   that claimed any header not wearing one particular class, and Short Links
+   wore another: its header took the seven client columns while its rows took
+   their own five, so DESTINATION sat 91px right of every destination under it
+   and LABEL 103px left of every label. Nothing caught it, because the `cols`
+   check only compares a header against a row it believes share a grid.
+   Every table states its own tracks now, on both the header and the row. */
+.crm-head.client-row, .crm-row.client-row {
   grid-template-columns:
     minmax(0, 1.9fr) 128px minmax(0, .9fr) 104px minmax(0, 1fr) 104px 18px;
 }
@@ -3227,13 +3309,74 @@ body > .shell { width: 100%; }
    200% zoom — scrolled sideways. A header the phone hides is not a header,
    and the row it heads leaves with it. */
 @media (max-width: 760px) {
-  .crm-head:not(.svc-row), .crm-row { grid-template-columns: minmax(0, 1fr) 120px; }
+  .crm-head.client-row, .crm-row.client-row { grid-template-columns: minmax(0, 1fr) 120px; }
   /* A compact record row, not a stacked card: who they are over what we know,
      the state over how long it has stood there. The chevron leaves with the
      columns — the whole row is the target at this width. */
   .crm-c-go { display: none; }
   .crm-band { padding-right: 15px; }
   .crm-band-worth { font-size: 12px; }
+}
+
+/* A standing fact about a whole route: true every day, nothing anybody can do
+   about it here, and therefore the quietest thing on the screen rather than a
+   full width card above the controls. A message is a line, not a card. */
+.routenote {
+  margin: 12px 0 0; font-size: 12.5px; color: var(--ink-mute);
+}
+.routenote b { font-weight: 600; color: var(--ink-soft); }
+.routenote code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+
+/* ---------- Content Review's client register ----------
+   A tile per client answered "which clients are there" and nothing else. The
+   sets, how many are live and whether an access code is on are columns now,
+   which is what lets a book of business be scanned rather than read. */
+.crm-head.cr-client-row, .crm-row.cr-client-row {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) 132px 18px;
+}
+.crm-c-sets { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.crm-c-sets .is-warn { color: var(--warn); font-weight: 600; }
+@media (max-width: 760px) {
+  /* The sets line moves under the name and the access mark keeps its track,
+     which is the two column record row every other list here takes. */
+  .crm-row.cr-client-row {
+    grid-template-columns: minmax(0, 1fr) 120px;
+    grid-template-areas: "name code" "sets code";
+  }
+  .crm-row.cr-client-row .crm-c-sets { grid-area: sets; font-size: 12.5px; }
+  .crm-row.cr-client-row .crm-c-code { grid-area: code; justify-self: start; }
+}
+
+/* ---------- The campaign register ----------
+   The same surface the clients directory is, with the campaign states as its
+   divider rows. A card grid answered "how many campaigns are there" and
+   nothing else: which one is waiting on somebody, what it is worth and who it
+   is for all needed opening each tile in turn. Columns do that by being read
+   down. The tracks are stated on both sides of the breakpoint, because a
+   `.crm-row.camp-row` outranks the phone rule for `.crm-row` whatever order
+   they sit in, and an unstated template is the desktop one at 390. */
+.crm-head.camp-row, .crm-row.camp-row {
+  grid-template-columns:
+    minmax(0, 1.7fr) minmax(0, 1.1fr) 84px 116px var(--state-w) 18px;
+}
+/* A heading over a money column ends where the figures end, and is still the
+   same eyebrow as the headings beside it. */
+.crm-head .is-end { text-align: right; }
+.camp-c-client { color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.camp-c-slots { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 760px) {
+  /* Who it is for and what it is worth on one line under the name, the state
+     in its own fixed track: the two column record row this console gives every
+     other list, measured against its worst case. "Open for selection" is the
+     widest chip a campaign can draw. */
+  .crm-row.camp-row {
+    grid-template-columns: minmax(0, 1fr) 132px;
+    grid-template-areas: "name stage" "meta stage";
+  }
+  .crm-row.camp-row .camp-c-client,
+  .crm-row.camp-row .camp-c-slots,
+  .crm-row.camp-row .svc-rate { display: none; }
 }
 
 /* ---------- Team ----------
@@ -3615,9 +3758,14 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 /* The Short Links row. It was a bordered card per link, each holding the same
    four icons, so fifty links were fifty boxes and the slug — the one thing
    anybody scans for — had no column to sit in. */
-.link-row {
+/* Every track is stated, the last one included. An `auto` final track is
+   sized by its own row, so the header — whose last cell is empty over the
+   actions — sized it at nothing and the three columns before it slid 76px
+   right of the rows beneath them. 124px is the three icon buttons the actions
+   cell actually holds. */
+.link-row, .crm-head.link-row {
   display: grid; align-items: center; gap: 0 12px;
-  grid-template-columns: minmax(110px, 170px) minmax(0, 1.6fr) minmax(0, 1fr) 84px auto;
+  grid-template-columns: minmax(110px, 170px) minmax(0, 1.6fr) minmax(0, 1fr) 84px 124px;
   padding: 10px 15px; border-bottom: 1px solid var(--line-soft);
 }
 .link-row:last-child { border-bottom: 0; }

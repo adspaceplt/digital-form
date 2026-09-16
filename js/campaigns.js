@@ -216,10 +216,15 @@
       });
   }
 
-  // "4 campaigns · last Aug 2026", or nothing but the platforms for a new name.
+  /* "4 · last Aug 2026" for somebody who has worked, and the same mute mark
+     every other cell in this console gives a value nobody has filled in for
+     somebody who has not. "None yet" written out on every row of a roster
+     where almost nobody has been booked is a sentence repeated three hundred
+     times where one character says it, under a heading that has already said
+     what the cell is. */
   function recordLine(c) {
     var rec = state.record && state.record[c.id];
-    if (!rec) return 'None yet';
+    if (!rec) return '';
     return rec.n + (rec.last ? ' · last ' + monthOf(rec.last) : '');
   }
   function monthOf(d) {
@@ -357,7 +362,8 @@
         '<span class="svc-name cr-who"><b>' + esc(c.name) +
           (off ? ' <span class="tone">Inactive</span>' : '') + '</b></span>' +
         '<span class="cr-links">' + (links || '<span class="muted">No links</span>') + '</span>' +
-        '<span class="cr-rec">' + esc(recordLine(c)) + '</span>' +
+        '<span class="cr-rec">' + (recordLine(c)
+          ? esc(recordLine(c)) : '<span class="muted">—</span>') + '</span>' +
         '<span class="svc-rate">' + (c.client_rate ? esc(money(c.client_rate))
                                                    : '<span class="muted">RM</span>') + '</span>' +
         '<span class="team-act">' +
@@ -769,28 +775,73 @@
       });
       return;
     }
-    var sums = campSums;
-    (function (data) {
-      data.forEach(function (c) {
-            var cl = c.clients || {};
-            var mk = cl.market || 'MY';
-            var ap = cl.sst_applies == null ? true : cl.sst_applies;
-            var sub = sums[c.id] || 0;
-            var b = document.createElement('button');
-            b.className = 'bigcard';
-            b.type = 'button';
-            b.innerHTML =
-              '<b>' + esc(campName(c)) + '</b>' +
-              '<span class="muted">' + esc(cl.name || '') + '</span>' +
-              '<span class="muted">' + c.slots + ' creator' + (c.slots === 1 ? '' : 's') +
-                (sub ? ' · ' + esc(MON.money2(sub + MON.taxOf(sub, mk, ap), mk)) : '') + '</span>' +
-              '<span class="chip' + (c.state === 'draft' ? '' : ' is-live') + '">' +
-                esc(STATE_WORD[c.state] || c.state) + '</span>';
-            b.addEventListener('click', function () { openCampaign(c); });
-            box.appendChild(b);
-      });
-    }(rows));
+    /* One register, not a grid of cards. Three campaigns as three tiles reads
+       as a dashboard; thirty reads as a wall, and neither answers "which of
+       these is waiting on somebody" without opening each one. The states are
+       labelled divider rows inside one surface, exactly as the clients
+       directory carries its stages. */
+    var table = document.createElement('div');
+    table.className = 'crm-table softpanel crm-register';
+    var head = document.createElement('div');
+    head.className = 'crm-head camp-row';
+    /* The money column's heading is right aligned over the figures it names,
+       but it is still an eyebrow: `.svc-rate` carries the row's own 13.5px and
+       set the word AMOUNT three sizes above every other heading beside it. */
+    head.innerHTML = ['Campaign', 'Client', 'Creators', 'Amount', 'State']
+      .map(function (h, i) {
+        return '<span' + (i === 3 ? ' class="is-end"' : '') + '>' + h + '</span>';
+      }).join('') + '<span></span>';
+    table.appendChild(head);
+
+    CAMP_GROUPS.forEach(function (g) {
+      var mine = rows.filter(function (c) { return c.state === g; });
+      if (!mine.length) return;
+      var b = document.createElement('div');
+      b.className = 'svc-cat crm-band';
+      b.innerHTML = esc(STATE_WORD[g] || g) + ' <span>' + mine.length + '</span>';
+      table.appendChild(b);
+      mine.forEach(function (c) { table.appendChild(campRow(c, campSums)); });
+    });
+    box.appendChild(table);
   }
+
+  /* Draft first, then the two live states, then what is finished: the order a
+     campaign actually moves in, which is also the order somebody scans for
+     what needs them. A state the vocabulary grows is added here. */
+  var CAMP_GROUPS = ['draft', 'open', 'production', 'completed'];
+
+  function campRow(c, sums) {
+    var cl = c.clients || {};
+    var mk = cl.market || 'MY';
+    var ap = cl.sst_applies == null ? true : cl.sst_applies;
+    var sub = sums[c.id] || 0;
+    var amount = sub ? MON.money2(sub + MON.taxOf(sub, mk, ap), mk) : '';
+    var row = document.createElement('button');
+    row.type = 'button';
+    row.className = 'crm-row camp-row';
+    row.innerHTML =
+      '<span class="crm-c crm-c-name">' + esc(campName(c)) + '</span>' +
+      '<span class="crm-c camp-c-client">' + esc(cl.name || '\u2014') + '</span>' +
+      '<span class="crm-c camp-c-slots">' + esc(String(c.slots || 0)) + '</span>' +
+      /* A campaign nobody has been booked on yet has no amount, and the
+         currency sign alone is a fragment that reads like a broken field. */
+      '<span class="crm-c svc-rate">' + (amount ? esc(amount)
+        : '<span class="muted">' + esc(MON.market(mk).sign) + '</span>') + '</span>' +
+      '<span class="crm-c crm-c-stage"><span class="tone ' +
+        (c.state === 'draft' ? '' : 'is-ok') + '">' +
+        esc(STATE_WORD[c.state] || c.state) + '</span></span>' +
+      /* The one line the phone gets: the client, how many creators, and what
+         it is worth where that is known. */
+      '<span class="crm-c crm-c-meta">' +
+        [cl.name, c.slots + (Number(c.slots) === 1 ? ' creator' : ' creators'), amount]
+          .filter(Boolean).map(esc).join(' \u00b7 ') + '</span>' +
+      '<span class="crm-c crm-c-go" aria-hidden="true">' + CHEV_R + '</span>';
+    row.addEventListener('click', function () { openCampaign(c); });
+    return row;
+  }
+
+  var CHEV_R = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
 
   if ($('campFind')) $('campFind').addEventListener('input', function () {
     campFind = this.value.trim().toLowerCase(); paintCampaigns();

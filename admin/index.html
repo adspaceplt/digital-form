@@ -603,23 +603,22 @@
 
   <!-- ============ Clients ============ -->
   <section id="clientsView" hidden>
-    <div class="viewhead">
-      <span class="headmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="M22 20v-1.5a4 4 0 0 0-3-3.85"/><path d="M16 3.6a4 4 0 0 1 0 7"/></svg><h2>Clients</h2></span>
-      <!-- A client is a company and belongs to the CRM. Content Review
-           publishes their deliverables; it does not create them. -->
-      <button class="btn" id="goToCrm" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 11h4v10"/><path d="M7 21v-4h5v4"/></svg>Manage clients</button>
-    </div>
-    <!-- Every active client is listed here, so on a real book of business the
-         grid is the thing you have to read rather than scan. -->
+    <!-- No section head: the bar already says Content Review, and a heading
+         reading "Clients" under it was a second name for the same screen. The
+         one action this route has sits in the command bar, where every other
+         console list puts its one action.
+         A client is a company and belongs to the CRM. Content Review publishes
+         their deliverables; it does not create them. -->
     <div class="cmdbar">
       <span class="cmdbar-find">
         <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
         <input class="input input-sm" id="crFind" type="search" placeholder="Search clients" aria-label="Search clients">
       </span>
       <span class="cmdbar-count" id="crCount"></span>
+      <button class="btn btn-sm" id="goToCrm" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 11h4v10"/><path d="M7 21v-4h5v4"/></svg>Manage clients</button>
     </div>
     <div class="msg" id="clientMsg"></div>
-    <div class="cards" id="clientCards"></div>
+    <div id="clientCards"></div>
   </section>
 
   <!-- ============ One client ============ -->
@@ -886,9 +885,9 @@
 
       <!-- ---- Campaign list ---- -->
       <div id="campListView">
-        <div class="viewhead">
-          <span class="headmark"><h2>Campaigns</h2></span>
-        </div>
+        <!-- No section head: the tab above it already says Campaigns, and a
+             heading that repeats the control you pressed to get here is the
+             one thing this portal's copy rules forbid outright. -->
         <!-- A campaign is found by its name or by the client it is for, and
              the state is what somebody filters on first. -->
         <div class="cmdbar">
@@ -903,7 +902,7 @@
           <button class="btn btn-sm btn-primary" id="showAddCamp" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New campaign</button>
         </div>
 
-        <div class="cards" id="campCards"></div>
+        <div id="campCards"></div>
       </div>
 
       <!-- ---- One campaign ---- -->
@@ -1161,9 +1160,9 @@
 
       <!-- ---- Creators list ---- -->
       <div id="rosterView" hidden>
-        <div class="viewhead">
-          <span class="headmark"><h2>Creators</h2></span>
-        </div>
+        <!-- No heading: the tab above it says Creators, and the command bar
+             under it carries the search, the filter, the count and the one
+             action. Every console route opens the same way. -->
 
         <!-- A creator is added or edited in a sheet, not in a panel above the list:
              the panel pushed four hundred creators down the page every time
@@ -1243,9 +1242,10 @@
     <!-- ============ Short Links ============ -->
     <!-- ---- Team: who may do what ---- -->
     <div class="console-body" id="sectionTeam" hidden>
-      <div class="viewhead">
-        <span class="headmark"><h2>Members</h2></span>
-      </div>
+      <!-- Every console route opens on its command bar. The bar above already
+           says Team and the column header says Person, so a "Members" heading
+           between the two was a third name for the same list. User groups
+           below keeps its heading, because it is a second thing. -->
       <div class="cmdbar">
         <span class="cmdbar-find">
           <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -1306,10 +1306,10 @@
 
     <!-- ---- Services: the rate card every quote reads from ---- -->
     <div class="console-body" id="sectionServices" hidden>
-      <div class="viewhead">
-        <span class="headmark"><h2>Rate card</h2></span>
-      </div>
-      <!-- What you are looking for, how you are cutting it, the one action. -->
+      <!-- The bar says Services and the two tables under the command bar say
+           Services and Add-ons, so a "Rate card" heading over both was a third
+           name pushing the controls down the page.
+           What you are looking for, how you are cutting it, the one action. -->
       <div class="cmdbar">
         <span class="cmdbar-find">
           <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -1350,14 +1350,11 @@
     <div class="console-body" id="sectionLinks" hidden>
 
       <!-- The bar above already says Short Links. Repeating it pushed the
-           controls down and told the reader nothing. -->
-      <div class="notice" id="linksNotice">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.5"/></svg>
-        <div>
-          <b>Not live yet.</b>
-          <span>Links redirect once <code>go.adspace.me</code> is moved.</span>
-        </div>
-      </div>
+           controls down and told the reader nothing.
+           The standing notice is a line under the register it qualifies, not a
+           full width card above the controls: it is true every day and nothing
+           can be done about it here, so it is the quietest thing on the route
+           rather than the first. A message is a line, not a card. -->
 
       <div class="panel" id="addLinkBox" hidden>
         <div class="panelhead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><h3 id="linkFormTitle">New short link</h3></div>
@@ -1417,6 +1414,8 @@ raya-2026        https://example.com/raya"></textarea>
       </div>
 
       <div id="linkList"></div>
+      <p class="routenote" id="linksNotice"><b>Not live yet.</b>
+        Links redirect once <code>go.adspace.me</code> is moved.</p>
     </div>
 
   </div>

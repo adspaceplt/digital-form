@@ -362,7 +362,7 @@
   /* One shared header, once, at the top of the register. */
   function registerHead() {
     var el = document.createElement('div');
-    el.className = 'crm-head';
+    el.className = 'crm-head client-row';
     el.innerHTML =
       ['Client', 'Stage', 'Industry', 'Value', 'Person in charge', 'Last activity']
         .map(function (h) { return '<span>' + h + '</span>'; }).join('') +
@@ -400,7 +400,7 @@
     var w = stageWord(c.stage || 'lead');
     var row = document.createElement('button');
     row.type = 'button';
-    row.className = 'crm-row';
+    row.className = 'crm-row client-row';
     row.innerHTML =
       '<span class="crm-c crm-c-name">' + esc(c.name || '') + '</span>' +
       '<span class="crm-c crm-c-stage"><span class="tone ' + w[2] + '">' + esc(w[1]) + '</span>' +
@@ -2272,11 +2272,19 @@
         '<span>Service</span><span class="svc-rate">Rate</span>' +
         '<span>Unit</span><span></span></div></div>';
       var table = sec.querySelector('.crm-table');
+      /* A sub-heading that repeats the heading over it is saying the same
+         thing twice: the Add-ons table holds one category, called Add-ons,
+         under a section head that already says Add-ons. A category divides a
+         table; where there is nothing to divide, it is furniture. */
+      var divides = cats.length > 1 ||
+        cats[0].toLowerCase().replace(/[^a-z]/g, '') !== t[0].toLowerCase().replace(/[^a-z]/g, '');
       cats.forEach(function (k) {
-        var cat = document.createElement('div');
-        cat.className = 'svc-cat';
-        cat.textContent = k;
-        table.appendChild(cat);
+        if (divides) {
+          var cat = document.createElement('div');
+          cat.className = 'svc-cat';
+          cat.textContent = k;
+          table.appendChild(cat);
+        }
         rows.filter(function (s) { return s.category === k; })
             .forEach(function (s) { table.appendChild(catalogRow(s)); });
       });
