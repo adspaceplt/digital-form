@@ -508,9 +508,21 @@
       factsHtml +
       (o.state === 'withdrawn' ? '<div class="booking-meta">' + esc(t().unavailable) + '</div>' : '') +
       (resultsOf(posts) || '') +
-      (mine && hasDraft(o) ? draftPreview(o) + decisionBlock(o) : '');
+      (mine && hasDraft(o) ? draftPreview(o) : '') +
+      (mine && hasDraft(o) ? '<div class="inline-review">' +
+        '<label class="field-label">' + esc(t().noteLabel) +
+          '<textarea class="input textarea" data-review-note rows="3"></textarea></label>' +
+        '<label class="field-label">' + esc(t().byLabel) +
+          '<input class="input" data-review-by></label>' +
+        '<div class="row inline-review-actions"><button class="btn btn-go" data-review="approved" type="button">' +
+          esc(t().approve) + '</button><button class="btn btn-warn" data-review="changes" type="button">' +
+          esc(t().askChanges) + '</button></div><div class="msg" data-review-msg></div></div>' : '');
 
-    if (mine && hasDraft(o)) wireDecision(row, o);
+    if (mine && hasDraft(o)) {
+      Array.prototype.forEach.call(row.querySelectorAll('[data-review]'), function (button) {
+        button.addEventListener('click', function () { sendInlineReview(o, row, this.getAttribute('data-review')); });
+      });
+    }
     return row;
   }
 
@@ -568,8 +580,8 @@
      nothing to open is a card the client is not being asked to decide on. */
   function hasDraft(o) { return !!(o.draft_url || (o.files || []).length); }
 
-  /* The work itself, on the card. A 9:16 video is the main object being
-     reviewed, not a thumbnail that asks for another tab. */
+  /* The work is visible before the decision sheet opens. A 9:16 video is the
+     main object being reviewed, not a thumbnail that asks for another tab. */
   function draftPreview(o) {
     var files = o.files || [];
     var media = files.map(function (f) {
@@ -589,70 +601,27 @@
       '</div>';
   }
 
-  /* The name a decision is recorded under, shared with Content Review, so a
-     client who has already approved a post does not type it a second time. */
-  var NAME_KEY = 'adspace_reviewer';
-  function knownName() {
-    try { return localStorage.getItem(NAME_KEY) || ''; } catch (e) { return ''; }
-  }
-  function keepName(n) {
-    if (!n) return;
-    try { localStorage.setItem(NAME_KEY, n); } catch (e) {}
-  }
-
-  /* Content Review decides in place, and this is the same decision, so it is
-     the same component: Approve, Request changes, and a note that opens under
-     them. It used to be a button that opened the draft in a window over the
-     card — a frame to open and a frame to dismiss before the client could say
-     anything, on a card that is already showing them what they are deciding
-     on. */
-  function decisionBlock(o) {
-    var byId = 'by-' + String(o.id).replace(/[^\w-]/g, '');
-    return '<div class="approve">' +
-      '<label class="field-label approve-who" for="' + esc(byId) + '">' + esc(t().byLabel) +
-        '<input class="input input-sm" id="' + esc(byId) + '" value="' + esc(knownName()) + '">' +
-      '</label>' +
-      '<div class="approve-row">' +
-        '<button class="btn btn-approve" type="button" data-act="approve">' + esc(t().approve) + '</button>' +
-        '<button class="btn btn-changes" type="button" data-act="changes">' + esc(t().askChanges) + '</button>' +
-      '</div>' +
-      '<div class="changebox">' +
-        '<textarea class="textarea" rows="3" aria-label="' + esc(t().noteLabel) +
-          '" placeholder="' + esc(t().needNote) + '"></textarea>' +
-        '<div class="changebox-actions">' +
-          '<button class="btn btn-sm" type="button" data-act="cancel">' + esc(t().cancel) + '</button>' +
-          '<button class="btn btn-sm btn-primary" type="button" data-act="send">' + esc(t().sendRequest) + '</button>' +
-        '</div>' +
-      '</div>' +
-      '<div class="approve-state" role="status"></div>' +
-    '</div>';
-  }
-
-  function wireDecision(row, o) {
-    var wrap  = row.querySelector('.approve');
-    var box   = wrap.querySelector('.changebox');
-    var note  = wrap.querySelector('.textarea');
-    var state = wrap.querySelector('.approve-state');
-    var who   = wrap.querySelector('.approve-who .input');
-    var busy  = false;
-
-    function say(text, err) {
-      state.textContent = text || '';
-      state.classList.toggle('is-err', !!err);
+  /* The media is already full-size in the booking. Decisions happen directly
+     beneath it, rather than reopening the same video in a second surface. */
+  function sendInlineReview(o, row, decision) {
+    var note = (row.querySelector('[data-review-note]').value || '').trim();
+    var by = (row.querySelector('[data-review-by]').value || '').trim();
+    var out = row.querySelector('[data-review-msg]');
+    if (decision === 'changes' && !note) {
+      out.textContent = t().needNote; out.className = 'msg err'; return;
     }
-    function lock(on) {
-      busy = on;
-      Array.prototype.forEach.call(wrap.querySelectorAll('.btn'), function (b) { b.disabled = on; });
-    }
-
-    wrap.querySelector('[data-act="approve"]').addEventListener('click', function () {
-      if (busy) return;
-      box.classList.remove('is-open');
-      send('approved', '');
-    });
-    wrap.querySelector('[data-act="changes"]').addEventListener('click', function () {
-      box.classList.add('is-open');
-      note.focus();
+    Array.prototype.forEach.call(row.querySelectorAll('[data-review]'), function (b) { b.disabled = true; });
+    db.rpc('review_draft', {
+      p_token: TOKEN, p_option: o.id, p_decision: decision,
+      p_note: note || null, p_reviewer: by || null, p_passcode: passcode
+    }).then(function (r) {
+      var d = (r && r.data) || {};
+      if ((r && r.error) || d.error) {
+        out.textContent = (r.error && r.error.message) || d.error; out.className = 'msg err';
+        Array.prototype.forEach.call(row.querySelectorAll('[data-review]'), function (b) { b.disabled = false; });
+        return;
+      }
+      load();
     });
     box.querySelector('[data-act="cancel"]').addEventListener('click', function () {
       box.classList.remove('is-open');

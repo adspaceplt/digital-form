@@ -1149,6 +1149,9 @@
     }).join('');
     $('campLink').value = campaignUrl(c);
     $('campOpen').href = campaignUrl(c);
+    var linkOpen = c.state !== 'draft';
+    $('campLinkState').className = 'tone' + (linkOpen ? ' is-ok' : '');
+    $('campLinkState').textContent = linkOpen ? 'Live' : 'Not published';
     showCampPane(restoring ? campPaneFromUrl() : (same ? campPane : 'overview'));
     if (!same) setOpen('invoiceToggle', 'invoiceBody', false);
     // The invoice panel depends on who is confirmed, so it is painted once the
@@ -1396,7 +1399,7 @@
     t.className = 'crm-table softpanel';
     t.innerHTML = '<div class="crm-head svc-row sched-row"><span>Creator</span><span>' +
       (isDelivery() ? 'Delivery' : 'Shoot') + '</span><span>Draft due</span>' +
-      '<span>Publish</span><span>State</span></div>';
+      '<span>Publish</span></div>';
     var now = today();
     var upcoming = rows.filter(function (o) { return !o.visit_date || o.visit_date >= now; });
     var passed = rows.filter(function (o) { return o.visit_date && o.visit_date < now; });
@@ -1415,7 +1418,6 @@
       t.appendChild(el);
     }
     function row(o) {
-      var w = OPTION_WORD[o.state] || [o.state, ''];
       var el = document.createElement('div');
       el.className = 'svc-row sched-row';
       el.innerHTML =
@@ -1428,8 +1430,7 @@
         '<span class="sched-when sched-edit" data-label="Draft due"><input class="input input-sm" data-schedule="submission_due" ' +
           'type="date" value="' + esc(o.submission_due || '') + '" aria-label="Draft due date"></span>' +
         '<span class="sched-when sched-edit" data-label="Publish"><input class="input input-sm" data-schedule="planned_publish" ' +
-          'type="date" value="' + esc(o.planned_publish || '') + '" aria-label="Publish date"></span>' +
-        '<span class="sched-state"><span class="tone ' + esc(w[1] || '') + '">' + esc(w[0]) + '</span></span>';
+          'type="date" value="' + esc(o.planned_publish || '') + '" aria-label="Publish date"></span>';
       Array.prototype.forEach.call(el.querySelectorAll('[data-schedule]'), function (input) {
         input.addEventListener('change', function () {
           var patch = {}; patch[this.getAttribute('data-schedule')] = this.value || null;
@@ -1817,16 +1818,14 @@
 
     /* The money the client is quoted, right aligned on one grid so the total
        sits under the figures it is the sum of. */
-    var mb = $('campMoneyBlock');
-    if (mb) {
-      mb.hidden = !chosen.length;
-      $('campFinanceTotal').hidden = !chosen.length;
+    var finance = $('campFinanceTotal');
+    if (finance) {
+      finance.hidden = !chosen.length;
       if (chosen.length) {
         var moneyRows =
           railMoney('Subtotal', money2(total)) +
           railMoney(taxWord(), money2(sstOf(total))) +
           railMoney('Total', money2(total + sstOf(total)), 'is-total');
-        $('campMoneyRail').innerHTML = moneyRows;
         $('campFinanceMoney').innerHTML = moneyRows;
       }
     }
@@ -1845,22 +1844,8 @@
       }).join('');
     }
 
-    /* Whether the client can open it at all. A campaign in draft is invisible
-       to them, and that is the fact people get wrong on a phone call. */
-    var lb = $('campLinkBlock');
-    if (lb) {
-      var open = c.state !== 'draft';
-      lb.hidden = false;
-      $('campLinkRail').innerHTML =
-        '<p class="raillinkstate"><span class="tone ' + (open ? 'is-ok' : '') + '">' +
-          (open ? 'Live' : 'Not published') + '</span>' +
-          '<span>' + (open ? 'The client can open their link.' : 'The client cannot see it yet.') +
-          '</span></p>';
-    }
-
     /* The rule under the last block, set in the paint. */
-    var blocks = ['campFactBlock', 'campPickBlock', 'campMoneyBlock', 'campDateBlock',
-      'campLinkBlock'].map($).filter(Boolean);
+    var blocks = ['campFactBlock', 'campPickBlock', 'campDateBlock'].map($).filter(Boolean);
     blocks.forEach(function (b) { b.classList.remove('is-last'); });
     var shown = blocks.filter(function (b) { return !b.hidden; });
     if (shown.length) shown[shown.length - 1].classList.add('is-last');

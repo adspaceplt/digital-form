@@ -221,7 +221,7 @@
     $('whoName').textContent = cr.name || '';
     $('whoLine').textContent = '';
     if (window.ADspaceChrome) window.ADspaceChrome.preparedFor(t().preparedFor, cr.name || '');
-    $('signOutBtn').textContent = t().signOut;
+    $('signOutBtn').querySelector('span').textContent = t().signOut;
 
     var rows = feed.bookings || [];
     $('workHead').hidden = !rows.length;
@@ -700,8 +700,9 @@
   var chromeActions = window.ADspaceChrome && window.ADspaceChrome.actions();
   if (chromeActions) {
     var forgetBtn = document.createElement('button');
-    forgetBtn.className = 'btn btn-quiet btn-sm';
+    forgetBtn.className = 'pill';
     forgetBtn.id = 'signOutBtn'; forgetBtn.type = 'button';
+    forgetBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M12 4h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/></svg><span></span>';
     chromeActions.appendChild(forgetBtn);
   }
   $('signOutBtn').addEventListener('click', function () { forget(); askCode(); });
