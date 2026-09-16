@@ -3592,6 +3592,10 @@ body > .shell { width: 100%; }
 body.no-remove #deleteClient,
 body.no-remove #campDangerRow,
 body.no-remove .kmenu-item[data-a="del"].is-danger:not([data-soft]) { display: none !important; }
+/* Voiding a verified letter reverses a confirmation, so it is its own
+   capability rather than a corner of Clients. The database checks it again
+   when the button is pressed; this only stops the screen offering it. */
+body.no-docvoid .kmenu-item[data-a="void"] { display: none !important; }
 body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; }
 @media (pointer: coarse) {
   .select-sm { min-height: var(--ctl-h); }
