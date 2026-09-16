@@ -261,9 +261,120 @@
     }
 
     card.appendChild(approvalBlock(post, head.querySelector('.badge')));
-    paintDecision(post.review, head.querySelector('.badge'), card);
+    paintDecision(post.review, head.querySelector('.badge'), card.querySelector('.approve'));
+    /* The gallery is how a client sees the month; the canvas is how they
+       decide on one post. Opening it is the mockup itself, which is the thing
+       they are already looking at, plus a named control for a keyboard. */
+    stage.setAttribute('role', 'button');
+    stage.setAttribute('tabindex', '0');
+    stage.setAttribute('aria-label', 'Review ' + MK.label(post));
+    stage.addEventListener('click', function (e) {
+      /* A control inside the mockup is the mockup's, not the canvas's. */
+      if (e.target.closest('button, a, input, textarea, select')) return;
+      openCanvas(card);
+    });
+    stage.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCanvas(card); }
+    });
     return card;
   }
+
+  /* ---- The Review Canvas -----------------------------------------------
+     One post at the size it deserves, with everything the decision rests on
+     beside it: what it is, the copy in full, what was said last time, where
+     it stands and the one place to decide. The blocks are moved out of the
+     card and put back on close, so there is one approve control in the page
+     and it cannot drift from the one in the gallery. */
+  var canvasFor = null, canvasHome = null, canvasOpener = null;
+
+  function galleryCards() {
+    return Array.prototype.slice.call(document.querySelectorAll('#content .card'));
+  }
+
+  function openCanvas(card) {
+    if (canvasFor === card) return;
+    if (canvasFor) returnCanvas();
+    canvasOpener = canvasOpener || document.activeElement;
+    canvasFor = card;
+    /* Where each block came from, so it goes back in the order it left. */
+    canvasHome = [];
+    var head = card.querySelector('.card-head');
+    $('canvasTitle').textContent = head.querySelector('.card-title').textContent;
+    $('canvasDims').textContent = head.querySelector('.card-dims').textContent;
+
+    var cards = galleryCards();
+    var at = cards.indexOf(card);
+    $('canvasPos').textContent = (at + 1) + ' of ' + cards.length;
+    $('canvasPrev').disabled = at <= 0;
+    $('canvasNext').disabled = at >= cards.length - 1;
+
+    var stage = $('canvasStage'), rail = $('canvasRail');
+    stage.innerHTML = ''; rail.innerHTML = '';
+    /* The badge travels with the rail, because where a post stands is part of
+       what the decision is being made against. */
+    var badge = head.querySelector('.badge');
+    var take = function (el, into) {
+      if (!el) return;
+      canvasHome.push([el, el.parentNode, el.nextSibling]);
+      into.appendChild(el);
+    };
+    take(card.querySelector('.card-stage'), stage);
+    take(badge, rail);
+    take(card.querySelector('.copyblock'), rail);
+    take(card.querySelector('.reask'), rail);
+    take(card.querySelector('.approve'), rail);
+
+    $('canvas').hidden = false;
+    document.body.classList.add('is-canvas');
+    $('canvasClose').focus();
+  }
+
+  /* Put every block back where it came from. In reverse, because taking the
+     second block out of a card invalidates the sibling the first one recorded;
+     and defensively, because a node that is no longer a child of the parent it
+     was next to is appended rather than thrown at insertBefore. */
+  function returnCanvas() {
+    (canvasHome || []).slice().reverse().forEach(function (h) {
+      var el = h[0], parent = h[1], before = h[2];
+      if (before && before.parentNode === parent) parent.insertBefore(el, before);
+      else parent.appendChild(el);
+    });
+    canvasHome = null;
+    canvasFor = null;
+  }
+
+  function shutCanvas() {
+    if (!canvasFor) return;
+    returnCanvas();
+    $('canvas').hidden = true;
+    document.body.classList.remove('is-canvas');
+    if (canvasOpener && document.body.contains(canvasOpener)) canvasOpener.focus();
+    canvasOpener = null;
+  }
+
+  function stepCanvas(by) {
+    if (!canvasFor) return;
+    var cards = galleryCards();
+    var at = cards.indexOf(canvasFor) + by;
+    if (at < 0 || at >= cards.length) return;
+    var next = cards[at];
+    returnCanvas();
+    openCanvas(next);
+  }
+
+  $('canvasClose').addEventListener('click', shutCanvas);
+  $('canvasPrev').addEventListener('click', function () { stepCanvas(-1); });
+  $('canvasNext').addEventListener('click', function () { stepCanvas(1); });
+  $('canvas').addEventListener('click', function (e) { if (e.target === this) shutCanvas(); });
+  document.addEventListener('keydown', function (e) {
+    if ($('canvas').hidden) return;
+    if (e.key === 'Escape') { shutCanvas(); return; }
+    /* Arrows move through the set, unless somebody is typing their name into
+       the decision beside it. */
+    if (e.target.closest('input, textarea, select')) return;
+    if (e.key === 'ArrowLeft') stepCanvas(-1);
+    if (e.key === 'ArrowRight') stepCanvas(1);
+  });
 
   function approvalBlock(post, badge) {
     var wrap = document.createElement('div');
@@ -339,21 +450,29 @@
         decision: decision, note: note, reviewer: reviewer,
         created_at: new Date().toISOString()
       };
-      paintDecision(post.review, badge, wrap.closest('.card'));
+      paintDecision(post.review, badge, wrap);
     }).catch(function () {
       Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
       wrap.querySelector('.approve-state').textContent = 'Unable to save. Please check your connection.';
     });
   }
 
-  function paintDecision(review, badge, card) {
-    var wrap  = card.querySelector('.approve');
+  /* Takes the decision block itself rather than the card it usually sits in:
+     while the Review Canvas is open that block is in the canvas rail, and
+     `card.querySelector('.approve')` came back null there — which threw inside
+     a .then and was reported to the client as "Unable to save. Please check
+     your connection." over a save that had gone through. */
+  function paintDecision(review, badge, wrap) {
+    if (wrap && wrap.classList && !wrap.classList.contains('approve')) {
+      wrap = wrap.querySelector('.approve');
+    }
+    if (!wrap) return;
     var state = wrap.querySelector('.approve-state');
     var approveBtn = wrap.querySelector('.btn-approve');
     var changesBtn = wrap.querySelector('.btn-changes');
 
     badge.className = 'badge status status-pending';
-    badge.innerHTML = '<i class="status-dot"></i><span></span>';
+    badge.innerHTML = '<span></span>';
     var badgeWord = badge.querySelector('span');
     approveBtn.setAttribute('aria-pressed', 'false');
     changesBtn.setAttribute('aria-pressed', 'false');
@@ -382,7 +501,7 @@
       approveBtn.textContent = 'Approved';
       approveBtn.disabled = true;
       state.innerHTML = 'Approved' + who + ' on ' + when + '.';
-      autoFold(card);
+      autoFold(wrap);
     } else {
       badgeWord.textContent = 'Changes requested';
       badge.className = 'badge status status-changes is-changes';
@@ -532,8 +651,11 @@
     head.setAttribute('aria-expanded', section.classList.contains('is-folded') ? 'false' : 'true');
   }
 
-  function autoFold(card) {
-    var section = card.closest('.batch');
+  /* The set folds once every post in it is settled. Reached from the decision
+     block, which is in the canvas rail while the canvas is open and therefore
+     inside no `.batch` at all: there is nothing to fold until it goes home. */
+  function autoFold(from) {
+    var section = from && from.closest ? from.closest('.batch') : null;
     if (section) paintFold(section, false);
   }
 

@@ -8,6 +8,13 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
   const ctx = await b.newContext({ viewport: { width: 1200, height: 1000 } });
   const p = await ctx.newPage();
+  /* The client record is a workspace with panes now, so a section's controls
+     are in the pane that owns them. `pane()` is what a person does with the
+     tab strip; every interaction below opens its own section first. */
+  const pane = async (k) => {
+    await p.locator('#crmTabs .tab[data-pane="' + k + '"]').click();
+    await p.waitForTimeout(250);
+  };
   const errs = [];
   p.on('pageerror', e => errs.push('PAGEERROR ' + e.message));
   p.on('dialog', d => d.accept());
@@ -73,9 +80,11 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   check('opens the client it just created',
     (await p.locator('#crmClientName').innerText()) === 'Star Living');
   check('the source is on the record', (await p.locator('#crmFacts').innerText()).includes('Referral'));
+  await pane('contacts');
   check('the person who asked is the main contact',
     await p.locator('#crmContacts .ct-row:not(.crm-head)').count() === 1 &&
     (await p.locator('#crmContacts').innerText()).includes('Main contact'));
+  await pane('services');
   check('the enquiry stands in until a service line is added',
     (await p.locator('#crmServices').innerText()).includes('Package B'));
   check('a review link is issued at creation, so Content Review has nothing to make',
@@ -84,6 +93,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   check('the new client is priced in S$', (await p.locator('#crmFacts').innerText()).includes('S$'));
 
   // contacts
+  await pane('contacts');
   await p.locator('#crmAddContact').click(); await p.waitForTimeout(300);
   await p.fill('#ctName', 'Ms Tan');
   await p.fill('#ctRole', 'Finance');
@@ -94,8 +104,10 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   check('phone and WhatsApp are one tap each',
     await p.locator('#crmContacts .plink').count() >= 2);
 
-  // billing, and the tax switch
-  await p.locator('#crmBillToggle').click(); await p.waitForTimeout(300);
+  // billing, and the tax switch. The pane is the disclosure now: opening
+  // Billing opens the fields, so there is nothing to unfold first.
+  await pane('billing');
+  check('the Billing pane opens its fields', await p.locator('#crmBillBody').isVisible());
   check('the tax switch names the tax', (await p.locator('#crmSstLabel').innerText()).length > 0,
     JSON.stringify(await p.locator('#crmSstLabel').innerText()));
   await p.locator('#crmSstApplies').uncheck();
@@ -116,6 +128,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
     (await p.locator('#crmClientName').innerText()) === 'Star Living');
 
   // editing happens on the record, not over the list
+  await pane('overview');
   check('engagements wait for Active', await p.locator('#crmEngage').isHidden());
   check('the record says when they want to start',
     (await p.locator('#crmFacts').innerText()).includes('1 to 3 months'),
@@ -193,19 +206,75 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
 
 
 
-  // the list is grouped: leads on top, active below
+  /* The record's panes are in the address, so a refresh, a pasted link, Back
+     and Forward all land on the section somebody was working in. Seven
+     sections in one column meant Documents was a scroll away from the
+     services it quotes. */
+  console.log('=== the record is a workspace with panes ===');
+  check('the panes are the record sections',
+    (await p.locator('#crmTabs .tab').allInnerTexts()).join(',') ===
+    'Overview,Contacts,Billing,Brand,Services,Documents,Activity',
+    (await p.locator('#crmTabs .tab').allInnerTexts()).join(','));
+  check('one pane is shown at a time', await p.locator('.rec-pane:not([hidden])').count() === 1);
+  check('the facts sit in the rail, not in a pane',
+    await p.locator('.rec-rail #crmFacts').count() === 1 &&
+    await p.locator('.rec-rail #crmJourney').count() === 1);
+  check('and identity stays above them both',
+    await p.locator('.rec-head #crmClientName').isVisible() &&
+    await p.locator('.rec-head #crmClientStage').isVisible());
+  await pane('documents');
+  check('the pane travels in the address', p.url().indexOf('tab=documents') > -1, p.url());
+  await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(1100);
+  check('a refresh lands on the same pane',
+    await p.locator('.rec-pane[data-pane="documents"]').isVisible() &&
+    await p.locator('#crmTabs .tab[data-pane="documents"]').getAttribute('aria-selected') === 'true');
+  await pane('contacts');
+  await p.goBack(); await p.waitForTimeout(500);
+  check('Back returns to the pane before it',
+    await p.locator('.rec-pane[data-pane="documents"]').isVisible(), p.url());
+  await p.goForward(); await p.waitForTimeout(500);
+  check('and Forward goes on again',
+    await p.locator('.rec-pane[data-pane="contacts"]').isVisible(), p.url());
+  await pane('overview');
+  check('Overview is the default, so it stays out of the address',
+    p.url().indexOf('tab=') < 0, p.url());
+
+  /* One register, not three floating cards: one surface, one header, and the
+     stages as labelled divider rows inside it. Three panels repeated the
+     column names three times and put page ground between rows that belong to
+     one list. */
   await p.locator('#crmBack').click(); await p.waitForTimeout(600);
-  const groups = await p.locator('.crm-group-head h3').allInnerTexts();
-  console.log('  groups: ' + groups.map(g => g.replace(/\n/g, ' ')).join(' / '));
+  check('the register is one surface', await p.locator('#crmList .crm-register').count() === 1,
+    String(await p.locator('#crmList .crm-register').count()));
+  check('with one shared header', await p.locator('#crmList .crm-head').count() === 1,
+    String(await p.locator('#crmList .crm-head').count()));
+  check('and no separate panel per stage', await p.locator('#crmList .crm-group').count() === 0);
+  /* innerText would come back shouting: the band is uppercased in CSS. */
+  const groups = await p.locator('#crmList .crm-band')
+    .evaluateAll(els => els.map(e => e.textContent.replace(/\s+/g, ' ').trim()));
+  console.log('  bands: ' + groups.map(g => g.replace(/\n/g, ' ')).join(' / '));
   check('leads sit above active clients', groups[0].indexOf('Leads') === 0 && groups.some(g => g.indexOf('Active') === 0));
+  check('the bands are inside the register',
+    await p.locator('#crmList .crm-register > .crm-band').count() === groups.length);
+  const cols = await p.locator('#crmList .crm-head span')
+    .evaluateAll(els => els.map(e => e.textContent.trim()));
+  check('the header names every column',
+    cols.slice(0, 6).join(',') === 'Client,Stage,Industry,Value,Person in charge,Last activity',
+    cols.join(','));
+  check('and leaves the last one empty, over the mark that says a row opens',
+    cols.length === 7 && cols[6] === '');
+  check('a row is one control, so the whole of it opens the client',
+    await p.locator('#crmList .crm-row').first().evaluate(el =>
+      el.tagName === 'BUTTON' && el.querySelectorAll('button, a, input, select').length === 0));
 
   // the registered name is kept in capitals
   await p.locator('.crm-row').filter({ hasText: 'Star Living' }).click(); await p.waitForTimeout(700);
-  await p.locator('#crmBillToggle').click(); await p.waitForTimeout(300);
+  await pane('billing');
   await p.fill('#crmLegalName', 'star living sdn bhd');
   check('company name is forced to capitals', (await p.locator('#crmLegalName').inputValue()) === 'STAR LIVING SDN BHD');
 
   // a call logged against the client, with a next action
+  await pane('activity');
   await p.locator('#crmAddTouch').click(); await p.waitForTimeout(300);
   await p.selectOption('#tcKind', 'visit');
   await p.fill('#tcSummary', 'Walked the showroom. They want the launch video before Raya.');
@@ -239,6 +308,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   check('and reopened', await p.locator('.touch-next.is-done').count() === 0);
 
   // contacts: edit in place, remove with undo, put back
+  await pane('contacts');
   await p.locator('#crmContacts .ct-row:not(.crm-head) [data-a="menu"]').first().click(); await p.waitForTimeout(250);
   await p.locator('#crmContacts [data-a="edit"]').first().click(); await p.waitForTimeout(300);
   check('contact edit opens prefilled', (await p.locator('#ctName').inputValue()) === 'Mr Lim');
@@ -291,6 +361,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
     await p.evaluate(() => window.__DB.activity_log.some(a => a.action === 'contact.deleted')));
 
   // services: a line from the rate card, then a custom line, confirmed; the value follows
+  await pane('services');
   await p.locator('#crmAddService').click(); await p.waitForTimeout(400);
   check('the rate card is offered, grouped', await p.locator('#svPick optgroup').count() >= 2);
   await p.selectOption('#svPick', 'pkg-b'); await p.waitForTimeout(150);
@@ -348,6 +419,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
 
   // a Letter of Offer from the quoted lines only, numbered for the month, kept as issued
   await p.locator('#crmServices .svc-row:not(.crm-head)').first().locator('select[data-f="state"]').selectOption('quoted'); await p.waitForTimeout(900);
+  await pane('documents');
   const dl = p.waitForEvent('download', { timeout: 8000 }).catch(() => null);
   await p.locator('#crmCover').click();
   const got = await dl; await p.waitForTimeout(600);
@@ -377,7 +449,9 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   await p.locator('#crmCover').click(); await p.waitForTimeout(800);
   check('the next one this month takes the next number',
     await p.evaluate(yymm => window.__DB.client_documents.some(d => d.number === 'AQT/INT/' + yymm + '002'), yymm));
+  await pane('services');
   await p.locator('#crmServices .svc-row:not(.crm-head)').first().locator('select[data-f="state"]').selectOption('confirmed'); await p.waitForTimeout(900);
+  await pane('documents');
   await p.locator('#crmCover').click(); await p.waitForTimeout(600);
   check('with nothing quoted there is no letter to issue', /No lines to quote/.test(await p.locator('#crmDocMsg').innerText()) &&
     await p.evaluate(() => window.__DB.client_documents.length === 2));
@@ -385,10 +459,11 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   // the billing contact is one of the contacts, the main one unless chosen
   await p.locator('#crmBack').click(); await p.waitForTimeout(600);
   await p.locator('.crm-row').filter({ hasText: 'Laman Citra' }).click(); await p.waitForTimeout(800);
+  await pane('billing');
   check('an active client with a main contact has billing complete', (await p.locator('#crmBillSummary').innerText()).includes('Complete'));
-  await p.locator('#crmBillToggle').click(); await p.waitForTimeout(300);
   check('the billing contact is prefilled with the main contact',
     (await p.locator('#crmBillContact option:checked').innerText()).includes('Mr Lim'));
+  await pane('services');
   await p.locator('#crmAddService').click(); await p.waitForTimeout(300);
   await p.selectOption('#svPick', 'koc-10'); await p.selectOption('#svState', 'confirmed');
   await p.locator('#svSave').click(); await p.waitForTimeout(900);
@@ -399,6 +474,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   check('a line can run for a term from a start date',
     (await p.locator('#crmServices').innerText()).includes('2,160') &&
     (await p.locator('#crmServices').innerText()).includes('6 months from 12 Oct 2026'));
+  await pane('overview');
   check('engagements show on an active client', await p.locator('#crmEngage').isVisible());
   await p.evaluate(() => {
     window.__DB.campaigns.push({ id: 'cmp1', client_id: 'c1', title: 'Promote Newly Launch Project',
@@ -414,6 +490,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
     const row = document.querySelector('#crmEngage .work-row-name .tone');
     return !!row && row.textContent === window.ADspaceWords.en.campState.open;
   }), await p.locator('#crmEngage').innerText());
+  await pane('documents');
   await p.locator('#crmCover').click(); await p.waitForTimeout(900);
   check('the letter takes the quoted line only, with SST', await p.evaluate(() => {
     const d = window.__DB.client_documents.find(x => x.client_id === 'c1');
@@ -431,8 +508,9 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
   await p.locator('#crmBack').click(); await p.waitForTimeout(600);
   await p.locator('.crm-row').filter({ hasText: 'Star Living' }).click(); await p.waitForTimeout(800);
 
-  // the brand profile is its own fold with its own save
-  await p.locator('#crmBrandToggle').click(); await p.waitForTimeout(300);
+  // the brand profile is its own pane with its own save
+  await pane('brand');
+  check('the Brand pane opens its fields', await p.locator('#crmBrandBody').isVisible());
   await p.fill('#crmSocialIg', '@starliving');
   await p.fill('#crmNotes', 'Warm, family first. No hard sell.');
   await p.locator('#crmBrandSave').click(); await p.waitForTimeout(800);
@@ -440,7 +518,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
     await p.evaluate(() => { const c = window.__DB.clients.find(c => c.name === 'Star Living'); return c.social_ig === '@starliving' && /family/.test(c.brand_notes); }));
   check('the head shows the link', await p.locator('#crmLinks .plink').count() >= 1);
   await p.locator('#crmBack').click(); await p.waitForTimeout(800);
-  check('the pipeline group carries its value', (await p.locator('.crm-group-worth').first().innerText()).includes('70,940'));
+  check('the stage band carries its value', (await p.locator('.crm-band-worth').first().innerText()).includes('70,940'));
   check('next actions are gathered at the top of the list', await p.locator('#crmDue').isVisible() &&
     (await p.locator('.due-row').count()) >= 1);
   check('the overdue one is marked', await p.locator('.due-row.is-due').count() >= 1);
@@ -476,7 +554,7 @@ const check = (l, ok, extra) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (ex
     await p.waitForTimeout(900);
   };
   const rowOf = n => p.locator('.crm-row', { hasText: n }).first();
-  const groupOf = n => p.locator('.crm-group', { hasText: n }).first();
+  const groupOf = n => p.locator('.crm-band', { hasText: n }).first();
 
   await age('Star Living', 'lead', 40);
   check('a lead inside 48 hours is not marked', !/Overdue/.test(await rowOf('Star Living').innerText()));

@@ -19,6 +19,12 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
   const ctx = await b.newContext({ viewport: { width: 1280, height: 1000 } });
   const p = await ctx.newPage();
+  /* The campaign record is a command centre with panes now, so a section's
+     controls are in the pane that owns them. */
+  const cpane = async (k) => {
+    await p.locator('#campTabs .tab[data-pane="' + k + '"]').click();
+    await p.waitForTimeout(250);
+  };
   p.on('pageerror', e => errs.push('PAGEERROR ' + e.message));
   p.on('console', m => { if (m.type() === 'error' && !/404|Failed to load resource|TUNNEL/i.test(m.text())) errs.push('CONSOLE ' + m.text()); });
   p.on('dialog', d => d.accept('scheduling clash'));
@@ -35,6 +41,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   await p.waitForTimeout(600);
 
   say('=== lock ===');
+  await cpane('client');
   say('lock button: "' + await p.locator('#campLock').innerText() + '" visible=' + await p.locator('#campLock').isVisible());
   say('production hidden before lock: ' + await p.locator('#creatorList').isHidden());
 
@@ -50,6 +57,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   say('campaign state: ' + await p.locator('#campState').innerText());
   say('confirmation record: ' + await p.evaluate(() => JSON.stringify(window.__DB.campaign_confirmations[0])));
   say('option states: ' + await p.evaluate(() => window.__DB.campaign_options.map(o => o.state).join(',')));
+  await cpane('creators');
   say('production visible: ' + await p.locator('#creatorList').isVisible() + ' rows=' + await p.locator('.kcard').count());
 
   say('=== bulk logistics ===');
@@ -157,6 +165,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   say('sent back to the options: ' + await p.evaluate(() =>
     window.__DB.campaign_options.filter(o => o.state === 'option').length) + ' of 4 now selectable');
 
+  await cpane('client');
   say('campaign itself reopens: "' + await p.locator('#campPublish').innerText() + '"');
   await p.locator('#campPublish').click();
   await p.waitForTimeout(700);

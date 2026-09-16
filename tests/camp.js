@@ -7,6 +7,12 @@ const say = s => console.log(s);
 (async () => {
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
   const p = await b.newPage({ viewport: { width: 1280, height: 900 } });
+  /* The campaign record is a command centre with panes now, so a section's
+     controls are in the pane that owns them. */
+  const cpane = async (k) => {
+    await p.locator('#campTabs .tab[data-pane="' + k + '"]').click();
+    await p.waitForTimeout(250);
+  };
   p.on('pageerror', e => errs.push('PAGEERROR ' + e.message));
   p.on('console', m => { if (m.type() === 'error' && !/favicon|404/i.test(m.text())) errs.push('CONSOLE ' + m.text()); });
   await p.route('**/supabase-js*/**', r => r.fulfill({ contentType: 'application/javascript', body: STUB }));
@@ -100,6 +106,7 @@ const say = s => console.log(s);
   say('campaign link: ' + (await p.locator('#campLink').inputValue()).replace(/k=.*/, 'k=…'));
 
   // add options
+  await cpane('creators');
   await p.locator('#showAddOption').click();
   await p.waitForTimeout(400);
   say('picker rows: ' + await p.locator('#optionPick .pickrow').count());
@@ -223,16 +230,20 @@ const say = s => console.log(s);
   await card.locator('.kmenu-btn').click(); await p.waitForTimeout(250);
   await p.locator('.kmenu [data-a="pick"]').first().click();
   await p.waitForTimeout(600);
+  await cpane('client');
   await p.locator('#campLock').click(); await p.waitForTimeout(300);
   await p.fill('#lockPerson', 'Wei Ling');
   await p.locator('#lockGo').click();
   await p.waitForTimeout(900);
   say('option states: ' + await p.evaluate(() => window.__DB.campaign_options.map(o => o.state).join(',')));
-  const hasPanel = await p.locator('#invoicePanel').isVisible();
+  /* The panel arrives with the confirmation. It lives in the Finance pane, so
+     "arrived" is its own hidden flag rather than whether the pane it sits in
+     happens to be the one on screen. */
+  const hasPanel = !(await p.locator('#invoicePanel').evaluate(e => e.hidden));
   say('invoice section arrives with the confirmation: ' + hasPanel);
   if (!hasPanel) { console.log('FAIL the invoice section is missing after a creator is confirmed'); }
 
-  await p.locator('#invoiceToggle').click(); await p.waitForTimeout(200);
+  await cpane('finance');
   say('invoice panel opened by hand: ' + await p.locator('#invoiceBody').isVisible());
   await p.fill('#invNo', '026114');
   await p.locator('#invCancel').click(); await p.waitForTimeout(300);
@@ -278,6 +289,7 @@ const say = s => console.log(s);
 
   // Revert the confirmation: the invoice has to leave both pages with it.
   p.once('dialog', d => d.accept());
+  await cpane('creators');
   const live = p.locator('#creatorList .kcard').first();
   await live.locator('.kmenu-btn').scrollIntoViewIfNeeded();
   await live.locator('.kmenu-btn').click(); await p.waitForTimeout(250);
@@ -304,12 +316,14 @@ const say = s => console.log(s);
   await again.locator('.kmenu-btn').click(); await p.waitForTimeout(250);
   await p.locator('.kmenu [data-a="pick"]').first().click();
   await p.waitForTimeout(600);
+  await cpane('client');
   await p.locator('#campLock').click(); await p.waitForTimeout(300);
   await p.fill('#lockPerson', 'Wei Ling');
   await p.locator('#lockGo').click(); await p.waitForTimeout(900);
   say('confirmed again, the client reads: ' + await p.evaluate(async t =>
     (await window.__rpc('get_campaign', { p_token: t })).data.campaign.invoice_no, tok));
 
+  await cpane('client');
   await p.locator('#campPublish').click();
   await p.waitForTimeout(400);
   say('after publish: state=' + await p.locator('#campState').innerText() + ' btn=' + await p.locator('#campPublish').innerText());

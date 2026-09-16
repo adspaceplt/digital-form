@@ -48,7 +48,11 @@
       { id:'t0', name:'ADspace', email:'adspacestudios@gmail.com', active:true, role:'admin', is_admin:true, can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:true, can_billing:true, can_remove:true },
       { id:'t1', name:'Qiao Rou', email:'qiaorou@adspacestudios.com', active:true, role:'sales', can_clients:true, can_review:false, can_campaigns:false, can_links:false, can_activity:false, can_billing:true, can_remove:false },
       { id:'t2', name:'Aisyah', email:'aisyah@adspacestudios.com', active:true, role:'account', can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:false, can_billing:true, can_remove:false }],
-    links: [], batches: []
+    links: [
+      { id:'l1', slug:'raya-2026', target_url:'https://adspacestudios.com/campaigns/raya-2026', title:'Raya landing', active:true },
+      { id:'l2', slug:'menu-hkl', target_url:'https://hkllim.com/menu?utm_source=qr&utm_medium=table-tent', title:'Table tent QR', active:true },
+      { id:'l3', slug:'old-promo', target_url:'https://adspacestudios.com/promo/2025', title:'', active:false }
+    ], batches: []
   };
   // Survive a reload, so "come back to the link later" is actually testable.
   try {
@@ -108,6 +112,11 @@
     var rows = (DB[table] || []).slice();
     var sel = '', single = false, pending = null, mode = null;
     var api = {};
+    /* A read the database refuses. Every list in the console has a failed
+       state and none of them was ever driven, because nothing here could say
+       no: `window.__failRead = { clients: 'permission denied' }` is how a
+       suite reaches that screen. */
+    if (window.__failRead && window.__failRead[table]) api.__err = { message: window.__failRead[table] };
     api.select = function (s) { sel = s || '*'; return api; };
     api.order = function () { return api; };
     api.limit = function () { return api; };
@@ -192,6 +201,12 @@
       var out = api.__err
         ? { data: null, error: api.__err }
         : { data: single ? (hydrate(table, rows, sel)[0] || null) : hydrate(table, rows, sel), error: null };
+      /* A read that takes a moment, so the loading state is a screen somebody
+         can actually be shown. Resolved in a microtask, every list in the
+         console painted its skeleton and replaced it in the same frame, and
+         the state nobody could reach was the state nobody checked. */
+      var wait = window.__slowRead && window.__slowRead[table];
+      if (wait) return new Promise(function (go) { setTimeout(function () { go(out); }, wait); }).then(ok, bad);
       return Promise.resolve(out).then(ok, bad);
     };
     return api;

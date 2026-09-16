@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260917a">
+<link rel="stylesheet" href="/css/portal.css?v=20260917b">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,19 +28,20 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260917a"></script>
-<script src="/js/words.js?v=20260917a"></script>
-<script src="/js/copy.js?v=20260917a"></script>
-<script src="/js/menu.js?v=20260917a"></script>
-<script src="/js/api.js?v=20260917a"></script>
-<script src="/js/money.js?v=20260917a"></script>
-<script src="/js/mockups.js?v=20260917a"></script>
+<script src="/js/config.js?v=20260917b"></script>
+<script src="/js/words.js?v=20260917b"></script>
+<script src="/js/copy.js?v=20260917b"></script>
+<script src="/js/state.js?v=20260917b"></script>
+<script src="/js/menu.js?v=20260917b"></script>
+<script src="/js/api.js?v=20260917b"></script>
+<script src="/js/money.js?v=20260917b"></script>
+<script src="/js/mockups.js?v=20260917b"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260917a" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260917b" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -109,15 +110,6 @@
       </button>
     </nav>
 
-    <div class="sidebar-foot">
-      <span class="sidebar-who">Logged in as <b id="whoami"></b></span>
-      <button class="btn themetoggle" id="themeToggle" type="button" aria-pressed="false">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.8 6.8 0 0 0 9.8 9.8z"/></svg><span id="themeWord">Dark</span>
-      </button>
-      <button class="btn signout" id="signOut" type="button" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 20H6.5A1.5 1.5 0 0 1 5 18.5v-13A1.5 1.5 0 0 1 6.5 4H12"/></svg>Sign out
-      </button>
-    </div>
   </aside>
 
   <div class="console-main">
@@ -132,6 +124,26 @@
       <button class="headlink" id="activityOpen" type="button" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 8v4.3l3 1.8"/></svg>Activity record
       </button>
+
+      <!-- Who you are, the register you read in, and the way out: three
+           things touched a few times a year each. They took a 150px block at
+           the foot of the sidebar, on every screen, under the sections
+           somebody actually came for. One control at the end of the bar,
+           where every application this team uses keeps an account. -->
+      <div class="acct" id="acctWrap" hidden>
+        <button class="acct-btn" id="acctBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Account">
+          <span class="acct-mark" id="acctMark" aria-hidden="true"></span>
+        </button>
+        <div class="kmenu acct-menu" id="acctMenu" hidden>
+          <span class="acct-who">Signed in as<b id="whoami"></b></span>
+          <button class="kmenu-item" id="themeToggle" type="button" aria-pressed="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.8 6.8 0 0 0 9.8 9.8z"/></svg>Switch to <span id="themeWord">dark</span>
+          </button>
+          <button class="kmenu-item" id="signOut" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 20H6.5A1.5 1.5 0 0 1 5 18.5v-13A1.5 1.5 0 0 1 6.5 4H12"/></svg>Sign out
+          </button>
+        </div>
+      </div>
     </header>
 
     <!-- ---- CRM: the client record everything else points at ---- -->
@@ -142,16 +154,19 @@
              controls rather than repeating the word. Search, filters and the
              one action sit together: everything that changes what is on the
              list is in one place. -->
-        <div class="filterbar crm-bar">
-          <input class="input" id="crmSearch" placeholder="Search clients" aria-label="Search clients" autocomplete="off">
-          <select class="select" id="crmStage" aria-label="Filter by stage">
+        <div class="cmdbar">
+          <span class="cmdbar-find">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <input class="input input-sm" id="crmSearch" type="search" placeholder="Search clients" aria-label="Search clients" autocomplete="off">
+          </span>
+          <select class="select select-sm" id="crmStage" aria-label="Filter by stage">
             <option value="all">Every stage</option>
           </select>
-          <select class="select" id="crmOwner" aria-label="Filter by person in charge">
+          <select class="select select-sm" id="crmOwner" aria-label="Filter by person in charge">
             <option value="all">Everyone</option>
           </select>
-          <span class="count" id="crmCount"></span>
-          <button class="btn btn-primary" id="crmNew" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add lead</button>
+          <span class="cmdbar-count" id="crmCount"></span>
+          <button class="btn btn-sm btn-primary" id="crmNew" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add lead</button>
         </div>
 
         <div class="panel" id="crmAddBox" hidden>
@@ -229,31 +244,69 @@
       <div id="crmWork" hidden>
         <button class="backlink" id="crmBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
 
-        <section class="panel">
-          <div class="crm-title">
-            <h2 id="crmClientName"></h2>
-            <select class="select state-select" id="crmClientStage" aria-label="Stage"></select>
-            <button class="btn btn-quiet btn-sm" id="crmEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg>Edit</button>
-          </div>
-          <dl class="facts" id="crmFacts"></dl>
-          <!-- The journey, left to right: how long each stage took and how long
-               this one has been running. Where a deal stalls is a fact about
-               the client, so it sits on the client. -->
-          <p class="crm-journey" id="crmJourney" hidden></p>
-          <div class="crm-links" id="crmLinks"></div>
-          <!-- What stands between a lead and an active client, said plainly. -->
-          <div class="notice is-warn" id="crmGate" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.5"/></svg>
-            <div><b>Not active.</b> <span id="crmGateText"></span></div>
+        <!-- Identity, status and the control that changes it, at the top and
+             on every pane: what record am I in and where does it stand.
+             The mark is the client's own logo where we hold one and their
+             initials where we do not, so the record opens on something that
+             says which company this is before the name is read. The meta line
+             under it carries the facts that identify rather than describe:
+             who we write to and in which language, and who here owns it. -->
+        <section class="panel rec-head">
+          <div class="rec-id">
+            <span class="rec-mark" id="crmClientMark" aria-hidden="true"></span>
+            <div class="crm-title">
+              <h2 id="crmClientName"></h2>
+              <select class="select state-select" id="crmClientStage" aria-label="Stage"></select>
+              <button class="btn btn-quiet btn-sm" id="crmEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg>Edit</button>
+            </div>
+            <p class="rec-id-meta" id="crmIdMeta"></p>
           </div>
           <div class="msg" id="crmWorkMsg"></div>
         </section>
         <div class="undobar" id="crmUndo" hidden></div>
 
+        <!-- The record is a workspace with a rail beside it: the pane carries
+             the work, the rail carries the facts that are true in every pane.
+             The whole record used to be one column seven sections deep, so
+             Documents was a scroll away from the services it quotes. -->
+        <div class="rec">
+          <nav class="rectabs" id="crmTabs" role="tablist" aria-label="Client record">
+            <button class="tab is-on" data-pane="overview" type="button" role="tab" aria-selected="true">Overview</button>
+            <button class="tab" data-pane="contacts" type="button" role="tab" aria-selected="false">Contacts</button>
+            <button class="tab" data-pane="billing" type="button" role="tab" aria-selected="false">Billing</button>
+            <button class="tab" data-pane="brand" type="button" role="tab" aria-selected="false">Brand</button>
+            <button class="tab" data-pane="services" type="button" role="tab" aria-selected="false">Services</button>
+            <button class="tab" data-pane="documents" type="button" role="tab" aria-selected="false">Documents</button>
+            <button class="tab" data-pane="activity" type="button" role="tab" aria-selected="false">Activity</button>
+          </nav>
+
+          <div class="rec-pane" data-pane="overview">
+        <!-- What this client needs, and where everything else stands. Built
+             only from what the record has already loaded: no second read, no
+             metric nobody stores. Sections and dividers, because a row of
+             decorative number tiles would be a dashboard and this is a
+             summary of one client. -->
+        <!-- No heading: the tab above already says Overview, and a section
+             head repeating it is the one thing said twice. Engagements below
+             keeps its own, because that one names something else. -->
+        <div id="crmSummary"></div>
+
+        <div id="crmEngage" hidden>
+        <!-- The work, last, because none of it exists until the client is
+             active. Each engagement says where it is and opens in its section. -->
+        <div class="viewhead">
+          <span class="headmark"><h2>Engagements</h2></span>
+          <div class="crm-engage-actions" id="crmEngageActions"></div>
+        </div>
+        <div id="crmWorkList"></div>
+        </div>
+          </div>
+
+          <div class="rec-pane" data-pane="contacts" hidden>
         <!-- The people. A company does not answer the phone. -->
         <div class="viewhead">
           <span class="headmark"><h2>Client details</h2></span>
-          <button class="btn btn-primary" id="crmAddContact" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add contact</button>
+          <button class="btn" id="crmAddContact" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add contact</button>
         </div>
         <div class="panel" id="crmContactBox" hidden>
           <div class="panelhead"><h3 id="crmContactTitle">New contact</h3></div>
@@ -285,7 +338,9 @@
           <div class="msg" id="ctMsg"></div>
         </div>
         <div id="crmContacts"></div>
+          </div>
 
+          <div class="rec-pane" data-pane="billing" hidden>
         <!-- Billing: every field an e-invoice needs, mandatory before Active. -->
         <section class="panel panel-collapse">
           <button class="disclosure" id="crmBillToggle" type="button" aria-expanded="false">
@@ -327,7 +382,9 @@
             <div class="msg" id="crmBillMsg"></div>
           </div>
         </section>
+          </div>
 
+          <div class="rec-pane" data-pane="brand" hidden>
         <!-- The brand as a thing to open and a thing to read: links, then notes. -->
         <section class="panel panel-collapse">
           <button class="disclosure" id="crmBrandToggle" type="button" aria-expanded="false">
@@ -362,53 +419,14 @@
             <div class="msg" id="crmBrandMsg"></div>
           </div>
         </section>
+          </div>
 
-        <!-- Every call, visit and message, newest first. -->
-        <div class="viewhead">
-          <span class="headmark"><h2>Calls and visits</h2></span>
-          <button class="btn btn-primary" id="crmAddTouch" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add entry</button>
-        </div>
-        <div class="panel" id="crmTouchBox" hidden>
-          <div class="panelhead"><h3 id="crmTouchTitle">New entry</h3></div>
-          <div class="row">
-            <div style="flex:0 0 170px"><label class="field-label" for="tcKind">Type</label>
-              <select class="select" id="tcKind">
-                <option value="call">Call</option>
-                <option value="visit">Site visit</option>
-                <option value="meeting">Meeting</option>
-                <option value="whatsapp">WhatsApp</option>
-                <option value="email">Email</option>
-                <option value="note">Note</option>
-              </select></div>
-            <div style="flex:0 0 170px"><label class="field-label" for="tcDate">Date</label>
-              <input class="input" id="tcDate" type="date"></div>
-            <div><label class="field-label" for="tcWith">With</label>
-              <input class="input" id="tcWith" list="crmContactNames" placeholder="John Doe">
-              <datalist id="crmContactNames"></datalist></div>
-          </div>
-          <div class="row" style="margin-top:12px">
-            <div><label class="field-label" for="tcSummary">Summary</label>
-              <textarea class="input textarea" id="tcSummary" rows="3" placeholder="Summary"></textarea></div>
-          </div>
-          <div class="row" style="margin-top:12px">
-            <div><label class="field-label" for="tcNext">Next action</label>
-              <input class="input" id="tcNext" placeholder="Next action"></div>
-            <div style="flex:0 0 170px"><label class="field-label" for="tcNextAt">Due</label>
-              <input class="input" id="tcNextAt" type="date"></div>
-          </div>
-          <div class="row" style="margin-top:14px">
-            <button class="btn btn-primary" id="tcSave" type="button">Save</button>
-            <button class="btn btn-quiet" id="tcCancel" type="button" style="flex:0 0 auto">Cancel</button>
-          </div>
-          <div class="msg" id="tcMsg"></div>
-        </div>
-        <div id="crmTouches"></div>
-
+          <div class="rec-pane" data-pane="services" hidden>
         <!-- What they asked for, were quoted, and confirmed. Lines come from
              the rate card and keep their own price. -->
         <div class="viewhead">
           <span class="headmark"><h2>Services</h2></span>
-          <button class="btn btn-primary" id="crmAddService" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
+          <button class="btn" id="crmAddService" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
         </div>
         <div class="panel" id="crmServiceBox" hidden>
           <div class="panelhead"><h3 id="crmServiceTitle">New service</h3></div>
@@ -450,37 +468,6 @@
         </div>
         <div class="msg" id="crmServiceMsg"></div>
         <div id="crmServices"></div>
-
-        <!-- The Letter of Offer: the quoted lines for the client to sign, kept as issued. -->
-        <div class="viewhead">
-          <span class="headmark"><h2>Documents</h2></span>
-          <button class="btn btn-primary" id="crmCover" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>Issue letter</button>
-        </div>
-        <div class="msg" id="crmDocMsg"></div>
-        <div id="crmDocuments"></div>
-
-        <!-- What goes on the letter, chosen before it is issued. To quote
-             lines that are not already on a live letter are ticked; a
-             confirmed line is listed apart and stays unticked, because a
-             renewal is a decision somebody makes and never a default. -->
-        <div class="sheet" id="pickSheet" hidden>
-          <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
-            <div class="sheet-head">
-              <h3 id="pickTitle">Issue letter</h3>
-              <button class="iconbtn" id="pickClose" type="button" aria-label="Close">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-              </button>
-            </div>
-            <div class="sheet-body" id="pickBody"></div>
-            <div class="sheet-foot">
-              <span class="lpicksum" id="pickSum"></span>
-              <button class="btn btn-primary" id="pickGo" type="button">Issue letter</button>
-              <button class="btn btn-quiet" id="pickCancel" type="button">Cancel</button>
-            </div>
-            <div class="msg" id="pickMsg"></div>
-          </div>
-        </div>
-
         <!-- What the client asked for from the portal. The team moves each
              one along and may set a fee and a reply the client reads. -->
         <div id="crmRequests" hidden>
@@ -504,15 +491,143 @@
         <div class="msg" id="crmReqMsg"></div>
         <div id="crmRequestList"></div>
         </div>
+          </div>
 
-        <div id="crmEngage" hidden>
-        <!-- The work, last, because none of it exists until the client is
-             active. Each engagement says where it is and opens in its section. -->
+          <div class="rec-pane" data-pane="documents" hidden>
+        <!-- The Letter of Offer: the quoted lines for the client to sign, kept as issued. -->
         <div class="viewhead">
-          <span class="headmark"><h2>Engagements</h2></span>
-          <div class="crm-engage-actions" id="crmEngageActions"></div>
+          <span class="headmark"><h2>Documents</h2></span>
+          <button class="btn" id="crmCover" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>Issue letter</button>
         </div>
-        <div id="crmWorkList"></div>
+        <div class="msg" id="crmDocMsg"></div>
+        <div id="crmDocuments"></div>
+          </div>
+
+        <!-- What goes on the letter, chosen before it is issued. To quote
+             lines that are not already on a live letter are ticked; a
+             confirmed line is listed apart and stays unticked, because a
+             renewal is a decision somebody makes and never a default. It
+             sits outside the panes: a sheet inside one would vanish, still
+             open, the moment somebody switched tab behind it. -->
+        <div class="sheet" id="pickSheet" hidden>
+          <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="pickTitle">
+            <div class="sheet-head">
+              <h3 id="pickTitle">Issue letter</h3>
+              <button class="iconbtn" id="pickClose" type="button" aria-label="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              </button>
+            </div>
+            <div class="sheet-body" id="pickBody"></div>
+            <div class="sheet-foot">
+              <span class="lpicksum" id="pickSum"></span>
+              <button class="btn btn-primary" id="pickGo" type="button">Issue letter</button>
+              <button class="btn btn-quiet" id="pickCancel" type="button">Cancel</button>
+            </div>
+            <div class="msg" id="pickMsg"></div>
+          </div>
+        </div>
+
+          <div class="rec-pane" data-pane="activity" hidden>
+        <!-- Every call, visit and message, newest first. -->
+        <div class="viewhead">
+          <span class="headmark"><h2>Calls and visits</h2></span>
+          <button class="btn" id="crmAddTouch" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add entry</button>
+        </div>
+        <div class="panel" id="crmTouchBox" hidden>
+          <div class="panelhead"><h3 id="crmTouchTitle">New entry</h3></div>
+          <div class="row">
+            <div style="flex:0 0 170px"><label class="field-label" for="tcKind">Type</label>
+              <select class="select" id="tcKind">
+                <option value="call">Call</option>
+                <option value="visit">Site visit</option>
+                <option value="meeting">Meeting</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="email">Email</option>
+                <option value="note">Note</option>
+              </select></div>
+            <div style="flex:0 0 170px"><label class="field-label" for="tcDate">Date</label>
+              <input class="input" id="tcDate" type="date"></div>
+            <div><label class="field-label" for="tcWith">With</label>
+              <input class="input" id="tcWith" list="crmContactNames" placeholder="John Doe">
+              <datalist id="crmContactNames"></datalist></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div><label class="field-label" for="tcSummary">Summary</label>
+              <textarea class="input textarea" id="tcSummary" rows="3" placeholder="Summary"></textarea></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div><label class="field-label" for="tcNext">Next action</label>
+              <input class="input" id="tcNext" placeholder="Next action"></div>
+            <div style="flex:0 0 170px"><label class="field-label" for="tcNextAt">Due</label>
+              <input class="input" id="tcNextAt" type="date"></div>
+          </div>
+          <div class="row" style="margin-top:14px">
+            <button class="btn btn-primary" id="tcSave" type="button">Save</button>
+            <button class="btn btn-quiet" id="tcCancel" type="button" style="flex:0 0 auto">Cancel</button>
+          </div>
+          <div class="msg" id="tcMsg"></div>
+        </div>
+        <div id="crmTouches"></div>
+
+        <!-- The portal's own record of what was done to this client. It keys
+             on the client's name, which is the only link activity_log carries;
+             a rename therefore leaves the older entries behind. -->
+        <div class="viewhead">
+          <span class="headmark"><h3>Record of changes</h3></span>
+        </div>
+        <div id="crmLogList"></div>
+          </div>
+
+
+          <!-- The rail carries what is true whichever pane is open, in the
+               order somebody needs it: what to do next, what is stopping the
+               record, how much of it is filled in, the dates that matter, the
+               facts, and what has happened lately. Every block is built from
+               data the record has already read and leaves entirely when that
+               data is not there. -->
+          <aside class="rec-rail" aria-label="Client facts">
+          <!-- What this record needs next. A next action a person actually
+               wrote on a call carries its own due date; where nobody has, the
+               step is derived from the same gate, stage and lines the rest of
+               the record reads. -->
+          <div class="railblock" id="crmNextBlock" hidden>
+            <h3 class="railtitle">Next action</h3>
+            <div id="crmNext"></div>
+          </div>
+          <!-- What stands between a lead and an active client, said plainly. -->
+          <div class="notice is-warn" id="crmGate" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.5"/></svg>
+            <div><b>Not active.</b> <span id="crmGateText"></span></div>
+          </div>
+          <!-- How much of the record is filled in, and the one line saying
+               what is missing. A bar rather than a number, because the useful
+               question is "is this nearly done" and not "is this 62%". -->
+          <div class="railblock" id="crmDoneBlock" hidden>
+            <h3 class="railtitle">Record</h3>
+            <div id="crmDone"></div>
+          </div>
+          <!-- Dates the record actually holds. A row is omitted when its date
+               is not there; none of them is guessed. -->
+          <div class="railblock" id="crmDatesBlock" hidden>
+            <h3 class="railtitle">Key dates</h3>
+            <dl class="raildates" id="crmDates"></dl>
+          </div>
+          <div class="railblock">
+            <h3 class="railtitle">Details</h3>
+            <dl class="facts" id="crmFacts"></dl>
+            <!-- The journey, left to right: how long each stage took and how long
+                 this one has been running. Where a deal stalls is a fact about
+                 the client, so it sits on the client. -->
+            <p class="crm-journey" id="crmJourney" hidden></p>
+            <div class="crm-links" id="crmLinks"></div>
+          </div>
+          <!-- The last few things the portal recorded about this client. The
+               whole record is one tab away; this is the excerpt. -->
+          <div class="railblock" id="crmRailLogBlock" hidden>
+            <h3 class="railtitle">Recent activity</h3>
+            <div id="crmRailLog"></div>
+          </div>
+          </aside>
         </div>
       </div>
     </div>
@@ -527,10 +642,16 @@
            publishes their deliverables; it does not create them. -->
       <button class="btn" id="goToCrm" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 11h4v10"/><path d="M7 21v-4h5v4"/></svg>Manage clients</button>
     </div>
+    <!-- Every active client is listed here, so on a real book of business the
+         grid is the thing you have to read rather than scan. -->
+    <div class="cmdbar">
+      <span class="cmdbar-find">
+        <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+        <input class="input input-sm" id="crFind" type="search" placeholder="Search clients" aria-label="Search clients">
+      </span>
+      <span class="cmdbar-count" id="crCount"></span>
+    </div>
     <div class="msg" id="clientMsg"></div>
-
-
-
     <div class="cards" id="clientCards"></div>
   </section>
 
@@ -741,7 +862,7 @@
     <!-- ============ Creator Campaigns ============ -->
     <div class="console-body" id="sectionCampaigns" hidden>
 
-      <div class="tabrow" role="tablist">
+      <div class="tabrow" id="campSectionTabs" role="tablist">
         <button class="tab is-on" id="tabCampaigns" data-tab="campaigns" type="button" role="tab">Campaigns</button>
         <button class="tab" id="tabRoster" data-tab="roster" type="button" role="tab">Creators</button>
       </div>
@@ -800,7 +921,19 @@
       <div id="campListView">
         <div class="viewhead">
           <span class="headmark"><h2>Campaigns</h2></span>
-          <button class="btn btn-primary" id="showAddCamp" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New campaign</button>
+        </div>
+        <!-- A campaign is found by its name or by the client it is for, and
+             the state is what somebody filters on first. -->
+        <div class="cmdbar">
+          <span class="cmdbar-find">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <input class="input input-sm" id="campFind" type="search" placeholder="Search campaign or client" aria-label="Search campaigns">
+          </span>
+          <select class="select select-sm" id="campStatePick" aria-label="Filter by state">
+            <option value="all">Every state</option>
+          </select>
+          <span class="cmdbar-count" id="campCount"></span>
+          <button class="btn btn-sm btn-primary" id="showAddCamp" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New campaign</button>
         </div>
 
         <div class="cards" id="campCards"></div>
@@ -810,6 +943,9 @@
       <div id="campWork" hidden>
         <button class="backlink" id="campBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
 
+        <!-- Identity and the one line that says what this campaign is waiting
+             on us for, on every pane. A campaign that needs somebody is a
+             campaign nobody should have to open seven sections to find. -->
         <section class="panel" id="campHead">
           <div id="campSummary">
           <div class="viewhead" style="margin:0 0 2px">
@@ -818,59 +954,34 @@
           </div>
           <!-- The name is the handle; the purpose is what the client reads. -->
           <p class="camp-purpose" id="campPurposeLine"></p>
-          <dl class="facts" id="campFacts"></dl>
-
-          <div class="tallies" id="campTally"></div>
-
-          <div class="kstep-title" style="margin:12px 0 8px">Client link</div>
-          <div class="linkbox">
-            <input class="input readfield" id="campLink" readonly aria-label="Client link">
-            <button class="btn btn-primary btn-icon" id="campCopy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
-            <a class="btn btn-icon" id="campOpen" target="_blank" rel="noopener">Preview
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
-            </a>
-          </div>
-          <div class="row" style="margin-top:12px">
-            <button class="btn btn-go" id="campPublish" type="button">Publish to client</button>
-            <button class="btn btn-primary" id="campLock" type="button" hidden>Confirm creators</button>
-          </div>
+          <p class="camp-next" id="campNext" hidden></p>
           <div class="msg" id="campWorkMsg"></div>
           </div>
         </section>
         <div class="undobar" id="campUndo" hidden></div>
 
-        <!-- An invoice exists only once the client has confirmed and we have
-             accepted, so the whole panel arrives with the confirmation and
-             leaves again if the confirmation is reverted. -->
-        <section class="panel panel-collapse" id="invoicePanel" hidden>
-          <button class="disclosure" id="invoiceToggle" type="button" aria-expanded="false">
-            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
-            <svg class="disclosure-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></svg>
-            <span>Invoice</span>
-            <span class="muted" id="invoiceSummary">Not issued yet</span>
-          </button>
-          <div class="disclosure-body" id="invoiceBody" hidden>
-            <div class="row">
-              <div style="flex:0 0 220px"><label class="field-label" for="invNo">Invoice no.</label>
-                <div class="slugfield">
-                  <span class="slugfield-pre">AINV</span>
-                  <input class="input" id="invNo" placeholder="XXXXXX" autocomplete="off">
-                </div></div>
-              <div><label class="field-label" for="invFile">Invoice PDF</label>
-                <input class="input" id="invFile" type="file" accept="application/pdf,.pdf"></div>
-            </div>
-            <!-- What is attached now belongs with the field that changes it,
-                 above the actions, not stranded under them. -->
-            <div class="invcurrent" id="invCurrent"></div>
-            <div class="row" style="margin-top:12px">
-              <button class="btn btn-primary" id="invSave" type="button">Save</button>
-              <button class="btn btn-quiet" id="invCancel" type="button" style="flex:0 0 auto">Cancel</button>
-            </div>
-            <div class="msg" id="invMsg"></div>
-          </div>
+        <div class="rec">
+          <nav class="rectabs" id="campTabs" role="tablist" aria-label="Campaign">
+            <button class="tab is-on" data-pane="overview" type="button" role="tab" aria-selected="true">Overview</button>
+            <button class="tab" data-pane="creators" type="button" role="tab" aria-selected="false">Creators</button>
+            <button class="tab" data-pane="schedule" type="button" role="tab" aria-selected="false">Schedule</button>
+            <button class="tab" data-pane="deliverables" type="button" role="tab" aria-selected="false">Deliverables</button>
+            <button class="tab" data-pane="client" type="button" role="tab" aria-selected="false">Client selection</button>
+            <button class="tab" data-pane="finance" type="button" role="tab" aria-selected="false">Finance</button>
+            <button class="tab" data-pane="activity" type="button" role="tab" aria-selected="false">Activity</button>
+          </nav>
+
+          <div class="rec-pane" data-pane="overview">
+
+          <div class="tallies" id="campTally"></div>
+
+        <section class="panel" id="rollup" hidden>
+            <div class="panelhead"><h3>Campaign results</h3></div>
+          <div class="tally" id="rollupTally"></div>
         </section>
+          </div>
 
-
+          <div class="rec-pane" data-pane="creators" hidden>
         <!-- ---- The creators on this campaign ---- -->
         <!-- One list, one card each. An option and a booking were two lists of
              the same people at different moments; the card is the person and
@@ -946,25 +1057,125 @@
 
 
         <div id="creatorList"></div>
+          </div>
 
-        <section class="panel" id="rollup" hidden>
-            <div class="panelhead"><h3>Campaign results</h3></div>
-          <div class="tally" id="rollupTally"></div>
+          <div class="rec-pane" data-pane="schedule" hidden>
+        <div class="viewhead">
+          <span class="headmark"><h2>Schedule</h2></span>
+          <button class="btn" id="schedBulk" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Bulk dates</button>
+        </div>
+        <!-- Every booked creator's shoot and publish date in one table, which
+             is the question a producer asks before any other. The dates are
+             the ones on each booking; nothing here is a second store. -->
+        <div id="schedList"></div>
+          </div>
+
+          <div class="rec-pane" data-pane="deliverables" hidden>
+        <div class="viewhead">
+          <span class="headmark"><h2>Deliverables</h2></span>
+        </div>
+        <!-- What each creator has handed in, gathered. The files and the
+             caption are the ones on the booking; opening the creator's card
+             shows the same rows with the actions beside them. -->
+        <div id="delivList"></div>
+          </div>
+
+          <div class="rec-pane" data-pane="client" hidden>
+        <div class="viewhead">
+          <span class="headmark"><h2>Client selection</h2></span>
+        </div>
+        <!-- The link the client opens and the two actions that move the
+             campaign between us and them, in one panel; what they chose in
+             the table under it. Two blocks, 12px apart, like every other
+             section of this console. -->
+        <section class="panel">
+          <div class="panelhead"><h3>Client link</h3></div>
+          <div class="linkbox">
+            <input class="input readfield" id="campLink" readonly aria-label="Client link">
+            <button class="btn btn-primary btn-icon" id="campCopy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
+            <a class="btn btn-icon" id="campOpen" target="_blank" rel="noopener">Preview
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+            </a>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn btn-go" id="campPublish" type="button">Publish to client</button>
+            <button class="btn btn-primary" id="campLock" type="button" hidden>Confirm creators</button>
+          </div>
         </section>
+        <div id="pickList"></div>
+          </div>
+
+          <div class="rec-pane" data-pane="finance" hidden>
+        <!-- An invoice exists only once the client has confirmed and we have
+             accepted, so the whole panel arrives with the confirmation and
+             leaves again if the confirmation is reverted. -->
+        <section class="panel panel-collapse" id="invoicePanel" hidden>
+          <button class="disclosure" id="invoiceToggle" type="button" aria-expanded="false">
+            <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
+            <svg class="disclosure-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M9 12h6M9 16h6"/></svg>
+            <span>Invoice</span>
+            <span class="muted" id="invoiceSummary">Not issued yet</span>
+          </button>
+          <div class="disclosure-body" id="invoiceBody" hidden>
+            <div class="row">
+              <div style="flex:0 0 220px"><label class="field-label" for="invNo">Invoice no.</label>
+                <div class="slugfield">
+                  <span class="slugfield-pre">AINV</span>
+                  <input class="input" id="invNo" placeholder="XXXXXX" autocomplete="off">
+                </div></div>
+              <div><label class="field-label" for="invFile">Invoice PDF</label>
+                <input class="input" id="invFile" type="file" accept="application/pdf,.pdf"></div>
+            </div>
+            <!-- What is attached now belongs with the field that changes it,
+                 above the actions, not stranded under them. -->
+            <div class="invcurrent" id="invCurrent"></div>
+            <div class="row" style="margin-top:12px">
+              <button class="btn btn-primary" id="invSave" type="button">Save</button>
+              <button class="btn btn-quiet" id="invCancel" type="button" style="flex:0 0 auto">Cancel</button>
+            </div>
+            <div class="msg" id="invMsg"></div>
+          </div>
+        </section>
+          </div>
+
+          <div class="rec-pane" data-pane="activity" hidden>
+        <div class="viewhead">
+          <span class="headmark"><h2>Activity</h2></span>
+        </div>
+        <!-- The portal's record for this campaign. `activity_log` carries no
+             campaign id, only the subject it was written with, which is the
+             campaign name at the time; a rename leaves older entries behind. -->
+        <div id="campLogList"></div>
+          </div>
 
 
+          <aside class="rec-rail" aria-label="Campaign facts">
+            <dl class="facts" id="campFacts"></dl>
+          </aside>
+        </div>
       </div>
 
       <!-- ---- Creators list ---- -->
       <div id="rosterView" hidden>
         <div class="viewhead">
           <span class="headmark"><h2>Creators</h2></span>
-          <button class="btn btn-primary" id="showAddCreator" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creator</button>
         </div>
 
-        <div class="panel" id="addCreatorBox" hidden>
-          <div class="panelhead"><h3 id="creatorFormTitle">New creator</h3></div>
-          <div class="row">
+        <!-- A creator is added or edited in a sheet, not in a panel above the list:
+             the panel pushed four hundred creators down the page every time
+             somebody opened it, and what you were comparing against left the
+             screen. -->
+        <div class="sheet" id="addCreatorBox" hidden>
+          <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="creatorFormTitle">
+            <div class="sheet-head">
+              <h3 id="creatorFormTitle">New creator</h3>
+              <button class="iconbtn" id="creatorSheetClose" type="button" aria-label="Close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              </button>
+            </div>
+            <div class="sheet-body">
+
+                    <div class="row">
             <div><label class="field-label" for="crName">Name</label>
               <input class="input" id="crName" placeholder="Creator name"></div>
             <div style="flex:0 0 150px"><label class="field-label" for="crRate">Usual rate (RM), optional</label>
@@ -1001,20 +1212,26 @@
             <button class="btn" id="cancelAddCreator" type="button" style="flex:0 0 auto">Cancel</button>
           </div>
           <div class="msg" id="creatorMsg"></div>
+            </div>
+          </div>
         </div>
 
-        <div class="linksbar">
-          <input class="input" id="rosterSearch" placeholder="Search name or handle" aria-label="Search creators" autocomplete="off">
-          <select class="select" id="rosterPlatform" aria-label="Filter by platform">
+        <div class="cmdbar">
+          <span class="cmdbar-find">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <input class="input input-sm" id="rosterSearch" type="search" placeholder="Search name or handle" aria-label="Search creators" autocomplete="off">
+          </span>
+          <select class="select select-sm" id="rosterPlatform" aria-label="Filter by platform">
             <option value="all">Every platform</option>
             <option value="xhs">rednote</option>
             <option value="instagram">Instagram</option>
             <option value="tiktok">TikTok</option>
             <option value="facebook">Facebook</option>
           </select>
-          <span class="muted" id="rosterCount"></span>
+          <span class="cmdbar-count" id="rosterCount"></span>
+          <button class="btn btn-sm btn-primary" id="showAddCreator" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creator</button>
         </div>
-        <div class="crm-table" id="rosterList"></div>
+        <div id="rosterList"></div>
       </div>
 
     </div>
@@ -1024,7 +1241,15 @@
     <div class="console-body" id="sectionTeam" hidden>
       <div class="viewhead">
         <span class="headmark"><h2>Members</h2></span>
-        <button class="btn btn-primary" id="teamAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add member</button>
+      </div>
+      <div class="cmdbar">
+        <span class="cmdbar-find">
+          <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+          <input class="input input-sm" id="teamFind" type="search" placeholder="Search name or sign-in email" aria-label="Search members">
+        </span>
+        <select class="select select-sm" id="teamGroupPick" aria-label="Group"></select>
+        <span class="cmdbar-count" id="teamCount"></span>
+        <button class="btn btn-sm btn-primary" id="teamAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add member</button>
       </div>
 
       <div class="panel" id="teamAddBox" hidden>
@@ -1045,7 +1270,10 @@
       </div>
 
       <div class="msg" id="teamMsg" style="margin:0 0 10px"></div>
-      <div class="team-table" id="teamList"></div>
+      <!-- The panel is drawn by whatever this holds: a table, a skeleton, an
+           empty line or a failure. A `team-table` here as well nested one
+           table inside another and left a pad above the first column name. -->
+      <div id="teamList"></div>
 
       <!-- ---- Groups: one set of switches per group, members inherit ---- -->
       <div class="viewhead" style="margin-top:28px">
@@ -1069,14 +1297,23 @@
         <div class="msg" id="grMsg"></div>
       </div>
       <div class="msg" id="groupMsg" style="margin:0 0 10px"></div>
-      <div class="team-table" id="groupList"></div>
+      <div class="team-table softpanel" id="groupList"></div>
     </div>
 
     <!-- ---- Services: the rate card every quote reads from ---- -->
     <div class="console-body" id="sectionServices" hidden>
       <div class="viewhead">
         <span class="headmark"><h2>Rate card</h2></span>
-        <button class="btn btn-primary" id="svcAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
+      </div>
+      <!-- What you are looking for, how you are cutting it, the one action. -->
+      <div class="cmdbar">
+        <span class="cmdbar-find">
+          <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+          <input class="input input-sm" id="svcFind" type="search" placeholder="Search the rate card" aria-label="Search the rate card">
+        </span>
+        <select class="select select-sm" id="svcFilter" aria-label="Category"></select>
+        <span class="cmdbar-count" id="svcCount"></span>
+        <button class="btn btn-sm btn-primary" id="svcAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
       </div>
       <div class="panel" id="svcBox" hidden>
         <div class="panelhead"><h3 id="svcTitle">New service</h3></div>
@@ -1160,11 +1397,19 @@ raya-2026        https://example.com/raya"></textarea>
 
       <!-- Search, count and both actions on one line, so everything that
            changes the list is in one place and none of it is a screen away. -->
-      <div class="linksbar">
-        <input class="input" id="linkSearch" placeholder="Search slug, destination or label" aria-label="Search links">
-        <span class="muted" id="linkCount"></span>
-        <button class="btn btn-quiet btn-sm" id="showImport" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>Bulk import</button>
-        <button class="btn btn-primary" id="showAddLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
+      <div class="cmdbar">
+        <span class="cmdbar-find">
+          <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+          <input class="input input-sm" id="linkSearch" type="search" placeholder="Search slug, destination or label" aria-label="Search links">
+        </span>
+        <select class="select select-sm" id="linkState" aria-label="State">
+          <option value="">Live and paused</option>
+          <option value="live">Live</option>
+          <option value="paused">Paused</option>
+        </select>
+        <span class="cmdbar-count" id="linkCount"></span>
+        <button class="btn btn-sm btn-quiet" id="showImport" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>Bulk import</button>
+        <button class="btn btn-sm btn-primary" id="showAddLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
       </div>
 
       <div id="linkList"></div>
@@ -1273,10 +1518,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260917a"></script>
-<script src="/js/documents.js?v=20260917a"></script>
-<script src="/js/crm.js?v=20260917a"></script>
-<script src="/js/team.js?v=20260917a"></script>
-<script src="/js/campaigns.js?v=20260917a"></script>
+<script src="/js/admin.js?v=20260917b"></script>
+<script src="/js/documents.js?v=20260917b"></script>
+<script src="/js/crm.js?v=20260917b"></script>
+<script src="/js/team.js?v=20260917b"></script>
+<script src="/js/campaigns.js?v=20260917b"></script>
 </body>
 </html>

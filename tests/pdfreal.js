@@ -16,6 +16,10 @@ const STUB = fs.readFileSync(process.argv[2] + '/stub2.js', 'utf8');
   await p.waitForTimeout(700);
   console.log('pdf-lib loaded: ' + await p.evaluate(() => !!window.PDFLib));
   await p.locator('.crm-row').filter({ hasText: 'Laman Citra' }).click(); await p.waitForTimeout(800);
+  /* The record is a workspace with panes now, so a section's controls are in
+     the pane that owns them. */
+  const pane = async (k) => { await p.locator('#crmTabs .tab[data-pane="' + k + '"]').click(); await p.waitForTimeout(300); };
+  await pane('services');
   for (const [pick, qty, state, label, rate, months, start] of [['pkg-b', '3', 'confirmed'], ['custom', '1', 'confirmed', 'Launch video, up to 60 seconds, one on-site shoot included', '20000'], ['pkg-b', '1', 'quoted', '', '', '3', '2026-10']]) {
     await p.locator('#crmAddService').click(); await p.waitForTimeout(300);
     await p.selectOption('#svPick', pick); await p.fill('#svQty', qty); await p.selectOption('#svState', state);
@@ -29,6 +33,7 @@ const STUB = fs.readFileSync(process.argv[2] + '/stub2.js', 'utf8');
   await p.locator('#crmEdit').click(); await p.waitForTimeout(400);
   await p.fill('#crmClientCode', 'AC180');
   await p.locator('#crmSave').click(); await p.waitForTimeout(900);
+  await pane('documents');
   await p.locator('#crmCover').click(); await p.waitForTimeout(600);
   const offered = await p.evaluate(() => [...document.querySelectorAll('#pickBody .lpickrow')]
     .map(r => ({ name: r.querySelector('b').textContent,

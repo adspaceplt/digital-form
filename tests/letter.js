@@ -58,6 +58,14 @@ const open = async (ctx, seed) => {
   return p;
 };
 
+/* The client record is a workspace with panes, so a section's controls live in
+   the pane that owns them. `pane()` is what a person does with the tab strip;
+   every interaction below opens its own section first. */
+const pane = async (p, k) => {
+  await p.locator('#crmTabs .tab[data-pane="' + k + '"]').click();
+  await p.waitForTimeout(300);
+};
+
 const svcState = (p, id) => p.evaluate(i =>
   (window.__DB.client_services.filter(s => s.id === i)[0] || {}).state, id);
 const docs = p => p.evaluate(() => window.__DB.client_documents
@@ -71,6 +79,7 @@ const docs = p => p.evaluate(() => window.__DB.client_documents
 
   // ---- The Client ID gate --------------------------------------------------
   let p = await open(ctx);
+  await pane(p, 'documents');
   await p.locator('#crmCover').click();
   await p.waitForTimeout(400);
   check('without a Client ID the sheet does not open',
@@ -96,6 +105,7 @@ const docs = p => p.evaluate(() => window.__DB.client_documents
     /AC180/.test(await p.locator('#crmFacts').innerText()));
 
   // ---- What the sheet offers ----------------------------------------------
+  await pane(p, 'documents');
   await p.locator('#crmCover').click();
   await p.waitForTimeout(500);
   check('the sheet opens once there is a Client ID',
@@ -140,6 +150,7 @@ const docs = p => p.evaluate(() => window.__DB.client_documents
   check('and the To quote line left off it stays To quote', (await svcState(p, 'sv_two')) === 'quoted');
 
   // ---- A line already on a live letter is not offered again ---------------
+  await pane(p, 'documents');
   await p.locator('#crmCover').click();
   await p.waitForTimeout(500);
   const held = await p.evaluate(() => [...document.querySelectorAll('#pickBody .lpickrow')]
@@ -218,6 +229,7 @@ const docs = p => p.evaluate(() => window.__DB.client_documents
   p = await open(ctx, SEED + `(function(){
     window.__DB.clients.filter(function(c){ return c.id === 'c1'; })[0].client_code = 'AC180';
     window.__persist && window.__persist(); })();`);
+  await pane(p, 'documents');
   await p.locator('#crmCover').click();
   await p.waitForTimeout(500);
   await p.evaluate(() => {
@@ -235,6 +247,7 @@ const docs = p => p.evaluate(() => window.__DB.client_documents
     }));
 
   // ---- Confirmed is not a state this row may set --------------------------
+  await pane(p, 'services');
   const opts = await p.evaluate(() => {
     const sel = [...document.querySelectorAll('#crmServices .csv-row [data-f="state"]')][0];
     return sel ? [...sel.options].map(o => o.value).join(',') : '(none)';

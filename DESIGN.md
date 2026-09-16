@@ -146,7 +146,7 @@ rule, and a theme nobody audits is a theme that quietly fails AA.
 
 | Token | Value | Use |
 |---|---|---|
-| `--radius` / `--radius-sm` | 10px / 7px | Panels and cards / controls and chips |
+| `--radius` / `--radius-sm` | 14px / 10px | A bounded section (panel, card, table, sheet) / anything a finger operates (button, input, select). `--radius-panel` and `--radius-ctl` are aliases of those two, `--radius-lg` is 18px for a sheet. **Two corners and nothing between them**: a contacts table at 10px sitting between two panels at 14 is the mismatch nobody can name and everybody sees, and a third pair of tokens beside the first two is how that happened |
 | `--head-h` | 64px (56px on a phone) | The chrome bar, on every page. `.topbar-inner` takes `calc(var(--head-h) - 1px)` because `.topbar` carries the hairline outside its box while `.console-head` carries it inside, and without that the two differ by exactly the border |
 | `--ctl-h` | 38px (44px coarse pointer) | Every button, input, select, icon button |
 | `--ctl-h-sm` | 32px (44px coarse) | `.btn-sm`, `.input-sm`, `.select-sm`, every status select |
@@ -202,7 +202,7 @@ carried three scattered rules that only ever quietened two carets.
 | Section heading | 19px / 600 / -.02em | `.viewhead h2`, `.crm-title h2` (record name) |
 | Sub-heading | 16px / 600 / -.01em | `.viewhead h3` |
 | Panel and group title | 15px / 600 / -.01em | `.panel h3`, `.crm-group-head h3`, `.kcard-name` |
-| Body | 14px / 400, line-height 1.55 | `body`, `.facts dd`, `.svc-name b` (600) |
+| Body | 14px in the console, **16px on the four client facing pages** (`:root[data-face="client"]`, set on the `<html>` of `/creators/`, `/creator/`, `/review/`, `/client/`), line-height 1.55 | `body`, `.facts dd`, `.svc-name b` (600). The console is a dense tool read all day at a desk, which is the departure this portal documents; a client reads one page once, usually on a phone, and is being asked to decide something on it. Only what inherits moves: controls, labels and chips state their own size, so the shapes are identical on both sides |
 | Money in a row | 13.5px, tabular | `.svc-rate` |
 | Control, small text | 13px / 12.5px | `.btn`, `.btn-sm`, `.svc-calc`, `.backlink` |
 | Meta and labels | 12px | `.field-label`, `.svc-name small`, `.crm-lang` |
@@ -362,7 +362,7 @@ measures the table whenever its header is not on screen (`padding`).
 | One record with steps | `.kcard` > `.kcard-head` (name, chips, ⋯) + `.kstep` blocks; folds to one line in lists of ten or more |
 | Rare or destructive actions | `.kmenu-btn` ⋯ + `.kmenu` > `.kmenu-item` (name only; `is-danger`). An item that leaves the building and cannot be recalled asks first, with `confirm()` naming what goes where: **Send invitation** sits one place from Edit in the same menu. A menu row is a control and clears the control floor like any other (`--ctl-h`: 38px, 44px under a finger); padding alone left it at 43px on a phone and nothing caught it until the walk opened a ⋯. An item that does not repaint the row behind it closes the menu itself, or the ⋯ sits open over the answer or behind the sheet it just opened. **The menu opens upwards where the room is above**, never past the bottom of the window, which is nowhere a phone can reach; and the scroll that closes it ignores the scroll the browser fires to reveal the button it has just focused, or the ⋯ closes itself the frame after it opens |
 | A rare change to a row | The row states the value; the ⋯ opens the panel that edits it, and the same panel adds a new one. A control drawn on every row for something changed once a quarter is Hick's law failing twice: it repeats on every line what one heading or one word could say, and it fills the row with the thing nobody came for. A group's seven switches, a member's group, a service's rate: all read on the row, all changed in a panel |
-| Status | `select.state-select` (tinted) for a state that **moves as part of the work** — a campaign step, a client stage, a request — where changing it is why somebody opened the page. A **lifecycle flag flipped once** (Active / Inactive on a rate card line, a colleague, a creator) is a chip on the row and a `Set inactive` / `Set active` item in the ⋯: a 124px tinted select on every line, for a decision taken once in the life of the row, was taller than the price it sat beside and painted the whole list one colour. `.tone` / `.chip-state` with a word for a value that is only read |
+| Status | One shape everywhere, including the review page: a chip with the word in it. `.status` on `/review/`, the Drive import rows and the saved posts drew a **coloured disc beside a word of the same colour**, which said nothing the word did not and is the one shape this system rules out for a status. `select.state-select` (tinted) for a state that **moves as part of the work** — a campaign step, a client stage, a request — where changing it is why somebody opened the page. A **lifecycle flag flipped once** (Active / Inactive on a rate card line, a colleague, a creator) is a chip on the row and a `Set inactive` / `Set active` item in the ⋯: a 124px tinted select on every line, for a decision taken once in the life of the row, was taller than the price it sat beside and painted the whole list one colour. `.tone` / `.chip-state` with a word for a value that is only read |
 | The chosen one of several options | A filled shape, one language per component and never a shadow: the sidebar `.navitem.is-on` takes the `--line-soft` fill and weight 600, a `.tab.is-on` an ink underline and weight 600, an `.acttab.is-on` the ink fill with white text, a `.crow.is-on` the `--line-soft` fill, a `.bigcard.is-on` an ink border. Hover is always one step lighter than selected (`--sunk` where selected is `--line-soft`), never equal to it, and lives inside `@media (hover: hover)` so a phone cannot leave it stuck on the last thing tapped. `uxaudit` hovers an unselected option and fails when it renders the selected one's background (`hover`) |
 | Form to add or edit | `.panel` > `.panelhead h3` + `.row` fields + Save / secondary / Cancel + `.msg`; one Save covers everything in the form, a file included, so a number and its PDF are never two saves, and Cancel repaints from what is stored. What is attached now sits with the field that changes it, above the actions, never stranded under them |
 | Optional detail | `.panel.panel-collapse` > `.disclosure` (title, summary right) + `.disclosure-body` |
@@ -370,7 +370,13 @@ measures the table whenever its header is not on screen (`padding`).
 | Modal | `.sheet` > `.sheet-card`, from the bottom on a phone, fixed height when it filters |
 | Undo | `.undobar` with one `Undo` button, eight seconds. A **quiet strip**: `--sunk` ground, a `--line` hairline, ordinary ink text, the ordinary outline `.btn-sm`. Never the ink fill: something was undone and there is a way back is a message, not the next thing to do, and a black bar the width of the page sitting above a black primary button reads as one enormous call to action whatever the button inside it looks like |
 | Message | `.msg` (`ok`, `warn`, `err`) as one line under the control, never a card |
-| Empty list | `.empty` with two words ("No entries.", "No links.", "No matches.", "Access denied."); never "yet", never a sentence |
+| Empty list | `.empty` with two words ("No entries.", "No links.", "No matches.", "Access denied."); never "yet", never a sentence. Drawn as a **line inside the panel the list would have filled**, never a 26px dashed rectangle with the words centred in it: a new client record drew four of those down the page and each heading was the smaller mark |
+| A list that is loading, empty, or could not be read | `js/state.js` and nothing else. `skeleton(box, n)` draws the shape of what is coming; `emptyLine(box, text, action, fn)` says nothing is there and carries the way out; `failLine(box, what, why, again)` names what could not be loaded, what the database said, and offers Try again. **A read that failed is not an empty list**: "No content sets.", "0 posts" and "Nothing added yet." were printed over failed requests and sent people to build records that already existed. Nothing there and nothing left after a filter are two answers with two ways out ("Add the first lead" / "Clear the filters") |
+| A record with more than three sections | A **workspace**: identity at the top, a `.rectabs` strip of panes, and a `.rec-rail` beside them carrying what is true whichever pane you are in (`.rec` grid, `minmax(0, 1.618fr) minmax(280px, 1fr)`; below 1100 the rail comes first and the panes follow; below 640 the tab strip scrolls sideways rather than wrapping to three rows). Seven sections in one column meant Documents was a scroll away from the services it quotes. The pane is in the address and **pushes** a history entry, because it is a move a person made, not a note of where the page ended up; Overview is the default and stays out of the address. **A pane is the disclosure**: opening Billing opens the fields, and a refusal that names a missing field lands on the pane that holds it |
+| What a record is waiting on | One line under the identity (`.camp-next`), derived on every repaint and never stored: a state written once by the action that caused it goes stale the moment somebody reverts |
+| One of many, then the one | A **queue** and an open record (`.queue` > `.qrow`, the creator's page): the queue orders by what has to be done, marks the one that needs the reader, and opens it by itself; the open one is in the address. Four full records stacked, each with its own upload box, is a page you have to read to find the one that matters |
+| Deciding on one thing in a gallery | A **canvas** (`.canvas`): the thing at the size it deserves on a stage, and everything the decision rests on in a rail beside it — what it is, the copy in full, what was said last time, where it stands, and the one place to decide. Prev/next and the arrow keys step the set, Escape closes. The canvas **moves** the gallery item's own blocks into it and puts them back on close, so there is one decision control in the page and it cannot drift from the one in the gallery |
+| Search, filter, count and the one action | `.cmdbar` > `.cmdbar-find` (a search box with its glyph, bounded 190 to 420px) + the filter selects + `.cmdbar-count` + one `.btn-sm.btn-primary`, on every console list: clients, content review, campaigns, creators, short links, the rate card, the team. The count reads `7 services` whole and `3 of 41` once a filter is on, and never sits in a section head. On a phone it shares the action's line rather than taking a fourth row before the first record |
 | Links to reach a person | `.plink` chips (phone, WhatsApp, email); equal widths on a phone |
 
 **The bar at the top of every page is one bar, so it is one height.** It used
@@ -436,7 +442,49 @@ row, including the rows that **had** a figure — the desktop column drew the
 money and the phone line threw it away for its sign. A fact that is not known
 is left out; the line carries the value when there is one and two facts when
 there is not. Counting the atoms in a row is the test for "too many messages":
-name, state, age, and two or three meta facts is the ceiling.
+name, state, age, and two or three meta facts is the ceiling. **A missing value
+in a column takes the mark its neighbours take, never a sentence.** The Last
+activity column wrote "No calls yet" on all seven rows of a list where almost
+nobody has been called: a sentence repeated seven times where one character
+says it, under a heading that has already said what the cell is. The Industry
+cell beside it was already using a mute em dash, so that is what the cell takes.
+A null marker in a table cell is a convention, not copy, and is the one place
+the no-dashes rule does not reach.
+
+**A list is one surface, and the groups inside it are dividers.** Leads, Active
+clients and Paused and past were three floating panels, each carrying its own
+copy of the same five column headings, with 24px of page ground between rows
+that belong to one list and the third group pushed under the fold. A stage was
+then something you read from which card a client sat in, rather than from the
+column that already says it. One table, one header, and the groups as the
+`.svc-cat` sub-heading this portal already uses on the rate card, the Team page
+and the creators list. The test is whether two rows in different groups are
+still the same kind of thing: where they are, the groups are headings inside
+one table; where they are not, they are separate tables.
+
+**A whole row that opens a record is one control, with nothing inside it.** The
+register row is a `<button>` carrying only spans, so the whole of it is the
+target from a pointer and from the keyboard, there is no control nested in
+another control for a screen reader to trip over, and the chevron at the end is
+a mark rather than a second thing to press.
+
+**A phone template names every cell it keeps, and hides the rest.** A cell left
+showing with no area in `grid-template-areas` is not laid out, it is placed in
+an implicit row of its own: Last activity took a third line under every row and
+printed the same date the meta line already carried. Adding a column to a table
+is two edits, the desktop track and the phone template, and the second is the
+one that is forgotten.
+
+**A control in an empty state has to survive the repaint that pressing it
+causes.** Filtering the clients list to nothing and pressing Clear the filters
+did nothing at all: `input` and `change` both fire for one keystroke, and the
+second of them arrives on **blur**, so focusing the button made the search box
+fire `change` with the value it already had, the list repainted, and the button
+was detached between mousedown and click. A list repaints when its filter has
+actually changed and not otherwise. Two lessons: one control never carries two
+listeners that do the same work, and a test drives a control the way a person
+does — a dispatched `click` on the node the test is holding cannot see this,
+because the node a person presses is the one that was there a frame earlier.
 
 **A list long enough to scroll needs a way to cut it and somewhere to be
 inside it.** Four hundred creators as one flat run of identical rows is a list
@@ -465,6 +513,47 @@ the row carries the **record** instead: where they post, how many campaigns
 they have run for us, when they last shot, and an `On a campaign` chip while
 one is live. A device that was added to make rows distinguishable and leaves
 them identical is not a device to restyle, it is one to remove.
+
+**A record opens on who it is, and its landing pane is the record.** The client
+record was a thin title strip over a six row shortcut card, so the pane
+somebody lands on carried less than any other and half the screen under it was
+empty. Two things fix that and neither of them is a metric tile. The identity
+area carries a mark (the client's own logo where we hold one, their initials
+where we do not), the name, the state and the one control that edits it, and a
+meta line of the facts that **identify** rather than describe — which language
+we write to them in, who here owns the account — each omitted when it is not
+known. The landing pane is then the record itself: flat titled sections divided
+by hairlines inside one bounded surface, a heading and the one control that
+opens each section's own pane, and concise real rows under it. Everything in it
+comes from what the record has already read, so the pane costs nothing and
+cannot hold a number that has gone stale; a section with nothing to show says
+so in a line, because "None issued." is an answer and a section that vanishes
+is a question.
+
+**A rail is one block per question, and a block with no data is not a block.**
+Each carries an eyebrow title and is divided from the next by the same hairline
+the sections use. The order is what somebody needs in the order they need it:
+what to do next, what is stopping the record, how much of it is filled in, the
+dates it holds, the facts, what has happened lately. Two rules keep it honest.
+**A written next action beats a derived one** — a person wrote it on a call and
+set its date; a derivation only inferred it. And **a row whose date nobody has
+recorded is left out**, never drawn as "Not set" in a list of dates, because a
+list of three dates where two say nothing is a list that has stopped being
+read. The rule under the last block is therefore set in the paint, not left to
+`:last-child`, which counts a hidden sibling and drew a hairline under nothing.
+
+**A completion figure is never the whole message.** "25% complete" tells
+somebody they are behind and not what to do, so the bar carries the count
+beside it and the line under it names what is still missing and opens it. It is
+counted over what the record genuinely tracks, and it is not a metric tile: it
+is one block in a rail with a control on it.
+
+**A column that spans two rows sizes the rows it spans.** The record grid puts
+the rail across both the tab row and the pane row. Left at `auto auto`, a rail
+taller than the two of them had its extra height shared between them, so a lead
+— a short pane beside a full rail — opened with sixty pixels of page ground
+between its tabs and its first section, and nothing in the pane could explain
+it. The row a strip of tabs sits in is `auto` and the row under it is `1fr`.
 
 **A phone row spends its first line on what the person came for.** The rate
 card was three lines — the name with its ⋯, then the unit, then the price

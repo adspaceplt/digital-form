@@ -95,7 +95,7 @@
      button names the theme it switches to, as a light switch does. */
   function paintTheme() {
     var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-    $('themeWord').textContent = dark ? 'Light' : 'Dark';
+    $('themeWord').textContent = dark ? 'light' : 'dark';
     $('themeToggle').setAttribute('aria-pressed', String(dark));
   }
   $('themeToggle').addEventListener('click', function () {
@@ -104,8 +104,31 @@
     else document.documentElement.removeAttribute('data-theme');
     try { localStorage.setItem('adspace-theme', dark ? 'dark' : 'light'); } catch (e) {}
     paintTheme();
+    shutAcct();
   });
   paintTheme();
+
+  /* The account control. Who you are, the register you read in and the way
+     out are three things touched a few times a year, so they sit behind one
+     control at the end of the bar rather than in a block at the foot of the
+     sidebar that every screen had to carry. */
+  function shutAcct() {
+    $('acctMenu').hidden = true;
+    $('acctBtn').setAttribute('aria-expanded', 'false');
+  }
+  $('acctBtn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    var open = $('acctMenu').hidden;
+    $('acctMenu').hidden = !open;
+    this.setAttribute('aria-expanded', String(open));
+    if (open) $('acctMenu').querySelector('.kmenu-item').focus();
+  });
+  document.addEventListener('click', function (e) {
+    if (!$('acctMenu').hidden && !e.target.closest('#acctWrap')) shutAcct();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('acctMenu').hidden) { shutAcct(); $('acctBtn').focus(); }
+  });
 
   $('signOut').addEventListener('click', function () {
     db.auth.signOut().then(function () { location.reload(); });
@@ -136,8 +159,11 @@
     $('publicShell').hidden = inApp;
     $('console').hidden = true;
     $('authPanel').hidden = inApp;
-    $('signOut').hidden = !inApp;
+    $('acctWrap').hidden = !inApp;
+    if (!inApp) shutAcct();
     $('whoami').textContent = inApp ? session.user.email : '';
+    /* One letter, not an avatar nobody uploaded. */
+    $('acctMark').textContent = inApp ? (session.user.email || '?').charAt(0).toUpperCase() : '';
     actor = inApp ? session.user.email : '';
 
     if (!inApp) {
@@ -389,7 +415,9 @@
       .then(function (r) { then(r.error ? null : (r.data || null)); }, function () { then(null); });
   }
 
-  function setUrl() {
+  function setUrl() { history.replaceState(null, '', urlOf(queryNow())); }
+
+  function queryNow() {
     var q = [];
     if (section !== 'clients') q.push('s=' + section);
     if (section === 'review') {
@@ -403,8 +431,19 @@
       var crm = window.ADspaceCRM.urlState();
       Object.keys(crm).forEach(function (k) { if (crm[k]) q.push(k + '=' + encodeURIComponent(crm[k])); });
     }
-    history.replaceState(null, '', '/admin/' + (q.length ? '?' + q.join('&') : ''));
+    return q;
   }
+
+  /* Most of the address is a note of where you are: it is replaced, so the
+     browser's Back button still leaves the console rather than walking every
+     repaint. A local navigation inside a record is different — it is a move a
+     person made, so it pushes an entry and Back and Forward walk the panes. */
+  function pushUrl() {
+    var before = location.pathname + location.search;
+    var after = urlOf(queryNow());
+    if (after !== before) history.pushState(null, '', after);
+  }
+  function urlOf(q) { return '/admin/' + (q.length ? '?' + q.join('&') : ''); }
 
   /* Scroll, per address. Review has its own richer memory tied to the client;
      this is the plain one the other sections use. */
@@ -473,18 +512,55 @@
   /* Only active clients belong here. The CRM also holds leads and past
      clients, and none of those have content to review. A client removed from
      this section stays a client; they are simply not listed here. */
+  /* Loading, empty and failed are said one way across the console. */
+  var UI = window.ADspaceState;
+  var skeleton = UI.skeleton, failLine = UI.failLine;
+
+  var crFind = '';
   function loadClients() {
+    var box = $('clientCards');
+    if (!state.reviewClients) skeleton(box, 3);
     db.from('clients').select('*').eq('stage', 'active').eq('review_hidden', false)
       .order('name').then(function (r) {
-      var box = $('clientCards');
-      box.innerHTML = '';
-      if (r.error) { msg('clientMsg', r.error.message, 'err'); return; }
-      if (!r.data.length) {
-        box.innerHTML = '<div class="empty">No active clients.</div>';
+      if (r.error) {
+        state.reviewClients = null;
+        failLine(box, 'Clients', r.error.message, loadClients);
         settleScroll();
         return;
       }
-      r.data.forEach(function (c) {
+      state.reviewClients = r.data || [];
+      paintReviewClients();
+      settleScroll();
+    });
+  }
+
+  function paintReviewClients() {
+    var box = $('clientCards');
+    var all = state.reviewClients || [];
+    var rows = !crFind ? all : all.filter(function (c) {
+      return String(c.name || '').toLowerCase().indexOf(crFind) >= 0;
+    });
+    var count = $('crCount');
+    if (count) {
+      count.textContent = !all.length ? ''
+        : rows.length === all.length ? all.length + (all.length === 1 ? ' client' : ' clients')
+        : rows.length + ' of ' + all.length;
+    }
+    box.innerHTML = '';
+    if (!all.length) {
+      box.innerHTML = '<div class="empty">No active clients.</div>';
+      return;
+    }
+    if (!rows.length) {
+      box.innerHTML = '<div class="softpanel"><div class="emptyline"><b>No matches.</b>' +
+        '<button class="btn btn-sm" data-a="clear" type="button">Clear the search</button></div></div>';
+      box.querySelector('[data-a="clear"]').addEventListener('click', function () {
+        crFind = ''; if ($('crFind')) $('crFind').value = ''; paintReviewClients();
+      });
+      return;
+    }
+    (function (data) {
+      data.forEach(function (c) {
         var card = document.createElement('button');
         card.className = 'bigcard';
         card.type = 'button';
@@ -502,18 +578,25 @@
         card.addEventListener('click', function () { openClient(c); });
         box.appendChild(card);
 
-        // A one line answer to "where does this client stand?"
+        /* A one line answer to "where does this client stand?" A read that
+           failed is not a client with nothing on it: "No content sets" over a
+           fault sends somebody to build a set that is already there. */
         db.from('batches').select('id, published').eq('client_id', c.id).then(function (b) {
           var sub = card.querySelector('[data-role="sub"]');
-          if (b.error || !b.data.length) { sub.textContent = 'No content sets'; return; }
+          if (b.error) { sub.textContent = 'Sets unavailable'; sub.className = 'bigcard-sub is-warn'; return; }
+          if (!b.data.length) { sub.textContent = 'No content sets'; return; }
           var live = b.data.filter(function (x) { return x.published; }).length;
           sub.textContent = b.data.length + ' set' + (b.data.length === 1 ? '' : 's') +
             ' · ' + live + ' published';
         });
       });
-      settleScroll();
-    });
+    }(rows));
   }
+
+  if ($('crFind')) $('crFind').addEventListener('input', function () {
+    crFind = this.value.trim().toLowerCase();
+    paintReviewClients();
+  });
 
   /* Label, tone, and which section of the portal the action belongs to, so the
      record can be filtered the way the sidebar is. */
@@ -935,7 +1018,8 @@
       .order('created_at', { ascending: false }).then(function (r) {
         var box = $('batchCards');
         box.innerHTML = '';
-        if (r.error || !r.data.length) {
+        if (r.error) { failLine(box, 'Content sets', r.error.message, loadBatches); return; }
+        if (!r.data.length) {
           box.innerHTML = '<div class="empty">No content sets.</div>';
           return;
         }
@@ -951,10 +1035,13 @@
           card.addEventListener('click', function () { openBatch(b); });
           box.appendChild(card);
 
+          /* A count that could not be read is not a count of nothing: it
+             said "0 posts" over a failed request and the set looked empty. */
           db.from('posts').select('id').eq('batch_id', b.id).then(function (p) {
+            var sub = card.querySelector('[data-role="sub"]');
+            if (p.error) { sub.textContent = 'Posts unavailable'; sub.className = 'bigcard-sub is-warn'; return; }
             var n = (p.data || []).length;
-            card.querySelector('[data-role="sub"]').textContent =
-              n + ' post' + (n === 1 ? '' : 's');
+            sub.textContent = n + ' post' + (n === 1 ? '' : 's');
           });
         });
       });
@@ -1848,7 +1935,7 @@
         '<span class="dfile-meta"><b>' + esc(f.name) + '</b>' +
           '<span class="dfile-status status ' +
             (f.done ? 'status-approved' : 'status-pending') + '">' +
-            '<i class="status-dot"></i>' + (f.done ? 'Imported' : 'Not imported') + '</span>' +
+            (f.done ? 'Imported' : 'Not imported') + '</span>' +
           (spec ? '<span class="muted">' + spec + '</span>' : '') +
         '</span>';
       // Drive has no thumbnail for every file. Fall back to the file type
@@ -2095,11 +2182,20 @@
       .then(function (r) {
         var box = $('postList');
         box.innerHTML = '';
+        /* A failed read used to print "Nothing added yet." over a set that
+           was full, which is the one message that makes somebody add a post
+           twice. */
+        if (r.error) {
+          $('savedCount').textContent = '';
+          failLine(box, 'Posts', r.error.message, loadPosts);
+          settleScroll();
+          return;
+        }
         var n = (r.data || []).length;
         $('savedCount').textContent = n
           ? n + ' post' + (n === 1 ? '' : 's') + ' in this set.'
           : 'Nothing added yet.';
-        if (r.error || !n) { settleScroll(); return; }
+        if (!n) { settleScroll(); return; }
 
         var ids = r.data.map(function (p) { return p.id; });
         db.from('reviews').select('post_id, decision, note, reviewer, created_at')
@@ -2112,6 +2208,10 @@
           });
       });
   }
+
+  // The ⋯ this portal draws everywhere a row hides its rarer actions.
+  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+    '<circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
 
   var ICON = {
     pencil: '<path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/>',
@@ -2140,6 +2240,10 @@
   window.ADspaceAdmin = {
     ICON: ICON,
     iconBtn: iconBtn,
+    /* The one list of what each logged action is called. The client record's
+       Activity pane reads it rather than keeping a second copy that would
+       drift from the activity record's own. */
+    actionLabel: ACTION_LABEL,
     log: logAction,
     actor: function () { return actor; },
     actorName: function () { return (me && me.name) || actor; },
@@ -2147,6 +2251,7 @@
     putToS3: putToS3,
     // Where you are, and how far down. The address bar is shared property.
     setUrl: setUrl,
+    pushUrl: pushUrl,
     restoreScroll: restoreScroll,
     // Campaigns announces itself once its script has run; if the rail asked
     // for it before then, enter now.
@@ -2182,7 +2287,7 @@
              : review.decision === 'approved' ? 'approved' : 'changes';
     var word = kind === 'pending' ? 'Pending'
              : kind === 'approved' ? 'Approved' : 'Changes requested';
-    return '<span class="status status-' + kind + '"><i class="status-dot"></i>' + word + '</span>';
+    return '<span class="status status-' + kind + '">' + word + '</span>';
   }
 
   function savedRow(p, review) {
@@ -2357,8 +2462,11 @@
     db.from('links').select('*').order('slug').then(function (r) {
       if (r.error) {
         links = [];
-        box.innerHTML = '<div class="empty">Could not load the links. ' +
-          esc(r.error.message) + '</div>';
+        box.innerHTML = '<div class="softpanel"><div class="errline">' +
+          '<b>Could not load the links.</b><span>' + esc(r.error.message) + '</span>' +
+          '<button class="btn btn-sm" data-a="retry" type="button">Try again</button>' +
+          '</div></div>';
+        box.querySelector('[data-a="retry"]').addEventListener('click', loadLinks);
         $('linkCount').textContent = '';
         return;
       }
@@ -2367,60 +2475,120 @@
     });
   }
 
-  function paintLinks() {
-    var box = $('linkList');
+  /* A slug is looked at far more often than it is changed, so the list is a
+     table with columns rather than fifty bordered cards each holding the same
+     four icons. Copy is the everyday action and stays on the row; the rest
+     move into the ⋯, where this portal already puts a rare or destructive
+     one. */
+  function linkShown() {
     var q = $('linkSearch').value.trim().toLowerCase();
-    var shown = !q ? links : links.filter(function (l) {
+    var st = $('linkState') ? $('linkState').value : '';
+    return links.filter(function (l) {
+      var live = l.active !== false;
+      if (st === 'live' && !live) return false;
+      if (st === 'paused' && live) return false;
+      if (!q) return true;
       return (l.slug + ' ' + (l.target_url || '') + ' ' + (l.title || ''))
         .toLowerCase().indexOf(q) > -1;
     });
+  }
+
+  function paintLinks() {
+    var box = $('linkList');
+    var shown = linkShown();
+    var filtered = shown.length !== links.length;
 
     $('linkCount').textContent = !links.length ? '' :
-      (q ? shown.length + ' of ' + links.length : links.length +
-        (links.length === 1 ? ' link' : ' links'));
+      (filtered ? shown.length + ' of ' + links.length
+                : links.length + (links.length === 1 ? ' link' : ' links'));
 
     box.innerHTML = '';
+    if (!links.length) {
+      box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
+        '<b>No short links yet.</b>' +
+        '<button class="btn btn-sm" data-a="first" type="button">Add the first link</button>' +
+        '</div></div>';
+      box.querySelector('[data-a="first"]').addEventListener('click', function () { openLinkForm(null); });
+      return;
+    }
     if (!shown.length) {
-      box.innerHTML = '<div class="empty">' +
-        (links.length ? 'Nothing matches that search.'
-                      : 'No links.') +
-        '</div>';
+      box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
+        '<b>No matches.</b><button class="btn btn-sm" data-a="clear" type="button">Clear the filters</button>' +
+        '</div></div>';
+      box.querySelector('[data-a="clear"]').addEventListener('click', function () {
+        $('linkSearch').value = '';
+        if ($('linkState')) $('linkState').value = '';
+        paintLinks();
+      });
       return;
     }
 
+    var table = document.createElement('div');
+    table.className = 'crm-table softpanel';
+    table.innerHTML = '<div class="crm-head link-row"><span>Short link</span>' +
+      '<span>Destination</span><span>Label</span><span></span><span></span></div>';
+
     shown.forEach(function (l) {
+      var off = l.active === false;
       var row = document.createElement('div');
-      row.className = 'slink' + (l.active === false ? ' is-off' : '');
+      row.className = 'link-row' + (off ? ' is-off' : '');
       row.innerHTML =
-        '<div class="slink-body">' +
-          '<span class="slink-slug">/' + esc(l.slug) + '</span>' +
-          (l.title ? '<span class="slink-label">' + esc(l.title) + '</span>' : '') +
-          (l.active === false ? '<span class="slink-label">· paused</span>' : '') +
-          '<span class="slink-target">' + esc(l.target_url || '') + '</span>' +
-        '</div>' +
-        '<div class="slink-actions">' +
-          iconBtn('copy',   'copy',   'Copy short link') +
-          iconBtn('qr',     'qr',     'QR codes') +
-          iconBtn('pencil', 'edit',   'Edit link') +
-          iconBtn('trash',  'del',    'Delete link', 'is-danger') +
-        '</div>';
+        '<span class="link-slug">/' + esc(l.slug) + '</span>' +
+        '<span class="link-target">' + esc(l.target_url || '') + '</span>' +
+        '<span class="link-label">' + esc(l.title || '') + '</span>' +
+        // Live is true of nearly every row, so only the exception is named.
+        '<span class="link-state">' + (off ? '<span class="tone is-warn">Paused</span>' : '') + '</span>' +
+        '<span class="link-act">' +
+          iconBtn('copy', 'copy', 'Copy short link') +
+          iconBtn('qr',   'qr',   'QR codes') +
+          '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+          '<div class="kmenu" data-menu hidden>' +
+            '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
+            '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete link</b></button>' +
+          '</div>' +
+        '</span>';
+
       row.querySelector('[data-a="copy"]').addEventListener('click', function (e) {
-        var b = e.currentTarget;
-        navigator.clipboard.writeText(shortUrl(l.slug)).then(function () {
-          b.classList.add('is-done');
-          b.querySelector('svg').innerHTML = ICON.tick;
-          setTimeout(function () {
-            b.classList.remove('is-done');
-            b.querySelector('svg').innerHTML = ICON.copy;
-          }, 1400);
-        });
+        window.ADspaceCopy.to(e.currentTarget, shortUrl(l.slug));
       });
       row.querySelector('[data-a="qr"]').addEventListener('click', function () { openQr(l); });
-      row.querySelector('[data-a="edit"]').addEventListener('click', function () { editLink(l); });
-      row.querySelector('[data-a="del"]').addEventListener('click', function () { removeLink(l); });
-      box.appendChild(row);
+      row.querySelector('[data-a="edit"]').addEventListener('click', function () {
+        shutLinkMenus(); editLink(l);
+      });
+      row.querySelector('[data-a="del"]').addEventListener('click', function () {
+        shutLinkMenus(); removeLink(l);
+      });
+      wireLinkMenu(row);
+      table.appendChild(row);
+    });
+    box.appendChild(table);
+  }
+
+  function shutLinkMenus() {
+    Array.prototype.forEach.call(document.querySelectorAll('#linkList .kmenu'), function (m) { m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll('#linkList .kmenu-btn'), function (b) {
+      b.setAttribute('aria-expanded', 'false');
     });
   }
+  function wireLinkMenu(row) {
+    var btn = row.querySelector('[data-a="menu"]');
+    var menu = row.querySelector('[data-menu]');
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = menu.hidden;
+      shutLinkMenus();
+      menu.hidden = !open;
+      btn.setAttribute('aria-expanded', String(open));
+      if (open) window.ADspaceMenu.place(btn, menu);
+    });
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('#linkList .kmenu, #linkList .kmenu-btn')) shutLinkMenus();
+  });
+  window.ADspaceMenu.onScroll(shutLinkMenus);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutLinkMenus(); });
+
+  if ($('linkState')) $('linkState').addEventListener('change', paintLinks);
 
   function openLinkForm(link) {
     editingSlug = link ? link.slug : null;

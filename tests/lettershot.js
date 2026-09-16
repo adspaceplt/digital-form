@@ -46,7 +46,11 @@ const shoot = async (p, name, viewportOnly) => {
       hasTouch: tag === '390', isMobile: tag === '390' });
 
     // 1. No Client ID: the letter is refused, and the record says what to do.
+    /* The record is a workspace with panes now: a section's controls are in
+       the pane that owns them. */
+    const pane = async (pg, k) => { await pg.locator('#crmTabs .tab[data-pane="' + k + '"]').click(); await pg.waitForTimeout(300); };
     let p = await open(ctx, SEED);
+    await pane(p, 'documents');
     await p.locator('#crmCover').click();
     await p.waitForTimeout(500);
     await shoot(p, 'lt-nocode-' + tag + '.png');
@@ -54,6 +58,7 @@ const shoot = async (p, name, viewportOnly) => {
 
     // 2. The selection sheet.
     p = await open(ctx, CODED);
+    await pane(p, 'documents');
     await p.locator('#crmCover').click();
     await p.waitForTimeout(600);
     await shoot(p, 'lt-pick-' + tag + '.png', true);
@@ -87,6 +92,7 @@ const shoot = async (p, name, viewportOnly) => {
 
     // 6. Void, beside the legacy letter that is never offered verification.
     p = await open(ctx, CODED);
+    await pane(p, 'documents');
     await p.locator('#crmCover').click();
     await p.waitForTimeout(600);
     await p.locator('#pickGo').click();

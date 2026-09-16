@@ -12,6 +12,12 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
   const p = await (await b.newContext({ viewport: { width: 1200, height: 900 } })).newPage();
   const errs = []; p.on('pageerror', e => errs.push(e.message));
+  /* The campaign record is a command centre with panes now, so a section's
+     controls are in the pane that owns them. */
+  const cpane = async (k) => {
+    await p.locator('#campTabs .tab[data-pane="' + k + '"]').click();
+    await p.waitForTimeout(250);
+  };
   await p.route('**/supabase-js*/**', r => r.fulfill({ contentType: 'application/javascript', body: STUB + SEED }));
   await p.route('**/qrcode*.js', r => r.fulfill({ contentType: 'application/javascript', body: 'window.QRCode=function(){};window.QRCode.CorrectLevel={H:2};' }));
   await p.route('https://mycdn.adspace.me/**', r => r.fulfill({ status: 404, body: '' }));
@@ -20,7 +26,9 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   await p.waitForTimeout(400);
   await p.locator('.navitem[data-section="campaigns"]').click(); await p.waitForTimeout(400);
   await p.locator('#campCards .bigcard').first().click(); await p.waitForTimeout(600);
+  await cpane('client');
   console.log('lock hidden with nothing shortlisted:', await p.locator('#campLock').isHidden());
+  await cpane('creators');
   // Accepting for the client now lives in the card's actions menu, so each
   // one is two steps: open the menu on that card, then pick the action.
   // Accepting moves the card up the list, so target by state, not position.

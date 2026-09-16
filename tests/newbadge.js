@@ -19,7 +19,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
 
   await p.goto('http://127.0.0.1:8899/creators/?k=ROLL', { waitUntil: 'networkidle' });
   await p.waitForTimeout(600);
-  console.log('first visit cards:', await p.locator('.crow').count(),
+  console.log('first visit cards:', await p.locator('.crow:not(.crow-head)').count(),
               'NEW badges:', await p.locator('.tag-new').count());
 
   // sourcing continues: two more options arrive
@@ -34,7 +34,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   });
   await p.reload({ waitUntil: 'networkidle' });
   await p.waitForTimeout(700);
-  console.log('after more sourcing:', await p.locator('.crow').count(), 'cards,',
+  console.log('after more sourcing:', await p.locator('.crow:not(.crow-head)').count(), 'cards,',
               await p.locator('.tag-new').count(), 'marked NEW');
   const names = await p.locator('.crow:has(.tag-new) .crow-name b').allInnerTexts();
   console.log('marked:', names.join(', '));

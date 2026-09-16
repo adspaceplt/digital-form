@@ -231,8 +231,12 @@ const SEED = `
   // --- the console side, in the same tab so the stand-in's data is shared ---
   await p.route('**/qrcode*.js', r => r.fulfill({ contentType: 'application/javascript', body: 'window.QRCode=function(){};window.QRCode.CorrectLevel={H:2};' }));
   const a = p;
-  await a.goto('http://127.0.0.1:8899/admin/?s=clients&client=laman-citra', { waitUntil: 'networkidle' });
+  /* Requests sit with the service lines they change, in the record's Services
+     pane, and the pane is in the address. */
+  await a.goto('http://127.0.0.1:8899/admin/?s=clients&client=laman-citra&tab=services', { waitUntil: 'networkidle' });
   await a.evaluate(() => window.__signIn('adspacestudios@gmail.com')); await a.waitForTimeout(900);
+  check('a pasted link lands on the pane it names',
+    await a.locator('.rec-pane[data-pane="services"]').isVisible());
   check('the console shows the requests', await a.locator('#crmRequests').isVisible() &&
     await a.locator('#crmRequestList .doc-row:not(.crm-head)').count() === 2);
   check('the request row: who, what, a state select', (await a.locator('#crmRequestList').innerText()).includes('Mr Lim') &&
@@ -253,7 +257,8 @@ const SEED = `
   }));
   check('the console prints the fee', (await a.locator('#crmRequestList').innerText()).includes('RM 500.00'));
 
-  // portal access is a switch on the contact
+  // portal access is a switch on the contact, in the Contacts pane
+  await a.locator('#crmTabs .tab[data-pane="contacts"]').click(); await a.waitForTimeout(300);
   const lim = a.locator('#crmContacts .ct-row:not(.crm-head)', { hasText: 'Mr Lim' });
   check('the contact carries the Portal access mark', (await lim.innerText()).includes('Portal access'));
   await lim.locator('[data-a="menu"]').scrollIntoViewIfNeeded(); await a.waitForTimeout(300);

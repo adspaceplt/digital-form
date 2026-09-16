@@ -6,6 +6,8 @@ const BASE = 'http://127.0.0.1:8899';
 const errs = [];
 const out = [];
 const say = (s) => { out.push(s); console.log(s); };
+let bad = 0;
+const check = (l, ok, x) => { console.log((ok ? 'ok   ' : 'FAIL ') + l + (x ? '  ' + x : '')); if (!ok) bad++; };
 
 (async () => {
   const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
@@ -28,11 +30,19 @@ const say = (s) => { out.push(s); console.log(s); };
 
   say('--- signed in ---');
   say('sidebar kicker: ' + await page.locator('.sidebar-kicker').innerText());
-  say('sidebar foot:   ' + (await page.locator('.sidebar-foot').innerText()).replace(/\n/g, ' | '));
+  /* Who you are, the register and the way out live behind the account control
+     at the end of the bar, not in a block at the foot of the sidebar. */
+  say('account button: visible=' + await page.locator('#acctBtn').isVisible() +
+      ' mark=' + await page.locator('#acctMark').innerText());
+  check('the sidebar carries no account block',
+    await page.locator('.sidebar-foot').count() === 0);
+  await page.locator('#acctBtn').click(); await page.waitForTimeout(250);
   const so = page.locator('#signOut');
-  const box = await so.boundingBox();
-  const st = await so.evaluate(el => { const c = getComputedStyle(el); return c.borderStyle + ' ' + c.borderWidth + ' / svg=' + !!el.querySelector('svg'); });
-  say('sign out: visible=' + await so.isVisible() + ' w=' + Math.round(box.width) + ' border=' + st);
+  say('account menu: ' + (await page.locator('#acctMenu').innerText()).replace(/\n/g, ' | '));
+  check('sign out is in the account menu', await so.isVisible());
+  check('and so is the address', (await page.locator('#whoami').innerText()).includes('@'));
+  await page.keyboard.press('Escape'); await page.waitForTimeout(200);
+  check('Escape closes it', await page.locator('#acctMenu').isHidden());
   say('nav items:      ' + (await page.locator('.navitem').allInnerTexts()).join(' , '));
   say('section title:  ' + await page.locator('#sectionTitle').innerText());
   say('activity link visible: ' + await page.locator('#activityOpen').isVisible());
@@ -53,13 +63,13 @@ const say = (s) => { out.push(s); console.log(s); };
   say('title: ' + await page.locator('#sectionTitle').innerText());
   say('review hidden: ' + await page.locator('#sectionReview').isHidden());
   say('activity link now: ' + await page.locator('#activityOpen').isVisible());
-  say('rows: ' + await page.locator('.slink').count() + ' count=' + await page.locator('#linkCount').innerText());
-  say('first row: ' + (await page.locator('.slink').first().innerText()).replace(/\n/g, ' | '));
+  say('rows: ' + await page.locator('.link-row:not(.crm-head)').count() + ' count=' + await page.locator('#linkCount').innerText());
+  say('first row: ' + (await page.locator('.link-row:not(.crm-head)').first().innerText()).replace(/\n/g, ' | '));
 
   // Search
   await page.fill('#linkSearch', 'raya');
   await page.waitForTimeout(200);
-  say('search raya -> ' + await page.locator('.slink').count() + ' (' + await page.locator('#linkCount').innerText() + ')');
+  say('search raya -> ' + await page.locator('.link-row:not(.crm-head)').count() + ' (' + await page.locator('#linkCount').innerText() + ')');
   await page.fill('#linkSearch', '');
   await page.waitForTimeout(200);
 
@@ -73,7 +83,7 @@ const say = (s) => { out.push(s); console.log(s); };
   await page.fill('#newSlug', 'merdeka-2026');
   await page.locator('#saveLink').click();
   await page.waitForTimeout(400);
-  say('after add: rows=' + await page.locator('.slink').count() +
+  say('after add: rows=' + await page.locator('.link-row:not(.crm-head)').count() +
       ' https-normalised=' + await page.evaluate(() => (window.__DB.links.find(l => l.slug === 'merdeka-2026') || {}).target_url));
 
   // Duplicate
@@ -123,4 +133,6 @@ const say = (s) => { out.push(s); console.log(s); };
   say('--- errors ---');
   say(errs.length ? errs.join('\n') : 'none');
   await browser.close();
+  console.log(bad ? 'run: ' + bad + ' FAIL' : 'run: ok');
+  if (bad) process.exit(1);
 })().catch(e => { console.error('FAIL', e); process.exit(1); });

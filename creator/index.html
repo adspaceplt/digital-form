@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-face="client">
 <head>
 <meta charset="UTF-8">
 <meta name="robots" content="noindex, nofollow">
@@ -14,17 +14,18 @@
 <link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
 <link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260917a">
+<link rel="stylesheet" href="/css/portal.css?v=20260917b">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/js/config.js?v=20260917a"></script>
-<script src="/js/words.js?v=20260917a"></script>
-<script src="/js/copy.js?v=20260917a"></script>
-<script src="/js/api.js?v=20260917a"></script>
-<script src="/js/money.js?v=20260917a"></script>
+<script src="/js/config.js?v=20260917b"></script>
+<script src="/js/words.js?v=20260917b"></script>
+<script src="/js/copy.js?v=20260917b"></script>
+<script src="/js/state.js?v=20260917b"></script>
+<script src="/js/api.js?v=20260917b"></script>
+<script src="/js/money.js?v=20260917b"></script>
 </head>
 <body>
 
-<script src="/js/chrome.js?v=20260917a" data-kicker="Creator Portal" data-for data-actions="lang"></script>
+<script src="/js/chrome.js?v=20260917b" data-kicker="Creator Portal" data-for data-actions="lang"></script>
 
 <main class="shell">
 
@@ -53,7 +54,14 @@
     </div>
 
     <h2 class="sectionhead" id="workHead" hidden></h2>
-    <div id="workList"></div>
+    <!-- A creator with four bookings had four full cards stacked down the
+         page, each with its own upload box, and the one that needed them
+         today was wherever it happened to fall. The queue is what they have;
+         the card below it is the one they are working on. -->
+    <div class="cwork">
+      <nav class="queue" id="workQueue" hidden aria-label="Your bookings"></nav>
+      <div id="workList"></div>
+    </div>
 
     <section class="cover-panel" id="noWork" hidden>
       <h2 id="noWorkTitle"></h2>
@@ -67,6 +75,6 @@
 
 </main>
 
-<script src="/js/creator.js?v=20260917a"></script>
+<script src="/js/creator.js?v=20260917b"></script>
 </body>
 </html>

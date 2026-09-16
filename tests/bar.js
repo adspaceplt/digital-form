@@ -34,7 +34,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   await p.reload({ waitUntil: 'networkidle' });
   await p.waitForTimeout(700);
   console.log('all booked -> progress card hidden:', await p.locator('#progressCard').isHidden(),
-              '| cards:', await p.locator('.crow').count(),
+              '| cards:', await p.locator('.crow:not(.crow-head)').count(),
               '| bookings:', await p.locator('.booking').count());
   await ctx.close(); await b.close();
 })();

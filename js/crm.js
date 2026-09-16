@@ -19,6 +19,9 @@
   var actor = bridge.actor || function () { return ''; };
   var actorName = bridge.actorName || actor;
   var setUrl = bridge.setUrl || function () {};
+  /* A pane is a move somebody made, not a note of where the page ended up, so
+     it pushes a history entry and Back and Forward walk the record. */
+  var pushUrl = bridge.pushUrl || setUrl;
   var restoreScroll = bridge.restoreScroll || function () {};
   var MON = window.ADspaceMoney;
 
@@ -219,7 +222,7 @@
       '</svg>' + (done >= total ? 'Complete' : done + ' of ' + total) + '</span>';
   }
 
-  var state = { clients: [], team: [], client: null, editing: null, contacts: [], touches: [], services: [], documents: [], docMap: {} };
+  var state = { clients: [], team: [], client: null, editing: null, contacts: [], touches: [], services: [], documents: [], docMap: {}, log: [], lastSeen: {} };
 
   // ---- List ---------------------------------------------------------------
   /* The people on a record come from the team list, not from typing: a name
@@ -256,17 +259,48 @@
     }, function () { if (then) then(); });
   }
 
+  /* Loading, empty and failed are said one way across the console. */
+  var UI = window.ADspaceState;
+  var skeleton = UI.skeleton, failLine = UI.failLine;
+
   function loadClients(then) {
+    var box = $('crmList');
+    if (!state.clients.length) skeleton(box, 6);
     db.from('clients').select('*').order('name').then(function (r) {
       if (r.error) {
-        $('crmList').innerHTML = '<div class="empty">Could not load clients. ' +
-          esc(r.error.message) + '</div>';
+        box.innerHTML = '<div class="softpanel"><div class="errline">' +
+          '<b>Clients could not be loaded.</b><span>' + esc(r.error.message) + '</span>' +
+          '<button class="btn btn-sm" data-a="retry" type="button">Try again</button></div></div>';
+        box.querySelector('[data-a="retry"]').addEventListener('click', function () { loadClients(then); });
         return;
       }
       state.clients = r.data || [];
       paintList();
+      loadLastSeen();
       if (then) then();
     });
+  }
+
+  /* When somebody last spoke to each client. It is a column on the register
+     because "who has gone quiet" is the second question anybody asks of this
+     list, after "who is overdue". It reads `client_touches`, which the team
+     already reads on every record, and adds no field, function or permission
+     of its own; the list paints without it and fills the column in when it
+     arrives, so a slow or refused read costs the list nothing. */
+  function loadLastSeen() {
+    db.from('client_touches').select('client_id, happened_at')
+      .is('archived_at', null)
+      .order('happened_at', { ascending: false })
+      .then(function (r) {
+        if (r.error || !r.data) return;
+        var seen = {};
+        r.data.forEach(function (t) {
+          if (!t.client_id || !t.happened_at) return;
+          if (!seen[t.client_id] || t.happened_at > seen[t.client_id]) seen[t.client_id] = t.happened_at;
+        });
+        state.lastSeen = seen;
+        if (!$('crmListView').hidden) paintList();
+      }, function () {});
   }
 
   function visible() {
@@ -284,45 +318,79 @@
 
   function paintList() {
     var rows = visible();
-    $('crmCount').textContent = rows.length + (rows.length === 1 ? ' client' : ' clients');
+    /* The same count everywhere: how many there are, or how many of them a
+       filter has left. It used to read "1 client" whether that was the whole
+       list or one of forty. */
+    $('crmCount').textContent = !state.clients.length ? ''
+      : rows.length === state.clients.length
+        ? state.clients.length + (state.clients.length === 1 ? ' client' : ' clients')
+        : rows.length + ' of ' + state.clients.length;
     var box = $('crmList');
     box.innerHTML = '';
     if (!rows.length) {
-      box.innerHTML = '<div class="empty">' +
-        (state.clients.length ? 'No client matches that.'
-                              : 'No clients yet.') + '</div>';
+      /* Nothing there and nothing left after a filter are two different
+         answers, so each carries its own way out. Said through the shared
+         helper, because every other list in the console says it through that
+         one and this list had its own copy of the same markup. */
+      if (state.clients.length) {
+        UI.emptyLine(box, 'No matches.', 'Clear the filters', clearFilters);
+      } else {
+        UI.emptyLine(box, 'No clients yet.', 'Add the first lead', function () { $('crmNew').click(); });
+      }
       return;
     }
+    /* One register, not three floating cards. Three panels each with its own
+       header repeated the column names three times, put twenty four pixels of
+       page ground between rows that belong to one list, and made a client's
+       stage something you read from which card they were in rather than from
+       the column that already says it. The stages are labelled divider rows
+       inside the one surface — the same sub-heading the rate card, the Team
+       page and the creators list already use. */
+    var table = document.createElement('div');
+    table.className = 'crm-table softpanel crm-register';
+    table.appendChild(registerHead());
+
     GROUPS.forEach(function (g) {
       var mine = rows.filter(function (c) { return stageWord(c.stage || 'lead')[3] === g[0]; });
       if (!mine.length) return;
-      // What the group is worth, per currency, so the pipeline has a number.
-      var worth = {};
-      mine.forEach(function (c) {
-        if (!c.deal_value) return;
-        var k = c.market || 'MY';
-        worth[k] = (worth[k] || 0) + Number(c.deal_value);
-      });
-      var worthText = Object.keys(worth).map(function (k) { return MON.money(worth[k], k); }).join(' + ');
-      var late = mine.filter(isStale).length;
-      var sec = document.createElement('section');
-      sec.className = 'crm-group';
-      sec.innerHTML =
-        '<div class="crm-group-head"><h3>' + esc(g[1]) + ' <span>' + mine.length + '</span></h3>' +
-          /* The count that makes somebody open the group, next to the one
-             that says how big it is. Absent where none has gone over, so a
-             healthy stage stays quiet. */
-          (late ? '<span class="tone is-warn">' + late + ' overdue</span>' : '') +
-          (worthText ? '<span class="crm-group-worth">' + esc(worthText) + '</span>' : '') +
-        '</div>' +
-        '<div class="crm-table">' +
-          '<div class="crm-head">' + ['Client', 'Stage', 'Industry', 'Value', 'Person in charge']
-            .map(function (h) { return '<span>' + h + '</span>'; }).join('') + '</div>' +
-        '</div>';
-      var table = sec.querySelector('.crm-table');
+      table.appendChild(band(g[1], mine));
       mine.forEach(function (c) { table.appendChild(listRow(c)); });
-      box.appendChild(sec);
     });
+    box.appendChild(table);
+  }
+
+  /* One shared header, once, at the top of the register. */
+  function registerHead() {
+    var el = document.createElement('div');
+    el.className = 'crm-head';
+    el.innerHTML =
+      ['Client', 'Stage', 'Industry', 'Value', 'Person in charge', 'Last activity']
+        .map(function (h) { return '<span>' + h + '</span>'; }).join('') +
+      /* Empty over the column that says a row opens something, the way every
+         other table in this console leaves the head empty over its ⋯. */
+      '<span></span>';
+    return el;
+  }
+
+  /* A stage divider: what it is, how many, how many have run over, and what
+     the group is worth. Everything the separate card heads carried, on one
+     line inside the register. */
+  function band(name, mine) {
+    var worth = {};
+    mine.forEach(function (c) {
+      if (!c.deal_value) return;
+      var k = c.market || 'MY';
+      worth[k] = (worth[k] || 0) + Number(c.deal_value);
+    });
+    var worthText = Object.keys(worth).map(function (k) { return MON.money(worth[k], k); }).join(' + ');
+    /* Absent where none has gone over, so a healthy stage stays quiet. */
+    var late = mine.filter(isStale).length;
+    var el = document.createElement('div');
+    el.className = 'svc-cat crm-band';
+    el.innerHTML = esc(name) + ' <span>' + mine.length + '</span>' +
+      (late ? '<span class="tone is-warn crm-band-late">' + late + ' overdue</span>' : '') +
+      (worthText ? '<span class="crm-band-worth">' + esc(worthText) + '</span>' : '');
+    return el;
   }
 
   /* A column per fact, because that is what every CRM anyone here has used
@@ -343,6 +411,14 @@
       '<span class="crm-c crm-c-ind">' + esc(c.industry || '—') + '</span>' +
       '<span class="crm-c crm-c-mkt">' + (c.deal_value ? esc(MON.money(c.deal_value, c.market)) : '<span class="muted">' + esc(MON.market(c.market).sign) + '</span>') + '</span>' +
       '<span class="crm-c crm-c-own">' + esc(c.owner || 'Unassigned') + '</span>' +
+      /* When somebody last spoke to them. Where nobody has, the cell takes the
+         same mute mark the Industry cell beside it already uses for a value
+         nobody has filled in: "No calls yet" written out on every row of a
+         list where almost nobody has been called yet is a sentence repeated
+         seven times where one character says it, and the column heading has
+         already said what the cell is. */
+      '<span class="crm-c crm-c-seen">' + (lastSeenWord(c)
+        ? esc(lastSeenWord(c)) : '<span class="muted">—</span>') + '</span>' +
       /* The one line the phone gets, so it carries the value rather than the
          currency it would be in. A bare RM with no amount is a fragment that
          reads like a broken field, and it was shown even where the client had
@@ -350,16 +426,54 @@
          away for its sign. What is not known is left out rather than stood in
          for, so the line is two or three facts, never a row of placeholders. */
       '<span class="crm-c crm-c-meta">' +
-        [c.industry, c.deal_value ? MON.money(c.deal_value, c.market) : '', c.owner]
-          .filter(Boolean).map(esc).join(' · ') +
-      '</span>';
+        [c.industry, c.deal_value ? MON.money(c.deal_value, c.market) : '', c.owner,
+         lastSeenWord(c)].filter(Boolean).map(esc).join(' · ') +
+      '</span>' +
+      /* The mark that says the row goes somewhere, in the column the header
+         leaves empty. The row is one button, so the whole of it opens the
+         client from a pointer and from the keyboard alike, and there is no
+         control nested inside another control to trip a screen reader. */
+      '<svg class="crm-c crm-c-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M9 18l6-6-6-6"/></svg>';
     row.addEventListener('click', function () { openClient(c); });
     return row;
   }
 
+  /* "12 Sept", or "Sept 2026" once the exact day has stopped mattering — the
+     same units the stage clock already talks in. */
+  function lastSeenWord(c) {
+    var iso = (state.lastSeen || {})[c.id];
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    var days = Math.floor((Date.now() - d.getTime()) / 86400000);
+    return d.toLocaleDateString('en-GB', days < 300
+      ? { day: 'numeric', month: 'short' }
+      : { month: 'short', year: 'numeric' });
+  }
+
+  /* A filter repaints the register when the filter has actually changed, and
+     not otherwise. `input` and `change` both fire for one keystroke, and the
+     second of them arrives on **blur**: pressing Clear the filters on the
+     empty state moved focus off the search box, the box fired `change` with
+     the value it already had, the register repainted, and the button was
+     detached between mousedown and click — so the one way out of a filtered
+     empty list did nothing when it was clicked with a mouse. */
+  var filterKey = '';
+  function clearFilters() {
+    $('crmSearch').value = ''; $('crmStage').value = 'all'; $('crmOwner').value = 'all';
+    onFilter();
+  }
+  function onFilter() {
+    var key = JSON.stringify([val('crmSearch'), $('crmStage').value, $('crmOwner').value]);
+    if (key === filterKey) return;
+    filterKey = key;
+    paintList();
+  }
   ['crmSearch', 'crmStage', 'crmOwner'].forEach(function (id) {
-    $(id).addEventListener('input', paintList);
-    $(id).addEventListener('change', paintList);
+    $(id).addEventListener('input', onFilter);
+    $(id).addEventListener('change', onFilter);
   });
 
   // ---- Create and edit ----------------------------------------------------
@@ -539,7 +653,11 @@
 
   // ---- One client ---------------------------------------------------------
   function openClient(c, restoring) {
-    if (!state.client || state.client.id !== c.id) state.contacts = [];
+    /* Re-opening the same record is a repaint, not a navigation: logging a
+       call moves the stage, which reads the client back, and that used to
+       throw somebody out of the pane they were working in. */
+    var same = Boolean(state.client && state.client.id === c.id);
+    if (!same) { state.contacts = []; state.log = []; }
     state.client = c;
     $('crmListView').hidden = true;
     $('crmWork').hidden = false;
@@ -553,16 +671,19 @@
     }).join('');
     sel.className = 'select select-sm state-select ' + (w[2] || '');
 
+    paintIdentity(c);
+
     var mk = MON.market(c.market);
+    /* Person in charge has moved to the identity line and Added to Key dates,
+       so neither is stated twice: a rail that repeats the head is a rail
+       nobody reads. */
     $('crmFacts').innerHTML = [
       ['Client ID', c.client_code || '<span class="muted">Not set</span>'],
       ['Source',   c.source ? sourceWord(c.source) : '<span class="muted">Not set</span>'],
-      ['Person in charge', c.owner || '<span class="muted">Unassigned</span>'],
       ['Industry', c.industry || '<span class="muted">Not set</span>'],
       ['Market',   (c.market === 'SG' ? 'Singapore' : 'Malaysia') + ' · ' + mk.sign],
       ['Value',    c.deal_value ? MON.money(c.deal_value, c.market) : '<span class="muted">Not set</span>'],
-      ['To commence', c.commence ? commenceWord(c.commence) : '<span class="muted">Not set</span>'],
-      ['Added',    c.created_at ? niceDate(c.created_at) : '']
+      ['To commence', c.commence ? commenceWord(c.commence) : '<span class="muted">Not set</span>']
     ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
       return '<div><dt>' + f[0] + '</dt><dd>' +
         (String(f[1]).indexOf('<span') === 0 ? f[1] : esc(f[1])) + '</dd></div>';
@@ -603,9 +724,431 @@
     loadDocuments();
     loadRequests();
     loadTouches();
+    loadClientLog();
     loadWork();
+    showPane(restoring ? paneFromUrl() : (same ? pane : 'overview'));
     setUrl();
     if (restoring) restoreScroll();
+  }
+
+  /* ---- The record's own panes ------------------------------------------
+     Seven sections in one column meant Documents was a scroll away from the
+     services it quotes and Billing was a scroll away from the contact it
+     names. The pane is in the address, so a refresh, a pasted link, Back and
+     Forward all land on the section somebody was working in. */
+  var PANES = ['overview', 'contacts', 'billing', 'brand', 'services', 'documents', 'activity'];
+  var pane = 'overview';
+
+  function paneFromUrl() {
+    var t = new URLSearchParams(location.search).get('tab') || '';
+    return PANES.indexOf(t) >= 0 ? t : 'overview';
+  }
+
+  function showPane(key) {
+    if (PANES.indexOf(key) < 0) key = 'overview';
+    pane = key;
+    Array.prototype.forEach.call(document.querySelectorAll('#crmTabs .tab'), function (b) {
+      var on = b.getAttribute('data-pane') === key;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-selected', String(on));
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.rec-pane'), function (el) {
+      el.hidden = el.getAttribute('data-pane') !== key;
+    });
+    /* A fold inside its own pane is furniture: the pane is the disclosure. */
+    if (key === 'billing') setOpen('crmBillToggle', 'crmBillBody', true);
+    if (key === 'brand') setOpen('crmBrandToggle', 'crmBrandBody', true);
+    if (key === 'activity' && !(state.log || []).length) loadClientLog();
+    if (key === 'overview') paintSummary();
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('#crmTabs .tab'), function (b) {
+    b.addEventListener('click', function () {
+      if (b.getAttribute('data-pane') === pane) return;
+      showPane(b.getAttribute('data-pane'));
+      pushUrl();
+    });
+  });
+  /* Back and Forward move between panes, because the pane is in the address
+     and the address is what the browser remembers. */
+  window.addEventListener('popstate', function () {
+    if ($('crmWork').hidden) return;
+    showPane(paneFromUrl());
+  });
+
+  /* What the portal recorded about this client. `activity_log` carries no
+     client id, only the subject it was written with, which is the client's
+     name at the time; a rename therefore leaves the older entries behind, and
+     that is stated rather than papered over. */
+  function loadClientLog() {
+    var box = $('crmLogList');
+    var c = state.client;
+    if (!box || !c) return;
+    UI.skeleton(box, 3);
+    db.from('activity_log').select('*').eq('subject', c.name)
+      .order('created_at', { ascending: false }).limit(50)
+      .then(function (r) {
+        if (r.error) { UI.failLine(box, 'The record of changes', r.error.message, loadClientLog); return; }
+        var rows = r.data || [];
+        /* Kept so the rail can show the last three without a second read: the
+           record has already paid for this one. */
+        state.log = rows;
+        railLog();
+        if (!rows.length) { box.innerHTML = '<div class="empty">No entries.</div>'; return; }
+        var t = document.createElement('div');
+        t.className = 'crm-table softpanel';
+        t.innerHTML = '<div class="crm-head svc-row log-row"><span>When</span><span>What</span>' +
+          '<span>Detail</span><span>Who</span></div>';
+        rows.forEach(function (x) {
+          var el = document.createElement('div');
+          el.className = 'svc-row log-row';
+          el.innerHTML =
+            '<span class="log-when">' + esc(niceDate(x.created_at)) + '</span>' +
+            '<span class="log-what">' + esc(logWord(x.action)) + '</span>' +
+            '<span class="log-detail">' + esc(x.detail || '') + '</span>' +
+            '<span class="log-who">' + esc(x.actor || '') + '</span>';
+          t.appendChild(el);
+        });
+        box.innerHTML = '';
+        box.appendChild(t);
+      });
+  }
+
+  /* The console already names every action in one place; this reads it rather
+     than keeping a second list that would drift from the first. */
+  function logWord(action) {
+    var A = window.ADspaceAdmin && window.ADspaceAdmin.actionLabel;
+    var hit = A && A[action];
+    return (hit && hit[0]) || String(action || '').replace(/[._]/g, ' ');
+  }
+
+  /* ---- Identity ---------------------------------------------------------
+     The record opens on something that says which company this is. The mark
+     is the client's own logo where we hold one (`clients.logo_url`, already
+     read for the mockups) and their initials where we do not; the logo is the
+     client's artwork and is never inverted, which is why the disc behind it
+     stays light in both themes, exactly as the review mockups do. */
+  function initialsOf(name) {
+    var parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    /* A Chinese name is one word of two or three characters, so the first two
+       characters are the mark; a Latin name gives the first letter of the
+       first two words. */
+    if (/[㐀-鿿]/.test(parts[0])) return parts[0].slice(0, 2);
+    /* Only words that begin with a letter count, or "Dale & Cecil" comes out
+       as "D&" and "S P Setia" as "SP". */
+    var words = parts.filter(function (w) { return /^[A-Za-z]/.test(w); });
+    if (!words.length) return parts[0].charAt(0).toUpperCase();
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+    return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+  }
+
+  function paintIdentity(c) {
+    var mark = $('crmClientMark');
+    if (mark) {
+      if (c.logo_url) {
+        mark.className = 'rec-mark has-logo';
+        mark.innerHTML = '<img src="' + esc(c.logo_url) + '" alt="">';
+        var img = mark.querySelector('img');
+        img.addEventListener('error', function () {
+          mark.className = 'rec-mark';
+          mark.textContent = initialsOf(c.name);
+        });
+      } else {
+        mark.className = 'rec-mark';
+        mark.textContent = initialsOf(c.name);
+      }
+    }
+    /* What identifies the client rather than what describes them: who we
+       write to and in which language, and who here owns the account. Each
+       part is omitted when it is not known, so the line never stands in for
+       a fact nobody has recorded. */
+    var main = (state.contacts || []).filter(function (x) { return x.is_primary; })[0] ||
+               (state.contacts || [])[0];
+    var bits = [];
+    if (main && main.lang && LANG_WORD[main.lang]) bits.push('Prefers ' + LANG_WORD[main.lang]);
+    if (c.owner) bits.push('Person in charge: ' + c.owner);
+    var meta = $('crmIdMeta');
+    if (meta) {
+      meta.textContent = bits.join('  ·  ');
+      meta.hidden = !bits.length;
+    }
+  }
+
+  /* ---- The record's Overview -------------------------------------------
+     Overview used to be the Engagements list and, for a lead, nothing at all:
+     the pane you land on had less on it than any other. It reads as an
+     operational record now — flat titled sections divided by hairlines, the
+     way the rest of this console draws a table — and every row in it comes
+     from what the record has already loaded: the contacts, the service lines,
+     the documents and the calls. No second read, no stored number, no
+     invented metric, and a section that has nothing says so in one line
+     rather than disappearing, because "no documents" is itself an answer. */
+  function paintSummary() {
+    var box = $('crmSummary');
+    var c = state.client;
+    if (!box || !c) return;
+
+    box.innerHTML = '<div class="ovcard">' + [
+      ovContact(c), ovServices(c), ovDocuments(c), ovTouches()
+    ].join('') + '</div>';
+
+    wireGo(box);
+    paintRail(c);
+  }
+
+  /* One handler for every control that opens a pane, in the Overview and in
+     the rail alike, so the address follows wherever somebody entered. */
+  function wireGo(box) {
+    Array.prototype.forEach.call(box.querySelectorAll('[data-go]'), function (b) {
+      b.addEventListener('click', function () {
+        showPane(b.getAttribute('data-go'));
+        pushUrl();
+      });
+    });
+  }
+
+  var CHEV = '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M9 18l6-6-6-6"/></svg>';
+
+  /* A section is a heading and the one control that opens what it summarises,
+     which is this portal's section head drawn flat rather than as a card. */
+  function ovSection(title, go, goWord, body) {
+    return '<section class="ovsec">' +
+      '<div class="ovsec-head"><h3>' + esc(title) + '</h3>' +
+      '<button class="btn btn-quiet btn-sm ovgo" type="button" data-go="' + esc(go) + '">' +
+        esc(goWord) + CHEV + '</button></div>' + body + '</section>';
+  }
+  /* Nothing there is a line, not a dashed box and not a sentence explaining
+     what the section would have held. */
+  function ovNone(text) { return '<p class="ovnone">' + esc(text) + '</p>'; }
+
+  function ovRows(pairs) {
+    return '<dl class="ovfacts">' + pairs.map(function (p) {
+      return '<div><dt>' + esc(p[0]) + '</dt><dd>' + p[1] + '</dd></div>';
+    }).join('') + '</dl>';
+  }
+
+  function ovContact(c) {
+    var list = state.contacts || [];
+    if (!list.length) {
+      return ovSection('Contact details', 'contacts', 'Contacts', ovNone('No contacts yet.'));
+    }
+    var m = list.filter(function (x) { return x.is_primary; })[0] || list[0];
+    var rows = [['Main contact', '<b>' + esc(m.name || '') + '</b>' +
+      (m.role ? '<span class="ovmeta">' + esc(m.role) + '</span>' : '')]];
+    if (m.phone) {
+      rows.push(['Phone', esc(m.phone) +
+        (m.whatsapp ? '<a class="ovlink" href="https://wa.me/' + esc(String(m.whatsapp).replace(/\D/g, '')) +
+          '" target="_blank" rel="noopener">WhatsApp</a>' : '')]);
+    }
+    if (m.email) rows.push(['Email', '<a class="ovlink" href="mailto:' + esc(m.email) + '">' + esc(m.email) + '</a>']);
+    if (m.lang && LANG_WORD[m.lang]) rows.push(['Preferred language', esc(LANG_WORD[m.lang])]);
+    /* Person in charge is on the identity line above and is not repeated
+       here; a record that states a fact twice is a record nobody reads. */
+    if (c.enquiry) rows.push(['Enquiry', esc(c.enquiry)]);
+    if (list.length > 1) {
+      rows.push(['Other contacts', (list.length - 1) + (list.length === 2 ? ' person' : ' people')]);
+    }
+    return ovSection('Contact details', 'contacts', 'Contacts', ovRows(rows));
+  }
+
+  /* The lines the client is paying for, or was quoted. Enquired lines are not
+     shown here for the same reason the letter leaves them out: nobody has put
+     a price on them yet. */
+  function ovServices(c) {
+    var all = state.services || [];
+    var rows = all.filter(function (l) { return l.state === 'confirmed' || l.state === 'quoted'; });
+    if (!rows.length) {
+      return ovSection('Services', 'services', 'Services',
+        ovNone(all.length ? all.length + (all.length === 1 ? ' line enquired, nothing quoted yet.' : ' lines enquired, nothing quoted yet.')
+                          : 'Nothing quoted or confirmed.'));
+    }
+    var body = '<div class="ovtable">' +
+      '<div class="ovhead ovrow-svc"><span>Service</span><span>Details</span><span>Amount</span><span>State</span></div>' +
+      rows.slice(0, 5).map(function (l) {
+        var st = SV_STATE[l.state] || ['', ''];
+        return '<div class="ovrow ovrow-svc">' +
+          '<span class="ovname">' + esc(l.label || '') + '</span>' +
+          '<span class="ovdim">' + esc(termWord(l) || '') + '</span>' +
+          '<span class="ovamt">' + esc(MON.money2(amountOf(l), c.market)) + '</span>' +
+          '<span><span class="tone ' + esc(st[1] || '') + '">' + esc(st[0] || l.state) + '</span></span>' +
+        '</div>';
+      }).join('') +
+      (rows.length > 5 ? '<p class="ovmore">' + (rows.length - 5) + ' more</p>' : '') +
+      '</div>';
+    return ovSection('Services', 'services', 'Services', body);
+  }
+
+  function ovDocuments() {
+    var rows = state.documents || [];
+    if (!rows.length) return ovSection('Letters', 'documents', 'Documents', ovNone('None issued.'));
+    var body = '<div class="ovtable">' +
+      '<div class="ovhead ovrow-doc"><span>Reference</span><span>Type</span><span>Issued</span><span>State</span></div>' +
+      rows.slice(0, 4).map(function (d) {
+        return '<div class="ovrow ovrow-doc">' +
+          '<span class="ovname">' + esc(d.number || '') + '</span>' +
+          '<span class="ovdim">' + esc(DOC_WORD[d.kind] || d.kind || '') + '</span>' +
+          '<span class="ovdim">' + esc(d.issued_at ? niceDate(d.issued_at) : '') + '</span>' +
+          '<span>' + (d.voided_at ? '<span class="tone">Void</span>' : '<span class="tone is-ok">Issued</span>') + '</span>' +
+        '</div>';
+      }).join('') +
+      (rows.length > 4 ? '<p class="ovmore">' + (rows.length - 4) + ' more</p>' : '') +
+      '</div>';
+    return ovSection('Letters', 'documents', 'Documents', body);
+  }
+
+  function ovTouches() {
+    var rows = state.touches || [];
+    if (!rows.length) return ovSection('Calls and visits', 'activity', 'Activity', ovNone('Nothing logged.'));
+    var body = '<ul class="ovlog">' + rows.slice(0, 3).map(function (t) {
+      return '<li class="ovlog-row">' +
+        '<span class="ovlog-kind">' + esc(KIND_WORD[t.kind] || t.kind || '') + '</span>' +
+        '<span class="ovlog-text">' + esc(t.summary || '') + '</span>' +
+        '<span class="ovlog-when">' + esc(niceDate(t.happened_at)) +
+          (t.contact_name ? '<span class="ovmeta">with ' + esc(t.contact_name) + '</span>' : '') + '</span>' +
+      '</li>';
+    }).join('') + '</ul>';
+    return ovSection('Calls and visits', 'activity', 'Activity', body);
+  }
+
+  /* ---- The rail ---------------------------------------------------------
+     What is true whichever pane is open. Every block leaves entirely when the
+     data behind it is not there, so nothing on it is a placeholder. */
+  function paintRail(c) {
+    railNext(c);
+    railDone(c);
+    railDates(c);
+    railLog();
+    wireGo($('crmNextBlock'));
+    wireGo($('crmDoneBlock'));
+    /* The rule under a block belongs to the last block actually drawn.
+       `:last-child` counts a hidden sibling, and every block here leaves when
+       the data behind it is not there. */
+    var rail = document.querySelector('.rec-rail');
+    if (!rail) return;
+    var shown = Array.prototype.filter.call(rail.querySelectorAll('.railblock'),
+      function (b) { return !b.hidden; });
+    shown.forEach(function (b, i) { b.classList.toggle('is-last', i === shown.length - 1); });
+  }
+
+  /* The next action somebody actually wrote on a call, with the date they set,
+     or failing that the step this record's own state implies. A written one
+     wins, because a person decided it and a derivation did not. */
+  function railNext(c) {
+    var block = $('crmNextBlock'), box = $('crmNext');
+    if (!block || !box) return;
+    var open = (state.touches || []).filter(function (t) { return t.next_action && !t.done_at; })
+      .sort(function (a, b) { return String(a.next_at || '9999') < String(b.next_at || '9999') ? -1 : 1; })[0];
+    if (open) {
+      var late = open.next_at && open.next_at < today();
+      box.innerHTML = '<button class="railnext" type="button" data-go="activity">' +
+        '<span class="railnext-text">' + esc(open.next_action) + '</span>' +
+        (open.next_at ? '<span class="railnext-when' + (late ? ' is-late' : '') + '">' +
+          esc((late ? 'Overdue · ' : 'Due ') + niceDate(open.next_at)) + '</span>' : '') +
+        CHEV + '</button>';
+      block.hidden = false;
+      return;
+    }
+    var step = nextStep(c);
+    if (!step) { block.hidden = true; box.innerHTML = ''; return; }
+    box.innerHTML = '<button class="railnext" type="button" data-go="' + esc(step.go) + '">' +
+      '<span class="railnext-text">' + esc(step.text) + '</span>' + CHEV + '</button>';
+    block.hidden = false;
+  }
+
+  /* The one thing this record needs next, read off the same gate, stage and
+     lines every other part of the record reads. The line states what is true;
+     the control opens the pane that changes it. */
+  function nextStep(c) {
+    var stage = c.stage || 'lead';
+    var missing = billingMissing(c);
+    var quoting = (state.services || []).filter(function (l) { return l.state === 'quoted'; }).length;
+    var confirmed = (state.services || []).filter(function (l) { return l.state === 'confirmed'; }).length;
+    var issued = (state.documents || []).filter(function (d) { return !d.voided_at; }).length;
+
+    if (!state.contacts.length) return { text: 'No contact on the record.', go: 'contacts' };
+    if (stage === 'lead') return { text: 'No call or visit logged.', go: 'activity' };
+    if (!(state.services || []).length) return { text: 'No service lines.', go: 'services' };
+    if (quoting && !issued) {
+      return { text: quoting + (quoting === 1 ? ' line' : ' lines') + ' to quote, no letter issued.', go: 'documents' };
+    }
+    if (stage !== 'active' && stage !== 'paused' && stage !== 'past' && missing.length) {
+      return { text: missing.length + (missing.length === 1 ? ' billing field' : ' billing fields') +
+        ' before Active.', go: 'billing' };
+    }
+    if (stage === 'proposal' && issued) return { text: 'Letter with the client, unsigned.', go: 'documents' };
+    if (stage === 'active' && !confirmed) return { text: 'Active with no confirmed line.', go: 'services' };
+    return null;
+  }
+
+  /* How much of the record is filled in. A bar rather than a figure, because
+     the question anybody actually asks is whether this is nearly done, and
+     the line under it names what is still missing so the bar is never the
+     only thing said. Counted over what the record genuinely tracks. */
+  function railDone(c) {
+    var block = $('crmDoneBlock'), box = $('crmDone');
+    if (!block || !box) return;
+    var parts = [
+      ['Billing', BILLING_REQUIRED.length - billingMissing(c).length, BILLING_REQUIRED.length],
+      ['Brand profile', BRAND.filter(function (f) { return c[f[1]]; }).length + (c.brand_notes ? 1 : 0), BRAND.length + 1],
+      ['Contacts', Math.min((state.contacts || []).length, 1), 1],
+      ['Services', Math.min((state.services || []).length, 1), 1]
+    ];
+    var done = parts.reduce(function (t, p) { return t + p[1]; }, 0);
+    var all = parts.reduce(function (t, p) { return t + p[2]; }, 0);
+    var pct = all ? Math.round(done / all * 100) : 0;
+    var short = parts.filter(function (p) { return p[1] < p[2]; });
+    box.innerHTML =
+      '<p class="railpct"><b>' + pct + '% complete</b><span>' + done + ' of ' + all + '</span></p>' +
+      '<span class="railbar"><span class="railbar-fill" style="width:' + pct + '%"></span></span>' +
+      (short.length
+        ? '<button class="railmiss" type="button" data-go="' +
+            (short[0][0] === 'Billing' ? 'billing' : short[0][0] === 'Brand profile' ? 'brand' :
+             short[0][0] === 'Contacts' ? 'contacts' : 'services') + '">' +
+            esc('Still to fill in: ' + short.map(function (p) { return p[0].toLowerCase(); }).join(', ') + '.') +
+            CHEV + '</button>'
+        : '<p class="ovnone">Nothing outstanding.</p>');
+    block.hidden = false;
+  }
+
+  /* Dates the record holds. A row is left out when its date is not there. */
+  function railDates(c) {
+    var block = $('crmDatesBlock'), box = $('crmDates');
+    if (!block || !box) return;
+    var live = (state.touches || []).filter(function (t) { return !t.archived_at; });
+    var last = live.map(function (t) { return t.happened_at; }).filter(Boolean).sort().pop();
+    var nextAt = live.filter(function (t) { return t.next_action && !t.done_at && t.next_at; })
+      .map(function (t) { return t.next_at; }).sort()[0];
+    var rows = [
+      ['Client since', c.created_at],
+      ['Last contact', last],
+      ['Next follow up', nextAt]
+    ].filter(function (r) { return r[1]; });
+    if (!rows.length) { block.hidden = true; box.innerHTML = ''; return; }
+    box.innerHTML = rows.map(function (r) {
+      var late = r[0] === 'Next follow up' && r[1] < today();
+      return '<div><dt>' + esc(r[0]) + '</dt><dd' + (late ? ' class="is-late"' : '') + '>' +
+        esc(niceDate(r[1])) + '</dd></div>';
+    }).join('');
+    block.hidden = false;
+  }
+
+  /* The last few entries the portal wrote about this client. The whole record
+     is one tab away; this is the excerpt, and it draws nothing at all until
+     that read has landed. */
+  function railLog() {
+    var block = $('crmRailLogBlock'), box = $('crmRailLog');
+    if (!block || !box) return;
+    var rows = (state.log || []).slice(0, 3);
+    if (!rows.length) { block.hidden = true; box.innerHTML = ''; return; }
+    box.innerHTML = '<ul class="raillog">' + rows.map(function (x) {
+      return '<li><span class="raillog-what">' + esc(logWord(x.action)) + '</span>' +
+        (x.detail ? '<span class="raillog-detail">' + esc(x.detail) + '</span>' : '') +
+        '<span class="raillog-when">' + esc(niceDate(x.created_at)) + '</span></li>';
+    }).join('') + '</ul>';
+    block.hidden = false;
   }
 
   function linkChip(href, label, external) {
@@ -632,6 +1175,11 @@
       var missing = billingMissing(c);
       if (missing.length) {
         this.value = was;
+        /* The refusal has to land where the fix is: the Billing pane, with
+           the fold open and the first missing field focused. Opening a fold
+           that is two panes away is a message about a screen nobody is on. */
+        showPane('billing');
+        setUrl();
         setOpen('crmBillToggle', 'crmBillBody', true);
         msg('crmBillMsg', 'Billing details required before Active: ' + missing.join(', ') + '.', 'err');
         var first = BILLING.filter(function (f) { return missing.indexOf(f[2]) > -1; })[0];
@@ -718,12 +1266,13 @@
 
   function loadContacts() {
     var box = $('crmContacts');
-    box.innerHTML = '<div class="empty">Loading…</div>';
+    if (!box.querySelector('.crm-table')) skeleton(box, 3);
     db.from('client_contacts').select('*').eq('client_id', state.client.id)
       .order('is_primary', { ascending: false }).order('name').then(function (r) {
-        if (r.error) { box.innerHTML = '<div class="empty">Could not load contacts.</div>'; return; }
+        if (r.error) { failLine(box, 'Contacts', r.error.message, loadContacts); return; }
         var all = r.data || [];
         state.contacts = all.filter(function (c) { return !c.archived_at; });
+        paintSummary();
         var gone = all.filter(function (c) { return c.archived_at; });
         paintBilling(state.client);
         $('crmContactNames').innerHTML = state.contacts.map(function (ct) {
@@ -1025,13 +1574,14 @@
 
   function loadTouches() {
     var box = $('crmTouches');
-    box.innerHTML = '<div class="empty">Loading…</div>';
+    if (!box.querySelector('.touch')) skeleton(box, 3);
     db.from('client_touches').select('*').eq('client_id', state.client.id)
       .order('happened_at', { ascending: false }).order('created_at', { ascending: false })
       .then(function (r) {
-        if (r.error) { box.innerHTML = '<div class="empty">Could not load the log.</div>'; return; }
+        if (r.error) { failLine(box, 'Calls and visits', r.error.message, loadTouches); return; }
         var all = r.data || [];
         state.touches = all.filter(function (t) { return !t.archived_at; });
+        paintSummary();
         var gone = all.filter(function (t) { return t.archived_at; });
         box.innerHTML = '';
         if (!state.touches.length) {
@@ -1178,7 +1728,7 @@
 
   function loadWork() {
     var box = $('crmWorkList');
-    box.innerHTML = '<div class="empty">Loading…</div>';
+    if (!box.querySelector('.crm-table')) skeleton(box, 2);
     var c = state.client;
     var out = { sets: null, camps: null };
     var done = function () {
@@ -1228,8 +1778,20 @@
       return;
     }
     box.innerHTML = '';
+    /* One panel with rows in it, as every other section of this record is. */
+    var list = document.createElement('div');
+    list.className = 'work-list';
+    box.appendChild(list);
+    box = list;
+    /* A row with no name is a row nobody can pick out, and one campaign is
+       live called `0`. The record is never renamed behind anybody's back; it
+       is drawn under a stand in and stays editable in Creator Campaigns. */
+    var named = function (t) {
+      var v = String(t == null ? '' : t).trim();
+      return (!v || v === '0' || v === 'null' || v === 'undefined') ? 'Untitled campaign' : v;
+    };
     camps.forEach(function (k) {
-      box.appendChild(workRow(k.title,
+      box.appendChild(workRow(named(k.title),
         'Creator campaign · ' + k.slots + ' creator' + (k.slots === 1 ? '' : 's'),
         '/admin/?s=campaigns&campaign=' + encodeURIComponent(k.id),
         [CAMP_WORD[k.state] || k.state, W.tone(k.state)]));
@@ -1247,8 +1809,12 @@
     row.type = 'button';
     row.className = 'work-row';
     row.innerHTML =
-      '<span class="work-row-name">' + esc(title) +
-        (chip ? ' <span class="tone ' + esc(chip[1] || '') + '">' + esc(chip[0]) + '</span>' : '') +
+      /* The name is what gives way when the row runs out of room; the state
+         is the one thing the row exists to tell you. Both used to sit in one
+         clipped box, so "Open for selection" came out as "Open for selectio"
+         on a phone while the name it belonged to had room to spare. */
+      '<span class="work-row-name"><span class="work-row-title">' + esc(title) + '</span>' +
+        (chip ? '<span class="tone ' + esc(chip[1] || '') + '">' + esc(chip[0]) + '</span>' : '') +
       '</span>' +
       '<span class="work-row-meta">' + esc(meta) + '</span>' +
       '<svg class="work-row-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
@@ -1311,13 +1877,14 @@
 
   function loadServices() {
     var box = $('crmServices');
-    box.innerHTML = '<div class="empty">Loading…</div>';
+    if (!box.querySelector('.crm-table')) skeleton(box, 3);
     loadCatalog(function () {
       db.from('client_services').select('*').eq('client_id', state.client.id)
         .is('archived_at', null).order('created_at').then(function (r) {
-          if (r.error) { box.innerHTML = '<div class="empty">' + esc(r.error.message) + '</div>'; return; }
+          if (r.error) { failLine(box, 'Services', r.error.message, loadServices); return; }
           state.services = r.data || [];
           paintServices();
+          paintSummary();
         });
     });
   }
@@ -1637,11 +2204,14 @@
     var box = $('crmDocuments');
     var c = state.client;
     if (!DOCS) { box.innerHTML = ''; return; }
-    box.innerHTML = '<div class="empty">Loading…</div>';
+    if (!box.querySelector('.crm-table')) skeleton(box, 2);
     DOCS.list(c.id, function (rows, err) {
-      if (err) { box.innerHTML = '<div class="empty">' + esc(err.message || err) + '</div>'; return; }
-      if (state.client.id !== c.id) return;
+      if (err) { failLine(box, 'Documents', err.message || String(err), loadDocuments); return; }
+      if (!state.client || state.client.id !== c.id) return;
+      /* Kept so the Summary can read them without a second call: the record
+         has already paid for this. */
       state.documents = rows || [];
+      paintSummary();
       /* Which service lines each letter captured. A letter issued before this
          change has none, which is what keeps it out of verification. */
       DOCS.mapOf(rows.map(function (d) { return d.id; }), function (by) {
@@ -1885,35 +2455,104 @@
   // ---- Rate card (the Services section) ------------------------------------
   var editingSvc = null;
   function isAdmin() { return Boolean(bridge.may && bridge.may('admin')); }
+  /* What is typed in the command bar. Kept out of the URL: a search is what
+     somebody is doing this minute, not where they are. */
+  var svcFind = '', svcCat = '';
+
   function enterServices() {
     catalog = null;
     $('svcAdd').hidden = !isAdmin();
     $('svcBox').hidden = true;
     msg('svcListMsg', '');
-    $('svcList').innerHTML = '<div class="empty">Loading…</div>';
-    loadCatalog(paintCatalog);
+    skeleton($('svcList'), 6);
+    loadCatalog(function () { fillSvcFilter(); paintCatalog(); });
   }
+
+  /* Loading is the shape of what is coming, not the word for it: a line of
+     text that is replaced by rows makes the page jump by its own height. */
+  function skeleton(box, n) {
+    var html = '';
+    for (var i = 0; i < n; i++) html += '<div class="skel-row"></div>';
+    box.innerHTML = '<div class="softpanel"><div class="skel">' + html + '</div></div>';
+  }
+
+  // The tiers the card is read in, and the categories inside each.
+  function svcTiers(rows) {
+    var extra = rows.map(function (s) { return s.category; })
+      .filter(function (k, i, a) { return CATS.indexOf(k) < 0 && a.indexOf(k) === i; });
+    return [
+      ['Services', ['Content', 'Account management', 'Monthly packages',
+                    'KOC programmes', 'KOL programmes'].concat(extra)],
+      ['Add-ons',  ['Verification', 'Add-ons']]
+    ];
+  }
+
+  function fillSvcFilter() {
+    var sel = $('svcFilter');
+    if (!sel) return;
+    var rows = catalog || [];
+    var seen = [];
+    svcTiers(rows).forEach(function (t) {
+      t[1].forEach(function (k) {
+        if (seen.indexOf(k) < 0 && rows.some(function (s) { return s.category === k; })) seen.push(k);
+      });
+    });
+    sel.innerHTML = '<option value="">All categories</option>' + seen.map(function (k) {
+      return '<option value="' + esc(k) + '">' + esc(k) + '</option>';
+    }).join('');
+    sel.value = svcCat;
+  }
+
+  /* Name, what it includes and the unit: a search on the card is somebody
+     looking for a line to quote, and they rarely remember its exact title. */
+  function svcMatch(s) {
+    if (!svcCat && !svcFind) return true;
+    if (svcCat && s.category !== svcCat) return false;
+    if (!svcFind) return true;
+    var hay = [s.name, s.note, s.unit, s.detail, s.category].join(' ').toLowerCase();
+    return hay.indexOf(svcFind) > -1;
+  }
+
   function paintCatalog() {
     var box = $('svcList');
     box.innerHTML = '';
-    var rows = catalog || [];
-    if (!rows.length) { box.innerHTML = '<div class="empty">No services.</div>'; return; }
+    var all = catalog || [];
+    var rows = all.filter(svcMatch);
+    var count = $('svcCount');
+    if (count) {
+      count.textContent = !all.length ? ''
+        : rows.length === all.length ? all.length + ' services'
+        : rows.length + ' of ' + all.length;
+    }
+
+    if (!all.length) {
+      box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
+        '<b>The rate card is empty.</b>' +
+        (isAdmin() ? '<button class="btn btn-sm" data-a="first" type="button">Add the first service</button>' : '') +
+        '</div></div>';
+      var first = box.querySelector('[data-a="first"]');
+      if (first) first.addEventListener('click', function () { openSvc(null); });
+      return;
+    }
+    if (!rows.length) {
+      box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
+        '<b>No matches.</b><button class="btn btn-sm" data-a="clear" type="button">Clear the filters</button>' +
+        '</div></div>';
+      box.querySelector('[data-a="clear"]').addEventListener('click', clearSvcFilters);
+      return;
+    }
+
     // Two tables, not a card per category: what is sold, and what is added
     // to it. Categories are sub-headings inside each.
-    var extra = rows.map(function (s) { return s.category; })
-      .filter(function (k, i, a) { return CATS.indexOf(k) < 0 && a.indexOf(k) === i; });
-    var TIERS = [
-      ['Services', ['Content', 'Account management', 'Monthly packages', 'KOC programmes', 'KOL programmes'].concat(extra)],
-      ['Add-ons',  ['Verification', 'Add-ons']]
-    ];
-    TIERS.forEach(function (t) {
+    svcTiers(all).forEach(function (t) {
       var cats = t[1].filter(function (k) { return rows.some(function (s) { return s.category === k; }); });
       if (!cats.length) return;
       var n = rows.filter(function (s) { return cats.indexOf(s.category) > -1; }).length;
       var sec = document.createElement('section');
       sec.className = 'crm-group';
       sec.innerHTML = '<div class="crm-group-head"><h3>' + esc(t[0]) + ' <span>' + n + '</span></h3></div>' +
-        '<div class="crm-table"><div class="crm-head svc-row cat-row"><span>Service</span><span class="svc-rate">Rate</span>' +
+        '<div class="crm-table softpanel"><div class="crm-head svc-row cat-row">' +
+        '<span>Service</span><span class="svc-rate">Rate</span>' +
         '<span>Unit</span><span></span></div></div>';
       var table = sec.querySelector('.crm-table');
       cats.forEach(function (k) {
@@ -1921,11 +2560,28 @@
         cat.className = 'svc-cat';
         cat.textContent = k;
         table.appendChild(cat);
-        rows.filter(function (s) { return s.category === k; }).forEach(function (s) { table.appendChild(catalogRow(s)); });
+        rows.filter(function (s) { return s.category === k; })
+            .forEach(function (s) { table.appendChild(catalogRow(s)); });
       });
       box.appendChild(sec);
     });
   }
+
+  function clearSvcFilters() {
+    svcFind = ''; svcCat = '';
+    if ($('svcFind')) $('svcFind').value = '';
+    if ($('svcFilter')) $('svcFilter').value = '';
+    paintCatalog();
+  }
+
+  if ($('svcFind')) $('svcFind').addEventListener('input', function () {
+    svcFind = this.value.trim().toLowerCase();
+    paintCatalog();
+  });
+  if ($('svcFilter')) $('svcFilter').addEventListener('change', function () {
+    svcCat = this.value;
+    paintCatalog();
+  });
   function catalogRow(s) {
     var row = document.createElement('div');
     row.className = 'svc-row' + (s.active === false ? ' is-off' : '');
@@ -2047,7 +2703,13 @@
     }).join('');
 
   window.ADspaceCRM = {
-    urlState: function () { return { client: keyOf(state.client) }; },
+    urlState: function () {
+      var o = { client: keyOf(state.client) };
+      /* Overview is the default, so it stays out of the address: a link to a
+         client is the client, not the client on its first pane. */
+      if (o.client && pane && pane !== 'overview') o.tab = pane;
+      return o;
+    },
     byKey: clientByKey,
     keyOf: keyOf,
     enter: function () {

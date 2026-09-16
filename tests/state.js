@@ -19,6 +19,12 @@ const SEED = `(function(){ var D = window.__DB; if (D.creators.length > 3) retur
   const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium-1194/chrome-linux/chrome' });
   const ctx = await b.newContext({ viewport: { width: 1200, height: 800 } });
   const p = await ctx.newPage();
+  /* The campaign record is a command centre with panes now, so a section's
+     controls are in the pane that owns them. */
+  const cpane = async (k) => {
+    await p.locator('#campTabs .tab[data-pane="' + k + '"]').click();
+    await p.waitForTimeout(250);
+  };
   p.on('pageerror', e => errs.push('PAGEERROR ' + e.message));
   await p.route('**/supabase-js*/**', r => r.fulfill({ contentType: 'application/javascript', body: STUB + SEED }));
   await p.route('**/qrcode*.js', r => r.fulfill({ contentType: 'application/javascript', body: 'window.QRCode=function(){};window.QRCode.CorrectLevel={H:2};' }));
@@ -85,6 +91,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.creators.length > 3) retur
   say('after cancel+reload: form open=' + await p.locator('#addCampBox').isVisible());
 
   say('=== a creator being added inside the campaign survives ===');
+  await cpane('creators');
   await p.locator('#showAddOption').click(); await p.waitForTimeout(500);
   // The keyed-in form is folded: the panel opens on the roster, which is what
   // it is usually for.

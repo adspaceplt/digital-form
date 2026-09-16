@@ -29,6 +29,9 @@
   var putToS3 = bridge.putToS3;
   var cfg     = window.ADSPACE_CONFIG || {};
   var setUrl  = bridge.setUrl || function () {};
+  /* A pane is a move somebody made, so it pushes a history entry and Back and
+     Forward walk the campaign. */
+  var pushUrl = bridge.pushUrl || setUrl;
   var restoreScroll = bridge.restoreScroll || function () {};
 
   /* ---- A form's memory -----------------------------------------------------
@@ -149,6 +152,8 @@
   }
 
   var state = { tab: 'campaigns', campaign: null, creators: [], clients: [], options: [], team: [], editing: null };
+  /* Loading, empty and failed are said one way across the console. */
+  var UI = window.ADspaceState;
 
   // ---- Tabs ---------------------------------------------------------------
   function showTab(name) {
@@ -156,24 +161,24 @@
     $('campListView').hidden = !(name === 'campaigns' && !state.campaign);
     $('campWork').hidden     = !(name === 'campaigns' && state.campaign);
     $('rosterView').hidden   = name !== 'roster';
-    Array.prototype.forEach.call(document.querySelectorAll('#sectionCampaigns .tab'), function (b) {
+    Array.prototype.forEach.call(document.querySelectorAll('#campSectionTabs .tab'), function (b) {
       b.classList.toggle('is-on', b.getAttribute('data-tab') === name);
     });
     setUrl();
     if (name === 'roster') loadRoster(function () { rosterDraft.restore(); restoreScroll(); });
     if (name === 'campaigns' && !state.campaign) { loadCampaigns(); campDraft.restore(); restoreScroll(); }
   }
-  Array.prototype.forEach.call(document.querySelectorAll('#sectionCampaigns .tab'), function (b) {
+  Array.prototype.forEach.call(document.querySelectorAll('#campSectionTabs .tab'), function (b) {
     b.addEventListener('click', function () { showTab(b.getAttribute('data-tab')); });
   });
 
   // ---- Creators list ------------------------------------------------------
   function loadRoster(then) {
+    if (!state.creators.length) UI.skeleton($('rosterList'), 4);
     db.from('creators').select('*, creator_profiles(*)').order('name').then(function (r) {
       if (r.error) {
         state.creators = [];
-        $('rosterList').innerHTML = '<div class="empty">Could not load the creators list. ' +
-          esc(r.error.message) + '</div>';
+        UI.failLine($('rosterList'), 'The creators list', r.error.message, function () { loadRoster(then); });
         return;
       }
       state.creators = r.data || [];
@@ -256,11 +261,25 @@
                 : state.creators.length + (state.creators.length === 1 ? ' creator' : ' creators'));
 
     box.innerHTML = '';
-    if (!shown.length) {
-      box.innerHTML = '<div class="empty">' +
-        (state.creators.length ? 'No matches.' : 'No creators yet.') + '</div>';
+    if (!state.creators.length) {
+      UI.emptyLine(box, 'No creators yet.', 'Add the first creator', function () {
+        $('showAddCreator').click();
+      });
       return;
     }
+    if (!shown.length) {
+      UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
+        $('rosterSearch').value = '';
+        if ($('rosterPlatform')) $('rosterPlatform').value = 'all';
+        paintRoster();
+      });
+      return;
+    }
+    /* The panel is what draws the boundary; the rows sit inside it. */
+    var table = document.createElement('div');
+    table.className = 'crm-table softpanel';
+    box.appendChild(table);
+    box = table;
     /* A creator is a person with a fee, so the row is the one this console
        uses for every list of records: name heaviest, the money next, the rest
        mute. It used to borrow the Short Links row, which set the name in the
@@ -352,7 +371,9 @@
           '</div>' +
         '</span>';
       rowMenu(row);
-      row.querySelector('[data-a="edit"]').addEventListener('click', function () { openCreator(c); });
+      row.querySelector('[data-a="edit"]').addEventListener('click', function () {
+        creatorOpener = this; openCreator(c);
+      });
       row.querySelector('[data-a="del"]').addEventListener('click', function () { removeCreator(c); });
       row.querySelector('[data-a="state"]').addEventListener('click', function () {
         shutMenus();
@@ -548,9 +569,29 @@
     });
   }
 
-  $('showAddCreator').addEventListener('click', function () { openCreator(null); });
+  /* The sheet opens over the list and hands it straight back, so comparing
+     one creator against the rest never costs the page you were reading. */
+  var creatorOpener = null;
+  function shutCreatorSheet() {
+    $('addCreatorBox').hidden = true;
+    state.editing = null;
+    rosterDraft.clear();
+    if (creatorOpener && document.body.contains(creatorOpener)) creatorOpener.focus();
+    creatorOpener = null;
+  }
+  $('creatorSheetClose').addEventListener('click', shutCreatorSheet);
+  $('addCreatorBox').addEventListener('click', function (e) {
+    if (e.target === this) shutCreatorSheet();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('addCreatorBox').hidden) shutCreatorSheet();
+  });
+  $('showAddCreator').addEventListener('click', function () {
+    creatorOpener = this;
+    openCreator(null);
+  });
   $('cancelAddCreator').addEventListener('click', function () {
-    $('addCreatorBox').hidden = true; state.editing = null; rosterDraft.clear();
+    shutCreatorSheet();
   });
   $('addProfRow').addEventListener('click', function () { $('profRows').appendChild(profRow(null, ROSTER_CTX)); });
   $('rosterSearch').addEventListener('input', paintRoster);
@@ -592,9 +633,7 @@
             return;
           }
           log(created ? 'creator.added' : 'creator.updated', name, '');
-          $('addCreatorBox').hidden = true;
-          state.editing = null;
-          rosterDraft.clear();
+          shutCreatorSheet();
           loadRoster();
         };
         if (!rows.length) after(null);
@@ -675,28 +714,64 @@
       });
   }
 
+  var campFind = '', campStateFilter = 'all', campSums = {};
+
   function loadCampaigns() {
+    var box = $('campCards');
+    fillCampStates();
+    if (!state.campaigns) UI.skeleton(box, 3);
     db.from('campaigns').select('*, clients(name, market, sst_applies)').order('created_at', { ascending: false })
       .then(function (r) {
-        var box = $('campCards');
         if (r.error) {
-          box.innerHTML = '<div class="empty">Could not load campaigns. ' + esc(r.error.message) + '</div>';
+          state.campaigns = null;
+          UI.failLine(box, 'Campaigns', r.error.message, loadCampaigns);
           return;
         }
-        box.innerHTML = '';
-        if (!r.data.length) {
-          box.innerHTML = '<div class="empty">No campaigns.</div>';
-          return;
-        }
+        state.campaigns = r.data || [];
         // The amount on a card is what the client is charged: the rates of
         // everyone selected or booked, plus tax, in the client's currency.
         db.from('campaign_options').select('campaign_id, rate, state').then(function (q) {
-          var sums = {};
+          campSums = {};
           (q.data || []).forEach(function (o) {
             if (CHARGED.indexOf(o.state) < 0) return;
-            sums[o.campaign_id] = (sums[o.campaign_id] || 0) + Number(o.rate || 0);
+            campSums[o.campaign_id] = (campSums[o.campaign_id] || 0) + Number(o.rate || 0);
           });
-          r.data.forEach(function (c) {
+          paintCampaigns();
+        });
+      });
+  }
+
+  function campMatch(c) {
+    if (campStateFilter !== 'all' && c.state !== campStateFilter) return false;
+    if (!campFind) return true;
+    var hay = (campName(c) + ' ' + ((c.clients || {}).name || '')).toLowerCase();
+    return hay.indexOf(campFind) >= 0;
+  }
+
+  function paintCampaigns() {
+    var box = $('campCards');
+    var all = state.campaigns || [];
+    var rows = all.filter(campMatch);
+    var count = $('campCount');
+    if (count) {
+      count.textContent = !all.length ? ''
+        : rows.length === all.length ? all.length + (all.length === 1 ? ' campaign' : ' campaigns')
+        : rows.length + ' of ' + all.length;
+    }
+    box.innerHTML = '';
+    if (!all.length) { box.innerHTML = '<div class="empty">No campaigns.</div>'; return; }
+    if (!rows.length) {
+      UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
+        campFind = ''; campStateFilter = 'all';
+        if ($('campFind')) $('campFind').value = '';
+        if ($('campStatePick')) $('campStatePick').value = 'all';
+        paintCampaigns();
+      });
+      return;
+    }
+    var sums = campSums;
+    (function (data) {
+      data.forEach(function (c) {
             var cl = c.clients || {};
             var mk = cl.market || 'MY';
             var ap = cl.sst_applies == null ? true : cl.sst_applies;
@@ -705,7 +780,7 @@
             b.className = 'bigcard';
             b.type = 'button';
             b.innerHTML =
-              '<b>' + esc(c.title) + '</b>' +
+              '<b>' + esc(campName(c)) + '</b>' +
               '<span class="muted">' + esc(cl.name || '') + '</span>' +
               '<span class="muted">' + c.slots + ' creator' + (c.slots === 1 ? '' : 's') +
                 (sub ? ' · ' + esc(MON.money2(sub + MON.taxOf(sub, mk, ap), mk)) : '') + '</span>' +
@@ -713,9 +788,25 @@
                 esc(STATE_WORD[c.state] || c.state) + '</span>';
             b.addEventListener('click', function () { openCampaign(c); });
             box.appendChild(b);
-          });
-        });
       });
+    }(rows));
+  }
+
+  if ($('campFind')) $('campFind').addEventListener('input', function () {
+    campFind = this.value.trim().toLowerCase(); paintCampaigns();
+  });
+  /* Filled from the one vocabulary, on the first load rather than at parse
+     time: `STATE_WORD` is assigned further down this file. */
+  function fillCampStates() {
+    var pick = $('campStatePick');
+    if (!pick || pick.dataset.filled) return;
+    pick.dataset.filled = '1';
+    Object.keys(STATE_WORD).forEach(function (k) {
+      var o = document.createElement('option');
+      o.value = k; o.textContent = STATE_WORD[k];
+      pick.appendChild(o);
+    });
+    pick.addEventListener('change', function () { campStateFilter = this.value; paintCampaigns(); });
   }
 
   // The states whose rate the client pays for.
@@ -801,11 +892,26 @@
     return rest ? 'AINV' + rest : null;
   }
 
+  /* A campaign is found by its name on every screen that lists one, so a name
+     that renders as nothing is a row nobody can pick out. One is live called
+     `0`, which JavaScript reads as absent everywhere it is tested for, and the
+     strings "null" and "undefined" arrive the same way from a form that was
+     handed a value it did not have. The record is never renamed behind
+     somebody's back: a row that already carries one is drawn under a stand in
+     and stays editable, and a new one is refused at the door. */
+  function badTitle(t) {
+    var v = String(t == null ? '' : t).trim();
+    return !v || v === '0' || v === 'null' || v === 'undefined';
+  }
+  function campName(c) {
+    return badTitle(c && c.title) ? 'Untitled campaign' : String(c.title).trim();
+  }
+
   $('addCamp').addEventListener('click', function () {
     var title = ($('campTitle').value || '').trim();
     var clientId = $('campClient').value;
     if (!clientId) { msg('campMsg', 'A client is required.', 'err'); return; }
-    if (!title) { msg('campMsg', 'A campaign name is required.', 'err'); return; }
+    if (badTitle(title)) { msg('campMsg', 'A campaign name is required.', 'err'); return; }
     var slots = Number($('campSlots').value || 0);
     if (!slots || slots < 1) { msg('campMsg', 'At least one creator is required.', 'err'); return; }
 
@@ -907,6 +1013,51 @@
     if (e.target.closest && e.target.closest('#ncPlatforms')) ncDraft.save();
   });
 
+  /* ---- The campaign as a command centre -------------------------------
+     One campaign is a booking desk, a schedule, a set of deliverables, a
+     conversation with the client and an invoice, and all five used to be one
+     column: the invoice was above the creators, the results below them, and
+     the dates lived inside each card. Seven panes, the pane in the address,
+     and the one line that says what it is waiting on us for above them all. */
+  var CPANES = ['overview', 'creators', 'schedule', 'deliverables', 'client', 'finance', 'activity'];
+  var campPane = 'overview';
+
+  function campPaneFromUrl() {
+    var t = new URLSearchParams(location.search).get('pane') || '';
+    return CPANES.indexOf(t) >= 0 ? t : 'overview';
+  }
+
+  function showCampPane(key) {
+    if (CPANES.indexOf(key) < 0) key = 'overview';
+    campPane = key;
+    Array.prototype.forEach.call(document.querySelectorAll('#campTabs .tab'), function (b) {
+      var on = b.getAttribute('data-pane') === key;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-selected', String(on));
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#campWork .rec-pane'), function (el) {
+      el.hidden = el.getAttribute('data-pane') !== key;
+    });
+    if (key === 'finance') setOpen('invoiceToggle', 'invoiceBody', true);
+    if (key === 'activity') loadCampLog();
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('#campTabs .tab'), function (b) {
+    b.addEventListener('click', function () {
+      if (b.getAttribute('data-pane') === campPane) return;
+      showCampPane(b.getAttribute('data-pane'));
+      pushUrl();
+    });
+  });
+  window.addEventListener('popstate', function () {
+    if ($('campWork').hidden) return;
+    showCampPane(campPaneFromUrl());
+  });
+
+  /* Bulk dates is the Schedule's action, so the button in that head opens the
+     same panel the Creators pane does. */
+  if ($('schedBulk')) $('schedBulk').addEventListener('click', function () { $('bulkToggle').click(); });
+
   function openCampaign(c, restoring) {
     // A repaint of the campaign already open keeps its panels as they are;
     // arriving at a campaign starts with them folded.
@@ -916,7 +1067,7 @@
     $('campListView').hidden = true;
     setUrl();
     $('campWork').hidden = false;
-    $('campName').textContent = c.title;
+    $('campName').textContent = campName(c);
     // Not the form's input of the same name: this is the line under the title.
     $('campPurposeLine').textContent = c.purpose || '';
     $('campPurposeLine').hidden = !c.purpose;
@@ -932,13 +1083,20 @@
     }).join('');
     $('campLink').value = campaignUrl(c);
     $('campOpen').href = campaignUrl(c);
+    showCampPane(restoring ? campPaneFromUrl() : (same ? campPane : 'overview'));
     if (!same) setOpen('invoiceToggle', 'invoiceBody', false);
     // The invoice panel depends on who is confirmed, so it is painted once the
     // creators are in (paintOptions), never from the stale list.
     $('invoicePanel').hidden = true;
     msg('campWorkMsg', '');
     loadOptions();
-    if (restoring) { campDraft.restore(); ncDraft.restore(); restoreScroll(); }
+    if (restoring) {
+      campDraft.restore(); ncDraft.restore();
+      /* A half typed creator lives in the Creators pane, so a restored draft
+         brings its pane with it: the work was there and invisible otherwise. */
+      if (!$('addOptionBox').hidden) { showCampPane('creators'); setUrl(); }
+      restoreScroll();
+    }
   }
 
   /* The state word and the one forward action are the same two things wherever
@@ -1000,7 +1158,7 @@
 
   $('campDelete').addEventListener('click', function () {
     var c = state.campaign;
-    if (!confirm('Delete ' + c.title + '?\n\nAll offers and selections will be removed. This cannot be undone.')) return;
+    if (!confirm('Delete ' + campName(c) + '?\n\nAll offers and selections will be removed. This cannot be undone.')) return;
     db.from('campaigns').delete().eq('id', c.id).then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
       log('campaign.deleted', c.title, c.invoice_no || '');
@@ -1125,6 +1283,180 @@
     });
   }
 
+  /* ---- Schedule -------------------------------------------------------
+     Every booked creator's shoot and publish date in one table, which is the
+     question a producer asks before any other and which used to mean opening
+     each card in turn. The dates are the ones on the booking; nothing here is
+     a second store, and nothing here is editable, because the card that owns
+     a date is where it is changed. */
+  function paintSchedule(live) {
+    var box = $('schedList');
+    if (!box) return;
+    var rows = live.filter(function (o) { return CHARGED.indexOf(o.state) > -1; });
+    if (!rows.length) {
+      UI.emptyLine(box, 'No creators booked yet.', 'Go to Creators', function () {
+        showCampPane('creators'); pushUrl();
+      });
+      return;
+    }
+    var t = document.createElement('div');
+    t.className = 'crm-table softpanel';
+    t.innerHTML = '<div class="crm-head svc-row sched-row"><span>Creator</span><span>' +
+      (isDelivery() ? 'Delivery' : 'Shoot') + '</span><span>Publish</span><span>State</span></div>';
+    rows.forEach(function (o) {
+      var w = OPTION_WORD[o.state] || [o.state, ''];
+      var el = document.createElement('div');
+      el.className = 'svc-row sched-row';
+      el.innerHTML =
+        '<span class="sched-who"><b>' + esc((o.creators || {}).name || '') + '</b></span>' +
+        '<span class="sched-when">' + (o.visit_date
+          ? esc(niceDate(o.visit_date) + (o.visit_time ? ', ' + o.visit_time : ''))
+          : '<span class="muted">Not set</span>') + '</span>' +
+        '<span class="sched-when">' + (o.planned_publish
+          ? esc(niceDate(o.planned_publish)) : '<span class="muted">Not set</span>') + '</span>' +
+        '<span class="sched-state"><span class="tone ' + esc(w[1] || '') + '">' + esc(w[0]) + '</span></span>';
+      t.appendChild(el);
+    });
+    box.innerHTML = '';
+    box.appendChild(t);
+  }
+
+  /* ---- Deliverables ----------------------------------------------------
+     What each creator has handed in, gathered. The files and the caption are
+     the ones on the booking; the creator's own card carries the same rows
+     with the actions beside them, so this pane reads and never writes. */
+  function paintDeliverables(live) {
+    var box = $('delivList');
+    if (!box) return;
+    var rows = live.filter(function (o) { return ((state.files || {})[o.id] || []).length || o.draft_url; });
+    if (!rows.length) {
+      UI.emptyLine(box, 'Nothing handed in yet.');
+      return;
+    }
+    box.innerHTML = '';
+    rows.forEach(function (o) {
+      var files = (state.files || {})[o.id] || [];
+      var w = OPTION_WORD[o.state] || [o.state, ''];
+      var sec = document.createElement('section');
+      sec.className = 'softpanel deliv';
+      var head = '<div class="deliv-head"><b>' + esc((o.creators || {}).name || '') + '</b>' +
+        '<span class="tone ' + esc(w[1] || '') + '">' + esc(w[0]) + '</span></div>';
+      var body = files.map(function (f) {
+        return '<a class="deliv-file" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
+          '<span class="deliv-name">' + esc(f.name || f.url) + '</span>' +
+          '<span class="deliv-kind">' + esc((f.kind || '').split('/')[0] || 'file') + '</span></a>';
+      }).join('');
+      var pasted = o.draft_url
+        ? '<a class="deliv-file" href="' + esc(o.draft_url) + '" target="_blank" rel="noopener">' +
+          '<span class="deliv-name">' + esc(o.draft_url) + '</span>' +
+          '<span class="deliv-kind">link</span></a>' : '';
+      var cap = o.draft_caption
+        ? '<p class="deliv-caption">' + esc(o.draft_caption) + '</p>' : '';
+      sec.innerHTML = head + '<div class="deliv-files">' + body + pasted + '</div>' + cap;
+      box.appendChild(sec);
+    });
+  }
+
+  /* ---- What the client chose ------------------------------------------
+     The selection as the client made it, beside the link they made it on.
+     It was only ever readable by counting chips down the creator cards. */
+  function paintPicks(live) {
+    var box = $('pickList');
+    if (!box) return;
+    var picked = live.filter(function (o) { return CHARGED.indexOf(o.state) > -1; });
+    /* Backup is a state, not a flag: the flow is option → shortlisted →
+       backup → confirmed, and a backup the client never called on stays a
+       backup rather than becoming an offer nobody took. */
+    var backups = live.filter(function (o) { return o.state === 'backup'; });
+    var waiting = live.filter(function (o) {
+      return o.state !== 'backup' && CHARGED.indexOf(o.state) < 0;
+    });
+    if (!live.length) { UI.emptyLine(box, 'No creators offered yet.'); return; }
+    var t = document.createElement('div');
+    t.className = 'crm-table softpanel';
+    t.innerHTML = '<div class="crm-head svc-row pick-row"><span>Creator</span><span>Placements</span>' +
+      '<span class="svc-rate">Fee</span><span>State</span></div>';
+    var band = function (name, n) {
+      var el = document.createElement('div');
+      el.className = 'svc-cat';
+      el.innerHTML = esc(name) + ' <span>' + n + '</span>';
+      return el;
+    };
+    var add = function (o) {
+      var w = OPTION_WORD[o.state] || [o.state, ''];
+      var el = document.createElement('div');
+      el.className = 'svc-row pick-row';
+      el.innerHTML =
+        '<span class="pick-who"><b>' + esc((o.creators || {}).name || '') + '</b></span>' +
+        '<span class="pick-plat">' + esc(o.platforms || '') + '</span>' +
+        '<span class="svc-rate">' + esc(money(o.rate)) + '</span>' +
+        '<span class="pick-state"><span class="tone ' + esc(w[1] || '') + '">' + esc(w[0]) + '</span></span>';
+      t.appendChild(el);
+    };
+    if (picked.length) { t.appendChild(band('Chosen', picked.length)); picked.forEach(add); }
+    if (backups.length) { t.appendChild(band('Backups', backups.length)); backups.forEach(add); }
+    if (waiting.length) { t.appendChild(band('Offered, not chosen', waiting.length)); waiting.forEach(add); }
+    box.innerHTML = '';
+    box.appendChild(t);
+  }
+
+  /* The portal's record for this campaign. `activity_log` carries no campaign
+     id, only the subject it was written with, which is the campaign's name at
+     the time; a rename leaves the older entries behind. */
+  function loadCampLog() {
+    var box = $('campLogList');
+    var c = state.campaign;
+    if (!box || !c) return;
+    UI.skeleton(box, 3);
+    db.from('activity_log').select('*').eq('subject', c.title)
+      .order('created_at', { ascending: false }).limit(50)
+      .then(function (r) {
+        if (r.error) { UI.failLine(box, 'The activity record', r.error.message, loadCampLog); return; }
+        var rows = r.data || [];
+        if (!rows.length) { box.innerHTML = '<div class="empty">No entries.</div>'; return; }
+        var A = (window.ADspaceAdmin && window.ADspaceAdmin.actionLabel) || {};
+        var t = document.createElement('div');
+        t.className = 'crm-table softpanel';
+        t.innerHTML = '<div class="crm-head svc-row log-row"><span>When</span><span>What</span>' +
+          '<span>Detail</span><span>Who</span></div>';
+        rows.forEach(function (x) {
+          var el = document.createElement('div');
+          el.className = 'svc-row log-row';
+          el.innerHTML =
+            '<span class="log-when">' + esc(logDate(x.created_at)) + '</span>' +
+            '<span class="log-what">' + esc((A[x.action] || [])[0] || String(x.action || '').replace(/[._]/g, ' ')) + '</span>' +
+            '<span class="log-detail">' + esc(x.detail || '') + '</span>' +
+            '<span class="log-who">' + esc(x.actor || '') + '</span>';
+          t.appendChild(el);
+        });
+        box.innerHTML = '';
+        box.appendChild(t);
+      });
+  }
+  function logDate(iso) {
+    var d = new Date(iso);
+    return isNaN(d.getTime()) ? '' :
+      d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  /* ---- What this campaign is waiting on us for --------------------------
+     Derived from the bookings on every repaint, never stored: a state written
+     once by the action that caused it is a state that goes stale the moment
+     somebody reverts. The order is the order the work actually blocks in. */
+  function nextAction(c, live) {
+    var n = function (st) { return live.filter(function (o) { return o.state === st; }).length; };
+    var submitted = n('submitted'), changes = n('changes'), visits = n('pending_visit');
+    var drafts = n('pending_draft'), shortlisted = n('shortlisted'), posted = n('posted');
+    if (submitted) return submitted + (submitted === 1 ? ' draft is' : ' drafts are') + ' waiting to be released to the client.';
+    if (shortlisted) return shortlisted + (shortlisted === 1 ? ' creator has' : ' creators have') + ' been chosen and still need confirming.';
+    if (c.state === 'draft') return 'Not published yet. The client cannot see it.';
+    if (changes) return changes + (changes === 1 ? ' creator is' : ' creators are') + ' reworking a draft.';
+    if (visits) return visits + (visits === 1 ? ' shoot has' : ' shoots have') + ' no date yet.';
+    if (drafts) return drafts + (drafts === 1 ? ' draft is' : ' drafts are') + ' with the creators.';
+    if (posted) return posted + (posted === 1 ? ' post is' : ' posts are') + ' live and waiting on results.';
+    return '';
+  }
+
   function paintOptions() {
     var c = state.campaign;
     var live = state.options.filter(function (o) { return o.state !== 'replaced' && o.state !== 'withdrawn'; });
@@ -1138,10 +1470,17 @@
     var booked = chosen.length + goodwill.length;
     // Counts, then what the client sees: the quoted rates and 8% SST on top.
     // Two labelled groups of cells, the same cells as the results card.
+    var next = nextAction(c, live);
+    $('campNext').textContent = next;
+    $('campNext').hidden = !next;
+    paintSchedule(live);
+    paintDeliverables(live);
+    paintPicks(live);
+
     $('campTally').innerHTML =
       '<div class="tallygroup"><div class="kstep-title">Selection</div><div class="tally">' +
-        tallyCell('Creators', c.slots) +
-        tallyCell('Options', live.length) +
+        tallyCell(c.slots === 1 ? 'Creator' : 'Creators', c.slots) +
+        tallyCell(live.length === 1 ? 'Option' : 'Options', live.length) +
         tallyCell('Selected', chosen.length + ' of ' + c.slots) +
         (booked > c.slots
           ? '<div class="tally-cell is-warn"><b>' + booked + '</b><span>Booked · ' +
@@ -2284,7 +2623,10 @@
     urlState: function () {
       return {
         campaign: state.campaign ? state.campaign.id : '',
-        tab: (!state.campaign && state.tab === 'roster') ? 'roster' : ''
+        tab: (!state.campaign && state.tab === 'roster') ? 'roster' : '',
+        /* Overview is the default, so a link to a campaign is the campaign
+           and not the campaign on its first pane. */
+        pane: (state.campaign && campPane !== 'overview') ? campPane : ''
       };
     },
     /* On entry, read the address rather than starting from the list. An open
@@ -2296,7 +2638,7 @@
         db.from('campaigns').select('*, clients(name, market, sst_applies)').eq('id', id).single().then(function (r) {
           if (r.error || !r.data) { state.campaign = null; showTab('campaigns'); return; }
           state.tab = 'campaigns';
-          Array.prototype.forEach.call(document.querySelectorAll('#sectionCampaigns .tab'), function (b) {
+          Array.prototype.forEach.call(document.querySelectorAll('#campSectionTabs .tab'), function (b) {
             b.classList.toggle('is-on', b.getAttribute('data-tab') === 'campaigns');
           });
           $('rosterView').hidden = true;

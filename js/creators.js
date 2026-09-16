@@ -111,6 +111,9 @@
       measuredOn: 'Measured',
       platformCol: 'Platform',
       platformsLabel: 'Posting on',
+      /* The columns a fee is compared across. Named only where there is room
+         to compare: below the phone line the header leaves with them. */
+      colCreator: 'Creator', colProfiles: 'Profiles', colFee: 'Fee',
       stageLabel: 'Stage',
       revisionLabel: 'Revision',
       nextLabel: 'Next',
@@ -205,6 +208,7 @@
       measuredOn: '统计日期',
       platformCol: '平台',
       platformsLabel: '发布平台',
+      colCreator: '博主', colProfiles: '主页', colFee: '费用',
       stageLabel: '当前进度',
       revisionLabel: '修改',
       nextLabel: '下一步',
@@ -333,8 +337,11 @@
     $('kicker').textContent = t().kicker;
     $('langToggle').textContent = t().lang;
 
-    var title = (lang === 'zh' && c.title_zh) ? c.title_zh : c.title;
-    $('campTitle').textContent = title || '';
+    /* The page's own heading. A campaign whose name renders as nothing left
+       the client looking at a blank line where the job should be. */
+    var title = String(((lang === 'zh' && c.title_zh) ? c.title_zh : c.title) || '').trim();
+    if (!title || title === '0' || title === 'null' || title === 'undefined') title = t().untitled;
+    $('campTitle').textContent = title;
     var purpose = (lang === 'zh' && c.purpose_zh) ? c.purpose_zh : c.purpose;
     $('campPurpose').textContent = purpose || '';
     $('campPurpose').hidden = !purpose;
@@ -718,7 +725,23 @@
 
     /* A list, not cards. Ten is a page of cards and forty is an afternoon of
        scrolling; the decision is made by opening profiles and comparing rates,
-       and a row puts both within reach without moving the eye. */
+       and a row puts both within reach without moving the eye.
+
+       On a screen wide enough to compare on, the columns are named: a fee and
+       a set of placements with nothing over them is a number the client has to
+       work out what to read against. Below the phone line the header leaves
+       and the row stacks, because four labels over a 358px row is furniture. */
+    var head = document.createElement('div');
+    head.className = 'crow crow-head';
+    head.innerHTML =
+      '<span class="crow-no"></span><span class="crow-tick-cell"></span>' +
+      '<div class="crow-name">' + esc(t().colCreator) + '</div>' +
+      '<div class="crow-plat">' + esc(t().platformsLabel) + '</div>' +
+      '<div class="crow-links">' + esc(t().colProfiles) + '</div>' +
+      '<div class="crow-rate">' + esc(t().colFee) + '</div>' +
+      (backupsOpen() ? '<span class="crow-backup-cell">' + esc(t().backup) + '</span>' : '');
+    grid.appendChild(head);
+
     options.forEach(function (o, idx) {
       var pick = chosen[o.id];
       var full = countSelected() >= slots && pick !== 'selected';
@@ -755,9 +778,13 @@
           (isNew(o) ? '<span class="tag-new">NEW</span>' : '') +
           (priority && pick === 'backup' ? '<span class="tag-pri">' + esc(t().priority) + '</span>' : '') +
           (o.is_replacement ? '<span class="tag-rep">' + esc(t().replacement) + '</span>' : '') +
+        '</div>' +
+        /* Its own column on a screen wide enough to compare on, and back
+           under the name on a phone. A fee is quoted for a stated set of
+           placements, so the two are read against each other. */
+        '<div class="crow-plat">' +
           (plats.length
-            ? '<span class="crow-plat"><span>' + esc(t().platformsLabel) + '</span> ' +
-              esc(plats.join(' · ')) + '</span>'
+            ? '<span>' + esc(t().platformsLabel) + '</span>' + esc(plats.join(' · '))
             : '') +
         '</div>' +
         '<div class="crow-links">' + links + '</div>' +
