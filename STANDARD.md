@@ -566,6 +566,10 @@ Update this section only with verified, durable facts. Keep entries short and re
 - **2026-09-16** — A released client draft is reviewed in its booking card: portrait video uses a 9:16 inline player with native play, pause and fullscreen controls, and the caption sits with it. The decision sheet contains decisions only and closes with one X, not an X plus Cancel.
 - **2026-09-16** — Client and campaign Activity panes use one three-column audit row: timestamp, event with its detail, and actor with a monogram. At narrow component widths the event owns the first line and date plus actor share the second. Activity never inherits the generic service-row phone grid; that collision stacked every cell at the same coordinates.
 
+- **2026-09-16** — A letter's PDF is never stored and there is no signed upload: `client_documents` holds the snapshot and the file is redrawn on Download. A permanent deletion therefore has **no storage side, no object queue and no quarantine** — the row is the letter — and the console says the deletion is immediate and irreversible. Decided with the user on 2026-09-16 after the alternative (building a signed-letter upload first) was weighed and deferred.
+- **2026-09-16** — The letter's closing carries the issuer's **name only**; no designation field was added. The guard against an internal role reaching a client's letterhead is therefore a refusal at issue time (`issuer_name_ok`), not a second field. Decided with the user on 2026-09-16.
+- **2026-09-16** — Voiding a letter applies to a **verified** letter only and has no restore. An issued or signed letter has confirmed nothing, so there is nothing to reverse; removing one is a deletion. This narrows what the old `letter_set_void` accepted, and is a deliberate capability change rather than a regression.
+
 ### Design system
 
 - **2026-09-15** — Tokens live in `css/portal.css` `:root`: colour, `--radius`, `--head-h`, `--ctl-h`, `--ctl-h-sm`, `--state-w`, `--ctl-text`, `--field-text`, `--shadow`, `--shadow-lift`, and the motion set `--t-fast` / `--t` / `--t-slow` / `--ease` / `--ease-out`. The full table and the reasoning are in `DESIGN.md`.
