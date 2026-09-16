@@ -1,4 +1,5 @@
 tests/walk/
+tests/p2/
 tests/pdfx/node_modules/
 tests/*.png
 tests/*.pdf

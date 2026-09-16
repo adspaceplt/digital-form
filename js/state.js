@@ -47,5 +47,24 @@
     if (go && onAction) go.addEventListener('click', onAction);
   }
 
-  window.ADspaceState = { skeleton: skeleton, failLine: failLine, emptyLine: emptyLine };
+  /* The two characters a record wears when we hold no logo for it. Both
+     workspaces draw the same `.rec-mark`, so the reading lives once: a Chinese
+     name is one word of two or three characters, so the first two characters
+     are the mark; a Latin name gives the first letter of each of the first two
+     words that actually begin with a letter, or "Dale & Cecil" comes out as
+     "D&" and "S P Setia" as "SP". Two copies of this drifted the moment one
+     screen learned about the ampersand and the other did not. */
+  function initials(name) {
+    var parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    if (/[\u3400-\u9fff]/.test(parts[0])) return parts[0].slice(0, 2);
+    var words = parts.filter(function (w) { return /^[A-Za-z]/.test(w); });
+    if (!words.length) return parts[0].charAt(0).toUpperCase();
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+    return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
+  }
+
+  window.ADspaceState = {
+    skeleton: skeleton, failLine: failLine, emptyLine: emptyLine, initials: initials
+  };
 }());

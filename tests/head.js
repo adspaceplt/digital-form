@@ -25,7 +25,7 @@ const SEED = `(function(){ var D = window.__DB;
   await p.evaluate(() => window.__signIn('adspacestudios@gmail.com'));
   await p.waitForTimeout(400);
   await p.locator('.navitem[data-section="campaigns"]').click(); await p.waitForTimeout(400);
-  await p.locator('#campCards .bigcard').first().click(); await p.waitForTimeout(700);
+  await p.locator('#campCards .crm-row').first().click(); await p.waitForTimeout(700);
   await p.locator('#campWork > section.panel').first().screenshot({ path: process.argv[2] + '/head.png' });
   await p.locator('#showAddOption').click(); await p.waitForTimeout(500);
   await p.locator('#addOptionBox').screenshot({ path: process.argv[2] + '/addbox.png' });
