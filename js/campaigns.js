@@ -36,6 +36,10 @@
   var pushUrl = bridge.pushUrl || setUrl;
   var restoreScroll = bridge.restoreScroll || function () {};
 
+  function maySeeActivity() {
+    return Boolean(bridge.may && bridge.may('activity'));
+  }
+
   /* ---- A form's memory -----------------------------------------------------
      What was typed, whether the form was open, and what it was editing, kept
      until it is submitted or cancelled. A refresh in the middle of a campaign
@@ -1072,7 +1076,7 @@
      column: the invoice was above the creators, the results below them, and
      the dates lived inside each card. Seven panes, the pane in the address,
      and the one line that says what it is waiting on us for above them all. */
-  var CPANES = ['overview', 'creators', 'schedule', 'deliverables', 'client', 'finance', 'activity'];
+  var CPANES = ['overview', 'creators', 'schedule', 'client', 'finance', 'activity'];
   var campPane = 'overview';
 
   function campPaneFromUrl() {
@@ -1082,6 +1086,7 @@
 
   function showCampPane(key) {
     if (CPANES.indexOf(key) < 0) key = 'overview';
+    if (key === 'activity' && !maySeeActivity()) key = 'overview';
     campPane = key;
     Array.prototype.forEach.call(document.querySelectorAll('#campTabs .tab'), function (b) {
       var on = b.getAttribute('data-pane') === key;
@@ -1096,6 +1101,7 @@
   }
 
   Array.prototype.forEach.call(document.querySelectorAll('#campTabs .tab'), function (b) {
+    if (b.hasAttribute('data-needs-activity')) b.hidden = !maySeeActivity();
     b.addEventListener('click', function () {
       if (b.getAttribute('data-pane') === campPane) return;
       showCampPane(b.getAttribute('data-pane'));
@@ -1116,6 +1122,9 @@
     // arriving at a campaign starts with them folded.
     var same = !!(state.campaign && state.campaign.id === c.id);
     state.campaign = c;
+    Array.prototype.forEach.call(document.querySelectorAll('#campTabs [data-needs-activity]'), function (b) {
+      b.hidden = !maySeeActivity();
+    });
     parkCampForm();
     $('campListView').hidden = true;
     setUrl();
@@ -1333,12 +1342,14 @@
                creator's own page has done this since it shipped; the console
                was drawing the broken mark. */
             var ext = esc(String(f.name || '').split('.').pop().toUpperCase() || 'FILE');
-            return '<a class="filecard" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
+            return '<div class="filecard" data-file="' + esc(f.id) + '"><a class="filecard-open" href="' +
+              esc(f.url) + '" target="_blank" rel="noopener" aria-label="Open submitted file">' +
               (f.kind === 'image'
                 ? '<img src="' + esc(f.url) + '" alt="" loading="lazy" ' +
                   'onerror="this.remove()"><span class="filecard-kind">' + ext + '</span>'
                 : '<span class="filecard-kind">' + ext + '</span>') +
-              '<span class="filecard-name">' + esc(f.name) + '</span></a>';
+              '<span class="filecard-name">' + esc(f.name) + '</span></a>' +
+              '<button class="filecard-x" type="button" data-a="removefile" aria-label="Remove submitted file">×</button></div>';
           }).join('') + '</div>'
         : '') +
       (o.draft_caption
@@ -1367,11 +1378,10 @@
   }
 
   /* ---- Schedule -------------------------------------------------------
-     Every booked creator's shoot and publish date in one table, which is the
-     question a producer asks before any other and which used to mean opening
-     each card in turn. The dates are the ones on the booking; nothing here is
-     a second store, and nothing here is editable, because the card that owns
-     a date is where it is changed. */
+     This is the operational order: the next booking first, undated work after
+     it, and elapsed bookings in their own section at the foot. The option's
+     position is deliberately untouched, so the client continues to see the
+     creators in the order in which they were offered and selected. */
   function paintSchedule(live) {
     var box = $('schedList');
     if (!box) return;
@@ -1385,23 +1395,83 @@
     var t = document.createElement('div');
     t.className = 'crm-table softpanel';
     t.innerHTML = '<div class="crm-head svc-row sched-row"><span>Creator</span><span>' +
-      (isDelivery() ? 'Delivery' : 'Shoot') + '</span><span>Publish</span><span>State</span></div>';
-    rows.forEach(function (o) {
+      (isDelivery() ? 'Delivery' : 'Shoot') + '</span><span>Draft due</span>' +
+      '<span>Publish</span><span>State</span></div>';
+    var now = today();
+    var upcoming = rows.filter(function (o) { return !o.visit_date || o.visit_date >= now; });
+    var passed = rows.filter(function (o) { return o.visit_date && o.visit_date < now; });
+    function byDate(a, b) {
+      var ak = (a.visit_date || '9999-12-31') + ' ' + (a.visit_time || '');
+      var bk = (b.visit_date || '9999-12-31') + ' ' + (b.visit_time || '');
+      return ak.localeCompare(bk) || Number(a.position || 0) - Number(b.position || 0);
+    }
+    upcoming.sort(byDate);
+    passed.sort(function (a, b) { return -byDate(a, b); });
+
+    function band(label, count) {
+      var el = document.createElement('div');
+      el.className = 'svc-cat crm-band';
+      el.innerHTML = esc(label) + ' <span>' + count + '</span>';
+      t.appendChild(el);
+    }
+    function row(o) {
       var w = OPTION_WORD[o.state] || [o.state, ''];
       var el = document.createElement('div');
       el.className = 'svc-row sched-row';
       el.innerHTML =
         '<span class="sched-who"><b>' + esc((o.creators || {}).name || '') + '</b></span>' +
-        '<span class="sched-when">' + (o.visit_date
-          ? esc(niceDate(o.visit_date) + (o.visit_time ? ', ' + o.visit_time : ''))
-          : '<span class="muted">Not set</span>') + '</span>' +
-        '<span class="sched-when">' + (o.planned_publish
-          ? esc(niceDate(o.planned_publish)) : '<span class="muted">Not set</span>') + '</span>' +
+        '<span class="sched-when sched-edit" data-label="' + (isDelivery() ? 'Delivery' : 'Shoot') + '"><input class="input input-sm" data-schedule="visit_date" ' +
+          'type="date" value="' + esc(o.visit_date || '') + '" aria-label="' +
+          (isDelivery() ? 'Delivery' : 'Shoot') + ' date">' +
+          '<input class="input input-sm" data-schedule="visit_time" type="time" value="' +
+          esc(clockValue(o.visit_time)) + '" aria-label="Optional time"></span>' +
+        '<span class="sched-when sched-edit" data-label="Draft due"><input class="input input-sm" data-schedule="submission_due" ' +
+          'type="date" value="' + esc(o.submission_due || '') + '" aria-label="Draft due date"></span>' +
+        '<span class="sched-when sched-edit" data-label="Publish"><input class="input input-sm" data-schedule="planned_publish" ' +
+          'type="date" value="' + esc(o.planned_publish || '') + '" aria-label="Publish date"></span>' +
         '<span class="sched-state"><span class="tone ' + esc(w[1] || '') + '">' + esc(w[0]) + '</span></span>';
+      Array.prototype.forEach.call(el.querySelectorAll('[data-schedule]'), function (input) {
+        input.addEventListener('change', function () {
+          var patch = {}; patch[this.getAttribute('data-schedule')] = this.value || null;
+          /* A visit creates a real production deadline. No-visit campaigns
+             leave the visit blank and use the adjacent Draft due field. */
+          if (this.getAttribute('data-schedule') === 'visit_date') {
+            patch.submission_due = this.value ? addDays(this.value, 7) : o.submission_due || null;
+          }
+          db.from('campaign_options').update(patch).eq('id', o.id).then(function (r) {
+            if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+            Object.keys(patch).forEach(function (k) { o[k] = patch[k]; });
+            log('campaign.dates', (o.creators || {}).name || '', 'schedule updated');
+            paintOptions();
+          });
+        });
+      });
       t.appendChild(el);
-    });
+    }
+    band('Upcoming', upcoming.length);
+    upcoming.forEach(row);
+    if (passed.length) { band('Past', passed.length); passed.forEach(row); }
     box.innerHTML = '';
     box.appendChild(t);
+  }
+
+  /* Older rows stored friendly strings such as "2pm". Native time inputs
+     need 24-hour values; blank remains the explicit no-time option. */
+  function clockValue(value) {
+    var s = String(value || '').trim().toLowerCase();
+    if (/^\d{2}:\d{2}$/.test(s)) return s;
+    var m = s.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/);
+    if (!m) return '';
+    var h = Number(m[1]) % 12;
+    if (m[3] === 'pm') h += 12;
+    return String(h).padStart(2, '0') + ':' + (m[2] || '00');
+  }
+
+  function addDays(day, n) {
+    var d = new Date(day + 'T00:00:00Z');
+    if (isNaN(d)) return null;
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
   }
 
   /* ---- Deliverables ----------------------------------------------------
@@ -1500,16 +1570,24 @@
         var A = (window.ADspaceAdmin && window.ADspaceAdmin.actionLabel) || {};
         var t = document.createElement('div');
         t.className = 'crm-table softpanel';
-        t.innerHTML = '<div class="crm-head svc-row log-row"><span>When</span><span>What</span>' +
-          '<span>Detail</span><span>Who</span></div>';
+        t.className += ' activity-list';
+        t.innerHTML = '<div class="crm-head svc-row log-row"><span>When</span><span>Activity</span>' +
+          '<span>By</span></div>';
         rows.forEach(function (x) {
           var el = document.createElement('div');
           el.className = 'svc-row log-row';
+          var actor = x.actor || '';
+          /* Preserve main's email-to-name resolver through conflict merges;
+             fall back to the stored actor on older deployments. */
+          var actorLabel = typeof whoName === 'function' ? whoName(actor) : actor;
           el.innerHTML =
-            '<span class="log-when">' + esc(logDate(x.created_at)) + '</span>' +
-            '<span class="log-what">' + esc((A[x.action] || [])[0] || String(x.action || '').replace(/[._]/g, ' ')) + '</span>' +
-            '<span class="log-detail">' + esc(x.detail || '') + '</span>' +
-            '<span class="log-who">' + esc(whoName(x.actor)) + '</span>';
+            '<time class="log-when" datetime="' + esc(x.created_at || '') + '">' + esc(logDate(x.created_at)) + '</time>' +
+            '<span class="log-event"><b class="log-what">' +
+              esc((A[x.action] || [])[0] || String(x.action || '').replace(/[._]/g, ' ')) + '</b>' +
+              (x.detail ? '<span class="log-detail">' + esc(x.detail) + '</span>' : '') + '</span>' +
+            '<span class="log-who"><span class="log-avatar" aria-hidden="true">' +
+              esc(actorInitial(actorLabel)) + '</span><span class="log-person">' +
+              esc(actorLabel || 'System') + '</span></span>';
           t.appendChild(el);
         });
         box.innerHTML = '';
@@ -1519,7 +1597,12 @@
   function logDate(iso) {
     var d = new Date(iso);
     return isNaN(d.getTime()) ? '' :
-      d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
+      ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  }
+  function actorInitial(actor) {
+    var s = String(actor || 'S').trim();
+    return (s.match(/[A-Za-z0-9\u3400-\u9fff]/) || ['S'])[0].toUpperCase();
   }
 
   /* ---- What this campaign is waiting on us for --------------------------
@@ -1687,7 +1770,7 @@
     var rows = live.filter(function (o) {
       return ((state.files || {})[o.id] || []).length || o.draft_url;
     });
-    if (!rows.length) return ovSec('Deliverables', 'deliverables', 'Deliverables', ovNone('Nothing handed in yet.'));
+    if (!rows.length) return ovSec('Deliverables', 'creators', 'Creators', ovNone('Nothing handed in yet.'));
     var body = rows.slice(0, 6).map(function (o) {
       var n = ((state.files || {})[o.id] || []).length;
       var w = OPTION_WORD[o.state] || [o.state, ''];
@@ -1697,7 +1780,7 @@
         '<span><span class="tone ' + esc(w[1] || 'tone-plain') + '">' + esc(w[0]) + '</span></span>' +
         '<span class="ovamt"></span></div>';
     }).join('');
-    return ovSec('Deliverables', 'deliverables', 'Deliverables',
+    return ovSec('Deliverables', 'creators', 'Creators',
       '<div class="ovtable"><div class="ovhead ovrow-book"><span>Creator</span>' +
       '<span>Handed in</span><span>Step</span><span class="ovamt"></span></div>' + body + '</div>');
   }
@@ -1737,11 +1820,14 @@
     var mb = $('campMoneyBlock');
     if (mb) {
       mb.hidden = !chosen.length;
+      $('campFinanceTotal').hidden = !chosen.length;
       if (chosen.length) {
-        $('campMoneyRail').innerHTML =
+        var moneyRows =
           railMoney('Subtotal', money2(total)) +
           railMoney(taxWord(), money2(sstOf(total))) +
           railMoney('Total', money2(total + sstOf(total)), 'is-total');
+        $('campMoneyRail').innerHTML = moneyRows;
+        $('campFinanceMoney').innerHTML = moneyRows;
       }
     }
 
@@ -1769,16 +1855,12 @@
         '<p class="raillinkstate"><span class="tone ' + (open ? 'is-ok' : '') + '">' +
           (open ? 'Live' : 'Not published') + '</span>' +
           '<span>' + (open ? 'The client can open their link.' : 'The client cannot see it yet.') +
-          '</span></p>' +
-        '<button class="btn btn-sm railgo" type="button" data-go="client">Client selection' + OVCHEV + '</button>';
-      Array.prototype.forEach.call(lb.querySelectorAll('[data-go]'), function (b) {
-        b.addEventListener('click', function () { showCampPane(b.getAttribute('data-go')); pushUrl(); });
-      });
+          '</span></p>';
     }
 
     /* The rule under the last block, set in the paint. */
-    var blocks = ['campPickBlock', 'campMoneyBlock', 'campDateBlock',
-      'campLinkBlock', 'campFactBlock'].map($).filter(Boolean);
+    var blocks = ['campFactBlock', 'campPickBlock', 'campMoneyBlock', 'campDateBlock',
+      'campLinkBlock'].map($).filter(Boolean);
     blocks.forEach(function (b) { b.classList.remove('is-last'); });
     var shown = blocks.filter(function (b) { return !b.hidden; });
     if (shown.length) shown[shown.length - 1].classList.add('is-last');
@@ -2275,6 +2357,7 @@
           field('Date', 'visit_date', o.visit_date, 'date') +
           field('Time', 'visit_time', o.visit_time, 'text', '') +
           (isDelivery() ? field('Tracking no.', 'tracking_no', o.tracking_no, 'text', '') : '') +
+          field('Draft due', 'submission_due', o.submission_due, 'date', '', 'kfield-pub') +
           field('Publish date', 'planned_publish', o.planned_publish, 'date', '', 'kfield-pub') +
           '<label class="kfield kfield-wide"><span>Notes</span>' +
             '<input class="input" data-f="notes" value="' + esc(o.notes || '') + '"></label>' +
@@ -2328,8 +2411,7 @@
 
     /* Copied in place, and the button says so for a moment rather than
        opening a bar or a sheet over the card it belongs to. */
-    var hb = card.querySelector('[data-a="hint"]');
-    if (hb) {
+    Array.prototype.forEach.call(card.querySelectorAll('[data-a="hint"]'), function (hb) {
       var line = hb.parentNode;
       var id = line.getAttribute('data-hint');
       var body = line.querySelector('.hinttext');
@@ -2339,10 +2421,33 @@
         body.hidden = !body.hidden;
         hb.setAttribute('aria-expanded', String(!body.hidden));
       });
-    }
+      /* Hover is a preview; click pins it. Pointer events also cover a stylus,
+         while the same button remains the complete interaction on touch. */
+      hb.addEventListener('pointerenter', function () { body.hidden = false; });
+      hb.addEventListener('pointerleave', function () {
+        if (hb.getAttribute('aria-expanded') !== 'true') body.hidden = true;
+      });
+    });
 
     on('copylink', function () {
       window.ADspaceCopy.to(this, creatorLink((o.creators || {}).access_code));
+    });
+
+    Array.prototype.forEach.call(card.querySelectorAll('[data-a="removefile"]'), function (button) {
+      button.addEventListener('click', function () {
+        var file = button.closest('[data-file]');
+        var id = file && file.getAttribute('data-file');
+        if (!id) return;
+        db.from('campaign_deliverables').update({ removed_at: new Date().toISOString() })
+          .eq('id', id).then(function (r) {
+            if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+            file.remove();
+            undoBar('Submission removed.', function () {
+              db.from('campaign_deliverables').update({ removed_at: null }).eq('id', id)
+                .then(function () { loadOptions(); });
+            });
+          });
+      });
     });
 
     var menu = card.querySelector('[data-menu]');
@@ -2363,6 +2468,11 @@
     // The header is the fold target; its buttons keep their own jobs.
     var body = card.querySelector('[data-body]');
     var foldBtn = card.querySelector('[data-a="fold"]');
+    var visitInput = card.querySelector('[data-f="visit_date"]');
+    var dueInput = card.querySelector('[data-f="submission_due"]');
+    if (visitInput && dueInput) visitInput.addEventListener('change', function () {
+      if (this.value) dueInput.value = addDays(this.value, 7);
+    });
     if (foldBtn) card.querySelector('.kcard-head').addEventListener('click', function (e) {
       if (e.target.closest('button') && e.target.closest('button') !== foldBtn) return;
       var show = body.hidden;
@@ -2859,9 +2969,11 @@
   $('bulkCancel').addEventListener('click', function () { $('bulkBox').hidden = true; });
 
   function bulkValues() {
+    var day = $('bulkDate').value || null;
     return {
-      visit_date: $('bulkDate').value || null,
-      visit_time: ($('bulkTime').value || '').trim() || null
+      visit_date: day,
+      visit_time: ($('bulkTime').value || '').trim() || null,
+      submission_due: day ? addDays(day, 7) : null
     };
   }
 

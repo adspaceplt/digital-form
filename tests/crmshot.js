@@ -36,7 +36,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.clients.length > 2) return
   await p.screenshot({ path: process.argv[2] + '/d-crm-list.png' });
   await p.locator('#crmList .crm-row').first().click(); await p.waitForTimeout(800);
   await p.screenshot({ path: process.argv[2] + '/d-crm-client.png', fullPage: true });
-  await p.locator('#crmBillToggle').click(); await p.waitForTimeout(300);
+  await p.locator('#crmTabs [data-pane="billing"]').click(); await p.waitForTimeout(300);
   await p.locator('#crmBillBody').screenshot({ path: process.argv[2] + '/d-billing.png' });
   await p.locator('#crmAddContact').click(); await p.waitForTimeout(300);
   await p.locator('#crmContactBox').screenshot({ path: process.argv[2] + '/d-contactform.png' });
