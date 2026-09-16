@@ -203,6 +203,17 @@ const say = s => console.log(s);
   check('the hand-in closes once it is ours', await p.locator('[data-a="submit"]').count() === 0);
   check('and a handed-in file can no longer be pulled back off',
     await p.locator('.filecard [data-a="rm"]').count() === 0);
+  /* A submitted file is a receipt, not a thing to handle: the page can play
+     none of it, so a wall of 9:16 tiles spent the screen saying nothing. */
+  check('a submitted file is an attachment line, not a tile',
+    await p.locator('.filepins .filepin').count() === 1 &&
+    await p.locator('.filecard').count() === 0,
+    (await p.locator('.filepins .filepin').count()) + ' pins, ' +
+    (await p.locator('.filecard').count()) + ' tiles');
+  check('and the line names the file and opens it',
+    /cover\.jpg/.test(await p.locator('.filepin').first().innerText()) &&
+    (await p.locator('.filepin').first().getAttribute('target')) === '_blank',
+    await p.locator('.filepin').first().innerText());
   check('and the card says where it now is', after.includes('under review'),
     after.replace(/\n/g, ' | '));
 
@@ -213,8 +224,8 @@ const say = s => console.log(s);
   check('the client is told Pending draft, never Your approval',
     beforeRelease.includes('Pending draft') && !beforeRelease.includes('Your approval'),
     beforeRelease.replace(/\n/g, ' | ').slice(0, 200));
-  check('and has nothing to review yet',
-    await p.locator('.inline-review').count() === 0);
+  check('and has nothing to decide on yet',
+    await p.locator('.approve').count() === 0);
 
   // The team releases it. Only now is it theirs to decide on.
   await p.evaluate(() => {
@@ -226,11 +237,19 @@ const say = s => console.log(s);
   check('once released the client is asked to approve',
     released.includes('Reviewing') && released.includes('Your approval'),
     released.replace(/\n/g, ' | ').slice(0, 200));
-  check('and the review controls are inline', await p.locator('.inline-review').count() === 1);
-  const reviewCard = await p.locator('.booking:has(.inline-review)').innerText();
-  check('the card shows the creator\'s own file, not a second review sheet',
-    reviewCard.includes('cover.jpg'), reviewCard.replace(/\n/g, ' | ').slice(0, 200));
-  check('and the caption they wrote', reviewCard.includes('New launch at Laman Citra'));
+  /* The decision is on the card, beside the work, the way Content Review
+     decides on a post. There is no window to open first and none to dismiss. */
+  check('and the decision is on the card itself', await p.locator('.approve').count() === 1);
+  check('with Approve and Request changes, and nothing to open first',
+    await p.locator('.approve [data-act="approve"]').count() === 1 &&
+    await p.locator('.approve [data-act="changes"]').count() === 1 &&
+    await p.locator('#draftSheet').count() === 0);
+  const decCard = await p.locator('.booking:has(.approve)').innerText();
+  check('the card shows the creator\'s own file, not a pasted link',
+    await p.locator('.client-draft-preview img, .client-draft-preview video').count() > 0 &&
+    await p.locator('.client-draft-preview a').count() === 0,
+    decCard.replace(/\n/g, ' | ').slice(0, 200));
+  check('and the caption they wrote', decCard.includes('New launch at Laman Citra'));
 
   // Back to the creator's page for the rest of the run.
   await p.goto('http://127.0.0.1:8899/creator/', { waitUntil: 'networkidle' });
@@ -254,6 +273,30 @@ const say = s => console.log(s);
     (await p.locator('#workList').innerText()).includes('payment details'));
   check('and it points at AP01', /ap01/i.test(await p.locator('[data-a="pay"]').first().getAttribute('href')),
     await p.locator('[data-a="pay"]').first().getAttribute('href'));
+
+  /* ---- A finished booking asks how it went, and stops asking for money ----- */
+  await p.evaluate(() => {
+    window.__DB.campaign_options.find(o => o.id === 'oA').state = 'completed';
+    window.__persist();
+  });
+  await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(800);
+  const done = await p.locator('#workList').innerText();
+  check('the payment form leaves once the booking is completed',
+    done.indexOf('payment details') < 0 && await p.locator('[data-a="pay"]').count() === 0,
+    done.replace(/\n/g, ' | ').slice(0, 160));
+  check('and the creator is asked how the job went',
+    await p.locator('.booking-rate .star').count() === 5);
+  await p.locator('.booking-rate .star[data-star="4"]').click();
+  await p.waitForTimeout(600);
+  check('their rating is recorded', await p.evaluate(() =>
+    window.__DB.campaign_options.find(o => o.id === 'oA').creator_rating) === 4,
+    String(await p.evaluate(() => window.__DB.campaign_options.find(o => o.id === 'oA').creator_rating)));
+  check('and four of the five read as given',
+    await p.locator('.booking-rate .star.is-on').count() === 4,
+    String(await p.locator('.booking-rate .star.is-on').count()));
+  await p.reload({ waitUntil: 'networkidle' }); await p.waitForTimeout(800);
+  check('and it is still there on the next visit',
+    await p.locator('.booking-rate .star.is-on').count() === 4);
 
   // ---- A link signs them in in one tap, and drops the code from the address --
   await p.evaluate(() => { try { localStorage.clear(); } catch (e) {} });

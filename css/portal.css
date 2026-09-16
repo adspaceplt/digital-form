@@ -2274,9 +2274,17 @@ body.is-plain .topbar { background: var(--chrome); }
    booking's step was something read from which card it sat in rather than from
    a column. The card is still the record — the steps open inside it — it just
    stops being a card, exactly as the clients directory stopped being three. */
+/* The register clips its own rows. Each `.kcard` inside carries a white
+   background and `border-radius: 0`, so the last row painted a square edge
+   over the two rounded corners the register draws — and the open row's sunk
+   step backgrounds painted over them again. Rounding the row's last child
+   chased the symptom and missed whichever element actually owned the bottom
+   edge (the head when folded, the body when open, a step inside the body).
+   The row ⋯ menus are positioned on the viewport by `ADspaceMenu.place()`, so
+   nothing here clips them. */
 .bookreg {
   background: var(--card); border: 1px solid var(--line);
-  border-radius: var(--radius); margin-bottom: 12px;
+  border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
 }
 .bookreg-head, .bookreg .kcard-head {
   display: grid; align-items: center; gap: 0 12px;
@@ -2301,24 +2309,6 @@ body.is-plain .topbar { background: var(--chrome); }
    the row's own left rule rather than a card border. */
 .bookreg .kcard.is-waiting { border-left: 3px solid var(--warn); }
 .bookreg .kcard > *:last-child { border-radius: 0; }
-.bookreg .kcard:last-child > *:last-child {
-  border-bottom-left-radius: calc(var(--radius) - 1px);
-  border-bottom-right-radius: calc(var(--radius) - 1px);
-}
-/* The final row has two different bottom edges: its header when folded and
-   its body when open. Rounding only `*:last-child` always selected the hidden
-   body, leaving the visible folded header square. When open, merely rounding
-   the body did not clip the sunk step backgrounds inside it, so those also
-   painted square corners over the register. Keep overflow visible on the
-   card itself for its actions menu, and clip only the body that owns the
-   lower corners. */
-.bookreg .kcard:last-child.is-folded > .kcard-head {
-  border-bottom-left-radius: calc(var(--radius) - 1px);
-  border-bottom-right-radius: calc(var(--radius) - 1px);
-}
-.bookreg .kcard:last-child > .kcard-body {
-  overflow: hidden;
-}
 .kcard-lead { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .kcard-tags { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; min-width: 0; }
 .kcard-act { display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
@@ -2601,22 +2591,10 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 .booking-results b { font-weight: 600; color: var(--ink-soft); }
 .booking-cta { margin-top: 11px; }
-.inline-review {
-  display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(180px, .65fr);
-  gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft);
-}
-.inline-review .field-label { margin: 0; }
-.inline-review .field-label .input { display: block; width: 100%; margin-top: 6px; }
-.inline-review-actions, .inline-review > .msg { grid-column: 1 / -1; }
-.inline-review-actions { margin: 0; }
 
 @media (max-width: 560px) {
   .prod-sum { flex: 1 1 100%; white-space: normal; }
   .booking-cta { width: 100%; }
-  .inline-review { grid-template-columns: minmax(0, 1fr); }
-  .inline-review-actions, .inline-review > .msg { grid-column: auto; }
-  .inline-review-actions { flex-direction: column; }
-  .inline-review-actions .btn { width: 100%; }
 }
 
 /* Backups are part of the selection, so their count sits with the count. */
@@ -3627,6 +3605,11 @@ body.no-remove #campDangerRow,
 body.no-remove .kmenu-item[data-a="del"].is-danger:not([data-soft]) { display: none !important; }
 body.no-billing #crmTabs [data-needs-billing],
 body.no-billing .rec-pane[data-pane="billing"] { display: none !important; }
+/* Voiding a verified letter reverses a confirmation, so it is its own
+   capability rather than a corner of Clients. The database checks it again
+   when the button is pressed; this only stops the screen offering it. */
+body.no-docvoid .kmenu-item[data-a="void"] { display: none !important; }
+body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; }
 @media (pointer: coarse) {
   .select-sm { min-height: var(--ctl-h); }
   .perm input { width: 22px; height: 22px; }
@@ -3849,11 +3832,47 @@ body.no-billing .rec-pane[data-pane="billing"] { display: none !important; }
   .hintbtn { width: 44px; height: 44px; margin-top: -10px; margin-bottom: -10px; font-size: 13px; }
 }
 
+/* A deadline is a caution, not an action, so it stopped being blue: blue on
+   this page means "press this", and a date nobody can press was borrowing the
+   one colour that says so. Amber while it is still ahead, red once it has
+   gone, so the two states cannot be mistaken for each other. */
 .due-countdown {
-  margin: 10px 0 0; padding: 8px 10px; border-left: 3px solid var(--action);
-  background: var(--sunk); color: var(--ink); font-size: 13px; font-weight: 600;
+  margin: 10px 0 0; padding: 8px 10px; border-left: 3px solid var(--warn);
+  background: var(--warn-bg); color: var(--warn); font-size: 13px; font-weight: 600;
 }
-.due-countdown.is-late { border-color: var(--warn); background: var(--warn-bg); color: var(--warn); }
+.due-countdown.is-late { border-color: var(--err); background: var(--err-bg); color: var(--err); }
+/* A submitted file is a receipt, not a thing to handle: one line, the mark
+   that says it is an attachment, the name and how big it was. */
+.filepins { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.filepin {
+  display: flex; align-items: center; gap: 9px; min-height: var(--ctl-h);
+  padding: 0 12px; border: 1px solid var(--line); border-radius: var(--radius-sm);
+  background: var(--card); color: var(--ink); text-decoration: none;
+  transition: border-color var(--t) var(--ease-out);
+}
+@media (hover: hover) { .filepin:hover { border-color: var(--ink); } }
+.filepin:active { transform: scale(.97); }
+.filepin svg { width: 16px; height: 16px; flex: 0 0 auto; color: var(--ink-mute); }
+.filepin-name { flex: 1 1 auto; min-width: 0; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.filepin-size { flex: 0 0 auto; font-size: 12px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+
+/* How the job went. Five targets, nothing to type, and the filled state is
+   the accent this portal keeps for something that is true rather than
+   something to press. */
+.booking-rate { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.stars { display: flex; gap: 2px; margin-top: 6px; }
+.star {
+  width: var(--ctl-h); height: var(--ctl-h); padding: 0; border: 0; background: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--line-ctl); cursor: pointer;
+  transition: color var(--t) var(--ease-out), transform var(--t-fast) var(--ease-out);
+}
+.star svg { width: 24px; height: 24px; fill: currentColor; }
+.star.is-on { color: var(--warn); }
+@media (hover: hover) { .star:hover { color: var(--warn); } }
+.star:active { transform: scale(.9); }
+.booking-rate .msg:empty { display: none; }
+
 .booking-caption { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
 .booking-caption p, .client-draft-preview .draft-caption p { margin: 4px 0 0; line-height: 1.55; white-space: normal; }
 .client-draft-preview { display: grid; gap: 12px; margin-top: 12px; }
@@ -3871,6 +3890,19 @@ body.no-billing .rec-pane[data-pane="billing"] { display: none !important; }
   .client-draft-media { grid-template-columns: minmax(0, 1fr); }
   .client-draft-media video, .client-draft-media img { width: 100%; max-height: 72vh; }
 }
+
+/* The decision sits on the card it belongs to, so it takes the card's own
+   gutter rather than the approval component's 16px inset, and the hairline is
+   what separates the work above from the answer below. Everything else about
+   it — the blue Approve, the quiet Request changes, the note that opens under
+   them — is the component Content Review already uses. */
+.booking > .approve { padding: 14px 0 0; margin-top: 12px; }
+.approve-state.is-err { color: var(--err); }
+/* What the client decided, kept on the card once the step has moved on. The
+   same line Content Review leaves under a post, so a decision is recorded the
+   same way on both client pages. */
+.booking-decided { margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.booking > .approve-note { margin-top: 8px; }
 
 /* ==========================================================================
    SOFT PRECISION PRIMITIVES

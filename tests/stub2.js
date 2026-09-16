@@ -493,6 +493,7 @@
           planned_publish: o.planned_publish, revision_round: o.revision_round,
           change_note: o.state === 'changes' ? o.drop_reason : null,
           caption: o.draft_caption, submitted_at: o.submitted_at,
+          rating: o.creator_rating,
           can_deliver: CR_DELIVER.indexOf(o.state) > -1,
           files: DB.campaign_deliverables.filter(function (d) {
             return d.option_id === o.id && !d.removed_at;
@@ -580,7 +581,14 @@
           planned_publish: o.planned_publish,
           profiles: DB.creator_profiles.filter(function (p) { return p.creator_id === cr.id; })
                      .map(function (p) { return { platform: p.platform, url: p.url }; }),
-          posts: DB.option_posts.filter(function (p) { return p.option_id === o.id; })
+          posts: DB.option_posts.filter(function (p) { return p.option_id === o.id; }),
+          // The client's last verdict, withheld with the draft it is about.
+          review: released ? (function () {
+            var rs = DB.option_reviews.filter(function (r) { return r.option_id === o.id; });
+            var last = rs[rs.length - 1];
+            return last ? { decision: last.decision, reviewer: last.reviewer,
+                            note: last.note, at: last.created_at } : null;
+          })() : null
         };
       });
       // The same gate the SQL carries: no invoice until a creator is confirmed.
@@ -708,14 +716,33 @@
       }
       var n = oo.revision_round || 0;
       DB.option_reviews.push({ option_id: oo.id, round: Math.max(n, 1),
-        decision: args.p_decision, note: args.p_note, reviewer: args.p_reviewer });
+        decision: args.p_decision, note: args.p_note, reviewer: args.p_reviewer,
+        created_at: new Date().toISOString() });
       if (args.p_decision === 'approved') oo.state = 'scheduled';
       else {
         oo.state = 'changes'; oo.revision_round = Math.max(n, 1) + 1;
         oo.changes_by = 'client';       // theirs, so their page keeps the chip
       }
+      // The client's verdict is the one campaign event nobody on the team
+      // witnesses, so the real function writes it to the activity record too.
+      DB.activity_log.push({
+        id: 'al' + (DB.activity_log.length + 1),
+        actor: String(args.p_reviewer || '').trim() || 'Client',
+        action: 'campaign.review',
+        subject: (DB.campaigns.filter(function (c) { return c.id === oo.campaign_id; })[0] || {}).title,
+        detail: args.p_decision === 'approved' ? 'Approved' : 'Changes requested',
+        created_at: new Date().toISOString()
+      });
       persist();
       return Promise.resolve({ data: { ok: true, decision: args.p_decision }, error: null });
+    }
+    if (name === 'creator_rate') {
+      var ro = DB.campaign_options.filter(function (x) { return x.id === args.p_option; })[0];
+      if (!ro) return Promise.resolve({ data: { error: 'not-found' }, error: null });
+      if (ro.state !== 'completed') return Promise.resolve({ data: { error: 'closed' }, error: null });
+      ro.creator_rating = args.p_stars;
+      persist();
+      return Promise.resolve({ data: { ok: true, rating: args.p_stars }, error: null });
     }
     return Promise.resolve({ data: null, error: null });
   }

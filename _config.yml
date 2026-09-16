@@ -1,0 +1,20 @@
+# What GitHub Pages publishes at digital.adspace.me.
+#
+# Everything in this repository was being served: the test harness, the
+# database schema, the working notes. None of it is part of the site, all of it
+# was reachable by anyone who guessed a path, and a search engine will index
+# whatever it can reach. The site is the pages and the assets they load; the
+# rest is how the site is built and has no business being downloadable from it.
+#
+# This governs the published site only. The repository itself is public, so
+# these files are still readable on github.com and in its history; only making
+# the repository private changes that.
+exclude:
+  - tests
+  - supabase
+  - docs
+  - CLAUDE.md
+  - DESIGN.md
+  - STANDARD.md
+  - README.md
+  - .gitignore

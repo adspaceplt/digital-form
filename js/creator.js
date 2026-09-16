@@ -66,6 +66,9 @@
 
       payHead: 'Payment details', payLine: 'Approved. Please complete your payment details.',
       payGo: 'Fill in the form',
+      rateHead: 'Your experience',
+      rateStar: function (n) { return n + ' out of 5'; },
+      rateThanks: 'Thank you.',
       ended: 'This booking has ended.',
       nextUp: {
         confirmed: 'We will confirm the shoot date with you.',
@@ -112,6 +115,9 @@
       failOne: '{file} 上传失败，请重试。',
       failMany: '{n} 个文件上传失败，请重试。',
 
+      rateHead: '合作体验',
+      rateStar: function (n) { return '5 星中的 ' + n + ' 星'; },
+      rateThanks: '感谢您的评分。',
       payHead: '付款资料', payLine: '已通过。请填写您的付款资料。',
       payGo: '填写表单',
       ended: '此合作已结束。',
@@ -177,6 +183,8 @@
     $('stateTitle').textContent = title;
     $('stateText').textContent = text;
     $('codeRow').hidden = !(opts && opts.ask);
+    // No session behind a cover, so nothing to sign out of.
+    if ($('signOutBtn')) $('signOutBtn').hidden = true;
     $('stateMsg').textContent = '';
     $('stateMsg').className = 'msg';
     if (opts && opts.ask) setTimeout(function () { $('codeInput').focus(); }, 60);
@@ -222,6 +230,7 @@
     $('whoLine').textContent = '';
     if (window.ADspaceChrome) window.ADspaceChrome.preparedFor(t().preparedFor, cr.name || '');
     $('signOutBtn').querySelector('span').textContent = t().signOut;
+    $('signOutBtn').hidden = false;
 
     var rows = feed.bookings || [];
     $('workHead').hidden = !rows.length;
@@ -377,20 +386,73 @@
         (b.caption && !b.can_deliver ? '<div class="booking-caption"><div class="kstep-title">' +
           esc(t().captionLabel) + '</div><p>' + esc(b.caption).replace(/\n/g, '<br>') + '</p></div>' : '') +
         (b.can_deliver ? deliverHtml(b) : '') +
-        (payDue(b.state) ? payHtml() : ''));
+        (payDue(b.state) ? payHtml() : '') +
+        (b.state === 'completed' ? rateHtml(b) : ''));
 
     if (b.can_deliver) wireDeliver(card, b);
     if (payDue(b.state)) {
       card.querySelector('[data-a="pay"]').setAttribute('href', (window.ADSPACE_ORG && window.ADSPACE_ORG.ap01) || '/ap01.html');
     }
+    if (b.state === 'completed') wireRate(card, b);
     return card;
   }
 
   /* The payment form is named once the work is approved, not the moment it is
      handed in: a creator who has to reshoot would otherwise have filed payment
      details against work nobody has accepted, and the correction lands in the
-     ledger. */
-  function payDue(s) { return ['scheduled', 'posted', 'completed'].indexOf(s) > -1; }
+     ledger. It leaves again at `completed`, because by then the form has been
+     filled and the booking is closed: a standing call to action on a finished
+     job reads as something still owed. */
+  function payDue(s) { return ['scheduled', 'posted'].indexOf(s) > -1; }
+
+  /* What the last block on a finished booking asks. The job is over and the
+     payment form has gone, so the one thing still worth a creator's tap is
+     how it went for them. Five states and nothing to type: a comment box on
+     this page would be a second inbox nobody reads. */
+  function rateHtml(b) {
+    var given = Number(b.rating || 0);
+    var stars = '';
+    for (var i = 1; i <= 5; i++) {
+      stars += '<button class="star' + (i <= given ? ' is-on' : '') + '" type="button" ' +
+        'data-star="' + i + '" role="radio" aria-checked="' + (i === given) + '" ' +
+        'aria-label="' + esc(t().rateStar(i)) + '">' +
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8z"/></svg>' +
+        '</button>';
+    }
+    return '<div class="booking-rate"><div class="kstep-title">' + esc(t().rateHead) + '</div>' +
+      '<div class="stars" role="radiogroup" aria-label="' + esc(t().rateHead) + '">' + stars + '</div>' +
+      '<div class="msg" data-ratemsg></div></div>';
+  }
+
+  function wireRate(card, b) {
+    var box = card.querySelector('.booking-rate');
+    if (!box) return;
+    var note = box.querySelector('[data-ratemsg]');
+    box.addEventListener('click', function (e) {
+      var btn = e.target.closest && e.target.closest('[data-star]');
+      if (!btn) return;
+      var n = Number(btn.getAttribute('data-star'));
+      Array.prototype.forEach.call(box.querySelectorAll('[data-star]'), function (s) {
+        var v = Number(s.getAttribute('data-star'));
+        s.classList.toggle('is-on', v <= n);
+        s.setAttribute('aria-checked', String(v === n));
+      });
+      db.rpc('creator_rate', { p_code: code, p_option: b.id, p_stars: n }).then(function (r) {
+        var d = (r && r.data) || {};
+        if ((r && r.error) || d.error) {
+          note.className = 'msg err';
+          note.textContent = t().failText;
+          return;
+        }
+        b.rating = n;
+        note.className = 'msg ok';
+        note.textContent = t().rateThanks;
+      }).catch(function () {
+        note.className = 'msg err';
+        note.textContent = t().failText;
+      });
+    });
+  }
 
   function payHtml() {
     return '<div class="booking-pay"><div class="kstep-title">' + esc(t().payHead) + '</div>' +
@@ -403,14 +465,45 @@
     return String(f.name || '').split('.').pop().toUpperCase() || 'FILE';
   }
 
+  /* Two shapes, because the file is doing two different jobs. While the
+     creator is still assembling a hand-in it is a thing they are handling —
+     tiles they can look over and take back off. Once it is submitted it is a
+     receipt: the page cannot play a 300 MB video or open a PDF inside a
+     card, so a wall of 9:16 squares showing a file type and a truncated name
+     spent most of the screen saying nothing. It becomes an attachment line,
+     which is what it is. */
   function filesHtml(b) {
     var files = b.files || [];
     if (!files.length) return '';
+    var body = b.can_deliver
+      ? '<div class="filegrid" data-files>' + files.map(function (f) {
+          return fileHtml(f, true);
+        }).join('') + '</div>'
+      : '<div class="filepins" data-files>' + files.map(pinHtml).join('') + '</div>';
     return '<div class="booking-files"><div class="kstep-title">' +
-      esc(b.can_deliver ? t().addFiles : t().filesHead) + '</div>' +
-      '<div class="filegrid" data-files>' + files.map(function (f) {
-        return fileHtml(f, b.can_deliver);
-      }).join('') + '</div></div>';
+      esc(b.can_deliver ? t().addFiles : t().filesHead) + '</div>' + body + '</div>';
+  }
+
+  /* Kilobytes are what a phone reports about a file it has sent, and the size
+     is the one fact that says a 40 MB video and a stray 2 KB screenshot are
+     not the same hand-in. */
+  function sizeOf(bytes) {
+    var n = Number(bytes || 0);
+    if (!n) return '';
+    if (n >= 1048576) return Math.round(n / 1048576) + ' MB';
+    return Math.max(1, Math.round(n / 1024)) + ' KB';
+  }
+
+  function pinHtml(f) {
+    var size = sizeOf(f.bytes);
+    return '<a class="filepin" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+        'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M21 11.5 12.5 20a5 5 0 0 1-7-7l8-8a3.3 3.3 0 0 1 4.7 4.7l-8 8a1.7 1.7 0 0 1-2.4-2.4l7.3-7.3"/>' +
+      '</svg>' +
+      '<span class="filepin-name">' + esc(f.name) + '</span>' +
+      (size ? '<span class="filepin-size">' + esc(size) + '</span>' : '') +
+    '</a>';
   }
 
   /* Taking a file back off is theirs only while we are still waiting for the
@@ -703,6 +796,11 @@
     forgetBtn.className = 'pill';
     forgetBtn.id = 'signOutBtn'; forgetBtn.type = 'button';
     forgetBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M12 4h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/></svg><span></span>';
+    /* Named and hidden from the start. Its label was only written once a
+       booking painted, so the sign-in cover carried an icon-only button with
+       no name, offering to sign out of a session nobody had yet. */
+    forgetBtn.querySelector('span').textContent = t().signOut;
+    forgetBtn.hidden = true;
     chromeActions.appendChild(forgetBtn);
   }
   $('signOutBtn').addEventListener('click', function () { forget(); askCode(); });

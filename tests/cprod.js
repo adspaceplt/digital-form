@@ -59,29 +59,48 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   say('invoice link: visible=' + await p.locator('#amountPdf').isVisible() + ' text="' + await p.locator('#amountPdf').innerText() + '" href=' + await p.locator('#amountPdf').getAttribute('href'));
 
   say('=== draft review ===');
-  say('review controls are inline: ' + await p.locator('.booking:has(.inline-review)').count());
-  say('drive link: ' + await p.locator('.booking:has(.inline-review) .client-draft-preview a').getAttribute('href'));
-  await p.locator('[data-review="changes"]').click();
+  /* The decision is on the card. No button opens a window over it first, so
+     what the client reads and what they press are the same surface. */
+  const dec = p.locator('.booking:has(.approve) .approve');
+  say('decided in place, no sheet: ' + await p.locator('.approve').count() +
+      ' · windows to open first: ' + await p.locator('#draftSheet').count());
+  say('draft shown on the card: ' + await p.locator('.booking .client-draft-preview').count() +
+      ' · link out: ' + await p.locator('.client-draft-preview a').getAttribute('href'));
+  await dec.locator('[data-act="changes"]').click();
   await p.waitForTimeout(250);
-  say('changes without a note: ' + await p.locator('[data-review-msg]').innerText());
-  await p.fill('[data-review-note]', 'Please cut the intro and show the facade earlier.');
-  await p.fill('[data-review-by]', 'Wei Ling');
-  await p.locator('[data-review="changes"]').click();
+  say('note box opens under the buttons: ' + await dec.locator('.changebox.is-open').count());
+  await dec.locator('[data-act="send"]').click();
+  await p.waitForTimeout(250);
+  say('changes without a note: ' + await dec.locator('.approve-state').innerText());
+  await dec.locator('.textarea').fill('Please cut the intro and show the facade earlier.');
+  /* The name is asked once, at the moment somebody decides, and kept. A field
+     on every card asked it of a reader who was not deciding anything. */
+  p.once('dialog', d => d.accept('Wei Ling'));
+  await dec.locator('[data-act="send"]').click();
   await p.waitForTimeout(900);
   say('state after changes: ' + await p.evaluate(() => window.__DB.campaign_options[0].state));
   say('round now: ' + await p.evaluate(() => window.__DB.campaign_options[0].revision_round));
   say('review logged: ' + await p.evaluate(() => JSON.stringify(window.__DB.option_reviews[0])));
+  say('written to the activity record: ' + await p.evaluate(() =>
+    JSON.stringify((window.__DB.activity_log || []).filter(a => a.action === 'campaign.review'))));
   say('chip now: ' + (await p.locator('.chip-state').allInnerTexts()).join(' | '));
+  say('and the card says who asked: ' + await p.locator('.booking-decided').first().innerText());
 
   say('=== approve path ===');
   await p.evaluate(() => { window.__DB.campaign_options[0].state = 'reviewing'; window.__persist(); });
   await p.reload({ waitUntil: 'networkidle' });
   await p.waitForTimeout(700);
-  say('reviewing card facts: ' + (await p.locator('.booking:has(.inline-review) .booking-facts').innerText()).replace(/\n/g, ' | '));
-  await p.locator('[data-review="approved"]').click();
+  say('reviewing card facts: ' + (await p.locator('.booking:has(.approve) .booking-facts').innerText()).replace(/\n/g, ' | '));
+  /* The name is remembered from the round above, so Approve goes straight
+     through: a second prompt here would fail the test rather than be answered. */
+  let asked = 0;
+  p.on('dialog', d => { asked++; d.accept('Should not be asked'); });
+  await p.locator('.booking:has(.approve) [data-act="approve"]').click();
   await p.waitForTimeout(900);
+  say('asked for the name a second time: ' + asked);
   say('state after approve: ' + await p.evaluate(() => window.__DB.campaign_options[0].state));
   say('chips now: ' + (await p.locator('.chip-state').allInnerTexts()).join(' | '));
+  say('approval kept on the card: ' + await p.locator('.booking-decided').first().innerText());
 
   await p.screenshot({ path: process.argv[2] + '/cprod.png', fullPage: true });
 

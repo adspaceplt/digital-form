@@ -293,14 +293,14 @@ create table public.campaign_options (
   is_replacement boolean default false, added_at timestamptz default now(), position int default 0,
   visit_date date, visit_time text, visit_location text, visit_pic text, visit_pic_phone text,
   tracking_no text, draft_url text, revision_round integer not null default 0,
-  planned_publish date, drop_reason text);
+  planned_publish date, drop_reason text, submission_due date);
 create table public.creator_profiles (id uuid primary key default gen_random_uuid(),
   creator_id uuid references public.creators(id), platform text, url text);
 drop table if exists public.option_reviews cascade;
 create table public.option_reviews (
   id uuid primary key default gen_random_uuid(),
   option_id uuid references public.campaign_options(id), round int, decision text,
-  note text, reviewer text, at timestamptz not null default now());
+  note text, reviewer text, created_at timestamptz not null default now());
 create table public.option_posts (id uuid primary key default gen_random_uuid(),
   option_id uuid references public.campaign_options(id), platform text, post_url text,
   published_at date, window_days int, impressions bigint, engagements bigint, views bigint,
@@ -466,6 +466,43 @@ create or replace function public.is_team() returns boolean language sql stable 
       === 'Reshoot the opening two seconds');
   check('while the client is still told Pending draft', shown() === 'pending_draft', shown());
   check('and is sent none of it', files() === '0');
+
+  /* ---- The client's decision leaves a record, and the creator can rate us --
+     Approving used to move the booking to Scheduled and say nothing else: no
+     activity row, and nothing on the client's own card naming who had
+     approved it. The migration adds both, plus the rating a creator gives
+     once the booking is finished. */
+  const decide = fs.readFileSync(
+    T + '/../supabase/migrations/2026-09-19-client-decision-record-and-creator-rating.sql', 'utf8');
+  sql(`drop table if exists public.activity_log cascade`);
+  sql(`create table public.activity_log (
+         id uuid primary key default gen_random_uuid(), actor text, action text not null,
+         subject text, detail text, created_at timestamptz not null default now())`);
+  runFile('decide.sql', decide);
+  runFile('decide.sql', decide);
+  console.log('ok   the decision migration applies on its own, and again');
+
+  sql(`update public.campaign_options set state = 'reviewing', revision_round = 1`);
+  check('the client approving is recorded as their decision',
+    /"ok": true/.test(sql(`select public.review_draft('TOK1', '${opt}', 'approved', null, 'Wei Ling')`)));
+  check('and lands in the activity record under their own name',
+    sql(`select actor || '|' || action from public.activity_log
+          where action = 'campaign.review'`) === 'Wei Ling|campaign.review',
+    sql(`select coalesce(string_agg(actor || '|' || action, ','), 'none') from public.activity_log`));
+  check('and the client is sent back who approved it and when',
+    sql(`select (public.get_campaign('TOK1')->'options'->0->'review'->>'decision') || '|' ||
+                (public.get_campaign('TOK1')->'options'->0->'review'->>'reviewer')`) === 'approved|Wei Ling',
+    sql(`select public.get_campaign('TOK1')->'options'->0->>'review'`));
+
+  check('a creator cannot rate a booking that is not finished',
+    /"closed"/.test(sql(`select public.creator_rate('${code}', '${opt}', 4)`)));
+  sql(`update public.campaign_options set state = 'completed'`);
+  check('and can once it is', /"ok": true/.test(sql(`select public.creator_rate('${code}', '${opt}', 4)`)));
+  check('the rating is stored and sent back to them',
+    sql(`select public.get_creator('${code}')->'bookings'->0->>'rating'`) === '4');
+  check('six stars is refused', /"range"/.test(sql(`select public.creator_rate('${code}', '${opt}', 6)`)));
+  check('and a code that is not theirs reaches nothing',
+    /"not-found"/.test(sql(`select public.creator_rate('ZZZZZZZZ', '${opt}', 3)`)));
 
   /* ---- The letter and the service are two lifecycles ---------------------
      A letter is issued for the services somebody chose, and only a verified

@@ -846,7 +846,15 @@ begin
             'published_at', pp.published_at, 'window_days', pp.window_days,
             'impressions', pp.impressions, 'engagements', pp.engagements,
             'views', pp.views, 'measured_at', pp.measured_at) order by pp.platform)
-          from option_posts pp where pp.option_id = o.id), '[]'::jsonb))
+          from option_posts pp where pp.option_id = o.id), '[]'::jsonb),
+        /* What the client last decided, so the card can say who approved it
+           and when rather than jumping to the next step with nothing to show
+           for the decision. Withheld with the draft it is about. */
+        'review', case when s.released then (
+            select jsonb_build_object('decision', r.decision, 'reviewer', r.reviewer,
+                                      'note', r.note, 'at', r.created_at)
+            from option_reviews r where r.option_id = o.id
+            order by r.created_at desc limit 1) end)
         order by o.position, o.added_at)
       from campaign_options o
       join creators cr on cr.id = o.creator_id
@@ -912,6 +920,19 @@ begin
            changes_by = 'client'
      where id = p_option;
   end if;
+
+  /* The client's decision is the one event on a campaign that nobody on the
+     team witnesses, and it was the only one the activity record never held:
+     a draft went to Reviewing and appeared as Scheduled with nothing in
+     between saying who had said yes. The reviewer's own name is the actor,
+     because a person decided it. */
+  insert into activity_log (actor, action, subject, detail)
+  select coalesce(nullif(trim(coalesce(p_reviewer, '')), ''), 'Client'),
+         'campaign.review', c.title,
+         cr.name || ' · ' ||
+         case when p_decision = 'approved' then 'Approved' else 'Changes requested' end ||
+         coalesce(': ' || nullif(trim(coalesce(p_note, '')), ''), '')
+    from creators cr where cr.id = o.creator_id;
 
   return jsonb_build_object('ok', true, 'decision', p_decision);
 end $$;
@@ -2254,6 +2275,17 @@ alter table public.campaign_options add column if not exists changes_by text;
 update public.campaign_options set changes_by = 'client'
  where state = 'changes' and changes_by is null;
 
+/* How the job went, in the creator's own words, asked once the booking is
+   finished and never before: a rating taken while the work is still being
+   judged is a rating given under pressure. One to five, theirs to change
+   while the booking stays completed, and never shown to the client. */
+alter table public.campaign_options add column if not exists creator_rating smallint;
+do $$ begin
+  alter table public.campaign_options
+    add constraint campaign_options_creator_rating_range
+    check (creator_rating is null or creator_rating between 1 and 5);
+exception when duplicate_object then null; end $$;
+
 -- A creator may upload only while we are actually waiting for their draft.
 create or replace function public.creator_can_deliver(p_state text)
 returns boolean language sql immutable as $$
@@ -2314,6 +2346,7 @@ begin
           'change_note', case when o.state = 'changes' then o.drop_reason end,
           'caption', o.draft_caption,
           'submitted_at', o.submitted_at,
+          'rating', o.creator_rating,
           'can_deliver', public.creator_can_deliver(o.state),
           'files', coalesce((
             select jsonb_agg(jsonb_build_object(
@@ -2418,6 +2451,29 @@ begin
   return jsonb_build_object('ok', true, 'files', n);
 end $$;
 
+/* How the job went. Asked only once the booking is completed, so nobody is
+   rating us while we still hold their payment, and changeable afterwards
+   because a first answer given in a hurry is not a better one. */
+create or replace function public.creator_rate(p_code text, p_option uuid, p_stars integer)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  cr creators%rowtype;
+  o  campaign_options%rowtype;
+begin
+  if p_stars is not null and (p_stars < 1 or p_stars > 5) then
+    return jsonb_build_object('error', 'range');
+  end if;
+  select * into cr from creators where access_code = upper(p_code) and active;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  select * into o from campaign_options where id = p_option and creator_id = cr.id;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  if o.state <> 'completed' then return jsonb_build_object('error', 'closed'); end if;
+
+  update campaign_options set creator_rating = p_stars where id = p_option;
+  return jsonb_build_object('ok', true, 'rating', p_stars);
+end $$;
+
 -- Asked by the sign-upload edge function before it signs anything: this code,
 -- this booking, and a step we are actually waiting on a draft for. The
 -- function builds the S3 key from the option id it checked here, so a real
@@ -2437,6 +2493,7 @@ grant execute on function public.get_creator(text) to anon, authenticated;
 grant execute on function public.creator_add_file(text, uuid, text, text, text, bigint) to anon, authenticated;
 grant execute on function public.creator_remove_file(text, uuid) to anon, authenticated;
 grant execute on function public.creator_submit(text, uuid, text) to anon, authenticated;
+grant execute on function public.creator_rate(text, uuid, integer) to anon, authenticated;
 grant execute on function public.creator_may_upload(text, uuid) to anon, authenticated;
 
 -- Taking a code back. A link forwarded to the wrong person is the only way one

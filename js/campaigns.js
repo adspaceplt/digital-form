@@ -1113,9 +1113,24 @@
     showCampPane(campPaneFromUrl());
   });
 
-  /* Bulk dates is the Schedule's action, so the button in that head opens the
-     same panel the Creators pane does. */
-  if ($('schedBulk')) $('schedBulk').addEventListener('click', function () { $('bulkToggle').click(); });
+  /* One bulk-date panel, moved to whichever pane asked for it.
+     It is markup inside the Creators pane, so Schedule's own Bulk dates
+     forwarded the click and opened the form inside a pane nobody was looking
+     at: the button appeared to do nothing, and the panel was waiting on the
+     Creators tab when somebody next opened it. A second copy of the form would
+     be two panels to keep in step, so the panel travels instead — the same
+     move the Review Canvas makes with a card's own blocks. */
+  function bulkOpen(btn) {
+    var box = $('bulkBox');
+    var head = btn && btn.closest ? btn.closest('.viewhead') : null;
+    if (!box || !head) return;
+    var moved = box.previousElementSibling !== head;
+    if (moved) head.parentNode.insertBefore(box, head.nextSibling);
+    // Moving it means somebody asked for it here; only a second press closes it.
+    box.hidden = moved ? false : !box.hidden;
+    if (!box.hidden && box.scrollIntoView) box.scrollIntoView({ block: 'nearest' });
+  }
+  if ($('schedBulk')) $('schedBulk').addEventListener('click', function () { bulkOpen(this); });
 
   function openCampaign(c, restoring) {
     // A repaint of the campaign already open keeps its panels as they are;
@@ -1684,6 +1699,9 @@
 
     var working = state.options.filter(isLive);
     $('bulkToggle').hidden = !working.length;
+    // Schedule's copy of the action answers to the same fact, or it offers a
+    // form that refuses every press with "Nothing is in production yet."
+    if ($('schedBulk')) $('schedBulk').hidden = !working.length;
     if (!working.length) $('bulkBox').hidden = true;
     $('bulkTitle').textContent = (isDelivery() ? 'Delivery' : 'Shoot') + ' date for all';
     paintRollup(working);
@@ -2948,9 +2966,7 @@
   });
 
   // ---- Bulk logistics -----------------------------------------------------
-  $('bulkToggle').addEventListener('click', function () {
-    $('bulkBox').hidden = !$('bulkBox').hidden;
-  });
+  $('bulkToggle').addEventListener('click', function () { bulkOpen(this); });
   $('bulkCancel').addEventListener('click', function () { $('bulkBox').hidden = true; });
 
   function bulkValues() {
