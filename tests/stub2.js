@@ -47,7 +47,11 @@
       { id:'t0', name:'ADspace', email:'adspacestudios@gmail.com', active:true, role:'admin', is_admin:true, can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:true, can_billing:true, can_remove:true },
       { id:'t1', name:'Qiao Rou', email:'qiaorou@adspacestudios.com', active:true, role:'sales', can_clients:true, can_review:false, can_campaigns:false, can_links:false, can_activity:false, can_billing:true, can_remove:false },
       { id:'t2', name:'Aisyah', email:'aisyah@adspacestudios.com', active:true, role:'account', can_clients:true, can_review:true, can_campaigns:true, can_links:true, can_activity:false, can_billing:true, can_remove:false }],
-    links: [], batches: []
+    links: [
+      { id:'l1', slug:'raya-2026', target_url:'https://adspacestudios.com/campaigns/raya-2026', title:'Raya landing', active:true },
+      { id:'l2', slug:'menu-hkl', target_url:'https://hkllim.com/menu?utm_source=qr&utm_medium=table-tent', title:'Table tent QR', active:true },
+      { id:'l3', slug:'old-promo', target_url:'https://adspacestudios.com/promo/2025', title:'', active:false }
+    ], batches: []
   };
   // Survive a reload, so "come back to the link later" is actually testable.
   try {

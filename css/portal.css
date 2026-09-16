@@ -3428,8 +3428,11 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   .cmdbar { flex-wrap: wrap; }
   .cmdbar-find { flex: 1 1 100%; }
   .cmdbar .select { flex: 1 1 auto; max-width: none; }
-  .cmdbar .btn { flex: 1 1 auto; }
-  .cmdbar-count { order: 9; width: 100%; }
+  /* Never full width. An action stretched across a phone is the heaviest
+     thing on the screen, sitting on top of the records somebody came to
+     read; this portal's section heads have refused that for months. */
+  .cmdbar .btn { flex: 0 0 auto; }
+  .cmdbar-count { order: 9; width: 100%; margin-left: 0; }
 }
 
 /* A bounded section, softly. One 1px hairline and a 14px corner, no shadow:
@@ -3469,3 +3472,42 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   background: var(--err-bg); border-bottom: 1px solid var(--err-line);
 }
 .errline .btn { flex: 0 0 auto; }
+
+/* The Short Links row. It was a bordered card per link, each holding the same
+   four icons, so fifty links were fifty boxes and the slug — the one thing
+   anybody scans for — had no column to sit in. */
+.link-row {
+  display: grid; align-items: center; gap: 0 12px;
+  grid-template-columns: minmax(110px, 170px) minmax(0, 1.6fr) minmax(0, 1fr) 84px auto;
+  padding: 10px 15px; border-bottom: 1px solid var(--line-soft);
+}
+.link-row:last-child { border-bottom: 0; }
+.link-row.is-off > :not(.link-act) { opacity: .55; }
+.link-slug {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px; font-weight: 600; letter-spacing: -.01em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.link-target, .link-label {
+  font-size: 13px; color: var(--ink-mute);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.link-label { color: var(--ink-soft); }
+.link-state { min-width: 0; }
+.link-act { position: relative; display: flex; gap: 4px; align-items: center; justify-content: flex-end; }
+
+@media (max-width: 640px) {
+  /* Two lines: what it is and what it does, then where it goes. */
+  .link-row {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas: "slug state act" "target target target" "label label label";
+    gap: 2px 10px; padding: 12px 15px;
+  }
+  .link-row > .link-slug   { grid-area: slug; }
+  .link-row > .link-state  { grid-area: state; }
+  .link-row > .link-act    { grid-area: act; margin-block: calc((20px - var(--ctl-h)) / 2); }
+  .link-row > .link-target { grid-area: target; }
+  .link-row > .link-label  { grid-area: label; }
+  .link-row > .link-label:empty { display: none; }
+  .crm-head.link-row { display: none; }
+}

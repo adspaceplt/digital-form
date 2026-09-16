@@ -2113,6 +2113,10 @@
       });
   }
 
+  // The ⋯ this portal draws everywhere a row hides its rarer actions.
+  var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+    '<circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
+
   var ICON = {
     pencil: '<path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/>',
     trash:  '<path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/>' +
@@ -2357,8 +2361,11 @@
     db.from('links').select('*').order('slug').then(function (r) {
       if (r.error) {
         links = [];
-        box.innerHTML = '<div class="empty">Could not load the links. ' +
-          esc(r.error.message) + '</div>';
+        box.innerHTML = '<div class="softpanel"><div class="errline">' +
+          '<b>Could not load the links.</b><span>' + esc(r.error.message) + '</span>' +
+          '<button class="btn btn-sm" data-a="retry" type="button">Try again</button>' +
+          '</div></div>';
+        box.querySelector('[data-a="retry"]').addEventListener('click', loadLinks);
         $('linkCount').textContent = '';
         return;
       }
@@ -2367,60 +2374,120 @@
     });
   }
 
-  function paintLinks() {
-    var box = $('linkList');
+  /* A slug is looked at far more often than it is changed, so the list is a
+     table with columns rather than fifty bordered cards each holding the same
+     four icons. Copy is the everyday action and stays on the row; the rest
+     move into the ⋯, where this portal already puts a rare or destructive
+     one. */
+  function linkShown() {
     var q = $('linkSearch').value.trim().toLowerCase();
-    var shown = !q ? links : links.filter(function (l) {
+    var st = $('linkState') ? $('linkState').value : '';
+    return links.filter(function (l) {
+      var live = l.active !== false;
+      if (st === 'live' && !live) return false;
+      if (st === 'paused' && live) return false;
+      if (!q) return true;
       return (l.slug + ' ' + (l.target_url || '') + ' ' + (l.title || ''))
         .toLowerCase().indexOf(q) > -1;
     });
+  }
+
+  function paintLinks() {
+    var box = $('linkList');
+    var shown = linkShown();
+    var filtered = shown.length !== links.length;
 
     $('linkCount').textContent = !links.length ? '' :
-      (q ? shown.length + ' of ' + links.length : links.length +
-        (links.length === 1 ? ' link' : ' links'));
+      (filtered ? shown.length + ' of ' + links.length
+                : links.length + (links.length === 1 ? ' link' : ' links'));
 
     box.innerHTML = '';
+    if (!links.length) {
+      box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
+        '<b>No short links yet.</b>' +
+        '<button class="btn btn-sm" data-a="first" type="button">Add the first link</button>' +
+        '</div></div>';
+      box.querySelector('[data-a="first"]').addEventListener('click', function () { openLinkForm(null); });
+      return;
+    }
     if (!shown.length) {
-      box.innerHTML = '<div class="empty">' +
-        (links.length ? 'Nothing matches that search.'
-                      : 'No links.') +
-        '</div>';
+      box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
+        '<b>No matches.</b><button class="btn btn-sm" data-a="clear" type="button">Clear the filters</button>' +
+        '</div></div>';
+      box.querySelector('[data-a="clear"]').addEventListener('click', function () {
+        $('linkSearch').value = '';
+        if ($('linkState')) $('linkState').value = '';
+        paintLinks();
+      });
       return;
     }
 
+    var table = document.createElement('div');
+    table.className = 'crm-table softpanel';
+    table.innerHTML = '<div class="crm-head link-row"><span>Short link</span>' +
+      '<span>Destination</span><span>Label</span><span></span><span></span></div>';
+
     shown.forEach(function (l) {
+      var off = l.active === false;
       var row = document.createElement('div');
-      row.className = 'slink' + (l.active === false ? ' is-off' : '');
+      row.className = 'link-row' + (off ? ' is-off' : '');
       row.innerHTML =
-        '<div class="slink-body">' +
-          '<span class="slink-slug">/' + esc(l.slug) + '</span>' +
-          (l.title ? '<span class="slink-label">' + esc(l.title) + '</span>' : '') +
-          (l.active === false ? '<span class="slink-label">· paused</span>' : '') +
-          '<span class="slink-target">' + esc(l.target_url || '') + '</span>' +
-        '</div>' +
-        '<div class="slink-actions">' +
-          iconBtn('copy',   'copy',   'Copy short link') +
-          iconBtn('qr',     'qr',     'QR codes') +
-          iconBtn('pencil', 'edit',   'Edit link') +
-          iconBtn('trash',  'del',    'Delete link', 'is-danger') +
-        '</div>';
+        '<span class="link-slug">/' + esc(l.slug) + '</span>' +
+        '<span class="link-target">' + esc(l.target_url || '') + '</span>' +
+        '<span class="link-label">' + esc(l.title || '') + '</span>' +
+        // Live is true of nearly every row, so only the exception is named.
+        '<span class="link-state">' + (off ? '<span class="tone is-warn">Paused</span>' : '') + '</span>' +
+        '<span class="link-act">' +
+          iconBtn('copy', 'copy', 'Copy short link') +
+          iconBtn('qr',   'qr',   'QR codes') +
+          '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+          '<div class="kmenu" data-menu hidden>' +
+            '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
+            '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete link</b></button>' +
+          '</div>' +
+        '</span>';
+
       row.querySelector('[data-a="copy"]').addEventListener('click', function (e) {
-        var b = e.currentTarget;
-        navigator.clipboard.writeText(shortUrl(l.slug)).then(function () {
-          b.classList.add('is-done');
-          b.querySelector('svg').innerHTML = ICON.tick;
-          setTimeout(function () {
-            b.classList.remove('is-done');
-            b.querySelector('svg').innerHTML = ICON.copy;
-          }, 1400);
-        });
+        window.ADspaceCopy.to(e.currentTarget, shortUrl(l.slug));
       });
       row.querySelector('[data-a="qr"]').addEventListener('click', function () { openQr(l); });
-      row.querySelector('[data-a="edit"]').addEventListener('click', function () { editLink(l); });
-      row.querySelector('[data-a="del"]').addEventListener('click', function () { removeLink(l); });
-      box.appendChild(row);
+      row.querySelector('[data-a="edit"]').addEventListener('click', function () {
+        shutLinkMenus(); editLink(l);
+      });
+      row.querySelector('[data-a="del"]').addEventListener('click', function () {
+        shutLinkMenus(); removeLink(l);
+      });
+      wireLinkMenu(row);
+      table.appendChild(row);
+    });
+    box.appendChild(table);
+  }
+
+  function shutLinkMenus() {
+    Array.prototype.forEach.call(document.querySelectorAll('#linkList .kmenu'), function (m) { m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll('#linkList .kmenu-btn'), function (b) {
+      b.setAttribute('aria-expanded', 'false');
     });
   }
+  function wireLinkMenu(row) {
+    var btn = row.querySelector('[data-a="menu"]');
+    var menu = row.querySelector('[data-menu]');
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = menu.hidden;
+      shutLinkMenus();
+      menu.hidden = !open;
+      btn.setAttribute('aria-expanded', String(open));
+      if (open) window.ADspaceMenu.place(btn, menu);
+    });
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('#linkList .kmenu, #linkList .kmenu-btn')) shutLinkMenus();
+  });
+  window.ADspaceMenu.onScroll(shutLinkMenus);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutLinkMenus(); });
+
+  if ($('linkState')) $('linkState').addEventListener('change', paintLinks);
 
   function openLinkForm(link) {
     editingSlug = link ? link.slug : null;

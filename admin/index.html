@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260916a">
+<link rel="stylesheet" href="/css/portal.css?v=20260916b">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,19 +28,19 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260916a"></script>
-<script src="/js/words.js?v=20260916a"></script>
-<script src="/js/copy.js?v=20260916a"></script>
-<script src="/js/menu.js?v=20260916a"></script>
-<script src="/js/api.js?v=20260916a"></script>
-<script src="/js/money.js?v=20260916a"></script>
-<script src="/js/mockups.js?v=20260916a"></script>
+<script src="/js/config.js?v=20260916b"></script>
+<script src="/js/words.js?v=20260916b"></script>
+<script src="/js/copy.js?v=20260916b"></script>
+<script src="/js/menu.js?v=20260916b"></script>
+<script src="/js/api.js?v=20260916b"></script>
+<script src="/js/money.js?v=20260916b"></script>
+<script src="/js/mockups.js?v=20260916b"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260916a" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260916b" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -1138,11 +1138,19 @@ raya-2026        https://example.com/raya"></textarea>
 
       <!-- Search, count and both actions on one line, so everything that
            changes the list is in one place and none of it is a screen away. -->
-      <div class="linksbar">
-        <input class="input" id="linkSearch" placeholder="Search slug, destination or label" aria-label="Search links">
-        <span class="muted" id="linkCount"></span>
-        <button class="btn btn-quiet btn-sm" id="showImport" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>Bulk import</button>
-        <button class="btn btn-primary" id="showAddLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
+      <div class="linksbar cmdbar">
+        <span class="cmdbar-find">
+          <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+          <input class="input input-sm" id="linkSearch" type="search" placeholder="Search slug, destination or label" aria-label="Search links">
+        </span>
+        <select class="select select-sm" id="linkState" aria-label="State">
+          <option value="">Live and paused</option>
+          <option value="live">Live</option>
+          <option value="paused">Paused</option>
+        </select>
+        <span class="cmdbar-count" id="linkCount"></span>
+        <button class="btn btn-sm btn-quiet" id="showImport" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>Bulk import</button>
+        <button class="btn btn-sm btn-primary" id="showAddLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
       </div>
 
       <div id="linkList"></div>
@@ -1251,10 +1259,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260916a"></script>
-<script src="/js/documents.js?v=20260916a"></script>
-<script src="/js/crm.js?v=20260916a"></script>
-<script src="/js/team.js?v=20260916a"></script>
-<script src="/js/campaigns.js?v=20260916a"></script>
+<script src="/js/admin.js?v=20260916b"></script>
+<script src="/js/documents.js?v=20260916b"></script>
+<script src="/js/crm.js?v=20260916b"></script>
+<script src="/js/team.js?v=20260916b"></script>
+<script src="/js/campaigns.js?v=20260916b"></script>
 </body>
 </html>
