@@ -58,6 +58,9 @@
     },
     rqKind: { upgrade: 'Upgrade', downgrade: 'Downgrade', cancel: 'Cancel', details: 'Change of details' },
     campState: { draft: 'Draft', open: 'Open for selection', production: 'In production', completed: 'Completed' },
+    /* What a campaign is called on screen when its name would render as
+       nothing. The record is never renamed behind anybody's back. */
+    untitled: 'Untitled campaign',
 
     // The actions that appear on more than one screen.
     act: {
@@ -101,6 +104,7 @@
     },
     rqKind: { upgrade: '升级', downgrade: '降级', cancel: '取消', details: '资料变更' },
     campState: { draft: '草稿', open: '待客户选择', production: '制作中', completed: '已完成' },
+    untitled: '未命名项目',
 
     act: {
       save: '保存', cancel: '取消', back: '返回', undo: '撤销',

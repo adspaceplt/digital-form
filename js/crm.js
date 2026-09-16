@@ -256,26 +256,9 @@
     }, function () { if (then) then(); });
   }
 
-  /* Loading is the shape of what is coming, not the word for it, and a read
-     that failed is not an empty list: "No clients yet." over a network fault
-     sends somebody to add a client that is already there. */
-  function skeleton(box, n) {
-    var s = '';
-    for (var i = 0; i < n; i++) s += '<div class="skel-row"></div>';
-    box.innerHTML = '<div class="softpanel"><div class="skel">' + s + '</div></div>';
-  }
-
-  /* A read that failed is not an empty list. "No contacts." over a network
-     fault sends somebody to key in a person who is already there, so the
-     failure says what could not be loaded, what the database said, and offers
-     the one thing that helps. */
-  function failLine(box, what, why, again) {
-    box.innerHTML = '<div class="softpanel"><div class="errline">' +
-      '<b>' + esc(what) + ' could not be loaded.</b>' +
-      (why ? '<span>' + esc(why) + '</span>' : '') +
-      '<button class="btn btn-sm" data-a="retry" type="button">Try again</button></div></div>';
-    box.querySelector('[data-a="retry"]').addEventListener('click', again);
-  }
+  /* Loading, empty and failed are said one way across the console. */
+  var UI = window.ADspaceState;
+  var skeleton = UI.skeleton, failLine = UI.failLine;
 
   function loadClients(then) {
     var box = $('crmList');
@@ -1219,8 +1202,15 @@
       return;
     }
     box.innerHTML = '';
+    /* A row with no name is a row nobody can pick out, and one campaign is
+       live called `0`. The record is never renamed behind anybody's back; it
+       is drawn under a stand in and stays editable in Creator Campaigns. */
+    var named = function (t) {
+      var v = String(t == null ? '' : t).trim();
+      return (!v || v === '0' || v === 'null' || v === 'undefined') ? 'Untitled campaign' : v;
+    };
     camps.forEach(function (k) {
-      box.appendChild(workRow(k.title,
+      box.appendChild(workRow(named(k.title),
         'Creator campaign · ' + k.slots + ' creator' + (k.slots === 1 ? '' : 's'),
         '/admin/?s=campaigns&campaign=' + encodeURIComponent(k.id),
         [CAMP_WORD[k.state] || k.state, W.tone(k.state)]));

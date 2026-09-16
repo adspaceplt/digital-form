@@ -675,28 +675,66 @@
       });
   }
 
+  var campFind = '', campStateFilter = 'all', campSums = {};
+  /* Loading, empty and failed are said one way across the console. */
+  var UI = window.ADspaceState;
+
   function loadCampaigns() {
+    var box = $('campCards');
+    fillCampStates();
+    if (!state.campaigns) UI.skeleton(box, 3);
     db.from('campaigns').select('*, clients(name, market, sst_applies)').order('created_at', { ascending: false })
       .then(function (r) {
-        var box = $('campCards');
         if (r.error) {
-          box.innerHTML = '<div class="empty">Could not load campaigns. ' + esc(r.error.message) + '</div>';
+          state.campaigns = null;
+          UI.failLine(box, 'Campaigns', r.error.message, loadCampaigns);
           return;
         }
-        box.innerHTML = '';
-        if (!r.data.length) {
-          box.innerHTML = '<div class="empty">No campaigns.</div>';
-          return;
-        }
+        state.campaigns = r.data || [];
         // The amount on a card is what the client is charged: the rates of
         // everyone selected or booked, plus tax, in the client's currency.
         db.from('campaign_options').select('campaign_id, rate, state').then(function (q) {
-          var sums = {};
+          campSums = {};
           (q.data || []).forEach(function (o) {
             if (CHARGED.indexOf(o.state) < 0) return;
-            sums[o.campaign_id] = (sums[o.campaign_id] || 0) + Number(o.rate || 0);
+            campSums[o.campaign_id] = (campSums[o.campaign_id] || 0) + Number(o.rate || 0);
           });
-          r.data.forEach(function (c) {
+          paintCampaigns();
+        });
+      });
+  }
+
+  function campMatch(c) {
+    if (campStateFilter !== 'all' && c.state !== campStateFilter) return false;
+    if (!campFind) return true;
+    var hay = (campName(c) + ' ' + ((c.clients || {}).name || '')).toLowerCase();
+    return hay.indexOf(campFind) >= 0;
+  }
+
+  function paintCampaigns() {
+    var box = $('campCards');
+    var all = state.campaigns || [];
+    var rows = all.filter(campMatch);
+    var count = $('campCount');
+    if (count) {
+      count.textContent = !all.length ? ''
+        : rows.length === all.length ? all.length + (all.length === 1 ? ' campaign' : ' campaigns')
+        : rows.length + ' of ' + all.length;
+    }
+    box.innerHTML = '';
+    if (!all.length) { box.innerHTML = '<div class="empty">No campaigns.</div>'; return; }
+    if (!rows.length) {
+      UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
+        campFind = ''; campStateFilter = 'all';
+        if ($('campFind')) $('campFind').value = '';
+        if ($('campStatePick')) $('campStatePick').value = 'all';
+        paintCampaigns();
+      });
+      return;
+    }
+    var sums = campSums;
+    (function (data) {
+      data.forEach(function (c) {
             var cl = c.clients || {};
             var mk = cl.market || 'MY';
             var ap = cl.sst_applies == null ? true : cl.sst_applies;
@@ -705,7 +743,7 @@
             b.className = 'bigcard';
             b.type = 'button';
             b.innerHTML =
-              '<b>' + esc(c.title) + '</b>' +
+              '<b>' + esc(campName(c)) + '</b>' +
               '<span class="muted">' + esc(cl.name || '') + '</span>' +
               '<span class="muted">' + c.slots + ' creator' + (c.slots === 1 ? '' : 's') +
                 (sub ? ' · ' + esc(MON.money2(sub + MON.taxOf(sub, mk, ap), mk)) : '') + '</span>' +
@@ -713,9 +751,25 @@
                 esc(STATE_WORD[c.state] || c.state) + '</span>';
             b.addEventListener('click', function () { openCampaign(c); });
             box.appendChild(b);
-          });
-        });
       });
+    }(rows));
+  }
+
+  if ($('campFind')) $('campFind').addEventListener('input', function () {
+    campFind = this.value.trim().toLowerCase(); paintCampaigns();
+  });
+  /* Filled from the one vocabulary, on the first load rather than at parse
+     time: `STATE_WORD` is assigned further down this file. */
+  function fillCampStates() {
+    var pick = $('campStatePick');
+    if (!pick || pick.dataset.filled) return;
+    pick.dataset.filled = '1';
+    Object.keys(STATE_WORD).forEach(function (k) {
+      var o = document.createElement('option');
+      o.value = k; o.textContent = STATE_WORD[k];
+      pick.appendChild(o);
+    });
+    pick.addEventListener('change', function () { campStateFilter = this.value; paintCampaigns(); });
   }
 
   // The states whose rate the client pays for.
@@ -801,11 +855,26 @@
     return rest ? 'AINV' + rest : null;
   }
 
+  /* A campaign is found by its name on every screen that lists one, so a name
+     that renders as nothing is a row nobody can pick out. One is live called
+     `0`, which JavaScript reads as absent everywhere it is tested for, and the
+     strings "null" and "undefined" arrive the same way from a form that was
+     handed a value it did not have. The record is never renamed behind
+     somebody's back: a row that already carries one is drawn under a stand in
+     and stays editable, and a new one is refused at the door. */
+  function badTitle(t) {
+    var v = String(t == null ? '' : t).trim();
+    return !v || v === '0' || v === 'null' || v === 'undefined';
+  }
+  function campName(c) {
+    return badTitle(c && c.title) ? 'Untitled campaign' : String(c.title).trim();
+  }
+
   $('addCamp').addEventListener('click', function () {
     var title = ($('campTitle').value || '').trim();
     var clientId = $('campClient').value;
     if (!clientId) { msg('campMsg', 'A client is required.', 'err'); return; }
-    if (!title) { msg('campMsg', 'A campaign name is required.', 'err'); return; }
+    if (badTitle(title)) { msg('campMsg', 'A campaign name is required.', 'err'); return; }
     var slots = Number($('campSlots').value || 0);
     if (!slots || slots < 1) { msg('campMsg', 'At least one creator is required.', 'err'); return; }
 
@@ -916,7 +985,7 @@
     $('campListView').hidden = true;
     setUrl();
     $('campWork').hidden = false;
-    $('campName').textContent = c.title;
+    $('campName').textContent = campName(c);
     // Not the form's input of the same name: this is the line under the title.
     $('campPurposeLine').textContent = c.purpose || '';
     $('campPurposeLine').hidden = !c.purpose;
@@ -1000,7 +1069,7 @@
 
   $('campDelete').addEventListener('click', function () {
     var c = state.campaign;
-    if (!confirm('Delete ' + c.title + '?\n\nAll offers and selections will be removed. This cannot be undone.')) return;
+    if (!confirm('Delete ' + campName(c) + '?\n\nAll offers and selections will be removed. This cannot be undone.')) return;
     db.from('campaigns').delete().eq('id', c.id).then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
       log('campaign.deleted', c.title, c.invoice_no || '');

@@ -333,8 +333,11 @@
     $('kicker').textContent = t().kicker;
     $('langToggle').textContent = t().lang;
 
-    var title = (lang === 'zh' && c.title_zh) ? c.title_zh : c.title;
-    $('campTitle').textContent = title || '';
+    /* The page's own heading. A campaign whose name renders as nothing left
+       the client looking at a blank line where the job should be. */
+    var title = String(((lang === 'zh' && c.title_zh) ? c.title_zh : c.title) || '').trim();
+    if (!title || title === '0' || title === 'null' || title === 'undefined') title = t().untitled;
+    $('campTitle').textContent = title;
     var purpose = (lang === 'zh' && c.purpose_zh) ? c.purpose_zh : c.purpose;
     $('campPurpose').textContent = purpose || '';
     $('campPurpose').hidden = !purpose;

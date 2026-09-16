@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260916d">
+<link rel="stylesheet" href="/css/portal.css?v=20260916e">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,19 +28,20 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260916d"></script>
-<script src="/js/words.js?v=20260916d"></script>
-<script src="/js/copy.js?v=20260916d"></script>
-<script src="/js/menu.js?v=20260916d"></script>
-<script src="/js/api.js?v=20260916d"></script>
-<script src="/js/money.js?v=20260916d"></script>
-<script src="/js/mockups.js?v=20260916d"></script>
+<script src="/js/config.js?v=20260916e"></script>
+<script src="/js/words.js?v=20260916e"></script>
+<script src="/js/copy.js?v=20260916e"></script>
+<script src="/js/state.js?v=20260916e"></script>
+<script src="/js/menu.js?v=20260916e"></script>
+<script src="/js/api.js?v=20260916e"></script>
+<script src="/js/money.js?v=20260916e"></script>
+<script src="/js/mockups.js?v=20260916e"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260916d" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260916e" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -499,10 +500,16 @@
            publishes their deliverables; it does not create them. -->
       <button class="btn" id="goToCrm" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 11h4v10"/><path d="M7 21v-4h5v4"/></svg>Manage clients</button>
     </div>
+    <!-- Every active client is listed here, so on a real book of business the
+         grid is the thing you have to read rather than scan. -->
+    <div class="cmdbar">
+      <span class="cmdbar-find">
+        <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+        <input class="input input-sm" id="crFind" type="search" placeholder="Search clients" aria-label="Search clients">
+      </span>
+      <span class="cmdbar-count" id="crCount"></span>
+    </div>
     <div class="msg" id="clientMsg"></div>
-
-
-
     <div class="cards" id="clientCards"></div>
   </section>
 
@@ -772,7 +779,19 @@
       <div id="campListView">
         <div class="viewhead">
           <span class="headmark"><h2>Campaigns</h2></span>
-          <button class="btn btn-primary" id="showAddCamp" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New campaign</button>
+        </div>
+        <!-- A campaign is found by its name or by the client it is for, and
+             the state is what somebody filters on first. -->
+        <div class="cmdbar">
+          <span class="cmdbar-find">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <input class="input input-sm" id="campFind" type="search" placeholder="Search campaign or client" aria-label="Search campaigns">
+          </span>
+          <select class="select select-sm" id="campStatePick" aria-label="Filter by state">
+            <option value="all">Every state</option>
+          </select>
+          <span class="cmdbar-count" id="campCount"></span>
+          <button class="btn btn-sm btn-primary" id="showAddCamp" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New campaign</button>
         </div>
 
         <div class="cards" id="campCards"></div>
@@ -1273,10 +1292,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260916d"></script>
-<script src="/js/documents.js?v=20260916d"></script>
-<script src="/js/crm.js?v=20260916d"></script>
-<script src="/js/team.js?v=20260916d"></script>
-<script src="/js/campaigns.js?v=20260916d"></script>
+<script src="/js/admin.js?v=20260916e"></script>
+<script src="/js/documents.js?v=20260916e"></script>
+<script src="/js/crm.js?v=20260916e"></script>
+<script src="/js/team.js?v=20260916e"></script>
+<script src="/js/campaigns.js?v=20260916e"></script>
 </body>
 </html>

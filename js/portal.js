@@ -446,7 +446,10 @@
     var eng = [];
     if (feed.review && feed.review.token) eng.push({ name: w.review, url: '/review/?k=' + encodeURIComponent(feed.review.token) });
     (feed.campaigns || []).forEach(function (m) {
-      eng.push({ name: (lang === 'zh' && m.title_zh) ? m.title_zh : m.title, sub: w.campaign + (w.campState[m.state] ? ' · ' + w.campState[m.state] : ''),
+      var nm = (lang === 'zh' && m.title_zh) ? m.title_zh : m.title;
+      nm = String(nm == null ? '' : nm).trim();
+      if (!nm || nm === '0' || nm === 'null' || nm === 'undefined') nm = w.untitled;
+      eng.push({ name: nm, sub: w.campaign + (w.campState[m.state] ? ' · ' + w.campState[m.state] : ''),
         url: '/creators/?k=' + encodeURIComponent(m.token) });
     });
     $('engWrap').hidden = !eng.length;

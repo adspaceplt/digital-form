@@ -473,18 +473,55 @@
   /* Only active clients belong here. The CRM also holds leads and past
      clients, and none of those have content to review. A client removed from
      this section stays a client; they are simply not listed here. */
+  /* Loading, empty and failed are said one way across the console. */
+  var UI = window.ADspaceState;
+  var skeleton = UI.skeleton, failLine = UI.failLine;
+
+  var crFind = '';
   function loadClients() {
+    var box = $('clientCards');
+    if (!state.reviewClients) skeleton(box, 3);
     db.from('clients').select('*').eq('stage', 'active').eq('review_hidden', false)
       .order('name').then(function (r) {
-      var box = $('clientCards');
-      box.innerHTML = '';
-      if (r.error) { msg('clientMsg', r.error.message, 'err'); return; }
-      if (!r.data.length) {
-        box.innerHTML = '<div class="empty">No active clients.</div>';
+      if (r.error) {
+        state.reviewClients = null;
+        failLine(box, 'Clients', r.error.message, loadClients);
         settleScroll();
         return;
       }
-      r.data.forEach(function (c) {
+      state.reviewClients = r.data || [];
+      paintReviewClients();
+      settleScroll();
+    });
+  }
+
+  function paintReviewClients() {
+    var box = $('clientCards');
+    var all = state.reviewClients || [];
+    var rows = !crFind ? all : all.filter(function (c) {
+      return String(c.name || '').toLowerCase().indexOf(crFind) >= 0;
+    });
+    var count = $('crCount');
+    if (count) {
+      count.textContent = !all.length ? ''
+        : rows.length === all.length ? all.length + (all.length === 1 ? ' client' : ' clients')
+        : rows.length + ' of ' + all.length;
+    }
+    box.innerHTML = '';
+    if (!all.length) {
+      box.innerHTML = '<div class="empty">No active clients.</div>';
+      return;
+    }
+    if (!rows.length) {
+      box.innerHTML = '<div class="softpanel"><div class="emptyline"><b>No matches.</b>' +
+        '<button class="btn btn-sm" data-a="clear" type="button">Clear the search</button></div></div>';
+      box.querySelector('[data-a="clear"]').addEventListener('click', function () {
+        crFind = ''; if ($('crFind')) $('crFind').value = ''; paintReviewClients();
+      });
+      return;
+    }
+    (function (data) {
+      data.forEach(function (c) {
         var card = document.createElement('button');
         card.className = 'bigcard';
         card.type = 'button';
@@ -502,18 +539,25 @@
         card.addEventListener('click', function () { openClient(c); });
         box.appendChild(card);
 
-        // A one line answer to "where does this client stand?"
+        /* A one line answer to "where does this client stand?" A read that
+           failed is not a client with nothing on it: "No content sets" over a
+           fault sends somebody to build a set that is already there. */
         db.from('batches').select('id, published').eq('client_id', c.id).then(function (b) {
           var sub = card.querySelector('[data-role="sub"]');
-          if (b.error || !b.data.length) { sub.textContent = 'No content sets'; return; }
+          if (b.error) { sub.textContent = 'Sets unavailable'; sub.className = 'bigcard-sub is-warn'; return; }
+          if (!b.data.length) { sub.textContent = 'No content sets'; return; }
           var live = b.data.filter(function (x) { return x.published; }).length;
           sub.textContent = b.data.length + ' set' + (b.data.length === 1 ? '' : 's') +
             ' · ' + live + ' published';
         });
       });
-      settleScroll();
-    });
+    }(rows));
   }
+
+  if ($('crFind')) $('crFind').addEventListener('input', function () {
+    crFind = this.value.trim().toLowerCase();
+    paintReviewClients();
+  });
 
   /* Label, tone, and which section of the portal the action belongs to, so the
      record can be filtered the way the sidebar is. */
@@ -935,7 +979,8 @@
       .order('created_at', { ascending: false }).then(function (r) {
         var box = $('batchCards');
         box.innerHTML = '';
-        if (r.error || !r.data.length) {
+        if (r.error) { failLine(box, 'Content sets', r.error.message, loadBatches); return; }
+        if (!r.data.length) {
           box.innerHTML = '<div class="empty">No content sets.</div>';
           return;
         }
@@ -951,10 +996,13 @@
           card.addEventListener('click', function () { openBatch(b); });
           box.appendChild(card);
 
+          /* A count that could not be read is not a count of nothing: it
+             said "0 posts" over a failed request and the set looked empty. */
           db.from('posts').select('id').eq('batch_id', b.id).then(function (p) {
+            var sub = card.querySelector('[data-role="sub"]');
+            if (p.error) { sub.textContent = 'Posts unavailable'; sub.className = 'bigcard-sub is-warn'; return; }
             var n = (p.data || []).length;
-            card.querySelector('[data-role="sub"]').textContent =
-              n + ' post' + (n === 1 ? '' : 's');
+            sub.textContent = n + ' post' + (n === 1 ? '' : 's');
           });
         });
       });
@@ -2095,11 +2143,20 @@
       .then(function (r) {
         var box = $('postList');
         box.innerHTML = '';
+        /* A failed read used to print "Nothing added yet." over a set that
+           was full, which is the one message that makes somebody add a post
+           twice. */
+        if (r.error) {
+          $('savedCount').textContent = '';
+          failLine(box, 'Posts', r.error.message, loadPosts);
+          settleScroll();
+          return;
+        }
         var n = (r.data || []).length;
         $('savedCount').textContent = n
           ? n + ' post' + (n === 1 ? '' : 's') + ' in this set.'
           : 'Nothing added yet.';
-        if (r.error || !n) { settleScroll(); return; }
+        if (!n) { settleScroll(); return; }
 
         var ids = r.data.map(function (p) { return p.id; });
         db.from('reviews').select('post_id, decision, note, reviewer, created_at')

@@ -935,6 +935,9 @@ a { color: inherit; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .bigcard-sub { color: var(--ink-mute); font-size: 12.5px; }
+/* The one line on the card could not be read. Said in warn, in words, so it
+   is not mistaken for a client with nothing on them. */
+.bigcard-sub.is-warn { color: var(--warn); }
 .bigcard-tag {
   align-self: flex-start; margin-top: 8px; font-size: 11px; font-weight: 600;
   letter-spacing: .03em; padding: 3px 8px; border-radius: 999px;
@@ -3416,7 +3419,9 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 /* `width: 100%` is set on these controls elsewhere, so a select with
    `flex: 0 0 auto` took the whole bar and crushed the search box to nothing.
    Both ends are stated here. */
-.cmdbar-find { position: relative; flex: 1 1 240px; min-width: 190px; }
+/* Bounded at both ends. With nothing beside it the box grew to the width of
+   the console, which is a nine hundred pixel field for a client's name. */
+.cmdbar-find { position: relative; flex: 1 1 240px; min-width: 190px; max-width: 420px; }
 .cmdbar-find .input { width: 100%; padding-left: 34px; border-radius: var(--radius-ctl); }
 .cmdbar-find svg {
   position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
@@ -3435,7 +3440,7 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 }
 @media (max-width: 640px) {
   .cmdbar { flex-wrap: wrap; }
-  .cmdbar-find { flex: 1 1 100%; }
+  .cmdbar-find { flex: 1 1 100%; max-width: none; }
   .cmdbar .select { flex: 1 1 auto; max-width: none; }
   /* Never full width. An action stretched across a phone is the heaviest
      thing on the screen, sitting on top of the records somebody came to
