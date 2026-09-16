@@ -547,51 +547,58 @@
         : rows.length + ' of ' + all.length;
     }
     box.innerHTML = '';
-    if (!all.length) {
-      box.innerHTML = '<div class="empty">No active clients.</div>';
-      return;
-    }
+    if (!all.length) { UI.emptyLine(box, 'No active clients.'); return; }
     if (!rows.length) {
-      box.innerHTML = '<div class="softpanel"><div class="emptyline"><b>No matches.</b>' +
-        '<button class="btn btn-sm" data-a="clear" type="button">Clear the search</button></div></div>';
-      box.querySelector('[data-a="clear"]').addEventListener('click', function () {
+      UI.emptyLine(box, 'No matches.', 'Clear the search', function () {
         crFind = ''; if ($('crFind')) $('crFind').value = ''; paintReviewClients();
       });
       return;
     }
-    (function (data) {
-      data.forEach(function (c) {
-        var card = document.createElement('button');
-        card.className = 'bigcard';
-        card.type = 'button';
-        // The mark, where there is one, so it is obvious at a glance that the
-        // address saved and that it actually loads.
-        card.innerHTML =
-          '<span class="bigcard-top">' +
-            (c.logo_url
-              ? '<span class="bigcard-logo"><img src="' + esc(c.logo_url) + '" alt=""></span>'
-              : '') +
-            '<span class="bigcard-name">' + esc(c.name) + '</span>' +
-          '</span>' +
-          '<span class="bigcard-sub" data-role="sub">Loading…</span>' +
-          (c.passcode ? '<span class="bigcard-tag">Access code on</span>' : '');
-        card.addEventListener('click', function () { openClient(c); });
-        box.appendChild(card);
+    /* One register, not a grid of tiles. A card per client answered "which
+       clients are there" and nothing else: how many sets each has, how many
+       are live and whether an access code is on all needed reading the tile,
+       and a tile cannot be read down a column. The same surface the clients
+       directory and the campaign register are. */
+    var table = document.createElement('div');
+    table.className = 'crm-table softpanel crm-register';
+    var head = document.createElement('div');
+    head.className = 'crm-head cr-client-row';
+    head.innerHTML = '<span>Client</span><span>Content sets</span><span>Access</span><span></span>';
+    table.appendChild(head);
 
-        /* A one line answer to "where does this client stand?" A read that
-           failed is not a client with nothing on it: "No content sets" over a
-           fault sends somebody to build a set that is already there. */
-        db.from('batches').select('id, published').eq('client_id', c.id).then(function (b) {
-          var sub = card.querySelector('[data-role="sub"]');
-          if (b.error) { sub.textContent = 'Sets unavailable'; sub.className = 'bigcard-sub is-warn'; return; }
-          if (!b.data.length) { sub.textContent = 'No content sets'; return; }
-          var live = b.data.filter(function (x) { return x.published; }).length;
-          sub.textContent = b.data.length + ' set' + (b.data.length === 1 ? '' : 's') +
-            ' · ' + live + ' published';
-        });
+    rows.forEach(function (c) {
+      var row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'crm-row cr-client-row';
+      row.innerHTML =
+        '<span class="crm-c crm-c-name">' + esc(c.name) + '</span>' +
+        '<span class="crm-c crm-c-sets" data-role="sub"><span class="muted">Loading\u2026</span></span>' +
+        /* An access code is the exception, so the row says nothing where there
+           is none rather than printing "Open" on almost every line. */
+        '<span class="crm-c crm-c-code">' + (c.passcode
+          ? '<span class="tone">Access code</span>' : '<span class="muted">\u2014</span>') + '</span>' +
+        '<span class="crm-c crm-c-go" aria-hidden="true">' + GO_CHEV + '</span>';
+      row.addEventListener('click', function () { openClient(c); });
+      table.appendChild(row);
+
+      /* A one line answer to "where does this client stand?" A read that
+         failed is not a client with nothing on it: "No content sets" over a
+         fault sends somebody to build a set that is already there. */
+      db.from('batches').select('id, published').eq('client_id', c.id).then(function (b) {
+        var sub = row.querySelector('[data-role="sub"]');
+        if (!sub) return;
+        if (b.error) { sub.innerHTML = '<span class="is-warn">Sets unavailable</span>'; return; }
+        if (!b.data.length) { sub.innerHTML = '<span class="muted">None yet</span>'; return; }
+        var live = b.data.filter(function (x) { return x.published; }).length;
+        sub.textContent = b.data.length + ' set' + (b.data.length === 1 ? '' : 's') +
+          ' \u00b7 ' + live + ' published';
       });
-    }(rows));
+    });
+    box.appendChild(table);
   }
+
+  var GO_CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
 
   if ($('crFind')) $('crFind').addEventListener('input', function () {
     crFind = this.value.trim().toLowerCase();
@@ -2525,8 +2532,10 @@
 
     var table = document.createElement('div');
     table.className = 'crm-table softpanel';
+    /* Status names the column the Paused chip sits in; the last stays empty
+       over the actions, the way every other table in this console does. */
     table.innerHTML = '<div class="crm-head link-row"><span>Short link</span>' +
-      '<span>Destination</span><span>Label</span><span></span><span></span></div>';
+      '<span>Destination</span><span>Label</span><span>Status</span><span></span></div>';
 
     shown.forEach(function (l) {
       var off = l.active === false;

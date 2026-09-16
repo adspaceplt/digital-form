@@ -198,12 +198,17 @@ function inPage(coarse) {
     if (!text && !el.getAttribute('aria-label') && !el.getAttribute('aria-labelledby') && !el.getAttribute('title')) F.push(['icon-label', desc(el) + ' icon-only without a name']);
   });
 
-  // 7 one green action per view
-  const goes = [...document.querySelectorAll('.btn-go')].filter(vis);
+  /* 7 blue is the action colour and it is spent sparingly: one prominent
+     action per view, two where a view genuinely offers two (publish and
+     confirm on the client-selection pane), never three. It used to count
+     `.btn-go` alone, which was the green forward button; now that blue carries
+     every filled action, the primary and the client's Approve are counted with
+     it, or a panel could show a green-rule-passing wall of blue. */
+  const goes = [...document.querySelectorAll('.btn-go, .btn-primary, .btn-approve')].filter(vis);
   const scopeOf = el => el.closest('.kcard, .booking, .crow, .bigcard, .card, .crm-row, .team-row, .sheet, .drawer, .batch, .panel, section, .console-body, main') || document.body;
   const by = new Map();
   goes.forEach(g => { const s = scopeOf(g); by.set(s, (by.get(s) || 0) + 1); });
-  by.forEach((n, s) => { if (n > 1) F.push(['accent', desc(s) + ' shows ' + n + ' green actions']); });
+  by.forEach((n, s) => { if (n > 2) F.push(['accent', desc(s) + ' shows ' + n + ' filled actions']); });
 
   // 8 contrast
   const parse = c => { const m = (c || '').match(/rgba?\(([^)]+)\)/); if (!m) return null; const a = m[1].split(/[,\s/]+/).map(parseFloat); return { r: a[0], g: a[1], b: a[2], a: a.length > 3 ? a[3] : 1 }; };
@@ -401,8 +406,8 @@ async function walk(b, coarse, dark) {
   await report('admin campaigns ' + tag, p, coarse);
   // The campaign with someone waiting to be confirmed, so the walk sees the
   // confirm sheet and the invoice that follows it.
-  const camp = p.locator('#campCards .bigcard', { hasText: 'Promote New Launch' });
-  await (await camp.count() ? camp.first() : p.locator('#campCards .bigcard').first()).click();
+  const camp = p.locator('#campCards .crm-row', { hasText: 'Promote New Launch' });
+  await (await camp.count() ? camp.first() : p.locator('#campCards .crm-row').first()).click();
   await p.waitForTimeout(700);
   await report('admin campaign head ' + tag, p, coarse);
   /* Every pane of the command centre, because a pane nobody walks is a pane
