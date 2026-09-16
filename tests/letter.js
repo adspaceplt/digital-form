@@ -189,13 +189,23 @@ const docs = p => p.evaluate(() => window.__DB.client_documents
   check('the row reads Signed',
     /Signed/.test(await p.locator('#crmDocuments').innerText()));
 
+  /* The client's value is the confirmed total, and verifying is what confirms
+     a line, so verifying is what moves it. It was not moving: verify repainted
+     the documents and the services and never called syncValue, so the record
+     kept the old figure until something else happened to save a line. */
+  const valueNow = async () => {
+    const t = await p.locator('#crmFacts').innerText();
+    return t.replace(/\s+/g, ' ');
+  };
+  const valueBefore = await valueNow();
+
   p.once('dialog', d => d.accept());
   await openMenu(rowIdx);
   await p.evaluate(i => {
     const rows = [...document.querySelectorAll('#crmDocuments .doc-row')].filter(r => !r.classList.contains('crm-head'));
     rows[i].querySelector('[data-a="verify"]').click();
   }, rowIdx);
-  await p.waitForTimeout(1100);
+  await p.waitForTimeout(1400);
   check('verifying confirms the line the letter captured',
     (await svcState(p, 'sv_new')) === 'confirmed');
   check('and nothing else', (await svcState(p, 'sv_two')) === 'quoted');
@@ -203,6 +213,10 @@ const docs = p => p.evaluate(() => window.__DB.client_documents
   check('and the enquired one is untouched', (await svcState(p, 'sv_enq')) === 'enquired');
   list = await docs(p);
   check('the letter reads Verified', list[0].verified === true);
+  const valueAfter = await valueNow();
+  check('and the client\'s value follows the confirmation',
+    valueAfter !== valueBefore && /24,200/.test(valueAfter),
+    'before: ' + valueBefore.slice(0, 110) + '  ||  after: ' + valueAfter.slice(0, 110));
 
   // ---- The legacy letter stays history ------------------------------------
   const legacy = await p.evaluate(() => {

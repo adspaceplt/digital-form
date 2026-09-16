@@ -26,6 +26,8 @@
   var ICON    = bridge.ICON || {};
   var log     = bridge.log || function () {};
   var who     = bridge.actor || function () { return ''; };
+  /* A logged address read as a person, through the console's one map. */
+  var whoName = bridge.whoName || function (e) { return e || ''; };
   var putToS3 = bridge.putToS3;
   var cfg     = window.ADSPACE_CONFIG || {};
   var setUrl  = bridge.setUrl || function () {};
@@ -1507,7 +1509,7 @@
             '<span class="log-when">' + esc(logDate(x.created_at)) + '</span>' +
             '<span class="log-what">' + esc((A[x.action] || [])[0] || String(x.action || '').replace(/[._]/g, ' ')) + '</span>' +
             '<span class="log-detail">' + esc(x.detail || '') + '</span>' +
-            '<span class="log-who">' + esc(x.actor || '') + '</span>';
+            '<span class="log-who">' + esc(whoName(x.actor)) + '</span>';
           t.appendChild(el);
         });
         box.innerHTML = '';

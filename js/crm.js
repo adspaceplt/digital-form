@@ -18,6 +18,8 @@
   var log = bridge.log || function () {};
   var actor = bridge.actor || function () { return ''; };
   var actorName = bridge.actorName || actor;
+  /* A logged address read as a person, through the console's one map. */
+  var whoName = bridge.whoName || function (e) { return e || ''; };
   var setUrl = bridge.setUrl || function () {};
   /* A pane is a move somebody made, not a note of where the page ended up, so
      it pushes a history entry and Back and Forward walk the record. */
@@ -806,7 +808,7 @@
             '<span class="log-when">' + esc(niceDate(x.created_at)) + '</span>' +
             '<span class="log-what">' + esc(logWord(x.action)) + '</span>' +
             '<span class="log-detail">' + esc(x.detail || '') + '</span>' +
-            '<span class="log-who">' + esc(x.actor || '') + '</span>';
+            '<span class="log-who">' + esc(whoName(x.actor)) + '</span>';
           t.appendChild(el);
         });
         box.innerHTML = '';
@@ -1960,6 +1962,10 @@
           if (out.error) { msg('crmServiceMsg', OVERRIDE_WORD[out.error] || out.error, 'err'); return; }
           msg('crmServiceMsg', 'Set by hand.', 'ok');
           loadServices();
+          /* The client's value is the confirmed total, so a state set by hand
+             moves it. saveService has always called this; the override was
+             added without it and left the record showing the old figure. */
+          syncValue();
         }, function (e) { msg('crmServiceMsg', (e && e.message) || 'Could not set it.', 'err'); });
     });
     on('del', function () { saveService(l, { archived_at: new Date().toISOString() }, true); });
@@ -2291,6 +2297,10 @@
           (n === 1 ? ' service confirmed.' : ' services confirmed.'), 'ok');
         loadDocuments();
         loadServices();
+        /* Verifying is what confirms a service, so it is what moves the
+           client's value. Without this the record kept the quoted figure
+           until something else happened to save a line. */
+        syncValue();
       });
     });
     /* Both of these ask in a sheet rather than a confirm(): each needs a
@@ -2375,6 +2385,7 @@
           (n ? linesWord(n) + ' put back to To quote.' : 'No service line changed.'), 'ok');
         loadDocuments();
         loadServices();
+        syncValue();
       });
     });
 
@@ -2411,6 +2422,7 @@
           (n ? linesWord(n) + ' put back to To quote.' : 'No service line changed.'), 'ok');
         loadDocuments();
         loadServices();
+        syncValue();
       });
     });
   }
