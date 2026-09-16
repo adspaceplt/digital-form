@@ -375,6 +375,13 @@ async function walk(b, coarse, dark) {
   await p.locator('#crmBack').click(); await p.waitForTimeout(400);
   await p.locator('.crm-row', { hasText: 'Laman Citra' }).first().click(); await p.waitForTimeout(700);
   await report('admin client record full ' + tag, p, coarse);
+  /* Every pane of the record, because a pane nobody walks is a pane whose
+     alignment, contrast and touch targets nobody measured. */
+  for (const key of ['contacts', 'billing', 'brand', 'services', 'documents', 'activity']) {
+    await p.locator('#crmTabs .tab[data-pane="' + key + '"]').click(); await p.waitForTimeout(450);
+    await report('admin client ' + key + ' ' + tag, p, coarse);
+  }
+  await p.locator('#crmTabs .tab[data-pane="contacts"]').click(); await p.waitForTimeout(400);
   // Letting a contact into the client portal: the sheet that asks which
   // address becomes their sign-in and whether the invitation goes now.
   const noAccess = p.locator('#crmContacts .ct-row:not(.crm-head)').filter({ hasNot: p.locator('.tone.is-ok') }).first();

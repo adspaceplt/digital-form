@@ -816,7 +816,6 @@ a { color: inherit; }
   /* #whoami used to sit in the top bar, where it pushed sign out onto a second
      row. It lives in the sidebar footer now, which has room for it, so hiding
      it only left the drawer saying "Logged in as" and nothing else. */
-  .sidebar-who { white-space: normal; overflow: visible; word-break: break-word; line-height: 1.4; }
   .grid { grid-template-columns: 1fr; }
   /* Offering a "view on phone" QR code to someone already on a phone is noise. */
   #qrBtn { display: none; }
@@ -1631,14 +1630,39 @@ body.is-plain .topbar { background: var(--chrome); }
 .navitem.is-on { background: var(--line-soft); color: var(--ink); font-weight: 600; }
 .navitem.is-on svg { color: var(--ink); }
 
-.sidebar-foot {
-  border-top: 1px solid var(--line-soft); padding: 14px 10px 0;
-  display: flex; flex-direction: column; gap: 4px; align-items: flex-start;
+/* Who you are, the register you read in and the way out. Three things
+   touched a few times a year each, which took a 150px block at the foot of
+   the sidebar on every screen, under the sections somebody came for, with two
+   full width buttons in it. One control at the end of the bar instead, where
+   every application this team uses keeps an account. */
+.acct { position: relative; flex: 0 0 auto; }
+.acct-btn {
+  display: grid; place-items: center; width: var(--ctl-h); height: var(--ctl-h);
+  border: 1px solid var(--line-ctl); border-radius: 50%; background: none; padding: 0;
+  transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
 }
-.sidebar-who {
-  font-size: 12px; color: var(--ink-mute); max-width: 100%;
+.acct-mark { font-size: 12.5px; font-weight: 600; letter-spacing: 0; color: var(--ink-soft); }
+@media (hover: hover) {
+  .acct-btn:hover { background: var(--line-soft); border-color: var(--ink-mute); }
+  .acct-btn:hover .acct-mark { color: var(--ink); }
+}
+.acct-btn[aria-expanded="true"] { background: var(--line-soft); border-color: var(--ink-mute); }
+.acct-menu { position: absolute; top: calc(var(--ctl-h) + 6px); right: 0; left: auto; min-width: 232px; }
+/* The address is read, never chosen, so it is a line above the items and not
+   one of them. */
+.acct-who {
+  display: flex; flex-direction: column; gap: 1px;
+  padding: 9px 12px 8px; margin-bottom: 4px;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.acct-who b {
+  font-size: 12.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--ink);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.acct-menu .kmenu-item { display: flex; align-items: center; gap: 9px; }
+.acct-menu .kmenu-item svg { width: 15px; height: 15px; stroke-width: 1.8; flex: 0 0 auto; color: var(--ink-mute); }
 
 .console-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
 .console-head {
@@ -1648,14 +1672,24 @@ body.is-plain .topbar { background: var(--chrome); }
   background: var(--chrome); backdrop-filter: saturate(180%) blur(14px);
   position: sticky; top: 0; z-index: 30;
 }
-.console-title { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+/* The page label is what gives way when the bar runs out of room, never the
+   controls: it clips to an ellipsis rather than pushing a target under 44px. */
+.console-title {
+  font-size: 14px; font-weight: 600; letter-spacing: -.01em;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.console-head > .headlink, .console-head > .acct { flex: 0 0 auto; }
 .console-body { padding: 0 28px 96px; }
 /* The section's own views were written for a page with its own margins. */
 .console-body .shell { padding: 0; max-width: none; }
 
 /* The rail becomes a drawer on a phone. */
+/* `flex: 0 0 auto`, or the bar squeezes it: the account control at the end of
+   the row took enough width at 390 to shrink the toggle to 38px, which is
+   under the floor a finger needs. */
 .navtoggle {
-  display: none; width: var(--ctl-h); height: var(--ctl-h); padding: 0; border: 0; background: none;
+  display: none; flex: 0 0 auto;
+  width: var(--ctl-h); height: var(--ctl-h); padding: 0; border: 0; background: none;
   border-radius: 8px; color: var(--ink-soft);
 }
 .navtoggle svg { width: 19px; height: 19px; stroke-width: 1.7; }
@@ -1690,25 +1724,6 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 .headlink svg { width: 15px; height: 15px; stroke-width: 1.7; }
 .headlink:hover { color: var(--ink); background: var(--line-soft); text-decoration-color: currentColor; }
-
-/* ---------- Signing out ----------
-   It read as body text with an underline, which is not something you reach for
-   deliberately. Same corner, same size as any other action in the console. */
-.sidebar-who { white-space: normal; line-height: 1.45; }
-.sidebar-who b {
-  display: block; font-weight: 600; color: var(--ink-soft);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
-}
-.signout,
-.themetoggle {
-  width: 100%; margin-top: 10px; min-width: 0;
-  padding: 8px 12px; font-size: 12.5px; color: var(--ink-soft);
-}
-.signout svg, .themetoggle svg { width: 15px; height: 15px; stroke-width: 1.7; }
-.signout:hover, .themetoggle:hover { border-color: var(--ink-mute); color: var(--ink); }
-/* It sits above Sign out so the thing that ends the session stays last, and it
-   keeps the same shape: a lighter border to make a preference read quieter put
-   the control boundary under 3:1, which is a floor, not a preference. */
 
 /* ---------- Sheet ----------
    Opens over the work and hands it straight back, so reading the record never
@@ -3538,4 +3553,79 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   .team-row > .team-act   { grid-area: act; margin-block: calc((20px - var(--ctl-h)) / 2); }
   .team-row > .team-mail  { grid-area: mail; }
   .team-head.team-row { display: none; }
+}
+
+/* ---------- The client record as a workspace ----------
+   Seven sections in one column meant Documents was a scroll away from the
+   services it quotes and Billing a scroll away from the contact it names.
+   Identity stays at the top, the panes carry the work, and the rail carries
+   the facts that are true whichever pane you are in. */
+/* The facts moved to the rail, so the head is the identity line and nothing
+   else: its old 14px bottom margin left a band of empty panel under it. */
+.rec-head { margin-bottom: 12px; }
+.rec-head .crm-title { margin-bottom: 0; }
+.rec-head .msg:empty { display: none; }
+.rec {
+  display: grid; align-items: start; gap: 0 24px;
+  grid-template-columns: minmax(0, 1.618fr) minmax(280px, 1fr);
+  grid-template-areas: "tabs rail" "pane rail";
+}
+.rectabs {
+  grid-area: tabs; display: flex; gap: 2px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--line); margin-bottom: 4px;
+}
+.rec-pane { grid-area: pane; min-width: 0; }
+/* The first block in a pane sits as far from the tabs as two blocks sit from
+   each other: the law of the stack does not stop at a tab strip. */
+.rec-pane > :first-child { margin-top: 0; }
+.rec-pane > .viewhead:first-child { margin-top: 12px; }
+.rec-rail { grid-area: rail; min-width: 0; }
+.rec-rail > .facts { margin: 0 0 12px; }
+/* A 320px rail is two columns of facts, not six. */
+.rec-rail .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.rec-rail .crm-journey { margin-bottom: 12px; }
+.rec-rail .crm-links { margin-top: 0; margin-bottom: 12px; }
+.rec-rail .notice { margin-bottom: 12px; }
+
+/* Below the workspace width the rail is not a rail: it is what you read
+   before the pane, so it comes first and the panes follow. */
+@media (max-width: 1100px) {
+  .rec {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "rail" "tabs" "pane";
+  }
+  .rec-rail { margin-bottom: 4px; }
+  .rec-rail .facts { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+}
+/* The tab strip scrolls sideways rather than wrapping to three rows: seven
+   words at 390 is two and a half lines of chrome above the work. */
+@media (max-width: 640px) {
+  .rectabs {
+    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+    margin-inline: -16px; padding-inline: 16px;
+  }
+  .rectabs::-webkit-scrollbar { display: none; }
+  .rectabs .tab { flex: 0 0 auto; }
+  .rec-rail .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* What the portal recorded about this client. Four columns, and on a phone
+   the two that matter with the rest under them. */
+.log-row { grid-template-columns: 132px minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, .9fr); }
+.log-when { font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.log-what { font-weight: 600; font-size: 13.5px; }
+.log-detail, .log-who { font-size: 13px; color: var(--ink-mute); min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 640px) {
+  .log-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "what when" "detail detail" "who who";
+    gap: 2px 10px;
+  }
+  .log-row > .log-what   { grid-area: what; }
+  .log-row > .log-when   { grid-area: when; }
+  .log-row > .log-detail { grid-area: detail; white-space: normal; }
+  .log-row > .log-who    { grid-area: who; }
+  .log-row > .log-detail:empty, .log-row > .log-who:empty { display: none; }
+  .crm-head.log-row { display: none; }
 }

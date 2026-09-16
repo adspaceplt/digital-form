@@ -95,7 +95,7 @@
      button names the theme it switches to, as a light switch does. */
   function paintTheme() {
     var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-    $('themeWord').textContent = dark ? 'Light' : 'Dark';
+    $('themeWord').textContent = dark ? 'light' : 'dark';
     $('themeToggle').setAttribute('aria-pressed', String(dark));
   }
   $('themeToggle').addEventListener('click', function () {
@@ -104,8 +104,31 @@
     else document.documentElement.removeAttribute('data-theme');
     try { localStorage.setItem('adspace-theme', dark ? 'dark' : 'light'); } catch (e) {}
     paintTheme();
+    shutAcct();
   });
   paintTheme();
+
+  /* The account control. Who you are, the register you read in and the way
+     out are three things touched a few times a year, so they sit behind one
+     control at the end of the bar rather than in a block at the foot of the
+     sidebar that every screen had to carry. */
+  function shutAcct() {
+    $('acctMenu').hidden = true;
+    $('acctBtn').setAttribute('aria-expanded', 'false');
+  }
+  $('acctBtn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    var open = $('acctMenu').hidden;
+    $('acctMenu').hidden = !open;
+    this.setAttribute('aria-expanded', String(open));
+    if (open) $('acctMenu').querySelector('.kmenu-item').focus();
+  });
+  document.addEventListener('click', function (e) {
+    if (!$('acctMenu').hidden && !e.target.closest('#acctWrap')) shutAcct();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('acctMenu').hidden) { shutAcct(); $('acctBtn').focus(); }
+  });
 
   $('signOut').addEventListener('click', function () {
     db.auth.signOut().then(function () { location.reload(); });
@@ -136,8 +159,11 @@
     $('publicShell').hidden = inApp;
     $('console').hidden = true;
     $('authPanel').hidden = inApp;
-    $('signOut').hidden = !inApp;
+    $('acctWrap').hidden = !inApp;
+    if (!inApp) shutAcct();
     $('whoami').textContent = inApp ? session.user.email : '';
+    /* One letter, not an avatar nobody uploaded. */
+    $('acctMark').textContent = inApp ? (session.user.email || '?').charAt(0).toUpperCase() : '';
     actor = inApp ? session.user.email : '';
 
     if (!inApp) {
@@ -389,7 +415,9 @@
       .then(function (r) { then(r.error ? null : (r.data || null)); }, function () { then(null); });
   }
 
-  function setUrl() {
+  function setUrl() { history.replaceState(null, '', urlOf(queryNow())); }
+
+  function queryNow() {
     var q = [];
     if (section !== 'clients') q.push('s=' + section);
     if (section === 'review') {
@@ -403,8 +431,19 @@
       var crm = window.ADspaceCRM.urlState();
       Object.keys(crm).forEach(function (k) { if (crm[k]) q.push(k + '=' + encodeURIComponent(crm[k])); });
     }
-    history.replaceState(null, '', '/admin/' + (q.length ? '?' + q.join('&') : ''));
+    return q;
   }
+
+  /* Most of the address is a note of where you are: it is replaced, so the
+     browser's Back button still leaves the console rather than walking every
+     repaint. A local navigation inside a record is different — it is a move a
+     person made, so it pushes an entry and Back and Forward walk the panes. */
+  function pushUrl() {
+    var before = location.pathname + location.search;
+    var after = urlOf(queryNow());
+    if (after !== before) history.pushState(null, '', after);
+  }
+  function urlOf(q) { return '/admin/' + (q.length ? '?' + q.join('&') : ''); }
 
   /* Scroll, per address. Review has its own richer memory tied to the client;
      this is the plain one the other sections use. */
@@ -2201,6 +2240,10 @@
   window.ADspaceAdmin = {
     ICON: ICON,
     iconBtn: iconBtn,
+    /* The one list of what each logged action is called. The client record's
+       Activity pane reads it rather than keeping a second copy that would
+       drift from the activity record's own. */
+    actionLabel: ACTION_LABEL,
     log: logAction,
     actor: function () { return actor; },
     actorName: function () { return (me && me.name) || actor; },
@@ -2208,6 +2251,7 @@
     putToS3: putToS3,
     // Where you are, and how far down. The address bar is shared property.
     setUrl: setUrl,
+    pushUrl: pushUrl,
     restoreScroll: restoreScroll,
     // Campaigns announces itself once its script has run; if the rail asked
     // for it before then, enter now.

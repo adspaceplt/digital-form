@@ -19,6 +19,9 @@
   var actor = bridge.actor || function () { return ''; };
   var actorName = bridge.actorName || actor;
   var setUrl = bridge.setUrl || function () {};
+  /* A pane is a move somebody made, not a note of where the page ended up, so
+     it pushes a history entry and Back and Forward walk the record. */
+  var pushUrl = bridge.pushUrl || setUrl;
   var restoreScroll = bridge.restoreScroll || function () {};
   var MON = window.ADspaceMoney;
 
@@ -514,7 +517,11 @@
 
   // ---- One client ---------------------------------------------------------
   function openClient(c, restoring) {
-    if (!state.client || state.client.id !== c.id) state.contacts = [];
+    /* Re-opening the same record is a repaint, not a navigation: logging a
+       call moves the stage, which reads the client back, and that used to
+       throw somebody out of the pane they were working in. */
+    var same = Boolean(state.client && state.client.id === c.id);
+    if (!same) state.contacts = [];
     state.client = c;
     $('crmListView').hidden = true;
     $('crmWork').hidden = false;
@@ -578,8 +585,95 @@
     loadRequests();
     loadTouches();
     loadWork();
+    showPane(restoring ? paneFromUrl() : (same ? pane : 'overview'));
     setUrl();
     if (restoring) restoreScroll();
+  }
+
+  /* ---- The record's own panes ------------------------------------------
+     Seven sections in one column meant Documents was a scroll away from the
+     services it quotes and Billing was a scroll away from the contact it
+     names. The pane is in the address, so a refresh, a pasted link, Back and
+     Forward all land on the section somebody was working in. */
+  var PANES = ['overview', 'contacts', 'billing', 'brand', 'services', 'documents', 'activity'];
+  var pane = 'overview';
+
+  function paneFromUrl() {
+    var t = new URLSearchParams(location.search).get('tab') || '';
+    return PANES.indexOf(t) >= 0 ? t : 'overview';
+  }
+
+  function showPane(key) {
+    if (PANES.indexOf(key) < 0) key = 'overview';
+    pane = key;
+    Array.prototype.forEach.call(document.querySelectorAll('#crmTabs .tab'), function (b) {
+      var on = b.getAttribute('data-pane') === key;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-selected', String(on));
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.rec-pane'), function (el) {
+      el.hidden = el.getAttribute('data-pane') !== key;
+    });
+    /* A fold inside its own pane is furniture: the pane is the disclosure. */
+    if (key === 'billing') setOpen('crmBillToggle', 'crmBillBody', true);
+    if (key === 'brand') setOpen('crmBrandToggle', 'crmBrandBody', true);
+    if (key === 'activity') loadClientLog();
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('#crmTabs .tab'), function (b) {
+    b.addEventListener('click', function () {
+      if (b.getAttribute('data-pane') === pane) return;
+      showPane(b.getAttribute('data-pane'));
+      pushUrl();
+    });
+  });
+  /* Back and Forward move between panes, because the pane is in the address
+     and the address is what the browser remembers. */
+  window.addEventListener('popstate', function () {
+    if ($('crmWork').hidden) return;
+    showPane(paneFromUrl());
+  });
+
+  /* What the portal recorded about this client. `activity_log` carries no
+     client id, only the subject it was written with, which is the client's
+     name at the time; a rename therefore leaves the older entries behind, and
+     that is stated rather than papered over. */
+  function loadClientLog() {
+    var box = $('crmLogList');
+    var c = state.client;
+    if (!box || !c) return;
+    UI.skeleton(box, 3);
+    db.from('activity_log').select('*').eq('subject', c.name)
+      .order('created_at', { ascending: false }).limit(50)
+      .then(function (r) {
+        if (r.error) { UI.failLine(box, 'The record of changes', r.error.message, loadClientLog); return; }
+        var rows = r.data || [];
+        if (!rows.length) { box.innerHTML = '<div class="empty">No entries.</div>'; return; }
+        var t = document.createElement('div');
+        t.className = 'crm-table softpanel';
+        t.innerHTML = '<div class="crm-head svc-row log-row"><span>When</span><span>What</span>' +
+          '<span>Detail</span><span>Who</span></div>';
+        rows.forEach(function (x) {
+          var el = document.createElement('div');
+          el.className = 'svc-row log-row';
+          el.innerHTML =
+            '<span class="log-when">' + esc(niceDate(x.created_at)) + '</span>' +
+            '<span class="log-what">' + esc(logWord(x.action)) + '</span>' +
+            '<span class="log-detail">' + esc(x.detail || '') + '</span>' +
+            '<span class="log-who">' + esc(x.actor || '') + '</span>';
+          t.appendChild(el);
+        });
+        box.innerHTML = '';
+        box.appendChild(t);
+      });
+  }
+
+  /* The console already names every action in one place; this reads it rather
+     than keeping a second list that would drift from the first. */
+  function logWord(action) {
+    var A = window.ADspaceAdmin && window.ADspaceAdmin.actionLabel;
+    var hit = A && A[action];
+    return (hit && hit[0]) || String(action || '').replace(/[._]/g, ' ');
   }
 
   function linkChip(href, label, external) {
@@ -606,6 +700,11 @@
       var missing = billingMissing(c);
       if (missing.length) {
         this.value = was;
+        /* The refusal has to land where the fix is: the Billing pane, with
+           the fold open and the first missing field focused. Opening a fold
+           that is two panes away is a message about a screen nobody is on. */
+        showPane('billing');
+        setUrl();
         setOpen('crmBillToggle', 'crmBillBody', true);
         msg('crmBillMsg', 'Billing details required before Active: ' + missing.join(', ') + '.', 'err');
         var first = BILLING.filter(function (f) { return missing.indexOf(f[2]) > -1; })[0];
@@ -1900,7 +1999,13 @@
     }).join('');
 
   window.ADspaceCRM = {
-    urlState: function () { return { client: keyOf(state.client) }; },
+    urlState: function () {
+      var o = { client: keyOf(state.client) };
+      /* Overview is the default, so it stays out of the address: a link to a
+         client is the client, not the client on its first pane. */
+      if (o.client && pane && pane !== 'overview') o.tab = pane;
+      return o;
+    },
     byKey: clientByKey,
     keyOf: keyOf,
     enter: function () {
