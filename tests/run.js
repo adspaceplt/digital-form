@@ -53,13 +53,13 @@ const say = (s) => { out.push(s); console.log(s); };
   say('title: ' + await page.locator('#sectionTitle').innerText());
   say('review hidden: ' + await page.locator('#sectionReview').isHidden());
   say('activity link now: ' + await page.locator('#activityOpen').isVisible());
-  say('rows: ' + await page.locator('.slink').count() + ' count=' + await page.locator('#linkCount').innerText());
-  say('first row: ' + (await page.locator('.slink').first().innerText()).replace(/\n/g, ' | '));
+  say('rows: ' + await page.locator('.link-row:not(.crm-head)').count() + ' count=' + await page.locator('#linkCount').innerText());
+  say('first row: ' + (await page.locator('.link-row:not(.crm-head)').first().innerText()).replace(/\n/g, ' | '));
 
   // Search
   await page.fill('#linkSearch', 'raya');
   await page.waitForTimeout(200);
-  say('search raya -> ' + await page.locator('.slink').count() + ' (' + await page.locator('#linkCount').innerText() + ')');
+  say('search raya -> ' + await page.locator('.link-row:not(.crm-head)').count() + ' (' + await page.locator('#linkCount').innerText() + ')');
   await page.fill('#linkSearch', '');
   await page.waitForTimeout(200);
 
@@ -73,7 +73,7 @@ const say = (s) => { out.push(s); console.log(s); };
   await page.fill('#newSlug', 'merdeka-2026');
   await page.locator('#saveLink').click();
   await page.waitForTimeout(400);
-  say('after add: rows=' + await page.locator('.slink').count() +
+  say('after add: rows=' + await page.locator('.link-row:not(.crm-head)').count() +
       ' https-normalised=' + await page.evaluate(() => (window.__DB.links.find(l => l.slug === 'merdeka-2026') || {}).target_url));
 
   // Duplicate

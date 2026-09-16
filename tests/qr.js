@@ -35,8 +35,8 @@ window.QRCode.CorrectLevel = { L:1, M:0, Q:3, H:2 };
   await p.locator('.navitem[data-section="links"]').click();
   await p.waitForTimeout(500);
 
-  say('qr buttons on rows: ' + await p.locator('.slink [data-a="qr"]').count());
-  await p.locator('.slink [data-a="qr"]').first().click();
+  say('qr buttons on rows: ' + await p.locator('.link-row [data-a="qr"]').count());
+  await p.locator('.link-row [data-a="qr"]').first().click();
   await p.waitForTimeout(400);
   say('sheet heading: ' + await p.locator('#qrHeading').innerText());
   say('empty state: ' + await p.locator('#qrList').innerText());
@@ -89,7 +89,7 @@ window.QRCode.CorrectLevel = { L:1, M:0, Q:3, H:2 };
   // no duplicate canvases after repaint
   await p.locator('#qrSheetClose').click();
   await p.waitForTimeout(200);
-  await p.locator('.slink [data-a="qr"]').first().click();
+  await p.locator('.link-row [data-a="qr"]').first().click();
   await p.waitForTimeout(500);
   say('canvases after reopen (should be 2): ' + await p.locator('.qrrow-img canvas').count());
 
@@ -113,7 +113,7 @@ window.QRCode.CorrectLevel = { L:1, M:0, Q:3, H:2 };
   await p2.waitForTimeout(400);
   await p2.locator('.navitem[data-section="links"]').click();
   await p2.waitForTimeout(400);
-  await p2.locator('.slink [data-a="qr"]').first().click();
+  await p2.locator('.link-row [data-a="qr"]').first().click();
   await p2.waitForTimeout(300);
   await p2.fill('#qrLabel', 'No library');
   await p2.locator('#qrNew').click();

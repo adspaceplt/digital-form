@@ -256,11 +256,19 @@
     }, function () { if (then) then(); });
   }
 
+  /* Loading, empty and failed are said one way across the console. */
+  var UI = window.ADspaceState;
+  var skeleton = UI.skeleton, failLine = UI.failLine;
+
   function loadClients(then) {
+    var box = $('crmList');
+    if (!state.clients.length) skeleton(box, 6);
     db.from('clients').select('*').order('name').then(function (r) {
       if (r.error) {
-        $('crmList').innerHTML = '<div class="empty">Could not load clients. ' +
-          esc(r.error.message) + '</div>';
+        box.innerHTML = '<div class="softpanel"><div class="errline">' +
+          '<b>Clients could not be loaded.</b><span>' + esc(r.error.message) + '</span>' +
+          '<button class="btn btn-sm" data-a="retry" type="button">Try again</button></div></div>';
+        box.querySelector('[data-a="retry"]').addEventListener('click', function () { loadClients(then); });
         return;
       }
       state.clients = r.data || [];
@@ -284,13 +292,30 @@
 
   function paintList() {
     var rows = visible();
-    $('crmCount').textContent = rows.length + (rows.length === 1 ? ' client' : ' clients');
+    /* The same count everywhere: how many there are, or how many of them a
+       filter has left. It used to read "1 client" whether that was the whole
+       list or one of forty. */
+    $('crmCount').textContent = !state.clients.length ? ''
+      : rows.length === state.clients.length
+        ? state.clients.length + (state.clients.length === 1 ? ' client' : ' clients')
+        : rows.length + ' of ' + state.clients.length;
     var box = $('crmList');
     box.innerHTML = '';
     if (!rows.length) {
-      box.innerHTML = '<div class="empty">' +
-        (state.clients.length ? 'No client matches that.'
-                              : 'No clients yet.') + '</div>';
+      /* Nothing there and nothing left after a filter are two different
+         answers, so each carries its own way out. */
+      box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
+        (state.clients.length
+          ? '<b>No matches.</b><button class="btn btn-sm" data-a="clear" type="button">Clear the filters</button>'
+          : '<b>No clients yet.</b><button class="btn btn-sm" data-a="first" type="button">Add the first lead</button>') +
+        '</div></div>';
+      var clear = box.querySelector('[data-a="clear"]');
+      if (clear) clear.addEventListener('click', function () {
+        $('crmSearch').value = ''; $('crmStage').value = 'all'; $('crmOwner').value = 'all';
+        paintList();
+      });
+      var first = box.querySelector('[data-a="first"]');
+      if (first) first.addEventListener('click', function () { $('crmNew').click(); });
       return;
     }
     GROUPS.forEach(function (g) {
@@ -315,7 +340,7 @@
           (late ? '<span class="tone is-warn">' + late + ' overdue</span>' : '') +
           (worthText ? '<span class="crm-group-worth">' + esc(worthText) + '</span>' : '') +
         '</div>' +
-        '<div class="crm-table">' +
+        '<div class="crm-table softpanel">' +
           '<div class="crm-head">' + ['Client', 'Stage', 'Industry', 'Value', 'Person in charge']
             .map(function (h) { return '<span>' + h + '</span>'; }).join('') + '</div>' +
         '</div>';
@@ -667,10 +692,10 @@
 
   function loadContacts() {
     var box = $('crmContacts');
-    box.innerHTML = '<div class="empty">Loading…</div>';
+    if (!box.querySelector('.crm-table')) skeleton(box, 3);
     db.from('client_contacts').select('*').eq('client_id', state.client.id)
       .order('is_primary', { ascending: false }).order('name').then(function (r) {
-        if (r.error) { box.innerHTML = '<div class="empty">Could not load contacts.</div>'; return; }
+        if (r.error) { failLine(box, 'Contacts', r.error.message, loadContacts); return; }
         var all = r.data || [];
         state.contacts = all.filter(function (c) { return !c.archived_at; });
         var gone = all.filter(function (c) { return c.archived_at; });
@@ -974,11 +999,11 @@
 
   function loadTouches() {
     var box = $('crmTouches');
-    box.innerHTML = '<div class="empty">Loading…</div>';
+    if (!box.querySelector('.touch')) skeleton(box, 3);
     db.from('client_touches').select('*').eq('client_id', state.client.id)
       .order('happened_at', { ascending: false }).order('created_at', { ascending: false })
       .then(function (r) {
-        if (r.error) { box.innerHTML = '<div class="empty">Could not load the log.</div>'; return; }
+        if (r.error) { failLine(box, 'Calls and visits', r.error.message, loadTouches); return; }
         var all = r.data || [];
         state.touches = all.filter(function (t) { return !t.archived_at; });
         var gone = all.filter(function (t) { return t.archived_at; });
@@ -1127,7 +1152,7 @@
 
   function loadWork() {
     var box = $('crmWorkList');
-    box.innerHTML = '<div class="empty">Loading…</div>';
+    if (!box.querySelector('.crm-table')) skeleton(box, 2);
     var c = state.client;
     var out = { sets: null, camps: null };
     var done = function () {
@@ -1177,8 +1202,20 @@
       return;
     }
     box.innerHTML = '';
+    /* One panel with rows in it, as every other section of this record is. */
+    var list = document.createElement('div');
+    list.className = 'work-list';
+    box.appendChild(list);
+    box = list;
+    /* A row with no name is a row nobody can pick out, and one campaign is
+       live called `0`. The record is never renamed behind anybody's back; it
+       is drawn under a stand in and stays editable in Creator Campaigns. */
+    var named = function (t) {
+      var v = String(t == null ? '' : t).trim();
+      return (!v || v === '0' || v === 'null' || v === 'undefined') ? 'Untitled campaign' : v;
+    };
     camps.forEach(function (k) {
-      box.appendChild(workRow(k.title,
+      box.appendChild(workRow(named(k.title),
         'Creator campaign · ' + k.slots + ' creator' + (k.slots === 1 ? '' : 's'),
         '/admin/?s=campaigns&campaign=' + encodeURIComponent(k.id),
         [CAMP_WORD[k.state] || k.state, W.tone(k.state)]));
@@ -1196,8 +1233,12 @@
     row.type = 'button';
     row.className = 'work-row';
     row.innerHTML =
-      '<span class="work-row-name">' + esc(title) +
-        (chip ? ' <span class="tone ' + esc(chip[1] || '') + '">' + esc(chip[0]) + '</span>' : '') +
+      /* The name is what gives way when the row runs out of room; the state
+         is the one thing the row exists to tell you. Both used to sit in one
+         clipped box, so "Open for selection" came out as "Open for selectio"
+         on a phone while the name it belonged to had room to spare. */
+      '<span class="work-row-name"><span class="work-row-title">' + esc(title) + '</span>' +
+        (chip ? '<span class="tone ' + esc(chip[1] || '') + '">' + esc(chip[0]) + '</span>' : '') +
       '</span>' +
       '<span class="work-row-meta">' + esc(meta) + '</span>' +
       '<svg class="work-row-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
@@ -1260,11 +1301,11 @@
 
   function loadServices() {
     var box = $('crmServices');
-    box.innerHTML = '<div class="empty">Loading…</div>';
+    if (!box.querySelector('.crm-table')) skeleton(box, 3);
     loadCatalog(function () {
       db.from('client_services').select('*').eq('client_id', state.client.id)
         .is('archived_at', null).order('created_at').then(function (r) {
-          if (r.error) { box.innerHTML = '<div class="empty">' + esc(r.error.message) + '</div>'; return; }
+          if (r.error) { failLine(box, 'Services', r.error.message, loadServices); return; }
           state.services = r.data || [];
           paintServices();
         });
@@ -1540,9 +1581,9 @@
     var box = $('crmDocuments');
     var c = state.client;
     if (!DOCS) { box.innerHTML = ''; return; }
-    box.innerHTML = '<div class="empty">Loading…</div>';
+    if (!box.querySelector('.crm-table')) skeleton(box, 2);
     DOCS.list(c.id, function (rows, err) {
-      if (err) { box.innerHTML = '<div class="empty">' + esc(err.message || err) + '</div>'; return; }
+      if (err) { failLine(box, 'Documents', err.message || String(err), loadDocuments); return; }
       box.innerHTML = '';
       if (!rows.length) { box.innerHTML = '<div class="empty">No documents.</div>'; return; }
       var table = document.createElement('div');
@@ -1611,35 +1652,104 @@
   // ---- Rate card (the Services section) ------------------------------------
   var editingSvc = null;
   function isAdmin() { return Boolean(bridge.may && bridge.may('admin')); }
+  /* What is typed in the command bar. Kept out of the URL: a search is what
+     somebody is doing this minute, not where they are. */
+  var svcFind = '', svcCat = '';
+
   function enterServices() {
     catalog = null;
     $('svcAdd').hidden = !isAdmin();
     $('svcBox').hidden = true;
     msg('svcListMsg', '');
-    $('svcList').innerHTML = '<div class="empty">Loading…</div>';
-    loadCatalog(paintCatalog);
+    skeleton($('svcList'), 6);
+    loadCatalog(function () { fillSvcFilter(); paintCatalog(); });
   }
+
+  /* Loading is the shape of what is coming, not the word for it: a line of
+     text that is replaced by rows makes the page jump by its own height. */
+  function skeleton(box, n) {
+    var html = '';
+    for (var i = 0; i < n; i++) html += '<div class="skel-row"></div>';
+    box.innerHTML = '<div class="softpanel"><div class="skel">' + html + '</div></div>';
+  }
+
+  // The tiers the card is read in, and the categories inside each.
+  function svcTiers(rows) {
+    var extra = rows.map(function (s) { return s.category; })
+      .filter(function (k, i, a) { return CATS.indexOf(k) < 0 && a.indexOf(k) === i; });
+    return [
+      ['Services', ['Content', 'Account management', 'Monthly packages',
+                    'KOC programmes', 'KOL programmes'].concat(extra)],
+      ['Add-ons',  ['Verification', 'Add-ons']]
+    ];
+  }
+
+  function fillSvcFilter() {
+    var sel = $('svcFilter');
+    if (!sel) return;
+    var rows = catalog || [];
+    var seen = [];
+    svcTiers(rows).forEach(function (t) {
+      t[1].forEach(function (k) {
+        if (seen.indexOf(k) < 0 && rows.some(function (s) { return s.category === k; })) seen.push(k);
+      });
+    });
+    sel.innerHTML = '<option value="">All categories</option>' + seen.map(function (k) {
+      return '<option value="' + esc(k) + '">' + esc(k) + '</option>';
+    }).join('');
+    sel.value = svcCat;
+  }
+
+  /* Name, what it includes and the unit: a search on the card is somebody
+     looking for a line to quote, and they rarely remember its exact title. */
+  function svcMatch(s) {
+    if (!svcCat && !svcFind) return true;
+    if (svcCat && s.category !== svcCat) return false;
+    if (!svcFind) return true;
+    var hay = [s.name, s.note, s.unit, s.detail, s.category].join(' ').toLowerCase();
+    return hay.indexOf(svcFind) > -1;
+  }
+
   function paintCatalog() {
     var box = $('svcList');
     box.innerHTML = '';
-    var rows = catalog || [];
-    if (!rows.length) { box.innerHTML = '<div class="empty">No services.</div>'; return; }
+    var all = catalog || [];
+    var rows = all.filter(svcMatch);
+    var count = $('svcCount');
+    if (count) {
+      count.textContent = !all.length ? ''
+        : rows.length === all.length ? all.length + ' services'
+        : rows.length + ' of ' + all.length;
+    }
+
+    if (!all.length) {
+      box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
+        '<b>The rate card is empty.</b>' +
+        (isAdmin() ? '<button class="btn btn-sm" data-a="first" type="button">Add the first service</button>' : '') +
+        '</div></div>';
+      var first = box.querySelector('[data-a="first"]');
+      if (first) first.addEventListener('click', function () { openSvc(null); });
+      return;
+    }
+    if (!rows.length) {
+      box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
+        '<b>No matches.</b><button class="btn btn-sm" data-a="clear" type="button">Clear the filters</button>' +
+        '</div></div>';
+      box.querySelector('[data-a="clear"]').addEventListener('click', clearSvcFilters);
+      return;
+    }
+
     // Two tables, not a card per category: what is sold, and what is added
     // to it. Categories are sub-headings inside each.
-    var extra = rows.map(function (s) { return s.category; })
-      .filter(function (k, i, a) { return CATS.indexOf(k) < 0 && a.indexOf(k) === i; });
-    var TIERS = [
-      ['Services', ['Content', 'Account management', 'Monthly packages', 'KOC programmes', 'KOL programmes'].concat(extra)],
-      ['Add-ons',  ['Verification', 'Add-ons']]
-    ];
-    TIERS.forEach(function (t) {
+    svcTiers(all).forEach(function (t) {
       var cats = t[1].filter(function (k) { return rows.some(function (s) { return s.category === k; }); });
       if (!cats.length) return;
       var n = rows.filter(function (s) { return cats.indexOf(s.category) > -1; }).length;
       var sec = document.createElement('section');
       sec.className = 'crm-group';
       sec.innerHTML = '<div class="crm-group-head"><h3>' + esc(t[0]) + ' <span>' + n + '</span></h3></div>' +
-        '<div class="crm-table"><div class="crm-head svc-row cat-row"><span>Service</span><span class="svc-rate">Rate</span>' +
+        '<div class="crm-table softpanel"><div class="crm-head svc-row cat-row">' +
+        '<span>Service</span><span class="svc-rate">Rate</span>' +
         '<span>Unit</span><span></span></div></div>';
       var table = sec.querySelector('.crm-table');
       cats.forEach(function (k) {
@@ -1647,11 +1757,28 @@
         cat.className = 'svc-cat';
         cat.textContent = k;
         table.appendChild(cat);
-        rows.filter(function (s) { return s.category === k; }).forEach(function (s) { table.appendChild(catalogRow(s)); });
+        rows.filter(function (s) { return s.category === k; })
+            .forEach(function (s) { table.appendChild(catalogRow(s)); });
       });
       box.appendChild(sec);
     });
   }
+
+  function clearSvcFilters() {
+    svcFind = ''; svcCat = '';
+    if ($('svcFind')) $('svcFind').value = '';
+    if ($('svcFilter')) $('svcFilter').value = '';
+    paintCatalog();
+  }
+
+  if ($('svcFind')) $('svcFind').addEventListener('input', function () {
+    svcFind = this.value.trim().toLowerCase();
+    paintCatalog();
+  });
+  if ($('svcFilter')) $('svcFilter').addEventListener('change', function () {
+    svcCat = this.value;
+    paintCatalog();
+  });
   function catalogRow(s) {
     var row = document.createElement('div');
     row.className = 'svc-row' + (s.active === false ? ' is-off' : '');

@@ -353,7 +353,7 @@
     var changesBtn = wrap.querySelector('.btn-changes');
 
     badge.className = 'badge status status-pending';
-    badge.innerHTML = '<i class="status-dot"></i><span></span>';
+    badge.innerHTML = '<span></span>';
     var badgeWord = badge.querySelector('span');
     approveBtn.setAttribute('aria-pressed', 'false');
     changesBtn.setAttribute('aria-pressed', 'false');

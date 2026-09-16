@@ -72,15 +72,26 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutMenus(); });
 
   function load() {
-    $('teamList').innerHTML = '<div class="empty">Loading…</div>';
+    $('teamList').innerHTML = '<div class="softpanel"><div class="skel">' +
+      '<div class="skel-row"></div><div class="skel-row"></div><div class="skel-row"></div>' +
+      '<div class="skel-row"></div></div></div>';
     db.from('team_roles').select('*').order('position').order('name').then(function (r) {
-      if (r.error) { $('groupList').innerHTML = '<div class="empty">' + esc(r.error.message) + '</div>'; return; }
+      if (r.error) {
+        $('groupList').innerHTML = '<div class="softpanel"><div class="errline">' +
+          '<b>Could not load the groups.</b><span>' + esc(r.error.message) + '</span></div></div>';
+        return;
+      }
       state.roles = r.data || [];
       paintGroups();
       fillRolePick();
+      fillGroupPick();
       db.from('team_members').select('*').order('active', { ascending: false })
         .order('role').order('name').then(function (q) {
-          if (q.error) { $('teamList').innerHTML = '<div class="empty">' + esc(q.error.message) + '</div>'; return; }
+          if (q.error) {
+            $('teamList').innerHTML = '<div class="softpanel"><div class="errline">' +
+              '<b>Could not load the team.</b><span>' + esc(q.error.message) + '</span></div></div>';
+            return;
+          }
           state.rows = q.data || [];
           paintMembers();
           paintGroups();   // member counts and Delete depend on the rows
@@ -108,29 +119,83 @@
      the same thing the groups table below already says, three times over, and
      answered "who is in Sales" only by reading every row. The heading answers
      it, and moving somebody is Edit in the ⋯, where a rare action belongs. */
+  var teamFind = '', teamGroup = '';
+
+  function fillGroupPick() {
+    var sel = $('teamGroupPick');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Every group</option>' + state.roles.map(function (r) {
+      return '<option value="' + esc(r.slug) + '">' + esc(r.name) + '</option>';
+    }).join('');
+    sel.value = teamGroup;
+  }
+  function teamMatch(m) {
+    if (teamGroup && m.role !== teamGroup) return false;
+    if (!teamFind) return true;
+    return (String(m.name || '') + ' ' + String(m.email || ''))
+      .toLowerCase().indexOf(teamFind) > -1;
+  }
+
   function paintMembers() {
     var box = $('teamList');
     box.innerHTML = '';
-    if (!state.rows.length) { box.innerHTML = '<div class="empty">No team members.</div>'; return; }
+    var all = state.rows;
+    var rows = all.filter(teamMatch);
+    var count = $('teamCount');
+    if (count) {
+      count.textContent = !all.length ? ''
+        : rows.length === all.length ? all.length + (all.length === 1 ? ' member' : ' members')
+        : rows.length + ' of ' + all.length;
+    }
+
+    if (!all.length) {
+      box.innerHTML = '<div class="softpanel"><div class="emptyline"><b>Nobody on the team yet.</b>' +
+        '<button class="btn btn-sm" data-a="first" type="button">Add the first member</button></div></div>';
+      box.querySelector('[data-a="first"]').addEventListener('click', function () { openMemberBox(null); });
+      return;
+    }
+    if (!rows.length) {
+      box.innerHTML = '<div class="softpanel"><div class="emptyline"><b>No matches.</b>' +
+        '<button class="btn btn-sm" data-a="clear" type="button">Clear the filters</button></div></div>';
+      box.querySelector('[data-a="clear"]').addEventListener('click', function () {
+        teamFind = ''; teamGroup = '';
+        if ($('teamFind')) $('teamFind').value = '';
+        if ($('teamGroupPick')) $('teamGroupPick').value = '';
+        paintMembers();
+      });
+      return;
+    }
+
+    var table = document.createElement('div');
+    table.className = 'team-table softpanel';
     var head = document.createElement('div');
-    head.className = 'team-head';
-    head.innerHTML = '<span>Person</span><span></span>';
-    box.appendChild(head);
+    head.className = 'team-head team-row';
+    head.innerHTML = '<span>Person</span><span>Sign-in email</span><span></span><span></span>';
+    table.appendChild(head);
+
     var placed = {};
     state.roles.forEach(function (r) {
-      var mine = state.rows.filter(function (m) { return m.role === r.slug; });
+      var mine = rows.filter(function (m) { return m.role === r.slug; });
       if (!mine.length) return;   // a group nobody is in draws no heading
       mine.forEach(function (m) { placed[m.id] = true; });
-      box.appendChild(catHead(r.name));
-      byName(mine).forEach(function (m) { box.appendChild(memberRow(m)); });
+      table.appendChild(catHead(r.name));
+      byName(mine).forEach(function (m) { table.appendChild(memberRow(m)); });
     });
     // A person whose group was deleted under them still has to be reachable.
-    var loose = state.rows.filter(function (m) { return !placed[m.id]; });
+    var loose = rows.filter(function (m) { return !placed[m.id]; });
     if (loose.length) {
-      box.appendChild(catHead('No group'));
-      byName(loose).forEach(function (m) { box.appendChild(memberRow(m)); });
+      table.appendChild(catHead('No group'));
+      byName(loose).forEach(function (m) { table.appendChild(memberRow(m)); });
     }
+    box.appendChild(table);
   }
+
+  if ($('teamFind')) $('teamFind').addEventListener('input', function () {
+    teamFind = this.value.trim().toLowerCase(); paintMembers();
+  });
+  if ($('teamGroupPick')) $('teamGroupPick').addEventListener('change', function () {
+    teamGroup = this.value; paintMembers();
+  });
   function byName(a) {
     return a.slice().sort(function (x, y) {
       if (Boolean(x.active) !== Boolean(y.active)) return x.active ? -1 : 1;
@@ -153,9 +218,9 @@
          the one accent on the ordinary case and leaves the exception looking
          like everything else. The row says nothing when a person is working
          and names it when they are not. */
-      '<span class="team-who"><b>' + esc(m.name) + (self ? ' <i>you</i>' : '') +
-        (m.active ? '' : ' <span class="tone">Inactive</span>') + '</b>' +
-        '<small>' + esc(m.email || '') + '</small></span>' +
+      '<span class="team-who"><b>' + esc(m.name) + (self ? ' <i>you</i>' : '') + '</b></span>' +
+      '<span class="team-mail">' + esc(m.email || '') + '</span>' +
+      '<span class="team-state">' + (m.active ? '' : '<span class="tone">Inactive</span>') + '</span>' +
       /* Mail leaves the building and cannot be recalled, so Send invitation
          sits one place from Edit and asks first, as it does on a contact.
          Standing somebody down happens once in a job, so it is here rather
