@@ -3606,6 +3606,8 @@ body > .shell { width: 100%; }
 body.no-remove #deleteClient,
 body.no-remove #campDangerRow,
 body.no-remove .kmenu-item[data-a="del"].is-danger:not([data-soft]) { display: none !important; }
+body.no-billing #crmTabs [data-needs-billing],
+body.no-billing .rec-pane[data-pane="billing"] { display: none !important; }
 /* Voiding a verified letter reverses a confirmation, so it is its own
    capability rather than a corner of Clients. The database checks it again
    when the button is pressed; this only stops the screen offering it. */

@@ -823,10 +823,12 @@
              have a safe actor/System fallback. */
           var actorLabel = typeof whoName === 'function' ? whoName(actor) : actor;
           el.innerHTML =
-            '<span class="log-when">' + esc(niceDate(x.created_at)) + '</span>' +
-            '<span class="log-what">' + esc(logWord(x.action)) + '</span>' +
-            '<span class="log-detail">' + esc(x.detail || '') + '</span>' +
-            '<span class="log-who">' + esc(whoName(x.actor)) + '</span>';
+            '<time class="log-when" datetime="' + esc(x.created_at || '') + '">' + esc(activityStamp(x.created_at)) + '</time>' +
+            '<span class="log-event"><b class="log-what">' + esc(logWord(x.action)) + '</b>' +
+              (x.detail ? '<span class="log-detail">' + esc(x.detail) + '</span>' : '') + '</span>' +
+            '<span class="log-who"><span class="log-avatar" aria-hidden="true">' +
+              esc(actorInitial(actorLabel)) + '</span><span class="log-person">' +
+              esc(actorLabel || 'System') + '</span></span>';
           t.appendChild(el);
         });
         box.innerHTML = '';
