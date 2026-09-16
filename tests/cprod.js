@@ -43,8 +43,8 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   say('sections: "' + await p.locator('#bookingHead').innerText() + '" / "' + await p.locator('#chooseHead').innerText() + '"');
   say('bookings: ' + await p.locator('.booking').count() + '  still choosable: ' + await p.locator('.crow:not(.crow-head)').count());
   say('chips: ' + (await p.locator('.chip-state').allInnerTexts()).join(' | '));
-  say('highlighted (theirs to act on): ' + await p.locator('.booking:has(.booking-cta)').count() +
-      ' -> ' + await p.locator('.booking:has(.booking-cta) .chip-state').innerText());
+  say('theirs to act on: ' + await p.locator('.booking:has(.approve)').count() +
+      ' -> ' + await p.locator('.booking:has(.approve) .chip-state').innerText());
   say('order (soonest shoot first): ' + (await p.locator('.booking .booking-head b').allInnerTexts()).join(' > '));
   say('first card facts: ' + (await p.locator('.booking').first().locator('.booking-facts').innerText()).replace(/\n/g, ' | '));
   say('progress: ' + await p.locator('#progCount').innerText() + ' / ' + await p.locator('#progSay').innerText());
@@ -59,17 +59,22 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   say('invoice link: visible=' + await p.locator('#amountPdf').isVisible() + ' text="' + await p.locator('#amountPdf').innerText() + '" href=' + await p.locator('#amountPdf').getAttribute('href'));
 
   say('=== draft review ===');
-  say('reviewing row is highlighted wherever it sits: ' + await p.locator('.booking:has(.booking-cta)').count());
-  await p.locator('.booking-cta').click();
-  await p.waitForTimeout(400);
-  say('sheet: ' + await p.locator('#draftSheet').isVisible() + ' heading=' + await p.locator('#draftHeading').innerText());
-  say('drive link: ' + await p.locator('#draftOpen').getAttribute('href'));
-  await p.locator('#draftChanges').click();
+  /* The decision is on the card. No button opens a window over it first, so
+     what the client reads and what they press are the same surface. */
+  const dec = p.locator('.booking:has(.approve) .approve');
+  say('decided in place, no sheet: ' + await p.locator('.approve').count() +
+      ' · windows to open first: ' + await p.locator('#draftSheet').count());
+  say('draft shown on the card: ' + await p.locator('.booking .client-draft-preview').count() +
+      ' · link out: ' + await p.locator('.client-draft-preview a').getAttribute('href'));
+  await dec.locator('[data-act="changes"]').click();
   await p.waitForTimeout(250);
-  say('changes without a note: ' + await p.locator('#draftMsg').innerText());
-  await p.fill('#draftNote', 'Please cut the intro and show the facade earlier.');
-  await p.fill('#draftBy', 'Wei Ling');
-  await p.locator('#draftChanges').click();
+  say('note box opens under the buttons: ' + await dec.locator('.changebox.is-open').count());
+  await dec.locator('[data-act="send"]').click();
+  await p.waitForTimeout(250);
+  say('changes without a note: ' + await dec.locator('.approve-state').innerText());
+  await dec.locator('.textarea').fill('Please cut the intro and show the facade earlier.');
+  await dec.locator('.approve-who .input').fill('Wei Ling');
+  await dec.locator('[data-act="send"]').click();
   await p.waitForTimeout(900);
   say('state after changes: ' + await p.evaluate(() => window.__DB.campaign_options[0].state));
   say('round now: ' + await p.evaluate(() => window.__DB.campaign_options[0].revision_round));
@@ -80,11 +85,10 @@ const SEED = `(function(){ var D = window.__DB; if (D.campaigns.length) return;
   await p.evaluate(() => { window.__DB.campaign_options[0].state = 'reviewing'; window.__persist(); });
   await p.reload({ waitUntil: 'networkidle' });
   await p.waitForTimeout(700);
-  say('reviewing card facts: ' + (await p.locator('.booking:has(.booking-cta) .booking-facts').innerText()).replace(/\n/g, ' | '));
-  await p.locator('.booking-cta').click();
-  await p.waitForTimeout(350);
-  say('last-round warning: ' + await p.locator('#draftBlurb').innerText());
-  await p.locator('#draftApprove').click();
+  say('reviewing card facts: ' + (await p.locator('.booking:has(.approve) .booking-facts').innerText()).replace(/\n/g, ' | '));
+  // The name is remembered from the round above, so it is typed once.
+  say('name carried over: "' + await p.locator('.approve-who .input').inputValue() + '"');
+  await p.locator('.booking:has(.approve) [data-act="approve"]').click();
   await p.waitForTimeout(900);
   say('state after approve: ' + await p.evaluate(() => window.__DB.campaign_options[0].state));
   say('chips now: ' + (await p.locator('.chip-state').allInnerTexts()).join(' | '));

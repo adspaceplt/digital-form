@@ -3858,6 +3858,20 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   .client-draft-media video, .client-draft-media img { width: 100%; max-height: 72vh; }
 }
 
+/* The decision sits on the card it belongs to, so it takes the card's own
+   gutter rather than the approval component's 16px inset, and the hairline is
+   what separates the work above from the answer below. Everything else about
+   it — the blue Approve, the quiet Request changes, the note that opens under
+   them — is the component Content Review already uses. */
+.booking > .approve { padding: 14px 0 0; margin-top: 12px; }
+.approve-who { display: block; margin-bottom: 10px; }
+/* A field standing alone fills what it is in; the cap is a desktop measure,
+   where a name in a 1100px card would otherwise draw a field the width of the
+   page for eight characters. */
+.approve-who .input { display: block; width: 100%; margin-top: 5px; }
+@media (min-width: 641px) { .approve-who .input { max-width: 280px; } }
+.approve-state.is-err { color: var(--err); }
+
 /* ==========================================================================
    SOFT PRECISION PRIMITIVES
    Built for the routes being migrated one at a time. Nothing here restyles an

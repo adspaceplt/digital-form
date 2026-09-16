@@ -136,19 +136,17 @@
       pic: 'Contact',
       goLive: 'Going live',
       viewPost: 'View post',
-      reviewDraft: 'Review draft',
       captionLabel: 'Caption',
-      draftHeading: 'Review draft',
-      draftBlurb: 'Open the draft, then approve it or request changes.',
       openDraft: 'Open the draft ↗',
-      noteLabel: 'Anything to change (optional)',
+      noteLabel: 'Changes required',
       byLabel: 'Your name',
       approve: 'Approve',
       askChanges: 'Request changes',
+      sendRequest: 'Send request',
       roundOf: function (n) { return 'Revision round ' + n + ' of 2'; },
-      lastRound: 'Final included revision.',
       reviewThanks: 'Received. The team will follow up.',
       needNote: 'Please describe the changes required.',
+      saveFailed: 'Unable to save. Please try again.',
       unavailable: 'Unavailable. Please select a replacement below.',
       results: 'Results',
       resultsHead: 'Campaign results',
@@ -226,19 +224,17 @@
       pic: '联系人',
       goLive: '发布日期',
       viewPost: '查看帖子',
-      reviewDraft: '查看初稿',
       captionLabel: '文案',
-      draftHeading: '查看初稿',
-      draftBlurb: '请打开初稿，然后通过或提出修改。',
       openDraft: '打开初稿 ↗',
-      noteLabel: '需要修改的地方（选填）',
+      noteLabel: '需要修改的内容',
       byLabel: '您的姓名',
       approve: '通过',
       askChanges: '需要修改',
+      sendRequest: '提交修改',
       roundOf: function (n) { return '第 ' + n + ' 次修改（共 2 次）'; },
-      lastRound: '最后一次包含的修改。',
       reviewThanks: '已收到，团队将跟进处理。',
       needNote: '请说明需要修改的内容。',
+      saveFailed: '保存失败，请重试。',
       unavailable: '暂不可用，请在下方选择替补。',
       results: '数据',
       resultsHead: '合作成效',
@@ -512,13 +508,9 @@
       factsHtml +
       (o.state === 'withdrawn' ? '<div class="booking-meta">' + esc(t().unavailable) + '</div>' : '') +
       (resultsOf(posts) || '') +
-      (mine && hasDraft(o) ? draftPreview(o) : '') +
-      (mine && hasDraft(o) ? '<button class="btn btn-sm btn-primary booking-cta" type="button">' +
-        esc(t().reviewDraft) + '</button>' : '');
+      (mine && hasDraft(o) ? draftPreview(o) + decisionBlock(o) : '');
 
-    if (mine && hasDraft(o)) {
-      row.querySelector('.booking-cta').addEventListener('click', function () { openDraft(o); });
-    }
+    if (mine && hasDraft(o)) wireDecision(row, o);
     return row;
   }
 
@@ -570,15 +562,14 @@
   }
 
   // ---- Draft review -------------------------------------------------------
-  var reviewing = null;
 
   /* A draft the team released is the creator's own files, a pasted link, or
      both. get_campaign sends neither until the release, so a card with
      nothing to open is a card the client is not being asked to decide on. */
   function hasDraft(o) { return !!(o.draft_url || (o.files || []).length); }
 
-  /* The work is visible before the decision sheet opens. A 9:16 video is the
-     main object being reviewed, not a thumbnail that asks for another tab. */
+  /* The work itself, on the card. A 9:16 video is the main object being
+     reviewed, not a thumbnail that asks for another tab. */
   function draftPreview(o) {
     var files = o.files || [];
     var media = files.map(function (f) {
@@ -598,67 +589,105 @@
       '</div>';
   }
 
-  function fileCard(f) {
-    var ext = String(f.name || '').split('.').pop().toUpperCase() || 'FILE';
-    if (f.kind === 'video') {
-      return '<div class="filecard filecard-video"><video controls playsinline preload="metadata" src="' +
-        esc(f.url) + '"></video><span class="filecard-name">' + esc(f.name) + '</span></div>';
+  /* The name a decision is recorded under, shared with Content Review, so a
+     client who has already approved a post does not type it a second time. */
+  var NAME_KEY = 'adspace_reviewer';
+  function knownName() {
+    try { return localStorage.getItem(NAME_KEY) || ''; } catch (e) { return ''; }
+  }
+  function keepName(n) {
+    if (!n) return;
+    try { localStorage.setItem(NAME_KEY, n); } catch (e) {}
+  }
+
+  /* Content Review decides in place, and this is the same decision, so it is
+     the same component: Approve, Request changes, and a note that opens under
+     them. It used to be a button that opened the draft in a window over the
+     card — a frame to open and a frame to dismiss before the client could say
+     anything, on a card that is already showing them what they are deciding
+     on. */
+  function decisionBlock(o) {
+    var byId = 'by-' + String(o.id).replace(/[^\w-]/g, '');
+    return '<div class="approve">' +
+      '<label class="field-label approve-who" for="' + esc(byId) + '">' + esc(t().byLabel) +
+        '<input class="input input-sm" id="' + esc(byId) + '" value="' + esc(knownName()) + '">' +
+      '</label>' +
+      '<div class="approve-row">' +
+        '<button class="btn btn-approve" type="button" data-act="approve">' + esc(t().approve) + '</button>' +
+        '<button class="btn btn-changes" type="button" data-act="changes">' + esc(t().askChanges) + '</button>' +
+      '</div>' +
+      '<div class="changebox">' +
+        '<textarea class="textarea" rows="3" aria-label="' + esc(t().noteLabel) +
+          '" placeholder="' + esc(t().needNote) + '"></textarea>' +
+        '<div class="changebox-actions">' +
+          '<button class="btn btn-sm" type="button" data-act="cancel">' + esc(t().cancel) + '</button>' +
+          '<button class="btn btn-sm btn-primary" type="button" data-act="send">' + esc(t().sendRequest) + '</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="approve-state" role="status"></div>' +
+    '</div>';
+  }
+
+  function wireDecision(row, o) {
+    var wrap  = row.querySelector('.approve');
+    var box   = wrap.querySelector('.changebox');
+    var note  = wrap.querySelector('.textarea');
+    var state = wrap.querySelector('.approve-state');
+    var who   = wrap.querySelector('.approve-who .input');
+    var busy  = false;
+
+    function say(text, err) {
+      state.textContent = text || '';
+      state.classList.toggle('is-err', !!err);
     }
-    return '<a class="filecard" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
-      (f.kind === 'image'
-        ? '<img src="' + esc(f.url) + '" alt="" loading="lazy">'
-        : '<span class="filecard-kind">' + esc(ext) + '</span>') +
-      '<span class="filecard-name">' + esc(f.name) + '</span></a>';
-  }
+    function lock(on) {
+      busy = on;
+      Array.prototype.forEach.call(wrap.querySelectorAll('.btn'), function (b) { b.disabled = on; });
+    }
 
-  function openDraft(o) {
-    reviewing = o;
-    $('draftHeading').textContent = t().draftHeading + ' · ' + o.name;
-    $('draftBlurb').textContent = t().draftBlurb +
-      (o.revision_round >= 2 ? '  ' + t().lastRound : '');
-    var files = o.files || [];
-    $('draftFiles').innerHTML = files.map(fileCard).join('');
-    $('draftFiles').hidden = !files.length;
-    $('draftCaption').textContent = o.caption || '';
-    $('draftCaptionLabel').textContent = t().captionLabel;
-    $('draftCaptionWrap').hidden = !o.caption;
-    $('draftOpen').href = absUrl(o.draft_url);
-    $('draftOpen').textContent = t().openDraft;
-    $('draftOpen').hidden = !o.draft_url;
-    $('draftNoteLabel').textContent = t().noteLabel;
-    $('draftByLabel').textContent = t().byLabel;
-    $('draftApprove').textContent = t().approve;
-    $('draftChanges').textContent = t().askChanges;
-    $('draftNote').value = '';
-    msg('draftMsg', '');
-    $('draftSheet').hidden = false;
-  }
-  function shutDraft() { $('draftSheet').hidden = true; reviewing = null; }
-  $('draftClose').addEventListener('click', shutDraft);
-  $('draftSheet').addEventListener('click', function (e) {
-    if (e.target === $('draftSheet')) shutDraft();
-  });
-
-  function sendReview(decision) {
-    if (!reviewing) return;
-    var note = ($('draftNote').value || '').trim();
-    if (decision === 'changes' && !note) { msg('draftMsg', t().needNote, 'err'); return; }
-    db.rpc('review_draft', {
-      p_token: TOKEN, p_option: reviewing.id, p_decision: decision,
-      p_note: note || null, p_reviewer: ($('draftBy').value || '').trim() || null,
-      p_passcode: passcode
-    }).then(function (r) {
-      var d = (r && r.data) || {};
-      if ((r && r.error) || d.error) {
-        msg('draftMsg', (r.error && r.error.message) || d.error, 'err');
-        return;
-      }
-      shutDraft();
-      load();                       // states have moved, so read them back
+    wrap.querySelector('[data-act="approve"]').addEventListener('click', function () {
+      if (busy) return;
+      box.classList.remove('is-open');
+      send('approved', '');
     });
+    wrap.querySelector('[data-act="changes"]').addEventListener('click', function () {
+      box.classList.add('is-open');
+      note.focus();
+    });
+    box.querySelector('[data-act="cancel"]').addEventListener('click', function () {
+      box.classList.remove('is-open');
+      say('');
+    });
+    box.querySelector('[data-act="send"]').addEventListener('click', function () {
+      if (busy) return;
+      var text = (note.value || '').trim();
+      if (!text) { say(t().needNote, true); note.focus(); return; }
+      send('changes', text);
+    });
+
+    function send(decision, text) {
+      var name = (who.value || '').trim();
+      keepName(name);
+      lock(true);
+      say('');
+      db.rpc('review_draft', {
+        p_token: TOKEN, p_option: o.id, p_decision: decision,
+        p_note: text || null, p_reviewer: name || null, p_passcode: passcode
+      }).then(function (r) {
+        var d = (r && r.data) || {};
+        if ((r && r.error) || d.error) {
+          lock(false);
+          say((r.error && r.error.message) || d.error, true);
+          return;
+        }
+        say(t().reviewThanks);
+        load();                     // states have moved, so read them back
+      }).catch(function () {
+        lock(false);
+        say(t().saveFailed, true);
+      });
+    }
   }
-  $('draftApprove').addEventListener('click', function () { sendReview('approved'); });
-  $('draftChanges').addEventListener('click', function () { sendReview('changes'); });
 
   function fmtDate(d) {
     var dt = new Date(d + 'T00:00:00');
