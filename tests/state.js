@@ -53,7 +53,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.creators.length > 3) retur
 
   say('=== an open campaign survives ===');
   await p.locator('#tabCampaigns').click(); await p.waitForTimeout(500);
-  await p.locator('#campCards .bigcard').first().click(); await p.waitForTimeout(600);
+  await p.locator('#campCards .crm-row').first().click(); await p.waitForTimeout(600);
   say('open: ' + await where() + ' | name=' + await p.locator('#campName').innerText());
   await reload();
   say('after reload: ' + await where() + ' | work visible=' + await p.locator('#campWork').isVisible() + ' | name=' + await p.locator('#campName').innerText());
@@ -111,9 +111,9 @@ const SEED = `(function(){ var D = window.__DB; if (D.creators.length > 3) retur
 
   say('=== back to Content Review still works ===');
   await p.locator('.navitem[data-section="review"]').click(); await p.waitForTimeout(500);
-  say('review: ' + await where() + ' | clients listed=' + await p.locator('#clientCards .bigcard').count());
+  say('review: ' + await where() + ' | clients listed=' + await p.locator('#clientCards .crm-row').count());
   await reload();
-  say('after reload: ' + await where() + ' | clients listed=' + await p.locator('#clientCards .bigcard').count());
+  say('after reload: ' + await where() + ' | clients listed=' + await p.locator('#clientCards .crm-row').count());
 
   await ctx.close(); await b.close();
   say('=== errors ==='); say(errs.length ? errs.join('\n') : 'none');

@@ -34,7 +34,7 @@ const SEED = `(function(){ var D = window.__DB; if (D.clients.length > 2) return
   await p.evaluate(() => window.__signIn('adspacestudios@gmail.com'));
   await p.waitForTimeout(900);
   await p.screenshot({ path: process.argv[2] + '/d-crm-list.png' });
-  await p.locator('.crm-row').first().click(); await p.waitForTimeout(800);
+  await p.locator('#crmList .crm-row').first().click(); await p.waitForTimeout(800);
   await p.screenshot({ path: process.argv[2] + '/d-crm-client.png', fullPage: true });
   await p.locator('#crmBillToggle').click(); await p.waitForTimeout(300);
   await p.locator('#crmBillBody').screenshot({ path: process.argv[2] + '/d-billing.png' });

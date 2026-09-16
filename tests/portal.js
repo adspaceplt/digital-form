@@ -99,9 +99,18 @@ const SEED = `
   // --- the client ---
   await p.evaluate(() => window.__signIn('lim@lc.com')); await p.waitForTimeout(600);
   check('the listed email opens the portal', await p.locator('#app').isVisible() && await p.locator('#stateBox').isHidden());
+  /* Phase 2 gave the page an identity area: the client's own name, their state
+     and the facts that place them at the top, and what is left in the rail. The
+     same facts, read where they now are — and asserted to appear once, because
+     printing the registered name in both places is the duplication the change
+     was made to remove. */
+  const ident = await p.locator('#cpHead').innerText();
   const facts = await p.locator('#ovFacts').innerText();
-  check('the company as registered', facts.includes('LAMAN CITRA SDN BHD') && facts.includes('202201012345') && facts.includes('Malaysia · RM'));
-  check('the account manager and the status', facts.includes('Qiao Rou') && facts.includes('Active'));
+  check('the company as registered', ident.includes('LAMAN CITRA SDN BHD') &&
+    facts.includes('202201012345') && facts.includes('Malaysia · RM'));
+  check('the account manager and the status', ident.includes('Qiao Rou') && ident.includes('Active'));
+  check('nothing on the identity line is repeated in the rail',
+    !facts.includes('LAMAN CITRA SDN BHD') && !facts.includes('Qiao Rou'));
   check('one company: no company select', await p.locator('#clientPick').isHidden());
 
   /* The shared vocabulary, checked as a structure rather than a screen: a word

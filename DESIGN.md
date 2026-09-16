@@ -42,7 +42,11 @@ palette can never be bought with legibility.
 | `--card` | `#ffffff` | `#1e201d` | Panels, tables, rows |
 | `--sunk` | `#f9f9f9` | `#272727` | Inset areas, table sub-headings, hover |
 | `--fill` / `--on-fill` | `#1b1a17` / `#ffffff` | `#eff0ea` / `#191b17` | The solid ink surface and its text: primary button, selected `.acttab`, progress. **Not the Undo bar**: a full width ink slab a few pixels above an ink Add contact read as one enormous call to action, and the fill is what names the primary action |
-| `--accent` = `--ok` | `#1f7a4d` | `#4aa876` | The one green: go action, live state, complete ring |
+| `--action` | `#0b57d0` | `#a8c7fa` | **Blue means action.** The filled primary, the forward action (Publish, Release, Submit) and the client's Approve. White on `#0b57d0` is 6.39:1 and clears AA for normal text; Apple's own `#007aff` manages 4.02:1 with white on it and is not an option for a button this size. In dark the fill is light, so the pair swaps like every other fill here |
+| `--action-hover` / `--action-pressed` | `#0847ae` / `#063989` | `#c2dafc` / `#d3e3fd` | Its hover and its pressed step, both stated, because a button that answers nothing under the pointer reads as furniture |
+| `--on-action` | `#ffffff` | `#062e6f` | Its text. 8.5:1 in dark |
+| `--action-ring` | `#8ab4f8` | `#8ab4f8` | The focus ring on everything a keyboard reaches. Ours, not the platform's: the console's focus colour used to be whatever the browser drew and differed between two machines looking at the same screen |
+| `--accent` = `--ok` | `#1f7a4d` | `#4aa876` | The one green: **live state and success only**. It used to carry the forward button as well, so a screen could not say "press this" and "this is running" in two different voices, and a page of green chips competed with a green button for the one accent. Approved on a review card is green because by then it is a fact and no longer an action |
 | `--ok-bg` | `#ecf5f0` | `#17281f` | Its tint |
 | `--ok-solid` / `--on-ok` | `#1f7a4d` / `#ffffff` | `#4aa876` / `#07150e` | A green **fill** and its text |
 | `--warn` / `--warn-bg` | `#9c5c16` / `#fbf2e6` | `#cf9350` / `#2a2217` | Caution, unpublish, pending and reviewing states |
@@ -66,6 +70,24 @@ browser draws (select popups, scrollbars, the caret) follows too.
 #fff`; always `var(--fill)` / `var(--on-fill)`, `var(--ok-solid)` /
 `var(--on-ok)`. A hover that used to be a darker hex is `filter:
 brightness()` on the same token, so one value still drives both themes.
+
+**One colour per promise.** Blue moves, green reports, amber cautions, red
+destroys, and everything else is neutral. A view carries one prominent blue
+action, two where it genuinely offers two (Publish and Confirm on the campaign's
+client-selection pane), never three: `uxaudit` counts `.btn-go`, `.btn-primary`
+and `.btn-approve` together per scope and fails at more than two. Copy link,
+Preview, Edit, Cancel and every row-level action stay neutral — an Add button
+drawn on each of twenty rows is twenty filled slabs and leaves the panel's own
+primary nothing to be. The screen stays about nine tenths neutral, which is what
+makes the blue worth looking at.
+
+**A hover state lives inside `@media (hover: hover)`, without exception.**
+`.btn:hover` did not, and it outranks `.btn-primary`: a tap on a phone leaves
+`:hover` on, so the moment the primary became a filled blue the ink text that
+rule sets landed on it and Add lead came out at 2.72:1 on the one button in the
+view. The bug predated the colour; only the colour made it visible. The same
+applies to `.btn-warn`, `.btn-danger` and `.btn-quiet`, whose hover fills would
+otherwise stay stuck on the last thing a finger touched.
 
 **The accent marks the exception, not the norm.** Green is the live state, but
 a state that is true of nearly every row carries no information, and painting
@@ -675,6 +697,90 @@ line it needs while the boxes around it wrap — with `flex-wrap` on the
 container that follows them, or a full width box pushes the rate and Add past
 the screen edge.
 
+**A rule about a component asks the component's width, not the window's.**
+The record pane sits inside a 243px sidebar and beside a 380px rail, so a
+1280px window gives it 591px and a 1440px window 690px. Every
+`@media (max-width: 640px)` rule governing something *inside* that pane was
+therefore false at exactly the widths where it was needed: the client's
+Services row kept a five column grid in 591px, the name track collapsed to
+59px, and "Social media management for Instagram, Facebook and TikTok" came out
+one word per line in a 210px tall row. The same fault is latent in every pane
+row, and no viewport matrix can see it, because the viewport is not the number
+that is wrong.
+
+`ADspaceState.fit` measures `.console-body`, `.rec-pane` and `.rec-rail` with a
+`ResizeObserver` and writes `is-narrow` (≤640) and `is-tight` (≤460) onto them;
+the stylesheet keys on those instead of on a media query. One copy of each row
+template then serves the phone and the narrow pane, because on a phone the pane
+is narrow too.
+
+**Container queries are the obvious answer here and are the wrong one.**
+`container-type: inline-size` implies `contain: layout`, which makes the element
+a containing block for `position: fixed` descendants — and `ADspaceMenu.place()`
+positions every row ⋯ on the viewport with exactly that. Turning the pane into a
+container would put every menu in the console a few hundred pixels out. The
+measurement is done in script precisely so nothing gains containment.
+
+**Two thresholds, because two things break at two widths.** At 640 a row of
+four or five columns has to become two lines. At 460 even a two column row has
+to give up its summary line: the booking register keyed to the single 640
+threshold drew three line, 113px rows in a 591px pane that had room for one.
+
+**A declared minimum that cannot be honoured is worse than no minimum.** The
+services row states `minmax(180px, 1fr)` for the name and gives up 20px across
+its two money tracks so the fixed tracks and gaps come to 672 — which fits the
+690px pane a 1440px window leaves. Below that the row stacks on purpose rather
+than overflowing.
+
+**A phone row is two lines and its first line is a touch target.** 56 to 72px
+is the one line register row and it cannot also hold on a phone: 44px for the
+target, 20px for the state line and 24px of padding is 88px, and no arrangement
+of a name, a state, a date and two controls in 358px is shorter. The band is
+asserted where the row is one line; the phone is held to its own ceiling and to
+the same consistency.
+
+**A menu that is not a row menu still inherits the row menu's rules.** The
+account menu took `.kmenu`'s 320px width and `.kmenu-item`'s
+`flex-direction: column` — which exists so a row menu can stack a bold label
+over a description — so Theme and Sign out came out as an icon above a word
+above another word, centred, in a 320px panel. It states `flex-direction: row`,
+`justify-content: flex-start`, `text-align: left` and its own 260px width
+explicitly, and outranks `.kmenu` rather than merely disagreeing with it, because
+`.kmenu` comes later in the file.
+
+**A tab strip never wraps.** Wrapping put Activity alone on a second line and
+pushed the pane down by a tab's height. One row always, scrolling sideways below
+the width where the tabs fit, with `flex: 0 0 auto` on each so none is squeezed
+to avoid the scroll.
+
+**A template that claims every header in the console will claim the wrong one.**
+The clients list's seven columns hung off `.crm-head:not(.svc-row)`, which is a
+rule that says "any header not wearing one particular class". Short Links wore
+another, so its header took the client columns while its rows took their own
+five: DESTINATION sat 91px right of every destination under it and LABEL 103px
+left of every label, invisible at a glance because the labels are short and
+mute, and missed by the `cols` check, which only compares a header with a row it
+believes shares a grid. Every table states its own tracks now, on the header and
+on the row alike, hung off that table's own row class.
+
+**The last track is a track.** An `auto` final column is sized by its own row,
+and a header whose last cell is empty over the actions sizes it at nothing, so
+the three columns before it slide right of the rows beneath them. State it, at
+the width the cell actually holds.
+
+**An empty grid cell still holds its column.** `display: none` on an empty cell
+removes it from the grid, and the cells after it slide one track left: a booking
+with no summary put its state chip under the Booking heading. The cell stays on
+a desktop and leaves only on a phone, where it is a named area in a template
+that can afford to lose a row.
+
+**A hidden button is not a second action.** `:only-of-type` and
+`:has(.btn + .btn)` both count one, so a head whose second action is hidden
+until its data exists gave its heading the whole row and stretched the one
+visible button into a full width slab across the phone — the banner the rule was
+written to stop, and the loudest thing on the screen once the primary was a
+filled blue. The selectors read `:not([hidden])`.
+
 **A component is borrowed for its shape, never for its convenience.** The
 creator roster was drawn with `.slink`, the Short Links row, so a person's name
 came out in the slug's monospace face and the phone layout put the two icon
@@ -830,6 +936,10 @@ still sits on top of the shared one.
   replaced them", "Still to choose", "Something changed".
 - Back is navigation; Revert undoes a state; Restore brings back a
   record; Reinstate brings back a person; never "Return".
+- **The same two facts about the same person carry the same colour on every
+  screen that shows them.** A contact's Portal access is green because a sign-in
+  is live and Main contact is neutral because it is a designation; the client's
+  own page had the two the wrong way round for as long as it had them.
 - One status vocabulary on console and client page: Confirmed, Pending
   visit, Pending draft, Reviewing, Changes requested, Scheduled, Posted,
   Completed, Withdrawn; service lines Enquired, To quote, Confirmed;
@@ -1075,8 +1185,9 @@ still sits on top of the shared one.
 - **Jakob and mental models**: table, disclosure, ⋯ menu, sheet, chip,
   select; nothing invented; the shapes of rework.com style operations
   software.
-- **Von Restorff**: one accent. Green is the go action and the live state;
-  warn is caution; ink outline is the total; nothing else coloured. Being
+- **Von Restorff**: one accent per promise. **Blue is the action** (one per
+  view, two at most); green is the live state and success; warn is caution; red
+  destroys; ink outline is the total; nothing else coloured. Being
   chosen is a fill, not a colour and never a shadow: `--shadow` stays on
   panels and `--shadow-lift` on menus, as the colour table says.
 - **Tesler**: the console carries the complexity; the client page does not.

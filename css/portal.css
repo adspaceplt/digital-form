@@ -47,7 +47,22 @@
   --err-hi:     #8c1d18;   /* the pressed / heavier step, never a second red */
   --err-solid:  #b3261e;
   --on-err:     #ffffff;
-  --focus:      rgba(31,122,77,.18);
+  /* Blue means action. Green had been carrying two jobs at once — the forward
+     button and the live state — so a page could not say "this is the thing to
+     press" and "this is running" in two different voices. Blue is the one that
+     moves, green is the one that reports, amber cautions and red destroys.
+     #0B57D0 carries white at 6.39:1 and clears AA for normal text; Apple's own
+     #007AFF manages 4.02:1 with white on it and is not an option for a button
+     this size. Secondary actions stay neutral: the screen is still about
+     nine tenths neutral, and blue is what is left for guiding the eye. */
+  --action:         #0b57d0;
+  --action-hover:   #0847ae;
+  --action-pressed: #063989;
+  --on-action:      #ffffff;
+  /* The ring is the focus colour at the weight a ring is drawn, so one token
+     still drives every control. */
+  --action-ring:    #8ab4f8;
+  --focus:      rgba(11,87,208,.22);
   --scrim:      rgba(0,0,0,.42);
   --chrome:     rgba(255,255,255,.88);   /* the translucent sticky bar */
   /* Soft Precision. Two corners and nothing between them: 10px on anything a
@@ -145,7 +160,15 @@
     --err-hi:     #f2a9a2;
     --err-solid:  #e8837a;
     --on-err:     #2b100d;
-    --focus:      rgba(74,168,118,.30);
+    /* In dark the fill is light, so white on it disappears: the blue and its
+       text swap round the way every other fill in this file does. #062e6f on
+       #a8c7fa is 8.5:1, and #a8c7fa as a boundary on the page ground is 10.9:1. */
+    --action:         #a8c7fa;
+    --action-hover:   #c2dafc;
+    --action-pressed: #d3e3fd;
+    --on-action:      #062e6f;
+    --action-ring:    #8ab4f8;
+    --focus:      rgba(138,180,248,.34);
     --scrim:      rgba(0,0,0,.62);
     --chrome:     rgba(22,24,20,.88);
     --shadow:     0 1px 2px rgba(0,0,0,.5);
@@ -292,8 +315,18 @@ a { color: inherit; }
 @media (pointer: coarse) { .input[type="file"]::file-selector-button { height: 34px; } }
 .textarea { width: 100%; resize: vertical; min-height: 84px; padding-block: 10px; }
 .input:focus, .select:focus, .textarea:focus {
-  outline: none; border-color: var(--ink); box-shadow: 0 0 0 3px var(--focus);
+  outline: none; border-color: var(--action); box-shadow: 0 0 0 3px var(--focus);
 }
+/* One ring, ours, on everything a keyboard can reach. It used to be the
+   browser's own on every button, which meant the console's focus colour was
+   whatever the platform happened to draw and changed between two machines
+   looking at the same screen. Blue, because focus is interactivity and that is
+   what blue means here; `focus-visible` rather than `focus`, so a pointer does
+   not leave a ring behind on the last thing it pressed. */
+:where(button, [role="button"], a[href], summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--action-ring); outline-offset: 2px; border-radius: var(--radius-sm);
+}
+.input:focus-visible, .select:focus-visible, .textarea:focus-visible { outline: none; }
 .count { color: var(--ink-mute); font-size: 13px; }
 
 /* ---------- Batch ---------- */
@@ -361,7 +394,9 @@ a { color: inherit; }
   border-radius: 8px; padding: 0 12px; min-height: var(--ctl-h); font-size: 12px;
   color: var(--ink-soft);
 }
-.copy-btn:hover { border-color: var(--ink); color: var(--ink); }
+@media (hover: hover) {
+  .copy-btn:hover { border-color: var(--ink); color: var(--ink); }
+}
 
 /* ---------- Approval ---------- */
 .approve { border-top: 1px solid var(--line-soft); padding: 14px 16px; }
@@ -381,15 +416,31 @@ a { color: inherit; }
   text-decoration: none;
 }
 .btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
-.btn:hover { border-color: var(--ink); color: var(--ink); }
+/* Inside `@media (hover: hover)`, which is where this portal puts every hover
+   state so a phone cannot leave one stuck on the last thing tapped. Left
+   outside it, a tapped `.btn` kept `.btn:hover` — and `.btn:hover` outranks
+   `.btn-primary`, so the moment the primary became a blue fill the ink text
+   this rule sets landed on it: 2.72:1 on a touch device, on the one button in
+   the view. The bug was always there; only the colours made it visible. */
+@media (hover: hover) {
+  .btn:hover { border-color: var(--ink); color: var(--ink); }
+}
 /* Approve is the action we want the client to take, so it carries the weight.
-   Request changes stays available but visually quiet. */
+   Request changes stays available but visually quiet. Blue while it is still a
+   decision to make; the settled state below is green, because by then it is no
+   longer an action but a fact about the post. */
 .approve-row .btn-approve {
   flex: 1.35; font-weight: 600;
-  background: var(--ok-solid); border-color: var(--ok-solid); color: var(--on-ok);
+  background: var(--action); border-color: var(--action); color: var(--on-action);
 }
-.approve-row .btn-approve:hover { background: var(--ok-solid); border-color: var(--ok-solid);
-  color: var(--on-ok); filter: brightness(.88); }
+@media (hover: hover) {
+  .approve-row .btn-approve:hover {
+    background: var(--action-hover); border-color: var(--action-hover); color: var(--on-action);
+  }
+}
+.approve-row .btn-approve:active {
+  background: var(--action-pressed); border-color: var(--action-pressed); color: var(--on-action);
+}
 .approve-row .btn-approve[aria-pressed="true"]::before { content: '\2713\00a0'; }
 
 .approve-row .btn-changes { flex: 1; color: var(--ink-mute); }
@@ -397,9 +448,22 @@ a { color: inherit; }
 .approve-row .btn-changes[aria-pressed="true"] {
   background: var(--warn-solid); border-color: var(--warn-solid); color: var(--on-warn); font-weight: 600;
 }
-.btn-primary { background: var(--fill); border-color: var(--fill); color: var(--on-fill); flex: 0 0 auto; }
-.btn-primary:hover { background: var(--ink); filter: brightness(1.35) saturate(.9); color: var(--on-fill); }
-.btn[disabled] { opacity: .5; cursor: default; }
+/* The one thing to press in a view. Hover, pressed and disabled are all
+   stated, because a button that answers nothing under the pointer reads as
+   furniture and a disabled one that only fades reads as a rendering fault. */
+.btn-primary {
+  background: var(--action); border-color: var(--action);
+  color: var(--on-action); flex: 0 0 auto; font-weight: 600;
+}
+@media (hover: hover) {
+  .btn-primary:hover { background: var(--action-hover); border-color: var(--action-hover); color: var(--on-action); }
+}
+.btn-primary:active { background: var(--action-pressed); border-color: var(--action-pressed); color: var(--on-action); }
+/* Not a colour of its own: a disabled control is the same control, dimmed and
+   inert, and a second grey here is a second thing to keep in step. */
+.btn[disabled], .btn[aria-disabled="true"] {
+  opacity: .42; cursor: default; pointer-events: none; filter: saturate(.55);
+}
 
 .changebox { margin-top: 12px; display: none; }
 .changebox.is-open { display: block; }
@@ -1200,7 +1264,8 @@ a { color: inherit; }
 }
 .copy-more:hover { color: var(--ink); }
 
-/* An approved post is settled: one wide outlined button, no second option */
+/* An approved post is settled: one wide outlined button, no second option.
+   Green, because this is a status and no longer an action. */
 .approve-row.is-settled .btn-approve {
   flex: 1; background: var(--card); border-color: var(--ok); color: var(--ok);
   opacity: 1; cursor: default; font-weight: 600;
@@ -1231,8 +1296,10 @@ a { color: inherit; }
 .btn-sm { flex: 0 0 auto; padding: 0 13px; min-height: var(--ctl-h-sm); font-size: 12.5px; min-width: 92px; }
 .btn-sm svg { width: 13px; height: 13px; }
 .btn-danger { background: var(--err-solid); border-color: var(--err-solid); color: var(--on-err); flex: 0 0 auto; }
-.btn-danger:hover { background: var(--err-solid); border-color: var(--err-solid);
-  color: var(--on-err); filter: brightness(.88); }
+@media (hover: hover) {
+  .btn-danger:hover { background: var(--err-solid); border-color: var(--err-solid);
+    color: var(--on-err); filter: brightness(.88); }
+}
 .btn-icon { display: inline-flex; align-items: center; gap: 7px; }
 .btn-icon svg { width: 14px; height: 14px; }
 .dangerrow { display: flex; gap: 10px; align-items: center; }
@@ -1345,17 +1412,29 @@ a { color: inherit; }
      danger   solid red    destroys data
      quiet    borderless   incidental, never the point of the section
    ========================================================================= */
+/* Publish, Approve, Release, Submit. It used to be green, which put the word
+   for "go and do this" in the same colour as the word for "this is live", so a
+   row of green chips and a green button competed for the one accent. It is the
+   action colour now — the same blue as `.btn-primary`, because they are the
+   same promise — and a view still carries at most two of them. */
 .btn-go {
-  background: var(--ok-solid); border-color: var(--ok-solid); color: var(--on-ok); flex: 0 0 auto; font-weight: 600;
+  background: var(--action); border-color: var(--action); color: var(--on-action);
+  flex: 0 0 auto; font-weight: 600;
 }
-.btn-go:hover { background: var(--ok-solid); border-color: var(--ok-solid);
-  color: var(--on-ok); filter: brightness(.88); }
+@media (hover: hover) {
+  .btn-go:hover { background: var(--action-hover); border-color: var(--action-hover); color: var(--on-action); }
+}
+.btn-go:active { background: var(--action-pressed); border-color: var(--action-pressed); color: var(--on-action); }
 
 .btn-warn { background: var(--card); border-color: var(--warn); color: var(--warn); flex: 0 0 auto; }
-.btn-warn:hover { background: var(--warn-solid); border-color: var(--warn-solid); color: var(--on-warn); }
+@media (hover: hover) {
+  .btn-warn:hover { background: var(--warn-solid); border-color: var(--warn-solid); color: var(--on-warn); }
+}
 
 .btn-quiet { background: none; border-color: transparent; color: var(--ink-mute); flex: 0 0 auto; }
-.btn-quiet:hover { background: var(--line-soft); border-color: transparent; color: var(--ink); }
+@media (hover: hover) {
+  .btn-quiet:hover { background: var(--line-soft); border-color: transparent; color: var(--ink); }
+}
 .btn-quiet.is-danger { color: var(--err); }
 .btn-quiet.is-danger:hover { background: var(--err-bg); color: var(--err-hi); }
 
@@ -1447,7 +1526,10 @@ a { color: inherit; }
 .disclosure .muted { margin-left: auto; font-weight: 400; }
 .disclosure-caret { font-size: 10px; color: var(--ink-mute); transition: transform var(--t) var(--ease); }
 .disclosure.is-open .disclosure-caret { transform: rotate(90deg); }
-.disclosure-body { padding: 4px 22px 20px; border-top: 1px solid var(--line-soft); }
+/* 16 to 20, on the 8px rhythm, and the same on both axes rather than 22 across
+   and 20 down: the invoice fold is a two field form and 22px of side padding
+   around it read as a card built for something larger. */
+.disclosure-body { padding: 16px 20px 20px; border-top: 1px solid var(--line-soft); }
 .disclosure-body .hint { margin: 14px 0 16px; }
 
 /* The summary is the reason to open the fold: "0 of 4" is what says whether
@@ -1650,7 +1732,24 @@ body.is-plain .topbar { background: var(--chrome); }
   .acct-btn:hover .acct-mark { color: var(--ink); }
 }
 .acct-btn[aria-expanded="true"] { background: var(--line-soft); border-color: var(--ink-mute); }
-.acct-menu { position: absolute; top: calc(var(--ctl-h) + 6px); right: 0; left: auto; min-width: 232px; }
+/* The account menu is a menu, not a panel. It inherited `.kmenu`'s 320px
+   width and, worse, `.kmenu-item`'s `flex-direction: column` — which exists so
+   a row menu can stack a bold label over a description — so Theme and Sign out
+   came out as an icon above a word above another word, centred, in a 320px
+   box. Each of those is overridden explicitly here rather than left to the
+   generic rule, because the generic rule is right for the menus it was written
+   for. */
+.kmenu.acct-menu {
+  position: absolute; top: calc(var(--ctl-h) + 6px); right: 0; left: auto;
+  width: 260px; min-width: 0; max-width: calc(100vw - 32px);
+}
+.acct-menu .kmenu-item {
+  flex-direction: row; align-items: center; justify-content: flex-start;
+  gap: 10px; text-align: left; min-height: 42px; padding: 8px 12px;
+}
+/* The label and its second line read as one row, not as two stacked items. */
+.acct-menu .kmenu-item b { font-weight: 600; }
+.acct-menu .kmenu-item span { margin-left: auto; text-align: right; }
 /* The address is read, never chosen, so it is a line above the items and not
    one of them. */
 .acct-who {
@@ -1664,7 +1763,7 @@ body.is-plain .topbar { background: var(--chrome); }
   font-size: 12.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--ink);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.acct-menu .kmenu-item { display: flex; align-items: center; gap: 9px; }
+
 .acct-menu .kmenu-item svg { width: 15px; height: 15px; stroke-width: 1.8; flex: 0 0 auto; color: var(--ink-mute); }
 
 .console-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
@@ -1682,7 +1781,16 @@ body.is-plain .topbar { background: var(--chrome); }
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .console-head > .headlink, .console-head > .acct { flex: 0 0 auto; }
-.console-body { padding: 0 28px 96px; }
+/* Every route starts the same distance under the bar. Three sections opened
+   with a `.viewhead` and its 24px, three opened straight on a command bar
+   flush against the chrome, so the first thing on the screen sat 24px lower
+   on half the console than on the other half — a shell that is a different
+   shell on every route. The step belongs to the body, so a route with a head
+   and a route without both get it, and the head's own top margin is dropped
+   where it is the first thing in the body. */
+.console-body { padding: 20px 28px 96px; }
+.console-body > .viewhead:first-child,
+.console-body > *:first-child > .viewhead:first-child { margin-top: 0; }
 /* The section's own views were written for a page with its own margins. */
 .console-body .shell { padding: 0; max-width: none; }
 
@@ -1707,7 +1815,7 @@ body.is-plain .topbar { background: var(--chrome); }
   .sidebar.is-open { transform: none; }
   .navtoggle { display: inline-grid; place-items: center; }
   .console-head { padding: 0 16px; }
-  .console-body { padding: 0 16px 72px; }
+  .console-body { padding: 16px 16px 72px; }
   /* Starts where the drawer ends. Dimming the area underneath an opaque
      drawer shows nothing, and it left the tappable region overlapping it. */
   .scrim {
@@ -1937,9 +2045,13 @@ body.is-plain .topbar { background: var(--chrome); }
    Determinate, because the slot count is known and fixed by the invoice. It
    leads with what is left to do; a tally alone makes the reader do the
    subtraction before they know whether to act. */
+/* Inside the summary band the progress is a section, not a second card: one
+   bounded surface, its parts divided by the hairline this system already uses
+   between the sections of a record. */
+.engage-band { padding: 16px 18px; }
+.engage-band > .booking-facts { margin-top: 0; }
 .progress-card {
-  border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
-  padding: 16px 18px; margin: 20px 0 18px;
+  padding: 16px 18px; border-top: 1px solid var(--line-soft);
 }
 .progress-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
 .progress-top b { font-size: 14px; font-weight: 600; }
@@ -1989,7 +2101,12 @@ body.is-plain .topbar { background: var(--chrome); }
 .crow-head > * { font-size: inherit; font-weight: inherit; letter-spacing: inherit;
   text-transform: inherit; color: inherit; }
 .crow-head .crow-plat > span { margin: 0; }
-.crow-head .crow-links { justify-content: flex-end; }
+/* Left aligned, like the two columns before it. Right aligned, the cell ended
+   at the same x but *started* wherever its contents happened to: the creator
+   with two profile buttons began at 703px and the three with one began at
+   868px, so a column built to be compared down could not be. A column starts
+   at the same x on every row or it is not a column. */
+.crow-head .crow-links { justify-content: flex-start; }
 .crow-tick-cell { grid-area: tick; }
 .crow-backup-cell { grid-area: backup; text-align: center; }
 .crow:last-child { border-bottom: 0; }
@@ -2028,7 +2145,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .crow-plat > span { color: var(--ink-mute); margin-right: 6px; }
 
 /* The thing they came to click, so it looks like something to click. */
-.crow-links { grid-area: links; display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; justify-content: flex-end; }
+.crow-links { grid-area: links; display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; justify-content: flex-start; }
 /* The thing they came to click, named in full and marked as leaving the page. */
 .plink {
   display: inline-flex; align-items: center; gap: 6px;
@@ -2138,6 +2255,48 @@ body.is-plain .topbar { background: var(--chrome); }
    card is a flat surface with a hairline, not a floating tile. Depth: the
    sections inside sit on a recessed ground so the nesting is visible without
    a second border. */
+/* ---------- The bookings on a campaign ----------
+   One register, not a stack of bordered cards. Ten bookings were ten floating
+   panels with 12px of page ground between rows belonging to one list, and a
+   booking's step was something read from which card it sat in rather than from
+   a column. The card is still the record — the steps open inside it — it just
+   stops being a card, exactly as the clients directory stopped being three. */
+.bookreg {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); margin-bottom: 12px;
+}
+.bookreg-head, .bookreg .kcard-head {
+  display: grid; align-items: center; gap: 0 12px;
+  /* Measured against the pane beside a rail at 1280, which is 591px: 44 for
+     the number, 124 for the widest step chip ("Changes requested"), 82 for the
+     two actions and 48 of gaps leaves 293 for the name and the summary. The
+     summary takes the larger share, because a creator's name is short and
+     "2 files · 22 Sept 2026, 10am" is not. */
+  grid-template-columns: 44px minmax(0, .9fr) minmax(0, 1.4fr) var(--state-w) 82px;
+}
+.bookreg-head {
+  padding: 12px 14px 8px;
+  font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-mute); border-bottom: 1px solid var(--line);
+}
+.bookreg .kcard {
+  border: 0; border-radius: 0; margin: 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.bookreg .kcard:last-child { border-bottom: 0; }
+/* The warn edge still marks a booking waiting on us; inside a register it is
+   the row's own left rule rather than a card border. */
+.bookreg .kcard.is-waiting { border-left: 3px solid var(--warn); }
+.bookreg .kcard > *:last-child { border-radius: 0; }
+.bookreg .kcard:last-child > *:last-child {
+  border-bottom-left-radius: calc(var(--radius) - 1px);
+  border-bottom-right-radius: calc(var(--radius) - 1px);
+}
+.kcard-lead { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.kcard-tags { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; min-width: 0; }
+.kcard-act { display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
+.kcard-act .kmenu-btn { margin-left: 0; }
+
 .kcard {
   position: relative;              /* the actions menu positions against this */
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
@@ -2162,19 +2321,12 @@ body.is-plain .topbar { background: var(--chrome); }
   color: var(--ink-mute); font-variant-numeric: tabular-nums;
 }
 
-.kcard-head {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  padding: 13px 14px 13px 16px;
-}
-/* The state sits second from the end, beside the ⋯, which is where this
-   portal's tables already put it. Trailing the name it started at a different
-   x on every card, so a column of cards could not be read down for where each
-   one has got to. `order` rather than a move in the markup, because name then
-   state then summary is still the right reading order. */
-.kcard-head > .tone { order: 2; margin-left: auto; }
-.kcard-head > .tone ~ .tone { margin-left: 0; }
-.kcard-head > .kcard-sum { order: 1; }
-.kcard-head > .kmenu-btn { order: 3; }
+/* The state is a column now, not a chip pushed right by `order`: the head is
+   a grid of five stable cells, so name, summary, state and actions each start
+   at the same x on every booking. Trailing the name the chip sat at 205px on
+   one card and 325px on the next, and a column of bookings is read down for
+   exactly that. */
+.kcard-head { padding: 11px 14px 11px 16px; }
 .kcard-name {
   font-size: 15px; font-weight: 600; letter-spacing: -.012em; color: var(--ink);
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -2282,15 +2434,18 @@ body.is-plain .topbar { background: var(--chrome); }
 .kfold:hover { background: var(--line-soft); color: var(--ink); }
 .kcard.is-live .kcard-head { cursor: pointer; }
 .kcard-sum {
-  flex: 1 1 auto; min-width: 0; font-size: 12.5px; color: var(--ink-mute);
+  min-width: 0; font-size: 12.5px; color: var(--ink-mute);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 .kcard-body > .kstep:first-child { border-top: 1px solid var(--line-soft); }
 .kactions .btn svg { width: 14px; height: 14px; }
-@media (max-width: 640px) {
-  .kcard-sum { flex: 1 1 100%; order: 10; padding-left: 22px; white-space: normal; }
-}
+/* Deliberately NOT `display: none` on a desktop: a grid item that is removed
+   is a track the cells after it slide into, and an offer with no summary put
+   its state chip under the Booking heading. The cell stays and holds its
+   column; it only leaves on a phone, where it is a named area in a template
+   that can afford to lose a row. */
+.bookreg .kcard-sum:empty { min-height: 1px; }
 
 
 /* ---------- Client-facing bookings ----------
@@ -2363,7 +2518,7 @@ body.is-plain .topbar { background: var(--chrome); }
    invoice and the money. "Your campaign" below is then only the creators. */
 .engage-card {
   border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
-  padding: 14px 16px 8px; margin-top: 16px;
+  padding: 0; margin: 16px 0 12px;
 }
 .engage-card .booking-facts { margin: 0; }
 .engage-card .amountfold {
@@ -2592,11 +2747,19 @@ body.is-plain .topbar { background: var(--chrome); }
      four words and put four actions on four lines of their own down the
      record. The heading still wraps under a wide pair of buttons. */
   .viewhead .headmark { flex: 1 1 auto; min-width: 0; }
-  .viewhead:has(.btn + .btn) .headmark { flex: 1 1 100%; }
-  /* Two actions share the line. One action is an action, not a banner: it
-     keeps its own width and sits at the end of the row. */
+  /* A hidden button is not a second action. Both `:only-of-type` and
+     `:has(.btn + .btn)` counted one, so the Creators pane — whose Bulk dates
+     button is hidden until somebody is booked — gave its heading the whole row
+     and stretched Add creators into a full width slab across the phone, which
+     is the banner this rule exists to stop. Now that the primary is a filled
+     blue that slab was the loudest thing on the screen. */
+  .viewhead:has(.btn:not([hidden]) ~ .btn:not([hidden])) .headmark { flex: 1 1 100%; }
+  /* Two visible actions share the line. One action is an action, not a banner:
+     it keeps its own width and sits at the end of the row. */
   .viewhead .btn { flex: 1 1 0; min-width: 0; }
-  .viewhead .btn:only-of-type { flex: 0 0 auto; margin-left: auto; }
+  .viewhead:not(:has(.btn:not([hidden]) ~ .btn:not([hidden]))) .btn {
+    flex: 0 0 auto; margin-left: auto;
+  }
   .viewhead .btn-sm { min-height: var(--ctl-h); font-size: var(--ctl-text); }
 
 
@@ -2741,7 +2904,9 @@ body.is-plain .topbar { background: var(--chrome); }
 @media (hover: hover) {
   .crm-row:hover { background: var(--sunk); }
 }
-.crm-row:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+/* A whole row is the control, so its ring sits inside its own edge rather than
+   over the row above it. */
+.crm-row:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -3px; border-radius: 0; }
 .crm-c { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 13.5px; color: var(--ink-mute); }
 .crm-c-name { font-size: 14.5px; font-weight: 600; letter-spacing: -.012em; color: var(--ink); }
@@ -2831,9 +2996,11 @@ body.is-plain .topbar { background: var(--chrome); }
      "18 months · Overdue" at 119px, and a track narrower than its worst case
      is a track that wraps on the one row somebody needs to read. */
   .crm-row {
+    gap: 4px 12px; padding: 12px 14px; align-items: start;
+  }
+  .crm-row.client-row {
     grid-template-columns: minmax(0, 1fr) 120px;
     grid-template-areas: "name stage" "meta stage";
-    gap: 4px 12px; padding: 12px 14px; align-items: start;
   }
   .crm-c-name  { grid-area: name; white-space: normal; }
   .crm-c-stage { grid-area: stage; justify-self: start; align-self: start; }
@@ -2842,7 +3009,14 @@ body.is-plain .topbar { background: var(--chrome); }
      no area in the template, so it took an implicit third row of its own and
      printed the same date the meta line already carried. */
   .crm-c-ind, .crm-c-mkt, .crm-c-own, .crm-c-seen { display: none; }
-  .crm-c-meta { display: block; grid-area: meta; font-size: 12.5px; }
+  /* The one line the phone gets is a summary, not a value cell, so it wraps
+     rather than being cut: "Laman Citra · 10 creators · RM 8,640.00" came out
+     as "Laman Citra · 10 creators · R…", which loses the figure that is the
+     reason the line carries it. */
+  .crm-c-meta {
+    display: block; grid-area: meta; font-size: 12.5px;
+    white-space: normal; overflow: visible; text-overflow: clip;
+  }
 }
 @media (max-width: 560px) {
   .crm-reach .plink { flex: 1 1 auto; justify-content: center; }
@@ -2945,7 +3119,16 @@ body > .shell { width: 100%; }
 /* The state column is one width everywhere, so the selects line up down a
    table and across sections. It sits last before the ⋯. */
 .svc-state { text-align: left; }
-.csv-row { grid-template-columns: minmax(0, 1fr) 160px 130px var(--state-w) var(--ctl-h); }
+/* The name track states a real minimum rather than `minmax(0, 1fr)`, which is
+   a track that will shrink to nothing: at the 690px pane a 1440px window
+   gives it, the name had 158px and "Social media management for Instagram,
+   Facebook and TikTok" broke one word per line into a 210px tall row. 180 is
+   the floor a service name is readable at; the two money tracks give up 20px
+   between them so the sum of the fixed tracks and the gaps (672) still fits
+   that 690. Below it the row stacks on purpose — see `.is-narrow` — rather
+   than overflowing, because a declared minimum that cannot be honoured is
+   worse than no minimum at all. */
+.csv-row { grid-template-columns: minmax(180px, 1fr) 150px 120px var(--state-w) var(--ctl-h); }
 .doc-row { grid-template-columns: minmax(0, 1fr) 130px var(--state-w) var(--ctl-h); }
 /* Service, what it costs, what that buys. Active is the ordinary case on this
    card, so it costs no column: the exception is named beside the name. */
@@ -3020,93 +3203,117 @@ body > .shell { width: 100%; }
 .csv-total .is-total b { font-size: 15px; }
 /* On a phone a row is two or three lines: the name with its ⋯, the small
    facts, then the money on the left and the state on the right. */
-@media (max-width: 640px) {
-  /* A record head on a phone: the name and its state share the first line with
-     the state at the end, and the action that edits the record takes the next
-     one. Left to wrap on its own the state landed after the name on one client
-     and at the edge on the next, because whether Edit still fitted depended on
-     how long the name was. The basis is the line less the state and the gap,
-     so the action is always the thing that wraps. */
-  .crm-title h2 { flex: 1 1 calc(100% - var(--state-w) - 10px); }
-  .crm-title .state-select { margin-left: auto; }
-  .crm-title .btn { margin-left: auto; }
-  /* The mark keeps its column on a phone but takes less of it, so the name
-     still has the width the state select is measured against. */
-  .svc-row.crm-head { display: none; }
-  .svc-row, .csv-row, .doc-row, .cat-row, .ct-row, .cr-row {
-    grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 12px 15px;
-    grid-template-areas: "name act" "calc calc" "amt state";
-  }
-  /* A service line draws a select while it can still move and a chip once a
-     verified letter has confirmed it, and the two are not the same width. On
-     an `auto` track that put the state column 51px further left on the
-     confirmed rows, which is the fault this portal calls a column that is not
-     a column. The track is the state's own width on every row, and what sits
-     in it ends at the same edge whichever shape it is. */
-  .csv-row { grid-template-columns: minmax(0, 1fr) var(--state-w); }
-  /* The two things a person came for sit on the first line, and what qualifies
-     the money goes under it. Three lines with a control on the last one was a
-     row 310px tall: two and a half services on a screen out of thirty four. */
-  .cat-row {
-    grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
-    grid-template-areas: "name rate act" "meta meta meta";
-  }
-  /* On a phone the head wraps, and what wraps is the summary, not the state:
-     the state belongs on the name's line where it can be read down the list.
-     Left to wrap it landed on a line of its own with an empty half beside it. */
-  .kcard-head > .tone { order: 1; }
-  .kcard-head > .kmenu-btn { order: 2; }
-  .kcard-head > .kcard-sum { order: 3; flex: 1 1 100%; }
-  /* Two lines, not four: who and what they cost, then where to find them with
-     their record at the end of the same line. A grid row each for the links
-     and the record put a 120px row on the screen, which is five creators on a
-     phone. */
-  .cr-row {
-    grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
-    grid-template-areas: "name rate act" "links rec rec";
-    row-gap: 4px; align-items: start;
-  }
-  .cr-row > .svc-name { align-self: center; }
-  .cr-row > .cr-links { grid-area: links; align-self: center; }
-  .cr-row > .cr-rec { grid-area: rec; text-align: right; align-self: center; }
-  /* The ⋯ acts on the whole row, so it spans the whole row. Left on the first
-     line it set that line's height to its own 38px and pushed the row to
-     100px for the sake of a 22px name. */
-  .doc-row { grid-template-areas: "name act" "amt state"; }
-  .ct-row  { grid-template-areas: "name act" "reach reach"; }
-  .svc-row > .svc-name { grid-area: name; }
-  .svc-row > .team-act { grid-area: act; align-self: start; }
-  /* The ⋯ keeps its full target and stops setting the first line's height:
-     its 38px box pushed a row carrying a 22px name to 100px. The negative
-     block margin is the same trick the selection tick uses, so the footprint
-     is the name's and the thing under a thumb is still 38px (44 on a touch
-     screen). */
-  .cr-row > .team-act { align-self: center; margin-block: calc((22px - var(--ctl-h)) / 2); }
-  .svc-row > .svc-calc { grid-area: calc; text-align: left; }
-  .svc-row > .svc-unit { grid-area: meta; }
-  .svc-row > .svc-amt { text-align: left; align-self: center; grid-area: amt; }
-  .cat-row > .svc-rate {
-    grid-area: rate; text-align: right; align-self: center; white-space: nowrap;
-  }
-  /* Against a name over two meta lines the fee belongs on the name's own line,
-     not floating halfway down the row. */
-  .cr-row > .svc-rate {
-    grid-area: rate; text-align: right; align-self: start; white-space: nowrap;
-  }
-  .svc-row > .svc-state { grid-area: state; justify-self: end; }
-  /* A service line draws a select while it can still move and a chip once a
-     verified letter has confirmed it, and the two are not the same width. End
-     justified in an `auto` track that put the state column 51px further left
-     on the confirmed rows, which is the fault this portal calls a column that
-     is not a column. The track above is the state's own width; the cell fills
-     it, so it starts at the same x on every row, and the chip is what ends at
-     the edge. Restated here because `.svc-row > .svc-state` comes later in the
-     file and would otherwise win on the same specificity. */
-  .svc-row.csv-row > .svc-state { justify-self: stretch; text-align: right; }
-  .ct-row > .crm-reach { grid-area: reach; }
-  .ct-row .plink { flex: 1 1 0; justify-content: center; }
-  .csv-total { justify-content: space-between; gap: 12px; }
+/* ---- Rows, keyed on the width of the thing that holds them ----
+   Not `@media (max-width: 640px)`: the record pane is about 591px wide at a
+   1280px window, so every one of these rules was false exactly where it was
+   needed and the Services row kept a desktop grid in 591px — the name track
+   collapsed to 59px and a description came out one word per line. `is-narrow`
+   is set from the element's own width by `ADspaceState.fit`, so one copy of
+   each template serves the phone and the narrow pane alike. */
+/* A record head on a phone: the name and its state share the first line with
+   the state at the end, and the action that edits the record takes the next
+   one. Left to wrap on its own the state landed after the name on one client
+   and at the edge on the next, because whether Edit still fitted depended on
+   how long the name was. The basis is the line less the state and the gap,
+   so the action is always the thing that wraps. */
+.is-narrow .crm-title h2 { flex: 1 1 calc(100% - var(--state-w) - 10px); }
+.is-narrow .crm-title .state-select { margin-left: auto; }
+.is-narrow .crm-title .btn { margin-left: auto; }
+/* The mark keeps its column on a phone but takes less of it, so the name
+   still has the width the state select is measured against. */
+.is-narrow .svc-row.crm-head { display: none; }
+.is-narrow .svc-row, .is-narrow .csv-row, .is-narrow .doc-row, .is-narrow .cat-row, .is-narrow .ct-row, .is-narrow .cr-row {
+  grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 12px 15px;
+  grid-template-areas: "name act" "calc calc" "amt state";
 }
+/* A service line draws a select while it can still move and a chip once a
+   verified letter has confirmed it, and the two are not the same width. On
+   an `auto` track that put the state column 51px further left on the
+   confirmed rows, which is the fault this portal calls a column that is not
+   a column. The track is the state's own width on every row, and what sits
+   in it ends at the same edge whichever shape it is. */
+.is-narrow .csv-row { grid-template-columns: minmax(0, 1fr) var(--state-w); }
+/* The two things a person came for sit on the first line, and what qualifies
+   the money goes under it. Three lines with a control on the last one was a
+   row 310px tall: two and a half services on a screen out of thirty four. */
+.is-narrow .cat-row {
+  grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
+  grid-template-areas: "name rate act" "meta meta meta";
+}
+/* A header the phone hides is not a header, so it leaves and takes its own
+   padding with it. The row becomes three lines under the number: who, where
+   it has got to, and what the booking is. The state keeps a line it can be
+   read down rather than sharing one with a summary that would squeeze it. */
+.is-tight .bookreg-head { display: none; }
+/* Two lines, not three. The state and the summary share the second line — the
+   chip keeps its own width and the summary takes what is left — so a collapsed
+   booking on a phone is about 70px rather than 119, and six of them can be
+   read without scrolling past three. */
+.is-tight .bookreg .kcard-head {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "lead name act" "lead tags sum";
+  gap: 4px 10px; align-items: center; padding: 10px 14px;
+}
+.is-tight .bookreg .kcard-lead { grid-area: lead; }
+.is-tight .bookreg .kcard-name { grid-area: name; }
+.is-tight .bookreg .kcard-act { grid-area: act; justify-self: end; }
+.is-tight .bookreg .kcard-tags { grid-area: tags; justify-self: start; }
+.is-tight .bookreg .kcard-sum {
+  grid-area: sum; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; text-align: right;
+}
+/* On a phone these are named areas, so an empty one is a blank line held
+   open by the gap and can safely leave. */
+.is-tight .bookreg .kcard-sum:empty, .is-tight .bookreg .kcard-tags:empty { display: none; }
+/* Two lines, not four: who and what they cost, then where to find them with
+   their record at the end of the same line. A grid row each for the links
+   and the record put a 120px row on the screen, which is five creators on a
+   phone. */
+.is-narrow .cr-row {
+  grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
+  grid-template-areas: "name rate act" "links rec rec";
+  row-gap: 4px; align-items: start;
+}
+.is-narrow .cr-row > .svc-name { align-self: center; }
+.is-narrow .cr-row > .cr-links { grid-area: links; align-self: center; }
+.is-narrow .cr-row > .cr-rec { grid-area: rec; text-align: right; align-self: center; }
+/* The ⋯ acts on the whole row, so it spans the whole row. Left on the first
+   line it set that line's height to its own 38px and pushed the row to
+   100px for the sake of a 22px name. */
+.is-narrow .doc-row { grid-template-areas: "name act" "amt state"; }
+.is-narrow .ct-row { grid-template-areas: "name act" "reach reach"; }
+.is-narrow .svc-row > .svc-name { grid-area: name; }
+.is-narrow .svc-row > .team-act { grid-area: act; align-self: start; }
+/* The ⋯ keeps its full target and stops setting the first line's height:
+   its 38px box pushed a row carrying a 22px name to 100px. The negative
+   block margin is the same trick the selection tick uses, so the footprint
+   is the name's and the thing under a thumb is still 38px (44 on a touch
+   screen). */
+.is-narrow .cr-row > .team-act { align-self: center; margin-block: calc((22px - var(--ctl-h)) / 2); }
+.is-narrow .svc-row > .svc-calc { grid-area: calc; text-align: left; }
+.is-narrow .svc-row > .svc-unit { grid-area: meta; }
+.is-narrow .svc-row > .svc-amt { text-align: left; align-self: center; grid-area: amt; }
+.is-narrow .cat-row > .svc-rate {
+  grid-area: rate; text-align: right; align-self: center; white-space: nowrap;
+}
+/* Against a name over two meta lines the fee belongs on the name's own line,
+   not floating halfway down the row. */
+.is-narrow .cr-row > .svc-rate {
+  grid-area: rate; text-align: right; align-self: start; white-space: nowrap;
+}
+.is-narrow .svc-row > .svc-state { grid-area: state; justify-self: end; }
+/* A service line draws a select while it can still move and a chip once a
+   verified letter has confirmed it, and the two are not the same width. End
+   justified in an `auto` track that put the state column 51px further left
+   on the confirmed rows, which is the fault this portal calls a column that
+   is not a column. The track above is the state's own width; the cell fills
+   it, so it starts at the same x on every row, and the chip is what ends at
+   the edge. Restated here because `.svc-row > .svc-state` comes later in the
+   file and would otherwise win on the same specificity. */
+.is-narrow .svc-row.csv-row > .svc-state { justify-self: stretch; text-align: right; }
+.is-narrow .ct-row > .crm-reach { grid-area: reach; }
+.is-narrow .ct-row .plink { flex: 1 1 0; justify-content: center; }
+.is-narrow .csv-total { justify-content: space-between; gap: 12px; }
 .crm-links:empty { display: none; }
 .notice.is-warn { border-color: #efd7b6; background: var(--warn-bg); margin: 12px 0 0; }
 .notice.is-warn svg { color: var(--warn); }
@@ -3214,9 +3421,15 @@ body > .shell { width: 100%; }
   font-size: 12.5px; font-weight: 600; color: var(--ink-soft);
   font-variant-numeric: tabular-nums;
 }
-/* The client list's columns. A header row in any other table is a
-   `.svc-row` and takes that row's grid, so each label sits over its column. */
-.crm-head:not(.svc-row), .crm-row {
+/* The client list's columns, hung off the list's own row class rather than off
+   every `.crm-head` in the console. `.crm-head:not(.svc-row)` was a template
+   that claimed any header not wearing one particular class, and Short Links
+   wore another: its header took the seven client columns while its rows took
+   their own five, so DESTINATION sat 91px right of every destination under it
+   and LABEL 103px left of every label. Nothing caught it, because the `cols`
+   check only compares a header against a row it believes share a grid.
+   Every table states its own tracks now, on both the header and the row. */
+.crm-head.client-row, .crm-row.client-row {
   grid-template-columns:
     minmax(0, 1.9fr) 128px minmax(0, .9fr) 104px minmax(0, 1fr) 104px 18px;
 }
@@ -3235,13 +3448,74 @@ body > .shell { width: 100%; }
    200% zoom — scrolled sideways. A header the phone hides is not a header,
    and the row it heads leaves with it. */
 @media (max-width: 760px) {
-  .crm-head:not(.svc-row), .crm-row { grid-template-columns: minmax(0, 1fr) 120px; }
+  .crm-head.client-row, .crm-row.client-row { grid-template-columns: minmax(0, 1fr) 120px; }
   /* A compact record row, not a stacked card: who they are over what we know,
      the state over how long it has stood there. The chevron leaves with the
      columns — the whole row is the target at this width. */
   .crm-c-go { display: none; }
   .crm-band { padding-right: 15px; }
   .crm-band-worth { font-size: 12px; }
+}
+
+/* A standing fact about a whole route: true every day, nothing anybody can do
+   about it here, and therefore the quietest thing on the screen rather than a
+   full width card above the controls. A message is a line, not a card. */
+.routenote {
+  margin: 12px 0 0; font-size: 12.5px; color: var(--ink-mute);
+}
+.routenote b { font-weight: 600; color: var(--ink-soft); }
+.routenote code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+
+/* ---------- Content Review's client register ----------
+   A tile per client answered "which clients are there" and nothing else. The
+   sets, how many are live and whether an access code is on are columns now,
+   which is what lets a book of business be scanned rather than read. */
+.crm-head.cr-client-row, .crm-row.cr-client-row {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) 132px 18px;
+}
+.crm-c-sets { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.crm-c-sets .is-warn { color: var(--warn); font-weight: 600; }
+@media (max-width: 760px) {
+  /* The sets line moves under the name and the access mark keeps its track,
+     which is the two column record row every other list here takes. */
+  .crm-row.cr-client-row {
+    grid-template-columns: minmax(0, 1fr) 120px;
+    grid-template-areas: "name code" "sets code";
+  }
+  .crm-row.cr-client-row .crm-c-sets { grid-area: sets; font-size: 12.5px; }
+  .crm-row.cr-client-row .crm-c-code { grid-area: code; justify-self: start; }
+}
+
+/* ---------- The campaign register ----------
+   The same surface the clients directory is, with the campaign states as its
+   divider rows. A card grid answered "how many campaigns are there" and
+   nothing else: which one is waiting on somebody, what it is worth and who it
+   is for all needed opening each tile in turn. Columns do that by being read
+   down. The tracks are stated on both sides of the breakpoint, because a
+   `.crm-row.camp-row` outranks the phone rule for `.crm-row` whatever order
+   they sit in, and an unstated template is the desktop one at 390. */
+.crm-head.camp-row, .crm-row.camp-row {
+  grid-template-columns:
+    minmax(0, 1.7fr) minmax(0, 1.1fr) 84px 116px var(--state-w) 18px;
+}
+/* A heading over a money column ends where the figures end, and is still the
+   same eyebrow as the headings beside it. */
+.crm-head .is-end { text-align: right; }
+.camp-c-client { color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.camp-c-slots { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 760px) {
+  /* Who it is for and what it is worth on one line under the name, the state
+     in its own fixed track: the two column record row this console gives every
+     other list, measured against its worst case. "Open for selection" is the
+     widest chip a campaign can draw. */
+  .crm-row.camp-row {
+    grid-template-columns: minmax(0, 1fr) 132px;
+    grid-template-areas: "name stage" "meta stage";
+  }
+  .crm-row.camp-row .camp-c-client,
+  .crm-row.camp-row .camp-c-slots,
+  .crm-row.camp-row .svc-rate { display: none; }
 }
 
 /* ---------- Team ----------
@@ -3366,7 +3640,8 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 /* A full width control on a phone is a slab, and a slab that shrinks reads as
    a wobble rather than a press. It dims instead. */
 @media (max-width: 640px) {
-  .viewhead .btn:only-of-type:active, .team-act .btn:active { transform: none; opacity: .72; }
+  .viewhead:not(:has(.btn:not([hidden]) ~ .btn:not([hidden]))) .btn:active,
+  .team-act .btn:active { transform: none; opacity: .72; }
 }
 
 /* A surface arrives; it does not blink into place. The menu comes from its
@@ -3627,9 +3902,14 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 /* The Short Links row. It was a bordered card per link, each holding the same
    four icons, so fifty links were fifty boxes and the slug — the one thing
    anybody scans for — had no column to sit in. */
-.link-row {
+/* Every track is stated, the last one included. An `auto` final track is
+   sized by its own row, so the header — whose last cell is empty over the
+   actions — sized it at nothing and the three columns before it slid 76px
+   right of the rows beneath them. 124px is the three icon buttons the actions
+   cell actually holds. */
+.link-row, .crm-head.link-row {
   display: grid; align-items: center; gap: 0 12px;
-  grid-template-columns: minmax(110px, 170px) minmax(0, 1.6fr) minmax(0, 1fr) 84px auto;
+  grid-template-columns: minmax(110px, 170px) minmax(0, 1.6fr) minmax(0, 1fr) 84px 124px;
   padding: 10px 15px; border-bottom: 1px solid var(--line-soft);
 }
 .link-row:last-child { border-bottom: 0; }
@@ -3777,6 +4057,32 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .railbar { display: block; height: 5px; border-radius: 3px; background: var(--line-soft); overflow: hidden; }
 .railbar-fill { display: block; height: 100%; background: var(--ok); border-radius: 3px; }
 
+/* The campaign rail's own blocks. Money is right aligned on one grid so the
+   total sits directly under the figures it is the sum of, which is the whole
+   point of putting it there rather than in a card of its own. */
+.railmoney { display: grid; gap: 7px; margin: 0; }
+.railmoney > div { display: flex; align-items: baseline; gap: 12px; }
+.railmoney dt { font-size: 13px; color: var(--ink-soft); }
+.railmoney dd {
+  margin: 0 0 0 auto; font-size: 13px; color: var(--ink);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+/* The one bold amount in the block, over the hairline that separates it from
+   the figures it totals. */
+.railmoney > .is-total {
+  padding-top: 7px; border-top: 1px solid var(--line-soft);
+}
+.railmoney > .is-total dt, .railmoney > .is-total dd { font-weight: 600; color: var(--ink); }
+
+.railfoot { margin: 7px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.railwarn { margin: 7px 0 0; font-size: 12.5px; font-weight: 600; color: var(--warn); }
+/* Whether the client can open the link at all: the chip carries the word, so
+   the state survives greyscale, and the line under it says what that means. */
+.raillinkstate { display: grid; gap: 6px; margin: 0 0 10px; justify-items: start; }
+.raillinkstate > span:last-child { font-size: 12.5px; color: var(--ink-soft); }
+.railgo { width: 100%; justify-content: space-between; gap: 8px; }
+.railgo .ovgo-chev { width: 14px; height: 14px; flex: 0 0 auto; color: var(--ink-mute); }
+
 .raildates { display: grid; gap: 8px; margin: 0; }
 .raildates > div { display: flex; align-items: baseline; gap: 12px; }
 .raildates dt { font-size: 13px; color: var(--ink-soft); }
@@ -3804,10 +4110,18 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   grid-template-rows: auto 1fr;
   grid-template-areas: "tabs rail" "pane rail";
 }
+/* One row, always. Wrapping put Activity alone on a second line and moved the
+   pane down by a tab's height; below the width where seven of them fit, the
+   strip scrolls sideways instead, which is what every tab strip on a phone
+   does. `flex: 0 0 auto` on the tabs, so none of them is squeezed to make the
+   row fit rather than scrolling. */
 .rectabs {
-  grid-area: tabs; display: flex; gap: 2px; flex-wrap: wrap;
+  grid-area: tabs; display: flex; gap: 2px; flex-wrap: nowrap;
+  overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
   border-bottom: 1px solid var(--line); margin-bottom: 4px;
 }
+.rectabs::-webkit-scrollbar { display: none; }
+.rectabs .tab { flex: 0 0 auto; }
 .rec-pane { grid-area: pane; min-width: 0; }
 /* The first block in a pane sits as far from the tabs as two blocks sit from
    each other: the law of the stack does not stop at a tab strip. */
@@ -3831,6 +4145,14 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .rec-rail .crm-links { margin-top: 0; margin-bottom: 12px; }
 .rec-rail .notice { margin-bottom: 12px; }
 
+/* Seven panes beside a rail is 633px of tabs in a 591px strip at 1280, so the
+   strip wrapped to two rows and Activity sat alone on the second. The campaign
+   tab reads `Selection` — the pane's own heading still says Client selection,
+   which is where that word means something — and the tabs in a workspace strip
+   sit 2px tighter, which buys the row back with room to spare rather than
+   exactly enough. */
+.rectabs .tab { padding: 0 12px; }
+
 /* Below the workspace width the rail is not a rail: it is what you read
    before the pane, so it comes first and the panes follow. */
 @media (max-width: 1100px) {
@@ -3847,12 +4169,9 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 /* The tab strip scrolls sideways rather than wrapping to three rows: seven
    words at 390 is two and a half lines of chrome above the work. */
 @media (max-width: 640px) {
-  .rectabs {
-    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
-    margin-inline: -16px; padding-inline: 16px;
-  }
-  .rectabs::-webkit-scrollbar { display: none; }
-  .rectabs .tab { flex: 0 0 auto; }
+  /* The strip already scrolls; on a phone it also bleeds to the gutter, so a
+     tab is not clipped by the page padding. */
+  .rectabs { margin-inline: -16px; padding-inline: 16px; }
   .rec-rail .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
@@ -3902,28 +4221,27 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .sched-state, .pick-state { min-width: 0; }
 .pick-row { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr) 96px 124px; }
 
-@media (max-width: 640px) {
-  /* Two lines: who and where they stand, then the dates under them. */
-  .sched-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "who state" "when when" "pub pub";
-    gap: 2px 10px;
-  }
-  .sched-row > .sched-who { grid-area: who; }
-  .sched-row > .sched-state { grid-area: state; }
-  .sched-row > .sched-when:nth-of-type(2) { grid-area: when; }
-  .sched-row > .sched-when:nth-of-type(3) { grid-area: pub; }
-  .pick-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "who state" "plat rate";
-    gap: 2px 10px;
-  }
-  .pick-row > .pick-who { grid-area: who; }
-  .pick-row > .pick-state { grid-area: state; }
-  .pick-row > .pick-plat { grid-area: plat; }
-  .pick-row > .svc-rate { grid-area: rate; text-align: right; }
-  .crm-head.sched-row, .crm-head.pick-row { display: none; }
+/* The campaign's own rows, on the same component-width switch. */
+/* Two lines: who and where they stand, then the dates under them. */
+.is-narrow .sched-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "who state" "when when" "pub pub";
+  gap: 2px 10px;
 }
+.is-narrow .sched-row > .sched-who { grid-area: who; }
+.is-narrow .sched-row > .sched-state { grid-area: state; }
+.is-narrow .sched-row > .sched-when:nth-of-type(2) { grid-area: when; }
+.is-narrow .sched-row > .sched-when:nth-of-type(3) { grid-area: pub; }
+.is-narrow .pick-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "who state" "plat rate";
+  gap: 2px 10px;
+}
+.is-narrow .pick-row > .pick-who { grid-area: who; }
+.is-narrow .pick-row > .pick-state { grid-area: state; }
+.is-narrow .pick-row > .pick-plat { grid-area: plat; }
+.is-narrow .pick-row > .svc-rate { grid-area: rate; text-align: right; }
+.is-narrow .crm-head.sched-row, .is-narrow .crm-head.pick-row { display: none; }
 
 /* What a creator handed in. One block per creator, the files as things to
    open, the caption as the text it is. */
@@ -3958,15 +4276,27 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 @media (min-width: 900px) {
   .cwork { grid-template-columns: minmax(240px, 1fr) minmax(0, 1.618fr); gap: 0 24px; }
 }
-.queue { display: flex; flex-direction: column; gap: 6px; }
+/* The queue is one list, so it is one surface with hairlines between its rows,
+   not four floating cards with page ground showing between bookings that
+   belong to each other. The open booking beside it is the object being worked
+   on and keeps its own boundary. */
+.queue {
+  display: flex; flex-direction: column;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  overflow: hidden;
+}
 .qrow {
   display: grid; align-items: center; gap: 2px 10px; width: 100%; text-align: left;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas: "name flag" "meta meta";
-  padding: 11px 14px; border: 1px solid var(--line); border-radius: var(--radius);
-  background: var(--card);
-  transition: border-color var(--t-fast) var(--ease-out), background var(--t-fast) var(--ease-out);
+  padding: 12px 14px; border: 0; border-bottom: 1px solid var(--line-soft);
+  border-radius: 0; background: var(--card);
+  transition: background var(--t-fast) var(--ease-out);
 }
+.qrow:last-child { border-bottom: 0; }
+/* The one waiting on them keeps a warn edge, which is the mark this portal
+   already gives a row that needs somebody. */
+.qrow.is-waiting { border-left: 3px solid var(--warn); }
 .qrow-name {
   grid-area: name; font-size: 14px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -3976,7 +4306,14 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 @media (hover: hover) { .qrow:hover { background: var(--sunk); } }
 /* Chosen is a fill and a border, never a shadow, like every other selected
    thing in this portal. */
-.qrow.is-on { background: var(--line-soft); border-color: var(--ink-mute); }
+.qrow.is-on { background: var(--line-soft); }
+/* Inside one surface a selected row is a fill and an edge on the side it is
+   read from, never a border that would double the hairline above it. */
+.qrow.is-on::after {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--ink);
+}
+.qrow { position: relative; }
+.qrow.is-on.is-waiting::after { background: var(--warn); }
 .qrow.is-off { opacity: .6; }
 .qrow:active { transform: scale(.97); }
 @media (prefers-reduced-motion: reduce) { .qrow:active { transform: none; } }
@@ -4051,9 +4388,32 @@ body.is-canvas { overflow: hidden; }
 .rec.cportal { grid-template-areas: "pane rail"; }
 .cportal > .rec-pane > .viewhead:first-child,
 .cportal > .rec-rail > .viewhead:first-child { margin-top: 0; }
-/* The company select is a page level control, so it keeps its own width
-   rather than filling the rail. */
-.cportal .rec-rail .viewhead .select { flex: 0 0 auto; width: auto; min-width: 150px; }
+/* The company select is a page level control on the identity line, so it keeps
+   its own width rather than stretching. */
+#cpHead .crm-title .select { flex: 0 0 auto; width: auto; min-width: 150px; }
+/* The rail's blocks are flat under their eyebrow titles, so the contacts read
+   as the block's rows rather than as a card sitting inside one. A bounded
+   surface inside a bounded surface is the nested card this system rules out,
+   and it was the one thing in the rail wearing a border. */
+.cportal .rec-rail .railblock .crm-table {
+  background: none; border: 0; border-radius: 0; margin: 0;
+}
+.cportal .rec-rail .railblock .crm-head { padding-inline: 0; }
+.cportal .rec-rail .railblock .svc-row { padding-inline: 0; }
+.cportal .rec-rail .railblock .svc-row:last-child { border-bottom: 0; padding-bottom: 0; }
+/* Reach is a short list of ways to contact one person, not a row of states.
+   Four bordered pills per contact, sixteen down the block, spent the shape
+   this portal gives a status on an address and a phone number. */
+.cportal .rec-rail .crm-reach { gap: 4px 14px; }
+.cportal .rec-rail .crm-reach .plink {
+  min-height: 0; padding: 0; border: 0; background: none; border-radius: 0;
+  color: var(--ink-soft); text-decoration: underline; text-underline-offset: 2px;
+  font-size: 13px; justify-content: flex-start;
+}
+@media (hover: hover) { .cportal .rec-rail .crm-reach .plink:hover { color: var(--ink); background: none; } }
+/* A finger still gets a target: the link keeps the row's own line height and
+   the rows are 14px apart, which is the gap this portal gives stacked links. */
+@media (pointer: coarse) { .cportal .rec-rail .crm-reach .plink { min-height: 30px; align-items: center; } }
 @media (max-width: 1100px) {
   .rec.cportal { grid-template-areas: "rail" "pane"; }
 }
@@ -4107,6 +4467,13 @@ body.is-canvas { overflow: hidden; }
 .ovrow:last-child { border-bottom: 0; padding-bottom: 0; }
 .ovrow-svc { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) 104px 96px; }
 .ovrow-doc { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.2fr) 104px 80px; }
+/* The campaign's bookings and dates, on the same grid the client record's
+   rows use. The step column is the state column width this portal gives every
+   other table, so a chip starts at the same x on every row. */
+.ovrow-book { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 106px 88px; }
+/* On a desktop the header says it, so the row does not. */
+.ovcap { display: none; }
+.ovrow-date { grid-template-columns: minmax(0, 1.3fr) 142px 112px; }
 .ovname { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 .ovdim { color: var(--ink-mute); font-size: 12.5px; min-width: 0; }
 .ovamt { font-variant-numeric: tabular-nums; }
@@ -4126,27 +4493,50 @@ body.is-canvas { overflow: hidden; }
 .ovlog-when { font-size: 12.5px; color: var(--ink-mute); text-align: right; }
 .ovlog-when .ovmeta { display: block; margin: 0; }
 
-@media (max-width: 640px) {
-  .ovsec { padding: 14px 15px; }
-  .ovfacts { grid-template-columns: minmax(0, 1fr); gap: 10px; }
-  /* A header the phone hides is not a header, so the row carries its own
-     labels instead: name and money on the first line, what qualifies them on
-     the second — the shape every other list in this console takes. */
-  .ovhead { display: none; }
-  .ovrow-svc, .ovrow-doc {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "name amt" "dim state"; gap: 3px 12px;
-  }
-  .ovrow-svc > :nth-child(1), .ovrow-doc > :nth-child(1) { grid-area: name; }
-  .ovrow-svc > :nth-child(2), .ovrow-doc > :nth-child(2) { grid-area: dim; }
-  .ovrow-svc > :nth-child(3), .ovrow-doc > :nth-child(3) { grid-area: amt; justify-self: end; }
-  .ovrow-svc > :nth-child(4), .ovrow-doc > :nth-child(4) { grid-area: state; justify-self: end; }
-  .ovlog-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "kind when" "text text"; gap: 3px 12px;
-  }
-  .ovlog-kind { grid-area: kind; }
-  .ovlog-text { grid-area: text; white-space: normal; }
-  .ovlog-when { grid-area: when; }
-  .ovlog-when .ovmeta { display: inline; margin-left: 7px; }
+/* The Overview's rows are inside the pane as well, so they take the same
+   component-width switch rather than the window's. */
+.is-narrow .ovsec { padding: 14px 15px; }
+.is-narrow .ovfacts { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+/* A header the phone hides is not a header, so the row carries its own
+   labels instead: name and money on the first line, what qualifies them on
+   the second — the shape every other list in this console takes. */
+.is-narrow .ovhead { display: none; }
+.is-narrow .ovrow-svc, .is-narrow .ovrow-doc {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name amt" "dim state"; gap: 3px 12px;
 }
+.is-narrow .ovrow-svc > :nth-child(1), .is-narrow .ovrow-doc > :nth-child(1) { grid-area: name; }
+.is-narrow .ovrow-svc > :nth-child(2), .is-narrow .ovrow-doc > :nth-child(2) { grid-area: dim; }
+.is-narrow .ovrow-svc > :nth-child(3), .is-narrow .ovrow-doc > :nth-child(3) { grid-area: amt; justify-self: end; }
+.is-narrow .ovrow-svc > :nth-child(4), .is-narrow .ovrow-doc > :nth-child(4) { grid-area: state; justify-self: end; }
+/* Bookings: name and fee on the first line, where they post and where the
+   work has got to on the second. */
+.is-narrow .ovrow-book {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name amt" "dim state"; gap: 3px 12px;
+}
+.is-narrow .ovrow-book > :nth-child(1) { grid-area: name; }
+.is-narrow .ovrow-book > :nth-child(2) { grid-area: dim; }
+.is-narrow .ovrow-book > :nth-child(3) { grid-area: state; justify-self: end; }
+.is-narrow .ovrow-book > :nth-child(4) { grid-area: amt; justify-self: end; }
+/* The schedule keeps both dates, each under the caption the hidden header
+   would otherwise have given it. */
+.is-narrow .ovrow-date {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-areas: "name name" "shoot pub"; gap: 6px 12px;
+}
+.is-narrow .ovrow-date > :nth-child(1) { grid-area: name; }
+.is-narrow .ovrow-date > :nth-child(2) { grid-area: shoot; }
+.is-narrow .ovrow-date > :nth-child(3) { grid-area: pub; }
+.is-narrow .ovcap {
+  display: block; font-size: 11px; font-weight: 600; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--ink-mute); margin-bottom: 2px;
+}
+.is-narrow .ovlog-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "kind when" "text text"; gap: 3px 12px;
+}
+.is-narrow .ovlog-kind { grid-area: kind; }
+.is-narrow .ovlog-text { grid-area: text; white-space: normal; }
+.is-narrow .ovlog-when { grid-area: when; }
+.is-narrow .ovlog-when .ovmeta { display: inline; margin-left: 7px; }

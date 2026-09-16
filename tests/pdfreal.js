@@ -15,7 +15,7 @@ const STUB = fs.readFileSync(process.argv[2] + '/stub2.js', 'utf8');
   await p.evaluate(() => window.__signIn('adspacestudios@gmail.com'));
   await p.waitForTimeout(700);
   console.log('pdf-lib loaded: ' + await p.evaluate(() => !!window.PDFLib));
-  await p.locator('.crm-row').filter({ hasText: 'Laman Citra' }).click(); await p.waitForTimeout(800);
+  await p.locator('#crmList .crm-row').filter({ hasText: 'Laman Citra' }).click(); await p.waitForTimeout(800);
   /* The record is a workspace with panes now, so a section's controls are in
      the pane that owns them. */
   const pane = async (k) => { await p.locator('#crmTabs .tab[data-pane="' + k + '"]').click(); await p.waitForTimeout(300); };

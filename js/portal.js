@@ -15,6 +15,9 @@
   var API = window.ADspaceAPI;
   var db  = API && API.client;
   var MON = window.ADspaceMoney;
+  /* The shared list and record primitives: the same `initials` both console
+     records draw their mark from, so one reading serves all three pages. */
+  var UI  = window.ADspaceState;
   var ORG = window.ADSPACE_ORG || {};
   var DOCS = window.ADspaceDocs;
   var $   = function (id) { return document.getElementById(id); };
@@ -48,7 +51,8 @@
       legalName: 'Registered name', regNo: 'Registration no.', address: 'Billing address', market: 'Market',
       manager: 'Account manager', status: 'Status', notSet: 'Not set',
       my: 'Malaysia', sg: 'Singapore',
-      contact: 'Contact', reach: 'Reach', mainContact: 'Main contact', portal: 'Portal', noContacts: 'No contacts.',
+      contact: 'Contact', reach: 'Reach', contacts: 'Contacts',
+      mainContact: 'Main contact', portal: 'Portal', noContacts: 'No contacts.',
       service: 'Service', qtyRate: 'Qty × rate', amount: 'Amount', state: 'State', noServices: 'No services.',
       months: function (n) { return n + ' months'; }, from: 'from', mo: 'mo',
       quotedTotal: 'To quote', confirmedTotal: 'Confirmed',
@@ -75,7 +79,8 @@
       legalName: '注册名称', regNo: '注册号码', address: '账单地址', market: '市场',
       manager: '客户经理', status: '状态', notSet: '未填写',
       my: '马来西亚', sg: '新加坡',
-      contact: '联系人', reach: '联系方式', mainContact: '主要联系人', portal: '平台', noContacts: '暂无联系人。',
+      contact: '联系人', reach: '联系方式', contacts: '联系人',
+      mainContact: '主要联系人', portal: '平台', noContacts: '暂无联系人。',
       service: '服务', qtyRate: '数量 × 单价', amount: '金额', state: '状态', noServices: '暂无服务。',
       months: function (n) { return n + ' 个月'; }, from: '起', mo: '个月',
       quotedTotal: '待报价', confirmedTotal: '已确认',
@@ -300,7 +305,8 @@
     if ($('langToggle')) $('langToggle').textContent = w.lang;
     if (window.ADspaceChrome) window.ADspaceChrome.preparedFor('', '');
 
-    ['ovHead:overview', 'svcHead:services', 'rqHead:requests', 'docHead:letters', 'engHead:engagements',
+    ['ovHead:overview', 'ctHead:contacts', 'svcHead:services', 'rqHead:requests',
+     'docHead:letters', 'engHead:engagements',
      'payHead:payment', 'accHead:account'].forEach(function (p) {
       var a = p.split(':'); $(a[0]).textContent = w[a[1]];
     });
@@ -321,13 +327,44 @@
     var st = w.stage[c.stage] || c.stage || '';
     var stTone = c.stage === 'active' ? 'is-ok' : (c.stage === 'paused' || c.stage === 'proposal') ? 'is-warn' : '';
     var mute = function (s) { return '<span class="muted">' + esc(s) + '</span>'; };
+
+    /* Who this page is for. A client signed in and read a table of their own
+       line items with their company name nowhere on it; the mark is their own
+       logo where we hold one and their initials where we do not, exactly as
+       both console records draw it. */
+    var mark = $('cpMark');
+    if (mark) {
+      if (c.logo_url) {
+        mark.className = 'rec-mark has-logo';
+        mark.innerHTML = '<img src="' + esc(c.logo_url) + '" alt="">';
+      } else {
+        mark.className = 'rec-mark';
+        mark.textContent = UI.initials(c.name || c.legal_name);
+      }
+    }
+    if ($('cpName')) $('cpName').textContent = c.name || c.legal_name || '';
+    if ($('cpState')) {
+      $('cpState').textContent = st;
+      $('cpState').className = 'tone ' + stTone;
+      $('cpState').hidden = !st;
+    }
+    if ($('cpMeta')) {
+      /* The facts that identify rather than describe, each left out when we do
+         not hold it. The rest of them are in the rail, under the heading that
+         names them, so nothing is printed twice. */
+      var bits = [];
+      if (c.legal_name && c.legal_name !== c.name) bits.push(esc(c.legal_name));
+      if (c.owner) bits.push(esc(w.manager) + ': ' + esc(c.owner));
+      $('cpMeta').innerHTML = bits.join(' &middot; ');
+      $('cpMeta').hidden = !bits.length;
+    }
+    /* The registered name, the account manager and the status are on the
+       identity line above, so the rail carries what is left rather than
+       repeating three facts a reader has just read. */
     $('ovFacts').innerHTML = [
-      [w.legalName, c.legal_name ? esc(c.legal_name) : mute(w.notSet)],
       [w.regNo, c.company_no ? esc(c.company_no) : mute(w.notSet)],
       [w.address, c.billing_address ? esc(c.billing_address) : mute(w.notSet)],
-      [w.market, esc((c.market === 'SG' ? w.sg : w.my) + ' · ' + MON.sign(c.market))],
-      [w.manager, c.owner ? esc(c.owner) : mute(w.notSet)],
-      [w.status, chip(st, stTone)]
+      [w.market, esc((c.market === 'SG' ? w.sg : w.my) + ' · ' + MON.sign(c.market))]
     ].map(function (f) { return '<div><dt>' + esc(f[0]) + '</dt><dd>' + f[1] + '</dd></div>'; }).join('');
 
     // Contacts, read only: who, how to reach them.
@@ -342,8 +379,13 @@
         var wa = String(k.phone || '').replace(/[^0-9]/g, '');
         row.innerHTML =
           '<span class="svc-name"><b>' + esc(k.name) +
-            (k.is_primary ? ' <span class="tone is-ok">' + esc(w.mainContact) + '</span>' : '') +
-            (k.portal_access ? ' <span class="tone">' + esc(w.portal) + '</span>' : '') + '</b>' +
+            /* Green is the live state and it is spent once per row: a sign-in
+               is live, a main contact is a designation. The console already
+               reads it that way; this page had the two the wrong way round, so
+               the same two facts about the same person carried opposite
+               colours on the two screens that show them. */
+            (k.is_primary ? ' <span class="tone">' + esc(w.mainContact) + '</span>' : '') +
+            (k.portal_access ? ' <span class="tone is-ok">' + esc(w.portal) + '</span>' : '') + '</b>' +
             (k.role ? '<small>' + esc(k.role) + '</small>' : '') + '</span>' +
           '<span class="crm-reach">' +
             (k.phone ? '<a class="plink" href="tel:' + esc(k.phone) + '">' + esc(k.phone) + '</a>' : '') +
