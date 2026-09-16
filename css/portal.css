@@ -3914,7 +3914,11 @@ body.is-canvas { overflow: hidden; }
 }
 .sumrow-body b { font-weight: 600; color: var(--ink); }
 .sumrow-go { flex: 0 0 auto; align-self: center; }
-.sumdot { color: var(--line-ctl); }
+/* `--line-ctl` is the 3:1 control **border** token and this is text, so it
+   came out at 3.44:1 against the card. A separator is read like everything
+   else on the line and takes the mute text token, which clears 4.5:1 on every
+   background this portal draws. */
+.sumdot { color: var(--ink-mute); }
 .summeta { font-size: 12.5px; color: var(--ink-mute); }
 /* An empty section is a line saying what would fill it, beside the way to do
    it — not a dashed box and not a sentence explaining what the section is. */
