@@ -777,20 +777,10 @@
      read for the mockups) and their initials where we do not; the logo is the
      client's artwork and is never inverted, which is why the disc behind it
      stays light in both themes, exactly as the review mockups do. */
-  function initialsOf(name) {
-    var parts = String(name || '').trim().split(/\s+/).filter(Boolean);
-    if (!parts.length) return '?';
-    /* A Chinese name is one word of two or three characters, so the first two
-       characters are the mark; a Latin name gives the first letter of the
-       first two words. */
-    if (/[㐀-鿿]/.test(parts[0])) return parts[0].slice(0, 2);
-    /* Only words that begin with a letter count, or "Dale & Cecil" comes out
-       as "D&" and "S P Setia" as "SP". */
-    var words = parts.filter(function (w) { return /^[A-Za-z]/.test(w); });
-    if (!words.length) return parts[0].charAt(0).toUpperCase();
-    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-    return (words[0].charAt(0) + words[1].charAt(0)).toUpperCase();
-  }
+  /* The campaign record draws the same mark, so the reading lives once, in
+     `ADspaceState.initials`. Two copies of it drifted the moment one screen
+     learned about the ampersand in "Dale & Cecil" and the other did not. */
+  function initialsOf(name) { return UI.initials(name); }
 
   function paintIdentity(c) {
     var mark = $('crmClientMark');

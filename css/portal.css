@@ -2101,6 +2101,43 @@ body.is-plain .topbar { background: var(--chrome); }
    card is a flat surface with a hairline, not a floating tile. Depth: the
    sections inside sit on a recessed ground so the nesting is visible without
    a second border. */
+/* ---------- The bookings on a campaign ----------
+   One register, not a stack of bordered cards. Ten bookings were ten floating
+   panels with 12px of page ground between rows belonging to one list, and a
+   booking's step was something read from which card it sat in rather than from
+   a column. The card is still the record — the steps open inside it — it just
+   stops being a card, exactly as the clients directory stopped being three. */
+.bookreg {
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); margin-bottom: 12px;
+}
+.bookreg-head, .bookreg .kcard-head {
+  display: grid; align-items: center; gap: 0 12px;
+  grid-template-columns: 44px minmax(0, 1.05fr) minmax(0, 1.25fr) var(--state-w) 82px;
+}
+.bookreg-head {
+  padding: 12px 14px 8px;
+  font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--ink-mute); border-bottom: 1px solid var(--line);
+}
+.bookreg .kcard {
+  border: 0; border-radius: 0; margin: 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.bookreg .kcard:last-child { border-bottom: 0; }
+/* The warn edge still marks a booking waiting on us; inside a register it is
+   the row's own left rule rather than a card border. */
+.bookreg .kcard.is-waiting { border-left: 3px solid var(--warn); }
+.bookreg .kcard > *:last-child { border-radius: 0; }
+.bookreg .kcard:last-child > *:last-child {
+  border-bottom-left-radius: calc(var(--radius) - 1px);
+  border-bottom-right-radius: calc(var(--radius) - 1px);
+}
+.kcard-lead { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.kcard-tags { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; min-width: 0; }
+.kcard-act { display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
+.kcard-act .kmenu-btn { margin-left: 0; }
+
 .kcard {
   position: relative;              /* the actions menu positions against this */
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
@@ -2125,19 +2162,12 @@ body.is-plain .topbar { background: var(--chrome); }
   color: var(--ink-mute); font-variant-numeric: tabular-nums;
 }
 
-.kcard-head {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  padding: 13px 14px 13px 16px;
-}
-/* The state sits second from the end, beside the ⋯, which is where this
-   portal's tables already put it. Trailing the name it started at a different
-   x on every card, so a column of cards could not be read down for where each
-   one has got to. `order` rather than a move in the markup, because name then
-   state then summary is still the right reading order. */
-.kcard-head > .tone { order: 2; margin-left: auto; }
-.kcard-head > .tone ~ .tone { margin-left: 0; }
-.kcard-head > .kcard-sum { order: 1; }
-.kcard-head > .kmenu-btn { order: 3; }
+/* The state is a column now, not a chip pushed right by `order`: the head is
+   a grid of five stable cells, so name, summary, state and actions each start
+   at the same x on every booking. Trailing the name the chip sat at 205px on
+   one card and 325px on the next, and a column of bookings is read down for
+   exactly that. */
+.kcard-head { padding: 11px 14px 11px 16px; }
 .kcard-name {
   font-size: 15px; font-weight: 600; letter-spacing: -.012em; color: var(--ink);
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -2245,15 +2275,18 @@ body.is-plain .topbar { background: var(--chrome); }
 .kfold:hover { background: var(--line-soft); color: var(--ink); }
 .kcard.is-live .kcard-head { cursor: pointer; }
 .kcard-sum {
-  flex: 1 1 auto; min-width: 0; font-size: 12.5px; color: var(--ink-mute);
+  min-width: 0; font-size: 12.5px; color: var(--ink-mute);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 .kcard-body > .kstep:first-child { border-top: 1px solid var(--line-soft); }
 .kactions .btn svg { width: 14px; height: 14px; }
-@media (max-width: 640px) {
-  .kcard-sum { flex: 1 1 100%; order: 10; padding-left: 22px; white-space: normal; }
-}
+/* Deliberately NOT `display: none` on a desktop: a grid item that is removed
+   is a track the cells after it slide into, and an offer with no summary put
+   its state chip under the Booking heading. The cell stays and holds its
+   column; it only leaves on a phone, where it is a named area in a template
+   that can afford to lose a row. */
+.bookreg .kcard-sum:empty { min-height: 1px; }
 
 
 /* ---------- Client-facing bookings ----------
@@ -3007,12 +3040,24 @@ body > .shell { width: 100%; }
     grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
     grid-template-areas: "name rate act" "meta meta meta";
   }
-  /* On a phone the head wraps, and what wraps is the summary, not the state:
-     the state belongs on the name's line where it can be read down the list.
-     Left to wrap it landed on a line of its own with an empty half beside it. */
-  .kcard-head > .tone { order: 1; }
-  .kcard-head > .kmenu-btn { order: 2; }
-  .kcard-head > .kcard-sum { order: 3; flex: 1 1 100%; }
+  /* A header the phone hides is not a header, so it leaves and takes its own
+     padding with it. The row becomes three lines under the number: who, where
+     it has got to, and what the booking is. The state keeps a line it can be
+     read down rather than sharing one with a summary that would squeeze it. */
+  .bookreg-head { display: none; }
+  .bookreg .kcard-head {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "lead name act" "lead tags tags" "lead sum sum";
+    gap: 5px 10px; align-items: start; padding: 12px 14px;
+  }
+  .bookreg .kcard-lead { grid-area: lead; align-self: center; }
+  .bookreg .kcard-name { grid-area: name; align-self: center; }
+  .bookreg .kcard-act  { grid-area: act; }
+  .bookreg .kcard-tags { grid-area: tags; }
+  .bookreg .kcard-sum  { grid-area: sum; white-space: normal; }
+  /* On a phone these are named areas, so an empty one is a blank line held
+     open by the gap and can safely leave. */
+  .bookreg .kcard-sum:empty, .bookreg .kcard-tags:empty { display: none; }
   /* Two lines, not four: who and what they cost, then where to find them with
      their record at the end of the same line. A grid row each for the links
      and the record put a 120px row on the screen, which is five creators on a
@@ -3720,6 +3765,32 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .railbar { display: block; height: 5px; border-radius: 3px; background: var(--line-soft); overflow: hidden; }
 .railbar-fill { display: block; height: 100%; background: var(--ok); border-radius: 3px; }
 
+/* The campaign rail's own blocks. Money is right aligned on one grid so the
+   total sits directly under the figures it is the sum of, which is the whole
+   point of putting it there rather than in a card of its own. */
+.railmoney { display: grid; gap: 7px; margin: 0; }
+.railmoney > div { display: flex; align-items: baseline; gap: 12px; }
+.railmoney dt { font-size: 13px; color: var(--ink-soft); }
+.railmoney dd {
+  margin: 0 0 0 auto; font-size: 13px; color: var(--ink);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+/* The one bold amount in the block, over the hairline that separates it from
+   the figures it totals. */
+.railmoney > .is-total {
+  padding-top: 7px; border-top: 1px solid var(--line-soft);
+}
+.railmoney > .is-total dt, .railmoney > .is-total dd { font-weight: 600; color: var(--ink); }
+
+.railfoot { margin: 7px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.railwarn { margin: 7px 0 0; font-size: 12.5px; font-weight: 600; color: var(--warn); }
+/* Whether the client can open the link at all: the chip carries the word, so
+   the state survives greyscale, and the line under it says what that means. */
+.raillinkstate { display: grid; gap: 6px; margin: 0 0 10px; justify-items: start; }
+.raillinkstate > span:last-child { font-size: 12.5px; color: var(--ink-soft); }
+.railgo { width: 100%; justify-content: space-between; gap: 8px; }
+.railgo .ovgo-chev { width: 14px; height: 14px; flex: 0 0 auto; color: var(--ink-mute); }
+
 .raildates { display: grid; gap: 8px; margin: 0; }
 .raildates > div { display: flex; align-items: baseline; gap: 12px; }
 .raildates dt { font-size: 13px; color: var(--ink-soft); }
@@ -3773,6 +3844,14 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .rec-rail .crm-journey { margin-bottom: 12px; }
 .rec-rail .crm-links { margin-top: 0; margin-bottom: 12px; }
 .rec-rail .notice { margin-bottom: 12px; }
+
+/* Seven panes beside a rail is 633px of tabs in a 591px strip at 1280, so the
+   strip wrapped to two rows and Activity sat alone on the second. The campaign
+   tab reads `Selection` — the pane's own heading still says Client selection,
+   which is where that word means something — and the tabs in a workspace strip
+   sit 2px tighter, which buys the row back with room to spare rather than
+   exactly enough. */
+.rectabs .tab { padding: 0 12px; }
 
 /* Below the workspace width the rail is not a rail: it is what you read
    before the pane, so it comes first and the panes follow. */
@@ -4050,6 +4129,13 @@ body.is-canvas { overflow: hidden; }
 .ovrow:last-child { border-bottom: 0; padding-bottom: 0; }
 .ovrow-svc { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) 104px 96px; }
 .ovrow-doc { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1.2fr) 104px 80px; }
+/* The campaign's bookings and dates, on the same grid the client record's
+   rows use. The step column is the state column width this portal gives every
+   other table, so a chip starts at the same x on every row. */
+.ovrow-book { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 106px 88px; }
+/* On a desktop the header says it, so the row does not. */
+.ovcap { display: none; }
+.ovrow-date { grid-template-columns: minmax(0, 1.3fr) 142px 112px; }
 .ovname { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 .ovdim { color: var(--ink-mute); font-size: 12.5px; min-width: 0; }
 .ovamt { font-variant-numeric: tabular-nums; }
@@ -4084,6 +4170,29 @@ body.is-canvas { overflow: hidden; }
   .ovrow-svc > :nth-child(2), .ovrow-doc > :nth-child(2) { grid-area: dim; }
   .ovrow-svc > :nth-child(3), .ovrow-doc > :nth-child(3) { grid-area: amt; justify-self: end; }
   .ovrow-svc > :nth-child(4), .ovrow-doc > :nth-child(4) { grid-area: state; justify-self: end; }
+  /* Bookings: name and fee on the first line, where they post and where the
+     work has got to on the second. */
+  .ovrow-book {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "name amt" "dim state"; gap: 3px 12px;
+  }
+  .ovrow-book > :nth-child(1) { grid-area: name; }
+  .ovrow-book > :nth-child(2) { grid-area: dim; }
+  .ovrow-book > :nth-child(3) { grid-area: state; justify-self: end; }
+  .ovrow-book > :nth-child(4) { grid-area: amt; justify-self: end; }
+  /* The schedule keeps both dates, each under the caption the hidden header
+     would otherwise have given it. */
+  .ovrow-date {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: "name name" "shoot pub"; gap: 6px 12px;
+  }
+  .ovrow-date > :nth-child(1) { grid-area: name; }
+  .ovrow-date > :nth-child(2) { grid-area: shoot; }
+  .ovrow-date > :nth-child(3) { grid-area: pub; }
+  .ovcap {
+    display: block; font-size: 11px; font-weight: 600; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--ink-mute); margin-bottom: 2px;
+  }
   .ovlog-row {
     grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas: "kind when" "text text"; gap: 3px 12px;

@@ -913,11 +913,20 @@
         <!-- Identity and the one line that says what this campaign is waiting
              on us for, on every pane. A campaign that needs somebody is a
              campaign nobody should have to open seven sections to find. -->
-        <section class="panel" id="campHead">
+        <section class="panel rec-head" id="campHead">
           <div id="campSummary">
-          <div class="viewhead" style="margin:0 0 2px">
-            <span class="headmark"><h2 id="campName"></h2><span class="chip" id="campState"></span></span>
-            <button class="btn btn-quiet btn-sm" id="campEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg>Edit details</button>
+          <!-- The same identity area the client record opens on: a mark, the
+               name with its real state, the one control that edits it, and a
+               meta line naming the client and who here owns the campaign. A
+               campaign with no client named is a campaign nobody can place. -->
+          <div class="rec-id">
+            <span class="rec-mark" id="campMark" aria-hidden="true"></span>
+            <div class="crm-title">
+              <h2 id="campName"></h2>
+              <span class="chip" id="campState"></span>
+              <button class="btn btn-quiet btn-sm" id="campEdit" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg>Edit details</button>
+            </div>
+            <p class="rec-id-meta" id="campIdMeta"></p>
           </div>
           <!-- The name is the handle; the purpose is what the client reads. -->
           <p class="camp-purpose" id="campPurposeLine"></p>
@@ -933,14 +942,18 @@
             <button class="tab" data-pane="creators" type="button" role="tab" aria-selected="false">Creators</button>
             <button class="tab" data-pane="schedule" type="button" role="tab" aria-selected="false">Schedule</button>
             <button class="tab" data-pane="deliverables" type="button" role="tab" aria-selected="false">Deliverables</button>
-            <button class="tab" data-pane="client" type="button" role="tab" aria-selected="false">Client selection</button>
+            <button class="tab" data-pane="client" type="button" role="tab" aria-selected="false">Selection</button>
             <button class="tab" data-pane="finance" type="button" role="tab" aria-selected="false">Finance</button>
             <button class="tab" data-pane="activity" type="button" role="tab" aria-selected="false">Activity</button>
           </nav>
 
           <div class="rec-pane" data-pane="overview">
 
-          <div class="tallies" id="campTally"></div>
+          <!-- The record, not a scoreboard. Six equal statistic cards said the
+               same three numbers the rail now carries and left the bookings —
+               the thing somebody opened the campaign for — a tab away. Flat
+               titled sections over what this campaign has already read. -->
+          <div id="campOv"></div>
 
         <section class="panel" id="rollup" hidden>
             <div class="panelhead"><h3>Campaign results</h3></div>
@@ -1116,8 +1129,32 @@
           </div>
 
 
+          <!-- One block per question, in the order somebody needs it: what
+               this campaign is waiting on us for, how far the selection has
+               got, what it is worth, the dates it holds, whether the client
+               can see it, and the facts that place it. A block leaves
+               entirely when its data does not exist. -->
           <aside class="rec-rail" aria-label="Campaign facts">
-            <dl class="facts" id="campFacts"></dl>
+            <div class="railblock" id="campPickBlock" hidden>
+              <h3 class="railtitle">Selection</h3>
+              <div id="campPickRail"></div>
+            </div>
+            <div class="railblock" id="campMoneyBlock" hidden>
+              <h3 class="railtitle">Amount</h3>
+              <dl class="railmoney" id="campMoneyRail"></dl>
+            </div>
+            <div class="railblock" id="campDateBlock" hidden>
+              <h3 class="railtitle">Key dates</h3>
+              <dl class="raildates" id="campDateRail"></dl>
+            </div>
+            <div class="railblock" id="campLinkBlock" hidden>
+              <h3 class="railtitle">Client link</h3>
+              <div id="campLinkRail"></div>
+            </div>
+            <div class="railblock" id="campFactBlock">
+              <h3 class="railtitle">Details</h3>
+              <dl class="facts" id="campFacts"></dl>
+            </div>
           </aside>
         </div>
       </div>

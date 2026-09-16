@@ -1072,12 +1072,16 @@
     $('campPurposeLine').textContent = c.purpose || '';
     $('campPurposeLine').hidden = !c.purpose;
     paintCampState(c);
+    paintCampIdentity(c);
+    /* The client and who owns the campaign are on the identity line and the
+       due date is in Key dates, so none of the three is repeated here: a fact
+       printed twice on one screen is the reader wondering which one is right.
+       What is left is what the campaign is, which nothing else says. */
     $('campFacts').innerHTML = [
-      ['Client',            (c.clients && c.clients.name) || ''],
       ['Push format',       FORMAT_WORD[c.push_format] || c.push_format || ''],
       ['Deliverable',       c.deliverable === 'graphic' ? 'One graphic' : 'One video'],
-      ['Person in charge',  c.owner || '<span class="muted">Unassigned</span>'],
-      ['Campaign due',      c.deadline ? niceDate(c.deadline) : '<span class="muted">No date set</span>']
+      ['Slots',             c.slots ? String(c.slots) + (Number(c.slots) === 1 ? ' creator' : ' creators') : ''],
+      ['Backups',           c.backups_open ? 'Client may mark backups' : 'Not offered']
     ].filter(function (f) { return f[1] !== ''; }).map(function (f) {
       return '<div><dt>' + f[0] + '</dt><dd>' + (f[1].indexOf('<span') === 0 ? f[1] : esc(f[1])) + '</dd></div>';
     }).join('');
@@ -1103,6 +1107,32 @@
      the state moves, so they are painted in one place. Publishing is the
      forward move and carries the weight; unpublishing and reopening are
      warnings, drawn as such. */
+  /* The campaign opens on who it is for. The mark is the client's own logo
+     where we hold one and their initials where we do not, exactly as the
+     client record draws it; `ADspaceState.initials` is the one copy of that
+     reading, so "Dale & Cecil" is DC on both screens or on neither. The disc
+     stays light in both themes because a client's logo is their artwork. */
+  function paintCampIdentity(c) {
+    var mark = $('campMark');
+    var cl = c.clients || {};
+    if (mark) {
+      if (cl.logo_url) {
+        mark.className = 'rec-mark has-logo';
+        mark.innerHTML = '<img src="' + esc(cl.logo_url) + '" alt="">';
+      } else {
+        mark.className = 'rec-mark';
+        mark.textContent = UI.initials(cl.name || campName(c));
+      }
+    }
+    var meta = $('campIdMeta');
+    if (!meta) return;
+    var bits = [];
+    if (cl.name) bits.push(esc(cl.name));
+    if (c.owner) bits.push('Person in charge: ' + esc(c.owner));
+    meta.innerHTML = bits.join(' &middot; ');
+    meta.hidden = !bits.length;
+  }
+
   function paintCampState(c) {
     $('campState').textContent = STATE_WORD[c.state] || c.state;
     $('campState').classList.toggle('is-live', c.state !== 'draft');
@@ -1477,20 +1507,13 @@
     paintDeliverables(live);
     paintPicks(live);
 
-    $('campTally').innerHTML =
-      '<div class="tallygroup"><div class="kstep-title">Selection</div><div class="tally">' +
-        tallyCell(c.slots === 1 ? 'Creator' : 'Creators', c.slots) +
-        tallyCell(live.length === 1 ? 'Option' : 'Options', live.length) +
-        tallyCell('Selected', chosen.length + ' of ' + c.slots) +
-        (booked > c.slots
-          ? '<div class="tally-cell is-warn"><b>' + booked + '</b><span>Booked · ' +
-            goodwill.length + ' goodwill</span></div>' : '') +
-      '</div></div>' +
-      '<div class="tallygroup"><div class="kstep-title">Amount</div><div class="tally">' +
-        tallyCell('Subtotal', money2(total)) +
-        tallyCell(taxWord(), money2(sstOf(total))) +
-        '<div class="tally-cell is-total"><b>' + esc(money2(total + sstOf(total))) + '</b><span>Total</span></div>' +
-      '</div></div>';
+    /* Six equal statistic cards carried three numbers and a scoreboard's worth
+       of white space, and pushed the bookings — the thing anybody opens a
+       campaign to see — behind a tab. The counts and the money are facts about
+       the campaign, so they are in the rail with the rest of the facts; the
+       pane carries the work. */
+    paintCampOv(c, live, chosen);
+    paintCampRail(c, live, chosen, total, booked, goodwill);
 
     /* One card per creator. An option and a booking were two lists showing the
        same people at different moments, which meant reading both to know where
@@ -1499,9 +1522,18 @@
        Order runs by how live the work is. */
     var box = $('creatorList');
     box.innerHTML = '';
+    box.className = '';
     if (!state.options.length) {
-      box.innerHTML = '<div class="empty">No creators.</div>';
+      UI.emptyLine(box, 'No creators yet.', 'Add creators', function () { $('showAddOption').click(); });
     } else {
+      /* One surface with a header over it, not a stack of bordered cards: ten
+         bookings were ten floating panels with 12px of page ground between
+         rows that belong to one list, and the state was something read from
+         each card rather than down a column. The card is still the record —
+         the steps open inside it — it just stops being a card. */
+      box.className = 'bookreg';
+      box.innerHTML = '<div class="bookreg-head"><span></span><span>Creator</span>' +
+        '<span>Booking</span><span>Step</span><span></span></div>';
       state.options.slice().sort(function (a, b) {
         return (cardRank(a) - cardRank(b)) || (Number(a.position || 0) - Number(b.position || 0));
       }).forEach(function (o, i) { box.appendChild(creatorCard(o, i + 1)); });
@@ -1519,6 +1551,189 @@
     $('bulkTitle').textContent = (isDelivery() ? 'Delivery' : 'Shoot') + ' date for all';
     paintRollup(working);
     paintInvoice(c);
+  }
+
+  /* ---- The campaign's Overview: the record, not a scoreboard ------------
+     Flat titled sections inside one bounded surface, each a heading, the one
+     control that opens its own pane, and real rows under it. Built only from
+     what `loadOptions` has already read, so the pane costs nothing and cannot
+     hold a figure that has gone stale. A section with nothing says so in a
+     line, because "None yet." is itself an answer. */
+  var OVCHEV = '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M9 18l6-6-6-6"/></svg>';
+
+  function ovSec(title, pane, word, body) {
+    return '<section class="ovsec"><div class="ovsec-head"><h3>' + esc(title) + '</h3>' +
+      '<button class="btn btn-quiet btn-sm ovgo" type="button" data-go="' + esc(pane) + '">' +
+      esc(word) + OVCHEV + '</button></div>' + body + '</section>';
+  }
+  function ovNone(t) { return '<p class="ovnone">' + esc(t) + '</p>'; }
+
+  function paintCampOv(c, live, chosen) {
+    var box = $('campOv');
+    if (!box) return;
+    box.innerHTML = '<div class="ovcard">' +
+      ovBookings(live) + ovDates(live) + ovHandins(live) + '</div>';
+    Array.prototype.forEach.call(box.querySelectorAll('[data-go]'), function (b) {
+      b.addEventListener('click', function () { showCampPane(b.getAttribute('data-go')); pushUrl(); });
+    });
+  }
+
+  /* The bookings, which is the campaign. Who, where they post, where the work
+     has got to, and what it costs — the four things anybody asks — on one grid
+     so a column starts at the same x on every row. */
+  function ovBookings(live) {
+    if (!live.length) return ovSec('Bookings', 'creators', 'Creators', ovNone('No creators offered yet.'));
+    var rows = live.slice().sort(function (a, b) {
+      return (cardRank(a) - cardRank(b)) || (Number(a.position || 0) - Number(b.position || 0));
+    }).slice(0, 8).map(function (o) {
+      var w = OPTION_WORD[o.state] || [o.state, ''];
+      return '<div class="ovrow ovrow-book">' +
+        '<span class="ovname">' + esc((o.creators || {}).name || '') + '</span>' +
+        '<span class="ovdim">' + esc(platformsOf(o).join(' · ') || '—') + '</span>' +
+        '<span><span class="tone ' + esc(w[1] || 'tone-plain') + '">' + esc(w[0]) + '</span></span>' +
+        '<span class="ovamt">' + esc(money(o.rate)) + '</span></div>';
+    }).join('');
+    var more = live.length > 8
+      ? '<p class="ovmore">' + (live.length - 8) + ' more on the Creators pane.</p>' : '';
+    return ovSec('Bookings', 'creators', 'Creators',
+      '<div class="ovtable"><div class="ovhead ovrow-book"><span>Creator</span>' +
+      '<span>Posting on</span><span>Step</span><span class="ovamt">Fee</span></div>' +
+      rows + '</div>' + more);
+  }
+
+  /* When the work happens. Only bookings the client is paying for have dates,
+     so this is the same set the Schedule pane reads and never a second store. */
+  function ovDates(live) {
+    var rows = live.filter(function (o) { return CHARGED.indexOf(o.state) > -1; });
+    if (!rows.length) return ovSec('Schedule', 'schedule', 'Schedule', ovNone('Nothing booked yet.'));
+    /* The column heading leaves with the header on a phone, so each date
+       carries its own caption, shown only where the header is not. Two
+       unlabelled dates stacked under each other are two dates nobody reads. */
+    var shootWord = isDelivery() ? 'Delivery' : 'Shoot';
+    var body = rows.slice(0, 6).map(function (o) {
+      return '<div class="ovrow ovrow-date">' +
+        '<span class="ovname">' + esc((o.creators || {}).name || '') + '</span>' +
+        '<span class="ovamt"><span class="ovcap">' + esc(shootWord) + '</span>' + (o.visit_date
+          ? esc(niceDate(o.visit_date) + (o.visit_time ? ', ' + o.visit_time : ''))
+          : '<span class="muted">—</span>') + '</span>' +
+        '<span class="ovamt"><span class="ovcap">Publish</span>' + (o.planned_publish
+          ? esc(niceDate(o.planned_publish)) : '<span class="muted">—</span>') + '</span></div>';
+    }).join('');
+    var more = rows.length > 6 ? '<p class="ovmore">' + (rows.length - 6) + ' more on the Schedule pane.</p>' : '';
+    return ovSec('Schedule', 'schedule', 'Schedule',
+      '<div class="ovtable"><div class="ovhead ovrow-date"><span>Creator</span>' +
+      '<span class="ovamt">' + (isDelivery() ? 'Delivery' : 'Shoot') + '</span>' +
+      '<span class="ovamt">Publish</span></div>' + body + '</div>' + more);
+  }
+
+  /* What has come in. A draft waiting on us is the one thing on this page
+     somebody has to act on today, so it is named here rather than counted. */
+  function ovHandins(live) {
+    var rows = live.filter(function (o) {
+      return ((state.files || {})[o.id] || []).length || o.draft_url;
+    });
+    if (!rows.length) return ovSec('Deliverables', 'deliverables', 'Deliverables', ovNone('Nothing handed in yet.'));
+    var body = rows.slice(0, 6).map(function (o) {
+      var n = ((state.files || {})[o.id] || []).length;
+      var w = OPTION_WORD[o.state] || [o.state, ''];
+      return '<div class="ovrow ovrow-book">' +
+        '<span class="ovname">' + esc((o.creators || {}).name || '') + '</span>' +
+        '<span class="ovdim">' + esc(n ? n + (n === 1 ? ' file' : ' files') : 'Pasted link') + '</span>' +
+        '<span><span class="tone ' + esc(w[1] || 'tone-plain') + '">' + esc(w[0]) + '</span></span>' +
+        '<span class="ovamt"></span></div>';
+    }).join('');
+    return ovSec('Deliverables', 'deliverables', 'Deliverables',
+      '<div class="ovtable"><div class="ovhead ovrow-book"><span>Creator</span>' +
+      '<span>Handed in</span><span>Step</span><span class="ovamt"></span></div>' + body + '</div>');
+  }
+
+  /* ---- The rail: one block per question --------------------------------
+     What it is waiting on us for, how far the selection has got, what it is
+     worth, the dates it holds, whether the client can see it, and the facts
+     that place it. A block leaves entirely when its data does not exist, so
+     the rule under the last one is set here: `:last-child` counts a hidden
+     sibling and would draw a hairline under nothing. */
+  function paintCampRail(c, live, chosen, total, booked, goodwill) {
+    /* What the campaign is waiting on us for is deliberately NOT a rail block:
+       it is the warn line under the identity, on every pane, which is both
+       more prominent and already the locked behaviour. Drawing it twice would
+       be the one thing this portal's copy rules forbid outright. */
+    var pb = $('campPickBlock');
+    if (pb) {
+      var slots = Number(c.slots || 0);
+      pb.hidden = !slots;
+      if (slots) {
+        var pct = Math.min(100, Math.round((chosen.length / slots) * 100));
+        $('campPickRail').innerHTML =
+          '<p class="railpct"><b>' + chosen.length + ' of ' + slots + ' chosen</b>' +
+          '<span>' + pct + '%</span></p>' +
+          '<span class="railbar"><span class="railbar-fill" style="width:' + pct + '%"></span></span>' +
+          (booked > slots
+            ? '<p class="railwarn">' + booked + ' booked · ' + goodwill.length + ' goodwill</p>'
+            : '') +
+          (live.length
+            ? '<p class="railfoot">' + live.length +
+              (live.length === 1 ? ' creator offered' : ' creators offered') + '</p>' : '');
+      }
+    }
+
+    /* The money the client is quoted, right aligned on one grid so the total
+       sits under the figures it is the sum of. */
+    var mb = $('campMoneyBlock');
+    if (mb) {
+      mb.hidden = !chosen.length;
+      if (chosen.length) {
+        $('campMoneyRail').innerHTML =
+          railMoney('Subtotal', money2(total)) +
+          railMoney(taxWord(), money2(sstOf(total))) +
+          railMoney('Total', money2(total + sstOf(total)), 'is-total');
+      }
+    }
+
+    var db = $('campDateBlock');
+    if (db) {
+      var dates = [];
+      if (c.deadline) dates.push(['Campaign due', niceDate(c.deadline)]);
+      var vis = live.map(function (o) { return o.visit_date; }).filter(Boolean).sort();
+      var pub = live.map(function (o) { return o.planned_publish; }).filter(Boolean).sort();
+      if (vis.length) dates.push([isDelivery() ? 'Next delivery' : 'Next shoot', niceDate(vis[0])]);
+      if (pub.length) dates.push(['Next publish', niceDate(pub[0])]);
+      db.hidden = !dates.length;
+      $('campDateRail').innerHTML = dates.map(function (d) {
+        return '<div><dt>' + esc(d[0]) + '</dt><dd>' + esc(d[1]) + '</dd></div>';
+      }).join('');
+    }
+
+    /* Whether the client can open it at all. A campaign in draft is invisible
+       to them, and that is the fact people get wrong on a phone call. */
+    var lb = $('campLinkBlock');
+    if (lb) {
+      var open = c.state !== 'draft';
+      lb.hidden = false;
+      $('campLinkRail').innerHTML =
+        '<p class="raillinkstate"><span class="tone ' + (open ? 'is-ok' : '') + '">' +
+          (open ? 'Live' : 'Not published') + '</span>' +
+          '<span>' + (open ? 'The client can open their link.' : 'The client cannot see it yet.') +
+          '</span></p>' +
+        '<button class="btn btn-sm railgo" type="button" data-go="client">Client selection' + OVCHEV + '</button>';
+      Array.prototype.forEach.call(lb.querySelectorAll('[data-go]'), function (b) {
+        b.addEventListener('click', function () { showCampPane(b.getAttribute('data-go')); pushUrl(); });
+      });
+    }
+
+    /* The rule under the last block, set in the paint. */
+    var blocks = ['campPickBlock', 'campMoneyBlock', 'campDateBlock',
+      'campLinkBlock', 'campFactBlock'].map($).filter(Boolean);
+    blocks.forEach(function (b) { b.classList.remove('is-last'); });
+    var shown = blocks.filter(function (b) { return !b.hidden; });
+    if (shown.length) shown[shown.length - 1].classList.add('is-last');
+  }
+
+  function railMoney(label, value, cls) {
+    return '<div' + (cls ? ' class="' + cls + '"' : '') + '><dt>' + esc(label) +
+      '</dt><dd>' + esc(value) + '</dd></div>';
   }
 
   function cardRank(o) {
@@ -1947,26 +2162,37 @@
       plats, money(o.rate)
     ].filter(Boolean).join(' · ') : '';
 
+    /* The head is a register row: five stable cells on a stated grid, so the
+       name, the summary, the state and the actions each start at the same x on
+       every booking. `order` on a flex row put the state second from the end
+       but could not make two rows agree on where that end was, and a column of
+       bookings is read down for where each one has got to. */
     card.innerHTML =
       '<header class="kcard-head">' +
-        (live ? '<button class="kfold" data-a="fold" type="button" aria-label="Details" ' +
-          'aria-expanded="' + String(open) + '">' + CHEV + '</button>' : '') +
-        (no ? '<span class="kcard-no">' + no + '</span>' : '') +
+        '<span class="kcard-lead">' +
+          (live ? '<button class="kfold" data-a="fold" type="button" aria-label="Details" ' +
+            'aria-expanded="' + String(open) + '">' + CHEV + '</button>' : '') +
+          (no ? '<span class="kcard-no">' + no + '</span>' : '') +
+        '</span>' +
         '<span class="kcard-name">' + esc(cr.name || '') + '</span>' +
-        '<span class="tone ' + (word[1] || 'tone-plain') + '">' + esc(word[0]) + '</span>' +
-        (o.is_replacement ? '<span class="tone is-warn">Replacement</span>' : '') +
-        (o.goodwill ? '<span class="tone is-warn">Goodwill</span>' : '') +
-        (sum ? '<span class="kcard-sum">' + esc(sum) + '</span>' : '') +
-        /* Sending a creator their link is the everyday action on this card, so
-           it is a control on the card and not three steps away inside their
-           record. Sent again costs nothing and saves the creator digging
-           through WhatsApp for a message from three weeks ago. */
-        (!dead && cr.access_code
-          ? '<button class="iconbtn kcard-link" data-a="copylink" type="button" ' +
-            'aria-label="Copy portal link for ' + esc(cr.name || '') + '" ' +
-            'title="Copy portal link">' + LINK_ICON + '</button>' : '') +
-        (dead ? '' : '<button class="kmenu-btn" data-a="menu" type="button" ' +
-          'aria-label="More actions" aria-expanded="false">' + DOTS + '</button>') +
+        '<span class="kcard-sum">' + (sum ? esc(sum) : '') + '</span>' +
+        '<span class="kcard-tags">' +
+          '<span class="tone ' + (word[1] || 'tone-plain') + '">' + esc(word[0]) + '</span>' +
+          (o.is_replacement ? '<span class="tone is-warn">Replacement</span>' : '') +
+          (o.goodwill ? '<span class="tone is-warn">Goodwill</span>' : '') +
+        '</span>' +
+        '<span class="kcard-act">' +
+          /* Sending a creator their link is the everyday action on this row, so
+             it is a control here and not three steps away inside their record.
+             Sent again costs nothing and saves the creator digging through
+             WhatsApp for a message from three weeks ago. */
+          (!dead && cr.access_code
+            ? '<button class="iconbtn kcard-link" data-a="copylink" type="button" ' +
+              'aria-label="Copy portal link for ' + esc(cr.name || '') + '" ' +
+              'title="Copy portal link">' + LINK_ICON + '</button>' : '') +
+          (dead ? '' : '<button class="kmenu-btn" data-a="menu" type="button" ' +
+            'aria-label="More actions" aria-expanded="false">' + DOTS + '</button>') +
+        '</span>' +
       '</header>' +
       cardMenu(o) +
       '<div class="kcard-body" data-body' + (open ? '' : ' hidden') + '>' +
