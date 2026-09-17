@@ -2546,14 +2546,25 @@
         var file = button.closest('[data-file]');
         var id = file && file.getAttribute('data-file');
         if (!id) return;
+        /* A creator's work, so the line names which file went: "Submission
+           removed." over a grid of three said nothing about which one. */
+        var what = (file.querySelector('.filecard-name, .filepin-name') || {}).textContent || '';
+        var block = file.closest('.handedin') || file.parentNode;
         db.from('campaign_deliverables').update({ removed_at: new Date().toISOString() })
-          .eq('id', id).then(function (r) {
+          .eq('id', id).select('id').then(function (r) {
             if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+            /* A refused update comes back with no error and no rows, the way a
+               refused delete does, so the card would have lost a file the
+               database still holds. */
+            if (!(r.data || []).length) {
+              msg('campWorkMsg', 'Not removed. The database refused the request.', 'err');
+              return;
+            }
             file.remove();
-            undoBar('Submission removed.', function () {
+            undoBar((what ? what.trim() + ' removed.' : 'Submission removed.'), function () {
               db.from('campaign_deliverables').update({ removed_at: null }).eq('id', id)
                 .then(function () { loadOptions(); });
-            });
+            }, block);
           });
       });
     });
@@ -2961,13 +2972,45 @@
   /* Removing the PDF clears the link the client sees; the file itself stays
      with the accountant. Undo puts the link back. */
   var undoTimer = null;
-  function undoBar(text, undo) {
+  /* The way back is drawn where the act happened.
+
+     `#campUndo` is one bar at the top of the campaign record, above the pane
+     strip. Taking a handed-in file off happens inside a creator's card, which
+     on a campaign of five creators is most of a screen further down: the file
+     vanished from under the pointer and the bar offering it back rendered
+     223px above the top of the window, measured. A safeguard nobody can see is
+     not one, and this is the fault behind "there is no way back" on a control
+     that has had a way back since it shipped.
+
+     `host` is the element the act belongs to; the bar is put directly after it
+     and taken away again. Without one it falls back to the record's own bar,
+     which is right for something at the top of the record. */
+  function undoBar(text, undo, host) {
     var bar = $('campUndo');
+    if (host && host.parentNode) {
+      bar = host.parentNode.querySelector(':scope > .undobar-here');
+      if (!bar) {
+        bar = document.createElement('div');
+        bar.className = 'undobar undobar-here';
+        host.parentNode.insertBefore(bar, host.nextSibling);
+      }
+    }
     bar.hidden = false;
     bar.innerHTML = '<span>' + esc(text) + '</span><button class="btn btn-sm" type="button">Undo</button>';
-    bar.querySelector('button').addEventListener('click', function () { bar.hidden = true; undo(); });
+    bar.querySelector('button').addEventListener('click', function () { shutUndo(bar); undo(); });
     clearTimeout(undoTimer);
-    undoTimer = setTimeout(function () { bar.hidden = true; }, 8000);
+    undoTimer = setTimeout(function () { shutUndo(bar); }, 8000);
+    /* It is put where the act was, so it is already on screen in the ordinary
+       case; this is for the one where the card sits at the very foot of the
+       pane and the bar lands under the fold it opened in. */
+    if (bar.scrollIntoViewIfNeeded) bar.scrollIntoViewIfNeeded();
+    else if (bar.getBoundingClientRect().bottom > window.innerHeight) {
+      bar.scrollIntoView({ block: 'nearest' });
+    }
+  }
+  function shutUndo(bar) {
+    bar.hidden = true;
+    if (bar.classList.contains('undobar-here') && bar.parentNode) bar.parentNode.removeChild(bar);
   }
   function setInvoiceFile(c, url, stamp) {
     var was = { url: c.invoice_url, stamp: c.invoice_uploaded_at };
@@ -2976,7 +3019,10 @@
       c.invoice_url = url; c.invoice_uploaded_at = stamp;
       log(url ? 'campaign.invoice_file' : 'campaign.invoice_removed', c.title, c.invoice_no || '');
       paintInvoice(c);
-      if (!url) undoBar('Invoice PDF removed.', function () { setInvoiceFile(c, was.url, was.stamp); });
+      /* Same reason as the handed-in file above: the Finance pane sits inside
+         the record, and the record's own bar is above the pane strip. */
+      if (!url) undoBar('Invoice PDF removed.',
+        function () { setInvoiceFile(c, was.url, was.stamp); }, $('invMsg'));
     });
   }
 

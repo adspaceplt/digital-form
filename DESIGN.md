@@ -871,6 +871,18 @@ an empty answer as the refusal it is. The same holds for an update whose
 policy can refuse it. The rule is not "check the error", it is **check that the
 thing happened**.
 
+**The way back is drawn where the act happened.** This portal's answer to a
+destructive click is a soft remove and an eight second Undo, not a dialog — but
+one Undo bar at the top of a record is not a way back from something done most
+of a screen further down. Taking a creator's handed-in file off a booking put
+the bar 223px above the top of the window, measured, while the × that was
+pressed sat mid screen: the file vanished under the pointer and nothing visible
+was offered. That reads as no safeguard at all, and no amount of it being
+technically recoverable changes what the person saw. The bar goes directly
+after the block the act belongs to, and names **what** went rather than its
+category, because "Submission removed." over a grid of three files answers the
+one question it was drawn to answer with nothing.
+
 **A record of a decision holds every party to it.** The activity record is what
 answers "who approved this, and when", and it held only what the team did: a
 client's approval lived in `reviews` alone, a creator's hand-in nowhere at all.
