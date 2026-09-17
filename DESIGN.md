@@ -504,6 +504,37 @@ drift; the older `cols` check only ever compared the header to the first row,
 and the phone hides the header, so this was invisible on exactly the width
 where it happened.
 
+**On a phone the last column is a right edge, not a track things sit at the
+start of.** A fixed track makes a column, which is what stopped the state chip
+drifting row to row — but the cell inside it was left at `justify-self: start`,
+so the chip began at the same x on every row and *ended* wherever its own word
+happened to end. "Lead" stopped 76px inside the card's padding, "Active" 69px,
+"6 days · Overdue" almost reached it. The left of the list was a straight
+margin and the right was ragged, on every register in the console, which is
+what reads as a card that has not been laid out even when nobody can say why.
+The cell fills the track it was given and its contents align right
+(`justify-self: stretch` plus `text-align: right`, or `align-items: flex-end`
+where the cell is a flex column), so the chip and the line under it both end
+where the padding does and the card has two margins instead of one. Stretch
+rather than `justify-self: end`, for the reason the service rows already state:
+an end justified cell is only as wide as its own content, so two lines inside
+it would start at different x.
+
+The corollary is that **an empty action cell gives up its track**. The rate
+card draws its ⋯ only for an admin, so for everybody else a fixed
+`var(--ctl-h)` last column held 44px of nothing and the whole column of prices
+stopped 44px short of an edge nobody could see: the row looked mis-centred and
+the cause was invisible. The track is `auto` and the empty cell is hidden — and
+only on a phone, because on a desktop that column is shared with rows that do
+draw the ⋯, and a cell that leaves the grid takes its column with it and
+slides everything after it one track left.
+
+`uxaudit`'s `edge` rule measures this at 390: the **ink** of the last column,
+not its box, because a stretched cell already reaches the edge while the chip
+inside it does not. A cell that begins at the row's left margin is a summary
+line rather than a column and is exempt, and one gutter step of slack is
+allowed for the gap a collapsed action track leaves behind.
+
 **A phone list is a two column table, not a card with things pushed right.**
 The answer to "cards or a table on a phone" is that the card *is* the table
 row: the left column is who they are over what we know about them, the right
