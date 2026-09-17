@@ -3008,6 +3008,15 @@ body.is-plain .topbar { background: var(--chrome); }
 .crm-c { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 13.5px; color: var(--ink-mute); }
 .crm-c-name { font-size: 14.5px; font-weight: 600; letter-spacing: -.012em; color: var(--ink); }
+/* The client's number in the accounting system, under the name. Monospace and
+   mute, the way this portal sets every other token: it is read when somebody
+   is holding an invoice and ignored the rest of the time, so it must not
+   compete with the name above it. */
+.crm-c-code {
+  display: block; margin-top: 2px; font-weight: 400;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11.5px; letter-spacing: .04em; color: var(--ink-mute);
+}
 /* The clock sits with the stage it is timing: the chip, and under it how long
    the client has been in it. Two lines in one cell rather than a seventh
    column, which the phone has nowhere to put. */
@@ -3543,7 +3552,31 @@ body > .shell { width: 100%; }
    how many have run over, and what the group is worth. */
 /* The count belongs to the stage it counts, so it sits against the name; the
    worth ends the line, where a money column ends everywhere else. */
-.crm-band { justify-content: flex-start; gap: 8px; }
+/* A band opens and shuts, so it is a button and says which it is. Past clients
+   start shut: nobody opens this page to read an ended engagement, but they are
+   still clients and still hold their number, so the band keeps its place and
+   its count rather than disappearing. `font: inherit` and `color: inherit`
+   because a native button otherwise takes the platform's own face and the
+   platform's own `buttontext`, which is the fault this portal already fixed
+   once for every other button. */
+.crm-band {
+  display: flex; align-items: center; justify-content: flex-start; gap: 8px;
+  width: 100%; background: var(--sunk); border: 0; text-align: left;
+  cursor: pointer; color: inherit; font: inherit;
+  /* It is a control now, so it clears the control floor like every other one:
+     `.svc-cat`'s own padding left it at 42px, two short of what a finger is
+     owed, and the audit is what said so. */
+  min-height: var(--ctl-h-sm);
+}
+.crm-band-fold {
+  width: 14px; height: 14px; flex: 0 0 auto; color: var(--ink-mute);
+  transform: rotate(90deg); transition: transform var(--t) var(--ease);
+}
+.crm-band.is-shut .crm-band-fold { transform: rotate(0deg); }
+@media (hover: hover) { .crm-band:hover .crm-band-fold { color: var(--ink); } }
+/* A full width strip that shrinks under a finger reads as a wobble, which is
+   the exception this portal's press rule already names. */
+.crm-band:active { transform: none; }
 .crm-band > span:first-of-type { font-weight: 500; }
 .crm-band-late { text-transform: none; letter-spacing: 0; }
 .crm-band-worth {
