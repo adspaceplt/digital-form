@@ -4619,10 +4619,22 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 /* A date nobody has set yet. An empty `input[type=date]` draws nothing at all
    on iOS — no mm/dd/yyyy, no caret — so a Publish date that has not been
    chosen was a blank pill under a label, with nothing saying it was a date
-   field. The cell says it itself, over the field and out of the pointer's
-   way, so a tap anywhere still opens the picker. */
-.sched-one { position: relative; }
-.sched-one.is-unset::after {
+   field. The field says it itself, over the box and out of the pointer's way,
+   so a tap anywhere still opens the picker.
+
+   The hint hangs off `.sched-field`, a wrapper around the field and nothing
+   else, because an overlay is centred on the box it explains. Hung off the
+   cell it was centred on the label as well: on a phone `top: 50%` of a 65px
+   cell is 10px above the centre of the 44px field inside it, so the word
+   printed across the box's own top border. The phone rule written to correct
+   that re-anchored to `bottom: 0` and restated the height from `--ctl-h-sm` —
+   a second guess at a box already on the page, 6px out at the desk where the
+   field is 38px and the token is 32. A wrapper needs neither guess, and one
+   rule is then true at every width. */
+.sched-field { position: relative; display: flex; min-width: 0; }
+.sched-edit .sched-field { flex: 1 1 132px; }
+.sched-field > .input { width: 100%; }
+.sched-one.is-unset .sched-field::after {
   content: 'Not set';
   position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
   font-size: 13px; color: var(--ink-mute); pointer-events: none;
@@ -4634,17 +4646,11 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
    is what the person is typing into. */
 .sched-one.is-unset input::-webkit-datetime-edit { opacity: 0; }
 .sched-one.is-unset input:focus::-webkit-datetime-edit { opacity: 1; }
-.sched-one.is-unset:focus-within::after { content: none; }
-/* Once the label sits above the field, the hint has to move down with it or
-   it lands on the label's line instead of the field's. */
-.is-narrow .sched-one.is-unset::after {
-  top: auto; bottom: 0; transform: none;
-  height: var(--ctl-h-sm); display: flex; align-items: center;
-}
+.sched-one.is-unset:focus-within .sched-field::after { content: none; }
 /* The cells are as tall as the tallest of them, so a field left to stretch
    grew to fill a row sized by its neighbour. A control keeps its own height. */
 .is-narrow .sched-row { align-items: start; }
-.is-narrow .sched-edit .input { flex: 0 0 auto; }
+.is-narrow .sched-edit .input, .is-narrow .sched-edit .sched-field { flex: 0 0 auto; }
 .is-narrow .sched-row > .sched-who { grid-area: who; }
 .is-narrow .sched-row > .sched-when:nth-of-type(2) { grid-area: when; }
 .is-narrow .sched-row > .sched-when:nth-of-type(3) { grid-area: due; }

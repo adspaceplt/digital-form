@@ -846,6 +846,20 @@ reads as a name (18 characters or fewer); rednote keeps a profile id in that
 field, and `5e3262fd00000000010015b6` is longer than the creator it belongs to
 and says nothing to anybody.
 
+**An overlay is positioned against the box it explains, never against the box
+that contains it.** The Schedule's "Not set" hint is drawn on the cell, and on a
+phone the cell holds the label as well as the field — so `top: 50%` of it is the
+field's top third and the word printed across the box's own border. Correcting
+that by re-anchoring to `bottom: 0` and restating the height from `--ctl-h-sm`
+made it worse in kind, not better: it is a second guess at a box that is already
+on the page and already has a height, and it was 6px out at the desk, where the
+field is 38px and the token is 32. Wherever either guess is wrong the overlay
+lands somewhere nobody chose, and no viewport matrix can see it, because the
+number that is wrong is not the viewport. Give the field a wrapper of its own
+(`.sched-field`) and centre on that: no height to state, no second rule per
+breakpoint, and the one positioning rule is true at every width. The same test
+applies to any hint, badge or adornment laid over a control.
+
 A field the browser draws itself (file, date, time, select) is reskinned
 to our box: same height, same border, and its inner button is one of ours
 (`::file-selector-button`: outline, `--line-ctl`, centred on the field's
