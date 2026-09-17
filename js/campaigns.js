@@ -1496,12 +1496,22 @@
           (isDelivery() ? 'Delivery' : 'Shoot') + ' date">' +
           '<input class="input input-sm" data-schedule="visit_time" type="time" value="' +
           esc(clockValue(o.visit_time)) + '" aria-label="Optional time"></span>' +
-        '<span class="sched-when sched-edit" data-label="Draft due"><input class="input input-sm" data-schedule="submission_due" ' +
+        '<span class="sched-when sched-edit sched-one" data-label="Draft due"><input class="input input-sm" data-schedule="submission_due" ' +
           'type="date" value="' + esc(o.submission_due || '') + '" aria-label="Draft due date"></span>' +
-        '<span class="sched-when sched-edit" data-label="Publish"><input class="input input-sm" data-schedule="planned_publish" ' +
+        '<span class="sched-when sched-edit sched-one" data-label="Publish"><input class="input input-sm" data-schedule="planned_publish" ' +
           'type="date" value="' + esc(o.planned_publish || '') + '" aria-label="Publish date"></span>';
+      /* An empty `input[type=date]` draws nothing at all on iOS — no
+         mm/dd/yyyy, no caret, just an empty pill — so a Publish date nobody
+         has set yet reads as a box with no explanation. The cell says so
+         itself, over the field and out of the pointer's way. */
+      function markEmpty(input) {
+        var cell = input.closest('.sched-one');
+        if (cell) cell.classList.toggle('is-unset', !input.value);
+      }
+      Array.prototype.forEach.call(el.querySelectorAll('.sched-one input'), markEmpty);
       Array.prototype.forEach.call(el.querySelectorAll('[data-schedule]'), function (input) {
         input.addEventListener('change', function () {
+          markEmpty(this);
           var patch = {}; patch[this.getAttribute('data-schedule')] = this.value || null;
           /* A visit creates a real production deadline. No-visit campaigns
              leave the visit blank and use the adjacent Draft due field. */
@@ -1906,10 +1916,27 @@
     if (db) {
       var dates = [];
       if (c.deadline) dates.push(['Campaign due', niceDate(c.deadline)]);
-      var vis = live.map(function (o) { return o.visit_date; }).filter(Boolean).sort();
-      var pub = live.map(function (o) { return o.planned_publish; }).filter(Boolean).sort();
-      if (vis.length) dates.push([isDelivery() ? 'Next delivery' : 'Next shoot', niceDate(vis[0])]);
-      if (pub.length) dates.push(['Next publish', niceDate(pub[0])]);
+      /* "Next" has to mean next. This took the earliest date of every live
+         booking and called it the next one, so the moment the first shoot
+         passed the rail went on promising a date that was already behind us —
+         12 Sept still reading as the next shoot in the middle of October.
+         The next one is the earliest date from today onward; where every date
+         is behind us there is no next one, so the row says what it is instead
+         of what it hoped to be. */
+      var today = new Date(); today.setHours(0, 0, 0, 0);
+      function aheadOf(list) {
+        var all = list.filter(Boolean).sort();
+        if (!all.length) return null;
+        for (var i = 0; i < all.length; i++) {
+          if (new Date(all[i] + 'T00:00:00') >= today) return { on: all[i], ahead: true };
+        }
+        return { on: all[all.length - 1], ahead: false };
+      }
+      var vis = aheadOf(live.map(function (o) { return o.visit_date; }));
+      var pub = aheadOf(live.map(function (o) { return o.planned_publish; }));
+      var what = isDelivery() ? 'delivery' : 'shoot';
+      if (vis) dates.push([(vis.ahead ? 'Next ' : 'Last ') + what, niceDate(vis.on)]);
+      if (pub) dates.push([(pub.ahead ? 'Next' : 'Last') + ' publish', niceDate(pub.on)]);
       db.hidden = !dates.length;
       $('campDateRail').innerHTML = dates.map(function (d) {
         return '<div><dt>' + esc(d[0]) + '</dt><dd>' + esc(d[1]) + '</dd></div>';
