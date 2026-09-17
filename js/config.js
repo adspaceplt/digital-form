@@ -86,7 +86,7 @@ window.ADSPACE_CONFIG = {
      encodes the whole address, so those codes keep working as long as that
      host keeps redirecting. This value decides what the next link is built
      with, nothing more. */
-  linkHost: 'ad.adspace.me'
+  linkHost: 'hi.adspace.me'
 
   /* No secret belongs in this file. It is served to the browser on a public
      site, so anything here can be read by anyone who opens the page. The
