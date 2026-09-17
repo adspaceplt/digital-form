@@ -142,7 +142,6 @@
       approve: 'Approve',
       askChanges: 'Request changes',
       sendRequest: 'Send request',
-      namePrompt: 'Please enter your name to record this decision:',
       theClient: 'the client',
       approvedBy: function (who, when) { return 'Approved by ' + who + (when ? ' on ' + when : '') + '.'; },
       changesBy: function (who, when) { return 'Changes requested by ' + who + (when ? ' on ' + when : '') + '.'; },
@@ -233,7 +232,6 @@
       approve: '通过',
       askChanges: '需要修改',
       sendRequest: '提交修改',
-      namePrompt: '请填写您的姓名，以记录本次决定：',
       theClient: '客户',
       approvedBy: function (who, when) { return who + '已通过' + (when ? '（' + when + '）' : '') + '。'; },
       changesBy: function (who, when) { return who + '提出修改' + (when ? '（' + when + '）' : '') + '。'; },
@@ -615,16 +613,10 @@
         ? '<div class="approve-note">' + esc(r.note) + '</div>' : '');
   }
 
-  /* The name a decision is recorded under, shared with Content Review, so a
-     client who has already approved a post does not type it a second time. */
-  var NAME_KEY = 'adspace_reviewer';
-  function knownName() {
-    try { return localStorage.getItem(NAME_KEY) || ''; } catch (e) { return ''; }
-  }
-  function keepName(n) {
-    if (!n) return;
-    try { localStorage.setItem(NAME_KEY, n); } catch (e) {}
-  }
+  /* The name a decision is recorded under lives in js/decide.js now, with the
+     control that asks for it. It was a private pair of helpers here and
+     another pair in js/review.js over the same localStorage key, which is the
+     shape a rule drifts in. */
 
   /* Content Review decides in place, and this is the same decision, so it is
      the same component: Approve, Request changes, and a note that opens under
@@ -641,6 +633,11 @@
       '<div class="changebox">' +
         '<textarea class="textarea" rows="3" aria-label="' + esc(t().noteLabel) +
           '" placeholder="' + esc(t().needNote) + '"></textarea>' +
+        /* Drawn only where we do not already hold the name, so a client who
+           has decided on something before is not asked twice. */
+        (window.ADspaceDecide.known() ? '' :
+          '<input class="input changebox-who" type="text" autocomplete="name" aria-label="' +
+            esc(t().nameLabel) + '" placeholder="' + esc(t().namePlaceholder) + '">') +
         '<div class="changebox-actions">' +
           '<button class="btn btn-sm" type="button" data-act="cancel">' + esc(t().cancel) + '</button>' +
           '<button class="btn btn-sm btn-primary" type="button" data-act="send">' + esc(t().sendRequest) + '</button>' +
@@ -654,6 +651,7 @@
     var wrap  = row.querySelector('.approve');
     var box   = wrap.querySelector('.changebox');
     var note  = wrap.querySelector('.textarea');
+    var who   = wrap.querySelector('.changebox-who');
     var state = wrap.querySelector('.approve-state');
     var busy  = false;
 
@@ -666,12 +664,20 @@
       Array.prototype.forEach.call(wrap.querySelectorAll('.btn'), function (b) { b.disabled = on; });
     }
 
-    wrap.querySelector('[data-act="approve"]').addEventListener('click', function () {
+    /* The name is asked inside Approve, so the client never leaves the card
+       they are deciding on. A name already given opens nothing. */
+    var approveBtn = wrap.querySelector('[data-act="approve"]');
+    var asker = window.ADspaceDecide.nameBox(approveBtn, {
+      label: t().nameLabel, placeholder: t().namePlaceholder, needed: t().nameNeeded
+    }, say);
+
+    approveBtn.addEventListener('click', function () {
       if (busy) return;
       box.classList.remove('is-open');
-      send('approved', '');
+      asker.need(function (name) { send('approved', '', name); });
     });
     wrap.querySelector('[data-act="changes"]').addEventListener('click', function () {
+      asker.close();
       box.classList.add('is-open');
       note.focus();
     });
@@ -683,20 +689,25 @@
       if (busy) return;
       var text = (note.value || '').trim();
       if (!text) { say(t().needNote, true); note.focus(); return; }
-      send('changes', text);
+      /* The note box is already open, so the name it may still need is a
+         field inside it rather than one growing out of a button on the row
+         behind it. Same question, asked where the client is looking. */
+      var name = window.ADspaceDecide.known();
+      if (!name) {
+        name = (who.value || '').trim();
+        if (!name) { say(t().nameNeeded, true); who.focus(); return; }
+        window.ADspaceDecide.keep(name);
+      }
+      send('changes', text, name);
     });
 
     /* A decision with nobody's name on it is worth nothing to either side, so
        the name is asked once and kept, exactly as Content Review asks it. It
-       is a hard stop rather than a field on every card: the question belongs
-       to the moment somebody decides, not to the card they are reading. */
-    function send(decision, text) {
-      var name = knownName();
-      if (!name) {
-        name = (window.prompt(t().namePrompt) || '').trim();
-        if (!name) { say(t().nameNeeded, true); return; }
-        keepName(name);
-      }
+       is asked at the moment somebody decides rather than as a field on every
+       card, because a reader who is not deciding anything was being asked to
+       fill one in — but it is asked on this page now, not in a browser
+       dialog: see js/decide.js. By here it is settled and passed in. */
+    function send(decision, text, name) {
       lock(true);
       say('');
       db.rpc('review_draft', {

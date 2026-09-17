@@ -478,9 +478,60 @@ a { color: inherit; }
   opacity: .42; cursor: default; pointer-events: none; filter: saturate(.55);
 }
 
+/* The name a decision is recorded under, asked inside the button that needs
+   it. This is `.pbox` again — a control that creates a need answers it in
+   place — and it replaces a `window.prompt`, which is the one shape this
+   portal's rules already rule out for something that has to be typed.
+
+   Three mechanics, all of them load bearing:
+   · Both ends of the size are stated. `max-width` rather than `width`,
+     because the field shares a flex row with the button and has to take
+     whatever is left rather than a figure guessed here; a `width: auto` does
+     not animate at all, and 0 to 100% does.
+   · Request changes leaves while the name is being asked for. The client has
+     chosen; this is the confirmation of that choice, not the choice again.
+     Without it the field had 135px to grow into on a phone and the row
+     wrapped to two lines mid animation, which is a jump, not a transition.
+   · The pair reads as one control: the button gives up its right corners and
+     the field takes them, with one divider between. */
+.namebox { flex: 1.35; display: inline-flex; align-items: stretch; min-width: 0; }
+/* Beats `.approve-row .btn-approve`'s own flex, which still matches in here. */
+.approve-row .namebox .btn-approve { flex: 1 1 auto; min-width: 0; }
+.approve-row .namebox.is-asking .btn-approve {
+  flex: 0 0 auto;
+  border-top-right-radius: 0; border-bottom-right-radius: 0;
+}
+.namebox-field {
+  flex: 1 1 auto; max-width: 0; min-width: 0; opacity: 0;
+  padding: 0; border: 0 solid var(--action); border-left-width: 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  height: auto; min-height: 0; font-size: var(--field-text);
+  transition: max-width var(--t-slow) var(--ease), opacity var(--t) var(--ease-out),
+              padding var(--t-slow) var(--ease);
+}
+.namebox.is-asking .namebox-field {
+  max-width: 100%; opacity: 1; padding: 0 12px;
+  border-width: 1px; border-left-width: 1px;
+}
+/* It leaves rather than hides: `display: none` would drop it out of the row
+   in one frame and the name field would jump into the gap. */
+.approve-row.is-asking .btn-changes {
+  flex: 0 0 0; max-width: 0; min-width: 0; opacity: 0;
+  padding-left: 0; padding-right: 0; border-width: 0; overflow: hidden;
+  transition: max-width var(--t-slow) var(--ease), opacity var(--t) var(--ease-out),
+              padding var(--t-slow) var(--ease), flex-basis var(--t-slow) var(--ease);
+}
+.approve-row.is-asking { gap: 0; }
+
 .changebox { margin-top: 12px; display: none; }
 .changebox.is-open { display: block; }
 .changebox .textarea { min-height: 74px; font-size: 13px; }
+/* The name the change request is recorded under. It sits in the box rather
+   than growing out of Approve, because by the time this is on screen the box
+   is already open and the button is on the row behind it: the same question
+   belongs where the client is looking. Drawn only when we do not hold a name
+   already, so nobody is asked twice. */
+.changebox-who { margin-top: 9px; }
 .changebox-actions { display: flex; gap: 8px; margin-top: 9px; justify-content: flex-end; }
 .approve-state { margin-top: 10px; font-size: 12.5px; color: var(--ink-mute); }
 .approve-state b { color: var(--ink-soft); font-weight: 600; }
