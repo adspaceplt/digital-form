@@ -1496,14 +1496,19 @@
           (isDelivery() ? 'Delivery' : 'Shoot') + ' date">' +
           '<input class="input input-sm" data-schedule="visit_time" type="time" value="' +
           esc(clockValue(o.visit_time)) + '" aria-label="Optional time"></span>' +
-        '<span class="sched-when sched-edit sched-one" data-label="Draft due"><input class="input input-sm" data-schedule="submission_due" ' +
-          'type="date" value="' + esc(o.submission_due || '') + '" aria-label="Draft due date"></span>' +
-        '<span class="sched-when sched-edit sched-one" data-label="Publish"><input class="input input-sm" data-schedule="planned_publish" ' +
-          'type="date" value="' + esc(o.planned_publish || '') + '" aria-label="Publish date"></span>';
+        '<span class="sched-when sched-edit sched-one" data-label="Draft due"><span class="sched-field">' +
+          '<input class="input input-sm" data-schedule="submission_due" ' +
+          'type="date" value="' + esc(o.submission_due || '') + '" aria-label="Draft due date"></span></span>' +
+        '<span class="sched-when sched-edit sched-one" data-label="Publish"><span class="sched-field">' +
+          '<input class="input input-sm" data-schedule="planned_publish" ' +
+          'type="date" value="' + esc(o.planned_publish || '') + '" aria-label="Publish date"></span></span>';
       /* An empty `input[type=date]` draws nothing at all on iOS — no
          mm/dd/yyyy, no caret, just an empty pill — so a Publish date nobody
-         has set yet reads as a box with no explanation. The cell says so
-         itself, over the field and out of the pointer's way. */
+         has set yet reads as a box with no explanation. The hint hangs off
+         `.sched-field`, which wraps the field and nothing else, so it is
+         centred on the box it explains. Hung off the cell it would be centred
+         on the label as well: on a phone that put "Not set" a third of the way
+         up the field, printed over its top border. */
       function markEmpty(input) {
         var cell = input.closest('.sched-one');
         if (cell) cell.classList.toggle('is-unset', !input.value);
