@@ -2477,19 +2477,20 @@
   }
 
   /* ---- Short Links -------------------------------------------------------
-     The redirector is not built and no domain has moved, so what this manages
-     is the list it will serve. Entering the existing slugs now means the
-     switch is a DNS change and nothing more; every slug keeps the address it
-     already has printed on it.
+     This list is live: hi.adspace.me is a Cloudflare Worker (workers/links/)
+     that reads it one slug at a time through link_resolve, so a row saved here
+     redirects as soon as it is saved and a row paused here stops redirecting.
+     The page used to carry a "Not live yet." line under the table; the Worker
+     is deployed, so that line would now be a standing fact that is false.
 
      The host is one value in js/config.js, read here and written into the
      field's prefix, because it was typed into this file and into the console's
      markup and the two could disagree. `go.adspace.me` is deliberately not
-     retired: a QR code encodes the whole address, so the ones already printed
-     on slides keep working for as long as that host redirects. */
+     retired and is not served by that Worker: a QR code encodes the whole
+     address, so the ones already printed on slides keep working for as long as
+     that host redirects. This value decides what the next link is built with. */
   var LINK_HOST = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'go.adspace.me';
   if ($('slugPrefix')) $('slugPrefix').textContent = LINK_HOST + '/';
-  if ($('linksHost')) $('linksHost').textContent = LINK_HOST;
   var links = [];
   var editingSlug = null;
 
