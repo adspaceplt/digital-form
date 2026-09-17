@@ -390,7 +390,7 @@
            approved a post before is not asked for it a second time. */
         (window.ADspaceDecide.known() ? '' :
           '<input class="input changebox-who" type="text" autocomplete="name"' +
-            ' aria-label="Your name" placeholder="Your name">') +
+            ' aria-label="Your name" placeholder="Name">') +
         '<div class="changebox-actions">' +
           '<button class="btn" type="button" data-act="cancel">Cancel</button>' +
           '<button class="btn btn-primary" type="button" data-act="send">Send request</button>' +
@@ -408,7 +408,7 @@
        js/decide.js. A name already given opens nothing at all. */
     var approveBtn = wrap.querySelector('.btn-approve');
     var asker = window.ADspaceDecide.nameBox(approveBtn, {
-      label: 'Your name', placeholder: 'Your name',
+      label: 'Your name', placeholder: 'Name',
       needed: 'A name is required to record this decision.'
     }, say);
 

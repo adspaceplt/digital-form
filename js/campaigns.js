@@ -1254,19 +1254,26 @@
   /* The campaign moves forward and back. A locked selection the client wants to
      revisit reopens; a campaign marked finished too early comes back. Neither
      needs the campaign rebuilding. */
-  var ICON = {
+  /* Named apart from the bridge's `ICON`, which this file already holds at the
+     top. Two `var ICON` in one scope is one variable: the second assignment
+     ran at load and won everywhere, so `ICON.trash` — a bridge key, and the
+     only thing the Remove button on a profile link row draws — resolved to
+     undefined and that button rendered as an empty red square with no glyph
+     and no name on it. The two maps are not even the same shape: the bridge
+     holds path data, this one holds whole `<svg>` elements. */
+  var STATE_ICON = {
     send:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3 14.5 21l-4.5-7-7-4.5z"/></svg>',
     eyeOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 3 18 18"/><path d="M10.6 5.1A9.6 9.6 0 0 1 12 5c5 0 9 4.5 9 7a12 12 0 0 1-2.4 3.4"/><path d="M6.5 7.6C4.3 9.1 3 11.2 3 12c0 2.5 4 7 9 7a9.7 9.7 0 0 0 4.2-1"/></svg>',
     reopen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/></svg>',
     play:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 5 12 7-12 7z"/></svg>'
   };
   function publishMove(s) {
-    if (s === 'draft')      return { to: 'open',  label: 'Publish to client', cls: 'btn-go', icon: ICON.send };
-    if (s === 'open')        return { to: 'draft', label: 'Unpublish', cls: 'btn-warn', icon: ICON.eyeOff,
+    if (s === 'draft')      return { to: 'open',  label: 'Publish to client', cls: 'btn-go', icon: STATE_ICON.send };
+    if (s === 'open')        return { to: 'draft', label: 'Unpublish', cls: 'btn-warn', icon: STATE_ICON.eyeOff,
       ask: 'Unpublish this campaign?\n\nThe client link stops working until published again. Selections are kept.' };
-    if (s === 'production')  return { to: 'open',  label: 'Reopen selection', cls: 'btn-warn', icon: ICON.reopen,
+    if (s === 'production')  return { to: 'open',  label: 'Reopen selection', cls: 'btn-warn', icon: STATE_ICON.reopen,
       ask: 'Reopen selection for the client?\n\nExisting bookings are kept.' };
-    return { to: 'production', label: 'Resume campaign', cls: '', icon: ICON.play,
+    return { to: 'production', label: 'Resume campaign', cls: '', icon: STATE_ICON.play,
       ask: 'Resume this campaign?' };
   }
 
