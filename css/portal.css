@@ -37,9 +37,14 @@
   --ok-bg:      #ecf5f0;
   --ok-solid:   #1f7a4d;
   --on-ok:      #ffffff;
-  --warn:       #9c5c16;
-  --warn-bg:    #fbf2e6;
-  --warn-solid: #9c5c16;
+  /* Amber reads as caution only while it is plainly orange. #9c5c16 had
+     drifted to brown, and a brown chip on a cream tint read as a notice
+     board, not a warning; this is the same hue with the red left in. 5.05:1
+     on its own tint, 5.59:1 on white. */
+  --warn:       #a94d0c;
+  --warn-bg:    #fdf1e7;
+  --warn-line:  #f1d3b8;
+  --warn-solid: #a94d0c;
   --on-warn:    #ffffff;
   --err:        #b3261e;
   --err-bg:     #fdeceb;
@@ -152,6 +157,7 @@
     --on-ok:      #07150e;
     --warn:       #cf9350;
     --warn-bg:    #2a2217;
+    --warn-line:  #4a3520;
     --warn-solid: #cf9350;
     --on-warn:    #1d1408;
     --err:        #e8837a;
@@ -1007,7 +1013,7 @@ a { color: inherit; }
 .viewhead h2, .viewhead h3 { flex: 1 1 auto; }
 /* The display sizes carry the brand face; everything smaller stays on the
    system stack, where a hinted system face beats a downloaded one at 12px. */
-.viewhead h2, .crm-title h2, .cover-panel h2, .camphead h1, .batch-title {
+.viewhead h2, .crm-title h2, .rec-name h2, .cover-panel h2, .camphead h1, .batch-title {
   font-family: var(--font-head);
 }
 .viewhead h2 { font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
@@ -2436,7 +2442,7 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 .tone.is-ok     { background: var(--ok-bg);   color: var(--ok); }
 .tone.is-warn   { background: var(--warn-bg); color: var(--warn); }
-.tone.is-danger { background: #fbeceb;        color: #a3312a; }
+.tone.is-danger { background: var(--err-bg);  color: var(--err); }
 
 .kmenu-btn {
   margin-left: auto; flex: 0 0 auto;
@@ -3330,26 +3336,6 @@ body > .shell { width: 100%; }
    collapsed to 59px and a description came out one word per line. `is-narrow`
    is set from the element's own width by `ADspaceState.fit`, so one copy of
    each template serves the phone and the narrow pane alike. */
-/* A record head on a phone: the name and its state share the first line with
-   the state at the end, and the action that edits the record takes the next
-   one. Left to wrap on its own the state landed after the name on one client
-   and at the edge on the next, because whether Edit still fitted depended on
-   how long the name was. The basis is the line less the state and the gap,
-   so the action is always the thing that wraps. */
-.is-narrow .crm-title h2 { flex: 1 1 calc(100% - var(--state-w) - 10px); }
-.is-narrow .crm-title .state-select { margin-left: auto; }
-/* Once it has wrapped, the action belongs under the name at the name's own
-   left margin. Pushed right as well, Edit and the ⋯ made a row of their own
-   against the right edge, with the name above them and the meta below and a
-   gap either side: the loosest part of the card, for its least used control. */
-.is-narrow .crm-title .btn { margin-left: 0; }
-.is-narrow .crm-title { margin-bottom: 10px; row-gap: 4px; }
-/* A text-only button carries the control padding every other button does, so
-   on its own line its first glyph started 16px in from the name above it. It
-   keeps its height, and the target stays well past the floor on its width. */
-.is-narrow .crm-title .btn-quiet { padding-left: 0; }
-/* The mark keeps its column on a phone but takes less of it, so the name
-   still has the width the state select is measured against. */
 .is-narrow .svc-row.crm-head { display: none; }
 .is-narrow .svc-row, .is-narrow .csv-row, .is-narrow .doc-row, .is-narrow .cat-row, .is-narrow .ct-row, .is-narrow .cr-row {
   grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; padding: 12px 15px;
@@ -3454,7 +3440,7 @@ body > .shell { width: 100%; }
 .is-narrow .ct-row .plink { flex: 1 1 0; justify-content: center; }
 .is-narrow .csv-total { justify-content: space-between; gap: 12px; }
 .crm-links:empty { display: none; }
-.notice.is-warn { border-color: #efd7b6; background: var(--warn-bg); margin: 12px 0 0; }
+.notice.is-warn { border-color: var(--warn-line); background: var(--warn-bg); margin: 12px 0 0; }
 .notice.is-warn svg { color: var(--warn); }
 .notice.is-warn b { color: var(--warn); }
 .crm-caps { text-transform: uppercase; }
@@ -4318,22 +4304,36 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 /* The facts moved to the rail, so the head is the identity line and nothing
    else: its old 14px bottom margin left a band of empty panel under it. */
 .rec-head { margin-bottom: 12px; }
-.rec-head .crm-title { margin-bottom: 0; }
 .rec-head .msg:empty { display: none; }
-/* Identity: the mark, the name with its state and the one control that edits
-   the record, and under them the facts that say which company this is rather
-   than describe it. A grid, so the meta line sits under the name and not
-   under the mark. */
+/* Identity, in two parts. Left: the mark, then who this is — the name with
+   its state on one line and under them the facts that identify rather than
+   describe. Right: the one ⋯ that acts on the record itself. The two parts
+   centre on each other, so the control sits on the middle of the card and
+   not on the name line: drawn on the name line it stood above the card's
+   centre on every record that carried a meta line, and the head read as top
+   heavy. Edit lives in the ⋯ with Delete, because a record is read a hundred
+   times for every time it is edited, and a control drawn beside the stage on
+   every record spent the head's second position on its rarest act. */
 .rec-id {
-  display: grid; align-items: center; gap: 3px 14px;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-areas: "mark title" "mark meta";
+  display: grid; align-items: center; gap: 14px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "mark who ctl";
 }
-.rec-id > .crm-title { grid-area: title; }
-.rec-id-meta {
-  grid-area: meta; margin: 0; font-size: 12.5px; color: var(--ink-mute); min-width: 0;
+.rec-who { grid-area: who; min-width: 0; display: grid; gap: 3px; }
+/* The name and its state share a line; a long name wraps under itself and
+   the state follows it down, so nothing here ever pushes the ⋯ off the row. */
+.rec-name { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.rec-name h2 {
+  margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em;
+  line-height: 1.3; min-width: 0; overflow-wrap: anywhere;
 }
+.rec-name .state-select, .rec-name .chip { flex: 0 0 auto; }
+/* Meta at 12px against a 19px name: the two sizes stand a golden ratio
+   apart, which is what keeps the line reading as a note under the name and
+   not as a second line of it. */
+.rec-id-meta { margin: 0; font-size: 12px; color: var(--ink-mute); min-width: 0; }
 .rec-id-meta[hidden] { display: none; }
+.rec-ctl { grid-area: ctl; display: flex; align-items: center; gap: 8px; align-self: center; }
 /* The client's own logo where we hold one, their initials where we do not.
    The disc stays light in both themes for the same reason the review mockups
    do: the logo is the client's artwork and is not ours to invert. */
@@ -4346,46 +4346,76 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 }
 .rec-mark.has-logo { background: #fff; border: 1px solid var(--line); }
 .rec-mark img { width: 100%; height: 100%; object-fit: contain; }
-@media (max-width: 640px) {
-  /* The mark tops out with the name rather than centring itself against a
-     head that has wrapped to three lines. This sits beside the rule it
-     overrides: written up with the other phone rules it came earlier in the
-     file than the base, and the base won. */
-  .rec-id { gap: 3px 11px; align-items: start; }
-  .rec-mark { width: 38px; height: 38px; font-size: 13px; }
-}
+/* On a phone the same two parts, closer: the mark takes less of the row so
+   the name keeps its width, and the ⋯ stays where the thumb is. Keyed on the
+   console's own width, like every other rule about something inside it. */
+.is-narrow .rec-id { gap: 10px; }
+.is-narrow .rec-mark { width: 38px; height: 38px; font-size: 13px; }
+.is-narrow .rec-name { gap: 6px 10px; }
 
 /* ---------- The record's rail ----------
    One block per question, each with its own title, divided by the same
    hairline the Overview uses. A block leaves entirely when the data behind it
    is not there, so the rail never carries a heading over nothing. */
-.railblock, .rec-rail > .notice {
-  padding-bottom: 14px; margin: 0 0 14px; border-bottom: 1px solid var(--line);
+.railblock {
+  padding-bottom: 16px; margin: 0 0 16px; border-bottom: 1px solid var(--line);
 }
-.rec-rail > .notice { padding: 13px 15px; margin-bottom: 14px; border: 1px solid #efd7b6; }
 /* Set in `paintRail`, because `:last-child` counts a hidden sibling and every
    one of these blocks leaves when its data is not there. */
 .railblock.is-last { border-bottom: 0; margin-bottom: 0; padding-bottom: 0; }
 .railblock[hidden] { display: none; }
+/* The rail's titles are the same size as the pane's section titles, because
+   they head the same kind of thing: a block of the record. As 11px eyebrows
+   the rail read as a footnote to the pane rather than as its other half. */
 .railtitle {
-  margin: 0 0 9px; font-size: 11px; font-weight: 600; letter-spacing: .06em;
-  text-transform: uppercase; color: var(--ink-mute);
+  margin: 0 0 10px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
 }
+/* One glyph per row, so a list of dates or events can be scanned by shape
+   before it is read: a calendar is a date, a file is a letter, a person is a
+   contact. Neutral, never coloured, because the word beside it is the fact. */
+.railico { width: 16px; height: 16px; flex: 0 0 auto; color: var(--ink-mute); stroke-width: 1.8; }
+/* Where the record stands: the stage as the chip every list draws, and how
+   long it has stood there, in one line. */
+.railstatus { display: grid; gap: 6px; justify-items: start; }
+.railstatus-line { font-size: 12.5px; color: var(--ink-soft); }
+.railstatus-line.is-late { color: var(--warn); font-weight: 600; }
+/* What stands between this record and Active. Red, because it is a refusal
+   and not a caution: amber is for something pending, and this is something
+   the database will not allow until the fields are filled. The whole block
+   is the control that opens Billing, where they are. */
+.railgate {
+  display: grid; align-items: center; gap: 2px 10px; width: 100%; text-align: left;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  margin: 0 0 16px; padding: 12px 13px; font: inherit; cursor: pointer;
+  border: 1px solid var(--err-line); border-radius: var(--radius-sm);
+  background: var(--err-bg); color: var(--ink);
+}
+.railgate[hidden] { display: none; }
+.railgate > svg:first-child { grid-row: 1 / -1; width: 18px; height: 18px; color: var(--err); stroke-width: 1.8; align-self: start; margin-top: 1px; }
+.railgate b { grid-column: 2; font-size: 13.5px; font-weight: 600; color: var(--err); }
+.railgate > span { grid-column: 2; font-size: 12.5px; color: var(--ink-soft); }
+.railgate > .ovgo-chev { grid-column: 3; grid-row: 1 / -1; width: 15px; height: 15px; color: var(--err); }
+/* Without a Billing pane to open there is nothing to press. */
+.railgate:not([data-go]) { cursor: default; }
+.railgate:not([data-go]) > .ovgo-chev { display: none; }
+@media (hover: hover) { .railgate[data-go]:hover { filter: brightness(.985); } }
 /* A next action is a thing to go and do, so the whole block is the control
    that opens where it is done. */
 .railnext, .railmiss {
   display: grid; align-items: center; gap: 2px 10px; width: 100%; text-align: left;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   border: 1px solid var(--line); border-radius: var(--radius-sm);
   background: var(--card); padding: 10px 11px; min-height: var(--ctl-h);
   font-size: 13.5px; color: var(--ink);
 }
 @media (hover: hover) { .railnext:hover, .railmiss:hover { background: var(--sunk); } }
-.railnext-text { grid-column: 1; min-width: 0; font-weight: 600; }
-.railnext-when { grid-column: 1; font-size: 12.5px; font-weight: 400; color: var(--ink-mute); }
+.railnext > .railico { grid-column: 1; grid-row: 1 / -1; align-self: start; margin-top: 2px; }
+.railnext-text { grid-column: 2; min-width: 0; font-weight: 600; }
+.railnext-when { grid-column: 2; font-size: 12.5px; font-weight: 400; color: var(--ink-mute); }
 .railnext-when.is-late { color: var(--warn); font-weight: 600; }
+.railmiss > span:first-child { grid-column: 1 / 3; min-width: 0; }
 .railnext > .ovgo-chev, .railmiss > .ovgo-chev {
-  grid-column: 2; grid-row: 1 / -1; width: 15px; height: 15px; color: var(--ink-mute);
+  grid-column: 3; grid-row: 1 / -1; width: 15px; height: 15px; color: var(--ink-mute);
 }
 .railmiss { font-size: 12.5px; color: var(--ink-soft); margin-top: 9px; font-weight: 400; }
 
@@ -4423,24 +4453,19 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .railgo { width: 100%; justify-content: space-between; gap: 8px; }
 .railgo .ovgo-chev { width: 14px; height: 14px; flex: 0 0 auto; color: var(--ink-mute); }
 
-.raildates { display: grid; gap: 8px; margin: 0; }
-.raildates > div { display: flex; align-items: baseline; gap: 12px; }
-.raildates dt { font-size: 13px; color: var(--ink-soft); }
-/* A date is something to act on, so it is marked as one: the same sunk chip
-   the client link and the access code wear, which is what this portal already
-   uses for a value somebody reads off the screen rather than types. Against a
-   flat list of labels the figures were the same weight as the words beside
-   them and read as prose. */
+.raildates { display: grid; gap: 10px; margin: 0; }
+/* Glyph, label, then the date on the right, tabular so a column of them
+   lines up on the day. The glyph is what separates the figure from the label
+   at a glance; a sunk chip used to do that and read as a control to press. */
+.raildates > div { display: flex; align-items: center; gap: 10px; }
+.raildates dt { font-size: 13px; color: var(--ink-soft); min-width: 0; }
 .raildates dd {
   margin: 0 0 0 auto; font-size: 13px; color: var(--ink);
   font-variant-numeric: tabular-nums; white-space: nowrap;
-  background: var(--sunk); border-radius: var(--radius-sm); padding: 3px 9px;
 }
-/* An overdue date is the one anybody scans for, so it carries the caution
-   tint as well as the word: the colour is never the only mark. */
-.raildates dd.is-late {
-  color: var(--warn); font-weight: 600; background: var(--warn-bg);
-}
+/* An overdue date is the one anybody scans for: the caution colour and the
+   weight together, so the mark survives greyscale. */
+.raildates dd.is-late { color: var(--warn); font-weight: 600; }
 /* A field and the one button that saves it, centred on each other: `end`
    aligned their boxes' bottoms, and a text-only button of a different height
    beside a 44px field then printed its word above the field's own line. */
@@ -4458,8 +4483,12 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 }
 .rail-date-edit .btn { min-width: 0; }
 
-.raillog { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.raillog li { display: grid; gap: 1px; font-size: 13px; min-width: 0; }
+.raillog { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+/* The glyph names the section the event belongs to; the three lines beside
+   it are what happened, to what, and when. */
+.raillog li { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 1px 10px; font-size: 13px; min-width: 0; }
+.raillog li > .railico { grid-row: 1 / -1; margin-top: 2px; }
+.raillog li > span { grid-column: 2; min-width: 0; }
 .raillog-what { font-weight: 600; }
 .raillog-detail {
   color: var(--ink-soft); font-size: 12.5px; min-width: 0;
@@ -4919,17 +4948,20 @@ body.is-canvas { overflow: hidden; }
 .ovsec-head h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 .ovgo { margin-left: auto; min-width: 0; padding: 0 6px 0 10px; gap: 2px; }
 .ovgo-chev { width: 14px; height: 14px; flex: 0 0 auto; }
+/* An Edit carries the pen, like every Edit in the console, and no chevron:
+   it opens the pane the facts are edited in rather than going somewhere. */
+.ovgo.is-edit { padding: 0 10px; gap: 6px; }
+.ovgo.is-edit svg { width: 14px; height: 14px; stroke-width: 1.8; }
 
-/* Label over value, two across, so six facts read as three lines rather than
-   six. The same shape as `.facts`, at the record's own density. */
-.ovfacts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 24px; margin: 0; }
-.ovfacts dt {
-  font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
-  color: var(--ink-mute); margin-bottom: 2px;
-}
+/* Label beside value, one fact a line, the label in a stated track so every
+   value starts at the same x. Two across with eyebrow labels read as six
+   small cards; a list of rows reads as one record. The label track is the
+   row's smaller share: 150px against a pane of roughly 590 is close to the
+   short side of a golden cut, which is what keeps the labels quiet. */
+.ovfacts { display: grid; gap: 9px; margin: 0; }
+.ovfacts > div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 0 16px; align-items: baseline; }
+.ovfacts dt { font-size: 13.5px; color: var(--ink-mute); min-width: 0; }
 .ovfacts dd { margin: 0; font-size: 13.5px; color: var(--ink); min-width: 0; overflow-wrap: anywhere; }
-/* An odd last fact spans, or it sits alone with an empty half beside it. */
-.ovfacts > div:nth-child(odd):last-child { grid-column: 1 / -1; }
 .ovfacts dd b { font-weight: 600; }
 .ovmeta { color: var(--ink-mute); font-size: 12.5px; margin-left: 7px; }
 /* The number and the way to reach on it, with something between them. The
@@ -4964,25 +4996,36 @@ body.is-canvas { overflow: hidden; }
 .ovdim { color: var(--ink-mute); font-size: 12.5px; min-width: 0; }
 .ovamt { font-variant-numeric: tabular-nums; }
 
-/* A call reads as one line: what it was, what was said, when and with whom. */
+/* A call is a glyph for what kind it was, what was said under what it was,
+   and when and with whom on the right: the shape every activity feed uses. */
 .ovlog { list-style: none; margin: 0; padding: 0; }
 .ovlog-row {
-  display: grid; align-items: baseline; gap: 0 14px;
-  grid-template-columns: 92px minmax(0, 1fr) 150px;
-  padding: 9px 0; border-bottom: 1px solid var(--line-soft); font-size: 13.5px;
+  display: grid; align-items: start; gap: 0 12px;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  padding: 10px 0; border-bottom: 1px solid var(--line-soft); font-size: 13.5px;
 }
 .ovlog-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.ovlog-ico {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--sunk);
+  display: grid; place-items: center; color: var(--ink-soft);
+}
+.ovlog-ico svg { width: 15px; height: 15px; stroke-width: 1.8; }
+.ovlog-main { display: grid; gap: 1px; min-width: 0; }
 .ovlog-kind { font-weight: 600; }
 /* What was said is the point of the row, so it wraps rather than being cut
    off mid-word: clipped text is a value the reader cannot have. */
-.ovlog-text { min-width: 0; color: var(--ink-soft); overflow-wrap: anywhere; }
-.ovlog-when { font-size: 12.5px; color: var(--ink-mute); text-align: right; }
+.ovlog-text { min-width: 0; color: var(--ink-soft); font-size: 13px; overflow-wrap: anywhere; }
+.ovlog-when { font-size: 12.5px; color: var(--ink-mute); text-align: right; white-space: nowrap; }
 .ovlog-when .ovmeta { display: block; margin: 0; }
 
 /* The Overview's rows are inside the pane as well, so they take the same
    component-width switch rather than the window's. */
 .is-narrow .ovsec { padding: 14px 15px; }
-.is-narrow .ovfacts { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.is-narrow .ovfacts > div { grid-template-columns: 104px minmax(0, 1fr); gap: 0 12px; }
+/* When and with whom drop under what was said, rather than squeezing it. */
+.is-narrow .ovlog-row { grid-template-columns: 30px minmax(0, 1fr); }
+.is-narrow .ovlog-when { grid-column: 2; text-align: left; white-space: normal; }
+.is-narrow .ovlog-when .ovmeta { display: inline; margin-left: 6px; }
 /* A header the phone hides is not a header, so the row carries its own
    labels instead: name and money on the first line, what qualifies them on
    the second — the shape every other list in this console takes. */
