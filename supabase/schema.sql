@@ -614,6 +614,23 @@ begin
   insert into public.reviews (post_id, decision, note, reviewer)
   values (p_post_id, p_decision, nullif(btrim(p_note), ''), nullif(btrim(p_reviewer), ''));
 
+  /* The activity record is the portal's account of what was decided and by
+     whom, and it held only what the team did. A client approving a post is
+     the decision the whole section exists to collect, and it left nothing
+     anybody could produce later: the verdict sat in `reviews` alone, which
+     no screen reads as a history. The reviewer's own typed name is the
+     actor, because a person decided it. */
+  insert into public.activity_log (actor, action, subject, detail)
+  select coalesce(nullif(btrim(coalesce(p_reviewer, '')), ''), 'Client'),
+         case when p_decision = 'approved' then 'review.approved' else 'review.changes' end,
+         c.name,
+         b.title || ' · ' || coalesce(nullif(p.platform, ''), 'post') ||
+         coalesce(' · ' || nullif(btrim(coalesce(p_note, '')), ''), '')
+    from public.posts p
+    join public.batches b on b.id = p.batch_id
+    join public.clients c on c.id = b.client_id
+   where p.id = p_post_id;
+
   return jsonb_build_object('ok', true);
 end $$;
 
@@ -1059,6 +1076,15 @@ begin
 
   insert into campaign_confirmations (campaign_id, kind, person, source)
   values (c.id, 'client', trim(p_person), 'portal');
+
+  /* Logged here and not in `save_selection`: that one fires on every tick as
+     an autosave, and a record full of half-made selections is a record nobody
+     can read. This is the commitment, and it is the one that carries a name. */
+  insert into public.activity_log (actor, action, subject, detail)
+  values (trim(p_person), 'campaign.confirmed', c.title,
+          (select count(*)::text || ' creator' || case when count(*) = 1 then '' else 's' end
+             from campaign_options
+            where campaign_id = c.id and state = 'shortlisted') || ' confirmed');
 
   return jsonb_build_object('ok', true);
 end $$;
@@ -2080,6 +2106,14 @@ begin
      and (withdrawn_at is null) = (not p_undo);
   get diagnostics n = row_count;
   if n = 0 then return jsonb_build_object('error', 'not-found'); end if;
+
+  insert into public.activity_log (actor, action, subject, detail)
+  select who, case when p_undo then 'request.reinstated' else 'request.withdrawn' end,
+         c.name, r.kind
+    from public.client_requests r
+    join public.clients c on c.id = r.client_id
+   where r.id = p_id;
+
   return jsonb_build_object('ok', true);
 end $$;
 
@@ -2647,6 +2681,14 @@ begin
      set state = 'submitted', draft_caption = p_caption, submitted_at = now(),
          changes_by = null          -- that round is over, whoever raised it
    where id = p_option;
+
+  -- A creator is a party to this too, and when they handed in is exactly the
+  -- fact a late delivery turns on.
+  insert into public.activity_log (actor, action, subject, detail)
+  select cr.name, 'campaign.submitted', c.title,
+         n::text || ' file' || case when n = 1 then '' else 's' end || ' handed in'
+    from campaigns c where c.id = o.campaign_id;
+
   return jsonb_build_object('ok', true, 'files', n);
 end $$;
 
@@ -2670,6 +2712,12 @@ begin
   if o.state <> 'completed' then return jsonb_build_object('error', 'closed'); end if;
 
   update campaign_options set creator_rating = p_stars where id = p_option;
+
+  insert into public.activity_log (actor, action, subject, detail)
+  select cr.name, 'campaign.rated', c.title,
+         coalesce(p_stars::text || ' of 5', 'rating cleared')
+    from campaigns c where c.id = o.campaign_id;
+
   return jsonb_build_object('ok', true, 'rating', p_stars);
 end $$;
 

@@ -90,7 +90,10 @@
       confirmHeading: 'Confirm your selection',
       confirmBlurb: 'Your selection will be confirmed under the name entered below.',
       nameLabel: 'Your name',
-      namePlaceholder: 'Full name',
+      /* Just Name. Asking a client for their full name every time they
+         approve something reads as an identity check rather than a signature.
+         Chinese already said 姓名, which is the same register. */
+      namePlaceholder: 'Name',
       send: 'Confirm',
       cancel: 'Cancel',
       nameNeeded: 'Please enter your name.',

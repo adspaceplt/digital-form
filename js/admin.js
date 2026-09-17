@@ -719,6 +719,15 @@
     'set.withdrawn':         ['Withdrawn from client', 'is-warn', 'review'],
     'link.reset':            ['Access link reset', 'is-warn', 'review'],
     'reapproval.requested':  ['Re-approval requested', 'is-warn', 'review'],
+    /* What a client and a creator did, not only what we did. The record is
+       what answers a dispute, and it held one side of every conversation:
+       a client approved a post and the portal kept the verdict in `reviews`
+       alone, which no screen reads as a history. These carry the name the
+       person typed as the actor, so the row says who, what and when. */
+    'review.approved':       ['Approved by client', 'is-ok', 'review'],
+    'review.changes':        ['Changes requested by client', 'is-warn', 'review'],
+    'request.withdrawn':     ['Request withdrawn by client', 'is-warn', 'clients'],
+    'request.reinstated':    ['Request reinstated by client', '', 'clients'],
     // Short links. Named apart from link.reset above, which is the client's
     // access link and a different thing entirely.
     'shortlink.created':     ['Short link created', 'is-ok', 'links'],
@@ -738,6 +747,9 @@
     'campaign.stage':        ['Stage moved', '', 'campaigns'],
     'campaign.unbooked':     ['Returned to options', 'is-warn', 'campaigns'],
     'campaign.withdrawn':    ['Creator withdrew', 'is-danger', 'campaigns'],
+    'campaign.confirmed':    ['Selection confirmed by client', 'is-ok', 'campaigns'],
+    'campaign.submitted':    ['Draft handed in by creator', '', 'campaigns'],
+    'campaign.rated':        ['Creator rated the booking', '', 'campaigns'],
     'campaign.replaced':     ['Creator replaced', 'is-danger', 'campaigns'],
     'campaign.reinstated':   ['Put back in production', 'is-ok', 'campaigns'],
     'campaign.invoice':      ['Invoice number set', '', 'campaigns'],
@@ -2650,21 +2662,25 @@
 
     var table = document.createElement('div');
     table.className = 'crm-table softpanel';
-    /* Status names the column the Paused chip sits in; the last stays empty
-       over the actions, the way every other table in this console does. */
+    /* No Status column: Live is true of nearly every row, so the heading stood
+       over a cell that was empty almost always and read as something broken.
+       The exception is named beside the slug instead, the way the rate card
+       names an inactive service. The last cell stays empty over the actions,
+       the way every other table in this console does. */
     table.innerHTML = '<div class="crm-head link-row"><span>Short link</span>' +
-      '<span>Destination</span><span>Label</span><span>Status</span><span></span></div>';
+      '<span>Destination</span><span>Label</span><span></span></div>';
 
     shown.forEach(function (l) {
       var off = l.active === false;
       var row = document.createElement('div');
       row.className = 'link-row' + (off ? ' is-off' : '');
       row.innerHTML =
-        '<span class="link-slug">/' + esc(l.slug) + '</span>' +
+        // Live is true of nearly every row, so only the exception is named,
+        // and it is named beside the thing it is true of.
+        '<span class="link-slug">/' + esc(l.slug) +
+          (off ? ' <span class="tone is-warn">Paused</span>' : '') + '</span>' +
         '<span class="link-target">' + esc(l.target_url || '') + '</span>' +
         '<span class="link-label">' + esc(l.title || '') + '</span>' +
-        // Live is true of nearly every row, so only the exception is named.
-        '<span class="link-state">' + (off ? '<span class="tone is-warn">Paused</span>' : '') + '</span>' +
         '<span class="link-act">' +
           iconBtn('copy', 'copy', 'Copy short link') +
           iconBtn('qr',   'qr',   'QR codes') +

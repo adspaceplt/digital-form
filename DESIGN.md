@@ -871,6 +871,34 @@ an empty answer as the refusal it is. The same holds for an update whose
 policy can refuse it. The rule is not "check the error", it is **check that the
 thing happened**.
 
+**A record of a decision holds every party to it.** The activity record is what
+answers "who approved this, and when", and it held only what the team did: a
+client's approval lived in `reviews` alone, a creator's hand-in nowhere at all.
+A table no screen reads as a history is not a record. Every client-facing and
+creator-facing write that is a **decision** logs under the name the person
+typed — approving a post, asking for changes, confirming a selection, handing
+work in, rating a booking, withdrawing a request. What is not a decision stays
+out: the creator selection autosaves on every tick, and a record full of
+half-made selections is one nobody can read, so the commitment is logged and
+the autosave is not. A tag a function writes is always one the console can
+name and file, or the row arrives with no label and no section.
+
+**A heading over a column that is nearly always empty reads as a fault.** Short
+Links headed a STATUS column whose cell is blank on every live row, which is
+almost all of them — the accent rule working correctly, and looking broken. The
+rate card had already settled it: where a state is the default for its list, the
+row says nothing while it holds and names the exception **beside the name**, not
+in a column of its own. Drop the column; keep the chip.
+
+**A number is not a link until it carries the country.** A Malaysian mobile is
+keyed `0143132195`, and stripping the punctuation gave `wa.me/0143132195`, which
+is not a number anywhere: the country code is missing and the leading zero is a
+national prefix. Prefixing `6` keeps the zero and gives `60143132195`, the same
+thing as 60 plus the number without it. A number already carrying its code is
+left alone, and one with no leading zero takes its client's market, because a
+Singapore mobile has eight digits and no prefix to replace. One builder, so the
+contact row and the Overview cannot disagree.
+
 **A permission is a level in a section, never a switch per verb.** Six section
 booleans plus one global `can_remove` meant the authority to destroy was shared
 by clients, contacts, letters, rate card lines, short links, creators and

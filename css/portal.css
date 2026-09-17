@@ -3567,6 +3567,13 @@ body > .shell { width: 100%; }
      `.svc-cat`'s own padding left it at 42px, two short of what a finger is
      owed, and the audit is what said so. */
   min-height: var(--ctl-h-sm);
+  /* And it states its own padding rather than taking `.svc-cat`'s 14 above
+     and 6 below. That asymmetry is right for a heading that hugs the list
+     under it; this is a divider row inside one register, with a hairline of
+     its own, so its word sits on the middle of its band. Left as it was, the
+     band read as a gap above the first client with the label fallen to the
+     floor of it. */
+  padding: 9px 15px;
 }
 .crm-band-fold {
   width: 14px; height: 14px; flex: 0 0 auto; color: var(--ink-mute);
@@ -4235,11 +4242,18 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
    actions — sized it at nothing and the three columns before it slid 76px
    right of the rows beneath them. 124px is the three icon buttons the actions
    cell actually holds. */
+/* Four columns, not five. A STATUS heading stood over a cell that is empty on
+   every live row, which is nearly all of them, so the column read as a fault
+   rather than as the accent rule working. The rate card had already settled
+   this: where a state is the default for its list, the row says nothing while
+   it holds and names the exception beside the name. `Paused` is a chip next to
+   the slug now and the row fades, exactly as an inactive service does. */
 .link-row, .crm-head.link-row {
   display: grid; align-items: center; gap: 0 12px;
-  grid-template-columns: minmax(110px, 170px) minmax(0, 1.6fr) minmax(0, 1fr) 84px 124px;
+  grid-template-columns: minmax(110px, 200px) minmax(0, 1.6fr) minmax(0, 1fr) 124px;
   padding: 10px 15px; border-bottom: 1px solid var(--line-soft);
 }
+.link-slug .tone { margin-left: 8px; }
 .link-row:last-child { border-bottom: 0; }
 .link-row.is-off > :not(.link-act) { opacity: .55; }
 .link-slug {
@@ -4252,18 +4266,16 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .link-label { color: var(--ink-soft); }
-.link-state { min-width: 0; }
 .link-act { position: relative; display: flex; gap: 4px; align-items: center; justify-content: flex-end; }
 
 @media (max-width: 640px) {
   /* Two lines: what it is and what it does, then where it goes. */
   .link-row {
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    grid-template-areas: "slug state act" "target target target" "label label label";
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "slug act" "target target" "label label";
     gap: 2px 10px; padding: 12px 15px;
   }
   .link-row > .link-slug   { grid-area: slug; }
-  .link-row > .link-state  { grid-area: state; }
   .link-row > .link-act    { grid-area: act; margin-block: calc((20px - var(--ctl-h)) / 2); }
   .link-row > .link-target { grid-area: target; }
   .link-row > .link-label  { grid-area: label; }
@@ -4920,6 +4932,10 @@ body.is-canvas { overflow: hidden; }
 .ovfacts > div:nth-child(odd):last-child { grid-column: 1 / -1; }
 .ovfacts dd b { font-weight: 600; }
 .ovmeta { color: var(--ink-mute); font-size: 12.5px; margin-left: 7px; }
+/* The number and the way to reach on it, with something between them. The
+   WhatsApp link used to be an underlined word printed hard against the last
+   digit, so the row read as one long string. */
+.ovreach { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
 .ovlink { color: var(--ink-soft); text-decoration: underline; text-underline-offset: 2px; }
 .ovlink:hover { color: var(--ink); }
 .ovnone { margin: 0; font-size: 13.5px; color: var(--ink-mute); }

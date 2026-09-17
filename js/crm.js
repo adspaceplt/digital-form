@@ -1043,9 +1043,11 @@
     var rows = [['Main contact', '<b>' + esc(m.name || '') + '</b>' +
       (m.role ? '<span class="ovmeta">' + esc(m.role) + '</span>' : '')]];
     if (m.phone) {
-      rows.push(['Phone', esc(m.phone) +
-        (m.whatsapp ? '<a class="ovlink" href="https://wa.me/' + esc(String(m.whatsapp).replace(/\D/g, '')) +
-          '" target="_blank" rel="noopener">WhatsApp</a>' : '')]);
+      /* A button, not a word run against the number with nothing between them:
+         it is a thing to press and it is the same `.plink` the contact row
+         and the client's own page already draw. */
+      rows.push(['Phone', '<span class="ovreach">' + esc(m.phone) +
+        waLink(m.whatsapp || m.phone, (state.client || {}).market) + '</span>']);
     }
     if (m.email) rows.push(['Email', '<a class="ovlink" href="mailto:' + esc(m.email) + '">' + esc(m.email) + '</a>']);
     if (m.lang && LANG_WORD[m.lang]) rows.push(['Preferred language', esc(LANG_WORD[m.lang])]);
@@ -1578,10 +1580,34 @@
 
   /* A contact is a row: who, how to reach them, a ⋯. The main contact
      carries the word. */
+  /* wa.me wants a full international number and no punctuation. A Malaysian
+     mobile is keyed as `0143132195`, and stripping the punctuation alone sent
+     people to `wa.me/0143132195`, which is not a number anywhere: the country
+     code is missing and the leading zero is a national prefix. Prefixing `6`
+     keeps the zero and gives `60143132195`, which is the same thing as 60
+     plus the number without it.
+
+     A number already carrying its country code is left exactly as it is, and
+     one with no leading zero takes its client's market, because a Singapore
+     mobile has eight digits and no national prefix to replace. */
+  function waNumber(raw, market) {
+    var d = String(raw || '').replace(/\D/g, '');
+    if (!d) return '';
+    if (d.indexOf('60') === 0 || d.indexOf('65') === 0) return d;
+    if (d.charAt(0) === '0') return '6' + d;
+    return (market === 'SG' ? '65' : '60') + d;
+  }
+  function waLink(raw, market, label) {
+    var n = waNumber(raw, market);
+    if (!n) return '';
+    return '<a class="plink" href="https://wa.me/' + esc(n) +
+      '" target="_blank" rel="noopener">' + esc(label || 'WhatsApp') + '</a>';
+  }
+
   function contactRow(ct, removed) {
     var row = document.createElement('div');
     row.className = 'svc-row ct-row' + (removed ? ' is-off' : '');
-    var wa = String(ct.whatsapp || ct.phone || '').replace(/[^0-9]/g, '');
+
     /* Their preference, not a claim about them: "Writes in English" reads as
        a judgement on what the person can do, when all it records is which
        language we write to them in. */
@@ -1598,7 +1624,7 @@
         '</b><small>' + esc(sub) + '</small></span>' +
       '<span class="crm-reach">' +
         (ct.phone ? '<a class="plink" href="tel:' + esc(ct.phone) + '">' + esc(ct.phone) + '</a>' : '') +
-        (wa ? '<a class="plink" href="https://wa.me/' + esc(wa) + '" target="_blank" rel="noopener">WhatsApp</a>' : '') +
+        waLink(ct.whatsapp || ct.phone, (state.client || {}).market) +
         (ct.email ? '<a class="plink" href="mailto:' + esc(ct.email) + '">' + esc(ct.email) + '</a>' : '') +
       '</span>' +
       '<span class="team-act">' +
