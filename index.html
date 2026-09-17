@@ -1,162 +1,63 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta name="robots" content="noindex">
-  <meta charset="UTF-8">
-  <title>Digital Portal</title>
-  <meta name="description" content="ADspace Digital Portal">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
-  <link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta http-equiv="cache-control" content="no-cache">
-      
-  <!--Redirect if JS is disabled-->
-<noscript>
-   <meta http-equiv="refresh" content="0; url=https://adspacestudios.com" />
-</noscript>
-      
-<!-- Stylesheet -->      
-<link rel="preload" as="font" href="/fonts/Custom.TTF" type="font/TTF" crossorigin="anonymous">
-<link rel="stylesheet" href="/css/main.css" type="text/css">
-<script src="https://kit.fontawesome.com/e275c1821d.js" crossorigin="anonymous"></script>
-      
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- The front door of an internal tool. Nothing here is for a search engine. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Digital Portal</title>
+<meta name="description" content="ADspace Digital Portal">
+<link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
+<link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
+<!-- The one brand face, fetched alongside the stylesheet rather than after it. -->
+<link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
+<link rel="stylesheet" href="/css/portal.css?v=20260920g">
 <style>
-      @font-face {
-        font-family: -apple-system, BlinkMacSystemFont,Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", Customfont;
-        src: url("/fonts/Custom.TTF");
-      }
-     * {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", Customfont;
-        -webkit-font-smoothing: antialiased;
-        margin: 0; 
-        }
-      html,
-      body {
-        height: 100%;
-        background-color: #transparent;
-	overflow: hidden;
-      }
-      p {
-        font-weight: 400;
-        color: #515151;
-      }
-      .wrapper {
-        min-height: 100%;
-        height: auto !important;
-        margin: 0 auto -235px; /* the bottom margin is the negative value of the footer's height */
-        text-align: center;
-        padding: 0px 30px;
-      }
-      .footer, .push {
-        height: 235px; /* .push must be the same height as .footer */
-      }
-      .title {
-        font-size: 600%;
-        font-weight: 400;
-        color: #515151;
-        line-height: 100px;
-        margin-bottom: 15px;
-        padding-top: 80px;
-        letter-spacing: -1px;
-      }   
-      .engtext {
-        font-size: 100%;
-        font-weight: 400;
-        color: #515151;
-        line-height: 1.7;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        -webkit-user-select: none;
-        -webkit-touch-callout: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-      }
-      .chitext {
-        font-size: 140%;
-        font-weight: 400;
-        color: #515151;
-        line-height: 30px;
-        margin-bottom: 30px;
-      }
-      .txt-rotate {
-        color: #515151;
-        -webkit-user-select: none;
-        -webkit-touch-callout: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-      }
-      button, 
-      [type=button], 
-      [type=reset], 
-      [type=submit] {
-      font-size: 12px;
-      border-radius: 8px;
-      white-space: nowrap;
-      margin-top: 30px;
-      max-height: 100px;
-      padding: 8px 16px;
-      background: initial;
-      border-color: #dddddd;
-      color: #515151;
-      line-height: 1.42859;
-      letter-spacing:-0.02em;
-      transition: background-color .4s ease-in-out,color .4s ease-in-out;
-      display: inline-block;
-      }
-      button:hover {
-      border-color: #fbfbfb;
-      background: #1a1a1a;
-      color: #f5f5f5;
-      }
-      button:focus {
-      border-color: #f5f5f5;
-      background: #transparent;
-      color: #1a1a1a;
-      }
-      @media (max-width: 767px) {
-        .title {
-          margin-top: 20px;
-        }
-        .footer, .push {
-          height: 130px; /* .push must be the same height as .footer */
-        }
-        .wrapper {
-          margin: 0 auto -130px; /* the bottom margin is the negative value of the footer's height */
-        }
-        .engtext {
-          line-height: 1.7;
-          margin-bottom: 20px;
-          font-size: 100%;
-        }
-        .chitext {
-          margin-bottom: 30px;
-        }
-      }
-    </style>
+  /* A cover and nothing else: the mark at the top, the name in the middle.
+     There is no sign in here and no list of the rooms inside, because every
+     door into this portal is a link somebody was sent — the console behind
+     Supabase Auth, the three client pages behind their own tokens. A menu of
+     them on a public page would be an index of what exists and a set of
+     dead ends for anybody without a link.
+
+     Built from css/portal.css so this page and the portal it fronts share one
+     set of tokens: the same ground, the same ink, the same display face. It
+     needs no script, so it still reads with JavaScript off. */
+  html, body { height: 100%; }
+  body {
+    margin: 0; display: flex; flex-direction: column;
+    background: var(--page); color: var(--ink);
+  }
+  .doorbar {
+    height: var(--head-h); flex: 0 0 auto;
+    display: flex; align-items: center;
+    padding: 0 24px;
+  }
+  .doorbar img { height: 26px; width: auto; display: block; }
+  .door {
+    flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
+    /* The bar has already taken its height off the top, so the title sits on
+       the optical centre of what is left rather than below it. */
+    padding: 0 24px calc(var(--head-h) / 2);
+  }
+  .door h1 {
+    margin: 0; font-family: var(--font-head); font-weight: 600;
+    font-size: clamp(34px, 9vw, 56px); letter-spacing: -.03em;
+    line-height: 1.1; text-align: center;
+  }
+  @media (max-width: 640px) { .doorbar { padding: 0 16px; } }
+</style>
 </head>
 <body>
-<div class="wrapper">
-      <div class="title"></div>
-      <div class="engtext"><img src="https://mycdn.adspace.me/adspace-brandname.png" style="width:80px;"></div>
-      <div class="chitext"></div>
-      <div class="push"></div>
-      </div>
-    
-      <div class="footer" style="text-align:center">
-      <!-- <p id="screen-log" style="font-size:10px;margin-top:30px">
-      © 2026 ADSPACE PLT -->
-      </p>
-      </div>
- 
-     
-      
+
+<header class="doorbar">
+  <img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace"
+       onerror="this.replaceWith(Object.assign(document.createElement('b'),{textContent:'ADspace'}))">
+</header>
+
+<main class="door">
+  <h1>Digital Portal</h1>
+</main>
+
 </body>
 </html>

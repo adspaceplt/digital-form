@@ -4355,11 +4355,21 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .raildates { display: grid; gap: 8px; margin: 0; }
 .raildates > div { display: flex; align-items: baseline; gap: 12px; }
 .raildates dt { font-size: 13px; color: var(--ink-soft); }
+/* A date is something to act on, so it is marked as one: the same sunk chip
+   the client link and the access code wear, which is what this portal already
+   uses for a value somebody reads off the screen rather than types. Against a
+   flat list of labels the figures were the same weight as the words beside
+   them and read as prose. */
 .raildates dd {
   margin: 0 0 0 auto; font-size: 13px; color: var(--ink);
   font-variant-numeric: tabular-nums; white-space: nowrap;
+  background: var(--sunk); border-radius: var(--radius-sm); padding: 3px 9px;
 }
-.raildates dd.is-late { color: var(--warn); font-weight: 600; }
+/* An overdue date is the one anybody scans for, so it carries the caution
+   tint as well as the word: the colour is never the only mark. */
+.raildates dd.is-late {
+  color: var(--warn); font-weight: 600; background: var(--warn-bg);
+}
 /* A field and the one button that saves it, centred on each other: `end`
    aligned their boxes' bottoms, and a text-only button of a different height
    beside a 44px field then printed its word above the field's own line. */
@@ -4572,6 +4582,31 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 }
 .is-narrow .sched-edit {
   display: flex; flex-direction: column; align-items: stretch; gap: 4px;
+}
+/* A date nobody has set yet. An empty `input[type=date]` draws nothing at all
+   on iOS — no mm/dd/yyyy, no caret — so a Publish date that has not been
+   chosen was a blank pill under a label, with nothing saying it was a date
+   field. The cell says it itself, over the field and out of the pointer's
+   way, so a tap anywhere still opens the picker. */
+.sched-one { position: relative; }
+.sched-one.is-unset::after {
+  content: 'Not set';
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  font-size: 13px; color: var(--ink-mute); pointer-events: none;
+}
+/* Chrome draws its own `mm/dd/yyyy` in an empty date field and iOS draws
+   nothing at all, so the hint has to replace the first rather than sit on top
+   of it: without this the two printed over each other. It comes back the
+   moment the field is focused, because from then on the browser's own editor
+   is what the person is typing into. */
+.sched-one.is-unset input::-webkit-datetime-edit { opacity: 0; }
+.sched-one.is-unset input:focus::-webkit-datetime-edit { opacity: 1; }
+.sched-one.is-unset:focus-within::after { content: none; }
+/* Once the label sits above the field, the hint has to move down with it or
+   it lands on the label's line instead of the field's. */
+.is-narrow .sched-one.is-unset::after {
+  top: auto; bottom: 0; transform: none;
+  height: var(--ctl-h-sm); display: flex; align-items: center;
 }
 /* The cells are as tall as the tallest of them, so a field left to stretch
    grew to fill a row sized by its neighbour. A control keeps its own height. */
