@@ -964,6 +964,18 @@ A field the browser draws itself (file, date, time, select) is reskinned
 to our box: same height, same border, and its inner button is one of ours
 (`::file-selector-button`: outline, `--line-ctl`, centred on the field's
 line), never the platform's grey slab floating on a baseline of its own.
+**A date field is a field, not a button.** iOS draws `input[type=date]` as a
+pill with the value centred in it, so a full width date on a phone read as
+something to press rather than something filled in, and an empty one drew
+nothing at all. `appearance: none` takes the pill away,
+`::-webkit-date-and-time-value { text-align: left }` puts the value where
+every other field's value starts, and `display: block` holds the height of an
+empty one. Under a finger the field carries its own glyph on the left (a
+calendar for a date, a clock for a time, mute, 16px) because neither iOS nor
+Android draws a picker mark and a tap anywhere opens the picker; at a desk
+Chrome's own mark on the right is the pointer's route in, so it stays,
+quietened to the mute ink, and no second calendar is drawn beside it. The
+"Not set" hint starts where the value would and at the value's size.
 
 Buttons: `.btn` outline, `.btn-primary` ink, `.btn-go` accent (the one
 forward action in a view), `.btn-warn` outline warn (reversible caution:

@@ -1718,13 +1718,29 @@
      somebody reverts. The order is the order the work actually blocks in. */
   function nextAction(c, live) {
     var n = function (st) { return live.filter(function (o) { return o.state === st; }).length; };
-    var submitted = n('submitted'), changes = n('changes'), visits = n('pending_visit');
+    var submitted = n('submitted'), changes = n('changes');
     var drafts = n('pending_draft'), shortlisted = n('shortlisted'), posted = n('posted');
+    /* Pending visit is the step, not the absence of a date: a booking sits at
+       it from confirmation until the shoot has happened, dated or not. The
+       line used to read every one of them as "no date yet", so a campaign
+       with every shoot in the diary told the team two were unscheduled. */
+    var pending = live.filter(function (o) { return o.state === 'pending_visit'; });
+    var undated = pending.filter(function (o) { return !o.visit_date; }).length;
+    var ahead = pending.map(function (o) { return o.visit_date; })
+      .filter(function (d) { return d && d >= today(); }).sort();
+    var one = isDelivery() ? 'delivery' : 'shoot', many = isDelivery() ? 'deliveries' : 'shoots';
     if (submitted) return submitted + (submitted === 1 ? ' draft is' : ' drafts are') + ' waiting to be released to the client.';
     if (shortlisted) return shortlisted + (shortlisted === 1 ? ' creator has' : ' creators have') + ' been chosen and still need confirming.';
     if (c.state === 'draft') return 'Not published yet. The client cannot see it.';
     if (changes) return changes + (changes === 1 ? ' creator is' : ' creators are') + ' reworking a draft.';
-    if (visits) return visits + (visits === 1 ? ' shoot has' : ' shoots have') + ' no date yet.';
+    if (undated) return undated + ' ' + (undated === 1 ? one + ' has' : many + ' have') + ' no date yet.';
+    if (ahead.length) {
+      return ahead.length + ' ' + (ahead.length === 1 ? one + ' is' : many + ' are') + ' scheduled, next on ' + niceDate(ahead[0]) + '.';
+    }
+    if (pending.length) {
+      return pending.length + ' ' + (pending.length === 1 ? one + ' has' : many + ' have') +
+        ' passed and still read Pending visit.';
+    }
     if (drafts) return drafts + (drafts === 1 ? ' draft is' : ' drafts are') + ' with the creators.';
     if (posted) return posted + (posted === 1 ? ' post is' : ' posts are') + ' live and waiting on results.';
     return '';
