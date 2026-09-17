@@ -3025,7 +3025,20 @@ body.is-plain .topbar { background: var(--chrome); }
     grid-template-areas: "name stage" "meta stage";
   }
   .crm-c-name  { grid-area: name; white-space: normal; }
-  .crm-c-stage { grid-area: stage; justify-self: start; align-self: start; }
+  /* The last column is a right edge. Pinned to the START of its 120px track
+     the chip sat wherever its own word ended: "Lead" stopped 76px short of
+     the card's padding and "6 days · Overdue" nearly reached it, so the left
+     of the list was a straight margin and the right was ragged. The cell
+     fills the track it was given and its contents are right aligned, so the
+     chip and the age under it both end where the padding does and the card
+     has two margins instead of one. Stretch rather than `justify-self: end`,
+     for the reason the service rows already state: an end justified cell is
+     as wide as its own content, so the two lines inside it would then start
+     at different x. */
+  .crm-c-stage {
+    grid-area: stage; justify-self: stretch; align-self: start;
+    align-items: flex-end; text-align: right;
+  }
   /* The four column cells give way to the one combined line. Last activity
      belongs on that line, not under it: left showing, it was a grid item with
      no area in the template, so it took an implicit third row of its own and
@@ -3268,9 +3281,19 @@ body > .shell { width: 100%; }
    the money goes under it. Three lines with a control on the last one was a
    row 310px tall: two and a half services on a screen out of thirty four. */
 .is-narrow .cat-row {
-  grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
+  grid-template-columns: minmax(0, 1fr) 92px auto;
   grid-template-areas: "name rate act" "meta meta meta";
 }
+/* An action cell with nothing in it gives up its track. The rate card draws
+   the ⋯ only for an admin, so for everybody else a fixed `var(--ctl-h)`
+   third column held 44px of nothing and the whole column of prices stopped
+   44px short of a right edge nobody could see — the row looked mis-centred
+   and the cause was invisible. The track is `auto` above so it can collapse,
+   and it only collapses on a phone: on a desktop the column is shared with
+   rows that do draw the ⋯, and a cell that leaves the grid takes its column
+   with it and slides the cells after it one track left. */
+.is-narrow .cat-row > .team-act:empty,
+.is-narrow .cr-row > .team-act:empty { display: none; }
 /* A header the phone hides is not a header, so it leaves and takes its own
    padding with it. The row becomes three lines under the number: who, where
    it has got to, and what the booking is. The state keeps a line it can be
@@ -3301,7 +3324,7 @@ body > .shell { width: 100%; }
    and the record put a 120px row on the screen, which is five creators on a
    phone. */
 .is-narrow .cr-row {
-  grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
+  grid-template-columns: minmax(0, 1fr) 92px auto;
   grid-template-areas: "name rate act" "links rec rec";
   row-gap: 4px; align-items: start;
 }
@@ -3514,7 +3537,12 @@ body > .shell { width: 100%; }
     grid-template-areas: "name code" "sets code";
   }
   .crm-row.cr-client-row .crm-c-sets { grid-area: sets; font-size: 12.5px; }
-  .crm-row.cr-client-row .crm-c-code { grid-area: code; justify-self: start; }
+  /* Right edge, like every other last column on a phone: start justified in
+     a 120px track the access mark stopped short of the padding and the list
+     lost its second margin. */
+  .crm-row.cr-client-row .crm-c-code {
+    grid-area: code; justify-self: stretch; text-align: right;
+  }
 }
 
 /* ---------- The campaign register ----------

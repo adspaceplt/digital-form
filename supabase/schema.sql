@@ -370,8 +370,8 @@ create policy clients_write  on public.clients for insert to authenticated with 
 create policy clients_update on public.clients for update to authenticated using (true) with check (true);
 
 -- Short links are internal: the team manages them, anonymous visitors get no
--- direct table access at all. When the redirector is built it reads this table
--- with the service role, not with the anon key, so nothing here has to open up.
+-- direct table access at all. The redirector reads one row at a time through
+-- link_resolve() below, never through this policy.
 drop policy if exists links_team on public.links;
 create policy links_team on public.links
   for all to authenticated using (true) with check (true);
@@ -1105,6 +1105,73 @@ create index if not exists link_qrs_slug_idx on public.link_qrs(slug, created_at
 drop policy if exists link_qrs_team on public.link_qrs;
 create policy link_qrs_team on public.link_qrs
   for all to authenticated using (true) with check (true);
+
+-- ---------------------------------------------------------------------------
+-- The redirector's one read
+--
+-- hi.adspace.me is a Cloudflare Worker; its source is workers/links/ in this
+-- repository. It was going to read these two tables with the service role,
+-- which would have meant putting a key that can read and write every table in
+-- the database into a Cloudflare secret so that a redirector could look up one
+-- column. This function is the narrower thing that does the same job: one
+-- exact slug in, one destination out. No listing, no search, no prefix match
+-- and no second column, so the anon key is enough and nothing that can write
+-- ever leaves Supabase.
+--
+-- What it gives away is what a short link gives away by definition: hold the
+-- slug, learn where it goes. That is the redirect itself.
+--
+-- The state comes back beside the address because the four answers are four
+-- different pages. A slug nobody has entered is not a slug the team has
+-- paused, and neither is a revoked QR code: the code is turned away while the
+-- typed link keeps working, which is the whole reason link_qrs carries its
+-- own identity rather than pointing at the bare slug.
+--
+-- The out parameters are named url and state, not target_url: a declared name
+-- that matches a column resolves against the column at run time, and PL/pgSQL
+-- does not say so until the function is called.
+-- ---------------------------------------------------------------------------
+create or replace function public.link_resolve(p_slug text, p_qr text default null)
+returns table (url text, state text)
+language plpgsql security definer stable set search_path = public as $$
+declare
+  v_slug   text := lower(btrim(coalesce(p_slug, '')));
+  v_code   text := lower(btrim(coalesce(p_qr, '')));
+  v_target text;
+  v_live   boolean;
+begin
+  if v_slug = '' then
+    return query select null::text, 'missing'::text;
+    return;
+  end if;
+
+  select l.target_url, l.active into v_target, v_live
+    from public.links l
+   where l.slug = v_slug;
+
+  if v_target is null then
+    return query select null::text, 'missing'::text;
+    return;
+  end if;
+  if not v_live then
+    return query select null::text, 'paused'::text;
+    return;
+  end if;
+
+  -- A scan carries its code; a typed link does not, and is never turned away
+  -- by one. A code that belongs to another slug is as revoked as a dead one.
+  if v_code <> '' and not exists (
+       select 1 from public.link_qrs q
+        where q.code = v_code and q.slug = v_slug and q.active) then
+    return query select null::text, 'revoked'::text;
+    return;
+  end if;
+
+  return query select v_target, 'ok'::text;
+end $$;
+
+revoke all on function public.link_resolve(text, text) from public;
+grant execute on function public.link_resolve(text, text) to anon, authenticated;
 
 -- ===========================================================================
 -- CREATOR CAMPAIGNS, PHASES 2 AND 3
