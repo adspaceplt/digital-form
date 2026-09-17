@@ -99,13 +99,35 @@
      part the client page has no use for: which group of the list it falls in. */
   var W = window.ADspaceWords;
   var STAGES = [['lead', 'leads'], ['contacted', 'leads'], ['proposal', 'leads'],
-                ['active', 'active'], ['paused', 'ended'], ['past', 'ended']]
+                ['active', 'clients'], ['paused', 'clients'], ['past', 'past']]
     .map(function (g) { return [g[0], W.en.stage[g[0]], W.tone(g[0]), g[1]]; });
+  /* Three bands, in the order somebody works them.
+     **Leads first**, because speed to first contact is the number that moves
+     conversion and a lead under a hundred and eighty clients is a lead nobody
+     rings. **Clients** is the working book of business — active and paused —
+     and is named Clients rather than Active clients because a paused client is
+     still a client and reads wrong filed under an ending. **Past clients** are
+     ended engagements: still clients, still holding their number, and folded
+     shut by default because nobody opens this page to read them. The fold is
+     remembered, so somebody who does open it keeps it open. */
   var GROUPS = [
-    ['leads',  'Leads'],
-    ['active', 'Active clients'],
-    ['ended',  'Paused and past']
+    ['leads',   'Leads'],
+    ['clients', 'Clients'],
+    ['past',    'Past clients']
   ];
+  var SHUT_BY_DEFAULT = { past: true };
+  var BAND_KEY = 'adspace-crm-bands';
+  function bandShut(key) {
+    var kept;
+    try { kept = JSON.parse(localStorage.getItem(BAND_KEY) || '{}'); } catch (e) { kept = {}; }
+    return typeof kept[key] === 'boolean' ? kept[key] : !!SHUT_BY_DEFAULT[key];
+  }
+  function keepBand(key, shut) {
+    var kept;
+    try { kept = JSON.parse(localStorage.getItem(BAND_KEY) || '{}'); } catch (e) { kept = {}; }
+    kept[key] = shut;
+    try { localStorage.setItem(BAND_KEY, JSON.stringify(kept)); } catch (e) {}
+  }
   var INDUSTRIES = ['Property', 'F&B', 'Retail', 'Wellness', 'Lifestyle',
                     'Automotive', 'Tech', 'Education', 'Other'];
   var LANG_WORD = { en: 'English', zh: '中文', ms: 'Bahasa Malaysia' };
@@ -317,8 +339,11 @@
     var stage = $('crmStage').value;
     var owner = $('crmOwner').value;
     return state.clients.filter(function (c) {
+      /* The number is what somebody holding an invoice searches by, so it is
+         searched alongside the two names. */
       if (q && String(c.name || '').toLowerCase().indexOf(q) < 0 &&
-               String(c.legal_name || '').toLowerCase().indexOf(q) < 0) return false;
+               String(c.legal_name || '').toLowerCase().indexOf(q) < 0 &&
+               String(c.client_code || '').toLowerCase().indexOf(q) < 0) return false;
       if (stage !== 'all' && (c.stage || 'lead') !== stage) return false;
       if (owner !== 'all' && (c.owner || '') !== owner) return false;
       return true;
@@ -359,11 +384,23 @@
     table.className = 'crm-table softpanel crm-register';
     table.appendChild(registerHead());
 
+    /* A band draws its first thirty and offers the rest, so a book of a
+       hundred and eighty opens as a page somebody can read rather than as a
+       mile of rows. A filter narrows what reaches this point, so searching is
+       always faster than scrolling. */
     var groupLimit = 30;
+    /* While a filter is on, every band opens: somebody who searched for a name
+       wants the row wherever it is, and a shut band would hide the one match
+       and say nothing. */
+    var filtered = rows.length !== state.clients.length;
     GROUPS.forEach(function (g) {
       var mine = rows.filter(function (c) { return stageWord(c.stage || 'lead')[3] === g[0]; });
       if (!mine.length) return;
-      table.appendChild(band(g[1], mine));
+      var shut = !filtered && bandShut(g[0]);
+      var head = band(g[0], g[1], mine, shut);
+      table.appendChild(head);
+      if (shut) return;
+
       mine.slice(0, groupLimit).forEach(function (c) { table.appendChild(listRow(c)); });
       if (mine.length > groupLimit) {
         var more = document.createElement('button');
@@ -395,7 +432,7 @@
   /* A stage divider: what it is, how many, how many have run over, and what
      the group is worth. Everything the separate card heads carried, on one
      line inside the register. */
-  function band(name, mine) {
+  function band(key, name, mine, shut) {
     var worth = {};
     mine.forEach(function (c) {
       if (!c.deal_value) return;
@@ -405,11 +442,24 @@
     var worthText = Object.keys(worth).map(function (k) { return MON.money(worth[k], k); }).join(' + ');
     /* Absent where none has gone over, so a healthy stage stays quiet. */
     var late = mine.filter(isStale).length;
-    var el = document.createElement('div');
-    el.className = 'svc-cat crm-band';
-    el.innerHTML = esc(name) + ' <span>' + mine.length + '</span>' +
+    /* The band is a button, because it opens and shuts. Its count stays on it
+       while it is shut, or a folded band is a heading that says nothing about
+       what it is holding back. */
+    var el = document.createElement('button');
+    el.type = 'button';
+    el.className = 'svc-cat crm-band' + (shut ? ' is-shut' : '');
+    el.setAttribute('aria-expanded', shut ? 'false' : 'true');
+    el.innerHTML =
+      '<svg class="crm-band-fold" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<path d="M9 18l6-6-6-6"/></svg>' +
+      esc(name) + ' <span>' + mine.length + '</span>' +
       (late ? '<span class="tone is-warn crm-band-late">' + late + ' overdue</span>' : '') +
       (worthText ? '<span class="crm-band-worth">' + esc(worthText) + '</span>' : '');
+    el.addEventListener('click', function () {
+      keepBand(key, !shut);
+      paintList();
+    });
     return el;
   }
 
@@ -422,7 +472,14 @@
     row.type = 'button';
     row.className = 'crm-row client-row';
     row.innerHTML =
-      '<span class="crm-c crm-c-name">' + esc(c.name || '') + '</span>' +
+      /* The number the accounting system issued, under the name it belongs to
+         rather than in a column of its own: a seventh column costs the name
+         its width on every row for a value that is only read when somebody is
+         holding an invoice, and the phone template has nowhere to put it. Set
+         the way this portal sets every other token. */
+      '<span class="crm-c crm-c-name">' + esc(c.name || '') +
+        (c.client_code ? '<small class="crm-c-code">' + esc(c.client_code) + '</small>' : '') +
+      '</span>' +
       '<span class="crm-c crm-c-stage"><span class="tone ' + w[2] + '">' + esc(w[1]) + '</span>' +
         /* The word carries it, not the colour: the mark has to survive a
            greyscale print and a reader who cannot tell warn from mute. */
