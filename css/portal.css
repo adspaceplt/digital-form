@@ -3883,8 +3883,35 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
    own page draws, because it is the same files and a reviewer should recognise
    what they were sent. */
 .handedin { margin: 2px 0 12px; }
-.handedin .filegrid { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
+/* 92px was a thumbnail grid, which is the right size for a list of documents
+   and the wrong one for the screen where somebody watches a creator's work
+   before a client does. A 9:16 player needs a column it can be read in, so the
+   track is wide enough for one and the row still fits two side by side in the
+   pane at 1280. */
+.handedin .filegrid { grid-template-columns: repeat(auto-fill, minmax(148px, 200px)); }
 .handedin .filecard { text-decoration: none; }
+/* Both media shapes take the creator's own 9:16, so a grid holding a player
+   and a still has even rows: mixing a 9:16 player with a square tile left the
+   shorter one with a band of nothing under it and pushed the next file onto a
+   row of its own. The player is letterboxed on black rather than cropped,
+   because a reviewer has to see what the client will see and `cover` would
+   cut the caption safe area off the top and bottom. */
+.handedin .filecard { aspect-ratio: 9 / 16; }
+.filecard.filecard-video {
+  width: auto; aspect-ratio: 9 / 16; padding-bottom: 0;
+}
+.filecard.filecard-video video {
+  position: absolute; inset: 0; z-index: 1;
+  width: 100%; height: 100%; object-fit: contain; background: #000;
+}
+/* The name sits over the foot of the player, so it does not cost a row and
+   does not sit under the scrubber a finger reaches for. */
+.filecard.filecard-video .filecard-name {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+  padding: 16px 8px 6px; pointer-events: none;
+  background: linear-gradient(to top, rgba(0, 0, 0, .72), transparent);
+  color: #fff;
+}
 .handedin .kfield { margin-top: 10px; }
 
 /* Copied, said on the button that did it. */
@@ -3954,6 +3981,27 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .filepin svg { width: 16px; height: 16px; flex: 0 0 auto; color: var(--ink-mute); }
 .filepin-name { flex: 1 1 auto; min-width: 0; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .filepin-size { flex: 0 0 auto; font-size: 12px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+/* The console's copy of the line carries a way to take the file back off,
+   which the creator's own page deliberately does not once the work is handed
+   in. The line is a container rather than a link, so the link inside it is
+   what fills the row and the × keeps its own target beside it: a button
+   nested in an anchor is a control inside a control. */
+.filepin-row { padding-right: 4px; }
+.filepin-row:active { transform: none; }
+.filepin-open {
+  display: flex; align-items: center; gap: 9px; flex: 1 1 auto; min-width: 0;
+  color: inherit; text-decoration: none; min-height: var(--ctl-h);
+}
+.filepin-x {
+  flex: 0 0 auto; width: var(--ctl-h-sm); height: var(--ctl-h-sm); border-radius: 50%;
+  border: 1px solid transparent; background: none; color: var(--ink-mute);
+  font-size: 15px; line-height: 1; display: grid; place-items: center;
+  transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .filepin-x:hover { background: var(--err-bg); color: var(--err); border-color: var(--err-line); }
+}
+.filepin-x:active { transform: scale(.94); }
 
 /* How the job went. Five targets, nothing to type, and the filled state is
    the accent this portal keeps for something that is true rather than
@@ -3983,8 +4031,10 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   width: min(100%, 360px); aspect-ratio: 9 / 16; object-fit: contain;
   background: #000; border-radius: var(--radius-sm);
 }
-.filecard-video { width: min(100%, 360px); aspect-ratio: 9 / 16; }
-.filecard-video video { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: contain; background: #000; }
+/* `.filecard-video` was styled here for a console player that was never
+   written, so these two rules matched nothing for as long as they existed and
+   the console kept drawing a square with MP4 on it. The player exists now and
+   the rules that size it sit with the rest of `.filecard`, above. */
 @media (max-width: 520px) {
   .client-draft-media { grid-template-columns: minmax(0, 1fr); }
   .client-draft-media video, .client-draft-media img { width: 100%; max-height: 72vh; }

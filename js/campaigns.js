@@ -1367,23 +1367,61 @@
   function handedIn(o) {
     var files = (state.files && state.files[o.id]) || [];
     if (!files.length && !o.draft_caption) return '';
+    /* Media is watched and everything else is opened, so they are two shapes,
+       not one grid of squares. A 9:16 player beside a square tile left the
+       third file orphaned on a row of its own with a gap beside it, which is
+       the ragged grid this portal's own checklist rules out; and a PDF drawn
+       at 9:16 to even it up is a tall empty box saying PDF. The creator's own
+       page settled this months ago: what can be played is played, what cannot
+       is an attachment line. */
+    var media = files.filter(function (f) { return f.kind === 'video' || f.kind === 'image'; });
+    var rest  = files.filter(function (f) { return f.kind !== 'video' && f.kind !== 'image'; });
     return '<div class="handedin">' +
-      (files.length
-        ? '<div class="filegrid">' + files.map(function (f) {
+      (media.length
+        ? '<div class="filegrid">' + media.map(function (f) {
             /* A thumbnail that cannot load shows what the file is rather than
                the browser's broken image mark, which tells a reviewer the
                creator's work is gone when only the preview failed. The
                creator's own page has done this since it shipped; the console
                was drawing the broken mark. */
             var ext = esc(String(f.name || '').split('.').pop().toUpperCase() || 'FILE');
-            return '<div class="filecard" data-file="' + esc(f.id) + '"><a class="filecard-open" href="' +
-              esc(f.url) + '" target="_blank" rel="noopener" aria-label="Open submitted file">' +
-              (f.kind === 'image'
-                ? '<img src="' + esc(f.url) + '" alt="" loading="lazy" ' +
-                  'onerror="this.remove()"><span class="filecard-kind">' + ext + '</span>'
-                : '<span class="filecard-kind">' + ext + '</span>') +
+            /* A video plays here. The console drew it as a square with MP4
+               written on it, so the only way to watch a creator's work before
+               releasing it to a client was to download every file — on the one
+               screen whose whole job is to look at it before a client does.
+               The client's own page has had a player since it shipped; this is
+               the same treatment on our side of the glass, with the remove
+               control the client's page has no business carrying.
+               `preload="metadata"` so five creators' videos cost five poster
+               frames rather than five downloads. */
+            if (f.kind === 'video') {
+              return '<div class="filecard filecard-video" data-file="' + esc(f.id) + '">' +
+                '<video controls playsinline preload="metadata" src="' + esc(f.url) + '"></video>' +
+                '<span class="filecard-name">' + esc(f.name) + '</span>' +
+                '<button class="filecard-x" type="button" data-a="removefile" aria-label="Remove submitted file">×</button></div>';
+            }
+            /* A thumbnail that cannot load shows what the file is rather than
+               the browser's broken image mark, which tells a reviewer the
+               creator's work is gone when only the preview failed. */
+            return '<div class="filecard filecard-image" data-file="' + esc(f.id) + '">' +
+              '<a class="filecard-open" href="' + esc(f.url) +
+              '" target="_blank" rel="noopener" aria-label="Open submitted file">' +
+              '<img src="' + esc(f.url) + '" alt="" loading="lazy" onerror="this.remove()">' +
+              '<span class="filecard-kind">' + ext + '</span>' +
               '<span class="filecard-name">' + esc(f.name) + '</span></a>' +
               '<button class="filecard-x" type="button" data-a="removefile" aria-label="Remove submitted file">×</button></div>';
+          }).join('') + '</div>'
+        : '') +
+      (rest.length
+        ? '<div class="filepins">' + rest.map(function (f) {
+            return '<span class="filepin filepin-row" data-file="' + esc(f.id) + '">' +
+              '<a class="filepin-open" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+                'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                '<path d="M21 11.5 12.5 20a5 5 0 0 1-7-7l8-8a3.3 3.3 0 0 1 4.7 4.7l-8 8a1.7 1.7 0 0 1-2.4-2.4l7.3-7.3"/>' +
+              '</svg><span class="filepin-name">' + esc(f.name) + '</span></a>' +
+              '<button class="filepin-x" type="button" data-a="removefile" ' +
+              'aria-label="Remove submitted file">×</button></span>';
           }).join('') + '</div>'
         : '') +
       (o.draft_caption
@@ -2396,7 +2434,18 @@
       '<div class="kstep kstep-work">' +
         '<div class="kactions">' +
           '<button class="btn btn-sm btn-primary" data-a="save" type="button">Save</button>' +
-          (advance ? '<button class="btn btn-sm btn-go" data-a="advance" type="button">' +
+          /* Blue moves work to somebody else, and exactly one step on this
+             card does: Release to client. The other five — pending visit,
+             pending draft, scheduled, posted, completed — are the team
+             recording its own progress, and drawing them blue put one filled
+             accent on every creator card, so a pane with five creators in it
+             carried five equally loud buttons and none of them said which
+             step mattered. It also broke the law this portal counts in the
+             audit: one prominent blue action per view, two at most. The rest
+             are the ordinary outline action, and what differentiates them is
+             the word on them, not the paint. */
+          (advance ? '<button class="btn btn-sm' + (advance === 'reviewing' ? ' btn-go' : '') +
+            '" data-a="advance" type="button">' +
             esc(ADVANCE_WORD[advance] || wordFor(advance)) + CHEV + '</button>' : '') +
           /* Back to the creator without the client ever seeing the round.
              Warn and outlined: it is reversible and it is not the way out. */
