@@ -253,9 +253,7 @@
   function loadMe(then) {
     db.rpc('me').then(function (r) {
       if (r.error) {
-        me = { role: 'admin', can_clients: true, can_review: true, can_campaigns: true,
-               can_links: true, can_activity: false, can_billing: true, can_remove: true,
-               can_doc_void: true, legacy: true };
+        me = { role: 'admin', is_admin: true, legacy: true };
       } else {
         me = r.data && r.data.id ? r.data : null;
       }
@@ -263,26 +261,49 @@
       then();
     }, function () { me = null; meLoaded = true; then(); });
   }
-  function may(flag) {
+
+  /* Access is a level per section, the same four the database ranks.
+     `view` reads, `work` adds, edits and publishes, `manage` also destroys.
+     The line is reversibility: Unpublish exists, so publishing is `work`;
+     a permanent deletion has no way back, so it is `manage`. */
+  var SECTIONS = ['clients', 'review', 'campaigns', 'links', 'services', 'team', 'activity'];
+  var RANK = { none: 0, view: 1, work: 2, manage: 3 };
+  function level(section) {
+    if (!me) return 0;
+    if (me.is_admin || me.role === 'admin') return 3;
+    return RANK[(me.access || {})[section]] || 0;
+  }
+  /* `may('clients')` still reads as it always did and still means the
+     everyday level, so nothing that asked the old question has changed its
+     meaning; a second argument asks for one of the other three. */
+  function may(section, want) {
+    return level(section) >= (RANK[want || 'work'] || 2);
+  }
+  /* Two capabilities are not sections and are not levels: billing is a pane
+     inside the client record, and voiding a letter is one act inside
+     Documents that this portal deliberately keeps apart from deleting one. */
+  function capable(flag) {
     if (!me) return false;
     if (me.is_admin || me.role === 'admin') return true;
     return Boolean(me['can_' + flag]);
   }
-  var SECTION_FLAG = { clients: 'clients', review: 'review', campaigns: 'campaigns',
-                       links: 'links', services: 'clients', team: 'admin' };
-  function sectionAllowed(name) {
-    if (name === 'team') return Boolean(me && (me.is_admin || me.role === 'admin'));
-    return may(SECTION_FLAG[name] || name);
-  }
+  function sectionAllowed(name) { return may(name, 'view'); }
+
   /* Hide what the person may not use. Nothing here is the control; the
-     policies are. This keeps the screen from offering what will be refused. */
+     policies are. This keeps the screen from offering what will be refused.
+     One class per section rather than one global `no-remove`, because the
+     authority to destroy is per section now: a group can manage Content
+     Review without being able to delete a client. */
   function applyAccess() {
     navItems().forEach(function (b) {
       b.hidden = !sectionAllowed(b.getAttribute('data-section'));
     });
-    document.body.classList.toggle('no-remove', !may('remove'));
-    document.body.classList.toggle('no-docvoid', !may('doc_void'));
-    document.body.classList.toggle('no-billing', !may('billing'));
+    SECTIONS.forEach(function (s) {
+      document.body.classList.toggle('no-manage-' + s, !may(s, 'manage'));
+      document.body.classList.toggle('no-work-' + s, !may(s, 'work'));
+    });
+    document.body.classList.toggle('no-docvoid', !capable('doc_void'));
+    document.body.classList.toggle('no-billing', !capable('billing'));
   }
 
   /* On a phone the rail is a drawer. It closes on a pick, on the scrim, and on
@@ -738,7 +759,7 @@
   var maySeeActivity = false;
 
   function gateActivity() {
-    maySeeActivity = may('activity');
+    maySeeActivity = may('activity', 'view');
     showActivityLink();
     // An older database without me() still has the viewers list; honour it.
     if (me && me.legacy && actor) {
@@ -2354,7 +2375,10 @@
     },
     // The signed-in person's team row, for sections that gate on it.
     me: function () { return me; },
-    may: may
+    may: may,
+    /* Billing and Void are capabilities, not sections, so they are asked for
+       by name rather than by level. */
+    capable: capable
   };
 
   /* Pending, approved, changes requested. The dot is what you scan for; the
@@ -2647,7 +2671,7 @@
           '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
             '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
-            '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete link</b></button>' +
+            '<button class="kmenu-item is-danger" data-a="del" data-need="links:manage" type="button"><b>Delete link</b></button>' +
           '</div>' +
         '</span>';
 

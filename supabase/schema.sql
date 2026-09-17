@@ -1284,6 +1284,32 @@ alter table public.team_members add column if not exists can_activity  boolean n
 alter table public.team_members add column if not exists can_billing   boolean not null default true;
 alter table public.team_members add column if not exists can_remove    boolean not null default false;
 alter table public.team_members add column if not exists updated_at    timestamptz;
+/* Moved up from the user groups block below so `allowed()` can be written
+   once. It used to be declared after `team_roles`, which is after the first
+   definition of `allowed()`, so a second copy of that function existed
+   further down purely to reach `is_admin` — and the second copy had dropped
+   `doc_void` from its case list, so the capability answered false for every
+   non-admin group however the switch was set. One definition, one place. */
+alter table public.team_members add column if not exists is_admin     boolean not null default false;
+alter table public.team_members add column if not exists can_doc_void boolean not null default false;
+
+/* ACCESS IS A LEVEL PER SECTION, NOT A SWITCH PER VERB.
+   `{"clients":"work","review":"manage", …}` over the seven console sections,
+   with four levels ranked none < view < work < manage.
+
+   The old model was six section booleans plus one global `can_remove`, so the
+   authority to permanently delete could not be granted for one section
+   without granting it for all of them: turning it on so a group could delete
+   a content set also let them delete a client, a letter, a contact and a rate
+   card line. It is per section now.
+
+   The levels are drawn on **reversibility**, not on add/edit/delete/share.
+   Add and edit are reversible; so is publishing, because Unpublish exists.
+   Permanent deletion is not. A matrix of sections against verbs would have
+   been twenty eight switches of which about sixteen name nothing this portal
+   does — and this console already removed one permission matrix for exactly
+   that reason. */
+alter table public.team_members add column if not exists access jsonb not null default '{}'::jsonb;
 create unique index if not exists team_members_email_idx
   on public.team_members(lower(email)) where email is not null;
 
@@ -1371,8 +1397,18 @@ language sql security definer stable set search_path = public as $$
 $$;
 grant execute on function public.me() to authenticated;
 
--- One predicate for every policy: may this person do this? Admin may do all.
-create or replace function public.allowed(flag text)
+-- The four levels, ranked. Anything unknown is nothing, so a section a group
+-- has never been given is a section it cannot reach.
+create or replace function public.level_rank(p_level text)
+returns int language sql immutable as $$
+  select case lower(coalesce(p_level, ''))
+    when 'view' then 1 when 'work' then 2 when 'manage' then 3 else 0 end;
+$$;
+
+/* The predicate every policy asks: does this person reach this level in this
+   section? `view` reads, `work` adds, edits and publishes, `manage` also
+   destroys. An admin reaches everything. */
+create or replace function public.allowed(p_section text, p_level text)
 returns boolean
 language plpgsql security definer stable set search_path = public as $$
 declare t public.team_members;
@@ -1380,18 +1416,40 @@ begin
   select * into t from public.team_members
     where lower(email) = lower(auth.jwt() ->> 'email') and active limit 1;
   if t.id is null then return false; end if;
-  if t.role = 'admin' then return true; end if;
-  return coalesce(case flag
-    when 'clients'   then t.can_clients
-    when 'review'    then t.can_review
-    when 'campaigns' then t.can_campaigns
-    when 'links'     then t.can_links
-    when 'activity'  then t.can_activity
-    when 'billing'   then t.can_billing
-    when 'remove'    then t.can_remove
-    when 'doc_void'  then t.can_doc_void
-    when 'admin'     then false
-  end, false);
+  if t.is_admin or t.role = 'admin' then return true; end if;
+  return public.level_rank(t.access ->> lower(p_section))
+       >= public.level_rank(p_level);
+end $$;
+grant execute on function public.allowed(text, text) to authenticated;
+
+/* The one-argument form stays, because two capabilities genuinely are not
+   sections and never will be: `billing` is a pane inside the client record
+   and `doc_void` is one act inside Documents, and this portal deliberately
+   keeps voiding a letter and deleting one as two authorities. `admin` is the
+   flag that opens everything.
+
+   A section name passed here means **work**, not view: a call site missed
+   when the levels went in then refuses rather than quietly granting a write
+   to somebody who was only given reading. Every read policy names `view`
+   explicitly. `remove` is deliberately gone — that was the global flag this
+   model exists to break up, so any call still asking for it fails loudly. */
+create or replace function public.allowed(flag text)
+returns boolean
+language plpgsql security definer stable set search_path = public as $$
+declare t public.team_members;
+begin
+  if flag in ('billing', 'doc_void', 'admin') then
+    select * into t from public.team_members
+      where lower(email) = lower(auth.jwt() ->> 'email') and active limit 1;
+    if t.id is null then return false; end if;
+    if t.is_admin or t.role = 'admin' then return true; end if;
+    return coalesce(case flag
+      when 'billing'  then t.can_billing
+      when 'doc_void' then t.can_doc_void
+      else false
+    end, false);
+  end if;
+  return public.allowed(flag, 'work');
 end $$;
 grant execute on function public.allowed(text) to authenticated;
 
@@ -1423,10 +1481,13 @@ begin
     for p in select policyname from pg_policies where schemaname = 'public' and tablename = t loop
       execute format('drop policy if exists %I on public.%I', p.policyname, t);
     end loop;
-    execute format('create policy %I on public.%I for select to authenticated using (public.allowed(%L))', t || '_read', t, f);
-    execute format('create policy %I on public.%I for insert to authenticated with check (public.allowed(%L))', t || '_write', t, f);
-    execute format('create policy %I on public.%I for update to authenticated using (public.allowed(%L)) with check (public.allowed(%L))', t || '_edit', t, f, f);
-    execute format('create policy %I on public.%I for delete to authenticated using (public.allowed(%L) and public.allowed(''remove''))', t || '_del', t, f);
+    /* The four statements are the four levels, which is what the level model
+       buys: reading is `view`, writing is `work`, and deleting is `manage` in
+       that section rather than one global remove flag shared by all of them. */
+    execute format('create policy %I on public.%I for select to authenticated using (public.allowed(%L, ''view''))', t || '_read', t, f);
+    execute format('create policy %I on public.%I for insert to authenticated with check (public.allowed(%L, ''work''))', t || '_write', t, f);
+    execute format('create policy %I on public.%I for update to authenticated using (public.allowed(%L, ''work'')) with check (public.allowed(%L, ''work''))', t || '_edit', t, f, f);
+    execute format('create policy %I on public.%I for delete to authenticated using (public.allowed(%L, ''manage''))', t || '_del', t, f);
   end loop;
 end $$;
 
@@ -1437,7 +1498,8 @@ drop policy if exists clients_read   on public.clients;
 drop policy if exists clients_write  on public.clients;
 drop policy if exists clients_update on public.clients;
 create policy clients_read on public.clients for select to authenticated
-  using (public.allowed('clients') or public.allowed('review') or public.allowed('campaigns'));
+  using (public.allowed('clients', 'view') or public.allowed('review', 'view')
+      or public.allowed('campaigns', 'view'));
 create policy clients_write on public.clients for insert to authenticated
   with check (public.allowed('clients'));
 create policy clients_update on public.clients for update to authenticated
@@ -1448,7 +1510,7 @@ create policy clients_update on public.clients for update to authenticated
 -- activity_viewers is no longer consulted; the switch lives on the team row.
 drop policy if exists activity_read on public.activity_log;
 create policy activity_read on public.activity_log
-  for select to authenticated using (public.allowed('activity'));
+  for select to authenticated using (public.allowed('activity', 'view'));
 
 -- The team list is read by everyone signed in (the owner dropdown, and me())
 -- and changed only by an admin. The admin test goes through allowed(), which
@@ -1460,8 +1522,8 @@ drop policy if exists team_read    on public.team_members;
 drop policy if exists team_admin   on public.team_members;
 create policy team_read on public.team_members for select to authenticated using (true);
 create policy team_admin on public.team_members for all to authenticated
-  using (public.allowed('admin'))
-  with check (public.allowed('admin'));
+  using (public.allowed('team', 'manage'))
+  with check (public.allowed('team', 'manage'));
 
 -- ===========================================================================
 -- USER GROUPS
@@ -1494,8 +1556,31 @@ values
   ('sales',   'Sales',   false, true, false, false, false, false, true, false, false, 2)
 on conflict (slug) do nothing;
 
-alter table public.team_members add column if not exists is_admin boolean not null default false;
-alter table public.team_members add column if not exists can_doc_void boolean not null default false;
+-- `is_admin` and `can_doc_void` are declared in the ACCESS block above now,
+-- so one definition of allowed() can reach them.
+alter table public.team_roles add column if not exists access jsonb not null default '{}'::jsonb;
+
+/* The levels, backfilled once from the switches each group already carried,
+   so this file changes what a permission *can* say without changing what any
+   existing group is allowed to do on the day it runs.
+
+   A section the group could open becomes `work`, or `manage` where it also
+   held the old global remove flag. Activity is a log, so it is `view` or
+   nothing. Services is read by everyone who is signed in and edited by an
+   admin, and Team is an admin's alone, so both start where they already were.
+   Guarded on emptiness: the levels are edited on the Team page after this,
+   and a backfill that ran on every re-run would put a group's corrections
+   back to whatever its old booleans said. */
+update public.team_roles set access = jsonb_build_object(
+    'clients',   case when can_clients   then (case when can_remove then 'manage' else 'work' end) else 'none' end,
+    'review',    case when can_review    then (case when can_remove then 'manage' else 'work' end) else 'none' end,
+    'campaigns', case when can_campaigns then (case when can_remove then 'manage' else 'work' end) else 'none' end,
+    'links',     case when can_links     then (case when can_remove then 'manage' else 'work' end) else 'none' end,
+    'activity',  case when can_activity  then 'view' else 'none' end,
+    'services',  case when is_admin      then 'manage' else 'view' end,
+    'team',      case when is_admin      then 'manage' else 'none' end)
+  where access = '{}'::jsonb;
+
 update public.team_members set role = 'account'
   where role is null or role not in (select slug from public.team_roles);
 do $$ begin
@@ -1521,6 +1606,7 @@ begin
   new.can_campaigns := r.can_campaigns; new.can_links    := r.can_links;
   new.can_activity  := r.can_activity;  new.can_billing  := r.can_billing;
   new.can_remove    := r.can_remove;    new.can_doc_void := r.can_doc_void;
+  new.access        := coalesce(r.access, '{}'::jsonb);
   new.updated_at    := now();
   return new;
 end $$;
@@ -1570,27 +1656,11 @@ begin
   return new;
 end $$;
 
--- Admin is a property of the group now, not the word.
-create or replace function public.allowed(flag text)
-returns boolean
-language plpgsql security definer stable set search_path = public as $$
-declare t public.team_members;
-begin
-  select * into t from public.team_members
-    where lower(email) = lower(auth.jwt() ->> 'email') and active limit 1;
-  if t.id is null then return false; end if;
-  if t.is_admin then return true; end if;
-  return coalesce(case flag
-    when 'clients'   then t.can_clients
-    when 'review'    then t.can_review
-    when 'campaigns' then t.can_campaigns
-    when 'links'     then t.can_links
-    when 'activity'  then t.can_activity
-    when 'billing'   then t.can_billing
-    when 'remove'    then t.can_remove
-    when 'admin'     then false
-  end, false);
-end $$;
+/* `allowed()` used to be defined a second time here, to reach `is_admin`,
+   which was declared below the first copy. That second copy had quietly
+   dropped `doc_void` from its case list, so the capability answered false for
+   every non-admin group however the Team page set it. The columns move up to
+   the ACCESS block instead and there is one definition. */
 
 -- Re-stamp every member from their group once, so rows written before this
 -- block carry the right switches.
@@ -1600,7 +1670,7 @@ drop policy if exists roles_read  on public.team_roles;
 drop policy if exists roles_admin on public.team_roles;
 create policy roles_read  on public.team_roles for select to authenticated using (true);
 create policy roles_admin on public.team_roles for all to authenticated
-  using (public.allowed('admin')) with check (public.allowed('admin'));
+  using (public.allowed('team', 'manage')) with check (public.allowed('team', 'manage'));
 
 -- ============================================================================
 -- SERVICES: the rate card, and what each client has asked for.
@@ -1623,7 +1693,7 @@ drop policy if exists services_read  on public.services;
 drop policy if exists services_admin on public.services;
 create policy services_read  on public.services for select to authenticated using (true);
 create policy services_admin on public.services for all to authenticated
-  using (public.allowed('admin')) with check (public.allowed('admin'));
+  using (public.allowed('services', 'manage')) with check (public.allowed('services', 'manage'));
 
 -- The rate card is seeded once, on a database that has none, and never again.
 -- The people who own it edit it in the console, deletions included, and a seed
@@ -1691,7 +1761,7 @@ create index if not exists client_services_client_idx on public.client_services(
 alter table public.client_services enable row level security;
 drop policy if exists client_services_rw on public.client_services;
 create policy client_services_rw on public.client_services for all to authenticated
-  using (public.allowed('clients')) with check (public.allowed('clients'));
+  using (public.allowed('clients', 'view')) with check (public.allowed('clients', 'work'));
 
 -- ============================================================================
 -- DOCUMENTS: quotations and invoices, kept as issued.
@@ -1720,7 +1790,7 @@ create index if not exists client_documents_client_idx on public.client_document
 alter table public.client_documents enable row level security;
 drop policy if exists client_documents_rw on public.client_documents;
 create policy client_documents_rw on public.client_documents for all to authenticated
-  using (public.allowed('clients')) with check (public.allowed('clients'));
+  using (public.allowed('clients', 'view')) with check (public.allowed('clients', 'work'));
 
 -- A line can run for a term: qty × rate × months, from a start month.
 alter table public.client_services add column if not exists tenure   int  not null default 1;
@@ -1818,7 +1888,8 @@ begin
   if not public.is_team() then
     raise exception 'Not allowed';
   end if;
-  if not public.allowed('remove') then
+  -- Deleting a client is `manage` on Clients, not a global remove flag.
+  if not public.allowed('clients', 'manage') then
     raise exception 'Not allowed';
   end if;
   select value into want from public.app_secrets where key = 'delete_code';
@@ -1860,7 +1931,7 @@ create index if not exists client_requests_client_idx on public.client_requests(
 alter table public.client_requests enable row level security;
 drop policy if exists client_requests_team on public.client_requests;
 create policy client_requests_team on public.client_requests for all to authenticated
-  using (public.allowed('clients')) with check (public.allowed('clients'));
+  using (public.allowed('clients', 'view')) with check (public.allowed('clients', 'work'));
 drop trigger if exists client_requests_touch on public.client_requests;
 create trigger client_requests_touch before update on public.client_requests
   for each row execute function public.touch_updated_at();
@@ -2735,7 +2806,7 @@ alter table public.client_document_services enable row level security;
 -- calling PostgREST.
 drop policy if exists cds_read on public.client_document_services;
 create policy cds_read on public.client_document_services for select to authenticated
-  using (public.allowed('clients'));
+  using (public.allowed('clients', 'view'));
 
 -- ---------------------------------------------------------------------------
 -- 4. The serial, per client, per Malaysian calendar month
@@ -2753,7 +2824,7 @@ create table if not exists public.client_document_seq (
 alter table public.client_document_seq enable row level security;
 drop policy if exists cdseq_read on public.client_document_seq;
 create policy cdseq_read on public.client_document_seq for select to authenticated
-  using (public.allowed('clients'));
+  using (public.allowed('clients', 'view'));
 
 -- ---------------------------------------------------------------------------
 -- 5. Issuing
@@ -3220,7 +3291,9 @@ declare
   cl  public.clients%rowtype;
   ids uuid[];
 begin
-  if not public.allowed('remove') then return jsonb_build_object('error', 'not-allowed'); end if;
+  -- A letter lives inside the client record, so deleting one is `manage`
+  -- on Clients. Voiding stays its own capability: two authorities, two acts.
+  if not public.allowed('clients', 'manage') then return jsonb_build_object('error', 'not-allowed'); end if;
   if coalesce(btrim(p_reason), '') = '' then return jsonb_build_object('error', 'reason-required'); end if;
   select * into d from public.client_documents where id = p_doc;
   if d.id is null then return jsonb_build_object('error', 'not-found'); end if;

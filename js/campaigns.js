@@ -37,7 +37,7 @@
   var restoreScroll = bridge.restoreScroll || function () {};
 
   function maySeeActivity() {
-    return Boolean(bridge.may && bridge.may('activity'));
+    return Boolean(bridge.may && bridge.may('activity', 'view'));
   }
 
   /* ---- A form's memory -----------------------------------------------------
@@ -383,7 +383,7 @@
             /* Standing a creator down was named by the error you got when a
                delete was refused and existed nowhere on the page. */
             menuItem('state', off ? 'Set active' : 'Set inactive') +
-            menuItem('del', 'Remove', 'is-danger') +
+            menuItem('del', 'Remove', 'is-danger', 'campaigns:manage') +
           '</div>' +
         '</span>';
       rowMenu(row);
@@ -2317,8 +2317,9 @@
   /* The exceptional actions. They used to be buttons in the row, at the same
      weight as Save, which is the wrong weight for something that happens a few
      times a year. A menu says "there is more here" without shouting it. */
-  function menuItem(action, label, cls) {
-    return '<button class="kmenu-item ' + (cls || '') + '" data-a="' + action + '" type="button">' +
+  function menuItem(action, label, cls, need) {
+    return '<button class="kmenu-item ' + (cls || '') + '" data-a="' + action + '"' +
+      (need ? ' data-need="' + need + '"' : '') + ' type="button">' +
       '<b>' + esc(label) + '</b></button>';
   }
 
