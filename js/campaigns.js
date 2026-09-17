@@ -111,7 +111,11 @@
      sits inside it. That identity is what makes two links the same creator;
      a short link has none, so it can be stored but never matched. */
   var PLATFORMS = [
-    { id: 'xhs',       label: 'rednote',   re: /xiaohongshu\.com\/user\/profile\/([0-9a-zA-Z]{8,40})/i },
+    /* rednote serves the same profile under two hostnames: xiaohongshu.com,
+       and rednote.com, which is the one the app hands out now. The profile id
+       in the path is identical, so both resolve to the same creator and a
+       link copied from either is accepted. */
+    { id: 'xhs',       label: 'rednote',   re: /(?:xiaohongshu\.com|rednote\.com)\/user\/profile\/([0-9a-zA-Z]{8,40})/i },
     { id: 'xhs',       label: 'rednote',   re: /xhslink\.(?:com|cn)\/\S+/i, anonymous: true },
     { id: 'instagram', label: 'Instagram', re: /instagram\.com\/([A-Za-z0-9._]{1,40})/i },
     { id: 'tiktok',    label: 'TikTok',    re: /tiktok\.com\/@([A-Za-z0-9._]{1,40})/i },
@@ -732,7 +736,7 @@
     var box = $('campCards');
     fillCampStates();
     if (!state.campaigns) UI.skeleton(box, 3);
-    db.from('campaigns').select('*, clients(name, market, sst_applies)').order('created_at', { ascending: false })
+    db.from('campaigns').select('*, clients(name, market, sst_applies, logo_url)').order('created_at', { ascending: false })
       .then(function (r) {
         if (r.error) {
           state.campaigns = null;
@@ -1010,7 +1014,7 @@
       owner: ($('campOwner').value || '').trim() || null,
       backups_open: $('campBackups').checked
     };
-    db.from('campaigns').update(patch).eq('id', c.id).select('*, clients(name, market, sst_applies)').single().then(function (r) {
+    db.from('campaigns').update(patch).eq('id', c.id).select('*, clients(name, market, sst_applies, logo_url)').single().then(function (r) {
       if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
       log('campaign.edited', title, slots + ' creators');
       shutCampForm();
@@ -1033,7 +1037,7 @@
       // work with is the one we sent, so it has to be complete on its own.
       state: 'draft',
       created_by: who() || null
-    }).select('*, clients(name, market, sst_applies)').single().then(function (r) {
+    }).select('*, clients(name, market, sst_applies, logo_url)').single().then(function (r) {
       if (r.error) { msg('campMsg', r.error.message, 'err'); return; }
       log('campaign.created', title, slots + ' creators');
       shutCampForm();
@@ -3047,7 +3051,7 @@
       var params = new URLSearchParams(location.search);
       var id = params.get('campaign');
       if (id && !(state.campaign && state.campaign.id === id)) {
-        db.from('campaigns').select('*, clients(name, market, sst_applies)').eq('id', id).single().then(function (r) {
+        db.from('campaigns').select('*, clients(name, market, sst_applies, logo_url)').eq('id', id).single().then(function (r) {
           if (r.error || !r.data) { state.campaign = null; showTab('campaigns'); return; }
           state.tab = 'campaigns';
           Array.prototype.forEach.call(document.querySelectorAll('#campSectionTabs .tab'), function (b) {

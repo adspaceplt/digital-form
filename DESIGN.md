@@ -712,6 +712,16 @@ phone the head wraps, and **what wraps is the summary, not the state**: left to
 itself the state took a line of its own with an empty half beside it, while the
 name it belongs to sat on the line above.
 
+**A browser dialog is not a control this portal has.** `window.prompt` and
+`confirm` cannot be styled, cannot be translated — the buttons stay in the
+browser's language, so a Chinese reader gets half a dialog — and on a phone
+they are a system sheet that takes the reader off the page. The rule was
+already written for destructive acts ("a sheet, never `confirm()`, whenever
+something has to be typed"); it holds for a single value too, and there the
+answer is not a sheet but the field growing out of the control that needs it.
+The name a client's decision is recorded under is the case: it used to be a
+prompt on both client-facing pages, and it is `.namebox` now.
+
 **A control that creates a need answers it in place.** Ticking a platform a
 creator has no profile link for used to open a labelled field *after* the Add
 button: what you type sat downstream of the control that sends it, the row

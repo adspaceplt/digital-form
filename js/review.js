@@ -386,6 +386,11 @@
       '</div>' +
       '<div class="changebox">' +
         '<textarea class="textarea" placeholder="Describe the changes required."></textarea>' +
+        /* Only where we do not already hold the name: a client who has
+           approved a post before is not asked for it a second time. */
+        (window.ADspaceDecide.known() ? '' :
+          '<input class="input changebox-who" type="text" autocomplete="name"' +
+            ' aria-label="Your name" placeholder="Your name">') +
         '<div class="changebox-actions">' +
           '<button class="btn" type="button" data-act="cancel">Cancel</button>' +
           '<button class="btn btn-primary" type="button" data-act="send">Send request</button>' +
@@ -395,12 +400,24 @@
 
     var box      = wrap.querySelector('.changebox');
     var textarea = wrap.querySelector('.textarea');
+    var who      = wrap.querySelector('.changebox-who');
+    var state    = wrap.querySelector('.approve-state');
+    function say(text) { state.textContent = text || ''; }
 
-    wrap.querySelector('.btn-approve').addEventListener('click', function () {
+    /* The name is asked inside Approve rather than in a browser dialog: see
+       js/decide.js. A name already given opens nothing at all. */
+    var approveBtn = wrap.querySelector('.btn-approve');
+    var asker = window.ADspaceDecide.nameBox(approveBtn, {
+      label: 'Your name', placeholder: 'Your name',
+      needed: 'A name is required to record this decision.'
+    }, say);
+
+    approveBtn.addEventListener('click', function () {
       box.classList.remove('is-open');
-      send(post, 'approved', null, wrap, badge);
+      asker.need(function (name) { send(post, 'approved', null, wrap, badge, name); });
     });
     wrap.querySelector('.btn-changes').addEventListener('click', function () {
+      asker.close();
       box.classList.add('is-open');
       textarea.focus();
     });
@@ -410,29 +427,26 @@
     box.querySelector('[data-act="send"]').addEventListener('click', function () {
       var note = textarea.value.trim();
       if (!note) { textarea.focus(); return; }
+      /* The note box is already open, so the name it may still need is a
+         field inside it rather than one growing out of the row behind it. */
+      var name = window.ADspaceDecide.known();
+      if (!name) {
+        name = (who.value || '').trim();
+        if (!name) { say('A name is required to record this decision.'); who.focus(); return; }
+        window.ADspaceDecide.keep(name);
+      }
       box.classList.remove('is-open');
-      send(post, 'changes', note, wrap, badge);
+      send(post, 'changes', note, wrap, badge, name);
     });
     return wrap;
   }
 
-  function send(post, decision, note, wrap, badge) {
+  /* An approval with nobody's name on it is worth nothing, so the name is a
+     hard stop — but it is settled before this runs, on the page rather than
+     in a browser dialog, and arrives here as an argument. */
+  function send(post, decision, note, wrap, badge, reviewer) {
     var buttons = wrap.querySelectorAll('.btn');
     Array.prototype.forEach.call(buttons, function (b) { b.disabled = true; });
-
-    // An approval with nobody's name on it is worth nothing, so this is a hard
-    // stop rather than a prompt that can be dismissed past.
-    var reviewer = localStorage.getItem('adspace_reviewer') || '';
-    if (!reviewer) {
-      reviewer = (window.prompt('Please enter your name to record this decision:') || '').trim();
-      if (!reviewer) {
-        Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
-        wrap.querySelector('.approve-state').textContent =
-          'A name is required to record this decision.';
-        return;
-      }
-      localStorage.setItem('adspace_reviewer', reviewer);
-    }
 
     API.submitReview({
       token: token, postId: post.id, decision: decision,
