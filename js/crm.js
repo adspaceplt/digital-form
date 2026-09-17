@@ -762,6 +762,16 @@
       return '<option value="' + s[0] + '"' + (s[0] === (c.stage || 'lead') ? ' selected' : '') + '>' + esc(s[1]) + '</option>';
     }).join('');
     sel.className = 'select select-sm state-select ' + (w[2] || '');
+    /* Where the record stands, and for how long. The chip is the stage the
+       head lets you change; the line is the stage clock, which nothing else
+       on the rail states, and it carries the overdue word the register does. */
+    var status = $('crmStatus');
+    if (status) {
+      var age = ageWord(c), late = isStale(c);
+      status.innerHTML = '<span class="tone ' + esc(w[2] || '') + '">' + esc(w[1]) + '</span>' +
+        (age ? '<span class="railstatus-line' + (late ? ' is-late' : '') + '">' +
+          esc(age === 'Today' ? 'Since today' : age + ' in this stage') + (late ? ' · Overdue' : '') + '</span>' : '');
+    }
 
     paintIdentity(c);
 
@@ -1016,13 +1026,48 @@
     'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M9 18l6-6-6-6"/></svg>';
 
+  /* The glyphs the record's rows carry. One per kind of thing, neutral, drawn
+     at 16px with the stroke every other mark in the console uses, so a list
+     can be scanned by shape before it is read. */
+  var RICON = {
+    calendar: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+    phone:    '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+    pin:      '<path d="M12 21s7-6.5 7-12a7 7 0 0 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>',
+    person:   '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+    chat:     '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
+    mail:     '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+    file:     '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
+    tag:      '<path d="M20 12l-8 8-9-9V4h7z"/><circle cx="7.5" cy="7.5" r="1"/>',
+    image:    '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="M21 16l-5-5-9 9"/>',
+    speaker:  '<path d="M3 10v4a1 1 0 0 0 1 1h2l5 4V5L6 9H4a1 1 0 0 0-1 1z"/><path d="M15 9a3 3 0 0 1 0 6"/>',
+    link:     '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+    pencil:   '<path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/>',
+    dot:      '<circle cx="12" cy="12" r="3"/>'
+  };
+  function ico(name, cls) {
+    return '<svg class="' + (cls || 'railico') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (RICON[name] || RICON.dot) + '</svg>';
+  }
+  /* A call's glyph is its kind; a recorded event's is the section it belongs
+     to, which is what the activity record already files it under. */
+  var KIND_ICON = { call: 'phone', visit: 'pin', meeting: 'person', whatsapp: 'chat', email: 'mail', note: 'chat' };
+  var SECTION_ICON = { clients: 'person', team: 'person', review: 'image', campaigns: 'speaker',
+                       links: 'link', services: 'tag' };
+  function logIcon(action) {
+    if (/^doc\./.test(action || '')) return 'file';
+    var A = window.ADspaceAdmin && window.ADspaceAdmin.actionLabel;
+    var hit = A && A[action];
+    return SECTION_ICON[hit && hit[2]] || 'dot';
+  }
+
   /* A section is a heading and the one control that opens what it summarises,
-     which is this portal's section head drawn flat rather than as a card. */
-  function ovSection(title, go, goWord, body) {
+     which is this portal's section head drawn flat rather than as a card. An
+     Edit carries the pen and no chevron; a View all carries the chevron. */
+  function ovSection(title, go, goWord, body, isEdit) {
     return '<section class="ovsec">' +
       '<div class="ovsec-head"><h3>' + esc(title) + '</h3>' +
-      '<button class="btn btn-quiet btn-sm ovgo" type="button" data-go="' + esc(go) + '">' +
-        esc(goWord) + CHEV + '</button></div>' + body + '</section>';
+      '<button class="btn btn-quiet btn-sm ovgo' + (isEdit ? ' is-edit' : '') + '" type="button" data-go="' + esc(go) + '">' +
+        (isEdit ? ico('pencil', 'ovgo-pen') + esc(goWord) : esc(goWord) + CHEV) + '</button></div>' + body + '</section>';
   }
   /* Nothing there is a line, not a dashed box and not a sentence explaining
      what the section would have held. */
@@ -1037,7 +1082,7 @@
   function ovContact(c) {
     var list = state.contacts || [];
     if (!list.length) {
-      return ovSection('Contact details', 'contacts', 'Contacts', ovNone('No contacts yet.'));
+      return ovSection('Contact details', 'contacts', 'Edit', ovNone('No contacts yet.'), true);
     }
     var m = list.filter(function (x) { return x.is_primary; })[0] || list[0];
     var rows = [['Main contact', '<b>' + esc(m.name || '') + '</b>' +
@@ -1050,14 +1095,14 @@
         waLink(m.whatsapp || m.phone, (state.client || {}).market) + '</span>']);
     }
     if (m.email) rows.push(['Email', '<a class="ovlink" href="mailto:' + esc(m.email) + '">' + esc(m.email) + '</a>']);
-    if (m.lang && LANG_WORD[m.lang]) rows.push(['Preferred language', esc(LANG_WORD[m.lang])]);
+    if (m.lang && LANG_WORD[m.lang]) rows.push(['Language', 'Prefers ' + esc(LANG_WORD[m.lang])]);
     /* Person in charge is on the identity line above and is not repeated
        here; a record that states a fact twice is a record nobody reads. */
     if (c.enquiry) rows.push(['Enquiry', esc(c.enquiry)]);
     if (list.length > 1) {
       rows.push(['Other contacts', (list.length - 1) + (list.length === 2 ? ' person' : ' people')]);
     }
-    return ovSection('Contact details', 'contacts', 'Contacts', ovRows(rows));
+    return ovSection('Contact details', 'contacts', 'Edit', ovRows(rows), true);
   }
 
   /* The lines the client is paying for, or was quoted. Enquired lines are not
@@ -1067,7 +1112,7 @@
     var all = state.services || [];
     var rows = all.filter(function (l) { return l.state === 'confirmed' || l.state === 'quoted'; });
     if (!rows.length) {
-      return ovSection('Services', 'services', 'Services',
+      return ovSection('Services', 'services', 'Manage services',
         ovNone(all.length ? all.length + (all.length === 1 ? ' line enquired, nothing quoted yet.' : ' lines enquired, nothing quoted yet.')
                           : 'Nothing quoted or confirmed.'));
     }
@@ -1084,12 +1129,12 @@
       }).join('') +
       (rows.length > 5 ? '<p class="ovmore">' + (rows.length - 5) + ' more</p>' : '') +
       '</div>';
-    return ovSection('Services', 'services', 'Services', body);
+    return ovSection('Services', 'services', 'Manage services', body);
   }
 
   function ovDocuments() {
     var rows = state.documents || [];
-    if (!rows.length) return ovSection('Letters', 'documents', 'Documents', ovNone('None issued.'));
+    if (!rows.length) return ovSection('Letters', 'documents', 'View all', ovNone('None issued.'));
     var body = '<div class="ovtable">' +
       '<div class="ovhead ovrow-doc"><span>Reference</span><span>Type</span><span>Issued</span><span>State</span></div>' +
       rows.slice(0, 4).map(function (d) {
@@ -1102,21 +1147,24 @@
       }).join('') +
       (rows.length > 4 ? '<p class="ovmore">' + (rows.length - 4) + ' more</p>' : '') +
       '</div>';
-    return ovSection('Letters', 'documents', 'Documents', body);
+    return ovSection('Letters', 'documents', 'View all', body);
   }
 
   function ovTouches() {
     var rows = state.touches || [];
-    if (!rows.length) return ovSection('Calls and visits', 'activity', 'Activity', ovNone('Nothing logged.'));
+    if (!rows.length) return ovSection('Calls and visits', 'activity', 'View all', ovNone('Nothing logged.'));
     var body = '<ul class="ovlog">' + rows.slice(0, 3).map(function (t) {
       return '<li class="ovlog-row">' +
-        '<span class="ovlog-kind">' + esc(KIND_WORD[t.kind] || t.kind || '') + '</span>' +
-        '<span class="ovlog-text">' + esc(t.summary || '') + '</span>' +
+        '<span class="ovlog-ico">' + ico(KIND_ICON[t.kind] || 'chat', '') + '</span>' +
+        '<span class="ovlog-main">' +
+          '<span class="ovlog-kind">' + esc(KIND_WORD[t.kind] || t.kind || '') + '</span>' +
+          (t.summary ? '<span class="ovlog-text">' + esc(t.summary) + '</span>' : '') +
+        '</span>' +
         '<span class="ovlog-when">' + esc(niceDate(t.happened_at)) +
           (t.contact_name ? '<span class="ovmeta">with ' + esc(t.contact_name) + '</span>' : '') + '</span>' +
       '</li>';
     }).join('') + '</ul>';
-    return ovSection('Calls and visits', 'activity', 'Activity', body);
+    return ovSection('Calls and visits', 'activity', 'View all', body);
   }
 
   /* ---- The rail ---------------------------------------------------------
@@ -1149,7 +1197,7 @@
       .sort(function (a, b) { return String(a.next_at || '9999') < String(b.next_at || '9999') ? -1 : 1; })[0];
     if (open) {
       var late = open.next_at && open.next_at < today();
-      box.innerHTML = '<button class="railnext" type="button" data-go="activity">' +
+      box.innerHTML = '<button class="railnext" type="button" data-go="activity">' + ico('calendar') +
         '<span class="railnext-text">' + esc(open.next_action) + '</span>' +
         (open.next_at ? '<span class="railnext-when' + (late ? ' is-late' : '') + '">' +
           esc((late ? 'Overdue · ' : 'Due ') + niceDate(open.next_at)) + '</span>' : '') +
@@ -1159,7 +1207,7 @@
     }
     var step = nextStep(c);
     if (!step) { block.hidden = true; box.innerHTML = ''; return; }
-    box.innerHTML = '<button class="railnext" type="button" data-go="' + esc(step.go) + '">' +
+    box.innerHTML = '<button class="railnext" type="button" data-go="' + esc(step.go) + '">' + ico(step.icon || 'dot') +
       '<span class="railnext-text">' + esc(step.text) + '</span>' + CHEV + '</button>';
     block.hidden = false;
   }
@@ -1174,18 +1222,18 @@
     var confirmed = (state.services || []).filter(function (l) { return l.state === 'confirmed'; }).length;
     var issued = (state.documents || []).filter(function (d) { return !d.voided_at; }).length;
 
-    if (!state.contacts.length) return { text: 'No contact on the record.', go: 'contacts' };
-    if (stage === 'lead') return { text: 'No call or visit logged.', go: 'activity' };
-    if (!(state.services || []).length) return { text: 'No service lines.', go: 'services' };
+    if (!state.contacts.length) return { text: 'No contact on the record.', go: 'contacts', icon: 'person' };
+    if (stage === 'lead') return { text: 'No call or visit logged.', go: 'activity', icon: 'phone' };
+    if (!(state.services || []).length) return { text: 'No service lines.', go: 'services', icon: 'tag' };
     if (quoting && !issued) {
-      return { text: quoting + (quoting === 1 ? ' line' : ' lines') + ' to quote, no letter issued.', go: 'documents' };
+      return { text: quoting + (quoting === 1 ? ' line' : ' lines') + ' to quote, no letter issued.', go: 'documents', icon: 'file' };
     }
     if (stage !== 'active' && stage !== 'paused' && stage !== 'past' && missing.length) {
       return { text: missing.length + (missing.length === 1 ? ' billing field' : ' billing fields') +
-        ' before Active.', go: 'billing' };
+        ' before Active.', go: 'billing', icon: 'file' };
     }
-    if (stage === 'proposal' && issued) return { text: 'Letter with the client, unsigned.', go: 'documents' };
-    if (stage === 'active' && !confirmed) return { text: 'Active with no confirmed line.', go: 'services' };
+    if (stage === 'proposal' && issued) return { text: 'Letter with the client, unsigned.', go: 'documents', icon: 'file' };
+    if (stage === 'active' && !confirmed) return { text: 'Active with no confirmed line.', go: 'services', icon: 'tag' };
     return null;
   }
 
@@ -1213,7 +1261,7 @@
         ? '<button class="railmiss" type="button" data-go="' +
             (short[0][0] === 'Billing' ? 'billing' : short[0][0] === 'Brand profile' ? 'brand' :
              short[0][0] === 'Contacts' ? 'contacts' : 'services') + '">' +
-            esc('Still to fill in: ' + short.map(function (p) { return p[0].toLowerCase(); }).join(', ') + '.') +
+            '<span>' + esc('Still to fill in: ' + short.map(function (p) { return p[0].toLowerCase(); }).join(', ') + '.') + '</span>' +
             CHEV + '</button>'
         : '<p class="ovnone">Nothing outstanding.</p>');
     block.hidden = false;
@@ -1227,20 +1275,18 @@
     var last = live.map(function (t) { return t.happened_at; }).filter(Boolean).sort().pop();
     var nextAt = live.filter(function (t) { return t.next_action && !t.done_at && t.next_at; })
       .map(function (t) { return t.next_at; }).sort()[0];
-    var activeAt = (c.stage_log || []).filter(function (x) { return x.stage === 'active'; })
-      .map(function (x) { return x.at; }).pop();
-    if (!activeAt && c.stage === 'active') activeAt = c.stage_since || c.created_at;
+    /* How long the client has been Active is the stage clock, which Account
+       status already states, so it is not a date row here as well. */
     var rows = [
       ['Client since', c.created_at],
-      ['Active for', activeAt ? spanWord(daysSince(activeAt)) : ''],
       ['Last contact', last],
       ['Next follow up', nextAt]
     ].filter(function (r) { return r[1]; });
     if (!rows.length) { block.hidden = true; box.innerHTML = ''; return; }
     box.innerHTML = rows.map(function (r) {
       var late = r[0] === 'Next follow up' && r[1] < today();
-      return '<div><dt>' + esc(r[0]) + '</dt><dd' + (late ? ' class="is-late"' : '') + '>' +
-        esc(r[0] === 'Active for' ? r[1] : niceDate(r[1])) + '</dd></div>';
+      return '<div>' + ico('calendar') + '<dt>' + esc(r[0]) + '</dt><dd' + (late ? ' class="is-late"' : '') + '>' +
+        esc(niceDate(r[1])) + '</dd></div>';
     }).join('');
     $('crmSince').value = c.created_at ? String(c.created_at).slice(0, 10) : '';
     block.hidden = false;
@@ -1273,7 +1319,7 @@
     var rows = (state.log || []).slice(0, 3);
     if (!rows.length) { block.hidden = true; box.innerHTML = ''; return; }
     box.innerHTML = '<ul class="raillog">' + rows.map(function (x) {
-      return '<li><span class="raillog-what">' + esc(logWord(x.action)) + '</span>' +
+      return '<li>' + ico(logIcon(x.action)) + '<span class="raillog-what">' + esc(logWord(x.action)) + '</span>' +
         (x.detail ? '<span class="raillog-detail">' + esc(x.detail) + '</span>' : '') +
         '<span class="raillog-when">' + esc(niceDate(x.created_at)) + '</span></li>';
     }).join('') + '</ul>';
@@ -1304,9 +1350,12 @@
     state.client = null;
     showList();          // the list and the next actions above it, together
   });
-  $('crmEdit').addEventListener('click', function () {
-    if (!state.clients.length) loadClients();
-    openForm(state.client);
+  /* The gate is a fixed block, so it is wired once; the rail's other controls
+     are redrawn on every paint and wired by `wireGo` each time. */
+  $('crmGate').addEventListener('click', function () {
+    if (!this.getAttribute('data-go')) return;
+    showPane('billing');
+    pushUrl();
   });
 
   /* ---- Deleting a client ---------------------------------------------------
@@ -1378,11 +1427,16 @@
         if (open && window.ADspaceMenu) ADspaceMenu.place(btn, menu);
       });
       menu.addEventListener('click', function (e) {
-        var it = e.target.closest && e.target.closest('[data-a="delclient"]');
+        var it = e.target.closest && e.target.closest('[data-a]');
         if (!it) return;
         menu.hidden = true;
         btn.setAttribute('aria-expanded', 'false');
-        openClientDelete();
+        var a = it.getAttribute('data-a');
+        if (a === 'delclient') { openClientDelete(); return; }
+        if (a === 'edit') {
+          if (!state.clients.length) loadClients();
+          openForm(state.client);
+        }
       });
       document.addEventListener('click', function () {
         if (!menu.hidden) { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); }
@@ -1472,10 +1526,13 @@
      the contacts arrive, since the contact is one of them. */
   function paintBilling(c) {
     var missing = billingMissing(c);
-    $('crmGate').hidden = c.stage === 'active' || c.stage === 'past';
-    $('crmGateText').textContent = missing.length
-      ? 'Billing details required before Active: ' + missing.join(', ') + '.'
-      : 'Billing details complete.';
+    /* Drawn only while something is missing on a record that is not yet
+       Active: a gate with nothing behind it is not a gate. It opens Billing
+       where the person can see that pane, and is plain text where they cannot. */
+    var gate = $('crmGate');
+    gate.hidden = !missing.length || c.stage === 'active' || c.stage === 'past';
+    if (maySeeBilling()) gate.setAttribute('data-go', 'billing'); else gate.removeAttribute('data-go');
+    $('crmGateText').textContent = 'Required before Active: ' + missing.join(', ') + '.';
     $('crmBillSummary').innerHTML = ring(BILLING_REQUIRED.length - missing.length, BILLING_REQUIRED.length);
     var pick = billContact(c);
     $('crmBillContact').innerHTML = '<option value="">None</option>' + (state.contacts || []).map(function (ct) {

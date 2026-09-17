@@ -941,7 +941,22 @@
   $('showAddCamp').addEventListener('click', function () {
     loadClients(function () { openCampForm(null); });
   });
+  /* The record's ⋯, placed on the viewport like every other one; Edit details
+     is its one item, and choosing it shuts the menu the item sits in. */
+  (function () {
+    var btn = $('campMenuBtn'), menu = $('campMenu');
+    if (!btn || !menu) return;
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = menu.hidden;
+      shutMenus();
+      menu.hidden = !open;
+      btn.setAttribute('aria-expanded', String(open));
+      if (open) window.ADspaceMenu.place(btn, menu);
+    });
+  })();
   $('campEdit').addEventListener('click', function () {
+    shutMenus();
     loadClients(function () { openCampForm(state.campaign); });
   });
   $('cancelAddCamp').addEventListener('click', shutCampForm);

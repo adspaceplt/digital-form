@@ -49,7 +49,7 @@ palette can never be bought with legibility.
 | `--accent` = `--ok` | `#1f7a4d` | `#4aa876` | The one green: **live state and success only**. It used to carry the forward button as well, so a screen could not say "press this" and "this is running" in two different voices, and a page of green chips competed with a green button for the one accent. Approved on a review card is green because by then it is a fact and no longer an action |
 | `--ok-bg` | `#ecf5f0` | `#17281f` | Its tint |
 | `--ok-solid` / `--on-ok` | `#1f7a4d` / `#ffffff` | `#4aa876` / `#07150e` | A green **fill** and its text |
-| `--warn` / `--warn-bg` | `#9c5c16` / `#fbf2e6` | `#cf9350` / `#2a2217` | Caution, unpublish, pending and reviewing states |
+| `--warn` / `--warn-bg` / `--warn-line` | `#a94d0c` / `#fdf1e7` / `#f1d3b8` | `#cf9350` / `#2a2217` / `#4a3520` | Caution, unpublish, pending and reviewing states. **Amber only while it is plainly orange**: the earlier `#9c5c16` had drifted to brown, and a brown chip on a cream tint read as a notice board rather than a warning. 5.05:1 on its own tint. **A refusal is red, not amber**: the billing gate on a client record is `--err`, because the database will not allow Active until the fields are filled, and a caution's colour on a refusal read as an announcement |
 | `--warn-solid` / `--on-warn` | `#9c5c16` / `#ffffff` | `#cf9350` / `#1d1408` | A warn fill and its text |
 | `--err` / `--err-bg` / `--err-line` / `--err-hi` | `#b3261e` / `#fdeceb` / `#e9b9b5` / `#8c1d18` | `#e8837a` / `#2e1d1b` / `#6a3a35` / `#f2a9a2` | `.msg.err`, danger menu items, the one danger button; `--err-hi` is the pressed step, never a second red |
 | `--focus` | `rgba(31,122,77,.18)` | `rgba(74,168,118,.30)` | The focus ring, on every control, never removed |
@@ -220,7 +220,7 @@ carried three scattered rules that only ever quietened two carets.
 |---|---|---|
 | Section heading | 19px / 600 / -.02em | `.viewhead h2`, `.crm-title h2` (record name) |
 | Sub-heading | 16px / 600 / -.01em | `.viewhead h3` |
-| Panel and group title | 15px / 600 / -.01em | `.panel h3`, `.crm-group-head h3`, `.kcard-name` |
+| Panel and group title | 15px / 600 / -.01em | `.panel h3`, `.crm-group-head h3`, `.kcard-name`, `.ovsec-head h3`, `.railtitle` (the rail heads the same kind of block the pane does; as an 11px eyebrow it read as a footnote to the pane rather than its other half) |
 | Body | 14px in the console, **16px on the four client facing pages** (`:root[data-face="client"]`, set on the `<html>` of `/creators/`, `/creator/`, `/review/`, `/client/`), line-height 1.55 | `body`, `.facts dd`, `.svc-name b` (600). The console is a dense tool read all day at a desk, which is the departure this portal documents; a client reads one page once, usually on a phone, and is being asked to decide something on it. Only what inherits moves: controls, labels and chips state their own size, so the shapes are identical on both sides |
 | Money in a row | 13.5px, tabular | `.svc-rate` |
 | Control, small text | 13px / 12.5px | `.btn`, `.btn-sm`, `.svc-calc`, `.backlink` |
@@ -638,11 +638,29 @@ cannot hold a number that has gone stale; a section with nothing to show says
 so in a line, because "None issued." is an answer and a section that vanishes
 is a question.
 
+**A record head is two parts that centre on each other.** Left, who this is:
+the mark, the name with its stage on one line, the identifying facts under
+them. Right, the one ⋯ that acts on the record, holding Edit and Delete. Edit
+used to be drawn beside the stage on every record and it earned that position
+perhaps four times in a client's life; on a phone it and the ⋯ wrapped to a
+line of their own under the name, with the meta below them, which is the wrong
+reading order, and on a desktop the controls sat on the name line, above the
+card's middle on every record that carried a meta line. Two parts on one grid,
+`align-items: center`, and the control is on the middle of the card at every
+width while a long name wraps under itself. The name at 19px and the meta at
+12px stand a golden ratio apart, which is what keeps the second line reading
+as a note under the name and not as a second line of it.
+
 **A rail is one block per question, and a block with no data is not a block.**
-Each carries an eyebrow title and is divided from the next by the same hairline
-the sections use. The order is what somebody needs in the order they need it:
-what to do next, what is stopping the record, how much of it is filled in, the
-dates it holds, the facts, what has happened lately. Two rules keep it honest.
+Each carries a title at the pane's own section size and is divided from the
+next by the same hairline the sections use. The order is what somebody needs
+in the order they need it: where the record stands and for how long (the
+stage chip and its clock, stated here and nowhere else on the rail), what to do
+next, what is stopping the record (red, because it is a refusal and opens the
+pane that clears it), how much of it is filled in, the dates it holds, the
+facts, what has happened lately. A row in a list of dates or events carries a
+neutral 16px glyph, so the list can be scanned by shape before it is read; the
+glyph is never coloured, because the word beside it is the fact. Two rules keep it honest.
 **A written next action beats a derived one** — a person wrote it on a call and
 set its date; a derivation only inferred it. And **a row whose date nobody has
 recorded is left out**, never drawn as "Not set" in a list of dates, because a
