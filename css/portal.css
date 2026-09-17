@@ -3240,7 +3240,16 @@ body > .shell { width: 100%; }
    so the action is always the thing that wraps. */
 .is-narrow .crm-title h2 { flex: 1 1 calc(100% - var(--state-w) - 10px); }
 .is-narrow .crm-title .state-select { margin-left: auto; }
-.is-narrow .crm-title .btn { margin-left: auto; }
+/* Once it has wrapped, the action belongs under the name at the name's own
+   left margin. Pushed right as well, Edit and the ⋯ made a row of their own
+   against the right edge, with the name above them and the meta below and a
+   gap either side: the loosest part of the card, for its least used control. */
+.is-narrow .crm-title .btn { margin-left: 0; }
+.is-narrow .crm-title { margin-bottom: 10px; row-gap: 4px; }
+/* A text-only button carries the control padding every other button does, so
+   on its own line its first glyph started 16px in from the name above it. It
+   keeps its height, and the target stays well past the floor on its width. */
+.is-narrow .crm-title .btn-quiet { padding-left: 0; }
 /* The mark keeps its column on a phone but takes less of it, so the name
    still has the width the state select is measured against. */
 .is-narrow .svc-row.crm-head { display: none; }
@@ -4197,10 +4206,17 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
 .raildates dd.is-late { color: var(--warn); font-weight: 600; }
+/* A field and the one button that saves it, centred on each other: `end`
+   aligned their boxes' bottoms, and a text-only button of a different height
+   beside a 44px field then printed its word above the field's own line. */
 .rail-date-edit {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 6px;
-  align-items: end; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 5px 8px;
+  align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft);
 }
+/* No rule under nothing. The dates above are omitted one by one when the
+   record does not hold them, so a client with none left a heading, a gap and
+   a hairline over an empty list. */
+.raildates:empty + .rail-date-edit { margin-top: 0; padding-top: 0; border-top: 0; }
 .rail-date-edit label {
   grid-column: 1 / -1; font-size: 11px; font-weight: 600;
   letter-spacing: .05em; text-transform: uppercase; color: var(--ink-mute);
@@ -4387,24 +4403,42 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .pick-state { min-width: 0; }
 .pick-row { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr) 96px 124px; }
 
-/* The campaign's own rows, on the same component-width switch. */
-/* Two lines: who and where they stand, then the dates under them. */
+/* The campaign's own rows, on the same component-width switch.
+
+   Who, then the shoot, then the two deadlines side by side. Stacked one per
+   line with a 72px label beside each, a creator took three full-width date
+   boxes and the pane became a column of empty fields rather than a schedule:
+   five creators ran to fifteen of them. The label also sat to the left of its
+   field, which is the one place in this portal a field label does not go —
+   everywhere else it is above, so the field can have the width. */
 .is-narrow .sched-row {
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "who" "when" "due" "pub";
-  gap: 2px 10px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "who who" "when when" "due pub";
+  gap: 10px;
 }
-.is-narrow .sched-edit { align-items: stretch; flex-wrap: wrap; }
-.is-narrow .sched-edit .input { flex: 1 1 120px; }
+.is-narrow .sched-edit {
+  display: flex; flex-direction: column; align-items: stretch; gap: 4px;
+}
+/* The cells are as tall as the tallest of them, so a field left to stretch
+   grew to fill a row sized by its neighbour. A control keeps its own height. */
+.is-narrow .sched-row { align-items: start; }
+.is-narrow .sched-edit .input { flex: 0 0 auto; }
 .is-narrow .sched-row > .sched-who { grid-area: who; }
 .is-narrow .sched-row > .sched-when:nth-of-type(2) { grid-area: when; }
 .is-narrow .sched-row > .sched-when:nth-of-type(3) { grid-area: due; }
 .is-narrow .sched-row > .sched-when:nth-of-type(4) { grid-area: pub; }
+/* The label above its field, as every other label in the portal is. */
 .is-narrow .sched-row > .sched-when::before {
-  flex: 0 0 72px; align-self: center; font-size: 11px; font-weight: 600;
-  letter-spacing: .05em; text-transform: uppercase; color: var(--ink-mute);
+  content: attr(data-label);
+  font-size: 11px; font-weight: 600; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--ink-mute);
 }
-.is-narrow .sched-row > .sched-when::before { content: attr(data-label); }
+/* The shoot keeps its date and its time on one line under the one label. */
+.is-narrow .sched-row > .sched-when:nth-of-type(2) {
+  display: grid; grid-template-columns: minmax(0, 1fr) 104px; gap: 4px 6px;
+}
+.is-narrow .sched-row > .sched-when:nth-of-type(2)::before { grid-column: 1 / -1; }
+.is-narrow .sched-edit .input { min-width: 0; width: 100%; }
 .is-narrow .pick-row {
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas: "who state" "plat rate";
