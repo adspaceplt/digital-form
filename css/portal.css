@@ -300,8 +300,47 @@ a { color: inherit; }
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6b6b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 10px center; background-size: 15px;
 }
-/* Date and time fields bring their own chrome too, and it is taller. */
-.input[type="date"], .input[type="time"] { line-height: 1.5; min-height: var(--ctl-h); }
+/* Date and time fields bring their own chrome too, and it is taller. On iOS
+   it is also a pill with the value centred in it: `appearance: none` takes
+   the pill away, and the value's own box is told to start at the left like
+   every other field, because a date centred in a full width box on a phone
+   read as a button and not as a field. `display: block` keeps an empty field
+   at the control height, which iOS otherwise collapses to nothing. */
+.input[type="date"], .input[type="time"] {
+  line-height: 1.5; min-height: var(--ctl-h);
+  appearance: none; -webkit-appearance: none; display: block; text-align: left;
+}
+.input[type="date"]::-webkit-date-and-time-value,
+.input[type="time"]::-webkit-date-and-time-value { text-align: left; min-height: 1.5em; }
+/* Chrome's own picker mark, quietened to the mute ink rather than removed:
+   it is the pointer's route into the picker at a desk. */
+.input[type="date"]::-webkit-calendar-picker-indicator,
+.input[type="time"]::-webkit-calendar-picker-indicator { opacity: .55; cursor: pointer; }
+/* Under a finger there is no picker mark at all, on iOS or on Android, so
+   the field names itself with a glyph on the left: a calendar for a date and
+   a clock for a time, the same weight as every other glyph in the console.
+   At a desk Chrome's own mark already says it, and two calendars in one box
+   is noise. */
+@media (pointer: coarse) {
+  .input[type="date"], .input[type="time"] {
+    padding-left: 38px; background-repeat: no-repeat;
+    background-position: left 12px center; background-size: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6760' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
+  }
+  .input[type="time"] {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6760' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E");
+  }
+  /* A finger opens the picker by tapping the field, so a second mark on the
+     right is not a route in, and in a 122px time track it clipped the value. */
+  .input[type="date"]::-webkit-calendar-picker-indicator,
+  .input[type="time"]::-webkit-calendar-picker-indicator { display: none; }
+  :root[data-theme="dark"] .input[type="date"] {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a6a89e' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
+  }
+  :root[data-theme="dark"] .input[type="time"] {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a6a89e' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E");
+  }
+}
 /* A file field arrives as the browser's own grey button floating on a baseline
    of its own. Same box as every other field, and the button inside it is one of
    ours: outline, our border, centred on the field's line. */
@@ -4659,7 +4698,9 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .sched-row { grid-template-columns: minmax(140px, 1fr) minmax(220px, 1.1fr) 142px 142px; }
 .sched-when { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 .sched-edit { display: flex; align-items: center; gap: 6px; }
-.sched-edit .input { min-width: 0; padding-inline: 8px; }
+/* The end padding is trimmed for the 142px desk tracks; the start padding is
+   the date field's own, because under a finger it holds the glyph. */
+.sched-edit .input { min-width: 0; padding-inline-end: 8px; }
 .sched-edit input[type="date"] { flex: 1 1 132px; }
 .sched-edit input[type="time"] { flex: 0 1 92px; }
 .sched-plat, .pick-plat { font-size: 13px; color: var(--ink-mute); min-width: 0;
@@ -4706,6 +4747,11 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
   font-size: 13px; color: var(--ink-mute); pointer-events: none;
 }
+/* The hint starts where the value would, which under a finger is after the
+   glyph, and at the size the value is drawn at. */
+@media (pointer: coarse) {
+  .sched-one.is-unset .sched-field::after { left: 38px; font-size: var(--field-text); }
+}
 /* Chrome draws its own `mm/dd/yyyy` in an empty date field and iOS draws
    nothing at all, so the hint has to replace the first rather than sit on top
    of it: without this the two printed over each other. It comes back the
@@ -4730,7 +4776,7 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 }
 /* The shoot keeps its date and its time on one line under the one label. */
 .is-narrow .sched-row > .sched-when:nth-of-type(2) {
-  display: grid; grid-template-columns: minmax(0, 1fr) 104px; gap: 4px 6px;
+  display: grid; grid-template-columns: minmax(0, 1fr) 122px; gap: 4px 8px;
 }
 .is-narrow .sched-row > .sched-when:nth-of-type(2)::before { grid-column: 1 / -1; }
 .is-narrow .sched-edit .input { min-width: 0; width: 100%; }
