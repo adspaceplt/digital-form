@@ -1207,8 +1207,17 @@
         '\n\nThis action cannot be reversed.';
       if (!confirm(warning)) return;
 
-      db.from('batches').delete().eq('id', b.id).then(function (res) {
+      /* `.select()` so the answer says what was removed. A delete the database
+         refuses returns no error at all — PostgREST answers 204 and the row
+         simply stays — so without this the panel closed, nothing was said, and
+         the set was still in the list underneath. A refusal is a sentence on
+         the screen, never a success nobody can tell from one. */
+      db.from('batches').delete().eq('id', b.id).select('id').then(function (res) {
         if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
+        if (!(res.data || []).length) {
+          msg('setMsg', 'Not deleted. The database refused the request.', 'err');
+          return;
+        }
         logAction('set.deleted', state.client.name + ' — ' + b.title,
           n + ' post' + (n === 1 ? '' : 's') + (b.published ? ', was published' : ', was draft'));
         state.batch = null;
@@ -2423,7 +2432,14 @@
       });
       row.querySelector('[data-a="del"]').addEventListener('click', function () {
         if (!confirm('Delete this post?\n\nIt will be removed from the client view.')) return;
-        db.from('posts').delete().eq('id', p.id).then(function () {
+        // Same as the set above: the answer was thrown away entirely here, so a
+        // refused delete repainted the list with the post still in it.
+        db.from('posts').delete().eq('id', p.id).select('id').then(function (r) {
+          if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
+          if (!(r.data || []).length) {
+            msg('setMsg', 'Not deleted. The database refused the request.', 'err');
+            return;
+          }
           logAction('post.deleted',
             state.client.name + ' — ' + state.batch.title, MK.label(p));
           loadPosts(); loadBatches();

@@ -3754,6 +3754,12 @@ body > .shell { width: 100%; }
 body.no-remove #deleteClient,
 body.no-remove #campDangerRow,
 body.no-remove #crmClientMenuWrap,
+/* Deleting a content set takes its posts and their approval records with it
+   and there is no restore, so it is the same hard-delete authority as a
+   client, a letter, a contact or a short link. The icon was drawn for
+   everybody, so a group without the permission was offered a control that
+   could not work — and the page reported success when it did not. */
+body.no-remove #deleteSet,
 body.no-remove .kmenu-item[data-a="del"].is-danger:not([data-soft]) { display: none !important; }
 /* What a deletion takes with it, counted from the record rather than
    described. A list, because four facts in a sentence is a sentence nobody

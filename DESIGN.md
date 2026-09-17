@@ -860,6 +860,25 @@ number that is wrong is not the viewport. Give the field a wrapper of its own
 breakpoint, and the one positioning rule is true at every width. The same test
 applies to any hint, badge or adornment laid over a control.
 
+**A write that changed nothing is not a write that worked.** PostgREST answers
+a delete its policies refuse with 204 and **no error**: the row stays and the
+caller is told nothing at all. Every `.then(function (r) { if (r.error) …})` in
+this portal therefore reads a refusal as a success, and the two deletes in a
+content set did exactly that — the panel closed, no message, and the set was
+still in the list behind it, which is indistinguishable from a page that has
+not repainted. A delete asks for what it removed (`.select('id')`) and treats
+an empty answer as the refusal it is. The same holds for an update whose
+policy can refuse it. The rule is not "check the error", it is **check that the
+thing happened**.
+
+**A destructive control is drawn behind its capability, or it is a promise the
+database will break.** `body.no-remove` already hid Delete client, the campaign
+danger row and every `is-danger` menu item without `data-soft`; the content
+set's trash was the one hard delete in the console drawn for everybody, so a
+group without `can_remove` was offered it and then quietly refused. The two
+halves go together: hide what cannot work, and say so if it is refused anyway,
+because a permission can be taken away while the screen is open.
+
 A field the browser draws itself (file, date, time, select) is reskinned
 to our box: same height, same border, and its inner button is one of ours
 (`::file-selector-button`: outline, `--line-ctl`, centred on the field's
