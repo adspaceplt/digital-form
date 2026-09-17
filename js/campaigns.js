@@ -2688,12 +2688,24 @@
      a fresh revision number, exactly as a client's rejection does, but the
      client's page never learns the round happened: `changes_by` is what
      get_campaign reads to report it as Pending draft instead. */
+  /* The note opens under the button that sends it, which is the shape the
+     client's own Request changes already has on /creators/. It used to be a
+     browser prompt: a window over the card, in the browser's language, asking
+     for several lines in a control that is one line high. */
   function sendBack(o, card) {
+    var btn = card.querySelector('[data-a="sendback"]');
+    if (!btn) return;
+    if (btn._ask) { btn._ask.open(); return; }
+    btn._ask = window.ADspaceAsk.note(btn.closest('.kactions') || btn, {
+      label: 'What needs changing', send: 'Send to creator',
+      placeholder: 'What needs changing? The creator reads this.',
+      save: function (why) { sendBackNow(o, card, why); }
+    });
+    btn._ask.open();
+  }
+
+  function sendBackNow(o, card, why) {
     var m = card.querySelector('[data-msg]');
-    var why = prompt('What needs changing? The creator reads this.');
-    if (why === null) return;
-    why = why.trim();
-    if (!why) { m.textContent = 'A note is required.'; m.className = 'msg err'; return; }
     db.from('campaign_options').update({
       state: 'changes', changes_by: 'team', drop_reason: why,
       revision_round: Math.max(o.revision_round || 0, 1) + 1
@@ -2807,6 +2819,13 @@
       return;
     }
 
+    /* STILL A PROMPT, deliberately, until the sheet that replaces it ships.
+       This act states a consequence ("the record is kept for invoice
+       reconciliation") and then takes a reason, which is the definition of a
+       sheet in this portal, not of a field growing out of a button. Deleting
+       the prompt without building the sheet would cost the audit record the
+       reason it carries, so it stays until there is somewhere better to put
+       it. See the withdraw/replace sheet. */
     var why = prompt(kind === 'withdrawn' ? 'Reason for withdrawal:' : 'Reason for replacement:') || '';
     db.from('campaign_options')
       .update({ state: kind, drop_reason: why.trim() || null, goodwill: goodwill })

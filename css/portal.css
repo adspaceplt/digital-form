@@ -523,6 +523,31 @@ a { color: inherit; }
 }
 .approve-row.is-asking { gap: 0; }
 
+/* A title edited where it sits. The field takes the heading's own size and
+   weight, so the line does not jump by a pixel when the pen is pressed: a
+   rename that reflows the bar around it is a rename you have to find your
+   place in again. */
+.askfield {
+  font-size: 19px; font-weight: 600; letter-spacing: -.02em;
+  min-width: 0; flex: 1 1 260px; max-width: 100%;
+}
+/* The pen has become the tick that saves. It keeps the icon button's box and
+   takes the **ink** fill, not blue: blue moves work to somebody else and
+   Publish is already doing that two controls along, so a blue tick beside a
+   blue Publish is two equally loud actions in one bar. Saving a name is an
+   ordinary operation, which is what the ink primary is for. */
+.btn-icononly.is-saving {
+  color: var(--on-fill); background: var(--fill); border-color: var(--fill);
+}
+@media (hover: hover) {
+  .btn-icononly.is-saving:hover { filter: brightness(1.25); }
+}
+/* A note the console opens under the control that sends it. `.changebox`
+   carries the shape; this only says where it sits, because on a card the
+   control is in a row of its own and the note belongs under the whole row. */
+.asknote { width: 100%; }
+.kactions .asknote, .asknote { margin-top: 10px; }
+
 .changebox { margin-top: 12px; display: none; }
 .changebox.is-open { display: block; }
 .changebox .textarea { min-height: 74px; font-size: 13px; }

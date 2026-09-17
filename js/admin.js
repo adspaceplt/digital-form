@@ -1093,17 +1093,26 @@
       });
   }
 
+  /* The name a new set needs is not on the screen yet, so the field grows out
+     of the button that needs it and that button confirms it. Seeded with the
+     month, which is what nearly every set is called. */
+  var addSetAsk = window.ADspaceAsk.inline($('addBatch'), {
+    label: 'Content set name', placeholder: 'Content set name',
+    value: function () { return thisMonth(); },
+    save: function (title) { makeBatch(title); }
+  });
   $('addBatch').addEventListener('click', function () {
-    var title = (window.prompt('Name for this content set:', thisMonth()) || '').trim();
-    if (!title) return;
+    addSetAsk.press();
+  });
+  function makeBatch(title) {
     db.from('batches').insert({
       client_id: state.client.id, title: title, published: false
     }).select().single().then(function (r) {
-      if (r.error) return;
+      if (r.error) { msg('setsMsg', r.error.message, 'err'); return; }
       loadBatches();
       openBatch(r.data);
     });
-  });
+  }
 
   function openBatch(b, quiet) {
     state.batch = b;
@@ -1210,13 +1219,22 @@
     });
   });
 
+  /* The title is already on the screen, so the pen edits it where it sits and
+     becomes the tick that saves it. It used to open a browser prompt, which is
+     a window over the page asking for a value the page was already showing. */
   $('renameSet').addEventListener('click', function () {
-    var title = (window.prompt('Rename this content set:', state.batch.title) || '').trim();
-    if (!title) return;
-    db.from('batches').update({ title: title }).eq('id', state.batch.id).then(function () {
-      state.batch.title = title;
-      paintSetHeader();
-      loadBatches();
+    var btn = this;
+    window.ADspaceAsk.rename($('setTitle'), btn, {
+      label: 'Content set name', max: 120,
+      saveLabel: 'Save name',
+      save: function (title) {
+        db.from('batches').update({ title: title }).eq('id', state.batch.id).then(function (r) {
+          if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
+          state.batch.title = title;
+          paintSetHeader();
+          loadBatches();
+        });
+      }
     });
   });
 
@@ -2379,21 +2397,29 @@
 
       row.querySelector('[data-a="edit"]').addEventListener('click', paintEdit);
 
+      /* The client reads this, so it is a note and not a value: it opens under
+         the control that sends it rather than in a browser window over the
+         post it is about. */
       var reask = row.querySelector('[data-a="reask"]');
       if (reask) reask.addEventListener('click', function () {
-        var why = (window.prompt(
-          'Reason for re-approval (shown to the client):') || '').trim();
-        if (!why) return;
-        db.from('posts').update({
-          review_reset_at: new Date().toISOString(),
-          review_reset_note: why
-        }).eq('id', p.id).then(function (r) {
-          if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
-          logAction('reapproval.requested',
-            state.client.name + ' — ' + MK.label(p), why);
-          msg('setMsg', 'Re-approval requested.', 'ok');
-          loadPosts();
+        if (reask._ask) { reask._ask.open(); return; }
+        reask._ask = window.ADspaceAsk.note(reask, {
+          label: 'Reason for re-approval', send: 'Request re-approval',
+          placeholder: 'Why the client is being asked again. They read this.',
+          save: function (why) {
+            db.from('posts').update({
+              review_reset_at: new Date().toISOString(),
+              review_reset_note: why
+            }).eq('id', p.id).then(function (r) {
+              if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
+              logAction('reapproval.requested',
+                state.client.name + ' — ' + MK.label(p), why);
+              msg('setMsg', 'Re-approval requested.', 'ok');
+              loadPosts();
+            });
+          }
         });
+        reask._ask.open();
       });
       row.querySelector('[data-a="del"]').addEventListener('click', function () {
         if (!confirm('Delete this post?\n\nIt will be removed from the client view.')) return;
