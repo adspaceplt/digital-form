@@ -28,10 +28,10 @@
   var MON = window.ADspaceMoney;
 
   function maySeeActivity() {
-    return Boolean(bridge.may && bridge.may('activity'));
+    return Boolean(bridge.may && bridge.may('activity', 'view'));
   }
   function maySeeBilling() {
-    return Boolean(bridge.may && bridge.may('billing'));
+    return Boolean(bridge.capable && bridge.capable('billing'));
   }
 
   function esc(s) {
@@ -1609,7 +1609,7 @@
               /* The hard delete, once the soft one has been made. No data-soft,
                  so body.no-remove hides it from anyone whose group does not
                  carry can_remove: an admin's by default. */
-              '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete permanently</b></button>'
+              '<button class="kmenu-item is-danger" data-a="del" data-need="clients:manage" type="button"><b>Delete permanently</b></button>'
             : '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
               (ct.is_primary ? '' :
                 '<button class="kmenu-item" data-a="primary" type="button"><b>Main contact</b></button>') +
@@ -2201,7 +2201,10 @@
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
           '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
-          (isAdmin() ? '<button class="kmenu-item" data-a="force" type="button"><b>Set state by hand</b></button>' : '') +
+          /* This overrides a client's service line, not the rate card, so it
+             is Clients at manage and not Services. */
+          (bridge.may && bridge.may('clients', 'manage')
+            ? '<button class="kmenu-item" data-a="force" type="button"><b>Set state by hand</b></button>' : '') +
           '<button class="kmenu-item is-danger" data-a="del" data-soft type="button"><b>Remove</b></button>' +
         '</div>' +
       '</span>';
@@ -2527,7 +2530,7 @@
              again when the button is pressed. */
           (st === 'verified'
             ? '<button class="kmenu-item is-danger" data-a="void" type="button"><b>Void letter</b></button>' : '') +
-          '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete permanently</b></button>' +
+          '<button class="kmenu-item is-danger" data-a="del" data-need="clients:manage" type="button"><b>Delete permanently</b></button>' +
         '</div>' +
       '</span>';
     wireMenu(row);
@@ -2828,14 +2831,17 @@
 
   // ---- Rate card (the Services section) ------------------------------------
   var editingSvc = null;
-  function isAdmin() { return Boolean(bridge.may && bridge.may('admin')); }
+  /* The rate card is edited by whoever manages Services. It asked for
+     `admin` before the levels, which made the one person who could correct a
+     price the same person who administers the team. */
+  function maySvc() { return Boolean(bridge.may && bridge.may('services', 'manage')); }
   /* What is typed in the command bar. Kept out of the URL: a search is what
      somebody is doing this minute, not where they are. */
   var svcFind = '', svcCat = '';
 
   function enterServices() {
     catalog = null;
-    $('svcAdd').hidden = !isAdmin();
+    $('svcAdd').hidden = !maySvc();
     $('svcBox').hidden = true;
     msg('svcListMsg', '');
     skeleton($('svcList'), 6);
@@ -2902,7 +2908,7 @@
     if (!all.length) {
       box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
         '<b>The rate card is empty.</b>' +
-        (isAdmin() ? '<button class="btn btn-sm" data-a="first" type="button">Add the first service</button>' : '') +
+        (maySvc() ? '<button class="btn btn-sm" data-a="first" type="button">Add the first service</button>' : '') +
         '</div></div>';
       var first = box.querySelector('[data-a="first"]');
       if (first) first.addEventListener('click', function () { openSvc(null); });
@@ -2977,7 +2983,7 @@
         (s.note ? '<small>' + esc(s.note) + '</small>' : '') + '</span>' +
       '<span class="svc-rate">' + (s.rate != null ? esc(MON.money2(s.rate, 'MY')) : '<span class="muted">On quote</span>') + '</span>' +
       '<span class="svc-unit">' + esc(s.unit || '') + '</span>' +
-      '<span class="team-act">' + (isAdmin()
+      '<span class="team-act">' + (maySvc()
         ? '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
             '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
@@ -2988,11 +2994,11 @@
                a line is taken off the card before it can be taken out of it.
                No data-soft, so body.no-remove holds it back from a group that
                does not carry can_remove. */
-            (off ? '<button class="kmenu-item is-danger" data-a="del" type="button"><b>Delete permanently</b></button>' : '') +
+            (off ? '<button class="kmenu-item is-danger" data-a="del" data-need="services:manage" type="button"><b>Delete permanently</b></button>' : '') +
           '</div>'
         : '') + '</span>';
     row.classList.add('cat-row');
-    if (isAdmin()) {
+    if (maySvc()) {
       wireMenu(row);
       row.querySelector('[data-a="edit"]').addEventListener('click', function () { openSvc(s); });
       var del = row.querySelector('[data-a="del"]');

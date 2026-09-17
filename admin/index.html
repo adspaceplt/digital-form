@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260920j">
+<link rel="stylesheet" href="/css/portal.css?v=20260920k">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,21 +28,21 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260920j"></script>
-<script src="/js/words.js?v=20260920j"></script>
-<script src="/js/copy.js?v=20260920j"></script>
-<script src="/js/ask.js?v=20260920j"></script>
-<script src="/js/state.js?v=20260920j"></script>
-<script src="/js/menu.js?v=20260920j"></script>
-<script src="/js/api.js?v=20260920j"></script>
-<script src="/js/money.js?v=20260920j"></script>
-<script src="/js/mockups.js?v=20260920j"></script>
+<script src="/js/config.js?v=20260920k"></script>
+<script src="/js/words.js?v=20260920k"></script>
+<script src="/js/copy.js?v=20260920k"></script>
+<script src="/js/ask.js?v=20260920k"></script>
+<script src="/js/state.js?v=20260920k"></script>
+<script src="/js/menu.js?v=20260920k"></script>
+<script src="/js/api.js?v=20260920k"></script>
+<script src="/js/money.js?v=20260920k"></script>
+<script src="/js/mockups.js?v=20260920k"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260920j" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260920k" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -263,7 +263,7 @@
                    Past). Removing the record itself happens once in its life
                    and cannot be undone, so it lives where every other rare and
                    destructive action does. -->
-              <div class="kmenu-wrap" id="crmClientMenuWrap">
+              <div class="kmenu-wrap" id="crmClientMenuWrap" data-need="clients:manage">
                 <button class="kmenu-btn" id="crmClientMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More">
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                 </button>
@@ -847,7 +847,7 @@
           <p class="hint">Reset invalidates the current link. Removal deletes the content sets and approvals and keeps the client record.</p>
           <div class="dangerrow">
             <button class="btn btn-warn" id="resetLink" type="button">Reset access link</button>
-            <button class="btn btn-danger" id="deleteClient" type="button">Remove from Content Review</button>
+            <button class="btn btn-danger" id="deleteClient" data-need="review:manage" type="button">Remove from Content Review</button>
           </div>
         </div>
 
@@ -874,7 +874,7 @@
         <div class="setbar-actions">
           <button class="btn btn-icononly" id="renameSet" type="button"
                   title="Rename set" aria-label="Rename set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg></button>
-          <button class="btn btn-icononly is-danger" id="deleteSet" type="button"
+          <button class="btn btn-icononly is-danger" id="deleteSet" data-need="review:manage" type="button"
                   title="Delete set" aria-label="Delete set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/></svg></button>
           <button class="btn btn-go btn-icon" id="publishSet" type="button">
             <svg id="publishIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1024,7 +1024,7 @@
           </div>
           <div class="msg" id="campMsg"></div>
           <!-- Deletion lives with editing: rare, and behind one more click. -->
-          <div class="form-danger" id="campDangerRow" hidden>
+          <div class="form-danger" id="campDangerRow" data-need="campaigns:manage" hidden>
             <button class="btn btn-quiet is-danger btn-sm" id="campDelete" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/></svg>Delete campaign</button>
           </div>
         </div>
@@ -1422,7 +1422,7 @@
         </div>
         <div class="row" style="margin-top:12px">
           <div><span class="field-label">Access</span>
-            <div class="permgrid" id="grFlags"></div></div>
+            <div class="permbox" id="grFlags"></div></div>
         </div>
         <div class="row" style="margin-top:14px">
           <button class="btn btn-primary" id="grSave" type="button">Add</button>
@@ -1649,10 +1649,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260920j"></script>
-<script src="/js/documents.js?v=20260920j"></script>
-<script src="/js/crm.js?v=20260920j"></script>
-<script src="/js/team.js?v=20260920j"></script>
-<script src="/js/campaigns.js?v=20260920j"></script>
+<script src="/js/admin.js?v=20260920k"></script>
+<script src="/js/documents.js?v=20260920k"></script>
+<script src="/js/crm.js?v=20260920k"></script>
+<script src="/js/team.js?v=20260920k"></script>
+<script src="/js/campaigns.js?v=20260920k"></script>
 </body>
 </html>

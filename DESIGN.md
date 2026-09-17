@@ -871,6 +871,29 @@ an empty answer as the refusal it is. The same holds for an update whose
 policy can refuse it. The rule is not "check the error", it is **check that the
 thing happened**.
 
+**A permission is a level in a section, never a switch per verb.** Six section
+booleans plus one global `can_remove` meant the authority to destroy was shared
+by clients, contacts, letters, rate card lines, short links, creators and
+content sets at once: granting it for one granted it for all seven, which is
+not a permission but a blast radius. The obvious correction is a matrix of
+sections against add, edit, delete and share — and it is the wrong axis twice
+over. It is twenty eight switches a group, about sixteen of which name nothing
+this portal does (there is no "share" on Services, no "add" on a log), and this
+page had already removed one permission matrix because a matrix grows a column
+every time the product does. And CRUD cuts across the line that actually
+matters here rather than along it: **add, edit and publish are reversible, and
+a permanent deletion is not**. So the ladder is none, view, work, manage, one
+select per section, and the row reads back as a sentence. Adding an eighth
+section costs one select; adding a fifth verb would have cost a column on every
+one of them.
+
+**What has no ladder keeps a switch.** Billing is a pane inside the client
+record and voiding a letter is one act inside Documents, which this portal
+deliberately keeps apart from deleting one. Neither is a section, so neither
+gets a level; two named switches beside seven selects is the honest shape, and
+pretending they are sections to make the model look uniform would put a
+meaningless View and Work on both.
+
 **A destructive control is drawn behind its capability, or it is a promise the
 database will break.** `body.no-remove` already hid Delete client, the campaign
 danger row and every `is-danger` menu item without `data-soft`; the content

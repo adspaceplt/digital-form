@@ -24,19 +24,53 @@
     el.textContent = text || ''; el.className = 'msg' + (kind ? ' ' + kind : '');
   }
 
-  var FLAGS = [
-    ['can_clients',   'Clients'],
-    ['can_review',    'Content Review'],
-    ['can_campaigns', 'Creator Campaigns'],
-    ['can_links',     'Short Links'],
-    ['can_billing',   'Billing'],
-    ['can_activity',  'Activity record'],
-    ['can_doc_void',  'Void client letters'],
-    /* can_remove is this portal's hard-delete authority across contacts, rate
-       card lines and now letters, so it is named for what it does rather than
-       for the newest thing it governs. */
-    ['can_remove',    'Permanently delete records']
+  /* ACCESS IS A LEVEL PER SECTION.
+     It used to be eight booleans, six of them all-or-nothing section access
+     and one — `can_remove` — a single hard-delete authority shared by
+     clients, contacts, letters, rate card lines, short links, creators and
+     content sets. Granting it so a group could delete one of those granted
+     all of them.
+
+     Four levels, ranked, drawn on reversibility rather than on
+     add/edit/delete/share: add, edit and publish can all be undone (Unpublish
+     exists), a permanent deletion cannot. A matrix of sections against verbs
+     would be twenty eight switches per group, about sixteen of which name
+     nothing this portal does, and this page already replaced one permission
+     matrix for exactly that reason. */
+  var LEVELS = [
+    ['none',   'No access'],
+    ['view',   'View'],
+    ['work',   'Work'],
+    ['manage', 'Manage']
   ];
+  var LEVEL_WORD = { view: 'View', work: 'Work', manage: 'Manage' };
+
+  /* Each section offers the levels that mean something in it. The activity
+     record is a log, so it is read or not read; administering the team is one
+     authority rather than a ladder. */
+  var SECTIONS = [
+    ['clients',   'Clients',           ['none', 'view', 'work', 'manage']],
+    ['review',    'Content Review',    ['none', 'view', 'work', 'manage']],
+    ['campaigns', 'Creator Campaigns', ['none', 'view', 'work', 'manage']],
+    ['links',     'Short Links',       ['none', 'view', 'work', 'manage']],
+    ['services',  'Services',          ['none', 'view', 'work', 'manage']],
+    ['team',      'Team',              ['none', 'manage']],
+    ['activity',  'Activity record',   ['none', 'view']]
+  ];
+
+  /* Two capabilities are not sections and have no ladder: Billing is a pane
+     inside the client record, and voiding a letter is one act inside
+     Documents that this portal deliberately keeps apart from deleting one. */
+  var CAPS = [
+    ['can_billing',  'Billing details'],
+    ['can_doc_void', 'Void client letters']
+  ];
+
+  function accessOf(r) {
+    var a = r && r.access;
+    if (typeof a === 'string') { try { a = JSON.parse(a); } catch (e) { a = null; } }
+    return a || {};
+  }
 
   var state = { rows: [], roles: [], editing: null };
 
@@ -275,12 +309,20 @@
     state.roles.forEach(function (r) { box.appendChild(groupRow(r)); });
   }
 
-  // What the group opens, in its own words. An admin group opens everything,
-  // and listing eight things it can do is a longer way of saying so.
+  /* What the group opens, in its own words, grouped by level so the strongest
+     reads first. An admin group opens everything, and listing every section it
+     can reach is a longer way of saying so. A column per switch was tried and
+     removed: it is a table that grows every time the product does. */
   function grantWord(r) {
     if (r.is_admin) return 'Everything';
-    var on = FLAGS.filter(function (f) { return r[f[0]]; }).map(function (f) { return f[1]; });
-    return on.length ? on.join(' · ') : 'No access';
+    var acc = accessOf(r), parts = [];
+    ['manage', 'work', 'view'].forEach(function (lv) {
+      var named = SECTIONS.filter(function (s) { return acc[s[0]] === lv; })
+                          .map(function (s) { return s[1]; });
+      if (named.length) parts.push(LEVEL_WORD[lv] + ': ' + named.join(', '));
+    });
+    CAPS.forEach(function (c) { if (r[c[0]]) parts.push(c[1]); });
+    return parts.length ? parts.join(' · ') : 'No access';
   }
 
   function groupRow(r) {
@@ -316,6 +358,7 @@
       if (q.error) { msg('groupMsg', q.error.message, 'err'); load(); return; }
       Object.keys(patch).forEach(function (k) { r[k] = patch[k]; });
       log('team.group_changed', r.name, Object.keys(patch).map(function (k) {
+        if (k === 'access') return grantWord({ access: patch.access });
         return k.replace('can_', '') + '=' + patch[k];
       }).join(', '));
       msg('groupMsg', 'Saved.', 'ok');
@@ -324,12 +367,22 @@
     });
   }
 
-  // The switches, drawn once into the panel that adds a group and edits one.
-  var SWITCHES = FLAGS.concat([['is_admin', 'Admin']]);
-  $('grFlags').innerHTML = SWITCHES.map(function (f) {
-    return '<label class="perm"><input type="checkbox" data-f="' + f[0] + '"><span>' + esc(f[1]) + '</span></label>';
-  }).join('');
+  /* One select per section, then the two capabilities and Admin as switches.
+     Seven selects rather than twenty eight tickboxes, and the row above reads
+     back as a sentence. */
+  $('grFlags').innerHTML =
+    '<div class="permgrid">' + SECTIONS.map(function (sec) {
+      return '<label class="permlevel"><span class="field-label">' + esc(sec[1]) + '</span>' +
+        '<select class="select select-sm" data-sec="' + sec[0] + '" aria-label="' + esc(sec[1]) + ' access">' +
+        LEVELS.filter(function (l) { return sec[2].indexOf(l[0]) > -1; }).map(function (l) {
+          return '<option value="' + l[0] + '">' + esc(l[1]) + '</option>';
+        }).join('') + '</select></label>';
+    }).join('') + '</div>' +
+    CAPS.concat([['is_admin', 'Admin (everything)']]).map(function (f) {
+      return '<label class="perm"><input type="checkbox" data-f="' + f[0] + '"><span>' + esc(f[1]) + '</span></label>';
+    }).join('');
   function flagBoxes() { return Array.prototype.slice.call($('grFlags').querySelectorAll('input')); }
+  function levelPicks() { return Array.prototype.slice.call($('grFlags').querySelectorAll('select')); }
 
   // One panel adds a group or edits one, as one panel adds a service.
   function openGroupBox(r) {
@@ -339,10 +392,18 @@
     $('grSave').textContent = r ? 'Save' : 'Add';
     $('groupAddBox').hidden = false;
     $('grName').value = r ? r.name : '';
-    // A new group starts on the section everybody needs and nothing else.
+    // A new group starts able to work the section everybody needs, and to
+    // read nothing else: what it may destroy is always chosen deliberately.
+    var acc = r ? accessOf(r) : null;
+    levelPicks().forEach(function (sel) {
+      var k = sel.getAttribute('data-sec');
+      sel.value = acc ? (acc[k] || 'none') : (k === 'clients' ? 'work' : 'none');
+      if (!sel.value) sel.value = 'none';
+      sel.disabled = Boolean(r && r.slug === 'admin');
+    });
     flagBoxes().forEach(function (cb) {
       var k = cb.getAttribute('data-f');
-      cb.checked = r ? Boolean(r[k]) : k === 'can_clients';
+      cb.checked = r ? Boolean(r[k]) : false;
       cb.disabled = Boolean(r && r.slug === 'admin');
     });
     msg('grMsg', '');
@@ -355,11 +416,14 @@
     if (!name) { msg('grMsg', 'A name is required.', 'err'); return; }
     var flags = {};
     flagBoxes().forEach(function (cb) { flags[cb.getAttribute('data-f')] = cb.checked; });
+    var access = {};
+    levelPicks().forEach(function (sel) { access[sel.getAttribute('data-sec')] = sel.value || 'none'; });
     if (state.editing) {
       var r = state.editing;
       var patch = {};
       if (name !== r.name) patch.name = name;
       Object.keys(flags).forEach(function (k) { if (Boolean(r[k]) !== flags[k]) patch[k] = flags[k]; });
+      if (JSON.stringify(accessOf(r)) !== JSON.stringify(access)) patch.access = access;
       $('groupAddBox').hidden = true; state.editing = null;
       if (Object.keys(patch).length) saveGroup(r, patch);
       return;
@@ -367,7 +431,7 @@
     var slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     if (!slug) { msg('grMsg', 'Use letters or numbers in the name.', 'err'); return; }
     if (state.roles.some(function (r) { return r.slug === slug; })) { msg('grMsg', 'That group already exists.', 'err'); return; }
-    var row = { slug: slug, name: name, position: state.roles.length };
+    var row = { slug: slug, name: name, position: state.roles.length, access: access };
     Object.keys(flags).forEach(function (k) { row[k] = flags[k]; });
     db.from('team_roles').insert(row).then(function (q) {
       if (q.error) { msg('grMsg', q.error.message, 'err'); return; }

@@ -3735,9 +3735,20 @@ body > .shell { width: 100%; }
 .team-who b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
 .team-who b i { font-style: normal; font-size: 11px; font-weight: 600; color: var(--accent); margin-left: 6px; }
 .team-who small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* The switches, in the panel that edits a group. The label is the target, so
-   the row clears the control floor even though the box in it is 18px. */
-.permgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 18px; margin-top: 4px; }
+/* What a group opens, in the panel that edits one: a level per section, then
+   the two capabilities that are not sections. The selects carry the ladder and
+   the tickboxes carry what has no ladder, so the panel says which is which
+   without a line of copy explaining it. */
+.permbox { margin-top: 4px; }
+.permgrid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 18px; margin-top: 4px; }
+/* Label above its field, as every other label in this portal sits. */
+.permlevel { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.permlevel .field-label { margin: 0; }
+/* The capabilities sit under the grid, divided from it, and wrap rather than
+   forcing a column width the section names do not want. */
+.permbox > .perm:first-of-type { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+/* The switches. The label is the target, so the row clears the control floor
+   even though the box in it is 18px. */
 .perm {
   display: flex; align-items: center; gap: 10px; min-height: var(--ctl-h);
   font-size: 13px; color: var(--ink-soft); cursor: pointer;
@@ -3751,16 +3762,22 @@ body > .shell { width: 100%; }
 /* ---------- Access ----------
    What a person may not do is not drawn. The database refuses it anyway;
    this stops the screen offering what will be refused. */
-body.no-remove #deleteClient,
-body.no-remove #campDangerRow,
-body.no-remove #crmClientMenuWrap,
-/* Deleting a content set takes its posts and their approval records with it
-   and there is no restore, so it is the same hard-delete authority as a
-   client, a letter, a contact or a short link. The icon was drawn for
-   everybody, so a group without the permission was offered a control that
-   could not work — and the page reported success when it did not. */
-body.no-remove #deleteSet,
-body.no-remove .kmenu-item[data-a="del"].is-danger:not([data-soft]) { display: none !important; }
+/* A destructive control names the section it destroys in, and is drawn only
+   where that section is managed.
+
+   This used to be one `no-remove` class over a list of ids plus
+   `.kmenu-item[data-a="del"].is-danger:not([data-soft])`, which is a rule
+   that says "any danger item that is not a soft remove" — so one switch
+   covered clients, contacts, letters, rate card lines, short links, creators
+   and content sets alike, and granting it so a group could delete a content
+   set also let them delete a client. The section is on the control now
+   (`data-need="review:manage"`), so the gate is per section and the selector
+   no longer has to guess from what a control is *not*. */
+body.no-manage-clients   [data-need="clients:manage"],
+body.no-manage-review    [data-need="review:manage"],
+body.no-manage-campaigns [data-need="campaigns:manage"],
+body.no-manage-links     [data-need="links:manage"],
+body.no-manage-services  [data-need="services:manage"] { display: none !important; }
 /* What a deletion takes with it, counted from the record rather than
    described. A list, because four facts in a sentence is a sentence nobody
    finishes reading before pressing the button. */
@@ -3780,6 +3797,9 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 /* A phone takes two lines a row: who or which group with the ⋯ beside it,
    then the state or what the group opens underneath. */
 @media (max-width: 640px) {
+  /* Four section columns do not fit a phone; two do, and seven sections is
+     then four rows rather than a column of selects the length of the screen. */
+  .permgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .team-table { padding: 0; }
   .team-head, .group-head { display: none; }
   .team-row, .group-row {
