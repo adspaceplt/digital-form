@@ -11,6 +11,7 @@
 # the repository private changes that.
 exclude:
   - tests
+  - drafts
   - supabase
   - docs
   - CLAUDE.md
