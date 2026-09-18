@@ -655,7 +655,16 @@ had 130px and a campaign's state wrapped under it. Every line of the left part
 a line drawn outside the grid sat on another and read as unaligned. The name
 at 19px and the meta at 12px stand a golden ratio apart, which is what keeps
 the second line reading as a note under the name and not as a second line of
-it.
+it. **The state and the ⋯ in the right part are one line, centred on each
+other.** The shared `.chip` rule pins a chip to the top of its flex row, which
+is right beside a name; beside a 38px control (44px under a finger) it put the
+campaign's state 11px above the ⋯'s centre, so the two things on the right of
+the head read as two lines squeezed together. `.rec-ctl .chip` centres. They
+are deliberately not split onto two lines: a state on a line of its own above
+the name costs every campaign 30px to say what the chip beside the control
+already says, and the console's tables put the state beside the ⋯ on every
+row. `tests/six.js` measures the chip's centre against the ⋯'s at 1280 and
+390.
 
 **A rail is one block per question, and a block with no data is not a block.**
 Each carries a title at the pane's own section size and is divided from the
@@ -695,6 +704,17 @@ what qualifies the money (the unit, the platforms) goes under it, and the ⋯
 ends the first line where the thumb already is. Ninety five pixels, and the
 whole card on one screen. The same shape now carries the rate card and the
 creator roster (`.cat-row`, `.cr-row`: `"name rate act" / "meta meta meta"`).
+
+**A row is the same height whether or not its ⋯ is drawn.** The rate card
+draws the ⋯ for an admin only, and on the first line of the phone row its 44px
+target set that line's height: the same service was 97px on an admin's phone
+and 68px on everybody else's, with the name pinned to the top of the tall one
+and the unit floating 30px under it. Two people comparing screens saw two
+different lists. The ⋯ takes the negative block margin the creator roster's
+already had (`margin-block: calc((22px - var(--ctl-h)) / 2)`), so its
+footprint is the name line's and its target is still 44px; the row is 73px for
+everyone. A control whose presence depends on a permission must never be what
+sizes the row it sits in.
 
 **An instruction lasts as long as it is needed, and a tooltip is not one.**
 This portal carries no explanatory copy, because a line that explains a step is
