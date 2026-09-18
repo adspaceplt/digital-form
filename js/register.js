@@ -188,6 +188,7 @@
         '<div class="kmenu" data-menu hidden>' +
           (d.source === 'portal' ? menuItem('download', 'Download') : '') +
           (d.file_url ? menuItem('open', 'Open file') : '') +
+          (d.source === 'manual' ? menuItem('edit', 'Edit') : '') +
           (d.voided_at ? '' : menuItem('void', 'Void', 'is-danger', need)) +
           menuItem('del', 'Delete permanently', 'is-danger', need) +
         '</div>' +
@@ -198,6 +199,7 @@
       LET.download(d, function (warn) { if (warn) say(warn, 'err'); });
     });
     on('open', function () { window.open(d.file_url, '_blank', 'noopener'); });
+    on('edit', function () { openAdd(d, onChange); });
     on('void', function () { openVoid(d, onChange); });
     on('del', function () { openDelete(d, onChange); });
     return el;
@@ -389,41 +391,58 @@
   }
 
   // ---- A serial added by hand ------------------------------------------------
-  function openAdd() {
+  /* The same sheet adds a row and edits a hand-added one: with a row the
+     serial is read only, because a wrong serial is deleted and added again
+     so the deletions remember it. */
+  var editing = null;   // { d, then }
+  function openAdd(d, onChange) {
     if (!(may('register', 'work') || mayFamily('client', 'work'))) return;
-    sayTo = 'regMsg';
+    if (!(d && d.id)) d = null;
+    editing = d ? { d: d, then: onChange } : null;
+    if (!d) sayTo = 'regMsg';
     msg('regAddMsg', '');
     var go = function () {
       fillClients();
       var sel = $('regAddClient');
       sel.innerHTML = $('docClient').innerHTML;
-      $('regAddSerial').value = ''; $('regAddKind').value = ''; $('regAddWho').value = '';
-      $('regAddNote').value = ''; $('regAddUrl').value = '';
-      $('regAddDate').value = today();
-      $('regAddFam').value = may('register', 'work') ? 'other' : 'client';
+      var rc = (d && d.recipient) || {};
+      $('regAddTitle').textContent = d ? 'Edit ' + d.serial : 'Add entry';
+      $('regAddGo').textContent = d ? 'Save' : 'Add';
+      $('regAddSerial').value = d ? d.serial : '';
+      $('regAddSerial').readOnly = Boolean(d);
+      $('regAddKind').value = d ? (d.kind || '') : '';
+      $('regAddWho').value = d ? (rc.name || '') : '';
+      $('regAddNote').value = d ? (d.note || '') : '';
+      $('regAddUrl').value = d ? (d.file_url || '') : '';
+      $('regAddDate').value = d ? String(d.issued_at || '').slice(0, 10) : today();
+      $('regAddFam').value = d ? d.family : (may('register', 'work') ? 'other' : 'client');
+      sel.value = d ? (d.client_id || '') : '';
       $('regAddSheet').hidden = false;
-      $('regAddSerial').focus();
+      (d ? $('regAddKind') : $('regAddSerial')).focus();
     };
     if (state.clients.length) go(); else loadPeople(go);
   }
-  function shutAdd() { $('regAddSheet').hidden = true; }
+  function shutAdd() { $('regAddSheet').hidden = true; editing = null; }
   function sendAdd() {
     var serial = $('regAddSerial').value.trim(), kind = $('regAddKind').value.trim();
     if (!serial) { msg('regAddMsg', 'A reference is required.', 'err'); $('regAddSerial').focus(); return; }
     if (!kind) { msg('regAddMsg', 'Say what kind of document it is.', 'err'); $('regAddKind').focus(); return; }
     var go = $('regAddGo');
     go.disabled = true;
-    LET.addManual({
+    var fields = {
       serial: serial, family: $('regAddFam').value, kind: kind, issued_at: $('regAddDate').value || null,
       recipient: $('regAddWho').value.trim(), client: $('regAddClient').value || null,
       note: $('regAddNote').value.trim(), file_url: $('regAddUrl').value.trim()
-    }, function (err, out) {
+    };
+    var was = editing;
+    var done = function (err, out) {
       go.disabled = false;
       if (err) { msg('regAddMsg', err, 'err'); return; }
       shutAdd();
-      say(out.serial + ' added.', 'ok');
-      load();
-    });
+      say(out.serial + (was ? ' saved.' : ' added.'), 'ok');
+      if (was && was.then) was.then(); else load();
+    };
+    if (was) LET.updateManual(was.d, fields, done); else LET.addManual(fields, done);
   }
 
   // ---- Void and delete -------------------------------------------------------
@@ -454,7 +473,7 @@
   function wire() {
     var on = function (id, fn) { var el = $(id); if (el) el.addEventListener('click', fn); };
     on('regIssue', function () { openIssue({}); });
-    on('regAdd', openAdd);
+    on('regAdd', function () { openAdd(null); });
     on('docClose', shutIssue); on('docCancel', shutIssue); on('docGo', sendIssue);
     on('regAddClose', shutAdd); on('regAddCancel', shutAdd); on('regAddGo', sendAdd);
     on('rvoidClose', shutVoid); on('rvoidCancel', shutVoid);
