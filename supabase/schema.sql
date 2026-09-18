@@ -3373,3 +3373,430 @@ begin
                             'reverted', coalesce(array_length(ids, 1), 0));
 end $$;
 grant execute on function public.letter_delete(uuid, text, text) to authenticated;
+
+-- ===========================================================================
+-- THE DOCUMENTS REGISTER
+--
+-- Every letter the portal issues, and every serial it is told about, in one
+-- place: the quotation cover that accompanies the accounting portal's
+-- quotation, the letters to clients, the HR letters to colleagues, and the
+-- rows added by hand for documents made elsewhere. The Letter of Offer keeps
+-- its own table above; the Register reads both.
+--
+-- Three rules carry the whole design.
+--   1. The serial is the database's to make, per family, and the person may
+--      overwrite it where the number comes from outside (the accounting
+--      portal's quotation serial). A serial is never reused: a deleted one is
+--      remembered.
+--   2. HR is its own section in the access ladder. An HR row is unreadable
+--      without `hr` view, its serial carries a staff code, and the activity
+--      record is told that an HR letter was issued and nothing about whom.
+--   3. Verification answers an exact serial with the kind, the date and
+--      whether it stands, and never the recipient. It is granted to anon,
+--      because the footer of every letter names a public page.
+-- ===========================================================================
+
+-- 1. The people who are written to, and who sign. A colleague carries a staff
+--    code (the HR serial is built from it) and a designation (printed under
+--    the signature). Both are typed on the Team page.
+alter table public.team_members add column if not exists staff_code text;
+alter table public.team_members add column if not exists designation text;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'team_members_staff_code_shape') then
+    alter table public.team_members add constraint team_members_staff_code_shape
+      check (staff_code is null or staff_code ~ '^[A-Z0-9]{3,8}$');
+  end if;
+end $$;
+create unique index if not exists team_members_staff_code_idx
+  on public.team_members (upper(staff_code)) where staff_code is not null and staff_code <> '';
+
+-- 2. The kinds. One row per letter type: which family it belongs to, the
+--    segment it puts in the serial, and the words it starts with. The seed is
+--    a first run into an empty table, as the rate card's is: the wording is
+--    the team's to edit and a seed that ran every time would put it back.
+create table if not exists public.doc_types (
+  id         text primary key,
+  family     text not null check (family in ('quote_cover', 'client', 'hr')),
+  code       text,
+  name       text not null,
+  title      text not null default '',
+  salutation text not null default 'Dear Sir/Madam,',
+  closing    text not null default 'Yours sincerely,',
+  body_en    text not null default '',
+  body_zh    text not null default '',
+  body_ms    text not null default '',
+  signed     boolean not null default true,
+  position   int not null default 0,
+  active     boolean not null default true
+);
+alter table public.doc_types enable row level security;
+drop policy if exists doc_types_read on public.doc_types;
+create policy doc_types_read on public.doc_types for select to authenticated using (public.is_team());
+
+insert into public.doc_types (id, family, code, name, title, salutation, closing, body_en, body_zh, body_ms, signed, position)
+select v.* from (values
+  ('quote_cover', 'quote_cover', null, 'Quotation cover', 'QUOTATION FOR DIGITAL MARKETING SERVICES',
+   'Dear Sir/Madam,', 'Yours sincerely,',
+   E'We are pleased to submit our quotation for your consideration. It has been prepared based on the scope and requirements discussed, with full details set out in the attached quotation.\n\nShould you need any clarification or additional information, please do not hesitate to reach out. We are happy to provide further materials to support your evaluation.\n\nThank you for the opportunity. We look forward to working with you and your team.',
+   E'我們很榮幸能為貴司提呈本次報價。此報價乃根據貴司需求擬定，詳細內容請見附件報價單。\n\n若在審閱過程中有任何疑問或需要補充資料，歡迎隨時與我們聯繫。\n\n感謝貴司給予此次機會，期待有幸與貴司團隊展開合作。',
+   E'Dengan sukacitanya kami mengemukakan sebut harga ini untuk pertimbangan pihak tuan/puan. Sebut harga ini telah disediakan berdasarkan skop dan keperluan yang telah dibincangkan, dengan butiran lengkap disertakan dalam dokumen yang dilampirkan.\n\nSekiranya pihak tuan/puan memerlukan sebarang penjelasan atau maklumat lanjut, sila hubungi kami. Kami dengan senang hati akan membantu dan menyediakan maklumat tambahan yang diperlukan untuk penilaian pihak tuan/puan.\n\nTerima kasih atas peluang yang diberikan. Kami menantikan peluang untuk bekerjasama dengan pihak tuan/puan dan pasukan anda.',
+   false, 10),
+  ('thanks', 'client', 'SC', 'Thank-you letter', 'WITH APPRECIATION',
+   'Dear Sir/Madam,', 'Yours sincerely,',
+   E'On behalf of the team, we would like to extend our sincere appreciation for the opportunity to serve as your marketing partner throughout this engagement. It has been a privilege to support your brand and contribute to your business objectives.\n\nWe place high importance on the feedback of our clients, as it enables us to refine and enhance the quality of our services. At your convenience, we would be grateful if you could share your experience with us through the following link: https://go.adspace.me/review. Your input will be invaluable to our continuous improvement efforts.\n\nWhile this engagement is drawing to a close, we wish to emphasise that our doors remain open for future collaboration opportunities. Should there be any new initiatives or campaigns where our expertise may be of value, we would be delighted to support your brand once again.\n\nThank you once more for the trust and confidence you have placed in us. We look forward to the possibility of building upon this relationship in the future.',
+   '', '', true, 20),
+  ('client_letter', 'client', 'GL', 'Letter to client', '',
+   'Dear Sir/Madam,', 'Yours sincerely,', '', '', '', true, 30),
+  ('hr_confirm', 'hr', 'E', 'Confirmation of employment', 'CONFIRMATION OF EMPLOYMENT',
+   'Dear {first name},', 'Warm regards,',
+   E'We are pleased to officially confirm your position as {role} with us, effective {effective date}. This follows a successful completion of your probationary period which commenced on {start date}.\n\nFollowing your confirmation, the terms of your employment outlined in your initial employment contract will remain in effect, with the following additions or modifications:\n\nSalary: RM {salary}/month (subject to statutory deductions)\n\nWe trust that you will continue to work with dedication and commitment, and we encourage you to further develop your skills and grow professionally within our organisation.\n\nShould you have any questions regarding your confirmation or any other matters, please do not hesitate to contact your Direct Manager.\n\nCongratulations on your confirmation! We look forward to your continued contributions and a successful journey ahead with ADSPACE PLT.',
+   '', '', true, 40),
+  ('hr_letter', 'hr', 'GL', 'HR letter', '',
+   'Dear {first name},', 'Warm regards,', '', '', '', true, 50)
+) as v(id, family, code, name, title, salutation, closing, body_en, body_zh, body_ms, signed, position)
+where not exists (select 1 from public.doc_types);
+
+-- 3. The documents. A portal row holds the whole snapshot the PDF is drawn
+--    from, so it is redrawn exactly as issued; a manual row holds the serial
+--    and what is known about it. The serial is unique across the register
+--    and, through serial_taken(), across the Letters of Offer and the
+--    deletions as well.
+create table if not exists public.documents (
+  id          uuid primary key default gen_random_uuid(),
+  type_id     text references public.doc_types(id) on delete set null,
+  family      text not null check (family in ('quote_cover', 'client', 'hr', 'other')),
+  kind        text not null,
+  serial      text not null,
+  client_id   uuid references public.clients(id) on delete set null,
+  member_id   uuid references public.team_members(id) on delete set null,
+  issued_at   date not null default current_date,
+  title       text not null default '',
+  salutation  text not null default '',
+  closing     text not null default '',
+  recipient   jsonb not null default '{}'::jsonb,
+  body        jsonb not null default '{}'::jsonb,
+  languages   text[] not null default '{en}',
+  signatory   jsonb,
+  signed      boolean not null default true,
+  source      text not null default 'portal' check (source in ('portal', 'manual')),
+  file_url    text,
+  note        text,
+  issued_by   text,
+  idem_key    text,
+  created_at  timestamptz not null default now(),
+  voided_at   timestamptz,
+  voided_by   text,
+  void_reason text
+);
+create unique index if not exists documents_serial_idx on public.documents (upper(serial));
+create index if not exists documents_client_idx on public.documents (client_id);
+create index if not exists documents_member_idx on public.documents (member_id);
+create index if not exists documents_created_idx on public.documents (created_at desc);
+
+create table if not exists public.document_deletions (
+  id         uuid primary key default gen_random_uuid(),
+  serial     text not null,
+  family     text not null,
+  kind       text,
+  actor      text,
+  reason     text,
+  deleted_at timestamptz not null default now()
+);
+alter table public.document_deletions enable row level security;
+
+-- Who may do what, by family. A client's documents belong to the client
+-- record as much as to the Register, so either section's level opens them;
+-- an HR letter answers to the HR section and to nothing else.
+create or replace function public.register_may(p_family text, p_level text)
+returns boolean
+language sql security definer stable set search_path = public as $$
+  select case
+    when p_family = 'hr'    then public.allowed('hr', p_level)
+    when p_family = 'other' then public.allowed('register', p_level)
+    else public.allowed('register', p_level) or public.allowed('clients', p_level)
+  end
+$$;
+grant execute on function public.register_may(text, text) to authenticated;
+
+alter table public.documents enable row level security;
+drop policy if exists documents_read on public.documents;
+create policy documents_read on public.documents for select to authenticated
+  using (public.register_may(family, 'view'));
+-- Every write goes through a function below; there is no insert, update or
+-- delete policy on the table, and PostgREST refuses them all.
+
+-- A serial is spent once: on the register, on a Letter of Offer, or in the
+-- record of a deletion.
+create or replace function public.serial_taken(p_serial text)
+returns boolean
+language sql security definer stable set search_path = public as $$
+  select exists (select 1 from public.documents where upper(serial) = upper(btrim(p_serial)))
+      or exists (select 1 from public.client_documents where upper(number) = upper(btrim(p_serial)))
+      or exists (select 1 from public.document_deletions where upper(serial) = upper(btrim(p_serial)))
+$$;
+grant execute on function public.serial_taken(text) to authenticated;
+
+-- 4. Issuing. The serial rules, per family:
+--      quote cover  typed, from the accounting portal (AQT2607003)
+--      client       AD/[SA/]{client code}/{type}, SA where the client has
+--                   engaged a service (any confirmed line, or a client that
+--                   has been Active)
+--      hr           ADHR/{staff code}/{type}{YYMM}
+--    A typed serial is accepted for any family; a built one takes a numeric
+--    suffix where the same client already holds the same type.
+create or replace function public.issue_document(
+  p_type      text,
+  p_client    uuid,
+  p_member    uuid,
+  p_serial    text,
+  p_issued_at date,
+  p_title     text,
+  p_recipient jsonb,
+  p_body      jsonb,
+  p_signatory jsonb,
+  p_languages text[],
+  p_idem      text,
+  p_salutation text default null
+)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  who     text := lower(auth.jwt() ->> 'email');
+  t       public.doc_types%rowtype;
+  cl      public.clients%rowtype;
+  mb      public.team_members%rowtype;
+  me      public.team_members%rowtype;
+  v_old   public.documents%rowtype;
+  v_serial text;
+  v_base  text;
+  v_n     int;
+  v_id    uuid;
+  v_engaged boolean;
+  v_langs text[];
+begin
+  select * into t from public.doc_types where id = p_type and active;
+  if t.id is null then return jsonb_build_object('error', 'no-type'); end if;
+  if not public.register_may(t.family, 'work') then return jsonb_build_object('error', 'not-allowed'); end if;
+
+  if coalesce(btrim(p_idem), '') <> '' then
+    select * into v_old from public.documents where idem_key = btrim(p_idem) limit 1;
+    if v_old.id is not null then
+      return jsonb_build_object('ok', true, 'repeat', true, 'id', v_old.id, 'serial', v_old.serial);
+    end if;
+  end if;
+
+  if t.family in ('quote_cover', 'client') then
+    if p_client is null then return jsonb_build_object('error', 'no-client'); end if;
+    select * into cl from public.clients where id = p_client;
+    if cl.id is null then return jsonb_build_object('error', 'no-client'); end if;
+  end if;
+  if t.family = 'hr' then
+    if p_member is null then return jsonb_build_object('error', 'no-member'); end if;
+    select * into mb from public.team_members where id = p_member;
+    if mb.id is null then return jsonb_build_object('error', 'no-member'); end if;
+    if coalesce(btrim(mb.staff_code), '') = '' then return jsonb_build_object('error', 'no-staff-code'); end if;
+  end if;
+
+  -- A signed kind is signed by a person, never by a permission.
+  if t.signed then
+    if coalesce(btrim(p_signatory ->> 'name'), '') = '' then return jsonb_build_object('error', 'no-signatory'); end if;
+    if not public.issuer_name_ok(p_signatory ->> 'name') then
+      return jsonb_build_object('error', 'issuer-name', 'name', p_signatory ->> 'name');
+    end if;
+  end if;
+
+  v_serial := nullif(btrim(coalesce(p_serial, '')), '');
+  if v_serial is null then
+    if t.family = 'quote_cover' then return jsonb_build_object('error', 'serial-required'); end if;
+    if t.family = 'client' then
+      if coalesce(btrim(cl.client_code), '') = '' then return jsonb_build_object('error', 'no-client-code'); end if;
+      v_engaged := cl.stage in ('active', 'paused', 'past')
+                or exists (select 1 from public.client_services s where s.client_id = cl.id and s.state = 'confirmed');
+      v_base := 'AD/' || case when v_engaged then 'SA/' else '' end || cl.client_code || '/' || coalesce(t.code, 'GL');
+    else
+      v_base := 'ADHR/' || upper(mb.staff_code) || '/' || coalesce(t.code, 'GL') ||
+                to_char(timezone('Asia/Kuala_Lumpur', now()), 'YYMM');
+    end if;
+    v_serial := v_base; v_n := 1;
+    while public.serial_taken(v_serial) loop
+      v_n := v_n + 1; v_serial := v_base || '-' || v_n;
+    end loop;
+  else
+    if v_serial !~ '^[A-Za-z0-9/._-]{3,40}$' then return jsonb_build_object('error', 'serial-shape'); end if;
+    if public.serial_taken(v_serial) then return jsonb_build_object('error', 'serial-taken'); end if;
+  end if;
+
+  v_langs := coalesce(p_languages, '{en}');
+  if array_length(v_langs, 1) is null then v_langs := '{en}'; end if;
+
+  select * into me from public.team_members where lower(email) = who and active limit 1;
+
+  insert into public.documents
+    (type_id, family, kind, serial, client_id, member_id, issued_at, title, salutation, closing,
+     recipient, body, languages, signatory, signed, source, issued_by, idem_key)
+  values
+    (t.id, t.family, t.name, v_serial,
+     case when t.family = 'hr' then null else p_client end,
+     case when t.family = 'hr' then p_member else null end,
+     coalesce(p_issued_at, (timezone('Asia/Kuala_Lumpur', now()))::date),
+     coalesce(nullif(btrim(p_title), ''), t.title),
+     coalesce(nullif(btrim(p_salutation), ''), t.salutation), t.closing,
+     coalesce(p_recipient, '{}'::jsonb), coalesce(p_body, '{}'::jsonb), v_langs,
+     case when t.signed then p_signatory else null end, t.signed, 'portal',
+     coalesce(me.name, who), nullif(btrim(p_idem), ''))
+  returning id into v_id;
+
+  -- The record is told an HR letter was issued and nothing about whom: the
+  -- Activity record is read by more people than HR is.
+  if t.family = 'hr' then
+    insert into public.activity_log (actor, action, subject, detail)
+    values (who, 'document.issued', 'HR', t.name);
+  else
+    insert into public.activity_log (actor, action, subject, detail)
+    values (who, 'document.issued', cl.name, v_serial || ' · ' || t.name);
+  end if;
+  return jsonb_build_object('ok', true, 'id', v_id, 'serial', v_serial);
+exception
+  when unique_violation then
+    if coalesce(btrim(p_idem), '') <> '' then
+      select * into v_old from public.documents where idem_key = btrim(p_idem) limit 1;
+      if v_old.id is not null then
+        return jsonb_build_object('ok', true, 'repeat', true, 'id', v_old.id, 'serial', v_old.serial);
+      end if;
+    end if;
+    return jsonb_build_object('error', 'serial-taken');
+end $$;
+grant execute on function public.issue_document(text, uuid, uuid, text, date, text, jsonb, jsonb, jsonb, text[], text, text) to authenticated;
+
+-- 5. A serial added by hand: a document made elsewhere (the accounting
+--    portal, an older Word letter) that the verify page should still answer.
+create or replace function public.register_add(
+  p_serial    text,
+  p_family    text,
+  p_kind      text,
+  p_issued_at date,
+  p_recipient text,
+  p_client    uuid,
+  p_note      text,
+  p_file_url  text
+)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  who   text := lower(auth.jwt() ->> 'email');
+  me    public.team_members%rowtype;
+  v_serial text := nullif(btrim(coalesce(p_serial, '')), '');
+  v_fam text := coalesce(nullif(btrim(p_family), ''), 'other');
+  v_id  uuid;
+  cl    public.clients%rowtype;
+begin
+  if v_fam not in ('quote_cover', 'client', 'hr', 'other') then return jsonb_build_object('error', 'bad-family'); end if;
+  if not public.register_may(v_fam, 'work') then return jsonb_build_object('error', 'not-allowed'); end if;
+  if v_serial is null then return jsonb_build_object('error', 'serial-required'); end if;
+  if v_serial !~ '^[A-Za-z0-9/._-]{3,40}$' then return jsonb_build_object('error', 'serial-shape'); end if;
+  if public.serial_taken(v_serial) then return jsonb_build_object('error', 'serial-taken'); end if;
+  if coalesce(btrim(p_kind), '') = '' then return jsonb_build_object('error', 'kind-required'); end if;
+  if p_client is not null then select * into cl from public.clients where id = p_client; end if;
+  select * into me from public.team_members where lower(email) = who and active limit 1;
+
+  insert into public.documents
+    (family, kind, serial, client_id, issued_at, recipient, signed, source, file_url, note, issued_by)
+  values
+    (v_fam, btrim(p_kind), v_serial, cl.id, coalesce(p_issued_at, current_date),
+     jsonb_build_object('name', coalesce(btrim(p_recipient), '')), false, 'manual',
+     nullif(btrim(p_file_url), ''), nullif(btrim(p_note), ''), coalesce(me.name, who))
+  returning id into v_id;
+
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, 'register.added',
+          case when v_fam = 'hr' then 'HR' else coalesce(cl.name, btrim(p_recipient), '') end,
+          case when v_fam = 'hr' then btrim(p_kind) else v_serial || ' · ' || btrim(p_kind) end);
+  return jsonb_build_object('ok', true, 'id', v_id, 'serial', v_serial);
+exception
+  when unique_violation then return jsonb_build_object('error', 'serial-taken');
+end $$;
+grant execute on function public.register_add(text, text, text, date, text, uuid, text, text) to authenticated;
+
+-- 6. Void: the row and the serial stay, the document no longer stands. The
+--    verify page answers "voided" from then on.
+create or replace function public.document_set_void(p_doc uuid, p_reason text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  who text := lower(auth.jwt() ->> 'email');
+  d   public.documents%rowtype;
+  cl  public.clients%rowtype;
+begin
+  select * into d from public.documents where id = p_doc;
+  if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.register_may(d.family, 'manage') then return jsonb_build_object('error', 'not-allowed'); end if;
+  if coalesce(btrim(p_reason), '') = '' then return jsonb_build_object('error', 'reason-required'); end if;
+  if d.voided_at is not null then return jsonb_build_object('ok', true, 'repeat', true); end if;
+  update public.documents set voided_at = now(), voided_by = who, void_reason = btrim(p_reason) where id = p_doc;
+  if d.client_id is not null then select * into cl from public.clients where id = d.client_id; end if;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, 'document.voided',
+          case when d.family = 'hr' then 'HR' else coalesce(cl.name, d.recipient ->> 'name', '') end,
+          case when d.family = 'hr' then d.kind else d.serial || ' · ' || btrim(p_reason) end);
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.document_set_void(uuid, text) to authenticated;
+
+-- 7. Delete: permanent, the serial typed back, and remembered so it is never
+--    handed out again.
+create or replace function public.document_delete(p_doc uuid, p_confirm text, p_reason text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  who text := lower(auth.jwt() ->> 'email');
+  d   public.documents%rowtype;
+  cl  public.clients%rowtype;
+begin
+  select * into d from public.documents where id = p_doc;
+  if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.register_may(d.family, 'manage') then return jsonb_build_object('error', 'not-allowed'); end if;
+  if coalesce(btrim(p_reason), '') = '' then return jsonb_build_object('error', 'reason-required'); end if;
+  if upper(btrim(coalesce(p_confirm, ''))) <> upper(d.serial) then return jsonb_build_object('error', 'confirm-mismatch'); end if;
+  insert into public.document_deletions (serial, family, kind, actor, reason)
+  values (d.serial, d.family, d.kind, who, btrim(p_reason));
+  delete from public.documents where id = p_doc;
+  if d.client_id is not null then select * into cl from public.clients where id = d.client_id; end if;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, 'document.deleted',
+          case when d.family = 'hr' then 'HR' else coalesce(cl.name, d.recipient ->> 'name', '') end,
+          case when d.family = 'hr' then d.kind else d.serial || ' · ' || btrim(p_reason) end);
+  return jsonb_build_object('ok', true, 'serial', d.serial);
+end $$;
+grant execute on function public.document_delete(uuid, text, text) to authenticated;
+
+-- 8. Verification, public. One exact serial in, the kind, the date and
+--    whether it stands out. Never the recipient, never the content, no
+--    listing and no partial match: what this gives away is what the footer
+--    of the letter already printed. An HR serial is answered as "HR letter".
+create or replace function public.verify_serial(p_serial text)
+returns jsonb
+language plpgsql security definer stable set search_path = public as $$
+declare
+  s text := upper(btrim(coalesce(p_serial, '')));
+  d public.documents%rowtype;
+  l public.client_documents%rowtype;
+begin
+  if length(s) < 3 or length(s) > 40 then return jsonb_build_object('found', false); end if;
+  select * into d from public.documents where upper(serial) = s limit 1;
+  if d.id is not null then
+    return jsonb_build_object('found', true, 'serial', d.serial,
+      'kind', case when d.family = 'hr' then 'HR letter' else d.kind end,
+      'issued_at', d.issued_at,
+      'state', case when d.voided_at is null then 'valid' else 'voided' end);
+  end if;
+  select * into l from public.client_documents where upper(number) = s limit 1;
+  if l.id is not null then
+    return jsonb_build_object('found', true, 'serial', l.number, 'kind', 'Letter of Offer',
+      'issued_at', l.issued_at,
+      'state', case when l.voided_at is not null then 'voided'
+                    when l.superseded_by is not null then 'replaced'
+                    else 'valid' end);
+  end if;
+  return jsonb_build_object('found', false);
+end $$;
+grant execute on function public.verify_serial(text) to anon, authenticated;

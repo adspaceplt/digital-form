@@ -53,6 +53,11 @@
     ['review',    'Content Review',    ['none', 'view', 'work', 'manage']],
     ['campaigns', 'Creator Campaigns', ['none', 'view', 'work', 'manage']],
     ['links',     'Short Links',       ['none', 'view', 'work', 'manage']],
+    /* The Register is the documents issued and the serials the verify page
+       answers; HR letters are their own section because a colleague's
+       letter is read by fewer people than a client's. */
+    ['register',  'Register',          ['none', 'view', 'work', 'manage']],
+    ['hr',        'HR letters',        ['none', 'view', 'work', 'manage']],
     ['services',  'Services',          ['none', 'view', 'work', 'manage']],
     ['team',      'Team',              ['none', 'manage']],
     ['activity',  'Activity record',   ['none', 'view']]
@@ -169,7 +174,7 @@
   function teamMatch(m) {
     if (teamGroup && m.role !== teamGroup) return false;
     if (!teamFind) return true;
-    return (String(m.name || '') + ' ' + String(m.email || ''))
+    return (String(m.name || '') + ' ' + String(m.email || '') + ' ' + String(m.staff_code || ''))
       .toLowerCase().indexOf(teamFind) > -1;
   }
 
@@ -257,7 +262,12 @@
          and names it when they are not. */
       /* You is a designation, not a live state, so it is the neutral chip the
          rate card gives Inactive and not a word in the accent green. */
-      '<span class="team-who"><b>' + esc(m.name) + (self ? ' <span class="tone">You</span>' : '') + '</b></span>' +
+      '<span class="team-who"><b>' + esc(m.name) + (self ? ' <span class="tone">You</span>' : '') + '</b>' +
+        /* The staff code and the designation are read off the row because
+           the HR serial and the signature on a letter are built from them. */
+        (m.staff_code || m.designation
+          ? '<small>' + esc([m.staff_code, m.designation].filter(Boolean).join(' · ')) + '</small>' : '') +
+      '</span>' +
       '<span class="team-mail">' + esc(m.email || '') + '</span>' +
       '<span class="team-state">' + (m.active ? '' : '<span class="tone">Inactive</span>') + '</span>' +
       /* Mail leaves the building and cannot be recalled, so Send invitation
@@ -453,6 +463,8 @@
     $('teamAddBox').hidden = false;
     $('tmName').value = m ? (m.name || '') : '';
     $('tmEmail').value = m ? (m.email || '') : '';
+    $('tmStaff').value = m ? (m.staff_code || '') : '';
+    $('tmDesig').value = m ? (m.designation || '') : '';
     fillRolePick(); $('tmRole').value = m ? m.role : 'account';
     msg('tmMsg', '');
     $('tmName').focus();
@@ -463,9 +475,14 @@
     var name = ($('tmName').value || '').trim();
     var email = ($('tmEmail').value || '').trim().toLowerCase();
     var role = $('tmRole').value;
+    var staff = ($('tmStaff').value || '').trim().toUpperCase();
+    var desig = ($('tmDesig').value || '').trim();
     if (!name) { msg('tmMsg', 'A name is required.', 'err'); return; }
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg('tmMsg', 'A valid email is required.', 'err'); return; }
     if (!role) { msg('tmMsg', 'A group is required.', 'err'); return; }
+    /* The HR serial is built from it, so it is letters and digits only. */
+    if (staff && !/^[A-Z0-9]{3,8}$/.test(staff)) { msg('tmMsg', 'A staff code is 3 to 8 letters or digits.', 'err'); $('tmStaff').focus(); return; }
+    var fields = { name: name, email: email, role: role, staff_code: staff || null, designation: desig || null };
     if (editingMember) {
       var m = editingMember;
       /* The row's email is the address the console signs in with, so moving it
@@ -475,9 +492,10 @@
           !confirm('Change the sign-in address to ' + email + '?\n\n' + m.name +
                    ' signs in with the new address. Send an invitation so the login is made.')) return;
       $('teamAddBox').hidden = true; editingMember = null;
-      db.from('team_members').update({ name: name, email: email, role: role }).eq('id', m.id).then(function (r) {
+      db.from('team_members').update(fields).eq('id', m.id).then(function (r) {
         if (r.error) {
-          msg('teamMsg', /duplicate|unique/i.test(r.error.message)
+          msg('teamMsg', /staff_code/i.test(r.error.message) ? 'That staff code is already on the list.'
+            : /duplicate|unique/i.test(r.error.message)
             ? 'That email is already on the list.' : r.error.message, 'err');
           return;
         }
@@ -487,10 +505,11 @@
       });
       return;
     }
-    db.from('team_members').insert({ name: name, email: email, role: role, active: true })
+    db.from('team_members').insert(Object.assign({ active: true }, fields))
       .then(function (r) {
         if (r.error) {
-          msg('tmMsg', /duplicate|unique/i.test(r.error.message)
+          msg('tmMsg', /staff_code/i.test(r.error.message) ? 'That staff code is already on the list.'
+            : /duplicate|unique/i.test(r.error.message)
             ? 'That email is already on the list.' : r.error.message, 'err');
           return;
         }

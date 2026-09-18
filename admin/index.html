@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260920t">
+<link rel="stylesheet" href="/css/portal.css?v=20260920u">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,21 +28,21 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260920t"></script>
-<script src="/js/words.js?v=20260920t"></script>
-<script src="/js/copy.js?v=20260920t"></script>
-<script src="/js/ask.js?v=20260920t"></script>
-<script src="/js/state.js?v=20260920t"></script>
-<script src="/js/menu.js?v=20260920t"></script>
-<script src="/js/api.js?v=20260920t"></script>
-<script src="/js/money.js?v=20260920t"></script>
-<script src="/js/mockups.js?v=20260920t"></script>
+<script src="/js/config.js?v=20260920u"></script>
+<script src="/js/words.js?v=20260920u"></script>
+<script src="/js/copy.js?v=20260920u"></script>
+<script src="/js/ask.js?v=20260920u"></script>
+<script src="/js/state.js?v=20260920u"></script>
+<script src="/js/menu.js?v=20260920u"></script>
+<script src="/js/api.js?v=20260920u"></script>
+<script src="/js/money.js?v=20260920u"></script>
+<script src="/js/mockups.js?v=20260920u"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260920t" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260920u" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -102,6 +102,9 @@
       </button>
       <button class="navitem" data-section="links" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.6-5.7l-1.7 1.7"/><path d="M14 10.5a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.6 5.7l1.7-1.7"/></svg><span>Short Links</span>
+      </button>
+      <button class="navitem" data-section="register" type="button" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 15 2 2 4-4"/></svg><span>Register</span>
       </button>
       <button class="navitem" data-section="services" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg><span>Services</span>
@@ -533,6 +536,7 @@
         <!-- The Letter of Offer: the quoted lines for the client to sign, kept as issued. -->
         <div class="viewhead">
           <span class="headmark"><h2>Documents</h2></span>
+          <button class="btn" id="crmIssueDoc" type="button" data-need="clients:work">Issue document</button>
           <button class="btn btn-primary" id="crmCover" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>Issue letter</button>
         </div>
         <div class="msg" id="crmDocMsg"></div>
@@ -1410,6 +1414,30 @@
 
     <!-- ============ Short Links ============ -->
     <!-- ---- Team: who may do what ---- -->
+    <!-- ---- Register: every document issued, and every serial the verify
+         page answers. HR rows reach this list only where the database's own
+         policy lets them. ---- -->
+    <div class="console-body" id="sectionRegister" hidden>
+      <div class="cmdbar">
+        <span class="cmdbar-find">
+          <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+          <input class="input input-sm" id="regFind" type="search" placeholder="Search reference or name" aria-label="Search documents" autocomplete="off">
+        </span>
+        <select class="select select-sm" id="regFam" aria-label="Filter by kind">
+          <option value="">Every kind</option>
+          <option value="quote_cover">Quotation covers</option>
+          <option value="client">Client letters</option>
+          <option value="hr">HR letters</option>
+          <option value="other">Other documents</option>
+        </select>
+        <span class="cmdbar-count" id="regCount"></span>
+        <button class="btn btn-sm" id="regAdd" type="button" hidden>Add entry</button>
+        <button class="btn btn-sm btn-primary" id="regIssue" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
+      </div>
+      <div class="msg" id="regMsg"></div>
+      <div id="regList"></div>
+    </div>
+
     <div class="console-body" id="sectionTeam" hidden>
       <!-- Every console route opens on its command bar. The bar above already
            says Team and the column header says Person, so a "Members" heading
@@ -1434,6 +1462,14 @@
             <input class="input" id="tmEmail" type="email" placeholder="john@adspacestudios.com"></div>
           <div style="flex:0 0 190px"><label class="field-label" for="tmRole">Group</label>
             <select class="select" id="tmRole"></select></div>
+        </div>
+        <!-- The HR serial is built from the staff code and the designation is
+             printed under a signature, so both are kept here with the person. -->
+        <div class="row" style="margin-top:12px">
+          <div style="flex:0 0 190px"><label class="field-label" for="tmStaff">Staff code</label>
+            <input class="input" id="tmStaff" placeholder="AD005" autocapitalize="characters" spellcheck="false"></div>
+          <div><label class="field-label" for="tmDesig">Designation</label>
+            <input class="input" id="tmDesig" placeholder="Marketing Executive"></div>
         </div>
         <div class="row" style="margin-top:14px">
           <button class="btn btn-primary" id="tmSave" type="button">Add</button>
@@ -1688,10 +1724,188 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260920t"></script>
-<script src="/js/documents.js?v=20260920t"></script>
-<script src="/js/crm.js?v=20260920t"></script>
-<script src="/js/team.js?v=20260920t"></script>
-<script src="/js/campaigns.js?v=20260920t"></script>
+<!-- One sheet issues every kind of document: the kind decides which fields
+     draw and what they start with, and the database builds the reference
+     unless one is typed over it. It sits outside the sections, because a
+     sheet inside a hidden section is a sheet nobody can see. -->
+<div class="sheet" id="docSheet" hidden>
+  <div class="sheet-card sheet-wide" role="dialog" aria-modal="true" aria-labelledby="docTitle">
+    <div class="sheet-head">
+      <h3 id="docTitle">Issue document</h3>
+      <button class="iconbtn" id="docClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div class="row">
+        <div><label class="field-label" for="docKind">Document</label>
+          <select class="select" id="docKind"></select></div>
+        <div id="docClientWrap"><label class="field-label" for="docClient">Client</label>
+          <select class="select" id="docClient"></select></div>
+        <div id="docMemberWrap" hidden><label class="field-label" for="docMember">Colleague</label>
+          <select class="select" id="docMember"></select></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div style="flex:0 0 200px"><label class="field-label" for="docSerial">Reference</label>
+          <input class="input" id="docSerial" placeholder="Assigned on issue" autocapitalize="characters" spellcheck="false"></div>
+        <div style="flex:0 0 170px"><label class="field-label" for="docDate">Date</label>
+          <input class="input" id="docDate" type="date"></div>
+        <div><label class="field-label" for="docTitleIn">Title</label>
+          <input class="input" id="docTitleIn" placeholder="Title"></div>
+      </div>
+      <div class="row" style="margin-top:12px" id="docToRow">
+        <div><label class="field-label" for="docTo">To</label>
+          <input class="input" id="docTo" placeholder="COMPANY NAME SDN BHD"></div>
+        <div><label class="field-label" for="docAddr">Address</label>
+          <textarea class="input" id="docAddr" rows="3" placeholder="Address"></textarea></div>
+      </div>
+      <div class="row" style="margin-top:12px" id="docAttnRow">
+        <div><label class="field-label" for="docAttn">Attn</label>
+          <input class="input" id="docAttn" placeholder="John Doe"></div>
+        <div><label class="field-label" for="docAttnRole">Designation</label>
+          <input class="input" id="docAttnRole" placeholder="Designation"></div>
+      </div>
+      <div class="row" style="margin-top:12px" id="docHrRow" hidden>
+        <div><label class="field-label" for="docRole">Position</label>
+          <input class="input" id="docRole" placeholder="Position"></div>
+        <div><label class="field-label" for="docIc">NRIC</label>
+          <input class="input" id="docIc" placeholder="000214-01-XXXX"></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div><label class="field-label" for="docSal">Salutation</label>
+          <input class="input" id="docSal" placeholder="Dear Sir/Madam,"></div>
+        <div id="docLangRow" hidden><span class="field-label">Languages</span>
+          <span class="pboxes">
+            <span class="pbox"><label class="pbox-tick"><input type="checkbox" id="docLangEn" checked disabled> English</label></span>
+            <span class="pbox"><label class="pbox-tick"><input type="checkbox" id="docLangZh"> Chinese</label></span>
+            <span class="pbox"><label class="pbox-tick"><input type="checkbox" id="docLangMs"> Malay</label></span>
+          </span></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div><label class="field-label" for="docBodyEn">Body</label>
+          <textarea class="input" id="docBodyEn" rows="9" placeholder="Body"></textarea></div>
+      </div>
+      <div class="row" style="margin-top:12px" id="docBodyZhWrap" hidden>
+        <div><label class="field-label" for="docBodyZh">Body, Chinese</label>
+          <textarea class="input" id="docBodyZh" rows="6" lang="zh" placeholder="正文"></textarea></div>
+      </div>
+      <div class="row" style="margin-top:12px" id="docBodyMsWrap" hidden>
+        <div><label class="field-label" for="docBodyMs">Body, Malay</label>
+          <textarea class="input" id="docBodyMs" rows="6" placeholder="Kandungan"></textarea></div>
+      </div>
+      <div class="row" style="margin-top:12px" id="docSignRow">
+        <div><label class="field-label" for="docSigName">Signed by</label>
+          <input class="input" id="docSigName" placeholder="John Doe"></div>
+        <div><label class="field-label" for="docSigRole">Designation</label>
+          <input class="input" id="docSigRole" placeholder="Designation"></div>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="docGo" type="button">Issue</button>
+      <button class="btn btn-quiet" id="docCancel" type="button">Cancel</button>
+    </div>
+    <div class="msg" id="docMsg"></div>
+  </div>
+</div>
+
+<!-- A serial made elsewhere, added so the verify page answers it. -->
+<div class="sheet" id="regAddSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="regAddTitle">
+    <div class="sheet-head">
+      <h3 id="regAddTitle">Add entry</h3>
+      <button class="iconbtn" id="regAddClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div class="row">
+        <div><label class="field-label" for="regAddSerial">Reference</label>
+          <input class="input" id="regAddSerial" placeholder="AQT2607003" autocapitalize="characters" spellcheck="false"></div>
+        <div><label class="field-label" for="regAddKind">Document</label>
+          <input class="input" id="regAddKind" placeholder="Quotation"></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div><label class="field-label" for="regAddFam">Kind</label>
+          <select class="select" id="regAddFam">
+            <option value="quote_cover">Quotation cover</option>
+            <option value="client">Client letter</option>
+            <option value="hr">HR letter</option>
+            <option value="other">Other</option>
+          </select></div>
+        <div><label class="field-label" for="regAddDate">Date</label>
+          <input class="input" id="regAddDate" type="date"></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div><label class="field-label" for="regAddClient">Client</label>
+          <select class="select" id="regAddClient"></select></div>
+        <div><label class="field-label" for="regAddWho">Recipient</label>
+          <input class="input" id="regAddWho" placeholder="John Doe"></div>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <div><label class="field-label" for="regAddUrl">File link</label>
+          <input class="input" id="regAddUrl" placeholder="https://…"></div>
+        <div><label class="field-label" for="regAddNote">Note</label>
+          <input class="input" id="regAddNote" placeholder="Note"></div>
+      </div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="regAddGo" type="button">Add</button>
+      <button class="btn btn-quiet" id="regAddCancel" type="button">Cancel</button>
+    </div>
+    <div class="msg" id="regAddMsg"></div>
+  </div>
+</div>
+
+<div class="sheet" id="rvoidSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="rvoidTitle">
+    <div class="sheet-head">
+      <h3 id="rvoidTitle">Void document</h3>
+      <button class="iconbtn" id="rvoidClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <p class="hint" id="rvoidWhat"></p>
+      <label class="field-label" for="rvoidReason">Reason</label>
+      <textarea class="input" id="rvoidReason" rows="3" placeholder="Reason"></textarea>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-warn" id="rvoidGo" type="button">Void document</button>
+      <button class="btn btn-quiet" id="rvoidCancel" type="button">Cancel</button>
+    </div>
+    <div class="msg" id="rvoidMsg"></div>
+  </div>
+</div>
+
+<div class="sheet" id="rdelSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="rdelTitle">
+    <div class="sheet-head">
+      <h3 id="rdelTitle">Delete document permanently</h3>
+      <button class="iconbtn" id="rdelClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <p class="hint" id="rdelWhat"></p>
+      <label class="field-label" for="rdelConfirm">Type the reference to confirm</label>
+      <input class="input" id="rdelConfirm" autocomplete="off" spellcheck="false" placeholder="Reference">
+      <label class="field-label" for="rdelReason" style="margin-top:12px">Reason</label>
+      <textarea class="input" id="rdelReason" rows="3" placeholder="Reason"></textarea>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-danger" id="rdelGo" type="button">Delete permanently</button>
+      <button class="btn btn-quiet" id="rdelCancel" type="button">Cancel</button>
+    </div>
+    <div class="msg" id="rdelMsg"></div>
+  </div>
+</div>
+
+<script src="/js/admin.js?v=20260920u"></script>
+<script src="/js/documents.js?v=20260920u"></script>
+<script src="/js/letters.js?v=20260920u"></script>
+<script src="/js/register.js?v=20260920u"></script>
+<script src="/js/crm.js?v=20260920u"></script>
+<script src="/js/team.js?v=20260920u"></script>
+<script src="/js/campaigns.js?v=20260920u"></script>
 </body>
 </html>

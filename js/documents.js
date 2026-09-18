@@ -291,22 +291,93 @@
     });
     return assetCache[url];
   }
-  function embedFonts(pdf, PDF) {
+  /* The four faces the letterhead uses: body (Slate Book), the heavier lines
+     (Slate Regular), the headings (Slate Medium, falling back to the heavier
+     face where the file is not there) and the wordmark (Optima). `extra` may
+     name a fifth, the Chinese face a letter with a Chinese block embeds; it is
+     fetched only then, and its absence is reported as `cjk: null` so the
+     caller can refuse by name rather than draw boxes. */
+  function embedFonts(pdf, PDF, extra) {
     var std = function () {
       return Promise.all([pdf.embedFont(PDF.StandardFonts.Helvetica), pdf.embedFont(PDF.StandardFonts.HelveticaBold)])
-        .then(function (f) { return { font: f[0], bold: f[1], custom: false }; });
+        .then(function (f) { return { font: f[0], bold: f[1], med: f[1], mark: f[1], custom: false, cjk: null }; });
     };
     if (!ORG.font || !window.fontkit) return std();
     pdf.registerFontkit(window.fontkit);
     var opt = function (url) { return url ? fetchBytes(url).catch(function () { return null; }) : Promise.resolve(null); };
-    return Promise.all([fetchBytes(ORG.font), opt(ORG.fontBold), opt(ORG.fontMark)])
+    var cjkUrl = extra && extra.cjk ? ORG.fontCjk : '';
+    return Promise.all([fetchBytes(ORG.font), opt(ORG.fontBold), opt(ORG.fontMark), opt(ORG.fontMed), opt(cjkUrl)])
       .then(function (b) {
-        return Promise.all([pdf.embedFont(b[0], { subset: true }),
-                            b[1] ? pdf.embedFont(b[1], { subset: true }) : null,
-                            b[2] ? pdf.embedFont(b[2], { subset: true }) : null])
-          .then(function (f) { return { font: f[0], bold: f[1] || f[0], mark: f[2] || f[1] || f[0], custom: true }; });
+        var emb = function (bytes) { return bytes ? pdf.embedFont(bytes, { subset: true }) : null; };
+        return Promise.all([emb(b[0]), emb(b[1]), emb(b[2]), emb(b[3]), emb(b[4])])
+          .then(function (f) {
+            return { font: f[0], bold: f[1] || f[0], mark: f[2] || f[1] || f[0],
+                     med: f[3] || f[1] || f[0], cjk: f[4] || null, custom: true };
+          });
       })
       .catch(std);
+  }
+
+  /* ---- The pen: what every letter draws with ---------------------------
+     One copy of the primitives and one copy of the letterhead, so the Letter
+     of Offer and the letters in js/letters.js cannot come out on two
+     different sheets of paper. `ctx.page` is the page being drawn; the caller
+     owns the cursor. */
+  var W = 595.28, H = 841.89, M = 54, R = W - M;
+  function pen(PDF, fonts, logo) {
+    var font = fonts.font;
+    var ink = PDF.rgb(0.075, 0.094, 0.102), mute = PDF.rgb(0.39, 0.43, 0.44), line = PDF.rgb(0.87, 0.89, 0.89);
+    var p = { page: null, W: W, H: H, M: M, R: R, ink: ink, mute: mute, line: line, fonts: fonts, logo: logo };
+    p.safe = function (s) {
+      s = String(s == null ? '' : s);
+      return fonts.custom ? s : s.replace(/[^\x20-\x7E -ÿ]/g, '-');
+    };
+    p.text = function (s, x, yy, size, f, color) {
+      p.page.drawText(p.safe(s), { x: x, y: yy, size: size || 10, font: f || font, color: color || ink });
+    };
+    p.width = function (s, size, f) { return (f || font).widthOfTextAtSize(p.safe(s), size || 10); };
+    p.right = function (s, xr, yy, size, f, color) { p.text(s, xr - p.width(s, size, f), yy, size, f, color); };
+    p.centre = function (s, yy, size, f, color) { p.text(s, (W - p.width(s, size, f)) / 2, yy, size, f, color); };
+    p.rule = function (yy, x1, x2, heavy) {
+      p.page.drawLine({ start: { x: x1 || M, y: yy }, end: { x: x2 || R, y: yy }, thickness: heavy ? 1 : 0.6, color: heavy ? ink : line });
+    };
+    p.wrap = function (s, max, size, f) {
+      var out = [], cur = '';
+      p.safe(s).split(/\s+/).forEach(function (w) {
+        var t = cur ? cur + ' ' + w : w;
+        if (p.width(t, size, f) > max && cur) { out.push(cur); cur = w; } else cur = t;
+      });
+      if (cur) out.push(cur);
+      return out;
+    };
+    /* Chinese has no spaces to break on, so a run is cut where the next
+       glyph would cross the column. */
+    p.wrapCjk = function (s, max, size, f) {
+      var out = [], cur = '';
+      String(s || '').split('').forEach(function (ch) {
+        if (f.widthOfTextAtSize(cur + ch, size) > max && cur) { out.push(cur); cur = ch; } else cur += ch;
+      });
+      if (cur) out.push(cur);
+      return out;
+    };
+    // The letterhead, in the reference's positions; returns the y under it.
+    p.head = function () {
+      var T = function (top) { return H - top; };
+      p.text('ADspace', M, T(58), 14, fonts.mark || fonts.bold);
+      if (ORG.regno) p.text('Co. Reg.  ' + ORG.regno, M, T(70), 9, font, mute);
+      var ly = T(83);
+      String(ORG.address || '').split(/\r?\n/).filter(Boolean).forEach(function (s) { p.text(s, M, ly, 11); ly -= 12.5; });
+      if (logo) { var mh = 21, mw = logo.width * (mh / logo.height); p.page.drawImage(logo, { x: R - mw, y: T(65), width: mw, height: mh }); }
+      var ry = T(92);
+      [phoneWord(ORG.phone), ORG.email, ORG.website].filter(Boolean).forEach(function (s) { p.right(s, R, ry, 11); ry -= 12.5; });
+      return Math.min(ly, ry) - 10;
+    };
+    // The monogram bottom centre and the page count bottom right.
+    p.footMark = function (i, n) {
+      if (logo) { var fh = 20, fw = logo.width * (fh / logo.height); p.page.drawImage(logo, { x: (W - fw) / 2, y: 30, width: fw, height: fh }); }
+      p.right('Page ' + (i + 1) + ' of ' + n, R, 30, 7.5, font, mute);
+    };
+    return p;
   }
   /* The mark is ADSPACE_ORG.logo, else the header's own mark. A failure to
      load it (most often no CORS on the file) is reported, not hidden. */
@@ -338,57 +409,27 @@
     var PDF = window.PDFLib;
     if (!PDF) return Promise.reject(new Error('PDF library not loaded'));
     var k = KIND[doc.kind] || KIND.offer;
-    var W = 595.28, H = 841.89, M = 54;
     var pdf, fonts, logo;
     return PDF.PDFDocument.create().then(function (p) {
       pdf = p;
       return Promise.all([embedFonts(pdf, PDF), embedLogo(pdf)]);
     }).then(function (got) {
       fonts = got[0]; logo = got[1];
-      var font = fonts.font, bold = fonts.bold, markFont = fonts.mark || bold;
-      var ink = PDF.rgb(0.075, 0.094, 0.102), mute = PDF.rgb(0.39, 0.43, 0.44), line = PDF.rgb(0.87, 0.89, 0.89);
+      var font = fonts.font, bold = fonts.bold;
+      /* The pen holds the primitives and the letterhead; this letter keeps
+         its own cursor and tells the pen which page it is on. */
+      var pn = pen(PDF, fonts, logo);
+      var ink = pn.ink, mute = pn.mute;
+      var text = pn.text, width = pn.width, right = pn.right, rule = pn.rule, wrap = pn.wrap;
       var pages = [];
       var page, y;
-      var safe = function (s) {
-        s = String(s == null ? '' : s);
-        return fonts.custom ? s : s.replace(/[^\x20-\x7E -ÿ]/g, '-');
-      };
-      var text = function (s, x, yy, size, f, color) {
-        page.drawText(safe(s), { x: x, y: yy, size: size || 10, font: f || font, color: color || ink });
-      };
-      var width = function (s, size, f) { return (f || font).widthOfTextAtSize(safe(s), size || 10); };
-      var right = function (s, xr, yy, size, f, color) { text(s, xr - width(s, size, f), yy, size, f, color); };
-      var rule = function (yy, x1, x2, heavy) {
-        page.drawLine({ start: { x: x1 || M, y: yy }, end: { x: x2 || W - M, y: yy }, thickness: heavy ? 1 : 0.6, color: heavy ? ink : line });
-      };
-      var wrap = function (s, max, size, f) {
-        var out = [], cur = '';
-        safe(s).split(/\s+/).forEach(function (w) {
-          var t = cur ? cur + ' ' + w : w;
-          if (width(t, size, f) > max && cur) { out.push(cur); cur = w; } else cur = t;
-        });
-        if (cur) out.push(cur);
-        return out;
-      };
-      var newPage = function () { page = pdf.addPage([W, H]); pages.push(page); y = H - 57; };
+      var newPage = function () { page = pdf.addPage([W, H]); pn.page = page; pages.push(page); y = H - 57; };
       var need = function (h) { if (y - h < 64) newPage(); };
       newPage();
 
-      // The letterhead, on every page: wordmark and registration left, the
-      // monogram and how to reach the office right, in the reference's
-      // positions; the monogram again bottom centre, the page count bottom
-      // right. y counts down from the top of the page.
-      var R = W - M, T = function (top) { return H - top; };
-      var head = function () {
-        text('ADspace', M, T(58), 14, markFont);
-        if (ORG.regno) text('Co. Reg.  ' + ORG.regno, M, T(70), 9, font, mute);
-        var ly = T(83);
-        String(ORG.address || '').split(/\r?\n/).filter(Boolean).forEach(function (s) { text(s, M, ly, 11); ly -= 12.5; });
-        if (logo) { var mh = 21, mw = logo.width * (mh / logo.height); page.drawImage(logo, { x: R - mw, y: T(65), width: mw, height: mh }); }
-        var ry = T(92);
-        [phoneWord(ORG.phone), ORG.email, ORG.website].filter(Boolean).forEach(function (s) { right(s, R, ry, 11); ry -= 12.5; });
-        y = Math.min(ly, ry) - 10;
-      };
+      // The letterhead, on every page; the monogram again bottom centre, the
+      // page count bottom right. y counts down from the top of the page.
+      var head = function () { y = pn.head(); };
       /* Every page names the letter it belongs to, and every page but the one
          that is signed carries a line for the client's initials.
 
@@ -398,9 +439,8 @@
          page is the ordinary commercial answer, and the reference in the foot
          means a page lifted out of this letter still says which letter it is. */
       var foot = function (i, n) {
-        if (logo) { var fh = 20, fw = logo.width * (fh / logo.height); page.drawImage(logo, { x: (W - fw) / 2, y: 30, width: fw, height: fh }); }
+        pn.footMark(i, n);
         text(doc.number, M, 30, 7.5, font, mute);
-        right('Page ' + (i + 1) + ' of ' + n, R, 30, 7.5, font, mute);
         /* The initials go where a hand rests to write them, which is the same
            side of the page the signature is on. They sit a row above the page
            number rather than beside it: the two are the only marks in the
@@ -666,7 +706,7 @@
       y -= 4;
 
       var signPage = page;
-      pages.forEach(function (pg, i) { page = pg; foot(i, pages.length); });
+      pages.forEach(function (pg, i) { page = pg; pn.page = pg; foot(i, pages.length); });
 
       /* The fields are added last, once the page they belong to is settled.
          Their appearance font is Helvetica rather than the letter's own face:
@@ -728,6 +768,9 @@
     issue: issue, download: download, render: render, list: list,
     setVoid: setVoidRpc, remove: removeRpc, KIND: KIND, fileName: fileName,
     setSigned: setSigned, verify: verify, mapOf: mapOf,
-    liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, idemKey: idemKey
+    liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, idemKey: idemKey,
+    // What js/letters.js draws with, so there is one letterhead.
+    pen: pen, embedFonts: embedFonts, embedLogo: embedLogo, letterDate: letterDate,
+    logoWarn: function () { return logoWarn; }
   };
 })();

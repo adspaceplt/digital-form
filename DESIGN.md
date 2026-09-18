@@ -969,6 +969,43 @@ left alone, and one with no leading zero takes its client's market, because a
 Singapore mobile has eight digits and no prefix to replace. One builder, so the
 contact row and the Overview cannot disagree.
 
+**A document is drawn on one letterhead, whichever kind it is.** The Letter of
+Offer held the only copy of the pen: the page size, the margins, the wordmark,
+the address block, the monogram top right and bottom centre, the page count.
+Writing a second letter meant writing those again, and two copies of a
+letterhead drift the way two copies of a colour do. `js/documents.js` exports
+the pen and `js/letters.js` draws the quotation cover, the client letters and
+the HR letters with it, so a change to the letterhead reaches every document
+the portal issues. What a letter says is the type's to seed and the person's
+to edit; where it goes on the page is the engine's alone.
+
+**A reference is answered, never a name.** The verify page every letter's foot
+names takes one exact reference and answers with the kind, the date and
+whether the document stands. It does not list, it does not match a prefix, and
+it never prints who the document was addressed to: an HR letter is answered as
+"HR letter" and nothing more, because the reason a reference is verifiable is
+so a reader can trust the paper in their hand, not so a stranger can learn who
+has been written to. What the page gives away is what the foot of the letter
+already printed.
+
+**HR letters answer to their own section.** A colleague's confirmation letter
+is read by fewer people than a client's thank-you letter, so it is not one more
+family in the Register's ladder but a section of its own (`hr`), gated apart
+from `register` and from `clients`. The Register page opens for either; the
+database's policy decides which rows arrive. The Activity record is told that
+an HR letter was issued, voided or deleted and the kind it was, and not whom it
+concerned, because the record is read by everybody with the Activity section.
+
+**A serial is built by the database and spent once.** Each family has a rule:
+the accounting portal's own reference for a quotation cover, typed; the client
+code with the type's letters for a client letter, with SA where a service has
+been engaged; the staff code and the month for an HR letter. A built serial
+that is already spent takes a numbered suffix; a typed one is refused; a
+deleted one is remembered, so it is never handed out again. The console shows
+the rule's result and lets a person type over it, and never computes the
+serial itself, because two browsers computing the next number is how two
+letters share one.
+
 **A permission is a level in a section, never a switch per verb.** Six section
 booleans plus one global `can_remove` meant the authority to destroy was shared
 by clients, contacts, letters, rate card lines, short links, creators and
