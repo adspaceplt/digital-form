@@ -308,10 +308,18 @@ a { color: inherit; }
    at the control height, which iOS otherwise collapses to nothing. */
 .input[type="date"], .input[type="time"] {
   line-height: 1.5; min-height: var(--ctl-h);
-  appearance: none; -webkit-appearance: none; display: block; text-align: left;
+  appearance: none; -webkit-appearance: none; text-align: left;
+  display: flex; align-items: center;
 }
+/* iOS lays the value out as a block at the top of the field, so with the
+   pill gone it floated against the top edge while the glyph sat on the
+   middle. The value's own box is given the field's inner height and its
+   text is centred in it; the flex centring above covers the same case on
+   any engine that honours it on an input. */
 .input[type="date"]::-webkit-date-and-time-value,
-.input[type="time"]::-webkit-date-and-time-value { text-align: left; min-height: 1.5em; }
+.input[type="time"]::-webkit-date-and-time-value {
+  text-align: left; min-height: calc(var(--ctl-h) - 2px); line-height: calc(var(--ctl-h) - 2px);
+}
 /* Chrome's own picker mark, quietened to the mute ink rather than removed:
    it is the pointer's route into the picker at a desk. */
 .input[type="date"]::-webkit-calendar-picker-indicator,
@@ -2840,7 +2848,9 @@ body.is-plain .topbar { background: var(--chrome); }
 
 /* ---------- Campaign header, in order ----------
    Name, then what it is for, then the facts, then the numbers. */
-.camp-purpose { font-size: 14.5px; color: var(--ink-soft); margin: 0 0 12px; }
+/* The second of the three lines in the campaign's identity, between the name
+   and the meta, on the same margin as both. */
+.camp-purpose { font-size: 14px; color: var(--ink-soft); margin: 0; min-width: 0; overflow-wrap: anywhere; }
 .camp-purpose[hidden] { display: none; }
 
 /* Counts and money on one line, small enough to be read as a row rather than
@@ -4388,9 +4398,19 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 /* On a phone the same two parts, closer: the mark takes less of the row so
    the name keeps its width, and the ⋯ stays where the thumb is. Keyed on the
    console's own width, like every other rule about something inside it. */
-.is-narrow .rec-id { gap: 10px; }
+/* On a phone the two parts become two rows: the mark at the top left and
+   the state with the ⋯ at the top right, then who this is under them on the
+   card's own margin, full width. Beside a 38px mark the name had 130px and
+   a campaign's state wrapped under it while its purpose line, drawn outside
+   the grid, sat on a different margin from the name and the meta: three
+   lines on two margins, which is what reads as unaligned. */
+.is-narrow .rec-id {
+  gap: 10px 12px; align-items: center;
+  grid-template-areas: "mark . ctl" "who who who";
+}
 .is-narrow .rec-mark { width: 38px; height: 38px; font-size: 13px; }
 .is-narrow .rec-name { gap: 6px 10px; }
+.is-narrow .rec-who { gap: 4px; }
 
 /* ---------- The record's rail ----------
    One block per question, each with its own title, divided by the same

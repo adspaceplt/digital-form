@@ -646,10 +646,16 @@ perhaps four times in a client's life; on a phone it and the ⋯ wrapped to a
 line of their own under the name, with the meta below them, which is the wrong
 reading order, and on a desktop the controls sat on the name line, above the
 card's middle on every record that carried a meta line. Two parts on one grid,
-`align-items: center`, and the control is on the middle of the card at every
-width while a long name wraps under itself. The name at 19px and the meta at
-12px stand a golden ratio apart, which is what keeps the second line reading
-as a note under the name and not as a second line of it.
+`align-items: center`, and the control is on the middle of the card at a desk
+while a long name wraps under itself. On a phone the two parts become two
+rows: the mark top left, the state and the ⋯ top right, and who this is under
+them on the card's own margin, full width, because beside a 38px mark the name
+had 130px and a campaign's state wrapped under it. Every line of the left part
+(name, a campaign's purpose, the meta) sits inside that part on one margin;
+a line drawn outside the grid sat on another and read as unaligned. The name
+at 19px and the meta at 12px stand a golden ratio apart, which is what keeps
+the second line reading as a note under the name and not as a second line of
+it.
 
 **A rail is one block per question, and a block with no data is not a block.**
 Each carries a title at the pane's own section size and is divided from the
