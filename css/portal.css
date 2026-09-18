@@ -1435,6 +1435,11 @@ a { color: inherit; }
 
 /* Import progress */
 .progress { margin: 16px 0 4px; }
+/* The console's own hand-in for a creator, on the card's draft step: the
+   file field is a field like its neighbours and the bar under it takes the
+   whole row with no margin of its own, so the step keeps its 12px rhythm. */
+.kupload { grid-column: span 2; margin: 0; }
+.kupload[hidden] { display: none; }
 .progress-head {
   display: flex; justify-content: space-between; align-items: baseline;
   font-size: 12.5px; color: var(--ink-soft); margin-bottom: 6px;
@@ -2112,9 +2117,14 @@ body.is-plain .topbar { background: var(--chrome); }
    ========================================================================= */
 
 /* ---------- Tabs ---------- */
+/* The route level strip (Campaigns / Creators) sits where every other
+   route's command bar sits, and the bar is one block gap under it: it stood
+   18px down and 4px above the bar, so the search on Campaigns opened a
+   strip's height lower than on every other route and the gap under the
+   strip was off the scale. */
 .tabrow {
   display: flex; gap: 4px; border-bottom: 1px solid var(--line);
-  margin: 18px 0 4px;
+  margin: 0 0 12px;
 }
 .tab {
   border: 0; background: none; min-height: var(--ctl-h); padding: 0 14px; border-radius: 9px 9px 0 0;
@@ -3270,7 +3280,20 @@ body > .shell { width: 100%; }
 /* The group is one block, so the table inside it does not add its own 12px
    on top of the 24 that separates two groups: 36px read as a section that
    had lost its heading. */
-.crm-group > .crm-table:last-child { margin-bottom: 0; }
+.crm-group > .crm-table:last-child,
+.crm-group-inner > .crm-table:last-child { margin-bottom: 0; }
+/* The card arrives from its heading and leaves into it: a grid row from 0fr
+   to 1fr is the one height CSS can animate without being told the height,
+   and the inner box clips while it moves. Nothing is clipped at rest: every
+   row ⋯ is placed on the viewport by `ADspaceMenu.place()`. */
+.crm-group-body {
+  display: grid; grid-template-rows: 1fr; opacity: 1;
+  transition: grid-template-rows var(--t-slow) var(--ease), opacity var(--t) var(--ease-out);
+}
+.crm-group.is-shut > .crm-group-body { grid-template-rows: 0fr; opacity: 0; }
+.crm-group-inner { min-height: 0; overflow: hidden; }
+.crm-group-head { transition: margin var(--t-slow) var(--ease); }
+.crm-group.is-shut > .crm-group-head { margin-bottom: 0; }
 .crm-group-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
 .crm-group-head h3 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 .crm-group-head h3 span { font-weight: 500; color: var(--ink-mute); margin-left: 6px; }

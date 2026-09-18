@@ -33,8 +33,8 @@ Open the creator link on a phone, in a normal browser window.
 | 1 | Pick one image | The bar moves, the percentage climbs, the right side reads `Saving` at the end, then `Uploaded.` and a thumbnail |
 | 2 | Look at the console, campaign, that creator's card | The same file is listed under Draft |
 | 3 | Pick two more files at once | The label counts `1/2` then `2/2`, and both appear |
-| 4 | Pick a video over 300 MB | Refused by name before anything uploads: `<file> is larger than 300 MB.` Nothing is added |
-| 5 | Pick a video of roughly 200 to 300 MB | Completes. Time it: a 300 MB file on a domestic line takes several minutes and the bar must keep moving throughout |
+| 4 | Pick a video over 1 GB (1024 MB) | Refused by name before anything uploads: `<file> is larger than 1024 MB.` Nothing is added |
+| 5 | Pick a video of roughly 500 MB to 1 GB | Completes. Time it: a 1 GB file on a domestic line takes many minutes and the bar must keep moving throughout |
 | 6 | Turn flight mode on midway through an upload | Within two minutes it stops and names the file that failed. Nothing is left on a full bar |
 | 7 | Turn flight mode off and pick the same file again | It uploads normally |
 | 8 | Remove one file with its × | It goes, on the creator's page and in the console |
@@ -60,7 +60,7 @@ These do not replace the run above, but they are what the run is confirming:
 
 - `tests/sql.js` runs the whole delivery path against a real Postgres 16: a code
   is issued, an upload is allowed, a file is recorded, several files land on one
-  booking, 300 MB is stored to the byte, submitting moves the step and keeps the
+  booking, 1 GB is stored to the byte, submitting moves the step and keeps the
   caption, a submitted file cannot be pulled back off, an invalid code reaches
   nothing, and the migration applies on its own and again.
 - `tests/creator.js` drives a real browser: both files attach, each goes straight

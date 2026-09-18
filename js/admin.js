@@ -366,7 +366,7 @@
     review: 'Content Review',
     campaigns: 'Creator Campaigns',
     links: 'Short Links',
-    register: 'Register',
+    register: 'Documents',
     services: 'Services',
     team: 'Team'
   };
@@ -702,17 +702,16 @@
       });
       return;
     }
-    /* One register, not a grid of tiles. A card per client answered "which
-       clients are there" and nothing else: how many sets each has, how many
-       are live and whether an access code is on all needed reading the tile,
-       and a tile cannot be read down a column. The same surface the clients
-       directory and the campaign register are. */
-    var table = document.createElement('div');
-    table.className = 'crm-table softpanel crm-register';
-    var head = document.createElement('div');
-    head.className = 'crm-head cr-client-row';
-    head.innerHTML = '<span>Client</span><span>Content sets</span><span>Access</span><span></span>';
-    table.appendChild(head);
+    /* One register, not a grid of tiles, drawn as the one directory shape
+       every console route takes: a heading with the count over a card with
+       its own header row. A card per client answered "which clients are
+       there" and nothing else; a tile cannot be read down a column. */
+    var GRP = window.ADspaceGroup;
+    var table = GRP.table('cr-client-row', ['Client', 'Content sets', 'Access', ''], 'crm-register');
+    var sec = GRP.section({
+      route: 'review', key: 'clients', name: 'Clients', count: rows.length,
+      shut: false, table: function () { return table; }
+    });
 
     rows.forEach(function (c) {
       var row = document.createElement('button');
@@ -742,7 +741,7 @@
           ' \u00b7 ' + live + ' published';
       });
     });
-    box.appendChild(table);
+    box.appendChild(sec);
   }
 
   var GO_CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
@@ -773,13 +772,13 @@
     'client.service':        ['Service line added', 'is-ok', 'clients'],
     'client.service_changed': ['Service line changed', '', 'clients'],
     'client.service_removed': ['Service line removed', 'is-danger', 'clients'],
-    'document.issued':       ['Document issued', 'is-ok', 'clients'],
-    'document.voided':       ['Document voided', 'is-danger', 'clients'],
-    'document.restored':     ['Document restored', 'is-ok', 'clients'],
-    'document.deleted':      ['Document deleted', 'is-danger', 'clients'],
-    'document.reissued':     ['Document reissued', '', 'clients'],
-    'register.added':        ['Register entry added', 'is-ok', 'clients'],
-    'register.edited':       ['Register entry edited', '', 'clients'],
+    'document.issued':       ['Document issued', 'is-ok', 'register'],
+    'document.voided':       ['Document voided', 'is-danger', 'register'],
+    'document.restored':     ['Document restored', 'is-ok', 'register'],
+    'document.deleted':      ['Document deleted', 'is-danger', 'register'],
+    'document.reissued':     ['Document reissued', '', 'register'],
+    'register.added':        ['Document reference added', 'is-ok', 'register'],
+    'register.edited':       ['Document reference edited', '', 'register'],
     'service.added':         ['Rate card line added', 'is-ok', 'services'],
     'service.changed':       ['Rate card line changed', '', 'services'],
     'service.off':           ['Rate card line set inactive', 'is-warn', 'services'],
@@ -851,10 +850,34 @@
     'creator.updated':       ['Creator edited', '', 'campaigns'],
     'creator.removed':       ['Creator removed', 'is-danger', 'campaigns'],
     'creator.off':           ['Creator set inactive', 'is-warn', 'campaigns'],
-    'creator.on':            ['Creator set active', 'is-ok', 'campaigns']
+    'creator.on':            ['Creator set active', 'is-ok', 'campaigns'],
+    /* Written for months and never named here, so each row landed in the
+       record with no label and no section: a tag a function writes is
+       always one this map names. */
+    'qr.created':            ['QR code created', 'is-ok', 'links'],
+    'qr.revoked':            ['QR code revoked', 'is-warn', 'links'],
+    'qr.restored':           ['QR code restored', 'is-ok', 'links'],
+    'document.signed':       ['Letter marked signed', 'is-ok', 'register'],
+    'document.unsigned':     ['Letter signature cleared', 'is-warn', 'register'],
+    'document.verified':     ['Letter verified', 'is-ok', 'register'],
+    'document.superseded':   ['Letter superseded', 'is-warn', 'register'],
+    'campaign.review':       ['Draft decided by client', '', 'campaigns'],
+    'service.override':      ['Service line price overridden', 'is-warn', 'clients'],
+    /* Content Review wrote nothing for the everyday acts on a set. */
+    'set.created':           ['Content set created', 'is-ok', 'review'],
+    'set.renamed':           ['Content set renamed', '', 'review'],
+    'post.added':            ['Posts added', 'is-ok', 'review'],
+    'post.edited':           ['Post edited', '', 'review'],
+    'client.handles':        ['Client handles saved', '', 'review'],
+    'client.profile':        ['Client logo or access code saved', '', 'review'],
+    'client.drive':          ['Drive folder set', '', 'review'],
+    'drive.imported':        ['Drive assets imported', 'is-ok', 'review'],
+    /* A file the team handed in for a creator, from the console. */
+    'campaign.file_added':   ['Draft file uploaded by team', '', 'campaigns']
   };
   var ACT_SECTION = { all: 'Everything', clients: 'Clients', team: 'Team', review: 'Content Review',
-                      campaigns: 'Creator Campaigns', links: 'Short Links', services: 'Services' };
+                      campaigns: 'Creator Campaigns', links: 'Short Links', register: 'Documents',
+                      services: 'Services' };
 
   /* The section only appears for people on the viewer list. The database
      enforces this too, so hiding it here is convenience rather than the
@@ -1046,6 +1069,11 @@
       handle_xhs:    $('eXhs').value.trim() || null
     }).eq('id', state.client.id).then(function (r) {
       if (r.error) { msg('handleMsg', r.error.message, 'err'); return; }
+      logAction('client.handles', state.client.name,
+        ['ig', 'fb', 'tiktok', 'xhs'].map(function (k) {
+          var v = $({ ig: 'eIg', fb: 'eFb', tiktok: 'eTt', xhs: 'eXhs' }[k]).value.trim();
+          return v ? k + '=' + v : '';
+        }).filter(Boolean).join(', '));
       state.client.handle_ig = $('eIg').value.trim() || null;
       state.client.handle_fb = $('eFb').value.trim() || null;
       state.client.handle_tiktok = $('eTt').value.trim() || null;
@@ -1110,6 +1138,10 @@
     db.from('clients').update({ logo_url: logo || null, passcode: pass || null })
       .eq('id', state.client.id).then(function (r) {
         if (r.error) { msg('profileMsg', r.error.message, 'err'); return; }
+        logAction('client.profile', state.client.name,
+          [(logo || null) !== (state.client.logo_url || null) ? 'logo changed' : '',
+           !had && pass ? 'access code added' : had && !pass ? 'access code removed'
+             : pass && pass !== state.client.passcode ? 'access code updated' : ''].filter(Boolean).join(', ') || 'no change');
         state.client.logo_url = logo || null;
         state.client.passcode = pass || null;
         paintLock();
@@ -1233,6 +1265,7 @@
       client_id: state.client.id, title: title, published: false
     }).select().single().then(function (r) {
       if (r.error) { msg('setsMsg', r.error.message, 'err'); return; }
+      logAction('set.created', state.client.name + ' — ' + title, '');
       loadBatches();
       openBatch(r.data);
     });
@@ -1363,6 +1396,7 @@
       save: function (title) {
         db.from('batches').update({ title: title }).eq('id', state.batch.id).then(function (r) {
           if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
+          logAction('set.renamed', state.client.name + ' — ' + title, 'was ' + (state.batch.title || ''));
           state.batch.title = title;
           paintSetHeader();
           loadBatches();
@@ -2085,7 +2119,10 @@
 
       // remember the folder so next month is one click
       db.from('clients').update({ drive_folder: url }).eq('id', state.client.id)
-        .then(function () { state.client.drive_folder = url; });
+        .then(function () {
+          if (state.client.drive_folder !== url) logAction('client.drive', state.client.name, url);
+          state.client.drive_folder = url;
+        });
 
       return alreadyImported().then(function (seen) {
         driveFiles = files.map(function (f) {
@@ -2363,6 +2400,8 @@
         });
         db.from('posts').insert(rows).then(function (res) {
           if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
+          logAction('post.added', state.client.name + ' — ' + (state.batch.title || ''),
+            rows.length + (rows.length === 1 ? ' post' : ' posts'));
           clearDrafts();
           msg('setMsg', rows.length + ' post' + (rows.length === 1 ? '' : 's') + ' added.', 'ok');
           loadPosts();
@@ -2630,6 +2669,9 @@
         };
         db.from('posts').update(patch).eq('id', p.id).then(function (res) {
           if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
+          /* Which fields changed, so the row says what was edited. */
+          logAction('post.edited', state.client.name + ' — ' + (state.batch.title || ''),
+            'Post ' + (p.position != null ? p.position + 1 : '') + ': ' + Object.keys(patch).join(', '));
           Object.keys(patch).forEach(function (k) { p[k] = patch[k]; });
           m = (p.media || [])[0] || {};
           editMedia = null;
@@ -2756,17 +2798,30 @@
       return;
     }
 
-    var table = document.createElement('div');
-    table.className = 'crm-table softpanel';
-    /* No Status column: Live is true of nearly every row, so the heading stood
-       over a cell that was empty almost always and read as something broken.
-       The exception is named beside the slug instead, the way the rate card
-       names an inactive service. The last cell stays empty over the actions,
-       the way every other table in this console does. */
-    table.innerHTML = '<div class="crm-head link-row"><span>Short link</span>' +
-      '<span>Destination</span><span>Label</span><span></span></div>';
+    /* Live links and paused ones, a card each, the shape every directory in
+       this console takes; Paused stays shut by default and a filter opens
+       both. No Status column: Live is true of nearly every row, so the
+       heading stood over a cell that was empty almost always and read as
+       something broken. The exception is named beside the slug, the way the
+       rate card names an inactive service. */
+    var GRP = window.ADspaceGroup;
+    var liveRows = shown.filter(function (l) { return l.active !== false; });
+    var pausedRows = shown.filter(function (l) { return l.active === false; });
+    [['live', 'Live', liveRows, false], ['paused', 'Paused', pausedRows, true]].forEach(function (g) {
+      if (!g[2].length) return;
+      box.appendChild(GRP.section({
+        route: 'links', key: g[0], name: g[1], count: g[2].length,
+        shut: !filtered && GRP.shut('links', g[0], g[3], g[2].length === shown.length),
+        table: function () {
+          var table = GRP.table('link-row', ['Short link', 'Destination', 'Label', '']);
+          GRP.more(table, g[2], 30, 'links', linkRow);
+          return table;
+        }
+      }));
+    });
+  }
 
-    shown.forEach(function (l) {
+  function linkRow(l) {
       var off = l.active === false;
       var row = document.createElement('div');
       row.className = 'link-row' + (off ? ' is-off' : '');
@@ -2798,9 +2853,7 @@
         shutLinkMenus(); removeLink(l);
       });
       wireLinkMenu(row);
-      table.appendChild(row);
-    });
-    box.appendChild(table);
+      return row;
   }
 
   function shutLinkMenus() {

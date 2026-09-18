@@ -210,8 +210,15 @@
      nobody took up is not a campaign they have run. There is deliberately no
      "on a campaign" mark, because a creator is often on several at once, so
      the chip was true of nearly every row and told nobody anything. */
+  /* Every step from Confirmed onward counts as a campaign the creator has
+     run, whichever step it is at now. `submitted` arrived after this list
+     was written and was left out of it, so a creator whose draft was waiting
+     on release showed — in the Campaigns column and came back to `1` when
+     the team released it: a booking that vanishes and reappears with its
+     step is not a record. Only an offer never confirmed, a withdrawal and a
+     replacement stay out. */
   var DONE_STATES = ['confirmed', 'pending_visit', 'pending_delivery', 'pending_draft',
-                     'reviewing', 'changes', 'scheduled', 'posted', 'completed'];
+                     'submitted', 'reviewing', 'changes', 'scheduled', 'posted', 'completed'];
 
   function loadRecord(then) {
     state.record = {};
@@ -254,11 +261,11 @@
      every creator is in exactly one, and because a flat four hundred rows with one
      heading at the top tells you nothing about where you are. */
   var BANDS = [
-    ['Up to RM 300',    function (r) { return r > 0 && r <= 300; }],
-    ['RM 301 to 500',   function (r) { return r > 300 && r <= 500; }],
-    ['RM 501 to 800',   function (r) { return r > 500 && r <= 800; }],
-    ['Above RM 800',    function (r) { return r > 800; }],
-    ['On quote',        function (r) { return !r; }]
+    ['Up to RM 300',    function (r) { return r > 0 && r <= 300; }, 'rm300'],
+    ['RM 301 to 500',   function (r) { return r > 300 && r <= 500; }, 'rm500'],
+    ['RM 501 to 800',   function (r) { return r > 500 && r <= 800; }, 'rm800'],
+    ['Above RM 800',    function (r) { return r > 800; }, 'rm800plus'],
+    ['On quote',        function (r) { return !r; }, 'quote']
   ];
 
   function paintRoster() {
@@ -293,48 +300,39 @@
       });
       return;
     }
-    /* The panel is what draws the boundary; the rows sit inside it. */
-    var table = document.createElement('div');
-    table.className = 'crm-table softpanel';
-    box.appendChild(table);
-    box = table;
-    /* A creator is a person with a fee, so the row is the one this console
-       uses for every list of records: name heaviest, the money next, the rest
-       mute. It used to borrow the Short Links row, which set the name in the
-       slug's monospace face and pushed two icon buttons onto a line of their
-       own, so a card three facts deep stood 270px tall on a phone and only
-       three fitted on a screen. */
-    var head = document.createElement('div');
-    head.className = 'crm-head svc-row cr-row';
-    head.innerHTML = '<span>Creator</span><span>Profiles</span><span>Campaigns</span>' +
-      '<span class="svc-rate">Fee</span><span></span>';
-    box.appendChild(head);
-
-    /* Stood down people are not booked, so they are not in the budget bands:
-       they are one group at the foot, where they can still be edited and put
-       back without sitting between two creators who are available. */
-    var live = shown.filter(function (c) { return c.active !== false; });
-    var down = shown.filter(function (c) { return c.active === false; });
+    /* A card per fee band under its own heading, the shape every directory
+       in this console takes. A creator is a person with a fee, so the row is
+       the one this console uses for every list of records: name heaviest,
+       the money next, the rest mute. It used to borrow the Short Links row,
+       which set the name in the slug's monospace face and pushed two icon
+       buttons onto a line of their own. */
+    var GRP = window.ADspaceGroup;
     var byName = function (a) {
       return a.slice().sort(function (x, y) { return String(x.name || '').localeCompare(String(y.name || '')); });
     };
-    BANDS.forEach(function (band) {
-      var mine = byName(live.filter(function (c) { return band[1](Number(c.client_rate || 0)); }));
-      if (!mine.length) return;
-      box.appendChild(bandHead(band[0], mine.length));
-      mine.forEach(function (c) { box.appendChild(rosterRow(c)); });
+    /* Stood down people are not booked, so they are not in the budget bands:
+       they are one card at the foot, shut by default, where they can still be
+       edited and put back without sitting between two creators who are
+       available. */
+    var live = shown.filter(function (c) { return c.active !== false; });
+    var down = shown.filter(function (c) { return c.active === false; });
+    var groups = BANDS.map(function (band) {
+      return [band[2], band[0], byName(live.filter(function (c) { return band[1](Number(c.client_rate || 0)); })), false];
     });
-    if (down.length) {
-      box.appendChild(bandHead('Inactive', down.length));
-      byName(down).forEach(function (c) { box.appendChild(rosterRow(c)); });
-    }
-  }
-
-  function bandHead(name, n) {
-    var el = document.createElement('div');
-    el.className = 'svc-cat';
-    el.innerHTML = esc(name) + ' <span>' + n + '</span>';
-    return el;
+    groups.push(['inactive', 'Inactive', byName(down), true]);
+    groups.forEach(function (g) {
+      if (!g[2].length) return;
+      box.appendChild(GRP.section({
+        route: 'creators', key: g[0], name: g[1], count: g[2].length,
+        shut: !narrowed && GRP.shut('creators', g[0], g[3], g[2].length === shown.length),
+        table: function () {
+          var table = GRP.table('svc-row cr-row',
+            ['Creator', 'Profiles', 'Campaigns', { text: 'Fee', cls: 'svc-rate' }, '']);
+          GRP.more(table, g[2], 30, 'creators', rosterRow);
+          return table;
+        }
+      }));
+    });
   }
 
   /* The monogram is gone. It was put here to make a row findable by eye, the
@@ -788,34 +786,31 @@
       });
       return;
     }
-    /* One register, not a grid of cards. Three campaigns as three tiles reads
-       as a dashboard; thirty reads as a wall, and neither answers "which of
-       these is waiting on somebody" without opening each one. The states are
-       labelled divider rows inside one surface, exactly as the clients
-       directory carries its stages. */
-    var table = document.createElement('div');
-    table.className = 'crm-table softpanel crm-register';
-    var head = document.createElement('div');
-    head.className = 'crm-head camp-row';
-    /* The money column's heading is right aligned over the figures it names,
-       but it is still an eyebrow: `.svc-rate` carries the row's own 13.5px and
-       set the word AMOUNT three sizes above every other heading beside it. */
-    head.innerHTML = ['Campaign', 'Client', 'Creators', 'Amount', 'State']
-      .map(function (h, i) {
-        return '<span' + (i === 3 ? ' class="is-end"' : '') + '>' + h + '</span>';
-      }).join('') + '<span></span>';
-    table.appendChild(head);
-
+    /* A card per state under its own heading, the shape every directory in
+       this console takes: three campaigns as three tiles read as a dashboard
+       and thirty as a wall, and one surface with the states as uppercase
+       divider rows was sent back on Clients. Completed stays shut by
+       default; a filter opens every card. */
+    var GRP = window.ADspaceGroup;
+    var filtered = rows.length !== all.length;
     CAMP_GROUPS.forEach(function (g) {
       var mine = rows.filter(function (c) { return c.state === g; });
       if (!mine.length) return;
-      var b = document.createElement('div');
-      b.className = 'svc-cat crm-band';
-      b.innerHTML = esc(STATE_WORD[g] || g) + ' <span>' + mine.length + '</span>';
-      table.appendChild(b);
-      mine.forEach(function (c) { table.appendChild(campRow(c, campSums)); });
+      box.appendChild(GRP.section({
+        route: 'campaigns', key: g, name: STATE_WORD[g] || g, count: mine.length,
+        shut: !filtered && GRP.shut('campaigns', g, g === 'completed', mine.length === rows.length),
+        table: function () {
+          /* The money column's heading is right aligned over the figures it
+             names, but it is still an eyebrow: `.svc-rate` carries the row's
+             own 13.5px and set the word AMOUNT three sizes above every other
+             heading beside it. */
+          var table = GRP.table('camp-row',
+            ['Campaign', 'Client', 'Creators', { text: 'Amount', cls: 'is-end' }, 'State', ''], 'crm-register');
+          GRP.more(table, mine, 30, 'campaigns', function (c) { return campRow(c, campSums); });
+          return table;
+        }
+      }));
     });
-    box.appendChild(table);
   }
 
   /* Draft first, then the two live states, then what is finished: the order a
@@ -1370,7 +1365,7 @@
     if (files.length || o.draft_url) return '';
     return hint('draft-route',
       'Send ' + ((o.creators || {}).name || 'the creator') + ' their portal link and they upload here ' +
-      'themselves. Paste a link below only if they cannot.');
+      'themselves. Upload for them below if they cannot, or paste a link.');
   }
 
   /* An instruction is for the first few times somebody meets a screen, and
@@ -2519,7 +2514,25 @@
         draftGuide(o) +
         handedIn(o) +
         '<div class="kfields">' +
-          '<label class="kfield kfield-wide"><span>Or paste a link, if they cannot upload</span>' +
+          /* The team can hand a file in for the creator, at the same steps
+             the creator's own page accepts one (`creator_can_deliver`: pending
+             draft, changes requested, submitted): a creator who cannot get a
+             file up their line used to leave the booking stuck until somebody
+             found a Drive folder, and the console had no way to help. The file
+             takes the console's own signed PUT to S3 and lands in the same
+             hand-in the creator's files do, so the card, the release and the
+             client's page cannot tell whose hand put it there. */
+          (teamMayDeliver(o) && putToS3
+            ? '<label class="kfield kfield-wide"><span>Upload for ' +
+                esc((o.creators || {}).name || 'the creator') + '</span>' +
+                '<input class="input" type="file" multiple data-a="teamfiles" ' +
+                'accept="video/*,image/*,.pdf,.zip"></label>' +
+              '<div class="progress kupload" data-teamup hidden>' +
+                '<div class="progress-head"><span data-teamlabel></span><span data-teampct></span></div>' +
+                '<div class="progress-track"><div class="progress-fill" data-teamfill></div></div>' +
+              '</div>'
+            : '') +
+          '<label class="kfield kfield-wide"><span>Or paste a link</span>' +
             '<input class="input" data-f="draft_url" value="' + esc(o.draft_url || '') +
             '" placeholder="https://"></label>' +
         '</div>' +
@@ -2562,6 +2575,91 @@
     if (live) paintPosts(card.querySelector('[data-posts]'), o);
     wireCard(card, o);
     return card;
+  }
+
+  /* The steps at which a file may be handed in, the creator's page's rule
+     (`creator_can_deliver`) read here so the two cannot drift. */
+  function teamMayDeliver(o) {
+    return ['pending_draft', 'changes', 'submitted'].indexOf(o.state) > -1;
+  }
+
+  /* One file at a time: signed by the console's own path (a team member,
+     the campaign's client folder), sent to S3 with the progress the creator
+     sees on their page, then recorded on the booking. It is not handed in
+     until the row exists, and a row the policy refused comes back empty
+     rather than as an error, so the empty answer is the refusal. One bad
+     file never abandons the rest, and the outcome is written after the
+     repaint that follows it, or the redraw throws the line away. */
+  function teamDeliver(card, o, files) {
+    var cap = ((cfg.s3 && cfg.s3.maxUploadMB) || 1024) * 1024 * 1024;
+    var mb = (cfg.s3 && cfg.s3.maxUploadMB) || 1024;
+    var big = files.filter(function (f) { return f.size > cap; });
+    var queue = files.filter(function (f) { return f.size <= cap; });
+    var box = card.querySelector('[data-teamup]');
+    var label = card.querySelector('[data-teamlabel]');
+    var pct = card.querySelector('[data-teampct]');
+    var fill = card.querySelector('[data-teamfill]');
+    var pick = card.querySelector('[data-a="teamfiles"]');
+    var tooBig = big.length === 1
+      ? big[0].name + ' is larger than ' + mb + ' MB.'
+      : big.length > 1 ? big.length + ' files are larger than ' + mb + ' MB.' : '';
+    if (!queue.length) { if (tooBig) msg('campWorkMsg', tooBig, 'err'); return; }
+    if (!state.campaign || !state.campaign.client_id) { msg('campWorkMsg', 'The campaign has no client to file this under.', 'err'); return; }
+
+    function show(i, n, file, p, saving) {
+      if (!box) return;
+      box.hidden = false;
+      label.textContent = (n > 1 ? i + '/' + n + ' · ' : '') + file.name;
+      pct.textContent = saving ? 'Saving' : Math.round(p * 100) + '%';
+      fill.style.width = Math.round(p * 100) + '%';
+    }
+    function sendOne(file, i, n) {
+      show(i, n, file, 0, false);
+      var ext = (file.name.split('.').pop() || 'bin').toLowerCase().replace(/[^a-z0-9]/g, '') || 'bin';
+      return db.functions.invoke((cfg.s3 && cfg.s3.functionName) || 'sign-upload', {
+        body: { ext: ext, clientId: state.campaign.client_id, size: file.size }
+      }).then(function (r) {
+        if (r.error) throw new Error(r.error.message || 'could not be signed');
+        if (!r.data || !r.data.uploadUrl) throw new Error((r.data && r.data.error) || 'refused');
+        var kind = mediaKind({ name: file.name, kind: (file.type || '').split('/')[0] });
+        return putToS3(r.data.uploadUrl, file, file.type || 'application/octet-stream', function (p) {
+          show(i, n, file, p, p >= 1);
+        }).then(function () {
+          show(i, n, file, 1, true);
+          return db.from('campaign_deliverables').insert({
+            option_id: o.id, url: r.data.publicUrl, name: file.name,
+            kind: kind === 'video' || kind === 'image' ? kind : 'file',
+            bytes: file.size, round: Math.max(o.revision_round || 0, 1)
+          }).select('id');
+        }).then(function (w) {
+          if (w.error) throw new Error(w.error.message);
+          if (!(w.data || []).length) throw new Error('the database refused the record');
+          log('campaign.file_added', logSubject(), (o.creators || {}).name + ' · ' + file.name + ' · uploaded by ' + (who() || 'team'));
+        });
+      });
+    }
+
+    pick.disabled = true;
+    var done = 0, failed = [];
+    var chain = Promise.resolve();
+    queue.forEach(function (file, idx) {
+      chain = chain.then(function () {
+        return sendOne(file, idx + 1, queue.length).then(function () { done++; }, function (e) {
+          failed.push(file.name + ': ' + (e && e.message ? e.message : 'failed'));
+        });
+      });
+    });
+    chain.then(function () {
+      if (box) box.hidden = true;
+      pick.disabled = false;
+      var text = (done ? done + (done === 1 ? ' file' : ' files') + ' handed in for ' +
+        ((o.creators || {}).name || 'the creator') + '.' : '') +
+        (failed.length ? ' Not saved: ' + failed.join('; ') : '') +
+        (tooBig ? ' ' + tooBig : '');
+      loadOptions();
+      /* After the repaint, or the redraw throws the line away. */
+      setTimeout(function () { msg('campWorkMsg', text.trim(), failed.length || tooBig ? 'err' : 'ok'); }, 50);
+    });
   }
 
   function wireCard(card, o) {
@@ -2620,6 +2718,14 @@
             }, block);
           });
       });
+    });
+
+    var pick = card.querySelector('[data-a="teamfiles"]');
+    if (pick) pick.addEventListener('change', function () {
+      var picked = Array.prototype.slice.call(this.files || []);
+      this.value = '';
+      if (!picked.length) return;
+      teamDeliver(card, o, picked);
     });
 
     var menu = card.querySelector('[data-menu]');

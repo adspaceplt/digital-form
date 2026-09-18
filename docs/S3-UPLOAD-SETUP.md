@@ -265,16 +265,18 @@ If the upload fails:
 - Uploads are stored with a one year immutable cache header. Filenames are random and never
   reused, so CloudFront can hold them indefinitely and repeat views cost nothing.
 
-## The creator's own upload, and the 300 MB ceiling
+## The creator's own upload, the console's upload for them, and the 1 GB ceiling
 
 A creator uploads from `/creator/` with an access code and no account, so `sign-upload`
 checks the code against the booking (`creator_may_upload`) instead of a session, and builds
 the key from the option id it verified. The file goes browser to S3 exactly as the console's
-does. The ceiling is 300 MB a file, and it has to hold at every layer it passes:
+does, and since 2026-09-22 the console can hand a file in for a creator from the
+campaign's draft step by the same path. The ceiling is 1 GB a file (raised from
+300 MB at the user's request), and it has to hold at every layer it passes:
 
 | Layer | Limit | Where it is set |
 |---|---|---|
-| Browser | 300 MB, refused by name before a byte moves | `ADSPACE_CONFIG.s3.maxUploadMB` in `js/config.js` |
+| Browser | 1 GB, refused by name before a byte moves | `ADSPACE_CONFIG.s3.maxUploadMB` in `js/config.js` |
 | Signing function | 2 GB | `MAX_BYTES` in `supabase/functions/sign-upload/index.ts`. Only JSON metadata reaches it; the file never does |
 | Supabase | not in the path | The 50 MB storage cap is `ADSPACE_CONFIG.maxUploadMB` and applies only while S3 is off. The creator page never reads it |
 | S3 | 5 GB for a single PUT | AWS. The PUT goes straight to `{bucket}.s3.{region}.amazonaws.com` |
@@ -289,7 +291,7 @@ function has to be redeployed.
 
 To confirm the signed URL's own expiry on a live project, upload one file from `/creator/`
 with the browser's network tab open and read `X-Amz-Expires` off the PUT request's query
-string. Anything at or above 3600 is comfortable for 300 MB on a domestic line.
+string. Anything at or above 3600 is comfortable for 1 GB on a domestic line.
 
 ## Why not put AWS keys in the page
 
