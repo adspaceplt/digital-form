@@ -447,7 +447,7 @@ a { color: inherit; }
 /* Copy block under the mockup: the caption is half the deliverable. */
 .copyblock { border-top: 1px solid var(--line-soft); padding: 16px; }
 .copyblock h5 {
-  font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+  font-size: 12px; letter-spacing: 0;
   color: var(--ink-mute); font-weight: 600; margin-bottom: 7px;
 }
 /* The section name and the copy button on one line, above the words, so the
@@ -1090,7 +1090,7 @@ a { color: inherit; }
 .viewhead h3 { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
 .viewhead .btn { flex: 0 0 auto; }
 .sectionlabel {
-  font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+  font-size: 12px; letter-spacing: 0;
   color: var(--ink-mute); font-weight: 600; margin: 24px 0 12px;
 }
 
@@ -1120,7 +1120,7 @@ a { color: inherit; }
    list that has nothing in it, which is what it is. */
 .empty {
   grid-column: 1 / -1;
-  background: var(--card); border: 1px solid var(--line);
+  background: var(--card); border: 1px solid var(--card-line);
   border-radius: var(--radius-panel);
   padding: 18px 15px; text-align: left; color: var(--ink-mute); font-size: 13.5px;
 }
@@ -1174,7 +1174,7 @@ a { color: inherit; }
 .bigcard-sub.is-warn { color: var(--warn); }
 .bigcard-tag {
   align-self: flex-start; margin-top: 8px; font-size: 11px; font-weight: 600;
-  letter-spacing: .03em; padding: 3px 8px; border-radius: 999px;
+  letter-spacing: 0; padding: 3px 8px; border-radius: 999px;
   background: var(--line-soft); color: var(--ink-mute);
 }
 .bigcard-tag.is-live { background: var(--ok-bg); color: var(--ok); }
@@ -1236,7 +1236,7 @@ a { color: inherit; }
 /* No thumbnail from Drive: show what the file is instead of a broken icon. */
 .dfile-img i {
   position: absolute; inset: 0; display: none; place-items: center;
-  font-style: normal; font-size: 10px; font-weight: 700; letter-spacing: .06em;
+  font-style: normal; font-size: 10px; font-weight: 700; letter-spacing: 0;
   color: var(--ink-mute); background: var(--line-soft);
 }
 .dfile-img.is-blank img { display: none; }
@@ -1388,7 +1388,7 @@ a { color: inherit; }
    ========================================================================= */
 .beta {
   display: inline-block; vertical-align: 2px; margin-left: 6px;
-  font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  font-size: 12px; font-weight: 700; letter-spacing: 0;
   padding: 1px 6px; border-radius: 4px;
   background: none; color: var(--ink-mute); border: 1px solid var(--line);
 }
@@ -1462,7 +1462,7 @@ a { color: inherit; }
 
 /* What the file actually is */
 .filetag {
-  display: inline-block; align-self: flex-start; font-size: 11px; font-weight: 600; letter-spacing: .03em;
+  display: inline-block; align-self: flex-start; font-size: 11px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-soft); background: var(--line-soft);
   padding: 2px 7px; border-radius: 5px; white-space: nowrap;
 }
@@ -1735,11 +1735,11 @@ a { color: inherit; }
 }
 .act:last-child { border-bottom: 0; }
 .act-head {
-  padding: 4px 0 6px; font-size: 11px; font-weight: 600; letter-spacing: .07em;
-  text-transform: uppercase; color: var(--ink-mute); border-bottom: 1px solid var(--line);
+  padding: 4px 0 6px; font-size: 12px; font-weight: 600; letter-spacing: 0;
+  color: var(--ink-mute); border-bottom: 1px solid var(--line);
 }
 .act-tag {
-  display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .03em;
+  display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: 0;
   padding: 3px 8px; border-radius: 5px; max-width: 100%;
   background: var(--line-soft); color: var(--ink-soft); white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
@@ -1873,13 +1873,13 @@ body.is-plain .topbar { background: var(--chrome); }
 .sidebar-brand { display: flex; flex-direction: column; gap: 2px; padding: 0 10px 22px; }
 .sidebar-brand .brand-logo { height: 24px; width: auto; align-self: flex-start; }
 .sidebar-kicker {
-  font-size: 11px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute);
 }
 
 .sidebar-nav { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; }
 .sidebar-label {
-  font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute); padding: 0 10px 8px;
 }
 .navitem {
@@ -1941,7 +1941,7 @@ body.is-plain .topbar { background: var(--chrome); }
   display: flex; flex-direction: column; gap: 1px;
   padding: 9px 12px 8px; margin-bottom: 4px;
   border-bottom: 1px solid var(--line-soft);
-  font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute);
 }
 .acct-who b {
@@ -2285,7 +2285,7 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 .crow-head {
   padding: 11px 14px 8px; background: var(--sunk);
-  font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute); border-bottom: 1px solid var(--line);
 }
 .crow-head > * { font-size: inherit; font-weight: inherit; letter-spacing: inherit;
@@ -2363,7 +2363,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .crow-backup.is-on { background: var(--fill); border-color: var(--fill); color: var(--on-fill); }
 
 .tag-new {
-  font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  font-size: 11px; font-weight: 700; letter-spacing: 0;
   padding: 2px 6px; border-radius: 4px; background: var(--fill); color: var(--on-fill);
 }
 .tag-rep {
@@ -2474,7 +2474,7 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 .bookreg-head {
   padding: 12px 14px 8px;
-  font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute); border-bottom: 1px solid var(--line);
 }
 .bookreg .kcard {
@@ -2568,7 +2568,7 @@ body.is-plain .topbar { background: var(--chrome); }
 /* A step inside the card. Recessed ground, hairline above. */
 .kstep { border-top: 1px solid var(--line-soft); padding: 11px 16px 13px; background: var(--sunk); }
 .kstep-title {
-  font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute); margin-bottom: 9px;
 }
 
@@ -2583,7 +2583,7 @@ body.is-plain .topbar { background: var(--chrome); }
   border-color: var(--ok-solid); background: var(--ok-solid); color: var(--on-ok);
 }
 .kstep-label {
-  font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute);
 }
 .kstep-sum { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-width: 0; }
@@ -2600,7 +2600,7 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 .kfield { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .kfield > span {
-  font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute);
 }
 .kfield-wide { grid-column: span 2; }
@@ -2676,7 +2676,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .results { width: 100%; border-collapse: collapse; font-size: 12.5px; }
 .results th {
   text-align: left; padding: 6px 12px 6px 0; border-bottom: 1px solid var(--line-soft);
-  font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute); white-space: nowrap;
 }
 .results td { padding: 7px 12px 7px 0; border-bottom: 1px solid var(--line-soft); color: var(--ink); white-space: nowrap; }
@@ -2699,8 +2699,8 @@ body.is-plain .topbar { background: var(--chrome); }
   .results tr:last-child { border-bottom: 0; }
   .results td { display: flex; flex-direction: column; gap: 2px; padding: 0; border: 0; white-space: normal; }
   .results td::before {
-    content: attr(data-l); font-size: 11px; font-weight: 600; letter-spacing: .07em;
-    text-transform: uppercase; color: var(--ink-mute);
+    content: attr(data-l); font-size: 12px; font-weight: 600; letter-spacing: 0;
+    color: var(--ink-mute);
   }
   .results td:first-child { grid-column: 1 / -1; }
   .results td:first-child::before { display: none; }
@@ -2733,7 +2733,7 @@ body.is-plain .topbar { background: var(--chrome); }
   gap: 10px 20px; margin: 12px 0 0;
 }
 .booking-facts dt {
-  font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute);
 }
 .booking-facts dd { margin: 2px 0 0; font-size: 13.5px; color: var(--ink); }
@@ -2779,7 +2779,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .progress-backup.is-ok { color: var(--ok); }
 .listhint.is-priority { color: var(--warn); font-weight: 500; }
 .tag-pri {
-  font-size: 11px; font-weight: 700; letter-spacing: .04em;
+  font-size: 11px; font-weight: 700; letter-spacing: 0;
   padding: 2px 7px; border-radius: 4px; background: var(--warn-solid); color: var(--on-warn);
 }
 
@@ -2867,7 +2867,7 @@ body.is-plain .topbar { background: var(--chrome); }
   .facts:has(> :nth-child(5):last-child) > :last-child { grid-column: 1 / -1; }
 }
 .facts dt {
-  font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute); margin-bottom: 3px;
 }
 .facts dd { font-size: 14px; color: var(--ink); margin: 0; overflow-wrap: anywhere; }
@@ -2901,7 +2901,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .stats { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px 22px; margin: 4px 0 16px; }
 .stat { display: flex; flex-direction: column; gap: 1px; }
 .stat b { font-size: 17px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-.stat span { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-mute); }
+.stat span { font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--ink-mute); }
 .stat.is-total b { color: var(--ink); }
 .stat.is-warn b, .stat.is-warn span { color: var(--warn); }
 .stat-gap { width: 1px; background: var(--line); align-self: stretch; margin: 2px 0; }
@@ -3068,7 +3068,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .act-day {
   position: sticky; top: 0; z-index: 2;
   margin: 16px 0 6px; padding: 6px 0 5px; background: var(--card);
-  font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute); border-bottom: 1px solid var(--line-soft);
 }
 .act-day:first-child { margin-top: 4px; }
@@ -3087,9 +3087,14 @@ body.is-plain .topbar { background: var(--chrome); }
 /* The pad above the first row belongs to the header, not to the table, so it
    leaves with the header when a phone hides it. Padding the table instead
    left a 12px gap over the first row on a phone, with nothing in it. */
+/* A label is 12px, 600, mute and sentence case. It was an 11px uppercase
+   eyebrow with .06em of tracking on every table header, band, fact label
+   and step title; the user sent that face back on 2026-09-22 ("weird
+   spacing, wide visual effect") and it is retired portal-wide, the
+   platform mockups excepted because they reproduce another product. */
 .crm-head {
   padding: 12px 15px 8px; border-bottom: 1px solid var(--line);
-  font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute);
 }
 .crm-row {
@@ -3113,7 +3118,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .crm-c-code {
   display: block; margin-top: 2px; font-weight: 400;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11.5px; letter-spacing: .04em; color: var(--ink-mute);
+  font-size: 11.5px; letter-spacing: 0; color: var(--ink-mute);
 }
 /* The clock sits with the stage it is timing: the chip, and under it how long
    the client has been in it. Two lines in one cell rather than a seventh
@@ -3433,8 +3438,8 @@ body > .shell { width: 100%; }
 /* A category heading inside the table, between its lines. */
 .svc-cat {
   display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
-  padding: 14px 15px 6px; font-size: 11px; font-weight: 600; letter-spacing: .06em;
-  text-transform: uppercase; color: var(--ink-mute); background: var(--sunk);
+  padding: 14px 15px 6px; font-size: 12px; font-weight: 600; letter-spacing: 0;
+  color: var(--ink-mute); background: var(--sunk);
   border-bottom: 1px solid var(--line-soft);
 }
 /* The count is a number, not part of the band's name. */
@@ -3639,7 +3644,7 @@ body > .shell { width: 100%; }
   padding: 9px 0; border-top: 1px solid var(--line-soft);
 }
 .due-when { display: flex; flex-direction: column; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink-soft); }
-.due-when em { font-style: normal; font-size: 11px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--ink-mute); }
+.due-when em { font-style: normal; font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--ink-mute); }
 .due-row.is-due .due-when, .due-row.is-due .due-when em { color: var(--warn); }
 .due-row.is-soon .due-when em { color: var(--accent); }
 .due-client {
@@ -3872,7 +3877,7 @@ body > .shell { width: 100%; }
    heading does; centring left "STATE" floating over the left edge of a select. */
 .team-head, .group-head {
   padding-top: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line);
-  font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute); text-align: left;
 }
 .team-row, .group-row { padding-top: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line-soft); }
@@ -4669,7 +4674,10 @@ body.no-view-register-hr [data-need="register.hr:view"] { display: none !importa
 .railnext, .railmiss {
   display: grid; align-items: center; gap: 2px 10px; width: 100%; text-align: left;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  /* A row that opens something keeps an edge, one tone lighter than the
+     rule, so it reads as a control on a card that has no outline of its own
+     (the user's call on 2026-09-22); the billing gate keeps its red. */
+  border: 1px solid var(--line-soft); border-radius: var(--radius-sm);
   background: var(--card); padding: 10px 11px; min-height: var(--ctl-h);
   font-size: 13.5px; color: var(--ink);
 }
@@ -4743,8 +4751,8 @@ body.no-view-register-hr [data-need="register.hr:view"] { display: none !importa
    a hairline over an empty list. */
 .raildates:empty + .rail-date-edit { margin-top: 0; padding-top: 0; border-top: 0; }
 .rail-date-edit label {
-  grid-column: 1 / -1; font-size: 11px; font-weight: 600;
-  letter-spacing: .05em; text-transform: uppercase; color: var(--ink-mute);
+  grid-column: 1 / -1; font-size: 12px; font-weight: 600;
+  letter-spacing: 0; color: var(--ink-mute);
 }
 .rail-date-edit .btn { min-width: 0; }
 
@@ -5016,8 +5024,8 @@ body.no-view-register-hr [data-need="register.hr:view"] { display: none !importa
 /* The label above its field, as every other label in the portal is. */
 .is-narrow .sched-row > .sched-when::before {
   content: attr(data-label);
-  font-size: 11px; font-weight: 600; letter-spacing: .05em;
-  text-transform: uppercase; color: var(--ink-mute);
+  font-size: 12px; font-weight: 600; letter-spacing: 0;
+  color: var(--ink-mute);
 }
 /* The shoot keeps its date and its time on one line under the one label. */
 .is-narrow .sched-row > .sched-when:nth-of-type(2) {
@@ -5053,7 +5061,7 @@ body.no-view-register-hr [data-need="register.hr:view"] { display: none !importa
 .deliv-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .deliv-kind {
   margin-left: auto; flex: 0 0 auto;
-  font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute);
 }
 .deliv-caption {
@@ -5269,7 +5277,7 @@ body.is-canvas { overflow: hidden; }
 .ovtable { display: block; }
 .ovhead, .ovrow { display: grid; align-items: baseline; gap: 0 14px; }
 .ovhead {
-  font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+  font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute); padding-bottom: 7px; border-bottom: 1px solid var(--line-soft);
 }
 .ovrow { padding: 9px 0; border-bottom: 1px solid var(--line-soft); font-size: 13.5px; }
@@ -5352,8 +5360,8 @@ body.is-canvas { overflow: hidden; }
 .is-narrow .ovrow-date > :nth-child(2) { grid-area: shoot; }
 .is-narrow .ovrow-date > :nth-child(3) { grid-area: pub; }
 .is-narrow .ovcap {
-  display: block; font-size: 11px; font-weight: 600; letter-spacing: .06em;
-  text-transform: uppercase; color: var(--ink-mute); margin-bottom: 2px;
+  display: block; font-size: 12px; font-weight: 600; letter-spacing: 0;
+  color: var(--ink-mute); margin-bottom: 2px;
 }
 .is-narrow .ovlog-row {
   grid-template-columns: minmax(0, 1fr) auto;
