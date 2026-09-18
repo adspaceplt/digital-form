@@ -3464,6 +3464,12 @@ body > .shell { width: 100%; }
    is the name's and the thing under a thumb is still 38px (44 on a touch
    screen). */
 .is-narrow .cr-row > .team-act { align-self: center; margin-block: calc((22px - var(--ctl-h)) / 2); }
+/* The rate card row too: the ⋯ is drawn for an admin only, so the same
+   row was 97px on an admin's phone and 68px on everybody else's, with the
+   name pinned to the top of the tall one and the unit floating 30px under
+   it. The row is the same height whether or not the ⋯ is there. */
+.is-narrow .cat-row > .team-act { align-self: center; margin-block: calc((22px - var(--ctl-h)) / 2); }
+.is-narrow .cat-row > .svc-name { align-self: center; }
 .is-narrow .svc-row > .svc-calc { grid-area: calc; text-align: left; }
 .is-narrow .svc-row > .svc-unit { grid-area: meta; }
 .is-narrow .svc-row > .svc-amt { text-align: left; align-self: center; grid-area: amt; }
@@ -4379,6 +4385,11 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 .rec-id-meta { margin: 0; font-size: 12px; color: var(--ink-mute); min-width: 0; }
 .rec-id-meta[hidden] { display: none; }
 .rec-ctl { grid-area: ctl; display: flex; align-items: center; gap: 8px; align-self: center; }
+/* The shared .chip rule pins every chip to the top of its flex row, which is
+   right in a card head where it sits beside a name; beside a 38px ⋯ (44px
+   under a finger) it put the campaign's state 11px above the control's
+   centre, so the two things on the right of the head were on two lines. */
+.rec-ctl .chip { align-self: center; }
 /* The client's own logo where we hold one, their initials where we do not.
    The disc stays light in both themes for the same reason the review mockups
    do: the logo is the client's artwork and is not ours to invert. */
