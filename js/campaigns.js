@@ -1398,6 +1398,13 @@
   /* What the creator sent from their own page, and the caption they wrote with
      it. Drawn above the Draft link rather than instead of it: a link pasted by
      hand still works, and an older campaign has nothing else. */
+  var MEDIA_EXT = { mp4: 'video', m4v: 'video', mov: 'video', webm: 'video', mkv: 'video',
+                    jpg: 'image', jpeg: 'image', png: 'image', gif: 'image', webp: 'image', heic: 'image', heif: 'image' };
+  function mediaKind(f) {
+    if (f.kind === 'video' || f.kind === 'image') return f.kind;
+    var ext = String(f.name || f.url || '').split('?')[0].split('.').pop().toLowerCase();
+    return MEDIA_EXT[ext] || f.kind || 'file';
+  }
   function handedIn(o) {
     var files = (state.files && state.files[o.id]) || [];
     if (!files.length && !o.draft_caption) return '';
@@ -1408,8 +1415,11 @@
        at 9:16 to even it up is a tall empty box saying PDF. The creator's own
        page settled this months ago: what can be played is played, what cannot
        is an attachment line. */
-    var media = files.filter(function (f) { return f.kind === 'video' || f.kind === 'image'; });
-    var rest  = files.filter(function (f) { return f.kind !== 'video' && f.kind !== 'image'; });
+    /* A file recorded as `file` because the phone sent no type is still a
+       video if its name says so, and a video is watched here, not downloaded. */
+    var media = files.map(function (f) { return Object.assign({}, f, { kind: mediaKind(f) }); })
+      .filter(function (f) { return f.kind === 'video' || f.kind === 'image'; });
+    var rest  = files.filter(function (f) { var k = mediaKind(f); return k !== 'video' && k !== 'image'; });
     return '<div class="handedin">' +
       (media.length
         ? '<div class="filegrid">' + media.map(function (f) {

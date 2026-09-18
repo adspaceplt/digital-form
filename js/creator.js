@@ -54,7 +54,7 @@
       changesHead: 'Changes requested',
       addFiles: 'Files', captionLabel: 'Caption',
       captionHint: 'Caption to publish with this post.',
-      submit: 'Submit', submitting: 'Submitting…',
+      submit: 'Submit', submitting: 'Submitting…', update: 'Update submission',
       needFiles: 'Attach at least one file.',
       uploading: 'Uploading', saving: 'Saving', remove: 'Remove',
       filesHead: 'Submitted files',
@@ -105,7 +105,7 @@
       changesHead: '需要修改',
       addFiles: '文件', captionLabel: '文案',
       captionHint: '将随作品一同发布的文案。',
-      submit: '提交', submitting: '提交中…',
+      submit: '提交', submitting: '提交中…', update: '更新提交',
       needFiles: '请至少上传一个文件。',
       uploading: '上传中', saving: '保存中', remove: '移除',
       filesHead: '已提交文件',
@@ -475,9 +475,12 @@
   function filesHtml(b) {
     var files = b.files || [];
     if (!files.length) return '';
+    /* At Submitted the box stays open for more files, but a file already
+       handed in keeps no ×: a submission under review is not emptied from
+       here, and the database refuses it too (creator_can_retract). */
     var body = b.can_deliver
       ? '<div class="filegrid" data-files>' + files.map(function (f) {
-          return fileHtml(f, true);
+          return fileHtml(f, needsCreator(b));
         }).join('') + '</div>'
       : '<div class="filepins" data-files>' + files.map(pinHtml).join('') + '</div>';
     return '<div class="booking-files"><div class="kstep-title">' +
@@ -543,15 +546,31 @@
       '<textarea class="input textarea" id="cap-' + esc(b.id) + '" rows="4" data-cap ' +
         'placeholder="' + esc(t().captionHint) + '">' + esc(b.caption || '') + '</textarea>' +
       '<div class="kactions"><button class="btn btn-go" type="button" data-a="submit">' +
-        esc(t().submit) + '</button></div>' +
+        esc(b.state === 'submitted' ? t().update : t().submit) + '</button></div>' +
       '<div class="msg" data-msg></div></div>';
   }
 
   // ---- Upload ---------------------------------------------------------------
 
+  /* A phone does not always say what a file is: a .mov picked from Files
+     can arrive with no type at all, and a video recorded as `file` was drawn
+     in the console as an attachment that downloaded when pressed. The
+     extension is the fallback, for the kind and for the type S3 stores, so
+     the console's player and the browser's own viewer both get a real type. */
+  var EXT_TYPE = {
+    mp4: 'video/mp4', m4v: 'video/x-m4v', mov: 'video/quicktime', webm: 'video/webm', mkv: 'video/x-matroska',
+    jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp',
+    heic: 'image/heic', heif: 'image/heif', pdf: 'application/pdf'
+  };
+  function typeOf(file) {
+    if (file.type) return file.type;
+    var ext = String(file.name || '').split('.').pop().toLowerCase();
+    return EXT_TYPE[ext] || 'application/octet-stream';
+  }
   function kindOf(file) {
-    if (/^image\//.test(file.type)) return 'image';
-    if (/^video\//.test(file.type)) return 'video';
+    var type = typeOf(file);
+    if (/^image\//.test(type)) return 'image';
+    if (/^video\//.test(type)) return 'video';
     return 'file';
   }
 
@@ -671,7 +690,7 @@
       }).then(function (r) {
         if (r.error) throw new Error(r.error.message || 'could not be signed');
         if (!r.data || !r.data.uploadUrl) throw new Error((r.data && r.data.error) || 'refused');
-        return putToS3(r.data.uploadUrl, file, file.type, function (p) {
+        return putToS3(r.data.uploadUrl, file, typeOf(file), function (p) {
           show(i, n, file, p, p >= 1);
         }).then(function () {
           show(i, n, file, 1, true);

@@ -2592,7 +2592,17 @@ do $$ begin
 exception when duplicate_object then null; end $$;
 
 -- A creator may upload only while we are actually waiting for their draft.
+/* A creator may add to a hand-in until the team releases it: `submitted` is
+   ours to review, not yet the client's, and a creator who pressed Submit
+   after one file found the box gone with the second still on their phone
+   (reported by the user on 2026-09-22). Taking a file back off stays open
+   while we are still waiting for the draft and shuts at `submitted`, so a
+   submission under review cannot be emptied from the creator's side. */
 create or replace function public.creator_can_deliver(p_state text)
+returns boolean language sql immutable as $$
+  select p_state in ('pending_draft', 'changes', 'submitted')
+$$;
+create or replace function public.creator_can_retract(p_state text)
 returns boolean language sql immutable as $$
   select p_state in ('pending_draft', 'changes')
 $$;
@@ -2716,7 +2726,7 @@ begin
    where d.id = p_file and d.removed_at is null
      and exists (select 1 from campaign_options o
                   where o.id = d.option_id and o.creator_id = cr.id
-                    and public.creator_can_deliver(o.state));
+                    and public.creator_can_retract(o.state));
   get diagnostics n = row_count;
   if n = 0 then return jsonb_build_object('error', 'not-found'); end if;
   return jsonb_build_object('ok', true);
@@ -2759,6 +2769,7 @@ begin
   insert into public.activity_log (actor, action, subject, detail)
   select cr.name, 'campaign.submitted', c.title,
          n::text || ' file' || case when n = 1 then '' else 's' end || ' handed in'
+         || case when o.state = 'submitted' then ' · updated' else '' end
     from campaigns c where c.id = o.campaign_id;
 
   return jsonb_build_object('ok', true, 'files', n);
