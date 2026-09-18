@@ -58,12 +58,11 @@
     ['activity',  'Activity record',   ['none', 'view']]
   ];
 
-  /* Two capabilities are not sections and have no ladder: Billing is a pane
-     inside the client record, and voiding a letter is one act inside
-     Documents that this portal deliberately keeps apart from deleting one. */
+  /* One capability is not a section and has no ladder: Billing is a pane
+     inside the client record. Voiding a letter used to be a second switch
+     here and is Clients: Manage now, the same authority that deletes one. */
   var CAPS = [
-    ['can_billing',  'Billing details'],
-    ['can_doc_void', 'Void client letters']
+    ['can_billing',  'Billing details']
   ];
 
   function accessOf(r) {

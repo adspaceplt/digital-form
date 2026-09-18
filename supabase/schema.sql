@@ -1448,11 +1448,15 @@ begin
 end $$;
 grant execute on function public.allowed(text, text) to authenticated;
 
-/* The one-argument form stays, because two capabilities genuinely are not
-   sections and never will be: `billing` is a pane inside the client record
-   and `doc_void` is one act inside Documents, and this portal deliberately
-   keeps voiding a letter and deleting one as two authorities. `admin` is the
-   flag that opens everything.
+/* The one-argument form stays, because one capability genuinely is not a
+   section and never will be: `billing` is a pane inside the client record.
+   `admin` is the flag that opens everything. `doc_void` was a second such
+   switch until 2026-09-22: voiding a verified letter reverses a commercial
+   confirmation and was kept apart from deleting one, but in practice the
+   person trusted to delete a client's letter is the person trusted to void
+   it, and two switches for one level of trust left groups with Manage on
+   Clients and no void. Voiding is Clients: Manage now; the `can_doc_void`
+   columns stay, unread, so an older database is not put through a drop.
 
    A section name passed here means **work**, not view: a call site missed
    when the levels went in then refuses rather than quietly granting a write
@@ -1464,14 +1468,13 @@ returns boolean
 language plpgsql security definer stable set search_path = public as $$
 declare t public.team_members;
 begin
-  if flag in ('billing', 'doc_void', 'admin') then
+  if flag in ('billing', 'admin') then
     select * into t from public.team_members
       where lower(email) = lower(auth.jwt() ->> 'email') and active limit 1;
     if t.id is null then return false; end if;
     if t.is_admin or t.role = 'admin' then return true; end if;
     return coalesce(case flag
       when 'billing'  then t.can_billing
-      when 'doc_void' then t.can_doc_void
       else false
     end, false);
   end if;
@@ -3307,7 +3310,9 @@ declare
   cl  public.clients%rowtype;
   ids uuid[];
 begin
-  if not public.allowed('doc_void') then return jsonb_build_object('error', 'not-allowed'); end if;
+  -- Voiding is the Clients section's Manage level, the same authority that
+  -- deletes a letter: one level of trust, one switch.
+  if not public.allowed('clients', 'manage') then return jsonb_build_object('error', 'not-allowed'); end if;
   if coalesce(btrim(p_reason), '') = '' then return jsonb_build_object('error', 'reason-required'); end if;
   select * into d from public.client_documents where id = p_doc;
   if d.id is null then return jsonb_build_object('error', 'not-found'); end if;

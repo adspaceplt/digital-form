@@ -2607,12 +2607,11 @@
           (canVerify ? '<button class="kmenu-item" data-a="verify" type="button"><b>Verify signed letter</b></button>' : '') +
           /* Void reverses a confirmation, so it is offered on a verified
              letter and nowhere else: an issued or signed letter has confirmed
-             nothing and there is nothing to put back. `data-soft` is absent
-             from both, so `body.no-remove` and `body.no-docvoid` are what
-             decide whether either is drawn at all — and the database decides
-             again when the button is pressed. */
+             nothing and there is nothing to put back. Both acts are the
+             section's Manage level, so both carry the same `data-need` and
+             the database decides again when the button is pressed. */
           (st === 'verified'
-            ? '<button class="kmenu-item is-danger" data-a="void" type="button"><b>Void letter</b></button>' : '') +
+            ? '<button class="kmenu-item is-danger" data-a="void" data-need="clients:manage" type="button"><b>Void letter</b></button>' : '') +
           '<button class="kmenu-item is-danger" data-a="del" data-need="clients:manage" type="button"><b>Delete permanently</b></button>' +
         '</div>' +
       '</span>';
