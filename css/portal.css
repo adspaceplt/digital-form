@@ -1544,6 +1544,16 @@ a { color: inherit; }
 :root[data-face="client"] .cover-panel p { font-size: 16px; }
 .cover-panel form { margin-top: 18px; display: flex; gap: 8px; }
 .cover-panel form .input { flex: 1; min-width: 0; }
+/* The verify page's one answer: the reference, what it is and when, and
+   whether it stands, in the chip every other state on this portal wears. */
+.verify-out { margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.verify-out b { font-size: 16px; letter-spacing: -.01em; }
+.verify-out span { color: var(--ink-soft); font-size: 14px; }
+:root[data-face="client"] .verify-out span { font-size: 16px; }
+.verify-out .tone { font-size: 11.5px; color: inherit; }
+/* The sheet that issues a document carries a body per language, so it takes
+   a little more width than the rest. */
+.sheet-card.sheet-wide { width: min(880px, 100%); }
 @media (max-width: 640px) {
   .cover-panel { padding: 30px 22px 26px; }
   .cover-panel h2 { font-size: 21px; }
@@ -3305,6 +3315,13 @@ body > .shell { width: 100%; }
    worse than no minimum at all. */
 .csv-row { grid-template-columns: minmax(180px, 1fr) 150px 120px var(--state-w) var(--ctl-h); }
 .doc-row { grid-template-columns: minmax(0, 1fr) 130px var(--state-w) var(--ctl-h); }
+/* A Register row: the reference and what it is, who it went to, when. Valid
+   is the ordinary case, so there is no state column; Void is named beside
+   the reference and the row fades, as an inactive service does. */
+.reg-row { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 110px var(--ctl-h); }
+.reg-who { font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reg-date { font-size: 13px; color: var(--ink-mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
+#crmDocuments .reg-table { margin-top: 12px; }
 /* Service, what it costs, what that buys. Active is the ordinary case on this
    card, so it costs no column: the exception is named beside the name. */
 /* The rate card's own columns. Unit used to take every pixel the name did
@@ -3455,6 +3472,13 @@ body > .shell { width: 100%; }
    line it set that line's height to its own 38px and pushed the row to
    100px for the sake of a 22px name. */
 .is-narrow .doc-row { grid-template-areas: "name act" "amt state"; }
+/* Two lines: the reference and its ⋯, then who and when, the date ending at
+   the card's right edge. */
+.is-narrow .reg-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "who date"; }
+.is-narrow .reg-row > .svc-name { grid-area: name; }
+.is-narrow .reg-row > .team-act { grid-area: act; justify-self: end; }
+.is-narrow .reg-row > .reg-who { grid-area: who; }
+.is-narrow .reg-row > .reg-date { grid-area: date; justify-self: stretch; text-align: right; }
 .is-narrow .ct-row { grid-template-areas: "name act" "reach reach"; }
 .is-narrow .svc-row > .svc-name { grid-area: name; }
 .is-narrow .svc-row > .team-act { grid-area: act; align-self: start; }
@@ -3827,6 +3851,9 @@ body.no-manage-clients   [data-need="clients:manage"],
 body.no-manage-review    [data-need="review:manage"],
 body.no-manage-campaigns [data-need="campaigns:manage"],
 body.no-manage-links     [data-need="links:manage"],
+body.no-manage-register  [data-need="register:manage"],
+body.no-manage-hr        [data-need="hr:manage"],
+body.no-work-clients     [data-need="clients:work"],
 body.no-manage-services  [data-need="services:manage"] { display: none !important; }
 /* What a deletion takes with it, counted from the record rather than
    described. A list, because four facts in a sentence is a sentence nobody

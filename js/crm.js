@@ -2564,12 +2564,25 @@
       DOCS.mapOf(rows.map(function (d) { return d.id; }), function (by) {
         state.docMap = by || {};
         box.innerHTML = '';
-        if (!rows.length) { box.innerHTML = '<div class="empty">No documents.</div>'; return; }
-        var table = document.createElement('div');
-        table.className = 'crm-table';
-        table.innerHTML = '<div class="crm-head svc-row doc-row"><span>Document</span><span class="svc-rate">Total</span><span>State</span><span></span></div>';
-        rows.forEach(function (d) { table.appendChild(documentRow(d)); });
-        box.appendChild(table);
+        var empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = 'No documents.';
+        if (!rows.length) box.appendChild(empty);
+        else {
+          var table = document.createElement('div');
+          table.className = 'crm-table';
+          table.innerHTML = '<div class="crm-head svc-row doc-row"><span>Document</span><span class="svc-rate">Total</span><span>State</span><span></span></div>';
+          rows.forEach(function (d) { table.appendChild(documentRow(d)); });
+          box.appendChild(table);
+        }
+        /* The client's other documents (the quotation cover, a thank-you
+           letter) come from the Register and take their own row shape under
+           the letters; the empty line leaves when either list has rows. */
+        if (window.ADspaceRegister) {
+          window.ADspaceRegister.paintFor(c.id, box, function (regRows) {
+            if (state.client && state.client.id === c.id && regRows.length && empty.parentNode) empty.remove();
+          });
+        }
       });
     });
   }
@@ -2879,6 +2892,17 @@
   });
 
   $('crmCover').addEventListener('click', function () { if (DOCS) openPick(); });
+  /* The quotation cover and the letters to a client are issued from the same
+     sheet the Register uses, with this client fixed and its main contact
+     seeding the Attn line. */
+  $('crmIssueDoc').addEventListener('click', function () {
+    var R = window.ADspaceRegister, c = state.client;
+    if (!R || !c) return;
+    var main = (state.contacts || []).filter(function (p) { return p.is_primary && !p.archived_at; })[0] ||
+               (state.contacts || []).filter(function (p) { return !p.archived_at; })[0] || null;
+    R.openIssue({ client: c, contact: main, families: ['quote_cover', 'client'], msg: 'crmDocMsg',
+                  onDone: function () { loadDocuments(); } });
+  });
 
   $('pickGo').addEventListener('click', function () {
     if (!picking || !DOCS) return;

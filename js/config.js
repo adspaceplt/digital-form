@@ -31,7 +31,17 @@ window.ADSPACE_ORG = {
   logo: '/css/adspace-mark.png',
   font: '/css/SlateBook.TTF',
   fontBold: '/css/SlateRg.TTF',
-  fontMark: '/css/OPTIMA.TTF'
+  fontMark: '/css/OPTIMA.TTF',
+  // The letters' headings are Slate Medium, as the Word templates set them.
+  // Blank or missing, they take fontBold, which is what the Letter of Offer
+  // already uses.
+  fontMed: '/css/SlateMed.TTF',
+  // Slate carries no Chinese, so a letter with a Chinese block embeds this
+  // face for that block alone. Fetched only when a Chinese block is drawn,
+  // and refused by name when it cannot be, rather than drawing boxes.
+  fontCjk: 'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/SubsetOTF/TC/NotoSansTC-Regular.otf',
+  // The public page a letter's footer points to.
+  verifyUrl: 'go.adspace.me/verify'
 };
 
 window.ADSPACE_CONFIG = {

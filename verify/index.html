@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" data-face="client">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verify document · ADspace</title>
+<meta name="description" content="Check a reference printed on a document issued by ADspace.">
+<meta property="og:title" content="Verify document by ADspace">
+<meta property="og:description" content="Check a reference printed on a document issued by ADspace.">
+<meta property="og:image" content="https://mycdn.adspace.me/adspace-favicon.png">
+<link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
+<link rel="stylesheet" href="/css/portal.css?v=20260920u">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="/js/config.js?v=20260920u"></script>
+<script src="/js/words.js?v=20260920u"></script>
+<script src="/js/state.js?v=20260920u"></script>
+<script src="/js/api.js?v=20260920u"></script>
+</head>
+<body class="is-plain">
+
+<script src="/js/chrome.js?v=20260920u" data-kicker="Verify" data-actions="lang"></script>
+
+<main class="shell">
+  <!-- One field, one button, one answer. The page answers an exact reference
+       with the kind, the date and whether it stands, and never the recipient:
+       what it gives away is what the footer of the document already printed. -->
+  <section class="cover">
+    <div class="cover-inner">
+      <div class="cover-panel">
+        <h2 id="vTitle">Verify document</h2>
+        <p id="vText">Enter the reference printed on the document.</p>
+        <form id="vForm" novalidate>
+          <input class="input" id="vSerial" placeholder="AD/AC180/SC" aria-label="Reference" autocomplete="off" autocapitalize="characters" spellcheck="false">
+          <button class="btn btn-primary" id="vGo" type="submit">Verify</button>
+        </form>
+        <div class="verify-out" id="vOut" hidden></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script src="/js/verify.js?v=20260920u"></script>
+</body>
+</html>

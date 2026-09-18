@@ -266,7 +266,7 @@
      `view` reads, `work` adds, edits and publishes, `manage` also destroys.
      The line is reversibility: Unpublish exists, so publishing is `work`;
      a permanent deletion has no way back, so it is `manage`. */
-  var SECTIONS = ['clients', 'review', 'campaigns', 'links', 'services', 'team', 'activity'];
+  var SECTIONS = ['clients', 'review', 'campaigns', 'links', 'register', 'hr', 'services', 'team', 'activity'];
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(section) {
     if (!me) return 0;
@@ -287,7 +287,13 @@
     if (me.is_admin || me.role === 'admin') return true;
     return Boolean(me['can_' + flag]);
   }
-  function sectionAllowed(name) { return may(name, 'view'); }
+  /* The Register is one page over two sections of the ladder: the documents
+     themselves and the HR letters, which are gated apart. Either opens it,
+     and the database's own policy decides which rows arrive. */
+  function sectionAllowed(name) {
+    if (name === 'register') return may('register', 'view') || may('hr', 'view');
+    return may(name, 'view');
+  }
 
   /* Hide what the person may not use. Nothing here is the control; the
      policies are. This keeps the screen from offering what will be refused.
@@ -347,12 +353,13 @@
     review: 'Content Review',
     campaigns: 'Creator Campaigns',
     links: 'Short Links',
+    register: 'Register',
     services: 'Services',
     team: 'Team'
   };
   // The first section this person is allowed, for when the one asked for is not.
   function firstAllowed() {
-    var order = ['clients', 'review', 'campaigns', 'links', 'services', 'team'];
+    var order = ['clients', 'review', 'campaigns', 'links', 'register', 'services', 'team'];
     for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
     return 'clients';
   }
@@ -367,6 +374,7 @@
     $('sectionReview').hidden    = name !== 'review';
     $('sectionCampaigns').hidden = name !== 'campaigns';
     $('sectionLinks').hidden     = name !== 'links';
+    $('sectionRegister').hidden  = name !== 'register';
     $('sectionServices').hidden  = name !== 'services';
     $('sectionTeam').hidden      = name !== 'team';
     $('sectionTitle').textContent = SECTION_TITLE[name];
@@ -393,6 +401,12 @@
     if (name === 'team') {
       if (!window.ADspaceTeam) { enterLater = 'team'; return; }
       window.ADspaceTeam.enter();
+      setUrl();
+      return;
+    }
+    if (name === 'register') {
+      if (!window.ADspaceRegister) { enterLater = 'register'; return; }
+      window.ADspaceRegister.enter();
       setUrl();
       return;
     }
@@ -688,6 +702,7 @@
     'document.voided':       ['Document voided', 'is-danger', 'clients'],
     'document.restored':     ['Document restored', 'is-ok', 'clients'],
     'document.deleted':      ['Document deleted', 'is-danger', 'clients'],
+    'register.added':        ['Register entry added', 'is-ok', 'clients'],
     'service.added':         ['Rate card line added', 'is-ok', 'services'],
     'service.changed':       ['Rate card line changed', '', 'services'],
     'service.off':           ['Rate card line set inactive', 'is-warn', 'services'],
