@@ -297,6 +297,11 @@
      name a fifth, the Chinese face a letter with a Chinese block embeds; it is
      fetched only then, and its absence is reported as `cjk: null` so the
      caller can refuse by name rather than draw boxes. */
+  // An OpenType file with CFF outlines opens with the tag OTTO.
+  function isCff(bytes) {
+    var u = new Uint8Array(bytes);
+    return u.length > 4 && u[0] === 0x4f && u[1] === 0x54 && u[2] === 0x54 && u[3] === 0x4f;
+  }
   function embedFonts(pdf, PDF, extra) {
     var std = function () {
       return Promise.all([pdf.embedFont(PDF.StandardFonts.Helvetica), pdf.embedFont(PDF.StandardFonts.HelveticaBold)])
@@ -309,7 +314,17 @@
     return Promise.all([fetchBytes(ORG.font), opt(ORG.fontBold), opt(ORG.fontMark), opt(ORG.fontMed), opt(cjkUrl)])
       .then(function (b) {
         var emb = function (bytes) { return bytes ? pdf.embedFont(bytes, { subset: true }) : null; };
-        return Promise.all([emb(b[0]), emb(b[1]), emb(b[2]), emb(b[3]), emb(b[4])])
+        /* The Chinese face is embedded whole when it is CFF based. pdf-lib
+           subsets a CID-keyed CFF font (Noto Sans CJK is one) with the
+           glyph order wrong, so every character came out as the font's first
+           glyphs in sequence: `! " # $ % &` where the Chinese should be. The
+           file is larger for it; a TrueType face subsets correctly and still
+           does. */
+        var embCjk = function (bytes) {
+          if (!bytes) return null;
+          return pdf.embedFont(bytes, { subset: !isCff(bytes) });
+        };
+        return Promise.all([emb(b[0]), emb(b[1]), emb(b[2]), emb(b[3]), embCjk(b[4])])
           .then(function (f) {
             return { font: f[0], bold: f[1] || f[0], mark: f[2] || f[1] || f[0],
                      med: f[3] || f[1] || f[0], cjk: f[4] || null, custom: true };
