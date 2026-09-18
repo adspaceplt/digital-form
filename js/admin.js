@@ -302,7 +302,6 @@
       document.body.classList.toggle('no-manage-' + s, !may(s, 'manage'));
       document.body.classList.toggle('no-work-' + s, !may(s, 'work'));
     });
-    document.body.classList.toggle('no-docvoid', !capable('doc_void'));
     document.body.classList.toggle('no-billing', !capable('billing'));
   }
 

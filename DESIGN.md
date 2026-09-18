@@ -436,7 +436,7 @@ measures the table whenever its header is not on screen (`padding`).
 | Rows of records | `.crm-table` > `.crm-head` + `.crm-row` / `.svc-row` (`csv-row` service lines, `doc-row` documents, `cat-row` rate card, `ct-row` contacts, `team-row`); state column `var(--state-w)` second last, `.team-act` ⋯ cell last; the header row carries the same row classes (`crm-head svc-row csv-row`) so it shares the row's grid and every label sits over its column, one cell per column, empty over the ⋯; `uxaudit` fails a header cell off its column (`cols`); on a phone two or three lines by `grid-template-areas` (name and ⋯ / small facts / money left, state right), never one field per line |
 | Completeness of a group | `.ringline` > `.ring` (`is-ok` when full) + "2 of 4" or "Complete" |
 | One record with steps | `.kcard` > `.kcard-head` (name, chips, ⋯) + `.kstep` blocks; folds to one line in lists of ten or more |
-| An act that cannot be taken back | A **sheet**, never `confirm()`, whenever something has to be typed: voiding a letter takes a reason, deleting one takes the reason and the reference typed back. The sheet says what the act will do in the record's own terms (which service lines go back, what is removed, whether it can be undone) before it asks. The menu item that opens it is drawn behind the capability (`body.no-docvoid`, `body.no-remove`) and the database checks the same permission again when the button is pressed, so a permission taken away while the sheet is open is a refusal and not something that already happened |
+| An act that cannot be taken back | A **sheet**, never `confirm()`, whenever something has to be typed: voiding a letter takes a reason, deleting one takes the reason and the reference typed back. The sheet says what the act will do in the record's own terms (which service lines go back, what is removed, whether it can be undone) before it asks. The menu item that opens it is drawn behind the section's Manage level (`data-need="clients:manage"`) and the database checks the same permission again when the button is pressed, so a permission taken away while the sheet is open is a refusal and not something that already happened |
 | Rare or destructive actions | `.kmenu-btn` ⋯ + `.kmenu` > `.kmenu-item` (name only; `is-danger`). An item that leaves the building and cannot be recalled asks first, with `confirm()` naming what goes where: **Send invitation** sits one place from Edit in the same menu. A menu row is a control and clears the control floor like any other (`--ctl-h`: 38px, 44px under a finger); padding alone left it at 43px on a phone and nothing caught it until the walk opened a ⋯. An item that does not repaint the row behind it closes the menu itself, or the ⋯ sits open over the answer or behind the sheet it just opened. **The menu opens upwards where the room is above**, never past the bottom of the window, which is nowhere a phone can reach; and the scroll that closes it ignores the scroll the browser fires to reveal the button it has just focused, or the ⋯ closes itself the frame after it opens |
 | A rare change to a row | The row states the value; the ⋯ opens the panel that edits it, and the same panel adds a new one. A control drawn on every row for something changed once a quarter is Hick's law failing twice: it repeats on every line what one heading or one word could say, and it fills the row with the thing nobody came for. A group's seven switches, a member's group, a service's rate: all read on the row, all changed in a panel |
 | Status | One shape everywhere, including the review page: a chip with the word in it. `.status` on `/review/`, the Drive import rows and the saved posts drew a **coloured disc beside a word of the same colour**, which said nothing the word did not and is the one shape this system rules out for a status. `select.state-select` (tinted) for a state that **moves as part of the work** — a campaign step, a client stage, a request — where changing it is why somebody opened the page. A **lifecycle flag flipped once** (Active / Inactive on a rate card line, a colleague, a creator) is a chip on the row and a `Set inactive` / `Set active` item in the ⋯: a 124px tinted select on every line, for a decision taken once in the life of the row, was taller than the price it sat beside and painted the whole list one colour. `.tone` / `.chip-state` with a word for a value that is only read |
@@ -951,12 +951,16 @@ select per section, and the row reads back as a sentence. Adding an eighth
 section costs one select; adding a fifth verb would have cost a column on every
 one of them.
 
-**What has no ladder keeps a switch.** Billing is a pane inside the client
-record and voiding a letter is one act inside Documents, which this portal
-deliberately keeps apart from deleting one. Neither is a section, so neither
-gets a level; two named switches beside seven selects is the honest shape, and
-pretending they are sections to make the model look uniform would put a
-meaningless View and Work on both.
+**What has no ladder keeps a switch, and a switch that shadows a level goes.**
+Billing is a pane inside the client record, not a section, so it gets no
+level; one named switch beside seven selects is the honest shape, and
+pretending it is a section would put a meaningless View and Work on it.
+Voiding a letter was a second switch, kept apart from deleting one because it
+reverses a commercial confirmation. It went on 2026-09-22: the person trusted
+to delete a client's letter is the person trusted to void it, so two switches
+described one level of trust, and a group with Manage on Clients and no void
+read as a mistake nobody had made. A switch earns its place only when the
+authority it names is not already one of the ladder's rungs.
 
 **A destructive control is drawn behind its capability, or it is a promise the
 database will break.** `body.no-remove` already hid Delete client, the campaign

@@ -3827,10 +3827,6 @@ body.no-manage-services  [data-need="services:manage"] { display: none !importan
 .dellist li { margin: 3px 0; }
 body.no-billing #crmTabs [data-needs-billing],
 body.no-billing .rec-pane[data-pane="billing"] { display: none !important; }
-/* Voiding a verified letter reverses a confirmation, so it is its own
-   capability rather than a corner of Clients. The database checks it again
-   when the button is pressed; this only stops the screen offering it. */
-body.no-docvoid .kmenu-item[data-a="void"] { display: none !important; }
 body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; }
 @media (pointer: coarse) {
   .select-sm { min-height: var(--ctl-h); }

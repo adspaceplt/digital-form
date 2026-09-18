@@ -106,7 +106,7 @@ For each workflow, define:
 
 Examples include lead qualification, opportunity stages, task assignment, approval, invoice status, client onboarding, document collection, ticket escalation, and record archiving.
 
-- **2026-09-16** — Two authorities over a letter. `can_doc_void` (new, Admin only by default) voids a verified letter. `can_remove` — the portal's existing hard-delete authority over contacts and rate card lines — now also permanently deletes a letter. No parallel permission system was created and no hard-coded role check is relied on: both go through `allowed()` and are re-checked server-side on every call.
+- **2026-09-16** — Two acts over a letter, Void and Delete, both re-checked server-side on every call through `allowed()`; no parallel permission system and no hard-coded role check. **Superseded on 2026-09-22 for the authority**: both are the Clients section's Manage level. `can_doc_void` was a separate switch and the user asked for it folded in, because the person trusted to delete a client's letter is the person trusted to void one, and two switches for one level of trust left groups with Manage on Clients and no void. The columns stay, unread; `supabase/migrations/2026-09-22-void-is-clients-manage.sql` redefines the two functions.
 
 ### Workflow invariants
 
