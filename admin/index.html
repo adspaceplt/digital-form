@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260920o">
+<link rel="stylesheet" href="/css/portal.css?v=20260920p">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,21 +28,21 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260920o"></script>
-<script src="/js/words.js?v=20260920o"></script>
-<script src="/js/copy.js?v=20260920o"></script>
-<script src="/js/ask.js?v=20260920o"></script>
-<script src="/js/state.js?v=20260920o"></script>
-<script src="/js/menu.js?v=20260920o"></script>
-<script src="/js/api.js?v=20260920o"></script>
-<script src="/js/money.js?v=20260920o"></script>
-<script src="/js/mockups.js?v=20260920o"></script>
+<script src="/js/config.js?v=20260920p"></script>
+<script src="/js/words.js?v=20260920p"></script>
+<script src="/js/copy.js?v=20260920p"></script>
+<script src="/js/ask.js?v=20260920p"></script>
+<script src="/js/state.js?v=20260920p"></script>
+<script src="/js/menu.js?v=20260920p"></script>
+<script src="/js/api.js?v=20260920p"></script>
+<script src="/js/money.js?v=20260920p"></script>
+<script src="/js/mockups.js?v=20260920p"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260920o" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260920p" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -1082,17 +1082,22 @@
                campaign with no client named is a campaign nobody can place. -->
           <div class="rec-id">
             <span class="rec-mark" id="campMark" aria-hidden="true"></span>
+            <!-- Three lines, left aligned on one margin: the name is the
+                 handle, the purpose is what the client reads, the meta names
+                 the client and who here owns it. -->
             <div class="rec-who">
               <div class="rec-name">
                 <h2 id="campName"></h2>
-                <span class="chip" id="campState"></span>
               </div>
+              <p class="camp-purpose" id="campPurposeLine"></p>
               <p class="rec-id-meta" id="campIdMeta"></p>
             </div>
-            <!-- The same ⋯ the client record carries, so a record is acted on
-                 the same way whichever kind it is. Delete stays with the edit
-                 form, behind one more click. -->
+            <!-- The state and the same ⋯ the client record carries, in the
+                 card's right part, so a record is acted on the same way
+                 whichever kind it is. Delete stays with the edit form, behind
+                 one more click. -->
             <div class="rec-ctl">
+              <span class="chip" id="campState"></span>
               <div class="kmenu-wrap" id="campMenuWrap">
                 <button class="kmenu-btn" id="campMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More">
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
@@ -1103,8 +1108,6 @@
               </div>
             </div>
           </div>
-          <!-- The name is the handle; the purpose is what the client reads. -->
-          <p class="camp-purpose" id="campPurposeLine"></p>
         <section class="camp-client-tools" id="campClientTools">
           <div class="panelhead"><h3>Client link</h3></div>
           <div class="linkbox">
@@ -1679,10 +1682,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260920o"></script>
-<script src="/js/documents.js?v=20260920o"></script>
-<script src="/js/crm.js?v=20260920o"></script>
-<script src="/js/team.js?v=20260920o"></script>
-<script src="/js/campaigns.js?v=20260920o"></script>
+<script src="/js/admin.js?v=20260920p"></script>
+<script src="/js/documents.js?v=20260920p"></script>
+<script src="/js/crm.js?v=20260920p"></script>
+<script src="/js/team.js?v=20260920p"></script>
+<script src="/js/campaigns.js?v=20260920p"></script>
 </body>
 </html>
