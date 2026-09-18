@@ -266,12 +266,26 @@
      `view` reads, `work` adds, edits and publishes, `manage` also destroys.
      The line is reversibility: Unpublish exists, so publishing is `work`;
      a permanent deletion has no way back, so it is `manage`. */
-  var SECTIONS = ['clients', 'review', 'campaigns', 'links', 'register', 'hr', 'services', 'team', 'activity'];
+  var SECTIONS = ['clients', 'review', 'campaigns', 'links', 'register', 'services', 'team', 'activity'];
+  /* A part is a pane or a list inside a section, keyed `section.part`. It
+     takes its own level where the group set one and its section's where it
+     did not, in the page exactly as in `allowed()`, so a group that never
+     opened the Parts fold is where it always was. HR letters were a section
+     and are `register.hr` now. */
+  var PARTS = {
+    clients:   ['contacts', 'billing', 'services', 'documents', 'requests', 'calls'],
+    review:    ['sets', 'settings'],
+    campaigns: ['campaigns', 'creators', 'finance'],
+    register:  ['documents', 'hr']
+  };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
-  function level(section) {
+  function level(key) {
     if (!me) return 0;
     if (me.is_admin || me.role === 'admin') return 3;
-    return RANK[(me.access || {})[section]] || 0;
+    var acc = me.access || {};
+    var lv = acc[key];
+    if (lv == null && key.indexOf('.') > 0) lv = acc[key.split('.')[0]];
+    return RANK[lv] || 0;
   }
   /* `may('clients')` still reads as it always did and still means the
      everyday level, so nothing that asked the old question has changed its
@@ -279,36 +293,35 @@
   function may(section, want) {
     return level(section) >= (RANK[want || 'work'] || 2);
   }
-  /* Two capabilities are not sections and are not levels: billing is a pane
-     inside the client record, and voiding a letter is one act inside
-     Documents that this portal deliberately keeps apart from deleting one. */
-  function capable(flag) {
-    if (!me) return false;
-    if (me.is_admin || me.role === 'admin') return true;
-    return Boolean(me['can_' + flag]);
-  }
-  /* The Register is one page over two sections of the ladder: the documents
+  /* The Register is one page over two parts of the ladder: the documents
      themselves and the HR letters, which are gated apart. Either opens it,
      and the database's own policy decides which rows arrive. */
   function sectionAllowed(name) {
-    if (name === 'register') return may('register', 'view') || may('hr', 'view');
+    if (name === 'register') return may('register.documents', 'view') || may('register.hr', 'view');
     return may(name, 'view');
   }
 
   /* Hide what the person may not use. Nothing here is the control; the
      policies are. This keeps the screen from offering what will be refused.
-     One class per section rather than one global `no-remove`, because the
-     authority to destroy is per section now: a group can manage Content
-     Review without being able to delete a client. */
+     One class per section and per part rather than one global `no-remove`,
+     because the authority to destroy is per section now: a group can manage
+     Content Review without being able to delete a client. A part's class
+     hyphenates the key (`no-work-clients-billing`), since a dot is not a
+     class token. */
   function applyAccess() {
     navItems().forEach(function (b) {
       b.hidden = !sectionAllowed(b.getAttribute('data-section'));
     });
-    SECTIONS.forEach(function (s) {
-      document.body.classList.toggle('no-manage-' + s, !may(s, 'manage'));
-      document.body.classList.toggle('no-work-' + s, !may(s, 'work'));
+    var keys = SECTIONS.slice();
+    Object.keys(PARTS).forEach(function (s) {
+      PARTS[s].forEach(function (p) { keys.push(s + '.' + p); });
     });
-    document.body.classList.toggle('no-billing', !capable('billing'));
+    keys.forEach(function (k) {
+      var cls = k.replace('.', '-');
+      document.body.classList.toggle('no-manage-' + cls, !may(k, 'manage'));
+      document.body.classList.toggle('no-work-' + cls, !may(k, 'work'));
+      document.body.classList.toggle('no-view-' + cls, !may(k, 'view'));
+    });
   }
 
   /* On a phone the rail is a drawer. It closes on a pick, on the scrim, and on
@@ -702,6 +715,7 @@
     'document.voided':       ['Document voided', 'is-danger', 'clients'],
     'document.restored':     ['Document restored', 'is-ok', 'clients'],
     'document.deleted':      ['Document deleted', 'is-danger', 'clients'],
+    'document.reissued':     ['Document reissued', '', 'clients'],
     'register.added':        ['Register entry added', 'is-ok', 'clients'],
     'register.edited':       ['Register entry edited', '', 'clients'],
     'service.added':         ['Rate card line added', 'is-ok', 'services'],
@@ -2403,9 +2417,7 @@
     // The signed-in person's team row, for sections that gate on it.
     me: function () { return me; },
     may: may,
-    /* Billing and Void are capabilities, not sections, so they are asked for
-       by name rather than by level. */
-    capable: capable
+    parts: PARTS
   };
 
   /* Pending, approved, changes requested. The dot is what you scan for; the

@@ -41,13 +41,16 @@
   }
   function today() { return new Date().toISOString().slice(0, 10); }
   function may(section, level) { return Boolean(bridge.may && bridge.may(section, level)); }
-  /* Client letters answer to the Register or to Clients, as the database's
-     register_may() does; HR letters answer to HR alone. */
+  /* Client letters answer to the Register's Documents part or to the client
+     record's, as the database's register_may() does; HR letters answer to
+     the Register's HR part alone. */
   function mayFamily(family, level) {
-    if (family === 'hr') return may('hr', level);
-    if (family === 'other') return may('register', level);
-    return may('register', level) || may('clients', level);
+    if (family === 'hr') return may('register.hr', level);
+    if (family === 'other') return may('register.documents', level);
+    return may('register.documents', level) || may('clients.documents', level);
   }
+  /* The part a row's acts name in `data-need`, on the Register. */
+  function needOf(family) { return family === 'hr' ? 'register.hr' : 'register.documents'; }
 
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   function menuItem(action, label, cls, need) {
@@ -107,7 +110,7 @@
   function enter() {
     var bar = $('regIssue'), add = $('regAdd');
     if (bar) bar.hidden = !(mayFamily('client', 'work') || mayFamily('hr', 'work') || mayFamily('quote_cover', 'work'));
-    if (add) add.hidden = !(may('register', 'work') || mayFamily('client', 'work'));
+    if (add) add.hidden = !(may('register.documents', 'work') || mayFamily('client', 'work'));
     load();
   }
 
@@ -166,7 +169,7 @@
       cat.className = 'svc-cat';
       cat.innerHTML = esc(BAND[f]) + ' <span>' + mine.length + '</span>';
       table.appendChild(cat);
-      mine.forEach(function (d) { table.appendChild(row(d, f === 'hr' ? 'hr:manage' : 'register:manage')); });
+      mine.forEach(function (d) { table.appendChild(row(d, needOf(f))); });
     });
     box.appendChild(table);
   }
@@ -175,6 +178,9 @@
      and what it is, who it went to, when. Valid is the ordinary case, so the
      row says nothing while it holds and names Void beside the reference. */
   function row(d, need, onChange) {
+    /* `need` is the part the row answers to (`register.documents`,
+       `register.hr`, or `clients.documents` on the record); the level is
+       the act's own: reissue is work, void and delete are manage. */
     var el = document.createElement('div');
     el.className = 'svc-row reg-row' + (d.voided_at ? ' is-off' : '');
     /* The kind, and who issued it where the portal did. A row added by hand
@@ -186,7 +192,10 @@
          the control: one press, and it says Copied the way every other copy
          in this portal does. */
       '<span class="svc-name"><b><button class="serial-copy" type="button" data-a="copy" aria-label="Copy ' + esc(d.serial) + '">' + esc(d.serial) + '</button>' +
-        (d.voided_at ? ' <span class="tone">Void</span>' : '') + '</b>' +
+        /* The version a reissue replaced says so, because on this list the
+           team can see both versions and the word tells them which is which;
+           the verify page never says it. */
+        (d.voided_at ? ' <span class="tone">' + (d.void_reason === 'Reissued' ? 'Reissued' : 'Void') + '</span>' : '') + '</b>' +
         '<small>' + esc(sub) + '</small></span>' +
       '<span class="reg-who">' + esc(whoOf(d)) + '</span>' +
       '<span class="reg-date">' + esc(niceDate(d.issued_at)) + '</span>' +
@@ -195,9 +204,12 @@
         '<div class="kmenu" data-menu hidden>' +
           (d.source === 'portal' ? menuItem('download', 'Download') : '') +
           (d.file_url ? menuItem('open', 'Open file') : '') +
-          (d.source === 'manual' ? menuItem('edit', 'Edit') : '') +
-          (d.voided_at ? '' : menuItem('void', 'Void', 'is-danger', need)) +
-          menuItem('del', 'Delete permanently', 'is-danger', need) +
+          (d.source === 'manual' ? menuItem('edit', 'Edit', '', need + ':work') : '') +
+          /* A portal document is corrected by reissuing it: the same serial,
+             the earlier version kept and voided as Reissued. */
+          (d.source === 'portal' && !(d.voided_at && d.void_reason === 'Reissued') ? menuItem('reissue', 'Reissue', '', need + ':work') : '') +
+          (d.voided_at ? '' : menuItem('void', 'Void', 'is-danger', need + ':manage')) +
+          menuItem('del', 'Delete permanently', 'is-danger', need + ':manage') +
         '</div>' +
       '</span>';
     wireMenu(el);
@@ -212,6 +224,7 @@
     });
     on('open', function () { window.open(d.file_url, '_blank', 'noopener'); });
     on('edit', function () { openAdd(d, onChange); });
+    on('reissue', function () { openIssue({ reissue: d, onDone: onChange, msg: sayTo }); });
     on('void', function () { openVoid(d, onChange); });
     on('del', function () { openDelete(d, onChange); });
     return el;
@@ -231,7 +244,7 @@
         table.className = 'crm-table reg-table';
         table.innerHTML = '<div class="crm-head svc-row reg-row"><span>Document</span><span>Recipient</span><span>Issued</span><span></span></div>';
         rows.forEach(function (d) {
-          table.appendChild(row(d, 'clients:manage', function () { paintFor(clientId, box, then); }));
+          table.appendChild(row(d, 'clients.documents', function () { paintFor(clientId, box, then); }));
         });
         var old = box.querySelector('.reg-table');
         if (old) old.remove();
@@ -252,7 +265,7 @@
   });
 
   // ---- Issuing ----------------------------------------------------------------
-  var issuing = null;   // { client, member, families, idem, onDone }
+  var issuing = null;   // { client, member, families, idem, onDone, reissue }
 
   function typeById(id) { return state.types.filter(function (t) { return t.id === id; })[0]; }
   function fillKinds() {
@@ -262,6 +275,13 @@
       return mayFamily(t.family, 'work');
     });
     sel.innerHTML = allowed.map(function (t) { return '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>'; }).join('');
+    /* A reissue keeps its kind whatever the kind list says now: the type may
+       since have been retired, and the document is still what it was. */
+    var re = issuing.reissue;
+    if (re && mayFamily(re.family, 'work') && !allowed.some(function (t) { return t.id === re.type_id; })) {
+      sel.innerHTML += '<option value="' + esc(re.type_id || '') + '">' + esc(re.kind) + '</option>';
+      allowed = allowed.concat([{ id: re.type_id, name: re.kind, family: re.family }]);
+    }
     return allowed;
   }
   function fillClients() {
@@ -340,8 +360,10 @@
 
   function openIssue(opts) {
     opts = opts || {};
-    issuing = { client: opts.client || null, contact: opts.contact || null, families: opts.families || null,
-                idem: null, onDone: opts.onDone || null };
+    var re = opts.reissue && opts.reissue.id ? opts.reissue : null;
+    issuing = { client: opts.client || null, contact: opts.contact || null,
+                families: re ? [re.family] : (opts.families || null),
+                idem: null, onDone: opts.onDone || null, reissue: re };
     sayTo = opts.msg || 'regMsg';
     msg('docMsg', '');
     var go = function () {
@@ -352,18 +374,54 @@
       $('docSerial').value = '';
       $('docDate').value = today();
       $('docTitle').textContent = issuing.client ? 'Issue document for ' + issuing.client.name : 'Issue document';
-      seed();
+      $('docGo').textContent = re ? 'Reissue' : 'Issue';
+      /* What a reissue fixes is what the document says; what it is, whose
+         it is and its reference are not up for change. */
+      $('docKind').disabled = Boolean(re); $('docClient').disabled = Boolean(re); $('docMember').disabled = Boolean(re);
+      $('docSerial').readOnly = Boolean(re);
+      if (re) prefill(re); else seed();
       $('docSheet').hidden = false;
-      $('docKind').focus();
+      (re ? $('docTitleIn') : $('docKind')).focus();
     };
     if (state.types.length) go(); else loadPeople(go);
   }
-  function shutIssue() { $('docSheet').hidden = true; issuing = null; }
+  /* The sheet filled from the version being replaced, field for field. */
+  function prefill(d) {
+    var t = typeById(d.type_id) || { family: d.family, signed: Boolean(d.signed) };
+    var hr = d.family === 'hr', quote = d.family === 'quote_cover';
+    var rc = d.recipient || {}, body = d.body || {}, langs = d.languages || ['en'], sg = d.signatory || {};
+    $('docKind').value = d.type_id || '';
+    $('docClient').value = d.client_id || '';
+    $('docMember').value = d.member_id || '';
+    $('docClientWrap').hidden = hr; $('docMemberWrap').hidden = !hr;
+    $('docToRow').hidden = hr; $('docAttnRow').hidden = hr; $('docHrRow').hidden = !hr;
+    $('docLangRow').hidden = !quote; $('docSignRow').hidden = !t.signed;
+    $('docSerial').value = d.serial || '';
+    $('docDate').value = String(d.issued_at || today()).slice(0, 10);
+    $('docTitle').textContent = 'Reissue ' + d.serial;
+    $('docTitleIn').value = d.title || '';
+    $('docTo').value = rc.name || ''; $('docAddr').value = rc.address || '';
+    $('docAttn').value = rc.attn || ''; $('docAttnRole').value = rc.attn_role || '';
+    $('docRole').value = rc.role || ''; $('docIc').value = rc.ic || '';
+    $('docSal').value = d.salutation || '';
+    $('docBodyEn').value = body.en || ''; $('docBodyZh').value = body.zh || ''; $('docBodyMs').value = body.ms || '';
+    $('docLangEn').checked = true;
+    $('docLangZh').checked = langs.indexOf('zh') > -1; $('docLangMs').checked = langs.indexOf('ms') > -1;
+    langBodies();
+    $('docSigName').value = sg.name || ''; $('docSigRole').value = sg.designation || '';
+    seeded.sal = null; seeded.body = null;
+  }
+  function shutIssue() {
+    $('docSheet').hidden = true; issuing = null;
+    $('docKind').disabled = false; $('docClient').disabled = false; $('docMember').disabled = false;
+    $('docSerial').readOnly = false; $('docGo').textContent = 'Issue';
+  }
 
   function ticked(id) { return $(id).checked; }
   function sendIssue() {
     if (!issuing) return;
-    var t = typeById($('docKind').value);
+    var re = issuing.reissue;
+    var t = typeById($('docKind').value) || (re ? { id: re.type_id, family: re.family, signed: Boolean(re.signed) } : null);
     if (!t) { msg('docMsg', 'Choose a document type.', 'err'); return; }
     var hr = t.family === 'hr', quote = t.family === 'quote_cover';
     var serial = $('docSerial').value.trim();
@@ -387,19 +445,21 @@
     if (t.signed && !signatory.name) { msg('docMsg', 'A signatory is required.', 'err'); $('docSigName').focus(); return; }
     issuing.idem = issuing.idem || (window.ADspaceDocs && window.ADspaceDocs.idemKey());
     var go = $('docGo');
-    go.disabled = true; go.textContent = 'Issuing…';
+    go.disabled = true; go.textContent = re ? 'Reissuing…' : 'Issuing…';
     var done = issuing.onDone;
-    LET.issue({
+    var args = {
       type: t.id, client: hr ? null : client, member: hr ? $('docMember').value : null,
       serial: serial || null, issued_at: $('docDate').value || null, title: $('docTitleIn').value.trim(),
       salutation: $('docSal').value.trim(), recipient: recipient, body: body, signatory: signatory, languages: languages, idem: issuing.idem
-    }, function (r) {
-      go.disabled = false; go.textContent = 'Issue';
+    };
+    var back = function (r) {
+      go.disabled = false; go.textContent = re ? 'Reissue' : 'Issue';
       if (r.error) { msg('docMsg', r.error, 'err'); return; }
       shutIssue();
-      say(r.serial + (r.repeat ? ' was already issued.' : ' issued.') + (r.warn ? ' ' + r.warn : ''), r.warn ? 'warn' : 'ok');
+      say(r.serial + (re ? ' reissued.' : r.repeat ? ' was already issued.' : ' issued.') + (r.warn ? ' ' + r.warn : ''), r.warn ? 'warn' : 'ok');
       if (done) done(r); else load();
-    });
+    };
+    if (re) LET.reissue(re, args, back); else LET.issue(args, back);
   }
 
   // ---- A serial added by hand ------------------------------------------------
@@ -408,7 +468,7 @@
      so the deletions remember it. */
   var editing = null;   // { d, then }
   function openAdd(d, onChange) {
-    if (!(may('register', 'work') || mayFamily('client', 'work'))) return;
+    if (!(may('register.documents', 'work') || mayFamily('client', 'work'))) return;
     if (!(d && d.id)) d = null;
     editing = d ? { d: d, then: onChange } : null;
     if (!d) sayTo = 'regMsg';
@@ -427,7 +487,7 @@
       $('regAddNote').value = d ? (d.note || '') : '';
       $('regAddUrl').value = d ? (d.file_url || '') : '';
       $('regAddDate').value = d ? String(d.issued_at || '').slice(0, 10) : today();
-      $('regAddFam').value = d ? d.family : (may('register', 'work') ? 'other' : 'client');
+      $('regAddFam').value = d ? d.family : (may('register.documents', 'work') ? 'other' : 'client');
       sel.value = d ? (d.client_id || '') : '';
       $('regAddSheet').hidden = false;
       (d ? $('regAddKind') : $('regAddSerial')).focus();

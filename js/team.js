@@ -54,21 +54,29 @@
     ['campaigns', 'Creator Campaigns', ['none', 'view', 'work', 'manage']],
     ['links',     'Short Links',       ['none', 'view', 'work', 'manage']],
     /* The Register is the documents issued and the serials the verify page
-       answers; HR letters are their own section because a colleague's
-       letter is read by fewer people than a client's. */
+       answers; HR letters are a part of it, gated apart, because a
+       colleague's letter is read by fewer people than a client's. */
     ['register',  'Register',          ['none', 'view', 'work', 'manage']],
-    ['hr',        'HR letters',        ['none', 'view', 'work', 'manage']],
     ['services',  'Services',          ['none', 'view', 'work', 'manage']],
     ['team',      'Team',              ['none', 'manage']],
     ['activity',  'Activity record',   ['none', 'view']]
   ];
 
-  /* One capability is not a section and has no ladder: Billing is a pane
-     inside the client record. Voiding a letter used to be a second switch
-     here and is Clients: Manage now, the same authority that deletes one. */
-  var CAPS = [
-    ['can_billing',  'Billing details']
-  ];
+  /* A PART IS AN EXCEPTION TO ITS SECTION. Each section is made of the panes
+     and lists below, and a part left at Same as section stores nothing: the
+     database and the page both read the part's own level where one is set
+     and the section's where none is. So the ordinary group is one select per
+     section, and the group that may work Clients but not read Billing sets
+     that one part and nothing else. Billing was a switch beside the ladder
+     until 2026-09-22; it is a part now, with the same four levels. */
+  var PARTS = {
+    clients:   [['contacts', 'Contacts'], ['billing', 'Billing'], ['services', 'Services'],
+                ['documents', 'Documents'], ['requests', 'Requests'], ['calls', 'Calls and visits']],
+    review:    [['sets', 'Content sets'], ['settings', 'Client settings']],
+    campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance']],
+    register:  [['documents', 'Client documents'], ['hr', 'HR letters']]
+  };
+  var CAPS = [];
 
   function accessOf(r) {
     var a = r && r.access;
@@ -327,12 +335,30 @@
   function grantWord(r) {
     if (r.is_admin) return 'Everything';
     var acc = accessOf(r), parts = [];
+    /* A section's exceptions read in brackets after its name
+       (`Clients (Billing: No access)`), so the sentence still says what the
+       group opens and then what it does not. */
+    var word = function (s) {
+      var ex = (PARTS[s[0]] || []).filter(function (p) {
+        var v = acc[s[0] + '.' + p[0]];
+        return v && v !== acc[s[0]];
+      }).map(function (p) {
+        var v = acc[s[0] + '.' + p[0]];
+        return p[1] + ': ' + (LEVEL_WORD[v] || 'No access');
+      });
+      return s[1] + (ex.length ? ' (' + ex.join(', ') + ')' : '');
+    };
     ['manage', 'work', 'view'].forEach(function (lv) {
-      var named = SECTIONS.filter(function (s) { return acc[s[0]] === lv; })
-                          .map(function (s) { return s[1]; });
+      var named = SECTIONS.filter(function (s) { return acc[s[0]] === lv; }).map(word);
       if (named.length) parts.push(LEVEL_WORD[lv] + ': ' + named.join(', '));
     });
-    CAPS.forEach(function (c) { if (r[c[0]]) parts.push(c[1]); });
+    /* A part opened above a section that is shut is an exception too. */
+    var only = SECTIONS.filter(function (s) { return (acc[s[0]] || 'none') === 'none'; }).map(function (s) {
+      var ex = (PARTS[s[0]] || []).filter(function (p) { return acc[s[0] + '.' + p[0]] && acc[s[0] + '.' + p[0]] !== 'none'; })
+        .map(function (p) { return p[1] + ': ' + LEVEL_WORD[acc[s[0] + '.' + p[0]]]; });
+      return ex.length ? s[1] + ' (' + ex.join(', ') + ')' : '';
+    }).filter(Boolean);
+    if (only.length) parts.push('Only: ' + only.join(', '));
     return parts.length ? parts.join(' · ') : 'No access';
   }
 
@@ -381,19 +407,35 @@
   /* One select per section, then the two capabilities and Admin as switches.
      Seven selects rather than twenty eight tickboxes, and the row above reads
      back as a sentence. */
+  /* One block per section: the section's own select is the main control on
+     its head line, and its parts sit directly under it, each a select that
+     starts at Same as section. A part is read where its section is, never in
+     a second list that names the sections again (the user's own structure,
+     2026-09-22). A section with no parts is the head line alone. */
   $('grFlags').innerHTML =
-    '<div class="permgrid">' + SECTIONS.map(function (sec) {
-      return '<label class="permlevel"><span class="field-label">' + esc(sec[1]) + '</span>' +
-        '<select class="select select-sm" data-sec="' + sec[0] + '" aria-label="' + esc(sec[1]) + ' access">' +
-        LEVELS.filter(function (l) { return sec[2].indexOf(l[0]) > -1; }).map(function (l) {
-          return '<option value="' + l[0] + '">' + esc(l[1]) + '</option>';
-        }).join('') + '</select></label>';
-    }).join('') + '</div>' +
+    SECTIONS.map(function (sec) {
+      var parts = PARTS[sec[0]] || [];
+      return '<div class="permsec">' +
+        '<label class="permsec-main"><span class="permsec-name">' + esc(sec[1]) + '</span>' +
+          '<select class="select select-sm" data-sec="' + sec[0] + '" aria-label="' + esc(sec[1]) + ' access">' +
+          LEVELS.filter(function (l) { return sec[2].indexOf(l[0]) > -1; }).map(function (l) {
+            return '<option value="' + l[0] + '">' + esc(l[1]) + '</option>';
+          }).join('') + '</select></label>' +
+        (parts.length ? '<div class="permgrid permsec-parts">' + parts.map(function (p) {
+          return '<label class="permlevel"><span class="field-label">' + esc(p[1]) + '</span>' +
+            '<select class="select select-sm" data-part="' + sec[0] + '.' + p[0] + '" aria-label="' + esc(sec[1] + ': ' + p[1]) + ' access">' +
+            '<option value="">Same as section</option>' +
+            LEVELS.map(function (l) { return '<option value="' + l[0] + '">' + esc(l[1]) + '</option>'; }).join('') +
+            '</select></label>';
+        }).join('') + '</div>' : '') +
+      '</div>';
+    }).join('') +
     CAPS.concat([['is_admin', 'Admin (everything)']]).map(function (f) {
       return '<label class="perm"><input type="checkbox" data-f="' + f[0] + '"><span>' + esc(f[1]) + '</span></label>';
     }).join('');
   function flagBoxes() { return Array.prototype.slice.call($('grFlags').querySelectorAll('input')); }
-  function levelPicks() { return Array.prototype.slice.call($('grFlags').querySelectorAll('select')); }
+  function levelPicks() { return Array.prototype.slice.call($('grFlags').querySelectorAll('select[data-sec]')); }
+  function partPicks() { return Array.prototype.slice.call($('grFlags').querySelectorAll('select[data-part]')); }
 
   // One panel adds a group or edits one, as one panel adds a service.
   function openGroupBox(r) {
@@ -410,6 +452,11 @@
       var k = sel.getAttribute('data-sec');
       sel.value = acc ? (acc[k] || 'none') : (k === 'clients' ? 'work' : 'none');
       if (!sel.value) sel.value = 'none';
+      sel.disabled = Boolean(r && r.slug === 'admin');
+    });
+    partPicks().forEach(function (sel) {
+      var k = sel.getAttribute('data-part');
+      sel.value = acc && acc[k] ? acc[k] : '';
       sel.disabled = Boolean(r && r.slug === 'admin');
     });
     flagBoxes().forEach(function (cb) {
@@ -429,6 +476,8 @@
     flagBoxes().forEach(function (cb) { flags[cb.getAttribute('data-f')] = cb.checked; });
     var access = {};
     levelPicks().forEach(function (sel) { access[sel.getAttribute('data-sec')] = sel.value || 'none'; });
+    // Only an exception is stored; Same as section is the absence of a key.
+    partPicks().forEach(function (sel) { if (sel.value) access[sel.getAttribute('data-part')] = sel.value; });
     if (state.editing) {
       var r = state.editing;
       var patch = {};
