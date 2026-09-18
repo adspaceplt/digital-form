@@ -45,7 +45,8 @@
     'kind-required':  'Say what kind of document it is.',
     'reason-required':'Say why.',
     'confirm-mismatch':'That is not this document\'s reference.',
-    'not-found':      'That document could not be found.'
+    'not-found':      'That document could not be found.',
+    'not-manual':     'A document issued by the portal is a snapshot and is not edited.'
   };
 
   function missingWord(m) {
@@ -108,6 +109,14 @@
   function addManual(a, then) {
     call('register_add', {
       p_serial: a.serial, p_family: a.family || 'other', p_kind: a.kind,
+      p_issued_at: a.issued_at || null, p_recipient: a.recipient || '',
+      p_client: a.client || null, p_note: a.note || null, p_file_url: a.file_url || null
+    }, then);
+  }
+  /* A hand-added row is corrected in place; the serial never changes. */
+  function updateManual(doc, a, then) {
+    call('register_update', {
+      p_doc: doc.id, p_kind: a.kind, p_family: a.family || 'other',
       p_issued_at: a.issued_at || null, p_recipient: a.recipient || '',
       p_client: a.client || null, p_note: a.note || null, p_file_url: a.file_url || null
     }, then);
@@ -220,7 +229,13 @@
          Chinese face and breaks by glyph. */
       var body = doc.body || {};
       langs.forEach(function (l, i) {
-        if (i) { need(20); y -= 2; rule(y); y -= 18; }
+        /* The rule sits midway between the blocks it divides, measured on
+           the ink: the last line's descent above it and the next line's
+           glyph height below it. Hung 18pt over the next baseline it read
+           as 27 above and 10 below. After the paragraph gap y is one line
+           and a gap under the last baseline; the rule goes 10 up from
+           there and the next baseline 24 down from the rule. */
+        if (i) { need(38); y += 10; rule(y); y -= 24; }
         paragraphs(body[l]).forEach(function (p) { l === 'zh' ? paraCjk(p) : para(p); });
       });
 
@@ -273,7 +288,7 @@
   }
 
   window.ADspaceLetters = {
-    types: types, list: list, listAll: listAll, issue: issue, addManual: addManual,
+    types: types, list: list, listAll: listAll, issue: issue, addManual: addManual, updateManual: updateManual,
     setVoid: setVoid, remove: remove, render: render, download: download,
     fileName: fileName, fill: fill, stateOf: stateOf,
     FAMILY_WORD: FAMILY_WORD, LANG_WORD: LANG_WORD, WORD: WORD

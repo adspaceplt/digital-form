@@ -3469,7 +3469,7 @@ create table if not exists public.documents (
   serial      text not null,
   client_id   uuid references public.clients(id) on delete set null,
   member_id   uuid references public.team_members(id) on delete set null,
-  issued_at   date not null default current_date,
+  issued_at   date default current_date,
   title       text not null default '',
   salutation  text not null default '',
   closing     text not null default '',
@@ -3716,6 +3716,53 @@ exception
   when unique_violation then return jsonb_build_object('error', 'serial-taken');
 end $$;
 grant execute on function public.register_add(text, text, text, date, text, uuid, text, text) to authenticated;
+-- A serial imported or added by hand is known before its details are, so
+-- the date may be blank and the row is edited afterwards; a portal row is a
+-- snapshot and is never edited.
+alter table public.documents alter column issued_at drop not null;
+
+-- 5a. Editing a hand-added row: the kind, the family, the date, the recipient,
+--     the client, the note and the file link. The serial never changes; a
+--     wrong serial is deleted and added again, so the deletions remember it.
+create or replace function public.register_update(
+  p_doc       uuid,
+  p_kind      text,
+  p_family    text,
+  p_issued_at date,
+  p_recipient text,
+  p_client    uuid,
+  p_note      text,
+  p_file_url  text
+)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  who   text := lower(auth.jwt() ->> 'email');
+  d     public.documents%rowtype;
+  v_fam text := coalesce(nullif(btrim(p_family), ''), 'other');
+  cl    public.clients%rowtype;
+begin
+  select * into d from public.documents where id = p_doc;
+  if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if d.source <> 'manual' then return jsonb_build_object('error', 'not-manual'); end if;
+  if v_fam not in ('quote_cover', 'client', 'hr', 'other') then return jsonb_build_object('error', 'bad-family'); end if;
+  if not public.register_may(d.family, 'work') or not public.register_may(v_fam, 'work') then
+    return jsonb_build_object('error', 'not-allowed');
+  end if;
+  if coalesce(btrim(p_kind), '') = '' then return jsonb_build_object('error', 'kind-required'); end if;
+  if p_client is not null then select * into cl from public.clients where id = p_client; end if;
+  update public.documents set
+    kind = btrim(p_kind), family = v_fam, issued_at = p_issued_at,
+    recipient = jsonb_build_object('name', coalesce(btrim(p_recipient), '')),
+    client_id = cl.id, note = nullif(btrim(p_note), ''), file_url = nullif(btrim(p_file_url), '')
+  where id = p_doc;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, 'register.edited',
+          case when v_fam = 'hr' then 'HR' else coalesce(cl.name, btrim(p_recipient), '') end,
+          case when v_fam = 'hr' then btrim(p_kind) else d.serial || ' · ' || btrim(p_kind) end);
+  return jsonb_build_object('ok', true, 'serial', d.serial);
+end $$;
+grant execute on function public.register_update(uuid, text, text, date, text, uuid, text, text) to authenticated;
 
 -- 6. Void: the row and the serial stay, the document no longer stands. The
 --    verify page answers "voided" from then on.

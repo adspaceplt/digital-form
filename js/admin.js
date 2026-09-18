@@ -703,6 +703,7 @@
     'document.restored':     ['Document restored', 'is-ok', 'clients'],
     'document.deleted':      ['Document deleted', 'is-danger', 'clients'],
     'register.added':        ['Register entry added', 'is-ok', 'clients'],
+    'register.edited':       ['Register entry edited', '', 'clients'],
     'service.added':         ['Rate card line added', 'is-ok', 'services'],
     'service.changed':       ['Rate card line changed', '', 'services'],
     'service.off':           ['Rate card line set inactive', 'is-warn', 'services'],
