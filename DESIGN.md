@@ -1030,10 +1030,11 @@ all of them saying what the section select already said. So a part (the panes
 and lists a section is made of, `clients.billing`, `review.sets`,
 `campaigns.finance`, `register.hr`) has a level only where somebody set one,
 and answers with its section's otherwise, in the database predicate and on the
-page alike. The ordinary group is still one select per section; the Parts fold
-under them stores nothing at `Same as section` and opens by itself only for a
-group that holds an exception, and the row reads the exception in brackets
-after the section it departs from. A part is drawn from what a section is made
+page alike. The ordinary group is still one select per section; the parts sit directly
+under their own section's select, store nothing at `Same as section`, and the
+row reads the exception in brackets after the section it departs from. They
+were first drawn as a separate Parts fold listing the sections again, and the
+user sent it back: a part is read where its section is. A part is drawn from what a section is made
 of, never from a verb: there is no `clients.billing.delete`.
 
 **A switch beside the ladder goes the day a level can say it.** Billing was one

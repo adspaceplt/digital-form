@@ -407,43 +407,35 @@
   /* One select per section, then the two capabilities and Admin as switches.
      Seven selects rather than twenty eight tickboxes, and the row above reads
      back as a sentence. */
+  /* One block per section: the section's own select is the main control on
+     its head line, and its parts sit directly under it, each a select that
+     starts at Same as section. A part is read where its section is, never in
+     a second list that names the sections again (the user's own structure,
+     2026-09-22). A section with no parts is the head line alone. */
   $('grFlags').innerHTML =
-    '<div class="permgrid">' + SECTIONS.map(function (sec) {
-      return '<label class="permlevel"><span class="field-label">' + esc(sec[1]) + '</span>' +
-        '<select class="select select-sm" data-sec="' + sec[0] + '" aria-label="' + esc(sec[1]) + ' access">' +
-        LEVELS.filter(function (l) { return sec[2].indexOf(l[0]) > -1; }).map(function (l) {
-          return '<option value="' + l[0] + '">' + esc(l[1]) + '</option>';
-        }).join('') + '</select></label>';
-    }).join('') + '</div>' +
-    /* The parts, folded: one select per part, Same as section first. */
-    '<div class="permparts">' +
-      '<button class="permparts-toggle" id="grPartsToggle" type="button" aria-expanded="false" aria-controls="grParts">' +
-        '<span class="disclosure-caret" aria-hidden="true">&#9656;</span><span>Parts</span></button>' +
-      '<div class="permparts-body" id="grParts" hidden>' +
-        Object.keys(PARTS).map(function (secKey) {
-          var sec = SECTIONS.filter(function (s) { return s[0] === secKey; })[0];
-          return '<div class="permparts-sec"><span class="field-label">' + esc(sec[1]) + '</span><div class="permgrid">' +
-            PARTS[secKey].map(function (p) {
-              return '<label class="permlevel"><span class="field-label">' + esc(p[1]) + '</span>' +
-                '<select class="select select-sm" data-part="' + secKey + '.' + p[0] + '" aria-label="' + esc(sec[1] + ': ' + p[1]) + ' access">' +
-                '<option value="">Same as section</option>' +
-                LEVELS.map(function (l) { return '<option value="' + l[0] + '">' + esc(l[1]) + '</option>'; }).join('') +
-                '</select></label>';
-            }).join('') + '</div></div>';
-        }).join('') +
-      '</div>' +
-    '</div>' +
+    SECTIONS.map(function (sec) {
+      var parts = PARTS[sec[0]] || [];
+      return '<div class="permsec">' +
+        '<label class="permsec-main"><span class="permsec-name">' + esc(sec[1]) + '</span>' +
+          '<select class="select select-sm" data-sec="' + sec[0] + '" aria-label="' + esc(sec[1]) + ' access">' +
+          LEVELS.filter(function (l) { return sec[2].indexOf(l[0]) > -1; }).map(function (l) {
+            return '<option value="' + l[0] + '">' + esc(l[1]) + '</option>';
+          }).join('') + '</select></label>' +
+        (parts.length ? '<div class="permgrid permsec-parts">' + parts.map(function (p) {
+          return '<label class="permlevel"><span class="field-label">' + esc(p[1]) + '</span>' +
+            '<select class="select select-sm" data-part="' + sec[0] + '.' + p[0] + '" aria-label="' + esc(sec[1] + ': ' + p[1]) + ' access">' +
+            '<option value="">Same as section</option>' +
+            LEVELS.map(function (l) { return '<option value="' + l[0] + '">' + esc(l[1]) + '</option>'; }).join('') +
+            '</select></label>';
+        }).join('') + '</div>' : '') +
+      '</div>';
+    }).join('') +
     CAPS.concat([['is_admin', 'Admin (everything)']]).map(function (f) {
       return '<label class="perm"><input type="checkbox" data-f="' + f[0] + '"><span>' + esc(f[1]) + '</span></label>';
     }).join('');
   function flagBoxes() { return Array.prototype.slice.call($('grFlags').querySelectorAll('input')); }
   function levelPicks() { return Array.prototype.slice.call($('grFlags').querySelectorAll('select[data-sec]')); }
   function partPicks() { return Array.prototype.slice.call($('grFlags').querySelectorAll('select[data-part]')); }
-  function openParts(on) {
-    $('grParts').hidden = !on;
-    $('grPartsToggle').setAttribute('aria-expanded', String(on));
-  }
-  $('grPartsToggle').addEventListener('click', function () { openParts($('grParts').hidden); });
 
   // One panel adds a group or edits one, as one panel adds a service.
   function openGroupBox(r) {
@@ -462,16 +454,11 @@
       if (!sel.value) sel.value = 'none';
       sel.disabled = Boolean(r && r.slug === 'admin');
     });
-    /* A group with an exception opens on it; one without keeps the fold shut,
-       because Same as section on every part is the ordinary case. */
-    var anyPart = false;
     partPicks().forEach(function (sel) {
       var k = sel.getAttribute('data-part');
       sel.value = acc && acc[k] ? acc[k] : '';
-      if (sel.value) anyPart = true;
       sel.disabled = Boolean(r && r.slug === 'admin');
     });
-    openParts(anyPart);
     flagBoxes().forEach(function (cb) {
       var k = cb.getAttribute('data-f');
       cb.checked = r ? Boolean(r[k]) : false;

@@ -3860,18 +3860,15 @@ body > .shell { width: 100%; }
 .perm input { flex: 0 0 auto; width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
 .perm input:disabled { opacity: .45; }
 .perm:has(input:disabled) { cursor: default; color: var(--ink-mute); }
-/* The parts of a section, folded under the section selects. A part left at
-   Same as section stores nothing, so the fold is furniture for the group
-   that needs no exception and the exception itself for the one that does. */
-.permparts { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
-.permparts-toggle {
-  display: inline-flex; align-items: center; gap: 6px; min-height: var(--ctl-h); min-width: var(--ctl-h);
-  padding: 0; border: 0; background: none; color: var(--ink-soft); font: inherit; font-size: 13px; cursor: pointer;
-}
-.permparts-toggle .disclosure-caret { display: inline-block; transition: transform var(--t) var(--ease); }
-.permparts-toggle[aria-expanded="true"] .disclosure-caret { transform: rotate(90deg); }
-.permparts-body { margin-top: 10px; display: grid; gap: 14px; }
-.permparts-sec > .field-label { margin: 0 0 6px; }
+/* One block per section. The head line is the section's name and its own
+   select, the main control; the parts sit under it, indented so they read
+   as the section's and not as eight more sections. */
+.permsec { padding: 10px 0; border-top: 1px solid var(--line-soft); }
+.permsec:first-child { padding-top: 4px; border-top: 0; }
+.permsec-main { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.permsec-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+.permsec-main .select { width: 200px; flex: 0 0 auto; }
+.permsec-parts { margin-top: 8px; padding-left: 16px; border-left: 2px solid var(--line-soft); }
 .team-act { text-align: right; }
 .select-sm { min-height: var(--ctl-h-sm); height: var(--ctl-h-sm); min-width: 0; padding-right: 28px; font-size: 13px; width: 100%; }
 
