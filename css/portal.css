@@ -548,6 +548,20 @@ a { color: inherit; }
    · The pair reads as one control: the button gives up its right corners and
      the field takes them, with one divider between. */
 .namebox { flex: 1.35; display: inline-flex; align-items: stretch; min-width: 0; }
+/* The same box around a section head's one action (New content set). The
+   1.35 share above is the Approve row's, where the box splits a row with
+   Request changes; in a head it made the box take most of the row and put
+   the button mid line, 700px short of the edge. Here the box holds its own
+   width and sits on the right, and the field opens to a stated width, so
+   the button slides left exactly as far as the field grows and no further. */
+.viewhead .namebox { flex: 0 0 auto; margin-left: auto; }
+.viewhead .namebox .btn { flex: 0 0 auto; }
+.viewhead .namebox.is-asking .btn { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.viewhead .namebox-field { width: 360px; }
+@media (max-width: 640px) {
+  .viewhead .namebox.is-asking { flex: 1 1 100%; }
+  .viewhead .namebox-field { width: auto; }
+}
 /* Beats `.approve-row .btn-approve`'s own flex, which still matches in here. */
 .approve-row .namebox .btn-approve { flex: 1 1 auto; min-width: 0; }
 .approve-row .namebox.is-asking .btn-approve {
@@ -3843,6 +3857,18 @@ body > .shell { width: 100%; }
 .perm input { flex: 0 0 auto; width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
 .perm input:disabled { opacity: .45; }
 .perm:has(input:disabled) { cursor: default; color: var(--ink-mute); }
+/* The parts of a section, folded under the section selects. A part left at
+   Same as section stores nothing, so the fold is furniture for the group
+   that needs no exception and the exception itself for the one that does. */
+.permparts { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.permparts-toggle {
+  display: inline-flex; align-items: center; gap: 6px; min-height: var(--ctl-h-sm);
+  padding: 0; border: 0; background: none; color: var(--ink-soft); font: inherit; font-size: 13px; cursor: pointer;
+}
+.permparts-toggle .disclosure-caret { display: inline-block; transition: transform var(--t) var(--ease); }
+.permparts-toggle[aria-expanded="true"] .disclosure-caret { transform: rotate(90deg); }
+.permparts-body { margin-top: 10px; display: grid; gap: 14px; }
+.permparts-sec > .field-label { margin: 0 0 6px; }
 .team-act { text-align: right; }
 .select-sm { min-height: var(--ctl-h-sm); height: var(--ctl-h-sm); min-width: 0; padding-right: 28px; font-size: 13px; width: 100%; }
 
@@ -3860,22 +3886,67 @@ body > .shell { width: 100%; }
    set also let them delete a client. The section is on the control now
    (`data-need="review:manage"`), so the gate is per section and the selector
    no longer has to guess from what a control is *not*. */
-body.no-manage-clients   [data-need="clients:manage"],
-body.no-manage-review    [data-need="review:manage"],
+/* A part names its section and itself (`data-need="clients.billing:work"`),
+   and the class hyphenates the key, since a dot is not a class token. The
+   list is every section and part the console has at every level it gates,
+   written out rather than generated, so a control that names a part nobody
+   defined is a control that is always drawn and therefore seen. */
+body.no-manage-clients [data-need="clients:manage"],
+body.no-work-clients [data-need="clients:work"],
+body.no-manage-review [data-need="review:manage"],
+body.no-work-review [data-need="review:work"],
 body.no-manage-campaigns [data-need="campaigns:manage"],
-body.no-manage-links     [data-need="links:manage"],
-body.no-manage-register  [data-need="register:manage"],
-body.no-manage-hr        [data-need="hr:manage"],
-body.no-work-clients     [data-need="clients:work"],
-body.no-manage-services  [data-need="services:manage"] { display: none !important; }
+body.no-work-campaigns [data-need="campaigns:work"],
+body.no-manage-links [data-need="links:manage"],
+body.no-work-links [data-need="links:work"],
+body.no-manage-register [data-need="register:manage"],
+body.no-work-register [data-need="register:work"],
+body.no-manage-services [data-need="services:manage"],
+body.no-work-services [data-need="services:work"],
+body.no-manage-clients-contacts [data-need="clients.contacts:manage"],
+body.no-work-clients-contacts [data-need="clients.contacts:work"],
+body.no-view-clients-contacts [data-need="clients.contacts:view"],
+body.no-manage-clients-billing [data-need="clients.billing:manage"],
+body.no-work-clients-billing [data-need="clients.billing:work"],
+body.no-view-clients-billing [data-need="clients.billing:view"],
+body.no-manage-clients-services [data-need="clients.services:manage"],
+body.no-work-clients-services [data-need="clients.services:work"],
+body.no-view-clients-services [data-need="clients.services:view"],
+body.no-manage-clients-documents [data-need="clients.documents:manage"],
+body.no-work-clients-documents [data-need="clients.documents:work"],
+body.no-view-clients-documents [data-need="clients.documents:view"],
+body.no-manage-clients-requests [data-need="clients.requests:manage"],
+body.no-work-clients-requests [data-need="clients.requests:work"],
+body.no-view-clients-requests [data-need="clients.requests:view"],
+body.no-manage-clients-calls [data-need="clients.calls:manage"],
+body.no-work-clients-calls [data-need="clients.calls:work"],
+body.no-view-clients-calls [data-need="clients.calls:view"],
+body.no-manage-review-sets [data-need="review.sets:manage"],
+body.no-work-review-sets [data-need="review.sets:work"],
+body.no-view-review-sets [data-need="review.sets:view"],
+body.no-manage-review-settings [data-need="review.settings:manage"],
+body.no-work-review-settings [data-need="review.settings:work"],
+body.no-view-review-settings [data-need="review.settings:view"],
+body.no-manage-campaigns-campaigns [data-need="campaigns.campaigns:manage"],
+body.no-work-campaigns-campaigns [data-need="campaigns.campaigns:work"],
+body.no-view-campaigns-campaigns [data-need="campaigns.campaigns:view"],
+body.no-manage-campaigns-creators [data-need="campaigns.creators:manage"],
+body.no-work-campaigns-creators [data-need="campaigns.creators:work"],
+body.no-view-campaigns-creators [data-need="campaigns.creators:view"],
+body.no-manage-campaigns-finance [data-need="campaigns.finance:manage"],
+body.no-work-campaigns-finance [data-need="campaigns.finance:work"],
+body.no-view-campaigns-finance [data-need="campaigns.finance:view"],
+body.no-manage-register-documents [data-need="register.documents:manage"],
+body.no-work-register-documents [data-need="register.documents:work"],
+body.no-view-register-documents [data-need="register.documents:view"],
+body.no-manage-register-hr [data-need="register.hr:manage"],
+body.no-work-register-hr [data-need="register.hr:work"],
+body.no-view-register-hr [data-need="register.hr:view"] { display: none !important; }
 /* What a deletion takes with it, counted from the record rather than
    described. A list, because four facts in a sentence is a sentence nobody
    finishes reading before pressing the button. */
 .dellist { margin: 10px 0 14px; padding-left: 18px; font-size: 13.5px; color: var(--ink-soft); }
 .dellist li { margin: 3px 0; }
-body.no-billing #crmTabs [data-needs-billing],
-body.no-billing .rec-pane[data-pane="billing"] { display: none !important; }
-body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; }
 @media (pointer: coarse) {
   .select-sm { min-height: var(--ctl-h); }
   .perm input { width: 22px; height: 22px; }

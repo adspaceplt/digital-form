@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260920y">
+<link rel="stylesheet" href="/css/portal.css?v=20260920z">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,21 +28,21 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260920y"></script>
-<script src="/js/words.js?v=20260920y"></script>
-<script src="/js/copy.js?v=20260920y"></script>
-<script src="/js/ask.js?v=20260920y"></script>
-<script src="/js/state.js?v=20260920y"></script>
-<script src="/js/menu.js?v=20260920y"></script>
-<script src="/js/api.js?v=20260920y"></script>
-<script src="/js/money.js?v=20260920y"></script>
-<script src="/js/mockups.js?v=20260920y"></script>
+<script src="/js/config.js?v=20260920z"></script>
+<script src="/js/words.js?v=20260920z"></script>
+<script src="/js/copy.js?v=20260920z"></script>
+<script src="/js/ask.js?v=20260920z"></script>
+<script src="/js/state.js?v=20260920z"></script>
+<script src="/js/menu.js?v=20260920z"></script>
+<script src="/js/api.js?v=20260920z"></script>
+<script src="/js/money.js?v=20260920z"></script>
+<script src="/js/mockups.js?v=20260920z"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260920y" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260920z" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -296,11 +296,11 @@
         <div class="rec">
           <nav class="rectabs" id="crmTabs" role="tablist" aria-label="Client record">
             <button class="tab is-on" data-pane="overview" type="button" role="tab" aria-selected="true">Overview</button>
-            <button class="tab" data-pane="contacts" type="button" role="tab" aria-selected="false">Contacts</button>
-            <button class="tab" data-pane="billing" data-needs-billing type="button" role="tab" aria-selected="false">Billing</button>
+            <button class="tab" data-pane="contacts" data-part="clients.contacts" type="button" role="tab" aria-selected="false">Contacts</button>
+            <button class="tab" data-pane="billing" data-part="clients.billing" type="button" role="tab" aria-selected="false">Billing</button>
             <button class="tab" data-pane="brand" type="button" role="tab" aria-selected="false">Brand</button>
-            <button class="tab" data-pane="services" type="button" role="tab" aria-selected="false">Services</button>
-            <button class="tab" data-pane="documents" type="button" role="tab" aria-selected="false">Documents</button>
+            <button class="tab" data-pane="services" data-part="clients.services" type="button" role="tab" aria-selected="false">Services</button>
+            <button class="tab" data-pane="documents" data-part="clients.documents" type="button" role="tab" aria-selected="false">Documents</button>
             <button class="tab" data-pane="activity" data-needs-activity type="button" role="tab" aria-selected="false">Activity</button>
           </nav>
 
@@ -330,7 +330,7 @@
         <!-- The people. A company does not answer the phone. -->
         <div class="viewhead">
           <span class="headmark"><h2>Client details</h2></span>
-          <button class="btn btn-primary" id="crmAddContact" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add contact</button>
+          <button class="btn btn-primary" id="crmAddContact" data-need="clients.contacts:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add contact</button>
         </div>
         <div class="panel" id="crmContactBox" hidden>
           <div class="panelhead"><h3 id="crmContactTitle">New contact</h3></div>
@@ -400,7 +400,7 @@
               <input type="checkbox" id="crmSstApplies"> <span id="crmSstLabel">Charge SST 8% on this client's quotes</span>
             </label>
             <div class="row" style="margin-top:14px">
-              <button class="btn btn-primary" id="crmBillSave" type="button">Save</button>
+              <button class="btn btn-primary" id="crmBillSave" data-need="clients.billing:work" type="button">Save</button>
             </div>
             <div class="msg" id="crmBillMsg"></div>
           </div>
@@ -465,7 +465,7 @@
              the rate card and keep their own price. -->
         <div class="viewhead">
           <span class="headmark"><h2>Services</h2></span>
-          <button class="btn btn-primary" id="crmAddService" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
+          <button class="btn btn-primary" id="crmAddService" data-need="clients.services:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
         </div>
         <div class="panel" id="crmServiceBox" hidden>
           <div class="panelhead"><h3 id="crmServiceTitle">New service</h3></div>
@@ -536,8 +536,8 @@
         <!-- The Letter of Offer: the quoted lines for the client to sign, kept as issued. -->
         <div class="viewhead">
           <span class="headmark"><h2>Documents</h2></span>
-          <button class="btn" id="crmIssueDoc" type="button" data-need="clients:work">Issue document</button>
-          <button class="btn btn-primary" id="crmCover" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>Issue letter</button>
+          <button class="btn" id="crmIssueDoc" type="button" data-need="clients.documents:work">Issue document</button>
+          <button class="btn btn-primary" id="crmCover" data-need="clients.documents:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>Issue letter</button>
         </div>
         <div class="msg" id="crmDocMsg"></div>
         <div id="crmDocuments"></div>
@@ -649,7 +649,7 @@
         <!-- Every call, visit and message, newest first. -->
         <div class="viewhead">
           <span class="headmark"><h2>Calls and visits</h2></span>
-          <button class="btn btn-primary" id="crmAddTouch" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add entry</button>
+          <button class="btn btn-primary" id="crmAddTouch" data-need="clients.calls:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add entry</button>
         </div>
         <div class="panel" id="crmTouchBox" hidden>
           <div class="panelhead"><h3 id="crmTouchTitle">New entry</h3></div>
@@ -813,7 +813,7 @@
       </div>
     </section>
 
-    <section class="panel panel-collapse">
+    <section class="panel panel-collapse" data-need="review.settings:view">
       <button class="disclosure" id="advancedToggle" type="button" aria-expanded="false">
         <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
         <svg class="disclosure-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
@@ -841,7 +841,7 @@
               <label class="field-label" for="eXhs">rednote name</label>
               <input class="input" id="eXhs" placeholder="Name">
             </div>
-            <button class="btn btn-primary" id="saveHandles" type="button">Save</button>
+            <button class="btn btn-primary" id="saveHandles" data-need="review.settings:work" type="button">Save</button>
           </div>
           <div class="msg" id="handleMsg"></div>
         </div>
@@ -862,7 +862,7 @@
               <label class="field-label" for="ePass">Access code</label>
               <input class="input" id="ePass" placeholder="None">
             </div>
-            <button class="btn btn-primary" id="saveProfile" type="button">Save</button>
+            <button class="btn btn-primary" id="saveProfile" data-need="review.settings:work" type="button">Save</button>
           </div>
           <div class="msg" id="logoNote"></div>
           <div class="msg" id="profileMsg"></div>
@@ -872,8 +872,8 @@
           <h4>Link and removal</h4>
           <p class="hint">Reset invalidates the current link. Removal deletes the content sets and approvals and keeps the client record.</p>
           <div class="dangerrow">
-            <button class="btn btn-warn" id="resetLink" type="button">Reset access link</button>
-            <button class="btn btn-danger" id="deleteClient" data-need="review:manage" type="button">Remove from Content Review</button>
+            <button class="btn btn-warn" id="resetLink" data-need="review.settings:work" type="button">Reset access link</button>
+            <button class="btn btn-danger" id="deleteClient" data-need="review.sets:manage" type="button">Remove from Content Review</button>
           </div>
         </div>
 
@@ -882,7 +882,7 @@
 
     <div class="viewhead">
       <span class="headmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg><h2>Content sets</h2></span>
-      <button class="btn btn-primary" id="addBatch" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New content set</button>
+      <button class="btn btn-primary" id="addBatch" data-need="review.sets:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New content set</button>
     </div>
     <div class="cards" id="batchCards"></div>
     <div class="msg" id="setsMsg"></div>
@@ -900,9 +900,9 @@
         <div class="setbar-actions">
           <button class="btn btn-icononly" id="renameSet" type="button"
                   title="Rename set" aria-label="Rename set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg></button>
-          <button class="btn btn-icononly is-danger" id="deleteSet" data-need="review:manage" type="button"
+          <button class="btn btn-icononly is-danger" id="deleteSet" data-need="review.sets:manage" type="button"
                   title="Delete set" aria-label="Delete set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/></svg></button>
-          <button class="btn btn-go btn-icon" id="publishSet" type="button">
+          <button class="btn btn-go btn-icon" id="publishSet" data-need="review.sets:work" type="button">
             <svg id="publishIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
                  aria-hidden="true"></svg>
@@ -1002,7 +1002,7 @@
 
       <div class="tabrow" id="campSectionTabs" role="tablist">
         <button class="tab is-on" id="tabCampaigns" data-tab="campaigns" type="button" role="tab">Campaigns</button>
-        <button class="tab" id="tabRoster" data-tab="roster" type="button" role="tab">Creators</button>
+        <button class="tab" id="tabRoster" data-tab="roster" data-need="campaigns.creators:view" type="button" role="tab">Creators</button>
       </div>
 
       <!-- ---- Campaign form: creates, and edits an open campaign in place ---- -->
@@ -1050,7 +1050,7 @@
           </div>
           <div class="msg" id="campMsg"></div>
           <!-- Deletion lives with editing: rare, and behind one more click. -->
-          <div class="form-danger" id="campDangerRow" data-need="campaigns:manage" hidden>
+          <div class="form-danger" id="campDangerRow" data-need="campaigns.campaigns:manage" hidden>
             <button class="btn btn-quiet is-danger btn-sm" id="campDelete" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/></svg>Delete campaign</button>
           </div>
         </div>
@@ -1071,7 +1071,7 @@
             <option value="all">Every state</option>
           </select>
           <span class="cmdbar-count" id="campCount"></span>
-          <button class="btn btn-sm btn-primary" id="showAddCamp" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New campaign</button>
+          <button class="btn btn-sm btn-primary" id="showAddCamp" data-need="campaigns.campaigns:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New campaign</button>
         </div>
 
         <div id="campCards"></div>
@@ -1145,7 +1145,7 @@
             <button class="tab" data-pane="creators" type="button" role="tab" aria-selected="false">Creators</button>
             <button class="tab" data-pane="schedule" type="button" role="tab" aria-selected="false">Schedule</button>
             <button class="tab" data-pane="client" type="button" role="tab" aria-selected="false">Selection</button>
-            <button class="tab" data-pane="finance" type="button" role="tab" aria-selected="false">Finance</button>
+            <button class="tab" data-pane="finance" data-part="campaigns.finance" type="button" role="tab" aria-selected="false">Finance</button>
             <button class="tab" data-pane="activity" data-needs-activity type="button" role="tab" aria-selected="false">Activity</button>
           </nav>
 
@@ -1290,7 +1290,7 @@
                  above the actions, not stranded under them. -->
             <div class="invcurrent" id="invCurrent"></div>
             <div class="row" style="margin-top:12px">
-              <button class="btn btn-primary" id="invSave" type="button">Save</button>
+              <button class="btn btn-primary" id="invSave" data-need="campaigns.finance:work" type="button">Save</button>
               <button class="btn btn-quiet" id="invCancel" type="button" style="flex:0 0 auto">Cancel</button>
             </div>
             <div class="msg" id="invMsg"></div>
@@ -1405,7 +1405,7 @@
             <option value="facebook">Facebook</option>
           </select>
           <span class="cmdbar-count" id="rosterCount"></span>
-          <button class="btn btn-sm btn-primary" id="showAddCreator" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creator</button>
+          <button class="btn btn-sm btn-primary" id="showAddCreator" data-need="campaigns.creators:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creator</button>
         </div>
         <div id="rosterList"></div>
       </div>
@@ -1900,12 +1900,12 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260920y"></script>
-<script src="/js/documents.js?v=20260920y"></script>
-<script src="/js/letters.js?v=20260920y"></script>
-<script src="/js/register.js?v=20260920y"></script>
-<script src="/js/crm.js?v=20260920y"></script>
-<script src="/js/team.js?v=20260920y"></script>
-<script src="/js/campaigns.js?v=20260920y"></script>
+<script src="/js/admin.js?v=20260920z"></script>
+<script src="/js/documents.js?v=20260920z"></script>
+<script src="/js/letters.js?v=20260920z"></script>
+<script src="/js/register.js?v=20260920z"></script>
+<script src="/js/crm.js?v=20260920z"></script>
+<script src="/js/team.js?v=20260920z"></script>
+<script src="/js/campaigns.js?v=20260920z"></script>
 </body>
 </html>

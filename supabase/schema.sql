@@ -1432,76 +1432,96 @@ returns int language sql immutable as $$
 $$;
 
 /* The predicate every policy asks: does this person reach this level in this
-   section? `view` reads, `work` adds, edits and publishes, `manage` also
-   destroys. An admin reaches everything. */
+   section, or in this part of it? `view` reads, `work` adds, edits and
+   publishes, `manage` also destroys. An admin reaches everything.
+
+   A PART IS A KEY UNDER ITS SECTION. The access map holds a level per
+   section (`clients`) and, where a group needs one, a level per part of a
+   section (`clients.billing`): a part answers with its own level where one is
+   set and with its section's where none is, so a group that has never set a
+   part is exactly where it was. The parts are the panes and lists a section
+   is made of, and nothing finer:
+
+     clients    contacts · billing · services · documents · requests · calls
+     review     sets · settings
+     campaigns  campaigns · creators · finance
+     register   documents · hr
+
+   HR letters were a section of their own (`hr`) until this went in; they are
+   `register.hr` now, and the backfill below moves the level across once. */
 create or replace function public.allowed(p_section text, p_level text)
 returns boolean
 language plpgsql security definer stable set search_path = public as $$
-declare t public.team_members;
+declare
+  t public.team_members;
+  k text := lower(coalesce(p_section, ''));
+  lv text;
 begin
   select * into t from public.team_members
     where lower(email) = lower(auth.jwt() ->> 'email') and active limit 1;
   if t.id is null then return false; end if;
   if t.is_admin or t.role = 'admin' then return true; end if;
-  return public.level_rank(t.access ->> lower(p_section))
-       >= public.level_rank(p_level);
+  lv := t.access ->> k;
+  if lv is null and position('.' in k) > 0 then
+    lv := t.access ->> split_part(k, '.', 1);
+  end if;
+  return public.level_rank(lv) >= public.level_rank(p_level);
 end $$;
 grant execute on function public.allowed(text, text) to authenticated;
 
-/* The one-argument form stays, because one capability genuinely is not a
-   section and never will be: `billing` is a pane inside the client record.
-   `admin` is the flag that opens everything. `doc_void` was a second such
-   switch until 2026-09-22: voiding a verified letter reverses a commercial
-   confirmation and was kept apart from deleting one, but in practice the
-   person trusted to delete a client's letter is the person trusted to void
-   it, and two switches for one level of trust left groups with Manage on
-   Clients and no void. Voiding is Clients: Manage now; the `can_doc_void`
-   columns stay, unread, so an older database is not put through a drop.
+/* The one-argument form stays for `admin`, the flag that opens everything,
+   and as the everyday form: a section or part name passed here means
+   **work**, not view, so a call site missed when the levels went in refuses
+   rather than quietly granting a write to somebody who was only given
+   reading. Every read policy names `view` explicitly. `remove` is
+   deliberately gone — that was the global flag this model exists to break
+   up, so any call still asking for it fails loudly.
 
-   A section name passed here means **work**, not view: a call site missed
-   when the levels went in then refuses rather than quietly granting a write
-   to somebody who was only given reading. Every read policy names `view`
-   explicitly. `remove` is deliberately gone — that was the global flag this
-   model exists to break up, so any call still asking for it fails loudly. */
+   `billing` was a capability here, a switch beside the ladder, because a
+   pane inside the client record is not a section. It went on 2026-09-22 at
+   the user's request: the letters in Documents print the registered name
+   and the billing address anyway, so the switch hid a pane and not the
+   facts, and a group that could open Clients without Billing read as a
+   mistake nobody had made. Billing is `clients.billing` now, a part with the
+   same four levels as everything else; the `can_billing` columns stay,
+   unread, as `can_doc_void` does. `allowed('billing')` therefore refuses,
+   which is what a retired switch should do. */
 create or replace function public.allowed(flag text)
 returns boolean
 language plpgsql security definer stable set search_path = public as $$
 declare t public.team_members;
 begin
-  if flag in ('billing', 'admin') then
+  if flag = 'admin' then
     select * into t from public.team_members
       where lower(email) = lower(auth.jwt() ->> 'email') and active limit 1;
     if t.id is null then return false; end if;
-    if t.is_admin or t.role = 'admin' then return true; end if;
-    return coalesce(case flag
-      when 'billing'  then t.can_billing
-      else false
-    end, false);
+    return t.is_admin or t.role = 'admin';
   end if;
   return public.allowed(flag, 'work');
 end $$;
 grant execute on function public.allowed(text) to authenticated;
 
--- The section tables, each gated by its section, with removal gated twice.
--- Policies are additive, so the old blanket ones have to go first.
+-- The section tables, each gated by the part of its section it belongs to,
+-- with removal gated twice. Policies are additive, so the old blanket ones
+-- have to go first.
 do $$
 declare
   spec text[][] := array[
-    ['client_contacts',        'clients'],
-    ['client_touches',         'clients'],
-    ['batches',                'review'],
-    ['posts',                  'review'],
-    ['reviews',                'review'],
-    ['drive_assets',           'review'],
+    ['client_contacts',        'clients.contacts'],
+    ['client_touches',         'clients.calls'],
+    ['batches',                'review.sets'],
+    ['posts',                  'review.sets'],
+    ['reviews',                'review.sets'],
+    ['drive_assets',           'review.sets'],
     ['links',                  'links'],
     ['link_qrs',               'links'],
-    ['creators',               'campaigns'],
-    ['creator_profiles',       'campaigns'],
-    ['campaigns',              'campaigns'],
-    ['campaign_options',       'campaigns'],
-    ['campaign_confirmations', 'campaigns'],
-    ['option_posts',           'campaigns'],
-    ['option_reviews',         'campaigns']
+    ['creators',               'campaigns.creators'],
+    ['creator_profiles',       'campaigns.creators'],
+    ['campaigns',              'campaigns.campaigns'],
+    ['campaign_options',       'campaigns.campaigns'],
+    ['campaign_confirmations', 'campaigns.campaigns'],
+    ['option_posts',           'campaigns.campaigns'],
+    ['option_reviews',         'campaigns.campaigns']
   ];
   i int; t text; f text; p record;
 begin
@@ -1532,8 +1552,48 @@ create policy clients_read on public.clients for select to authenticated
 create policy clients_write on public.clients for insert to authenticated
   with check (public.allowed('clients'));
 create policy clients_update on public.clients for update to authenticated
-  using (public.allowed('clients') or public.allowed('review'))
-  with check (public.allowed('clients') or public.allowed('review'));
+  using (public.allowed('clients') or public.allowed('review.settings'))
+  with check (public.allowed('clients') or public.allowed('review.settings'));
+
+/* Two parts live in columns of a row other parts also write, so a policy
+   cannot separate them: the billing details on `clients` and the invoice on
+   `campaigns`. A trigger asks the part's own level for exactly those columns
+   and lets the rest of the row through on the section's, so hiding the
+   Billing pane from a group is a refusal in the database and not only a tab
+   the page does not draw. */
+create or replace function public.clients_billing_guard()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  -- A billing contact deleted from Contacts nulls bill_contact_id by the
+  -- foreign key, which is a cascade and not a person editing Billing.
+  if pg_trigger_depth() > 1 then return new; end if;
+  if (new.legal_name, new.company_no, new.company_no_old, new.tin, new.sst_no, new.sst_applies,
+      new.bill_contact_id, new.finance_email, new.billing_address)
+     is distinct from
+     (old.legal_name, old.company_no, old.company_no_old, old.tin, old.sst_no, old.sst_applies,
+      old.bill_contact_id, old.finance_email, old.billing_address)
+     and not public.allowed('clients.billing', 'work') then
+    raise exception 'Billing details need Clients: Billing at Work.' using errcode = '42501';
+  end if;
+  return new;
+end $$;
+drop trigger if exists clients_billing_guard on public.clients;
+create trigger clients_billing_guard before update on public.clients
+  for each row execute function public.clients_billing_guard();
+
+create or replace function public.campaigns_finance_guard()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if (new.invoice_no, new.invoice_url, new.invoice_uploaded_at)
+     is distinct from (old.invoice_no, old.invoice_url, old.invoice_uploaded_at)
+     and not public.allowed('campaigns.finance', 'work') then
+    raise exception 'The invoice needs Creator Campaigns: Finance at Work.' using errcode = '42501';
+  end if;
+  return new;
+end $$;
+drop trigger if exists campaigns_finance_guard on public.campaigns;
+create trigger campaigns_finance_guard before update on public.campaigns
+  for each row execute function public.campaigns_finance_guard();
 
 -- The activity record is written by anyone and read by those allowed to.
 -- activity_viewers is no longer consulted; the switch lives on the team row.
@@ -1609,6 +1669,15 @@ update public.team_roles set access = jsonb_build_object(
     'services',  case when is_admin      then 'manage' else 'view' end,
     'team',      case when is_admin      then 'manage' else 'none' end)
   where access = '{}'::jsonb;
+
+/* HR letters were their own section (`hr`) and are a part of the Register
+   (`register.hr`) now. The level moves across once, `none` included, because
+   a part with no level of its own falls back to its section's and a group
+   given the Register but not HR must stay that way. Guarded on the old key,
+   which the move removes, so a re-run finds nothing to move. */
+update public.team_roles
+   set access = (access - 'hr') || jsonb_build_object('register.hr', coalesce(access ->> 'hr', 'none'))
+ where access ? 'hr';
 
 update public.team_members set role = 'account'
   where role is null or role not in (select slug from public.team_roles);
@@ -1790,7 +1859,7 @@ create index if not exists client_services_client_idx on public.client_services(
 alter table public.client_services enable row level security;
 drop policy if exists client_services_rw on public.client_services;
 create policy client_services_rw on public.client_services for all to authenticated
-  using (public.allowed('clients', 'view')) with check (public.allowed('clients', 'work'));
+  using (public.allowed('clients.services', 'view')) with check (public.allowed('clients.services', 'work'));
 
 -- ============================================================================
 -- DOCUMENTS: quotations and invoices, kept as issued.
@@ -1819,7 +1888,7 @@ create index if not exists client_documents_client_idx on public.client_document
 alter table public.client_documents enable row level security;
 drop policy if exists client_documents_rw on public.client_documents;
 create policy client_documents_rw on public.client_documents for all to authenticated
-  using (public.allowed('clients', 'view')) with check (public.allowed('clients', 'work'));
+  using (public.allowed('clients.documents', 'view')) with check (public.allowed('clients.documents', 'work'));
 
 -- A line can run for a term: qty × rate × months, from a start month.
 alter table public.client_services add column if not exists tenure   int  not null default 1;
@@ -1960,7 +2029,7 @@ create index if not exists client_requests_client_idx on public.client_requests(
 alter table public.client_requests enable row level security;
 drop policy if exists client_requests_team on public.client_requests;
 create policy client_requests_team on public.client_requests for all to authenticated
-  using (public.allowed('clients', 'view')) with check (public.allowed('clients', 'work'));
+  using (public.allowed('clients.requests', 'view')) with check (public.allowed('clients.requests', 'work'));
 drop trigger if exists client_requests_touch on public.client_requests;
 create trigger client_requests_touch before update on public.client_requests
   for each row execute function public.touch_updated_at();
@@ -2857,7 +2926,7 @@ alter table public.client_document_services enable row level security;
 -- calling PostgREST.
 drop policy if exists cds_read on public.client_document_services;
 create policy cds_read on public.client_document_services for select to authenticated
-  using (public.allowed('clients', 'view'));
+  using (public.allowed('clients.documents', 'view'));
 
 -- ---------------------------------------------------------------------------
 -- 4. The serial, per client, per Malaysian calendar month
@@ -2875,7 +2944,7 @@ create table if not exists public.client_document_seq (
 alter table public.client_document_seq enable row level security;
 drop policy if exists cdseq_read on public.client_document_seq;
 create policy cdseq_read on public.client_document_seq for select to authenticated
-  using (public.allowed('clients', 'view'));
+  using (public.allowed('clients.documents', 'view'));
 
 -- ---------------------------------------------------------------------------
 -- 5. Issuing
@@ -2925,7 +2994,7 @@ declare
   v_bad  int;
   v_old  public.client_documents%rowtype;
 begin
-  if not public.allowed('clients') then
+  if not public.allowed('clients.documents') then
     return jsonb_build_object('error', 'not-allowed');
   end if;
   if p_client is null or p_services is null or array_length(p_services, 1) is null then
@@ -3093,7 +3162,7 @@ declare
   d   public.client_documents%rowtype;
   cl  public.clients%rowtype;
 begin
-  if not public.allowed('clients') then return jsonb_build_object('error', 'not-allowed'); end if;
+  if not public.allowed('clients.documents') then return jsonb_build_object('error', 'not-allowed'); end if;
   select * into d from public.client_documents where id = p_doc;
   if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
   if d.voided_at is not null then return jsonb_build_object('error', 'voided'); end if;
@@ -3132,7 +3201,7 @@ declare
   v_map int;
   v_n   int;
 begin
-  if not public.allowed('billing') then return jsonb_build_object('error', 'not-allowed'); end if;
+  if not public.allowed('clients.documents') then return jsonb_build_object('error', 'not-allowed'); end if;
   select * into d from public.client_documents where id = p_doc;
   if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
   if d.voided_at is not null then return jsonb_build_object('error', 'voided'); end if;
@@ -3187,7 +3256,7 @@ declare
   d   public.client_documents%rowtype;
   cl  public.clients%rowtype;
 begin
-  if not public.allowed('clients') then return jsonb_build_object('error', 'not-allowed'); end if;
+  if not public.allowed('clients.documents') then return jsonb_build_object('error', 'not-allowed'); end if;
   select * into d from public.client_documents where id = p_doc;
   if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
   if d.verified_at is not null then return jsonb_build_object('error', 'verified'); end if;
@@ -3276,7 +3345,7 @@ create index if not exists client_document_deletions_client_idx
 alter table public.client_document_deletions enable row level security;
 drop policy if exists client_document_deletions_read on public.client_document_deletions;
 create policy client_document_deletions_read on public.client_document_deletions
-  for select to authenticated using (public.allowed('clients'));
+  for select to authenticated using (public.allowed('clients.documents'));
 -- No write policy: the audit row is written by letter_delete and nothing else.
 
 -- Which lines this letter alone is holding confirmed. A line mapped to a
@@ -3312,7 +3381,7 @@ declare
 begin
   -- Voiding is the Clients section's Manage level, the same authority that
   -- deletes a letter: one level of trust, one switch.
-  if not public.allowed('clients', 'manage') then return jsonb_build_object('error', 'not-allowed'); end if;
+  if not public.allowed('clients.documents', 'manage') then return jsonb_build_object('error', 'not-allowed'); end if;
   if coalesce(btrim(p_reason), '') = '' then return jsonb_build_object('error', 'reason-required'); end if;
   select * into d from public.client_documents where id = p_doc;
   if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
@@ -3346,7 +3415,7 @@ declare
 begin
   -- A letter lives inside the client record, so deleting one is `manage`
   -- on Clients. Voiding stays its own capability: two authorities, two acts.
-  if not public.allowed('clients', 'manage') then return jsonb_build_object('error', 'not-allowed'); end if;
+  if not public.allowed('clients.documents', 'manage') then return jsonb_build_object('error', 'not-allowed'); end if;
   if coalesce(btrim(p_reason), '') = '' then return jsonb_build_object('error', 'reason-required'); end if;
   select * into d from public.client_documents where id = p_doc;
   if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
@@ -3388,9 +3457,10 @@ grant execute on function public.letter_delete(uuid, text, text) to authenticate
 --      overwrite it where the number comes from outside (the accounting
 --      portal's quotation serial). A serial is never reused: a deleted one is
 --      remembered.
---   2. HR is its own section in the access ladder. An HR row is unreadable
---      without `hr` view, its serial carries a staff code, and the activity
---      record is told that an HR letter was issued and nothing about whom.
+--   2. HR is its own part of the access ladder (`register.hr`). An HR row is
+--      unreadable without it, its serial carries a staff code, and the
+--      activity record is told that an HR letter was issued and nothing
+--      about whom.
 --   3. Verification answers an exact serial with the kind, the date and
 --      whether it stands, and never the recipient. It is granted to anon,
 --      because the footer of every letter names a public page.
@@ -3488,7 +3558,14 @@ create table if not exists public.documents (
   voided_by   text,
   void_reason text
 );
-create unique index if not exists documents_serial_idx on public.documents (upper(serial));
+/* A reissue keeps the serial: the earlier version is voided and stays on the
+   record, the new one is the document that stands. So a serial is unique
+   among the documents that stand, and serial_taken() below still refuses it
+   to anything else, because both versions hold it. */
+drop index if exists documents_serial_idx;
+create unique index if not exists documents_serial_live_idx
+  on public.documents (upper(serial)) where voided_at is null;
+alter table public.documents add column if not exists replaces uuid references public.documents(id) on delete set null;
 create index if not exists documents_client_idx on public.documents (client_id);
 create index if not exists documents_member_idx on public.documents (member_id);
 create index if not exists documents_created_idx on public.documents (created_at desc);
@@ -3505,15 +3582,15 @@ create table if not exists public.document_deletions (
 alter table public.document_deletions enable row level security;
 
 -- Who may do what, by family. A client's documents belong to the client
--- record as much as to the Register, so either section's level opens them;
--- an HR letter answers to the HR section and to nothing else.
+-- record as much as to the Register, so either's Documents part opens them;
+-- an HR letter answers to the Register's HR part and to nothing else.
 create or replace function public.register_may(p_family text, p_level text)
 returns boolean
 language sql security definer stable set search_path = public as $$
   select case
-    when p_family = 'hr'    then public.allowed('hr', p_level)
-    when p_family = 'other' then public.allowed('register', p_level)
-    else public.allowed('register', p_level) or public.allowed('clients', p_level)
+    when p_family = 'hr'    then public.allowed('register.hr', p_level)
+    when p_family = 'other' then public.allowed('register.documents', p_level)
+    else public.allowed('register.documents', p_level) or public.allowed('clients.documents', p_level)
   end
 $$;
 grant execute on function public.register_may(text, text) to authenticated;
@@ -3764,6 +3841,93 @@ begin
 end $$;
 grant execute on function public.register_update(uuid, text, text, date, text, uuid, text, text) to authenticated;
 
+-- 5b. Reissue: a portal document corrected after it went out. The earlier
+--     version is voided with the reason `Reissued` and kept, the new version
+--     takes the same serial, the same kind and the same client or colleague,
+--     and points back at the one it replaces. Work level, because correcting
+--     what you issued is everyday work and the earlier version stays on the
+--     record where anybody can read it. The verify page answers the version
+--     that stands and says nothing about a reissue: the reference on the
+--     paper in somebody's hand is the reference of the document that stands.
+create or replace function public.document_reissue(
+  p_doc       uuid,
+  p_issued_at date,
+  p_title     text,
+  p_recipient jsonb,
+  p_body      jsonb,
+  p_signatory jsonb,
+  p_languages text[],
+  p_salutation text,
+  p_idem      text
+)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  who    text := lower(auth.jwt() ->> 'email');
+  d      public.documents%rowtype;
+  v_old  public.documents%rowtype;
+  me     public.team_members%rowtype;
+  cl     public.clients%rowtype;
+  v_id   uuid;
+  v_langs text[];
+begin
+  select * into d from public.documents where id = p_doc;
+  if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if d.source <> 'portal' then return jsonb_build_object('error', 'not-portal'); end if;
+  if not public.register_may(d.family, 'work') then return jsonb_build_object('error', 'not-allowed'); end if;
+  -- The same press twice is one reissue, and is answered before the check
+  -- below, because the first press is exactly what made a later version stand.
+  if coalesce(btrim(p_idem), '') <> '' then
+    select * into v_old from public.documents where idem_key = btrim(p_idem) limit 1;
+    if v_old.id is not null then
+      return jsonb_build_object('ok', true, 'repeat', true, 'id', v_old.id, 'serial', v_old.serial);
+    end if;
+  end if;
+  -- Only the version that stands is reissued; an earlier one already has a successor.
+  if exists (select 1 from public.documents
+              where upper(serial) = upper(d.serial) and voided_at is null and id <> d.id) then
+    return jsonb_build_object('error', 'not-current');
+  end if;
+  if d.signed then
+    if coalesce(btrim(p_signatory ->> 'name'), '') = '' then return jsonb_build_object('error', 'no-signatory'); end if;
+    if not public.issuer_name_ok(p_signatory ->> 'name') then
+      return jsonb_build_object('error', 'issuer-name', 'name', p_signatory ->> 'name');
+    end if;
+  end if;
+  v_langs := coalesce(p_languages, d.languages, '{en}');
+  if array_length(v_langs, 1) is null then v_langs := '{en}'; end if;
+  select * into me from public.team_members where lower(email) = who and active limit 1;
+
+  -- The version that stood stops standing first, so the serial is free for
+  -- the one that replaces it; a version already voided keeps its own reason.
+  if d.voided_at is null then
+    update public.documents set voided_at = now(), voided_by = who, void_reason = 'Reissued' where id = d.id;
+  end if;
+  insert into public.documents
+    (type_id, family, kind, serial, client_id, member_id, issued_at, title, salutation, closing,
+     recipient, body, languages, signatory, signed, source, issued_by, idem_key, replaces)
+  values
+    (d.type_id, d.family, d.kind, d.serial, d.client_id, d.member_id,
+     coalesce(p_issued_at, d.issued_at, (timezone('Asia/Kuala_Lumpur', now()))::date),
+     coalesce(nullif(btrim(p_title), ''), d.title),
+     coalesce(nullif(btrim(p_salutation), ''), d.salutation), d.closing,
+     coalesce(p_recipient, d.recipient), coalesce(p_body, d.body), v_langs,
+     case when d.signed then p_signatory else null end, d.signed, 'portal',
+     coalesce(me.name, who), nullif(btrim(p_idem), ''), d.id)
+  returning id into v_id;
+
+  if d.client_id is not null then select * into cl from public.clients where id = d.client_id; end if;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, 'document.reissued',
+          case when d.family = 'hr' then 'HR' else coalesce(cl.name, d.recipient ->> 'name', '') end,
+          case when d.family = 'hr' then d.kind else d.serial || ' · ' || d.kind end);
+  return jsonb_build_object('ok', true, 'id', v_id, 'serial', d.serial);
+exception
+  when unique_violation then
+    return jsonb_build_object('error', 'serial-taken');
+end $$;
+grant execute on function public.document_reissue(uuid, date, text, jsonb, jsonb, jsonb, text[], text, text) to authenticated;
+
 -- 6. Void: the row and the serial stay, the document no longer stands. The
 --    verify page answers "voided" from then on.
 create or replace function public.document_set_void(p_doc uuid, p_reason text)
@@ -3820,6 +3984,8 @@ grant execute on function public.document_delete(uuid, text, text) to authentica
 --    whether it stands out. Never the recipient, never the content, no
 --    listing and no partial match: what this gives away is what the footer
 --    of the letter already printed. An HR serial is answered as "HR letter".
+--    A reissued serial is answered by the version that stands, as Valid, and
+--    only reads Void once no version of it stands.
 create or replace function public.verify_serial(p_serial text)
 returns jsonb
 language plpgsql security definer stable set search_path = public as $$
@@ -3829,7 +3995,8 @@ declare
   l public.client_documents%rowtype;
 begin
   if length(s) < 3 or length(s) > 40 then return jsonb_build_object('found', false); end if;
-  select * into d from public.documents where upper(serial) = s limit 1;
+  select * into d from public.documents where upper(serial) = s
+    order by (voided_at is null) desc, created_at desc limit 1;
   if d.id is not null then
     return jsonb_build_object('found', true, 'serial', d.serial,
       'kind', case when d.family = 'hr' then 'HR letter' else d.kind end,

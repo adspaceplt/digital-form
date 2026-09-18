@@ -46,7 +46,9 @@
     'reason-required':'Say why.',
     'confirm-mismatch':'That is not this document\'s reference.',
     'not-found':      'That document could not be found.',
-    'not-manual':     'A document issued by the portal is a snapshot and is not edited.'
+    'not-manual':     'A document issued by the portal is a snapshot and is not edited.',
+    'not-portal':     'Only a document issued by the portal can be reissued.',
+    'not-current':    'A later version of this document already stands. Reissue that one.'
   };
 
   function missingWord(m) {
@@ -102,6 +104,22 @@
       readBack(out.id, function (doc, e2) {
         if (e2 || !doc) { then({ ok: true, repeat: out.repeat, serial: out.serial, warn: 'Issued. The file could not be drawn.' }); return; }
         download(doc, function (warn) { then({ ok: true, repeat: out.repeat, serial: out.serial, doc: doc, warn: warn }); });
+      });
+    });
+  }
+  /* A corrected version of a document that went out: the same serial, kind
+     and addressee; the earlier version voided as Reissued and kept. */
+  function reissue(doc, a, then) {
+    call('document_reissue', {
+      p_doc: doc.id, p_issued_at: a.issued_at || null, p_title: a.title || null,
+      p_recipient: a.recipient || null, p_body: a.body || null, p_signatory: a.signatory || null,
+      p_languages: a.languages && a.languages.length ? a.languages : null,
+      p_salutation: a.salutation || null, p_idem: a.idem || DOCS.idemKey()
+    }, function (err, out) {
+      if (err) { then({ error: err }); return; }
+      readBack(out.id, function (d2, e2) {
+        if (e2 || !d2) { then({ ok: true, repeat: out.repeat, serial: out.serial, warn: 'Reissued. The file could not be drawn.' }); return; }
+        download(d2, function (warn) { then({ ok: true, repeat: out.repeat, serial: out.serial, doc: d2, warn: warn }); });
       });
     });
   }
@@ -288,7 +306,7 @@
   }
 
   window.ADspaceLetters = {
-    types: types, list: list, listAll: listAll, issue: issue, addManual: addManual, updateManual: updateManual,
+    types: types, list: list, listAll: listAll, issue: issue, reissue: reissue, addManual: addManual, updateManual: updateManual,
     setVoid: setVoid, remove: remove, render: render, download: download,
     fileName: fileName, fill: fill, stateOf: stateOf,
     FAMILY_WORD: FAMILY_WORD, LANG_WORD: LANG_WORD, WORD: WORD

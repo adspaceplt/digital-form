@@ -988,10 +988,10 @@ so a reader can trust the paper in their hand, not so a stranger can learn who
 has been written to. What the page gives away is what the foot of the letter
 already printed.
 
-**HR letters answer to their own section.** A colleague's confirmation letter
+**HR letters answer to their own part.** A colleague's confirmation letter
 is read by fewer people than a client's thank-you letter, so it is not one more
-family in the Register's ladder but a section of its own (`hr`), gated apart
-from `register` and from `clients`. The Register page opens for either; the
+family under the Register's level but a part of its own (`register.hr`), gated
+apart from `register.documents` and from `clients.documents`. The Register page opens for either; the
 database's policy decides which rows arrive. The Activity record is told that
 an HR letter was issued, voided or deleted and the kind it was, and not whom it
 concerned, because the record is read by everybody with the Activity section.
@@ -1022,16 +1022,57 @@ select per section, and the row reads back as a sentence. Adding an eighth
 section costs one select; adding a fifth verb would have cost a column on every
 one of them.
 
-**What has no ladder keeps a switch, and a switch that shadows a level goes.**
-Billing is a pane inside the client record, not a section, so it gets no
-level; one named switch beside seven selects is the honest shape, and
-pretending it is a section would put a meaningless View and Work on it.
-Voiding a letter was a second switch, kept apart from deleting one because it
-reverses a commercial confirmation. It went on 2026-09-22: the person trusted
-to delete a client's letter is the person trusted to void it, so two switches
-described one level of trust, and a group with Manage on Clients and no void
-read as a mistake nobody had made. A switch earns its place only when the
-authority it names is not already one of the ladder's rungs.
+**A part is an exception to its section, never a second ladder.** The ask was
+finer access: a group that works Clients but must not read Billing, a group
+that reads the Register's client letters but not its HR letters. The obvious
+shape is a select per pane per section, which is forty selects a group, nearly
+all of them saying what the section select already said. So a part (the panes
+and lists a section is made of, `clients.billing`, `review.sets`,
+`campaigns.finance`, `register.hr`) has a level only where somebody set one,
+and answers with its section's otherwise, in the database predicate and on the
+page alike. The ordinary group is still one select per section; the Parts fold
+under them stores nothing at `Same as section` and opens by itself only for a
+group that holds an exception, and the row reads the exception in brackets
+after the section it departs from. A part is drawn from what a section is made
+of, never from a verb: there is no `clients.billing.delete`.
+
+**A switch beside the ladder goes the day a level can say it.** Billing was one
+(`can_billing`), kept because a pane inside a record is not a section. It hid
+the pane and not the facts: the letters in Documents print the registered name
+and the billing address, so a group without the switch read them anyway one tab
+along, and a group that could open Clients without Billing read as a mistake
+nobody had made. It is the part `clients.billing` now, with the same four
+levels as everything else, read at View and typed at Work, and the database
+refuses the save below Work through a trigger on exactly those columns. Voiding
+a letter was the other switch and went the same day, into Clients: Manage. The
+one-argument `allowed('billing')` refuses, which is what a retired switch
+should do.
+
+**A document that went out wrong is reissued, not edited and not replaced.**
+A portal document is a snapshot and is never edited in place; a person who
+finds a wrong name on a quotation cover after it was issued still has to fix
+it. Reissue opens the same sheet filled from the version being replaced, with
+what the document is, whose it is and its reference fixed and the words free,
+and on Reissue the earlier version is voided as Reissued and kept, while the
+new one takes the same serial and points back at it. The same serial, because
+the reference has already been quoted to the client and printed on the paper
+in their hand; a new one would make the corrected document a different
+document. On the Register the team sees both versions and the replaced one
+says so. **The verify page never says reissued**: it answers the version that
+stands as Valid, since what the reader is asking is whether the paper they
+hold is the document that stands, and the history of how it came to stand is
+the team's and not theirs. Decided with the user on 2026-09-22.
+
+**A component borrowed for its shape carries its old flex into the new row.**
+The field that names a new content set grows out of New content set through
+`.namebox`, the box the client's Approve row uses. That box takes `flex: 1.35`
+because in the Approve row it splits the line with Request changes; in a
+section head it took most of the row and put the one action 700px short of the
+edge, which read as a button dropped in the wrong place. In a head the box
+holds its own width on the right and the field opens to a stated 360px, so the
+button slides left exactly as far as the field grows; on a phone the open box
+takes the row. The test is the one already written two paragraphs up: what a
+component was built to say, and whether the new row says it.
 
 **A destructive control is drawn behind its capability, or it is a promise the
 database will break.** `body.no-remove` already hid Delete client, the campaign

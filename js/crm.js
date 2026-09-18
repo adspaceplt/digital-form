@@ -30,8 +30,18 @@
   function maySeeActivity() {
     return Boolean(bridge.may && bridge.may('activity', 'view'));
   }
-  function maySeeBilling() {
-    return Boolean(bridge.capable && bridge.capable('billing'));
+  /* A part of the section: the pane's own level where the group set one, the
+     section's where it did not. Billing was a switch beside the ladder until
+     2026-09-22 and is `clients.billing` now. */
+  function mayPart(part, level) {
+    return Boolean(bridge.may && bridge.may(part, level || 'work'));
+  }
+  function maySeeBilling() { return mayPart('clients.billing', 'view'); }
+  /* The tabs that carry `data-part` draw only where that part is readable. */
+  function gateTabs() {
+    Array.prototype.forEach.call(document.querySelectorAll('#crmTabs [data-part]'), function (b) {
+      b.hidden = !mayPart(b.getAttribute('data-part'), 'view');
+    });
   }
 
   function esc(s) {
@@ -748,9 +758,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('#crmTabs [data-needs-activity]'), function (b) {
       b.hidden = !maySeeActivity();
     });
-    Array.prototype.forEach.call(document.querySelectorAll('#crmTabs [data-needs-billing]'), function (b) {
-      b.hidden = !maySeeBilling();
-    });
+    gateTabs();
     $('crmListView').hidden = true;
     $('crmWork').hidden = false;
     $('crmClientName').textContent = c.name || '';
@@ -853,7 +861,8 @@
   function showPane(key) {
     if (PANES.indexOf(key) < 0) key = 'overview';
     if (key === 'activity' && !maySeeActivity()) key = 'overview';
-    if (key === 'billing' && !maySeeBilling()) key = 'overview';
+    var tabOf = document.querySelector('#crmTabs .tab[data-pane="' + key + '"]');
+    if (tabOf && tabOf.hasAttribute('data-part') && !mayPart(tabOf.getAttribute('data-part'), 'view')) key = 'overview';
     pane = key;
     Array.prototype.forEach.call(document.querySelectorAll('#crmTabs .tab'), function (b) {
       var on = b.getAttribute('data-pane') === key;
@@ -867,9 +876,9 @@
     if (key === 'overview') paintSummary();
   }
 
+  gateTabs();
   Array.prototype.forEach.call(document.querySelectorAll('#crmTabs .tab'), function (b) {
     if (b.hasAttribute('data-needs-activity')) b.hidden = !maySeeActivity();
-    if (b.hasAttribute('data-needs-billing')) b.hidden = !maySeeBilling();
     b.addEventListener('click', function () {
       if (b.getAttribute('data-pane') === pane) return;
       showPane(b.getAttribute('data-pane'));
@@ -1526,6 +1535,11 @@
      the contacts arrive, since the contact is one of them. */
   function paintBilling(c) {
     var missing = billingMissing(c);
+    /* Below Work on the Billing part the fields are read and not typed in;
+       the database refuses the save anyway (`clients_billing_guard`). */
+    var ro = !mayPart('clients.billing', 'work');
+    BILLING.forEach(function (f) { if ($(f[0])) $(f[0]).disabled = ro; });
+    $('crmSstApplies').disabled = ro;
     /* Drawn only while something is missing on a record that is not yet
        Active: a gate with nothing behind it is not a gate. It opens Billing
        where the person can see that pane, and is plain text where they cannot. */
@@ -1689,18 +1703,17 @@
         '<div class="kmenu" data-menu hidden>' +
           (removed
             ? '<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>' +
-              /* The hard delete, once the soft one has been made. No data-soft,
-                 so body.no-remove hides it from anyone whose group does not
-                 carry can_remove: an admin's by default. */
-              '<button class="kmenu-item is-danger" data-a="del" data-need="clients:manage" type="button"><b>Delete permanently</b></button>'
-            : '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
+              /* The hard delete, once the soft one has been made. Drawn only
+                 where the Contacts part is managed. */
+              '<button class="kmenu-item is-danger" data-a="del" data-need="clients.contacts:manage" type="button"><b>Delete permanently</b></button>'
+            : '<button class="kmenu-item" data-a="edit" data-need="clients.contacts:work" type="button"><b>Edit</b></button>' +
               (ct.is_primary ? '' :
                 '<button class="kmenu-item" data-a="primary" type="button"><b>Main contact</b></button>') +
               (ct.portal_access
                 ? '<button class="kmenu-item" data-a="invite" type="button"><b>Send invitation</b></button>' +
                   '<button class="kmenu-item" data-a="unportal" type="button"><b>Revoke portal access</b></button>'
                 : '<button class="kmenu-item" data-a="portal" type="button"><b>Enable portal access</b></button>') +
-              '<button class="kmenu-item is-danger" data-a="del" data-soft type="button"><b>Remove</b></button>') +
+              '<button class="kmenu-item is-danger" data-a="del" data-soft data-need="clients.contacts:work" type="button"><b>Remove</b></button>') +
         '</div>' +
       '</span>';
     wireMenu(row);
@@ -1985,8 +1998,8 @@
           ? '<button class="btn btn-quiet btn-sm" data-a="restore" type="button">Restore</button>'
           : (open ? '<button class="btn btn-sm" data-a="done" type="button">Done</button>' : '') +
             (tc.done_at ? '<button class="btn btn-quiet btn-sm" data-a="undone" type="button">Reopen</button>' : '') +
-            '<button class="btn btn-quiet btn-sm" data-a="edit" type="button">Edit</button>' +
-            '<button class="btn btn-quiet btn-sm is-danger" data-a="del" type="button">Remove</button>') +
+            '<button class="btn btn-quiet btn-sm" data-a="edit" data-need="clients.calls:work" type="button">Edit</button>' +
+            '<button class="btn btn-quiet btn-sm is-danger" data-a="del" data-need="clients.calls:work" type="button">Remove</button>') +
       '</div>';
     var on = function (a, fn) { var el = row.querySelector('[data-a="' + a + '"]'); if (el) el.addEventListener('click', fn); };
     on('edit',    function () { openTouch(tc); });
@@ -2283,12 +2296,12 @@
       '<span class="team-act">' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
         '<div class="kmenu" data-menu hidden>' +
-          '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
+          '<button class="kmenu-item" data-a="edit" data-need="clients.services:work" type="button"><b>Edit</b></button>' +
           /* This overrides a client's service line, not the rate card, so it
              is Clients at manage and not Services. */
           (bridge.may && bridge.may('clients', 'manage')
             ? '<button class="kmenu-item" data-a="force" type="button"><b>Set state by hand</b></button>' : '') +
-          '<button class="kmenu-item is-danger" data-a="del" data-soft type="button"><b>Remove</b></button>' +
+          '<button class="kmenu-item is-danger" data-a="del" data-soft data-need="clients.services:work" type="button"><b>Remove</b></button>' +
         '</div>' +
       '</span>';
     wireMenu(row);
@@ -2451,6 +2464,7 @@
     var box = $('crmRequestList');
     var wrap = $('crmRequests');
     var id = state.client.id;
+    if (!mayPart('clients.requests', 'view')) { wrap.hidden = true; return; }
     db.from('client_contacts').select('id').eq('client_id', id).eq('portal_access', true).is('archived_at', null).then(function (pr) {
       var anyPortal = Boolean((pr.data || []).length);
       return db.from('client_requests').select('*').eq('client_id', id).order('created_at', { ascending: false }).then(function (r) {
@@ -2624,8 +2638,8 @@
              section's Manage level, so both carry the same `data-need` and
              the database decides again when the button is pressed. */
           (st === 'verified'
-            ? '<button class="kmenu-item is-danger" data-a="void" data-need="clients:manage" type="button"><b>Void letter</b></button>' : '') +
-          '<button class="kmenu-item is-danger" data-a="del" data-need="clients:manage" type="button"><b>Delete permanently</b></button>' +
+            ? '<button class="kmenu-item is-danger" data-a="void" data-need="clients.documents:manage" type="button"><b>Void letter</b></button>' : '') +
+          '<button class="kmenu-item is-danger" data-a="del" data-need="clients.documents:manage" type="button"><b>Delete permanently</b></button>' +
         '</div>' +
       '</span>';
     wireMenu(row);
@@ -3103,8 +3117,7 @@
               (off ? 'Set active' : 'Set inactive') + '</b></button>' +
             /* Inactive first, then gone, as it is for a letter and a contact:
                a line is taken off the card before it can be taken out of it.
-               No data-soft, so body.no-remove holds it back from a group that
-               does not carry can_remove. */
+               Drawn only where Services is managed. */
             (off ? '<button class="kmenu-item is-danger" data-a="del" data-need="services:manage" type="button"><b>Delete permanently</b></button>' : '') +
           '</div>'
         : '') + '</span>';

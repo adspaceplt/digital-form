@@ -166,7 +166,10 @@
   var UI = window.ADspaceState;
 
   // ---- Tabs ---------------------------------------------------------------
+  function mayPart(part, level) { return Boolean(bridge.may && bridge.may(part, level || 'work')); }
   function showTab(name) {
+    // The Creators List is a part of the section and may be shut to a group.
+    if (name === 'roster' && !mayPart('campaigns.creators', 'view')) name = 'campaigns';
     state.tab = name;
     $('campListView').hidden = !(name === 'campaigns' && !state.campaign);
     $('campWork').hidden     = !(name === 'campaigns' && state.campaign);
@@ -1115,9 +1118,16 @@
     return CPANES.indexOf(t) >= 0 ? t : 'overview';
   }
 
+  function gateCampTabs() {
+    Array.prototype.forEach.call(document.querySelectorAll('#campTabs [data-part]'), function (b) {
+      b.hidden = !mayPart(b.getAttribute('data-part'), 'view');
+    });
+  }
   function showCampPane(key) {
     if (CPANES.indexOf(key) < 0) key = 'overview';
     if (key === 'activity' && !maySeeActivity()) key = 'overview';
+    var tabOf = document.querySelector('#campTabs .tab[data-pane="' + key + '"]');
+    if (tabOf && tabOf.hasAttribute('data-part') && !mayPart(tabOf.getAttribute('data-part'), 'view')) key = 'overview';
     campPane = key;
     Array.prototype.forEach.call(document.querySelectorAll('#campTabs .tab'), function (b) {
       var on = b.getAttribute('data-pane') === key;
@@ -1131,6 +1141,7 @@
     if (key === 'activity') loadCampLog();
   }
 
+  gateCampTabs();
   Array.prototype.forEach.call(document.querySelectorAll('#campTabs .tab'), function (b) {
     if (b.hasAttribute('data-needs-activity')) b.hidden = !maySeeActivity();
     b.addEventListener('click', function () {
@@ -1171,6 +1182,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('#campTabs [data-needs-activity]'), function (b) {
       b.hidden = !maySeeActivity();
     });
+    gateCampTabs();
     parkCampForm();
     $('campListView').hidden = true;
     setUrl();
