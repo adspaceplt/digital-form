@@ -23,6 +23,14 @@
   --ink-mute:   #6b6760;
   --line-ctl:   #8e8a80;   /* control boundaries: 3:1 on every page background */
   --line:       #e2dfd8;
+  /* The outline of a bounded card (a directory table, a record's head and
+     Overview, a form panel, the booking register, the Team card): one
+     token, so every card is the same card. Nothing nests a card in a card
+     (checked on 2026-09-22: no panel in a sheet or a panel, no table in a
+     panel or an Overview), so a transparent edge never loses a surface. Transparent since 2026-09-22, when the user chose the Team
+     card's look for all of them: the card's own ground against the page is
+     the edge, and the 1px stays so nothing is re-measured. */
+  --card-line:  transparent;
   --line-soft:  #ececec;
   --page:       #f5f5f5;   /* ADspace's own off white, as on the website */
   --card:       #ffffff;
@@ -139,6 +147,7 @@
     --ink-mute:   #a6a89e;
     --line-ctl:   #83857c;
     --line:       #3a3c36;
+    --card-line:  transparent;
     --line-soft:  #2e2e2e;
     --page:       #161814;
     --card:       #1e201d;
@@ -1055,7 +1064,7 @@ a { color: inherit; }
    TEAM ADMIN
    ========================================================================= */
 .panel {
-  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
   box-shadow: var(--shadow); padding: 18px 20px; margin-bottom: 12px;
 }
 .panel.narrow { max-width: 520px; margin-top: 48px; }
@@ -2451,7 +2460,7 @@ body.is-plain .topbar { background: var(--chrome); }
    The row ⋯ menus are positioned on the viewport by `ADspaceMenu.place()`, so
    nothing here clips them. */
 .bookreg {
-  background: var(--card); border: 1px solid var(--line);
+  background: var(--card); border: 1px solid var(--card-line);
   border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
 }
 .bookreg-head, .bookreg .kcard-head {
@@ -3311,7 +3320,7 @@ body > .shell { width: 100%; }
 .crm-group.is-shut { margin-bottom: 24px; }
 .crm-group-head .hint { margin: 0; flex: 1 1 260px; }
 .crm-table {
-  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
   overflow: hidden; margin-bottom: 12px;
 }
 /* Blocks stacked in a section sit 12px apart whatever they are: a table, a
@@ -3828,13 +3837,15 @@ body > .shell { width: 100%; }
    stating in words what it opens. Permissions are a property of the group,
    never of the person, so they are read on three rows rather than on nine. */
 .team-table {
-  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
   padding: 12px 0 4px;
 }
 /* Soft Precision: the panel draws the boundary, so the table inside stops
    drawing a second one and stops padding the top — the header row has its
    own, and two of them read as a blank band above the first column name. */
-.team-table.softpanel { border: 0; padding: 0; }
+/* The panel draws the boundary; the table inside keeps the shared card
+   outline (one token, one card) and stops padding the top. */
+.team-table.softpanel { padding: 0; }
 .team-table.softpanel > .team-head { padding-top: 12px; }
 /* Members: who they are and whether they are working. Which group is the
    heading they sit under, so the row does not repeat it. */
@@ -4424,7 +4435,7 @@ body.no-view-register-hr [data-need="register.hr:view"] { display: none !importa
 /* A bounded section, softly. One 1px hairline and a 14px corner, no shadow:
    a border and a shadow together is a thing pretending to float. */
 .softpanel {
-  background: var(--card); border: 1px solid var(--line);
+  background: var(--card); border: 1px solid var(--card-line);
   border-radius: var(--radius-panel); overflow: hidden;
 }
 .softpanel + .softpanel { margin-top: 12px; }
@@ -5217,7 +5228,7 @@ body.is-canvas { overflow: hidden; }
    screen of nothing. Never a row of decorative number tiles — this is one
    client, not a board. */
 .ovcard {
-  background: var(--card); border: 1px solid var(--line);
+  background: var(--card); border: 1px solid var(--card-line);
   border-radius: var(--radius); overflow: hidden; margin-bottom: 12px;
 }
 .ovsec { padding: 16px 18px; border-bottom: 1px solid var(--line-soft); }
@@ -5271,7 +5282,10 @@ body.is-canvas { overflow: hidden; }
 .ovrow-book { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 106px 88px; }
 /* On a desktop the header says it, so the row does not. */
 .ovcap { display: none; }
-.ovrow-date { grid-template-columns: minmax(0, 1.3fr) 142px 112px; }
+/* The shoot track is measured against its worst case, `22 Sept 2026, 12:30pm`
+   at 13.5px (168px): at 142 the time wrapped under the date on every row
+   with a half hour in it. */
+.ovrow-date { grid-template-columns: minmax(0, 1.3fr) 176px 112px; }
 .ovname { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
 .ovdim { color: var(--ink-mute); font-size: 12.5px; min-width: 0; }
 .ovamt { font-variant-numeric: tabular-nums; }
