@@ -35,7 +35,7 @@ window.ADSPACE_ORG = {
   // The letters' headings are Slate Medium, as the Word templates set them.
   // Blank or missing, they take fontBold, which is what the Letter of Offer
   // already uses.
-  fontMed: '/css/SlateMed.TTF',
+  fontMed: '/css/SlateMedium.TTF',
   // Slate carries no Chinese, so a letter with a Chinese block embeds this
   // face for that block alone. Fetched only when a Chinese block is drawn,
   // and refused by name when it cannot be, rather than drawing boxes.
