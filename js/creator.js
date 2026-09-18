@@ -580,7 +580,7 @@
      is a file uploaded twice. */
   function maxBytes() {
     var cfg = window.ADSPACE_CONFIG || {};
-    return (((cfg.s3 && cfg.s3.maxUploadMB) || 300)) * 1024 * 1024;
+    return (((cfg.s3 && cfg.s3.maxUploadMB) || 1024)) * 1024 * 1024;
   }
 
   function fill(s, map) {

@@ -61,10 +61,12 @@ window.ADSPACE_CONFIG = {
     enabled: true,
     functionName: 'sign-upload',
 
-    // What a creator may upload in one file. Video, so it is generous; the
-    // edge function's own ceiling is higher, and this is the figure the
-    // creator's page refuses on, before a single byte moves.
-    maxUploadMB: 300
+    // What one file may weigh, on the creator's page and in the console's
+    // draft upload alike. Video, so it is generous (raised from 300 MB on
+    // 2026-09-22 at the user's request); the edge function's own ceiling is
+    // 2 GB, and this is the figure the page refuses on, before a single byte
+    // moves.
+    maxUploadMB: 1024
   },
   /* Google Drive import.
 

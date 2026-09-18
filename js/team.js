@@ -216,28 +216,33 @@
       return;
     }
 
-    var table = document.createElement('div');
-    table.className = 'team-table softpanel';
-    var head = document.createElement('div');
-    head.className = 'team-head team-row';
-    head.innerHTML = '<span>Person</span><span>Sign-in email</span><span></span><span></span>';
-    table.appendChild(head);
-
+    /* A card per user group under its own heading, the shape every directory
+       in this console takes; a group nobody is in draws no card, and a person
+       whose group was deleted under them still has to be reachable. */
+    var GRP = window.ADspaceGroup;
+    var filtered = rows.length !== all.length;
     var placed = {};
-    state.roles.forEach(function (r) {
+    var groups = state.roles.map(function (r) {
       var mine = rows.filter(function (m) { return m.role === r.slug; });
-      if (!mine.length) return;   // a group nobody is in draws no heading
       mine.forEach(function (m) { placed[m.id] = true; });
-      table.appendChild(catHead(r.name));
-      byName(mine).forEach(function (m) { table.appendChild(memberRow(m)); });
+      return [r.slug, r.name, mine];
     });
-    // A person whose group was deleted under them still has to be reachable.
-    var loose = rows.filter(function (m) { return !placed[m.id]; });
-    if (loose.length) {
-      table.appendChild(catHead('No group'));
-      byName(loose).forEach(function (m) { table.appendChild(memberRow(m)); });
-    }
-    box.appendChild(table);
+    groups.push(['none', 'No group', rows.filter(function (m) { return !placed[m.id]; })]);
+    groups.forEach(function (g) {
+      if (!g[2].length) return;
+      box.appendChild(GRP.section({
+        route: 'team', key: g[0], name: g[1], count: g[2].length,
+        shut: !filtered && GRP.shut('team', g[0], false),
+        table: function () {
+          var table = GRP.table('team-row', ['Person', 'Sign-in email', '', '']);
+          /* The members table keeps its own row grid and header rule. */
+          table.className = 'team-table softpanel';
+          table.firstChild.className = 'team-head team-row';
+          byName(g[2]).forEach(function (m) { table.appendChild(memberRow(m)); });
+          return table;
+        }
+      }));
+    });
   }
 
   if ($('teamFind')) $('teamFind').addEventListener('input', function () {
@@ -252,13 +257,6 @@
       return String(x.name || '').localeCompare(String(y.name || ''));
     });
   }
-  function catHead(name) {
-    var el = document.createElement('div');
-    el.className = 'svc-cat';
-    el.textContent = name;
-    return el;
-  }
-
   function memberRow(m) {
     var self = me() && me().id === m.id;
     var el = document.createElement('div');

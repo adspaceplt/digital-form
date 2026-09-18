@@ -455,6 +455,7 @@ measures the table whenever its header is not on screen (`padding`).
 | Deciding on one thing in a gallery | A **canvas** (`.canvas`): the thing at the size it deserves on a stage, and everything the decision rests on in a rail beside it — what it is, the copy in full, what was said last time, where it stands, and the one place to decide. Prev/next and the arrow keys step the set, Escape closes. The canvas **moves** the gallery item's own blocks into it and puts them back on close, so there is one decision control in the page and it cannot drift from the one in the gallery |
 | Search, filter, count and the one action | `.cmdbar` > `.cmdbar-find` (a search box with its glyph, bounded 190 to 420px) + the filter selects + `.cmdbar-count` + one `.btn-sm.btn-primary`, on every console list: clients, content review, campaigns, creators, short links, the rate card, the team. The count reads `7 services` whole and `3 of 41` once a filter is on, and never sits in a section head. On a phone it shares the action's line rather than taking a fourth row before the first record |
 | Links to reach a person | `.plink` chips (phone, WhatsApp, email); equal widths on a phone |
+| A directory of records | `ADspaceGroup.section` (`js/group.js`): `.crm-group` > `.crm-group-head` (the 15px heading, the count, the marks, the name as the fold) + `.crm-group-body` > `.crm-table.softpanel` with its own `.crm-head`; `ADspaceGroup.more` for the rows past thirty. One card per group on every console directory, folds remembered per browser, a filter opening every card, the card opening and shutting in place |
 
 **The bar at the top of every page is one bar, so it is one height.** It used
 to have none of its own: 14px of padding above and below whatever was tallest
@@ -559,16 +560,34 @@ cell beside it was already using a mute em dash, so that is what the cell takes.
 A null marker in a table cell is a convention, not copy, and is the one place
 the no-dashes rule does not reach.
 
-**A list is one surface, and the groups inside it are dividers.** Leads, Active
-clients and Paused and past were three floating panels, each carrying its own
-copy of the same five column headings, with 24px of page ground between rows
-that belong to one list and the third group pushed under the fold. A stage was
-then something you read from which card a client sat in, rather than from the
-column that already says it. One table, one header, and the groups as the
-`.svc-cat` sub-heading this portal already uses on the rate card, the Team page
-and the creators list. The test is whether two rows in different groups are
-still the same kind of thing: where they are, the groups are headings inside
-one table; where they are not, they are separate tables.
+**A directory is a card per group, and every directory is the same card.**
+Leads, Active clients and Paused and past were three floating panels for a
+month, then one surface with the stages as uppercase divider rows inside it for
+a week, and the user sent the divider rows back: the eyebrow face and its
+spacing read as wrong, and the same rows were on Campaigns, the Creators List,
+Services and Team while Content Review and Short Links were a bare card with no
+heading at all. Seven routes, four shapes. So one component (`js/group.js`,
+`ADspaceGroup.section`) draws them all: the 15px heading with the count and the
+marks, the name as the fold, and a card with its own header row under it. The
+test for what the groups are is still whether two rows in different groups are
+the same kind of thing (a stage, a state, a fee band, a category, a user
+group); where they are not, they are different routes. **Folds, not tabs, on a
+long directory**: a tab hides the count and costs a click per group, a folded
+card costs one line and still says how many it holds. A card that holds
+everything on the page never shuts by default, or a route with every link
+paused is a heading over nothing.
+
+**The card opens from its heading and leaves into it.** A fold is a move
+somebody made, and the eye follows a surface that arrives; a directory that
+repaints around the fold blinks. The body is a grid row that runs from 0fr to
+1fr, which is the one height CSS can animate without being told the height,
+with the opacity alongside it at `--t-slow` / `--ease`; a shut card empties
+itself once it has closed. The register this portal takes after is Apple's and
+Cloudflare's, and what those pages have in common is not their palette but
+that every change of state is a move the reader can follow: a surface that
+comes from the control that opened it, a fold that closes onto its heading, a
+menu that comes from its button. That is the standard a new control is held
+to here before its colour is chosen.
 
 **A whole row that opens a record is one control, with nothing inside it.** The
 register row is a `<button>` carrying only spans, so the whole of it is the

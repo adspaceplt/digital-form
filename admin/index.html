@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260921b">
+<link rel="stylesheet" href="/css/portal.css?v=20260921c">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,21 +28,22 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260921b"></script>
-<script src="/js/words.js?v=20260921b"></script>
-<script src="/js/copy.js?v=20260921b"></script>
-<script src="/js/ask.js?v=20260921b"></script>
-<script src="/js/state.js?v=20260921b"></script>
-<script src="/js/menu.js?v=20260921b"></script>
-<script src="/js/api.js?v=20260921b"></script>
-<script src="/js/money.js?v=20260921b"></script>
-<script src="/js/mockups.js?v=20260921b"></script>
+<script src="/js/config.js?v=20260921c"></script>
+<script src="/js/words.js?v=20260921c"></script>
+<script src="/js/copy.js?v=20260921c"></script>
+<script src="/js/ask.js?v=20260921c"></script>
+<script src="/js/state.js?v=20260921c"></script>
+<script src="/js/group.js?v=20260921c"></script>
+<script src="/js/menu.js?v=20260921c"></script>
+<script src="/js/api.js?v=20260921c"></script>
+<script src="/js/money.js?v=20260921c"></script>
+<script src="/js/mockups.js?v=20260921c"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260921b" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260921c" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -104,7 +105,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.6-5.7l-1.7 1.7"/><path d="M14 10.5a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.6 5.7l1.7-1.7"/></svg><span>Short Links</span>
       </button>
       <button class="navitem" data-section="register" type="button" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 15 2 2 4-4"/></svg><span>Register</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 15 2 2 4-4"/></svg><span>Documents</span>
       </button>
       <button class="navitem" data-section="services" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg><span>Services</span>
@@ -1727,6 +1728,7 @@ raya-2026        https://example.com/raya"></textarea>
       <button class="acttab" data-af="review" type="button">Content Review</button>
       <button class="acttab" data-af="campaigns" type="button">Creator Campaigns</button>
       <button class="acttab" data-af="links" type="button">Short Links</button>
+      <button class="acttab" data-af="register" type="button">Documents</button>
       <button class="acttab" data-af="services" type="button">Services</button>
     </div>
     <div class="sheet-body" id="activityList"></div>
@@ -1914,12 +1916,12 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260921b"></script>
-<script src="/js/documents.js?v=20260921b"></script>
-<script src="/js/letters.js?v=20260921b"></script>
-<script src="/js/register.js?v=20260921b"></script>
-<script src="/js/crm.js?v=20260921b"></script>
-<script src="/js/team.js?v=20260921b"></script>
-<script src="/js/campaigns.js?v=20260921b"></script>
+<script src="/js/admin.js?v=20260921c"></script>
+<script src="/js/documents.js?v=20260921c"></script>
+<script src="/js/letters.js?v=20260921c"></script>
+<script src="/js/register.js?v=20260921c"></script>
+<script src="/js/crm.js?v=20260921c"></script>
+<script src="/js/team.js?v=20260921c"></script>
+<script src="/js/campaigns.js?v=20260921c"></script>
 </body>
 </html>

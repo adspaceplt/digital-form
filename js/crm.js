@@ -126,18 +126,10 @@
     ['past',    'Past clients']
   ];
   var SHUT_BY_DEFAULT = { past: true };
-  var BAND_KEY = 'adspace-crm-bands';
-  function bandShut(key) {
-    var kept;
-    try { kept = JSON.parse(localStorage.getItem(BAND_KEY) || '{}'); } catch (e) { kept = {}; }
-    return typeof kept[key] === 'boolean' ? kept[key] : !!SHUT_BY_DEFAULT[key];
-  }
-  function keepBand(key, shut) {
-    var kept;
-    try { kept = JSON.parse(localStorage.getItem(BAND_KEY) || '{}'); } catch (e) { kept = {}; }
-    kept[key] = shut;
-    try { localStorage.setItem(BAND_KEY, JSON.stringify(kept)); } catch (e) {}
-  }
+  /* The fold is remembered by ADspaceGroup under the route, so a Past
+     clients card shut on Monday is shut on Tuesday. */
+  var GRP = window.ADspaceGroup;
+  function bandShut(key, lone) { return GRP.shut('clients', key, SHUT_BY_DEFAULT[key], lone); }
   var INDUSTRIES = ['Property', 'F&B', 'Retail', 'Wellness', 'Lifestyle',
                     'Automotive', 'Tech', 'Education', 'Other'];
   var LANG_WORD = { en: 'English', zh: '中文', ms: 'Bahasa Malaysia' };
@@ -396,52 +388,28 @@
     GROUPS.forEach(function (g) {
       var mine = rows.filter(function (c) { return stageWord(c.stage || 'lead')[3] === g[0]; });
       if (!mine.length) return;
-      var shut = !filtered && bandShut(g[0]);
-      var sec = document.createElement('section');
-      sec.className = 'crm-group' + (shut ? ' is-shut' : '');
-      sec.setAttribute('data-band', g[0]);
-      sec.appendChild(band(g[0], g[1], mine, shut));
-      if (shut) { box.appendChild(sec); return; }
-
-      var table = document.createElement('div');
-      table.className = 'crm-table softpanel crm-register';
-      table.appendChild(registerHead());
-      /* A card draws its first thirty and offers the rest, so a book of a
-         hundred and eighty opens as a page somebody can read rather than as
-         a mile of rows. A filter narrows what reaches this point, so
-         searching is always faster than scrolling. */
-      mine.slice(0, groupLimit).forEach(function (c) { table.appendChild(listRow(c)); });
-      if (mine.length > groupLimit) {
-        var more = document.createElement('button');
-        more.type = 'button'; more.className = 'crm-group-more';
-        more.textContent = 'Show ' + (mine.length - groupLimit) + ' more ' + g[1].toLowerCase();
-        more.addEventListener('click', function () {
-          mine.slice(groupLimit).forEach(function (c) { table.insertBefore(listRow(c), more); });
-          more.remove();
-        });
-        table.appendChild(more);
-      }
-      sec.appendChild(table);
-      box.appendChild(sec);
+      box.appendChild(GRP.section({
+        route: 'clients', key: g[0], name: g[1], count: mine.length,
+        marks: bandMarks(mine),
+        shut: !filtered && bandShut(g[0], mine.length === rows.length),
+        table: function () {
+          var table = GRP.table('client-row',
+            ['Client', 'Stage', 'Industry', 'Value', 'Person in charge', 'Last activity', ''], 'crm-register');
+          /* A card draws its first thirty and offers the rest, so a book of a
+             hundred and eighty opens as a page somebody can read rather than
+             as a mile of rows. A filter narrows what reaches this point, so
+             searching is always faster than scrolling. */
+          GRP.more(table, mine, groupLimit, g[1].toLowerCase(), listRow);
+          return table;
+        }
+      }));
     });
   }
 
-  /* One shared header, once, at the top of the register. */
-  function registerHead() {
-    var el = document.createElement('div');
-    el.className = 'crm-head client-row';
-    el.innerHTML =
-      ['Client', 'Stage', 'Industry', 'Value', 'Person in charge', 'Last activity']
-        .map(function (h) { return '<span>' + h + '</span>'; }).join('') +
-      /* Empty over the column that says a row opens something, the way every
-         other table in this console leaves the head empty over its ⋯. */
-      '<span></span>';
-    return el;
-  }
-
-  /* A stage's heading: what it is, how many, how many have run over, and what
-     the group is worth, on one line over its own card. The name is the fold. */
-  function band(key, name, mine, shut) {
+  /* What sits on a stage's heading after its name and count: how many have
+     run over, and what the group is worth. Absent where none has gone over,
+     so a healthy stage stays quiet. */
+  function bandMarks(mine) {
     var worth = {};
     mine.forEach(function (c) {
       if (!c.deal_value) return;
@@ -449,26 +417,9 @@
       worth[k] = (worth[k] || 0) + Number(c.deal_value);
     });
     var worthText = Object.keys(worth).map(function (k) { return MON.money(worth[k], k); }).join(' + ');
-    /* Absent where none has gone over, so a healthy stage stays quiet. */
     var late = mine.filter(isStale).length;
-    /* The band is a button, because it opens and shuts. Its count stays on it
-       while it is shut, or a folded band is a heading that says nothing about
-       what it is holding back. */
-    var el = document.createElement('div');
-    el.className = 'crm-group-head' + (shut ? ' is-shut' : '');
-    el.innerHTML =
-      '<h3><button class="crm-group-fold" type="button" aria-expanded="' + (shut ? 'false' : 'true') + '">' +
-        '<svg class="crm-band-fold" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-          'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-          '<path d="M9 18l6-6-6-6"/></svg>' +
-        esc(name) + '<span>' + mine.length + '</span></button></h3>' +
-      (late ? '<span class="tone is-warn crm-band-late">' + late + ' overdue</span>' : '') +
+    return (late ? '<span class="tone is-warn crm-band-late">' + late + ' overdue</span>' : '') +
       (worthText ? '<span class="crm-band-worth">' + esc(worthText) + '</span>' : '');
-    el.querySelector('.crm-group-fold').addEventListener('click', function () {
-      keepBand(key, !shut);
-      paintList();
-    });
-    return el;
   }
 
   /* A column per fact, because that is what every CRM anyone here has used
@@ -3040,41 +2991,38 @@
       return;
     }
 
-    // Two tables, not a card per category: what is sold, and what is added
-    // to it. Categories are sub-headings inside each.
+    /* A card per category under its own heading, the shape every directory
+       in this console takes, in the order the card sells them: what is sold
+       first, then what is added to it. It was two cards with the categories
+       as uppercase divider rows inside them; the user asked for a card per
+       category on 2026-09-22, as the Register and the Clients list draw.
+       A filter opens every card. */
+    var GRP = window.ADspaceGroup;
+    var filtered = rows.length !== all.length;
+    var seen = {};
     svcTiers(all).forEach(function (t) {
-      var cats = t[1].filter(function (k) { return rows.some(function (s) { return s.category === k; }); });
-      if (!cats.length) return;
-      var n = rows.filter(function (s) { return cats.indexOf(s.category) > -1; }).length;
-      var sec = document.createElement('section');
-      sec.className = 'crm-group';
-      sec.innerHTML = '<div class="crm-group-head"><h3>' + esc(t[0]) + ' <span>' + n + '</span></h3></div>' +
-        /* One heading over the amount and the unit: the unit qualifies the
-           price ("RM 360.00  Per post"), so two headings over what reads as
-           one value said Rate and Unit where a person reads a price. The
-           cells stay two tracks so every amount keeps the same right edge. */
-        '<div class="crm-table softpanel"><div class="crm-head svc-row cat-row">' +
-        '<span>Service</span><span class="svc-rate">Price</span>' +
-        '<span class="svc-unit"></span><span></span></div></div>';
-      var table = sec.querySelector('.crm-table');
-      /* A sub-heading that repeats the heading over it is saying the same
-         thing twice: the Add-ons table holds one category, called Add-ons,
-         under a section head that already says Add-ons. A category divides a
-         table; where there is nothing to divide, it is furniture. */
-      var divides = cats.length > 1 ||
-        cats[0].toLowerCase().replace(/[^a-z]/g, '') !== t[0].toLowerCase().replace(/[^a-z]/g, '');
-      cats.forEach(function (k) {
+      t[1].forEach(function (k) {
+        if (seen[k]) return;
+        seen[k] = true;
         var lines = rows.filter(function (s) { return s.category === k; });
-        if (divides) {
-          // The band carries its count, as every other band in the console does.
-          var cat = document.createElement('div');
-          cat.className = 'svc-cat';
-          cat.innerHTML = esc(k) + ' <span>' + lines.length + '</span>';
-          table.appendChild(cat);
-        }
-        lines.forEach(function (s) { table.appendChild(catalogRow(s)); });
+        if (!lines.length) return;
+        var key = String(k).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        box.appendChild(GRP.section({
+          route: 'services', key: key, name: k, count: lines.length,
+          shut: !filtered && GRP.shut('services', key, false),
+          table: function () {
+            /* One heading over the amount and the unit: the unit qualifies
+               the price ("RM 360.00  Per post"), so two headings over what
+               reads as one value said Rate and Unit where a person reads a
+               price. The cells stay two tracks so every amount keeps the
+               same right edge. */
+            var table = GRP.table('svc-row cat-row',
+              ['Service', { text: 'Price', cls: 'svc-rate' }, { text: '', cls: 'svc-unit' }, '']);
+            lines.forEach(function (s) { table.appendChild(catalogRow(s)); });
+            return table;
+          }
+        }));
       });
-      box.appendChild(sec);
     });
   }
 
