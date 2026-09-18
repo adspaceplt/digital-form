@@ -415,13 +415,21 @@
   $('grFlags').innerHTML =
     SECTIONS.map(function (sec) {
       var parts = PARTS[sec[0]] || [];
-      return '<div class="permsec">' +
-        '<label class="permsec-main"><span class="permsec-name">' + esc(sec[1]) + '</span>' +
+      /* A section with parts folds them under its head line, the way the
+         accounting portal the user showed folds each of its sections: the
+         select on the head is the main control and is always in reach, and
+         the parts open where an exception is held or where somebody asks. */
+      return '<div class="permsec" data-sec="' + sec[0] + '">' +
+        '<div class="permsec-main">' +
+          (parts.length
+            ? '<button class="permsec-toggle" type="button" aria-expanded="false" aria-controls="grParts-' + sec[0] + '">' +
+                '<span class="disclosure-caret" aria-hidden="true">&#9656;</span><span class="permsec-name">' + esc(sec[1]) + '</span></button>'
+            : '<span class="permsec-name">' + esc(sec[1]) + '</span>') +
           '<select class="select select-sm" data-sec="' + sec[0] + '" aria-label="' + esc(sec[1]) + ' access">' +
           LEVELS.filter(function (l) { return sec[2].indexOf(l[0]) > -1; }).map(function (l) {
             return '<option value="' + l[0] + '">' + esc(l[1]) + '</option>';
-          }).join('') + '</select></label>' +
-        (parts.length ? '<div class="permgrid permsec-parts">' + parts.map(function (p) {
+          }).join('') + '</select></div>' +
+        (parts.length ? '<div class="permgrid permsec-parts" id="grParts-' + sec[0] + '" hidden>' + parts.map(function (p) {
           return '<label class="permlevel"><span class="field-label">' + esc(p[1]) + '</span>' +
             '<select class="select select-sm" data-part="' + sec[0] + '.' + p[0] + '" aria-label="' + esc(sec[1] + ': ' + p[1]) + ' access">' +
             '<option value="">Same as section</option>' +
@@ -436,6 +444,18 @@
   function flagBoxes() { return Array.prototype.slice.call($('grFlags').querySelectorAll('input')); }
   function levelPicks() { return Array.prototype.slice.call($('grFlags').querySelectorAll('select[data-sec]')); }
   function partPicks() { return Array.prototype.slice.call($('grFlags').querySelectorAll('select[data-part]')); }
+  function foldSec(sec, open) {
+    var box = $('grParts-' + sec), btn = $('grFlags').querySelector('.permsec[data-sec="' + sec + '"] .permsec-toggle');
+    if (!box || !btn) return;
+    box.hidden = !open;
+    btn.setAttribute('aria-expanded', String(open));
+  }
+  Array.prototype.forEach.call($('grFlags').querySelectorAll('.permsec-toggle'), function (btn) {
+    btn.addEventListener('click', function () {
+      var sec = btn.closest('.permsec').getAttribute('data-sec');
+      foldSec(sec, $('grParts-' + sec).hidden);
+    });
+  });
 
   // One panel adds a group or edits one, as one panel adds a service.
   function openGroupBox(r) {
@@ -454,11 +474,16 @@
       if (!sel.value) sel.value = 'none';
       sel.disabled = Boolean(r && r.slug === 'admin');
     });
+    /* A section holding an exception opens on it; the rest stay folded,
+       because Same as section on every part is the ordinary case. */
+    var opened = {};
     partPicks().forEach(function (sel) {
       var k = sel.getAttribute('data-part');
       sel.value = acc && acc[k] ? acc[k] : '';
+      if (sel.value) opened[k.split('.')[0]] = true;
       sel.disabled = Boolean(r && r.slug === 'admin');
     });
+    Object.keys(PARTS).forEach(function (sec) { foldSec(sec, Boolean(opened[sec])); });
     flagBoxes().forEach(function (cb) {
       var k = cb.getAttribute('data-f');
       cb.checked = r ? Boolean(r[k]) : false;

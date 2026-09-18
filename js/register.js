@@ -109,6 +109,8 @@
 
   function enter() {
     var bar = $('regIssue'), add = $('regAdd');
+    var vl = $('regVerifyLink');
+    if (vl) vl.textContent = location.host + '/verify';
     if (bar) bar.hidden = !(mayFamily('client', 'work') || mayFamily('hr', 'work') || mayFamily('quote_cover', 'work'));
     if (add) add.hidden = !(may('register.documents', 'work') || mayFamily('client', 'work'));
     load();

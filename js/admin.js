@@ -370,6 +370,53 @@
     services: 'Services',
     team: 'Team'
   };
+  /* WHAT EACH SECTION IS FOR, in one line, while the team is new to it.
+     This portal carries no explanatory copy, and the user asked for exactly
+     this on 2026-09-22: the portal is opening to the whole team and most of
+     them do not yet know what the sections are. So it is the instruction
+     pattern the creator page and the draft step already use: the line opens
+     by itself the first three times a section is entered and then retires
+     behind its `?` in the command bar, where anybody can open it again. Not
+     a `title`, because a tooltip is unreachable on a phone. */
+  var INTRO = {
+    clients:   'Every client starts here as a lead. The record holds contacts, billing, services, letters and calls, and an active client is what Content Review and Creator Campaigns hang off.',
+    review:    'Post mockups for the client to approve online. Build a content set, publish it and send the client the link.',
+    campaigns: 'Creator bookings from selection to posting. The client picks creators on their link; the steps, the schedule and the invoice are run here.',
+    links:     'Short links for slides, print and QR codes, redirecting from ' + ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '. A destination can be corrected or paused after it is printed.',
+    register:  'Every document the portal has issued and every reference added by hand. A reference is checked at ' + location.host + '/verify.',
+    services:  'The rate card every quotation reads from. A price here seeds a client\'s service line and stays editable there.',
+    team:      'Who can sign in, and what each group may open. Access is set per section, with exceptions per part.'
+  };
+  var INTRO_SHOWS = 3;
+  function introSeen(name) {
+    try { return Number(localStorage.getItem('adspace-hint-intro-' + name) || 0); } catch (e) { return INTRO_SHOWS; }
+  }
+  function paintIntro(name) {
+    var host = $('section' + name.charAt(0).toUpperCase() + name.slice(1));
+    if (!host || !INTRO[name]) return;
+    var bar = host.querySelector('.cmdbar');
+    if (!bar) return;
+    var line = host.querySelector('.routeintro');
+    var seen = introSeen(name);
+    if (!line) {
+      line = document.createElement('div');
+      line.className = 'hintline routeintro';
+      line.innerHTML = '<button class="hintbtn" type="button" aria-expanded="false" aria-label="What this section is for">?</button>' +
+        '<p class="hinttext" hidden></p>';
+      line.querySelector('.hinttext').textContent = INTRO[name];
+      bar.parentNode.insertBefore(line, bar.nextSibling);
+      line.querySelector('.hintbtn').addEventListener('click', function () {
+        var t = line.querySelector('.hinttext');
+        t.hidden = !t.hidden;
+        this.setAttribute('aria-expanded', String(!t.hidden));
+      });
+      // Counted once per visit, not once per repaint.
+      try { localStorage.setItem('adspace-hint-intro-' + name, String(seen + 1)); } catch (e) {}
+    }
+    var open = seen < INTRO_SHOWS;
+    line.querySelector('.hinttext').hidden = !open;
+    line.querySelector('.hintbtn').setAttribute('aria-expanded', String(open));
+  }
   // The first section this person is allowed, for when the one asked for is not.
   function firstAllowed() {
     var order = ['clients', 'review', 'campaigns', 'links', 'register', 'services', 'team'];
@@ -391,6 +438,7 @@
     $('sectionServices').hidden  = name !== 'services';
     $('sectionTeam').hidden      = name !== 'team';
     $('sectionTitle').textContent = SECTION_TITLE[name];
+    paintIntro(name);
     // The tab said Content Review Internal whichever section you were in.
     document.title = SECTION_TITLE[name] + ' · ADspace Digital Portal';
     navItems().forEach(function (b) {
@@ -2596,6 +2644,13 @@
      that host redirects. This value decides what the next link is built with. */
   var LINK_HOST = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'go.adspace.me';
   if ($('slugPrefix')) $('slugPrefix').textContent = LINK_HOST + '/';
+  /* The host a link redirects from is a standing fact about the route, so it
+     is the quiet line under the register: the team asked where these links
+     live, and the field's prefix is only on screen while one is being added.
+     go.adspace.me is named because the QR codes printed before this portal
+     encode it whole and keep working. */
+  if ($('linkNote')) $('linkNote').innerHTML = 'Short links redirect from <b>' + LINK_HOST + '</b>. ' +
+    'Codes printed with <b>go.adspace.me</b> keep working.';
   var links = [];
   var editingSlug = null;
 
