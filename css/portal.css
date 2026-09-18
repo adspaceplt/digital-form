@@ -3501,7 +3501,10 @@ body > .shell { width: 100%; }
 .is-narrow .doc-row { grid-template-areas: "name act" "amt state"; }
 /* Two lines: the reference and its ⋯, then who and when, the date ending at
    the card's right edge. */
-.is-narrow .reg-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "who date"; }
+/* The right track is fixed, measured against `30 Sept 2026`, because an
+   `auto` track is sized by its own row: a row with no date drew it at the
+   width of the ⋯ and the dates of the rows around it started elsewhere. */
+.is-narrow .reg-row { grid-template-columns: minmax(0, 1fr) 100px; grid-template-areas: "name act" "who date"; }
 .is-narrow .reg-row > .svc-name { grid-area: name; }
 .is-narrow .reg-row > .team-act { grid-area: act; justify-self: end; }
 .is-narrow .reg-row > .reg-who { grid-area: who; }
@@ -3862,7 +3865,7 @@ body > .shell { width: 100%; }
    that needs no exception and the exception itself for the one that does. */
 .permparts { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
 .permparts-toggle {
-  display: inline-flex; align-items: center; gap: 6px; min-height: var(--ctl-h-sm);
+  display: inline-flex; align-items: center; gap: 6px; min-height: var(--ctl-h); min-width: var(--ctl-h);
   padding: 0; border: 0; background: none; color: var(--ink-soft); font: inherit; font-size: 13px; cursor: pointer;
 }
 .permparts-toggle .disclosure-caret { display: inline-block; transition: transform var(--t) var(--ease); }
