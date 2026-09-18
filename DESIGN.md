@@ -226,7 +226,7 @@ carried three scattered rules that only ever quietened two carets.
 | Control, small text | 13px / 12.5px | `.btn`, `.btn-sm`, `.svc-calc`, `.backlink` |
 | Meta and labels | 12px | `.field-label`, `.svc-name small`, `.crm-lang` |
 | Chip and select | 12.5px / 600 and 11.5px / 600 | `.state-select`; `.tone`, `.chip`, `.chip-state` (one chip shape: 11.5px, radius 5px, padding 2px 8px, sentence case, never an uppercase pill) |
-| Eyebrow | 11px / 600 / .06em uppercase, mute | `.facts dt`, `.kstep-title`, `.crm-head`, `.svc-cat`, `.sectionlabel` |
+| Label | 12px / 600 / sentence case, mute, no tracking | `.facts dt`, `.kstep-title`, `.crm-head`, `.svc-cat`, `.sectionlabel`, `.ovhead`, `.team-head`, the sidebar kicker. **The tracked uppercase eyebrow is retired** (2026-09-22): it was 11px with .06em of tracking on every table header, band and fact label, and the user sent it back as a wide, spaced face that read as decoration. The platform mockups keep their own, because they reproduce another product's UI |
 | Numbers in cells | 17px / 600 / -.02em | `.tally-cell b` |
 | Brand wordmark fallback | 16px / 700 / -.02em | `.brand-logo` text when the image fails |
 | Display | 24px / 600 / -.02em (21px on a phone); 26px on the review hero; 20px batch title | `.cover-panel h2`, `.camphead h1`, `.batch-title` |
