@@ -3867,6 +3867,15 @@ body > .shell { width: 100%; }
 .permsec:first-child { padding-top: 4px; border-top: 0; }
 .permsec-main { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .permsec-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+/* The fold is the name itself, so the target is the word and not a mark
+   beside it; it clears the control floor like every other control. */
+.permsec-toggle {
+  display: inline-flex; align-items: center; gap: 6px; min-height: var(--ctl-h); min-width: var(--ctl-h);
+  margin-block: calc((22px - var(--ctl-h)) / 2); padding: 0; border: 0; background: none;
+  color: var(--ink); font: inherit; text-align: left; cursor: pointer;
+}
+.permsec-toggle .disclosure-caret { display: inline-block; color: var(--ink-mute); transition: transform var(--t) var(--ease); }
+.permsec-toggle[aria-expanded="true"] .disclosure-caret { transform: rotate(90deg); }
 .permsec-main .select { width: 200px; flex: 0 0 auto; }
 .permsec-parts { margin-top: 8px; padding-left: 16px; border-left: 2px solid var(--line-soft); }
 .team-act { text-align: right; }
@@ -4186,17 +4195,35 @@ body.no-view-register-hr [data-need="register.hr:view"] { display: none !importa
    once it has been read three times, and is a button rather than a `title`,
    because a hover tooltip cannot be reached on a phone. */
 .hintline { display: flex; align-items: flex-start; gap: 8px; margin: 2px 0 10px; }
+/* The mark is an 18px ring; the target is the control floor (38px, 44 under a
+   finger), drawn transparent around it with negative margins so the line
+   keeps its height. It was the 18px ring alone, which the matrix caught the
+   day the mark reached the console's command bars. */
 .hintbtn {
-  flex: 0 0 auto; width: 18px; height: 18px; margin-top: 1px; border-radius: 50%;
-  border: 1px solid var(--line-ctl); background: var(--card); color: var(--ink-mute);
-  font-size: 11px; font-weight: 600; line-height: 1; display: grid; place-items: center;
-  transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
+  position: relative; isolation: isolate; flex: 0 0 auto;
+  width: var(--ctl-h); height: var(--ctl-h);
+  margin: calc((20px - var(--ctl-h)) / 2) 0 calc((20px - var(--ctl-h)) / 2) calc((18px - var(--ctl-h)) / 2);
+  padding: 0; border: 0; background: none; color: var(--ink-mute);
+  font-size: 11px; font-weight: 600; line-height: 1; display: grid; place-items: center; cursor: pointer;
+  transition: color var(--t-fast) var(--ease-out);
 }
-.hintbtn:hover { background: var(--sunk); color: var(--ink); }
+.hintbtn::before {
+  content: ""; position: absolute; z-index: -1; left: 50%; top: 50%; width: 18px; height: 18px;
+  margin: -9px 0 0 -9px; border-radius: 50%; border: 1px solid var(--line-ctl); background: var(--card);
+  transition: background var(--t-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .hintbtn:hover { color: var(--ink); }
+  .hintbtn:hover::before { background: var(--sunk); }
+}
 .hintbtn:active { transform: scale(.92); }
 .hinttext { font-size: 12.5px; line-height: 1.5; color: var(--ink-mute); margin: 0; }
+/* What a section is for, under its command bar, while the team is new to it:
+   the same line and the same retiring `?`, on the stack's 12px step. */
+.routeintro { margin: 12px 0 0; }
+.routenote a { color: var(--ink-soft); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
 @media (pointer: coarse) {
-  .hintbtn { width: 44px; height: 44px; margin-top: -10px; margin-bottom: -10px; font-size: 13px; }
+  .hintbtn { font-size: 13px; }
 }
 
 /* A deadline is a caution, not an action, so it stopped being blue: blue on
