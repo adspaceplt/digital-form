@@ -659,12 +659,26 @@ it. **The state and the ⋯ in the right part are one line, centred on each
 other.** The shared `.chip` rule pins a chip to the top of its flex row, which
 is right beside a name; beside a 38px control (44px under a finger) it put the
 campaign's state 11px above the ⋯'s centre, so the two things on the right of
-the head read as two lines squeezed together. `.rec-ctl .chip` centres. They
-are deliberately not split onto two lines: a state on a line of its own above
+the head read as two lines squeezed together. `.rec-ctl .chip` centres. The
+client's stage select lives in the same right part, beside the ⋯, for the same
+reason: on the name line it stood mid line on a phone with the card's whole
+right half empty beside it. They are deliberately not split onto two lines: a state on a line of its own above
 the name costs every campaign 30px to say what the chip beside the control
 already says, and the console's tables put the state beside the ⋯ on every
 row. `tests/six.js` measures the chip's centre against the ⋯'s at 1280 and
 390.
+
+**On a phone the rail is two groups, and the pane sits between them.** Below
+the workspace width the rail is not a column beside the panes but a stack above
+them, and a stack of five blocks put the record's own content (the contacts,
+the services, the letters) a screen and a half down, behind a log nobody opens
+a record to read. What needs acting on stays above the tabs: the stage and its
+clock, the next action, the billing gate, the profile bar. What is only looked
+up follows the pane: the dates, the details, the recent activity
+(`.rail-after`). The rail dissolves into the page grid (`display: contents`)
+and the blocks take their place by `order`, so the markup is one rail and the
+desk is untouched. Recent activity is deliberately last: it is an excerpt of the
+Activity pane, read after the record and not before it.
 
 **A rail is one block per question, and a block with no data is not a block.**
 Each carries a title at the pane's own section size and is divided from the
