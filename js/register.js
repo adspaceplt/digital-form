@@ -79,7 +79,7 @@
   });
 
   // ---- The list ------------------------------------------------------------
-  var state = { docs: null, clients: [], members: [], types: [], me: null, find: '', fam: '', err: null };
+  var state = { docs: null, clients: [], members: [], types: [], me: null, find: '', fam: '', sort: 'newest', err: null };
   var FAMILIES = ['quote_cover', 'client', 'hr', 'other'];
   var BAND = { quote_cover: 'Quotation covers', client: 'Client letters', hr: 'HR letters', other: 'Other documents' };
 
@@ -161,19 +161,32 @@
       return;
     }
     box.innerHTML = '';
-    var table = document.createElement('div');
-    table.className = 'crm-table softpanel';
-    table.innerHTML = '<div class="crm-head svc-row reg-row"><span>Document</span><span>Recipient</span><span>Issued</span><span></span></div>';
+    /* A card per family under its own heading, the way the rate card lists
+       Services and Add-ons, and newest at the top of each: the last thing
+       issued is the one somebody came back for. The sort is the person's to
+       change from the bar. */
     FAMILIES.forEach(function (f) {
-      var mine = rows.filter(function (d) { return d.family === f; });
+      var mine = rows.filter(function (d) { return d.family === f; }).sort(sorter());
       if (!mine.length) return;
-      var cat = document.createElement('div');
-      cat.className = 'svc-cat';
-      cat.innerHTML = esc(BAND[f]) + ' <span>' + mine.length + '</span>';
-      table.appendChild(cat);
+      var sec = document.createElement('section');
+      sec.className = 'crm-group';
+      sec.innerHTML = '<div class="crm-group-head"><h3>' + esc(BAND[f]) + '<span>' + mine.length + '</span></h3></div>';
+      var table = document.createElement('div');
+      table.className = 'crm-table softpanel';
+      table.innerHTML = '<div class="crm-head svc-row reg-row"><span>Document</span><span>Recipient</span><span>Issued</span><span></span></div>';
       mine.forEach(function (d) { table.appendChild(row(d, needOf(f))); });
+      sec.appendChild(table);
+      box.appendChild(sec);
     });
-    box.appendChild(table);
+  }
+  /* Newest first is issued date, then when the row was added, so a row with
+     no date sits under the dated ones rather than among them. */
+  function sorter() {
+    var s = state.sort;
+    var when = function (d) { return String(d.issued_at || '') + '|' + String(d.created_at || ''); };
+    if (s === 'reference') return function (a, b) { return String(a.serial).localeCompare(String(b.serial)); };
+    if (s === 'oldest') return function (a, b) { return when(a) < when(b) ? -1 : when(a) > when(b) ? 1 : 0; };
+    return function (a, b) { return when(a) > when(b) ? -1 : when(a) < when(b) ? 1 : 0; };
   }
 
   /* One row shape on the Register and on the client record: the reference
@@ -264,6 +277,10 @@
   if ($('regFam')) $('regFam').addEventListener('change', function () {
     if (this.value === state.fam) return;
     state.fam = this.value; paint();
+  });
+  if ($('regSort')) $('regSort').addEventListener('change', function () {
+    if (this.value === state.sort) return;
+    state.sort = this.value; paint();
   });
 
   // ---- Issuing ----------------------------------------------------------------

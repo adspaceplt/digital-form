@@ -3273,7 +3273,19 @@ body > .shell { width: 100%; }
 .crm-group > .crm-table:last-child { margin-bottom: 0; }
 .crm-group-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 0 0 12px; }
 .crm-group-head h3 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
-.crm-group-head h3 span { font-weight: 500; color: var(--ink-mute); margin-left: 4px; }
+.crm-group-head h3 span { font-weight: 500; color: var(--ink-mute); margin-left: 6px; }
+/* The stage's name is the fold on the Clients page: the whole word is the
+   target, it clears the control floor, and its caret turns when it opens. */
+.crm-group-head { align-items: center; }
+.crm-group-fold {
+  display: inline-flex; align-items: center; gap: 6px; min-height: var(--ctl-h);
+  margin-block: calc((22px - var(--ctl-h)) / 2); padding: 0; border: 0; background: none;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+}
+.crm-group-fold .crm-band-fold { width: 14px; height: 14px; color: var(--ink-mute); transform: rotate(90deg); transition: transform var(--t) var(--ease); }
+.crm-group-fold[aria-expanded="false"] .crm-band-fold { transform: none; }
+.crm-group-head .crm-band-worth { margin-left: auto; font-size: 12.5px; color: var(--ink-mute); }
+.crm-group.is-shut { margin-bottom: 24px; }
 .crm-group-head .hint { margin: 0; flex: 1 1 260px; }
 .crm-table {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
@@ -3825,7 +3837,7 @@ body > .shell { width: 100%; }
 /* Every label starts where its column's content starts, as a rate card
    heading does; centring left "STATE" floating over the left edge of a select. */
 .team-head, .group-head {
-  padding-bottom: 8px; border-bottom: 1px solid var(--line);
+  padding-top: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--line);
   font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
   color: var(--ink-mute); text-align: left;
 }

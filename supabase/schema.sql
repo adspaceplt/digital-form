@@ -3516,23 +3516,23 @@ create policy doc_types_read on public.doc_types for select to authenticated usi
 
 insert into public.doc_types (id, family, code, name, title, salutation, closing, body_en, body_zh, body_ms, signed, position)
 select v.* from (values
-  ('quote_cover', 'quote_cover', null, 'Quotation cover', 'QUOTATION FOR DIGITAL MARKETING SERVICES',
+  ('quote_cover', 'quote_cover', null, 'Quotation Cover', 'QUOTATION FOR DIGITAL MARKETING SERVICES',
    'Dear Sir/Madam,', 'Yours sincerely,',
    E'We are pleased to submit our quotation for your consideration. It has been prepared based on the scope and requirements discussed, with full details set out in the attached quotation.\n\nShould you need any clarification or additional information, please do not hesitate to reach out. We are happy to provide further materials to support your evaluation.\n\nThank you for the opportunity. We look forward to working with you and your team.',
    E'我們很榮幸能為貴司提呈本次報價。此報價乃根據貴司需求擬定，詳細內容請見附件報價單。\n\n若在審閱過程中有任何疑問或需要補充資料，歡迎隨時與我們聯繫。\n\n感謝貴司給予此次機會，期待有幸與貴司團隊展開合作。',
    E'Dengan sukacitanya kami mengemukakan sebut harga ini untuk pertimbangan pihak tuan/puan. Sebut harga ini telah disediakan berdasarkan skop dan keperluan yang telah dibincangkan, dengan butiran lengkap disertakan dalam dokumen yang dilampirkan.\n\nSekiranya pihak tuan/puan memerlukan sebarang penjelasan atau maklumat lanjut, sila hubungi kami. Kami dengan senang hati akan membantu dan menyediakan maklumat tambahan yang diperlukan untuk penilaian pihak tuan/puan.\n\nTerima kasih atas peluang yang diberikan. Kami menantikan peluang untuk bekerjasama dengan pihak tuan/puan dan pasukan anda.',
    false, 10),
-  ('thanks', 'client', 'SC', 'Thank-you letter', 'WITH APPRECIATION',
+  ('thanks', 'client', 'SC', 'Thank You Letter', 'WITH APPRECIATION',
    'Dear Sir/Madam,', 'Yours sincerely,',
    E'On behalf of the team, we would like to extend our sincere appreciation for the opportunity to serve as your marketing partner throughout this engagement. It has been a privilege to support your brand and contribute to your business objectives.\n\nWe place high importance on the feedback of our clients, as it enables us to refine and enhance the quality of our services. At your convenience, we would be grateful if you could share your experience with us through the following link: https://go.adspace.me/review. Your input will be invaluable to our continuous improvement efforts.\n\nWhile this engagement is drawing to a close, we wish to emphasise that our doors remain open for future collaboration opportunities. Should there be any new initiatives or campaigns where our expertise may be of value, we would be delighted to support your brand once again.\n\nThank you once more for the trust and confidence you have placed in us. We look forward to the possibility of building upon this relationship in the future.',
    '', '', true, 20),
-  ('client_letter', 'client', 'GL', 'Letter to client', '',
+  ('client_letter', 'client', 'GL', 'Letter to Client', '',
    'Dear Sir/Madam,', 'Yours sincerely,', '', '', '', true, 30),
-  ('hr_confirm', 'hr', 'E', 'Confirmation of employment', 'CONFIRMATION OF EMPLOYMENT',
+  ('hr_confirm', 'hr', 'E', 'Confirmation of Employment', 'CONFIRMATION OF EMPLOYMENT',
    'Dear {first name},', 'Warm regards,',
    E'We are pleased to officially confirm your position as {role} with us, effective {effective date}. This follows a successful completion of your probationary period which commenced on {start date}.\n\nFollowing your confirmation, the terms of your employment outlined in your initial employment contract will remain in effect, with the following additions or modifications:\n\nSalary: RM {salary}/month (subject to statutory deductions)\n\nWe trust that you will continue to work with dedication and commitment, and we encourage you to further develop your skills and grow professionally within our organisation.\n\nShould you have any questions regarding your confirmation or any other matters, please do not hesitate to contact your Direct Manager.\n\nCongratulations on your confirmation! We look forward to your continued contributions and a successful journey ahead with ADSPACE PLT.',
    '', '', true, 40),
-  ('hr_letter', 'hr', 'GL', 'HR letter', '',
+  ('hr_letter', 'hr', 'GL', 'HR Letter', '',
    'Dear {first name},', 'Warm regards,', '', '', '', true, 50)
 ) as v(id, family, code, name, title, salutation, closing, body_en, body_zh, body_ms, signed, position)
 where not exists (select 1 from public.doc_types);
@@ -4010,7 +4010,7 @@ begin
     order by (voided_at is null) desc, created_at desc limit 1;
   if d.id is not null then
     return jsonb_build_object('found', true, 'serial', d.serial,
-      'kind', case when d.family = 'hr' then 'HR letter' else d.kind end,
+      'kind', case when d.family = 'hr' then 'HR Letter' else d.kind end,
       'issued_at', d.issued_at,
       'state', case when d.voided_at is null then 'valid' else 'voided' end);
   end if;

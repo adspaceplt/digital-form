@@ -383,34 +383,33 @@
       }
       return;
     }
-    /* One register, not three floating cards. Three panels each with its own
-       header repeated the column names three times, put twenty four pixels of
-       page ground between rows that belong to one list, and made a client's
-       stage something you read from which card they were in rather than from
-       the column that already says it. The stages are labelled divider rows
-       inside the one surface — the same sub-heading the rate card, the Team
-       page and the creators list already use. */
-    var table = document.createElement('div');
-    table.className = 'crm-table softpanel crm-register';
-    table.appendChild(registerHead());
-
-    /* A band draws its first thirty and offers the rest, so a book of a
-       hundred and eighty opens as a page somebody can read rather than as a
-       mile of rows. A filter narrows what reaches this point, so searching is
-       always faster than scrolling. */
+    /* A card per stage, each under its own heading, the way the rate card
+       lists Services and Add-ons. The register was one surface with the
+       stages as uppercase divider rows inside it for a week; the user sent
+       that back on 2026-09-22 (the eyebrow face and its spacing read as
+       wrong), so the stages are the section headings they were before, with
+       the count, the overdue mark and the value on the heading line, and
+       each stage's table carries its own header. Past clients stay shut by
+       default and open from the heading; a filter opens every card. */
     var groupLimit = 30;
-    /* While a filter is on, every band opens: somebody who searched for a name
-       wants the row wherever it is, and a shut band would hide the one match
-       and say nothing. */
     var filtered = rows.length !== state.clients.length;
     GROUPS.forEach(function (g) {
       var mine = rows.filter(function (c) { return stageWord(c.stage || 'lead')[3] === g[0]; });
       if (!mine.length) return;
       var shut = !filtered && bandShut(g[0]);
-      var head = band(g[0], g[1], mine, shut);
-      table.appendChild(head);
-      if (shut) return;
+      var sec = document.createElement('section');
+      sec.className = 'crm-group' + (shut ? ' is-shut' : '');
+      sec.setAttribute('data-band', g[0]);
+      sec.appendChild(band(g[0], g[1], mine, shut));
+      if (shut) { box.appendChild(sec); return; }
 
+      var table = document.createElement('div');
+      table.className = 'crm-table softpanel crm-register';
+      table.appendChild(registerHead());
+      /* A card draws its first thirty and offers the rest, so a book of a
+         hundred and eighty opens as a page somebody can read rather than as
+         a mile of rows. A filter narrows what reaches this point, so
+         searching is always faster than scrolling. */
       mine.slice(0, groupLimit).forEach(function (c) { table.appendChild(listRow(c)); });
       if (mine.length > groupLimit) {
         var more = document.createElement('button');
@@ -422,8 +421,9 @@
         });
         table.appendChild(more);
       }
+      sec.appendChild(table);
+      box.appendChild(sec);
     });
-    box.appendChild(table);
   }
 
   /* One shared header, once, at the top of the register. */
@@ -439,9 +439,8 @@
     return el;
   }
 
-  /* A stage divider: what it is, how many, how many have run over, and what
-     the group is worth. Everything the separate card heads carried, on one
-     line inside the register. */
+  /* A stage's heading: what it is, how many, how many have run over, and what
+     the group is worth, on one line over its own card. The name is the fold. */
   function band(key, name, mine, shut) {
     var worth = {};
     mine.forEach(function (c) {
@@ -455,18 +454,17 @@
     /* The band is a button, because it opens and shuts. Its count stays on it
        while it is shut, or a folded band is a heading that says nothing about
        what it is holding back. */
-    var el = document.createElement('button');
-    el.type = 'button';
-    el.className = 'svc-cat crm-band' + (shut ? ' is-shut' : '');
-    el.setAttribute('aria-expanded', shut ? 'false' : 'true');
+    var el = document.createElement('div');
+    el.className = 'crm-group-head' + (shut ? ' is-shut' : '');
     el.innerHTML =
-      '<svg class="crm-band-fold" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-        '<path d="M9 18l6-6-6-6"/></svg>' +
-      esc(name) + ' <span>' + mine.length + '</span>' +
+      '<h3><button class="crm-group-fold" type="button" aria-expanded="' + (shut ? 'false' : 'true') + '">' +
+        '<svg class="crm-band-fold" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
+          'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<path d="M9 18l6-6-6-6"/></svg>' +
+        esc(name) + '<span>' + mine.length + '</span></button></h3>' +
       (late ? '<span class="tone is-warn crm-band-late">' + late + ' overdue</span>' : '') +
       (worthText ? '<span class="crm-band-worth">' + esc(worthText) + '</span>' : '');
-    el.addEventListener('click', function () {
+    el.querySelector('.crm-group-fold').addEventListener('click', function () {
       keepBand(key, !shut);
       paintList();
     });

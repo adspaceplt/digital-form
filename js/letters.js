@@ -34,7 +34,7 @@
     'not-allowed':    'You do not have permission to do this.',
     'no-client':      'Choose a client.',
     'no-member':      'Choose a colleague.',
-    'no-staff-code':  'Add a staff code to that colleague on the Team page first.',
+    'no-staff-code':  'Add an Employee ID to that colleague on the Team page first.',
     'no-signatory':   'A signatory is required.',
     'issuer-name':    'A letter is signed by a person. Set your name on the Team page, then issue it.',
     'serial-required':'A reference is required.',
