@@ -3322,6 +3322,19 @@ body > .shell { width: 100%; }
 .reg-who { font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .reg-date { font-size: 13px; color: var(--ink-mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
 #crmDocuments .reg-table { margin-top: 12px; }
+/* The reference is a copy control in the row's own face: the target clears
+   the control floor, the negative block margin keeps the line the height it
+   was, and Copied is said the way every copy button says it. */
+.serial-copy {
+  display: inline-flex; align-items: center; min-height: var(--ctl-h);
+  margin: calc((20px - var(--ctl-h)) / 2) 0 calc((20px - var(--ctl-h)) / 2) -6px;
+  padding: 0 6px; border: 0; background: none; border-radius: var(--radius-sm);
+  font: inherit; font-weight: 600; letter-spacing: -.01em; color: inherit; cursor: pointer;
+  transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
+}
+@media (hover: hover) { .serial-copy:hover { background: var(--sunk); } }
+.serial-copy:active { transform: scale(.97); }
+.serial-copy.is-done { color: var(--ok); background: var(--ok-bg); }
 /* Service, what it costs, what that buys. Active is the ordinary case on this
    card, so it costs no column: the exception is named beside the name. */
 /* The rate card's own columns. Unit used to take every pixel the name did
