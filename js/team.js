@@ -255,7 +255,9 @@
          the one accent on the ordinary case and leaves the exception looking
          like everything else. The row says nothing when a person is working
          and names it when they are not. */
-      '<span class="team-who"><b>' + esc(m.name) + (self ? ' <i>you</i>' : '') + '</b></span>' +
+      /* You is a designation, not a live state, so it is the neutral chip the
+         rate card gives Inactive and not a word in the accent green. */
+      '<span class="team-who"><b>' + esc(m.name) + (self ? ' <span class="tone">You</span>' : '') + '</b></span>' +
       '<span class="team-mail">' + esc(m.email || '') + '</span>' +
       '<span class="team-state">' + (m.active ? '' : '<span class="tone">Inactive</span>') + '</span>' +
       /* Mail leaves the building and cannot be recalled, so Send invitation
