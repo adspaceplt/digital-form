@@ -177,9 +177,16 @@
   function row(d, need, onChange) {
     var el = document.createElement('div');
     el.className = 'svc-row reg-row' + (d.voided_at ? ' is-off' : '');
-    var sub = [d.kind, d.source === 'manual' ? 'Added by hand' : '', d.issued_by].filter(Boolean).join(' · ');
+    /* The kind, and who issued it where the portal did. A row added by hand
+       says nothing about how it arrived and names nobody: an import is not a
+       person, and the fact is in the ⋯ (Edit is offered on it). */
+    var sub = [d.kind, d.source === 'portal' ? d.issued_by : ''].filter(Boolean).join(' · ');
     el.innerHTML =
-      '<span class="svc-name"><b>' + esc(d.serial) + (d.voided_at ? ' <span class="tone">Void</span>' : '') + '</b>' +
+      /* The reference is what somebody came to copy, so the reference is
+         the control: one press, and it says Copied the way every other copy
+         in this portal does. */
+      '<span class="svc-name"><b><button class="serial-copy" type="button" data-a="copy" aria-label="Copy ' + esc(d.serial) + '">' + esc(d.serial) + '</button>' +
+        (d.voided_at ? ' <span class="tone">Void</span>' : '') + '</b>' +
         '<small>' + esc(sub) + '</small></span>' +
       '<span class="reg-who">' + esc(whoOf(d)) + '</span>' +
       '<span class="reg-date">' + esc(niceDate(d.issued_at)) + '</span>' +
@@ -195,6 +202,11 @@
       '</span>';
     wireMenu(el);
     var on = function (a, fn) { var b = el.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { shutMenus(); fn(); }); };
+    var cp = el.querySelector('[data-a="copy"]');
+    if (cp) cp.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (window.ADspaceCopy) window.ADspaceCopy.to(this, d.serial);
+    });
     on('download', function () {
       LET.download(d, function (warn) { if (warn) say(warn, 'err'); });
     });
