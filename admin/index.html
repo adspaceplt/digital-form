@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260920r">
+<link rel="stylesheet" href="/css/portal.css?v=20260920s">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,21 +28,21 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260920r"></script>
-<script src="/js/words.js?v=20260920r"></script>
-<script src="/js/copy.js?v=20260920r"></script>
-<script src="/js/ask.js?v=20260920r"></script>
-<script src="/js/state.js?v=20260920r"></script>
-<script src="/js/menu.js?v=20260920r"></script>
-<script src="/js/api.js?v=20260920r"></script>
-<script src="/js/money.js?v=20260920r"></script>
-<script src="/js/mockups.js?v=20260920r"></script>
+<script src="/js/config.js?v=20260920s"></script>
+<script src="/js/words.js?v=20260920s"></script>
+<script src="/js/copy.js?v=20260920s"></script>
+<script src="/js/ask.js?v=20260920s"></script>
+<script src="/js/state.js?v=20260920s"></script>
+<script src="/js/menu.js?v=20260920s"></script>
+<script src="/js/api.js?v=20260920s"></script>
+<script src="/js/money.js?v=20260920s"></script>
+<script src="/js/mockups.js?v=20260920s"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260920r" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260920s" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -258,16 +258,19 @@
             <div class="rec-who">
               <div class="rec-name">
                 <h2 id="crmClientName"></h2>
-                <select class="select state-select" id="crmClientStage" aria-label="Stage"></select>
               </div>
               <p class="rec-id-meta" id="crmIdMeta"></p>
             </div>
-            <!-- Everything that acts on the record itself, behind one ⋯. Edit
-                 happens a few times in a client's life; taking a client out of
-                 the working list is a stage (Paused, Past); removing the record
-                 happens once and cannot be undone, so it sits last and behind
-                 the section's manage level. -->
+            <!-- The stage and everything that acts on the record itself, in
+                 the card's right part, the shape the campaign head has. The
+                 stage used to sit on the name line: on a phone it stood mid
+                 line under the ⋯ with nothing to its right. Edit happens a few
+                 times in a client's life; taking a client out of the working
+                 list is a stage (Paused, Past); removing the record happens
+                 once and cannot be undone, so it sits last and behind the
+                 section's manage level. -->
             <div class="rec-ctl">
+              <select class="select state-select" id="crmClientStage" aria-label="Stage"></select>
               <div class="kmenu-wrap" id="crmClientMenuWrap">
                 <button class="kmenu-btn" id="crmClientMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More">
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
@@ -730,7 +733,10 @@
           </div>
           <!-- Dates the record actually holds. A row is omitted when its date
                is not there; none of them is guessed. -->
-          <div class="railblock" id="crmDatesBlock" hidden>
+          <!-- The three blocks below are reference, not action: on a phone
+               they follow the panes (`.rail-after`), so the record's own
+               content is not a screen and a half down. -->
+          <div class="railblock rail-after" id="crmDatesBlock" hidden>
             <h3 class="railtitle">Key dates</h3>
             <dl class="raildates" id="crmDates"></dl>
             <div class="rail-date-edit">
@@ -740,7 +746,7 @@
             </div>
             <div class="msg" id="crmSinceMsg"></div>
           </div>
-          <div class="railblock">
+          <div class="railblock rail-after">
             <h3 class="railtitle">Details</h3>
             <dl class="facts" id="crmFacts"></dl>
             <!-- The journey, left to right: how long each stage took and how long
@@ -751,7 +757,7 @@
           </div>
           <!-- The last few things the portal recorded about this client. The
                whole record is one tab away; this is the excerpt. -->
-          <div class="railblock" id="crmRailLogBlock" hidden>
+          <div class="railblock rail-after" id="crmRailLogBlock" hidden>
             <h3 class="railtitle">Recent activity</h3>
             <div id="crmRailLog"></div>
           </div>
@@ -1682,10 +1688,10 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260920r"></script>
-<script src="/js/documents.js?v=20260920r"></script>
-<script src="/js/crm.js?v=20260920r"></script>
-<script src="/js/team.js?v=20260920r"></script>
-<script src="/js/campaigns.js?v=20260920r"></script>
+<script src="/js/admin.js?v=20260920s"></script>
+<script src="/js/documents.js?v=20260920s"></script>
+<script src="/js/crm.js?v=20260920s"></script>
+<script src="/js/team.js?v=20260920s"></script>
+<script src="/js/campaigns.js?v=20260920s"></script>
 </body>
 </html>

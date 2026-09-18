@@ -4378,7 +4378,7 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
   margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em;
   line-height: 1.3; min-width: 0; overflow-wrap: anywhere;
 }
-.rec-name .state-select, .rec-name .chip { flex: 0 0 auto; }
+.rec-ctl .state-select, .rec-ctl .chip { flex: 0 0 auto; }
 /* Meta at 12px against a 19px name: the two sizes stand a golden ratio
    apart, which is what keeps the line reading as a note under the name and
    not as a second line of it. */
@@ -4634,12 +4634,31 @@ body.no-billing .panel-collapse:has(#crmBillToggle) { display: none !important; 
 @media (max-width: 1100px) {
   .rec {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
-    grid-template-areas: "rail" "tabs" "pane";
+    grid-template-rows: none;
+    grid-template-areas: none;
   }
-  /* Stacked, the rail is a block above the tabs and takes the step between
-     two blocks, not the four pixels it had when it was a column beside them. */
-  .rec-rail { margin-bottom: 12px; }
+  /* Stacked, the rail is not one block: what needs acting on (the stage and
+     its clock, the next action, the billing gate, the profile bar) is read
+     before the pane, and what is only looked up (the dates, the details, the
+     recent activity) is read after it. One rail above the tabs put the
+     record's own content a screen and a half down on a phone, behind a log
+     nobody opens a record to read. The rail dissolves into the page grid
+     (`display: contents`) and its blocks take their place by `order`; the
+     `.rec-rail` element stays in the tree, so nothing that queries it
+     changes. `ADspaceState.fit` measures it at 0 and leaves it alone, which
+     is why this is the console's record only (`:not(.cportal)`): the client
+     portal's rail carries contact rows keyed on the rail's own width class,
+     and a rail that is not a box has no width to key on. */
+  .rec:not(.cportal) > .rec-rail { display: contents; }
+  .rec:not(.cportal) > .rec-rail > * { order: 0; }
+  .rec:not(.cportal) > .rectabs { grid-area: auto; order: 1; }
+  .rec:not(.cportal) > .rec-pane { grid-area: auto; order: 2; }
+  .rec:not(.cportal) > .rec-rail > .rail-after { order: 3; }
+  /* The last block before the tabs keeps its rule, which is then the step
+     down to the strip; the first block after the pane takes the same step
+     up from it, because the pane's last section draws no rule of its own. */
+  .rec:not(.cportal) > .rec-pane:not([hidden]) { margin-bottom: 24px; }
+  .cportal > .rec-rail { margin-bottom: 12px; }
   .rec-rail .facts { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 }
 /* The tab strip scrolls sideways rather than wrapping to three rows: seven
