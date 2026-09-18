@@ -4231,8 +4231,21 @@ body.no-view-register-hr [data-need="register.hr:view"] { display: none !importa
 .hintbtn:active { transform: scale(.92); }
 .hinttext { font-size: 12.5px; line-height: 1.5; color: var(--ink-mute); margin: 0; }
 /* What a section is for, under its command bar, while the team is new to it:
-   the same line and the same retiring `?`, on the stack's 12px step. */
-.routeintro { margin: 12px 0 0; }
+   one sentence in the body face with Hide at its end, on the stack's 12px
+   step above and below; the ? in the bar brings it back. It was the 18px
+   ring with 12.5px mute text against the table's edge, which the user sent
+   back on 2026-09-22 as badly sized and spaced. */
+.routeintro {
+  display: flex; align-items: center; gap: 12px; margin: 12px 0;
+  font-size: 13.5px; line-height: 1.5; color: var(--ink-soft);
+}
+.routeintro-text { margin: 0; flex: 1 1 auto; min-width: 0; }
+.routeintro-hide { flex: 0 0 auto; min-width: 0; }
+.routeintro + * { margin-top: 0 !important; }
+.cmdbar-help { flex: 0 0 auto; min-width: var(--ctl-h-sm); width: var(--ctl-h-sm); padding: 0; font-weight: 600; }
+@media (max-width: 640px) {
+  .routeintro { align-items: flex-start; }
+}
 .routenote a { color: var(--ink-soft); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
 @media (pointer: coarse) {
   .hintbtn { font-size: 13px; }

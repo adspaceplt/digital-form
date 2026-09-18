@@ -1212,9 +1212,11 @@ still sits on top of the shared one.
   empty states that explain what a section is for. **One exception, asked
   for by the user on 2026-09-22 while the portal opens to the whole team**:
   each console route carries a one line purpose under its command bar
-  (`.routeintro`, `INTRO` in `js/admin.js`), and it is an instruction, so it
-  follows the instruction pattern: open by itself the first three times the
-  route is entered, retired behind its `?` after that, never a `title`. A
+  (`.routeintro`, `INTRO` in `js/admin.js`), in official register, one or
+  two sentences in the body face with **Hide** at its end; it is an
+  instruction, so it follows the instruction pattern: open by itself the
+  first three times the route is entered, retired after that or on Hide,
+  and brought back by the `?` in the command bar, never a `title`. A
   standing fact about a route (where short links redirect from, where a
   reference is checked) is a `.routenote` line under the register, because
   it is true every day and is not an instruction. The heading and the
