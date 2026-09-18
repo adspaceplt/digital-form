@@ -3013,9 +3013,13 @@
       var sec = document.createElement('section');
       sec.className = 'crm-group';
       sec.innerHTML = '<div class="crm-group-head"><h3>' + esc(t[0]) + ' <span>' + n + '</span></h3></div>' +
+        /* One heading over the amount and the unit: the unit qualifies the
+           price ("RM 360.00  Per post"), so two headings over what reads as
+           one value said Rate and Unit where a person reads a price. The
+           cells stay two tracks so every amount keeps the same right edge. */
         '<div class="crm-table softpanel"><div class="crm-head svc-row cat-row">' +
-        '<span>Service</span><span class="svc-rate">Rate</span>' +
-        '<span>Unit</span><span></span></div></div>';
+        '<span>Service</span><span class="svc-rate">Price</span>' +
+        '<span class="svc-unit"></span><span></span></div></div>';
       var table = sec.querySelector('.crm-table');
       /* A sub-heading that repeats the heading over it is saying the same
          thing twice: the Add-ons table holds one category, called Add-ons,
@@ -3024,14 +3028,15 @@
       var divides = cats.length > 1 ||
         cats[0].toLowerCase().replace(/[^a-z]/g, '') !== t[0].toLowerCase().replace(/[^a-z]/g, '');
       cats.forEach(function (k) {
+        var lines = rows.filter(function (s) { return s.category === k; });
         if (divides) {
+          // The band carries its count, as every other band in the console does.
           var cat = document.createElement('div');
           cat.className = 'svc-cat';
-          cat.textContent = k;
+          cat.innerHTML = esc(k) + ' <span>' + lines.length + '</span>';
           table.appendChild(cat);
         }
-        rows.filter(function (s) { return s.category === k; })
-            .forEach(function (s) { table.appendChild(catalogRow(s)); });
+        lines.forEach(function (s) { table.appendChild(catalogRow(s)); });
       });
       box.appendChild(sec);
     });
