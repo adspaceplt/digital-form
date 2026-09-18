@@ -271,7 +271,7 @@
       /* You is a designation, not a live state, so it is the neutral chip the
          rate card gives Inactive and not a word in the accent green. */
       '<span class="team-who"><b>' + esc(m.name) + (self ? ' <span class="tone">You</span>' : '') + '</b>' +
-        /* The staff code and the designation are read off the row because
+        /* The Employee ID and the designation are read off the row because
            the HR serial and the signature on a letter are built from them. */
         (m.staff_code || m.designation
           ? '<small>' + esc([m.staff_code, m.designation].filter(Boolean).join(' · ')) + '</small>' : '') +
@@ -555,7 +555,7 @@
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg('tmMsg', 'A valid email is required.', 'err'); return; }
     if (!role) { msg('tmMsg', 'A group is required.', 'err'); return; }
     /* The HR serial is built from it, so it is letters and digits only. */
-    if (staff && !/^[A-Z0-9]{3,8}$/.test(staff)) { msg('tmMsg', 'A staff code is 3 to 8 letters or digits.', 'err'); $('tmStaff').focus(); return; }
+    if (staff && !/^[A-Z0-9]{3,8}$/.test(staff)) { msg('tmMsg', 'An Employee ID is 3 to 8 letters or digits.', 'err'); $('tmStaff').focus(); return; }
     var fields = { name: name, email: email, role: role, staff_code: staff || null, designation: desig || null };
     if (editingMember) {
       var m = editingMember;
@@ -568,7 +568,7 @@
       $('teamAddBox').hidden = true; editingMember = null;
       db.from('team_members').update(fields).eq('id', m.id).then(function (r) {
         if (r.error) {
-          msg('teamMsg', /staff_code/i.test(r.error.message) ? 'That staff code is already on the list.'
+          msg('teamMsg', /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
             : /duplicate|unique/i.test(r.error.message)
             ? 'That email is already on the list.' : r.error.message, 'err');
           return;
@@ -582,7 +582,7 @@
     db.from('team_members').insert(Object.assign({ active: true }, fields))
       .then(function (r) {
         if (r.error) {
-          msg('tmMsg', /staff_code/i.test(r.error.message) ? 'That staff code is already on the list.'
+          msg('tmMsg', /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
             : /duplicate|unique/i.test(r.error.message)
             ? 'That email is already on the list.' : r.error.message, 'err');
           return;

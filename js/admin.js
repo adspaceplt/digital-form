@@ -379,13 +379,13 @@
      behind its `?` in the command bar, where anybody can open it again. Not
      a `title`, because a tooltip is unreachable on a phone. */
   var INTRO = {
-    clients:   'Every client starts here as a lead. The record holds contacts, billing, services, letters and calls, and an active client is what Content Review and Creator Campaigns hang off.',
-    review:    'Post mockups for the client to approve online. Build a content set, publish it and send the client the link.',
-    campaigns: 'Creator bookings from selection to posting. The client picks creators on their link; the steps, the schedule and the invoice are run here.',
-    links:     'Short links for slides, print and QR codes, redirecting from ' + ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '. A destination can be corrected or paused after it is printed.',
-    register:  'Every document the portal has issued and every reference added by hand. A reference is checked at ' + location.host + '/verify.',
-    services:  'The rate card every quotation reads from. A price here seeds a client\'s service line and stays editable there.',
-    team:      'Who can sign in, and what each group may open. Access is set per section, with exceptions per part.'
+    clients:   'Client records, from first enquiry to active engagement. Contacts, billing details, services, letters and call notes are kept on each record.',
+    review:    'Content sets prepared for client approval. Each set is published to the client\'s review link once it is ready.',
+    campaigns: 'Creator campaigns, from creator selection to posting. Bookings, schedules, deliverables and the invoice are managed here.',
+    links:     'Short links for slides, print and QR codes, served from ' + ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '. A destination can be corrected or paused at any time.',
+    register:  'All documents issued through the portal and references added by hand. A reference can be verified at ' + location.host + '/verify.',
+    services:  'The rate card used for every quotation. Prices here prefill a client\'s service lines.',
+    team:      'Team members and user groups. Access is set per section, with exceptions per part.'
   };
   var INTRO_SHOWS = 3;
   function introSeen(name) {
@@ -399,23 +399,37 @@
     var line = host.querySelector('.routeintro');
     var seen = introSeen(name);
     if (!line) {
+      /* The sentence, with Hide at its end; the ? in the bar brings it back.
+         Hide retires it at once, the way reading it three times does. */
       line = document.createElement('div');
-      line.className = 'hintline routeintro';
-      line.innerHTML = '<button class="hintbtn" type="button" aria-expanded="false" aria-label="What this section is for">?</button>' +
-        '<p class="hinttext" hidden></p>';
-      line.querySelector('.hinttext').textContent = INTRO[name];
+      line.className = 'routeintro';
+      line.hidden = true;
+      line.innerHTML = '<p class="routeintro-text"></p>' +
+        '<button class="btn btn-sm btn-quiet routeintro-hide" type="button">Hide</button>';
+      line.querySelector('.routeintro-text').textContent = INTRO[name];
       bar.parentNode.insertBefore(line, bar.nextSibling);
-      line.querySelector('.hintbtn').addEventListener('click', function () {
-        var t = line.querySelector('.hinttext');
-        t.hidden = !t.hidden;
-        this.setAttribute('aria-expanded', String(!t.hidden));
+      var mark = document.createElement('button');
+      mark.type = 'button';
+      mark.className = 'btn btn-sm btn-quiet cmdbar-help';
+      mark.setAttribute('aria-label', 'About this section');
+      mark.setAttribute('aria-expanded', 'false');
+      mark.textContent = '?';
+      var count = bar.querySelector('.cmdbar-count');
+      if (count) count.parentNode.insertBefore(mark, count); else bar.appendChild(mark);
+      var setOpen = function (on) {
+        line.hidden = !on;
+        mark.setAttribute('aria-expanded', String(on));
+      };
+      mark.addEventListener('click', function () { setOpen(line.hidden); });
+      line.querySelector('.routeintro-hide').addEventListener('click', function () {
+        try { localStorage.setItem('adspace-hint-intro-' + name, String(INTRO_SHOWS)); } catch (e) {}
+        setOpen(false);
       });
+      line.__setOpen = setOpen;
       // Counted once per visit, not once per repaint.
       try { localStorage.setItem('adspace-hint-intro-' + name, String(seen + 1)); } catch (e) {}
     }
-    var open = seen < INTRO_SHOWS;
-    line.querySelector('.hinttext').hidden = !open;
-    line.querySelector('.hintbtn').setAttribute('aria-expanded', String(open));
+    line.__setOpen(seen < INTRO_SHOWS);
   }
   // The first section this person is allowed, for when the one asked for is not.
   function firstAllowed() {
