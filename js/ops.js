@@ -131,7 +131,8 @@
     'bad-kind': 'That is not a kind of link this portal keeps.',
     'url-required': 'An address is required.',
     'ends-before-it-starts': 'That ends before it starts.',
-    'not-blocked': 'This task is not blocked.'
+    'not-blocked': 'This task is not blocked.',
+    'confirm-required': 'Type the task number exactly as it is shown.'
   };
   function said(err) { return SAID[err] || ('Refused: ' + err + '.'); }
 
@@ -149,6 +150,7 @@
     pane: 'overview',
     session: null,         // my one open work session, whichever task it is on
     detail: { checklist: [], links: [], sessions: [], events: [], video: null },
+    moved: null,           // the last stage move, named on the row the repaint draws
     tick: null
   };
 
@@ -165,11 +167,46 @@
   /* The colour a stage carries is the portal's one vocabulary: amber while
      something waits, green once it is a fact, neutral otherwise. Blocked is
      red, because it is a refusal and not a caution. */
+  /* Four families and no more, so a column of stages can be read down without
+     becoming a rainbow: not started is mute, the work in hand is the ordinary
+     case and carries no paint at all, anything waiting on a person is warn,
+     anything cleared is green, and blocked is red because it is a refusal.
+     Terminal-or-waiting was the whole of this rule before, so Intake, Ready,
+     In progress, Shooting, Editing, Revision, Approved and Delivered all drew
+     the same neutral control and nothing on the row said where the task had
+     got to — which is the one thing the control exists to say. It keys on
+     `stage_group`, which the workflow already carries, so a stage added to a
+     workflow next year is toned by its own data and not by a list kept here. */
+  /* A stored key is not a word on a screen. Details printed `reel` under a
+     template named Reel and `simple` under a field offering Simple, so the
+     record contradicted the form that filled it one tab away. The key stays
+     what it is; what a person reads is named here, and anything a workflow of
+     somebody's own adds falls through to sentence case rather than to the raw
+     key. */
+  var DELIVER_WORD = {
+    static: 'Static post', carousel: 'Carousel', reel: 'Reel', video: 'Video',
+    story: 'Story', report: 'Report', copywriting: 'Copywriting',
+    design: 'Design', adhoc: 'Ad-hoc request'
+  };
+  var COMPLEX_WORD = { simple: 'Simple', standard: 'Standard', complex: 'Complex' };
+  var PRIORITY_WORD = { '1': '1 highest', '2': '2', '3': '3 normal', '4': '4', '5': '5 lowest' };
+  function sentence(s) {
+    s = String(s || '').replace(/_/g, ' ');
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+  }
+
+  var STAGE_TONE = {
+    intake: 'is-off', kiv: 'is-off', cancelled: 'is-off',
+    internal_review: 'is-warn', client_review: 'is-warn', waiting: 'is-warn',
+    approved: 'is-ok', delivered: 'is-ok', done: 'is-ok',
+    blocked: 'is-danger'
+  };
   function stageTone(t) {
     var s = stageOf(t);
     if (!s) return '';
-    if (t.stage_key === 'blocked') return 'is-danger';
-    if (t.stage_key === 'cancelled') return '';
+    if (STAGE_TONE[s.stage_group]) return STAGE_TONE[s.stage_group];
+    /* A workflow of somebody's own making need not use the seeded groups, so
+       the old test is the fallback and never the rule. */
     if (s.is_terminal) return 'is-ok';
     if (s.is_waiting || s.is_review) return 'is-warn';
     return '';
@@ -227,13 +264,25 @@
         base().is('completed_at', null).is('cancelled_at', null),
         base().gte('completed_at', since).limit(500),
         base().gte('cancelled_at', since).limit(500),
+        /* The foreign key is named, because `ops_task_assignees` points at
+           `team_members` twice (the person assigned and the person who did the
+           assigning) and PostgREST refuses an embed it cannot resolve. Left
+           bare, this read failed outright: every owner in the console was
+           blank, Mine matched nothing, and the record's own owner select fell
+           back to Nobody a moment after a save that had worked. */
         db.from('ops_task_assignees')
-          .select('task_id, responsibility, team_member_id, team_members(name)')
+          .select('task_id, responsibility, team_member_id,' +
+                  ' team_members!ops_task_assignees_team_member_id_fkey(name)')
           .is('ended_at', null)
       ]).then(function (r) {
-        if (r[0] && r[0].error) {
-          state.err = r[0].error;
-          UI.failLine(box, 'Your tasks', r[0].error.message, load);
+        /* A refused read of who owns what is not an empty owner column: the
+           scope, the grouping and the capacity strip all hang off it, and a
+           queue that quietly says nobody owns anything is worse than one that
+           says it could not be read. */
+        var bad = (r[0] && r[0].error) || (r[3] && r[3].error);
+        if (bad) {
+          state.err = bad;
+          UI.failLine(box, 'Your tasks', bad.message, load);
           return;
         }
         /* One row can only be in one of the three, but a merge that trusted
@@ -441,7 +490,7 @@
       return;
     }
     box.innerHTML = '';
-    if (state.view === 'board') { paintBoard(all, rows); return; }
+    if (state.view === 'board') { paintBoard(all, rows); paintMoved(); return; }
     if (state.view === 'calendar') { paintCalendar(rows); return; }
     /* A *search* opens every card, because somebody who typed a title wants
        the row wherever it is and a shut card would hide the one match and say
@@ -470,6 +519,7 @@
         }
       }));
     });
+    paintMoved();
   }
 
   // ---- The board -----------------------------------------------------------
@@ -541,23 +591,40 @@
     });
     box.appendChild(board);
   }
-  /* A card is the row, stood up: the number and the due date on the first
-     line, the title as what opens the task, the client and the owner under
-     it, and the same stage select at the foot, through the same function
-     and the same gates, with a refusal named on the card. */
+  /* A card is the row, stood up, and read in the order somebody scans a board:
+     what it is, whose it is, when it is owed. The title is the heaviest thing
+     on it and is what opens the task; the serial is demoted into the mute line
+     above it beside the client, because a number is how a card is quoted in a
+     message and never why anybody is looking at it; the owner is a disc and a
+     name on the foot, which is the fact a board is read for and which this
+     card did not carry at all; the due date ends that same line, warn once it
+     has passed. The stage select sits between them, through the same function
+     and the same gates as the list, with a refusal named on the card. */
   function cardOf(t) {
     var el = document.createElement('div');
     el.className = 'bcard' + (isFinished(t) ? ' is-off' : '');
+    el.setAttribute('data-task', t.id);
     var over = !isFinished(t) && daysAway(t.current_final_due_at) < 0;
-    var meta = [(t.clients && t.clients.name) || (t.scope === 'internal' ? 'Internal' : ''),
-                state.owners[t.id]].filter(Boolean).join(' · ');
+    var top = ['T' + t.task_no,
+               (t.clients && t.clients.name) || (t.scope === 'internal' ? 'Internal' : '')]
+      .filter(Boolean);
+    var who = state.owners[t.id] || '';
     el.innerHTML =
-      '<div class="bcard-top"><span class="bcard-no">T' + esc(String(t.task_no)) + '</span>' +
-        (t.current_final_due_at ? '<span class="bcard-due' + (over ? ' is-over' : '') + '">' +
-          esc(shortDate(t.current_final_due_at)) + '</span>' : '') + '</div>' +
+      '<div class="bcard-top"><span class="bcard-no">' + esc(top[0]) + '</span>' +
+        (top[1] ? '<span class="bcard-client">' + esc(top[1]) + '</span>' : '') + '</div>' +
       '<button class="bcard-title" type="button">' + esc(t.title) + '</button>' +
-      (meta ? '<div class="bcard-meta">' + esc(meta) + '</div>' : '') +
-      '<div class="bcard-foot">' + stageCell(t) + '</div>';
+      '<div class="bcard-stage">' + stageCell(t) + '</div>' +
+      '<div class="bcard-foot">' +
+        '<span class="bcard-who">' +
+          (who ? '<span class="bcard-face" aria-hidden="true">' + esc(UI.initials(who)) + '</span>' +
+                 '<span class="bcard-name">' + esc(who) + '</span>'
+               : '<span class="bcard-face is-none" aria-hidden="true"></span>' +
+                 '<span class="bcard-name mute">Unassigned</span>') + '</span>' +
+        (t.current_final_due_at
+          ? '<span class="bcard-due' + (over ? ' is-over' : '') + '">' +
+              esc(shortDate(t.current_final_due_at)) + '</span>'
+          : '') +
+      '</div>';
     el.querySelector('.bcard-title').addEventListener('click', function () { openTask(t.id, true); });
     var sel = el.querySelector('.state-select');
     if (sel) sel.addEventListener('change', function () { rowMove(t, el, sel); });
@@ -718,9 +785,11 @@
   function rowOf(t) {
     var el = document.createElement('div');
     el.className = 'svc-row task-row' + (isFinished(t) ? ' is-off' : '');
+    el.setAttribute('data-task', t.id);
     var over = !isFinished(t) && daysAway(t.current_final_due_at) < 0;
     var meta = [(t.clients && t.clients.name) || (t.scope === 'internal' ? 'Internal' : ''),
-                t.deliverable_type].filter(Boolean).join(' · ');
+                DELIVER_WORD[t.deliverable_type] || sentence(t.deliverable_type)]
+      .filter(Boolean).join(' · ');
     el.innerHTML =
       '<button class="task-open" type="button"><b>' + esc(t.title) + '</b>' +
         '<small>' + esc(meta) + '</small></button>' +
@@ -770,19 +839,33 @@
         if (r.error) { back(); rowNote(el, r.error.message); return; }
         var d = r.data;
         if (d && d.error) { back(); rowNote(el, said(d.error)); return; }
+        /* A move that repaints the list and says nothing is a move nobody can
+           tell they made: the row is rebuilt somewhere else in the band order
+           and the select they pressed is gone. What happened is named under
+           the row it happened on, once the repaint has drawn it. */
+        state.moved = { id: t.id, word: labelOfStage(t, next) };
         /* The band a row belongs to can change with its stage, so the queue is
            repainted rather than the cell patched. */
         load();
       }, function (e) { back(); rowNote(el, (e && e.message) || String(e)); });
   }
-  function rowNote(el, text) {
+  /* The note the last move left, drawn on the row the repaint has just made. */
+  function paintMoved() {
+    var m = state.moved;
+    if (!m) return;
+    state.moved = null;
+    var row = document.querySelector('[data-task="' + m.id + '"]');
+    if (row) rowNote(row, 'Moved to ' + m.word + '.', 'ok');
+  }
+  function rowNote(el, text, tone) {
     var was = el.nextSibling;
     if (was && was.classList && was.classList.contains('task-note')) was.remove();
     if (!text) return;
     var note = document.createElement('div');
-    note.className = 'msg err task-note';
+    note.className = 'msg ' + (tone || 'err') + ' task-note';
     note.textContent = text;
     el.parentNode.insertBefore(note, el.nextSibling);
+    if (tone === 'ok') setTimeout(function () { if (note.parentNode) note.remove(); }, 6000);
   }
 
   // ---- One task ------------------------------------------------------------
@@ -816,13 +899,20 @@
       db.from('ops_tasks').select('*, clients(name)').eq('id', id).single(),
       db.from('ops_task_checklist_items').select('*').eq('task_id', id).order('position'),
       db.from('ops_task_links').select('*').eq('task_id', id).order('created_at'),
-      db.from('ops_work_sessions').select('*, team_members(name)').eq('task_id', id).order('started_at', { ascending: false }),
+      db.from('ops_work_sessions')
+        .select('*, team_members!ops_work_sessions_team_member_id_fkey(name)')
+        .eq('task_id', id).order('started_at', { ascending: false }),
       db.from('ops_task_events').select('*').eq('task_id', id).order('created_at', { ascending: false }).limit(60),
-      db.from('ops_task_assignees').select('*, team_members(name)').eq('task_id', id).is('ended_at', null),
+      db.from('ops_task_assignees')
+        .select('*, team_members!ops_task_assignees_team_member_id_fkey(name)')
+        .eq('task_id', id).is('ended_at', null),
       db.from('ops_video_details').select('*').eq('task_id', id)
     ]).then(function (r) {
-      if (r[0].error || !r[0].data) {
-        msg('taskMsg', (r[0].error && r[0].error.message) || 'That task could not be read.', 'err');
+      /* Who owns it is part of the record, so a refused read of the
+         assignments is named rather than drawn as an unowned task. */
+      var bad = r[0].error || (r[5] && r[5].error);
+      if (bad || !r[0].data) {
+        msg('taskMsg', (bad && bad.message) || 'That task could not be read.', 'err');
         return;
       }
       var t = r[0].data;
@@ -883,7 +973,7 @@
         .map(function (a) { return a.name; })[0] || '';
     $('taskMeta').textContent = [
       (t.clients && t.clients.name) || (t.scope === 'internal' ? 'Internal' : ''),
-      t.deliverable_type,
+      DELIVER_WORD[t.deliverable_type] || sentence(t.deliverable_type),
       who ? 'Owner ' + who : ''
     ].filter(Boolean).join(' · ');
     var chip = $('taskStage');
@@ -1262,10 +1352,10 @@
     var wf = state.workflows.filter(function (w) { return w.id === t.workflow_id; })[0];
     $('taskFacts').innerHTML = [
       ['Workflow', (wf && wf.name) || ''],
-      ['Deliverable', t.deliverable_type],
+      ['Deliverable', DELIVER_WORD[t.deliverable_type] || sentence(t.deliverable_type)],
       ['Languages', (t.language_codes || []).join(', ')],
-      ['Priority', String(t.priority_level)],
-      ['Complexity', t.complexity || ''],
+      ['Priority', PRIORITY_WORD[String(t.priority_level)] || String(t.priority_level)],
+      ['Complexity', COMPLEX_WORD[t.complexity] || sentence(t.complexity)],
       ['Added', niceDate(t.created_at)]
     ].filter(function (p) { return p[1]; }).map(function (p) {
       return '<div><dt>' + esc(p[0]) + '</dt><dd>' + esc(p[1]) + '</dd></div>';
@@ -1309,6 +1399,17 @@
       .sort(function (a, b) { return a.position - b.position; });
     return ahead.length ? ahead[0].key : nexts[0];
   }
+  /* Where the task came from: the last stage change in its own events, which
+     the record has already read. Nothing is stored for this, because a stored
+     "previous stage" is a fact written once by the move that caused it and is
+     wrong the moment somebody moves again. */
+  function cameFrom(t) {
+    var ev = (state.detail.events || []).filter(function (e) {
+      return e.event_type === 'stage_changed' && e.from_value && e.from_value.stage_key;
+    })[0];
+    var k = ev && ev.from_value.stage_key;
+    return k && k !== t.stage_key ? k : null;
+  }
   function paintStageBox(t) {
     var box = $('taskStageBox');
     var s = stageOf(t);
@@ -1320,14 +1421,24 @@
       return;
     }
     var first = forwardOf(t, nexts);
-    var rest = nexts.filter(function (k) { return k !== first; });
+    /* Revert undoes a state, and this portal's rule is that every forward move
+       has one. Which stage to go back to is not a guess: it is the one the
+       task came from, read off the last stage change in its own events, and it
+       is offered only where the workflow still allows that move — so a revert
+       goes through the same function and the same gates as everything else. */
+    var back = cameFrom(t);
+    if (back && nexts.indexOf(back) < 0) back = null;
+    var rest = nexts.filter(function (k) { return k !== first && k !== back; });
     /* The head already carries the stage as its chip, so the rail does not say
        it again; and the move is a button at its own width, never a slab across
        the rail: full width it was the loudest thing on the page, louder than
        the overdue line above it, and on a phone it was the banner this
        portal's section heads have refused for months. */
     box.innerHTML =
-      (can ? '<button class="btn btn-go railmove" data-go="' + esc(first) + '" type="button">Move to ' + esc(labelForKey(first)) + '</button>'
+      (can ? '<div class="railmoves">' +
+               '<button class="btn btn-go railmove" data-go="' + esc(first) + '" type="button">Move to ' + esc(labelForKey(first)) + '</button>' +
+               (back ? '<button class="btn btn-sm railback" data-back="' + esc(back) + '" type="button">Revert to ' + esc(labelForKey(back)) + '</button>' : '') +
+             '</div>'
            : '<p class="mute">' + esc(stageLabel(t)) + '</p>') +
       (can && rest.length
         ? '<div class="railother"><label class="field-label" for="taskOther">Or move to</label>' +
@@ -1339,6 +1450,8 @@
 
     var go = box.querySelector('[data-go]');
     if (go) go.addEventListener('click', function () { move(first); });
+    var rv = box.querySelector('[data-back]');
+    if (rv) rv.addEventListener('click', function () { move(back); });
     var other = box.querySelector('#taskOther');
     if (other) other.addEventListener('change', function () {
       if (!other.value) return;
@@ -1479,6 +1592,29 @@
   }
 
   // ---- Sheets --------------------------------------------------------------
+  /* What goes with it, counted from the record already on the screen, so the
+     sheet states the consequence before it asks rather than after. */
+  function openDelete() {
+    var t = state.task;
+    if (!t) return;
+    var goes = [
+      state.detail.events.length + (state.detail.events.length === 1 ? ' event' : ' events'),
+      state.detail.sessions.length ? state.detail.sessions.length +
+        (state.detail.sessions.length === 1 ? ' time session' : ' time sessions') : '',
+      state.detail.links.length ? state.detail.links.length +
+        (state.detail.links.length === 1 ? ' link' : ' links') : '',
+      state.detail.checklist.length ? state.detail.checklist.length + ' checklist items' : ''
+    ].filter(Boolean);
+    $('tdelWhat').textContent = 'T' + t.task_no + ' · ' + (t.title || 'Untitled task') +
+      ' goes, with its ' + goes.join(', ') + '. There is no restore.';
+    $('tdelConfirm').value = '';
+    $('tdelReason').value = '';
+    $('tdelConfirm').setAttribute('placeholder', 'T' + t.task_no);
+    msg('tdelMsg', '');
+    sheet('tdelSheet', true);
+    $('tdelConfirm').focus();
+  }
+
   var dueKind = 'final';
   function openDue(kind) {
     var t = state.task;
@@ -1531,6 +1667,7 @@
     $('ntFinal').value = '';
     $('ntScope').value = 'client';
     $('ntPriority').value = '3';
+    $('ntComplex').value = '';
     ntScopeChanged();
     ntHint();
     msg('ntMsg', '');
@@ -1569,6 +1706,7 @@
       title: title,
       description: String($('ntDesc').value || '').trim() || null,
       priority_level: Number($('ntPriority').value) || 3,
+      complexity: $('ntComplex').value || null,
       publish_at: $('ntPublish').value ? $('ntPublish').value + 'T00:00:00Z' : null,
       final_due_at: $('ntFinal').value ? $('ntFinal').value + 'T00:00:00Z' : null
     };
@@ -1670,8 +1808,30 @@
           });
         }
         if (a === 'reopen') reopenBox().open();
+        if (a === 'delete') openDelete();
       });
     }
+
+    // Deleting the task keyed in twice
+    ['tdelClose', 'tdelCancel'].forEach(function (id) {
+      var b = $(id); if (b) b.addEventListener('click', function () { sheet('tdelSheet', false); });
+    });
+    var tdg = $('tdelGo');
+    if (tdg) tdg.addEventListener('click', function () {
+      var t = state.task;
+      if (!t) return;
+      call('ops_delete_task', {
+        p_task: t.id,
+        p_confirm: String($('tdelConfirm').value || '').trim().toUpperCase(),
+        p_reason: String($('tdelReason').value || '').trim() || null
+      }, 'tdelMsg', function () {
+        sheet('tdelSheet', false);
+        /* The record is gone, so there is nothing to repaint it from: back to
+           the queue, which re-reads. */
+        showList();
+        load();
+      });
+    });
 
     // Links
     var la = $('taskLinkAdd');
