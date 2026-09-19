@@ -1654,7 +1654,7 @@
             ? '<button class="kmenu-item" data-a="restore" type="button"><b>Restore</b></button>' +
               /* The hard delete, once the soft one has been made. Drawn only
                  where the Contacts part is managed. */
-              '<button class="kmenu-item is-danger" data-a="del" data-need="clients.contacts:manage" type="button"><b>Delete permanently</b></button>'
+              '<button class="kmenu-item is-danger" data-a="del" data-need="clients.contacts:manage" type="button"><b>Delete</b></button>'
             : '<button class="kmenu-item" data-a="edit" data-need="clients.contacts:work" type="button"><b>Edit</b></button>' +
               (ct.is_primary ? '' :
                 '<button class="kmenu-item" data-a="primary" type="button"><b>Main contact</b></button>') +
@@ -2588,7 +2588,7 @@
              the database decides again when the button is pressed. */
           (st === 'verified'
             ? '<button class="kmenu-item is-danger" data-a="void" data-need="clients.documents:manage" type="button"><b>Void letter</b></button>' : '') +
-          '<button class="kmenu-item is-danger" data-a="del" data-need="clients.documents:manage" type="button"><b>Delete permanently</b></button>' +
+          '<button class="kmenu-item is-danger" data-a="del" data-need="clients.documents:manage" type="button"><b>Delete</b></button>' +
         '</div>' +
       '</span>';
     wireMenu(row);
@@ -3064,7 +3064,7 @@
             /* Inactive first, then gone, as it is for a letter and a contact:
                a line is taken off the card before it can be taken out of it.
                Drawn only where Services is managed. */
-            (off ? '<button class="kmenu-item is-danger" data-a="del" data-need="services:manage" type="button"><b>Delete permanently</b></button>' : '') +
+            (off ? '<button class="kmenu-item is-danger" data-a="del" data-need="services:manage" type="button"><b>Delete</b></button>' : '') +
           '</div>'
         : '') + '</span>';
     row.classList.add('cat-row');

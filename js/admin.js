@@ -396,60 +396,76 @@
      by itself the first three times a section is entered and then retires
      behind its `?` in the command bar, where anybody can open it again. Not
      a `title`, because a tooltip is unreachable on a phone. */
+  /* ONE LINE A ROUTE, IN OFFICIAL REGISTER: what the section holds and what
+     it is for, and nothing about how to use it. The first pass wrote two
+     sentences a route, half of them naming the panes inside a record, which
+     is an explanation of the product rather than of the section. The user
+     sent them back on 2026-09-22 as too long; each is one sentence now. */
   var INTRO = {
-    clients:   'Client records, from first enquiry to active engagement. Contacts, billing details, services, letters and call notes are kept on each record.',
-    work:      'Tasks owed to clients and to the team, ordered by when they are due. Each task carries its own stage, dates, checklist, links and recorded time.',
-    review:    'Content sets prepared for client approval. Each set is published to the client\'s review link once it is ready.',
-    campaigns: 'Creator campaigns, from creator selection to posting. Bookings, schedules, deliverables and the invoice are managed here.',
-    links:     'Short links for slides, print and QR codes, served from ' + ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '. A destination can be corrected or paused at any time.',
-    register:  'All documents issued through the portal and references added by hand. A reference can be verified at ' + location.host + '/verify.',
-    services:  'The rate card used for every quotation. Prices here prefill a client\'s service lines.',
-    team:      'Team members and user groups. Access is set per section, with exceptions per part.'
+    clients:   'Every client and lead, from first enquiry to active engagement.',
+    work:      'Tasks owed to clients and to the team, ordered by when they are due.',
+    review:    'Content sets prepared for client approval.',
+    campaigns: 'Creator campaigns, from selection through to posting.',
+    links:     'Short links for slides, print and QR codes, served from ' + ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '.',
+    register:  'Every document issued through the portal, and its reference.',
+    services:  'The rate card every quotation is priced from.',
+    team:      'Team members, user groups and what each group may open.'
   };
   var INTRO_SHOWS = 3;
   function introSeen(name) {
     try { return Number(localStorage.getItem('adspace-hint-intro-' + name) || 0); } catch (e) { return INTRO_SHOWS; }
   }
+  /* THE LINE IS A SURFACE THAT COMES FROM THE CONTROL THAT OPENS IT, not a
+     block inserted under each route's command bar. A block there could only
+     be reached from the directory: open a client, a campaign or a task and
+     the bar is off the screen, so the one control that explains the section
+     did nothing at all. It hangs off the section's name now, at every width
+     and in every state of every route, and is placed by the one copy of where
+     a panel opens. */
+  function aboutOpen(on) {
+    var pop = $('sectionAbout'), btn = $('sectionTitle');
+    if (!pop || !btn) return;
+    pop.hidden = !on;
+    btn.setAttribute('aria-expanded', String(on));
+    if (on) ADspaceMenu.place(btn, pop, 'left');
+  }
+  function aboutIsOpen() { var p = $('sectionAbout'); return p && !p.hidden; }
+  /* IT OPENS WHEN IT IS ASKED FOR, AND NEVER BY ITSELF. As a line in the flow
+     it could open on arrival and cost one row; as a surface over the page it
+     would land on the command bar underneath it, which is the row somebody
+     came to use. While a route is new the title's glyph carries the action
+     colour instead, so the invitation is on the control and the screen is
+     still the person's; after three visits even that retires. */
   function paintIntro(name) {
-    var host = $('section' + name.charAt(0).toUpperCase() + name.slice(1));
-    if (!host || !INTRO[name]) return;
-    var bar = host.querySelector('.cmdbar');
-    if (!bar) return;
-    var line = host.querySelector('.routeintro');
+    var pop = $('sectionAbout'), btn = $('sectionTitle');
+    if (!pop || !btn) return;
+    aboutOpen(false);
+    if (!INTRO[name]) { btn.classList.remove('is-new'); return; }
+    $('sectionAboutText').textContent = INTRO[name];
     var seen = introSeen(name);
-    if (!line) {
-      /* The sentence, with Hide at its end; the ? in the bar brings it back.
-         Hide retires it at once, the way reading it three times does. */
-      line = document.createElement('div');
-      line.className = 'routeintro';
-      line.hidden = true;
-      line.innerHTML = '<p class="routeintro-text"></p>' +
-        '<button class="btn btn-sm btn-quiet routeintro-hide" type="button">Hide</button>';
-      line.querySelector('.routeintro-text').textContent = INTRO[name];
-      bar.parentNode.insertBefore(line, bar.nextSibling);
-      var setOpen = function (on) {
-        line.hidden = !on;
-        var t = $('sectionTitle');
-        if (t) t.setAttribute('aria-expanded', String(on));
-      };
-      line.querySelector('.routeintro-hide').addEventListener('click', function () {
-        try { localStorage.setItem('adspace-hint-intro-' + name, String(INTRO_SHOWS)); } catch (e) {}
-        setOpen(false);
-      });
-      line.__setOpen = setOpen;
-      // Counted once per visit, not once per repaint.
+    // Counted once per visit, not once per repaint.
+    if (seen < INTRO_SHOWS) {
       try { localStorage.setItem('adspace-hint-intro-' + name, String(seen + 1)); } catch (e) {}
     }
-    line.__setOpen(seen < INTRO_SHOWS);
+    btn.classList.toggle('is-new', seen < INTRO_SHOWS);
   }
-  /* The section's name opens and shuts the line that says what the section
-     is for. One handler for every route: which line it governs is whichever
-     section is on the screen. */
-  $('sectionTitle').addEventListener('click', function () {
-    var host = $('section' + section.charAt(0).toUpperCase() + section.slice(1));
-    var line = host && host.querySelector('.routeintro');
-    if (line && line.__setOpen) line.__setOpen(line.hidden);
+  /* The section's name opens and shuts it, wherever on the route you are. */
+  $('sectionTitle').addEventListener('click', function (e) {
+    e.stopPropagation();
+    aboutOpen(!aboutIsOpen());
   });
+  $('sectionAboutHide').addEventListener('click', function () {
+    try { localStorage.setItem('adspace-hint-intro-' + section, String(INTRO_SHOWS)); } catch (e) {}
+    $('sectionTitle').classList.remove('is-new');
+    aboutOpen(false);
+  });
+  $('sectionAbout').addEventListener('click', function (e) { e.stopPropagation(); });
+  document.addEventListener('click', function () { if (aboutIsOpen()) aboutOpen(false); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && aboutIsOpen()) { aboutOpen(false); $('sectionTitle').focus(); }
+  });
+  ADspaceMenu.onScroll(function () { aboutOpen(false); });
+
   // The first section this person is allowed, for when the one asked for is not.
   function firstAllowed() {
     var order = ['clients', 'review', 'campaigns', 'links', 'register', 'services', 'team'];
@@ -2878,7 +2894,7 @@
           '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
             '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
-            '<button class="kmenu-item is-danger" data-a="del" data-need="links:manage" type="button"><b>Delete link</b></button>' +
+            '<button class="kmenu-item is-danger" data-a="del" data-need="links:manage" type="button"><b>Delete</b></button>' +
           '</div>' +
         '</span>';
 

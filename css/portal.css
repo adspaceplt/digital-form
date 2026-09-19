@@ -1646,13 +1646,25 @@ a { color: inherit; }
 .setbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
 .setbar .msg { flex: 1 1 100%; margin-top: 10px; }
 
-/* One chip everywhere: the same shape as .tone and .chip-state. */
-.chip {
-  display: inline-flex; align-self: flex-start; font-size: 11.5px; font-weight: 600; line-height: 1.5;
-  padding: 2px 8px; border-radius: 5px; background: var(--line-soft); color: var(--ink-soft);
-  white-space: nowrap;
+/* ONE CHIP, ONE SHAPE, ONE SET OF TONES. There were three selectors for the
+   same component — `.chip`, `.tone` and `.chip-state` — each restating the
+   same six declarations, and only two of them carried the tones: the task and
+   campaign records set `class="chip is-warn"` on their state and drew the
+   neutral grey whatever the stage, because `.chip.is-warn` did not exist.
+   Its own red was a pair of hexes rather than the error tokens, so it could
+   not follow the theme either. The shape and the tones are stated once here;
+   what differs between the three is only how each sits in its own row. */
+.chip, .tone, .chip-state {
+  font-size: 11.5px; font-weight: 600; line-height: 1.5;
+  padding: 2px 8px; border-radius: 5px; white-space: nowrap;
+  background: var(--line-soft); color: var(--ink-soft);
 }
-.chip.is-live { background: var(--ok-bg); color: var(--ok); }
+.chip.is-ok,     .tone.is-ok,     .chip-state.is-ok     { background: var(--ok-bg);   color: var(--ok); }
+.chip.is-warn,   .tone.is-warn,   .chip-state.is-warn   { background: var(--warn-bg); color: var(--warn); }
+.chip.is-danger, .tone.is-danger, .chip-state.is-danger { background: var(--err-bg);  color: var(--err); }
+.chip.is-live,   .tone.is-live,   .chip-state.is-live   { background: var(--ok-bg);   color: var(--ok); }
+.chip { display: inline-flex; align-self: flex-start; }
+.tone { flex: 0 0 auto; }
 
 .zone-head { display: flex; gap: 11px; align-items: flex-start; margin-bottom: 16px; }
 .zone-mark {
@@ -1995,6 +2007,11 @@ body.is-plain .topbar { background: var(--chrome); }
    three visits to every route: the title is a title. */
 @media (hover: hover) { .console-title:hover .console-title-info { color: var(--ink); } }
 .console-title[aria-expanded="true"] .console-title-info { color: var(--ink); }
+/* While a route is new the glyph carries the action colour, so the invitation
+   to read what the section is for sits on the control rather than on a panel
+   that opens itself over the command bar. It retires with the line, after
+   three visits or on Hide. */
+.console-title.is-new .console-title-info { color: var(--action); }
 .console-head > .headlink, .console-head > .acct { flex: 0 0 auto; }
 /* Every route starts the same distance under the bar. Three sections opened
    with a `.viewhead` and its 24px, three opened straight on a command bar
@@ -2115,7 +2132,11 @@ body.is-plain .topbar { background: var(--chrome); }
   .lpickrow input { grid-area: tick; }
   .lpickname { grid-area: name; }
   .lpickamt { grid-area: amt; }
-  .sheet-foot .btn { flex: 1 1 auto; }
+  /* Equal halves, not proportional ones. At `auto` the basis is each label's
+     own width, so Save came out a black slab across most of the row with
+     Cancel squeezed beside it — two actions of the same standing drawn at two
+     sizes, which the phone checklist has ruled out since it was written. */
+  .sheet-foot .btn { flex: 1 1 0; }
   .lpicksum { flex: 1 1 100%; }
 }
 /* The confirm list is a name and an amount, not the activity record's five
@@ -2563,14 +2584,7 @@ body.is-plain .topbar { background: var(--chrome); }
   font-size: 15px; font-weight: 600; letter-spacing: -.012em; color: var(--ink);
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.tone {
-  flex: 0 0 auto; font-size: 11.5px; font-weight: 600; line-height: 1.5;
-  padding: 2px 8px; border-radius: 5px; white-space: nowrap;
-  background: var(--line-soft); color: var(--ink-soft);
-}
-.tone.is-ok     { background: var(--ok-bg);   color: var(--ok); }
-.tone.is-warn   { background: var(--warn-bg); color: var(--warn); }
-.tone.is-danger { background: var(--err-bg);  color: var(--err); }
+/* The shape and the tones are stated once, up by `.chip`. */
 
 .kmenu-btn {
   margin-left: auto; flex: 0 0 auto;
@@ -2601,7 +2615,11 @@ body.is-plain .topbar { background: var(--chrome); }
 .kmenu-item b { font-size: 13.5px; font-weight: 600; color: var(--ink); }
 .kmenu-item span { font-size: 12px; line-height: 1.45; color: var(--ink-mute); }
 .kmenu-item:hover { background: var(--line-soft); }
-.kmenu-item.is-danger b { color: var(--err); }
+/* A destructive item is red whether or not it carries a <b>. The colour hung
+   off the bold child alone, so Delete on the client record — the one such
+   item written as plain text — read in ordinary ink beside Edit and said
+   nothing about what it does. */
+.kmenu-item.is-danger, .kmenu-item.is-danger b { color: var(--err); }
 
 /* A step inside the card. Recessed ground, hairline above. */
 .kstep { border-top: 1px solid var(--line-soft); padding: 11px 16px 13px; background: var(--sunk); }
@@ -2698,14 +2716,8 @@ body.is-plain .topbar { background: var(--chrome); }
    Whatever follows it (a Replacement tag) travels with it. */
 .booking-head > .chip-state, .booking-head > .tone { margin-left: auto; }
 .booking-head > .chip-state ~ *, .booking-head > .tone ~ * { margin-left: 0; }
-/* The same words and the same colours as the console's state chips. */
-.chip-state {
-  font-size: 11.5px; font-weight: 600; line-height: 1.5; padding: 2px 8px; border-radius: 5px;
-  background: var(--line-soft); color: var(--ink-soft); white-space: nowrap;
-}
-.chip-state.is-ok     { background: var(--ok-bg);   color: var(--ok); }
-.chip-state.is-warn   { background: var(--warn-bg); color: var(--warn); }
-.chip-state.is-danger { background: #fbeceb;        color: #a3312a; }
+/* The same words and the same colours as the console's state chips; the
+   shape and the tones are stated once, up by `.chip`. */
 .booking-meta { font-size: 13px; color: var(--ink-mute); margin-top: 5px; }
 
 /* Results as a table: one row per platform, the post link in the first
@@ -3513,7 +3525,14 @@ body > .shell { width: 100%; }
    months. The chip that stood over it is gone too; the head already carries
    the stage. */
 .railnow { margin: 0 0 10px; }
+/* The one forward action, and the way back beside it. Revert undoes a state,
+   so it is a neutral outline button and never a second blue one: this portal
+   spends one blue action a view and the forward move is it. They wrap rather
+   than shrink, because a button squeezed under its label is worse than two
+   lines. */
+.railmoves { display: flex; flex-wrap: wrap; gap: 8px; }
 .railmove { width: auto; }
+.railback { min-width: 0; }
 .railother { margin-top: 12px; }
 .railother .field-label { display: block; margin-bottom: 4px; }
 .railother .select { width: 100%; }
@@ -3618,6 +3637,10 @@ body > .shell { width: 100%; }
 .state-select.is-ok   { color: var(--ok);   border-color: var(--ok);   background-color: var(--ok-bg); }
 .state-select.is-warn { color: var(--warn); border-color: var(--warn); background-color: var(--warn-bg); }
 .state-select.is-off  { color: var(--ink-mute); }
+/* Blocked is a refusal, and the chip beside it on the record already says so
+   in red. The select had no danger rule at all, so the one stage a person has
+   to notice was drawn exactly like every other. */
+.state-select.is-danger { color: var(--err); border-color: var(--err); background-color: var(--err-bg); }
 .crm-title .state-select { flex: 0 0 auto; }
 /* How much of a group is filled: a ring and the count. */
 .ringline { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
@@ -4477,13 +4500,19 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    step above and below; the ? in the bar brings it back. It was the 18px
    ring with 12.5px mute text against the table's edge, which the user sent
    back on 2026-09-22 as badly sized and spaced. */
-.routeintro {
-  display: flex; align-items: center; gap: 12px; margin: 12px 0;
-  font-size: 13.5px; line-height: 1.5; color: var(--ink-soft);
+/* Retired 2026-09-22 as a block under the command bar: it could only be
+   reached from a route's directory, so on a record — where the bar is off the
+   screen — the control that explains the section did nothing. It is a surface
+   that comes from the control instead, in the panel family this console
+   already uses, placed by `ADspaceMenu.place(btn, pop, 'left')` because the
+   title sits at the start of its line and not at the end of a row. */
+.aboutpop {
+  display: block; width: min(340px, calc(100vw - 16px)); padding: 14px 16px 10px;
 }
-.routeintro-text { margin: 0; flex: 1 1 auto; min-width: 0; }
-.routeintro-hide { flex: 0 0 auto; min-width: 0; }
-.routeintro + * { margin-top: 0 !important; }
+.aboutpop-text {
+  margin: 0 0 6px; font-size: 13.5px; line-height: 1.5; color: var(--ink-soft);
+}
+.aboutpop-hide { min-width: 0; margin-left: -8px; }
 /* The `?` reopens the route's own line, so it belongs beside the count that
    says what is on the page, never out on its own. It is inserted into
    `.cmdbar-end` directly after the count, and that group's own gap spaces
@@ -4491,9 +4520,6 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    once left it stranded in the middle of the bar. */
 /* Retired 2026-09-22: the section's name in the console head is what opens
    the line now, because that is what the line is about. */
-@media (max-width: 640px) {
-  .routeintro { align-items: flex-start; }
-}
 .routenote a { color: var(--ink-soft); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
 @media (pointer: coarse) {
   .hintbtn { font-size: 13px; }
@@ -5047,8 +5073,14 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    strip scrolls sideways instead, which is what every tab strip on a phone
    does. `flex: 0 0 auto` on the tabs, so none of them is squeezed to make the
    row fit rather than scrolling. */
+/* The strip never gives up its height. `overflow-x: auto` makes it a scroll
+   container, whose automatic minimum size is 0, so as a flex item in the
+   Activity sheet's fixed-height card it was squeezed to nothing by the
+   scrolling body beside it: the tabs were in the markup, took no height and
+   drew nothing at all. In the record it is a grid item and this changes
+   nothing. */
 .rectabs {
-  grid-area: tabs; display: flex; gap: 2px; flex-wrap: nowrap;
+  grid-area: tabs; display: flex; gap: 2px; flex-wrap: nowrap; flex: 0 0 auto;
   overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
   /* One block gap under the strip, the same step `.tabrow` takes at the top
      of Campaigns: two tab strips in one console standing 4px and 12px above
@@ -5688,23 +5720,58 @@ body.is-canvas { overflow: hidden; }
   display: grid; gap: 6px; padding: 12px 12px 10px;
   background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius-sm);
 }
-.bcard-top { display: flex; align-items: baseline; gap: 8px; font-size: 12px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
-.bcard-top .bcard-no { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-weight: 600; letter-spacing: 0; }
-.bcard-due { margin-left: auto; white-space: nowrap; }
-.bcard-due.is-over { color: var(--warn); font-weight: 600; }
+/* THE CARD IS READ IN THE ORDER A BOARD IS SCANNED: what it is, whose it is,
+   when it is owed. The serial led the card in the token face at the same size
+   as the client beside it, which put the one fact nobody scans for at the top
+   of every card; it is mute and one step smaller than the line it shares, and
+   the title above the fold is what carries the weight. */
+.bcard-top {
+  display: flex; align-items: baseline; gap: 6px; min-width: 0;
+  font-size: 11.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums;
+}
+.bcard-top .bcard-no {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 500; letter-spacing: 0; flex: 0 0 auto;
+}
+.bcard-top .bcard-no::after { content: "·"; margin-left: 6px; }
+.bcard-top .bcard-no:only-child::after { content: none; }
+.bcard-client { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* The title is what opens the task: the widest thing on the card, where the
    eye already is, and nothing else on the card is nested inside it. */
+/* It is what opens the task, so it clears the control floor like every other
+   control: at `display: block` it was its own 19px line of text and the walk
+   measured it as a 19px target. */
 .bcard-title {
-  display: flex; align-items: center; width: 100%; min-height: var(--ctl-h); padding: 0; border: 0; background: none;
-  text-align: left; font: inherit; font-size: 13.5px; font-weight: 600; line-height: 1.35; color: var(--ink);
+  display: flex; align-items: center; width: 100%; min-height: var(--ctl-h);
+  padding: 0; border: 0; background: none;
+  text-align: left; font: inherit; font-size: 14px; font-weight: 600; line-height: 1.35; color: var(--ink);
   cursor: pointer; border-radius: 6px; overflow-wrap: anywhere;
 }
 @media (hover: hover) { .bcard-title:hover { color: var(--action); } }
 .bcard-meta { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* The move is the commonest act on a card as it is on a row, so the card
-   carries the same tinted select, at the foot where the thumb is. */
-.bcard-foot { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
-.bcard-foot .state-select { width: 100%; }
+   carries the same tinted select, at the same place on every card. */
+.bcard-stage { display: flex; }
+.bcard-stage .state-select { width: 100%; }
+/* Whose it is and when it is owed, on one line under the control. The owner
+   was missing from the card altogether, which is the fact a board is read
+   for; the disc is what lets a column be scanned by eye before it is read. */
+.bcard-foot {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+  font-size: 12px; color: var(--ink-soft);
+}
+.bcard-who { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.bcard-face {
+  flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--line-soft); color: var(--ink-soft);
+  font-size: 9.5px; font-weight: 600; letter-spacing: .01em;
+}
+.bcard-face.is-none { background: none; border: 1px dashed var(--line-ctl); }
+.bcard-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bcard-foot .bcard-due { margin-left: auto; flex: 0 0 auto; }
+.bcard-due { white-space: nowrap; }
+.bcard-due.is-over { color: var(--warn); font-weight: 600; }
 .bcard .task-note { margin-top: 4px; }
 .is-narrow .board { flex-direction: column; align-items: stretch; overflow-x: visible; padding-bottom: 0; gap: 16px; }
 .is-narrow .bcol { flex: none; width: auto; }

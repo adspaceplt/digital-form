@@ -95,6 +95,19 @@
   };
   /* The sections whose parts are granted rather than inherited. */
   var GRANTED_PARTS = { ops: 1 };
+
+  /* What a part holds that its section does not. An inherited part falls back
+     to its section, so a stored level equal to it changes nothing; a granted
+     part falls back to no access, so a stored `none` changes nothing either.
+     Either way the answer is the empty string, which is Same as section on
+     the panel and the absence of a key in the database. */
+  function exceptionOf(acc, key) {
+    var held = (acc && acc[key]) || '';
+    if (!held) return '';
+    var sec = key.split('.')[0];
+    var same = GRANTED_PARTS[sec] ? 'none' : ((acc && acc[sec]) || 'none');
+    return held === same ? '' : held;
+  }
   var CAPS = [];
 
   function accessOf(r) {
@@ -356,13 +369,10 @@
        (`Clients (Billing: No access)`), so the sentence still says what the
        group opens and then what it does not. */
     var word = function (s) {
-      var ex = (PARTS[s[0]] || []).filter(function (p) {
-        var v = acc[s[0] + '.' + p[0]];
-        return v && v !== acc[s[0]];
-      }).map(function (p) {
-        var v = acc[s[0] + '.' + p[0]];
-        return p[1] + ': ' + (LEVEL_WORD[v] || 'No access');
-      });
+      var ex = (PARTS[s[0]] || []).map(function (p) {
+        var v = exceptionOf(acc, s[0] + '.' + p[0]);
+        return v ? p[1] + ': ' + (LEVEL_WORD[v] || 'No access') : '';
+      }).filter(Boolean);
       return s[1] + (ex.length ? ' (' + ex.join(', ') + ')' : '');
     };
     ['manage', 'work', 'view'].forEach(function (lv) {
@@ -371,8 +381,10 @@
     });
     /* A part opened above a section that is shut is an exception too. */
     var only = SECTIONS.filter(function (s) { return (acc[s[0]] || 'none') === 'none'; }).map(function (s) {
-      var ex = (PARTS[s[0]] || []).filter(function (p) { return acc[s[0] + '.' + p[0]] && acc[s[0] + '.' + p[0]] !== 'none'; })
-        .map(function (p) { return p[1] + ': ' + LEVEL_WORD[acc[s[0] + '.' + p[0]]]; });
+      var ex = (PARTS[s[0]] || []).map(function (p) {
+        var v = exceptionOf(acc, s[0] + '.' + p[0]);
+        return v && v !== 'none' ? p[1] + ': ' + LEVEL_WORD[v] : '';
+      }).filter(Boolean);
       return ex.length ? s[1] + ' (' + ex.join(', ') + ')' : '';
     }).filter(Boolean);
     if (only.length) parts.push('Only: ' + only.join(', '));
@@ -495,11 +507,18 @@
       sel.disabled = Boolean(r && r.slug === 'admin');
     });
     /* A section holding an exception opens on it; the rest stay folded,
-       because Same as section on every part is the ordinary case. */
+       because Same as section on every part is the ordinary case.
+
+       A part that says what its section already says is not an exception.
+       The HR move wrote `register.hr` onto every group, `none` included, so
+       every group carried a stored level identical to the one it would have
+       inherited and Documents was the one section that opened by itself on
+       every screen, for a difference nobody had made. A stored level equal to
+       the section's reads as Same as section and is not saved again. */
     var opened = {};
     partPicks().forEach(function (sel) {
       var k = sel.getAttribute('data-part');
-      sel.value = acc && acc[k] ? acc[k] : '';
+      sel.value = exceptionOf(acc, k);
       if (sel.value) opened[k.split('.')[0]] = true;
       sel.disabled = Boolean(r && r.slug === 'admin');
     });
@@ -521,8 +540,14 @@
     flagBoxes().forEach(function (cb) { flags[cb.getAttribute('data-f')] = cb.checked; });
     var access = {};
     levelPicks().forEach(function (sel) { access[sel.getAttribute('data-sec')] = sel.value || 'none'; });
-    // Only an exception is stored; Same as section is the absence of a key.
-    partPicks().forEach(function (sel) { if (sel.value) access[sel.getAttribute('data-part')] = sel.value; });
+    // Only an exception is stored; Same as section is the absence of a key,
+    // and so is a part set to exactly what its section already gives.
+    partPicks().forEach(function (sel) {
+      var k = sel.getAttribute('data-part');
+      var sec = k.split('.')[0];
+      var same = GRANTED_PARTS[sec] ? 'none' : (access[sec] || 'none');
+      if (sel.value && sel.value !== same) access[k] = sel.value;
+    });
     if (state.editing) {
       var r = state.editing;
       var patch = {};

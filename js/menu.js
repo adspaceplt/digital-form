@@ -36,11 +36,18 @@
        the last row used to open past the bottom of the window, which is
        nowhere a phone can reach. Call it with the menu already visible; the
        height cannot be measured otherwise. */
-    place: function (btn, menu) {
+    place: function (btn, menu, align) {
       var r = btn.getBoundingClientRect(), h = menu.offsetHeight;
       menu.style.position = 'fixed';
       menu.style.right = 'auto';
-      menu.style.left = Math.max(8, r.right - menu.offsetWidth) + 'px';
+      /* A row ⋯ sits at the end of its row, so its menu hangs back from the
+         right edge. A control at the start of a line — the section's name in
+         the console head — is the other way round, and right alignment put
+         its panel against the window's left edge instead of under the word it
+         belongs to. Either way it is kept inside the viewport. */
+      menu.style.left = (align === 'left'
+        ? Math.max(8, Math.min(r.left, window.innerWidth - menu.offsetWidth - 8))
+        : Math.max(8, r.right - menu.offsetWidth)) + 'px';
       menu.style.top = (r.bottom + 4 + h <= window.innerHeight - 8 || r.top - 4 - h < 8)
         ? (r.bottom + 4) + 'px'
         : (r.top - 4 - h) + 'px';
