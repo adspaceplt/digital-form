@@ -147,7 +147,12 @@
     if (head) el.innerHTML = head;
     return el;
   }
-  function empty(box, word) { box.innerHTML = '<div class="empty">' + esc(word) + '</div>'; }
+  /* The one copy of how a list says it has nothing in it, which this page had
+     been going around: `.empty` is a bounded card, so a client with no
+     services, no letters and no requests read four white slabs down the page
+     where the console draws one line inside the surface the list would have
+     filled. */
+  function empty(box, word) { UI.emptyLine(box, word, '', null); }
 
   /* A menu in a table row is placed on the viewport under its button, as in
      the console, so the table never clips it. */
@@ -528,8 +533,13 @@
       acc.forEach(function (a) {
         var row = document.createElement('div');
         row.className = 'svc-row ct-row';
+        /* The address is what somebody signs in with, so it is read and not
+           written to: a mailto drawn as this portal's outlined link chip
+           offered to open a mail client, which is not what this section is
+           for, and put a bordered pill in a table cell beside plain text. */
         row.innerHTML = '<span class="svc-name"><b>' + esc(a.name) + '</b></span>' +
-          '<span class="crm-reach"><a class="plink" href="mailto:' + esc(a.email) + '">' + esc(a.email) + '</a></span><span class="team-act"></span>';
+          '<span class="crm-reach"><span class="acc-email">' + esc(a.email) + '</span></span>' +
+          '<span class="team-act"></span>';
         atb.appendChild(row);
       });
       abox.innerHTML = ''; abox.appendChild(atb);
