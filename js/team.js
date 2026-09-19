@@ -82,6 +82,16 @@
     review:    [['sets', 'Content sets'], ['settings', 'Client settings']],
     campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance']],
     register:  [['documents', 'Client documents'], ['hr', 'HR letters']],
+    /* The record is already read a section at a time — the tab strip is its
+       own — and its access was one switch over all of them, so opening the
+       campaigns log to the team opened every client's billing change and
+       every letter with it. Each tab is a part, and the database decides
+       which rows arrive: `activity_section()` maps a tag to the section the
+       console files it under, and the read policy asks the part. */
+    activity:  [['clients', 'Clients'], ['ops', 'My Work'], ['team', 'Team'],
+                ['review', 'Content Review'], ['campaigns', 'Creator Campaigns'],
+                ['links', 'Short Links'], ['register', 'Documents'],
+                ['services', 'Services']],
     /* THESE FOUR ARE THE EXCEPTION. Every other part is a pane *inside* its
        section's job, so it falls back to the section: a group that works
        Clients works its Billing pane unless somebody says otherwise. These

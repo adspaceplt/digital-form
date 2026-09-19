@@ -285,6 +285,11 @@
     review:    ['sets', 'settings'],
     campaigns: ['campaigns', 'creators', 'finance'],
     register:  ['documents', 'hr'],
+    /* The record is read a tab at a time, so its access is a part per tab.
+       `activity_section()` in the database maps a tag to the section the
+       console files it under and the read policy asks the part, so the tabs
+       here draw exactly what the database will send. */
+    activity:  ['clients', 'ops', 'team', 'review', 'campaigns', 'links', 'register', 'services'],
     /* Operations is the one section whose parts *widen* it rather than
        narrowing it: the team's whole queue, the reports, the templates and
        another person's hours are all more than "work my own tasks". So they
@@ -319,6 +324,11 @@
      being spelled out in both vocabularies everywhere. */
   function sectionAllowed(name) {
     if (name === 'register') return may('register.documents', 'view') || may('register.hr', 'view');
+    if (name === 'activity') {
+      return may('activity', 'view') || PARTS.activity.some(function (k) {
+        return may('activity.' + k, 'view');
+      });
+    }
     if (name === 'work') return may('ops', 'view');
     return may(name, 'view');
   }
@@ -808,6 +818,9 @@
   /* Label, tone, and which section of the portal the action belongs to, so the
      record can be filtered the way the sidebar is. */
   var ACTION_LABEL = {
+    /* A deleted task takes its own events with it, so the only record of the
+       deletion is here. Filed under My Work, which is the section it is about. */
+    'ops.deleted':           ['Task deleted', 'is-danger', 'ops'],
     'client.added':          ['Client added', 'is-ok', 'clients'],
     'team.added':            ['Team member added', 'is-ok', 'team'],
     'team.changed':          ['Access changed', 'is-warn', 'team'],
@@ -928,9 +941,9 @@
     /* A file the team handed in for a creator, from the console. */
     'campaign.file_added':   ['Draft file uploaded by team', '', 'campaigns']
   };
-  var ACT_SECTION = { all: 'Everything', clients: 'Clients', team: 'Team', review: 'Content Review',
-                      campaigns: 'Creator Campaigns', links: 'Short Links', register: 'Documents',
-                      services: 'Services' };
+  var ACT_SECTION = { all: 'Everything', clients: 'Clients', ops: 'My Work', team: 'Team',
+                      review: 'Content Review', campaigns: 'Creator Campaigns',
+                      links: 'Short Links', register: 'Documents', services: 'Services' };
 
   /* The section only appears for people on the viewer list. The database
      enforces this too, so hiding it here is convenience rather than the
@@ -938,7 +951,12 @@
   var maySeeActivity = false;
 
   function gateActivity() {
-    maySeeActivity = may('activity', 'view');
+    /* The record has parts now, so a group may hold none of the section and
+       one of its tabs: the link is drawn where any tab is readable, and the
+       tabs themselves draw where their own part is. */
+    maySeeActivity = may('activity', 'view') || PARTS.activity.some(function (k) {
+      return may('activity.' + k, 'view');
+    });
     showActivityLink();
     // An older database without me() still has the viewers list; honour it.
     if (me && me.legacy && actor) {
