@@ -1349,9 +1349,13 @@ a { color: inherit; }
 .iconbtn svg { width: 16px; height: 16px; stroke-width: 1.7; }
 /* A thumb needs the whole 44px even where the mark stays this size. */
 @media (pointer: coarse) { .iconbtn { width: 44px; height: 44px; } }
-.iconbtn:hover { background: var(--line-soft); color: var(--ink); }
-.iconbtn.is-danger:hover { background: var(--err-bg); color: var(--err); }
-.iconbtn.is-warn:hover { background: var(--warn-bg); color: var(--warn); }
+/* Inside the hover media like every other hover here: a tap leaves :hover
+   on, and a phone bar with two icon controls showed one of them filled. */
+@media (hover: hover) {
+  .iconbtn:hover { background: var(--line-soft); color: var(--ink); }
+  .iconbtn.is-danger:hover { background: var(--err-bg); color: var(--err); }
+  .iconbtn.is-warn:hover { background: var(--warn-bg); color: var(--warn); }
+}
 
 @media (max-width: 640px) {
   .saved {
@@ -5779,3 +5783,54 @@ body.is-canvas { overflow: hidden; }
 .notif-item span { font-size: 12.5px; color: var(--ink-soft); }
 .notif-item small { font-size: 12px; color: var(--ink-mute); }
 .notif-empty { padding: 10px; font-size: 12.5px; color: var(--ink-mute); }
+
+/* =========================================================================
+   THE COMMAND BAR ON A PHONE: ONE ROW, THE FILTERS BEHIND ONE BUTTON.
+   At 390 the bar was four rows and 430px of controls before the first
+   record (the search, the view segment, two rows of selects, the count and
+   the action), which is the bar doing at a phone width exactly what it does
+   at a desk. The two controls used all day keep the bar; the selects, the
+   count and the `?` go behind a Filters button and come up in a sheet from
+   the floor (`js/cmdbar.js`), which is the shape every list on a phone has.
+   Above 640 nothing here draws and the bar is what it was.
+   ========================================================================= */
+.cmdbar-filters, .cmd-more { display: none; }
+.cmdbar-badge {
+  position: absolute; top: 4px; right: 4px; min-width: 16px; height: 16px; padding: 0 4px;
+  border-radius: 8px; background: var(--action); color: var(--on-action);
+  font-size: 11px; font-weight: 600; line-height: 16px; text-align: center;
+}
+.cmdbar-badge[hidden] { display: none; }
+.cmdsheet-body { display: grid; gap: 14px; padding-top: 10px; }
+.cmdsheet-field .select { width: 100%; }
+.cmdsheet-quiet { display: flex; align-items: center; gap: 10px; }
+.cmdsheet-quiet .cmdbar-quiet { margin-right: 0; }
+.cmd-slot { display: none; }
+@media (max-width: 640px) {
+  /* One row: the search takes the width, the Filters button and the
+     actions end it. The view segment, where a route has one, is the second
+     row and the last. */
+  .cmdbar-find { flex: 1 1 0; min-width: 0; max-width: none; }
+  .cmdbar > .select { display: none; }
+  /* Two icon controls in the bar, one shape: the card ground and the control
+     edge every select has, so they read as controls of the bar and not as
+     row marks. */
+  .cmdbar-filters, .cmd-more-btn {
+    display: inline-grid; place-items: center; position: relative; padding: 0;
+    width: var(--ctl-h-sm); min-width: 0; height: var(--ctl-h-sm);
+    border: 1px solid var(--line-ctl); border-radius: var(--radius-ctl);
+    background: var(--card); color: var(--ink-soft);
+  }
+  .cmdbar-filters[aria-expanded="true"], .cmd-more-btn[aria-expanded="true"] { background: var(--line-soft); color: var(--ink); }
+  .cmdbar-end { flex: 0 0 auto; margin-left: 0; }
+  .cmdbar > .cmdbar-end > .cmdbar-quiet { display: none; }
+  /* The primary keeps its fill and gives up its word; the word is still its
+     name. A second action is behind the ⋯ beside it. */
+  .cmdbar-acts .cmd-primary { width: var(--ctl-h-sm); height: var(--ctl-h-sm); min-width: 0; padding: 0; }
+  .cmdbar-acts .cmd-primary .btn-word { display: none; }
+  .cmdbar-acts .cmd-primary svg { margin: 0; }
+  .cmdbar-acts .cmd-secondary { display: none; }
+  .cmd-more { display: inline-block; position: relative; }
+  .cmdbar-views { flex: 1 1 100%; order: 5; }
+  .cmdbar .btn { flex: 0 0 auto; }
+}

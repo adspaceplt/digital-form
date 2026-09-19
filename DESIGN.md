@@ -455,6 +455,7 @@ measures the table whenever its header is not on screen (`padding`).
 | Deciding on one thing in a gallery | A **canvas** (`.canvas`): the thing at the size it deserves on a stage, and everything the decision rests on in a rail beside it — what it is, the copy in full, what was said last time, where it stands, and the one place to decide. Prev/next and the arrow keys step the set, Escape closes. The canvas **moves** the gallery item's own blocks into it and puts them back on close, so there is one decision control in the page and it cannot drift from the one in the gallery |
 | Search, filter, count and the one action | `.cmdbar` > `.cmdbar-find` (a search box with its glyph, bounded 190 to 420px) + the filter selects + `.cmdbar-end` > `.cmdbar-count` + the `?` + one `.btn-sm.btn-primary`, on every console list: clients, my work, content review, campaigns, creators, short links, documents, the rate card, the team. The count reads `7 services` whole and `3 of 41` once a filter is on, never sits in a section head, and is not drawn at all when it is empty. The end group is one element so a wrap cannot split it: on a phone it takes the last row whole, the count and the `?` on the left and the actions on the right, and every route's bar is the same three rows |
 | Links to reach a person | `.plink` chips (phone, WhatsApp, email); equal widths on a phone |
+| The command bar on a phone | Below 640 the bar is **one row**: the search, a **Filters** button (`.cmdbar-filters`, sliders glyph, a badge counting the filters off their default) and the primary action as a filled `+` at the control size, with the view segment as a second row where a route has one. The selects, the count and the `?` come up in a **sheet from the floor** (`#cmdSheet`) under labels, with Done and Clear; a second action is behind a **⋯** beside the primary. `js/cmdbar.js` is the one copy. The desk bar is untouched |
 | A directory of records | `ADspaceGroup.section` (`js/group.js`): `.crm-group` > `.crm-group-head` (the 15px heading, the count, the marks, the name as the fold) + `.crm-group-body` > `.crm-table.softpanel` with its own `.crm-head`; `ADspaceGroup.more` for the rows past thirty. One card per group on every console directory, folds remembered per browser, a filter opening every card, the card opening and shutting in place. **The card carries no outline**, and it is one token for every bounded card (`--card-line`, transparent in both themes, on `.panel` (the record head and every form), `.crm-table`, `.softpanel`, `.team-table`, `.ovcard` and `.bookreg`; nothing nests a card in a card, so a transparent edge never loses a surface): the user chose the Team card's look on 2026-09-22 and asked why one card could differ from the rest at all. It could because Team carried a local `border: 0` written when that page was rebuilt, and the first fix added a second local rule for the directories; both are gone, and a card that needs a different edge is a card that needs a different token. The card's own ground against the page is the edge, white on `--page` in light and a step lighter than the ground in dark. The 1px stays transparent so nothing is re-measured |
 
 **The bar at the top of every page is one bar, so it is one height.** It used
@@ -918,6 +919,22 @@ to the pane was split the same way — 4px on the strip and 12px on whichever
 first child remembered to ask for it — so the client record stood 16px off its
 tabs, the task record 4px and Campaigns 12px: three strips, three gaps, nothing
 saying which was meant. The strip owns it, at the one block step, everywhere.
+
+**A phone bar is what the person came for, and everything else is one press
+away.** Stated as three rows, the command bar was still four rows of controls
+before the first record at 390, on a screen 700px tall: the search, the view
+segment, two rows of selects, then the count and the action. Every control
+had the standing of every other, and only two of them are used all day. So on
+a phone the bar keeps those two (the search, and the view where a route has
+one) and puts the rest behind one Filters button, the way every list on a
+phone already does: the selects come up in a sheet from the floor, each under
+a label, with Done and Clear, and a badge on the button says how many are set
+so a filtered list never looks like the whole. The primary action keeps its
+fill and gives up its word, because a filled `+` beside a search box says
+"add" in any language; a second action goes behind a ⋯, which is where this
+portal already puts a rare act. What is deliberately not done is a second
+copy of the selects: the sheet moves the bar's own elements in and puts them
+back, so there is one set of listeners and one place a filter can be wrong.
 
 **A group that must stay together is a group in the markup, not a hope about
 where a wrap will fall.** The command bar is one wrapping flex row of unlike
