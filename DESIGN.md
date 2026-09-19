@@ -455,7 +455,8 @@ measures the table whenever its header is not on screen (`padding`).
 | Deciding on one thing in a gallery | A **canvas** (`.canvas`): the thing at the size it deserves on a stage, and everything the decision rests on in a rail beside it — what it is, the copy in full, what was said last time, where it stands, and the one place to decide. Prev/next and the arrow keys step the set, Escape closes. The canvas **moves** the gallery item's own blocks into it and puts them back on close, so there is one decision control in the page and it cannot drift from the one in the gallery |
 | Search, filter, count and the one action | `.cmdbar` > `.cmdbar-find` (a search box with its glyph, bounded 190 to 420px) + the filter selects + `.cmdbar-end` > `.cmdbar-count` + the `?` + one `.btn-sm.btn-primary`, on every console list: clients, my work, content review, campaigns, creators, short links, documents, the rate card, the team. The count reads `7 services` whole and `3 of 41` once a filter is on, never sits in a section head, and is not drawn at all when it is empty. The end group is one element so a wrap cannot split it: on a phone it takes the last row whole, the count and the `?` on the left and the actions on the right, and every route's bar is the same three rows |
 | Links to reach a person | `.plink` chips (phone, WhatsApp, email); equal widths on a phone |
-| The command bar on a phone | Below 640 the bar is **one row**: the search, a **Filters** button (`.cmdbar-filters`, sliders glyph, a badge counting the filters off their default) and the primary action as a filled `+` at the control size, with the view segment as a second row where a route has one. The selects, the count and the `?` come up in a **sheet from the floor** (`#cmdSheet`) under labels, with Done and Clear; a second action is behind a **⋯** beside the primary. `js/cmdbar.js` is the one copy. The desk bar is untouched |
+| The command bar on a phone | Below 640 the bar is **one row**: a **search** mark and a **Filters** mark on the left (`.cmdbar-search`, `.cmdbar-filters`, the second carrying a badge that counts the filters off their default), then the count and the primary action as a filled `+` on the right, with the view segment as a second row where a route has one. Search **grows into the field** on the `.namebox` move and shuts again when it is left empty. The selects come up in a **sheet from the floor** (`#cmdSheet`) under labels, with Done and Clear; a second action is behind a **⋯** beside the primary. `js/cmdbar.js` is the one copy. The desk bar is untouched |
+| What a section is for | The route's name in the console head (`.console-title`, a button with a 14px info glyph) opens the one line that says what the section is for. Not a `?` in the command bar: the line is about the section, and the section's name is where a reader looks for it |
 | A directory of records | `ADspaceGroup.section` (`js/group.js`): `.crm-group` > `.crm-group-head` (the 15px heading, the count, the marks, the name as the fold) + `.crm-group-body` > `.crm-table.softpanel` with its own `.crm-head`; `ADspaceGroup.more` for the rows past thirty. One card per group on every console directory, folds remembered per browser, a filter opening every card, the card opening and shutting in place. **The card carries no outline**, and it is one token for every bounded card (`--card-line`, transparent in both themes, on `.panel` (the record head and every form), `.crm-table`, `.softpanel`, `.team-table`, `.ovcard` and `.bookreg`; nothing nests a card in a card, so a transparent edge never loses a surface): the user chose the Team card's look on 2026-09-22 and asked why one card could differ from the rest at all. It could because Team carried a local `border: 0` written when that page was rebuilt, and the first fix added a second local rule for the directories; both are gone, and a card that needs a different edge is a card that needs a different token. The card's own ground against the page is the edge, white on `--page` in light and a step lighter than the ground in dark. The 1px stays transparent so nothing is re-measured |
 
 **The bar at the top of every page is one bar, so it is one height.** It used
@@ -935,6 +936,19 @@ fill and gives up its word, because a filled `+` beside a search box says
 portal already puts a rare act. What is deliberately not done is a second
 copy of the selects: the sheet moves the bar's own elements in and puts them
 back, so there is one set of listeners and one place a filter can be wrong.
+
+**The control that explains a thing sits with the thing, and the thing here
+is the section.** The line that says what a route is for was opened by a `?`
+in the command bar, among the search, the filters and the one action — the
+controls that act on the *list*, which is not what the line is about. It
+belongs on the route's name, which is in the console head on every width, and
+there it costs a 14px glyph beside the word rather than a 44px control of its
+own. That matters: the head already holds four controls, and at 320 a fifth
+would have clipped the route's name to one letter. Where the row still cannot
+hold both, the glyph gives way and the name never does, because the name is
+what the bar is there to say. And only the glyph answers when the line is
+open: a fill on the title makes the route's name read as a selected chip, on
+every screen the line is open on.
 
 **A group that must stay together is a group in the markup, not a hope about
 where a wrap will fall.** The command bar is one wrapping flex row of unlike

@@ -17,6 +17,13 @@
  * because a workflow axis is not a filter). Clear puts every one back and
  * fires `change`, so the page repaints exactly as it would from the bar.
  *
+ * Search is a mark too, and the widest control in the bar: on a phone it
+ * grows into the field when it is pressed (the `.namebox` move the client's
+ * Approve makes) and collapses again when it is left empty, which is what
+ * leaves room for the count and the `?` on the right of the same row. It
+ * stays open while it holds a value, and the mark carries the ink edge while
+ * it is shut, because a filtered list has to say why on the screen.
+ *
  * The primary action keeps its fill and gives up its word on a phone (the
  * word stays as its accessible name); a second action goes into a ⋯ beside
  * it, placed by `ADspaceMenu` like every other menu. A bar with no selects
@@ -39,6 +46,8 @@
   }
   var GLYPH_FILTERS = svg('<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>');
   var GLYPH_PLUS = svg('<path d="M12 5v14M5 12h14"/>');
+  var GLYPH_SEARCH = svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>');
+  var GLYPH_X = svg('<path d="M6 6l12 12M18 6 6 18"/>');
   var GLYPH_MORE = svg('<circle cx="12" cy="5" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.4" fill="currentColor" stroke="none"/>');
 
   function selectsOf(bar) {
@@ -73,7 +82,7 @@
     rec.badge.hidden = !n;
     rec.btn.setAttribute('aria-label', n ? 'Filters, ' + n + ' set' : 'Filters');
   }
-  function refresh() { bars.forEach(paintBadge); }
+  function refresh() { bars.forEach(function (r) { paintBadge(r); mark(r); }); }
 
   /* ---- The sheet ---------------------------------------------------------- */
   function build() {
@@ -131,8 +140,6 @@
       body.appendChild(field);
       open.slots.push(lift(sel, field));
     });
-    var quiet = rec.bar.querySelector('.cmdbar-quiet');
-    if (quiet) open.slots.push(lift(quiet, head));
     sheet.hidden = false;
     rec.btn.setAttribute('aria-expanded', 'true');
     var first = body.querySelector('select:not([hidden])');
@@ -226,6 +233,73 @@
     if (window.ADspaceMenu && window.ADspaceMenu.onScroll) window.ADspaceMenu.onScroll(shutMore);
   }
 
+  /* ---- The search, which is a mark until it is pressed -------------------- */
+  function wireSearch(rec) {
+    var bar = rec.bar;
+    var find = bar.querySelector('.cmdbar-find');
+    if (!find) return;
+    var input = find.querySelector('input');
+    if (!input) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'iconbtn btn-sm cmdbar-search';
+    btn.setAttribute('aria-label', input.getAttribute('aria-label') || 'Search');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.innerHTML = GLYPH_SEARCH;
+    find.parentNode.insertBefore(btn, find);
+    var clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'cmdbar-find-clear';
+    clear.setAttribute('aria-label', 'Close search');
+    clear.innerHTML = GLYPH_X;
+    find.appendChild(clear);
+    rec.search = btn;
+    rec.input = input;
+
+    function openIt() {
+      bar.classList.add('is-searching');
+      btn.setAttribute('aria-expanded', 'true');
+      input.focus();
+    }
+    /* It shuts only when it is empty: a list filtered by something the
+       person cannot see is a list that looks wrong. */
+    function shutIt(force) {
+      if (!force && input.value.trim()) return;
+      bar.classList.remove('is-searching');
+      btn.setAttribute('aria-expanded', 'false');
+      mark(rec);
+    }
+    btn.addEventListener('click', openIt);
+    clear.addEventListener('click', function () {
+      if (input.value) {
+        input.value = '';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      shutIt(true);
+      btn.focus();
+    });
+    input.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      if (input.value) {
+        input.value = '';
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      shutIt(true);
+      btn.focus();
+    });
+    input.addEventListener('blur', function () { setTimeout(function () { shutIt(false); }, 120); });
+    input.addEventListener('input', function () { mark(rec); });
+    rec.openSearch = openIt;
+  }
+  /* The mark says the list is filtered while the field is shut. */
+  function mark(rec) {
+    if (!rec.search || !rec.input) return;
+    rec.search.classList.toggle('is-set', !!rec.input.value.trim());
+  }
+
   /* ---- Wiring ------------------------------------------------------------- */
   function wire(bar) {
     if (bar.__cmdbar) return;
@@ -243,6 +317,7 @@
     if (!rec.selects().length) btn.hidden = true;
     if (find && find.nextSibling) bar.insertBefore(btn, find.nextSibling); else bar.appendChild(btn);
     btn.addEventListener('click', function () { if (open && open.rec === rec) shut(); else show(rec); });
+    wireSearch(rec);
     wireActions(bar);
     bars.push(rec);
     paintBadge(rec);
@@ -257,8 +332,15 @@
   document.addEventListener('click', function () { setTimeout(refresh, 0); }, true);
   /* Growing past the phone line with the sheet open puts everything back:
      the desk bar draws its own selects and never this sheet. */
-  if (mq.addEventListener) mq.addEventListener('change', function (m) { if (!m.matches) shut(); });
-  else if (mq.addListener) mq.addListener(function (m) { if (!m.matches) shut(); });
+  function deskAgain() {
+    shut();
+    bars.forEach(function (r) {
+      r.bar.classList.remove('is-searching');
+      if (r.search) r.search.setAttribute('aria-expanded', 'false');
+    });
+  }
+  if (mq.addEventListener) mq.addEventListener('change', function (m) { if (!m.matches) deskAgain(); });
+  else if (mq.addListener) mq.addListener(function (m) { if (!m.matches) deskAgain(); });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireAll);
   else wireAll();

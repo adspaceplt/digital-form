@@ -126,7 +126,14 @@
       <button class="navtoggle" id="navToggle" type="button" aria-label="Sections">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
-      <span class="console-title" id="sectionTitle">Clients</span>
+      <!-- The section's name is the control that explains the section: the
+           `?` used to sit in the command bar with the list's own controls,
+           which is not what it is about. Asked for by the user on
+           2026-09-22. -->
+      <button class="console-title" id="sectionTitle" type="button" aria-expanded="false" aria-label="Clients, about this section">
+        <span class="console-title-word">Clients</span>
+        <svg class="console-title-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5"/><path d="M12 7.6h.01"/></svg>
+      </button>
       <span class="console-spacer"></span>
       <!-- The activity record was a full width card sitting under the client
            list, which is a lot of furniture for something read once a month. -->

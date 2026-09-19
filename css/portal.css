@@ -1965,10 +1965,36 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 /* The page label is what gives way when the bar runs out of room, never the
    controls: it clips to an ellipsis rather than pushing a target under 44px. */
+/* It is a control, because the section's name is what explains the section:
+   pressing it opens the one line that says what the route is for. The glyph
+   costs 14px beside the word rather than a 44px mark of its own, which is
+   what lets it survive a 320px head where a separate `?` could not. */
 .console-title {
-  font-size: 14px; font-weight: 600; letter-spacing: -.01em;
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 6px; flex: 0 1 auto;
+  /* A short route name is a short control: "Team" is 35px of word, and a
+     control a finger operates never goes under the floor whatever it says. */
+  min-width: var(--ctl-h); min-height: var(--ctl-h); padding: 0 6px; margin-left: -6px;
+  border: 0; border-radius: 8px; background: none;
+  font-size: 14px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
+  transition: background var(--t-fast) var(--ease-out);
 }
+.console-title-word { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.console-title-info { width: 14px; height: 14px; flex: 0 0 auto; stroke-width: 1.8; color: var(--ink-mute); }
+/* At 320 the head holds four 44px controls in 288px, so something gives. It
+   is the glyph and never the route's name: the name is what the bar is there
+   to say, and the title still opens the line when it is pressed. */
+@media (max-width: 400px) {
+  .console-title-info { display: none; }
+  .console-title { padding: 0; margin-left: 0; }
+  /* Four 44px controls in a 288px head leave 52px for the name at the 12px
+     gap, which is "My W…". At 8px it is 72px, and the name fits. */
+  .console-head { gap: 8px; }
+}
+/* Only the glyph answers. A fill on the open state made the route's name a
+   selected chip on every screen the line is open on, which is the first
+   three visits to every route: the title is a title. */
+@media (hover: hover) { .console-title:hover .console-title-info { color: var(--ink); } }
+.console-title[aria-expanded="true"] .console-title-info { color: var(--ink); }
 .console-head > .headlink, .console-head > .acct { flex: 0 0 auto; }
 /* Every route starts the same distance under the bar. Three sections opened
    with a `.viewhead` and its 24px, three opened straight on a command bar
@@ -4463,7 +4489,8 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    `.cmdbar-end` directly after the count, and that group's own gap spaces
    it; it carries no margin of its own, because an auto margin here is what
    once left it stranded in the middle of the bar. */
-.cmdbar-help { flex: 0 0 auto; min-width: var(--ctl-h-sm); width: var(--ctl-h-sm); padding: 0; font-weight: 600; }
+/* Retired 2026-09-22: the section's name in the console head is what opens
+   the line now, because that is what the line is about. */
 @media (max-width: 640px) {
   .routeintro { align-items: flex-start; }
 }
@@ -5794,7 +5821,7 @@ body.is-canvas { overflow: hidden; }
    the floor (`js/cmdbar.js`), which is the shape every list on a phone has.
    Above 640 nothing here draws and the bar is what it was.
    ========================================================================= */
-.cmdbar-filters, .cmd-more { display: none; }
+.cmdbar-search, .cmdbar-filters, .cmd-more { display: none; }
 .cmdbar-badge {
   position: absolute; top: 4px; right: 4px; min-width: 16px; height: 16px; padding: 0 4px;
   border-radius: 8px; background: var(--action); color: var(--on-action);
@@ -5806,24 +5833,74 @@ body.is-canvas { overflow: hidden; }
 .cmdsheet-quiet { display: flex; align-items: center; gap: 10px; }
 .cmdsheet-quiet .cmdbar-quiet { margin-right: 0; }
 .cmd-slot { display: none; }
+/* Drawn only while the search is open, and only on a phone: with no rule of
+   its own at a desk it rendered as a bare button under the search box. */
+.cmdbar-find-clear {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  width: 30px; height: 30px; display: none; place-items: center;
+  border: 0; border-radius: 8px; background: none; color: var(--ink-mute); padding: 0;
+}
+.cmdbar-find-clear svg { width: 15px; height: 15px; stroke-width: 1.8; }
 @media (max-width: 640px) {
-  /* One row: the search takes the width, the Filters button and the
-     actions end it. The view segment, where a route has one, is the second
-     row and the last. */
-  .cmdbar-find { flex: 1 1 0; min-width: 0; max-width: none; }
+  /* ONE ROW: two marks on the left, what the list holds and what to do about
+     it on the right. Search is the widest control in the bar and is used
+     after somebody has scanned, not before, so on a phone it is a mark that
+     grows into the field when it is pressed — the `.namebox` move the
+     client's Approve already makes, and what it buys is the room for the
+     count and the `?`, which had gone into the Filters sheet where nobody
+     would look for them. Asked for by the user on 2026-09-22. */
+  .cmdbar { column-gap: 8px; }
+  .cmdbar-search { display: inline-grid; }
+  /* It leaves by collapsing, never by `display: none`: a control that drops
+     out of a flex row in one frame makes the field jump into the gap. */
+  .cmdbar-find {
+    flex: 0 0 0; max-width: 0; min-width: 0; opacity: 0; overflow: hidden;
+    transition: max-width var(--t-slow) var(--ease), opacity var(--t) var(--ease-out),
+                flex-basis var(--t-slow) var(--ease);
+  }
+  /* A basis of the whole row, so the field takes the line and the view
+     segment is pushed onto the next one. An `auto` basis is the input's own
+     100% plus its padding and wrapped the field itself; a basis of 0 let the
+     segment join the collapsed row and take all 358px of it, leaving the
+     field at nothing. */
+  .cmdbar.is-searching .cmdbar-find { flex: 1 1 100%; max-width: 100%; opacity: 1; }
+  /* While it is open the field is the row; everything else collapses the
+     same way and comes back when the search closes. */
+  .cmdbar.is-searching .cmdbar-search,
+  .cmdbar.is-searching .cmdbar-filters,
+  .cmdbar.is-searching .cmdbar-end {
+    flex: 0 0 0; max-width: 0; min-width: 0; width: 0; opacity: 0;
+    padding-left: 0; padding-right: 0; border-width: 0; overflow: hidden;
+    transition: max-width var(--t-slow) var(--ease), width var(--t-slow) var(--ease),
+                opacity var(--t) var(--ease-out), padding var(--t-slow) var(--ease);
+  }
+  .cmdbar.is-searching { column-gap: 0; }
+  /* Squeezed to nothing a wrapping group wraps inside itself, and the count
+     and the actions stacked three deep made the bar 73px while the field
+     was open. */
+  .cmdbar.is-searching .cmdbar-end { flex-wrap: nowrap; }
+  .cmdbar.is-searching .cmdbar-find .input { padding-right: 38px; }
+  .cmdbar.is-searching .cmdbar-find-clear { display: grid; }
   .cmdbar > .select { display: none; }
   /* Two icon controls in the bar, one shape: the card ground and the control
      edge every select has, so they read as controls of the bar and not as
      row marks. */
-  .cmdbar-filters, .cmd-more-btn {
+  .cmdbar-search, .cmdbar-filters, .cmd-more-btn {
     display: inline-grid; place-items: center; position: relative; padding: 0;
     width: var(--ctl-h-sm); min-width: 0; height: var(--ctl-h-sm);
     border: 1px solid var(--line-ctl); border-radius: var(--radius-ctl);
     background: var(--card); color: var(--ink-soft);
   }
   .cmdbar-filters[aria-expanded="true"], .cmd-more-btn[aria-expanded="true"] { background: var(--line-soft); color: var(--ink); }
-  .cmdbar-end { flex: 0 0 auto; margin-left: 0; }
-  .cmdbar > .cmdbar-end > .cmdbar-quiet { display: none; }
+  /* A search that is holding a value says so while it is shut, the way the
+     Filters mark does: the list is filtered and the reason has to be on the
+     screen somewhere. */
+  .cmdbar-search.is-set { border-color: var(--ink-mute); color: var(--ink); }
+  /* The right of the row, as it is at a desk: what the list holds, then what
+     to do about it. */
+  .cmdbar-end { flex: 0 0 auto; margin-left: auto; }
+  .cmdbar-end .cmdbar-quiet { margin-right: 0; }
+  .cmdbar-end .cmdbar-quiet:empty { display: none; }
   /* The primary keeps its fill and gives up its word; the word is still its
      name. A second action is behind the ⋯ beside it. */
   .cmdbar-acts .cmd-primary { width: var(--ctl-h-sm); height: var(--ctl-h-sm); min-width: 0; padding: 0; }
