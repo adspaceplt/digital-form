@@ -3384,6 +3384,78 @@ body > .shell { width: 100%; }
 .reg-row { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 110px var(--ctl-h); }
 .reg-who { font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .reg-date { font-size: 13px; color: var(--ink-mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ---- My Work -------------------------------------------------------------
+   A task row: what it is over whose and what kind, where it has got to, who
+   owns it, and when it is owed. The due track is fixed and measured against
+   its worst case, `30 Sept · 12 days over` at 146px, because an `auto` track
+   is sized by its own row and a due date that starts somewhere different on
+   every line is what reads as unaligned however neatly each row is built. */
+/* The whole row is one control, with nothing nested in it, so it is the
+   target from a pointer and from the keyboard alike and answers under a
+   finger the way every other control in this portal does. */
+.task-row {
+  grid-template-columns: minmax(0, 1fr) var(--state-w) 140px 150px var(--ctl-h);
+  width: 100%; text-align: left; background: var(--card); border: 0;
+  font: inherit; color: inherit; cursor: pointer;
+}
+@media (hover: hover) { .task-row:hover { background: var(--sunk); } }
+.task-row:active { transform: scale(.997); }
+.task-stage { min-width: 0; }
+.task-owner { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.task-due { font-size: 13px; color: var(--ink-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* Overdue carries the word as well as the colour, so the mark survives
+   greyscale and a reader who cannot tell warn from mute. */
+.task-due.is-over { color: var(--warn); font-weight: 600; }
+.task-go { display: inline-flex; align-items: center; justify-content: flex-end; color: var(--ink-mute); }
+.task-go .crm-chev { width: 16px; height: 16px; }
+
+.tlink-row { grid-template-columns: minmax(0, 1fr) 120px auto; }
+.tlink-kind { min-width: 0; }
+.tsess-row { grid-template-columns: minmax(0, 1fr) 150px 110px; }
+.tsess-who { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tsess-mins { font-size: 13.5px; font-weight: 600; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tsess-row.is-total { border-top: 1px solid var(--line); }
+.tact-row { grid-template-columns: 170px minmax(0, 1fr) 150px; }
+.tact-when { font-size: 13px; color: var(--ink-mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tact-who { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* The task number is the mark, because that is what an invoice, a message and
+   a spreadsheet row all name a task by; a monogram of a title says nothing. */
+.rec-mark-no { font-size: 13px; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+
+/* A checklist item is a statement that something was done, so the row is the
+   label, when it was made, and one target that clears the control floor. */
+.checkrow {
+  display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 0 12px;
+  align-items: center; min-height: var(--ctl-h); padding: 8px 15px;
+  border-bottom: 1px solid var(--line-soft); cursor: pointer;
+}
+.checkrow:last-child { border-bottom: 0; }
+@media (hover: hover) { .checkrow:hover { background: var(--sunk); } }
+.checkrow input { width: 18px; height: 18px; accent-color: var(--action); cursor: pointer; }
+.checkrow-label { font-size: 13.5px; color: var(--ink); min-width: 0; }
+.checkrow.is-done .checkrow-label { color: var(--ink-mute); text-decoration: line-through; }
+.checkrow-when { font-size: 12px; color: var(--ink-mute); white-space: nowrap; }
+
+/* The rail's stage block: where it is now, the one move that carries it on,
+   and every other move the workflow allows behind a select. Eight buttons in
+   a rail is eight things to read before doing the one that matters. */
+.railnow { margin: 0 0 10px; }
+.railmove { width: 100%; }
+.railother { margin-top: 12px; }
+.railother .field-label { display: block; margin-bottom: 4px; }
+.railother .select { width: 100%; }
+.raildate { display: flex; align-items: baseline; gap: 10px; }
+.raildate dt { font-size: 13px; color: var(--ink-soft); min-width: 0; }
+.raildate dd { margin: 0 0 0 auto; font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.raildate dd.is-over { color: var(--warn); font-weight: 600; }
+.timer-run { font-size: 17px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+
+.ovnote { margin: 0 0 8px; font-size: 13.5px; color: var(--ink); overflow-wrap: anywhere; }
+.ovnote:last-child { margin-bottom: 0; }
+.ovfact { min-width: 0; }
+.mute { color: var(--ink-mute); }
 #crmDocuments .reg-table { margin-top: 12px; }
 /* The reference is a copy control in the row's own face: the target clears
    the control floor, the negative block margin keeps the line the height it
@@ -3558,6 +3630,34 @@ body > .shell { width: 100%; }
 .is-narrow .reg-row > .team-act { grid-area: act; justify-self: end; }
 .is-narrow .reg-row > .reg-who { grid-area: who; }
 .is-narrow .reg-row > .reg-date { grid-area: date; justify-self: stretch; text-align: right; }
+/* A phone task row is a two column table, not a card with things pushed
+   right: who and what on the left, where it stands over when it is owed on
+   the right. The right track is fixed and measured against its worst case,
+   the `Waiting for client` chip at 122px, so the state starts at the same x
+   on every row; both cells stretch and align right, so the card has two
+   margins rather than one ragged one. The owner leaves with the chevron:
+   the scope select above already answers whose queue this is, and the whole
+   row is the control, so the chevron was a mark and not a target. */
+.is-narrow .task-row {
+  grid-template-columns: minmax(0, 1fr) 132px;
+  grid-template-areas: "name stage" "name due";
+  row-gap: 4px; align-items: start;
+}
+.is-narrow .task-row > .svc-name { grid-area: name; align-self: center; }
+.is-narrow .task-row > .task-stage { grid-area: stage; justify-self: stretch; text-align: right; }
+.is-narrow .task-row > .task-due { grid-area: due; justify-self: stretch; text-align: right; }
+.is-narrow .task-row > .task-owner,
+.is-narrow .task-row > .task-go { display: none; }
+.is-narrow .tlink-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "kind kind"; }
+.is-narrow .tlink-row > .tlink-kind { grid-area: kind; }
+.is-narrow .tsess-row { grid-template-columns: minmax(0, 1fr) 110px; grid-template-areas: "name mins" "who mins"; }
+.is-narrow .tsess-row > .tsess-who { grid-area: who; }
+.is-narrow .tsess-row > .tsess-mins { grid-area: mins; align-self: center; }
+/* What happened owns the first line; when and who share the second, which is
+   the shape the client record's own activity rows take. */
+.is-narrow .tact-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name name" "when who"; }
+.is-narrow .tact-row > .tact-when { grid-area: when; }
+.is-narrow .tact-row > .tact-who { grid-area: who; justify-self: stretch; text-align: right; }
 .is-narrow .ct-row { grid-template-areas: "name act" "reach reach"; }
 .is-narrow .svc-row > .svc-name { grid-area: name; }
 .is-narrow .svc-row > .team-act { grid-area: act; align-self: start; }
@@ -4001,7 +4101,17 @@ body.no-work-register-documents [data-need="register.documents:work"],
 body.no-view-register-documents [data-need="register.documents:view"],
 body.no-manage-register-hr [data-need="register.hr:manage"],
 body.no-work-register-hr [data-need="register.hr:work"],
-body.no-view-register-hr [data-need="register.hr:view"] { display: none !important; }
+body.no-view-register-hr [data-need="register.hr:view"],
+/* Operations. The route is called My Work on the screen and `?s=work` in the
+   address; the ladder's key is `ops`, which is the word the database uses, so
+   the two are mapped once in `sectionAllowed()` and never spelled twice. */
+body.no-manage-ops [data-need="ops:manage"],
+body.no-work-ops [data-need="ops:work"],
+body.no-view-ops [data-need="ops:view"],
+body.no-view-ops-all [data-need="ops.all:view"],
+body.no-view-ops-reports [data-need="ops.reports:view"],
+body.no-work-ops-workflows [data-need="ops.workflows:work"],
+body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important; }
 /* What a deletion takes with it, counted from the record rather than
    described. A list, because four facts in a sentence is a sentence nobody
    finishes reading before pressing the button. */
@@ -4010,6 +4120,9 @@ body.no-view-register-hr [data-need="register.hr:view"] { display: none !importa
 @media (pointer: coarse) {
   .select-sm { min-height: var(--ctl-h); }
   .perm input { width: 22px; height: 22px; }
+  /* The whole row is the label, so the target is already the row's height;
+     the box itself grows so a finger has something to aim at. */
+  .checkrow input { width: 22px; height: 22px; }
 }
 /* A phone takes two lines a row: who or which group with the ⋯ beside it,
    then the state or what the group opens underneath. */

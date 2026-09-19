@@ -266,7 +266,7 @@
      `view` reads, `work` adds, edits and publishes, `manage` also destroys.
      The line is reversibility: Unpublish exists, so publishing is `work`;
      a permanent deletion has no way back, so it is `manage`. */
-  var SECTIONS = ['clients', 'review', 'campaigns', 'links', 'register', 'services', 'team', 'activity'];
+  var SECTIONS = ['clients', 'ops', 'review', 'campaigns', 'links', 'register', 'services', 'team', 'activity'];
   /* A part is a pane or a list inside a section, keyed `section.part`. It
      takes its own level where the group set one and its section's where it
      did not, in the page exactly as in `allowed()`, so a group that never
@@ -276,15 +276,24 @@
     clients:   ['contacts', 'billing', 'services', 'documents', 'requests', 'calls'],
     review:    ['sets', 'settings'],
     campaigns: ['campaigns', 'creators', 'finance'],
-    register:  ['documents', 'hr']
+    register:  ['documents', 'hr'],
+    /* Operations is the one section whose parts *widen* it rather than
+       narrowing it: the team's whole queue, the reports, the templates and
+       another person's hours are all more than "work my own tasks". So they
+       are granted and never inherited, which `level()` below honours by not
+       falling back for them, exactly as `ops_granted()` does in the
+       database. A group given `{"ops":"work"}` reads its own work and
+       nothing else, today and after somebody adds a group next year. */
+    ops:       ['all', 'reports', 'workflows', 'time']
   };
+  var OPS_GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     if (!me) return 0;
     if (me.is_admin || me.role === 'admin') return 3;
     var acc = me.access || {};
     var lv = acc[key];
-    if (lv == null && key.indexOf('.') > 0) lv = acc[key.split('.')[0]];
+    if (lv == null && key.indexOf('.') > 0 && !OPS_GRANTED[key]) lv = acc[key.split('.')[0]];
     return RANK[lv] || 0;
   }
   /* `may('clients')` still reads as it always did and still means the
@@ -293,11 +302,16 @@
   function may(section, want) {
     return level(section) >= (RANK[want || 'work'] || 2);
   }
-  /* The Register is one page over two parts of the ladder: the documents
-     themselves and the HR letters, which are gated apart. Either opens it,
-     and the database's own policy decides which rows arrive. */
+  /* Two routes whose name on the screen is not the key in the ladder. The
+     Register is one page over two parts of the ladder, the documents and the
+     HR letters, which are gated apart: either opens it, and the database's own
+     policy decides which rows arrive. My Work is the section the database
+     calls `ops`: the route is named for what a person does on it and the
+     permission for what it governs, and the mapping lives here rather than
+     being spelled out in both vocabularies everywhere. */
   function sectionAllowed(name) {
     if (name === 'register') return may('register.documents', 'view') || may('register.hr', 'view');
+    if (name === 'work') return may('ops', 'view');
     return may(name, 'view');
   }
 
@@ -363,6 +377,7 @@
   var section = 'clients';
   var SECTION_TITLE = {
     clients: 'Clients',
+    work: 'My Work',
     review: 'Content Review',
     campaigns: 'Creator Campaigns',
     links: 'Short Links',
@@ -380,6 +395,7 @@
      a `title`, because a tooltip is unreachable on a phone. */
   var INTRO = {
     clients:   'Client records, from first enquiry to active engagement. Contacts, billing details, services, letters and call notes are kept on each record.',
+    work:      'Tasks owed to clients and to the team, ordered by when they are due. Each task carries its own stage, dates, checklist, links and recorded time.',
     review:    'Content sets prepared for client approval. Each set is published to the client\'s review link once it is ready.',
     campaigns: 'Creator campaigns, from creator selection to posting. Bookings, schedules, deliverables and the invoice are managed here.',
     links:     'Short links for slides, print and QR codes, served from ' + ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '. A destination can be corrected or paused at any time.',
@@ -445,6 +461,7 @@
     if (meLoaded && !sectionAllowed(name)) name = firstAllowed();
     section = name;
     $('sectionClients').hidden   = name !== 'clients';
+    $('sectionWork').hidden      = name !== 'work';
     $('sectionReview').hidden    = name !== 'review';
     $('sectionCampaigns').hidden = name !== 'campaigns';
     $('sectionLinks').hidden     = name !== 'links';
@@ -483,6 +500,14 @@
       if (!window.ADspaceRegister) { enterLater = 'register'; return; }
       window.ADspaceRegister.enter();
       setUrl();
+      return;
+    }
+    /* My Work reads the address before it writes it, as Campaigns does: on a
+       reload the address is the only record of which task was open, and
+       writing first would blank the one thing it needs. */
+    if (name === 'work') {
+      if (!window.ADspaceOps) { enterLater = 'work'; return; }
+      window.ADspaceOps.enter();
       return;
     }
     if (name === 'services') {
@@ -578,6 +603,9 @@
     } else if (section === 'clients' && window.ADspaceCRM) {
       var crm = window.ADspaceCRM.urlState();
       Object.keys(crm).forEach(function (k) { if (crm[k]) q.push(k + '=' + encodeURIComponent(crm[k])); });
+    } else if (section === 'work' && window.ADspaceOps) {
+      var w = window.ADspaceOps.urlState();
+      Object.keys(w).forEach(function (k) { if (w[k]) q.push(k + '=' + encodeURIComponent(w[k])); });
     }
     return q;
   }
@@ -2514,6 +2542,11 @@
       if (enterLater !== 'team' || section !== 'team') return;
       enterLater = '';
       window.ADspaceTeam.enter();
+    },
+    opsReady: function () {
+      if (enterLater !== 'work' || section !== 'work') return;
+      enterLater = '';
+      window.ADspaceOps.enter();
     },
     // The signed-in person's team row, for sections that gate on it.
     me: function () { return me; },

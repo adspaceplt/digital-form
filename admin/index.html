@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260921e">
+<link rel="stylesheet" href="/css/portal.css?v=20260922a">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,22 +28,22 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260921e"></script>
-<script src="/js/words.js?v=20260921e"></script>
-<script src="/js/copy.js?v=20260921e"></script>
-<script src="/js/ask.js?v=20260921e"></script>
-<script src="/js/state.js?v=20260921e"></script>
-<script src="/js/group.js?v=20260921e"></script>
-<script src="/js/menu.js?v=20260921e"></script>
-<script src="/js/api.js?v=20260921e"></script>
-<script src="/js/money.js?v=20260921e"></script>
-<script src="/js/mockups.js?v=20260921e"></script>
+<script src="/js/config.js?v=20260922a"></script>
+<script src="/js/words.js?v=20260922a"></script>
+<script src="/js/copy.js?v=20260922a"></script>
+<script src="/js/ask.js?v=20260922a"></script>
+<script src="/js/state.js?v=20260922a"></script>
+<script src="/js/group.js?v=20260922a"></script>
+<script src="/js/menu.js?v=20260922a"></script>
+<script src="/js/api.js?v=20260922a"></script>
+<script src="/js/money.js?v=20260922a"></script>
+<script src="/js/mockups.js?v=20260922a"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260921e" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260922a" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -94,6 +94,9 @@
       <span class="sidebar-label">Tools</span>
       <button class="navitem is-on" data-section="clients" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 11h4v10"/><path d="M7 21v-4h5v4"/><path d="M7 9h2M7 13h2M13 9h1M13 13h1"/></svg><span>Clients</span>
+      </button>
+      <button class="navitem" data-section="work" type="button" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6"/><path d="m9.5 13 1.8 1.8 3.4-3.6"/></svg><span>My Work</span>
       </button>
       <button class="navitem" data-section="review" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg><span>Content Review</span>
@@ -1414,6 +1417,327 @@
     </div>
 
     <!-- ============ Short Links ============ -->
+
+    <!-- ---- My Work: the operations queue, and one task open.
+
+         The queue is banded by when the work is owed, because that is what
+         orders a day: overdue first, then today, this week, later, and the
+         ones nobody has dated. It is the same card per group every other
+         console directory uses. Which tasks arrive is the database's to
+         decide: your own work always, the whole team's only with `ops.all`,
+         so the scope select offers the team only where that part is held. -->
+    <div class="console-body" id="sectionWork" hidden>
+
+      <div id="workList">
+        <div class="cmdbar">
+          <span class="cmdbar-find">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <input class="input input-sm" id="workFind" type="search" placeholder="Search task or client" aria-label="Search tasks" autocomplete="off">
+          </span>
+          <select class="select select-sm" id="workScope" aria-label="Whose work" hidden>
+            <option value="mine">My work</option>
+            <option value="all">The whole team</option>
+          </select>
+          <select class="select select-sm" id="workStage" aria-label="Filter by stage">
+            <option value="open">Open work</option>
+            <option value="active">In progress</option>
+            <option value="review">With a reviewer</option>
+            <option value="waiting">Waiting or blocked</option>
+            <option value="done">Finished</option>
+            <option value="">Everything</option>
+          </select>
+          <span class="cmdbar-count" id="workCount"></span>
+          <button class="btn btn-sm btn-primary" id="workNew" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New task</button>
+        </div>
+        <div class="msg" id="workMsg"></div>
+        <div id="workQueue"></div>
+      </div>
+
+      <!-- One task, on the same workspace shape a client and a campaign use:
+           identity, panes, and a rail carrying what is true in every pane. -->
+      <div id="workRec" hidden>
+        <button class="backlink" id="workBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
+
+        <section class="panel rec-head" id="taskHead">
+          <div class="rec-id">
+            <span class="rec-mark" id="taskMark" aria-hidden="true"></span>
+            <div class="rec-who">
+              <div class="rec-name"><h2 id="taskName"></h2></div>
+              <p class="rec-id-meta" id="taskMeta"></p>
+            </div>
+            <div class="rec-ctl">
+              <span class="chip" id="taskStage"></span>
+              <div class="kmenu-wrap" id="taskMenuWrap">
+                <button class="kmenu-btn" id="taskMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                </button>
+                <div class="kmenu" id="taskMenu" hidden role="menu">
+                  <button class="kmenu-item" data-a="block" type="button" role="menuitem">Mark blocked</button>
+                  <button class="kmenu-item" data-a="reopen" type="button" role="menuitem" hidden>Reopen</button>
+                  <button class="kmenu-item" data-a="archive" type="button" role="menuitem" data-need="ops:manage">Archive</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- What this task is waiting on, derived on every repaint. -->
+          <p class="camp-next" id="taskNext" hidden></p>
+          <div class="msg" id="taskMsg"></div>
+        </section>
+        <div class="undobar" id="taskUndo" hidden></div>
+
+        <div class="rec">
+          <nav class="rectabs" id="taskTabs" role="tablist" aria-label="Task">
+            <button class="tab is-on" data-pane="overview" type="button" role="tab" aria-selected="true">Overview</button>
+            <button class="tab" data-pane="checklist" type="button" role="tab" aria-selected="false">Checklist</button>
+            <button class="tab" data-pane="links" type="button" role="tab" aria-selected="false">Links</button>
+            <button class="tab" data-pane="time" type="button" role="tab" aria-selected="false">Time</button>
+            <button class="tab" data-pane="activity" type="button" role="tab" aria-selected="false">Activity</button>
+          </nav>
+
+          <div class="rec-pane" data-pane="overview">
+            <div id="taskOv"></div>
+          </div>
+
+          <div class="rec-pane" data-pane="checklist" hidden>
+            <div class="viewhead"><div class="headmark"><h2>Checklist</h2></div></div>
+            <div id="taskCheck"></div>
+          </div>
+
+          <div class="rec-pane" data-pane="links" hidden>
+            <div class="viewhead">
+              <div class="headmark"><h2>Links</h2></div>
+              <button class="btn btn-sm btn-primary" id="taskLinkAdd" type="button" data-need="ops:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
+            </div>
+            <!-- The evidence a stage gate asks for. A draft link is what opens
+                 Client review and a final link is what opens Delivered, so the
+                 kind is a field and not a guess. -->
+            <div class="panel" id="taskLinkForm" hidden>
+              <div class="row">
+                <div class="field">
+                  <label class="field-label" for="taskLinkKind">Kind</label>
+                  <select class="select" id="taskLinkKind">
+                    <option value="draft">Draft</option>
+                    <option value="review">Review</option>
+                    <option value="final">Final</option>
+                    <option value="brief">Brief</option>
+                    <option value="asset">Asset</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label class="field-label" for="taskLinkLabel">Label</label>
+                  <input class="input" id="taskLinkLabel" placeholder="Cut 1" autocomplete="off">
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label class="field-label" for="taskLinkUrl">Address</label>
+                  <input class="input" id="taskLinkUrl" type="url" placeholder="https://" autocomplete="off" spellcheck="false">
+                </div>
+              </div>
+              <div class="row">
+                <button class="btn btn-primary" id="taskLinkSave" type="button">Save</button>
+                <button class="btn btn-quiet" id="taskLinkCancel" type="button">Cancel</button>
+              </div>
+              <div class="msg" id="taskLinkMsg"></div>
+            </div>
+            <div id="taskLinks"></div>
+          </div>
+
+          <div class="rec-pane" data-pane="time" hidden>
+            <div class="viewhead"><div class="headmark"><h2>Time</h2></div></div>
+            <!-- Recorded work only. Nothing here runs without somebody
+                 pressing Start, and nothing records idle time, keystrokes,
+                 screens or location. -->
+            <div id="taskTime"></div>
+          </div>
+
+          <div class="rec-pane" data-pane="activity" hidden>
+            <div class="viewhead"><div class="headmark"><h2>Activity</h2></div></div>
+            <div id="taskLog"></div>
+          </div>
+
+          <aside class="rec-rail" aria-label="Task facts">
+            <!-- Where the task stands, and the one move that carries it on.
+                 Every other move the workflow allows is in the select beside
+                 it, because a row of eight buttons is a row nobody reads. -->
+            <div class="railblock" id="taskStageBlock">
+              <h3 class="railtitle">Stage</h3>
+              <div id="taskStageBox"></div>
+            </div>
+            <div class="railblock" id="taskTimerBlock">
+              <h3 class="railtitle">Your time</h3>
+              <div id="taskTimer"></div>
+            </div>
+            <div class="railblock rail-after" id="taskDatesBlock">
+              <h3 class="railtitle">Key dates</h3>
+              <dl class="raildates" id="taskDates"></dl>
+            </div>
+            <div class="railblock rail-after" id="taskPeopleBlock">
+              <h3 class="railtitle">People</h3>
+              <dl class="facts" id="taskPeople"></dl>
+              <!-- Named for the act, not for the field above it: "Owner" over
+                   a select under a line already reading "Owner  Aisyah" said
+                   the same word twice and read as two of the same fact. -->
+              <div class="rail-date-edit" id="taskOwnerEdit" data-need="ops:manage">
+                <label for="taskOwner">Change owner</label>
+                <select class="select select-sm" id="taskOwner"></select>
+                <button class="btn btn-sm" id="taskOwnerSave" type="button">Save</button>
+              </div>
+              <div class="msg" id="taskOwnerMsg"></div>
+            </div>
+            <div class="railblock rail-after">
+              <h3 class="railtitle">Details</h3>
+              <dl class="facts" id="taskFacts"></dl>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- A date move states what it was and takes a reason, because a report
+           that cannot see why a promise moved cannot see replanning. -->
+      <div class="sheet" id="dueSheet" hidden>
+        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="dueTitle">
+          <div class="sheet-head">
+            <h3 id="dueTitle">Move the date</h3>
+            <button class="iconbtn" id="dueClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <p class="hint" id="dueWhat"></p>
+            <label class="field-label" for="dueDate">New date</label>
+            <input class="input" id="dueDate" type="date">
+            <label class="field-label" for="dueReason" style="margin-top:12px">Why it moved</label>
+            <select class="select" id="dueReason">
+              <option value="client_request">The client asked</option>
+              <option value="scope_change">The scope changed</option>
+              <option value="capacity">We did not have the capacity</option>
+              <option value="dependency">Something it waits on is late</option>
+              <option value="correction">Correcting a wrong date</option>
+            </select>
+            <label class="field-label" for="dueNote" style="margin-top:12px">Note</label>
+            <textarea class="input" id="dueNote" rows="2" placeholder="Optional"></textarea>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="dueGo" type="button">Save</button>
+            <button class="btn btn-quiet" id="dueCancel" type="button">Cancel</button>
+          </div>
+          <div class="msg" id="dueMsg"></div>
+        </div>
+      </div>
+
+      <!-- Blocked names what it is waiting on. "Blocked" on its own is a
+           state nobody can act on. -->
+      <div class="sheet" id="blockSheet" hidden>
+        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="blockTitle">
+          <div class="sheet-head">
+            <h3 id="blockTitle">Mark blocked</h3>
+            <button class="iconbtn" id="blockClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <label class="field-label" for="blockCat">What it is waiting on</label>
+            <select class="select" id="blockCat">
+              <option value="client">The client</option>
+              <option value="brief">A brief or content</option>
+              <option value="asset">An asset or footage</option>
+              <option value="approval">An internal approval</option>
+              <option value="third_party">Somebody outside</option>
+              <option value="other">Something else</option>
+            </select>
+            <label class="field-label" for="blockNote" style="margin-top:12px">Note</label>
+            <textarea class="input" id="blockNote" rows="3" placeholder="Optional"></textarea>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-warn" id="blockGo" type="button">Mark blocked</button>
+            <button class="btn btn-quiet" id="blockCancel" type="button">Cancel</button>
+          </div>
+          <div class="msg" id="blockMsg"></div>
+        </div>
+      </div>
+
+      <!-- What a task needs to exist: whose it is, what it is, and when it is
+           owed. Everything else the template seeds and the record edits. -->
+      <div class="sheet" id="taskSheet" hidden>
+        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="taskSheetTitle">
+          <div class="sheet-head">
+            <h3 id="taskSheetTitle">New task</h3>
+            <button class="iconbtn" id="taskSheetClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="ntScope">Scope</label>
+                <select class="select" id="ntScope">
+                  <option value="client">For a client</option>
+                  <option value="internal">Internal</option>
+                </select>
+              </div>
+              <div class="field" id="ntClientField">
+                <label class="field-label" for="ntClient">Client</label>
+                <select class="select" id="ntClient"></select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="ntTemplate">Template</label>
+                <select class="select" id="ntTemplate"></select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="ntOwner">Owner</label>
+                <select class="select" id="ntOwner"></select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="ntTitle">Title</label>
+                <input class="input" id="ntTitle" placeholder="October grid, post 3" autocomplete="off">
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="ntDesc">Description</label>
+                <textarea class="input" id="ntDesc" rows="2" placeholder="Optional"></textarea>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="ntPublish">Publish date</label>
+                <input class="input" id="ntPublish" type="date">
+              </div>
+              <div class="field">
+                <label class="field-label" for="ntFinal">Final due</label>
+                <input class="input" id="ntFinal" type="date">
+              </div>
+              <div class="field">
+                <label class="field-label" for="ntPriority">Priority</label>
+                <select class="select" id="ntPriority">
+                  <option value="1">1 highest</option>
+                  <option value="2">2</option>
+                  <option value="3" selected>3 normal</option>
+                  <option value="4">4</option>
+                  <option value="5">5 lowest</option>
+                </select>
+              </div>
+            </div>
+            <!-- The template's own offsets fill the dates from the publish
+                 date where one is given, so a person types the date the
+                 client knows and not the three the team works back to. -->
+            <p class="hint" id="ntHint"></p>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="ntGo" type="button">Create task</button>
+            <button class="btn btn-quiet" id="ntCancel" type="button">Cancel</button>
+          </div>
+          <div class="msg" id="ntMsg"></div>
+        </div>
+      </div>
+    </div>
+
     <!-- ---- Team: who may do what ---- -->
     <!-- ---- Register: every document issued, and every serial the verify
          page answers. HR rows reach this list only where the database's own
@@ -1916,12 +2240,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260921e"></script>
-<script src="/js/documents.js?v=20260921e"></script>
-<script src="/js/letters.js?v=20260921e"></script>
-<script src="/js/register.js?v=20260921e"></script>
-<script src="/js/crm.js?v=20260921e"></script>
-<script src="/js/team.js?v=20260921e"></script>
-<script src="/js/campaigns.js?v=20260921e"></script>
+<script src="/js/admin.js?v=20260922a"></script>
+<script src="/js/documents.js?v=20260922a"></script>
+<script src="/js/letters.js?v=20260922a"></script>
+<script src="/js/register.js?v=20260922a"></script>
+<script src="/js/crm.js?v=20260922a"></script>
+<script src="/js/team.js?v=20260922a"></script>
+<script src="/js/campaigns.js?v=20260922a"></script>
+<script src="/js/ops.js?v=20260922a"></script>
 </body>
 </html>
