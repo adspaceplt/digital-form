@@ -577,12 +577,15 @@
       (byDay[d.getTime()] = byDay[d.getTime()] || []).push(t);
     });
     var title = m.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    /* The short month draws under 360px, where "September 2026" with its two
+       arrows and Today ran past the gutter; the day labels already say Sept. */
+    var short = m.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }).replace(/^Sep /, 'Sept ');
     var chev = function (path) {
       return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + path + '"/></svg>';
     };
     var html = '<div class="calbar">' +
       '<button class="btn btn-sm iconbtn" data-cal="prev" type="button" aria-label="Previous month">' + chev('M15 18l-6-6 6-6') + '</button>' +
-      '<h3>' + esc(title) + '</h3>' +
+      '<h3><span class="cal-mlong">' + esc(title) + '</span><span class="cal-mshort">' + esc(short) + '</span></h3>' +
       '<button class="btn btn-sm iconbtn" data-cal="next" type="button" aria-label="Next month">' + chev('M9 18l6-6-6-6') + '</button>' +
       '<button class="btn btn-sm btn-quiet" data-cal="today" type="button">Today</button>' +
       '</div>';
@@ -601,7 +604,7 @@
         ((d.getDay() === 0 || d.getDay() === 6) ? ' is-weekend' : '') + (!list.length ? ' is-empty' : '');
       var chips = list.slice(0, 3).map(function (t) {
         var late = !isFinished(t) && d < today;
-        return '<button class="cal-chip ' + stageTone(t) + (late ? ' is-late' : '') + '" type="button" data-task="' + esc(t.id) + '">' +
+        return '<button class="cal-chip btn-sm ' + stageTone(t) + (late ? ' is-late' : '') + '" type="button" data-task="' + esc(t.id) + '">' +
           esc(t.title) + '</button>';
       }).join('') + (list.length > 3 ? '<span class="cal-more">+' + (list.length - 3) + ' more</span>' : '');
       cells += '<div class="' + cls + '" data-day="' + esc(d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2)) + '">' +

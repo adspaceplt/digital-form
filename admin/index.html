@@ -1478,9 +1478,9 @@
                view travels in the address; the list is the default and stays
                out of it. -->
           <span class="cmdbar-views" id="workViews" role="group" aria-label="View">
-            <button class="acttab is-on" data-view="list" type="button" aria-pressed="true">List</button>
-            <button class="acttab" data-view="board" type="button" aria-pressed="false">Board</button>
-            <button class="acttab" data-view="calendar" type="button" aria-pressed="false">Calendar</button>
+            <button class="acttab btn-sm is-on" data-view="list" type="button" aria-pressed="true">List</button>
+            <button class="acttab btn-sm" data-view="board" type="button" aria-pressed="false">Board</button>
+            <button class="acttab btn-sm" data-view="calendar" type="button" aria-pressed="false">Calendar</button>
           </span>
           <select class="select select-sm" id="workScope" aria-label="Whose work" hidden>
             <option value="mine">My work</option>
@@ -2173,15 +2173,15 @@ raya-2026        https://example.com/raya"></textarea>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
     </div>
-    <div class="acttabs" id="activityTabs">
-      <button class="acttab is-on" data-af="all" type="button">Everything</button>
-      <button class="acttab" data-af="clients" type="button">Clients</button>
-      <button class="acttab" data-af="team" type="button">Team</button>
-      <button class="acttab" data-af="review" type="button">Content Review</button>
-      <button class="acttab" data-af="campaigns" type="button">Creator Campaigns</button>
-      <button class="acttab" data-af="links" type="button">Short Links</button>
-      <button class="acttab" data-af="register" type="button">Documents</button>
-      <button class="acttab" data-af="services" type="button">Services</button>
+    <div class="rectabs" id="activityTabs" role="tablist" aria-label="Section">
+      <button class="tab is-on" data-af="all" type="button">Everything</button>
+      <button class="tab" data-af="clients" type="button">Clients</button>
+      <button class="tab" data-af="team" type="button">Team</button>
+      <button class="tab" data-af="review" type="button">Content Review</button>
+      <button class="tab" data-af="campaigns" type="button">Creator Campaigns</button>
+      <button class="tab" data-af="links" type="button">Short Links</button>
+      <button class="tab" data-af="register" type="button">Documents</button>
+      <button class="tab" data-af="services" type="button">Services</button>
     </div>
     <div class="sheet-body" id="activityList"></div>
   </div>
