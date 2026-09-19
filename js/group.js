@@ -49,7 +49,14 @@
 
   /* One group.
        route   the route the memory is filed under ('clients', 'campaigns', …)
-       key     the group's own key ('past', 'production', 'rm300', …)
+       key     the group's own key ('past', 'production', 'rm300', …), which
+               is what the card is identified by on the page (`data-band`)
+       memo    optional, what the fold is remembered under instead of `key`.
+               A directory that can be cut on more than one axis needs these
+               apart: My Work's Overdue card is `overdue` whichever axis is
+               on, but a card shut under By client has nothing to say about a
+               card under By stage, so the memory carries the axis and the
+               identity does not
        name    the heading
        count   how many rows the group holds, drawn on the heading
        marks   optional HTML after the fold (a warn chip, a value); the caller
@@ -96,7 +103,7 @@
     });
     btn.addEventListener('click', function () {
       shutNow = !shutNow;
-      keep(o.route, o.key, shutNow);
+      keep(o.route, o.memo || o.key, shutNow);
       if (!shutNow && !inner.firstChild && o.table) inner.appendChild(o.table());
       sec.classList.toggle('is-shut', shutNow);
       head.classList.toggle('is-shut', shutNow);

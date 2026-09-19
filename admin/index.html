@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260922a">
+<link rel="stylesheet" href="/css/portal.css?v=20260922b">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,22 +28,22 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260922a"></script>
-<script src="/js/words.js?v=20260922a"></script>
-<script src="/js/copy.js?v=20260922a"></script>
-<script src="/js/ask.js?v=20260922a"></script>
-<script src="/js/state.js?v=20260922a"></script>
-<script src="/js/group.js?v=20260922a"></script>
-<script src="/js/menu.js?v=20260922a"></script>
-<script src="/js/api.js?v=20260922a"></script>
-<script src="/js/money.js?v=20260922a"></script>
-<script src="/js/mockups.js?v=20260922a"></script>
+<script src="/js/config.js?v=20260922b"></script>
+<script src="/js/words.js?v=20260922b"></script>
+<script src="/js/copy.js?v=20260922b"></script>
+<script src="/js/ask.js?v=20260922b"></script>
+<script src="/js/state.js?v=20260922b"></script>
+<script src="/js/group.js?v=20260922b"></script>
+<script src="/js/menu.js?v=20260922b"></script>
+<script src="/js/api.js?v=20260922b"></script>
+<script src="/js/money.js?v=20260922b"></script>
+<script src="/js/mockups.js?v=20260922b"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260922a" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260922b" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -1446,6 +1446,26 @@
             <option value="done">Finished</option>
             <option value="">Everything</option>
           </select>
+          <!-- The axis. Banding by when work is owed answers "what do I do
+               today" and cannot answer "how is October going" or "what is
+               stuck at client review": two hundred rows under Later are
+               unreadable whatever shape they are. Same rows, same card, a
+               different question. -->
+          <select class="select select-sm" id="workGroup" aria-label="Group by">
+            <option value="due">By due date</option>
+            <option value="client">By client</option>
+            <option value="stage">By stage</option>
+            <option value="owner">By owner</option>
+          </select>
+          <!-- How far back finished work is read. Open work is never bounded
+               by it, so nothing overdue can fall out of the queue however old
+               it is. It draws only while finished work is being asked for,
+               because that is the only time it governs anything. -->
+          <select class="select select-sm" id="workPeriod" aria-label="How far back to read finished work" hidden>
+            <option value="month">This month</option>
+            <option value="q">Last 3 months</option>
+            <option value="year">This year</option>
+          </select>
           <span class="cmdbar-count" id="workCount"></span>
           <button class="btn btn-sm btn-primary" id="workNew" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New task</button>
         </div>
@@ -2240,13 +2260,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260922a"></script>
-<script src="/js/documents.js?v=20260922a"></script>
-<script src="/js/letters.js?v=20260922a"></script>
-<script src="/js/register.js?v=20260922a"></script>
-<script src="/js/crm.js?v=20260922a"></script>
-<script src="/js/team.js?v=20260922a"></script>
-<script src="/js/campaigns.js?v=20260922a"></script>
-<script src="/js/ops.js?v=20260922a"></script>
+<script src="/js/admin.js?v=20260922b"></script>
+<script src="/js/documents.js?v=20260922b"></script>
+<script src="/js/letters.js?v=20260922b"></script>
+<script src="/js/register.js?v=20260922b"></script>
+<script src="/js/crm.js?v=20260922b"></script>
+<script src="/js/team.js?v=20260922b"></script>
+<script src="/js/campaigns.js?v=20260922b"></script>
+<script src="/js/ops.js?v=20260922b"></script>
 </body>
 </html>

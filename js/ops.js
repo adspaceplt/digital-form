@@ -139,7 +139,7 @@
   var state = {
     tasks: null, stages: {}, workflows: [], templates: [], members: [], clients: [],
     owners: {}, ownerIds: {},   // task id → the live owner's name, and their id
-    find: '', scope: 'mine', filter: 'open', err: null,
+    find: '', scope: 'mine', filter: 'open', group: 'due', period: 'month', err: null,
     task: null,            // the open task, as ops_task_json returned it
     pane: 'overview',
     session: null,         // my one open work session, whichever task it is on
@@ -200,13 +200,28 @@
     loadCatalogue(function () {
       /* The client's name comes off the join the policy already allows, and
          the owner off the live assignee rows. Neither is a second store: a
-         task holds an id and the name is read where it lives. */
+         task holds an id and the name is read where it lives.
+
+         THE READ IS BOUNDED, AND OPEN WORK IS NOT PART OF THE BOUND. At eight
+         contents a week across thirty clients this table gains about three
+         hundred rows a month, so a single `.limit(500)` over everything
+         stopped showing older work in week seven and said nothing at all
+         about it. What grows without limit is *finished* work; what a person
+         has to see is open work, however old, because a task overdue since
+         August is the first thing the queue exists to show. So open work is
+         read in full and closed work is read from the chosen period onward.
+         Three reads rather than one `.or()`, because each is a plain filter
+         and a cancelled task carries `cancelled_at` where a completed one
+         carries `completed_at`. */
+      var since = periodStart().toISOString();
+      var base = function () {
+        return db.from('ops_tasks').select('*, clients(name)').is('archived_at', null)
+          .order('current_final_due_at', { ascending: true, nullsFirst: false });
+      };
       Promise.all([
-        db.from('ops_tasks')
-          .select('*, clients(name)')
-          .is('archived_at', null)
-          .order('current_final_due_at', { ascending: true, nullsFirst: false })
-          .limit(500),
+        base().is('completed_at', null).is('cancelled_at', null),
+        base().gte('completed_at', since).limit(500),
+        base().gte('cancelled_at', since).limit(500),
         db.from('ops_task_assignees')
           .select('task_id, responsibility, team_member_id, team_members(name)')
           .is('ended_at', null)
@@ -216,10 +231,19 @@
           UI.failLine(box, 'Your tasks', r[0].error.message, load);
           return;
         }
-        state.tasks = (r[0] && r[0].data) || [];
+        /* One row can only be in one of the three, but a merge that trusted
+           that would be a merge nobody had checked. */
+        var seen = {};
+        state.tasks = [].concat((r[0] && r[0].data) || [], (r[1] && r[1].data) || [],
+                                (r[2] && r[2].data) || [])
+          .filter(function (t) {
+            if (seen[t.id]) return false;
+            seen[t.id] = 1;
+            return true;
+          });
         state.owners = {};
         state.ownerIds = {};
-        ((r[1] && r[1].data) || []).forEach(function (a) {
+        ((r[3] && r[3].data) || []).forEach(function (a) {
           if (a.responsibility !== 'owner') return;
           state.owners[a.task_id] = (a.team_members && a.team_members.name) || '';
           state.ownerIds[a.task_id] = a.team_member_id;
@@ -246,6 +270,14 @@
   }
 
   // ---- The queue -----------------------------------------------------------
+  /* How far back finished work is read. Never applied to open work. */
+  function periodStart() {
+    var d = new Date();
+    if (state.period === 'q') return new Date(d.getFullYear(), d.getMonth() - 2, 1);
+    if (state.period === 'year') return new Date(d.getFullYear(), 0, 1);
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  }
+
   var BANDS = [
     { key: 'overdue', name: 'Overdue' },
     { key: 'today',   name: 'Due today' },
@@ -262,6 +294,66 @@
     if (n === 0) return 'today';
     if (n <= 7) return 'week';
     return 'later';
+  }
+
+  /* THE AXIS. The same rows and the same card, asked a different question.
+     By due date is what orders a day. By client is how the work is sold and
+     how the team has always counted it — thirty headings with a count each,
+     rather than two hundred and ninety rows. By stage is where the work is
+     piling up. By owner is who is carrying it.
+
+     Only the due bands have a fixed order and a fixed set; the other three
+     are drawn from the rows that are actually there, so a client with no
+     work this month costs no heading. */
+  function groupsOf(rows) {
+    var mode = state.group, out = [], by = {};
+    function put(key, name, sort) {
+      if (!by[key]) { by[key] = { key: key, name: name, sort: sort, rows: [] }; out.push(by[key]); }
+      return by[key];
+    }
+    rows.forEach(function (t) {
+      if (mode === 'client') {
+        var c = (t.clients && t.clients.name) || (t.scope === 'internal' ? 'Internal' : 'No client');
+        put('c-' + c, c, c).rows.push(t);
+      } else if (mode === 'stage') {
+        var s = stageOf(t);
+        put('s-' + t.stage_key, stageLabel(t), String(1000 + (s ? s.position : 99))).rows.push(t);
+      } else if (mode === 'owner') {
+        var o = state.owners[t.id] || '';
+        /* Nobody yet sorts last, because it is the exception and not a name. */
+        put('o-' + (o || 'none'), o || 'Nobody yet', o ? '1' + o : '2').rows.push(t);
+      } else {
+        var b = bandOf(t);
+        put(b, (BANDS.filter(function (x) { return x.key === b; })[0] || {}).name || b,
+            String(BANDS.map(function (x) { return x.key; }).indexOf(b))).rows.push(t);
+      }
+    });
+    if (mode === 'due') {
+      var order = BANDS.map(function (x) { return x.key; });
+      out.sort(function (a, b) { return order.indexOf(a.key) - order.indexOf(b.key); });
+    } else {
+      out.sort(function (a, b) { return String(a.sort).localeCompare(String(b.sort)); });
+    }
+    return out;
+  }
+  /* On the due axis the bands are few and mostly worth opening, so only the
+     two nobody opens a queue to read are shut. On every other axis the whole
+     point is the headings: thirty client cards, each with its count, is the
+     page somebody can scan — thirty open cards is the two hundred and ninety
+     rows we were trying to get away from. */
+  function shutByDefault(g) {
+    if (state.group !== 'due') return true;
+    return g.key === 'done' || g.key === 'later';
+  }
+  function marksOf(g) {
+    if (g.key === 'overdue') return '<span class="tone is-warn">Overdue</span>';
+    if (state.group === 'due') return '';
+    /* Off the due axis, overdue is the fact a heading has to carry or it is
+       hidden inside a shut card. */
+    var late = g.rows.filter(function (t) {
+      return !isFinished(t) && daysAway(t.current_final_due_at) < 0;
+    }).length;
+    return late ? '<span class="tone is-warn">' + late + ' overdue</span>' : '';
   }
 
   function inFilter(t) {
@@ -317,9 +409,11 @@
          are looking at is not a filter, so clearing the filters does not put
          somebody back on their own work without being asked. */
       UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
-        state.find = ''; state.filter = 'open';
+        state.find = ''; state.filter = 'open'; state.group = 'due';
         if ($('workFind')) $('workFind').value = '';
         if ($('workStage')) $('workStage').value = 'open';
+        if ($('workGroup')) $('workGroup').value = 'due';
+        showPeriod();
         paint();
       });
       return;
@@ -331,50 +425,108 @@
        on the page, and a card of four hundred finished tasks forced open by
        it is the opposite of help. */
     var filtered = Boolean(state.find);
-    BANDS.forEach(function (b) {
-      var mine = rows.filter(function (t) { return bandOf(t) === b.key; });
-      if (!mine.length) return;
-      /* Finished work is shut by default: nobody opens this page to read it,
-         and the count on the heading still says how much there is. A filter
-         opens every card, because somebody who searched for a title wants the
-         row wherever it is. */
-      var shutByDefault = b.key === 'done' || b.key === 'later';
+    groupsOf(rows).forEach(function (g) {
       box.appendChild(GRP.section({
-        route: 'work', key: b.key, name: b.name, count: mine.length,
-        marks: b.key === 'overdue' ? '<span class="tone is-warn">Overdue</span>' : '',
+        route: 'work', key: g.key, name: g.name, count: g.rows.length,
+        /* The fold is remembered per axis, while the card keeps its own name
+           on the page: a client card shut under By client has nothing to say
+           about a stage card under By stage, and one key for both would carry
+           the answer across. */
+        memo: state.group + ':' + g.key,
+        marks: marksOf(g),
         /* A card that holds everything on the page never shuts by default, or
            a person whose work is all weeks away opens My Work on a heading
            over nothing. */
-        shut: !filtered && GRP.shut('work', b.key, shutByDefault, mine.length === rows.length),
+        shut: !filtered && GRP.shut('work', state.group + ':' + g.key,
+                                    shutByDefault(g), g.rows.length === rows.length),
         table: function () {
-          var table = GRP.table('svc-row task-row',
-            ['Task', 'Stage', 'Owner', 'Due', '']);
-          GRP.more(table, mine, 30, 'tasks', rowOf);
+          var table = GRP.table('svc-row task-row', ['Task', 'Stage', 'Owner', 'Due']);
+          GRP.more(table, g.rows, 30, 'tasks', rowOf);
           return table;
         }
       }));
     });
   }
 
-  /* The whole row is one control with nothing nested in it, so it is the
-     target from a pointer and from the keyboard alike and there is no control
-     inside a control for a screen reader to trip over. */
+  /* THE COMMONEST ACT ON THIS LIST IS MOVING A STAGE, so the stage cell is
+     the portal's own tinted state select and not a chip somebody has to open
+     the record to change. It goes through `ops_transition_task` like every
+     other move, so the gates are the same and a refusal is named in the same
+     words — under the row, where the act was.
+
+     The row is therefore no longer a single `<button>`. A control inside a
+     control is one a screen reader trips over, so what opens the task is the
+     name cell: the widest cell, full row height, where the eye already is.
+     The chevron went with the button, because a mark that is no longer a
+     target is furniture. */
   function rowOf(t) {
-    var el = document.createElement('button');
-    el.type = 'button';
+    var el = document.createElement('div');
     el.className = 'svc-row task-row' + (isFinished(t) ? ' is-off' : '');
     var over = !isFinished(t) && daysAway(t.current_final_due_at) < 0;
     var meta = [(t.clients && t.clients.name) || (t.scope === 'internal' ? 'Internal' : ''),
                 t.deliverable_type].filter(Boolean).join(' · ');
     el.innerHTML =
-      '<span class="svc-name"><b>' + esc(t.title) + '</b>' +
-        '<small>' + esc(meta) + '</small></span>' +
-      '<span class="task-stage"><span class="tone ' + stageTone(t) + '">' + esc(stageLabel(t)) + '</span></span>' +
+      '<button class="task-open" type="button"><b>' + esc(t.title) + '</b>' +
+        '<small>' + esc(meta) + '</small></button>' +
+      '<span class="task-stage">' + stageCell(t) + '</span>' +
       '<span class="task-owner">' + (state.owners[t.id] ? esc(state.owners[t.id]) : '<span class="mute">—</span>') + '</span>' +
-      '<span class="task-due' + (over ? ' is-over' : '') + '">' + esc(dueWord(t.current_final_due_at)) + '</span>' +
-      '<span class="task-go">' + CHEV + '</span>';
-    el.addEventListener('click', function () { openTask(t.id, true); });
+      '<span class="task-due' + (over ? ' is-over' : '') + '">' + esc(dueWord(t.current_final_due_at)) + '</span>';
+    el.querySelector('.task-open').addEventListener('click', function () { openTask(t.id, true); });
+    var sel = el.querySelector('.state-select');
+    if (sel) sel.addEventListener('change', function () { rowMove(t, el, sel); });
     return el;
+  }
+
+  /* A select where the person may work the task and the stage can still move,
+     the read-only chip everywhere else: a control that cannot do anything is
+     a control that should not be drawn. */
+  function stageCell(t) {
+    var s = stageOf(t);
+    /* Blocked needs a category before it means anything, so it is asked for
+       on the record and never set from a list. */
+    var nexts = ((s && s.next_stage_keys) || []).filter(function (k) { return k !== 'blocked'; });
+    if (!may('ops', 'work') || isFinished(t) || !nexts.length) {
+      return '<span class="tone ' + stageTone(t) + '">' + esc(stageLabel(t)) + '</span>';
+    }
+    return '<select class="select select-sm state-select ' + stageTone(t) + '" ' +
+      'aria-label="Stage of ' + esc(t.title) + '">' +
+      '<option value="">' + esc(stageLabel(t)) + '</option>' +
+      nexts.map(function (k) {
+        return '<option value="' + esc(k) + '">' + esc(labelOfStage(t, k)) + '</option>';
+      }).join('') + '</select>';
+  }
+  function labelOfStage(t, k) {
+    var s = state.stages[t.workflow_id + '|' + k];
+    return (s && s.label) || String(k || '').replace(/_/g, ' ');
+  }
+
+  /* The move the row asked for. A refusal puts the select back where it was
+     and says why under the row, because the row is where the act happened and
+     the command bar is a screen away from it on a long list. */
+  function rowMove(t, el, sel) {
+    var next = sel.value;
+    if (!next) return;
+    var back = function () { sel.value = ''; };
+    rowNote(el, '');
+    db.rpc('ops_transition_task',
+      { p_task: t.id, p_next: next, p_version: t.version, p_note: null })
+      .then(function (r) {
+        if (r.error) { back(); rowNote(el, r.error.message); return; }
+        var d = r.data;
+        if (d && d.error) { back(); rowNote(el, said(d.error)); return; }
+        /* The band a row belongs to can change with its stage, so the queue is
+           repainted rather than the cell patched. */
+        load();
+      }, function (e) { back(); rowNote(el, (e && e.message) || String(e)); });
+  }
+  function rowNote(el, text) {
+    var was = el.nextSibling;
+    if (was && was.classList && was.classList.contains('task-note')) was.remove();
+    if (!text) return;
+    var note = document.createElement('div');
+    note.className = 'msg err task-note';
+    note.textContent = text;
+    el.parentNode.insertBefore(note, el.nextSibling);
   }
 
   // ---- One task ------------------------------------------------------------
@@ -1161,7 +1313,20 @@
       });
     }
     var st = $('workStage');
-    if (st) st.addEventListener('change', function () { state.filter = st.value; paint(); });
+    if (st) st.addEventListener('change', function () {
+      state.filter = st.value;
+      /* The period governs finished work and nothing else, so it appears
+         exactly when finished work is being asked for. A control that is on
+         the screen while it decides nothing is a control somebody has to
+         work out. Changing the filter into finished work needs the read
+         again, because finished work was bounded by the period all along. */
+      var was = showPeriod();
+      if (was) load(); else paint();
+    });
+    var gp = $('workGroup');
+    if (gp) gp.addEventListener('change', function () { state.group = gp.value; paint(); });
+    var pd = $('workPeriod');
+    if (pd) pd.addEventListener('change', function () { state.period = pd.value; load(); });
     var sc = $('workScope');
     if (sc) sc.addEventListener('change', function () { state.scope = sc.value; paint(); });
     var nw = $('workNew');
@@ -1313,6 +1478,16 @@
     return q;
   }
 
+  /* Finished work is the only thing the period bounds, so the select draws
+     only while finished work can be on the page. Returns whether it is now
+     showing, so a caller knows whether the read has to run again. */
+  function showPeriod() {
+    var pd = $('workPeriod');
+    var on = state.filter === 'done' || state.filter === '';
+    if (pd) pd.hidden = !on;
+    return on;
+  }
+
   function enter() {
     var nw = $('workNew');
     if (nw) nw.hidden = !may('ops', 'work');
@@ -1322,6 +1497,7 @@
        work would offer a view that comes back empty and say nothing. */
     if (sc) sc.hidden = !may('ops.all', 'view');
     if (sc && sc.hidden) state.scope = 'mine';
+    showPeriod();
 
     var params = new URLSearchParams(location.search);
     var want = params.get('task');

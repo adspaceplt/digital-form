@@ -430,8 +430,10 @@
       mark.setAttribute('aria-label', 'About this section');
       mark.setAttribute('aria-expanded', 'false');
       mark.textContent = '?';
+      /* After the count, not before it: the `?` belongs to the quiet group
+         that says what is on the page, and the one action ends the row. */
       var count = bar.querySelector('.cmdbar-count');
-      if (count) count.parentNode.insertBefore(mark, count); else bar.appendChild(mark);
+      if (count) count.parentNode.insertBefore(mark, count.nextSibling); else bar.appendChild(mark);
       var setOpen = function (on) {
         line.hidden = !on;
         mark.setAttribute('aria-expanded', String(on));
