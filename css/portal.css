@@ -5745,14 +5745,19 @@ body.is-canvas { overflow: hidden; }
 /* THE BELL. A control in the bar like the account, a count that is the unread
    rows and nothing else, and a menu that names the task and the change. */
 .notif { position: relative; flex: 0 0 auto; }
+/* The bell is the Activity record's shape (`.headlink`: the same glyph size,
+   the same mute ink, the same 8px fill on hover and while open), never the
+   account's circle: the circle is the avatar's, and a ring drawn round the
+   bell while its panel was open made it the one control in the bar with an
+   outline. */
 .notif-btn {
   position: relative; display: grid; place-items: center; width: var(--ctl-h); height: var(--ctl-h);
-  border: 1px solid transparent; border-radius: 50%; background: none; padding: 0; color: var(--ink-soft);
-  transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
+  border: 0; border-radius: 8px; background: none; padding: 0; color: var(--ink-mute);
+  transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
 }
-.notif-btn svg { width: 18px; height: 18px; stroke-width: 1.8; }
-@media (hover: hover) { .notif-btn:hover { background: var(--line-soft); } }
-.notif-btn[aria-expanded="true"] { background: var(--line-soft); border-color: var(--ink-mute); }
+.notif-btn svg { width: 15px; height: 15px; stroke-width: 1.7; }
+@media (hover: hover) { .notif-btn:hover { color: var(--ink); background: var(--line-soft); } }
+.notif-btn[aria-expanded="true"] { color: var(--ink); background: var(--line-soft); }
 .notif-count {
   position: absolute; top: 4px; right: 3px; min-width: 16px; height: 16px; padding: 0 4px;
   border-radius: 8px; background: var(--action); color: var(--on-action);
