@@ -183,16 +183,19 @@
     var inApp = Boolean(session);
     // Signed out is a plain page, white to the edges. Signed in is the console,
     // which brings its own chrome and does not want the page header as well.
-    /* Signed in is not the same as allowed in. Until the database has said
-       who this is, the console stays hidden: its chrome names every section
-       of the tool, and somebody with no team row was seeing that shape for as
-       long as the me() call took before it was swapped for the cover. So the
-       in-between looks like the plain page, and the console appears once, to
-       the person it belongs to. */
-    document.body.classList.toggle('is-plain', !inApp || !meLoaded);
-    $('topbar').hidden = inApp && meLoaded;
+    /* SIGNED IN IS NOT THE SAME AS ALLOWED IN, and the in-between is still
+       the console's own shell. Nothing about what this person may open is
+       drawn before the database has said it — the nav's names and the bar's
+       controls are blank and the body is a skeleton — but the shell, the rail
+       and the bar are the console's, because what used to stand here was the
+       shared page bar over an empty page, which is the composition the
+       client-facing pages use, and a refresh read for a second or two as
+       somebody else's portal. */
+    document.body.classList.toggle('is-plain', !inApp);
+    $('topbar').hidden = inApp;
     $('publicShell').hidden = inApp;
-    $('console').hidden = true;
+    $('console').classList.toggle('is-booting', inApp && !meLoaded);
+    $('console').hidden = !inApp;
     $('authPanel').hidden = inApp;
     $('acctWrap').hidden = !inApp;
     if (!inApp) shutAcct();
@@ -227,6 +230,7 @@
       if (me) loadWho(function () { if (!$('activitySheet').hidden) paintActivity(); });
       if (!me) {
         // A plain page like sign-in: the page header, white to the edges.
+        $('console').classList.remove('is-booting');
         $('console').hidden = true;
         $('topbar').hidden = false;
         document.body.classList.add('is-plain');
@@ -234,6 +238,7 @@
         $('noTeamWho').textContent = actor;
         return;
       }
+      $('console').classList.remove('is-booting');
       $('console').hidden = false;
       $('topbar').hidden = true;
       document.body.classList.remove('is-plain');

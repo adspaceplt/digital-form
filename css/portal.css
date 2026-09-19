@@ -3808,7 +3808,13 @@ body > .shell { width: 100%; }
    file and would otherwise win on the same specificity. */
 .is-narrow .svc-row.csv-row > .svc-state { justify-self: stretch; text-align: right; }
 .is-narrow .ct-row > .crm-reach { grid-area: reach; }
+/* Three ways to reach one person share the row at equal widths, which is
+   what the law is for. One link is not a row of links: Engagements borrows
+   this row for a name and a single Open, and at `flex: 1 1 0` that one
+   outlined button became a slab across the phone — the banner every section
+   head in this portal has refused for months. */
 .is-narrow .ct-row .plink { flex: 1 1 0; justify-content: center; }
+.is-narrow .ct-row .crm-reach .plink:only-child { flex: 0 0 auto; justify-content: center; }
 .is-narrow .csv-total { justify-content: space-between; gap: 12px; }
 .crm-links:empty { display: none; }
 .notice.is-warn { border-color: var(--warn-line); background: var(--warn-bg); margin: 12px 0 0; }
@@ -4737,6 +4743,16 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 
 /* Loading, as the shape of what is coming rather than the word for it. */
 .skel { padding: 4px 0; }
+/* The console while its team row is being read: the shell and the rail are
+   the console's own, the nav's names and the bar's controls are not drawn,
+   and the body is the shape of what is coming. Without it the in-between was
+   the shared page bar over an empty page, which is the client pages' own
+   composition, so a refresh read for a second as somebody else's portal. */
+.console.is-booting .sidebar-nav,
+.console.is-booting .console-head > * { visibility: hidden; }
+.console.is-booting .console-body { display: none; }
+.console.is-booting #consoleBoot { display: block; }
+#consoleBoot { display: none; }
 .skel-row {
   height: 14px; margin: 14px 15px; border-radius: var(--radius-sm);
   background: linear-gradient(90deg, var(--line-soft) 0%, var(--sunk) 50%, var(--line-soft) 100%);
@@ -4912,6 +4928,25 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .is-narrow .rec-mark { width: 38px; height: 38px; font-size: 13px; }
 .is-narrow .rec-name { gap: 6px 10px; }
 .is-narrow .rec-who { gap: 4px; }
+/* The client portal's head is a page section, not a pane inside the console,
+   so nothing sets `is-narrow` on it and it kept the three column template at
+   every width: on a 390 screen the state and a 150px action took the row and
+   the name was squeezed to sixty pixels — "Lama / n Citra" over a registered
+   name broken across seven lines. Here the head's width is the window's, so
+   the window is the right thing to ask, and the template is the console's own
+   rather than a second one written for this page. */
+@media (max-width: 640px) {
+  #cpHead .rec-id {
+    gap: 10px 12px; align-items: center;
+    grid-template-areas: "mark . ctl" "who who who";
+  }
+  #cpHead .rec-mark { width: 38px; height: 38px; font-size: 13px; }
+  #cpHead .rec-name { gap: 6px 10px; }
+  #cpHead .rec-who { gap: 4px; }
+  /* Two rows on a phone, so the action gives up its word beside the state the
+     way the command bar's primary does rather than wrapping the pair. */
+  #cpHead .rec-ctl { flex-wrap: wrap; justify-content: flex-end; }
+}
 
 /* ---------- The record's rail ----------
    One block per question, each with its own title, divided by the same
@@ -5496,15 +5531,35 @@ body.is-canvas { overflow: hidden; }
    no tab strip, because a client reads the page once and should not have to
    go looking for the section they were told about. */
 .rec.cportal { grid-template-areas: "pane rail"; }
-#cpHead { margin-top: 24px; margin-bottom: 20px; }
+/* On the spacing scale, which stops at 4, 8, 12, 16, 24, 32: the head stood
+   20px off the record and each section 28px off the one above it, so two of
+   the three steps on this page were values the scale does not have. */
+#cpHead { margin-top: 24px; margin-bottom: 24px; }
 .rec.cportal { gap: 0 32px; }
 .cportal > .rec-pane { min-width: 0; }
-.cportal > .rec-pane > .viewhead { margin-top: 28px; }
+.cportal > .rec-pane > .viewhead { margin-top: 24px; }
 .cportal > .rec-pane > .viewhead:first-child,
 .cportal > .rec-rail > .viewhead:first-child { margin-top: 0; }
 /* The company select is a page level control on the identity line, so it keeps
    its own width rather than stretching. */
-#cpHead .crm-title .select { flex: 0 0 auto; width: auto; min-width: 150px; }
+#cpHead .rec-ctl .select { flex: 0 0 auto; width: auto; min-width: 150px; }
+#cpHead .rec-ctl .btn { flex: 0 0 auto; }
+/* ONE HEADING SIZE ON THE PAGE. The rail's blocks head at the pane's own 15px
+   section size and the pane's sections headed at 16px, side by side, two
+   inches apart: the difference nobody can name and everybody sees. The pane's
+   sections take the same size and weight as the rail's, so a client reads one
+   page with one kind of heading on it rather than two columns that disagree.
+   Below 1100 the two columns become one, where it matters more still. */
+.cportal > .rec-pane > .viewhead h3,
+.cportal > .rec-rail .railtitle {
+  font-size: 15px; font-weight: 600; letter-spacing: -.01em;
+}
+/* A section with nothing in it is a line inside the surface it would have
+   filled, never a bounded card of its own, so a client with no services, no
+   letters and no requests does not read three empty slabs down the page. */
+.cportal > .rec-pane .softpanel { margin: 0; }
+/* A sign-in address is read, not written to. */
+.acc-email { font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; }
 /* The rail's blocks are flat under their eyebrow titles, so the contacts read
    as the block's rows rather than as a card sitting inside one. A bounded
    surface inside a bounded surface is the nested card this system rules out,
