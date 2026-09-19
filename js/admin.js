@@ -427,21 +427,11 @@
         '<button class="btn btn-sm btn-quiet routeintro-hide" type="button">Hide</button>';
       line.querySelector('.routeintro-text').textContent = INTRO[name];
       bar.parentNode.insertBefore(line, bar.nextSibling);
-      var mark = document.createElement('button');
-      mark.type = 'button';
-      mark.className = 'btn btn-sm btn-quiet cmdbar-help';
-      mark.setAttribute('aria-label', 'About this section');
-      mark.setAttribute('aria-expanded', 'false');
-      mark.textContent = '?';
-      /* After the count, not before it: the `?` belongs to the quiet group
-         that says what is on the page, and the one action ends the row. */
-      var count = bar.querySelector('.cmdbar-count');
-      if (count) count.parentNode.insertBefore(mark, count.nextSibling); else bar.appendChild(mark);
       var setOpen = function (on) {
         line.hidden = !on;
-        mark.setAttribute('aria-expanded', String(on));
+        var t = $('sectionTitle');
+        if (t) t.setAttribute('aria-expanded', String(on));
       };
-      mark.addEventListener('click', function () { setOpen(line.hidden); });
       line.querySelector('.routeintro-hide').addEventListener('click', function () {
         try { localStorage.setItem('adspace-hint-intro-' + name, String(INTRO_SHOWS)); } catch (e) {}
         setOpen(false);
@@ -452,6 +442,14 @@
     }
     line.__setOpen(seen < INTRO_SHOWS);
   }
+  /* The section's name opens and shuts the line that says what the section
+     is for. One handler for every route: which line it governs is whichever
+     section is on the screen. */
+  $('sectionTitle').addEventListener('click', function () {
+    var host = $('section' + section.charAt(0).toUpperCase() + section.slice(1));
+    var line = host && host.querySelector('.routeintro');
+    if (line && line.__setOpen) line.__setOpen(line.hidden);
+  });
   // The first section this person is allowed, for when the one asked for is not.
   function firstAllowed() {
     var order = ['clients', 'review', 'campaigns', 'links', 'register', 'services', 'team'];
@@ -473,7 +471,8 @@
     $('sectionRegister').hidden  = name !== 'register';
     $('sectionServices').hidden  = name !== 'services';
     $('sectionTeam').hidden      = name !== 'team';
-    $('sectionTitle').textContent = SECTION_TITLE[name];
+    $('sectionTitle').querySelector('.console-title-word').textContent = SECTION_TITLE[name];
+    $('sectionTitle').setAttribute('aria-label', SECTION_TITLE[name] + ', about this section');
     paintIntro(name);
     // The tab said Content Review Internal whichever section you were in.
     document.title = SECTION_TITLE[name] + ' · ADspace Digital Portal';

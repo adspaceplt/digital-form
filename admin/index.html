@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260922f">
+<link rel="stylesheet" href="/css/portal.css?v=20260922g">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,22 +28,23 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260922f"></script>
-<script src="/js/words.js?v=20260922f"></script>
-<script src="/js/copy.js?v=20260922f"></script>
-<script src="/js/ask.js?v=20260922f"></script>
-<script src="/js/state.js?v=20260922f"></script>
-<script src="/js/group.js?v=20260922f"></script>
-<script src="/js/menu.js?v=20260922f"></script>
-<script src="/js/api.js?v=20260922f"></script>
-<script src="/js/money.js?v=20260922f"></script>
-<script src="/js/mockups.js?v=20260922f"></script>
+<script src="/js/config.js?v=20260922g"></script>
+<script src="/js/words.js?v=20260922g"></script>
+<script src="/js/copy.js?v=20260922g"></script>
+<script src="/js/ask.js?v=20260922g"></script>
+<script src="/js/state.js?v=20260922g"></script>
+<script src="/js/group.js?v=20260922g"></script>
+<script src="/js/menu.js?v=20260922g"></script>
+<script src="/js/cmdbar.js?v=20260922g"></script>
+<script src="/js/api.js?v=20260922g"></script>
+<script src="/js/money.js?v=20260922g"></script>
+<script src="/js/mockups.js?v=20260922g"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260922f" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260922g" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -125,7 +126,14 @@
       <button class="navtoggle" id="navToggle" type="button" aria-label="Sections">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
       </button>
-      <span class="console-title" id="sectionTitle">Clients</span>
+      <!-- The section's name is the control that explains the section: the
+           `?` used to sit in the command bar with the list's own controls,
+           which is not what it is about. Asked for by the user on
+           2026-09-22. -->
+      <button class="console-title" id="sectionTitle" type="button" aria-expanded="false" aria-label="Clients, about this section">
+        <span class="console-title-word">Clients</span>
+        <svg class="console-title-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11.5v4.5"/><path d="M12 7.6h.01"/></svg>
+      </button>
       <span class="console-spacer"></span>
       <!-- The activity record was a full width card sitting under the client
            list, which is a lot of furniture for something read once a month. -->
@@ -1482,7 +1490,7 @@
             <button class="acttab btn-sm" data-view="board" type="button" aria-pressed="false">Board</button>
             <button class="acttab btn-sm" data-view="calendar" type="button" aria-pressed="false">Calendar</button>
           </span>
-          <select class="select select-sm" id="workScope" aria-label="Whose work" hidden>
+          <select class="select select-sm" id="workScope" aria-label="Whose work" data-nofilter hidden>
             <option value="mine">My work</option>
             <option value="all">The whole team</option>
           </select>
@@ -1502,7 +1510,7 @@
           <!-- A board is one workflow's stages, because the columns and the
                work-in-progress guidance on them are the workflow's own; it
                draws in place of Group by, whose axis the board has fixed. -->
-          <select class="select select-sm" id="workWf" aria-label="Workflow" hidden></select>
+          <select class="select select-sm" id="workWf" aria-label="Workflow" data-nofilter hidden></select>
           <select class="select select-sm" id="workGroup" aria-label="Group by">
             <option value="due">By due date</option>
             <option value="client">By client</option>
@@ -2368,13 +2376,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260922f"></script>
-<script src="/js/documents.js?v=20260922f"></script>
-<script src="/js/letters.js?v=20260922f"></script>
-<script src="/js/register.js?v=20260922f"></script>
-<script src="/js/crm.js?v=20260922f"></script>
-<script src="/js/team.js?v=20260922f"></script>
-<script src="/js/campaigns.js?v=20260922f"></script>
-<script src="/js/ops.js?v=20260922f"></script>
+<script src="/js/admin.js?v=20260922g"></script>
+<script src="/js/documents.js?v=20260922g"></script>
+<script src="/js/letters.js?v=20260922g"></script>
+<script src="/js/register.js?v=20260922g"></script>
+<script src="/js/crm.js?v=20260922g"></script>
+<script src="/js/team.js?v=20260922g"></script>
+<script src="/js/campaigns.js?v=20260922g"></script>
+<script src="/js/ops.js?v=20260922g"></script>
 </body>
 </html>
