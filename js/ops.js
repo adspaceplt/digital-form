@@ -140,6 +140,11 @@
     tasks: null, stages: {}, workflows: [], templates: [], members: [], clients: [],
     owners: {}, ownerIds: {},   // task id → the live owner's name, and their id
     find: '', scope: 'mine', filter: 'open', group: 'due', period: 'month', err: null,
+    view: 'list',          // list | board | calendar: three readings of one set of rows
+    wf: null,              // the workflow the board lays out
+    month: null,           // the first day of the month the calendar shows
+    week: [],              // this week's work sessions, for the capacity strip
+    notifs: [],            // my unread notifications
     task: null,            // the open task, as ops_task_json returned it
     pane: 'overview',
     session: null,         // my one open work session, whichever task it is on
@@ -177,7 +182,7 @@
       db.from('ops_workflows').select('id, key, name, active').order('key'),
       db.from('ops_workflow_stages').select('*').order('position'),
       db.from('ops_task_templates').select('*').eq('active', true).order('name'),
-      db.from('team_members').select('id, name, email, active').eq('active', true).order('name'),
+      db.from('team_members').select('id, name, email, active, capacity_minutes_week').eq('active', true).order('name'),
       db.from('clients').select('id, name').order('name')
     ]).then(function (r) {
       state.workflows = (r[0] && r[0].data) || [];
@@ -385,8 +390,20 @@
     return hay.indexOf(state.find) > -1;
   }
 
+  /* Which container the view draws in. The other two are hidden, and the
+     capacity strip draws only with the board, where the question it answers
+     (who has room this week) is the question being asked. */
+  function viewBox() {
+    var list = $('workQueue'), board = $('workBoard'), cal = $('workCal'), cap = $('workCap');
+    if (list) list.hidden = state.view !== 'list';
+    if (board) board.hidden = state.view !== 'board';
+    if (cal) cal.hidden = state.view !== 'calendar';
+    if (cap) cap.hidden = state.view !== 'board';
+    return state.view === 'board' ? board : state.view === 'calendar' ? cal : list;
+  }
+
   function paint() {
-    var box = $('workQueue');
+    var box = viewBox();
     if (!box || !state.tasks) return;
     /* The count is read against the view somebody chose, not against every
        row the database sent: "Open work, mine" is where this route opens, so
@@ -419,6 +436,8 @@
       return;
     }
     box.innerHTML = '';
+    if (state.view === 'board') { paintBoard(all, rows); return; }
+    if (state.view === 'calendar') { paintCalendar(rows); return; }
     /* A *search* opens every card, because somebody who typed a title wants
        the row wherever it is and a shut card would hide the one match and say
        nothing. Choosing a stage in the bar is not that: it picks which work is
@@ -446,6 +465,238 @@
         }
       }));
     });
+  }
+
+  // ---- The board -----------------------------------------------------------
+  /* ONE WORKFLOW'S STAGES, SIDE BY SIDE. The columns and the work-in-progress
+     guidance on them are the workflow's own, so the board is one workflow at
+     a time and the select names which; it draws where Group by would,
+     because the board has fixed the axis Group by chooses. The lanes beside
+     the line (blocked, waiting, KIV) are one column at the end: a board is
+     where the flow is read, and a task that has stepped out of the flow is
+     in one place, not three. A terminal stage draws only while the filter
+     lets finished work onto the page. */
+  function boardWorkflow(all) {
+    var counts = {};
+    all.forEach(function (t) { counts[t.workflow_id] = (counts[t.workflow_id] || 0) + 1; });
+    var wfs = state.workflows.filter(function (w) { return w.active !== false; });
+    if (!state.wf || !wfs.some(function (w) { return w.id === state.wf; })) {
+      var best = wfs.slice().sort(function (a, b) { return (counts[b.id] || 0) - (counts[a.id] || 0); })[0];
+      state.wf = best ? best.id : null;
+    }
+    var sel = $('workWf');
+    if (sel) {
+      sel.innerHTML = wfs.map(function (w) {
+        return '<option value="' + esc(w.id) + '"' + (w.id === state.wf ? ' selected' : '') + '>' +
+          esc(w.name) + (counts[w.id] ? ' (' + counts[w.id] + ')' : '') + '</option>';
+      }).join('');
+    }
+    return state.wf;
+  }
+  function stagesOf(wf) {
+    return Object.keys(state.stages).map(function (k) { return state.stages[k]; })
+      .filter(function (s) { return s.workflow_id === wf; })
+      .sort(function (a, b) { return a.position - b.position; });
+  }
+  function paintBoard(all, rows) {
+    var box = $('workBoard');
+    var wf = boardWorkflow(all);
+    var mine = rows.filter(function (t) { return t.workflow_id === wf; });
+    var stages = stagesOf(wf);
+    var cols = stages.filter(function (s) { return !SIDE[s.stage_group] && !s.is_terminal; })
+      .map(function (s) { return { key: s.key, name: s.label, wip: s.wip_guidance, keys: [s.key] }; });
+    var held = stages.filter(function (s) { return SIDE[s.stage_group] && !s.is_terminal; });
+    if (held.length) cols.push({ key: 'held', name: 'On hold', wip: null, keys: held.map(function (s) { return s.key; }) });
+    stages.filter(function (s) { return s.is_terminal; }).forEach(function (s) {
+      if (mine.some(function (t) { return t.stage_key === s.key; })) {
+        cols.push({ key: s.key, name: s.label, wip: null, keys: [s.key] });
+      }
+    });
+    paintCapacity();
+    box.innerHTML = '';
+    if (!mine.length) {
+      UI.emptyLine(box, 'No tasks in this workflow.', '', null);
+      return;
+    }
+    var board = document.createElement('div');
+    board.className = 'board';
+    cols.forEach(function (c) {
+      var cards = mine.filter(function (t) { return c.keys.indexOf(t.stage_key) > -1; });
+      var col = document.createElement('div');
+      col.className = 'bcol' + (!cards.length ? ' is-empty' : '') +
+        (c.wip && cards.length > c.wip ? ' is-over' : '');
+      col.setAttribute('data-col', c.key);
+      col.innerHTML = '<div class="bcol-head"><h3>' + esc(c.name) + '</h3>' +
+        '<span class="bcol-n">' + cards.length + (c.wip ? ' / ' + c.wip : '') + '</span></div>' +
+        '<div class="bcards"></div>';
+      var list = col.querySelector('.bcards');
+      if (!cards.length) list.innerHTML = '<p class="bcol-empty">None.</p>';
+      cards.forEach(function (t) { list.appendChild(cardOf(t)); });
+      board.appendChild(col);
+    });
+    box.appendChild(board);
+  }
+  /* A card is the row, stood up: the number and the due date on the first
+     line, the title as what opens the task, the client and the owner under
+     it, and the same stage select at the foot, through the same function
+     and the same gates, with a refusal named on the card. */
+  function cardOf(t) {
+    var el = document.createElement('div');
+    el.className = 'bcard' + (isFinished(t) ? ' is-off' : '');
+    var over = !isFinished(t) && daysAway(t.current_final_due_at) < 0;
+    var meta = [(t.clients && t.clients.name) || (t.scope === 'internal' ? 'Internal' : ''),
+                state.owners[t.id]].filter(Boolean).join(' · ');
+    el.innerHTML =
+      '<div class="bcard-top"><span class="bcard-no">T' + esc(String(t.task_no)) + '</span>' +
+        (t.current_final_due_at ? '<span class="bcard-due' + (over ? ' is-over' : '') + '">' +
+          esc(shortDate(t.current_final_due_at)) + '</span>' : '') + '</div>' +
+      '<button class="bcard-title" type="button">' + esc(t.title) + '</button>' +
+      (meta ? '<div class="bcard-meta">' + esc(meta) + '</div>' : '') +
+      '<div class="bcard-foot">' + stageCell(t) + '</div>';
+    el.querySelector('.bcard-title').addEventListener('click', function () { openTask(t.id, true); });
+    var sel = el.querySelector('.state-select');
+    if (sel) sel.addEventListener('change', function () { rowMove(t, el, sel); });
+    return el;
+  }
+
+  // ---- The calendar --------------------------------------------------------
+  /* The commitments on the days they fall. One date a task, the final due
+     date, because that is the promise the queue is ordered by and the rail
+     states the rest; a chip is the task at the size a cell can hold and a
+     press opens it. */
+  function monthStart(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
+  function sameDay(a, b) { return a && b && a.getTime() === b.getTime(); }
+  function paintCalendar(rows) {
+    var box = $('workCal');
+    if (!state.month) state.month = monthStart(new Date());
+    var m = state.month, today = todayStart();
+    var byDay = {};
+    rows.forEach(function (t) {
+      var d = dayOf(t.current_final_due_at);
+      if (!d) return;
+      (byDay[d.getTime()] = byDay[d.getTime()] || []).push(t);
+    });
+    var title = m.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+    /* The short month draws under 360px, where "September 2026" with its two
+       arrows and Today ran past the gutter; the day labels already say Sept. */
+    var short = m.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }).replace(/^Sep /, 'Sept ');
+    var chev = function (path) {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + path + '"/></svg>';
+    };
+    var html = '<div class="calbar">' +
+      '<button class="btn btn-sm iconbtn" data-cal="prev" type="button" aria-label="Previous month">' + chev('M15 18l-6-6 6-6') + '</button>' +
+      '<h3><span class="cal-mlong">' + esc(title) + '</span><span class="cal-mshort">' + esc(short) + '</span></h3>' +
+      '<button class="btn btn-sm iconbtn" data-cal="next" type="button" aria-label="Next month">' + chev('M9 18l6-6-6-6') + '</button>' +
+      '<button class="btn btn-sm btn-quiet" data-cal="today" type="button">Today</button>' +
+      '</div>';
+    var first = new Date(m), start = new Date(m);
+    /* Monday first, as this team's week is. */
+    start.setDate(first.getDate() - ((first.getDay() + 6) % 7));
+    var end = new Date(m.getFullYear(), m.getMonth() + 1, 0);
+    end.setDate(end.getDate() + (7 - ((end.getDay() + 6) % 7) - 1));
+    var cells = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(function (d) {
+      return '<div class="cal-dow">' + d + '</div>';
+    }).join('');
+    for (var d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      var k = d.getTime(), list = byDay[k] || [];
+      var out = d.getMonth() !== m.getMonth();
+      var cls = 'cal-day' + (out ? ' is-out' : '') + (sameDay(d, today) ? ' is-today' : '') +
+        ((d.getDay() === 0 || d.getDay() === 6) ? ' is-weekend' : '') + (!list.length ? ' is-empty' : '');
+      var chips = list.slice(0, 3).map(function (t) {
+        var late = !isFinished(t) && d < today;
+        return '<button class="cal-chip btn-sm ' + stageTone(t) + (late ? ' is-late' : '') + '" type="button" data-task="' + esc(t.id) + '">' +
+          esc(t.title) + '</button>';
+      }).join('') + (list.length > 3 ? '<span class="cal-more">+' + (list.length - 3) + ' more</span>' : '');
+      cells += '<div class="' + cls + '" data-day="' + esc(d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2)) + '">' +
+        '<span class="cal-num"><small>' + esc(d.toLocaleDateString('en-GB', { weekday: 'short' })) + '</small>' +
+          '<b>' + d.getDate() + '</b><small>' + esc(d.toLocaleDateString('en-GB', { month: 'short' })) + '</small></span>' +
+        chips + '</div>';
+    }
+    box.innerHTML = html + '<div class="cal">' + cells + '</div>';
+    box.querySelector('[data-cal="prev"]').addEventListener('click', function () {
+      state.month = new Date(m.getFullYear(), m.getMonth() - 1, 1); paintCalendar(rows);
+    });
+    box.querySelector('[data-cal="next"]').addEventListener('click', function () {
+      state.month = new Date(m.getFullYear(), m.getMonth() + 1, 1); paintCalendar(rows);
+    });
+    box.querySelector('[data-cal="today"]').addEventListener('click', function () {
+      state.month = monthStart(new Date()); paintCalendar(rows);
+    });
+    Array.prototype.forEach.call(box.querySelectorAll('.cal-chip'), function (b) {
+      b.addEventListener('click', function () { openTask(b.getAttribute('data-task'), true); });
+    });
+  }
+
+  // ---- Capacity ------------------------------------------------------------
+  /* The week's recorded hours against each person's capacity. A planning
+     figure beside the record of what was pressed: nothing here measures
+     attention, and a week with no sessions is a week nobody pressed Start.
+     Own week alone without `ops.all`; the team's with it. */
+  function weekStart() {
+    var d = todayStart();
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d;
+  }
+  function loadCapacity() {
+    db.from('ops_work_sessions').select('team_member_id, minutes, started_at, ended_at')
+      .gte('started_at', weekStart().toISOString())
+      .then(function (r) {
+        state.week = (r && r.data) || [];
+        paintCapacity();
+      }, function () { state.week = []; paintCapacity(); });
+  }
+  function paintCapacity() {
+    var box = $('workCap');
+    if (!box || state.view !== 'board') return;
+    var me = bridge.me && bridge.me();
+    var team = may('ops.all', 'view');
+    var mins = {};
+    state.week.forEach(function (s) {
+      var n = Number(s.minutes) || (s.started_at && !s.ended_at ? Math.max(0, (Date.now() - new Date(s.started_at)) / 60000) : 0);
+      mins[s.team_member_id] = (mins[s.team_member_id] || 0) + n;
+    });
+    var open = {};
+    (state.tasks || []).forEach(function (t) {
+      if (isFinished(t) || !state.ownerIds[t.id]) return;
+      open[state.ownerIds[t.id]] = (open[state.ownerIds[t.id]] || 0) + 1;
+    });
+    var people = state.members.filter(function (m) {
+      if (!team) return me && m.id === me.id;
+      return m.capacity_minutes_week || mins[m.id] || open[m.id];
+    });
+    if (!people.length) { box.innerHTML = ''; return; }
+    var hours = function (n) { return (Math.round(n / 30) / 2) + 'h'; };
+    box.innerHTML = '<div class="capstrip">' + people.map(function (m) {
+      var used = mins[m.id] || 0, cap = m.capacity_minutes_week || 0;
+      var pct = cap ? Math.min(100, Math.round(used / cap * 100)) : 0;
+      return '<div class="caprow' + (cap && used > cap ? ' is-over' : '') + '">' +
+        '<span class="caprow-name">' + esc(m.name) + '</span>' +
+        '<span class="caprow-fig">' + hours(used) + (cap ? ' of ' + hours(cap) : ' · no capacity set') +
+          (open[m.id] ? ' · ' + open[m.id] + ' open' : '') + '</span>' +
+        '<span class="capbar"><i style="width:' + pct + '%"></i></span></div>';
+    }).join('') + '</div>';
+  }
+
+  // ---- The view ------------------------------------------------------------
+  /* The segment and the bar's controls follow the view: Group by is the
+     list's axis and the workflow select is the board's, so each draws only
+     with its view. */
+  function applyView(v) {
+    state.view = v === 'board' || v === 'calendar' ? v : 'list';
+    var seg = $('workViews');
+    if (seg) Array.prototype.forEach.call(seg.querySelectorAll('.acttab'), function (b) {
+      var on = b.getAttribute('data-view') === state.view;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    if ($('workGroup')) $('workGroup').hidden = state.view !== 'list';
+    if ($('workWf')) $('workWf').hidden = state.view !== 'board';
+    if (state.view === 'board') loadCapacity();
+  }
+  function setView(v) {
+    applyView(v);
+    paint();
+    if (bridge.setUrl) bridge.setUrl();
   }
 
   /* THE COMMONEST ACT ON THIS LIST IS MOVING A STAGE, so the stage cell is
@@ -1358,6 +1609,14 @@
     if (pd) pd.addEventListener('change', function () { state.period = pd.value; load(); });
     var sc = $('workScope');
     if (sc) sc.addEventListener('change', function () { state.scope = sc.value; paint(); });
+    var vw = $('workViews');
+    if (vw) vw.addEventListener('click', function (e) {
+      var b = e.target.closest('.acttab');
+      if (b) setView(b.getAttribute('data-view'));
+    });
+    var wfs = $('workWf');
+    if (wfs) wfs.addEventListener('change', function () { state.wf = wfs.value; paint(); });
+    wireBell();
     var nw = $('workNew');
     if (nw) nw.addEventListener('click', openNew);
     var back = $('workBack');
@@ -1524,6 +1783,7 @@
     var q = {};
     if (state.openId) q.task = state.openId;
     if (state.openId && state.pane !== 'overview') q.pane = state.pane;
+    if (!state.openId && state.view !== 'list') q.view = state.view;
     return q;
   }
 
@@ -1551,6 +1811,7 @@
     var params = new URLSearchParams(location.search);
     var want = params.get('task');
     var pane = params.get('pane') || 'overview';
+    applyView(params.get('view') || 'list');
     load();
     if (!want) { $('workList').hidden = false; $('workRec').hidden = true; if (bridge.setUrl) bridge.setUrl(); return; }
     loadCatalogue(function () {
@@ -1559,8 +1820,94 @@
     });
   }
 
+  // ---- The bell --------------------------------------------------------------
+  /* A change somebody else made to a task you own, written by the database
+     beside the event that caused it. Drawn on every route for anybody who can
+     read My Work; the count is the unread rows and nothing else. Pressing one
+     opens the task and marks the row read, which is the one write a browser
+     makes to this table directly. */
+  function signedIn() {
+    var wrap = $('notifWrap');
+    if (!wrap) return;
+    wrap.hidden = !may('ops', 'view');
+    if (!wrap.hidden) loadNotifs();
+  }
+  function loadNotifs() {
+    var me = bridge.me && bridge.me();
+    if (!me || !me.id) return;
+    db.from('ops_notifications').select('*').eq('team_member_id', me.id)
+      .is('read_at', null).order('created_at', { ascending: false }).limit(30)
+      .then(function (r) {
+        state.notifs = (r && !r.error && r.data) || [];
+        paintNotifs();
+      }, function () {});
+  }
+  function paintNotifs() {
+    var n = state.notifs.length, count = $('notifCount'), list = $('notifList');
+    if (count) { count.hidden = !n; count.textContent = n > 30 ? '30+' : String(n); }
+    var btn = $('notifBtn');
+    if (btn) btn.setAttribute('aria-label', n ? 'Notifications, ' + n + ' unread' : 'Notifications');
+    if ($('notifAll')) $('notifAll').hidden = !n;
+    if (!list) return;
+    list.innerHTML = n ? state.notifs.map(function (x) {
+      return '<button class="notif-item" type="button" data-id="' + esc(x.id) + '">' +
+        '<b>' + esc(x.title || '') + '</b>' +
+        (x.body ? '<span>' + esc(x.body) + '</span>' : '') +
+        '<small>' + esc(niceTime(x.created_at)) + '</small></button>';
+    }).join('') : '<p class="notif-empty">Nothing unread.</p>';
+    Array.prototype.forEach.call(list.querySelectorAll('.notif-item'), function (b) {
+      b.addEventListener('click', function () { openNotif(b.getAttribute('data-id')); });
+    });
+  }
+  function markRead(ids) {
+    var now = new Date().toISOString();
+    state.notifs = state.notifs.filter(function (x) { return ids.indexOf(x.id) < 0; });
+    paintNotifs();
+    ids.forEach(function (id) {
+      db.from('ops_notifications').update({ read_at: now }).eq('id', id).then(function () {}, function () {});
+    });
+  }
+  function openNotif(id) {
+    var x = state.notifs.filter(function (n) { return n.id === id; })[0];
+    if (!x) return;
+    shutBell();
+    markRead([id]);
+    if (!x.task_id) return;
+    /* The address first, because My Work reads it on entry. */
+    history.replaceState(null, '', '/admin/?s=work&task=' + encodeURIComponent(x.task_id));
+    if (bridge.show) bridge.show('work');
+  }
+  function shutBell() {
+    var menu = $('notifMenu'), btn = $('notifBtn');
+    if (menu) menu.hidden = true;
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+  function wireBell() {
+    var btn = $('notifBtn'), menu = $('notifMenu');
+    if (!btn || !menu) return;
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = menu.hidden;
+      if (open) loadNotifs();
+      menu.hidden = !open;
+      btn.setAttribute('aria-expanded', String(open));
+      if (open) { var first = menu.querySelector('.notif-item, #notifAll'); if (first) first.focus(); }
+    });
+    document.addEventListener('click', function (e) {
+      if (!menu.hidden && !e.target.closest('#notifWrap')) shutBell();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !menu.hidden) { shutBell(); btn.focus(); }
+    });
+    var all = $('notifAll');
+    if (all) all.addEventListener('click', function () {
+      markRead(state.notifs.map(function (x) { return x.id; }));
+    });
+  }
+
   wire();
   showPane('overview', false);
-  window.ADspaceOps = { enter: enter, urlState: urlState };
+  window.ADspaceOps = { enter: enter, urlState: urlState, signedIn: signedIn };
   if (bridge.opsReady) bridge.opsReady();
+  if (bridge.me && bridge.me()) signedIn();
 })();
