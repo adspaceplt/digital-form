@@ -135,7 +135,28 @@ The queue is banded by when the work is owed — Overdue, Due today, Due this
 week, Later, No date set — because that is what orders a day. Later is shut by
 default and so is Finished, which the stage filter has to ask for. The bar
 carries a search, whose queue (only where `ops.all` is granted), a stage
-filter, the count and **New task**.
+filter, **Group by**, the count and **New task**.
+
+### At volume
+
+Eight contents a week across thirty clients is about 290 tasks a month. Three
+things carry that:
+
+- **The read is bounded, and open work is not part of the bound.** Open work
+  is read in full however old it is, because a task overdue since August is
+  the first thing the queue exists to show. Finished work — the part that
+  grows without limit — is read from the chosen period onward. The period
+  select appears only while finished work can be on the page, which is the
+  only time it governs anything.
+- **Group by** re-bands the same rows: by due date, by client, by stage or by
+  owner. Off the due axis every card is shut, so 290 rows read as thirty
+  client headings with a count and an overdue mark each. That is the axis the
+  spreadsheet always used, and it is the one to reach for when the question is
+  "how is October going" rather than "what do I do today".
+- **Thirty rows a card**, then `Show N more`.
+
+A folded card is remembered per axis: a client card shut under By client says
+nothing about a stage card under By stage.
 
 A task opens as a workspace on the same shape a client and a campaign use:
 the number as its mark, the title, the stage as a chip beside the ⋯, and one
@@ -149,6 +170,9 @@ Three things worth knowing:
   workflow allows sits in the select beside it. Which move is forward is the
   workflow's own to say: the stage nearest ahead by position, skipping the
   lanes beside the main line (blocked, waiting, KIV, cancelled).
+- **A stage moves from the queue row too**, through the same function and the
+  same gates, with the refusal named under the row. Blocked is not offered
+  there, because it needs a category before it means anything.
 - **Every refusal is named in the team's words**, not the database's. "Client
   review needs a draft or review link", never `needs-draft`.
 - **The timer is one open session a person, across every task.** Starting one

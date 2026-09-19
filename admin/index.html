@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260922a">
+<link rel="stylesheet" href="/css/portal.css?v=20260922c">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,22 +28,22 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260922a"></script>
-<script src="/js/words.js?v=20260922a"></script>
-<script src="/js/copy.js?v=20260922a"></script>
-<script src="/js/ask.js?v=20260922a"></script>
-<script src="/js/state.js?v=20260922a"></script>
-<script src="/js/group.js?v=20260922a"></script>
-<script src="/js/menu.js?v=20260922a"></script>
-<script src="/js/api.js?v=20260922a"></script>
-<script src="/js/money.js?v=20260922a"></script>
-<script src="/js/mockups.js?v=20260922a"></script>
+<script src="/js/config.js?v=20260922c"></script>
+<script src="/js/words.js?v=20260922c"></script>
+<script src="/js/copy.js?v=20260922c"></script>
+<script src="/js/ask.js?v=20260922c"></script>
+<script src="/js/state.js?v=20260922c"></script>
+<script src="/js/group.js?v=20260922c"></script>
+<script src="/js/menu.js?v=20260922c"></script>
+<script src="/js/api.js?v=20260922c"></script>
+<script src="/js/money.js?v=20260922c"></script>
+<script src="/js/mockups.js?v=20260922c"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260922a" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260922c" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -173,8 +173,14 @@
           <select class="select select-sm" id="crmOwner" aria-label="Filter by person in charge">
             <option value="all">Everyone</option>
           </select>
-          <span class="cmdbar-count" id="crmCount"></span>
-          <button class="btn btn-sm btn-primary" id="crmNew" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add lead</button>
+          <span class="cmdbar-end">
+            <span class="cmdbar-quiet">
+              <span class="cmdbar-count" id="crmCount"></span>
+            </span>
+            <span class="cmdbar-acts">
+              <button class="btn btn-sm btn-primary" id="crmNew" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add lead</button>
+            </span>
+          </span>
         </div>
 
         <div class="panel" id="crmAddBox" hidden>
@@ -789,8 +795,14 @@
         <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
         <input class="input input-sm" id="crFind" type="search" placeholder="Search clients" aria-label="Search clients">
       </span>
-      <span class="cmdbar-count" id="crCount"></span>
-      <button class="btn btn-sm" id="goToCrm" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 11h4v10"/><path d="M7 21v-4h5v4"/></svg>Manage clients</button>
+      <span class="cmdbar-end">
+        <span class="cmdbar-quiet">
+          <span class="cmdbar-count" id="crCount"></span>
+        </span>
+        <span class="cmdbar-acts">
+          <button class="btn btn-sm" id="goToCrm" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 11h4v10"/><path d="M7 21v-4h5v4"/></svg>Manage clients</button>
+        </span>
+      </span>
     </div>
     <div class="msg" id="clientMsg"></div>
     <div id="clientCards"></div>
@@ -1074,8 +1086,14 @@
           <select class="select select-sm" id="campStatePick" aria-label="Filter by state">
             <option value="all">Every state</option>
           </select>
-          <span class="cmdbar-count" id="campCount"></span>
-          <button class="btn btn-sm btn-primary" id="showAddCamp" data-need="campaigns.campaigns:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New campaign</button>
+          <span class="cmdbar-end">
+            <span class="cmdbar-quiet">
+              <span class="cmdbar-count" id="campCount"></span>
+            </span>
+            <span class="cmdbar-acts">
+              <button class="btn btn-sm btn-primary" id="showAddCamp" data-need="campaigns.campaigns:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New campaign</button>
+            </span>
+          </span>
         </div>
 
         <div id="campCards"></div>
@@ -1408,8 +1426,14 @@
             <option value="tiktok">TikTok</option>
             <option value="facebook">Facebook</option>
           </select>
-          <span class="cmdbar-count" id="rosterCount"></span>
-          <button class="btn btn-sm btn-primary" id="showAddCreator" data-need="campaigns.creators:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creator</button>
+          <span class="cmdbar-end">
+            <span class="cmdbar-quiet">
+              <span class="cmdbar-count" id="rosterCount"></span>
+            </span>
+            <span class="cmdbar-acts">
+              <button class="btn btn-sm btn-primary" id="showAddCreator" data-need="campaigns.creators:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creator</button>
+            </span>
+          </span>
         </div>
         <div id="rosterList"></div>
       </div>
@@ -1446,8 +1470,34 @@
             <option value="done">Finished</option>
             <option value="">Everything</option>
           </select>
-          <span class="cmdbar-count" id="workCount"></span>
-          <button class="btn btn-sm btn-primary" id="workNew" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New task</button>
+          <!-- The axis. Banding by when work is owed answers "what do I do
+               today" and cannot answer "how is October going" or "what is
+               stuck at client review": two hundred rows under Later are
+               unreadable whatever shape they are. Same rows, same card, a
+               different question. -->
+          <select class="select select-sm" id="workGroup" aria-label="Group by">
+            <option value="due">By due date</option>
+            <option value="client">By client</option>
+            <option value="stage">By stage</option>
+            <option value="owner">By owner</option>
+          </select>
+          <!-- How far back finished work is read. Open work is never bounded
+               by it, so nothing overdue can fall out of the queue however old
+               it is. It draws only while finished work is being asked for,
+               because that is the only time it governs anything. -->
+          <select class="select select-sm" id="workPeriod" aria-label="How far back to read finished work" hidden>
+            <option value="month">This month</option>
+            <option value="q">Last 3 months</option>
+            <option value="year">This year</option>
+          </select>
+          <span class="cmdbar-end">
+            <span class="cmdbar-quiet">
+              <span class="cmdbar-count" id="workCount"></span>
+            </span>
+            <span class="cmdbar-acts">
+              <button class="btn btn-sm btn-primary" id="workNew" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New task</button>
+            </span>
+          </span>
         </div>
         <div class="msg" id="workMsg"></div>
         <div id="workQueue"></div>
@@ -1760,9 +1810,15 @@
           <option value="oldest">Oldest first</option>
           <option value="reference">By reference</option>
         </select>
-        <span class="cmdbar-count" id="regCount"></span>
-        <button class="btn btn-sm" id="regAdd" type="button" hidden>Add entry</button>
-        <button class="btn btn-sm btn-primary" id="regIssue" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
+        <span class="cmdbar-end">
+          <span class="cmdbar-quiet">
+            <span class="cmdbar-count" id="regCount"></span>
+          </span>
+          <span class="cmdbar-acts">
+            <button class="btn btn-sm" id="regAdd" type="button" hidden>Add entry</button>
+            <button class="btn btn-sm btn-primary" id="regIssue" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
+          </span>
+        </span>
       </div>
       <div class="msg" id="regMsg"></div>
       <div id="regList"></div>
@@ -1782,8 +1838,14 @@
           <input class="input input-sm" id="teamFind" type="search" placeholder="Search name or sign-in email" aria-label="Search members">
         </span>
         <select class="select select-sm" id="teamGroupPick" aria-label="Group"></select>
-        <span class="cmdbar-count" id="teamCount"></span>
-        <button class="btn btn-sm btn-primary" id="teamAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add member</button>
+        <span class="cmdbar-end">
+          <span class="cmdbar-quiet">
+            <span class="cmdbar-count" id="teamCount"></span>
+          </span>
+          <span class="cmdbar-acts">
+            <button class="btn btn-sm btn-primary" id="teamAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add member</button>
+          </span>
+        </span>
       </div>
 
       <div class="panel" id="teamAddBox" hidden>
@@ -1854,8 +1916,14 @@
           <input class="input input-sm" id="svcFind" type="search" placeholder="Search the rate card" aria-label="Search the rate card">
         </span>
         <select class="select select-sm" id="svcFilter" aria-label="Category"></select>
-        <span class="cmdbar-count" id="svcCount"></span>
-        <button class="btn btn-sm btn-primary" id="svcAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
+        <span class="cmdbar-end">
+          <span class="cmdbar-quiet">
+            <span class="cmdbar-count" id="svcCount"></span>
+          </span>
+          <span class="cmdbar-acts">
+            <button class="btn btn-sm btn-primary" id="svcAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
+          </span>
+        </span>
       </div>
       <div class="panel" id="svcBox" hidden>
         <div class="panelhead"><h3 id="svcTitle">New service</h3></div>
@@ -1946,9 +2014,15 @@ raya-2026        https://example.com/raya"></textarea>
           <option value="live">Live</option>
           <option value="paused">Paused</option>
         </select>
-        <span class="cmdbar-count" id="linkCount"></span>
-        <button class="btn btn-sm btn-quiet" id="showImport" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>Bulk import</button>
-        <button class="btn btn-sm btn-primary" id="showAddLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
+        <span class="cmdbar-end">
+          <span class="cmdbar-quiet">
+            <span class="cmdbar-count" id="linkCount"></span>
+          </span>
+          <span class="cmdbar-acts">
+            <button class="btn btn-sm btn-quiet" id="showImport" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>Bulk import</button>
+            <button class="btn btn-sm btn-primary" id="showAddLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
+          </span>
+        </span>
       </div>
 
       <div id="linkList"></div>
@@ -2240,13 +2314,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260922a"></script>
-<script src="/js/documents.js?v=20260922a"></script>
-<script src="/js/letters.js?v=20260922a"></script>
-<script src="/js/register.js?v=20260922a"></script>
-<script src="/js/crm.js?v=20260922a"></script>
-<script src="/js/team.js?v=20260922a"></script>
-<script src="/js/campaigns.js?v=20260922a"></script>
-<script src="/js/ops.js?v=20260922a"></script>
+<script src="/js/admin.js?v=20260922c"></script>
+<script src="/js/documents.js?v=20260922c"></script>
+<script src="/js/letters.js?v=20260922c"></script>
+<script src="/js/register.js?v=20260922c"></script>
+<script src="/js/crm.js?v=20260922c"></script>
+<script src="/js/team.js?v=20260922c"></script>
+<script src="/js/campaigns.js?v=20260922c"></script>
+<script src="/js/ops.js?v=20260922c"></script>
 </body>
 </html>

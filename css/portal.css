@@ -3391,17 +3391,25 @@ body > .shell { width: 100%; }
    its worst case, `30 Sept · 12 days over` at 146px, because an `auto` track
    is sized by its own row and a due date that starts somewhere different on
    every line is what reads as unaligned however neatly each row is built. */
-/* The whole row is one control, with nothing nested in it, so it is the
-   target from a pointer and from the keyboard alike and answers under a
-   finger the way every other control in this portal does. */
-.task-row {
-  grid-template-columns: minmax(0, 1fr) var(--state-w) 140px 150px var(--ctl-h);
-  width: 100%; text-align: left; background: var(--card); border: 0;
-  font: inherit; color: inherit; cursor: pointer;
+/* The row carries the stage select, so it is a row and not one button: a
+   control inside a control is one a screen reader trips over. What opens the
+   task is the name cell, which is the widest, runs the row's full height and
+   is where the eye already is. */
+.task-row { grid-template-columns: minmax(0, 1fr) var(--state-w) 140px 150px; }
+.task-open {
+  display: flex; flex-direction: column; justify-content: center; gap: 2px;
+  min-width: 0; align-self: stretch; margin: -10px 0; padding: 10px 0;
+  border: 0; background: none; font: inherit; color: inherit;
+  text-align: left; cursor: pointer;
 }
-@media (hover: hover) { .task-row:hover { background: var(--sunk); } }
-.task-row:active { transform: scale(.997); }
+.task-open b { font-size: 14px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.task-open small { font-size: 12px; color: var(--ink-mute); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (hover: hover) { .task-open:hover b { text-decoration: underline; text-underline-offset: 2px; } }
+.task-open:active { transform: scale(.997); }
 .task-stage { min-width: 0; }
+.task-stage .state-select { width: 100%; }
+/* The refusal a stage move met, under the row it was made on. */
+.task-note { margin: 0; padding: 0 15px 10px; }
 .task-owner { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .task-due { font-size: 13px; color: var(--ink-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
 /* Overdue carries the word as well as the colour, so the mark survives
@@ -3633,21 +3641,20 @@ body > .shell { width: 100%; }
 /* A phone task row is a two column table, not a card with things pushed
    right: who and what on the left, where it stands over when it is owed on
    the right. The right track is fixed and measured against its worst case,
-   the `Waiting for client` chip at 122px, so the state starts at the same x
-   on every row; both cells stretch and align right, so the card has two
-   margins rather than one ragged one. The owner leaves with the chevron:
-   the scope select above already answers whose queue this is, and the whole
-   row is the control, so the chevron was a mark and not a target. */
+   the `Waiting for client` chip at 122px and the state select's own 124px, so
+   the state starts at the same x on every row; both cells stretch and align
+   right, so the card has two margins rather than one ragged one. The owner
+   leaves: the scope select above already answers whose queue this is, and a
+   phone row spends its width on what somebody came for. */
 .is-narrow .task-row {
   grid-template-columns: minmax(0, 1fr) 132px;
   grid-template-areas: "name stage" "name due";
   row-gap: 4px; align-items: start;
 }
-.is-narrow .task-row > .svc-name { grid-area: name; align-self: center; }
+.is-narrow .task-row > .task-open { grid-area: name; align-self: center; }
 .is-narrow .task-row > .task-stage { grid-area: stage; justify-self: stretch; text-align: right; }
 .is-narrow .task-row > .task-due { grid-area: due; justify-self: stretch; text-align: right; }
-.is-narrow .task-row > .task-owner,
-.is-narrow .task-row > .task-go { display: none; }
+.is-narrow .task-row > .task-owner { display: none; }
 .is-narrow .tlink-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "kind kind"; }
 .is-narrow .tlink-row > .tlink-kind { grid-area: kind; }
 .is-narrow .tsess-row { grid-template-columns: minmax(0, 1fr) 110px; grid-template-areas: "name mins" "who mins"; }
@@ -4394,6 +4401,11 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .routeintro-text { margin: 0; flex: 1 1 auto; min-width: 0; }
 .routeintro-hide { flex: 0 0 auto; min-width: 0; }
 .routeintro + * { margin-top: 0 !important; }
+/* The `?` reopens the route's own line, so it belongs beside the count that
+   says what is on the page, never out on its own. It is inserted into
+   `.cmdbar-end` directly after the count, and that group's own gap spaces
+   it; it carries no margin of its own, because an auto margin here is what
+   once left it stranded in the middle of the bar. */
 .cmdbar-help { flex: 0 0 auto; min-width: var(--ctl-h-sm); width: var(--ctl-h-sm); padding: 0; font-weight: 600; }
 @media (max-width: 640px) {
   .routeintro { align-items: flex-start; }
@@ -4528,26 +4540,81 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   width: 15px; height: 15px; stroke: var(--ink-mute); stroke-width: 1.8; fill: none;
   pointer-events: none;
 }
+/* 164px is measured against the longest option any command bar draws,
+   `Waiting or blocked` at 157px with its padding and chevron. It was 172,
+   which is eight pixels of slack every bar paid for and which put My Work's
+   third select four pixels past the row at 1280, wrapping the one action
+   onto a line of its own at the left margin. A bar's width is shared, so the
+   fix is the shared value and not an exception for the crowded route. */
 .cmdbar .select {
-  flex: 0 0 auto; width: auto; min-width: 172px; max-width: 220px;
+  flex: 0 0 auto; width: auto; min-width: 164px; max-width: 220px;
   border-radius: var(--radius-ctl);
 }
 .cmdbar .btn { flex: 0 0 auto; width: auto; border-radius: var(--radius-ctl); }
-/* The count sits with the list it counts; the one action ends the row. */
+/* What the list holds and what to do about it: the count, the `?` and the
+   route's one or two actions, as ONE element rather than three to five loose
+   ones. The bar is a wrapping flex row of unlike things, and loose items wrap
+   differently on every route — Services put the count and the `?` mid-row
+   with the action stranded underneath, Documents crammed four things onto the
+   last line, My Work pushed its one action onto a fourth row at the left
+   margin. A group cannot be split by a wrap, so the composition is the same
+   on all nine bars at every width, and it is stated in the markup rather than
+   guessed at with auto margins and `:nth-of-type` counting. */
+.cmdbar-end {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  justify-content: flex-end; flex: 0 1 auto; margin-left: auto; min-width: 0;
+}
+/* Two groups inside it, each unsplittable: what the list holds, and what to
+   do about it. Left as four loose children the group could not wrap at all,
+   so at 320 Documents' two actions ran 72px off the page; wrapping them
+   freely puts Add entry on the count's line and strands Issue document
+   underneath, which is the fault this whole element exists to end. Two
+   groups wrap as two: the pair goes first and the actions follow, right
+   aligned, on their own line when the width cannot hold both. */
+.cmdbar-quiet, .cmdbar-acts { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.cmdbar-quiet { margin-right: auto; }
+/* The count sits with the list it counts; the one action ends the row. A
+   count with nothing in it is not a count: left drawn it is still a flex
+   item, so it spent the group's 10px gap indenting the `?` beside it. */
 .cmdbar-count {
-  flex: 0 0 auto; margin-left: auto; font-size: 12px; color: var(--ink-mute);
+  flex: 0 0 auto; font-size: 12px; color: var(--ink-mute);
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
+.cmdbar-count:empty { display: none; }
 @media (max-width: 640px) {
+  /* THREE ROWS, AND EACH ONE IS THE SAME ROW ON EVERY ROUTE.
+     A wrapping flex row of six unlike things — a search box, nought to four
+     filters, a count, the `?` and one or two actions — wraps differently on
+     every route in the console, and the auto margins that pushed things to
+     the ends left holes in the middle of whatever row they landed on. That
+     is why the bar read as positioned at random: Services put the count and
+     the `?` mid-row with the action stranded underneath, Documents crammed
+     four things onto the last line, and Content Review left one outlined
+     button alone against an empty half.
+
+     So the rows are stated instead. The search takes the first, because it
+     is the one control that wants the width. The filters follow two to a
+     row at equal halves, so two look like two and four look like four
+     rather than like whatever was left over. The count and the `?` anchor
+     the last row on the left and the actions anchor it on the right, which
+     is the same composition the desk gets and the reason no action is ever
+     left exposed on a line of its own. */
   .cmdbar-find { flex: 1 1 100%; max-width: none; }
-  .cmdbar .select { flex: 1 1 auto; max-width: none; }
+  /* Two to a row at equal halves, so two read as two and four read as four
+     rather than as whatever was left over. A filter with no partner grows to
+     the full width by itself, because it is alone on its line and every
+     select may grow; nothing has to count them. */
+  .cmdbar .select { flex: 1 1 calc(50% - 5px); max-width: none; }
+  /* The last row, always its own row: the count and the `?` on the left, the
+     actions on the right, one auto margin between them. A basis of 100% is
+     what guarantees it cannot share a line with a leftover filter, which is
+     how My Work's one action ended up alone at the left margin of a fourth
+     row. */
+  .cmdbar-end { flex: 1 1 100%; margin-left: 0; }
   /* Never full width. An action stretched across a phone is the heaviest
      thing on the screen, sitting on top of the records somebody came to
      read; this portal's section heads have refused that for months. */
-  .cmdbar .btn { flex: 0 0 auto; order: 10; margin-left: auto; }
-  /* The count shares the action's line rather than taking one of its own: a
-     phone spends four rows on the bar before the first record otherwise. */
-  .cmdbar-count { order: 9; margin-left: 0; }
+  .cmdbar .btn { flex: 0 0 auto; }
 }
 
 /* A bounded section, softly. One 1px hairline and a 14px corner, no shadow:
@@ -4899,7 +4966,11 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .rectabs {
   grid-area: tabs; display: flex; gap: 2px; flex-wrap: nowrap;
   overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch;
-  border-bottom: 1px solid var(--line); margin-bottom: 4px;
+  /* One block gap under the strip, the same step `.tabrow` takes at the top
+     of Campaigns: two tab strips in one console standing 4px and 12px above
+     their content is the kind of difference nobody can name and everybody
+     sees. */
+  border-bottom: 1px solid var(--line); margin-bottom: 12px;
 }
 .rectabs::-webkit-scrollbar { display: none; }
 .rectabs .tab { flex: 0 0 auto; }
@@ -4920,12 +4991,16 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   .camp-client-tools > .row { flex-wrap: wrap; }
 }
 /* The first block in a pane sits as far from the tabs as two blocks sit from
-   each other: the law of the stack does not stop at a tab strip. */
+   each other: the law of the stack does not stop at a tab strip. THE STEP IS
+   THE STRIP'S, and only the strip's (`.rectabs { margin-bottom }`), the way
+   `.tabrow` already owned it at the top of Campaigns. It used to be split —
+   4px on the strip and 12px on whichever first child remembered to ask for
+   it — so the client record stood 16px off its tabs, the task record 4px,
+   and Campaigns 12px: three strips, three gaps, and nothing on the page
+   saying which was meant. One owner, one value, every pane. */
 .rec-pane > :first-child { margin-top: 0; }
-.rec-pane > .viewhead:first-child { margin-top: 12px; }
-/* The summary carries no heading of its own, so the card itself takes that
-   step off the tab strip. */
-#crmSummary:first-child { display: block; margin-top: 12px; }
+.rec-pane > .viewhead:first-child { margin-top: 0; }
+#crmSummary:first-child { display: block; margin-top: 0; }
 .rec-rail { grid-area: rail; min-width: 0; }
 .rec-rail > .facts { margin: 0 0 12px; }
 .rec-rail .railblock > .facts { margin: 0; }
@@ -4984,9 +5059,14 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 /* The tab strip scrolls sideways rather than wrapping to three rows: seven
    words at 390 is two and a half lines of chrome above the work. */
 @media (max-width: 640px) {
-  /* The strip already scrolls; on a phone it also bleeds to the gutter, so a
-     tab is not clipped by the page padding. */
-  .rectabs { margin-inline: -16px; padding-inline: 16px; }
+  /* The strip sits inside the page gutter like every other block, and its
+     rule therefore lands on the same two margins as the rail's dividers and
+     the card below it. It used to bleed (`margin-inline: -16px`) so a tab
+     scrolling out faded to the screen edge rather than being cut at the
+     gutter — a nicety that cost the one thing a hairline is for: at 390 the
+     rule ran 0 to 390 while every sibling ran 16 to 374, so the page had two
+     margins and the line under the tabs had none. `.tabrow` never bled, and
+     a scroller cut at the gutter is what the rest of this portal does. */
   .rec-rail .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 

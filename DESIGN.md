@@ -453,7 +453,7 @@ measures the table whenever its header is not on screen (`padding`).
 | What a record is waiting on | One line under the identity (`.camp-next`), derived on every repaint and never stored: a state written once by the action that caused it goes stale the moment somebody reverts |
 | One of many, then the one | A **queue** and an open record (`.queue` > `.qrow`, the creator's page): the queue orders by what has to be done, marks the one that needs the reader, and opens it by itself; the open one is in the address. Four full records stacked, each with its own upload box, is a page you have to read to find the one that matters |
 | Deciding on one thing in a gallery | A **canvas** (`.canvas`): the thing at the size it deserves on a stage, and everything the decision rests on in a rail beside it — what it is, the copy in full, what was said last time, where it stands, and the one place to decide. Prev/next and the arrow keys step the set, Escape closes. The canvas **moves** the gallery item's own blocks into it and puts them back on close, so there is one decision control in the page and it cannot drift from the one in the gallery |
-| Search, filter, count and the one action | `.cmdbar` > `.cmdbar-find` (a search box with its glyph, bounded 190 to 420px) + the filter selects + `.cmdbar-count` + one `.btn-sm.btn-primary`, on every console list: clients, content review, campaigns, creators, short links, the rate card, the team. The count reads `7 services` whole and `3 of 41` once a filter is on, and never sits in a section head. On a phone it shares the action's line rather than taking a fourth row before the first record |
+| Search, filter, count and the one action | `.cmdbar` > `.cmdbar-find` (a search box with its glyph, bounded 190 to 420px) + the filter selects + `.cmdbar-end` > `.cmdbar-count` + the `?` + one `.btn-sm.btn-primary`, on every console list: clients, my work, content review, campaigns, creators, short links, documents, the rate card, the team. The count reads `7 services` whole and `3 of 41` once a filter is on, never sits in a section head, and is not drawn at all when it is empty. The end group is one element so a wrap cannot split it: on a phone it takes the last row whole, the count and the `?` on the left and the actions on the right, and every route's bar is the same three rows |
 | Links to reach a person | `.plink` chips (phone, WhatsApp, email); equal widths on a phone |
 | A directory of records | `ADspaceGroup.section` (`js/group.js`): `.crm-group` > `.crm-group-head` (the 15px heading, the count, the marks, the name as the fold) + `.crm-group-body` > `.crm-table.softpanel` with its own `.crm-head`; `ADspaceGroup.more` for the rows past thirty. One card per group on every console directory, folds remembered per browser, a filter opening every card, the card opening and shutting in place. **The card carries no outline**, and it is one token for every bounded card (`--card-line`, transparent in both themes, on `.panel` (the record head and every form), `.crm-table`, `.softpanel`, `.team-table`, `.ovcard` and `.bookreg`; nothing nests a card in a card, so a transparent edge never loses a surface): the user chose the Team card's look on 2026-09-22 and asked why one card could differ from the rest at all. It could because Team carried a local `border: 0` written when that page was rebuilt, and the first fix added a second local rule for the directories; both are gone, and a card that needs a different edge is a card that needs a different token. The card's own ground against the page is the edge, white on `--page` in light and a step lighter than the ground in dark. The 1px stays transparent so nothing is re-measured |
 
@@ -559,6 +559,41 @@ says it, under a heading that has already said what the cell is. The Industry
 cell beside it was already using a mute em dash, so that is what the cell takes.
 A null marker in a table cell is a convention, not copy, and is the one place
 the no-dashes rule does not reach.
+
+**A long list needs an axis, not a smaller row.** At eight contents a week
+across thirty clients a task list gains about 290 rows a month. Banding by
+when the work is owed answers "what do I do today" and cannot answer "how is
+October going" or "what is piling up at client review": two hundred rows under
+*Later* are unreadable whatever shape the row is. A **Group by** select in the
+bar re-bands the same rows on the axis the question needs — by client, which
+is how the work is sold and counted, by stage, by owner — and off the default
+axis **every card is shut**, so the page is thirty headings with a count and an
+overdue mark each rather than the 290 rows the axis exists to escape. The
+heading then has to carry what a shut card would hide: a count of what is
+overdue inside it. The fold is remembered **per axis**, because a client card
+shut under By client says nothing about a stage card under By stage, while the
+card keeps its own name on the page.
+
+**A list that grows every month is read with a bound, and the bound is never
+on the work somebody still owes.** A single limit over everything silently
+stops showing older rows partway through the second month, which is worse than
+refusing: the page looks complete. What grows without limit is *finished* work,
+so that is what a period governs; open work is read in full however old it is,
+because a task overdue since August is the first thing a queue exists to show.
+The control that sets the period draws only while finished work can be on the
+page — a control on screen while it decides nothing is one somebody has to work
+out.
+
+**The commonest act on a row belongs on the row.** Moving a stage is what
+anybody does on a task list all day, so the stage cell is the portal's own
+tinted state select and goes through the same function and the same gates as
+the record does, with the refusal named under the row it was made on rather
+than in a bar a screen away. The corollary is that the row stops being one
+button: a control inside a control is one a screen reader trips over, so what
+opens the record is the name cell — the widest, full row height, where the eye
+already is — and the chevron goes, because a mark that is no longer a target is
+furniture. A state that needs something typed before it means anything (Blocked
+needs a category) is never in that select; it is asked for on the record.
 
 **A directory is a card per group, and every directory is the same card.**
 Leads, Active clients and Paused and past were three floating panels for a
@@ -867,6 +902,40 @@ explicitly, and outranks `.kmenu` rather than merely disagreeing with it, becaus
 pushed the pane down by a tab's height. One row always, scrolling sideways below
 the width where the tabs fit, with `flex: 0 0 auto` on each so none is squeezed
 to avoid the scroll.
+
+**A strip's rule sits on the page's own margins, and the step under it has one
+owner.** `.rectabs` bled to the screen edge on a phone (`margin-inline: -16px`)
+so a tab scrolling out faded past the gutter rather than being cut at it — a
+nicety that cost the one thing a hairline is for. At 390 the rule ran 0 to 390
+while the rail's dividers above it and the card below it ran 16 to 374: the page
+had two margins and the line under the tabs had none. `.tabrow` never bled, and
+a scroller cut at the gutter is what the rest of this portal does. The step down
+to the pane was split the same way — 4px on the strip and 12px on whichever
+first child remembered to ask for it — so the client record stood 16px off its
+tabs, the task record 4px and Campaigns 12px: three strips, three gaps, nothing
+saying which was meant. The strip owns it, at the one block step, everywhere.
+
+**A group that must stay together is a group in the markup, not a hope about
+where a wrap will fall.** The command bar is one wrapping flex row of unlike
+things — a search box, nought to four filters, the count, the `?`, one or two
+actions — and loose items wrap by whatever is left over, so every route wrapped
+differently: Services put the count and the `?` mid-row with the action
+stranded on a line of its own, Documents crammed four things onto the last
+line, Content Review left one outlined button against an empty half, My Work
+pushed its action onto a fourth row at the left margin. That is what "positioned
+everywhere" describes, and no amount of auto margins fixes it, because an auto
+margin can only push within the line a wrap has already chosen. Two of them in
+one line are worse still: they split the free space between them, which is how
+the `?` came to rest in the middle of the bar with ninety pixels of nothing
+either side. So the bar is three stated rows on a phone — the search, the
+filters two to a row at equal halves, and `.cmdbar-end` carrying the count, the
+`?` and the actions as **one element** at `flex-basis: 100%`, with the quiet
+pair anchored left and the actions right by a single auto margin. A group cannot
+be split by a wrap, so the composition is the same on all nine bars at every
+width and on the desk as on the phone. The alternative considered and rejected
+was counting the selects with `:nth-of-type` to make an odd one full width: it
+is a guess about the markup that a hidden control breaks silently, and My Work's
+hidden period select broke it the day it was written.
 
 **A template that claims every header in the console will claim the wrong one.**
 The clients list's seven columns hung off `.crm-head:not(.svc-row)`, which is a
