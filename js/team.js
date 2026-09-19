@@ -53,10 +53,17 @@
     ['review',    'Content Review',    ['none', 'view', 'work', 'manage']],
     ['campaigns', 'Creator Campaigns', ['none', 'view', 'work', 'manage']],
     ['links',     'Short Links',       ['none', 'view', 'work', 'manage']],
-    /* The Register is the documents issued and the serials the verify page
-       answers; HR letters are a part of it, gated apart, because a
-       colleague's letter is read by fewer people than a client's. */
-    ['register',  'Register',          ['none', 'view', 'work', 'manage']],
+    /* The documents issued and the serials the verify page answers; HR
+       letters are a part of it, gated apart, because a colleague's letter is
+       read by fewer people than a client's. Named as the nav names it: the
+       ladder's key stays `register`, which is an address and not copy, but a
+       panel granting "Register" while the rail read Documents made somebody
+       check twice which one they had. */
+    ['register',  'Documents',         ['none', 'view', 'work', 'manage']],
+    /* Operations, which the console calls My Work: View works your own
+       tasks, Work also creates them, Manage also assigns an owner. The four
+       parts under it are the exception to the rule below. */
+    ['ops',       'My Work',           ['none', 'view', 'work', 'manage']],
     ['services',  'Services',          ['none', 'view', 'work', 'manage']],
     ['team',      'Team',              ['none', 'manage']],
     ['activity',  'Activity record',   ['none', 'view']]
@@ -74,8 +81,20 @@
                 ['documents', 'Documents'], ['requests', 'Requests'], ['calls', 'Calls and visits']],
     review:    [['sets', 'Content sets'], ['settings', 'Client settings']],
     campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance']],
-    register:  [['documents', 'Client documents'], ['hr', 'HR letters']]
+    register:  [['documents', 'Client documents'], ['hr', 'HR letters']],
+    /* THESE FOUR ARE THE EXCEPTION. Every other part is a pane *inside* its
+       section's job, so it falls back to the section: a group that works
+       Clients works its Billing pane unless somebody says otherwise. These
+       four are the other direction — seeing every colleague's queue, reading
+       the reports, editing the templates and correcting somebody else's
+       hours are all *more* than "work my own tasks". So they are granted and
+       never inherited, in the page and in `ops_granted()` alike, and their
+       unset option reads No access rather than Same as section. */
+    ops:       [['all', 'The whole team\'s queue'], ['reports', 'Reports'],
+                ['workflows', 'Templates and recurring'], ['time', 'Another person\'s hours']]
   };
+  /* The sections whose parts are granted rather than inherited. */
+  var GRANTED_PARTS = { ops: 1 };
   var CAPS = [];
 
   function accessOf(r) {
@@ -430,7 +449,10 @@
         (parts.length ? '<div class="permgrid permsec-parts" id="grParts-' + sec[0] + '" hidden>' + parts.map(function (p) {
           return '<label class="permlevel"><span class="field-label">' + esc(p[1]) + '</span>' +
             '<select class="select select-sm" data-part="' + sec[0] + '.' + p[0] + '" aria-label="' + esc(sec[1] + ': ' + p[1]) + ' access">' +
-            '<option value="">Same as section</option>' +
+            /* A granted part is not inherited, so its unset state is No
+               access and saying "Same as section" would be a promise the
+               database does not keep. */
+            '<option value="">' + (GRANTED_PARTS[sec[0]] ? 'No access' : 'Same as section') + '</option>' +
             LEVELS.map(function (l) { return '<option value="' + l[0] + '">' + esc(l[1]) + '</option>'; }).join('') +
             '</select></label>';
         }).join('') + '</div>' : '') +

@@ -1,28 +1,38 @@
 # Operations system — setup
 
-The internal task, workflow, time and audit model behind the console's **Work**
-group. Phase 1 is the database: the tables, who may read them, and the server
-functions every write goes through. Nothing in it is visible to a client.
+The internal task, workflow, time and audit model behind the console's **My
+Work** route. Phase 1 is the database: the tables, who may read them, and the
+server functions every write goes through. Phase 2 is the page. Nothing in
+either is visible to a client.
 
-## 1. Apply the migration
+## 1. Apply the migrations
 
-In the Supabase SQL editor, run:
+In the Supabase SQL editor, run, in this order:
 
 ```
 supabase/migrations/2026-09-19-operations-system.sql
+supabase/migrations/2026-09-19-operations-phase2.sql
 ```
 
-It is safe to run twice. It creates fourteen `ops_` tables, their indexes and
-their read policies, seeds two workflows with their stages and six task
-templates, and creates twenty-three `ops_` functions. The only edits it makes
-to an existing object are two guarded columns on `team_members`
+Both are safe to run twice. The first creates fourteen `ops_` tables, their
+indexes and their read policies, seeds two workflows with their stages and six
+task templates, and creates twenty-three `ops_` functions. The only edits it
+makes to an existing object are two guarded columns on `team_members`
 (`capacity_minutes_week`, `wip_guidance`), both planning figures.
 
-`supabase/schema.sql` carries the same text under **THE OPERATIONS SYSTEM**,
-for a database built from scratch. `tests/ops.js` compares the two byte for
-byte, so they cannot drift.
+The second adds four functions and nothing else: `ops_add_link`,
+`ops_set_link_archived`, `ops_set_checklist` and `ops_set_video`. Three of
+phase 1's stage gates are data the page had no way to set — Client review
+needs a draft link, Delivered needs a final link, Editing is refused while
+footage is marked not ready — so without them a task created in the console
+reaches Ready and stops.
 
-The rollback is at the head of the migration.
+`supabase/schema.sql` carries the same text under **THE OPERATIONS SYSTEM** and
+**THE OPERATIONS SYSTEM, PHASE 2**, for a database built from scratch.
+`tests/ops.js` compares each against its own migration byte for byte, so they
+cannot drift.
+
+The rollback is at the head of each migration.
 
 ## 2. Give somebody access
 
@@ -58,8 +68,12 @@ Suggested settings:
 | Creative team member | `ops` Work |
 | Sales | `ops` Work, if they should raise client requests; otherwise nothing |
 
-A colleague with no `ops` level at all sees no Work group in the sidebar and
+A colleague with no `ops` level at all sees no My Work item in the sidebar and
 is refused by the database if they call a function anyway.
+
+The route is named **My Work** on the screen and travels as `?s=work`; the
+ladder's key is `ops`, which is the word the database uses. The two are mapped
+once, in `sectionAllowed()` in `js/admin.js`.
 
 ## 3. What a client account can reach
 
@@ -113,12 +127,38 @@ One open session a person, across every task, enforced by a partial unique
 index and not only by the function: starting a second task closes the first
 and says so.
 
-## 7. What is not built yet
+## 7. The page
 
-Phase 1 is the data model and the server. Still to come:
+**My Work** (`?s=work`) is the queue and one task open.
 
-- **Phase 2** My Work, task creation, the task workspace, stage moves,
-  blocking, due changes, work sessions on screen.
+The queue is banded by when the work is owed — Overdue, Due today, Due this
+week, Later, No date set — because that is what orders a day. Later is shut by
+default and so is Finished, which the stage filter has to ask for. The bar
+carries a search, whose queue (only where `ops.all` is granted), a stage
+filter, the count and **New task**.
+
+A task opens as a workspace on the same shape a client and a campaign use:
+the number as its mark, the title, the stage as a chip beside the ⋯, and one
+line saying what it is waiting on, derived on every repaint. Five panes —
+Overview, Checklist, Links, Time, Activity — and a rail carrying the stage and
+its moves, your timer, the dates, the people and the details.
+
+Three things worth knowing:
+
+- **One forward move is drawn as the action** and every other move the
+  workflow allows sits in the select beside it. Which move is forward is the
+  workflow's own to say: the stage nearest ahead by position, skipping the
+  lanes beside the main line (blocked, waiting, KIV, cancelled).
+- **Every refusal is named in the team's words**, not the database's. "Client
+  review needs a draft or review link", never `needs-draft`.
+- **The timer is one open session a person, across every task.** Starting one
+  here stops the one running elsewhere, and the page says which task that was
+  before you press.
+
+## 8. What is not built yet
+
+Phase 1 is the data model and the server, phase 2 is My Work. Still to come:
+
 - **Phase 3** the Operations queue, the video board, Calendar, capacity,
   notifications.
 - **Phase 4** the report functions and the Reports views, the client record's
