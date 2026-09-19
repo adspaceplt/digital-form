@@ -4402,12 +4402,11 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .routeintro-hide { flex: 0 0 auto; min-width: 0; }
 .routeintro + * { margin-top: 0 !important; }
 /* The `?` reopens the route's own line, so it belongs beside the count that
-   says what is on the page, never out on its own. It is a `.btn`, and on a
-   phone `.cmdbar .btn` gives the route's one action `margin-left: auto`: two
-   auto margins in one flex row split the free space between them, so the `?`
-   came to rest in the middle of the bar with ninety pixels of nothing either
-   side. It keeps the count's order and a plain gap instead. */
-.cmdbar-help { flex: 0 0 auto; min-width: var(--ctl-h-sm); width: var(--ctl-h-sm); padding: 0; font-weight: 600; margin-left: 6px; }
+   says what is on the page, never out on its own. It is inserted into
+   `.cmdbar-end` directly after the count, and that group's own gap spaces
+   it; it carries no margin of its own, because an auto margin here is what
+   once left it stranded in the middle of the bar. */
+.cmdbar-help { flex: 0 0 auto; min-width: var(--ctl-h-sm); width: var(--ctl-h-sm); padding: 0; font-weight: 600; }
 @media (max-width: 640px) {
   .routeintro { align-items: flex-start; }
 }
@@ -4552,34 +4551,70 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   border-radius: var(--radius-ctl);
 }
 .cmdbar .btn { flex: 0 0 auto; width: auto; border-radius: var(--radius-ctl); }
-/* The count sits with the list it counts; the one action ends the row. */
+/* What the list holds and what to do about it: the count, the `?` and the
+   route's one or two actions, as ONE element rather than three to five loose
+   ones. The bar is a wrapping flex row of unlike things, and loose items wrap
+   differently on every route — Services put the count and the `?` mid-row
+   with the action stranded underneath, Documents crammed four things onto the
+   last line, My Work pushed its one action onto a fourth row at the left
+   margin. A group cannot be split by a wrap, so the composition is the same
+   on all nine bars at every width, and it is stated in the markup rather than
+   guessed at with auto margins and `:nth-of-type` counting. */
+.cmdbar-end {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 10px;
+  justify-content: flex-end; flex: 0 1 auto; margin-left: auto; min-width: 0;
+}
+/* Two groups inside it, each unsplittable: what the list holds, and what to
+   do about it. Left as four loose children the group could not wrap at all,
+   so at 320 Documents' two actions ran 72px off the page; wrapping them
+   freely puts Add entry on the count's line and strands Issue document
+   underneath, which is the fault this whole element exists to end. Two
+   groups wrap as two: the pair goes first and the actions follow, right
+   aligned, on their own line when the width cannot hold both. */
+.cmdbar-quiet, .cmdbar-acts { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.cmdbar-quiet { margin-right: auto; }
+/* The count sits with the list it counts; the one action ends the row. A
+   count with nothing in it is not a count: left drawn it is still a flex
+   item, so it spent the group's 10px gap indenting the `?` beside it. */
 .cmdbar-count {
-  flex: 0 0 auto; margin-left: auto; font-size: 12px; color: var(--ink-mute);
+  flex: 0 0 auto; font-size: 12px; color: var(--ink-mute);
   font-variant-numeric: tabular-nums; white-space: nowrap;
 }
+.cmdbar-count:empty { display: none; }
 @media (max-width: 640px) {
-  /* The count and the `?` ride the search box's row rather than taking the
-     end of the last one. They are 32px and 44px against a search box that
-     does not need the whole width, and a route with three filters otherwise
-     spends four rows on the bar before the first record: find, two selects,
-     the third select, then the action. This way it is find with its count,
-     the filters, then the axis and the one action. */
-  .cmdbar-find { flex: 1 1 190px; max-width: none; order: 0; }
-  .cmdbar .select { flex: 1 1 auto; max-width: none; order: 2; }
+  /* THREE ROWS, AND EACH ONE IS THE SAME ROW ON EVERY ROUTE.
+     A wrapping flex row of six unlike things — a search box, nought to four
+     filters, a count, the `?` and one or two actions — wraps differently on
+     every route in the console, and the auto margins that pushed things to
+     the ends left holes in the middle of whatever row they landed on. That
+     is why the bar read as positioned at random: Services put the count and
+     the `?` mid-row with the action stranded underneath, Documents crammed
+     four things onto the last line, and Content Review left one outlined
+     button alone against an empty half.
+
+     So the rows are stated instead. The search takes the first, because it
+     is the one control that wants the width. The filters follow two to a
+     row at equal halves, so two look like two and four look like four
+     rather than like whatever was left over. The count and the `?` anchor
+     the last row on the left and the actions anchor it on the right, which
+     is the same composition the desk gets and the reason no action is ever
+     left exposed on a line of its own. */
+  .cmdbar-find { flex: 1 1 100%; max-width: none; }
+  /* Two to a row at equal halves, so two read as two and four read as four
+     rather than as whatever was left over. A filter with no partner grows to
+     the full width by itself, because it is alone on its line and every
+     select may grow; nothing has to count them. */
+  .cmdbar .select { flex: 1 1 calc(50% - 5px); max-width: none; }
+  /* The last row, always its own row: the count and the `?` on the left, the
+     actions on the right, one auto margin between them. A basis of 100% is
+     what guarantees it cannot share a line with a leftover filter, which is
+     how My Work's one action ended up alone at the left margin of a fourth
+     row. */
+  .cmdbar-end { flex: 1 1 100%; margin-left: 0; }
   /* Never full width. An action stretched across a phone is the heaviest
      thing on the screen, sitting on top of the records somebody came to
      read; this portal's section heads have refused that for months. */
-  .cmdbar .btn { flex: 0 0 auto; order: 10; margin-left: auto; }
-  /* With the search box, because they say what is in the list rather than
-     filter it, and because two small things at the end of the filters push
-     the action onto a row of its own. */
-  .cmdbar-count { order: 1; margin-left: auto; }
-  /* Same order as the count, so the two stay together in DOM order. Written
-     as `.cmdbar .cmdbar-help` because `.cmdbar .btn` below is two classes
-     deep and the `?` is a `.btn`: a one-class selector loses to it and the
-     action's auto margin stays on, which is what left the `?` adrift in the
-     middle of the bar with ninety pixels of nothing either side. */
-  .cmdbar .cmdbar-help { order: 1; margin-left: 6px; }
+  .cmdbar .btn { flex: 0 0 auto; }
 }
 
 /* A bounded section, softly. One 1px hairline and a 14px corner, no shadow:
