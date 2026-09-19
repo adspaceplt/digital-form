@@ -411,6 +411,11 @@
        filtered. The search is the narrowing, and it is what puts "of" on. */
     var all = state.tasks.filter(function (t) { return inFilter(t) && inScope(t); });
     var rows = all.filter(matches);
+    /* The board's workflow select is filled from the catalogue whether or not
+       there is anything to draw: with no tasks the paint stopped at the empty
+       line below and the select stood where Group by had been with nothing in
+       it, which the user reported as an empty record on 2026-09-22. */
+    if (state.view === 'board') boardWorkflow(all);
     var count = $('workCount');
     if (count) {
       count.textContent = !all.length ? ''
