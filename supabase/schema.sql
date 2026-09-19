@@ -4423,6 +4423,27 @@ language sql security definer stable set search_path = public as $$
 $$;
 grant execute on function public.ops_may_see_task(uuid) to authenticated;
 
+-- Row level security is stated one table at a time, never in the loop below.
+-- The Supabase SQL editor scans a script for exactly these lines and offers to
+-- append its own where it cannot find them: an `execute format(...)` inside a
+-- `do $$` block is invisible to it, so a file that enabled RLS correctly still
+-- prompted on every run. A security posture a reader cannot see in the file is
+-- one nobody can check, the editor included.
+alter table public.ops_workflows enable row level security;
+alter table public.ops_workflow_stages enable row level security;
+alter table public.ops_task_templates enable row level security;
+alter table public.ops_tasks enable row level security;
+alter table public.ops_task_assignees enable row level security;
+alter table public.ops_task_events enable row level security;
+alter table public.ops_work_sessions enable row level security;
+alter table public.ops_revisions enable row level security;
+alter table public.ops_task_checklist_items enable row level security;
+alter table public.ops_task_links enable row level security;
+alter table public.ops_video_details enable row level security;
+alter table public.ops_notifications enable row level security;
+alter table public.ops_recurring_rules enable row level security;
+alter table public.ops_kpi_targets enable row level security;
+
 do $$
 declare
   t text;
@@ -4433,7 +4454,6 @@ declare
     'ops_notifications', 'ops_recurring_rules', 'ops_kpi_targets'];
 begin
   foreach t in array tables loop
-    execute format('alter table public.%I enable row level security', t);
     /* Policies are additive, so every one this file owns goes before the new
        one lands. Named from the catalogue rather than from a list kept here,
        because a list is a second place to remember a policy and this file
