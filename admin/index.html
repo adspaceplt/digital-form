@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260922i">
+<link rel="stylesheet" href="/css/portal.css?v=20260922j">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,23 +28,23 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260922i"></script>
-<script src="/js/words.js?v=20260922i"></script>
-<script src="/js/copy.js?v=20260922i"></script>
-<script src="/js/ask.js?v=20260922i"></script>
-<script src="/js/state.js?v=20260922i"></script>
-<script src="/js/group.js?v=20260922i"></script>
-<script src="/js/menu.js?v=20260922i"></script>
-<script src="/js/cmdbar.js?v=20260922i"></script>
-<script src="/js/api.js?v=20260922i"></script>
-<script src="/js/money.js?v=20260922i"></script>
-<script src="/js/mockups.js?v=20260922i"></script>
+<script src="/js/config.js?v=20260922j"></script>
+<script src="/js/words.js?v=20260922j"></script>
+<script src="/js/copy.js?v=20260922j"></script>
+<script src="/js/ask.js?v=20260922j"></script>
+<script src="/js/state.js?v=20260922j"></script>
+<script src="/js/group.js?v=20260922j"></script>
+<script src="/js/menu.js?v=20260922j"></script>
+<script src="/js/cmdbar.js?v=20260922j"></script>
+<script src="/js/api.js?v=20260922j"></script>
+<script src="/js/money.js?v=20260922j"></script>
+<script src="/js/mockups.js?v=20260922j"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260922i" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260922j" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -2255,13 +2255,14 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
     <div class="rectabs" id="activityTabs" role="tablist" aria-label="Section">
       <button class="tab is-on" data-af="all" type="button">Everything</button>
-      <button class="tab" data-af="clients" type="button">Clients</button>
-      <button class="tab" data-af="team" type="button">Team</button>
-      <button class="tab" data-af="review" type="button">Content Review</button>
-      <button class="tab" data-af="campaigns" type="button">Creator Campaigns</button>
-      <button class="tab" data-af="links" type="button">Short Links</button>
-      <button class="tab" data-af="register" type="button">Documents</button>
-      <button class="tab" data-af="services" type="button">Services</button>
+      <button class="tab" data-af="clients" data-need="activity.clients:view" type="button">Clients</button>
+      <button class="tab" data-af="ops" data-need="activity.ops:view" type="button">My Work</button>
+      <button class="tab" data-af="team" data-need="activity.team:view" type="button">Team</button>
+      <button class="tab" data-af="review" data-need="activity.review:view" type="button">Content Review</button>
+      <button class="tab" data-af="campaigns" data-need="activity.campaigns:view" type="button">Creator Campaigns</button>
+      <button class="tab" data-af="links" data-need="activity.links:view" type="button">Short Links</button>
+      <button class="tab" data-af="register" data-need="activity.register:view" type="button">Documents</button>
+      <button class="tab" data-af="services" data-need="activity.services:view" type="button">Services</button>
     </div>
     <div class="sheet-body" id="activityList"></div>
   </div>
@@ -2448,13 +2449,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260922i"></script>
-<script src="/js/documents.js?v=20260922i"></script>
-<script src="/js/letters.js?v=20260922i"></script>
-<script src="/js/register.js?v=20260922i"></script>
-<script src="/js/crm.js?v=20260922i"></script>
-<script src="/js/team.js?v=20260922i"></script>
-<script src="/js/campaigns.js?v=20260922i"></script>
-<script src="/js/ops.js?v=20260922i"></script>
+<script src="/js/admin.js?v=20260922j"></script>
+<script src="/js/documents.js?v=20260922j"></script>
+<script src="/js/letters.js?v=20260922j"></script>
+<script src="/js/register.js?v=20260922j"></script>
+<script src="/js/crm.js?v=20260922j"></script>
+<script src="/js/team.js?v=20260922j"></script>
+<script src="/js/campaigns.js?v=20260922j"></script>
+<script src="/js/ops.js?v=20260922j"></script>
 </body>
 </html>

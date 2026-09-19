@@ -4221,6 +4221,18 @@ body.no-view-register-documents [data-need="register.documents:view"],
 body.no-manage-register-hr [data-need="register.hr:manage"],
 body.no-work-register-hr [data-need="register.hr:work"],
 body.no-view-register-hr [data-need="register.hr:view"],
+/* The Activity record is read a tab at a time, so each tab is a part and
+   draws only where that part is readable. The database decides which rows
+   arrive (`activity_section()` and the read policy), so a tab a group cannot
+   open would be a tab over an empty list. */
+body.no-view-activity-clients [data-need="activity.clients:view"],
+body.no-view-activity-ops [data-need="activity.ops:view"],
+body.no-view-activity-team [data-need="activity.team:view"],
+body.no-view-activity-review [data-need="activity.review:view"],
+body.no-view-activity-campaigns [data-need="activity.campaigns:view"],
+body.no-view-activity-links [data-need="activity.links:view"],
+body.no-view-activity-register [data-need="activity.register:view"],
+body.no-view-activity-services [data-need="activity.services:view"],
 /* Operations. The route is called My Work on the screen and `?s=work` in the
    address; the ladder's key is `ops`, which is the word the database uses, so
    the two are mapped once in `sectionAllowed()` and never spelled twice. */
