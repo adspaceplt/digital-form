@@ -12,9 +12,10 @@ In the Supabase SQL editor, run, in this order:
 ```
 supabase/migrations/2026-09-19-operations-system.sql
 supabase/migrations/2026-09-19-operations-phase2.sql
+supabase/migrations/2026-09-19-operations-phase3.sql
 ```
 
-Both are safe to run twice. The first creates fourteen `ops_` tables, their
+All three are safe to run twice. The first creates fourteen `ops_` tables, their
 indexes and their read policies, seeds two workflows with their stages and six
 task templates, and creates twenty-three `ops_` functions. The only edits it
 makes to an existing object are two guarded columns on `team_members`
@@ -27,8 +28,17 @@ needs a draft link, Delivered needs a final link, Editing is refused while
 footage is marked not ready — so without them a task created in the console
 reaches Ready and stops.
 
-`supabase/schema.sql` carries the same text under **THE OPERATIONS SYSTEM** and
-**THE OPERATIONS SYSTEM, PHASE 2**, for a database built from scratch.
+The third redefines one function, `ops_log`, so that the event every write
+files also tells the person it concerns: the accountable owner is told about a
+change somebody else made to their task, a new owner is told they were
+assigned, and nobody is told about their own act. It adds `ops_notify`, which
+writes the row. No table, column, policy or permission changes; the bell in the
+console reads the rows and marks them read, which was already the one direct
+write a browser may make.
+
+`supabase/schema.sql` carries the same text under **THE OPERATIONS SYSTEM**,
+**THE OPERATIONS SYSTEM, PHASE 2** and **THE OPERATIONS SYSTEM, PHASE 3**, for
+a database built from scratch.
 `tests/ops.js` compares each against its own migration byte for byte, so they
 cannot drift.
 
@@ -158,6 +168,32 @@ things carry that:
 A folded card is remembered per axis: a client card shut under By client says
 nothing about a stage card under By stage.
 
+### Three views
+
+The same rows, the same search, filter and scope, asked three questions.
+**List** is the queue above. **Board** lays one workflow's stages side by side,
+in the workflow's own order, with the count in each column against the
+work-in-progress guidance the stage carries (`4 / 5`, warn past it); the lanes
+beside the line (Blocked, Waiting for client, KIV) are one **On hold** column,
+and a finished stage draws only while the stage filter lets finished work onto
+the page. The workflow select draws where Group by was, because the board has
+fixed that axis. A card carries the same stage select a row does, through the
+same function and the same gates. Above the board, **capacity**: each person's
+recorded hours this week against the weekly capacity set on the Team page (your
+own without `ops.all`, the team's with it). Nothing here measures attention; a
+week with no sessions is a week nobody pressed Start. **Calendar** puts each
+task on the day its final date falls, a press opening it; on a phone it is the
+days that hold something, each named. The view travels in the address
+(`view=board`, `view=calendar`); the list is the default and stays out of it.
+
+### The bell
+
+A change somebody else made to a task you own arrives as a row the database
+writes beside the event, and the bell in the console bar counts the unread
+ones. Pressing one opens the task and marks it read; **Mark all read** clears
+them. Whose task, and what changed, in the team's words: `T1004 · Quarterly
+report`, `The final date moved to 30 Sept 2026 by Aisyah.`
+
 A task opens as a workspace on the same shape a client and a campaign use:
 the number as its mark, the title, the stage as a chip beside the ⋯, and one
 line saying what it is waiting on, derived on every repaint. Five panes —
@@ -183,10 +219,11 @@ Three things worth knowing:
 
 Phase 1 is the data model and the server, phase 2 is My Work. Still to come:
 
-- **Phase 3** the Operations queue, the video board, Calendar, capacity,
-  notifications.
+- **Phase 3, shipped**: the board, the calendar, capacity and the bell, above.
 - **Phase 4** the report functions and the Reports views, the client record's
-  Operations tab, Content Review integration, recurring generation on screen.
+  Operations tab, Content Review integration, recurring rules edited on screen
+  and a month generated from them (the function, `ops_generate_recurring`, is
+  already there).
 - **Phase 5** the spreadsheet import, described in `OPERATIONS-MIGRATION.md`.
 
 Each phase is deployable on its own and none of them breaks an existing part

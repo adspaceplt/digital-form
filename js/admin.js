@@ -218,6 +218,9 @@
        screen honest about it. Fetched once, before anything is shown. */
     loadMe(function () {
       applyAccess();
+      /* The bell in the bar is My Work's, drawn on every route for anybody who
+         can read the section, so it is told the moment the person is known. */
+      if (window.ADspaceOps && window.ADspaceOps.signedIn) window.ADspaceOps.signedIn();
       gateActivity();
       // Who wrote what, by address. Fire and forget: the record reads as
       // addresses until it lands, which is what it read as before.
@@ -2552,6 +2555,9 @@
     },
     // The signed-in person's team row, for sections that gate on it.
     me: function () { return me; },
+    /* Open a section from outside the rail: the bell opens the task a row
+       names, after writing the address the section reads on entry. */
+    show: function (name) { showSection(name); },
     may: may,
     parts: PARTS
   };

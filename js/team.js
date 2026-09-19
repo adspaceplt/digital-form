@@ -559,6 +559,7 @@
     $('tmEmail').value = m ? (m.email || '') : '';
     $('tmStaff').value = m ? (m.staff_code || '') : '';
     $('tmDesig').value = m ? (m.designation || '') : '';
+    $('tmCap').value = m && m.capacity_minutes_week ? String(Math.round(m.capacity_minutes_week / 30) / 2) : '';
     fillRolePick(); $('tmRole').value = m ? m.role : 'account';
     msg('tmMsg', '');
     $('tmName').focus();
@@ -571,12 +572,15 @@
     var role = $('tmRole').value;
     var staff = ($('tmStaff').value || '').trim().toUpperCase();
     var desig = ($('tmDesig').value || '').trim();
+    var capH = parseFloat($('tmCap').value);
     if (!name) { msg('tmMsg', 'A name is required.', 'err'); return; }
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg('tmMsg', 'A valid email is required.', 'err'); return; }
     if (!role) { msg('tmMsg', 'A group is required.', 'err'); return; }
     /* The HR serial is built from it, so it is letters and digits only. */
     if (staff && !/^[A-Z0-9]{3,8}$/.test(staff)) { msg('tmMsg', 'An Employee ID is 3 to 8 letters or digits.', 'err'); $('tmStaff').focus(); return; }
-    var fields = { name: name, email: email, role: role, staff_code: staff || null, designation: desig || null };
+    if ($('tmCap').value && !(capH >= 0 && capH <= 80)) { msg('tmMsg', 'Weekly capacity is 0 to 80 hours.', 'err'); $('tmCap').focus(); return; }
+    var fields = { name: name, email: email, role: role, staff_code: staff || null, designation: desig || null,
+                   capacity_minutes_week: capH >= 0 && $('tmCap').value ? Math.round(capH * 60) : null };
     if (editingMember) {
       var m = editingMember;
       /* The row's email is the address the console signs in with, so moving it
