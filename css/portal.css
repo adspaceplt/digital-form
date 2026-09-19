@@ -1646,13 +1646,25 @@ a { color: inherit; }
 .setbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
 .setbar .msg { flex: 1 1 100%; margin-top: 10px; }
 
-/* One chip everywhere: the same shape as .tone and .chip-state. */
-.chip {
-  display: inline-flex; align-self: flex-start; font-size: 11.5px; font-weight: 600; line-height: 1.5;
-  padding: 2px 8px; border-radius: 5px; background: var(--line-soft); color: var(--ink-soft);
-  white-space: nowrap;
+/* ONE CHIP, ONE SHAPE, ONE SET OF TONES. There were three selectors for the
+   same component — `.chip`, `.tone` and `.chip-state` — each restating the
+   same six declarations, and only two of them carried the tones: the task and
+   campaign records set `class="chip is-warn"` on their state and drew the
+   neutral grey whatever the stage, because `.chip.is-warn` did not exist.
+   Its own red was a pair of hexes rather than the error tokens, so it could
+   not follow the theme either. The shape and the tones are stated once here;
+   what differs between the three is only how each sits in its own row. */
+.chip, .tone, .chip-state {
+  font-size: 11.5px; font-weight: 600; line-height: 1.5;
+  padding: 2px 8px; border-radius: 5px; white-space: nowrap;
+  background: var(--line-soft); color: var(--ink-soft);
 }
-.chip.is-live { background: var(--ok-bg); color: var(--ok); }
+.chip.is-ok,     .tone.is-ok,     .chip-state.is-ok     { background: var(--ok-bg);   color: var(--ok); }
+.chip.is-warn,   .tone.is-warn,   .chip-state.is-warn   { background: var(--warn-bg); color: var(--warn); }
+.chip.is-danger, .tone.is-danger, .chip-state.is-danger { background: var(--err-bg);  color: var(--err); }
+.chip.is-live,   .tone.is-live,   .chip-state.is-live   { background: var(--ok-bg);   color: var(--ok); }
+.chip { display: inline-flex; align-self: flex-start; }
+.tone { flex: 0 0 auto; }
 
 .zone-head { display: flex; gap: 11px; align-items: flex-start; margin-bottom: 16px; }
 .zone-mark {
@@ -2572,14 +2584,7 @@ body.is-plain .topbar { background: var(--chrome); }
   font-size: 15px; font-weight: 600; letter-spacing: -.012em; color: var(--ink);
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.tone {
-  flex: 0 0 auto; font-size: 11.5px; font-weight: 600; line-height: 1.5;
-  padding: 2px 8px; border-radius: 5px; white-space: nowrap;
-  background: var(--line-soft); color: var(--ink-soft);
-}
-.tone.is-ok     { background: var(--ok-bg);   color: var(--ok); }
-.tone.is-warn   { background: var(--warn-bg); color: var(--warn); }
-.tone.is-danger { background: var(--err-bg);  color: var(--err); }
+/* The shape and the tones are stated once, up by `.chip`. */
 
 .kmenu-btn {
   margin-left: auto; flex: 0 0 auto;
@@ -2711,14 +2716,8 @@ body.is-plain .topbar { background: var(--chrome); }
    Whatever follows it (a Replacement tag) travels with it. */
 .booking-head > .chip-state, .booking-head > .tone { margin-left: auto; }
 .booking-head > .chip-state ~ *, .booking-head > .tone ~ * { margin-left: 0; }
-/* The same words and the same colours as the console's state chips. */
-.chip-state {
-  font-size: 11.5px; font-weight: 600; line-height: 1.5; padding: 2px 8px; border-radius: 5px;
-  background: var(--line-soft); color: var(--ink-soft); white-space: nowrap;
-}
-.chip-state.is-ok     { background: var(--ok-bg);   color: var(--ok); }
-.chip-state.is-warn   { background: var(--warn-bg); color: var(--warn); }
-.chip-state.is-danger { background: #fbeceb;        color: #a3312a; }
+/* The same words and the same colours as the console's state chips; the
+   shape and the tones are stated once, up by `.chip`. */
 .booking-meta { font-size: 13px; color: var(--ink-mute); margin-top: 5px; }
 
 /* Results as a table: one row per platform, the post link in the first
@@ -5739,8 +5738,12 @@ body.is-canvas { overflow: hidden; }
 .bcard-client { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* The title is what opens the task: the widest thing on the card, where the
    eye already is, and nothing else on the card is nested inside it. */
+/* It is what opens the task, so it clears the control floor like every other
+   control: at `display: block` it was its own 19px line of text and the walk
+   measured it as a 19px target. */
 .bcard-title {
-  display: block; width: 100%; padding: 0; border: 0; background: none;
+  display: flex; align-items: center; width: 100%; min-height: var(--ctl-h);
+  padding: 0; border: 0; background: none;
   text-align: left; font: inherit; font-size: 14px; font-weight: 600; line-height: 1.35; color: var(--ink);
   cursor: pointer; border-radius: 6px; overflow-wrap: anywhere;
 }
