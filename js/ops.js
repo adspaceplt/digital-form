@@ -555,7 +555,7 @@
      back from `ops_task_json` after every write, so the panes are repainted
      from the answer the write gave rather than from a second request that can
      disagree with it. */
-  function readTask(id) {
+  function readTask(id, after) {
     Promise.all([
       db.from('ops_tasks').select('*, clients(name)').eq('id', id).single(),
       db.from('ops_task_checklist_items').select('*').eq('task_id', id).order('position'),
@@ -582,7 +582,7 @@
         events: (r[4] && r[4].data) || [],
         video: (r[6] && r[6].data && r[6].data[0]) || null
       };
-      loadSession(paintTask);
+      loadSession(function () { paintTask(); if (after) after(); });
     }, function (e) {
       msg('taskMsg', (e && e.message) || String(e), 'err');
     });
@@ -612,9 +612,15 @@
 
   function paintIdentity(t) {
     var mark = $('taskMark');
-    /* The task number is the mark: it is what an invoice, a message and a
-       spreadsheet row all name it by, and a monogram of a title says nothing. */
-    if (mark) { mark.textContent = 'T' + t.task_no; mark.className = 'rec-mark rec-mark-no'; }
+    /* The task number is what an invoice, a message and a spreadsheet row all
+       name it by, so it heads the record in the token face and copies on a
+       press, the way a serial does on the Register. It was a 46px disc, which
+       is a shape for a logo or a monogram; five characters pressed into it
+       read as a badly fitted logo. */
+    if (mark) {
+      mark.textContent = 'T' + t.task_no;
+      mark.setAttribute('aria-label', 'Copy T' + t.task_no);
+    }
     $('taskName').textContent = t.title || 'Untitled task';
     var who = state.owners[t.id] ||
       (t.assignees || []).filter(function (a) { return a.responsibility === 'owner'; })
@@ -700,23 +706,6 @@
         (t.remarks ? '<p class="ovnote mute">' + esc(t.remarks) + '</p>' : '')
       : '<p class="ovnote mute">No brief was written.</p>';
 
-    var dates = factRows([
-      ['Publish', esc(niceDate(t.publish_at))],
-      ['First draft due', t.current_first_draft_due_at
-        ? esc(niceDate(t.current_first_draft_due_at)) +
-          (t.original_first_draft_due_at && t.original_first_draft_due_at !== t.current_first_draft_due_at
-            ? ' <small class="mute">moved from ' + esc(niceDate(t.original_first_draft_due_at)) + '</small>' : '')
-        : ''],
-      ['Final due', t.current_final_due_at
-        ? esc(niceDate(t.current_final_due_at)) +
-          (t.original_final_due_at && t.original_final_due_at !== t.current_final_due_at
-            ? ' <small class="mute">moved from ' + esc(niceDate(t.original_final_due_at)) + '</small>' : '')
-        : ''],
-      ['First draft in', esc(niceTime(t.first_draft_submitted_at))],
-      ['Delivered', esc(niceTime(t.delivered_at))],
-      ['Completed', esc(niceTime(t.completed_at))]
-    ]);
-
     /* Editing is refused while footage is marked not ready, so the mark is a
        control here rather than a fact somebody has to go and find. */
     var video = v ? factRows([
@@ -729,28 +718,37 @@
       ['Subtitles', v.subtitle_required ? 'Required' : '']
     ]) : '';
 
+    /* The links, as the client record's Overview lists letters: concise real
+       rows and the one control that opens the pane. `.ovgo` is a modifier, not
+       a button: the shape and the control floor come from `.btn .btn-quiet
+       .btn-sm`, or the control is 26px tall under a 44px finger. */
+    var links = live.length
+      ? '<ul class="ovlinks">' + live.slice(0, 5).map(function (l) {
+          var href = safeUrl(l.url);
+          return '<li><span class="tone">' + esc(l.kind) + '</span>' +
+            (href ? '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(l.label) + '</a>'
+                  : '<span>' + esc(l.label) + '</span>') + '</li>';
+        }).join('') + '</ul>'
+      : '<p class="ovnote mute">None yet.</p>';
+    var goLinks = '<button class="btn btn-quiet btn-sm ovgo" data-a="links" type="button">' +
+      (live.length ? 'Manage links' : 'Add a link') +
+      '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>';
+
     box.innerHTML = '<div class="ovcard">' +
       ovSection('Brief', '', brief) +
-      ovSection('Dates',
-        /* `.ovgo` is a modifier, not a button: the shape and the control floor
-           come from `.btn .btn-quiet .btn-sm`, which is how the client record's
-           own section actions are written. Without them the control was 26px
-           tall, under the 44px a finger needs. */
-        may('ops', 'work') ? '<button class="btn btn-quiet btn-sm ovgo" data-a="due" type="button">Move a date<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>' : '',
-        dates) +
       (v ? ovSection('Video', may('ops', 'work')
         ? '<button class="btn btn-sm" data-a="footage" type="button">' +
           (v.footage_ready ? 'Mark footage not ready' : 'Mark footage ready') + '</button>' : '', video) : '') +
       ovSection('Progress', '', factRows([
         ['Checklist', state.detail.checklist.length ? esc(done + ' of ' + state.detail.checklist.length + ' done') : ''],
-        ['Links', live.length ? esc(live.length + (live.length === 1 ? ' link' : ' links')) : ''],
         ['Recorded work', mins ? esc(minutesWord(mins)) : '<span class="mute">None yet</span>'],
         ['Estimate', t.estimate_minutes ? esc(minutesWord(t.estimate_minutes)) : '']
       ])) +
+      ovSection('Links', goLinks, links) +
       '</div>';
 
-    var due = box.querySelector('[data-a="due"]');
-    if (due) due.addEventListener('click', function () { openDue('final'); });
+    var gl = box.querySelector('[data-a="links"]');
+    if (gl) gl.addEventListener('click', function () { showPane('links'); });
     var ft = box.querySelector('[data-a="footage"]');
     if (ft) ft.addEventListener('click', function () {
       call('ops_set_video', { p_task: t.id, p_payload: { footage_ready: !v.footage_ready } },
@@ -966,26 +964,39 @@
        fact about the client's calendar, not a failure of ours, and marking
        all three red made the one date anybody scans for indistinguishable
        from the two beside it. */
+    /* A commitment that moved says where it moved from, because the original
+       is written once so a report can see replanning, and the one place the
+       dates are stated is where that has to be read. The three timestamps
+       that end a task (draft in, delivered, completed) sit under them once
+       they exist. */
     var rows = [
-      ['First draft', t.current_first_draft_due_at, true],
-      ['Final', t.current_final_due_at, true],
-      ['Publish', t.publish_at, false]
+      ['First draft', t.current_first_draft_due_at, true, t.original_first_draft_due_at],
+      ['Final', t.current_final_due_at, true, t.original_final_due_at],
+      ['Publish', t.publish_at, false, null],
+      ['Draft in', t.first_draft_submitted_at, false, null],
+      ['Delivered', t.delivered_at, false, null],
+      ['Completed', t.completed_at, false, null]
     ].filter(function (p) { return p[1]; });
     dates.innerHTML = rows.map(function (p) {
       var over = p[2] && !isFinished(t) && daysAway(p[1]) < 0;
-      return '<div class="raildate"><dt>' + esc(p[0]) + '</dt>' +
-        '<dd' + (over ? ' class="is-over"' : '') + '>' + esc(niceDate(p[1])) + '</dd></div>';
+      var moved = p[3] && p[3] !== p[1];
+      return '<div class="raildate' + (moved ? ' has-from' : '') + '"><dt>' + esc(p[0]) + '</dt>' +
+        '<dd' + (over ? ' class="is-over"' : '') + '>' + esc(niceDate(p[1])) +
+        (moved ? '<small>moved from ' + esc(niceDate(p[3])) + '</small>' : '') + '</dd></div>';
     }).join('');
-    $('taskDatesBlock').hidden = false;
+    $('taskDateEdit').hidden = !may('ops', 'work');
+    $('taskDatesBlock').hidden = !rows.length && !may('ops', 'work');
 
+    /* The owner is on the identity line and in the select below; the rail
+       names only the people the line does not. */
     var people = (t.assignees || []);
     $('taskPeople').innerHTML = [
-      ['Owner', people.filter(function (a) { return a.responsibility === 'owner'; }).map(function (a) { return a.name; }).join(', ')],
       ['Reviewer', people.filter(function (a) { return a.responsibility === 'reviewer'; }).map(function (a) { return a.name; }).join(', ')],
       ['Contributors', people.filter(function (a) { return a.responsibility === 'contributor'; }).map(function (a) { return a.name; }).join(', ')]
     ].filter(function (p) { return p[1]; }).map(function (p) {
       return '<div><dt>' + esc(p[0]) + '</dt><dd>' + esc(p[1]) + '</dd></div>';
-    }).join('') || '<div><dt>Owner</dt><dd class="mute">Nobody yet</dd></div>';
+    }).join('');
+    $('taskPeopleBlock').hidden = !$('taskPeople').innerHTML && !may('ops', 'manage');
 
     var sel = $('taskOwner');
     sel.innerHTML = '<option value="">Nobody</option>' + state.members.map(function (m) {
@@ -994,7 +1005,6 @@
 
     var wf = state.workflows.filter(function (w) { return w.id === t.workflow_id; })[0];
     $('taskFacts').innerHTML = [
-      ['Number', 'T' + t.task_no],
       ['Workflow', (wf && wf.name) || ''],
       ['Deliverable', t.deliverable_type],
       ['Languages', (t.language_codes || []).join(', ')],
@@ -1004,6 +1014,20 @@
     ].filter(function (p) { return p[1]; }).map(function (p) {
       return '<div><dt>' + esc(p[0]) + '</dt><dd>' + esc(p[1]) + '</dd></div>';
     }).join('');
+
+    /* The last three events, as the client record's rail excerpts its
+       Activity pane: read once with the task, so the block costs nothing. */
+    var recent = state.detail.events.slice(0, 3);
+    var rb = $('taskRecentBlock');
+    if (rb) {
+      rb.hidden = !recent.length;
+      $('taskRecent').innerHTML = '<ul class="raillog raillog-plain">' + recent.map(function (e) {
+        var d = eventDetail(e);
+        return '<li><span class="raillog-what">' + esc(EVENT_WORD[e.event_type] || e.event_type.replace(/_/g, ' ')) + '</span>' +
+          (d ? '<span class="raillog-detail">' + esc(d) + '</span>' : '') +
+          '<span class="raillog-when">' + esc(niceTime(e.created_at)) + (whoName(e) ? ' · ' + esc(whoName(e)) : '') + '</span></li>';
+      }).join('') + '</ul>';
+    }
   }
 
   /* One forward move drawn as the action, and every other move the workflow
@@ -1041,9 +1065,14 @@
     }
     var first = forwardOf(t, nexts);
     var rest = nexts.filter(function (k) { return k !== first; });
+    /* The head already carries the stage as its chip, so the rail does not say
+       it again; and the move is a button at its own width, never a slab across
+       the rail: full width it was the loudest thing on the page, louder than
+       the overdue line above it, and on a phone it was the banner this
+       portal's section heads have refused for months. */
     box.innerHTML =
-      '<p class="railnow"><span class="tone ' + stageTone(t) + '">' + esc(stageLabel(t)) + '</span></p>' +
-      (can ? '<button class="btn btn-go railmove" data-go="' + esc(first) + '" type="button">Move to ' + esc(labelForKey(first)) + '</button>' : '') +
+      (can ? '<button class="btn btn-go railmove" data-go="' + esc(first) + '" type="button">Move to ' + esc(labelForKey(first)) + '</button>'
+           : '<p class="mute">' + esc(stageLabel(t)) + '</p>') +
       (can && rest.length
         ? '<div class="railother"><label class="field-label" for="taskOther">Or move to</label>' +
           '<select class="select select-sm" id="taskOther">' +
@@ -1333,6 +1362,10 @@
     if (nw) nw.addEventListener('click', openNew);
     var back = $('workBack');
     if (back) back.addEventListener('click', showList);
+    var mk = $('taskMark');
+    if (mk) mk.addEventListener('click', function () {
+      if (window.ADspaceCopy) window.ADspaceCopy.to(mk, mk.textContent);
+    });
 
     // Panes
     var tabs = $('taskTabs');
@@ -1402,9 +1435,25 @@
     if (os) os.addEventListener('click', function () {
       var t = state.task;
       if (!t) return;
-      call('ops_assign_task', { p_task: t.id, p_owner: $('taskOwner').value || null, p_version: t.version },
-        'taskOwnerMsg', function () { readTask(t.id); });
+      var sel = $('taskOwner');
+      var pick = sel.value || null;
+      if (pick === ownerId(t)) { msg('taskOwnerMsg', 'No change.', ''); return; }
+      /* The select already shows the new name before anything is saved, so a
+         refused save left the screen claiming a change the database had not
+         made, and a successful one changed nothing near the control: the line
+         that says Saved is here, and a refusal puts the select back. */
+      call('ops_assign_task', { p_task: t.id, p_owner: pick, p_version: t.version },
+        'taskOwnerMsg', function (d) {
+          applyTask(d);
+          var m = state.members.filter(function (x) { return x.id === pick; })[0];
+          state.owners[t.id] = (m && m.name) || '';
+          state.ownerIds[t.id] = pick;
+          readTask(t.id, function () { msg('taskOwnerMsg', 'Saved.', 'ok'); });
+        }, function () { sel.value = ownerId(t) || ''; });
     });
+
+    var dm = $('taskDateMove');
+    if (dm) dm.addEventListener('click', function () { openDue('final'); });
 
     // Sheets
     ['dueClose', 'dueCancel'].forEach(function (id) {
