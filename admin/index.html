@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260922c">
+<link rel="stylesheet" href="/css/portal.css?v=20260922d">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,22 +28,22 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260922c"></script>
-<script src="/js/words.js?v=20260922c"></script>
-<script src="/js/copy.js?v=20260922c"></script>
-<script src="/js/ask.js?v=20260922c"></script>
-<script src="/js/state.js?v=20260922c"></script>
-<script src="/js/group.js?v=20260922c"></script>
-<script src="/js/menu.js?v=20260922c"></script>
-<script src="/js/api.js?v=20260922c"></script>
-<script src="/js/money.js?v=20260922c"></script>
-<script src="/js/mockups.js?v=20260922c"></script>
+<script src="/js/config.js?v=20260922d"></script>
+<script src="/js/words.js?v=20260922d"></script>
+<script src="/js/copy.js?v=20260922d"></script>
+<script src="/js/ask.js?v=20260922d"></script>
+<script src="/js/state.js?v=20260922d"></script>
+<script src="/js/group.js?v=20260922d"></script>
+<script src="/js/menu.js?v=20260922d"></script>
+<script src="/js/api.js?v=20260922d"></script>
+<script src="/js/money.js?v=20260922d"></script>
+<script src="/js/mockups.js?v=20260922d"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260922c" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260922d" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -1509,8 +1509,14 @@
         <button class="backlink" id="workBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
 
         <section class="panel rec-head" id="taskHead">
-          <div class="rec-id">
-            <span class="rec-mark" id="taskMark" aria-hidden="true"></span>
+          <!-- No mark. A task has no logo and no monogram worth drawing: the
+               number is what an invoice, a message and a spreadsheet row all
+               name it by, and pressed into a 46px disc it read as a badly
+               fitted logo. It is the first line of who this is, in the token
+               face the Register gives a serial, and a copy control for the
+               same reason that one is. -->
+          <div class="rec-id rec-id-plain">
+            <button class="serial-copy rec-token" id="taskMark" type="button"></button>
             <div class="rec-who">
               <div class="rec-name"><h2 id="taskName"></h2></div>
               <p class="rec-id-meta" id="taskMeta"></p>
@@ -1619,18 +1625,25 @@
               <h3 class="railtitle">Your time</h3>
               <div id="taskTimer"></div>
             </div>
+            <!-- The dates are stated here and nowhere else. The Overview had
+                 them too, so a task record printed 10 Sept, 15 Sept and
+                 18 Sept twice on one screen, and the control that moves one
+                 sat with the copy that was not in the rail. -->
             <div class="railblock rail-after" id="taskDatesBlock">
               <h3 class="railtitle">Key dates</h3>
               <dl class="raildates" id="taskDates"></dl>
+              <div class="rail-date-edit rail-date-go" id="taskDateEdit" data-need="ops:work">
+                <button class="btn btn-quiet btn-sm ovgo" id="taskDateMove" type="button">Move a date<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
+              </div>
             </div>
+            <!-- The owner is named once, on the identity line, and changed
+                 here. A read-only Owner row above the select that changes it
+                 was the same fact three times on one screen. -->
             <div class="railblock rail-after" id="taskPeopleBlock">
               <h3 class="railtitle">People</h3>
               <dl class="facts" id="taskPeople"></dl>
-              <!-- Named for the act, not for the field above it: "Owner" over
-                   a select under a line already reading "Owner  Aisyah" said
-                   the same word twice and read as two of the same fact. -->
               <div class="rail-date-edit" id="taskOwnerEdit" data-need="ops:manage">
-                <label for="taskOwner">Change owner</label>
+                <label for="taskOwner">Owner</label>
                 <select class="select select-sm" id="taskOwner"></select>
                 <button class="btn btn-sm" id="taskOwnerSave" type="button">Save</button>
               </div>
@@ -1639,6 +1652,10 @@
             <div class="railblock rail-after">
               <h3 class="railtitle">Details</h3>
               <dl class="facts" id="taskFacts"></dl>
+            </div>
+            <div class="railblock rail-after" id="taskRecentBlock" hidden>
+              <h3 class="railtitle">Recent activity</h3>
+              <div id="taskRecent"></div>
             </div>
           </aside>
         </div>
@@ -2314,13 +2331,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260922c"></script>
-<script src="/js/documents.js?v=20260922c"></script>
-<script src="/js/letters.js?v=20260922c"></script>
-<script src="/js/register.js?v=20260922c"></script>
-<script src="/js/crm.js?v=20260922c"></script>
-<script src="/js/team.js?v=20260922c"></script>
-<script src="/js/campaigns.js?v=20260922c"></script>
-<script src="/js/ops.js?v=20260922c"></script>
+<script src="/js/admin.js?v=20260922d"></script>
+<script src="/js/documents.js?v=20260922d"></script>
+<script src="/js/letters.js?v=20260922d"></script>
+<script src="/js/register.js?v=20260922d"></script>
+<script src="/js/crm.js?v=20260922d"></script>
+<script src="/js/team.js?v=20260922d"></script>
+<script src="/js/campaigns.js?v=20260922d"></script>
+<script src="/js/ops.js?v=20260922d"></script>
 </body>
 </html>

@@ -3430,7 +3430,27 @@ body > .shell { width: 100%; }
 
 /* The task number is the mark, because that is what an invoice, a message and
    a spreadsheet row all name a task by; a monogram of a title says nothing. */
-.rec-mark-no { font-size: 13px; font-variant-numeric: tabular-nums; letter-spacing: 0; }
+/* A record with no mark: the task. Its number heads the left part in the
+   token face and copies on a press, the way a serial does on the Register,
+   and the right part centres on the card as it does on every other record.
+   On a phone the ⋯ and the chip share the token's line, so the first row is
+   the number on the left and the state on the right, and the title and the
+   meta follow under them full width. */
+.rec-id.rec-id-plain {
+  grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "token ctl" "who ctl";
+  row-gap: 3px;
+}
+.rec-token {
+  grid-area: token; justify-self: start; min-height: var(--ctl-h-sm);
+  margin: calc((18px - var(--ctl-h-sm)) / 2) 0 calc((18px - var(--ctl-h-sm)) / 2) -6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px; font-weight: 600; letter-spacing: 0; color: var(--ink-mute);
+}
+/* On a phone only the number shares its line with the state and the ⋯; the
+   title and the meta take the card's full width under them, or a chip beside
+   the meta line wrapped the owner's name onto a line of its own. */
+.is-narrow .rec-id.rec-id-plain { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "token ctl" "who who"; row-gap: 4px; }
+.is-narrow .rec-id.rec-id-plain .rec-ctl { align-self: center; }
 
 /* A checklist item is a statement that something was done, so the row is the
    label, when it was made, and one target that clears the control floor. */
@@ -3449,15 +3469,40 @@ body > .shell { width: 100%; }
 /* The rail's stage block: where it is now, the one move that carries it on,
    and every other move the workflow allows behind a select. Eight buttons in
    a rail is eight things to read before doing the one that matters. */
+/* At its own width, never a slab across the rail: full width it was the
+   loudest thing on the page, louder than the overdue line above it, and on a
+   phone it was the banner this portal's section heads have refused for
+   months. The chip that stood over it is gone too; the head already carries
+   the stage. */
 .railnow { margin: 0 0 10px; }
-.railmove { width: 100%; }
+.railmove { width: auto; }
 .railother { margin-top: 12px; }
 .railother .field-label { display: block; margin-bottom: 4px; }
 .railother .select { width: 100%; }
 .raildate { display: flex; align-items: baseline; gap: 10px; }
 .raildate dt { font-size: 13px; color: var(--ink-soft); min-width: 0; }
-.raildate dd { margin: 0 0 0 auto; font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.raildate dd { margin: 0 0 0 auto; font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
 .raildate dd.is-over { color: var(--warn); font-weight: 600; }
+/* A commitment that moved keeps where it moved from under the date it is now,
+   in the mute face, because the original is written once so replanning can
+   be seen and the rail is the one place the dates are stated. */
+.raildate dd small { display: block; font-size: 12px; font-weight: 400; color: var(--ink-mute); }
+.raildate.has-from { align-items: start; }
+/* Move a date sits under the dates it moves, on their left margin, as the
+   client record's Key dates carry their edit. */
+.rail-date-edit.rail-date-go { display: flex; }
+.rail-date-go .ovgo { margin: 0 0 0 -10px; }
+.rail-date-edit.rail-date-go[hidden] { display: none; }
+/* The Overview's links: the kind, then the label as the link, one a line. */
+.ovlinks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ovlinks li { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 13.5px; }
+.ovlinks a, .ovlinks li > span:last-child {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.ovlinks a { color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+/* A rail excerpt with no section glyph: a task's events are all the task's. */
+.raillog-plain li { grid-template-columns: minmax(0, 1fr); }
+.raillog-plain li > span { grid-column: 1; }
 .timer-run { font-size: 17px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 
 .ovnote { margin: 0 0 8px; font-size: 13.5px; color: var(--ink); overflow-wrap: anywhere; }
@@ -4929,7 +4974,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 /* No rule under nothing. The dates above are omitted one by one when the
    record does not hold them, so a client with none left a heading, a gap and
    a hairline over an empty list. */
-.raildates:empty + .rail-date-edit { margin-top: 0; padding-top: 0; border-top: 0; }
+.raildates:empty + .rail-date-edit, .facts:empty + .rail-date-edit { margin-top: 0; padding-top: 0; border-top: 0; }
 .rail-date-edit label {
   grid-column: 1 / -1; font-size: 12px; font-weight: 600;
   letter-spacing: 0; color: var(--ink-mute);
