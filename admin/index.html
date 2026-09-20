@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260920b">
+<link rel="stylesheet" href="/css/portal.css?v=20260920c">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,23 +28,23 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260920b"></script>
-<script src="/js/words.js?v=20260920b"></script>
-<script src="/js/copy.js?v=20260920b"></script>
-<script src="/js/ask.js?v=20260920b"></script>
-<script src="/js/state.js?v=20260920b"></script>
-<script src="/js/group.js?v=20260920b"></script>
-<script src="/js/menu.js?v=20260920b"></script>
-<script src="/js/cmdbar.js?v=20260920b"></script>
-<script src="/js/api.js?v=20260920b"></script>
-<script src="/js/money.js?v=20260920b"></script>
-<script src="/js/mockups.js?v=20260920b"></script>
+<script src="/js/config.js?v=20260920c"></script>
+<script src="/js/words.js?v=20260920c"></script>
+<script src="/js/copy.js?v=20260920c"></script>
+<script src="/js/ask.js?v=20260920c"></script>
+<script src="/js/state.js?v=20260920c"></script>
+<script src="/js/group.js?v=20260920c"></script>
+<script src="/js/menu.js?v=20260920c"></script>
+<script src="/js/cmdbar.js?v=20260920c"></script>
+<script src="/js/api.js?v=20260920c"></script>
+<script src="/js/money.js?v=20260920c"></script>
+<script src="/js/mockups.js?v=20260920c"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260920b" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260920c" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -1346,13 +1346,6 @@
 
 
         <div id="creatorList"></div>
-        <!-- The commitment, under the list it commits. Adding a creator is
-             repeatable and reversible; this closes selection and puts the
-             campaign into production, so it is the one weighted control on
-             the pane and Add creators reads as the step before it. -->
-        <div class="row" id="campLockRow" style="margin-top:12px">
-          <button class="btn btn-primary" id="campLock" type="button" hidden>Confirm creators</button>
-        </div>
           </div>
 
           <div class="rec-pane" data-pane="schedule" hidden>
@@ -1370,9 +1363,18 @@
         <div class="viewhead">
           <span class="headmark"><h2>Client selection</h2></span>
         </div>
-        <!-- The link and campaign actions stay in the identity area above;
-             this pane is only the client's offered and chosen sequence. -->
+        <!-- The link stays in the identity area above; this pane is the
+             client's offered and chosen sequence, and the one act on it. -->
         <div id="pickList"></div>
+        <!-- The commitment, under the selection it commits. It stood above
+             the tab strip and was therefore drawn over Overview, Schedule
+             and Finance too, where it acts on nothing: three weighted
+             controls on a pane whose own primary is Save. A control sits
+             with the thing it changes, and what this changes is the list
+             directly above it. -->
+        <div class="row" id="campLockRow" style="margin-top:12px">
+          <button class="btn btn-primary" id="campLock" type="button" hidden>Confirm creators</button>
+        </div>
           </div>
 
           <div class="rec-pane" data-pane="finance" hidden>
@@ -1749,6 +1751,13 @@
             <div class="railblock rail-after" id="taskDatesBlock">
               <h3 class="railtitle">Key dates</h3>
               <dl class="raildates" id="taskDates"></dl>
+              <!-- An extension somebody has asked for and nobody has answered.
+                   It sits with the dates it is about, because that is the one
+                   place the dates are stated, and it carries its own actions:
+                   the person asked answers it, the person who asked takes it
+                   back. -->
+              <div class="dueask" id="dueAsk" hidden></div>
+              <div class="msg" id="dueAskMsg"></div>
               <div class="rail-date-edit rail-date-go" id="taskDateEdit" data-need="ops:work">
                 <button class="btn btn-quiet btn-sm ovgo" id="taskDateMove" type="button">Move a date<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button>
               </div>
@@ -2316,6 +2325,32 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
+<!-- Release to client is the one move on a creator's card that a client sees
+     the moment it is made, so it is the one that is checked first. The list is
+     the team's own quality check, all of it required: the count says how far
+     it has got, so a control that will not move is never a mystery. What is
+     recorded is who checked and when, in the activity record; the step itself
+     is the evidence the check was made, because nothing else opens this gate.
+     It sits outside the sections, as every sheet here does. -->
+<div class="sheet" id="qcSheet" hidden>
+  <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="qcTitle">
+    <div class="sheet-head">
+      <h3 id="qcTitle">Quality check</h3>
+      <button class="iconbtn" id="qcClose" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <p class="qc-who" id="qcWho"></p>
+    <div class="qclist" id="qcList"></div>
+    <div class="sheet-foot">
+      <span class="lpicksum" id="qcCount"></span>
+      <button class="btn btn-go" id="qcGo" type="button" disabled>Release to client</button>
+      <button class="btn btn-quiet" id="qcCancel" type="button">Cancel</button>
+    </div>
+    <div class="msg" id="qcMsg"></div>
+  </div>
+</div>
+
 <!-- One sheet issues every kind of document: the kind decides which fields
      draw and what they start with, and the database builds the reference
      unless one is typed over it. It sits outside the sections, because a
@@ -2497,13 +2532,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260920b"></script>
-<script src="/js/documents.js?v=20260920b"></script>
-<script src="/js/letters.js?v=20260920b"></script>
-<script src="/js/register.js?v=20260920b"></script>
-<script src="/js/crm.js?v=20260920b"></script>
-<script src="/js/team.js?v=20260920b"></script>
-<script src="/js/campaigns.js?v=20260920b"></script>
-<script src="/js/ops.js?v=20260920b"></script>
+<script src="/js/admin.js?v=20260920c"></script>
+<script src="/js/documents.js?v=20260920c"></script>
+<script src="/js/letters.js?v=20260920c"></script>
+<script src="/js/register.js?v=20260920c"></script>
+<script src="/js/crm.js?v=20260920c"></script>
+<script src="/js/team.js?v=20260920c"></script>
+<script src="/js/campaigns.js?v=20260920c"></script>
+<script src="/js/ops.js?v=20260920c"></script>
 </body>
 </html>
