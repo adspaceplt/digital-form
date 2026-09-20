@@ -245,7 +245,7 @@
     if (!all.length) {
       box.innerHTML = '<div class="softpanel"><div class="emptyline"><b>Nobody on the team yet.</b>' +
         '<button class="btn btn-sm" data-a="first" type="button">Add the first member</button></div></div>';
-      box.querySelector('[data-a="first"]').addEventListener('click', function () { openMemberBox(null); });
+      box.querySelector('[data-a="first"]').addEventListener('click', function () { openMemberBox(null, this); });
       return;
     }
     if (!rows.length) {
@@ -345,7 +345,7 @@
       }, function () { saveMember(m, { active: false }); });
     });
     var ed = el.querySelector('[data-a="edit"]');
-    if (ed) ed.addEventListener('click', function () { openMemberBox(m); });
+    if (ed) ed.addEventListener('click', function () { openMemberBox(m, this); });
     var inv = el.querySelector('[data-a="invite"]');
     if (inv) inv.addEventListener('click', function () { reinvite(m); });
     return el;
@@ -426,7 +426,7 @@
 
     wireMenu(el);
     var ren = el.querySelector('[data-a="rename"]');
-    if (ren) ren.addEventListener('click', function () { openGroupBox(r); });
+    if (ren) ren.addEventListener('click', function () { openGroupBox(r, this); });
     var del = el.querySelector('[data-a="del"]');
     if (del) del.addEventListener('click', function () {
       window.ADspaceConfirm.ask({
@@ -518,13 +518,20 @@
     });
   });
 
-  // One panel adds a group or edits one, as one panel adds a service.
-  function openGroupBox(r) {
+  /* One sheet adds a group or edits one, the same sheet a colleague and a
+     creator are edited in. */
+  var groupOpener = null;
+  function shutGroupBox() {
+    window.ADspaceSheet.close();
+    state.editing = null;
+    groupOpener = null;
+  }
+  function openGroupBox(r, opener) {
     shutMenus();   // it was chosen from a ⋯, which does not repaint behind it
     state.editing = r || null;
+    groupOpener = opener || null;
     $('grTitle').textContent = r ? 'Edit group' : 'New group';
     $('grSave').textContent = r ? 'Save' : 'Add';
-    $('groupAddBox').hidden = false;
     $('grName').value = r ? r.name : '';
     // A new group starts able to work the section everybody needs, and to
     // read nothing else: what it may destroy is always chosen deliberately.
@@ -558,10 +565,14 @@
       cb.disabled = Boolean(r && r.slug === 'admin');
     });
     msg('grMsg', '');
-    $('grName').focus();
+    window.ADspaceSheet.show($('groupAddBox'), {
+      opener: groupOpener, focus: '#grName',
+      onClose: function () { state.editing = null; groupOpener = null; }
+    });
   }
-  $('groupAdd').addEventListener('click', function () { openGroupBox(null); });
-  $('grCancel').addEventListener('click', function () { $('groupAddBox').hidden = true; state.editing = null; });
+  $('groupAdd').addEventListener('click', function () { openGroupBox(null, this); });
+  $('grCancel').addEventListener('click', shutGroupBox);
+  $('grClose').addEventListener('click', shutGroupBox);
   $('grSave').addEventListener('click', function () {
     var name = ($('grName').value || '').trim();
     if (!name) { msg('grMsg', 'A name is required.', 'err'); return; }
@@ -583,7 +594,7 @@
       if (name !== r.name) patch.name = name;
       Object.keys(flags).forEach(function (k) { if (Boolean(r[k]) !== flags[k]) patch[k] = flags[k]; });
       if (JSON.stringify(accessOf(r)) !== JSON.stringify(access)) patch.access = access;
-      $('groupAddBox').hidden = true; state.editing = null;
+      shutGroupBox();
       if (Object.keys(patch).length) saveGroup(r, patch);
       return;
     }
@@ -595,7 +606,7 @@
     db.from('team_roles').insert(row).then(function (q) {
       if (q.error) { msg('grMsg', q.error.message, 'err'); return; }
       log('team.group_added', name, '');
-      $('groupAddBox').hidden = true;
+      shutGroupBox();
       msg('groupMsg', name + ' added.', 'ok');
       load();
     });
@@ -603,12 +614,23 @@
 
   // ---- Add or edit a person -----------------------------------------------
   var editingMember = null;
-  function openMemberBox(m) {
+  /* The form is a sheet over the list, the shape a creator is edited in: on
+     a phone it comes up from the floor over the row somebody pressed, rather
+     than unfolding a screen above it where pressing Edit looked like nothing
+     had happened. The scrim does not throw typed changes away; the close
+     mark, Cancel and Escape are the ways out. */
+  var memberOpener = null;
+  function shutMemberBox() {
+    window.ADspaceSheet.close();
+    editingMember = null;
+    memberOpener = null;
+  }
+  function openMemberBox(m, opener) {
     shutMenus();
     editingMember = m || null;
+    memberOpener = opener || null;
     $('tmTitle').textContent = m ? 'Edit member' : 'New team member';
     $('tmSave').textContent = m ? 'Save' : 'Add';
-    $('teamAddBox').hidden = false;
     $('tmName').value = m ? (m.name || '') : '';
     $('tmEmail').value = m ? (m.email || '') : '';
     $('tmStaff').value = m ? (m.staff_code || '') : '';
@@ -616,10 +638,14 @@
     $('tmCap').value = m && m.capacity_minutes_week ? String(Math.round(m.capacity_minutes_week / 30) / 2) : '';
     fillRolePick(); $('tmRole').value = m ? m.role : 'account';
     msg('tmMsg', '');
-    $('tmName').focus();
+    window.ADspaceSheet.show($('teamAddBox'), {
+      opener: memberOpener, focus: '#tmName',
+      onClose: function () { editingMember = null; memberOpener = null; }
+    });
   }
-  $('teamAdd').addEventListener('click', function () { openMemberBox(null); });
-  $('tmCancel').addEventListener('click', function () { $('teamAddBox').hidden = true; editingMember = null; });
+  $('teamAdd').addEventListener('click', function () { openMemberBox(null, this); });
+  $('tmCancel').addEventListener('click', shutMemberBox);
+  $('tmClose').addEventListener('click', shutMemberBox);
   $('tmSave').addEventListener('click', function () {
     var name = ($('tmName').value || '').trim();
     var email = ($('tmEmail').value || '').trim().toLowerCase();
@@ -641,7 +667,7 @@
          moves the door. The login itself stays where it was until somebody is
          invited at the new address. */
       function write() {
-        $('teamAddBox').hidden = true; editingMember = null;
+        shutMemberBox();
         db.from('team_members').update(fields).eq('id', m.id).then(function (r) {
           if (r.error) {
             msg('teamMsg', /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
@@ -673,7 +699,7 @@
           return;
         }
         log('team.added', name, email + ' · ' + roleName(role));
-        $('teamAddBox').hidden = true;
+        shutMemberBox();
         load();
         // The row is theirs; now the login. The function holds the key the
         // browser must not, and emails them the sign-in link.
