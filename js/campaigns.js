@@ -2323,6 +2323,43 @@
      is the one move on this card that cannot be taken back quietly. */
   var ADVANCE_WORD = { submitted: 'Mark submitted', reviewing: 'Release to client' };
 
+  /* THE QUALITY CHECK BEFORE A CLIENT SEES THE WORK.
+     Release is the only move on this card a client sees the moment it is
+     made, and until now it was one press. These are the team's own checks,
+     in the order somebody watches a video: what is written on it, then who
+     it is for, then how it plays. All of them are required — a check that
+     can be skipped is a check nobody makes — and the count says how far it
+     has got, so a control that will not move is never a mystery.
+
+     They are stated here and nowhere else. A list somebody can edit on a
+     settings page is a later thing and would need a table; what this needed
+     first was the gate. */
+  var QC_CHECKS = [
+    ['Copy and facts', [
+      'Spelling and grammar',
+      'Brand and product names spelled correctly',
+      'Client name, location and contact details correct',
+      'Campaign name and dates correct',
+      'Prices, offers and terms correct'
+    ]],
+    ['The brief', [
+      'Caption, hashtags and mentions match the brief',
+      'Call to action present',
+      'Paid partnership label where required',
+      'No competitor brands or third parties visible'
+    ]],
+    ['The file', [
+      'Correct cut and aspect ratio for the platform',
+      'Nothing important under the platform\'s own overlays',
+      'Duration within the platform\'s limit',
+      'Audio audible throughout, music cleared for use',
+      'Visual flow, no lag or dropped frames'
+    ]]
+  ];
+  function qcAll() {
+    return QC_CHECKS.reduce(function (a, g) { return a.concat(g[1]); }, []);
+  }
+
   /* Whose round a `changes` is. The client's own decision is stamped by
      review_draft; a round the team sent back is stamped here. Rows that
      predate the column can only be the client's. */
@@ -2847,6 +2884,10 @@
       var m = card.querySelector('[data-msg]');
       if (why) { m.textContent = why; m.className = 'msg err'; return; }
       delete patch.id;
+      /* Every other step is the team recording its own progress and moves on
+         the press. This one hands the work to the client, so it is checked
+         first and the sheet is what releases it. */
+      if (to === 'reviewing') { openQc(o, patch); return; }
       advanceOption(o, to, patch);
     });
     on('back',      function () { stepBack(o, prevState(o.state, o)); });
@@ -2993,6 +3034,82 @@
       loadOptions();
     });
   }
+
+  /* ---- The quality check ------------------------------------------------
+     One sheet, opened by the one control it gates. It holds what it was
+     opened with rather than reading the card again, because the card can
+     repaint underneath an open sheet. */
+  var qc = null;
+
+  function openQc(o, patch) {
+    qc = { o: o, patch: patch, done: {} };
+    var files = (state.files && state.files[o.id]) || [];
+    var name = (o.creators || {}).name || 'this creator';
+    $('qcWho').textContent = name + ' · ' +
+      (files.length ? files.length + (files.length === 1 ? ' file' : ' files') : 'pasted link');
+    msg('qcMsg', '');
+    var box = $('qcList');
+    box.innerHTML = '';
+    /* Fourteen checks read as fourteen only when they are one run. In three
+       groups — what it says, what the brief asked for, how the file plays —
+       it is three things to hold, which is what a person can. */
+    var n = 0;
+    QC_CHECKS.forEach(function (group) {
+      var head = document.createElement('p');
+      head.className = 'qcgroup';
+      head.textContent = group[0];
+      box.appendChild(head);
+      group[1].forEach(function (word) {
+        var row = document.createElement('label');
+        row.className = 'qcrow';
+        row.innerHTML = '<input type="checkbox" data-qc="' + n + '"><span>' + esc(word) + '</span>';
+        box.appendChild(row);
+        n++;
+      });
+    });
+    Array.prototype.forEach.call(box.querySelectorAll('input'), function (el) {
+      el.addEventListener('change', function () {
+        qc.done[this.getAttribute('data-qc')] = this.checked;
+        qcCount();
+      });
+    });
+    qcCount();
+    $('qcSheet').hidden = false;
+    var first = box.querySelector('input');
+    if (first) first.focus();
+  }
+
+  function qcCount() {
+    if (!qc) return;
+    var all = qcAll();
+    var n = all.filter(function (_, i) { return qc.done[i]; }).length;
+    $('qcCount').textContent = n + ' of ' + all.length + ' checked';
+    /* All of them, or the gate is decoration. The count is what says why the
+       button will not move, so nothing has to be explained in a sentence. */
+    $('qcGo').disabled = n < all.length;
+  }
+
+  function shutQc() { $('qcSheet').hidden = true; qc = null; }
+
+  $('qcClose').addEventListener('click', shutQc);
+  $('qcCancel').addEventListener('click', shutQc);
+  $('qcSheet').addEventListener('click', function (e) { if (e.target === this) shutQc(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('qcSheet').hidden) shutQc();
+  });
+
+  $('qcGo').addEventListener('click', function () {
+    if (!qc) return;
+    var o = qc.o, patch = qc.patch;
+    /* Who checked it and when. The step itself is the evidence the check was
+       made, because nothing else opens this gate, so the record carries the
+       name rather than a second copy of the list. */
+    log('campaign.qc', logSubject(),
+      ((o.creators || {}).name || 'A creator') + ' · quality checked by ' +
+      ((bridge.actorName && bridge.actorName()) || 'the team'));
+    shutQc();
+    advanceOption(o, 'reviewing', patch);
+  });
 
   function advanceOption(o, to, fields) {
     var patch = Object.assign({}, fields || {}, { state: to });

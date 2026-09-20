@@ -115,6 +115,9 @@
     'denied': 'You do not have access to do that.',
     'not-found': 'That task is no longer there.',
     'stale': 'Somebody changed this task while it was open. It has been reloaded.',
+    'not-yours': 'That extension is somebody else\'s to decide.',
+    'decided': 'That extension has already been answered.',
+    'no-date': 'A date is required.',
     'bad-transition': 'That is not a move this workflow offers from here.',
     'no-such-stage': 'That is not a stage in this workflow.',
     'ready-needs-owner-and-due': 'Ready needs an owner and a final due date.',
@@ -906,7 +909,12 @@
       db.from('ops_task_assignees')
         .select('*, team_members!ops_task_assignees_team_member_id_fkey(name)')
         .eq('task_id', id).is('ended_at', null),
-      db.from('ops_video_details').select('*').eq('task_id', id)
+      db.from('ops_video_details').select('*').eq('task_id', id),
+      /* The extension nobody has answered yet. Read with the task, because
+         it is part of where the task stands and a second round trip would
+         paint the rail twice. A refused read leaves no block rather than
+         failing the record: the dates themselves are still true. */
+      db.from('ops_due_requests').select('*').eq('task_id', id).eq('state', 'asked')
     ]).then(function (r) {
       /* Who owns it is part of the record, so a refused read of the
          assignments is named rather than drawn as an unowned task. */
@@ -916,6 +924,7 @@
         return;
       }
       var t = r[0].data;
+      state.due = (((r[7] && r[7].data) || [])[0]) || null;
       t.assignees = ((r[5] && r[5].data) || []).map(function (a) {
         return { team_member_id: a.team_member_id, responsibility: a.responsibility,
                  name: (a.team_members && a.team_members.name) || '' };
@@ -1249,17 +1258,46 @@
     review_decision: 'Review decided', file_added: 'Link added', file_removed: 'Link removed',
     file_restored: 'Link restored', checklist_changed: 'Checklist changed',
     video_changed: 'Video details changed', delivered: 'Delivered', completed: 'Completed',
-    reopened: 'Reopened', cancelled: 'Cancelled', archived: 'Archived', restored: 'Restored'
+    reopened: 'Reopened', cancelled: 'Cancelled', archived: 'Archived', restored: 'Restored',
+    /* An extension is asked for, answered, or taken back; the date moving
+       is still `due_changed`, so a report reads replanning the same way
+       whether or not an approval was needed. */
+    due_requested: 'Extension requested', due_approved: 'Extension approved',
+    due_declined: 'Extension declined'
   };
+  /* The reason a date moved is a stored key and the sheet offers a word for
+     it; the record printed the key. Named once, with sentence case as the
+     fallback so a category added next year is still a word. */
+  var REASON_WORD = {
+    client_request: 'Client request', scope_change: 'Scope change',
+    capacity: 'Internal capacity', pending_assets: 'Pending assets',
+    pending_confirmation: 'Pending confirmation', correction: 'Incorrect date listed'
+  };
+  function reasonWord(k) {
+    if (!k) return '';
+    if (REASON_WORD[k]) return REASON_WORD[k];
+    var w = String(k).replace(/_/g, ' ');
+    return w.charAt(0).toUpperCase() + w.slice(1);
+  }
+
   function eventDetail(e) {
     var d = e.detail || {}, to = e.to_value || {}, from = e.from_value || {};
+    /* An extension asked for, answered or taken back reads like the move it
+       is about, so the two sit together in the log rather than in two
+       vocabularies. */
+    if (e.event_type === 'due_requested' || e.event_type === 'due_approved' ||
+        e.event_type === 'due_declined') {
+      return (to.kind === 'final' ? 'Final due' : 'First draft due') + ' ' +
+        (from.value ? niceDate(from.value) + ' to ' : '') + niceDate(to.value) +
+        (d.reason ? ' · ' + reasonWord(d.reason) : '');
+    }
     if (e.event_type === 'stage_changed') {
       return (from.stage_key ? labelForKey(from.stage_key) + ' to ' : '') + labelForKey(to.stage_key);
     }
     if (e.event_type === 'due_changed') {
       return (to.kind === 'final' ? 'Final due' : 'First draft due') + ' ' +
         (from.value ? niceDate(from.value) + ' to ' : '') + niceDate(to.value) +
-        (d.reason ? ' · ' + String(d.reason).replace(/_/g, ' ') : '');
+        (d.reason ? ' · ' + reasonWord(d.reason) : '');
     }
     if (e.event_type === 'work_stopped') return minutesWord(to.minutes);
     if (e.event_type === 'checklist_changed') return to.label + (to.done ? ' ticked' : ' cleared');
@@ -1267,7 +1305,7 @@
     if (e.event_type === 'file_added' || e.event_type === 'file_removed' || e.event_type === 'file_restored') {
       return to.label || to.kind || '';
     }
-    return d.note || d.reason || '';
+    return d.note || reasonWord(d.reason) || '';
   }
   function labelForKey(k) {
     var t = state.task;
@@ -1331,7 +1369,8 @@
         (moved ? '<small>moved from ' + esc(niceDate(p[3])) + '</small>' : '') + '</dd></div>';
     }).join('');
     $('taskDateEdit').hidden = !may('ops', 'work');
-    $('taskDatesBlock').hidden = !rows.length && !may('ops', 'work');
+    paintDue(t);
+    $('taskDatesBlock').hidden = !rows.length && !may('ops', 'work') && !state.due;
 
     /* The owner is on the identity line and in the select below; the rail
        names only the people the line does not. */
@@ -1410,6 +1449,60 @@
     var k = ev && ev.from_value.stage_key;
     return k && k !== t.stage_key ? k : null;
   }
+  /* WHOSE DATE IT IS.
+     A commitment is the promise the person who created the task made, so
+     moving it is theirs to allow: the control is named for what pressing it
+     will actually do, and while an ask is open the rail says so with the one
+     action the reader has. Nobody is shown a button that is not theirs. */
+  function whoDecides(t) { return (t && t.created_by) || null; }
+  function myId() { var m = bridge.me && bridge.me(); return (m && m.id) || null; }
+  function needsAsking(t) {
+    var d = whoDecides(t);
+    return Boolean(d && myId() && d !== myId());
+  }
+
+  function paintDue(t) {
+    var mv = $('taskDateMove');
+    if (mv) {
+      /* The same control, named for its consequence. A person moving a date
+         on a task they created moves it; everybody else is asking. */
+      var word = needsAsking(t) ? 'Request extension' : 'Move a date';
+      var lbl = mv.firstChild;
+      if (lbl && lbl.nodeType === 3) lbl.nodeValue = word; else mv.textContent = word;
+      mv.hidden = Boolean(state.due);
+    }
+    var box = $('dueAsk');
+    if (!box) return;
+    msg('dueAskMsg', state.said || '', state.said ? 'ok' : '');
+    state.said = '';
+    var q = state.due;
+    if (!q) { box.hidden = true; box.innerHTML = ''; return; }
+    var mine = myId() && q.asked_by === myId();
+    var yours = myId() && q.decider_id === myId();
+    var who = nameOf(q.asked_by) || 'Somebody';
+    var to = nameOf(q.decider_id) || 'the task owner';
+    box.hidden = false;
+    box.innerHTML =
+      '<p class="dueask-line">' +
+        esc((q.kind === 'final' ? 'Due date' : 'First draft date') + ' to ' + niceDate(q.wants_at)) +
+        '<small>' + esc(mine ? 'Waiting on ' + to : who + ' asked') +
+        (q.note ? ' · ' + esc(q.note) : '') + '</small></p>' +
+      '<div class="dueask-acts">' +
+        (yours
+          ? '<button class="btn btn-sm btn-go" data-due="yes" type="button">Approve</button>' +
+            '<button class="btn btn-sm" data-due="no" type="button">Decline</button>'
+          : mine
+            ? '<button class="btn btn-sm" data-due="withdraw" type="button">Withdraw</button>'
+            : '') +
+      '</div>';
+  }
+
+  function nameOf(id) {
+    if (!id) return '';
+    var m = (state.members || []).filter(function (x) { return x.id === id; })[0];
+    return (m && m.name) || '';
+  }
+
   function paintStageBox(t) {
     var box = $('taskStageBox');
     var s = stageOf(t);
@@ -1878,6 +1971,19 @@
 
     var dm = $('taskDateMove');
     if (dm) dm.addEventListener('click', function () { openDue('final'); });
+    /* Approve, decline or take back an open extension, where the rail drew
+       one. The buttons are painted by paintDue and wired here once. */
+    var da = $('dueAsk');
+    if (da) da.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-due]');
+      if (!b || !state.task || !state.due) return;
+      var act = b.getAttribute('data-due');
+      var fn = act === 'withdraw' ? 'ops_withdraw_due_change' : 'ops_decide_due_change';
+      var args = act === 'withdraw'
+        ? { p_request: state.due.id }
+        : { p_request: state.due.id, p_approve: act === 'yes', p_note: null };
+      call(fn, args, 'dueAskMsg', function () { readTask(state.task.id); });
+    });
 
     // Sheets
     ['dueClose', 'dueCancel'].forEach(function (id) {
@@ -1888,13 +1994,23 @@
       var t = state.task;
       if (!t) return;
       if (!$('dueDate').value) { msg('dueMsg', 'A date is required.', 'err'); return; }
-      call('ops_change_due_date', {
+      /* One call, and the database decides whether this is a move or an ask:
+         a person moving a date on a task they created themselves needs
+         nobody, and everybody else is asking the person who set it. Deciding
+         that here would put the rule in two places. */
+      call('ops_request_due_change', {
         p_task: t.id, p_kind: dueKind === 'final' ? 'final' : 'first_draft',
         p_value: $('dueDate').value + 'T00:00:00Z',
         p_reason: $('dueReason').value,
         p_note: String($('dueNote').value || '').trim() || null,
         p_version: t.version
-      }, 'dueMsg', function () { sheet('dueSheet', false); readTask(t.id); });
+      }, 'dueMsg', function (out) {
+        sheet('dueSheet', false);
+        state.said = out && out.asked
+          ? (out.repeat ? 'That extension is already with them.' : 'Extension requested.')
+          : '';
+        readTask(t.id);
+      });
     });
 
     ['blockClose', 'blockCancel'].forEach(function (id) {
@@ -2072,7 +2188,14 @@
 
   wire();
   showPane('overview', false);
-  window.ADspaceOps = { enter: enter, urlState: urlState, signedIn: signedIn };
+  window.ADspaceOps = {
+    enter: enter, urlState: urlState, signedIn: signedIn,
+    /* Which task is open, and a re-read of it. The record is otherwise only
+       reachable through a press, so a change made to the row underneath it
+       has no way to reach the screen. */
+    openId: function () { return (state.task && state.task.id) || null; },
+    reload: function () { if (state.task) readTask(state.task.id); }
+  };
   if (bridge.opsReady) bridge.opsReady();
   if (bridge.me && bridge.me()) signedIn();
 })();

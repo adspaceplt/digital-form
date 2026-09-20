@@ -35,7 +35,8 @@ language sql immutable parallel safe as $$
   select case
     when action in ('campaign.bulk', 'campaign.closed', 'campaign.confirmed',
                     'campaign.created', 'campaign.deleted', 'campaign.edited',
-                    'campaign.file_added', 'campaign.invoice', 'campaign.invoice_file',
+                    'campaign.file_added', 'campaign.qc',
+                    'campaign.invoice', 'campaign.invoice_file',
                     'campaign.invoice_removed', 'campaign.keyed', 'campaign.locked',
                     'campaign.opened', 'campaign.rate', 'campaign.rated',
                     'campaign.reinstated', 'campaign.replaced', 'campaign.review',

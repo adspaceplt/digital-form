@@ -965,7 +965,8 @@
     'client.drive':          ['Drive folder set', '', 'review'],
     'drive.imported':        ['Drive assets imported', 'is-ok', 'review'],
     /* A file the team handed in for a creator, from the console. */
-    'campaign.file_added':   ['Draft file uploaded by team', '', 'campaigns']
+    'campaign.file_added':   ['Draft file uploaded by team', '', 'campaigns'],
+    'campaign.qc':           ['Quality checked before release', '', 'campaigns']
   };
   /* The same order as the rail, because they are the same eight sections and
      a person who has learned one sequence should not have to learn a second.

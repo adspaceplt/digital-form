@@ -2152,6 +2152,46 @@ body.is-plain .topbar { background: var(--chrome); }
 .lpickrow.is-held { cursor: default; }
 .lpickrow.is-held .lpickname b, .lpickrow.is-held .lpickamt { color: var(--ink-mute); }
 .lpicknote { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+/* ---------- An extension somebody has asked for ----------
+   It sits under the dates it is about, in the rail's own action shape: an
+   edge one tone lighter, because it opens something, and the two answers
+   side by side at equal widths, because they are two answers of the same
+   standing. */
+.dueask {
+  margin-top: 10px; padding: 10px 12px;
+  border: 1px solid var(--line-soft); border-radius: var(--radius-sm);
+  background: var(--sunk);
+}
+.dueask-line { margin: 0; font-size: 13px; color: var(--ink); }
+.dueask-line small { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-mute); }
+.dueask-acts { display: flex; gap: 8px; margin-top: 10px; }
+.dueask-acts:empty { display: none; }
+.dueask-acts .btn { flex: 1 1 0; min-width: 0; }
+
+/* ---------- The quality check before a client sees the work ----------
+   A list of checks reads like the list it is: one row a check, a hairline
+   between, the whole row the target so a tick is never a 14px box to hit.
+   It borrows the letter picker's row rather than inventing a second shape. */
+.qc-who { margin: 0 0 12px; font-size: 13px; color: var(--ink-mute); }
+.qclist { display: flex; flex-direction: column; }
+/* The group's own name, in the label face every other sub-heading uses. */
+.qcgroup {
+  margin: 0; padding: 14px 0 6px;
+  font-size: 12px; font-weight: 600; color: var(--ink-mute); letter-spacing: 0;
+}
+.qcgroup:first-child { padding-top: 0; }
+.qcrow {
+  display: grid; align-items: center; gap: 0 12px;
+  grid-template-columns: 18px minmax(0, 1fr);
+  padding: 10px 0; border-bottom: 1px solid var(--line-soft);
+  min-height: var(--ctl-h); cursor: pointer;
+}
+.qcrow:last-child { border-bottom: 0; }
+.qcrow + .qcgroup { border-top: 1px solid var(--line-soft); }
+.qcrow input { width: 18px; height: 18px; accent-color: var(--accent); }
+.qcrow span { font-size: 14px; }
+@media (hover: hover) { .qcrow:hover { background: var(--sunk); } }
+
 /* The reference somebody types instead of the one the database makes. It sits
    under the lines it prices and above the actions, on the block step, and the
    field fills the sheet rather than sizing itself to its own placeholder. */

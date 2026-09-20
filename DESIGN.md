@@ -629,6 +629,37 @@ eventually sees, so it divides nothing. And the sequence, once chosen, is the
 sequence everywhere it appears — the rail, the activity record's tabs, the
 permission panel's blocks — because a person can hold one order and not four.
 
+**A promise is moved by the person who made it.** A date on a task is the
+commitment its creator put there, and the control that moved it moved it on
+the press, so the person who set it learned afterwards, from a notification,
+that a deadline had already gone. The round that was missing is the whole of
+the fix: the person doing the work asks, the person who set the date answers,
+and the date moves on the answer. Three things keep it from becoming
+paperwork. A person moving a date on a task they created needs nobody, so the
+same control does both jobs and the database decides which — a round with one
+name on both ends is a form. The control is named for what pressing it will
+actually do, because "Move a date" on a control that will only ask is a lie
+the reader finds out about afterwards. And the ask is drawn where the dates
+are, with the one action its reader has: the person asked sees Approve and
+Decline, the person who asked sees Withdraw, and anybody else sees neither,
+because a button that is not yours to press is a question about why it is
+there. What is deliberately not gated is the team's own internal milestone:
+the commitment a client is owed is the one an extension is about.
+
+**A gate on the one step somebody else sees.** Every step on a creator's card
+is the team recording its own progress except one, and that one puts the work
+in front of a client the moment it is pressed. So that is the step that is
+checked, and the check is the team's own list rather than a warning: what it
+says, what the brief asked for, how the file plays. All of it is required,
+because a check that can be skipped is a check nobody makes, and the count
+beside the button is what says why the button will not move — a disabled
+control with no count is a mystery, and a sentence explaining it is the
+explanatory copy this portal does not have. Fourteen checks in one run read as
+fourteen; in three groups they are three things to hold, which is what a
+person can. What is recorded is who checked and when, and not a second copy of
+the list: the step itself is the evidence, because nothing else opens the
+gate.
+
 **A destructive item is red whether or not it carries a bold child.** The colour hung off `.kmenu-item.is-danger b`, so Delete on the client record — the one such item written as plain text — read in ordinary ink beside Edit and said nothing about what it does. A rule about a state belongs on the element that carries the state.
 
 **A verb does not repeat the noun the context has already given.** Delete client, Delete campaign, Delete link, Delete permanently: four labels for one act, each naming what the menu it sits in has already named. The item is **Delete**, and the consequence is stated where it belongs — in the sheet that asks, which says what goes and that there is no restore. Asked for by the user on 2026-09-22, and it is the rule this file already carried ("no object the context gives"); the examples that contradicted it are corrected.
