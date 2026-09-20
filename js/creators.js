@@ -642,8 +642,8 @@
           '<input class="input changebox-who" type="text" autocomplete="name" aria-label="' +
             esc(t().nameLabel) + '" placeholder="' + esc(t().namePlaceholder) + '">') +
         '<div class="changebox-actions">' +
-          '<button class="btn btn-sm" type="button" data-act="cancel">' + esc(t().cancel) + '</button>' +
           '<button class="btn btn-sm btn-primary" type="button" data-act="send">' + esc(t().sendRequest) + '</button>' +
+          '<button class="btn btn-sm" type="button" data-act="cancel">' + esc(t().cancel) + '</button>' +
         '</div>' +
       '</div>' +
       '<div class="approve-state" role="status"></div>' +

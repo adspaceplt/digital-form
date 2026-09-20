@@ -647,46 +647,35 @@
     return Boolean(s && (s.next_stage_keys || []).indexOf(next) > -1);
   }
 
+  /* A column that will take a drop says so on itself, and the pointer drag
+     below reads that rather than each column carrying its own listeners: one
+     place decides what a drop means, whichever input made it. */
   function dropInto(col, next) {
     if (!may('ops', 'work')) return;
-    col.addEventListener('dragover', function (e) {
-      if (!dragAllowed(next)) return;
-      e.preventDefault();                       // the only way to accept a drop
-      e.dataTransfer.dropEffect = 'move';
-      col.classList.add('is-drop');
-    });
-    col.addEventListener('dragleave', function (e) {
-      // A drag over a child fires dragleave on the column; only a real exit counts.
-      if (col.contains(e.relatedTarget)) return;
-      col.classList.remove('is-drop');
-    });
-    col.addEventListener('drop', function (e) {
-      col.classList.remove('is-drop');
-      if (!dragAllowed(next)) return;
-      e.preventDefault();
-      var t = drag.task, card = drag.el;
-      endDrag();
-      moveTo(t, card, next);
-    });
+    col.setAttribute('data-drop', next);
   }
 
   function startDrag(t, el) {
-    drag = { task: t, el: el };
+    drag.task = t;
+    drag.el = el;
     el.classList.add('is-dragging');
     var board = el.closest('.board');
     if (!board) return;
+    drag.board = board;
     board.classList.add('is-dragging');
     /* Every column says whether this card may land in it, so the answer is on
-       the screen while the hand is still moving. */
+       the screen while the hand is still moving: error prevention rather than
+       an error message afterwards. */
     Array.prototype.forEach.call(board.querySelectorAll('.bcol'), function (c) {
-      var k = c.getAttribute('data-col');
-      c.classList.toggle('is-shut-out', !dragAllowed(k));
+      c.classList.toggle('is-shut-out', !dragAllowed(c.getAttribute('data-drop')));
     });
   }
 
   function endDrag() {
     if (drag && drag.el) drag.el.classList.remove('is-dragging');
-    var board = document.querySelector('.board');
+    var g = drag && drag.ghost && drag.ghost.el;
+    if (g && g.parentNode) g.parentNode.removeChild(g);
+    var board = (drag && drag.board) || document.querySelector('.board');
     if (board) {
       board.classList.remove('is-dragging');
       Array.prototype.forEach.call(board.querySelectorAll('.bcol'), function (c) {
@@ -694,6 +683,111 @@
       });
     }
     drag = null;
+  }
+
+  /* **A card is dragged by a finger as well as by a pointer.**
+     It was HTML5 drag and drop, set under `(pointer: fine)` alone, because
+     those events do not fire under a finger - which meant the board could not
+     be rearranged on the device most of this portal is read on, and the user
+     asked for exactly that. Pointer events are one API for both, so this is
+     one path rather than two.
+
+     **A finger drags from a grip, a pointer from anywhere on the card.** A
+     press and hold was tried first and cannot work: a phone decides whether a
+     touch is a scroll at the moment it lands, before any class this page sets
+     can say otherwise, so the board claimed the gesture and cancelled the drag
+     the instant the finger moved. A grip declares `touch-action: none` on
+     itself, so the browser never claims a gesture that starts there, the rest
+     of the card still scrolls the board, and there is no hold to wait out. It
+     is drawn at every width, because a handle that appears only on a phone is
+     a control somebody has to discover twice; at a desk the whole card is a
+     handle as well, since a mouse has no scroll to lose.
+
+     The card that lifts is a clone under the hand, never the card itself:
+     moving the real one out of its column reflows the board mid gesture. */
+  var SLOP = 8;
+
+  function ghostOf(el, x, y) {
+    var r = el.getBoundingClientRect();
+    var g = el.cloneNode(true);
+    g.className = el.className.replace(/\bis-dragging\b/, '') + ' bcard-ghost';
+    g.style.width = r.width + 'px';
+    g.style.left = r.left + 'px';
+    g.style.top = r.top + 'px';
+    g.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(g);
+    return { el: g, dx: x - r.left, dy: y - r.top,
+             move: function (nx, ny) {
+               g.style.transform = 'translate(' + (nx - x) + 'px,' + (ny - y) + 'px)';
+             } };
+  }
+
+  /* The column under the pointer, found by what is actually on the screen
+     there, because the clone is `pointer-events: none` and a finger has no
+     hover to read. */
+  function colAt(x, y) {
+    var el = document.elementFromPoint(x, y);
+    return el ? el.closest('.bcol') : null;
+  }
+
+  function wireDrag(el, t) {
+    el.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      /* The title opens the task and the select moves the stage; neither is a
+         handle, or a press on them would never reach its own control. */
+      var touch = e.pointerType !== 'mouse';
+      var grip = Boolean(e.target.closest('.bcard-grip'));
+      /* A finger starts a drag from the grip and nowhere else, so the rest of
+         the card is still the board's to scroll. */
+      if (touch && !grip) return;
+      if (!grip && e.target.closest('.bcard-title, .state-select, select, button, a')) return;
+      var sx = e.clientX, sy = e.clientY, id = e.pointerId;
+      var lifted = false;
+
+      function lift(x, y) {
+        lifted = true;
+        drag = { task: null, el: null, ghost: null, board: null };
+        drag.ghost = ghostOf(el, x, y);
+        startDrag(t, el);
+        try { el.setPointerCapture(id); } catch (err) {}
+      }
+      function move(ev) {
+        if (ev.pointerId !== id) return;
+        if (!lifted) {
+          if (Math.abs(ev.clientX - sx) <= SLOP && Math.abs(ev.clientY - sy) <= SLOP) return;
+          lift(sx, sy);
+        }
+        ev.preventDefault();
+        drag.ghost.move(ev.clientX, ev.clientY);
+        var col = colAt(ev.clientX, ev.clientY);
+        Array.prototype.forEach.call(drag.board.querySelectorAll('.bcol'), function (c) {
+          c.classList.toggle('is-drop', c === col && dragAllowed(c.getAttribute('data-drop')));
+        });
+      }
+      function up(ev) {
+        if (ev.pointerId !== id) return;
+        if (!lifted) { done(); return; }
+        var col = colAt(ev.clientX, ev.clientY);
+        var next = col && col.getAttribute('data-drop');
+        var ok = next && dragAllowed(next);
+        var task = drag.task, card = drag.el;
+        done();
+        /* The same path the select on the card takes, so the gates, the
+           refusal and where it is named are all one thing. */
+        if (ok) moveTo(task, card, next);
+      }
+      function done() {
+        document.removeEventListener('pointermove', move, true);
+        document.removeEventListener('pointerup', up, true);
+        document.removeEventListener('pointercancel', up, true);
+        try { el.releasePointerCapture(id); } catch (err) {}
+        if (lifted) endDrag();
+        lifted = false;
+      }
+      document.addEventListener('pointermove', move, true);
+      document.addEventListener('pointerup', up, true);
+      document.addEventListener('pointercancel', up, true);
+    });
   }
   /* A card is the row, stood up, and read in the order somebody scans a board:
      what it is, whose it is, when it is owed. The title is the heaviest thing
@@ -715,7 +809,18 @@
     var who = state.owners[t.id] || '';
     el.innerHTML =
       '<div class="bcard-top"><span class="bcard-no">' + esc(top[0]) + '</span>' +
-        (top[1] ? '<span class="bcard-client">' + esc(top[1]) + '</span>' : '') + '</div>' +
+        (top[1] ? '<span class="bcard-client">' + esc(top[1]) + '</span>' : '') +
+        /* The grip a finger drags from. It carries its own name, because an
+           icon-only control that says nothing is one a screen reader cannot
+           offer; and it is not a keyboard path — a keyboard moves a stage
+           with the select below it, which every card carries. */
+        (may('ops', 'work') && !isFinished(t)
+          ? '<span class="bcard-grip" aria-hidden="true" title="Drag to move stage">' +
+            '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/>' +
+            '<circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/>' +
+            '<circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/>' +
+            '<circle cx="15" cy="18" r="1.6"/></svg></span>'
+          : '') + '</div>' +
       '<button class="bcard-title" type="button">' + esc(t.title) + '</button>' +
       '<div class="bcard-stage">' + stageCell(t) + '</div>' +
       '<div class="bcard-foot">' +
@@ -732,22 +837,10 @@
     el.querySelector('.bcard-title').addEventListener('click', function () { openTask(t.id, true); });
     var sel = el.querySelector('.state-select');
     if (sel) sel.addEventListener('change', function () { rowMove(t, el, sel); });
-    /* Only where the move is allowed at all, and only under a pointer that can
-       drag: a finger fires no drag events and a keyboard has no drag, so both
-       keep the select and nothing is lost by the card not being draggable. */
-    if (may('ops', 'work') && !isFinished(t) && window.matchMedia &&
-        window.matchMedia('(pointer: fine)').matches) {
-      el.setAttribute('draggable', 'true');
-      el.addEventListener('dragstart', function (e) {
-        // Some data has to be set or Firefox will not start the drag at all.
-        if (e.dataTransfer) {
-          e.dataTransfer.effectAllowed = 'move';
-          try { e.dataTransfer.setData('text/plain', 'T' + t.task_no); } catch (err) {}
-        }
-        startDrag(t, el);
-      });
-      el.addEventListener('dragend', endDrag);
-    }
+    /* Wherever the move is allowed at all, under a finger as under a pointer.
+       A keyboard still has no drag, so the select on every card stays and is
+       the path both share: this is an addition, never a replacement. */
+    if (may('ops', 'work') && !isFinished(t)) wireDrag(el, t);
     return el;
   }
 

@@ -2141,9 +2141,15 @@ body.is-plain .topbar { background: var(--chrome); }
    above the row somebody pressed, so pressing Edit reads as nothing having
    happened. Narrower than the 780px a picker needs, because these are three
    or four fields and not a table. The foot carries the portal's order and
-   weights, Cancel quiet on the left and the primary on the right, and two
-   equal halves on a phone rather than a slab and a remnant. */
+   weights — the primary first and the quiet way out after it, which is the
+   order every action row in this portal reads in — and two equal halves on a
+   phone rather than a slab and a remnant. */
 .sheet-card.formsheet { width: min(620px, 100%); }
+/* The card takes focus when a sheet opens, because a field taking focus on a
+   phone raises the keyboard and zooms the page over the rest of the form. It
+   is a surface and not a control, so it draws no ring; what it is there for is
+   Escape, the focus trap and the dialog announcing itself. */
+.sheet-card[tabindex]:focus { outline: none; }
 .formsheet .sheet-foot { justify-content: flex-end; }
 @media (max-width: 560px) {
   .formsheet .sheet-foot > .btn { flex: 1 1 0; min-width: 0; }
@@ -3895,19 +3901,37 @@ body > .shell { width: 100%; }
    that track by the width of `+2` and every cell after the name started
    15px left of the rows around it. The track is the control's own width,
    which is the only thing that is ever drawn in it. */
+/* **Two lines, and one right margin.** The row drew three different right
+   edges: the ⋯ spanned the first line only, so the record line ran to the
+   card's padding at 358 while the fee above it stopped at 302, and `.cr-rec`
+   is a flex box, so the `text-align: right` it was given moved nothing at all
+   and `—` sat at the *left* of a 148px track while `1 · Sept 2026` filled it
+   and looked right aligned. Three edges on a two line row is what reads as
+   uneven spacing without anybody being able to name it.
+   The ⋯ spans both lines now, so the meta track ends where the money track
+   ends; 104px is measured against `12 · Sept 2026` at 12.5px, which is the
+   widest thing either cell can draw. */
 .is-narrow .cr-row {
-  grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
-  grid-template-areas: "name rate act" "links rec rec";
+  grid-template-columns: minmax(0, 1fr) 104px var(--ctl-h);
+  grid-template-areas: "name rate act" "links rec act";
   row-gap: 4px; align-items: start;
 }
 /* A stated track outlives the cell in it, so the row that draws no ⋯ gives
    the track up as well: the rule a page below hides the cell, and this
    takes the column with it rather than leaving 44px of nothing at an edge
    nobody can see. */
-.is-narrow .cr-row:has(> .team-act:empty) { grid-template-columns: minmax(0, 1fr) 92px 0; }
+.is-narrow .cr-row:has(> .team-act:empty) { grid-template-columns: minmax(0, 1fr) 104px 0; }
 .is-narrow .cr-row > .svc-name { align-self: center; }
-.is-narrow .cr-row > .cr-links { grid-area: links; align-self: center; }
-.is-narrow .cr-row > .cr-rec { grid-area: rec; text-align: right; align-self: center; }
+/* Both meta cells start at the top of their line. Centred, the record floated
+   to the middle of a links cell that had wrapped to two rows, so the date sat
+   halfway down the card with nothing beside it. */
+.is-narrow .cr-row > .cr-links { grid-area: links; align-self: start; }
+.is-narrow .cr-row > .cr-rec {
+  grid-area: rec; align-self: start;
+  /* A flex box is not moved by `text-align`; this is what actually ends the
+     record at the card's own margin. */
+  justify-content: flex-end;
+}
 /* The ⋯ acts on the whole row, so it spans the whole row. Left on the first
    line it set that line's height to its own 38px and pushed the row to
    100px for the sake of a 22px name. */
@@ -6002,19 +6026,56 @@ body.is-canvas { overflow: hidden; }
    allow is dimmed, so a refusal is rare and never a surprise. The move goes
    through the same function and the same gates as the select on the card,
    so nothing here is a second way of changing a stage — only a second way of
-   reaching the same one. Pointer only: a finger fires no drag events and a
-   keyboard has none, and both keep the select. */
-@media (hover: hover) and (pointer: fine) {
-  .bcard[draggable="true"] { cursor: grab; }
-  .bcard.is-dragging { cursor: grabbing; opacity: .5; }
-  .board.is-dragging .bcol { transition: opacity var(--t) var(--ease-out); }
-  .board.is-dragging .bcol.is-shut-out { opacity: .4; }
-  /* The column that would take it, marked in the action colour, because this
-     is the move about to be made and not a state that is already true. */
-  .board.is-dragging .bcol.is-drop .bcards {
-    outline: 2px dashed var(--action); outline-offset: 3px; border-radius: var(--radius-sm);
-  }
+   reaching the same one. **A finger drags too**: it was HTML5 drag and drop,
+   which fires nothing under a touch, so the board could not be rearranged on
+   the device this portal is mostly read on. Pointer events are one API for
+   both, so these rules are no longer behind a pointer query; a keyboard still
+   has no drag and keeps the select, which every card carries anyway. */
+.bcard.is-dragging { opacity: .4; }
+.board.is-dragging .bcol { transition: opacity var(--t) var(--ease-out); }
+.board.is-dragging .bcol.is-shut-out { opacity: .4; }
+/* The column that would take it, marked in the action colour, because this is
+   the move about to be made and not a state that is already true. */
+.board.is-dragging .bcol.is-drop .bcards {
+  outline: 2px dashed var(--action); outline-offset: 3px; border-radius: var(--radius-sm);
 }
+/* While a card is in hand the board does not also scroll under it, and the
+   text under the finger is not selected. Only while: a board wider than the
+   screen has to stay scrollable the rest of the time, which is why a finger
+   holds before a card lifts at all. */
+.board.is-dragging { touch-action: none; user-select: none; }
+/* The card that follows the hand is a clone, never the card itself: taking
+   the real one out of its column reflows the board mid gesture. It is out of
+   the way of `elementFromPoint`, which is how the column under the finger is
+   found at all. */
+.bcard-ghost {
+  position: fixed; z-index: 90; pointer-events: none; margin: 0;
+  box-shadow: var(--shadow-lift); opacity: .96;
+  transform: rotate(1.2deg);
+}
+/* The grip a finger drags from. `touch-action: none` on the handle itself is
+   the whole mechanism: a phone decides whether a touch is a scroll the moment
+   it lands, so a class this page sets afterwards is always too late, and the
+   board cancelled every drag as soon as the finger moved. Declared here, the
+   browser never claims a gesture that starts on the grip, and the rest of the
+   card goes on scrolling the board. 44px under a finger like every other
+   target; quiet, because it is furniture until it is wanted. */
+.bcard-grip {
+  touch-action: none; margin-left: auto; flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 20px; margin-block: -2px; color: var(--ink-mute); opacity: .55;
+}
+.bcard-grip svg { width: 16px; height: 16px; }
+@media (pointer: coarse) {
+  .bcard-grip { width: 44px; height: 44px; margin-block: calc((20px - 44px) / 2); margin-right: -8px; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .bcard { cursor: grab; }
+  .bcard.is-dragging { cursor: grabbing; }
+  .bcard-grip { cursor: grab; }
+  .bcard-title, .bcard .state-select { cursor: pointer; }
+}
+@media (prefers-reduced-motion: reduce) { .bcard-ghost { transform: none; } }
 /* THE CARD IS READ IN THE ORDER A BOARD IS SCANNED: what it is, whose it is,
    when it is owed. The serial led the card in the token face at the same size
    as the client beside it, which put the one fact nobody scans for at the top

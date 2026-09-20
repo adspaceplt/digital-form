@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260920g">
+<link rel="stylesheet" href="/css/portal.css?v=20260920h">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,25 +28,25 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260920g"></script>
-<script src="/js/words.js?v=20260920g"></script>
-<script src="/js/copy.js?v=20260920g"></script>
-<script src="/js/ask.js?v=20260920g"></script>
-<script src="/js/confirm.js?v=20260920g"></script>
-<script src="/js/sheet.js?v=20260920g"></script>
-<script src="/js/state.js?v=20260920g"></script>
-<script src="/js/group.js?v=20260920g"></script>
-<script src="/js/menu.js?v=20260920g"></script>
-<script src="/js/cmdbar.js?v=20260920g"></script>
-<script src="/js/api.js?v=20260920g"></script>
-<script src="/js/money.js?v=20260920g"></script>
-<script src="/js/mockups.js?v=20260920g"></script>
+<script src="/js/config.js?v=20260920h"></script>
+<script src="/js/words.js?v=20260920h"></script>
+<script src="/js/copy.js?v=20260920h"></script>
+<script src="/js/ask.js?v=20260920h"></script>
+<script src="/js/confirm.js?v=20260920h"></script>
+<script src="/js/sheet.js?v=20260920h"></script>
+<script src="/js/state.js?v=20260920h"></script>
+<script src="/js/group.js?v=20260920h"></script>
+<script src="/js/menu.js?v=20260920h"></script>
+<script src="/js/cmdbar.js?v=20260920h"></script>
+<script src="/js/api.js?v=20260920h"></script>
+<script src="/js/money.js?v=20260920h"></script>
+<script src="/js/mockups.js?v=20260920h"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260920g" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260920h" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -265,8 +265,13 @@
           </span>
         </div>
 
-        <div class="panel" id="crmAddBox" hidden>
-          <div class="panelhead"><h3 id="crmFormTitle">New lead</h3></div>
+              <div class="sheet" id="crmAddBox" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmAddTitle">
+          <div class="sheet-head">
+            <h3 id="crmFormTitle">New lead</h3>
+            <button class="iconbtn" id="crmAddClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+          <div class="sheet-body">
           <div class="row">
             <div><label class="field-label" for="crmName">Client name</label>
               <input class="input" id="crmName" placeholder="Company name"></div>
@@ -314,12 +319,15 @@
             <div style="flex:0 0 210px"><label class="field-label" for="crmCommence">Urgency to commence</label>
               <select class="select" id="crmCommence"></select></div>
           </div>
-          <div class="row" style="margin-top:14px">
-            <button class="btn btn-primary" id="crmSave" type="button">Add lead</button>
-            <button class="btn btn-quiet" id="crmCancel" type="button" style="flex:0 0 auto">Cancel</button>
-          </div>
+          
           <div class="msg" id="crmMsg"></div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="crmSave" type="button">Add lead</button>
+            <button class="btn btn-quiet" id="crmCancel" type="button">Cancel</button>
+          </div>
         </div>
+      </div>
 
         <!-- Every open next action across every client, soonest first. The
              data was already on each log entry; this is the screen that
@@ -424,8 +432,13 @@
           <span class="headmark"><h2>Client details</h2></span>
           <button class="btn btn-primary" id="crmAddContact" data-need="clients.contacts:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add contact</button>
         </div>
-        <div class="panel" id="crmContactBox" hidden>
-          <div class="panelhead"><h3 id="crmContactTitle">New contact</h3></div>
+              <div class="sheet" id="crmContactBox" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmContactTitle">
+          <div class="sheet-head">
+            <h3 id="crmContactTitle">New contact</h3>
+            <button class="iconbtn" id="crmContactClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+          <div class="sheet-body">
           <div class="row">
             <div><label class="field-label" for="ctName">Name</label>
               <input class="input" id="ctName" placeholder="John Doe"></div>
@@ -447,12 +460,15 @@
           <label class="tickline" style="margin-top:12px">
             <input type="checkbox" id="ctPrimary"> <span>Main contact</span>
           </label>
-          <div class="row" style="margin-top:14px">
-            <button class="btn btn-primary" id="ctSave" type="button">Save</button>
-            <button class="btn btn-quiet" id="ctCancel" type="button" style="flex:0 0 auto">Cancel</button>
-          </div>
+          
           <div class="msg" id="ctMsg"></div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="ctSave" type="button">Save</button>
+            <button class="btn btn-quiet" id="ctCancel" type="button">Cancel</button>
+          </div>
         </div>
+      </div>
         <div id="crmContacts"></div>
           </div>
 
@@ -559,8 +575,13 @@
           <span class="headmark"><h2>Services</h2></span>
           <button class="btn btn-primary" id="crmAddService" data-need="clients.services:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add service</button>
         </div>
-        <div class="panel" id="crmServiceBox" hidden>
-          <div class="panelhead"><h3 id="crmServiceTitle">New service</h3></div>
+              <div class="sheet" id="crmServiceBox" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmServiceTitle">
+          <div class="sheet-head">
+            <h3 id="crmServiceTitle">New service</h3>
+            <button class="iconbtn" id="crmServiceClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+          <div class="sheet-body">
           <div class="row">
             <div><label class="field-label" for="svPick">Service</label>
               <select class="select" id="svPick"></select></div>
@@ -591,12 +612,15 @@
             <div><label class="field-label" for="svNote">Note</label>
               <input class="input" id="svNote" placeholder="Note"></div>
           </div>
-          <div class="row" style="margin-top:14px">
-            <button class="btn btn-primary" id="svSave" type="button">Save</button>
-            <button class="btn btn-quiet" id="svCancel" type="button" style="flex:0 0 auto">Cancel</button>
-          </div>
+          
           <div class="msg" id="svMsg"></div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="svSave" type="button">Save</button>
+            <button class="btn btn-quiet" id="svCancel" type="button">Cancel</button>
+          </div>
         </div>
+      </div>
         <div class="msg" id="crmServiceMsg"></div>
         <div id="crmServices"></div>
         <!-- What the client asked for from the portal. The team moves each
@@ -605,20 +629,28 @@
         <div class="viewhead">
           <span class="headmark"><h2>Requests</h2></span>
         </div>
-        <div class="panel" id="crmReplyBox" hidden>
-          <div class="panelhead"><h3 id="crmReplyTitle">Reply</h3></div>
+              <div class="sheet" id="crmReplyBox" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmReplyTitle">
+          <div class="sheet-head">
+            <h3 id="crmReplyTitle">Reply</h3>
+            <button class="iconbtn" id="crmReplyClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+          <div class="sheet-body">
           <div class="row">
             <div style="flex:0 0 200px"><label class="field-label" for="rqFee">Fee</label>
               <input class="input" id="rqFee" type="number" min="0" step="0.01" placeholder="0.00"></div>
             <div><label class="field-label" for="rqReply">Reply</label>
               <input class="input" id="rqReply" placeholder="Reply"></div>
           </div>
-          <div class="row" style="margin-top:14px">
-            <button class="btn btn-primary" id="rqSave" type="button">Save</button>
-            <button class="btn btn-quiet" id="rqCancel" type="button" style="flex:0 0 auto">Cancel</button>
-          </div>
+          
           <div class="msg" id="rqMsg"></div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="rqSave" type="button">Save</button>
+            <button class="btn btn-quiet" id="rqCancel" type="button">Cancel</button>
+          </div>
         </div>
+      </div>
         <div class="msg" id="crmReqMsg"></div>
         <div id="crmRequestList"></div>
         </div>
@@ -743,8 +775,13 @@
           <span class="headmark"><h2>Calls and visits</h2></span>
           <button class="btn btn-primary" id="crmAddTouch" data-need="clients.calls:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add entry</button>
         </div>
-        <div class="panel" id="crmTouchBox" hidden>
-          <div class="panelhead"><h3 id="crmTouchTitle">New entry</h3></div>
+              <div class="sheet" id="crmTouchBox" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crmTouchTitle">
+          <div class="sheet-head">
+            <h3 id="crmTouchTitle">New entry</h3>
+            <button class="iconbtn" id="crmTouchClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+          <div class="sheet-body">
           <div class="row">
             <div style="flex:0 0 170px"><label class="field-label" for="tcKind">Type</label>
               <select class="select" id="tcKind">
@@ -771,12 +808,15 @@
             <div style="flex:0 0 170px"><label class="field-label" for="tcNextAt">Due</label>
               <input class="input" id="tcNextAt" type="date"></div>
           </div>
-          <div class="row" style="margin-top:14px">
-            <button class="btn btn-primary" id="tcSave" type="button">Save</button>
-            <button class="btn btn-quiet" id="tcCancel" type="button" style="flex:0 0 auto">Cancel</button>
-          </div>
+          
           <div class="msg" id="tcMsg"></div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="tcSave" type="button">Save</button>
+            <button class="btn btn-quiet" id="tcCancel" type="button">Cancel</button>
+          </div>
         </div>
+      </div>
         <div id="crmTouches"></div>
 
         <!-- The portal's own record of what was done to this client. It keys
@@ -2078,8 +2118,8 @@
             <div class="msg" id="tmMsg"></div>
           </div>
           <div class="sheet-foot">
-            <button class="btn btn-quiet" id="tmCancel" type="button">Cancel</button>
             <button class="btn btn-primary" id="tmSave" type="button">Add</button>
+            <button class="btn btn-quiet" id="tmCancel" type="button">Cancel</button>
           </div>
         </div>
       </div>
@@ -2115,8 +2155,8 @@
             <div class="msg" id="grMsg"></div>
           </div>
           <div class="sheet-foot">
-            <button class="btn btn-quiet" id="grCancel" type="button">Cancel</button>
             <button class="btn btn-primary" id="grSave" type="button">Add</button>
+            <button class="btn btn-quiet" id="grCancel" type="button">Cancel</button>
           </div>
         </div>
       </div>
@@ -2145,8 +2185,13 @@
           </span>
         </span>
       </div>
-      <div class="panel" id="svcBox" hidden>
-        <div class="panelhead"><h3 id="svcTitle">New service</h3></div>
+            <div class="sheet" id="svcBox" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="svcTitle">
+          <div class="sheet-head">
+            <h3 id="svcTitle">New service</h3>
+            <button class="iconbtn" id="svcClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+          <div class="sheet-body">
         <div class="row">
           <div style="flex:0 0 220px"><label class="field-label" for="svcCat">Category</label>
             <select class="select" id="svcCat"></select></div>
@@ -2163,11 +2208,14 @@
           <div><label class="field-label" for="svcDetail">What it includes</label>
             <textarea class="input textarea" id="svcDetail" rows="4" placeholder="Instagram, Facebook and TikTok&#10;8 contents each month&#10;Monthly performance report"></textarea></div>
         </div>
-        <div class="row" style="margin-top:14px">
-          <button class="btn btn-primary" id="svcSave" type="button">Save</button>
-          <button class="btn btn-quiet" id="svcCancel" type="button" style="flex:0 0 auto">Cancel</button>
-        </div>
+        
         <div class="msg" id="svcMsg"></div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="svcSave" type="button">Save</button>
+            <button class="btn btn-quiet" id="svcCancel" type="button">Cancel</button>
+          </div>
+        </div>
       </div>
       <div class="msg" id="svcListMsg"></div>
       <div id="svcList"></div>
@@ -2182,8 +2230,13 @@
            can be done about it here, so it is the quietest thing on the route
            rather than the first. A message is a line, not a card. -->
 
-      <div class="panel" id="addLinkBox" hidden>
-        <div class="panelhead"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><h3 id="linkFormTitle">New short link</h3></div>
+            <div class="sheet" id="addLinkBox" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="linkFormTitle">
+          <div class="sheet-head">
+            <h3 id="linkFormTitle">New short link</h3>
+            <button class="iconbtn" id="linkClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
+          <div class="sheet-body">
         <div class="row">
           <div style="flex:0 0 210px">
             <label class="field-label" for="newSlug">Short link</label>
@@ -2202,11 +2255,14 @@
             <input class="input" id="newLinkLabel" placeholder="Label">
           </div>
         </div>
-        <div class="row" style="margin-top:16px">
-          <button class="btn btn-primary" id="saveLink" type="button">Create</button>
-          <button class="btn" id="cancelAddLink" type="button" style="flex:0 0 auto">Cancel</button>
-        </div>
+        
         <div class="msg" id="linkMsg"></div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="saveLink" type="button">Create</button>
+            <button class="btn" id="cancelAddLink" type="button">Cancel</button>
+          </div>
+        </div>
       </div>
 
       <div class="panel" id="importBox" hidden>
@@ -2569,13 +2625,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260920g"></script>
-<script src="/js/documents.js?v=20260920g"></script>
-<script src="/js/letters.js?v=20260920g"></script>
-<script src="/js/register.js?v=20260920g"></script>
-<script src="/js/crm.js?v=20260920g"></script>
-<script src="/js/team.js?v=20260920g"></script>
-<script src="/js/campaigns.js?v=20260920g"></script>
-<script src="/js/ops.js?v=20260920g"></script>
+<script src="/js/admin.js?v=20260920h"></script>
+<script src="/js/documents.js?v=20260920h"></script>
+<script src="/js/letters.js?v=20260920h"></script>
+<script src="/js/register.js?v=20260920h"></script>
+<script src="/js/crm.js?v=20260920h"></script>
+<script src="/js/team.js?v=20260920h"></script>
+<script src="/js/campaigns.js?v=20260920h"></script>
+<script src="/js/ops.js?v=20260920h"></script>
 </body>
 </html>

@@ -613,7 +613,9 @@
     msg('creatorMsg', ''); msg('dupeWarn', '');
     $('addCreatorBox').hidden = false;
     if (!restoring) rosterDraft.note({ editing: c ? c.id : null });
-    $('crName').focus();
+    /* Nothing is focused when the form opens: on a phone a field taking
+       focus raises the keyboard and zooms the page past the rest of the
+       form, and the first field is rarely the one somebody came to change. */
   }
 
   /* Which campaigns this creator has been on, on their own card. The list's
@@ -1073,7 +1075,9 @@
     msg('campMsg', '');
     $('addCampBox').hidden = false;
     if (!restoring) campDraft.note({ editing: c ? c.id : null });
-    (c ? $('campTitle') : $('campClient')).focus();
+    /* Nothing is focused when the form opens: on a phone a field taking
+       focus raises the keyboard and zooms the page past the rest of the
+       form, and the first field is rarely the one somebody came to change. */
   }
   function parkCampForm() { $('addCampBox').hidden = true; placeCampForm(false); }
   function shutCampForm() { parkCampForm(); editingCamp = null; campDraft.clear(); }
@@ -2307,7 +2311,9 @@
     resetNc();
     ncDraft.note({ campaign: state.campaign.id });
     loadRoster(paintPicker);
-    $('optionSearch').focus();
+    /* Nothing is focused when the picker opens: on a phone a field taking
+       focus raises the keyboard and zooms the page past the list
+       somebody came to read, and the first field is rarely the one somebody came to change. */
   });
   /* Keying somebody in is the rarer of the two jobs, so it is folded: the
      panel opens on the creators list, which is what it is usually for. */

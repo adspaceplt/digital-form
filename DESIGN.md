@@ -646,12 +646,28 @@ the card is still in hand: every column the workflow allows is marked and
 every other dimmed, which is this file's own rule about constraining an
 invalid choice rather than reporting it afterwards. A column that needs
 something typed before it means anything is not a drop target at all; Blocked
-takes a category, and a category is asked for on the record. And it is a
-pointer affordance only: a finger fires no drag events and a keyboard has no
-drag, so the select stays on every card and nothing that could move a stage
-before can move one less easily now. An interaction available to one input is
-an addition; the same interaction replacing the control everybody else used is
-a regression.
+takes a category, and a category is asked for on the record. The select stays
+on every card whatever happens, because a keyboard has no drag: an interaction
+available to one input is an addition; the same interaction replacing the
+control everybody else used is a regression.
+
+**And a finger drags too, from a grip.** It was HTML5 drag and drop, which
+fires nothing under a touch, so it was set under `(pointer: fine)` and the
+board could not be rearranged on the device this portal is mostly read on —
+which is what the user asked about. Pointer events are one API for both, so
+the drag is one path rather than two. What a phone then costs is the gesture
+itself: a browser decides whether a touch is a scroll **at the moment it
+lands**, before any class the page sets can say otherwise, so a press and hold
+was cancelled the instant the finger moved and the card never lifted. The
+answer is not a longer hold, it is a **handle that declares `touch-action:
+none` on itself** — the browser never claims a gesture that starts there, the
+rest of the card goes on scrolling a board that is taller than the screen, and
+there is no hold to wait out. The grip is drawn at every width, because a
+control that appears only on a phone is one somebody has to discover twice; at
+a desk the whole card is a handle as well, since a mouse has no scroll to
+lose. What follows the hand is a **clone**: taking the real card out of its
+column reflows the board mid gesture, and the clone is `pointer-events: none`
+so the column under the finger can be found at all.
 
 **A card on a board is read in the order a board is scanned.** What it is, whose it is, when it is owed. The board card led with its serial in the token face at the same size as the client beside it, and carried no owner at all — the one fact a board exists to show, and the fact that decides whether a column is anybody's problem. The serial is demoted into the mute meta line, because a number is how a card is quoted in a message and never why somebody is looking at it; the title is the weight and is what opens the task; the foot is the owner as a small initials disc and a name, with the due date ending the line. The disc is the same device a contacts list uses and works here for the reason it failed on the creators list: a board column is a handful of people's work, not four hundred names in one alphabet.
 
@@ -771,6 +787,45 @@ screen's.
 
 **Two actions in a row are two halves, not a slab and a remnant.** A sheet's foot let its buttons flex from their own label widths on a phone, so Save came out a black bar across most of the row with Cancel squeezed beside it — two actions of the same standing at two sizes, which the phone checklist has ruled out since it was written. Equal halves.
 
+**The way out is last in its row, in every row, and it is measured.** This file
+has said "Order in a row: Save / secondary / Cancel" since it was written, and
+thirty-one rows in the portal obeyed it while three did not — the two Team
+sheet feet and every `.changebox-actions` put Cancel first. Two orders in one
+console is not a style inconsistency, it is somebody pressing the wrong button
+when they move quickly, which is exactly what the user reported, on a phone and
+at a desk alike: the hand learns a position, and a position that means Save on
+one screen and Cancel on the next is worse than either order chosen badly.
+Which order is right matters less than that there is one, and this portal had
+already chosen: the primary reads first because it is what the row is *for*,
+and the way out follows it. `uxaudit`'s `order` rule measures it by **x** and
+not by markup order, because a row can reverse itself in CSS and what a person
+presses is what they read; only a row holding both an action and a way out is
+judged, and on a phone a wrapped foot is judged line by line.
+
+**A sheet opens on what there is to change; the caret is the reader's to
+place.** Every form sheet focused its first field on open, which on iOS raises
+the keyboard *and* zooms the page — so the reader lands on a form scrolled and
+magnified past most of what they opened it to read, already typing into a field
+that is rarely the one they came for. Correcting a phone number should not
+begin by deleting a half-typed name. The card takes focus instead, with
+`tabindex="-1"` and no ring, which keeps everything focus was there for: Escape
+closes, the trap holds, and a screen reader announces the dialog. The one
+exception is a sheet whose whole purpose is a single value, where the field
+*is* the sheet. The same rule retired the autofocus on the Add creator sheet,
+the campaign form and the creator picker's search.
+
+**One record, one way to edit it, on every route.** Seven forms were still
+`.panel` blocks that unfolded at the top of their section or in place of the
+record's head: adding a lead, a contact, a service line, a call, a request
+reply, a rate card line and a short link. On a phone that is a form a screen
+away from the row somebody pressed, so Edit read as nothing having happened;
+worse, the client form was *moved into* the record and hid its head, so the
+client vanished while their own details were being corrected. They are all
+`js/sheet.js` now, which means they also inherit the two rules that file
+exists for — the scrim refuses to dismiss a sheet holding typed work, and
+Escape always closes. A sheet is over the page, so a form no longer has to be
+carried to where the person is.
+
 **A part that says what its section already says is not an exception.** The permission panel opens a section whose parts hold one, and the HR move wrote `register.hr` onto every group, `none` included — so every group carried a stored level identical to the one it would have inherited, and Documents was the one section that opened by itself on every screen, for a difference nobody had made. A stored level equal to the section's reads as Same as section, is not counted as an exception in the row's sentence, and is not written back.
 
 **A loading state has the shape of what is loading.** The console is not drawn until the database has said who this person is, because its rail names every section of the tool — but the page still has to be something in the meantime, and what it was was the shared page bar over an empty body, which is exactly the composition the client-facing pages use. A colleague refreshing their own console read somebody else's portal for a second or two on every load. The shell, the rail and the bar are the console's from the first paint; what is withheld is the *content* of them — the nav's names, the bar's controls, the route's body — and the body is a skeleton. Withholding what a person may open and withholding the shape of the page are two different things, and only the first is a rule.
@@ -846,6 +901,20 @@ own band at the foot: they are not booked, so they do not belong in a budget
 tier between two creators who are available. Alphabetical banding was weighed
 and rejected — most of this roster is Chinese names, so a first letter index
 puts nearly everything in one bucket or gives three hundred buckets of one.
+
+**A row with two lines has one right margin, not three.** The creators list on
+a phone drew three different right edges and the user reported it as uneven
+spacing without being able to name it, which is exactly what that fault reads
+as. The ⋯ spanned the first line only, so the record line ran to the card's
+padding at 358 while the money above it stopped at 302; and `.cr-rec` is a
+flex box, so the `text-align: right` it had been given moved nothing at all —
+`—` sat at the *left* of a 148px track while `1 · Sept 2026` filled it and
+looked right aligned, so the column could not be read down. Three lessons, all
+already in this file and all missed here: the last column is a right edge and
+the ⋯ spans every line of the row it acts on; `text-align` is not what aligns
+a flex child, `justify-content` is; and both meta cells start at the top of
+their line, or a record centred against a links cell that has wrapped to two
+rows floats halfway down the card with nothing beside it.
 
 **A list of people is told apart by what they have done, not by a device put
 in front of their name.** The creators list gave every row a neutral monogram
