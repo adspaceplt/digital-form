@@ -91,21 +91,41 @@ this portal's documented behaviour wins.
 
 ### Non-negotiable validation before "done"
 
-**The behavioural suites are no longer in this repository.** It is public, and
-the harness, the database schema and these working notes were all reachable at
-digital.adspace.me and readable on github.com; the suites were taken out on the
-user's instruction on 2026-09-20. `_config.yml` stops Pages publishing the
-rest. **They are in the history and come back with one command**, which is the
-first thing to do before changing behaviour:
+**The behavioural suites are in `adspaceplt/digital-form-tests`, a private
+repository.** This one is public, and the harness, the database schema and
+these working notes were all reachable at digital.adspace.me and readable on
+github.com; the suites were taken out on the user's instruction on 2026-09-20.
+`_config.yml` stops Pages publishing the rest.
+
+**They are cloned beside the portal and linked in**, which is the first thing
+to do in a new session, before changing behaviour:
 
 ```
-git checkout 02de7c9 -- tests        # then delete the folder again before pushing
+git clone https://github.com/adspaceplt/digital-form-tests /home/user/digital-form-tests
+ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 ```
+
+The symlink is what lets every suite go on taking `tests` as its argument and
+reading `tests/stub2.js` beside itself; `.gitignore` holds both `tests` and
+`tests/`, because a symlink is not a directory and the trailing slash alone
+does not match it. **A repair to a suite is committed and pushed to that
+repository in the same batch as the change it covers**, or it is lost with the
+container.
+
+**It was lost with the container, for three days, and that is why this section
+reads the way it does.** Between 2026-09-20 and the move, the instruction here
+was `git checkout 02de7c9 -- tests`, and every session dutifully restored,
+repaired, ran and then deleted the folder — so the same repair was paid for
+again each session and never survived one. By the time it was measured, that
+restore point was eight pull requests behind the product: **eight suites
+passed, thirteen crashed, and twelve had been written after `02de7c9` and
+never reached a commit anywhere**, `ops.js` and `work.js` among them. Those
+twelve are gone and are being written again; `STATUS.md` in that repository is
+the live register of which suite is in which state, and is what to read before
+claiming the gate ran.
 
 Everything below still applies. What changed is where the suites live, not
-whether they are run: a change to behaviour is restored, run, and the folder
-removed again in the same push, because a portal this size cannot be checked by
-reading it.
+whether they are run: a portal this size cannot be checked by reading it.
 
 1. `node --check` on every changed `js/*.js`.
 2. Local server: `setsid nohup npx --yes http-server -p 8899 -s . >/dev/null 2>&1 &` from the repo root (it dies between turns; restart on `ERR_CONNECTION_REFUSED`).
