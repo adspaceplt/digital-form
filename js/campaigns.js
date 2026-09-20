@@ -395,7 +395,12 @@
       row.querySelector('[data-a="state"]').addEventListener('click', function () {
         shutMenus();
         db.from('creators').update({ active: off }).eq('id', c.id).then(function (r) {
-          if (r.error) { alert(r.error.message); return; }
+          if (r.error) {
+            window.ADspaceConfirm.ask({
+              title: 'Not saved', body: r.error.message, go: 'Close', cancel: false
+            });
+            return;
+          }
           log(off ? 'creator.on' : 'creator.off', c.name, '');
           loadRoster();
         });
@@ -573,15 +578,22 @@
     $('crCodeReset').addEventListener('click', function () {
       var c = state.editing;
       if (!c) return;
-      if (!confirm('Reset the access code for ' + c.name + '? Their current link stops working.')) return;
-      db.rpc('reset_creator_code', { p_creator: c.id }).then(function (r) {
-        if (r.error) { msg('crCodeMsg', r.error.message, 'err'); return; }
-        var code = (r.data && r.data.code) || '';
-        c.access_code = code;
-        paintCode(c);
-        msg('crCodeMsg', 'New code issued. Send them the new link.', 'ok');
-        log('creator.code', c.name, '');
-        loadRoster();
+      window.ADspaceConfirm.ask({
+        title: 'Reset the access code',
+        body: 'The link ' + c.name + ' already has stops working immediately. '
+            + 'The new one has to be sent to them.',
+        go: 'Reset code',
+        tone: 'warn'
+      }, function () {
+        db.rpc('reset_creator_code', { p_creator: c.id }).then(function (r) {
+          if (r.error) { msg('crCodeMsg', r.error.message, 'err'); return; }
+          var code = (r.data && r.data.code) || '';
+          c.access_code = code;
+          paintCode(c);
+          msg('crCodeMsg', 'New code issued. Send them the new link.', 'ok');
+          log('creator.code', c.name, '');
+          loadRoster();
+        });
       });
     });
   }
@@ -672,16 +684,33 @@
   });
 
   function removeCreator(c) {
-    if (!confirm('Remove ' + c.name + ' from the creators list?\n\nExisting campaign records are kept.')) return;
-    db.from('creators').delete().eq('id', c.id).then(function (r) {
-      if (r.error) {
-        alert(/foreign key|violates/i.test(r.error.message)
-          ? c.name + ' has been offered in a campaign and cannot be removed. Mark them inactive instead.'
-          : r.error.message);
-        return;
-      }
-      log('creator.removed', c.name, '');
-      loadRoster();
+    window.ADspaceConfirm.ask({
+      title: 'Remove',
+      body: c.name + ' leaves the Creators List. Campaigns they have already run '
+          + 'are kept. There is no restore. To stop booking them and keep the '
+          + 'record, set them inactive instead.',
+      go: 'Remove',
+      tone: 'danger'
+    }, function () {
+      db.from('creators').delete().eq('id', c.id).then(function (r) {
+        if (r.error) {
+          /* The refusal is a line on the page, not a browser alert: it names a
+             way forward (set them inactive) and that is something to read, not
+             something to dismiss. */
+          window.ADspaceConfirm.ask({
+            title: 'Not removed',
+            body: /foreign key|violates/i.test(r.error.message)
+              ? c.name + ' has been offered in a campaign, so the record cannot go. '
+                + 'Set them inactive instead.'
+              : r.error.message,
+            go: 'Close',
+            cancel: false
+          });
+          return;
+        }
+        log('creator.removed', c.name, '');
+        loadRoster();
+      });
     });
   }
 
@@ -1292,32 +1321,45 @@
   function publishMove(s) {
     if (s === 'draft')      return { to: 'open',  label: 'Publish to client', cls: 'btn-go', icon: STATE_ICON.send };
     if (s === 'open')        return { to: 'draft', label: 'Unpublish', cls: 'btn-warn', icon: STATE_ICON.eyeOff,
-      ask: 'Unpublish this campaign?\n\nThe client link stops working until published again. Selections are kept.' };
+      ask: { title: 'Unpublish', go: 'Unpublish', tone: 'warn',
+        body: 'The client link stops working until this is published again. Selections are kept.' } };
     if (s === 'production')  return { to: 'open',  label: 'Reopen selection', cls: 'btn-warn', icon: STATE_ICON.reopen,
-      ask: 'Reopen selection for the client?\n\nExisting bookings are kept.' };
+      ask: { title: 'Reopen selection', go: 'Reopen', tone: 'warn',
+        body: 'The client can choose again. Bookings already in production are kept.' } };
     return { to: 'production', label: 'Resume campaign', cls: '', icon: STATE_ICON.play,
-      ask: 'Resume this campaign?' };
+      ask: { title: 'Resume the campaign', go: 'Resume',
+        body: 'Selection closes and the bookings go back into production.' } };
   }
 
   $('campPublish').addEventListener('click', function () {
     var c = state.campaign;
     var move = publishMove(c.state);
-    if (move.ask && !confirm(move.ask)) return;
-    db.from('campaigns').update({ state: move.to }).eq('id', c.id).then(function (r) {
-      if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-      c.state = move.to;
-      log(move.to === 'open' ? 'campaign.opened' : 'campaign.closed', c.title, move.to);
-      openCampaign(c);
-    });
+    function save() {
+      db.from('campaigns').update({ state: move.to }).eq('id', c.id).then(function (r) {
+        if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+        c.state = move.to;
+        log(move.to === 'open' ? 'campaign.opened' : 'campaign.closed', c.title, move.to);
+        openCampaign(c);
+      });
+    }
+    if (!move.ask) { save(); return; }
+    window.ADspaceConfirm.ask(move.ask, save);
   });
 
   $('campDelete').addEventListener('click', function () {
     var c = state.campaign;
-    if (!confirm('Delete ' + campName(c) + '?\n\nAll offers and selections will be removed. This cannot be undone.')) return;
-    db.from('campaigns').delete().eq('id', c.id).then(function (r) {
-      if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-      log('campaign.deleted', c.title, c.invoice_no || '');
-      $('campBack').click();
+    window.ADspaceConfirm.ask({
+      title: 'Delete',
+      body: 'Every offer, selection and booking on ' + campName(c) + ' goes with it. '
+          + 'There is no restore.',
+      go: 'Delete',
+      tone: 'danger'
+    }, function () {
+      db.from('campaigns').delete().eq('id', c.id).then(function (r) {
+        if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+        log('campaign.deleted', c.title, c.invoice_no || '');
+        $('campBack').click();
+      });
     });
   });
 
@@ -2091,13 +2133,24 @@
   function dropOption(o) {
     var name = (o.creators && o.creators.name) || 'this creator';
     if (o.state !== 'option' && o.state !== 'backup') {
-      alert(name + ' has been selected by the client. Manage them under Production.');
+      window.ADspaceConfirm.ask({
+        title: 'Already selected',
+        body: name + ' has been chosen by the client. Manage them under Production.',
+        go: 'Close',
+        cancel: false
+      });
       return;
     }
-    if (!confirm('Withdraw ' + name + ' from the options?')) return;
-    db.from('campaign_options').delete().eq('id', o.id).then(function (r) {
-      if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-      loadOptions();
+    window.ADspaceConfirm.ask({
+      title: 'Withdraw',
+      body: name + ' leaves the options the client is choosing from.',
+      go: 'Withdraw',
+      tone: 'warn'
+    }, function () {
+      db.from('campaign_options').delete().eq('id', o.id).then(function (r) {
+        if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+        loadOptions();
+      });
     });
   }
 
@@ -2334,25 +2387,29 @@
      They are stated here and nowhere else. A list somebody can edit on a
      settings page is a later thing and would need a table; what this needed
      first was the gate. */
+  /* Nine checks in three groups of three, not fourteen in three uneven ones.
+     Every risk the first pass named is still here; what changed is that
+     checks of the same kind are read and ticked together, because a person
+     watching a video for spelling is watching it for brand names in the same
+     pass and ticking them separately is two presses for one act. Fourteen
+     rows also overran the sheet on a phone. Nothing that costs money or takes
+     a post down was dropped: the ad label, the safe area, the duration, music
+     licensing, prices and terms, and a competitor in shot are all still
+     required. */
   var QC_CHECKS = [
     ['Copy and facts', [
-      'Spelling and grammar',
-      'Brand and product names spelled correctly',
-      'Client name, location and contact details correct',
-      'Campaign name and dates correct',
+      'Spelling, grammar and brand names correct',
+      'Client name, location, contact details, campaign name and dates correct',
       'Prices, offers and terms correct'
     ]],
     ['The brief', [
-      'Caption, hashtags and mentions match the brief',
-      'Call to action present',
+      'Caption, hashtags, mentions and call to action match the brief',
       'Paid partnership label where required',
       'No competitor brands or third parties visible'
     ]],
     ['The file', [
-      'Correct cut and aspect ratio for the platform',
-      'Nothing important under the platform\'s own overlays',
-      'Duration within the platform\'s limit',
-      'Audio audible throughout, music cleared for use',
+      'Correct cut and aspect ratio, nothing important under the platform\'s overlays',
+      'Duration within the platform\'s limit, audio audible throughout, music cleared',
       'Visual flow, no lag or dropped frames'
     ]]
   ];
@@ -2963,14 +3020,21 @@
      somebody already typed in. */
   function stepBack(o, to) {
     var name = (o.creators || {}).name || 'this creator';
-    if (!to || !confirm('Revert ' + name + ' to ' + wordFor(to) + '?')) return;
-    var patch = { state: to };
-    if (o.state === 'changes') patch.changes_by = null;   // the round is over
-    db.from('campaign_options').update(patch).eq('id', o.id).then(function (r) {
-      if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-      log('campaign.stage', logSubject(), name + ' · back to ' + wordFor(to));
-      msg('campWorkMsg', name + ': ' + wordFor(to) + '.', 'ok');
-      loadOptions();
+    if (!to) return;
+    window.ADspaceConfirm.ask({
+      title: 'Revert to ' + wordFor(to),
+      body: name + ' goes back a step. Dates, notes and files are kept.',
+      go: 'Revert',
+      tone: 'warn'
+    }, function () {
+      var patch = { state: to };
+      if (o.state === 'changes') patch.changes_by = null;   // the round is over
+      db.from('campaign_options').update(patch).eq('id', o.id).then(function (r) {
+        if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+        log('campaign.stage', logSubject(), name + ' · back to ' + wordFor(to));
+        msg('campWorkMsg', name + ': ' + wordFor(to) + '.', 'ok');
+        loadOptions();
+      });
     });
   }
 
@@ -2978,27 +3042,39 @@
      was spent. They go back among the options and the slot frees up. */
   function unbook(o) {
     var name = (o.creators || {}).name || 'this creator';
-    if (!confirm('Revert ' + name + ' to options?\n\nDates and notes are kept.')) return;
-    db.from('campaign_options').update({ state: 'option' }).eq('id', o.id).then(function (r) {
-      if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-      log('campaign.unbooked', logSubject(), name);
-      msg('campWorkMsg', name + ' reverted to options.', 'ok');
-      loadOptions();
+    window.ADspaceConfirm.ask({
+      title: 'Revert to options',
+      body: name + ' goes back among the options and their place frees up. '
+          + 'Dates and notes are kept.',
+      go: 'Revert',
+      tone: 'warn'
+    }, function () {
+      db.from('campaign_options').update({ state: 'option' }).eq('id', o.id).then(function (r) {
+        if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+        log('campaign.unbooked', logSubject(), name);
+        msg('campWorkMsg', name + ' reverted to options.', 'ok');
+        loadOptions();
+      });
     });
   }
 
   // A withdrawal or replacement keyed on the wrong card, undone.
   function reinstate(o) {
     var name = (o.creators || {}).name || 'this creator';
-    if (!confirm('Reinstate ' + name + '?\n\nThe recorded reason is cleared.')) return;
-    db.from('campaign_options')
-      .update({ state: 'confirmed', drop_reason: null, goodwill: false })
-      .eq('id', o.id).then(function (r) {
-        if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-        log('campaign.reinstated', logSubject(), name);
-        msg('campWorkMsg', name + ' reinstated.', 'ok');
-        loadOptions();
-      });
+    window.ADspaceConfirm.ask({
+      title: 'Reinstate',
+      body: name + ' goes back to Confirmed and the recorded reason is cleared.',
+      go: 'Reinstate'
+    }, function () {
+      db.from('campaign_options')
+        .update({ state: 'confirmed', drop_reason: null, goodwill: false })
+        .eq('id', o.id).then(function (r) {
+          if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+          log('campaign.reinstated', logSubject(), name);
+          msg('campWorkMsg', name + ' reinstated.', 'ok');
+          loadOptions();
+        });
+    });
   }
 
   /* Moving to posted needs somewhere for the numbers to go, and there is one
@@ -3041,8 +3117,18 @@
      repaint underneath an open sheet. */
   var qc = null;
 
+  /* What has been ticked, per booking, for as long as this page is open.
+     Closing the sheet used to throw the ticks away, so somebody who shut it
+     to go and look at the file again came back to an empty list and started
+     the whole run over: the checks had been made, and the record of them had
+     not. Reported 2026-09-20. It is deliberately not stored in the database —
+     a half-finished check is not a fact about the work — and it is cleared
+     the moment the release goes through, so the next round is its own run. */
+  var qcKept = {};
+
   function openQc(o, patch) {
-    qc = { o: o, patch: patch, done: {} };
+    qcKept[o.id] = qcKept[o.id] || {};
+    qc = { o: o, patch: patch, done: qcKept[o.id] };
     var files = (state.files && state.files[o.id]) || [];
     var name = (o.creators || {}).name || 'this creator';
     $('qcWho').textContent = name + ' · ' +
@@ -3062,7 +3148,8 @@
       group[1].forEach(function (word) {
         var row = document.createElement('label');
         row.className = 'qcrow';
-        row.innerHTML = '<input type="checkbox" data-qc="' + n + '"><span>' + esc(word) + '</span>';
+        row.innerHTML = '<input type="checkbox" data-qc="' + n + '"' +
+          (qc.done[n] ? ' checked' : '') + '><span>' + esc(word) + '</span>';
         box.appendChild(row);
         n++;
       });
@@ -3107,6 +3194,9 @@
     log('campaign.qc', logSubject(),
       ((o.creators || {}).name || 'A creator') + ' · quality checked by ' +
       ((bridge.actorName && bridge.actorName()) || 'the team'));
+    /* The run is spent. A booking sent back for changes is checked again from
+       the top, because it is a different file. */
+    delete qcKept[o.id];
     shutQc();
     advanceOption(o, 'reviewing', patch);
   });
@@ -3205,33 +3295,43 @@
     var shot = PIPELINE.indexOf(o.state) >= PIPELINE.indexOf('pending_draft');
     var goodwill = false;
 
-    if (kind === 'replaced' && shot) {
-      if (!confirm(name + ' has already filmed.\n\nReplacing them is goodwill: the creator is still paid. Continue?')) return;
-      goodwill = true;
-    } else if (!confirm((kind === 'withdrawn' ? 'Mark ' + name + ' as withdrawn?'
-                                              : 'Replace ' + name + '?') +
-        '\n\nThe record is kept for invoice reconciliation.')) {
-      return;
-    }
+    goodwill = kind === 'replaced' && shot;
 
-    /* STILL A PROMPT, deliberately, until the sheet that replaces it ships.
-       This act states a consequence ("the record is kept for invoice
-       reconciliation") and then takes a reason, which is the definition of a
-       sheet in this portal, not of a field growing out of a button. Deleting
-       the prompt without building the sheet would cost the audit record the
-       reason it carries, so it stays until there is somewhere better to put
-       it. See the withdraw/replace sheet. */
-    var why = prompt(kind === 'withdrawn' ? 'Reason for withdrawal:' : 'Reason for replacement:') || '';
-    db.from('campaign_options')
-      .update({ state: kind, drop_reason: why.trim() || null, goodwill: goodwill })
-      .eq('id', o.id).then(function (r) {
-        if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
-        log(kind === 'withdrawn' ? 'campaign.withdrawn' : 'campaign.replaced', name, why);
-        msg('campWorkMsg', kind === 'withdrawn'
-          ? name + ' withdrawn. The place is open for a replacement.'
-          : name + ' replaced.' + (goodwill ? ' Recorded as goodwill.' : ' The place is open.'), 'warn');
-        loadOptions();
-      });
+    /* This used to be two browser dialogs: a confirm stating the consequence,
+       then a bare prompt for the reason, which arrived after the decision had
+       already been taken and said only "Reason for withdrawal:". One sheet
+       states what it costs and takes the reason in the same breath, which is
+       what this portal's own rule asks of an act that has to be explained
+       before it is agreed to. The reason is required, because it is the whole
+       of what the record will carry afterwards. */
+    window.ADspaceConfirm.ask({
+      title: kind === 'withdrawn' ? 'Withdraw' : 'Replace',
+      body: (goodwill
+              ? name + ' has already filmed, so replacing them is goodwill: they are still paid. '
+              : '')
+          + 'The booking is kept on the record for invoice reconciliation, and '
+          + (kind === 'withdrawn' || !goodwill ? 'the place opens for somebody else.'
+                                               : 'the place stays filled.'),
+      go: kind === 'withdrawn' ? 'Withdraw' : 'Replace',
+      tone: 'warn',
+      field: {
+        label: kind === 'withdrawn' ? 'Reason for withdrawal' : 'Reason for replacement',
+        placeholder: 'What happened. This goes on the record.',
+        rows: 3,
+        need: 'Say why. This is the only note the record keeps.'
+      }
+    }, function (why) {
+      db.from('campaign_options')
+        .update({ state: kind, drop_reason: why.trim() || null, goodwill: goodwill })
+        .eq('id', o.id).then(function (r) {
+          if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+          log(kind === 'withdrawn' ? 'campaign.withdrawn' : 'campaign.replaced', name, why);
+          msg('campWorkMsg', kind === 'withdrawn'
+            ? name + ' withdrawn. The place is open for a replacement.'
+            : name + ' replaced.' + (goodwill ? ' Recorded as goodwill.' : ' The place is open.'), 'warn');
+          loadOptions();
+        });
+    });
   }
 
   function paintRollup(live) {
@@ -3527,8 +3627,13 @@
 
   $('bulkApply').addEventListener('click', function () { applyBulk(false); });
   $('bulkApplyAll').addEventListener('click', function () {
-    if (!confirm('Overwrite these fields on every creator?')) return;
-    applyBulk(true);
+    window.ADspaceConfirm.ask({
+      title: 'Overwrite every creator',
+      body: 'Dates somebody set by hand on a booking are replaced with these. '
+          + 'Apply to blanks leaves those alone.',
+      go: 'Overwrite',
+      tone: 'warn'
+    }, function () { applyBulk(true); });
   });
 
   // ---- Entry --------------------------------------------------------------

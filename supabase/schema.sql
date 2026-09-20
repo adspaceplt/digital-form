@@ -3008,6 +3008,7 @@ declare
   me     public.team_members%rowtype;
   v_ym   text;
   v_seq  int;
+  v_try  int;
   v_no   text;
   v_id   uuid;
   v_lines jsonb;
@@ -3118,20 +3119,40 @@ begin
     -- The month is Malaysian, because the office that numbers the letter is.
     v_ym := to_char(timezone('Asia/Kuala_Lumpur', now()), 'YYMM');
 
-    -- Atomic: the upsert takes the row lock, so two issuers serialise here and
-    -- come out with consecutive numbers. No read-then-insert, no retry.
+    -- The counter still advances on every automatic issue, and the upsert's
+    -- row lock is what makes the scan below safe: a second issuer blocks here
+    -- until the first has committed its letter, so the two never read the same
+    -- gap as free. What the counter gives is a bound to scan within, not the
+    -- number itself.
     insert into public.client_document_seq (client_id, ym, next_val)
          values (p_client, v_ym, 2)
     on conflict (client_id, ym)
       do update set next_val = public.client_document_seq.next_val + 1
       returning next_val - 1 into v_seq;
 
+    -- The lowest free slot, not the counter's own value. A deleted letter
+    -- releases its reference (serial_taken stopped counting deletions on
+    -- 2026-09-20), and without this the automatic path still counted upward
+    -- past the gap: a client whose first two letters were issued in testing
+    -- and deleted started at 03 for ever. The counter is at least the number
+    -- of letters issued this month, so a free slot exists at or below it
+    -- unless somebody has typed references over the same range by hand; the
+    -- cap covers that and refuses rather than looping.
+    --
     -- Two digits is the floor, not the ceiling: the hundredth letter of a month
     -- widens to three rather than wrapping. Not lpad(): Postgres pads AND
     -- truncates to the width it is given, so lpad('100', 2, '0') is '10' and the
     -- hundredth letter would collide with the tenth.
-    v_no := 'AQL/' || cl.client_code || '/' || v_ym ||
-            case when v_seq < 100 then lpad(v_seq::text, 2, '0') else v_seq::text end;
+    v_try := 1;
+    loop
+      v_no := 'AQL/' || cl.client_code || '/' || v_ym ||
+              case when v_try < 100 then lpad(v_try::text, 2, '0') else v_try::text end;
+      exit when not public.serial_taken(v_no);
+      v_try := v_try + 1;
+      if v_try > greatest(v_seq, 1) + 200 then
+        return jsonb_build_object('error', 'no-serial');
+      end if;
+    end loop;
   end if;
 
   insert into public.client_documents

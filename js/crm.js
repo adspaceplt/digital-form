@@ -1719,7 +1719,13 @@
     if (!ct.email) { msg('crmWorkMsg', 'An email is required.', 'err'); return; }
     // Mail leaves the building and cannot be recalled, and this sits one
     // place away from Edit in the same menu.
-    if (!confirm('Send a sign-in invitation to ' + ct.email + '?')) return;
+    window.ADspaceConfirm.ask({
+      title: 'Send an invitation',
+      body: 'An email goes to ' + ct.email + ' with a sign-in link. '
+          + 'It leaves the building and cannot be recalled.',
+      go: 'Send'
+    }, function () { send(); });
+    function send() {
     msg('crmWorkMsg', notify ? 'Sending…' : 'Working…');
     API.invokeFn('invite-member', { email: ct.email, name: ct.name, kind: 'client', notify: Boolean(notify) })
       .then(function (res) {
@@ -1730,6 +1736,7 @@
           : res.data.already ? 'A login already exists. Sign-in link sent to ' + ct.email + '.'
           : 'Invitation sent to ' + ct.email + '.', 'ok');
       });
+    }
   }
 
   /* The login exists from here on, whichever way it was made. Recorded on the
@@ -1868,13 +1875,20 @@
      text, so nothing that survives is left pointing at a hole. */
   function purgeContact(ct) {
     Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
-    if (!confirm('Delete ' + ct.name + ' permanently?\n\nThis cannot be undone. Calls, letters and requests keep the name as it was written.')) return;
-    db.from('client_contacts').delete().eq('id', ct.id).then(function (r) {
-      if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
-      log('contact.deleted', state.client.name + ' · ' + ct.name, ct.email || '');
-      msg('crmWorkMsg', 'Deleted.', 'ok');
-      loadContacts();
-      loadRequests();
+    window.ADspaceConfirm.ask({
+      title: 'Delete',
+      body: ct.name + ' goes from this client for good. There is no restore. '
+          + 'Calls, letters and requests keep the name as it was written at the time.',
+      go: 'Delete',
+      tone: 'danger'
+    }, function () {
+      db.from('client_contacts').delete().eq('id', ct.id).then(function (r) {
+        if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
+        log('contact.deleted', state.client.name + ' · ' + ct.name, ct.email || '');
+        msg('crmWorkMsg', 'Deleted.', 'ok');
+        loadContacts();
+        loadRequests();
+      });
     });
   }
 
@@ -2263,23 +2277,39 @@
        it is never a silent edit. */
     on('force', function () {
       Array.prototype.forEach.call(row.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
-      var to = prompt('Set ' + l.label + ' to which state?\n\nenquired, quoted or confirmed', l.state);
-      if (!to) return;
-      to = String(to).trim().toLowerCase();
-      var why = prompt('Why is this being set by hand?\n\nThis is written to the activity record.');
-      if (!why || !why.trim()) { msg('crmServiceMsg', 'A reason is required.', 'err'); return; }
-      db.rpc('override_service_state', { p_service: l.id, p_state: to, p_reason: why.trim() })
-        .then(function (r) {
-          var out = (r && r.data) || {};
-          if (r && r.error) { msg('crmServiceMsg', r.error.message, 'err'); return; }
-          if (out.error) { msg('crmServiceMsg', OVERRIDE_WORD[out.error] || out.error, 'err'); return; }
-          msg('crmServiceMsg', 'Set by hand.', 'ok');
-          loadServices();
-          /* The client's value is the confirmed total, so a state set by hand
-             moves it. saveService has always called this; the override was
-             added without it and left the record showing the old figure. */
-          syncValue();
-        }, function (e) { msg('crmServiceMsg', (e && e.message) || 'Could not set it.', 'err'); });
+      /* Two browser prompts: the first asked for the state as free text, so
+         "Confirmed" with a capital or a trailing space was a refusal from the
+         database rather than a choice from the three that exist, and the
+         second arrived after the state had already been typed. One sheet, the
+         state as a select over the states a line can hold, and the reason
+         beside it, because the reason is what the activity record keeps. */
+      window.ADspaceConfirm.ask({
+        title: 'Update status',
+        body: 'The state of ' + l.label + ' is set by hand, past the checks the '
+            + 'letter normally makes. The reason goes on the activity record.',
+        go: 'Update',
+        tone: 'warn',
+        fields: [
+          { name: 'state', label: 'State', value: l.state,
+            choices: Object.keys(SV_STATE).map(function (k) { return [k, SV_STATE[k][0]]; }) },
+          { name: 'why', label: 'Why it is being set by hand', rows: 3,
+            placeholder: 'What the checks cannot see.',
+            need: 'A reason is required.' }
+        ]
+      }, function (a) {
+        db.rpc('override_service_state', { p_service: l.id, p_state: a.state, p_reason: a.why })
+          .then(function (r) {
+            var out = (r && r.data) || {};
+            if (r && r.error) { msg('crmServiceMsg', r.error.message, 'err'); return; }
+            if (out.error) { msg('crmServiceMsg', OVERRIDE_WORD[out.error] || out.error, 'err'); return; }
+            msg('crmServiceMsg', 'Set by hand.', 'ok');
+            loadServices();
+            /* The client's value is the confirmed total, so a state set by hand
+               moves it. saveService has always called this; the override was
+               added without it and left the record showing the old figure. */
+            syncValue();
+          }, function (e) { msg('crmServiceMsg', (e && e.message) || 'Could not set it.', 'err'); });
+      });
     });
     on('del', function () { saveService(l, { archived_at: new Date().toISOString() }, true); });
     return row;
@@ -2622,20 +2652,26 @@
        it is about to do and names the letter it is about to do it for. */
     on('verify', function () {
       shut();
-      if (!confirm('Verify ' + d.number + '?\n\nThis confirms the ' + mapped.length +
-                   (mapped.length === 1 ? ' service on this letter' : ' services on this letter') +
-                   ' and nothing else.')) return;
-      DOCS.verify(d, function (err, out) {
-        if (err) { msg('crmDocMsg', err, 'err'); loadDocuments(); return; }
-        var n = (out && out.confirmed) || 0;
-        msg('crmDocMsg', d.number + ' verified. ' + n +
-          (n === 1 ? ' service confirmed.' : ' services confirmed.'), 'ok');
-        loadDocuments();
-        loadServices();
-        /* Verifying is what confirms a service, so it is what moves the
-           client's value. Without this the record kept the quoted figure
-           until something else happened to save a line. */
-        syncValue();
+      window.ADspaceConfirm.ask({
+        title: 'Verify ' + d.number,
+        body: 'The ' + mapped.length
+            + (mapped.length === 1 ? ' service on this letter is confirmed'
+                                   : ' services on this letter are confirmed')
+            + ', and nothing else. A verified letter is voided rather than deleted.',
+        go: 'Verify'
+      }, function () {
+        DOCS.verify(d, function (err, out) {
+          if (err) { msg('crmDocMsg', err, 'err'); loadDocuments(); return; }
+          var n = (out && out.confirmed) || 0;
+          msg('crmDocMsg', d.number + ' verified. ' + n +
+            (n === 1 ? ' service confirmed.' : ' services confirmed.'), 'ok');
+          loadDocuments();
+          loadServices();
+          /* Verifying is what confirms a service, so it is what moves the
+             client's value. Without this the record kept the quoted figure
+             until something else happened to save a line. */
+          syncValue();
+        });
       });
     });
     /* Both of these ask in a sheet rather than a confirm(): each needs a
@@ -3119,12 +3155,19 @@
             '. Remove those lines first.', 'warn');
         return;
       }
-      if (!confirm('Delete ' + s.name + ' permanently?\n\nThis cannot be undone. Letters already issued keep the line as it was written.')) return;
-      db.from('services').delete().eq('slug', s.slug).then(function (r) {
-        if (r.error) { msg('svcListMsg', r.error.message, 'err'); return; }
-        log('service.deleted', s.name, s.category || '');
-        enterServices();
-        msg('svcListMsg', 'Deleted.', 'ok');
+      window.ADspaceConfirm.ask({
+        title: 'Delete',
+        body: s.name + ' leaves the rate card and cannot be quoted again. There is '
+            + 'no restore. Letters already issued keep the line as it was written.',
+        go: 'Delete',
+        tone: 'danger'
+      }, function () {
+        db.from('services').delete().eq('slug', s.slug).then(function (r) {
+          if (r.error) { msg('svcListMsg', r.error.message, 'err'); return; }
+          log('service.deleted', s.name, s.category || '');
+          enterServices();
+          msg('svcListMsg', 'Deleted.', 'ok');
+        });
       });
     });
   }

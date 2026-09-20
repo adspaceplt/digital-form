@@ -332,8 +332,17 @@
     var st = el.querySelector('[data-a="state"]');
     if (st) st.addEventListener('click', function () {
       shutMenus();
-      if (m.active && !confirm('Set ' + m.name + ' inactive?\n\nAccess is removed until they are set active again.')) return;
-      saveMember(m, { active: !m.active });
+      /* Setting somebody active again asks nothing: it is the way back from
+         this, and the way back never asks. */
+      if (!m.active) { saveMember(m, { active: true }); return; }
+      window.ADspaceConfirm.ask({
+        title: 'Set inactive',
+        body: m.name + ' loses access to every section until they are set active '
+            + 'again here. Their record, their name on past work and everything '
+            + 'they signed stay as they are.',
+        go: 'Set inactive',
+        tone: 'warn'
+      }, function () { saveMember(m, { active: false }); });
     });
     var ed = el.querySelector('[data-a="edit"]');
     if (ed) ed.addEventListener('click', function () { openMemberBox(m); });
@@ -420,12 +429,20 @@
     if (ren) ren.addEventListener('click', function () { openGroupBox(r); });
     var del = el.querySelector('[data-a="del"]');
     if (del) del.addEventListener('click', function () {
-      if (!confirm('Delete the ' + r.name + ' group?')) return;
-      db.from('team_roles').delete().eq('slug', r.slug).then(function (q) {
-        if (q.error) { msg('groupMsg', q.error.message, 'err'); return; }
-        log('team.group_removed', r.name, '');
-        msg('groupMsg', r.name + ' deleted.', 'ok');
-        load();
+      window.ADspaceConfirm.ask({
+        title: 'Delete',
+        body: 'The ' + r.name + ' group and the access it carries go. There is no '
+            + 'restore. Anybody still in it falls under "No group" and opens nothing '
+            + 'until they are moved.',
+        go: 'Delete',
+        tone: 'danger'
+      }, function () {
+        db.from('team_roles').delete().eq('slug', r.slug).then(function (q) {
+          if (q.error) { msg('groupMsg', q.error.message, 'err'); return; }
+          log('team.group_removed', r.name, '');
+          msg('groupMsg', r.name + ' deleted.', 'ok');
+          load();
+        });
       });
     });
     return el;
@@ -623,21 +640,28 @@
       /* The row's email is the address the console signs in with, so moving it
          moves the door. The login itself stays where it was until somebody is
          invited at the new address. */
-      if (email !== String(m.email || '').toLowerCase() &&
-          !confirm('Change the sign-in address to ' + email + '?\n\n' + m.name +
-                   ' signs in with the new address. Send an invitation so the login is made.')) return;
-      $('teamAddBox').hidden = true; editingMember = null;
-      db.from('team_members').update(fields).eq('id', m.id).then(function (r) {
-        if (r.error) {
-          msg('teamMsg', /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
-            : /duplicate|unique/i.test(r.error.message)
-            ? 'That email is already on the list.' : r.error.message, 'err');
-          return;
-        }
-        log('team.edited', name, email + ' · ' + roleName(role));
-        msg('teamMsg', 'Saved.', 'ok');
-        load();
-      });
+      function write() {
+        $('teamAddBox').hidden = true; editingMember = null;
+        db.from('team_members').update(fields).eq('id', m.id).then(function (r) {
+          if (r.error) {
+            msg('teamMsg', /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
+              : /duplicate|unique/i.test(r.error.message)
+              ? 'That email is already on the list.' : r.error.message, 'err');
+            return;
+          }
+          log('team.edited', name, email + ' · ' + roleName(role));
+          msg('teamMsg', 'Saved.', 'ok');
+          load();
+        });
+      }
+      if (email === String(m.email || '').toLowerCase()) { write(); return; }
+      window.ADspaceConfirm.ask({
+        title: 'Change the sign-in address',
+        body: m.name + ' signs in with ' + email + ' from now on. The login itself '
+            + 'stays at the old address until they are invited at the new one.',
+        go: 'Change address',
+        tone: 'warn'
+      }, write);
       return;
     }
     db.from('team_members').insert(Object.assign({ active: true }, fields))
@@ -678,16 +702,22 @@
     // The ⋯ it was chosen from would otherwise sit open over the answer.
     shutMenus();
     if (!m.email) { msg('teamMsg', m.name + ' has no email on record.', 'err'); return; }
-    if (!confirm('Send a sign-in invitation to ' + m.email + '?')) return;
-    msg('teamMsg', 'Sending an invitation to ' + m.email + '…', 'ok');
-    API.invokeFn('invite-member', { email: m.email, name: m.name })
-      .then(function (r) {
-        var d = r.data || {};
-        if (r.error) { msg('teamMsg', 'Could not send: ' + r.why, 'err'); return; }
-        log('team.invited', m.name, m.email);
-        msg('teamMsg', d.already ? m.name + ' already has a login.'
-                                 : 'Invitation sent to ' + m.email + '.', 'ok');
-      });
+    window.ADspaceConfirm.ask({
+      title: 'Send an invitation',
+      body: 'An email goes to ' + m.email + ' with a sign-in link. '
+          + 'It leaves the building and cannot be recalled.',
+      go: 'Send'
+    }, function () {
+      msg('teamMsg', 'Sending an invitation to ' + m.email + '…', 'ok');
+      API.invokeFn('invite-member', { email: m.email, name: m.name })
+        .then(function (r) {
+          var d = r.data || {};
+          if (r.error) { msg('teamMsg', 'Could not send: ' + r.why, 'err'); return; }
+          log('team.invited', m.name, m.email);
+          msg('teamMsg', d.already ? m.name + ' already has a login.'
+                                   : 'Invitation sent to ' + m.email + '.', 'ok');
+        });
+    });
   }
 
   window.ADspaceTeam = {
