@@ -646,6 +646,24 @@ because a button that is not yours to press is a question about why it is
 there. What is deliberately not gated is the team's own internal milestone:
 the commitment a client is owed is the one an extension is about.
 
+**A checklist is only a gate if the thing it gates is on the screen.** The
+quality check shipped as fourteen rows drawn straight into the sheet card
+rather than into the card's own scrolling body, so the list overflowed and the
+foot — with Release in it — was pushed off the bottom of the screen. On a phone
+every box could be ticked and there was then nothing to press: the gate had
+become a wall. The body scrolls and the foot is fixed under it, which is what
+every other sheet in this portal already does, and the count sits beside the
+action at a desk and above two equal halves on a phone. Two further things the
+same report settled. **Ticks are work, and work is not thrown away by closing a
+window**: somebody who shuts the sheet to go and look at the file again is
+doing the check, not abandoning it, so the ticks are kept per booking until the
+release goes through and are cleared then, because a booking sent back for
+changes is a different file. And **fourteen was too many for the wrong reason**
+— not that fourteen checks are too much care, but that checks of the same kind
+were two presses for one act: a person watching a video for spelling is
+watching it for brand names in the same pass. Nine, three groups of three, with
+every risk that costs money or takes a post down still on the list.
+
 **A gate on the one step somebody else sees.** Every step on a creator's card
 is the team recording its own progress except one, and that one puts the work
 in front of a client the moment it is pressed. So that is the step that is
@@ -881,6 +899,14 @@ it — copy it — is not what the box suggests. `.readfield` keeps the height a
 the alignment, so a row still reads as one line, and takes the affordance away
 rather than the shape.
 
+**The account is not an action.** The control at the end of the console bar
+carried a `--line-ctl` ring, so beside an Activity link and a bell that are
+nothing but ink and a fill on hover, the person's own name read as the one
+thing up there to press. That is the fault the bell's own ring already had, and
+it is corrected the same way: no border in either shape, and the fill on hover
+and while the menu is open is what says it is pressable. The three controls in
+that bar are one shape.
+
 **Copied is said one way.** Four buttons copied something and each answered
 differently: one swapped its own label, one a span inside itself, one wrote a
 message into a `.msg` line under the panel, one tinted itself. `js/copy.js` is
@@ -912,6 +938,24 @@ something has to be typed"); it holds for a single value too, and there the
 answer is not a sheet but the field growing out of the control that needs it.
 The name a client's decision is recorded under is the case: it used to be a
 prompt on both client-facing pages, and it is `.namebox` now.
+
+The console kept thirty-one of them anyway, because each one is a line of code
+and the right control is a component. `js/confirm.js` is that component, and it
+divides from `js/ask.js` on the rule already stated above: a value on its own
+grows out of the control that needs it; an act with a **consequence** is a
+sheet, because the consequence is exactly what a growing field has nowhere to
+put. Four things a browser dialog cannot do are what the sheet is for. The
+consequence reads as a line under the title rather than as a second paragraph
+of it. The destructive answer is red and the way out is quiet, and a
+destructive question opens focused on the way out, so a stray Enter costs
+nothing. **A value is asked for in the same breath as the question**, never in
+a second dialog after the decision has already been taken — setting a service
+line by hand was a prompt for the state (free text, so a capital letter was a
+refusal) followed by a prompt for the reason, and removing a client from
+Content Review was a confirm followed by a naked "Type the client name
+exactly:". And **the way back never asks**: reinstating a code, setting a
+colleague active again, restoring a creator. A question in front of the
+correction is one more thing between somebody and putting it right.
 
 **A control that creates a need answers it in place.** Ticking a platform a
 creator has no profile link for used to open a labelled field *after* the Add

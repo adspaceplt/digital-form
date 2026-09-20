@@ -1258,20 +1258,25 @@
   });
 
   $('resetLink').addEventListener('click', function () {
-    if (!confirm('Reset the review link for ' + state.client.name + '?\n\n' +
-      'The current link stops working immediately. The new link must be reissued to the client.')) return;
-
-    var next = makeToken();
-    db.from('clients').update({ access_token: next }).eq('id', state.client.id)
-      .then(function (r) {
-        if (r.error) { msg('handleMsg', r.error.message, 'err'); return; }
-        logAction('link.reset', state.client.name, 'Previous link invalidated');
-        state.client.access_token = next;
-        var fresh = reviewUrl(state.client);
-        $('clientLink').value = fresh;
-        $('openLink').href = fresh;
-        msg('handleMsg', 'New link issued. The previous link is no longer valid.', 'ok');
-      });
+    window.ADspaceConfirm.ask({
+      title: 'Reset the review link',
+      body: 'The current link for ' + state.client.name + ' stops working immediately. '
+          + 'The new one has to be sent to the client.',
+      go: 'Reset link',
+      tone: 'warn'
+    }, function () {
+      var next = makeToken();
+      db.from('clients').update({ access_token: next }).eq('id', state.client.id)
+        .then(function (r) {
+          if (r.error) { msg('handleMsg', r.error.message, 'err'); return; }
+          logAction('link.reset', state.client.name, 'Previous link invalidated');
+          state.client.access_token = next;
+          var fresh = reviewUrl(state.client);
+          $('clientLink').value = fresh;
+          $('openLink').href = fresh;
+          msg('handleMsg', 'New link issued. The previous link is no longer valid.', 'ok');
+        });
+    });
   });
 
   /* Deleting a client takes every set, post and approval with it, and two
@@ -1292,22 +1297,33 @@
     var c = state.client;
     db.from('batches').select('id').eq('client_id', c.id).then(function (r) {
       var sets = (r.data || []).length;
-      if (!confirm('Remove ' + c.name + ' from Content Review?\n\n' +
-        'Deletes ' + sets + ' content set' + (sets === 1 ? '' : 's') +
-        ' with all posts and approval records. The client record is kept.')) return;
-      var typed = prompt('Type the client name exactly to confirm:', '');
-      if (typed === null) return;
-      if (typed.trim() !== c.name) {
-        msg('profileMsg', 'Name does not match. Nothing removed.', 'err');
-        return;
-      }
-      db.from('batches').delete().eq('client_id', c.id).then(function (d) {
-        if (d.error) { msg('profileMsg', d.error.message, 'err'); return; }
-        db.from('clients').update({ review_hidden: true }).eq('id', c.id).then(function (u) {
-          if (u.error) { msg('profileMsg', u.error.message, 'err'); return; }
-          logAction('review.removed', c.name,
-            sets + ' content set' + (sets === 1 ? '' : 's') + ' removed');
-          showClients();
+      /* Two browser dialogs, one after the other — the question, then a naked
+         prompt for the name — and neither said what the other was for. One
+         sheet states what goes and takes the name in the same breath, which
+         is what Delete client on the record already does. */
+      window.ADspaceConfirm.ask({
+        title: 'Remove from Content Review',
+        body: sets + ' content set' + (sets === 1 ? '' : 's')
+            + ' with every post and approval record in ' + (sets === 1 ? 'it' : 'them')
+            + ' goes. There is no restore. The client record is kept.',
+        go: 'Remove',
+        tone: 'danger',
+        field: {
+          label: 'Type the client name to confirm',
+          placeholder: c.name,
+          match: c.name,
+          need: 'Type the client name to confirm.',
+          mismatch: 'That is not this client\'s name.'
+        }
+      }, function () {
+        db.from('batches').delete().eq('client_id', c.id).then(function (d) {
+          if (d.error) { msg('profileMsg', d.error.message, 'err'); return; }
+          db.from('clients').update({ review_hidden: true }).eq('id', c.id).then(function (u) {
+            if (u.error) { msg('profileMsg', u.error.message, 'err'); return; }
+            logAction('review.removed', c.name,
+              sets + ' content set' + (sets === 1 ? '' : 's') + ' removed');
+            showClients();
+          });
         });
       });
     });
@@ -1433,13 +1449,16 @@
       if (!posts.length) { msg('setMsg', 'Add at least one post before publishing.', 'err'); return; }
       var blank = posts.filter(function (p) { return !p.caption && !p.caption_zh; }).length;
       var warn = blank
-        ? '\n\n' + blank + ' of ' + posts.length + ' posts ' + (blank === 1 ? 'has' : 'have') +
-          ' no copy assigned.'
+        ? ' ' + blank + ' of ' + posts.length + ' ' + (blank === 1 ? 'has' : 'have')
+          + ' no copy assigned.'
         : '';
-      if (!confirm('Publish ' + posts.length + ' post' + (posts.length === 1 ? '' : 's') +
-                   ' to ' + state.client.name + '? The set becomes visible immediately.' +
-                   warn)) return;
-      setPublished(true);
+      window.ADspaceConfirm.ask({
+        title: 'Publish to the client',
+        body: posts.length + ' post' + (posts.length === 1 ? '' : 's') + ' become'
+            + (posts.length === 1 ? 's' : '') + ' visible to ' + state.client.name
+            + ' immediately.' + warn,
+        go: 'Publish'
+      }, function () { setPublished(true); });
     });
   });
 
@@ -1461,11 +1480,15 @@
     var b = state.batch;
     db.from('posts').select('id').eq('batch_id', b.id).then(function (r) {
       var n = (r.data || []).length;
-      var warning = 'Delete "' + b.title + '"?\n\n' +
-        'This removes ' + n + ' post' + (n === 1 ? '' : 's') + ' and their approval records.' +
-        (b.published ? '\n\nThis set is currently published to the client.' : '') +
-        '\n\nThis action cannot be reversed.';
-      if (!confirm(warning)) return;
+      window.ADspaceConfirm.ask({
+        title: 'Delete',
+        body: n + ' post' + (n === 1 ? '' : 's') + ' in "' + b.title
+            + '" and their approval records go.'
+            + (b.published ? ' This set is published to the client.' : '')
+            + ' There is no restore.',
+        go: 'Delete',
+        tone: 'danger'
+      }, function () {
 
       /* `.select()` so the answer says what was removed. A delete the database
          refuses returns no error at all — PostgREST answers 204 and the row
@@ -1484,6 +1507,7 @@
         clearDrafts();
         $('setPanel').hidden = true;
         loadBatches();
+      });
       });
     });
   });
@@ -2464,8 +2488,14 @@
   });
 
   $('clearDrafts').addEventListener('click', function () {
-    if (state.drafts.length && !confirm('Discard these uploads?')) return;
-    clearDrafts();
+    if (!state.drafts.length) { clearDrafts(); return; }
+    window.ADspaceConfirm.ask({
+      title: 'Discard these uploads',
+      body: state.drafts.length + ' upload' + (state.drafts.length === 1 ? '' : 's')
+          + ' waiting to be saved go. The files themselves are untouched.',
+      go: 'Discard',
+      tone: 'danger'
+    }, clearDrafts);
   });
 
   var saveTimer = null;
@@ -2706,18 +2736,25 @@
         reask._ask.open();
       });
       row.querySelector('[data-a="del"]').addEventListener('click', function () {
-        if (!confirm('Delete this post?\n\nIt will be removed from the client view.')) return;
-        // Same as the set above: the answer was thrown away entirely here, so a
-        // refused delete repainted the list with the post still in it.
-        db.from('posts').delete().eq('id', p.id).select('id').then(function (r) {
-          if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
-          if (!(r.data || []).length) {
-            msg('setMsg', 'Not deleted. The database refused the request.', 'err');
-            return;
-          }
-          logAction('post.deleted',
-            state.client.name + ' — ' + state.batch.title, MK.label(p));
-          loadPosts(); loadBatches();
+        window.ADspaceConfirm.ask({
+          title: 'Delete',
+          body: MK.label(p) + ' leaves the client view, with its approval record. '
+              + 'There is no restore.',
+          go: 'Delete',
+          tone: 'danger'
+        }, function () {
+          // Same as the set above: the answer was thrown away entirely here, so a
+          // refused delete repainted the list with the post still in it.
+          db.from('posts').delete().eq('id', p.id).select('id').then(function (r) {
+            if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
+            if (!(r.data || []).length) {
+              msg('setMsg', 'Not deleted. The database refused the request.', 'err');
+              return;
+            }
+            logAction('post.deleted',
+              state.client.name + ' — ' + state.batch.title, MK.label(p));
+            loadPosts(); loadBatches();
+          });
         });
       });
     }
@@ -3010,11 +3047,18 @@
   function editLink(l) { openLinkForm(l); }
 
   function removeLink(l) {
-    if (!confirm('Delete /' + l.slug + '?\n\nAnywhere this link is already printed or posted will stop working.')) return;
-    db.from('links').delete().eq('slug', l.slug).then(function (r) {
-      if (r.error) { msg('linkMsg', r.error.message, 'err'); return; }
-      logAction('shortlink.deleted', '/' + l.slug, l.target_url || '');
-      loadLinks();
+    window.ADspaceConfirm.ask({
+      title: 'Delete',
+      body: 'Anywhere /' + l.slug + ' is already printed, posted or sent stops working. '
+          + 'There is no restore. To turn it off and keep it, pause it instead.',
+      go: 'Delete',
+      tone: 'danger'
+    }, function () {
+      db.from('links').delete().eq('slug', l.slug).then(function (r) {
+        if (r.error) { msg('linkMsg', r.error.message, 'err'); return; }
+        logAction('shortlink.deleted', '/' + l.slug, l.target_url || '');
+        loadLinks();
+      });
     });
   }
 
@@ -3200,14 +3244,24 @@
 
   function toggleQr(q) {
     var next = !q.active;
-    if (!next && !confirm('Revoke "' + (q.label || 'this code') + '"?\n\n' +
-        'Scans of this code will be turned away. /' + q.slug + ' keeps working.')) return;
-    db.from('link_qrs').update({ active: next, revoked_at: next ? null : new Date().toISOString() })
-      .eq('code', q.code).then(function (r) {
-        if (r.error) { msg('qrMsg', r.error.message, 'err'); return; }
-        logAction(next ? 'qr.restored' : 'qr.revoked', '/' + q.slug, q.label || q.code);
-        loadQrs();
-      });
+    function save() {
+      db.from('link_qrs').update({ active: next, revoked_at: next ? null : new Date().toISOString() })
+        .eq('code', q.code).then(function (r) {
+          if (r.error) { msg('qrMsg', r.error.message, 'err'); return; }
+          logAction(next ? 'qr.restored' : 'qr.revoked', '/' + q.slug, q.label || q.code);
+          loadQrs();
+        });
+    }
+    /* Reinstating asks nothing: it is the way back from this, and a way back
+       that asks first is one more thing between somebody and the correction. */
+    if (next) { save(); return; }
+    window.ADspaceConfirm.ask({
+      title: 'Revoke this code',
+      body: 'Scans of ' + (q.label || 'this code') + ' are turned away. '
+          + '/' + q.slug + ' keeps working, and the code can be reinstated here.',
+      go: 'Revoke',
+      tone: 'warn'
+    }, save);
   }
 
   $('qrNew').addEventListener('click', function () {

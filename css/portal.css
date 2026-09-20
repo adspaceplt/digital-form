@@ -1927,10 +1927,15 @@ body.is-plain .topbar { background: var(--chrome); }
    full width buttons in it. One control at the end of the bar instead, where
    every application this team uses keeps an account. */
 .acct { position: relative; flex: 0 0 auto; }
+/* No outline. It was the last outlined thing in the console bar, beside an
+   Activity link and a bell that both carry nothing but ink and a fill on
+   hover, so the person's own name read as the one action up there — the same
+   fault the bell's own ring had, corrected the same way. The fill on hover and
+   while the menu is open is what says it is pressable. */
 .acct-btn {
   display: grid; place-items: center; width: var(--ctl-h); height: var(--ctl-h);
-  border: 1px solid var(--line-ctl); border-radius: 50%; background: none; padding: 0;
-  transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
+  border: 0; border-radius: 50%; background: none; padding: 0;
+  transition: background var(--t-fast) var(--ease-out);
 }
 .acct-mark { font-size: 12.5px; font-weight: 600; letter-spacing: 0; color: var(--ink-soft); }
 /* The name, where the bar can hold it. The control is then a pill rather than
@@ -1954,10 +1959,10 @@ body.is-plain .topbar { background: var(--chrome); }
   .acct-btn:hover .acct-name { color: var(--ink); }
 }
 @media (hover: hover) {
-  .acct-btn:hover { background: var(--line-soft); border-color: var(--ink-mute); }
+  .acct-btn:hover { background: var(--line-soft); }
   .acct-btn:hover .acct-mark { color: var(--ink); }
 }
-.acct-btn[aria-expanded="true"] { background: var(--line-soft); border-color: var(--ink-mute); }
+.acct-btn[aria-expanded="true"] { background: var(--line-soft); }
 /* The account menu is a menu, not a panel. It inherited `.kmenu`'s 320px
    width and, worse, `.kmenu-item`'s `flex-direction: column` — which exists so
    a row menu can stack a bold label over a description — so Theme and Sign out
@@ -2124,6 +2129,25 @@ body.is-plain .topbar { background: var(--chrome); }
    quarter of the card with its label floating above nothing. */
 .sheet-body > .input, .sheet-body > .select, .sheet-body > textarea.input { width: 100%; }
 
+/* ---------- The question every act asks (js/confirm.js) ----------
+   Narrower than a sheet that carries a form: this one holds a sentence and
+   two answers, and 780px of card for eleven words reads as a dialog that has
+   lost its contents. The consequence is a line under the title at the body
+   size, never a second paragraph of the title, and the two answers are the
+   portal's own Save / Cancel order and weights. */
+.sheet-card.askcard { width: min(440px, 100%); }
+.askline { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
+.askline:not([hidden]) + .askfields:not([hidden]) { margin-top: 14px; }
+.askfield + .askfield { margin-top: 12px; }
+.askfield > .input, .askfield > .select, .askfield > textarea.input { width: 100%; }
+.askfield .field-label { display: block; margin-bottom: 6px; }
+.askcard .sheet-foot.askfoot { justify-content: flex-end; }
+@media (max-width: 560px) {
+  /* Two actions of the same standing are two halves, never a slab and a
+     remnant: the rule the sheet foot already carries everywhere else. */
+  .askcard .sheet-foot.askfoot > .btn { flex: 1 1 0; min-width: 0; }
+}
+
 /* ---------- Choosing what goes on a letter ----------
    A letter is issued for the services somebody chose, so the choice is a
    screen rather than a predicate nobody can see. Ticked by default where the
@@ -2191,6 +2215,17 @@ body.is-plain .topbar { background: var(--chrome); }
 .qcrow input { width: 18px; height: 18px; accent-color: var(--accent); }
 .qcrow span { font-size: 14px; }
 @media (hover: hover) { .qcrow:hover { background: var(--sunk); } }
+/* The count says why the button will not move, so it is on the same line as
+   the button at a desk and above it on a phone, where two actions of the same
+   standing are two halves. The foot never scrolls away: the body above it is
+   what scrolls, so the action is on the screen from the first tick. */
+.qcfoot { flex-wrap: wrap; }
+.qcfoot > .btn { margin-left: 0; }
+.qcfoot > #qcGo { margin-left: auto; }
+@media (max-width: 560px) {
+  .qcfoot > .lpicksum { flex: 1 0 100%; margin-bottom: 10px; }
+  .qcfoot > .btn { flex: 1 1 0; min-width: 0; margin-left: 0; }
+}
 
 /* The reference somebody types instead of the one the database makes. It sits
    under the lines it prices and above the actions, on the block step, and the
