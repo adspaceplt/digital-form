@@ -2646,8 +2646,13 @@ begin
           'deliverable', c.deliverable,
           'push_format', c.push_format,
           'platforms', o.platforms,
-          'rate', o.rate,
-          'currency', case when coalesce(cl.market, 'MY') = 'SG' then 'SGD' else 'MYR' end,
+          /* NO RATE, AND NO CURRENCY. `campaign_options.rate` is what the
+             client is quoted for this booking and carries our markup, so it
+             is not the creator's to read and is certainly not "their fee";
+             what a creator is paid is agreed with them and claimed on AP01,
+             which the page links to once the work is approved. `currency`
+             existed only to format that one figure and names the client's
+             market, which is a fact about the client. */
           'state', o.state,
           'visit_date', o.visit_date,
           'visit_time', o.visit_time,
