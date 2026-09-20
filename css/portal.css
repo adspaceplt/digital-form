@@ -3707,9 +3707,43 @@ body > .shell { width: 100%; }
    is gone: it was there to make a row findable by eye, and on a roster of
    Chinese names a first character index gives 是yy呀 and 是甜甜啊 the same
    circle, which is the very failure that ruled out an alphabetical band. */
-.cr-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) 120px 96px var(--ctl-h); }
+/* The record column carries a campaign's name now, not a bare count, so it is
+   measured against one: 200px holds `Promote Newly La… +2 · Sept 2026` at
+   12.5px, and the name is the half that gives way. */
+.cr-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) 200px 96px var(--ctl-h); }
 .cr-links { display: flex; flex-wrap: wrap; gap: 4px 14px; min-width: 0; }
-.cr-rec { font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.cr-rec {
+  font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums;
+  display: flex; align-items: baseline; min-width: 0;
+}
+/* The name truncates and the tail never does: `+2 · Sept 2026` is the part a
+   clipped cell would make meaningless, while a shortened campaign name is
+   still the campaign. */
+.cr-rec-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cr-rec-tail { flex: 0 0 auto; white-space: pre; }
+
+/* What this creator has run, on their own card. A row a campaign, the name
+   and the month it was shot, and the whole row opens it — the shape every
+   other list of records in this console has, so there is nothing new to
+   learn and nothing nested inside the control. */
+.crcamps { display: flex; flex-direction: column; }
+.crcamp {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  min-height: var(--ctl-h); padding: 8px 10px; text-align: left;
+  background: none; border: 0; border-bottom: 1px solid var(--line-soft);
+  border-radius: var(--radius-ctl);
+  transition: background var(--t-fast) var(--ease-out);
+}
+.crcamp:last-child { border-bottom: 0; }
+.crcamp-name {
+  flex: 1 1 auto; min-width: 0; font-size: 13.5px; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.crcamp-when {
+  flex: 0 0 auto; font-size: 12px; color: var(--ink-mute);
+  font-variant-numeric: tabular-nums;
+}
+@media (hover: hover) { .crcamp:hover { background: var(--sunk); } }
 .cr-who > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
 /* The same outbound link, without the chip: on a row that carries two or three
