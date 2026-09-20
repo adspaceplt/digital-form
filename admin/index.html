@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260920e">
+<link rel="stylesheet" href="/css/portal.css?v=20260920f">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,24 +28,25 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260920e"></script>
-<script src="/js/words.js?v=20260920e"></script>
-<script src="/js/copy.js?v=20260920e"></script>
-<script src="/js/ask.js?v=20260920e"></script>
-<script src="/js/confirm.js?v=20260920e"></script>
-<script src="/js/state.js?v=20260920e"></script>
-<script src="/js/group.js?v=20260920e"></script>
-<script src="/js/menu.js?v=20260920e"></script>
-<script src="/js/cmdbar.js?v=20260920e"></script>
-<script src="/js/api.js?v=20260920e"></script>
-<script src="/js/money.js?v=20260920e"></script>
-<script src="/js/mockups.js?v=20260920e"></script>
+<script src="/js/config.js?v=20260920f"></script>
+<script src="/js/words.js?v=20260920f"></script>
+<script src="/js/copy.js?v=20260920f"></script>
+<script src="/js/ask.js?v=20260920f"></script>
+<script src="/js/confirm.js?v=20260920f"></script>
+<script src="/js/sheet.js?v=20260920f"></script>
+<script src="/js/state.js?v=20260920f"></script>
+<script src="/js/group.js?v=20260920f"></script>
+<script src="/js/menu.js?v=20260920f"></script>
+<script src="/js/cmdbar.js?v=20260920f"></script>
+<script src="/js/api.js?v=20260920f"></script>
+<script src="/js/money.js?v=20260920f"></script>
+<script src="/js/mockups.js?v=20260920f"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260920e" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260920f" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -2042,33 +2043,45 @@
         </span>
       </div>
 
-      <div class="panel" id="teamAddBox" hidden>
-        <div class="panelhead"><h3 id="tmTitle">New team member</h3></div>
-        <div class="row">
-          <div><label class="field-label" for="tmName">Name</label>
-            <input class="input" id="tmName" placeholder="John Doe"></div>
-          <div><label class="field-label" for="tmEmail">Sign-in email</label>
-            <input class="input" id="tmEmail" type="email" placeholder="john@adspacestudios.com"></div>
-          <div style="flex:0 0 190px"><label class="field-label" for="tmRole">Group</label>
-            <select class="select" id="tmRole"></select></div>
+      <!-- A colleague is edited where a creator is edited: a sheet over the
+           list, so on a phone the form arrives over the row it belongs to
+           rather than unfolding a screen above it. -->
+      <div class="sheet" id="teamAddBox" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="tmTitle">
+          <div class="sheet-head">
+            <h3 id="tmTitle">New team member</h3>
+            <button class="iconbtn" id="tmClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <div class="row">
+              <div><label class="field-label" for="tmName">Name</label>
+                <input class="input" id="tmName" placeholder="John Doe"></div>
+              <div><label class="field-label" for="tmEmail">Sign-in email</label>
+                <input class="input" id="tmEmail" type="email" placeholder="john@adspacestudios.com"></div>
+              <div style="flex:0 0 190px"><label class="field-label" for="tmRole">Group</label>
+                <select class="select" id="tmRole"></select></div>
+            </div>
+            <!-- The HR serial is built from the Employee ID and the designation is
+                 printed under a signature, so both are kept here with the person. -->
+            <div class="row" style="margin-top:12px">
+              <div style="flex:0 0 190px"><label class="field-label" for="tmStaff">Employee ID</label>
+                <input class="input" id="tmStaff" placeholder="AD005" autocapitalize="characters" spellcheck="false"></div>
+              <div><label class="field-label" for="tmDesig">Designation</label>
+                <input class="input" id="tmDesig" placeholder="Marketing Executive"></div>
+              <!-- A planning figure, in the unit people plan in. Stored in minutes
+                   because the sessions it is read against are. -->
+              <div style="flex:0 0 190px"><label class="field-label" for="tmCap">Weekly capacity, hours</label>
+                <input class="input" id="tmCap" type="number" min="0" max="80" step="0.5" placeholder="40"></div>
+            </div>
+            <div class="msg" id="tmMsg"></div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-quiet" id="tmCancel" type="button">Cancel</button>
+            <button class="btn btn-primary" id="tmSave" type="button">Add</button>
+          </div>
         </div>
-        <!-- The HR serial is built from the Employee ID and the designation is
-             printed under a signature, so both are kept here with the person. -->
-        <div class="row" style="margin-top:12px">
-          <div style="flex:0 0 190px"><label class="field-label" for="tmStaff">Employee ID</label>
-            <input class="input" id="tmStaff" placeholder="AD005" autocapitalize="characters" spellcheck="false"></div>
-          <div><label class="field-label" for="tmDesig">Designation</label>
-            <input class="input" id="tmDesig" placeholder="Marketing Executive"></div>
-          <!-- A planning figure, in the unit people plan in. Stored in minutes
-               because the sessions it is read against are. -->
-          <div style="flex:0 0 190px"><label class="field-label" for="tmCap">Weekly capacity, hours</label>
-            <input class="input" id="tmCap" type="number" min="0" max="80" step="0.5" placeholder="40"></div>
-        </div>
-        <div class="row" style="margin-top:14px">
-          <button class="btn btn-primary" id="tmSave" type="button">Add</button>
-          <button class="btn btn-quiet" id="tmCancel" type="button" style="flex:0 0 auto">Cancel</button>
-        </div>
-        <div class="msg" id="tmMsg"></div>
       </div>
 
       <div class="msg" id="teamMsg" style="margin:0 0 10px"></div>
@@ -2082,21 +2095,30 @@
         <span class="headmark"><h2>User groups</h2></span>
         <button class="btn" id="groupAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add group</button>
       </div>
-      <div class="panel" id="groupAddBox" hidden>
-        <div class="panelhead"><h3 id="grTitle">New group</h3></div>
-        <div class="row">
-          <div><label class="field-label" for="grName">Name</label>
-            <input class="input" id="grName" placeholder="Group name"></div>
+      <div class="sheet" id="groupAddBox" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="grTitle">
+          <div class="sheet-head">
+            <h3 id="grTitle">New group</h3>
+            <button class="iconbtn" id="grClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <div class="row">
+              <div><label class="field-label" for="grName">Name</label>
+                <input class="input" id="grName" placeholder="Group name"></div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <div><span class="field-label">Access</span>
+                <div class="permbox" id="grFlags"></div></div>
+            </div>
+            <div class="msg" id="grMsg"></div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-quiet" id="grCancel" type="button">Cancel</button>
+            <button class="btn btn-primary" id="grSave" type="button">Add</button>
+          </div>
         </div>
-        <div class="row" style="margin-top:12px">
-          <div><span class="field-label">Access</span>
-            <div class="permbox" id="grFlags"></div></div>
-        </div>
-        <div class="row" style="margin-top:14px">
-          <button class="btn btn-primary" id="grSave" type="button">Add</button>
-          <button class="btn btn-quiet" id="grCancel" type="button" style="flex:0 0 auto">Cancel</button>
-        </div>
-        <div class="msg" id="grMsg"></div>
       </div>
       <div class="msg" id="groupMsg" style="margin:0 0 10px"></div>
       <div class="team-table softpanel" id="groupList"></div>
@@ -2547,13 +2569,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260920e"></script>
-<script src="/js/documents.js?v=20260920e"></script>
-<script src="/js/letters.js?v=20260920e"></script>
-<script src="/js/register.js?v=20260920e"></script>
-<script src="/js/crm.js?v=20260920e"></script>
-<script src="/js/team.js?v=20260920e"></script>
-<script src="/js/campaigns.js?v=20260920e"></script>
-<script src="/js/ops.js?v=20260920e"></script>
+<script src="/js/admin.js?v=20260920f"></script>
+<script src="/js/documents.js?v=20260920f"></script>
+<script src="/js/letters.js?v=20260920f"></script>
+<script src="/js/register.js?v=20260920f"></script>
+<script src="/js/crm.js?v=20260920f"></script>
+<script src="/js/team.js?v=20260920f"></script>
+<script src="/js/campaigns.js?v=20260920f"></script>
+<script src="/js/ops.js?v=20260920f"></script>
 </body>
 </html>

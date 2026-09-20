@@ -2135,6 +2135,19 @@ body.is-plain .topbar { background: var(--chrome); }
    lost its contents. The consequence is a line under the title at the body
    size, never a second paragraph of the title, and the two answers are the
    portal's own Save / Cancel order and weights. */
+/* ---------- A form in a sheet (js/sheet.js) ----------
+   A colleague, a user group and a creator are all edited in the same card:
+   a form on a phone that unfolds at the top of the page is a form a screen
+   above the row somebody pressed, so pressing Edit reads as nothing having
+   happened. Narrower than the 780px a picker needs, because these are three
+   or four fields and not a table. The foot carries the portal's order and
+   weights, Cancel quiet on the left and the primary on the right, and two
+   equal halves on a phone rather than a slab and a remnant. */
+.sheet-card.formsheet { width: min(620px, 100%); }
+.formsheet .sheet-foot { justify-content: flex-end; }
+@media (max-width: 560px) {
+  .formsheet .sheet-foot > .btn { flex: 1 1 0; min-width: 0; }
+}
 .sheet-card.askcard { width: min(440px, 100%); }
 .askline { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
 .askline:not([hidden]) + .askfields:not([hidden]) { margin-top: 14px; }
@@ -2280,7 +2293,21 @@ body.is-plain .topbar { background: var(--chrome); }
   .sheet-card {
     width: 100%; max-height: 92vh;
     border-radius: var(--radius) var(--radius) 0 0;
+    /* The card is what moves, so it is what is promoted: a bottom sheet that
+       is composited arrives in one piece instead of repainting its rows as
+       it travels. */
+    will-change: transform;
   }
+  /* `vh` on iOS is the tall viewport, the one that assumes the browser's own
+     bars have scrolled away, so a sheet measured in it stands taller than the
+     screen actually shows and its foot — where Save is — starts below the
+     fold. `dvh` is the viewport as it is at this moment, and it follows the
+     bars and the keyboard as they come and go. The `vh` line above stays as
+     the fallback for anything that does not know the unit. */
+  @supports (max-height: 92dvh) { .sheet-card { max-height: 92dvh; } }
+  /* The floor the sheet is anchored to is the phone's, not the screen's: on a
+     device with a home indicator the last row of a sheet sat under it. */
+  .sheet-card { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
 }
 
 .iconbtn.is-done { color: var(--ok); background: var(--ok-bg); }
@@ -3861,11 +3888,23 @@ body > .shell { width: 100%; }
    their record at the end of the same line. A grid row each for the links
    and the record put a 120px row on the screen, which is five creators on a
    phone. */
+/* The last track is stated, not left to `auto`. The record cell spans the
+   second and third tracks, and a spanning item sizes an intrinsic track it
+   reaches: its tail never shrinks (`+2 · Sept 2026` is the part a clipped
+   cell would make meaningless), so a creator with a second campaign grew
+   that track by the width of `+2` and every cell after the name started
+   15px left of the rows around it. The track is the control's own width,
+   which is the only thing that is ever drawn in it. */
 .is-narrow .cr-row {
-  grid-template-columns: minmax(0, 1fr) 92px auto;
+  grid-template-columns: minmax(0, 1fr) 92px var(--ctl-h);
   grid-template-areas: "name rate act" "links rec rec";
   row-gap: 4px; align-items: start;
 }
+/* A stated track outlives the cell in it, so the row that draws no ⋯ gives
+   the track up as well: the rule a page below hides the cell, and this
+   takes the column with it rather than leaving 44px of nothing at an edge
+   nobody can see. */
+.is-narrow .cr-row:has(> .team-act:empty) { grid-template-columns: minmax(0, 1fr) 92px 0; }
 .is-narrow .cr-row > .svc-name { align-self: center; }
 .is-narrow .cr-row > .cr-links { grid-area: links; align-self: center; }
 .is-narrow .cr-row > .cr-rec { grid-area: rec; text-align: right; align-self: center; }
@@ -6214,4 +6253,37 @@ body.is-canvas { overflow: hidden; }
   .cmd-more { display: inline-block; position: relative; }
   .cmdbar-views { flex: 1 1 100%; order: 5; }
   .cmdbar .btn { flex: 0 0 auto; }
+}
+
+/* =========================================================================
+   NO FIELD UNDER 16px WHERE A FINGER USES IT
+   =========================================================================
+   iOS zooms the page the moment a field under 16px takes focus, and it does
+   not zoom back out: the reader is left on a page a third too wide, hunting
+   for the control they were about to use, and every tap after that lands
+   somewhere they did not aim. `--field-text` has said 16px under a coarse
+   pointer for months, and six rules stated their own size past it — the small
+   input and select, the state select, the note box, the link row, the draft
+   box — so every one of those was a zoom on a phone and nothing measured it.
+
+   It sits at the foot of the file on purpose. Those rules are further down,
+   so a block earlier in the file loses to them whatever it says, and the
+   alternative is an override on each one: six unexplained hacks rather than
+   one stated rule at the end.
+
+   Deliberately not `user-scalable=no` or `maximum-scale=1`, which stop the
+   zoom by taking pinch zoom away from everybody: that fails WCAG 1.4.4 and
+   the 200% browser zoom pass the matrix runs at 1280 and 1440. A field at the
+   size a phone reads is the fix; refusing the reader their own zoom is not.
+
+   The `:root` in front is what makes it land. Three of the rules it has to
+   beat are two-class or class-plus-attribute selectors written for their own
+   reasons — `.select-sm.state-select`, `.input.readfield`, `.input[type=file]`
+   — so a bare class here loses to them wherever it matters most. One stated
+   device in one place, rather than a `!important` or a copy of each selector
+   with a size bolted on. */
+@media (pointer: coarse) {
+  :root .input, :root .select, :root .textarea,
+  :root .input-sm, :root .select-sm, :root .state-select,
+  :root input, :root select, :root textarea { font-size: 16px; }
 }

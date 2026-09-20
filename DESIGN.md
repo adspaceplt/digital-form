@@ -455,6 +455,7 @@ measures the table whenever its header is not on screen (`padding`).
 | Deciding on one thing in a gallery | A **canvas** (`.canvas`): the thing at the size it deserves on a stage, and everything the decision rests on in a rail beside it — what it is, the copy in full, what was said last time, where it stands, and the one place to decide. Prev/next and the arrow keys step the set, Escape closes. The canvas **moves** the gallery item's own blocks into it and puts them back on close, so there is one decision control in the page and it cannot drift from the one in the gallery |
 | Search, filter, count and the one action | `.cmdbar` > `.cmdbar-find` (a search box with its glyph, bounded 190 to 420px) + the filter selects + `.cmdbar-end` > `.cmdbar-count` + the `?` + one `.btn-sm.btn-primary`, on every console list: clients, my work, content review, campaigns, creators, short links, documents, the rate card, the team. The count reads `7 services` whole and `3 of 41` once a filter is on, never sits in a section head, and is not drawn at all when it is empty. The end group is one element so a wrap cannot split it: on a phone it takes the last row whole, the count and the `?` on the left and the actions on the right, and every route's bar is the same three rows |
 | Links to reach a person | `.plink` chips (phone, WhatsApp, email); equal widths on a phone |
+| A form that adds or edits one record | A **sheet** over the list (`js/sheet.js`, `.sheet-card.formsheet`): head with a close mark, a scrolling `.sheet-body`, a foot with Cancel quiet and the primary, equal halves below 560. The scrim closes it only while nothing has been typed; Escape and the close mark always do. One shape for a creator, a colleague and a user group |
 | The command bar on a phone | Below 640 the bar is **one row**: a **search** mark and a **Filters** mark on the left (`.cmdbar-search`, `.cmdbar-filters`, the second carrying a badge that counts the filters off their default), then the count and the primary action as a filled `+` on the right, with the view segment as a second row where a route has one. Search **grows into the field** on the `.namebox` move and shuts again when it is left empty. The selects come up in a **sheet from the floor** (`#cmdSheet`) under labels, with Done and Clear; a second action is behind a **⋯** beside the primary. `js/cmdbar.js` is the one copy. The desk bar is untouched |
 | What a section is for | The route's name in the console head (`.console-title`, a button with a 14px info glyph) opens the one line that says what the section is for. Not a `?` in the command bar: the line is about the section, and the section's name is where a reader looks for it |
 | A directory of records | `ADspaceGroup.section` (`js/group.js`): `.crm-group` > `.crm-group-head` (the 15px heading, the count, the marks, the name as the fold) + `.crm-group-body` > `.crm-table.softpanel` with its own `.crm-head`; `ADspaceGroup.more` for the rows past thirty. One card per group on every console directory, folds remembered per browser, a filter opening every card, the card opening and shutting in place. **The card carries no outline**, and it is one token for every bounded card (`--card-line`, transparent in both themes, on `.panel` (the record head and every form), `.crm-table`, `.softpanel`, `.team-table`, `.ovcard` and `.bookreg`; nothing nests a card in a card, so a transparent edge never loses a surface): the user chose the Team card's look on 2026-09-22 and asked why one card could differ from the rest at all. It could because Team carried a local `border: 0` written when that page was rebuilt, and the first fix added a second local rule for the directories; both are gone, and a card that needs a different edge is a card that needs a different token. The card's own ground against the page is the edge, white on `--page` in light and a step lighter than the ground in dark. The 1px stays transparent so nothing is re-measured |
@@ -546,6 +547,30 @@ columns are fixed and top aligned (`"name stage" / "meta stage"`). Anything
 centred inside a row of unequal cells pushes the name off the top pad — 22px
 above and 12px below on a 12px padding, which is the "spacing inconsistent"
 nobody can name but everybody sees.
+
+**A name is read, not parsed, so two rows a reader cannot tell apart are one
+row.** `SteveCN` and `SteveCN ` look identical on every screen in this portal
+and in every message about the person, and the difference that makes them two
+creators is a character nobody can see. So the key a duplicate is judged on
+trims both ends, collapses every run of whitespace to one and ignores case,
+and the name is stored the way it is compared — keeping the spaces somebody
+left behind is what lets the same creator be keyed in twice. A space *inside*
+a name is a different name and stays a caution rather than a refusal, because
+two people can genuinely be told apart by one. The refusal is named while the
+form is still open, not only when Save is pressed: the point is to stop the
+second row being typed, not to report it afterwards. And the check has to run
+on the field the person is actually filling in first — this one was reached
+only after a profile link had been typed, so the commonest way to key somebody
+in twice, their name and nothing else yet, was the one path that said nothing.
+
+**A cell in a list is read by its shape, so it holds what differs and not what
+is longest.** The creators list named each creator's latest campaign for a
+week. A campaign title is longer than the column, so it arrived truncated on
+every row, and it answered a question nobody asks of a list — which campaign,
+of the several, was most recent. What a roster is read for is whether somebody
+has worked for us and how recently: a number and a month, which fit, line up
+and can be scanned down. The names are on the creator's own card one press
+away, where every one of them is legible.
 
 **A placeholder is not data, and a row is not a form.** The clients list showed
 `F&B · S$ · Aisyah`: a bare currency sign standing in for a figure, on every
@@ -677,6 +702,41 @@ fourteen; in three groups they are three things to hold, which is what a
 person can. What is recorded is who checked and when, and not a second copy of
 the list: the step itself is the evidence, because nothing else opens the
 gate.
+
+**A field a finger uses is never under 16px.** iOS zooms the page the moment
+one takes focus and does not zoom back out, so the reader is left on a page a
+third too wide, hunting for the control they were about to use, and every tap
+after that lands somewhere they did not aim. The token said 16px under a
+coarse pointer and six rules stated their own size past it, which is the
+failure mode of a token: it is only true where nothing later disagrees. The
+answer is never `user-scalable=no` or `maximum-scale=1` — that stops the zoom
+by taking pinch zoom away from everybody, fails WCAG 1.4.4 and contradicts the
+200% pass this portal already runs. Make the field the size a phone reads, and
+measure it: a zoom is a thing the phone does rather than a thing the page
+draws, which is exactly why nobody sees it in a screenshot.
+
+**One record, one way to edit it, and the way is a card over the thing.** A
+creator was edited in a sheet and a colleague in a panel that unfolded at the
+top of the section. On a phone that panel is a screen above the row somebody
+pressed, so Edit read as nothing having happened, and at a desk it moved the
+list under the pointer. The sheet is the shape: on a phone it comes up from the
+floor over the row, at a desk it is a card over the list, and either way what
+is being edited is in front of what it is being edited from. Two things make
+it safe. **The scrim does not dismiss a sheet that holds typed changes** — a
+click a few pixels wide of the card is not a decision to throw a form away,
+and an untouched sheet still closes on it, because then there is nothing to
+lose. And **Escape always closes**, touched or not: nobody presses Escape by
+accident with a mouse, and a dialog a keyboard cannot leave is a dialog nobody
+can leave.
+
+**A bottom sheet is measured in the viewport the reader actually has.** `vh` on
+iOS is the tall viewport, the one that assumes the browser's own bars have
+scrolled away, so a sheet sized in it stands taller than the screen shows and
+its foot — where Save is — starts below the fold. `dvh` follows the bars and
+the keyboard as they come and go, behind `@supports` with the `vh` line as the
+fallback. The card is what moves, so the card is what is promoted, and its
+floor is the phone's floor (`env(safe-area-inset-bottom)`) and not the
+screen's.
 
 **A destructive item is red whether or not it carries a bold child.** The colour hung off `.kmenu-item.is-danger b`, so Delete on the client record — the one such item written as plain text — read in ordinary ink beside Edit and said nothing about what it does. A rule about a state belongs on the element that carries the state.
 

@@ -271,21 +271,18 @@
     return rec.n + (rec.last ? ' · last ' + monthOf(rec.last) : '');
   }
 
-  /* The cell names the latest campaign and counts the rest. A count on its
-     own was the whole cell, and on this roster almost everybody has run one,
-     so it printed `1 · last Sept 2026` down the page: a column that reads the
-     same on every row tells nobody which creator is which, which is the one
-     thing this column exists for. The name is what differs; `+2` says there
-     is more without spending the width on it, and the month stays because
-     "have they worked lately" is what a booking asks next. The whole history
-     is on the creator's own card, where there is room for it. */
+  /* How many, and when they last shot. The cell named the latest campaign
+     for a week and the user sent it back on 2026-09-20: a campaign title is
+     longer than the column, it is truncated by the time it fits, and it
+     answers a question nobody asks of a list — the names are on the
+     creator's own card, one press away, where every one of them is legible.
+     What a roster is read for is whether somebody has worked for us and how
+     recently, which is a number and a month. */
   function recordCell(c) {
     var rec = state.record && state.record[c.id];
     if (!rec || !rec.on.length) return '<span class="muted">—</span>';
-    var more = rec.on.length - 1;
-    return '<span class="cr-rec-name">' + esc(rec.on[0].title) + '</span>' +
-      '<span class="cr-rec-tail">' + (more ? ' +' + more : '') +
-      (rec.last ? ' · ' + esc(monthOf(rec.last)) : '') + '</span>';
+    return '<span class="cr-rec-name">' + rec.on.length + '</span>' +
+      '<span class="cr-rec-tail">' + (rec.last ? ' · ' + esc(monthOf(rec.last)) : '') + '</span>';
   }
   function monthOf(d) {
     var t = new Date(d + 'T00:00:00');
@@ -502,12 +499,31 @@
       .filter(Boolean);
   }
 
+  /* One name, whatever whitespace was typed around or inside it. A name is
+     read, not parsed, so two rows a reader cannot tell apart are two rows
+     nobody can work with: `SteveCN ` looks exactly like `SteveCN` on every
+     screen in this portal and in every message about them. Both ends are
+     trimmed, every run of whitespace inside collapses to one space, and the
+     comparison ignores case — the name itself is stored as typed, because
+     capitals are the creator's own. */
+  function nameKey(s) {
+    return String(s == null ? '' : s).replace(/\s+/g, ' ').trim().toLowerCase();
+  }
+  /* Who already holds this name, if anybody. `skip` is the creator being
+     edited, who cannot be a duplicate of themselves. */
+  function nameHolder(value, skip) {
+    var k = nameKey(value);
+    if (!k) return null;
+    return state.creators.filter(function (c) {
+      return (!skip || c.id !== skip.id) && nameKey(c.name) === k;
+    })[0] || null;
+  }
+
   /* Before saving, say who else already owns one of these identities. The
      database refuses it outright; this is so the person finds out while they
      still have the form open. */
   function warnDupes(ctx) {
     var mine = profValues(ctx).filter(function (p) { return p.handle; });
-    if (!mine.length) { msg(ctx.warn, ''); return; }
     var hits = [];
     state.creators.forEach(function (c) {
       if (state.editing && c.id === state.editing.id) return;
@@ -520,8 +536,23 @@
         });
       });
     });
+    /* The name is checked whether or not a profile link has been typed yet.
+       It used to be reached only after one had, because an empty set of
+       links returned early — so the commonest way to key somebody in twice
+       (their name, and nothing else yet) was the one path that said nothing. */
     if (hits.length) {
       msg(ctx.warn, 'Already in the creators list as ' + hits.join(', ') + '. Saving will be refused.', 'err');
+      return;
+    }
+    /* The same name twice is a refusal, not a caution. `SteveCN`, `SteveCN `
+       and `SteveCN  ` are one creator with three rows behind them, and the
+       difference that makes them three is invisible on the screen: nobody
+       can see a trailing space, so nobody can see why the list holds two of
+       somebody. The key trims both ends and collapses every run of
+       whitespace to one, so what is compared is what a person reads. */
+    var held = nameHolder($(ctx.name).value, state.editing);
+    if (held) {
+      msg(ctx.warn, 'Already in the creators list as ' + held.name + '. Saving will be refused.', 'err');
       return;
     }
     // Nothing identical. Names close enough to be worth a second look.
@@ -701,8 +732,17 @@
   $('crName').addEventListener('input', function () { warnDupes(ROSTER_CTX); });
 
   $('saveCreator').addEventListener('click', function () {
-    var name = ($('crName').value || '').trim();
+    /* Stored the way it is compared: the spaces at the ends and the double
+       space in the middle are not part of anybody's name, and keeping them
+       is what lets the same creator be keyed in twice. */
+    var name = ($('crName').value || '').replace(/\s+/g, ' ').trim();
     if (!name) { msg('creatorMsg', 'A name is required.', 'err'); return; }
+    var held = nameHolder(name, state.editing);
+    if (held) {
+      msg('creatorMsg', held.name + ' is already in the creators list.', 'err');
+      $('crName').focus();
+      return;
+    }
 
     var raw = Array.prototype.slice.call(document.querySelectorAll('#profRows .prof-url'))
       .map(function (i) { return i.value.trim(); }).filter(Boolean);
