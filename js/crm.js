@@ -14,6 +14,30 @@
   if (!API || !API.configured || !db) return;
 
   var $ = function (id) { return document.getElementById(id); };
+
+  /* Every form on this route is the portal's one form sheet, so it opens and
+     shuts through the one file that knows how (`js/sheet.js`): the scrim that
+     refuses to throw typed work away, Escape, the focus trap, and focus handed
+     back to the control that opened it. They were `.panel` blocks that
+     unfolded at the top of the section or in place of the record's head, so on
+     a phone pressing Edit put the form a screen away from the row and read as
+     nothing having happened. Nothing inside is focused: a field taking focus
+     on a phone raises the keyboard and zooms the page past the rest of the
+     form, and the first field is rarely the one somebody came to change. */
+  function openSheet(id, opener, onClose) {
+    window.ADspaceSheet.show($(id), { opener: opener || null, onClose: onClose || null });
+  }
+  function shutSheet(id) {
+    var box = $(id);
+    if (window.ADspaceSheet.isOpen(box)) window.ADspaceSheet.close();
+    else box.hidden = true;
+  }
+  /* The close mark in a sheet's head does what Cancel does, so it presses it
+     rather than keeping a second copy of whatever Cancel has to put back. */
+  function sheetClose(closeId, cancelId) {
+    var x = $(closeId);
+    if (x) x.addEventListener('click', function () { $(cancelId).click(); });
+  }
   var bridge = window.ADspaceAdmin || {};
   var log = bridge.log || function () {};
   var actor = bridge.actor || function () { return ''; };
@@ -578,7 +602,7 @@
   var CATS = ['Content', 'Account management', 'Verification', 'Monthly packages',
               'KOC programmes', 'KOL programmes', 'Add-ons'];
 
-  function openForm(c) {
+  function openForm(c, btn) {
     state.editing = c || null;
     $('crmFormTitle').textContent = c ? 'Edit client' : 'New lead';
     $('crmSave').textContent = c ? 'Save' : 'Add lead';
@@ -595,26 +619,20 @@
     $('crmEnquiry').value = c ? (c.deal_note || '') : '';
     msg('crmMsg', '');
     codeWarn();
-    // Editing happens on the record, in place of its head; adding happens on
-    // the list. One form, moved to where the person is.
-    var box = $('crmAddBox');
-    if (c) {
-      var head = $('crmWork').querySelector('section.panel');
-      $('crmWork').insertBefore(box, head);
-      head.hidden = true;
-    } else {
-      $('crmListView').insertBefore(box, $('crmDue'));
-    }
-    box.hidden = false;
-    $('crmName').focus();
+    /* A sheet is over the page, so the form no longer has to be carried to
+       where the person is: adding from the list and editing from the record
+       are the same card over the same place. It used to be moved into the
+       record and to replace its head, which on a phone hid the client while
+       their own details were being corrected. Nothing is focused, because a
+       field taking focus on a phone raises the keyboard and zooms the page
+       over the rest of the form. */
+    openSheet('crmAddBox', btn);
   }
   function shutForm() {
-    $('crmAddBox').hidden = true;
-    var head = $('crmWork').querySelector('section.panel');
-    if (head) head.hidden = false;
+    shutSheet('crmAddBox');
     state.editing = null;
   }
-  $('crmNew').addEventListener('click', function () { openForm(null); });
+  $('crmNew').addEventListener('click', function () { openForm(null, this); });
   $('crmCancel').addEventListener('click', shutForm);
 
   /* Typed the way it is stored, so nobody saves `ac180` and wonders why the
@@ -1795,7 +1813,7 @@
   var editingContact = null;
   function openContact(ct) {
     editingContact = ct || null;
-    $('crmContactBox').hidden = false;
+    openSheet('crmContactBox');
     $('crmContactTitle').textContent = ct ? 'Edit contact' : 'New contact';
     $('ctSave').textContent = 'Save';
     $('ctName').value = ct ? (ct.name || '') : '';
@@ -1805,9 +1823,11 @@
     $('ctLang').value = ct ? (ct.lang || 'en') : 'en';
     $('ctPrimary').checked = ct ? Boolean(ct.is_primary) : !state.contacts.length;
     msg('ctMsg', '');
-    $('ctName').focus();
+    /* Nothing is focused when the sheet opens: on a phone a field taking
+       focus raises the keyboard and zooms the page past the rest of the form,
+       and the first field is rarely the one somebody came to change. */
   }
-  function shutContact() { $('crmContactBox').hidden = true; editingContact = null; }
+  function shutContact() { shutSheet('crmContactBox'); editingContact = null; }
   $('crmAddContact').addEventListener('click', function () { openContact(null); });
   $('ctCancel').addEventListener('click', shutContact);
 
@@ -1994,7 +2014,7 @@
   var editingTouch = null;
   function openTouch(tc) {
     editingTouch = tc || null;
-    $('crmTouchBox').hidden = false;
+    openSheet('crmTouchBox');
     $('crmTouchTitle').textContent = tc ? 'Edit entry' : 'New entry';
     $('tcSave').textContent = 'Save';
     $('tcKind').value = tc ? (tc.kind || 'call') : 'call';
@@ -2008,9 +2028,11 @@
       if (main) $('tcWith').value = main.name;
     }
     msg('tcMsg', '');
-    $('tcSummary').focus();
+    /* Nothing is focused when the sheet opens: on a phone a field taking
+       focus raises the keyboard and zooms the page past the rest of the form,
+       and the first field is rarely the one somebody came to change. */
   }
-  function shutTouch() { $('crmTouchBox').hidden = true; editingTouch = null; }
+  function shutTouch() { shutSheet('crmTouchBox'); editingTouch = null; }
   $('crmAddTouch').addEventListener('click', function () { openTouch(null); });
   $('tcCancel').addEventListener('click', shutTouch);
 
@@ -2365,11 +2387,10 @@
       $('svNote').value = l ? (l.note || '') : '';
       syncPick(!l);
       msg('svMsg', '');
-      $('crmServiceBox').hidden = false;
-      $('svPick').focus();
+      openSheet('crmServiceBox');
     });
   }
-  function shutService() { $('crmServiceBox').hidden = true; editingService = null; }
+  function shutService() { shutSheet('crmServiceBox'); editingService = null; }
   $('svPick').addEventListener('change', function () {
     syncPick(true);
     if ($('svPick').value === 'custom') $('svLabel').focus();
@@ -2502,10 +2523,12 @@
     $('rqFee').value = q.fee != null && q.fee !== '' ? Number(q.fee) : '';
     $('rqReply').value = q.reply || '';
     msg('rqMsg', '');
-    $('crmReplyBox').hidden = false;
-    $('rqFee').focus();
+    openSheet('crmReplyBox');
+    /* Nothing is focused when the sheet opens: on a phone a field taking
+       focus raises the keyboard and zooms the page past the rest of the form,
+       and the first field is rarely the one somebody came to change. */
   }
-  function shutReply() { $('crmReplyBox').hidden = true; replying = null; }
+  function shutReply() { shutSheet('crmReplyBox'); replying = null; }
   $('rqCancel').addEventListener('click', shutReply);
   $('rqSave').addEventListener('click', function () {
     if (!replying) return;
@@ -2970,7 +2993,7 @@
   function enterServices() {
     catalog = null;
     $('svcAdd').hidden = !maySvc();
-    $('svcBox').hidden = true;
+    shutSheet('svcBox');
     msg('svcListMsg', '');
     skeleton($('svcList'), 6);
     loadCatalog(function () { fillSvcFilter(); paintCatalog(); });
@@ -3189,11 +3212,13 @@
     $('svcMin').value = s ? Math.max(1, Number(s.min_months || 1)) : 1;
     $('svcDetail').value = s ? (s.detail || '') : '';
     msg('svcMsg', '');
-    $('svcBox').hidden = false;
-    $('svcName').focus();
+    /* Nothing is focused when the sheet opens: on a phone a field taking
+       focus raises the keyboard and zooms the page past the rest of the
+       form, and the first field is rarely the one somebody came to change. */
+    openSheet('svcBox');
   }
   $('svcAdd').addEventListener('click', function () { openSvc(null); });
-  $('svcCancel').addEventListener('click', function () { $('svcBox').hidden = true; editingSvc = null; });
+  $('svcCancel').addEventListener('click', function () { shutSheet('svcBox'); editingSvc = null; });
   $('svcSave').addEventListener('click', function () {
     var name = val('svcName');
     if (!name) { msg('svcMsg', 'A name is required.', 'err'); $('svcName').focus(); return; }
@@ -3203,7 +3228,7 @@
     var after = function (r) {
       if (r.error) { msg('svcMsg', r.error.message, 'err'); return; }
       log(editingSvc ? 'service.changed' : 'service.added', name, row.category);
-      $('svcBox').hidden = true; editingSvc = null;
+      shutSheet('svcBox'); editingSvc = null;
       enterServices();
     };
     if (editingSvc) { db.from('services').update(row).eq('slug', editingSvc.slug).then(after); return; }
@@ -3318,6 +3343,15 @@
         });
       }, function () { $('crmDue').hidden = true; });
   }
+
+  /* The close mark in each sheet's head presses that sheet's own Cancel, so
+     there is one way back per form and not two that can drift. */
+  sheetClose('crmAddClose', 'crmCancel');
+  sheetClose('crmContactClose', 'ctCancel');
+  sheetClose('crmServiceClose', 'svCancel');
+  sheetClose('crmTouchClose', 'tcCancel');
+  sheetClose('crmReplyClose', 'rqCancel');
+  sheetClose('svcClose', 'svcCancel');
 
   if (bridge.crmReady) bridge.crmReady();
 })();

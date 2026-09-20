@@ -2787,8 +2787,8 @@
           '<textarea class="textarea" data-f="caption_zh" placeholder="中文文案">' +
             esc(p.caption_zh || '') + '</textarea>' +
           '<div class="changebox-actions">' +
-            '<button class="btn btn-sm" data-a="cancel" type="button">Cancel</button>' +
             '<button class="btn btn-primary btn-sm" data-a="save" type="button">Save</button>' +
+            '<button class="btn btn-sm" data-a="cancel" type="button">Cancel</button>' +
           '</div>' +
         '</div>';
 
@@ -2931,7 +2931,7 @@
         '<b>No short links yet.</b>' +
         '<button class="btn btn-sm" data-a="first" type="button">Add the first link</button>' +
         '</div></div>';
-      box.querySelector('[data-a="first"]').addEventListener('click', function () { openLinkForm(null); });
+      box.querySelector('[data-a="first"]').addEventListener('click', function () { openLinkForm(null, this); });
       return;
     }
     if (!shown.length) {
@@ -3030,19 +3030,26 @@
 
   if ($('linkState')) $('linkState').addEventListener('change', paintLinks);
 
-  function openLinkForm(link) {
+  function openLinkForm(link, opener) {
     editingSlug = link ? link.slug : null;
     $('linkFormTitle').textContent = link ? 'Edit short link' : 'New short link';
     $('saveLink').textContent = link ? 'Save' : 'Create';
     $('newSlug').value = link ? link.slug : '';
     $('newTarget').value = link ? (link.target_url || '') : '';
     $('newLinkLabel').value = link ? (link.title || '') : '';
-    $('addLinkBox').hidden = false;
     $('importBox').hidden = true;
     msg('linkMsg', '');
-    $('newSlug').focus();
+    /* The portal's one form sheet, so it opens over the register rather than
+       unfolding above it, and nothing inside takes focus: a field taking
+       focus on a phone raises the keyboard and zooms the page past the rest
+       of the form. */
+    window.ADspaceSheet.show($('addLinkBox'), { opener: opener || null });
   }
-  function shutLinkForm() { $('addLinkBox').hidden = true; editingSlug = null; msg('linkMsg', ''); }
+  function shutLinkForm() {
+    if (window.ADspaceSheet.isOpen($('addLinkBox'))) window.ADspaceSheet.close();
+    else $('addLinkBox').hidden = true;
+    editingSlug = null; msg('linkMsg', '');
+  }
 
   function editLink(l) { openLinkForm(l); }
 
@@ -3062,8 +3069,10 @@
     });
   }
 
-  $('showAddLink').addEventListener('click', function () { openLinkForm(null); });
+  $('showAddLink').addEventListener('click', function () { openLinkForm(null, this); });
   $('cancelAddLink').addEventListener('click', shutLinkForm);
+  /* The close mark in the sheet's head is the same way back as Cancel. */
+  if ($('linkClose')) $('linkClose').addEventListener('click', shutLinkForm);
   $('linkSearch').addEventListener('input', paintLinks);
 
   $('saveLink').addEventListener('click', function () {
@@ -3283,7 +3292,7 @@
 
   $('showImport').addEventListener('click', function () {
     $('importBox').hidden = false;
-    $('addLinkBox').hidden = true;
+    shutLinkForm();
     msg('importMsg', '');
     $('importText').focus();
   });

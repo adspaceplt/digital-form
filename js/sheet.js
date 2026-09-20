@@ -76,8 +76,20 @@
     box.addEventListener('input', onEdit);
     box.addEventListener('change', onEdit);
     box.addEventListener('mousedown', onScrim);
+    /* **The card takes focus, never a field.** A sheet that focused its first
+       input raised the phone's keyboard the moment it opened, and on iOS a
+       field taking focus zooms the page — so the reader landed on a form
+       scrolled and magnified past most of what they had opened it to read,
+       already typing into a field that is rarely the one they came to change.
+       A sheet opens on what there is to change; the caret is the reader's to
+       place. The card is what takes focus, so Escape still closes, the trap
+       still holds and a screen reader still announces the dialog.
+       `o.focus` survives for a sheet whose whole purpose is one value. */
     var f = o.focus && box.querySelector(o.focus);
-    if (f) f.focus(); else { var all = fields(box); if (all.length) all[0].focus(); }
+    if (f) { f.focus(); return; }
+    var card = box.querySelector('.sheet-card') || box;
+    if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '-1');
+    card.focus();
   }
 
   window.ADspaceSheet = {

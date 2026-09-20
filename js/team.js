@@ -566,7 +566,7 @@
     });
     msg('grMsg', '');
     window.ADspaceSheet.show($('groupAddBox'), {
-      opener: groupOpener, focus: '#grName',
+      opener: groupOpener,
       onClose: function () { state.editing = null; groupOpener = null; }
     });
   }
@@ -639,7 +639,7 @@
     fillRolePick(); $('tmRole').value = m ? m.role : 'account';
     msg('tmMsg', '');
     window.ADspaceSheet.show($('teamAddBox'), {
-      opener: memberOpener, focus: '#tmName',
+      opener: memberOpener,
       onClose: function () { editingMember = null; memberOpener = null; }
     });
   }

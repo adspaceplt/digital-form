@@ -164,9 +164,13 @@
     box.className = 'changebox asknote';
     box.innerHTML =
       '<textarea class="textarea" rows="3"></textarea>' +
+      /* Send then Cancel, which is the order every other action row in this
+         portal reads in: the primary first, the way out after it. Two orders
+         across one console is somebody pressing the wrong one when they move
+         quickly, and this row was one of the three that disagreed. */
       '<div class="changebox-actions">' +
-        '<button class="btn btn-sm" type="button" data-a="cancel">Cancel</button>' +
         '<button class="btn btn-sm btn-primary" type="button" data-a="send"></button>' +
+        '<button class="btn btn-sm" type="button" data-a="cancel">Cancel</button>' +
       '</div>';
     var ta = box.querySelector('textarea');
     ta.setAttribute('aria-label', opts.label || 'Note');

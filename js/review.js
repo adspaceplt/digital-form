@@ -392,8 +392,8 @@
           '<input class="input changebox-who" type="text" autocomplete="name"' +
             ' aria-label="Your name" placeholder="Name">') +
         '<div class="changebox-actions">' +
-          '<button class="btn" type="button" data-act="cancel">Cancel</button>' +
           '<button class="btn btn-primary" type="button" data-act="send">Send request</button>' +
+          '<button class="btn" type="button" data-act="cancel">Cancel</button>' +
         '</div>' +
       '</div>' +
       '<div class="approve-state"></div>';
