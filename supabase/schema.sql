@@ -2989,7 +2989,12 @@ create or replace function public.issue_letter(
   p_total     numeric,
   p_deal      jsonb   default '{}'::jsonb,
   p_replaces  uuid    default null,
-  p_renewal   boolean default false
+  p_renewal   boolean default false,
+  /* A reference somebody typed. Blank is the ordinary case and the counter
+     below makes the number; where one is typed it is checked against every
+     document that stands and the counter is not advanced, so filling a gap
+     by hand never costs the next letter its place in the sequence. */
+  p_serial    text    default null
 )
 returns jsonb
 language plpgsql
@@ -3021,8 +3026,10 @@ begin
   if cl.id is null then return jsonb_build_object('error', 'no-client'); end if;
 
   -- The Client ID is what the serial is built from, so there is no letter
-  -- without one. Staff enter it on the record; nothing invents it.
-  if coalesce(btrim(cl.client_code), '') = '' then
+  -- without one. Staff enter it on the record; nothing invents it. A typed
+  -- reference needs no code, because nothing is being built.
+  v_no := nullif(btrim(coalesce(p_serial, '')), '');
+  if v_no is null and coalesce(btrim(cl.client_code), '') = '' then
     return jsonb_build_object('error', 'no-client-code');
   end if;
 
@@ -3033,6 +3040,17 @@ begin
       where client_id = p_client and idem_key = btrim(p_idem) limit 1;
     if v_old.id is not null then
       return jsonb_build_object('ok', true, 'repeat', true, 'id', v_old.id, 'number', v_old.number);
+    end if;
+  end if;
+
+  -- A typed reference is checked before anything is written: the same shape
+  -- the Register accepts, and refused where a document still holds it.
+  if v_no is not null then
+    if v_no !~ '^[A-Za-z0-9/._-]{3,40}$' then
+      return jsonb_build_object('error', 'serial-shape');
+    end if;
+    if public.serial_taken(v_no) then
+      return jsonb_build_object('error', 'serial-taken');
     end if;
   end if;
 
@@ -3093,23 +3111,28 @@ begin
    where cs.id = any(p_services);
   if v_lines is null then return jsonb_build_object('error', 'no-lines'); end if;
 
-  -- The month is Malaysian, because the office that numbers the letter is.
-  v_ym := to_char(timezone('Asia/Kuala_Lumpur', now()), 'YYMM');
+  -- A typed reference spends no sequence number: the counter is the office's
+  -- record of how many letters it has issued this month, and a person filling
+  -- a gap by hand has not issued one more.
+  if v_no is null then
+    -- The month is Malaysian, because the office that numbers the letter is.
+    v_ym := to_char(timezone('Asia/Kuala_Lumpur', now()), 'YYMM');
 
-  -- Atomic: the upsert takes the row lock, so two issuers serialise here and
-  -- come out with consecutive numbers. No read-then-insert, no retry.
-  insert into public.client_document_seq (client_id, ym, next_val)
-       values (p_client, v_ym, 2)
-  on conflict (client_id, ym)
-    do update set next_val = public.client_document_seq.next_val + 1
-    returning next_val - 1 into v_seq;
+    -- Atomic: the upsert takes the row lock, so two issuers serialise here and
+    -- come out with consecutive numbers. No read-then-insert, no retry.
+    insert into public.client_document_seq (client_id, ym, next_val)
+         values (p_client, v_ym, 2)
+    on conflict (client_id, ym)
+      do update set next_val = public.client_document_seq.next_val + 1
+      returning next_val - 1 into v_seq;
 
-  -- Two digits is the floor, not the ceiling: the hundredth letter of a month
-  -- widens to three rather than wrapping. Not lpad(): Postgres pads AND
-  -- truncates to the width it is given, so lpad('100', 2, '0') is '10' and the
-  -- hundredth letter would collide with the tenth.
-  v_no := 'AQL/' || cl.client_code || '/' || v_ym ||
-          case when v_seq < 100 then lpad(v_seq::text, 2, '0') else v_seq::text end;
+    -- Two digits is the floor, not the ceiling: the hundredth letter of a month
+    -- widens to three rather than wrapping. Not lpad(): Postgres pads AND
+    -- truncates to the width it is given, so lpad('100', 2, '0') is '10' and the
+    -- hundredth letter would collide with the tenth.
+    v_no := 'AQL/' || cl.client_code || '/' || v_ym ||
+            case when v_seq < 100 then lpad(v_seq::text, 2, '0') else v_seq::text end;
+  end if;
 
   insert into public.client_documents
     (client_id, kind, number, issued_at, market, subtotal, tax, total,
@@ -3159,10 +3182,20 @@ exception
         return jsonb_build_object('ok', true, 'repeat', true, 'id', v_old.id, 'number', v_old.number);
       end if;
     end if;
+    -- A typed reference two people sent at once: the loser is told the
+    -- reference is spent rather than that "two letters were issued at once",
+    -- which names a cause they cannot act on.
+    if nullif(btrim(coalesce(p_serial, '')), '') is not null then
+      return jsonb_build_object('error', 'serial-taken');
+    end if;
     return jsonb_build_object('error', 'clash');
 end $$;
 
-grant execute on function public.issue_letter(uuid, uuid[], text, numeric, numeric, numeric, jsonb, uuid, boolean) to authenticated;
+/* PostgREST resolves an RPC by the argument names it is sent, so the older
+   nine-argument form would be a second candidate for a call that omits
+   p_serial and the request would be refused as ambiguous. */
+drop function if exists public.issue_letter(uuid, uuid[], text, numeric, numeric, numeric, jsonb, uuid, boolean);
+grant execute on function public.issue_letter(uuid, uuid[], text, numeric, numeric, numeric, jsonb, uuid, boolean, text) to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- 6. The client signed it. That is a fact about the letter and nothing else.
@@ -3618,14 +3651,18 @@ create policy documents_read on public.documents for select to authenticated
 -- Every write goes through a function below; there is no insert, update or
 -- delete policy on the table, and PostgREST refuses them all.
 
--- A serial is spent once: on the register, on a Letter of Offer, or in the
--- record of a deletion.
+-- A serial is spent by a document that STANDS: on the register, or as a
+-- Letter of Offer. A deletion is deliberately not counted (2026-09-20): a
+-- document issued by mistake and deleted used to take its reference out of
+-- circulation for ever, so testing a client's first two letters and deleting
+-- both left that client starting at 03. The deletion row is still the only
+-- record that an earlier document held the reference, which is the cost of
+-- this and is stated rather than hidden.
 create or replace function public.serial_taken(p_serial text)
 returns boolean
 language sql security definer stable set search_path = public as $$
   select exists (select 1 from public.documents where upper(serial) = upper(btrim(p_serial)))
       or exists (select 1 from public.client_documents where upper(number) = upper(btrim(p_serial)))
-      or exists (select 1 from public.document_deletions where upper(serial) = upper(btrim(p_serial)))
 $$;
 grant execute on function public.serial_taken(text) to authenticated;
 

@@ -48,11 +48,16 @@
   /* Each section offers the levels that mean something in it. The activity
      record is a log, so it is read or not read; administering the team is one
      authority rather than a ladder. */
+  /* The rail's order, so a person granting access reads the sections in the
+     sequence they will meet them on the screen. */
   var SECTIONS = [
+    /* Operations, which the console calls My Work: View works your own
+       tasks, Work also creates them, Manage also assigns an owner. The four
+       parts under it are the exception to the rule below. */
+    ['ops',       'My Work',           ['none', 'view', 'work', 'manage']],
     ['clients',   'Clients',           ['none', 'view', 'work', 'manage']],
     ['review',    'Content Review',    ['none', 'view', 'work', 'manage']],
     ['campaigns', 'Creator Campaigns', ['none', 'view', 'work', 'manage']],
-    ['links',     'Short Links',       ['none', 'view', 'work', 'manage']],
     /* The documents issued and the serials the verify page answers; HR
        letters are a part of it, gated apart, because a colleague's letter is
        read by fewer people than a client's. Named as the nav names it: the
@@ -60,10 +65,7 @@
        panel granting "Register" while the rail read Documents made somebody
        check twice which one they had. */
     ['register',  'Documents',         ['none', 'view', 'work', 'manage']],
-    /* Operations, which the console calls My Work: View works your own
-       tasks, Work also creates them, Manage also assigns an owner. The four
-       parts under it are the exception to the rule below. */
-    ['ops',       'My Work',           ['none', 'view', 'work', 'manage']],
+    ['links',     'Short Links',       ['none', 'view', 'work', 'manage']],
     ['services',  'Services',          ['none', 'view', 'work', 'manage']],
     ['team',      'Team',              ['none', 'manage']],
     ['activity',  'Activity record',   ['none', 'view']]
@@ -88,10 +90,10 @@
        every letter with it. Each tab is a part, and the database decides
        which rows arrive: `activity_section()` maps a tag to the section the
        console files it under, and the read policy asks the part. */
-    activity:  [['clients', 'Clients'], ['ops', 'My Work'], ['team', 'Team'],
+    activity:  [['ops', 'My Work'], ['clients', 'Clients'],
                 ['review', 'Content Review'], ['campaigns', 'Creator Campaigns'],
-                ['links', 'Short Links'], ['register', 'Documents'],
-                ['services', 'Services']],
+                ['register', 'Documents'], ['links', 'Short Links'],
+                ['services', 'Services'], ['team', 'Team']],
     /* THESE FOUR ARE THE EXCEPTION. Every other part is a pane *inside* its
        section's job, so it falls back to the section: a group that works
        Clients works its Billing pane unless somebody says otherwise. These

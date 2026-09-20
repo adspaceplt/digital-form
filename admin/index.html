@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260920a">
+<link rel="stylesheet" href="/css/portal.css?v=20260920b">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,23 +28,23 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260920a"></script>
-<script src="/js/words.js?v=20260920a"></script>
-<script src="/js/copy.js?v=20260920a"></script>
-<script src="/js/ask.js?v=20260920a"></script>
-<script src="/js/state.js?v=20260920a"></script>
-<script src="/js/group.js?v=20260920a"></script>
-<script src="/js/menu.js?v=20260920a"></script>
-<script src="/js/cmdbar.js?v=20260920a"></script>
-<script src="/js/api.js?v=20260920a"></script>
-<script src="/js/money.js?v=20260920a"></script>
-<script src="/js/mockups.js?v=20260920a"></script>
+<script src="/js/config.js?v=20260920b"></script>
+<script src="/js/words.js?v=20260920b"></script>
+<script src="/js/copy.js?v=20260920b"></script>
+<script src="/js/ask.js?v=20260920b"></script>
+<script src="/js/state.js?v=20260920b"></script>
+<script src="/js/group.js?v=20260920b"></script>
+<script src="/js/menu.js?v=20260920b"></script>
+<script src="/js/cmdbar.js?v=20260920b"></script>
+<script src="/js/api.js?v=20260920b"></script>
+<script src="/js/money.js?v=20260920b"></script>
+<script src="/js/mockups.js?v=20260920b"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260920a" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260920b" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -91,32 +91,60 @@
       <span class="sidebar-kicker">Digital Portal</span>
     </div>
 
+    <!--
+      Eight routes, in two groups, and the order inside each is how often a
+      person opens it. The serial position effect is what decides the two
+      ends: the first slot is found fastest and goes to the queue somebody
+      opens on arrival and returns to all day; the last is the second most
+      findable and goes to the route a person has to be able to place without
+      scanning, which by every convention is the settings-like one. What gets
+      lost in the middle is then what is opened by an event rather than by
+      habit, which is the right thing to lose.
+
+      The groups are Miller's chunk: four and four rather than one run of
+      eight. The axis is not client-facing against internal, which was
+      weighed and does not divide this console — every route here is
+      internal and four of them produce something a client eventually sees.
+      It is whether the route is opened by habit or by a question.
+
+      Clients leaving the first slot is a deliberate change to a documented
+      decision ("Clients first; everything hangs off a client"). That
+      sentence is about the data model, which is unchanged: every record
+      still hangs off a client. It was never a statement about frequency,
+      and My Work is opened many times a day where Clients is opened when
+      something happens.
+    -->
     <nav class="sidebar-nav" aria-label="Sections">
-      <span class="sidebar-label">Tools</span>
-      <button class="navitem is-on" data-section="clients" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 11h4v10"/><path d="M7 21v-4h5v4"/><path d="M7 9h2M7 13h2M13 9h1M13 13h1"/></svg><span>Clients</span>
-      </button>
-      <button class="navitem" data-section="work" type="button" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6"/><path d="m9.5 13 1.8 1.8 3.4-3.6"/></svg><span>My Work</span>
-      </button>
-      <button class="navitem" data-section="review" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg><span>Content Review</span>
-      </button>
-      <button class="navitem" data-section="campaigns" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="m17.5 4.5 1.2 2.5 2.8.4-2 2 .5 2.8-2.5-1.3-2.5 1.3.5-2.8-2-2 2.8-.4z"/></svg><span>Creator Campaigns</span>
-      </button>
-      <button class="navitem" data-section="links" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.6-5.7l-1.7 1.7"/><path d="M14 10.5a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.6 5.7l1.7-1.7"/></svg><span>Short Links</span>
-      </button>
-      <button class="navitem" data-section="register" type="button" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 15 2 2 4-4"/></svg><span>Documents</span>
-      </button>
-      <button class="navitem" data-section="services" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg><span>Services</span>
-      </button>
-      <button class="navitem" data-section="team" type="button" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/><path d="m17.5 5.5 1 1 2-2"/></svg><span>Team</span>
-      </button>
+      <div class="navgroup">
+        <span class="sidebar-label">Work</span>
+        <button class="navitem" data-section="work" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h5A1.5 1.5 0 0 1 16 4.5V6"/><path d="m9.5 13 1.8 1.8 3.4-3.6"/></svg><span>My Work</span>
+        </button>
+        <button class="navitem" data-section="clients" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V7l7-4 7 4v14"/><path d="M17 11h4v10"/><path d="M7 21v-4h5v4"/><path d="M7 9h2M7 13h2M13 9h1M13 13h1"/></svg><span>Clients</span>
+        </button>
+        <button class="navitem" data-section="review" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg><span>Content Review</span>
+        </button>
+        <button class="navitem" data-section="campaigns" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 20v-1.5a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4V20"/><circle cx="9" cy="7" r="3.5"/><path d="m17.5 4.5 1.2 2.5 2.8.4-2 2 .5 2.8-2.5-1.3-2.5 1.3.5-2.8-2-2 2.8-.4z"/></svg><span>Creator Campaigns</span>
+        </button>
+      </div>
+      <div class="navgroup">
+        <span class="sidebar-label">Records and setup</span>
+        <button class="navitem" data-section="register" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 15 2 2 4-4"/></svg><span>Documents</span>
+        </button>
+        <button class="navitem" data-section="links" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.6-5.7l-1.7 1.7"/><path d="M14 10.5a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.6 5.7l1.7-1.7"/></svg><span>Short Links</span>
+        </button>
+        <button class="navitem" data-section="services" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><path d="M7.5 7.5h.01"/></svg><span>Services</span>
+        </button>
+        <button class="navitem" data-section="team" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/><path d="m17.5 5.5 1 1 2-2"/></svg><span>Team</span>
+        </button>
+      </div>
     </nav>
 
   </aside>
@@ -168,8 +196,13 @@
         </div>
       </div>
       <div class="acct" id="acctWrap" hidden>
+        <!-- No profile picture, by decision, so the disc was a monogram of an
+             email address and said nothing a screenshot could use. At a desk
+             the control is the person's name; on a phone, where the bar has
+             the section's name to protect, it falls back to the initial. -->
         <button class="acct-btn" id="acctBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Account">
           <span class="acct-mark" id="acctMark" aria-hidden="true"></span>
+          <span class="acct-name" id="acctName"></span>
         </button>
         <div class="kmenu acct-menu" id="acctMenu" hidden>
           <span class="acct-who">Signed in as<b id="whoami"></b></span>
@@ -1197,9 +1230,14 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
             </a>
           </div>
+          <!-- One forward action stands above every pane, and it is the one
+               that hands the campaign to the client. Confirm creators acted on
+               the Creators pane's own list and sat here, so it was drawn over
+               Overview, Schedule and Finance too: three prominent actions on a
+               pane whose own primary is Save. It is on that pane now, under
+               the list it confirms. -->
           <div class="row" style="margin-top:12px">
             <button class="btn btn-go" id="campPublish" type="button">Publish to client</button>
-            <button class="btn btn-primary" id="campLock" type="button" hidden>Confirm creators</button>
           </div>
         </section>
           <p class="camp-next" id="campNext" hidden></p>
@@ -1240,7 +1278,7 @@
         <div class="viewhead">
           <span class="headmark"><h2>Creators</h2></span>
           <button class="btn" id="bulkToggle" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Bulk dates</button>
-          <button class="btn btn-primary" id="showAddOption" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creators</button>
+          <button class="btn" id="showAddOption" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add creators</button>
         </div>
 
         <div class="panel" id="bulkBox" hidden>
@@ -1308,6 +1346,13 @@
 
 
         <div id="creatorList"></div>
+        <!-- The commitment, under the list it commits. Adding a creator is
+             repeatable and reversible; this closes selection and puts the
+             campaign into production, so it is the one weighted control on
+             the pane and Add creators reads as the step before it. -->
+        <div class="row" id="campLockRow" style="margin-top:12px">
+          <button class="btn btn-primary" id="campLock" type="button" hidden>Confirm creators</button>
+        </div>
           </div>
 
           <div class="rec-pane" data-pane="schedule" hidden>
@@ -1931,6 +1976,7 @@
         <select class="select select-sm" id="regFam" aria-label="Filter by kind">
           <option value="">Every kind</option>
           <option value="quote_cover">Quotation covers</option>
+          <option value="offer">Letters of Offer</option>
           <option value="client">Client letters</option>
           <option value="hr">HR letters</option>
           <option value="other">Other documents</option>
@@ -2254,15 +2300,17 @@ raya-2026        https://example.com/raya"></textarea>
       </button>
     </div>
     <div class="rectabs" id="activityTabs" role="tablist" aria-label="Section">
+      <!-- The rail's own order, because these are the rail's own sections and
+           one sequence is easier to hold than two. -->
       <button class="tab is-on" data-af="all" type="button">Everything</button>
-      <button class="tab" data-af="clients" data-need="activity.clients:view" type="button">Clients</button>
       <button class="tab" data-af="ops" data-need="activity.ops:view" type="button">My Work</button>
-      <button class="tab" data-af="team" data-need="activity.team:view" type="button">Team</button>
+      <button class="tab" data-af="clients" data-need="activity.clients:view" type="button">Clients</button>
       <button class="tab" data-af="review" data-need="activity.review:view" type="button">Content Review</button>
       <button class="tab" data-af="campaigns" data-need="activity.campaigns:view" type="button">Creator Campaigns</button>
-      <button class="tab" data-af="links" data-need="activity.links:view" type="button">Short Links</button>
       <button class="tab" data-af="register" data-need="activity.register:view" type="button">Documents</button>
+      <button class="tab" data-af="links" data-need="activity.links:view" type="button">Short Links</button>
       <button class="tab" data-af="services" data-need="activity.services:view" type="button">Services</button>
+      <button class="tab" data-af="team" data-need="activity.team:view" type="button">Team</button>
     </div>
     <div class="sheet-body" id="activityList"></div>
   </div>
@@ -2449,13 +2497,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260920a"></script>
-<script src="/js/documents.js?v=20260920a"></script>
-<script src="/js/letters.js?v=20260920a"></script>
-<script src="/js/register.js?v=20260920a"></script>
-<script src="/js/crm.js?v=20260920a"></script>
-<script src="/js/team.js?v=20260920a"></script>
-<script src="/js/campaigns.js?v=20260920a"></script>
-<script src="/js/ops.js?v=20260920a"></script>
+<script src="/js/admin.js?v=20260920b"></script>
+<script src="/js/documents.js?v=20260920b"></script>
+<script src="/js/letters.js?v=20260920b"></script>
+<script src="/js/register.js?v=20260920b"></script>
+<script src="/js/crm.js?v=20260920b"></script>
+<script src="/js/team.js?v=20260920b"></script>
+<script src="/js/campaigns.js?v=20260920b"></script>
+<script src="/js/ops.js?v=20260920b"></script>
 </body>
 </html>

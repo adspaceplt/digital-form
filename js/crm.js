@@ -2249,7 +2249,7 @@
           /* This overrides a client's service line, not the rate card, so it
              is Clients at manage and not Services. */
           (bridge.may && bridge.may('clients', 'manage')
-            ? '<button class="kmenu-item" data-a="force" type="button"><b>Set state by hand</b></button>' : '') +
+            ? '<button class="kmenu-item" data-a="force" type="button"><b>Update status</b></button>' : '') +
           '<button class="kmenu-item is-danger" data-a="del" data-soft data-need="clients.services:work" type="button"><b>Remove</b></button>' +
         '</div>' +
       '</span>';
@@ -2568,7 +2568,11 @@
     var sub = [DOC_WORD[d.kind] || d.kind, niceDate(d.issued_at), d.issued_by].filter(Boolean).join(' · ');
     var lines = docLines(d);
     row.innerHTML =
-      '<span class="svc-name"><b>' + esc(d.number) + '</b><small>' + esc(sub) + '</small>' +
+      /* The reference is the everyday act on this row: it is copied into a
+         message, an invoice or the accounting portal. Same control, same
+         answer, as the Documents register's own row. */
+      '<span class="svc-name"><b><button class="serial-copy" type="button" data-a="copy" aria-label="Copy ' + esc(d.number) + '">' +
+        esc(d.number) + '</button></b><small>' + esc(sub) + '</small>' +
         (lines.length ? '<small>' + esc(lines.join(' · ')) + '</small>' : '') +
         (d.verified_at ? '<small>' + esc('Verified ' + niceDate(d.verified_at) +
           (d.verified_by ? ' · ' + d.verified_by : '')) + '</small>' : '') + '</span>' +
@@ -2587,12 +2591,17 @@
              section's Manage level, so both carry the same `data-need` and
              the database decides again when the button is pressed. */
           (st === 'verified'
-            ? '<button class="kmenu-item is-danger" data-a="void" data-need="clients.documents:manage" type="button"><b>Void letter</b></button>' : '') +
+            ? '<button class="kmenu-item is-danger" data-a="void" data-need="clients.documents:manage" type="button"><b>Void</b></button>' : '') +
           '<button class="kmenu-item is-danger" data-a="del" data-need="clients.documents:manage" type="button"><b>Delete</b></button>' +
         '</div>' +
       '</span>';
     wireMenu(row);
     var on = function (a, fn) { var el = row.querySelector('[data-a="' + a + '"]'); if (el) el.addEventListener('click', fn); };
+    var cp = row.querySelector('[data-a="copy"]');
+    if (cp) cp.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (window.ADspaceCopy) window.ADspaceCopy.to(this, d.number);
+    });
     var shut = function () {
       Array.prototype.forEach.call(row.querySelectorAll('.kmenu'), function (m) { m.hidden = true; });
     };
@@ -2797,9 +2806,12 @@
     var c = state.client;
     msg('crmDocMsg', '');
     msg('pickMsg', '');
+    /* The Client ID is what an automatic reference is built from, so a client
+       without one is told here rather than at the end. It is a caution and no
+       longer a refusal to open the sheet: a typed reference needs no code,
+       and the database is what decides either way. */
     if (!String(c.client_code || '').trim()) {
-      msg('crmDocMsg', 'Add a Client ID to this client before issuing a letter. Edit the record to set one.', 'warn');
-      return;
+      msg('pickMsg', 'This client has no Client ID, so a reference cannot be made automatically. Type one below, or set the ID on the record.', 'warn');
     }
     var e = eligible();
     picking = { replaces: null };
@@ -2809,7 +2821,17 @@
         'Void that letter, or issue a replacement from its ⋯, before quoting these again.') +
       pickBlock('Confirmed', e.confirmed, false,
         'Tick one only for a renewal, a variation or a replacement.') +
-      (e.open.length || e.confirmed.length ? '' : '<p class="lpicknote">Nothing to quote. Add a service line and mark it To quote.</p>');
+      (e.open.length || e.confirmed.length ? '' : '<p class="lpicknote">Nothing to quote. Add a service line and mark it To quote.</p>') +
+      /* The reference is the database's to make and the office's to override.
+         Blank is the everyday case and the placeholder says so without a
+         sentence; a reference is typed to fill a gap a deleted letter left,
+         which is the only reason this field exists. Typing one spends no
+         sequence number, so the next automatic letter keeps its place. */
+      '<div class="lpickref">' +
+        '<label class="field-label" for="pickRef">Reference</label>' +
+        '<input class="input input-sm" id="pickRef" type="text" autocomplete="off" spellcheck="false"' +
+          ' placeholder="Numbered automatically">' +
+      '</div>';
     /* A held line is shown so the reason is on the screen, and is refused so
        the same letter cannot go out twice by accident. */
     Array.prototype.forEach.call($('pickBody').querySelectorAll('.lpickrow.is-held input'), function (i) {
@@ -2886,7 +2908,8 @@
       stage: stageWord(c.stage || 'lead')[1], enquiry: c.deal_note || ''
     };
     DOCS.issue('offer', c, rows, deal,
-      { idem: picking.idem, replaces: picking.replaces, renewal: renewal },
+      { idem: picking.idem, replaces: picking.replaces, renewal: renewal,
+        serial: ($('pickRef') && $('pickRef').value.trim()) || '' },
       function (r) {
         go.disabled = false;
         go.textContent = 'Issue letter';

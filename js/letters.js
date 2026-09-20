@@ -77,10 +77,55 @@
     db.from('documents').select('*').eq('client_id', clientId).order('created_at', { ascending: false })
       .then(function (r) { then(r.data || [], r.error); }, function (e) { then([], e); });
   }
-  function listAll(then) {
-    db.from('documents').select('*').order('created_at', { ascending: false }).limit(2000)
-      .then(function (r) { then(r.data || [], r.error); }, function (e) { then([], e); });
+  /* The Letter of Offer lives in its own table, because it is not a letter of
+     words but a priced snapshot: the lines, the totals and the bill-to are
+     redrawn from it on Download and none of that fits `documents`. What that
+     cost was a register with no record of it — the verify page answered the
+     reference and the Documents section had never heard of it, so the team
+     had two lists to keep in their heads. It is read here and mapped into the
+     register's own row shape, so Documents is the one place every reference
+     this portal has issued can be found. The table is the store; the register
+     is the view over both. */
+  function asOffer(d) {
+    var to = d.bill_to || {};
+    return {
+      id: d.id,
+      family: 'offer',
+      kind: 'Letter of Offer',
+      serial: d.number,
+      client_id: d.client_id,
+      issued_at: d.issued_at,
+      created_at: d.created_at,
+      recipient: { name: to.legal_name || to.name || '' },
+      issued_by: d.issued_by,
+      source: 'portal',
+      voided_at: d.voided_at,
+      /* A letter that was replaced reads Superseded on this list for the same
+         reason a reissued register document reads Reissued: the team can see
+         both versions and the word says which is which. */
+      void_reason: d.voided_at ? 'Void' : (d.superseded_by ? 'Superseded' : ''),
+      superseded_by: d.superseded_by,
+      offer: d
+    };
   }
+  function listAll(then) {
+    /* Two reads, and a refusal on either one is the register's refusal: a
+       person who may read Letters of Offer and cannot is shown why, never a
+       register quietly missing a family. Where the permission is simply not
+       held the caller does not ask, so nothing is refused and no band draws. */
+    var jobs = [db.from('documents').select('*').order('created_at', { ascending: false }).limit(2000)];
+    if (listAll.offers !== false) {
+      jobs.push(db.from('client_documents').select('*').order('created_at', { ascending: false }).limit(2000));
+    }
+    Promise.all(jobs).then(function (r) {
+      var err = (r[0] && r[0].error) || (r[1] && r[1].error);
+      if (err) { then([], err); return; }
+      var rows = (r[0] && r[0].data) || [];
+      var offers = ((r[1] && r[1].data) || []).map(asOffer);
+      then(rows.concat(offers), null);
+    }, function (e) { then([], e); });
+  }
+  listAll.offers = true;
   function readBack(id, then) {
     db.from('documents').select('*').eq('id', id).single()
       .then(function (r) { then(r.data, r.error); }, function (e) { then(null, e); });

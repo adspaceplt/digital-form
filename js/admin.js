@@ -147,6 +147,18 @@
      out are three things touched a few times a year, so they sit behind one
      control at the end of the bar rather than in a block at the foot of the
      sidebar that every screen had to carry. */
+  /* The name where we hold one, the address until we do, and the initial for
+     the phone, which has the section's name to protect and no room for both. */
+  function paintAcct(who) {
+    var name = (me && me.name) || '';
+    var word = name || String(who || '').split('@')[0] || '';
+    var nm = $('acctName'), mk = $('acctMark');
+    if (nm) nm.textContent = word;
+    if (mk) mk.textContent = (word || '?').charAt(0).toUpperCase();
+    var btn = $('acctBtn');
+    if (btn) btn.setAttribute('aria-label', word ? 'Account, ' + word : 'Account');
+  }
+
   function shutAcct() {
     $('acctMenu').hidden = true;
     $('acctBtn').setAttribute('aria-expanded', 'false');
@@ -200,8 +212,12 @@
     $('acctWrap').hidden = !inApp;
     if (!inApp) shutAcct();
     $('whoami').textContent = inApp ? session.user.email : '';
-    /* One letter, not an avatar nobody uploaded. */
-    $('acctMark').textContent = inApp ? (session.user.email || '?').charAt(0).toUpperCase() : '';
+    /* Who you are, in words. There is no profile picture by decision, so the
+       control names the person: a screenshot of any screen then says whose
+       account it was taken from, which a monogram of an email address did
+       not. The team row arrives after this, so the address stands in until
+       it does (see nameAcct below) and the name replaces it. */
+    paintAcct(inApp ? (session.user.email || '') : '');
     actor = inApp ? session.user.email : '';
 
     if (!inApp) {
@@ -274,7 +290,9 @@
      `view` reads, `work` adds, edits and publishes, `manage` also destroys.
      The line is reversibility: Unpublish exists, so publishing is `work`;
      a permanent deletion has no way back, so it is `manage`. */
-  var SECTIONS = ['clients', 'ops', 'review', 'campaigns', 'links', 'register', 'services', 'team', 'activity'];
+  /* The rail's order, which is also the Activity record's and the Team
+     panel's: one sequence across the console rather than three. */
+  var SECTIONS = ['ops', 'clients', 'review', 'campaigns', 'register', 'links', 'services', 'team', 'activity'];
   /* A part is a pane or a list inside a section, keyed `section.part`. It
      takes its own level where the group set one and its section's where it
      did not, in the page exactly as in `allowed()`, so a group that never
@@ -289,7 +307,7 @@
        `activity_section()` in the database maps a tag to the section the
        console files it under and the read policy asks the part, so the tabs
        here draw exactly what the database will send. */
-    activity:  ['clients', 'ops', 'team', 'review', 'campaigns', 'links', 'register', 'services'],
+    activity:  ['ops', 'clients', 'review', 'campaigns', 'register', 'links', 'services', 'team'],
     /* Operations is the one section whose parts *widen* it rather than
        narrowing it: the team's whole queue, the reports, the templates and
        another person's hours are all more than "work my own tasks". So they
@@ -341,8 +359,16 @@
      hyphenates the key (`no-work-clients-billing`), since a dot is not a
      class token. */
   function applyAccess() {
+    /* The team row has arrived by now, so the account control can stop
+       standing in with an address and name the person. */
+    paintAcct(actor);
     navItems().forEach(function (b) {
       b.hidden = !sectionAllowed(b.getAttribute('data-section'));
+    });
+    /* A group whose every route is withheld takes its heading with it: a
+       label over nothing is the same fault as a table header over no rows. */
+    Array.prototype.forEach.call(document.querySelectorAll('.navgroup'), function (g) {
+      g.hidden = !g.querySelector('.navitem:not([hidden])');
     });
     var keys = SECTIONS.slice();
     Object.keys(PARTS).forEach(function (s) {
@@ -941,9 +967,14 @@
     /* A file the team handed in for a creator, from the console. */
     'campaign.file_added':   ['Draft file uploaded by team', '', 'campaigns']
   };
-  var ACT_SECTION = { all: 'Everything', clients: 'Clients', ops: 'My Work', team: 'Team',
+  /* The same order as the rail, because they are the same eight sections and
+     a person who has learned one sequence should not have to learn a second.
+     Everything leads, being the view somebody lands on. */
+  var ACT_SECTION = { all: 'Everything',
+                      ops: 'My Work', clients: 'Clients',
                       review: 'Content Review', campaigns: 'Creator Campaigns',
-                      links: 'Short Links', register: 'Documents', services: 'Services' };
+                      register: 'Documents', links: 'Short Links',
+                      services: 'Services', team: 'Team' };
 
   /* The section only appears for people on the viewer list. The database
      enforces this too, so hiding it here is convenience rather than the
@@ -2644,7 +2675,7 @@
           (review && review.decision === 'approved'
             ? iconBtn('redo', 'reask', 'Request re-approval', 'is-warn') : '') +
           iconBtn('pencil', 'edit', 'Edit post') +
-          iconBtn('trash', 'del', 'Delete post', 'is-danger') +
+          iconBtn('trash', 'del', 'Delete', 'is-danger') +
         '</div>';
 
       row.querySelector('[data-a="edit"]').addEventListener('click', paintEdit);

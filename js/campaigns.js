@@ -1818,6 +1818,9 @@
     // Accepting is offered exactly when the client has chosen something.
     var waiting = state.options.filter(function (o) { return o.state === 'shortlisted'; });
     $('campLock').hidden = !waiting.length;
+    /* The row leaves with the button, or an empty row keeps the block step
+       under the list and the pane ends on a gap nobody put there. */
+    if ($('campLockRow')) $('campLockRow').hidden = !waiting.length;
     $('campLock').textContent = 'Confirm ' + waiting.length +
       (waiting.length === 1 ? ' creator' : ' creators');
 
@@ -2692,11 +2695,76 @@
       window.ADspaceCopy.to(this, creatorLink((o.creators || {}).access_code));
     });
 
+    /* TAKING A CREATOR'S WORK OFF IS TWO PRESSES, AND THE SECOND ONE WARNS.
+       It was one press on an × that sits in the corner of the card somebody
+       is watching the video in, and the only safeguard was the eight second
+       Undo — which is no safeguard at all against a press nobody noticed,
+       and the user reported exactly that: an accidental click and the
+       creator has to upload the file again. The × arms the file instead and
+       the confirm takes its place, naming what it costs; Escape, Cancel or
+       a press anywhere else puts it back, one file armed at a time. The
+       soft remove and the Undo stay behind it, so there are three steps
+       between a stray click and lost work. */
+    var armed = null;
+    function disarm() {
+      if (!armed) return;
+      var box = armed.querySelector('.filearm');
+      if (box) box.remove();
+      armed.classList.remove('is-arming');
+      var x = armed.querySelector('[data-a="removefile"]');
+      if (x) { x.hidden = false; x.setAttribute('aria-expanded', 'false'); }
+      armed = null;
+    }
+    card.addEventListener('click', function (e) {
+      if (armed && !e.target.closest('.filearm') && !e.target.closest('[data-a="removefile"]')) disarm();
+    });
+    card.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && armed) {
+        var x = armed.querySelector('[data-a="removefile"]');
+        disarm();
+        if (x) x.focus();
+      }
+    });
+    function arm(button, file, go) {
+      disarm();
+      armed = file;
+      file.classList.add('is-arming');
+      button.hidden = true;
+      button.setAttribute('aria-expanded', 'true');
+      var box = document.createElement('div');
+      box.className = 'filearm';
+      box.setAttribute('role', 'group');
+      box.setAttribute('aria-label', 'Confirm removing this file');
+      box.innerHTML =
+        '<span class="filearm-ask">Remove? The creator would have to upload it again.</span>' +
+        '<span class="filearm-acts">' +
+          '<button class="btn btn-sm btn-danger" type="button" data-a="rmyes">Remove</button>' +
+          '<button class="btn btn-sm btn-quiet" type="button" data-a="rmno">Cancel</button>' +
+        '</span>';
+      file.appendChild(box);
+      box.querySelector('[data-a="rmno"]').addEventListener('click', function () {
+        disarm();
+        button.focus();
+      });
+      box.querySelector('[data-a="rmyes"]').addEventListener('click', function () {
+        armed = null;               // the file is about to go with its box
+        go();
+      });
+      box.querySelector('[data-a="rmyes"]').focus();
+    }
+
     Array.prototype.forEach.call(card.querySelectorAll('[data-a="removefile"]'), function (button) {
+      button.setAttribute('aria-expanded', 'false');
       button.addEventListener('click', function () {
         var file = button.closest('[data-file]');
         var id = file && file.getAttribute('data-file');
         if (!id) return;
+        arm(button, file, function () { removeFile(button, file, id); });
+      });
+    });
+
+    function removeFile(button, file, id) {
+      {
         /* A creator's work, so the line names which file went: "Submission
            removed." over a grid of three said nothing about which one. */
         var what = (file.querySelector('.filecard-name, .filepin-name') || {}).textContent || '';
@@ -2717,8 +2785,8 @@
                 .then(function () { loadOptions(); });
             }, block);
           });
-      });
-    });
+      }
+    }
 
     var pick = card.querySelector('[data-a="teamfiles"]');
     if (pick) pick.addEventListener('change', function () {
