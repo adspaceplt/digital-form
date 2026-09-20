@@ -1088,6 +1088,10 @@ after the block the act belongs to, and names **what** went rather than its
 category, because "Submission removed." over a grid of three files answers the
 one question it was drawn to answer with nothing.
 
+**One number, two parties, two meanings.** A booking's rate is what the client is quoted: it carries the agency's markup and is the figure the client's own selection page prints beside each creator. The creator's page read the same column and captioned it "Your fee", so the creator was shown the client's price and told it was their payment. Nothing about the column changed between those two screens; only who was reading it. Before a figure is put on a page, the question is not "is this the right field" but "whose number is this, and what will the person reading it take it to mean" — and where the two answers differ, the field does not travel. What a creator is owed is agreed with them and claimed on its own form, so their page needs no figure at all, and the one that existed is withheld by the function rather than hidden by the page, because the page is one anybody can open.
+
+**A test can codify the leak it should have caught.** The assertion here read `their own fee, not the client's amount` and checked for `RM 380` — the client's amount. It passed on every run for as long as the defect existed, and its own name argued the defect was correct. A test that asserts a *value* is only as good as the belief behind the value; where a fact is withheld, assert the withholding — that the key is absent from what the function returned — because that is the thing the rule is actually about.
+
 **A record of a decision holds every party to it.** The activity record is what
 answers "who approved this, and when", and it held only what the team did: a
 client's approval lived in `reviews` alone, a creator's hand-in nowhere at all.

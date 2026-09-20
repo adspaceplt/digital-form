@@ -22,7 +22,6 @@
   var API = window.ADspaceAPI;
   var db  = API && API.client;
   var $   = function (id) { return document.getElementById(id); };
-  var MON = window.ADspaceMoney;
   var KEY = 'adspace-creator';
 
   function esc(s) {
@@ -48,7 +47,7 @@
       shootOn: 'Shoot', deliveryOn: 'Delivery', goLive: 'Publish on',
       draftDue: 'Draft due', dueToday: 'Due today', overdue: 'Overdue by {n}', dueIn: 'Due in {n}',
       whereAt: 'Location', contact: 'On the day', tracking: 'Tracking no.',
-      fee: 'Your fee', platformsLabel: 'Posting on', tbc: 'To be confirmed',
+      platformsLabel: 'Posting on', tbc: 'To be confirmed',
       briefHead: 'The brief',
       deliverHead: 'Submission',
       changesHead: 'Changes requested',
@@ -99,7 +98,7 @@
       shootOn: '拍摄', deliveryOn: '寄送', goLive: '发布日期',
       draftDue: '作品截止', dueToday: '今天截止', overdue: '已逾期 {n}', dueIn: '{n} 后截止',
       whereAt: '地点', contact: '当天联系人', tracking: '快递单号',
-      fee: '您的费用', platformsLabel: '发布平台', tbc: '待确认',
+      platformsLabel: '发布平台', tbc: '待确认',
       briefHead: '合作简介',
       deliverHead: '作品提交',
       changesHead: '需要修改',
@@ -141,10 +140,6 @@
   var feed = null;
   var code = '';
   function t() { return T[lang]; }
-
-  /* The fee is the creator's own, in the client's currency, because that is
-     what the invoice will read. */
-  function money(n, cur) { return MON.money(n, cur === 'SGD' ? 'SG' : 'MY'); }
 
   function fmtDate(d) {
     if (!d) return '';
@@ -360,7 +355,7 @@
       if (plats.length) facts.push([t().platformsLabel, plats.join(' · ')]);
       if (b.planned_publish) facts.push([t().goLive, fmtDate(b.planned_publish)]);
       if (b.submission_due) facts.push([t().draftDue, fmtDate(b.submission_due)]);
-      facts.push([t().fee, money(b.rate, b.currency)]);
+
     }
 
     var title = (lang === 'zh' && b.campaign_zh) ? b.campaign_zh : b.campaign;
