@@ -220,17 +220,40 @@
   var DONE_STATES = ['confirmed', 'pending_visit', 'pending_delivery', 'pending_draft',
                      'submitted', 'reviewing', 'changes', 'scheduled', 'posted', 'completed'];
 
+  /* Which campaigns, not just how many. This read already asked for every
+     booking of every creator and threw the campaign away, so the count was
+     all the column could say — and on a roster where almost everybody has run
+     one campaign it printed `1 · last Sept 2026` on row after row, a column
+     saying the same thing on every line, which is the fault that already
+     retired the monogram disc from this list. The campaign is a column the
+     query can simply keep. No new table, no creator reference, no backfill:
+     `campaign_options` has linked the two since the day it existed. */
   function loadRecord(then) {
     state.record = {};
-    db.from('campaign_options').select('creator_id, state, visit_date, added_at')
+    db.from('campaign_options')
+      .select('creator_id, state, visit_date, added_at, campaign_id, campaigns(title, state)')
       .then(function (r) {
+        /* A refused read leaves the record empty rather than drawing every
+           creator as somebody who has never worked. */
+        if (r.error) { state.recordFailed = true; then(); return; }
+        state.recordFailed = false;
         (r.data || []).forEach(function (o) {
           if (DONE_STATES.indexOf(o.state) < 0) return;
           var rec = state.record[o.creator_id] ||
-            (state.record[o.creator_id] = { n: 0, last: '' });
+            (state.record[o.creator_id] = { n: 0, last: '', on: [] });
           rec.n++;
           var when = o.visit_date || (o.added_at || '').slice(0, 10);
           if (when > rec.last) rec.last = when;
+          /* One entry a campaign: a creator booked twice on one campaign is
+             on one campaign. Newest first, which is the order anybody asks
+             the question in. */
+          var camp = o.campaigns || {};
+          var seen = rec.on.filter(function (x) { return x.id === o.campaign_id; })[0];
+          if (seen) { if (when > seen.when) seen.when = when; return; }
+          rec.on.push({ id: o.campaign_id, title: campName(camp), when: when });
+        });
+        Object.keys(state.record).forEach(function (k) {
+          state.record[k].on.sort(function (a, b) { return a.when < b.when ? 1 : -1; });
         });
         then();
       });
@@ -246,6 +269,23 @@
     var rec = state.record && state.record[c.id];
     if (!rec) return '';
     return rec.n + (rec.last ? ' · last ' + monthOf(rec.last) : '');
+  }
+
+  /* The cell names the latest campaign and counts the rest. A count on its
+     own was the whole cell, and on this roster almost everybody has run one,
+     so it printed `1 · last Sept 2026` down the page: a column that reads the
+     same on every row tells nobody which creator is which, which is the one
+     thing this column exists for. The name is what differs; `+2` says there
+     is more without spending the width on it, and the month stays because
+     "have they worked lately" is what a booking asks next. The whole history
+     is on the creator's own card, where there is room for it. */
+  function recordCell(c) {
+    var rec = state.record && state.record[c.id];
+    if (!rec || !rec.on.length) return '<span class="muted">—</span>';
+    var more = rec.on.length - 1;
+    return '<span class="cr-rec-name">' + esc(rec.on[0].title) + '</span>' +
+      '<span class="cr-rec-tail">' + (more ? ' +' + more : '') +
+      (rec.last ? ' · ' + esc(monthOf(rec.last)) : '') + '</span>';
   }
   function monthOf(d) {
     var t = new Date(d + 'T00:00:00');
@@ -373,8 +413,7 @@
         '<span class="svc-name cr-who"><b>' + esc(c.name) +
           (off ? ' <span class="tone">Inactive</span>' : '') + '</b></span>' +
         '<span class="cr-links">' + (links || '<span class="muted">No links</span>') + '</span>' +
-        '<span class="cr-rec">' + (recordLine(c)
-          ? esc(recordLine(c)) : '<span class="muted">—</span>') + '</span>' +
+        '<span class="cr-rec">' + recordCell(c) + '</span>' +
         '<span class="svc-rate">' + (c.client_rate ? esc(money(c.client_rate))
                                                    : '<span class="muted">RM</span>') + '</span>' +
         '<span class="team-act">' +
@@ -539,10 +578,44 @@
     if (!ps.length) rows.appendChild(profRow(null, ROSTER_CTX));
     else ps.forEach(function (p) { rows.appendChild(profRow(p, ROSTER_CTX)); });
     paintCode(c);
+    paintCreatorCamps(c);
     msg('creatorMsg', ''); msg('dupeWarn', '');
     $('addCreatorBox').hidden = false;
     if (!restoring) rosterDraft.note({ editing: c ? c.id : null });
     $('crName').focus();
+  }
+
+  /* Which campaigns this creator has been on, on their own card. The list's
+     one cell names the latest and counts the rest, which is all a column can
+     carry; the question "what have they done for us" is answered here, where
+     there is room for a row each and a way into every one of them.
+     Composed from `state.record`, which `loadRecord` has already read for the
+     list: no second query, and a creator opened from a list that could not
+     read the bookings shows nothing rather than an empty history. */
+  function paintCreatorCamps(c) {
+    var box = $('crCampBox');
+    if (!box) return;
+    var rec = (c && state.record && state.record[c.id]) || null;
+    box.hidden = !(rec && rec.on.length);
+    if (box.hidden) return;
+    var list = $('crCamps');
+    list.innerHTML = '';
+    rec.on.forEach(function (x) {
+      var row = document.createElement('button');
+      row.className = 'crcamp';
+      row.type = 'button';
+      row.innerHTML =
+        '<span class="crcamp-name">' + esc(x.title) + '</span>' +
+        '<span class="crcamp-when">' + (x.when ? esc(monthOf(x.when)) : '') + '</span>';
+      /* The campaign opens where every campaign opens, from its own row in
+         the list, so there is one way in and the address stays right. */
+      row.addEventListener('click', function () {
+        $('addCreatorBox').hidden = true;
+        rosterDraft.clear();
+        openCampaignById(x.id);
+      });
+      list.appendChild(row);
+    });
   }
 
   /* The code reads in two groups of four, because it is meant to be read down
@@ -1085,6 +1158,36 @@
       shutCampForm();
       openCampaign(r.data);
     });
+  }
+
+  /* Opening a campaign named somewhere other than its own list: the row is
+     fetched by id with exactly the join `openCampaign` expects, and the tab
+     moves with it, because the Creators List is a different tab and leaving
+     it showing behind an open campaign is two routes on one screen. The
+     select is the one the address handler already uses, so the record that
+     arrives here and the record that arrives on a refresh are the same
+     object. A campaign that has since been deleted says so rather than
+     leaving a press that did nothing. */
+  function openCampaignById(id, onFail) {
+    if (!id) return;
+    db.from('campaigns').select('*, clients(name, market, sst_applies, logo_url)')
+      .eq('id', id).single().then(function (r) {
+        if (r.error || !r.data) {
+          if (onFail) onFail(r.error && r.error.message);
+          else window.ADspaceConfirm.ask({
+            title: 'Not found',
+            body: 'That campaign is no longer in the list.',
+            go: 'Close', cancel: false
+          });
+          return;
+        }
+        state.tab = 'campaigns';
+        Array.prototype.forEach.call(document.querySelectorAll('#campSectionTabs .tab'), function (b) {
+          b.classList.toggle('is-on', b.getAttribute('data-tab') === 'campaigns');
+        });
+        $('rosterView').hidden = true;
+        openCampaign(r.data);
+      });
   }
 
   function campaignUrl(c) { return location.origin + '/creators/?k=' + c.access_token; }

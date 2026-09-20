@@ -5,7 +5,15 @@ tests/pdfx/node_modules/
 tests/*.png
 tests/*.pdf
 
-# The behavioural suites and their artefacts were taken out of this public
-# repository on 2026-09-20. They are in the history at 02de7c9 if they are
-# ever wanted back: git checkout 02de7c9 -- tests
+# The behavioural suites live in adspaceplt/digital-form-tests, a PRIVATE
+# repository, because this one is public and they carry the schema, the
+# stand-in for it and the whole harness. `tests` here is a symlink to a
+# clone of that repository and is never committed:
+#
+#   git clone https://github.com/adspaceplt/digital-form-tests /home/user/digital-form-tests
+#   ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
+#
+# Ignored with and without the slash: a symlink is not a directory, so
+# `tests/` alone does not match it and the link showed up untracked.
+tests
 tests/

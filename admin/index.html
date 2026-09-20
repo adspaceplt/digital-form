@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260920d">
+<link rel="stylesheet" href="/css/portal.css?v=20260920e">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,24 +28,24 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260920d"></script>
-<script src="/js/words.js?v=20260920d"></script>
-<script src="/js/copy.js?v=20260920d"></script>
-<script src="/js/ask.js?v=20260920d"></script>
-<script src="/js/confirm.js?v=20260920d"></script>
-<script src="/js/state.js?v=20260920d"></script>
-<script src="/js/group.js?v=20260920d"></script>
-<script src="/js/menu.js?v=20260920d"></script>
-<script src="/js/cmdbar.js?v=20260920d"></script>
-<script src="/js/api.js?v=20260920d"></script>
-<script src="/js/money.js?v=20260920d"></script>
-<script src="/js/mockups.js?v=20260920d"></script>
+<script src="/js/config.js?v=20260920e"></script>
+<script src="/js/words.js?v=20260920e"></script>
+<script src="/js/copy.js?v=20260920e"></script>
+<script src="/js/ask.js?v=20260920e"></script>
+<script src="/js/confirm.js?v=20260920e"></script>
+<script src="/js/state.js?v=20260920e"></script>
+<script src="/js/group.js?v=20260920e"></script>
+<script src="/js/menu.js?v=20260920e"></script>
+<script src="/js/cmdbar.js?v=20260920e"></script>
+<script src="/js/api.js?v=20260920e"></script>
+<script src="/js/money.js?v=20260920e"></script>
+<script src="/js/mockups.js?v=20260920e"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260920d" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260920e" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -1484,6 +1484,14 @@
             <button class="btn btn-quiet btn-sm" id="addProfRow" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
           </div>
 
+          <!-- What this creator has actually done for us, which is the
+               question the list's one cell can only hint at. Drawn only
+               once there is a booking to name. -->
+          <div class="subsection" id="crCampBox" hidden>
+            <h4>Campaigns</h4>
+            <div class="crcamps" id="crCamps"></div>
+          </div>
+
           <!-- A creator's own key. Shown on the record it belongs to rather
                than on every row of the list, and only once they exist. -->
           <div class="subsection" id="crCodeBox" hidden>
@@ -2539,13 +2547,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260920d"></script>
-<script src="/js/documents.js?v=20260920d"></script>
-<script src="/js/letters.js?v=20260920d"></script>
-<script src="/js/register.js?v=20260920d"></script>
-<script src="/js/crm.js?v=20260920d"></script>
-<script src="/js/team.js?v=20260920d"></script>
-<script src="/js/campaigns.js?v=20260920d"></script>
-<script src="/js/ops.js?v=20260920d"></script>
+<script src="/js/admin.js?v=20260920e"></script>
+<script src="/js/documents.js?v=20260920e"></script>
+<script src="/js/letters.js?v=20260920e"></script>
+<script src="/js/register.js?v=20260920e"></script>
+<script src="/js/crm.js?v=20260920e"></script>
+<script src="/js/team.js?v=20260920e"></script>
+<script src="/js/campaigns.js?v=20260920e"></script>
+<script src="/js/ops.js?v=20260920e"></script>
 </body>
 </html>
