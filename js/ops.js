@@ -561,10 +561,38 @@
     var wf = boardWorkflow(all);
     var mine = rows.filter(function (t) { return t.workflow_id === wf; });
     var stages = stagesOf(wf);
+    /* A board of nine columns is wider than any screen, and most of them are
+       empty most of the time: the video workflow draws Intake, Ready,
+       Shooting, Editing, Client review, Revision, Approved and Delivered
+       whether or not anything is in them, so reading it means scrolling past
+       columns that say None. An empty column is drawn only where it is still
+       somewhere the work can go — the stage a task on this board could be
+       moved into next, which is what a column is *for* — or where it is the
+       workflow's own entry, because a board with nowhere to start reads as a
+       board missing its first step. Everything else leaves, and comes back by
+       itself the moment a task can reach it. */
+    var reach = {};
+    stages.forEach(function (s) {
+      if (!mine.some(function (t) { return t.stage_key === s.key; })) return;
+      (s.next_stage_keys || []).forEach(function (k) { reach[k] = 1; });
+    });
+    var entry = stages.length ? stages[0].key : null;
+    var keep = function (s, n) { return n > 0 || reach[s.key] || s.key === entry; };
     var cols = stages.filter(function (s) { return !SIDE[s.stage_group] && !s.is_terminal; })
+      .filter(function (s) {
+        return keep(s, mine.filter(function (t) { return t.stage_key === s.key; }).length);
+      })
       .map(function (s) { return { key: s.key, name: s.label, wip: s.wip_guidance, keys: [s.key] }; });
+    /* On hold gathers the lanes beside the line, and is drawn only while it
+       holds something: it is where work steps *out* of the flow, so an empty
+       one is a column for a thing that has not happened. It is deliberately
+       not a drop target either — Blocked needs a category before it means
+       anything, and that is asked for on the record. */
     var held = stages.filter(function (s) { return SIDE[s.stage_group] && !s.is_terminal; });
-    if (held.length) cols.push({ key: 'held', name: 'On hold', wip: null, keys: held.map(function (s) { return s.key; }) });
+    var heldKeys = held.map(function (s) { return s.key; });
+    if (held.length && mine.some(function (t) { return heldKeys.indexOf(t.stage_key) > -1; })) {
+      cols.push({ key: 'held', name: 'On hold', wip: null, keys: heldKeys, noDrop: true });
+    }
     stages.filter(function (s) { return s.is_terminal; }).forEach(function (s) {
       if (mine.some(function (t) { return t.stage_key === s.key; })) {
         cols.push({ key: s.key, name: s.label, wip: null, keys: [s.key] });
@@ -590,9 +618,82 @@
       var list = col.querySelector('.bcards');
       if (!cards.length) list.innerHTML = '<p class="bcol-empty">None.</p>';
       cards.forEach(function (t) { list.appendChild(cardOf(t)); });
+      if (!c.noDrop) dropInto(col, c.keys[0]);
       board.appendChild(col);
     });
     box.appendChild(board);
+  }
+
+  /* Dragging a card is the one thing a board is expected to do, and it was the
+     first thing the user reached for. It is the same move as the select on the
+     card: the same function, the same gates, the same refusal named in the
+     team's words on the card it was made on. What it adds is that the board
+     says where a card may go *before* it is dropped, which is this portal's
+     rule about constraining an invalid choice rather than reporting it: while
+     a card is in hand every column the workflow allows is marked and every
+     other is dimmed, so a refusal is rare and never a surprise.
+
+     It is deliberately a pointer affordance only. Dragging cannot be done from
+     a keyboard and HTML5 drag events do not fire under a finger, so the select
+     on every card stays exactly where it was and is the path for both — this
+     is an addition, never a replacement, and no screen loses a way to move a
+     stage. */
+  var drag = null;
+
+  function dragAllowed(next) {
+    if (!drag || !next) return false;
+    if (drag.task.stage_key === next) return false;
+    var s = stageOf(drag.task);
+    return Boolean(s && (s.next_stage_keys || []).indexOf(next) > -1);
+  }
+
+  function dropInto(col, next) {
+    if (!may('ops', 'work')) return;
+    col.addEventListener('dragover', function (e) {
+      if (!dragAllowed(next)) return;
+      e.preventDefault();                       // the only way to accept a drop
+      e.dataTransfer.dropEffect = 'move';
+      col.classList.add('is-drop');
+    });
+    col.addEventListener('dragleave', function (e) {
+      // A drag over a child fires dragleave on the column; only a real exit counts.
+      if (col.contains(e.relatedTarget)) return;
+      col.classList.remove('is-drop');
+    });
+    col.addEventListener('drop', function (e) {
+      col.classList.remove('is-drop');
+      if (!dragAllowed(next)) return;
+      e.preventDefault();
+      var t = drag.task, card = drag.el;
+      endDrag();
+      moveTo(t, card, next);
+    });
+  }
+
+  function startDrag(t, el) {
+    drag = { task: t, el: el };
+    el.classList.add('is-dragging');
+    var board = el.closest('.board');
+    if (!board) return;
+    board.classList.add('is-dragging');
+    /* Every column says whether this card may land in it, so the answer is on
+       the screen while the hand is still moving. */
+    Array.prototype.forEach.call(board.querySelectorAll('.bcol'), function (c) {
+      var k = c.getAttribute('data-col');
+      c.classList.toggle('is-shut-out', !dragAllowed(k));
+    });
+  }
+
+  function endDrag() {
+    if (drag && drag.el) drag.el.classList.remove('is-dragging');
+    var board = document.querySelector('.board');
+    if (board) {
+      board.classList.remove('is-dragging');
+      Array.prototype.forEach.call(board.querySelectorAll('.bcol'), function (c) {
+        c.classList.remove('is-shut-out', 'is-drop');
+      });
+    }
+    drag = null;
   }
   /* A card is the row, stood up, and read in the order somebody scans a board:
      what it is, whose it is, when it is owed. The title is the heaviest thing
@@ -631,6 +732,22 @@
     el.querySelector('.bcard-title').addEventListener('click', function () { openTask(t.id, true); });
     var sel = el.querySelector('.state-select');
     if (sel) sel.addEventListener('change', function () { rowMove(t, el, sel); });
+    /* Only where the move is allowed at all, and only under a pointer that can
+       drag: a finger fires no drag events and a keyboard has no drag, so both
+       keep the select and nothing is lost by the card not being draggable. */
+    if (may('ops', 'work') && !isFinished(t) && window.matchMedia &&
+        window.matchMedia('(pointer: fine)').matches) {
+      el.setAttribute('draggable', 'true');
+      el.addEventListener('dragstart', function (e) {
+        // Some data has to be set or Firefox will not start the drag at all.
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = 'move';
+          try { e.dataTransfer.setData('text/plain', 'T' + t.task_no); } catch (err) {}
+        }
+        startDrag(t, el);
+      });
+      el.addEventListener('dragend', endDrag);
+    }
     return el;
   }
 
@@ -832,9 +949,16 @@
      and says why under the row, because the row is where the act happened and
      the command bar is a screen away from it on a long list. */
   function rowMove(t, el, sel) {
-    var next = sel.value;
+    moveTo(t, el, sel.value, function () { sel.value = ''; });
+  }
+  /* One path for every way a stage is moved on this page — the select on a
+     list row, the select on a board card, and a card dragged into a column.
+     All three go through `ops_transition_task` and therefore through the same
+     gates, and all three name the refusal on the thing that was moved rather
+     than in a bar a screen away. */
+  function moveTo(t, el, next, back) {
     if (!next) return;
-    var back = function () { sel.value = ''; };
+    back = back || function () {};
     rowNote(el, '');
     db.rpc('ops_transition_task',
       { p_task: t.id, p_next: next, p_version: t.version, p_note: null })

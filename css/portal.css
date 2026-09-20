@@ -5996,6 +5996,25 @@ body.is-canvas { overflow: hidden; }
   display: grid; gap: 6px; padding: 12px 12px 10px;
   background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius-sm);
 }
+/* A card in hand, and the columns answering while it is still moving. The
+   board says where the card may land before it is dropped, which is error
+   prevention rather than an error message: a stage the workflow does not
+   allow is dimmed, so a refusal is rare and never a surprise. The move goes
+   through the same function and the same gates as the select on the card,
+   so nothing here is a second way of changing a stage — only a second way of
+   reaching the same one. Pointer only: a finger fires no drag events and a
+   keyboard has none, and both keep the select. */
+@media (hover: hover) and (pointer: fine) {
+  .bcard[draggable="true"] { cursor: grab; }
+  .bcard.is-dragging { cursor: grabbing; opacity: .5; }
+  .board.is-dragging .bcol { transition: opacity var(--t) var(--ease-out); }
+  .board.is-dragging .bcol.is-shut-out { opacity: .4; }
+  /* The column that would take it, marked in the action colour, because this
+     is the move about to be made and not a state that is already true. */
+  .board.is-dragging .bcol.is-drop .bcards {
+    outline: 2px dashed var(--action); outline-offset: 3px; border-radius: var(--radius-sm);
+  }
+}
 /* THE CARD IS READ IN THE ORDER A BOARD IS SCANNED: what it is, whose it is,
    when it is owed. The serial led the card in the token face at the same size
    as the client beside it, which put the one fact nobody scans for at the top
