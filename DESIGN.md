@@ -626,6 +626,33 @@ needs a category) is never in that select; it is asked for on the record.
 
 **A board is the same rows asked a different question, and it is one workflow at a time.** A kanban of 290 cards is a table drawn worse, so the board is scoped the way the work is scoped: the same search, filter and scope as the list, one workflow's stages as the columns because the columns and the work-in-progress guidance on them are the workflow's own, and the lanes a task steps out of the flow into gathered in one column, since a board is where the flow is read. The count on a column is read against the guidance (`4 / 5`) and turns warn past it, which is the whole of what the guidance is for. It scrolls sideways at a desk on purpose: eight columns at a legible width are wider than any screen, a board narrowed to fit is one nobody can read, and the rule against sideways tables is a rule about tables. On a phone the columns stack and an empty one is not drawn, which is the list grouped by stage, which is what a board is on a screen one column wide. **A calendar holds one date a task**: the commitment the queue is ordered by. Three dates a task in a cell is a cell nobody can read. **And a record tells the person it concerns, from where the event is written.** The notification is filed beside the event, in the one function every write already goes through, so the rule (the owner is told about a change somebody else made; nobody is told about their own act) is stated once and a write added next year keeps it without anybody remembering to.
 
+**A board column is a place the work can go, so an empty one that nothing can
+reach is not a column.** The video workflow has nine stages and most of them
+are empty most of the time, so the board drew seven columns saying None and
+one that mattered, side by side, wider than any screen. The rule is not "hide
+what is empty" — that would take away the column somebody is about to move a
+card into, which is the whole point of a board. It is: draw an empty column
+where a task on this board could be moved into it next, and draw the
+workflow's entry always, because a board with nowhere to start reads as one
+missing its first step. On hold is the exception in the other direction: it is
+where work steps out of the flow, so an empty one is a column for a thing that
+has not happened, and it is drawn only while it holds something.
+
+**Dragging a card is a second way to reach one move, never a second move.** It
+goes through the same function and the same gates as the select on the card,
+so a gate that refuses refuses either way and says so in the same place — on
+the card it was made on. What the drag adds is that the board answers while
+the card is still in hand: every column the workflow allows is marked and
+every other dimmed, which is this file's own rule about constraining an
+invalid choice rather than reporting it afterwards. A column that needs
+something typed before it means anything is not a drop target at all; Blocked
+takes a category, and a category is asked for on the record. And it is a
+pointer affordance only: a finger fires no drag events and a keyboard has no
+drag, so the select stays on every card and nothing that could move a stage
+before can move one less easily now. An interaction available to one input is
+an addition; the same interaction replacing the control everybody else used is
+a regression.
+
 **A card on a board is read in the order a board is scanned.** What it is, whose it is, when it is owed. The board card led with its serial in the token face at the same size as the client beside it, and carried no owner at all — the one fact a board exists to show, and the fact that decides whether a column is anybody's problem. The serial is demoted into the mute meta line, because a number is how a card is quoted in a message and never why somebody is looking at it; the title is the weight and is what opens the task; the foot is the owner as a small initials disc and a name, with the due date ending the line. The disc is the same device a contacts list uses and works here for the reason it failed on the creators list: a board column is a handful of people's work, not four hundred names in one alphabet.
 
 **A control that is the same shape at every value is a control that says nothing.** The stage select on a task was toned only for terminal and waiting stages, so eight of the thirteen — Intake, Ready, In progress, Shooting, Editing, Revision, Approved, Delivered — drew the same neutral box, and a column of them could not be read down for where the work had got to, which is the one thing the control is there for. Four families, keyed on the stage group the workflow already carries: not started is mute, the work in hand carries no paint because it is the ordinary case and the accent marks the exception, anything waiting on a person is warn, anything cleared is green, and blocked is red, because it is a refusal. That is the palette this file already has; nothing new was added to make a stage legible.
