@@ -2,11 +2,15 @@
  * Register — every document the portal has issued or been told about, and
  * the sheet that issues one.
  *
- * The list is the documents table with the Letters of Offer left to the
- * client record that owns them. Rows are banded by family (quotation covers,
- * client letters, HR letters, other), and an HR row reaches this page only
- * where the database's own policy lets it: HR is its own section in the
- * access ladder, so nothing here decides who may read a colleague's letter.
+ * The list is every reference this portal has issued: the documents table,
+ * and the Letters of Offer, which live in a table of their own because a
+ * letter of words and a priced snapshot are not one shape. Leaving them out
+ * meant the verify page answered a reference the Documents section had never
+ * heard of, and the team kept two lists in their heads. Rows are banded by
+ * family (quotation covers, Letters of Offer, client letters, HR letters,
+ * other), and an HR row reaches this page only where the database's own
+ * policy lets it: HR is its own section in the access ladder, so nothing
+ * here decides who may read a colleague's letter.
  *
  * The issue sheet is one sheet for every kind. The client record opens it
  * with the client fixed (`openIssue({ client })`); the Register opens it with
@@ -18,6 +22,9 @@
   var API = window.ADspaceAPI;
   var db  = API && API.client;
   var LET = window.ADspaceLetters;
+  /* The Letter of Offer's own engine: it is redrawn from a priced snapshot,
+     which js/letters.js knows nothing about. */
+  var DOCS = window.ADspaceDocs;
   var UI  = window.ADspaceState;
   var bridge = window.ADspaceAdmin || {};
   if (!API || !API.configured || !db || !LET || !UI) return;
@@ -47,10 +54,19 @@
   function mayFamily(family, level) {
     if (family === 'hr') return may('register.hr', level);
     if (family === 'other') return may('register.documents', level);
+    /* A Letter of Offer is a client's document and answers to the client
+       record's part alone, which is the policy on its own table. It is not
+       the Register's to issue or to correct: it is issued from the record
+       that holds the service lines it prices. */
+    if (family === 'offer') return may('clients.documents', level);
     return may('register.documents', level) || may('clients.documents', level);
   }
   /* The part a row's acts name in `data-need`, on the Register. */
-  function needOf(family) { return family === 'hr' ? 'register.hr' : 'register.documents'; }
+  function needOf(family) {
+    if (family === 'hr') return 'register.hr';
+    if (family === 'offer') return 'clients.documents';
+    return 'register.documents';
+  }
 
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   function menuItem(action, label, cls, need) {
@@ -80,8 +96,11 @@
 
   // ---- The list ------------------------------------------------------------
   var state = { docs: null, clients: [], members: [], types: [], me: null, find: '', fam: '', sort: 'newest', err: null };
-  var FAMILIES = ['quote_cover', 'client', 'hr', 'other'];
-  var BAND = { quote_cover: 'Quotation covers', client: 'Client letters', hr: 'HR letters', other: 'Other documents' };
+  var FAMILIES = ['quote_cover', 'offer', 'client', 'hr', 'other'];
+  var BAND = {
+    quote_cover: 'Quotation covers', offer: 'Letters of Offer',
+    client: 'Client letters', hr: 'HR letters', other: 'Other documents'
+  };
 
   function clientOf(id) { return state.clients.filter(function (c) { return c.id === id; })[0]; }
   function memberOf(id) { return state.members.filter(function (m) { return m.id === id; })[0]; }
@@ -121,6 +140,10 @@
     if (!box) return;
     if (!box.querySelector('.crm-table')) UI.skeleton(box, 5);
     state.err = null;
+    /* Only ask for what this person may read. A permission not held is not a
+       refusal to report: the band simply is not theirs, and asking anyway
+       would fail the whole register over a family they cannot see. */
+    LET.listAll.offers = mayFamily('offer', 'view');
     loadPeople(function () {
       LET.listAll(function (rows, err) {
         if (err) { state.err = err; UI.failLine(box, 'the register', err.message || String(err), load); return; }
@@ -202,8 +225,15 @@
     /* `need` is the part the row answers to (`register.documents`,
        `register.hr`, or `clients.documents` on the record); the level is
        the act's own: reissue is work, void and delete are manage. */
+    /* A Letter of Offer is read here and lives on the client record: it is a
+       priced snapshot, and every act on it (Mark signed, Verify, Void,
+       Delete) turns on which service lines it holds, which is a fact the
+       register has not loaded and must not guess at. So the row offers what
+       it can answer for — the file and the record — and the rest is one press
+       away, where the consequence can be counted. */
+    var offer = d.family === 'offer';
     var el = document.createElement('div');
-    el.className = 'svc-row reg-row' + (d.voided_at ? ' is-off' : '');
+    el.className = 'svc-row reg-row' + (d.voided_at || d.superseded_by ? ' is-off' : '');
     /* The kind, and who issued it where the portal did. A row added by hand
        says nothing about how it arrived and names nobody: an import is not a
        person, and the fact is in the ⋯ (Edit is offered on it). */
@@ -216,7 +246,9 @@
         /* The version a reissue replaced says so, because on this list the
            team can see both versions and the word tells them which is which;
            the verify page never says it. */
-        (d.voided_at ? ' <span class="tone">' + (d.void_reason === 'Reissued' ? 'Reissued' : 'Void') + '</span>' : '') + '</b>' +
+        (d.voided_at || d.superseded_by
+          ? ' <span class="tone">' + esc(d.voided_at ? (d.void_reason === 'Reissued' ? 'Reissued' : 'Void') : 'Superseded') + '</span>'
+          : '') + '</b>' +
         '<small>' + esc(sub) + '</small></span>' +
       '<span class="reg-who">' + esc(whoOf(d)) + '</span>' +
       '<span class="reg-date">' + esc(niceDate(d.issued_at)) + '</span>' +
@@ -225,12 +257,16 @@
         '<div class="kmenu" data-menu hidden>' +
           (d.source === 'portal' ? menuItem('download', 'Download') : '') +
           (d.file_url ? menuItem('open', 'Open file') : '') +
-          (d.source === 'manual' ? menuItem('edit', 'Edit', '', need + ':work') : '') +
-          /* A portal document is corrected by reissuing it: the same serial,
-             the earlier version kept and voided as Reissued. */
-          (d.source === 'portal' && !(d.voided_at && d.void_reason === 'Reissued') ? menuItem('reissue', 'Reissue', '', need + ':work') : '') +
-          (d.voided_at ? '' : menuItem('void', 'Void', 'is-danger', need + ':manage')) +
-          menuItem('del', 'Delete permanently', 'is-danger', need + ':manage') +
+          (offer ? menuItem('record', 'Open client record') : '') +
+          (offer ? '' :
+            (d.source === 'manual' ? menuItem('edit', 'Edit', '', need + ':work') : '') +
+            /* A portal document is corrected by reissuing it: the same serial,
+               the earlier version kept and voided as Reissued. */
+            (d.source === 'portal' && !(d.voided_at && d.void_reason === 'Reissued') ? menuItem('reissue', 'Reissue', '', need + ':work') : '') +
+            (d.voided_at ? '' : menuItem('void', 'Void', 'is-danger', need + ':manage')) +
+            /* Delete, not "Delete permanently": the menu has named what this
+               is and the sheet states that there is no restore. */
+            menuItem('del', 'Delete', 'is-danger', need + ':manage')) +
         '</div>' +
       '</span>';
     wireMenu(el);
@@ -241,9 +277,24 @@
       if (window.ADspaceCopy) window.ADspaceCopy.to(this, d.serial);
     });
     on('download', function () {
+      /* Two engines, because they are two documents: a Letter of Offer is
+         redrawn from its priced snapshot by js/documents.js, every other
+         document from its words by js/letters.js. */
+      if (offer) { DOCS.download(d.offer, function (warn) { if (warn) say(warn, 'err'); }); return; }
       LET.download(d, function (warn) { if (warn) say(warn, 'err'); });
     });
     on('open', function () { window.open(d.file_url, '_blank', 'noopener'); });
+    /* The letter's own acts live on the record that priced it, so the row
+       carries the way there rather than a copy of them. The address is
+       written first, the way the bell opens a task, because the Clients
+       section reads it on entry. */
+    on('record', function () {
+      var c = clientOf(d.client_id);
+      var key = (window.ADspaceCRM && c && window.ADspaceCRM.keyOf(c)) || d.client_id;
+      if (!key) return;
+      history.replaceState(null, '', '/admin/?client=' + encodeURIComponent(key) + '&tab=documents');
+      if (bridge.show) bridge.show('clients');
+    });
     on('edit', function () { openAdd(d, onChange); });
     on('reissue', function () { openIssue({ reissue: d, onDone: onChange, msg: sayTo }); });
     on('void', function () { openVoid(d, onChange); });

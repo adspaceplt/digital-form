@@ -611,6 +611,24 @@ needs a category) is never in that select; it is asked for on the record.
 
 **The control that explains a thing comes from that control, and never opens by itself.** The line saying what a section is for was a block under the command bar, so it could only be reached from that route's directory: open a client, a campaign or a task and the bar is off the screen, and the one control that explains the section did nothing at all. It is a panel hung off the section's name now, which works in every state of every route. What it must not do is open on arrival: a surface over the page lands on the command bar, which is the row somebody came to use, and on a phone it intercepts the press. While a route is new the title's glyph carries the action colour instead, so the invitation is on the control and the screen stays the reader's; after three visits even that retires. And the line is **one sentence**: the first pass ran to two and named the panes inside a record, which explains the product rather than the section.
 
+**A navigation rail is ordered by how often each route is opened, and its two
+ends are the only positions that are genuinely different.** The serial position
+effect is usually quoted as "first and last are remembered"; in an
+always-visible rail it is a claim about where the eye lands and how quickly a
+place is found, and it still holds. So the first slot goes to the route opened
+many times a day — here the task queue somebody opens on arrival — and the last
+to the route a person must be able to place without scanning, which by every
+convention is the settings-like one. What is then lost in the middle is what is
+opened by an event rather than by habit, and that is the right thing to lose.
+Eight items is past Miller's comfortable span, so they are two chunks of four
+under their own labels; a chunk whose every item is withheld hides its label
+with it, because a heading over nothing is a table header over no rows. The
+axis that was weighed and rejected is client-facing against internal: every
+route in a console is internal, and half of them produce something a client
+eventually sees, so it divides nothing. And the sequence, once chosen, is the
+sequence everywhere it appears — the rail, the activity record's tabs, the
+permission panel's blocks — because a person can hold one order and not four.
+
 **A destructive item is red whether or not it carries a bold child.** The colour hung off `.kmenu-item.is-danger b`, so Delete on the client record — the one such item written as plain text — read in ordinary ink beside Edit and said nothing about what it does. A rule about a state belongs on the element that carries the state.
 
 **A verb does not repeat the noun the context has already given.** Delete client, Delete campaign, Delete link, Delete permanently: four labels for one act, each naming what the menu it sits in has already named. The item is **Delete**, and the consequence is stated where it belongs — in the sheet that asks, which says what goes and that there is no restore. Asked for by the user on 2026-09-22, and it is the rule this file already carried ("no object the context gives"); the examples that contradicted it are corrected.
@@ -1091,6 +1109,8 @@ one question it was drawn to answer with nothing.
 **One number, two parties, two meanings.** A booking's rate is what the client is quoted: it carries the agency's markup and is the figure the client's own selection page prints beside each creator. The creator's page read the same column and captioned it "Your fee", so the creator was shown the client's price and told it was their payment. Nothing about the column changed between those two screens; only who was reading it. Before a figure is put on a page, the question is not "is this the right field" but "whose number is this, and what will the person reading it take it to mean" — and where the two answers differ, the field does not travel. What a creator is owed is agreed with them and claimed on its own form, so their page needs no figure at all, and the one that existed is withheld by the function rather than hidden by the page, because the page is one anybody can open.
 
 **A test can codify the leak it should have caught.** The assertion here read `their own fee, not the client's amount` and checked for `RM 380` — the client's amount. It passed on every run for as long as the defect existed, and its own name argued the defect was correct. A test that asserts a *value* is only as good as the belief behind the value; where a fact is withheld, assert the withholding — that the key is absent from what the function returned — because that is the thing the rule is actually about.
+
+**An Undo covers a press you noticed.** This portal's answer to a destructive click is a soft remove and a visible Undo, and that was argued — here, in writing — to be better than a dialog, because a dialog taxes the everyday case to protect the rare one. It holds only while the person knows they pressed. The × that takes a creator's handed-in file off sits in the corner of the card their video is playing in; an accidental press there is one nobody sees, the eight seconds run out, and the work is gone with no way back but asking the creator to upload it again. Where the act destroys somebody else's work and the control sits inside the thing being looked at, the question is asked first — in place, taking the control's own position, naming what it would cost — and the soft remove and the Undo stay behind it. Three steps, not one. The test for which pattern applies is not how rare the act is but whether the person will know they made it.
 
 **A record of a decision holds every party to it.** The activity record is what
 answers "who approved this, and when", and it held only what the team did: a

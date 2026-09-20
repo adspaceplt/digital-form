@@ -120,12 +120,17 @@
 
   /* client: the record. picked: the service rows the person chose. deal: the
      display facts the record knows that the client row does not spell out.
-     opts: { idem, replaces, renewal }. */
+     opts: { idem, replaces, renewal, serial }. A blank serial is the everyday
+     case and the database numbers the letter; one typed here is checked
+     against every document that stands and spends no sequence number. */
   function issue(kind, client, picked, deal, opts, then) {
     opts = opts || {};
     var use = (picked || []).filter(function (l) { return l && !l.archived_at; });
     if (!use.length) { then({ error: 'Choose at least one service.' }); return; }
-    if (!String(client.client_code || '').trim()) {
+    var serial = String(opts.serial || '').trim();
+    /* The Client ID builds an automatic reference and nothing else, so it is
+       needed only where none has been typed. */
+    if (!serial && !String(client.client_code || '').trim()) {
       then({ error: 'Add a Client ID to this client before issuing a letter.' });
       return;
     }
@@ -139,7 +144,8 @@
       p_deal: { owner: deal.owner || '', source: deal.source || '', industry: deal.industry || '',
                 stage: deal.stage || '', enquiry: deal.enquiry || '' },
       p_replaces: opts.replaces || null,
-      p_renewal: Boolean(opts.renewal)
+      p_renewal: Boolean(opts.renewal),
+      p_serial: serial || null
     }).then(function (r) {
       /* The migration has to be in place before the site is. Until it is, the
          function is missing and nothing is written at all — a half issued
@@ -178,6 +184,8 @@
     'not-signed': 'Mark the letter signed before verifying it.',
     'no-mapping': 'This letter was issued before the change and cannot be verified. Confirm its services by hand.',
     'clash': 'Two letters were issued at once. Try again.',
+    'serial-taken': 'That reference belongs to a document that still stands.',
+    'serial-shape': 'A reference is 3 to 40 characters: letters, numbers and / . _ -',
     'reason-required': 'Say why.',
     'not-verified': 'Only a verified letter is voided. An issued or signed letter is deleted instead.',
     'confirm-mismatch': 'That is not this letter\'s reference.',
