@@ -70,6 +70,16 @@
   function show(box, o) {
     o = o || {};
     if (open) shut();
+    /* **A sheet belongs to the page, not to the list it was authored in.** It
+       is `position: fixed`, so where it sits in the DOM decides nothing about
+       where it draws — except that an ancestor which is `hidden` hides it
+       completely. The client form is authored inside the clients list, and
+       that list is hidden the moment a record is open, so Edit on a record
+       opened a sheet nobody could see. The form used to be carried into the
+       record by hand for that reason; moving every sheet to the page once, on
+       first open, is the same fix made once instead of per form. Listeners and
+       typed values survive a move, and a second open costs nothing. */
+    if (box.parentNode !== document.body) document.body.appendChild(box);
     box.hidden = false;
     open = { box: box, opener: o.opener || null, dirty: false, onClose: o.onClose || null };
     document.addEventListener('keydown', onKey, true);
