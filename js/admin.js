@@ -124,23 +124,51 @@
     if (e.key === 'Enter') $('authSend').click();
   });
 
-  /* Dark is the console's and this browser's: chosen here, remembered here,
-     and never taken from the system. The head script has already applied it
-     before first paint; this only flips it and writes the choice down. The
-     button names the theme it switches to, as a light switch does. */
+  /* Dark is the console's and this browser's. It starts from the device,
+     because a tool the team sits in all day should arrive in the register
+     their machine is already in, and a choice made here wins over it for
+     ever. The client pages are untouched: they carry no dark at all, which is
+     the half of that rule that was ever about a client deciding something in
+     a register nobody chose. The head script has already applied the answer
+     before first paint; this flips it and writes the choice down. */
+  var sysDark = window.matchMedia
+    ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  function stored() {
+    try { return localStorage.getItem('adspace-theme'); } catch (e) { return null; }
+  }
+  /* The button names the theme it switches *to*, as a light switch does, and
+     the glyph is the whole of it, so the name is the label. */
   function paintTheme() {
     var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-    $('themeWord').textContent = dark ? 'light' : 'dark';
-    $('themeToggle').setAttribute('aria-pressed', String(dark));
+    var btn = $('themeToggle');
+    btn.setAttribute('aria-pressed', String(dark));
+    btn.setAttribute('aria-label', dark ? 'Switch to light' : 'Switch to dark');
+  }
+  function wearTheme(dark) {
+    if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.removeAttribute('data-theme');
+    paintTheme();
   }
   $('themeToggle').addEventListener('click', function () {
     var dark = document.documentElement.getAttribute('data-theme') !== 'dark';
-    if (dark) document.documentElement.setAttribute('data-theme', 'dark');
-    else document.documentElement.removeAttribute('data-theme');
-    try { localStorage.setItem('adspace-theme', dark ? 'dark' : 'light'); } catch (e) {}
-    paintTheme();
-    shutAcct();
+    wearTheme(dark);
+    /* Switching *to* what the device already shows is switching back to
+       following it, so nothing is stored and the machine keeps the console at
+       sunset. That is what stops a two state switch becoming a one way door:
+       press it twice and the setting is gone rather than pinned to the value
+       it happened to land on. */
+    try {
+      if (sysDark && sysDark.matches === dark) localStorage.removeItem('adspace-theme');
+      else localStorage.setItem('adspace-theme', dark ? 'dark' : 'light');
+    } catch (e) {}
   });
+  /* The device changing carries the console with it, but only while nobody
+     has chosen: a stored answer is a decision and is not overruled by dusk. */
+  if (sysDark) {
+    var follow = function (e) { if (!stored()) wearTheme(e.matches); };
+    if (sysDark.addEventListener) sysDark.addEventListener('change', follow);
+    else if (sysDark.addListener) sysDark.addListener(follow);
+  }
   paintTheme();
 
   /* The account control. Who you are, the register you read in and the way
@@ -320,6 +348,13 @@
   var OPS_GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
+    /* No key is no access, never an exception. A permission check that throws
+       takes the whole console down with it, which is what an unnamed key did
+       here once; and where it cannot answer it refuses, which is the posture
+       the rest of the ladder already states. The admin answer deliberately
+       stays *below* this, or a bug reaches only the people without the
+       permission to survive it — which is exactly how this one hid. */
+    if (!key) return 0;
     if (!me) return 0;
     if (me.is_admin || me.role === 'admin') return 3;
     var acc = me.access || {};
@@ -581,8 +616,14 @@
     if (name === 'links') { loadLinks(); restoreScroll(); }
   }
 
+  /* Every `.navitem` that names a section, which is what this function is
+     asked for: `applyAccess` puts each one's `data-section` to the ladder, so
+     a `.navitem` without one is a question the ladder cannot answer. The rail
+     carries a row that is not a section (the Activity record at its foot) and
+     that row is a `.railrow`, not a `.navitem` — the selector states the
+     requirement rather than trusting the markup to keep it. */
   function navItems() {
-    return Array.prototype.slice.call(document.querySelectorAll('.navitem'));
+    return Array.prototype.slice.call(document.querySelectorAll('.navitem[data-section]'));
   }
   navItems().forEach(function (b) {
     b.addEventListener('click', function () { showSection(b.getAttribute('data-section')); });

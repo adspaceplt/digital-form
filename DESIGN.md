@@ -32,16 +32,16 @@ palette can never be bought with legibility.
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--ink` | `#1b1a17` | `#eff0ea` | Text |
-| `--ink-soft` | `#524e47` | `#c6c8be` | Secondary text, default button text |
-| `--ink-mute` | `#6b6760` | `#a6a89e` | Labels, hints, quiet buttons (4.5:1 on every background) |
-| `--line` | `#e2dfd8` | `#3a3c36` | Card borders, table rules |
+| `--ink` | `#1b1a17` | `#f2efec` | Text |
+| `--ink-soft` | `#524e47` | `#cdc8c3` | Secondary text, default button text |
+| `--ink-mute` | `#6b6760` | `#ada8a3` | Labels, hints, quiet buttons (4.5:1 on every background) |
+| `--line` | `#e2dfd8` | `#3e3b38` | Card borders, table rules |
 | `--line-soft` | `#ececec` | `#2e2e2e` | Row dividers, the selected fill |
-| `--line-ctl` | `#8e8a80` | `#83857c` | Input, select, textarea and outline button borders: 3:1 on every background |
-| `--page` | `#f5f5f5` | `#161814` | The ground. ADspace's own off white, the one paired with `#1a1a1a` on the website: a brand value, not a tuned one, and never "corrected" back to a warm grey |
-| `--card` | `#ffffff` | `#1e201d` | Panels, tables, rows |
+| `--line-ctl` | `#8e8a80` | `#898480` | Input, select, textarea and outline button borders: 3:1 on every background |
+| `--page` | `#f5f5f5` | `#171717` | The ground. ADspace's own off white, the one paired with `#1a1a1a` on the website: a brand value, not a tuned one, and never "corrected" back to a warm grey |
+| `--card` | `#ffffff` | `#1f1f1f` | Panels, tables, rows |
 | `--sunk` | `#f9f9f9` | `#272727` | Inset areas, table sub-headings, hover |
-| `--fill` / `--on-fill` | `#1b1a17` / `#ffffff` | `#eff0ea` / `#191b17` | The solid ink surface and its text: primary button, selected `.acttab`, progress. **Not the Undo bar**: a full width ink slab a few pixels above an ink Add contact read as one enormous call to action, and the fill is what names the primary action |
+| `--fill` / `--on-fill` | `#1b1a17` / `#ffffff` | `#f2efec` / `#1c1a19` | The solid ink surface and its text: primary button, selected `.acttab`, progress. **Not the Undo bar**: a full width ink slab a few pixels above an ink Add contact read as one enormous call to action, and the fill is what names the primary action |
 | `--action` | `#0b57d0` | `#a8c7fa` | **Blue means forward action.** Publish, Release, Submit and the client's Approve use it; ordinary Add, Create and Save operations use the ink fill. White on `#0b57d0` is 6.39:1 and clears AA for normal text; Apple's own `#007aff` manages 4.02:1 with white on it and is not an option for a button this size. In dark the fill is light, so the pair swaps like every other fill here |
 | `--action-hover` / `--action-pressed` | `#0847ae` / `#063989` | `#c2dafc` / `#d3e3fd` | Its hover and its pressed step, both stated, because a button that answers nothing under the pointer reads as furniture |
 | `--on-action` | `#ffffff` | `#062e6f` | Its text. 8.5:1 in dark |
@@ -53,7 +53,7 @@ palette can never be bought with legibility.
 | `--warn-solid` / `--on-warn` | `#9c5c16` / `#ffffff` | `#cf9350` / `#1d1408` | A warn fill and its text |
 | `--err` / `--err-bg` / `--err-line` / `--err-hi` | `#b3261e` / `#fdeceb` / `#e9b9b5` / `#8c1d18` | `#e8837a` / `#2e1d1b` / `#6a3a35` / `#f2a9a2` | `.msg.err`, danger menu items, the one danger button; `--err-hi` is the pressed step, never a second red |
 | `--focus` | `rgba(31,122,77,.18)` | `rgba(74,168,118,.30)` | The focus ring, on every control, never removed |
-| `--chrome` | `rgba(255,255,255,.88)` | `rgba(22,24,20,.88)` | The translucent sticky bars (top bar, console head, confirm bar) |
+| `--chrome` | `rgba(255,255,255,.88)` | `rgba(23,23,23,.88)` | The translucent sticky bars (top bar, console head, confirm bar) |
 | `--scrim` | `rgba(0,0,0,.42)` | `rgba(0,0,0,.62)` | Behind a sheet |
 | `--shadow` | `0 1px 2px rgba(19,24,26,.05)` | `0 1px 2px rgba(0,0,0,.5)` | Panels only |
 | `--shadow-lift` | menus only | menus only | Nothing else casts a shadow |
@@ -113,6 +113,23 @@ the selected item keeps exactly the contrast it had and simply stops being
 the one warm patch on a neutral screen. The warmth stays on the marks:
 `--line` (borders) and the whole ink ramp.
 
+**And that rule is the dark palette's too, which it was not until 2026-09-21.**
+Dark had been written once and never held to it, and it had drifted onto a
+different hue axis entirely: measured, every non-neutral token in it sat at
+**hue 70 to 100 degrees** — yellow-green — while light's warm marks sit at
+**42**. A small warm cast at `#f5f5f5` is a considered off-white; the same
+chroma on an olive axis at `#161814` is mud, and the user reported exactly
+that, comparing the console against another dark application and calling it
+brownish. So `--page` and `--card` are neutral in dark as they are in light,
+because they are the two largest surfaces and are what the eye calls the
+colour of the application; `--sunk` and `--line-soft` already were. The ink
+ramp and the borders keep their warmth and keep it **on light's own axis**,
+not a second one. Every replacement holds the luminance of the value it
+replaced, so no documented contrast pair moves: `--ink` on `--page` goes
+15.60 to 15.65, `--line-ctl` on `--card` 4.39 to 4.46. The lesson is the one
+this file keeps relearning about tokens — a rule is only true where nothing
+later disagrees, and a palette written in two places is two palettes.
+
 A filled surface is **not** set to `--page`. `#f5f5f5` is the page's own
 value, and the sidebar it would sit on is white: selected would fall from
 1.18:1 to 1.09:1 against that white and the gap to hover would collapse
@@ -122,21 +139,37 @@ paint to reach for wherever a grey is needed.
 
 ### Themes
 
-**Light is the default everywhere. Dark is the console's, and only ever
-by choice.** It is deliberately not taken from `prefers-color-scheme`: a
-client who happens to keep their phone in dark mode would be deciding on
-a proposal in a register nobody chose for that conversation, and the mood
-a decision is made in is not ours to set by accident. So:
+**Light is the client's, always. Dark is the console's, and the console
+starts from the device.** The rule used to read "light everywhere, dark only
+ever by choice, never from `prefers-color-scheme`", and the reason given for
+it was entirely about one party: a client who keeps their phone in dark mode
+would be deciding on a proposal in a register nobody chose for that
+conversation, and the mood a decision is made in is not ours to set by
+accident. That reason is untouched and the client half of the rule is
+unchanged. It never applied to the console, which is the team's own tool,
+where nobody is approving anything and where arriving in a register their
+machine is not in is the thing that reads as wrong. Changed at the user's
+request on 2026-09-21. So:
 
 - `/client/`, `/creators/` and `/review/` have **no dark at all**. They
-  never carry `data-theme`, whatever is in that browser's storage.
-- `/admin/` carries a toggle in the sidebar foot, above Sign out, naming
-  the theme it switches to the way a light switch does. The choice is
-  kept in `localStorage` under `adspace-theme`, per browser, never on the
-  account.
-- A four-line script in the console's `<head>` applies the stored choice
-  before the stylesheet paints, so choosing dark does not flash white on
-  every load.
+  never carry `data-theme`, whatever is in that browser's storage and
+  whatever the device is set to.
+- `/admin/` **follows the device until somebody chooses**, and a choice then
+  wins for ever. The switch is in the console bar (`.themeswitch`), naming
+  the theme it moves to the way a light switch does. The choice is kept in
+  `localStorage` under `adspace-theme`, per browser, never on the account.
+- **Switching to the register the device already shows clears the choice**
+  rather than storing it, so the setting is never a one way door: press the
+  switch twice and the console is following the machine again. That is what
+  lets a two state control carry a three state model without a third press
+  nobody would find, and it is why the machine still takes the console into
+  dark at dusk for anyone who has not decided otherwise.
+- A `matchMedia` listener follows the device while nothing is stored and is
+  ignored the moment something is. A stored answer is a decision, and dusk
+  does not overrule a decision.
+- The script in the console's `<head>` resolves both before the stylesheet
+  paints, so neither the stored choice nor the device's own setting flashes
+  the other register on every load.
 - The palette hangs off `:root[data-theme="dark"]`, never a media query,
   and `color-scheme` follows it so the browser's own chrome (select
   popups, scrollbars, the caret) matches.
@@ -1491,6 +1524,24 @@ floating in the dead space. A creator is a person with a fee, so the row is the
 one every other list of records uses, and edit and delete went into the ⋯ where
 a destructive action belongs. Before reaching for a component, check that what
 it was built to say is what this screen says.
+
+**And a class can carry behaviour as well as a look, which is the version of
+that mistake a screenshot cannot show.** The Activity record moved to the foot
+of the rail and took `.navitem` for its geometry, so the column would read as
+one column. `.navitem` does not mean "a row in the rail"; it means **a section
+of the console**, and `navItems()` reads every one of them and puts its
+`data-section` to the ladder. The new row had none, so `level(null)` threw and
+the console did not draw at all — for **everybody except an admin**, because
+`level()` answers an admin on the line above the one that reads the key. Three
+things follow, and the third is the one worth keeping. The shape is its own
+class (`.railrow`) and the meaning keeps its name, which is the rule above
+applied to a class rather than to a look. A selector that a function depends
+on states the dependency (`.navitem[data-section]`), rather than trusting every
+future author to know it. And **a permission check refuses where it cannot
+answer and never throws**: `level()` returns 0 for a missing key, above the
+admin branch, because a check that explodes takes the whole page with it, and
+one that is *skipped* for the most privileged reader is a fault that reaches
+only the people least able to work around it.
 
 **One action is an action, not a banner.** The rule the section head already
 carried (`.viewhead .btn:only-of-type`) was missed by every other bar, so on a
