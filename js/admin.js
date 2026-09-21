@@ -2853,8 +2853,17 @@
      live, and the field's prefix is only on screen while one is being added.
      go.adspace.me is named because the QR codes printed before this portal
      encode it whole and keep working. */
-  if ($('linkNote')) $('linkNote').innerHTML = 'Short links redirect from <b>' + LINK_HOST + '</b>. ' +
-    'Codes printed with <b>go.adspace.me</b> keep working.';
+  /* Both hosts open, because the fastest way to know a redirector is alive is
+     to follow it, and the bare host answers rather than refusing: the Worker
+     sends it to the website, since somebody who types it has half a URL. Drawn
+     the way the Register's routenote draws /verify — an underlined link in a
+     new tab, no external mark, because the quiet line is a fact and not a row
+     of controls. */
+  if ($('linkNote')) $('linkNote').innerHTML = 'Short links redirect from ' +
+    hostLink(LINK_HOST) + '. Codes printed with ' + hostLink('go.adspace.me') + ' keep working.';
+  function hostLink(h) {
+    return '<a href="https://' + esc(h) + '" target="_blank" rel="noopener">' + esc(h) + '</a>';
+  }
   var links = [];
   var editingSlug = null;
 
@@ -2986,6 +2995,14 @@
           '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
             '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
+            /* Live is a lifecycle flag flipped once in the life of a row, so
+               it is a chip on the row and an item here, never a field in the
+               form and never a select on every line — the shape a rate card
+               line and a colleague already take. It was neither for months:
+               the register banded Live and Paused and the delete sheet said
+               "pause it instead", with nothing anywhere that could. */
+            '<button class="kmenu-item" data-a="live" data-need="links:work" type="button"><b>' +
+              (off ? 'Resume' : 'Pause') + '</b></button>' +
             '<button class="kmenu-item is-danger" data-a="del" data-need="links:manage" type="button"><b>Delete</b></button>' +
           '</div>' +
         '</span>';
@@ -2996,6 +3013,9 @@
       row.querySelector('[data-a="qr"]').addEventListener('click', function () { openQr(l); });
       row.querySelector('[data-a="edit"]').addEventListener('click', function () {
         shutLinkMenus(); editLink(l);
+      });
+      row.querySelector('[data-a="live"]').addEventListener('click', function () {
+        shutLinkMenus(); setLinkLive(l, off);
       });
       row.querySelector('[data-a="del"]').addEventListener('click', function () {
         shutLinkMenus(); removeLink(l);
@@ -3067,6 +3087,47 @@
         loadLinks();
       });
     });
+  }
+
+  /* Pausing stops a link somebody has already printed, so it says what it
+     costs before it goes; resuming is the way back and the way back never
+     asks. The write takes `.select('id')`, because a policy can refuse an
+     update and PostgREST answers a refused one with no error at all — a
+     repaint over a row that has not changed is indistinguishable from a page
+     that did not repaint. */
+  function setLinkLive(l, live) {
+    var run = function () {
+      db.from('links').update({ active: !!live }).eq('slug', l.slug).select('id')
+        .then(function (r) {
+          if (r.error) { msg('linkMsg', r.error.message, 'err'); return; }
+          if (!r.data || !r.data.length) {
+            msg('linkMsg', 'Not saved. The database refused the request.', 'err');
+            return;
+          }
+          /* `shortlink.updated`, not a tag of its own: pausing is a change to
+             the link, the record already names that, and a new tag would have
+             to be added to `ACTION_LABEL` and to `activity_section()` in SQL
+             in the same breath or it lands in the record with no word and no
+             section. What happened is the detail. */
+          logAction('shortlink.updated', '/' + l.slug, live ? 'Resumed' : 'Paused');
+          /* The row leaves the card somebody was looking at, and Paused is
+             shut by default and empties itself, so a pause would otherwise
+             take the row off the screen with nothing saying where it went.
+             The card it moves into is opened, and the fold is remembered the
+             way any other fold is: somebody who has just paused a link is
+             somebody who wants that card open. */
+          window.ADspaceGroup.keep('links', live ? 'live' : 'paused', false);
+          loadLinks();
+        });
+    };
+    if (live) { run(); return; }
+    window.ADspaceConfirm.ask({
+      title: 'Pause',
+      body: '/' + l.slug + ' stops redirecting, wherever it is already printed, '
+          + 'posted or sent. Resume puts it back.',
+      go: 'Pause',
+      tone: 'warn'
+    }, run);
   }
 
   $('showAddLink').addEventListener('click', function () { openLinkForm(null, this); });

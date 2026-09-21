@@ -53,22 +53,43 @@
      "-5%" in one column hides that.
 
      A term the rate card does not name costs nothing either: a rule nobody has
-     written is not one to invent at quoting time. */
+     written is not one to invent at quoting time.
+
+     `word` qualifies the figure on a line that carries the adjustment; `adj`
+     names the adjustment on its own, for the control that asks whether to
+     apply it, because a tick is named for what pressing it does. */
   var TERMS = {
-    3:  { factor: 1 / 0.9,  word: '3 month term, 10% short term adjustment' },
-    6:  { factor: 1,        word: '' },
-    12: { factor: 0.95,     word: '12 month term, 5% discount' },
-    24: { factor: 0.9,      word: '24 month term, 10% discount' }
+    3:  { factor: 1 / 0.9,  word: '3 month term, 10% short term adjustment', adj: '10% short term adjustment' },
+    6:  { factor: 1,        word: '',                                        adj: '' },
+    12: { factor: 0.95,     word: '12 month term, 5% discount',              adj: '5% long term discount' },
+    24: { factor: 0.9,      word: '24 month term, 10% discount',             adj: '10% long term discount' }
   };
-  function termOf(months) { return TERMS[Math.max(1, Number(months || 1))] || { factor: 1, word: '' }; }
+  function termOf(months) { return TERMS[Math.max(1, Number(months || 1))] || { factor: 1, word: '', adj: '' }; }
   function termFactor(months) { return termOf(months).factor; }
   function termWord(months) { return termOf(months).word; }
+  function termAdj(months) { return termOf(months).adj || ''; }
+  /* The adjustment is asked for, never applied by itself. A line priced at
+     RM 400 over three months printed RM 444.44 because the factor was applied
+     to every line that had a term, so the rate somebody typed was not the rate
+     on the screen and they had to work backwards from it to see their own
+     figure. It is a tick on the line now (`client_services.term_adjust`).
+
+     Only an explicit `false` turns it off, and that asymmetry is load bearing:
+     an issued letter is a snapshot taken before the column existed, so its
+     lines carry no flag at all, and a missing flag has to redraw the figure
+     that was printed. New lines are stored with `false` and old ones were
+     backfilled to `true`, so nothing is left to the default. */
+  function adjusts(adjust) { return adjust !== false; }
   /* The rate the client is actually billed each month, rounded to the cent
      where it is charged so a monthly figure times its term cannot disagree
      with the total by a fraction of a sen. */
-  function rateFor(rate, months) {
-    return Math.round(Number(rate || 0) * termFactor(months) * 100) / 100;
+  function rateFor(rate, months, adjust) {
+    var f = adjusts(adjust) ? termFactor(months) : 1;
+    return Math.round(Number(rate || 0) * f * 100) / 100;
   }
+  /* The word beside the figure, which is only true where the tick is on: a
+     line billed at the rate that was typed has nothing to explain. */
+  function termNote(months, adjust) { return adjusts(adjust) ? termWord(months) : ''; }
 
   // Named the same wherever it is charged, because it is the same tax.
   function taxLabel() { return TAX.label; }
@@ -81,6 +102,8 @@
     taxLabel: taxLabel,
     termFactor: termFactor,
     termWord: termWord,
+    termAdj: termAdj,
+    termNote: termNote,
     rateFor: rateFor,
     TERMS: TERMS,
     sign: signOf,

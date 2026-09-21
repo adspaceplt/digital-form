@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260921d">
+<link rel="stylesheet" href="/css/portal.css?v=20260921e">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,25 +28,25 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260921d"></script>
-<script src="/js/words.js?v=20260921d"></script>
-<script src="/js/copy.js?v=20260921d"></script>
-<script src="/js/ask.js?v=20260921d"></script>
-<script src="/js/confirm.js?v=20260921d"></script>
-<script src="/js/sheet.js?v=20260921d"></script>
-<script src="/js/state.js?v=20260921d"></script>
-<script src="/js/group.js?v=20260921d"></script>
-<script src="/js/menu.js?v=20260921d"></script>
-<script src="/js/cmdbar.js?v=20260921d"></script>
-<script src="/js/api.js?v=20260921d"></script>
-<script src="/js/money.js?v=20260921d"></script>
-<script src="/js/mockups.js?v=20260921d"></script>
+<script src="/js/config.js?v=20260921e"></script>
+<script src="/js/words.js?v=20260921e"></script>
+<script src="/js/copy.js?v=20260921e"></script>
+<script src="/js/ask.js?v=20260921e"></script>
+<script src="/js/confirm.js?v=20260921e"></script>
+<script src="/js/sheet.js?v=20260921e"></script>
+<script src="/js/state.js?v=20260921e"></script>
+<script src="/js/group.js?v=20260921e"></script>
+<script src="/js/menu.js?v=20260921e"></script>
+<script src="/js/cmdbar.js?v=20260921e"></script>
+<script src="/js/api.js?v=20260921e"></script>
+<script src="/js/money.js?v=20260921e"></script>
+<script src="/js/mockups.js?v=20260921e"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260921d" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260921e" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -603,6 +603,15 @@
           <div class="row" style="margin-top:12px" id="svLabelRow" hidden>
             <div><label class="field-label" for="svLabel">Name</label>
               <input class="input" id="svLabel" placeholder="Service name"></div>
+          </div>
+          <!-- The term adjustment is asked for, never applied by itself: a
+               line typed at RM 400 over three months used to print RM 444.44
+               and the person quoting had to work backwards to their own
+               figure. The row is drawn only where the term carries a factor,
+               so a tick that would do nothing is never offered. -->
+          <div class="row" style="margin-top:12px" id="svAdjRow" hidden>
+            <label class="tickline"><input type="checkbox" id="svAdjust">
+              <span id="svAdjustWord">Apply the term adjustment</span></label>
           </div>
           <div class="row" style="margin-top:12px">
             <div><label class="field-label" for="svDetail">What it includes</label>
@@ -2449,11 +2458,20 @@ raya-2026        https://example.com/raya"></textarea>
          be ticked and there was then nothing to press. -->
     <div class="sheet-body">
       <p class="qc-who" id="qcWho"></p>
+      <!-- Who has already checked this file, and what the booking is waiting
+           for. Drawn only once somebody has: a first check reads as the
+           ordinary case and says nothing. -->
+      <p class="qc-note" id="qcNote" hidden></p>
       <div class="qclist" id="qcList"></div>
     </div>
+    <!-- Two ways out of the check and one way back. Release is the forward
+         action and keeps the blue; asking for a second pair of eyes records
+         the same check and holds the booking, so it is the ordinary outline
+         action beside it. It leaves once somebody has asked. -->
     <div class="sheet-foot qcfoot">
       <span class="lpicksum" id="qcCount"></span>
       <button class="btn btn-go" id="qcGo" type="button" disabled>Release to client</button>
+      <button class="btn" id="qcSecond" type="button" disabled>Ask a second reviewer</button>
       <button class="btn btn-quiet" id="qcCancel" type="button">Cancel</button>
     </div>
     <div class="msg" id="qcMsg"></div>
@@ -2641,13 +2659,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260921d"></script>
-<script src="/js/documents.js?v=20260921d"></script>
-<script src="/js/letters.js?v=20260921d"></script>
-<script src="/js/register.js?v=20260921d"></script>
-<script src="/js/crm.js?v=20260921d"></script>
-<script src="/js/team.js?v=20260921d"></script>
-<script src="/js/campaigns.js?v=20260921d"></script>
-<script src="/js/ops.js?v=20260921d"></script>
+<script src="/js/admin.js?v=20260921e"></script>
+<script src="/js/documents.js?v=20260921e"></script>
+<script src="/js/letters.js?v=20260921e"></script>
+<script src="/js/register.js?v=20260921e"></script>
+<script src="/js/crm.js?v=20260921e"></script>
+<script src="/js/team.js?v=20260921e"></script>
+<script src="/js/campaigns.js?v=20260921e"></script>
+<script src="/js/ops.js?v=20260921e"></script>
 </body>
 </html>
