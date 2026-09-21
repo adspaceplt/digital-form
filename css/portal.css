@@ -322,8 +322,12 @@ a { color: inherit; }
    it is also a pill with the value centred in it: `appearance: none` takes
    the pill away, and the value's own box is told to start at the left like
    every other field, because a date centred in a full width box on a phone
-   read as a button and not as a field. `display: block` keeps an empty field
-   at the control height, which iOS otherwise collapses to nothing. */
+   read as a button and not as a field. `min-height` keeps an empty field at
+   the control height, which iOS otherwise collapses to nothing, and the flex
+   centring is what puts the value on its middle. This comment said
+   `display: block` for some time after the rule had stopped using it, which
+   is how `tests/sch.js` came to assert a sentence rather than the mechanism:
+   a comment can go stale and a measurement cannot. */
 .input[type="date"], .input[type="time"] {
   line-height: 1.5; min-height: var(--ctl-h);
   appearance: none; -webkit-appearance: none; text-align: left;
@@ -669,7 +673,7 @@ a { color: inherit; }
    belongs where the client is looking. Drawn only when we do not hold a name
    already, so nobody is asked twice. */
 .changebox-who { margin-top: 9px; }
-.changebox-actions { display: flex; gap: 8px; margin-top: 9px; justify-content: flex-end; }
+.changebox-actions { display: flex; gap: 8px; margin-top: 9px; justify-content: flex-start; }
 .approve-state { margin-top: 10px; font-size: 12.5px; color: var(--ink-mute); }
 .approve-state b { color: var(--ink-soft); font-weight: 600; }
 .approve-note {
@@ -1720,7 +1724,7 @@ a { color: inherit; }
 /* Work in progress is warm, so it is obvious it is unfinished */
 .zone-draft { background: #fffaf2; border-color: #f0e2cd; }
 .zone-actions {
-  display: flex; justify-content: flex-end; gap: 10px; align-items: center;
+  display: flex; justify-content: flex-start; gap: 10px; align-items: center;
   margin-top: 18px; padding-top: 16px; border-top: 1px solid #f0e2cd;
 }
 
@@ -2186,7 +2190,6 @@ body.is-plain .topbar { background: var(--chrome); }
    is a surface and not a control, so it draws no ring; what it is there for is
    Escape, the focus trap and the dialog announcing itself. */
 .sheet-card[tabindex]:focus { outline: none; }
-.formsheet .sheet-foot { justify-content: flex-end; }
 @media (max-width: 560px) {
   .formsheet .sheet-foot > .btn { flex: 1 1 0; min-width: 0; }
 }
@@ -2196,7 +2199,6 @@ body.is-plain .topbar { background: var(--chrome); }
 .askfield + .askfield { margin-top: 12px; }
 .askfield > .input, .askfield > .select, .askfield > textarea.input { width: 100%; }
 .askfield .field-label { display: block; margin-bottom: 6px; }
-.askcard .sheet-foot.askfoot { justify-content: flex-end; }
 @media (max-width: 560px) {
   /* Two actions of the same standing are two halves, never a slab and a
      remnant: the rule the sheet foot already carries everywhere else. */
@@ -2208,11 +2210,33 @@ body.is-plain .topbar { background: var(--chrome); }
    screen rather than a predicate nobody can see. Ticked by default where the
    line is free to be quoted; shown and refused where it is already on a live
    letter, because the reason belongs on the screen with the thing it stops. */
+/* Every sheet in this console puts its actions in the same place: at the
+   start of the foot, on the card's own left margin, primary first. It was two
+   places — a form sheet and an ask card anchored their pair right while every
+   plain sheet (the task, the letter, the document, every void and delete) left
+   it at the start — so the hand learned a position on one screen and pressed
+   the wrong control on the next, which is the fault this file already names
+   for the button *order*. The serial position effect is not what governs it:
+   that is about a list somebody scans, and a pair is not a list. What governs
+   it is motor memory and Jakob, and once the order is fixed (primary first,
+   enforced by `uxaudit`'s `order` rule) the right edge is the wrong anchor —
+   it puts the way out in the corner every platform reserves for the primary.
+   The start of the foot is also the x every field label above it starts at. */
 .sheet-foot {
   display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  justify-content: flex-start;
   padding-top: 14px; border-top: 1px solid var(--line-soft);
 }
-.lpicksum { flex: 1 1 auto; font-size: 13px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+/* `.btn` is `flex: 1` at the base, so a bare one in a flex row grows: the
+   short link sheet's Cancel was the one button in any foot with no modifier
+   class and came out 446px against every other Cancel's 114, which read as a
+   slab with the primary stranded beside it. Stated once here so no future
+   foot can repeat it; the phone rules below still turn the pair into halves. */
+.sheet-foot > .btn { flex: 0 0 auto; }
+/* A count in the foot explains the action beside it, so it stays on that
+   line — but it follows the actions rather than pushing them off the margin,
+   because what must not move is the control somebody presses. */
+.lpicksum { order: 1; flex: 0 1 auto; font-size: 13px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 .lpickgroup + .lpickgroup { margin-top: 14px; }
 .lpickgroup .svc-cat { padding: 0 0 6px; }
 .lpickrow {
@@ -2276,7 +2300,6 @@ body.is-plain .topbar { background: var(--chrome); }
    what scrolls, so the action is on the screen from the first tick. */
 .qcfoot { flex-wrap: wrap; }
 .qcfoot > .btn { margin-left: 0; }
-.qcfoot > #qcGo { margin-left: auto; }
 /* Three actions do not divide a phone's width: at a third each, "Ask a
    second reviewer" clips to two words and says nothing. They take a row each
    in the order they are read — the forward action, the one that holds it,
@@ -2284,7 +2307,9 @@ body.is-plain .topbar { background: var(--chrome); }
    line. Two of them (once somebody has asked for a second, and the control
    leaves) are still two halves. */
 @media (max-width: 560px) {
-  .qcfoot > .lpicksum { flex: 1 0 100%; margin-bottom: 10px; }
+  /* On a phone the count takes its own row above the actions, which is the
+     order it is read in when the thumb is at the foot of the card. */
+  .qcfoot > .lpicksum { order: 0; flex: 1 0 100%; margin-bottom: 10px; }
   .qcfoot > .btn { flex: 1 1 0; min-width: 0; margin-left: 0; }
   .qcfoot:has(#qcSecond:not([hidden])) > .btn { flex: 1 0 100%; }
 }
@@ -2313,7 +2338,7 @@ body.is-plain .topbar { background: var(--chrome); }
      Cancel squeezed beside it — two actions of the same standing drawn at two
      sizes, which the phone checklist has ruled out since it was written. */
   .sheet-foot .btn { flex: 1 1 0; }
-  .lpicksum { flex: 1 1 100%; }
+  .lpicksum { order: 0; flex: 1 1 100%; }
 }
 /* The confirm list is a name and an amount, not the activity record's five
    columns, whose first is 52px wide and clipped the name to three characters. */
@@ -5713,8 +5738,15 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 13px; color: var(--ink-soft);
 }
+/* The By track is stated, not `auto`. Every row is its own grid, so an `auto`
+   track is sized by that row alone: the three seeded rows measured 189, 134
+   and 110px, and the column of actors therefore started 79px apart with the
+   cell correctly stretched inside each one. 150px is measured against
+   `Nurul Ain binti Abdullah` (134px at 13px) with room over it; a longer
+   value ellipsises, which `.log-person` has always done, and the full one is
+   in the Activity record's own three-column table. */
 .is-narrow .activity-list .log-row {
-  grid-template-columns: minmax(0, 1fr) minmax(110px, auto);
+  grid-template-columns: minmax(0, 1fr) 150px;
   grid-template-areas: "event event" "when who";
   gap: 9px 14px; align-items: center;
 }
@@ -5722,16 +5754,24 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .is-narrow .activity-list .svc-row.log-row { min-height: 0; padding: 14px 15px; }
 .is-narrow .activity-list .log-event { grid-area: event; }
 .is-narrow .activity-list .log-when { grid-area: when; white-space: normal; }
-.is-narrow .activity-list .log-who { grid-area: who; justify-self: end; max-width: 100%; }
+/* The cell fills its track and its contents end at the row's own padding.
+   `justify-self: end` makes a cell only as wide as its content, so the By
+   column *started* wherever each actor's name happened to start: 136px apart
+   across three rows once the initials disc in front of the name was gone, and
+   it was the disc's fixed 28px that had been hiding it. `.log-who` is a flex
+   box, so what aligns its child is `justify-content`, never `text-align`. */
+.is-narrow .activity-list .log-who {
+  grid-area: who; justify-self: stretch; justify-content: flex-end; max-width: 100%;
+}
 @media (max-width: 640px) {
   .activity-list .log-row {
-    grid-template-columns: minmax(0, 1fr) minmax(110px, auto);
+    grid-template-columns: minmax(0, 1fr) 150px;
     grid-template-areas: "event event" "when who"; gap: 9px 14px;
   }
   .activity-list .crm-head.log-row { display: none; }
   .activity-list .log-event { grid-area: event; }
   .activity-list .log-when { grid-area: when; white-space: normal; }
-  .activity-list .log-who { grid-area: who; justify-self: end; }
+  .activity-list .log-who { grid-area: who; justify-self: stretch; justify-content: flex-end; }
 }
 
 /* ---------- The campaign command centre ----------

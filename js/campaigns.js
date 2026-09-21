@@ -3357,17 +3357,36 @@
     qc.already = rows.some(function (q) {
       return ((q.team_members || {}).name || '') === mine;
     });
+    /* The ask is outstanding only until a second person has checked. It used
+       to be read as `qc_second_wanted` alone, which made the flag permanent
+       rather than a thing that gets satisfied: once two checks existed,
+       everyone who had checked was still blocked, and the note told each of
+       them they were the one who had asked. Reverting out of Client review is
+       what put a satisfied check back in front of the sheet, so that is where
+       it was seen — but the fault was in the reading, not in the revert, and
+       the database had it right all along (`campaign_qc_pass` releases at two
+       checks whoever calls, so the page was stricter than its own gate). */
+    qc.outstanding = Boolean(o.qc_second_wanted) && rows.length < 2;
+    /* Who asked is the first person who checked: the ask is made in the same
+       call as their own check, so the earliest row is the asker and nothing
+       has to be stored to know it. */
+    var asker = rows.length ? ((rows[0].team_members || {}).name || 'a colleague') : '';
     if (!rows.length) { note.hidden = true; note.textContent = ''; }
     else {
       note.hidden = false;
-      note.className = 'qc-note' + (qc.already && o.qc_second_wanted ? ' is-blocked' : '');
-      note.textContent = o.qc_second_wanted
-        ? (qc.already
-            ? 'You checked this on ' + shortWhen(rows[0].checked_at) +
-              ' and asked for a second reviewer. Somebody else has to complete the check.'
-            : 'Checked by ' + qcNames(o) + ' on ' + shortWhen(rows[0].checked_at) +
-              '. Yours is the second review.')
-        : 'Checked by ' + qcNames(o) + ' on ' + shortWhen(rows[0].checked_at) + '.';
+      note.className = 'qc-note' + (qc.outstanding && qc.already ? ' is-blocked' : '');
+      note.textContent =
+        !o.qc_second_wanted
+          ? 'Checked by ' + qcNames(o) + ' on ' + shortWhen(rows[0].checked_at) + '.'
+        : qc.outstanding
+          ? (qc.already
+              ? 'You checked this on ' + shortWhen(rows[0].checked_at) +
+                ' and asked for a second reviewer. Somebody else has to complete the check.'
+              : 'Checked by ' + asker + ' on ' + shortWhen(rows[0].checked_at) +
+                '. Yours is the second review.')
+          /* Both pairs of eyes have been on it. Naming both is what says the
+             ask was answered, and by whom. */
+          : 'Checked by ' + qcNames(o) + '. The second review is done.';
     }
     /* Asking for a second pair of eyes is a decision taken once: once
        somebody has, the booking is held and the only move left is to
@@ -3395,8 +3414,12 @@
        button will not move, so nothing has to be explained in a sentence.
        A booking held for a second reviewer will not move for the person who
        asked, and saying that before the press is error prevention rather
-       than a refusal afterwards. */
-    $('qcGo').disabled = short || (qc.o.qc_second_wanted && qc.already);
+       than a refusal afterwards — but only while it is still held. Once two
+       people have checked, the ask has been answered and nobody is blocked;
+       reading the flag alone made it permanent and deadlocked everyone who
+       had checked, which is the state a revert out of Client review leaves
+       the sheet in. */
+    $('qcGo').disabled = short || Boolean(qc.outstanding && qc.already);
     $('qcSecond').disabled = short;
   }
 

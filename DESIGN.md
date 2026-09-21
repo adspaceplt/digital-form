@@ -915,6 +915,39 @@ not by markup order, because a row can reverse itself in CSS and what a person
 presses is what they read; only a row holding both an action and a way out is
 judged, and on a phone a wrapped foot is judged line by line.
 
+**And the row itself starts where every other row starts.** Fixing the order
+settled which button comes first and left open where the pair sits, and the
+console answered that two ways: a form sheet and an ask card anchored their
+actions to the **right** of the foot while every plain sheet — the task, the
+letter, the document, every void and every delete — left them at the **start**.
+Nineteen feet, two positions, which is the same fault as two orders and reads
+worse, because the eye now has to find the primary before the hand can learn
+it. The serial position effect is not the law that decides it: that is about a
+list somebody scans in sequence, and it is already spent on the navigation
+rail; a pair of buttons is not a list. What decides it is motor memory, Fitts
+and Jakob — and once the order is fixed at primary-first, the right edge is the
+**wrong** anchor, because it puts the way out in the corner every platform
+reserves for the confirming action. So the actions start at the foot's own left
+margin, which is the x every field label above them starts at, on every sheet,
+every note box and every zone. **A count in the foot follows the actions**
+rather than pushing them off that margin: it explains the button beside it, so
+it stays on the line, but what must not move is the control somebody presses.
+On a phone nothing changes — two actions of the same standing are still equal
+halves.
+
+**And a button with no modifier class grows.** `.btn` is `flex: 1` at the base,
+undone in about twenty places by a local `flex: 0 0 auto`, so a foot that never
+got one was a slab waiting to happen: the short link sheet's Cancel was the one
+sheet Cancel written as a bare `.btn` and measured **446px** against every other
+Cancel's 114, with the primary stranded beside it. That is what "the CTA is in
+the wrong place" looked like on that screen, and the position was never the
+fault. The base rule is load bearing everywhere else, so it is not what changes;
+the foot states what its own buttons do, once. `tests/geom.js` measures every
+sheet in the console at 1280 and 390 — not the handful a walk happens to open —
+and asserts the mechanism rather than a number: at a desk no foot button has a
+`flex-grow` above zero, so a label longer than the 116px floor
+(`Void document` at 118) is correct and a button that *fills the row* is not.
+
 **A sheet opens on what there is to change; the caret is the reader's to
 place.** Every form sheet focused its first field on open, which on iOS raises
 the keyboard *and* zooms the page — so the reader lands on a form scrolled and
@@ -1673,8 +1706,9 @@ pill with the value centred in it, so a full width date on a phone read as
 something to press rather than something filled in, and an empty one drew
 nothing at all. `appearance: none` takes the pill away,
 `::-webkit-date-and-time-value { text-align: left }` puts the value where
-every other field's value starts, and `display: block` holds the height of an
-empty one. Under a finger the field carries its own glyph on the left (a
+every other field's value starts, and `min-height: var(--ctl-h)` holds the
+height of an empty one, with the flex centring putting the value on its
+middle. Under a finger the field carries its own glyph on the left (a
 calendar for a date, a clock for a time, mute, 16px) because neither iOS nor
 Android draws a picker mark and a tap anywhere opens the picker; at a desk
 Chrome's own mark on the right is the pointer's route in, so it stays,
@@ -1684,8 +1718,11 @@ quietened to the mute ink, and no second calendar is drawn beside it. The
 Buttons: `.btn` outline, `.btn-primary` ink, `.btn-go` accent (the one
 forward action in a view), `.btn-warn` outline warn (reversible caution:
 Unpublish, Remove PDF), `.btn-quiet` text only, `.btn-sm`. Order in a
-row: Save / secondary / Cancel. Same width and height for every control
-in a row; `.row` aligns to the top and `.row > .btn` to the bottom.
+row: Save / secondary / Cancel, and the row starts at its container's own
+left margin, never anchored right. Same width and height for every control
+in a row; `.row` aligns to the top and `.row > .btn` to the bottom. A sheet
+Cancel is `.btn-quiet`, never a bare `.btn`, which carries `flex: 1` from the
+base rule and grows to fill the row.
 
 ### Responsive laws
 - Breakpoints: 640px is the phone line (tables become stacked rows,
