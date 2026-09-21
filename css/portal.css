@@ -2884,7 +2884,10 @@ body.is-plain .topbar { background: var(--chrome); }
 /* ---------- Client-facing bookings ----------
    One card per confirmed creator, in the same language as the console's
    cards: flat, hairline, a state chip, the live one marked on its edge. */
-.sectionhead { font-size: 16px; font-weight: 600; letter-spacing: -.01em; margin: 26px 0 12px; }
+/* 24 above, on the scale: a new section in a list. It was 26, which is not a
+   step this portal has, and against the card's own 12px foot it read as a gap
+   nobody had chosen. */
+.sectionhead { font-size: 16px; font-weight: 600; letter-spacing: -.01em; margin: 24px 0 12px; }
 .booking {
   border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
   padding: 14px 16px; margin-bottom: 9px;
@@ -2950,8 +2953,16 @@ body.is-plain .topbar { background: var(--chrome); }
 .engage-card .booking-facts { margin: 0; }
 .engage-card .amountfold {
   border: 0; border-top: 1px solid var(--line-soft); border-radius: 0;
-  margin: 12px 0 0; padding: 4px 0 0;
+  /* The hairline is 12px under the facts and the Amount row's ink is 16px
+     under the hairline, which is what the band's own floor gives it below.
+     It was 4px above and 26 below: the row is a 44px target holding a 20px
+     line, so the slack inside the button was counted only at the bottom. The
+     toggle takes the negative block margin every other bare control in this
+     portal takes, so its footprint is its label's line and its target is
+     untouched. */
+  margin: 12px 0 0; padding: 16px 0 0;
 }
+.engage-card .amountfold-btn { margin-block: calc((20px - var(--ctl-h)) / 2); }
 .rollup-card {
   border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
   padding: 14px 16px; margin: 0 0 12px;
@@ -3730,7 +3741,10 @@ body > .shell { width: 100%; }
 .raildate.has-from { align-items: start; }
 /* Move a date sits under the dates it moves, on their left margin, as the
    client record's Key dates carry their edit. */
-.rail-date-edit.rail-date-go { display: flex; }
+/* Two controls now, one per date, so the row wraps rather than squeezing them:
+   "Request extension" beside "Change draft date" is wider than the rail at
+   every width the rail has. */
+.rail-date-edit.rail-date-go { display: flex; flex-wrap: wrap; gap: 8px; }
 .rail-date-go .ovgo { margin: 0 0 0 -10px; }
 .rail-date-edit.rail-date-go[hidden] { display: none; }
 /* The Overview's links: the kind, then the label as the link, one a line. */
@@ -6410,18 +6424,25 @@ body.is-canvas { overflow: hidden; }
    the 200% browser zoom pass the matrix runs at 1280 and 1440. A field at the
    size a phone reads is the fix; refusing the reader their own zoom is not.
 
-   The `:root` in front is what makes it land. Three of the rules it has to
-   beat are two-class or class-plus-attribute selectors written for their own
-   reasons — `.select-sm.state-select`, `.input.readfield`, `.input[type=file]`
-   — so a bare class here loses to them wherever it matters most. One stated
-   device in one place, rather than a `!important` or a copy of each selector
-   with a size bolted on. */
+   The `:root` in front is what makes it land. Two of the rules it has to
+   beat are two-class selectors written for their own reasons —
+   `.select-sm.state-select` and `.input.readfield` — so a bare class here
+   loses to them wherever it matters most. One stated device in one place,
+   rather than a `!important` or a copy of each selector with a size bolted
+   on.
+
+   **A file field is exempt with the readonly ones**, for the same reason:
+   pressing it opens the system file picker and raises no keyboard, so it can
+   never zoom the page. It was listed above as a rule to beat and that was
+   wrong. The cost was visible: the field's own `no files selected` came out
+   at 16px beside a 12.5px `Choose Files` inside it, so the words the browser
+   writes shouted over the button somebody actually presses. */
 @media (pointer: coarse) {
-  :root .input:not([readonly]):not([disabled]),
+  :root .input:not([readonly]):not([disabled]):not([type="file"]),
   :root .select:not([disabled]), :root .textarea:not([readonly]):not([disabled]),
-  :root .input-sm:not([readonly]):not([disabled]),
+  :root .input-sm:not([readonly]):not([disabled]):not([type="file"]),
   :root .select-sm:not([disabled]), :root .state-select:not([disabled]),
-  :root input:not([readonly]):not([disabled]),
+  :root input:not([readonly]):not([disabled]):not([type="file"]),
   :root select:not([disabled]), :root textarea:not([readonly]):not([disabled]) { font-size: 16px; }
 }
 /* **A field nobody can type into cannot zoom the page**, so the floor above is

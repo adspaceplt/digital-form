@@ -85,6 +85,16 @@
     return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'),
             String(d.getDate()).padStart(2, '0')].join('-');
   }
+  /* The ceiling a first draft date may reach: the calendar day before the
+     commitment, which is what `ops_due_order_ok` compares against. Built off
+     `dayOf`, so the page and the database mean the same day. */
+  function dayBefore(v) {
+    var d = dayOf(v);
+    if (!d) return '';
+    d = new Date(d.getTime());
+    d.setDate(d.getDate() - 1);
+    return dateValue(d);
+  }
   /* "In 3 days" is what a person says; "2026-10-02T00:00:00Z" is what the row
      holds. Overdue carries the word as well as the colour, so the mark
      survives greyscale and a reader who cannot tell warn from mute. */
@@ -118,6 +128,10 @@
     'not-yours': 'That extension is somebody else\'s to decide.',
     'decided': 'That extension has already been answered.',
     'no-date': 'A date is required.',
+    /* The team's own milestone has to land before the commitment it feeds,
+       and the latest it may fall is the day before. Named here rather than
+       left as the database's own word, like every other refusal. */
+    'draft-not-before-final': 'The first draft is due at the latest one day before the final due date.',
     'bad-transition': 'That is not a move this workflow offers from here.',
     'no-such-stage': 'That is not a stage in this workflow.',
     'ready-needs-owner-and-due': 'Ready needs an owner and a final due date.',
@@ -1679,13 +1693,17 @@
   }
 
   function paintDue(t) {
+    /* The first draft date is the team's own milestone, set against a schedule
+       that is already agreed, so it is theirs to adjust and goes through no
+       round. Named for whether there is one yet. */
+    var dd = $('taskDraftDate');
+    if (dd) dd.textContent = t.current_first_draft_due_at ? 'Change draft date' : 'Set draft date';
     var mv = $('taskDateMove');
     if (mv) {
-      /* The same control, named for its consequence. A person moving a date
-         on a task they created moves it; everybody else is asking. */
-      var word = needsAsking(t) ? 'Request extension' : 'Move a date';
-      var lbl = mv.firstChild;
-      if (lbl && lbl.nodeType === 3) lbl.nodeValue = word; else mv.textContent = word;
+      /* The final date is the commitment a client is owed. The control is
+         named for what pressing it will do: a person who created the task
+         moves it, everybody else is asking the person who set it. */
+      mv.textContent = needsAsking(t) ? 'Request extension' : 'Change due date';
       mv.hidden = Boolean(state.due);
     }
     var box = $('dueAsk');
@@ -1930,10 +1948,31 @@
     var t = state.task;
     if (!t) return;
     dueKind = kind || 'final';
-    var was = dueKind === 'final' ? t.current_final_due_at : t.current_first_draft_due_at;
-    $('dueWhat').textContent = (dueKind === 'final' ? 'Final due date' : 'First draft due date') +
+    var draft = dueKind === 'first_draft';
+    var was = draft ? t.current_first_draft_due_at : t.current_final_due_at;
+    /* Each date says what it is and what governs it. The commitment keeps the
+       original-promise line, because that is the fact a replan report reads;
+       the team's own milestone says instead where its ceiling is, which is
+       the only thing that can refuse it. */
+    $('dueWhat').textContent = (draft ? 'First draft due date' : 'Final due date') +
       (was ? ', now ' + niceDate(was) + '.' : ', not set.') +
-      ' The promise first made is kept either way.';
+      (draft
+        ? (t.current_final_due_at
+            ? ' The latest it may fall is one day before the final due date, ' +
+              niceDate(t.current_final_due_at) + '.'
+            : '')
+        : ' The promise first made is kept either way.');
+    /* Error prevention rather than an error message: the picker will not open
+       past the day before the commitment. The database refuses it as well,
+       because a ceiling only the page knows is not a rule. */
+    /* The sheet is titled for the act, the way the control that opened it is
+       named: setting the team's own milestone, or asking for the client's
+       commitment to move. */
+    $('dueTitle').textContent = draft
+      ? (was ? 'Change draft date' : 'Set draft date')
+      : (needsAsking(t) ? 'Request extension' : 'Change due date');
+    var cap = draft && t.current_final_due_at ? dayBefore(t.current_final_due_at) : '';
+    if (cap) $('dueDate').setAttribute('max', cap); else $('dueDate').removeAttribute('max');
     $('dueDate').value = dateValue(was);
     $('dueNote').value = '';
     msg('dueMsg', '');
@@ -2188,6 +2227,8 @@
 
     var dm = $('taskDateMove');
     if (dm) dm.addEventListener('click', function () { openDue('final'); });
+    var dd2 = $('taskDraftDate');
+    if (dd2) dd2.addEventListener('click', function () { openDue('first_draft'); });
     /* Approve, decline or take back an open extension, where the rail drew
        one. The buttons are painted by paintDue and wired here once. */
     var da = $('dueAsk');
