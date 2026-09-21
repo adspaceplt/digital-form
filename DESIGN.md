@@ -599,6 +599,31 @@ Without that the margin is real: a one-line head stood 66px at a desk and 72 on
 a phone, which is a head taller than some of the rows below it, for one word.
 `uxaudit`'s `target` rule is what says so, and it said so on the first run.
 
+**A border inside a border groups nothing.** The file field's `Choose Files`
+carried the same 1px `--line-ctl` ring as the field around it, on the field's
+own white ground, so one control wore two identical borders and the inner one
+was told apart from the outer by nothing at all. A border groups; a second
+border inside the first only reads as a box drawn twice. The inner element is
+**shaded** instead — the fill the account control and the bell already use to
+say they are pressable — and the fill has to be visible: `--sunk` on white is
+1.03:1, which is a control nothing identifies, so it is `--line-soft`.
+
+**And a nested corner is concentric, or the two curves cross.** The field's
+radius is 10px and its inset was 8, so the inner button's corner sat *inside*
+the outer corner's arc: the reader sees the inner shape apparently covered by
+the outer one, which is exactly how it was reported. An inner radius is the
+outer radius less the inset — here 10 − 5 — written as the subtraction rather
+than as a number, so it is the consequence of the two corners this system has
+and not a third one beside them.
+
+**The last thing that reads as "not centred" is usually two type sizes.** The
+button's label was 12.5px beside the field's own 13px, so the pair sat on two
+baselines however symmetric the boxes measured. This was reported three times;
+the first two passes measured box heights, found 5px of slack on each side, and
+answered a question nobody had asked. When something reads as misaligned and
+the boxes are symmetric, measure the **ink**, the borders and the type sizes
+before saying it is even.
+
 **A card whose last line is a padded control reads bottom heavy.** The creators
 list's rows end in profile links, and `.plink-bare` carries 5px of its own
 padding above and below its word. Added to the row's 12px that made the foot

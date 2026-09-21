@@ -181,6 +181,40 @@
     var s = stageOf(t);
     return (s && s.label) || String(t.stage_key || '').replace(/_/g, ' ');
   }
+  /* WHAT THE FINAL DATE ACTUALLY PROMISES.
+     It is the day the work is owed *at client review*, not a square on a
+     calendar: a task still short of that stage when the date passes is late
+     whatever its own stage says, and that is what an admin is shown. Asked
+     for by the user on 2026-09-21.
+
+     Where client review begins is the workflow's own to say, read off
+     `stage_group` and not off a stage key, because the two seeded workflows
+     name that stage differently and one somebody adds next year will again.
+     Derived on every read and never stored: a flag written once by the move
+     that caused it is wrong the moment somebody reverts. */
+  function reviewFloor(wf) {
+    var at = null;
+    Object.keys(state.stages).forEach(function (k) {
+      var s = state.stages[k];
+      if (!s || s.workflow_id !== wf || s.stage_group !== 'client_review') return;
+      if (at === null || s.position < at) at = s.position;
+    });
+    return at;
+  }
+  function isLate(t) {
+    if (!t || !t.current_final_due_at) return false;
+    /* A task that is finished was not late for being finished: whether it
+       arrived on time is the record's question, not the queue's. */
+    if (t.completed_at || t.cancelled_at) return false;
+    var due = dayOf(t.current_final_due_at);
+    if (!due || due.getTime() >= todayStart().getTime()) return false;
+    var here = stageOf(t);
+    var floor = reviewFloor(t.workflow_id);
+    /* A workflow with no client review stage falls back to the plain reading
+       of the date, which is what it meant before this rule existed. */
+    if (floor === null || !here) return true;
+    return here.position < floor;
+  }
   /* The colour a stage carries is the portal's one vocabulary: amber while
      something waits, green once it is a fact, neutral otherwise. Blocked is
      red, because it is a refusal and not a caution. */
@@ -436,6 +470,9 @@
     if (f === 'active') return Boolean(s && s.is_active_work);
     if (f === 'review') return Boolean(s && s.is_review);
     if (f === 'waiting') return Boolean(s && s.is_waiting) || t.stage_key === 'blocked';
+    /* Every task past its final date and still short of client review. It cuts
+       across every stage, so it is a filter and never a band. */
+    if (f === 'late') return isLate(t);
     return true;
   }
   function inScope(t) {
@@ -816,7 +853,8 @@
     var el = document.createElement('div');
     el.className = 'bcard' + (isFinished(t) ? ' is-off' : '');
     el.setAttribute('data-task', t.id);
-    var over = !isFinished(t) && daysAway(t.current_final_due_at) < 0;
+    /* Late, not merely past: the same rule the queue row draws. */
+    var over = isLate(t);
     var top = ['T' + t.task_no,
                (t.clients && t.clients.name) || (t.scope === 'internal' ? 'Internal' : '')]
       .filter(Boolean);
@@ -1013,7 +1051,14 @@
     var el = document.createElement('div');
     el.className = 'svc-row task-row' + (isFinished(t) ? ' is-off' : '');
     el.setAttribute('data-task', t.id);
-    var over = !isFinished(t) && daysAway(t.current_final_due_at) < 0;
+    /* The warn paint marks the exception, and the exception is being LATE —
+       past the final date and still short of Client review — not merely
+       having a date behind us. A task that reached review on the day it was
+       owed and is now sitting with the client honoured the promise, and
+       painting it warn spends the accent on work nobody has to chase. The
+       word in the cell still states the days over either way, because that
+       is a fact about the date and not a judgement on the task. */
+    var over = isLate(t);
     var meta = [(t.clients && t.clients.name) || (t.scope === 'internal' ? 'Internal' : ''),
                 DELIVER_WORD[t.deliverable_type] || sentence(t.deliverable_type)]
       .filter(Boolean).join(' · ');
@@ -1253,8 +1298,16 @@
     } else if (s && s.is_waiting) {
       words.push('Waiting. Nothing here moves until that changes.');
     }
-    var over = !isFinished(t) && daysAway(t.current_final_due_at) < 0;
-    if (over) words.push('The final date passed ' + Math.abs(daysAway(t.current_final_due_at)) + ' days ago.');
+    /* The final date is the day the work is owed AT CLIENT REVIEW, so the
+       line says which of the two has happened. A task past its date that did
+       reach review is not late and the line does not call it one. */
+    if (isLate(t)) {
+      words.push('Late: the final date passed ' + Math.abs(daysAway(t.current_final_due_at)) +
+        ' days ago and this has not reached client review.');
+    } else if (!isFinished(t) && daysAway(t.current_final_due_at) < 0) {
+      words.push('The final date passed ' + Math.abs(daysAway(t.current_final_due_at)) +
+        ' days ago, and it reached client review.');
+    }
     line.textContent = words.join(' ');
     line.hidden = !words.length;
   }
@@ -1448,16 +1501,107 @@
   }
 
   // ---- Time ----------------------------------------------------------------
+  /* HOW LONG THE WORK SAT IN EACH STAGE.
+     The question a person actually asks of a task is not "who had the timer
+     running" but "how long was this in Shooting" — so that is what the pane
+     leads with. Nothing new is recorded for it: every stage change is already
+     an `ops_task_events` row the record has read, and the durations fall out
+     of walking them in order.
+
+     A session somebody started and stopped is a different measure and stays
+     below, named for what it is. The two are never summed, which is the rule
+     this system has carried since phase 1: cycle time, stage time and active
+     work are three things. */
+  function stageSpans() {
+    var ev = (state.detail.events || []).filter(function (e) {
+      return e.event_type === 'stage_changed' || e.event_type === 'task_created';
+    }).slice().sort(function (a, b) {
+      return new Date(a.created_at) - new Date(b.created_at);
+    });
+    if (!ev.length) return [];
+    var spans = [], open = null;
+    ev.forEach(function (e) {
+      var at = new Date(e.created_at).getTime();
+      var to = (e.to_value && e.to_value.stage_key) || null;
+      /* The creation event names the stage the task started in; where it does
+         not, the first move's `from` does, which is the same fact. */
+      if (!to && e.event_type === 'task_created') {
+        to = (e.to_value && e.to_value.stage_key) || null;
+      }
+      if (open) { open.to = at; spans.push(open); open = null; }
+      if (to) open = { key: to, from: at, to: null };
+    });
+    if (!open && ev.length) {
+      var first = ev[0];
+      if (first.from_value && first.from_value.stage_key) {
+        open = { key: first.from_value.stage_key, from: new Date(first.created_at).getTime(), to: null };
+      }
+    }
+    if (open) {
+      var t = state.task;
+      var end = t && (t.completed_at || t.cancelled_at);
+      open.to = end ? new Date(end).getTime() : Date.now();
+      open.running = !end;
+      spans.push(open);
+    }
+    /* One row a stage, not one row a visit: a task that went back for a
+       revision and forward again spent its time in that stage twice, and the
+       figure being read is the total. The number of visits is worth saying,
+       because three visits to Revision is the finding. */
+    var by = {}, order = [];
+    spans.forEach(function (s) {
+      var mins = Math.max(0, Math.round((s.to - s.from) / 60000));
+      if (!by[s.key]) { by[s.key] = { key: s.key, mins: 0, visits: 0, running: false }; order.push(s.key); }
+      by[s.key].mins += mins;
+      by[s.key].visits += 1;
+      if (s.running) by[s.key].running = true;
+    });
+    return order.map(function (k) { return by[k]; });
+  }
+
   function paintTime() {
     var box = $('taskTime');
     if (!box) return;
+    box.innerHTML = '';
+
+    var spans = stageSpans();
+    if (spans.length) {
+      var head = document.createElement('h3');
+      head.className = 'ovsec-title';
+      head.textContent = 'Time in each stage';
+      box.appendChild(head);
+      var st = GRP.table('svc-row tsess-row', ['Stage', 'Visits', 'Time']);
+      spans.forEach(function (s) {
+        var row = document.createElement('div');
+        row.className = 'svc-row tsess-row';
+        row.innerHTML =
+          '<span class="svc-name"><b>' + esc(labelForKey(s.key)) + '</b>' +
+            (s.running ? '<small>still here</small>' : '') + '</span>' +
+          '<span class="tsess-who">' + (s.visits > 1 ? esc(String(s.visits)) : '') + '</span>' +
+          '<span class="tsess-mins">' + esc(minutesWord(s.mins)) + '</span>';
+        st.appendChild(row);
+      });
+      var since = spans.reduce(function (a, s) { return a + s.mins; }, 0);
+      var cyc = document.createElement('div');
+      cyc.className = 'svc-row tsess-row is-total';
+      cyc.innerHTML = '<span class="svc-name"><b>Since it was created</b></span>' +
+        '<span class="tsess-who"></span><span class="tsess-mins">' + esc(minutesWord(since)) + '</span>';
+      st.appendChild(cyc);
+      box.appendChild(st);
+    }
+
     var rows = state.detail.sessions;
     var mins = rows.reduce(function (a, s) { return a + (Number(s.minutes) || 0); }, 0);
+    var h2 = document.createElement('h3');
+    h2.className = 'ovsec-title';
+    h2.textContent = 'Recorded work';
+    box.appendChild(h2);
     if (!rows.length) {
-      UI.emptyLine(box, 'No recorded work.');
+      var sub = document.createElement('div');
+      box.appendChild(sub);
+      UI.emptyLine(sub, 'No recorded work.');
       return;
     }
-    box.innerHTML = '';
     var table = GRP.table('svc-row tsess-row', ['Session', 'Who', 'Minutes']);
     rows.forEach(function (s) {
       var row = document.createElement('div');
@@ -1593,7 +1737,9 @@
       ['Completed', t.completed_at, false, null]
     ].filter(function (p) { return p[1]; });
     dates.innerHTML = rows.map(function (p) {
-      var over = p[2] && !isFinished(t) && daysAway(p[1]) < 0;
+      /* The commitment's own row is warn only where the task is late by the
+         rule, which is the same test the row and the card use. */
+      var over = p[2] && isLate(t);
       var moved = p[3] && p[3] !== p[1];
       return '<div class="raildate' + (moved ? ' has-from' : '') + '"><dt>' + esc(p[0]) + '</dt>' +
         '<dd' + (over ? ' class="is-over"' : '') + '>' + esc(niceDate(p[1])) +

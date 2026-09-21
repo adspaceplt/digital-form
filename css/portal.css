@@ -361,18 +361,45 @@ a { color: inherit; }
 /* A file field arrives as the browser's own grey button floating on a baseline
    of its own. Same box as every other field, and the button inside it is one of
    ours: outline, our border, centred on the field's line. */
+/* **The button inside the field is shaded, never outlined.** It carried the
+   same 1px `--line-ctl` ring as the field around it, on the field's own white
+   ground, so one control wore two identical borders and the inner one was told
+   apart from the outer by nothing at all. A border groups; a second border
+   inside the first groups nothing and only reads as a box that has been drawn
+   twice. The account control and the bell were corrected the same way: what
+   says a thing is pressable is its fill, not a ring.
+
+   It also fixes a collision. The field's radius is 10px and its inset was 8,
+   so the inner corner sat *inside* the outer corner's arc and the two curves
+   crossed — which is what "covered by the outer selection" describes. The
+   inset is 5px now and the shaded segment's corner is **concentric** with it:
+   an inner radius equals the outer radius less the inset, so 10 − 5 is 5, and
+   the two curves run parallel instead of crossing. That is not a third corner
+   value beside the two this system has — it is the consequence of them, which
+   is why it is written as the subtraction rather than as a number.
+
+   And the two labels are one size. `Choose Files` was 12.5px beside the
+   field's own 13px `no files selected`, so the pair sat on two baselines and
+   read as badly centred however the boxes measured. Reported three times
+   before it was looked at properly: the first two passes measured the box
+   heights, found them symmetric, and answered the wrong question. */
 .input[type="file"] {
-  display: flex; align-items: center; gap: 10px; padding-inline: 8px;
+  display: flex; align-items: center; gap: 10px; padding-inline: 5px;
   font-size: 13px; color: var(--ink-mute); cursor: pointer;
 }
 .input[type="file"]::file-selector-button {
-  flex: 0 0 auto; height: 28px; margin: 0; padding: 0 12px;
-  font: inherit; font-size: 12.5px; font-weight: 500;
-  color: var(--ink-soft); background: var(--card);
-  border: 1px solid var(--line-ctl); border-radius: var(--radius-sm); cursor: pointer;
+  flex: 0 0 auto; height: 28px; margin: 0; padding: 0 14px;
+  font: inherit; font-size: 13px; font-weight: 500;
+  /* `--line-soft` and not `--sunk`: at 1.03:1 on the field's white ground a
+     sunk fill is invisible, and a control nothing distinguishes is not a
+     control. This is the fill the account button and the bell take to say
+     they are pressable, which is the same job here. */
+  color: var(--ink-soft); background: var(--line-soft);
+  border: 0; border-radius: calc(var(--radius-sm) - 5px); cursor: pointer;
+  transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
 }
 @media (hover: hover) {
-  .input[type="file"]::file-selector-button:hover { background: var(--sunk); color: var(--ink); }
+  .input[type="file"]::file-selector-button:hover { background: var(--line); color: var(--ink); }
 }
 @media (pointer: coarse) { .input[type="file"]::file-selector-button { height: 34px; } }
 .textarea { width: 100%; resize: vertical; min-height: 84px; padding-block: 10px; }
@@ -3668,6 +3695,13 @@ body > .shell { width: 100%; }
 .tsess-who { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tsess-mins { font-size: 13.5px; font-weight: 600; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tsess-row.is-total { border-top: 1px solid var(--line); }
+/* The Time pane holds two measures that are never summed — how long the work
+   sat in each stage, and the sessions somebody started — so each is named at
+   the pane's own section size, and the second is one block step under the
+   first like every other pair of blocks in a section. */
+.ovsec-title { font-size: 15px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 8px; }
+.ovsec-title + .crm-table { margin-bottom: 0; }
+.crm-table + .ovsec-title, .empty + .ovsec-title { margin-top: 24px; }
 .tact-row { grid-template-columns: 170px minmax(0, 1fr) 150px; }
 .tact-when { font-size: 13px; color: var(--ink-mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tact-who { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
