@@ -498,16 +498,26 @@
      (who has room this week) is the question being asked. */
   function viewBox() {
     var list = $('workQueue'), board = $('workBoard'), cal = $('workCal'), cap = $('workCap');
+    var rep = $('workReport');
     if (list) list.hidden = state.view !== 'list';
     if (board) board.hidden = state.view !== 'board';
     if (cal) cal.hidden = state.view !== 'calendar';
     if (cap) cap.hidden = state.view !== 'board';
-    return state.view === 'board' ? board : state.view === 'calendar' ? cal : list;
+    if (rep) rep.hidden = state.view !== 'report';
+    return state.view === 'board' ? board
+         : state.view === 'calendar' ? cal
+         : state.view === 'report' ? rep : list;
   }
 
   function paint() {
     var box = viewBox();
-    if (!box || !state.tasks) return;
+    if (!box) return;
+    /* The report is the same work asked an aggregate question, so it reads
+       its own figures and none of the row filtering below applies to it:
+       "how long does Editing take" is a question about every task there has
+       ever been and not about the rows on this page. */
+    if (state.view === 'report') { paintReport(); return; }
+    if (!state.tasks) return;
     /* The count is read against the view somebody chose, not against every
        row the database sent: "Open work, mine" is where this route opens, so
        counting it as `5 of 6` would print a fraction on a screen nobody has
@@ -897,6 +907,188 @@
   }
 
   // ---- The calendar --------------------------------------------------------
+  // ---- The report ----------------------------------------------------------
+  /* THE SAME WORK, ASKED AN AGGREGATE QUESTION.
+     What is running, what is late, how long each stage takes, whether it was
+     there on time, and the same per person. Every figure comes from one call
+     to `ops_report`, which derives them from rows the system has written since
+     phase 1; the page computes nothing of its own, because a report a page
+     works out for itself is a second definition of the thing.
+
+     Read on arrival and again when the period changes, and kept, so switching
+     to Board and back does not go to the database for numbers that have not
+     moved. */
+  function loadReport(again) {
+    var want = state.period || 'month';
+    if (!again && state.report && state.reportFor === want) { paintReport(); return; }
+    state.reportBusy = true;
+    state.reportFor = want;
+    /* Through `paint` and never straight to `paintReport`: `viewBox` is what
+       hides the queue, the board and the calendar, so a report drawn without
+       it left the list on the screen underneath. */
+    paint();
+    db.rpc('ops_report', { p_from: periodStart().toISOString(), p_to: new Date().toISOString() })
+      .then(function (r) {
+        state.reportBusy = false;
+        if (r.error) { state.report = null; state.reportErr = r.error.message || 'denied'; }
+        else if (r.data && r.data.error) { state.report = null; state.reportErr = SAID[r.data.error] || r.data.error; }
+        else { state.report = r.data; state.reportErr = ''; }
+        paint();
+      })
+      .catch(function (e) {
+        state.reportBusy = false; state.report = null;
+        state.reportErr = String((e && e.message) || e);
+        paint();
+      });
+  }
+
+  /* Hours where a figure is hours and days where it is days: "2,880 min" is a
+     number somebody has to divide before it means anything, and the question
+     being asked of a stage is measured in days. */
+  function spanWord(mins) {
+    var m = Math.max(0, Math.round(Number(mins) || 0));
+    if (m < 90) return m + ' min';
+    if (m < 60 * 36) return Math.round(m / 60) + 'h';
+    var d = m / 1440;
+    return (d < 10 ? Math.round(d * 10) / 10 : Math.round(d)) + (d < 1.05 && d >= 0.95 ? ' day' : ' days');
+  }
+
+  /* A column heading is not on the screen on a phone, so a cell that holds a
+     bare number has nothing saying what the number is. The middle cell carries
+     its own word, drawn only where the header is hidden. */
+  function repLab(word) {
+    return '<span class="rep-lab">' + esc(word) + ' </span>';
+  }
+  function dayCount(n) {
+    return n + (Math.abs(n) === 1 ? ' day' : ' days');
+  }
+
+  function repTable(host, title, heads, rowClass, rows, note) {
+    var h = document.createElement('h3');
+    h.className = 'ovsec-title';
+    h.textContent = title;
+    host.appendChild(h);
+    if (!rows.length) {
+      /* `emptyLine` fills the box it is handed, so the wrapper is what the
+         next heading's gap keys on: the empty card is a block in the stack
+         like the table it stands in for, and both are the same distance from
+         the heading that follows. */
+      var sub = document.createElement('div');
+      sub.className = 'repempty';
+      host.appendChild(sub);
+      UI.emptyLine(sub, note || 'Nothing yet.');
+      return;
+    }
+    var t = GRP.table(rowClass, heads);
+    rows.forEach(function (cells) {
+      var row = document.createElement('div');
+      row.className = rowClass + (cells.cls ? ' ' + cells.cls : '');
+      row.innerHTML = cells.html;
+      if (cells.open) {
+        var b = row.querySelector('[data-open]');
+        if (b) b.addEventListener('click', function () { openTask(cells.open, true); });
+      }
+      t.appendChild(row);
+    });
+    host.appendChild(t);
+  }
+
+  function paintReport() {
+    var box = $('workReport');
+    if (!box) return;
+    if (state.reportBusy && !state.report) { UI.skeleton(box, 4); return; }
+    if (state.reportErr) {
+      UI.failLine(box, 'the report', state.reportErr, function () { loadReport(true); });
+      return;
+    }
+    var r = state.report;
+    if (!r) { UI.emptyLine(box, 'No report.'); return; }
+    box.innerHTML = '';
+
+    /* Every figure below but the first is taken over a window, and on a phone
+       the select that sets it is inside the filters sheet — so the window is
+       stated on the report itself rather than left to a control that is not
+       on the screen. */
+    var win = document.createElement('p');
+    win.className = 'routenote repwin';
+    win.textContent = niceDate(r.from) + ' to ' + niceDate(r.to);
+    box.appendChild(win);
+
+    /* 1. What is running. The first question a manager asks, answered in the
+          words on the stage itself, so "what is on shooting" reads as a row
+          rather than as a group somebody has to translate. */
+    repTable(box, 'What is running', ['Stage', '', 'Tasks'], 'svc-row rep-row',
+      (r.running || []).map(function (s) {
+        return { html: '<span class="svc-name"><b>' + esc(s.label) + '</b></span>' +
+                       '<span class="rep-mid"></span>' +
+                       '<span class="rep-num">' + esc(String(s.count)) + '</span>' };
+      }), 'Nothing open.');
+
+    /* 2. What is late, which is the flag the user asked be put in front of a
+          manager: past the commitment and still short of client review. The
+          title opens the task, because a list of problems nobody can act on
+          from is a list nobody reads twice. */
+    repTable(box, 'Late', ['Task', 'Owner', 'Over by'], 'svc-row rep-row',
+      (r.late || []).map(function (t) {
+        return {
+          open: t.task_id,
+          cls: 'is-late',
+          html: '<span class="svc-name"><button class="task-open rep-open" data-open type="button">' +
+                  '<b>' + esc(t.title || 'Untitled') + '</b>' +
+                  '<small>' + esc([t.client, t.stage].filter(Boolean).join(' · ')) + '</small>' +
+                '</button></span>' +
+                '<span class="rep-mid">' + repLab('Owner') +
+                  (t.owner ? esc(t.owner) : '<span class="mute">—</span>') + '</span>' +
+                '<span class="rep-num is-over">' + esc(dayCount(Number(t.days_over))) + '</span>'
+        };
+      }), 'Nothing is late.');
+
+    /* 3. How long each stage takes. A median, its 90th percentile and the
+          count it was taken over, never a bare figure: a median over two
+          tasks is not a measurement, and the tail is what a person is
+          actually trying to find. */
+    repTable(box, 'Time in each stage', ['Stage', 'Slowest tenth', 'Typical'], 'svc-row rep-row',
+      (r.stage_time || []).map(function (s) {
+        return { html: '<span class="svc-name"><b>' + esc(s.label) + '</b>' +
+                         '<small>' + esc(s.n + (s.n === 1 ? ' time' : ' times')) + '</small></span>' +
+                       '<span class="rep-mid">' + repLab('Slowest tenth') +
+                         esc(spanWord(s.p90_minutes)) + '</span>' +
+                       '<span class="rep-num">' + esc(spanWord(s.median_minutes)) + '</span>' };
+      }), 'No stage moves in this period.');
+
+    /* 4. Was it there on time. Replanning sits beside the rate and never
+          inside it: an extension would otherwise erase the miss it was
+          granted for, and a rate that cannot be missed measures nothing. */
+    var ot = r.on_time || {};
+    var reached = Number(ot.reached || 0);
+    repTable(box, 'At client review on time', ['', '', ''], 'svc-row rep-row',
+      !reached ? [] : [
+        { html: '<span class="svc-name"><b>On time</b></span><span class="rep-mid">' +
+                esc(Math.round((Number(ot.met) / reached) * 100) + '%') +
+                '</span><span class="rep-num">' + esc(String(ot.met)) + '</span>' },
+        { html: '<span class="svc-name"><b>Late</b></span><span class="rep-mid"></span>' +
+                '<span class="rep-num' + (Number(ot.missed) ? ' is-over' : '') + '">' +
+                esc(String(ot.missed)) + '</span>' },
+        { html: '<span class="svc-name"><b>Date was moved</b>' +
+                '<small>counted beside the rate, never inside it</small></span>' +
+                '<span class="rep-mid"></span><span class="rep-num">' +
+                esc(String(ot.replanned || 0)) + '</span>' }
+      ], 'Nothing reached client review.');
+
+    /* 5. By person. The foundation of a KPI and not a KPI: what somebody
+          finished, how much of it was on time, and how long their work took
+          end to end. No score and no ranking — a number a person can check is
+          worth more than a league table nobody trusts. */
+    repTable(box, 'By person', ['Person', 'On time', 'Typical'], 'svc-row rep-row',
+      (r.by_person || []).map(function (m) {
+        return { html: '<span class="svc-name"><b>' + esc(m.name) + '</b>' +
+                         '<small>' + esc(m.completed + ' finished') + '</small></span>' +
+                       '<span class="rep-mid">' + repLab('On time') +
+                         esc(m.on_time + ' of ' + m.completed) + '</span>' +
+                       '<span class="rep-num">' + esc(spanWord(m.median_cycle_minutes)) + '</span>' };
+      }), 'Nothing finished.');
+  }
+
   /* The commitments on the days they fall. One date a task, the final due
      date, because that is the promise the queue is ordered by and the rail
      states the rest; a chip is the task at the size a cell can hold and a
@@ -1019,7 +1211,11 @@
      list's axis and the workflow select is the board's, so each draws only
      with its view. */
   function applyView(v) {
-    state.view = v === 'board' || v === 'calendar' ? v : 'list';
+    /* The report is refused to anybody the part is not granted to, even from
+       the address: `view=report` in a link somebody was sent must not open a
+       view the database would only deny. */
+    if (v === 'report' && !may('ops.reports', 'view')) v = 'list';
+    state.view = v === 'board' || v === 'calendar' || v === 'report' ? v : 'list';
     var seg = $('workViews');
     if (seg) Array.prototype.forEach.call(seg.querySelectorAll('.acttab'), function (b) {
       var on = b.getAttribute('data-view') === state.view;
@@ -1028,11 +1224,22 @@
     });
     if ($('workGroup')) $('workGroup').hidden = state.view !== 'list';
     if ($('workWf')) $('workWf').hidden = state.view !== 'board';
+    /* The report is not a filtered list, so the list's own controls say
+       nothing about it: a search box over an aggregate filters nothing, and
+       a stage filter over "what is running" is the question being asked. */
+    var find = $('workFind'), stg = $('workStage'), cnt = $('workCount');
+    if (find && find.parentElement) find.parentElement.hidden = state.view === 'report';
+    if (stg) stg.hidden = state.view === 'report';
+    if (cnt && state.view === 'report') cnt.textContent = '';
+    showPeriod();
     if (state.view === 'board') loadCapacity();
   }
   function setView(v) {
     applyView(v);
-    paint();
+    /* The report reads its own figures, so entering it is what asks for
+       them. Kept between views, so Board and back does not go to the
+       database for numbers that have not moved. */
+    if (v === 'report') loadReport(false); else paint();
     if (bridge.setUrl) bridge.setUrl();
   }
 
@@ -2244,7 +2451,12 @@
     var gp = $('workGroup');
     if (gp) gp.addEventListener('change', function () { state.group = gp.value; paint(); });
     var pd = $('workPeriod');
-    if (pd) pd.addEventListener('change', function () { state.period = pd.value; load(); });
+    if (pd) pd.addEventListener('change', function () {
+      state.period = pd.value;
+      /* The period is the report's window as well as the queue's bound, so
+         changing it re-asks whichever one is on the screen. */
+      if (state.view === 'report') loadReport(true); else load();
+    });
     var sc = $('workScope');
     if (sc) sc.addEventListener('change', function () { state.scope = sc.value; paint(); });
     var vw = $('workViews');
@@ -2477,7 +2689,10 @@
      showing, so a caller knows whether the read has to run again. */
   function showPeriod() {
     var pd = $('workPeriod');
-    var on = state.filter === 'done' || state.filter === '';
+    /* On the queue the period bounds the finished work, so it is drawn only
+       while finished work can be on the page. On the report it is the window
+       every figure is taken over, so it is always drawn there. */
+    var on = state.view === 'report' || state.filter === 'done' || state.filter === '';
     if (pd) pd.hidden = !on;
     return on;
   }
@@ -2491,6 +2706,14 @@
        work would offer a view that comes back empty and say nothing. */
     if (sc) sc.hidden = !may('ops.all', 'view');
     if (sc && sc.hidden) state.scope = 'mine';
+    /* `ops.reports` is granted and never inherited, so a group given
+       `ops: work` is not quietly handed the team's numbers. Hiding the button
+       changes nothing the database does — `ops_report` refuses the same
+       person — but offering a view that can only come back denied is a
+       control somebody has to try before they learn it is not theirs. */
+    var rv = $('workViewReport');
+    if (rv) rv.hidden = !may('ops.reports', 'view');
+    if (rv && rv.hidden && state.view === 'report') state.view = 'list';
     showPeriod();
 
     var params = new URLSearchParams(location.search);

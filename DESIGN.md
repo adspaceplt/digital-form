@@ -939,6 +939,35 @@ printed the same date the meta line already carried. Adding a column to a table
 is two edits, the desktop track and the phone template, and the second is the
 one that is forgotten.
 
+**A cell whose heading leaves at the phone breakpoint carries its own word.**
+`.crm-head` hides below 640, which is right for a row of names, states and
+dates, because each of those says what it is. It is wrong for a bare figure:
+the operations report drew `4` under a task title and `11 days` under a stage
+name, and on a phone nothing on the screen said the first was days overdue or
+the second the slowest tenth. The answer is not to keep the header — a header
+row on a two line card is a third line of labels — it is for the qualifying
+cell to name itself where the header is gone (a label span, hidden at the
+desk) and for the figure to carry its unit at both widths. `Days over | 4`
+reads on a desk and nowhere else; `Over by | 4 days` reads on both. The test
+is to read one row with the heading covered and ask what each number is; no
+alignment or contrast rule can catch this, because the geometry is correct and
+the meaning is what has gone.
+
+**A section that is empty is still a block in the stack.** The report drew its
+empty sections into a wrapper, so the heading after one keyed on nothing and
+sat 18px below it while every other heading sat 24px below the table above.
+An empty state stands in for the block it replaces and is spaced as that
+block, or the law of the stack holds everywhere except exactly where there is
+least on the screen to distract from it.
+
+**A report states the window its figures are taken over.** Everything but
+"what is running now" is an aggregate over a period, and on a phone the select
+that sets that period is inside the filters sheet — so the one control naming
+the window is not on the screen with the numbers it governs. The report says
+it itself, in dates rather than in the select's word: "This month" does not
+say whether today is in it, and a figure whose window is ambiguous is a figure
+nobody can quote in a meeting.
+
 **A control in an empty state has to survive the repaint that pressing it
 causes.** Filtering the clients list to nothing and pressing Clear the filters
 did nothing at all: `input` and `change` both fire for one keystroke, and the
