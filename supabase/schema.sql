@@ -4945,6 +4945,19 @@ end $$;
 grant execute on function public.ops_transition_task(uuid, text, integer, text) to authenticated;
 
 -- 6.3 Move a date ---------------------------------------------------------------
+-- The order of the pair, stated once. Calendar days, not an interval: a person
+-- reads "the day before", and comparing timestamps would refuse a draft set
+-- for the morning of the day before a midnight final, which works perfectly.
+create or replace function public.ops_due_order_ok(
+  p_draft timestamptz, p_final timestamptz)
+returns boolean
+language sql immutable set search_path = public as $$
+  select p_draft is null
+      or p_final is null
+      or p_draft::date <= (p_final::date - 1)
+$$;
+grant execute on function public.ops_due_order_ok(timestamptz, timestamptz) to authenticated;
+
 create or replace function public.ops_change_due_date(
   p_task uuid, p_kind text, p_value timestamptz, p_reason text,
   p_note text default null, p_version integer default null)
@@ -4966,6 +4979,17 @@ begin
   if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
   if p_version is not null and p_version <> t.version then
     return jsonb_build_object('error', 'stale', 'task', public.ops_task_json(p_task));
+  end if;
+
+  /* The pair as it would stand after this move, whichever end moved. Checked
+     here and not only on the asking path, because `ops_decide_due_change`
+     reaches this function directly once an extension is approved: a gate that
+     lives only where the ask is raised is one an approval walks straight
+     past. */
+  if not public.ops_due_order_ok(
+       case when p_kind = 'first_draft' then p_value else t.current_first_draft_due_at end,
+       case when p_kind = 'final'       then p_value else t.current_final_due_at end) then
+    return jsonb_build_object('error', 'draft-not-before-final');
   end if;
 
   was := case when p_kind = 'final' then t.current_final_due_at
@@ -5992,12 +6016,20 @@ create policy ops_due_requests_read on public.ops_due_requests
   for select to authenticated using (public.ops_may_see_task(task_id));
 
 -- Who an extension on this task is asked of: the person who created it.
-create or replace function public.ops_due_decider(p_task uuid)
+-- Who decides, per kind. The first draft date is the team's own milestone and
+-- has no decider, so it falls through to the move; the final date is the
+-- client's commitment and keeps the round. One argument was not enough to say
+-- that, and two candidates for one name is how `issue_letter` came to have two
+-- signatures for one call, so the old form is dropped rather than kept.
+drop function if exists public.ops_due_decider(uuid);
+create or replace function public.ops_due_decider(p_task uuid, p_kind text)
 returns uuid
 language sql security definer stable set search_path = public as $$
-  select t.created_by from public.ops_tasks t where t.id = p_task
+  select case when p_kind = 'first_draft' then null
+              else (select t.created_by from public.ops_tasks t where t.id = p_task)
+         end
 $$;
-grant execute on function public.ops_due_decider(uuid) to authenticated;
+grant execute on function public.ops_due_decider(uuid, text) to authenticated;
 
 -- 1. Asking.
 create or replace function public.ops_request_due_change(
@@ -6027,9 +6059,19 @@ begin
     return jsonb_build_object('error', 'stale', 'task', public.ops_task_json(p_task));
   end if;
 
-  who := public.ops_due_decider(p_task);
-  /* Nobody to ask, or the asker is the person who would be asked: the move is
-     theirs to make and the round would be a form with one name on both ends. */
+  /* Refused before an ask is raised as well as before a move is made: an ask
+     nobody could approve without breaking the plan is one to turn away at the
+     door, with the word the move itself would have used. */
+  if not public.ops_due_order_ok(
+       case when p_kind = 'first_draft' then p_value else t.current_first_draft_due_at end,
+       case when p_kind = 'final'       then p_value else t.current_final_due_at end) then
+    return jsonb_build_object('error', 'draft-not-before-final');
+  end if;
+
+  who := public.ops_due_decider(p_task, p_kind);
+  /* Nobody to ask — the team's own first draft milestone, or a task whose
+     creator is the person asking — so the move is theirs to make and the
+     round would be a form with one name on both ends. */
   if who is null or who = m.id then
     return public.ops_change_due_date(p_task, p_kind, p_value, p_reason, p_note, p_version);
   end if;
@@ -6165,6 +6207,7 @@ grant execute on function public.ops_withdraw_due_change(uuid) to authenticated;
 --   drop function if exists public.ops_withdraw_due_change(uuid);
 --   drop function if exists public.ops_decide_due_change(uuid, boolean, text);
 --   drop function if exists public.ops_request_due_change(uuid, text, timestamptz, text, text, integer);
---   drop function if exists public.ops_due_decider(uuid);
+--   drop function if exists public.ops_due_decider(uuid, text);
+--   drop function if exists public.ops_due_order_ok(timestamptz, timestamptz);
 --   drop table if exists public.ops_due_requests;
 -- ops_change_due_date is unchanged by this file and needs no rollback.

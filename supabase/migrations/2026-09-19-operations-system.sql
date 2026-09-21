@@ -893,6 +893,19 @@ end $$;
 grant execute on function public.ops_transition_task(uuid, text, integer, text) to authenticated;
 
 -- 6.3 Move a date ---------------------------------------------------------------
+-- The order of the pair, stated once. Calendar days, not an interval: a person
+-- reads "the day before", and comparing timestamps would refuse a draft set
+-- for the morning of the day before a midnight final, which works perfectly.
+create or replace function public.ops_due_order_ok(
+  p_draft timestamptz, p_final timestamptz)
+returns boolean
+language sql immutable set search_path = public as $$
+  select p_draft is null
+      or p_final is null
+      or p_draft::date <= (p_final::date - 1)
+$$;
+grant execute on function public.ops_due_order_ok(timestamptz, timestamptz) to authenticated;
+
 create or replace function public.ops_change_due_date(
   p_task uuid, p_kind text, p_value timestamptz, p_reason text,
   p_note text default null, p_version integer default null)
@@ -914,6 +927,17 @@ begin
   if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
   if p_version is not null and p_version <> t.version then
     return jsonb_build_object('error', 'stale', 'task', public.ops_task_json(p_task));
+  end if;
+
+  /* The pair as it would stand after this move, whichever end moved. Checked
+     here and not only on the asking path, because `ops_decide_due_change`
+     reaches this function directly once an extension is approved: a gate that
+     lives only where the ask is raised is one an approval walks straight
+     past. */
+  if not public.ops_due_order_ok(
+       case when p_kind = 'first_draft' then p_value else t.current_first_draft_due_at end,
+       case when p_kind = 'final'       then p_value else t.current_final_due_at end) then
+    return jsonb_build_object('error', 'draft-not-before-final');
   end if;
 
   was := case when p_kind = 'final' then t.current_final_due_at
