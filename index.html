@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
 <!-- The one brand face, fetched alongside the stylesheet rather than after it. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260921e">
+<link rel="stylesheet" href="/css/portal.css?v=20260921f">
 <style>
   /* A cover and nothing else: the mark at the top, the name in the middle.
      There is no sign in here and no list of the rooms inside, because every
@@ -33,7 +33,11 @@
     display: flex; align-items: center;
     padding: 0 24px;
   }
-  .doorbar img { height: 26px; width: auto; display: block; }
+  /* `contain` for the reason `.brand-logo` takes it: height plus an auto
+     width plus a max-width clamp squashes the mark in a box too narrow for
+     it, and a squashed wordmark is not the wordmark. */
+  .doorbar img { height: 26px; width: auto; display: block;
+    object-fit: contain; object-position: left center; }
   .door {
     flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
     /* The bar has already taken its height off the top, so the title sits on

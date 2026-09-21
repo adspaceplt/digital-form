@@ -887,10 +887,8 @@
       '<div class="bcard-stage">' + stageCell(t) + '</div>' +
       '<div class="bcard-foot">' +
         '<span class="bcard-who">' +
-          (who ? '<span class="bcard-face" aria-hidden="true">' + esc(UI.initials(who)) + '</span>' +
-                 '<span class="bcard-name">' + esc(who) + '</span>'
-               : '<span class="bcard-face is-none" aria-hidden="true"></span>' +
-                 '<span class="bcard-name mute">Unassigned</span>') + '</span>' +
+          (who ? '<span class="bcard-name">' + esc(who) + '</span>'
+               : '<span class="bcard-name mute">Unassigned</span>') + '</span>' +
         (t.current_final_due_at
           ? '<span class="bcard-due' + (over ? ' is-over' : '') + '">' +
               esc(shortDate(t.current_final_due_at)) + '</span>'

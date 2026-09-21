@@ -267,7 +267,16 @@ a { color: inherit; }
 .chrome-actions .btn, .chrome-actions .pill { min-width: 0; }
 .brand-kicker, .brand-for { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .brand { display: flex; align-items: center; gap: 13px; min-width: 0; }
-.brand-logo { height: 26px; width: auto; }
+/* `height` + `width: auto` + the global `img { max-width: 100% }` is a squash
+   waiting for a narrow box: the width is clamped to what is left and the
+   height is not, so the mark is compressed horizontally and the wordmark
+   stops being the wordmark. Measured in the 244px rail, where the box
+   settles at 195px: anything past 8.13:1 drew at 8.13:1, and the wider the
+   asset the worse it got. `contain` fits the ink inside whatever box the
+   layout gives it with the ratio true, and `left` keeps it on the rail's
+   own margin rather than centred in the leftover width. The box still
+   measures 24px, so nothing under it moves. */
+.brand-logo { height: 26px; width: auto; object-fit: contain; object-position: left center; }
 .brand-wordmark { font-size: 16px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
 .brand-divider { width: 1px; height: 26px; background: var(--line); flex: 0 0 auto; }
 .brand-meta { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
@@ -5691,12 +5700,15 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   font-size: 13px; line-height: 1.4; color: var(--ink-mute);
   min-width: 0; overflow-wrap: anywhere;
 }
-.log-who { display: flex; align-items: center; gap: 9px; min-width: 0; }
-.log-avatar {
-  flex: 0 0 28px; width: 28px; height: 28px; display: grid; place-items: center;
-  border: 1px solid var(--line); border-radius: 50%; background: var(--sunk);
-  color: var(--ink-soft); font-size: 11px; font-weight: 600; text-transform: uppercase;
-}
+/* The actor is a name, and a name is what the column is read for. It carried
+   a 28px disc of one initial beside it, which is a placeholder for a picture
+   this portal does not hold and never will: nobody on this team has a profile
+   image, so every row of every log drew the same grey circle, and where the
+   initial did differ it told a reader nothing the name beside it did not
+   already say. A mark earns its place by holding real artwork — `.rec-mark`
+   carries the client's own `logo_url` — or by making rows findable by eye,
+   which one letter in one column cannot do. */
+.log-who { display: flex; align-items: center; min-width: 0; }
 .log-person {
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   font-size: 13px; color: var(--ink-soft);
@@ -6322,19 +6334,15 @@ body.is-canvas { overflow: hidden; }
 .bcard-stage .state-select { width: 100%; }
 /* Whose it is and when it is owed, on one line under the control. The owner
    was missing from the card altogether, which is the fact a board is read
-   for; the disc is what lets a column be scanned by eye before it is read. */
+   for. It arrived as a name behind a 20px initials disc, and the disc went
+   the same day the log's did: it stands in for a profile picture this portal
+   has none of, and a dashed empty one on every unassigned card is a
+   placeholder for a placeholder. The name is the fact. */
 .bcard-foot {
   display: flex; align-items: center; gap: 8px; min-width: 0;
   font-size: 12px; color: var(--ink-soft);
 }
-.bcard-who { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.bcard-face {
-  flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%;
-  display: inline-flex; align-items: center; justify-content: center;
-  background: var(--line-soft); color: var(--ink-soft);
-  font-size: 9.5px; font-weight: 600; letter-spacing: .01em;
-}
-.bcard-face.is-none { background: none; border: 1px dashed var(--line-ctl); }
+.bcard-who { display: flex; align-items: center; min-width: 0; }
 .bcard-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bcard-foot .bcard-due { margin-left: auto; flex: 0 0 auto; }
 .bcard-due { white-space: nowrap; }
