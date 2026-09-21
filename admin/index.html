@@ -159,11 +159,12 @@
          product. It is a place, so it is in the rail — at the foot, under a
          hairline and below the two chunks of four, because it is not a ninth
          section: it is not a route, it keeps no selected state, and it opens
-         a record over whatever you were doing. It borrows `.navitem` for its
-         geometry so the rail is one column top to bottom, and `.railfoot`
-         takes the weight back out. -->
+         a record over whatever you were doing. It takes `.railrow`, which is
+         the box every row of the rail draws in, and not `.navitem`, which is
+         a *section*: that class carries wiring, and borrowing it for the
+         shape alone broke the console for everybody who is not an admin. -->
     <div class="sidebar-foot">
-      <button class="navitem railfoot" id="activityOpen" type="button" hidden>
+      <button class="railrow railfoot" id="activityOpen" type="button" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 8v4.3l3 1.8"/></svg><span>Activity record</span>
       </button>
     </div>

@@ -1965,6 +1965,15 @@ body.is-plain .topbar { background: var(--chrome); }
   flex: 0 0 auto; margin-top: 12px; padding-top: 10px;
   border-top: 1px solid var(--line);
 }
+/* `.railrow` is the box a row of the rail draws in and `.navitem` is a
+   *section* of the console: the first is a shape, the second is a meaning
+   with wiring behind it (`navItems()` reads every `.navitem` and asks the
+   ladder about its `data-section`). The Activity record took `.navitem` for
+   one evening and inherited the other half with it — `sectionAllowed(null)`,
+   which threw for everybody who is not an admin, because `level()` answers an
+   admin before it ever reads the key. That is this file's own rule about
+   borrowing a component for its shape rather than for what it was built to
+   say, so the shape is its own class now and the meaning keeps its name. */
 .railfoot { color: var(--ink-mute); font-weight: 500; }
 .railfoot svg { stroke-width: 1.6; }
 @media (hover: hover) {
@@ -1979,14 +1988,17 @@ body.is-plain .topbar { background: var(--chrome); }
   font-size: 12px; font-weight: 600; letter-spacing: 0;
   color: var(--ink-mute); padding: 0 10px 8px;
 }
-.navitem {
+/* The box every row of the rail draws in, shared so the column reads as one
+   column. `.navitem` adds to it the one thing a section is: a place the
+   console navigates to. */
+.navitem, .railrow {
   display: flex; align-items: center; gap: 11px;
   width: 100%; min-height: var(--ctl-h); text-align: left; border: 0; background: none;
   padding: 9px 10px; border-radius: 9px;
   font-size: 13.5px; font-weight: 500; color: var(--ink-soft);
   transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
 }
-.navitem svg { width: 17px; height: 17px; flex: 0 0 auto; stroke-width: 1.7; color: var(--ink-mute); }
+.navitem svg, .railrow svg { width: 17px; height: 17px; flex: 0 0 auto; stroke-width: 1.7; color: var(--ink-mute); }
 /* Selected is the darker fill and the heavier word; hover is one step
    lighter, so the section you are in never has a twin. Hover exists only
    where a pointer hovers: a phone keeps :hover on the last thing tapped,

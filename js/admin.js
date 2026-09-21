@@ -348,6 +348,13 @@
   var OPS_GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
+    /* No key is no access, never an exception. A permission check that throws
+       takes the whole console down with it, which is what an unnamed key did
+       here once; and where it cannot answer it refuses, which is the posture
+       the rest of the ladder already states. The admin answer deliberately
+       stays *below* this, or a bug reaches only the people without the
+       permission to survive it — which is exactly how this one hid. */
+    if (!key) return 0;
     if (!me) return 0;
     if (me.is_admin || me.role === 'admin') return 3;
     var acc = me.access || {};
@@ -609,8 +616,14 @@
     if (name === 'links') { loadLinks(); restoreScroll(); }
   }
 
+  /* Every `.navitem` that names a section, which is what this function is
+     asked for: `applyAccess` puts each one's `data-section` to the ladder, so
+     a `.navitem` without one is a question the ladder cannot answer. The rail
+     carries a row that is not a section (the Activity record at its foot) and
+     that row is a `.railrow`, not a `.navitem` — the selector states the
+     requirement rather than trusting the markup to keep it. */
   function navItems() {
-    return Array.prototype.slice.call(document.querySelectorAll('.navitem'));
+    return Array.prototype.slice.call(document.querySelectorAll('.navitem[data-section]'));
   }
   navItems().forEach(function (b) {
     b.addEventListener('click', function () { showSection(b.getAttribute('data-section')); });

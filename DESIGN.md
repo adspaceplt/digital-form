@@ -1525,6 +1525,24 @@ one every other list of records uses, and edit and delete went into the ⋯ wher
 a destructive action belongs. Before reaching for a component, check that what
 it was built to say is what this screen says.
 
+**And a class can carry behaviour as well as a look, which is the version of
+that mistake a screenshot cannot show.** The Activity record moved to the foot
+of the rail and took `.navitem` for its geometry, so the column would read as
+one column. `.navitem` does not mean "a row in the rail"; it means **a section
+of the console**, and `navItems()` reads every one of them and puts its
+`data-section` to the ladder. The new row had none, so `level(null)` threw and
+the console did not draw at all — for **everybody except an admin**, because
+`level()` answers an admin on the line above the one that reads the key. Three
+things follow, and the third is the one worth keeping. The shape is its own
+class (`.railrow`) and the meaning keeps its name, which is the rule above
+applied to a class rather than to a look. A selector that a function depends
+on states the dependency (`.navitem[data-section]`), rather than trusting every
+future author to know it. And **a permission check refuses where it cannot
+answer and never throws**: `level()` returns 0 for a missing key, above the
+admin branch, because a check that explodes takes the whole page with it, and
+one that is *skipped* for the most privileged reader is a fault that reaches
+only the people least able to work around it.
+
 **One action is an action, not a banner.** The rule the section head already
 carried (`.viewhead .btn:only-of-type`) was missed by every other bar, so on a
 phone `Add lead` stretched the full width above the client list and `Add
