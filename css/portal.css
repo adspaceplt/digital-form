@@ -3699,9 +3699,28 @@ body > .shell { width: 100%; }
    sat in each stage, and the sessions somebody started — so each is named at
    the pane's own section size, and the second is one block step under the
    first like every other pair of blocks in a section. */
+/* The report's row: what it is, the qualifier, the figure. The figure ends at
+   the card's own margin and is tabular, so a column of them can be read down
+   without the eye tracking sideways for each one — which is the whole of what
+   a report is for. */
+.rep-row { grid-template-columns: minmax(0, 1fr) 132px 96px; }
+.rep-mid { font-size: 13px; color: var(--ink-mute); white-space: nowrap; }
+.rep-num {
+  font-size: 13.5px; font-weight: 600; text-align: right; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.rep-num.is-over { color: var(--warn); }
+.rep-open { text-align: left; }
+/* The column heading leaves at the phone breakpoint with every other
+   `.crm-head`, so the middle cell's own word is what says what its figure is.
+   Drawn only where the header is gone; at a desk the heading has said it. */
+.rep-lab { display: none; }
+/* The window every figure but the first is taken over. Stated on the report,
+   because on a phone the select that sets it is inside the filters sheet. */
+.repwin { margin: 0 0 12px; }
 .ovsec-title { font-size: 15px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 8px; }
 .ovsec-title + .crm-table { margin-bottom: 0; }
-.crm-table + .ovsec-title, .empty + .ovsec-title { margin-top: 24px; }
+.crm-table + .ovsec-title, .empty + .ovsec-title, .repempty + .ovsec-title { margin-top: 24px; }
 .tact-row { grid-template-columns: 170px minmax(0, 1fr) 150px; }
 .tact-when { font-size: 13px; color: var(--ink-mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tact-who { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -4067,6 +4086,20 @@ body > .shell { width: 100%; }
 .is-narrow .task-row > .task-owner { display: none; }
 .is-narrow .tlink-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "kind kind"; }
 .is-narrow .tlink-row > .tlink-kind { grid-area: kind; }
+/* The report's row, here rather than beside the desktop rule it belongs to:
+   `.is-narrow .svc-row` above is the same weight and comes later in the file,
+   so a phone template written up there loses to it and the row kept four
+   tracks whose last was sized by its own content — which is how two rows came
+   to start their figures 7px apart. Measured, not guessed: the computed
+   `grid-template-columns` read `241px 0px 0px 48.8px`. */
+.is-narrow .rep-row {
+  grid-template-columns: minmax(0, 1fr) 96px;
+  grid-template-areas: "name num" "mid num";
+}
+.is-narrow .rep-row > .svc-name { grid-area: name; }
+.is-narrow .rep-row > .rep-mid { grid-area: mid; }
+.is-narrow .rep-row > .rep-num { grid-area: num; align-self: center; }
+.is-narrow .rep-lab { display: inline; }
 .is-narrow .tsess-row { grid-template-columns: minmax(0, 1fr) 110px; grid-template-areas: "name mins" "who mins"; }
 .is-narrow .tsess-row > .tsess-who { grid-area: who; }
 .is-narrow .tsess-row > .tsess-mins { grid-area: mins; align-self: center; }
