@@ -3611,7 +3611,6 @@ body > .shell { width: 100%; }
 .crm-links { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
 /* The journey reads as one sentence of facts, so it is one mute line under
    them, not a row of cells competing with the facts above it. */
-.crm-journey { margin: 0 0 12px; font-size: 12.5px; color: var(--ink-mute); line-height: 1.5; }
 
 /* ---------- Services ----------
    The rate card, and the lines a client has asked for. One row per line:
@@ -5351,9 +5350,6 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .railico { width: 16px; height: 16px; flex: 0 0 auto; color: var(--ink-mute); stroke-width: 1.8; }
 /* Where the record stands: the stage as the chip every list draws, and how
    long it has stood there, in one line. */
-.railstatus { display: grid; gap: 6px; justify-items: start; }
-.railstatus-line { font-size: 12.5px; color: var(--ink-soft); }
-.railstatus-line.is-late { color: var(--warn); font-weight: 600; }
 /* What stands between this record and Active. Red, because it is a refusal
    and not a caution: amber is for something pending, and this is something
    the database will not allow until the fields are filled. The whole block
@@ -5431,10 +5427,9 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .railgo { width: 100%; justify-content: space-between; gap: 8px; }
 .railgo .ovgo-chev { width: 14px; height: 14px; flex: 0 0 auto; color: var(--ink-mute); }
 
+/* The campaign and task rails still list plain dates. Glyph, label, then the
+   date on the right, tabular so a column of them lines up on the day. */
 .raildates { display: grid; gap: 10px; margin: 0; }
-/* Glyph, label, then the date on the right, tabular so a column of them
-   lines up on the day. The glyph is what separates the figure from the label
-   at a glance; a sunk chip used to do that and read as a control to press. */
 .raildates > div { display: flex; align-items: center; gap: 10px; }
 .raildates dt { font-size: 13px; color: var(--ink-soft); min-width: 0; }
 .raildates dd {
@@ -5452,14 +5447,67 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft);
 }
 /* No rule under nothing. The dates above are omitted one by one when the
-   record does not hold them, so a client with none left a heading, a gap and
-   a hairline over an empty list. */
+   record does not hold them, so a rail with none left a heading, a gap and a
+   hairline over an empty list. */
 .raildates:empty + .rail-date-edit, .facts:empty + .rail-date-edit { margin-top: 0; padding-top: 0; border-top: 0; }
 .rail-date-edit label {
   grid-column: 1 / -1; font-size: 12px; font-weight: 600;
   letter-spacing: 0; color: var(--ink-mute);
 }
 .rail-date-edit .btn { min-width: 0; }
+
+/* Every date and every duration in one block: the stage journey above a rule
+   and the dates the record holds below it.
+
+   TWO tracks, not three. A name, a date and a duration are all `nowrap`, and
+   three of them in a 365px rail measured at exactly 365px — no slack at all,
+   so the first longer stage name or the first `3 days · Overdue` pushed the
+   page sideways, which is what the walk caught. What each row is read for is
+   the duration, so that ends the row on its own margin and the date rides
+   quietly beside the name, where the pair can ellipsis if it ever has to. */
+.tline { display: grid; gap: 10px; }
+.tl-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center; gap: 4px 10px;
+}
+.tl-lead { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.tl-what {
+  font-size: 13px; color: var(--ink-soft); min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* The stage the record is in now is the live one, so it carries the weight;
+   the stages behind it are history and read quiet. */
+.tl-row.is-now .tl-what { color: var(--ink); font-weight: 600; }
+.tl-when {
+  font-size: 12.5px; color: var(--ink-mute); white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.tl-span {
+  font-size: 12.5px; color: var(--ink-mute); white-space: nowrap;
+  text-align: right; font-variant-numeric: tabular-nums;
+}
+/* Overdue is the one thing anybody scans this block for: the caution colour
+   and the weight together, so the mark survives greyscale. */
+.tl-span.is-late, .tl-when.is-late { color: var(--warn); font-weight: 600; }
+.tl-rule { height: 1px; background: var(--line-soft); }
+/* A dated row is read, so its date carries the ink the stage rows give the
+   duration; the stage rows' own dates stay mute beside the stage. */
+.tl-date .tl-when { font-size: 13px; color: var(--ink); }
+/* Client since is the one value here a person corrects, so the pen ends the
+   row where a duration would and the value itself becomes the field. It takes
+   the negative block margin the rate card's ⋯ takes, so a 38px target does
+   not set the height of a 20px row. */
+.tl-pen {
+  justify-self: end; width: var(--ctl-h); height: var(--ctl-h);
+  margin-block: calc((20px - var(--ctl-h)) / 2);
+  border: 0; background: none; color: var(--ink-mute);
+}
+.tl-pen svg { width: 15px; height: 15px; }
+@media (hover: hover) { .tl-pen:hover { background: var(--line-soft); color: var(--ink); } }
+.tl-pen.is-saving { color: var(--action); }
+/* The field takes the value's place inside the row's own left cell, so the
+   picker grows where the date was rather than in the duration's track. */
+.tl-lead .askfield { min-width: 0; flex: 1 1 auto; }
 
 .raillog { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 /* The glyph names the section the event belongs to; the three lines beside
@@ -5535,15 +5583,11 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .rec-rail { grid-area: rail; min-width: 0; }
 .rec-rail > .facts { margin: 0 0 12px; }
 .rec-rail .railblock > .facts { margin: 0; }
-/* The journey is a sentence about the facts above it, not part of the last
-   value in them, so it keeps the step that says so. */
-.rec-rail .railblock > .crm-journey { margin: 12px 0 0; }
 .rec-rail .railblock > .crm-links { margin: 12px 0 0; }
 /* A 320px rail is two columns of facts, not six; an odd last one spans, or a
    cell sits alone on its row with an empty half beside it. */
 .rec-rail .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .rec-rail .facts > div:nth-child(odd):last-child { grid-column: 1 / -1; }
-.rec-rail .crm-journey { margin-bottom: 12px; }
 .rec-rail .crm-links { margin-top: 0; margin-bottom: 12px; }
 .rec-rail .notice { margin-bottom: 12px; }
 

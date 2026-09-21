@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260921c">
+<link rel="stylesheet" href="/css/portal.css?v=20260921d">
 <!-- Read before the stylesheet paints, so choosing dark does not flash white
      on every load. The console only: the client pages have no dark at all. -->
 <script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
@@ -28,25 +28,25 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260921c"></script>
-<script src="/js/words.js?v=20260921c"></script>
-<script src="/js/copy.js?v=20260921c"></script>
-<script src="/js/ask.js?v=20260921c"></script>
-<script src="/js/confirm.js?v=20260921c"></script>
-<script src="/js/sheet.js?v=20260921c"></script>
-<script src="/js/state.js?v=20260921c"></script>
-<script src="/js/group.js?v=20260921c"></script>
-<script src="/js/menu.js?v=20260921c"></script>
-<script src="/js/cmdbar.js?v=20260921c"></script>
-<script src="/js/api.js?v=20260921c"></script>
-<script src="/js/money.js?v=20260921c"></script>
-<script src="/js/mockups.js?v=20260921c"></script>
+<script src="/js/config.js?v=20260921d"></script>
+<script src="/js/words.js?v=20260921d"></script>
+<script src="/js/copy.js?v=20260921d"></script>
+<script src="/js/ask.js?v=20260921d"></script>
+<script src="/js/confirm.js?v=20260921d"></script>
+<script src="/js/sheet.js?v=20260921d"></script>
+<script src="/js/state.js?v=20260921d"></script>
+<script src="/js/group.js?v=20260921d"></script>
+<script src="/js/menu.js?v=20260921d"></script>
+<script src="/js/cmdbar.js?v=20260921d"></script>
+<script src="/js/api.js?v=20260921d"></script>
+<script src="/js/money.js?v=20260921d"></script>
+<script src="/js/mockups.js?v=20260921d"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260921c" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260921d" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -839,10 +839,6 @@
           <!-- Where the record stands and for how long: the stage, which the
                head lets you change, and the clock under it, which nothing
                else in the rail states. -->
-          <div class="railblock" id="crmStatusBlock">
-            <h3 class="railtitle">Account status</h3>
-            <div class="railstatus" id="crmStatus"></div>
-          </div>
           <!-- What this record needs next. A next action a person actually
                wrote on a call carries its own due date; where nobody has, the
                step is derived from the same gate, stage and lines the rest of
@@ -867,28 +863,25 @@
             <h3 class="railtitle">Profile</h3>
             <div id="crmDone"></div>
           </div>
-          <!-- Dates the record actually holds. A row is omitted when its date
-               is not there; none of them is guessed. -->
-          <!-- The three blocks below are reference, not action: on a phone
+          <!-- Every date and every duration this record holds, in one place.
+               The stage rows above the rule are the journey and its
+               turnarounds — how long a lead waited to be contacted, how long
+               from contact to proposal, how long this client has been
+               engaged — read from the stamped history the trigger writes, so
+               the averages a report will want later need no new field and no
+               backfill. The dated rows below are what the record holds; a row
+               is omitted when its date is not there.
+               The three blocks below are reference, not action: on a phone
                they follow the panes (`.rail-after`), so the record's own
                content is not a screen and a half down. -->
           <div class="railblock rail-after" id="crmDatesBlock" hidden>
-            <h3 class="railtitle">Key dates</h3>
-            <dl class="raildates" id="crmDates"></dl>
-            <div class="rail-date-edit">
-              <label for="crmSince">Client since</label>
-              <input class="input input-sm" id="crmSince" type="date">
-              <button class="btn btn-sm" id="crmSinceSave" type="button">Save</button>
-            </div>
+            <h3 class="railtitle">Timeline</h3>
+            <div class="tline" id="crmTimeline"></div>
             <div class="msg" id="crmSinceMsg"></div>
           </div>
           <div class="railblock rail-after">
             <h3 class="railtitle">Details</h3>
             <dl class="facts" id="crmFacts"></dl>
-            <!-- The journey, left to right: how long each stage took and how long
-                 this one has been running. Where a deal stalls is a fact about
-                 the client, so it sits on the client. -->
-            <p class="crm-journey" id="crmJourney" hidden></p>
             <div class="crm-links" id="crmLinks"></div>
           </div>
           <!-- The last few things the portal recorded about this client. The
@@ -2648,13 +2641,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260921c"></script>
-<script src="/js/documents.js?v=20260921c"></script>
-<script src="/js/letters.js?v=20260921c"></script>
-<script src="/js/register.js?v=20260921c"></script>
-<script src="/js/crm.js?v=20260921c"></script>
-<script src="/js/team.js?v=20260921c"></script>
-<script src="/js/campaigns.js?v=20260921c"></script>
-<script src="/js/ops.js?v=20260921c"></script>
+<script src="/js/admin.js?v=20260921d"></script>
+<script src="/js/documents.js?v=20260921d"></script>
+<script src="/js/letters.js?v=20260921d"></script>
+<script src="/js/register.js?v=20260921d"></script>
+<script src="/js/crm.js?v=20260921d"></script>
+<script src="/js/team.js?v=20260921d"></script>
+<script src="/js/campaigns.js?v=20260921d"></script>
+<script src="/js/ops.js?v=20260921d"></script>
 </body>
 </html>

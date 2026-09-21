@@ -219,31 +219,38 @@
     return !isNaN(t) && (Date.now() - t) / 3600000 >= limit;
   }
 
-  /* The journey, left to right, as one line: how long each stage took and how
-     long the current one has been running. Read from the stamped history, not
-     from the activity record, because the record is a log of what people did
-     and this is a fact about the client. */
+  /* The journey as rows: when each stage began and how long it took, with the
+     current one still running. Read from the stamped history the trigger
+     writes, not from the activity record, because the record is a log of what
+     people did and this is a fact about the client.
+
+     Each row's duration is one of the turnarounds the team wants to average
+     later: time in Lead is how long a lead waited to be contacted, time in
+     Contacted is how long from first contact to a proposal, time in Proposal
+     sent is how long it took to close, and time in Active is how long this
+     client has been engaged. Nothing new is stored for any of it — the
+     history is already there, so a report over every client needs no field
+     and no backfill. */
   function journeyOf(c) {
     var log = (c && c.stage_log) || [];
     /* A record whose history predates the clock still knows when its current
        stage began, so it says that much rather than nothing. */
     if (!log.length && c && c.stage_since) log = [{ stage: c.stage || 'lead', at: c.stage_since }];
-    if (!log.length) return '';
     var out = [];
     for (var i = 0; i < log.length; i++) {
       var at = Date.parse(log[i].at);
       if (isNaN(at)) continue;
-      var next = i + 1 < log.length ? Date.parse(log[i + 1].at) : Date.now();
-      var days = Math.max(0, Math.floor((next - at) / 86400000));
-      var word = stageWord(log[i].stage)[1];
-      /* The stage it is in now is running, so it reads as a duration so far;
-         a stage that is over reads as how long it took. "Same day so far" was
-         both at once and said neither. */
       var last = i + 1 === log.length;
-      if (last) out.push(word + ' ' + (days === 0 ? 'today' : spanWord(days).toLowerCase() + ' so far'));
-      else out.push(word + ' ' + (days === 0 ? 'same day' : spanWord(days).toLowerCase()));
+      var next = last ? Date.now() : Date.parse(log[i + 1].at);
+      out.push({
+        stage: log[i].stage,
+        word: stageWord(log[i].stage)[1],
+        at: log[i].at,
+        days: Math.max(0, Math.floor((next - at) / 86400000)),
+        now: last
+      });
     }
-    return out.join('  ·  ');
+    return out;
   }
 
   /* What an invoice needs. Field id, column, label, required. A client is
@@ -737,16 +744,10 @@
       return '<option value="' + s[0] + '"' + (s[0] === (c.stage || 'lead') ? ' selected' : '') + '>' + esc(s[1]) + '</option>';
     }).join('');
     sel.className = 'select select-sm state-select ' + (w[2] || '');
-    /* Where the record stands, and for how long. The chip is the stage the
-       head lets you change; the line is the stage clock, which nothing else
-       on the rail states, and it carries the overdue word the register does. */
-    var status = $('crmStatus');
-    if (status) {
-      var age = ageWord(c), late = isStale(c);
-      status.innerHTML = '<span class="tone ' + esc(w[2] || '') + '">' + esc(w[1]) + '</span>' +
-        (age ? '<span class="railstatus-line' + (late ? ' is-late' : '') + '">' +
-          esc(age === 'Today' ? 'Since today' : age + ' in this stage') + (late ? ' · Overdue' : '') + '</span>' : '');
-    }
+    /* There is no Account status block: the stage select in the head says
+       where the record stands and the Timeline says for how long, with the
+       overdue mark on the stage that is running. A rail block repeating the
+       head's own control was the same fact twice. */
 
     paintIdentity(c);
 
@@ -766,9 +767,9 @@
         (String(f[1]).indexOf('<span') === 0 ? f[1] : esc(f[1])) + '</dd></div>';
     }).join('');
 
-    var trip = journeyOf(c);
-    $('crmJourney').textContent = trip;
-    $('crmJourney').hidden = !trip;
+    /* The journey is the Timeline's, stated once: it was a mute line here as
+       well, so a record printed "Lead 10 days · Active today" under Details
+       and the same durations again in the rail. */
 
     // Website, phone and the social pages, as things to open rather than read.
     var links = [];
@@ -1001,6 +1002,11 @@
   var CHEV = '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
     'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M9 18l6-6-6-6"/></svg>';
+  /* The same pen the Overview's Contact details carries, so the one control
+     that edits a value in place is one mark everywhere in the record. */
+  var PEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
 
   /* The glyphs the record's rows carry. One per kind of thing, neutral, drawn
      at 16px with the stroke every other mark in the console uses, so a list
@@ -1243,48 +1249,89 @@
     block.hidden = false;
   }
 
-  /* Dates the record holds. A row is left out when its date is not there. */
+  /* Every date and every duration the record holds, in one block: the stage
+     journey and its turnarounds above a rule, then the dates themselves. A
+     dated row is left out when its date is not there, because a list of three
+     dates where two say "Not set" is a list that has stopped being read. */
   function railDates(c) {
-    var block = $('crmDatesBlock'), box = $('crmDates');
+    var block = $('crmDatesBlock'), box = $('crmTimeline');
     if (!block || !box) return;
     var live = (state.touches || []).filter(function (t) { return !t.archived_at; });
     var last = live.map(function (t) { return t.happened_at; }).filter(Boolean).sort().pop();
     var nextAt = live.filter(function (t) { return t.next_action && !t.done_at && t.next_at; })
       .map(function (t) { return t.next_at; }).sort()[0];
-    /* How long the client has been Active is the stage clock, which Account
-       status already states, so it is not a date row here as well. */
-    var rows = [
-      ['Client since', c.created_at],
-      ['Last contact', last],
-      ['Next follow up', nextAt]
-    ].filter(function (r) { return r[1]; });
-    if (!rows.length) { block.hidden = true; box.innerHTML = ''; return; }
-    box.innerHTML = rows.map(function (r) {
-      var late = r[0] === 'Next follow up' && r[1] < today();
-      return '<div>' + ico('calendar') + '<dt>' + esc(r[0]) + '</dt><dd' + (late ? ' class="is-late"' : '') + '>' +
-        esc(niceDate(r[1])) + '</dd></div>';
+
+    /* The stage it is in now is the one running, so its duration reads "so
+       far" and carries the overdue mark where the stage has run past its
+       limit — which is why Account status no longer states a clock of its
+       own: the stage select in the head says where the record is, and this
+       says for how long. */
+    var trip = journeyOf(c).map(function (s) {
+      var span = s.days === 0 ? (s.now ? 'Today' : 'Same day') : spanWord(s.days);
+      var over = s.now && isStale(c);
+      return '<div class="tl-row' + (s.now ? ' is-now' : '') + '">' +
+        '<span class="tl-lead"><span class="tl-what">' + esc(s.word) + '</span>' +
+          '<span class="tl-when">' + esc(niceDate(s.at)) + '</span></span>' +
+        '<span class="tl-span' + (over ? ' is-late' : '') + '">' +
+          esc(span + (s.now && s.days > 0 ? ' so far' : '') + (over ? ' · Overdue' : '')) +
+        '</span></div>';
     }).join('');
-    $('crmSince').value = c.created_at ? String(c.created_at).slice(0, 10) : '';
+
+    var dates = [
+      ['Client since', c.created_at, true],
+      ['Last contact', last, false],
+      ['Next follow up', nextAt, false]
+    ].filter(function (r) { return r[1]; }).map(function (r) {
+      var late = r[0] === 'Next follow up' && r[1] < today();
+      /* Client since is the one date here a person may correct, so the value
+         itself is what opens: a field growing out of the thing it changes,
+         never a second field and a Save button below the list. */
+      return '<div class="tl-row tl-date">' +
+        '<span class="tl-lead"><span class="tl-what">' + esc(r[0]) + '</span>' +
+          '<span class="tl-when' + (late ? ' is-late' : '') + '"' + (r[2] ? ' id="crmSinceVal"' : '') + '>' +
+            esc(niceDate(r[1])) + '</span></span>' +
+        (r[2] ? '<button class="tl-pen" id="crmSinceEdit" type="button" aria-label="Edit client since">' + PEN + '</button>'
+              : '<span class="tl-span"></span>') +
+        '</div>';
+    }).join('');
+
+    if (!trip && !dates) { block.hidden = true; box.innerHTML = ''; return; }
+    box.innerHTML = trip + (trip && dates ? '<div class="tl-rule"></div>' : '') + dates;
+    wireSince(c);
     block.hidden = false;
   }
 
   /* Imported records may predate this portal. Their real start date is an
      operational fact, so it can be corrected without falsifying the stage
-     clock or inventing a second stored date. */
-  $('crmSinceSave').addEventListener('click', function () {
-    var c = state.client, day = val('crmSince');
-    if (!c || !day) { msg('crmSinceMsg', 'Choose a date.', 'err'); return; }
-    var created = day + 'T00:00:00.000Z';
-    db.from('clients').update({ created_at: created }).eq('id', c.id).then(function (r) {
-      if (r.error) { msg('crmSinceMsg', r.error.message, 'err'); return; }
-      c.created_at = created;
-      var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
-      if (mine) mine.created_at = created;
-      railDates(c);
-      msg('crmSinceMsg', 'Saved.', 'ok');
-      log('client.edited', c.name, 'Client since ' + niceDate(created));
+     clock or inventing a second stored date. The value on the row becomes the
+     field, and the pen beside it becomes the tick that saves it, which is the
+     shape `js/ask.js` gives every value already on the screen. */
+  function wireSince(c) {
+    var val = $('crmSinceVal'), pen = $('crmSinceEdit');
+    if (!val || !pen) return;
+    pen.addEventListener('click', function () {
+      ADspaceAsk.rename(val, pen, {
+        type: 'date',
+        value: c.created_at ? String(c.created_at).slice(0, 10) : '',
+        label: 'Client since',
+        saveLabel: 'Save client since',
+        save: function (day) {
+          var created = day + 'T00:00:00.000Z';
+          db.from('clients').update({ created_at: created }).eq('id', c.id)
+            .select('id').then(function (r) {
+              if (r.error) { msg('crmSinceMsg', r.error.message, 'err'); return; }
+              if (!(r.data || []).length) { msg('crmSinceMsg', 'Not saved. The database refused the request.', 'err'); return; }
+              c.created_at = created;
+              var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
+              if (mine) mine.created_at = created;
+              railDates(c);
+              msg('crmSinceMsg', 'Saved.', 'ok');
+              log('client.edited', c.name, 'Client since ' + niceDate(created));
+            });
+        }
+      });
     });
-  });
+  }
 
   /* The last few entries the portal wrote about this client. The whole record
      is one tab away; this is the excerpt, and it draws nothing at all until
