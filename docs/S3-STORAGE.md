@@ -1,9 +1,11 @@
 # Storage: what grows, what costs, and what to do about it
 
 The portal writes to S3 and never removes anything. This file is the three
-things that fixes, in the order they are worth doing. **Step 1 is fifteen
-minutes in the AWS console, needs no code, and is where nearly all of the cost
-saving is.** Steps 2 and 3 are code and are not built yet.
+things that fixes, in the order they are worth doing. **Step 1 is ten minutes
+in the AWS console and needs no code**, and while the bucket is small it is
+worth doing for the leak it stops rather than for the money it saves: at this
+size the storage bill is pennies and the real exposure is files nobody can
+see. Steps 2 and 3 are code and are not built yet.
 
 ## What happens today
 
@@ -41,27 +43,22 @@ in the bucket, billable, and they are not visible in the normal object list.
 
 ---
 
-## 1. The lifecycle rule — do this first
+## 1. The lifecycle rule — do this first, but only half of it now
 
-No code, no deploy, no risk. It does three things: throws away abandoned
-upload parts, moves older files to cheaper storage, and expires old versions
-if versioning is on.
+The rule has two halves and they are worth doing at **different times**. The
+housekeeping half is worth doing today and costs nothing. The storage-class
+half is worth nothing today and can cost slightly more than it saves.
+
+### Now: the housekeeping half
 
 **AWS console → S3 → `myadspace` → Management → Lifecycle rules → Create.**
 
-Name it `content-housekeeping`, scope it to the prefix `content/`, and set:
+Name it `content-housekeeping`, scope it to the prefix `content/`, and set one
+action only:
 
 | Action | Value | Why |
 | --- | --- | --- |
-| Delete expired object delete markers or incomplete multipart uploads | **7 days** | An abandoned 1 GB upload is billable and invisible in the object list. Seven days is well past any real retry. |
-| Move current versions between storage classes | **Standard-IA after 90 days** | A client's content is looked at hard for a month and rarely after. Infrequent Access is roughly 45% cheaper to store. |
-| Move current versions between storage classes | **Glacier Instant Retrieval after 365 days** | A year on, a file is archive. Instant Retrieval still serves through CloudFront with no restore step, so nothing breaks. |
-
-**Do not add an expiration action.** A client asking for last year's reel and
-being told it is gone is worse than the storage bill. Cheaper, not deleted.
-
-As JSON, if you prefer to paste it (S3 → Management → Lifecycle rules → Edit
-as JSON, or the CLI):
+| Delete expired object delete markers or incomplete multipart uploads | **7 days** | An abandoned 1 GB upload is billable storage that does not appear in the object list, so nobody will ever notice it. At a 1 GB ceiling per file, one abandoned upload is a fifth of the Free Tier's whole 5 GB. Seven days is well past any real retry. |
 
 ```json
 {
@@ -71,10 +68,6 @@ as JSON, or the CLI):
       "Status": "Enabled",
       "Filter": { "Prefix": "content/" },
       "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 7 },
-      "Transitions": [
-        { "Days": 90,  "StorageClass": "STANDARD_IA" },
-        { "Days": 365, "StorageClass": "GLACIER_IR" }
-      ],
       "NoncurrentVersionExpiration": { "NoncurrentDays": 30 }
     }
   ]
@@ -86,9 +79,40 @@ It is harmless if it is off, and if it is on it is the line that stops every
 overwritten file being kept for ever. Every key the portal writes carries a
 UUID, so the portal itself never overwrites one.
 
-**A note on Standard-IA.** It charges a minimum of 30 days per object and a
-small retrieval fee. Both are far below the storage saved on files older than
-90 days, which is why the transition is at 90 and not at 30.
+### Later: the storage-class half
+
+**Do not add these while the bucket is small.** The Free Tier covers S3
+**Standard** only; Standard-IA and Glacier are not in it. So on a bucket
+inside the free allowance, a transition moves data *out* of what is free and
+*into* what is billed, and adds three charges that Standard does not have:
+
+- a per-request charge for each object moved,
+- a 30 day minimum billing period per object in IA, so a file corrected and
+  replaced after a week is still billed for a month,
+- a per-GB retrieval fee every time a client opens an older file.
+
+The saving is a fraction of a cent per GB per month. Below roughly 100 GB the
+whole exercise is worth pennies and can be negative.
+
+**Add them when the monthly bill shows an S3 storage line you would rather
+reduce** — in practice once the bucket is past about 100 GB, or once the Free
+Tier's twelve months end, whichever comes first. Then edit the same rule and
+add:
+
+```json
+"Transitions": [
+  { "Days": 90,  "StorageClass": "STANDARD_IA" },
+  { "Days": 365, "StorageClass": "GLACIER_IR" }
+]
+```
+
+90 rather than 30 because of the IA minimum above; Glacier **Instant**
+Retrieval rather than Flexible or Deep Archive because it still serves through
+CloudFront with no restore step, so nothing on a client's page breaks.
+
+**Do not add an expiration action, at any size.** A client asking for last
+year's reel and being told it is gone is worse than the storage bill. Cheaper,
+never deleted.
 
 ---
 
