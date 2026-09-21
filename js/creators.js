@@ -133,6 +133,7 @@
       },
       tbc: 'To be confirmed',
       amountLabel: 'Amount',
+      detailsLabel: 'Campaign details',
       creatorsLabel: 'Creators',
       dueLabel: 'Campaign due',
       pdf: 'PDF ↗',
@@ -223,6 +224,7 @@
       },
       tbc: '待定',
       amountLabel: '金额',
+      detailsLabel: '合作详情',
       creatorsLabel: '博主人数',
       dueLabel: '合作截止',
       pdf: 'PDF ↗',
@@ -359,6 +361,17 @@
       return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
     }).join('');
 
+    /* The fold's own head. The label names what is behind it, and the summary
+       carries the one fact with a consequence — the date — so it is readable
+       while the card is shut and the client is not made to open a card to
+       find out when this is due. A date needs no label, because a date reads as
+       one; where the campaign has none the count takes its place with its own
+       word, since a shut fold whose summary is blank is a fold with dead space
+       where the reason to open it should be. */
+    $('engageLabel').textContent = t().detailsLabel;
+    $('engageSum').textContent = c.deadline ? fmtDate(c.deadline)
+      : (c.slots ? t().creatorsLabel + ' ' + c.slots : '');
+
     if (c.state === 'draft') { showState(t().closed, t().closedText, false); return; }
 
     $('app').hidden = false;
@@ -427,6 +440,15 @@
     $('bookedTotals').hidden = !open;
     this.setAttribute('aria-expanded', String(open));
     this.classList.toggle('is-open', open);
+  });
+
+  /* The detail card. Shut when the page opens, because the creators the client
+     came to choose are below it; opening and shutting is the same move every
+     other fold in this portal makes, so the card grows and collapses in place
+     rather than blinking away. */
+  $('engageToggle').addEventListener('click', function () {
+    var shut = $('engageCard').classList.toggle('is-shut');
+    this.setAttribute('aria-expanded', String(!shut));
   });
 
   /* The campaign's numbers, added up the way the console adds them: every

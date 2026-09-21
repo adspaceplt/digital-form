@@ -2436,7 +2436,52 @@ body.is-plain .topbar { background: var(--chrome); }
    bounded surface, its parts divided by the hairline this system already uses
    between the sections of a record. */
 .engage-band { padding: 16px 18px; }
-.engage-band > .booking-facts { margin-top: 0; }
+/* What the campaign is about reads as one block of prose, then the facts.
+   Both lines used to be `.camphead p`, which is a caption under a title; inside
+   the card they are its content, so they take the card's own quiet body size
+   and the first of them sits on the band's own padding rather than 6px below
+   it. The `.engage-card` prefix is what makes these outrank `.camphead-purpose`
+   and `.engage-band > .booking-facts`, which are single-class rules later in
+   the file; one stack rule beats six margins written at their point of use. */
+.engage-card .engage-band > .camphead-purpose,
+.engage-card .engage-band > p { font-size: 14px; color: var(--ink-soft); }
+.engage-card .engage-band > .camphead-purpose { color: var(--ink); }
+.engage-card .engage-band > * { margin-top: 0; }
+.engage-card .engage-band > * + * { margin-top: 8px; }
+.engage-card .engage-band > * + .booking-facts { margin-top: 14px; }
+/* The detail folds, and the one fact with a consequence rides the head so it
+   is readable while the card is shut. The head is the control, the way every
+   other fold in this portal is opened by its own title. */
+.engage-head { display: flex; align-items: center; gap: 12px; padding: 14px 18px; }
+.engage-toggle {
+  display: inline-flex; align-items: center; gap: 8px; min-width: 0;
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font: inherit; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
+  /* A bare button is a control and clears the control floor, so the target is
+     38px at a desk and 44 under a finger. The negative block margin keeps its
+     footprint the label's own line, the way the rate card's ⋯ does: without it
+     the card's one-line head stood 66px at a desk and 72 on a phone. */
+  min-height: var(--ctl-h); margin-block: calc((20px - var(--ctl-h)) / 2);
+}
+.engage-toggle svg {
+  width: 16px; height: 16px; flex: 0 0 auto; color: var(--ink-mute);
+  transition: transform var(--t) var(--ease);
+}
+.engage-toggle[aria-expanded="true"] svg { transform: rotate(90deg); }
+.engage-sum {
+  margin-left: auto; flex: 0 0 auto; font-size: 13.5px; color: var(--ink-soft); font-weight: 500;
+}
+/* The body opens and shuts in place, on the grid row this portal animates
+   every fold with (`.crm-group-body`): 0fr to 1fr is the one height CSS can
+   move without being told what it is. Driven by a class rather than `hidden`,
+   because `hidden` is `display: none` and a display change cannot animate. */
+.engage-body {
+  display: grid; grid-template-rows: 1fr; opacity: 1;
+  transition: grid-template-rows var(--t-slow) var(--ease), opacity var(--t) var(--ease-out);
+}
+.engage-inner { min-height: 0; overflow: hidden; }
+.engage-card.is-shut > .engage-body { grid-template-rows: 0fr; opacity: 0; }
+.engage-body .engage-band { border-top: 1px solid var(--line-soft); }
 .progress-card {
   padding: 16px 18px; border-top: 1px solid var(--line-soft);
 }
@@ -3926,6 +3971,15 @@ body > .shell { width: 100%; }
    to the middle of a links cell that had wrapped to two rows, so the date sat
    halfway down the card with nothing beside it. */
 .is-narrow .cr-row > .cr-links { grid-area: links; align-self: start; }
+/* The profile links are the row's last line, and a `.plink-bare` carries 5px
+   of its own padding above and below its word. Added to the row's 12px that
+   made the foot 20px against a 14px head: the card read bottom heavy, which is
+   the "uneven spacing" reported on 2026-09-21. The cell takes the padding back
+   as a negative block margin, so the row's own padding is the only space and
+   each link keeps its full target. Same device as the ⋯ and the selection
+   tick, for the same reason. The top half is left alone: the row gap above
+   this line is only 4px, so pulling both ends would close it to nothing. */
+.is-narrow .cr-row > .cr-links { margin-bottom: -5px; }
 .is-narrow .cr-row > .cr-rec {
   grid-area: rec; align-self: start;
   /* A flex box is not moved by `text-align`; this is what actually ends the
@@ -6363,7 +6417,19 @@ body.is-canvas { overflow: hidden; }
    device in one place, rather than a `!important` or a copy of each selector
    with a size bolted on. */
 @media (pointer: coarse) {
-  :root .input, :root .select, :root .textarea,
-  :root .input-sm, :root .select-sm, :root .state-select,
-  :root input, :root select, :root textarea { font-size: 16px; }
+  :root .input:not([readonly]):not([disabled]),
+  :root .select:not([disabled]), :root .textarea:not([readonly]):not([disabled]),
+  :root .input-sm:not([readonly]):not([disabled]),
+  :root .select-sm:not([disabled]), :root .state-select:not([disabled]),
+  :root input:not([readonly]):not([disabled]),
+  :root select:not([disabled]), :root textarea:not([readonly]):not([disabled]) { font-size: 16px; }
 }
+/* **A field nobody can type into cannot zoom the page**, so the floor above is
+   not its floor. The rule is about the keyboard: iOS zooms when a field takes
+   focus *for typing*, and a `readonly` field never does. Applied to one, it
+   did real harm — the client's review link is a token to read and copy, set in
+   the mono face at 12.5px, and 16px mono made it the largest thing on the
+   card, wider and heavier than the client's own name above it and than the two
+   buttons beside it. Reported from a phone on 2026-09-21. `.readfield` is the
+   shape this portal gives a value that is only read; its size is the size the
+   thing it holds is set in. */
