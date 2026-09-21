@@ -42,9 +42,13 @@
     opts = opts || {};
     if (host._askOpen) return;
 
-    var was = host.textContent;
+    /* What is on the screen and what the field holds are the same string for
+       a name and two different ones for a date: the row reads `1 Jun 2026`
+       and the picker needs `2026-06-01`. `opts.value` seeds the field where
+       they differ, and is what an unchanged value is compared against. */
+    var was = typeof opts.value === 'string' ? opts.value : host.textContent;
     var field = document.createElement('input');
-    field.type = 'text';
+    field.type = opts.type || 'text';
     field.className = 'input askfield';
     field.value = was;
     field.setAttribute('aria-label', opts.label || 'Name');
