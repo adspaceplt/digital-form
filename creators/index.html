@@ -17,21 +17,21 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260920h">
+<link rel="stylesheet" href="/css/portal.css?v=20260920i">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="/js/config.js?v=20260920h"></script>
-<script src="/js/words.js?v=20260920h"></script>
-<script src="/js/copy.js?v=20260920h"></script>
-<script src="/js/decide.js?v=20260920h"></script>
-<script src="/js/state.js?v=20260920h"></script>
-<script src="/js/api.js?v=20260920h"></script>
-<script src="/js/money.js?v=20260920h"></script>
+<script src="/js/config.js?v=20260920i"></script>
+<script src="/js/words.js?v=20260920i"></script>
+<script src="/js/copy.js?v=20260920i"></script>
+<script src="/js/decide.js?v=20260920i"></script>
+<script src="/js/state.js?v=20260920i"></script>
+<script src="/js/api.js?v=20260920i"></script>
+<script src="/js/money.js?v=20260920i"></script>
 </head>
 <body>
 
 <!-- Header and footer come from the shared chrome, so a new page gets them
      by including one script rather than copying this markup. -->
-<script src="/js/chrome.js?v=20260920h" data-kicker="Creator Selection" data-for data-actions="lang"></script>
+<script src="/js/chrome.js?v=20260920i" data-kicker="Creator Selection" data-for data-actions="lang"></script>
 
 <main class="shell">
 
@@ -53,19 +53,38 @@
 
   <div id="app" hidden>
 
+    <!-- The name of the job, and nothing else. What the campaign is *about*
+         belongs with the rest of its detail, inside the card below. -->
     <div class="camphead">
       <h1 id="campTitle"></h1>
-      <p class="camphead-purpose" id="campPurpose" hidden></p>
-      <p id="campBrief"></p>
     </div>
 
     <!-- One summary band, not two cards. What the campaign is and how far the
          selection has got are the same question asked twice, and they were two
          bounded surfaces stacked above the comparison the client came to read.
-         The date is the one thing here with a consequence, so it keeps its
-         weight; the progress sits under the same hairline the facts do. -->
-    <section class="engage-card" id="engageCard">
+         The progress sits under the same hairline the facts do.
+
+         **The detail folds, and it is shut when the page opens.** The client
+         came to choose creators, and the creators are below this card: the
+         brief, the purpose and the figures were between them and the work,
+         so the page opened on everything except the thing to do. The date is
+         the one fact here with a consequence, so it rides the fold's own head
+         and stays readable while the card is shut — which is the summary a
+         fold in this portal has always carried. -->
+    <section class="engage-card is-shut" id="engageCard">
+      <div class="engage-head">
+        <button class="engage-toggle" id="engageToggle" type="button"
+                aria-expanded="false" aria-controls="engageBody">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+          <span id="engageLabel"></span>
+        </button>
+        <span class="engage-sum" id="engageSum"></span>
+      </div>
+      <div class="engage-body" id="engageBody">
+      <div class="engage-inner">
       <div class="engage-band">
+        <p class="camphead-purpose" id="campPurpose" hidden></p>
+        <p id="campBrief"></p>
         <dl class="booking-facts" id="engageFacts"></dl>
         <!-- The amount is folded away. Campaigns get shown on a screen in a
              meeting, and the billing figure is not always for that room. -->
@@ -94,6 +113,8 @@
       <div class="progress-new" id="progNew" hidden>
         <span id="progNewText"></span>
         <button class="linkbtn" id="progNewBtn" type="button"></button>
+      </div>
+      </div>
       </div>
       </div>
     </section>
@@ -144,6 +165,6 @@
   </div>
 </div>
 
-<script src="/js/creators.js?v=20260920h"></script>
+<script src="/js/creators.js?v=20260920i"></script>
 </body>
 </html>

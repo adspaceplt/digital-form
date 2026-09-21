@@ -572,6 +572,44 @@ has worked for us and how recently: a number and a month, which fit, line up
 and can be scanned down. The names are on the creator's own card one press
 away, where every one of them is legible.
 
+**A page opens on the thing it is there for, and everything that explains it
+folds.** The client's creator selection page opened on a summary card — the
+brief, what the campaign is for, the creator count, the due date, the amount,
+the progress bar — with the creators they came to choose below all of it. Every
+one of those facts is worth having; none of them is what the page is *for*. So
+the card folds and opens shut, and the page's first screen is the work. Two
+things make that safe rather than merely shorter. **The summary a fold is read
+for is on its head**, so the one fact with a consequence survives the shut
+state; a fold whose head says only its own name is a fold nobody opens, and one
+whose summary is blank is worse, because the dead space beside the label is
+exactly where the reason to open it should be. A date needs no label there, and
+where there is no date the next fact that is always known takes its place.
+**And a line that explains the thing goes inside the thing**: the campaign's
+purpose was drawn under the page title, outside the card, so it read as a
+caption on the page rather than as the card's own content and could not fold
+with the rest of it. The corollary is a cost, and it is accepted rather than
+hidden: the amount fold is now a fold inside a fold and the figure is two
+presses deep. That is what "the creators get the focus" buys.
+
+**A bare button is a control, and the card's head is not exempt.** The fold's
+label is the thing you press, so it clears the control floor like every other
+control — 38px at a desk, 44 under a finger — and it takes the negative block
+margin the rate card's ⋯ takes so its footprint stays the label's own line.
+Without that the margin is real: a one-line head stood 66px at a desk and 72 on
+a phone, which is a head taller than some of the rows below it, for one word.
+`uxaudit`'s `target` rule is what says so, and it said so on the first run.
+
+**A card whose last line is a padded control reads bottom heavy.** The creators
+list's rows end in profile links, and `.plink-bare` carries 5px of its own
+padding above and below its word. Added to the row's 12px that made the foot
+20px against a 14px head — a difference nobody can name and everybody sees,
+reported as "a small spacing below which feels uneven". The row's padding
+should be the only space in it, so the cell takes the control's padding back as
+a negative block margin and each link keeps its full target. Only the bottom
+half: the gap above that line is 4px, and pulling both ends would close it to
+nothing. This is the third component to need the same correction, after the ⋯
+and the selection tick, which is what makes it a rule rather than a patch.
+
 **A placeholder is not data, and a row is not a form.** The clients list showed
 `F&B · S$ · Aisyah`: a bare currency sign standing in for a figure, on every
 row, including the rows that **had** a figure — the desktop column drew the
