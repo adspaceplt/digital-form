@@ -1932,8 +1932,7 @@
             '<span class="log-event"><b class="log-what">' +
               esc((A[x.action] || [])[0] || String(x.action || '').replace(/[._]/g, ' ')) + '</b>' +
               (x.detail ? '<span class="log-detail">' + esc(x.detail) + '</span>' : '') + '</span>' +
-            '<span class="log-who"><span class="log-avatar" aria-hidden="true">' +
-              esc(actorInitial(actorLabel)) + '</span><span class="log-person">' +
+            '<span class="log-who"><span class="log-person">' +
               esc(actorLabel || 'System') + '</span></span>';
           t.appendChild(el);
         });
@@ -1946,10 +1945,6 @@
     return isNaN(d.getTime()) ? '' :
       d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
       ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  }
-  function actorInitial(actor) {
-    var s = String(actor || 'S').trim();
-    return (s.match(/[A-Za-z0-9\u3400-\u9fff]/) || ['S'])[0].toUpperCase();
   }
 
   /* ---- What this campaign is waiting on us for --------------------------

@@ -1071,6 +1071,41 @@ they have run for us, when they last shot, and an `On a campaign` chip while
 one is live. A device that was added to make rows distinguishable and leaves
 them identical is not a device to restyle, it is one to remove.
 
+**A mark holds artwork or it is not a mark.** Two more monogram discs survived
+that removal because neither sat on a list of creators: a 28px disc of one
+initial beside the actor on every row of the client's and the campaign's
+Activity panes, and a 20px initials disc beside the owner on every board card,
+with a dashed empty one where there was no owner. Both are placeholders for a
+profile picture, and this portal holds none and is not going to: nobody on this
+team has an avatar anywhere in the data model, so what those discs actually
+drew was the same grey circle down every row, and on the one axis where the
+letter did vary it said nothing the full name beside it had not already said.
+A dashed empty circle standing for an unassigned task is a placeholder for a
+placeholder. The test is the one the creators list settled and it has two
+halves, not one: a mark earns its place by **holding real artwork** —
+`.rec-mark` carries the client's own `logo_url` and falls back to initials only
+while we wait for one, `.mk-avatar` carries it into a platform's own UI — or by
+making rows **findable by eye**, which one letter in one column cannot do. A
+disc that does neither is decoration in the position information should be in,
+and the name is the fact.
+
+**An image sized by one axis inside a box that can clamp the other is a squash
+waiting to happen.** `.brand-logo` was `height: 26px; width: auto`, and the
+global `img { max-width: 100% }` then clamped the width in any box too narrow
+for the mark at that height while the height stayed exactly where it was put —
+so the wordmark was compressed horizontally and stopped being the wordmark.
+Measured in the 244px console rail, where the box settles at 195px: every
+stand-in past 8.13:1 drew at 8.13:1, and the wider the asset the worse the
+compression, ratio 14 and ratio 10 both landing on the same squashed 8.13. The
+fix must not depend on knowing the asset's intrinsic ratio — the mark is served
+from the CDN and a new one can be uploaded any day — so it is `object-fit:
+contain`, which fits the ink inside whatever box the layout gives it with the
+ratio true, plus `object-position: left center` so it sits on the rail's own
+margin rather than centred in the leftover width. The box still measures its
+stated height, so nothing under it moves; what gives is the drawn height of a
+mark too wide for the rail, which is the correct thing to give. A brand mark is
+the one image on the screen whose proportions are not ours to adjust.
+
 **A record opens on who it is, and its landing pane is the record.** The client
 record was a thin title strip over a six row shortcut card, so the pane
 somebody lands on carried less than any other and half the screen under it was

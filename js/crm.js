@@ -896,8 +896,7 @@
             '<time class="log-when" datetime="' + esc(x.created_at || '') + '">' + esc(activityStamp(x.created_at)) + '</time>' +
             '<span class="log-event"><b class="log-what">' + esc(logWord(x.action)) + '</b>' +
               (x.detail ? '<span class="log-detail">' + esc(x.detail) + '</span>' : '') + '</span>' +
-            '<span class="log-who"><span class="log-avatar" aria-hidden="true">' +
-              esc(actorInitial(actorLabel)) + '</span><span class="log-person">' +
+            '<span class="log-who"><span class="log-person">' +
               esc(actorLabel || 'System') + '</span></span>';
           t.appendChild(el);
         });
@@ -912,10 +911,6 @@
     var A = window.ADspaceAdmin && window.ADspaceAdmin.actionLabel;
     var hit = A && A[action];
     return (hit && hit[0]) || String(action || '').replace(/[._]/g, ' ');
-  }
-  function actorInitial(actor) {
-    var s = String(actor || 'S').trim();
-    return (s.match(/[A-Za-z0-9\u3400-\u9fff]/) || ['S'])[0].toUpperCase();
   }
   function activityStamp(iso) {
     var d = new Date(iso);
@@ -1033,10 +1028,15 @@
   /* A call's glyph is its kind; a recorded event's is the section it belongs
      to, which is what the activity record already files it under. */
   var KIND_ICON = { call: 'phone', visit: 'pin', meeting: 'person', whatsapp: 'chat', email: 'mail', note: 'chat' };
+  /* Every section the Activity record files a row under, or the row falls to
+     the bare dot: `register` (Documents) and `ops` (My Work) were missing, so
+     a letter issued against this client drew a hollow circle in the rail. */
   var SECTION_ICON = { clients: 'person', team: 'person', review: 'image', campaigns: 'speaker',
-                       links: 'link', services: 'tag' };
+                       links: 'link', services: 'tag', register: 'file', ops: 'calendar' };
   function logIcon(action) {
-    if (/^doc\./.test(action || '')) return 'file';
+    /* The tags are `document.*` and `register.*`; `/^doc\./` matched neither,
+       so the one family with an obvious glyph never got it. */
+    if (/^document\.|^register\./.test(action || '')) return 'file';
     var A = window.ADspaceAdmin && window.ADspaceAdmin.actionLabel;
     var hit = A && A[action];
     return SECTION_ICON[hit && hit[2]] || 'dot';
