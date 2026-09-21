@@ -2247,7 +2247,7 @@
   /* qty × the billed rate × months. A one-off line has one month. The billed
      rate is the catalogue rate carrying its term adjustment, worked out once
      in money.js so this, the letter and the client's page cannot disagree. */
-  function rateOf(l) { return MON.rateFor(l.rate, l.tenure); }
+  function rateOf(l) { return MON.rateFor(l.rate, l.tenure, l.term_adjust); }
   function amountOf(l) { return Number(l.qty || 0) * rateOf(l) * Math.max(1, Number(l.tenure || 1)); }
   /* A start kept as a month (older lines) reads as its first day. */
   function startDay(s) { s = String(s || ''); return s.length === 7 ? s + '-01' : s; }
@@ -2257,8 +2257,10 @@
     return (n > 1 ? n + ' months' : '') + (l.start_on ? (n > 1 ? ' from ' : 'From ') + niceDate(startDay(l.start_on)) : '');
   }
   // Named where the figure changes, so a rate that is not the rate card's is
-  // never something the reader has to work out for themselves.
-  function adjWord(l) { return MON.termWord(l.tenure); }
+  // never something the reader has to work out for themselves. It says nothing
+  // where the line is billed at the rate that was typed, because then there is
+  // nothing to explain.
+  function adjWord(l) { return MON.termNote(l.tenure, l.term_adjust); }
 
   function loadServices() {
     var box = $('crmServices');
@@ -2416,7 +2418,18 @@
       $('svTenure').value = Math.max(1, Number(s.min_months || 1));
       $('svDetail').value = s.detail || '';
     }
+    syncAdjust();
   }
+  /* The tick is offered only where the term has a factor, and it says what
+     pressing it will do at the term that is typed: an unlabelled "apply the
+     adjustment" leaves the reader to remember which way three months goes. */
+  function syncAdjust() {
+    var adj = MON.termAdj(Number(val('svTenure') || 1));
+    $('svAdjRow').hidden = !adj;
+    if (adj) $('svAdjustWord').textContent = 'Apply the ' + adj;
+    else $('svAdjust').checked = false;
+  }
+  $('svTenure').addEventListener('input', syncAdjust);
   function openService(l) {
     editingService = l || null;
     loadCatalog(function () {
@@ -2432,6 +2445,10 @@
       $('svStart').value = l ? (l.start_on || '') : '';
       $('svDetail').value = l ? (l.detail || '') : '';
       $('svNote').value = l ? (l.note || '') : '';
+      /* A new line is billed at the rate that was typed. An existing one is
+         read as it was stored, and a line quoted before the tick existed was
+         backfilled to carry it, so nobody's figure moves. */
+      $('svAdjust').checked = l ? l.term_adjust !== false : false;
       syncPick(!l);
       msg('svMsg', '');
       openSheet('crmServiceBox');
@@ -2454,7 +2471,10 @@
       qty: Number(val('svQty') || 1), rate: Number(val('svRate') || 0),
       tenure: Math.max(1, Number(val('svTenure') || 1)), start_on: val('svStart') || null,
       state: $('svState').value, note: val('svNote') || null,
-      detail: val('svDetail') || null
+      detail: val('svDetail') || null,
+      // Stored on every save, never left to the column's default, because the
+      // rule that reads it treats a missing value as "on".
+      term_adjust: !$('svAdjRow').hidden && $('svAdjust').checked
     };
     if (editingService) { saveService(editingService, row); return; }
     row.client_id = state.client.id;

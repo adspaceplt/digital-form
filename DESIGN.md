@@ -809,6 +809,56 @@ person can. What is recorded is who checked and when, and not a second copy of
 the list: the step itself is the evidence, because nothing else opens the
 gate.
 
+**A gate the page draws is not a gate.** The nine checks were a sheet, and the
+press behind them wrote the booking's state straight to the table — so a check
+was a thing somebody could close, and nothing anywhere recorded that it had
+been made. The rule that makes the second pair of eyes worth having, that the
+second may not be the first, is a rule only a server can hold: two browsers,
+two sessions, one table. So the release is a function, the check is a row with
+the person and the revision round on it, and the same move made any other way
+is refused by a trigger — because the table's own policy is permissive, and a
+gate that lives only in the function is one a direct request walks past. The
+page still says it first: Release is shut for the person who asked, and the
+control that asks for a second is gone once somebody has. Saying it first is a
+courtesy; refusing it is the database's job, and both are needed.
+
+**Nobody is assigned, and that is the design.** The obvious shape is to name
+the second reviewer, and it fails on the ordinary week: the named person is on
+a shoot, or has left, and the booking sits behind an account nobody can open.
+Anybody who may work the section can complete the check, as long as they are
+not the person who asked for it — which is one unique constraint on
+`(booking, person, round)` rather than a rule somebody wrote, so pressing
+again is the same check and the count does not move. What the page then owes
+is legibility, not notification: the card says, where the button that will not
+move it is, who has checked and that it is waiting on a second, because the
+ask is a sentence across the desk and the person walking past has to know what
+to ask for.
+
+**A figure the person typed is the figure they see.** A service line priced at
+RM 400 over a three month term printed RM 444.44, because the term's factor
+was applied to every line that carried a term. The arithmetic was right and
+documented, and it was still wrong on the screen: the number somebody enters
+is the number they mean, and one that comes back as something else makes them
+work backwards through a rule they did not invoke to find their own figure.
+The rule is not "never derive a value" — it is that a derivation with a
+commercial consequence is a **decision**, and a decision is asked for. So the
+adjustment is a tick on the line, offered only where the term actually carries
+one, named for what pressing it does rather than for what it is, and silent on
+the row when it is off, because a line billed at the rate that was typed has
+nothing to explain.
+
+**A default that is read three times has to be read the same way three times.**
+The tick is stored on the line, but the same figure is worked out in three
+places — the console, the letter and the client's own page — and one of those
+reads a snapshot taken before the column existed. A missing flag therefore has
+to mean *applied*, or every letter issued earlier redraws at a figure it never
+printed; a new line has to mean *not applied*, or the fault comes straight
+back. Those are not two defaults: only an explicit `false` turns it off, and
+nothing is left to the column's default, because the form stores the flag on
+every save and both server functions send it. The test for a change like this
+is not "does the new case work" but "what reads this value, and what does each
+of them see when it is absent".
+
 **A field a finger uses is never under 16px.** iOS zooms the page the moment
 one takes focus and does not zoom back out, so the reader is left on a page a
 third too wide, hunting for the control they were about to use, and every tap

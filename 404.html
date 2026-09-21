@@ -1,161 +1,101 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta name="robots" content="noindex">
-  <meta charset="UTF-8">
-  <title>E404</title>
-  <meta name="description" content="ADspace Digital Form Portal - Error">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
-  <link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta http-equiv="cache-control" content="no-cache">
-      
-  <!--Redirect if JS is disabled-->
-<noscript>
-   <meta http-equiv="refresh" content="0; url=https://adspacestudios.com" />
-</noscript>
-      
-<!-- Stylesheet -->      
-<link rel="preload" as="font" href="/fonts/Custom.TTF" type="font/TTF" crossorigin="anonymous">
-<link rel="stylesheet" href="/css/main.css" type="text/css">
-
-      
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Nothing on this host is for a search engine, and a 404 least of all. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Page not found</title>
+<meta name="description" content="ADspace Digital Portal">
+<link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
+<link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
+<!-- The one brand face, fetched alongside the stylesheet rather than after it. -->
+<link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
+<link rel="stylesheet" href="/css/portal.css?v=20260921e">
 <style>
-      @font-face {
-        font-family: -apple-system, BlinkMacSystemFont,Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", Customfont;
-        src: url("/fonts/Custom.TTF");
-      }
-     * {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", Customfont;
-        -webkit-font-smoothing: antialiased;
-        margin: 0; 
-        }
-      html,
-      body {
-        height: 100%;
-        background-color: #transparent;
-	overflow: hidden;
-      }
-      p {
-        font-weight: 400;
-        color: #515151;
-      }
-      .wrapper {
-        min-height: 100%;
-        height: auto !important;
-        margin: 0 auto -130px; /* the bottom margin is the negative value of the footer's height */
-        text-align: center;
-        padding: 0px 30px;
-      }
-      .footer, .push {
-        height: 130px; /* .push must be the same height as .footer */
-      }
-      .title {
-        font-size: 600%;
-        font-weight: 400;
-        color: #515151;
-        line-height: 100px;
-        margin-bottom: 15px;
-        padding-top: 80px;
-        letter-spacing: -1px;
-      }   
-      .engtext {
-        font-size: 100%;
-        font-weight: 400;
-        color: #515151;
-        line-height: 1.7;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        -webkit-user-select: none;
-        -webkit-touch-callout: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-      }
-      .chitext {
-        font-size: 140%;
-        font-weight: 400;
-        color: #515151;
-        line-height: 30px;
-        margin-bottom: 30px;
-      }
-      .txt-rotate {
-        color: #515151;
-        -webkit-user-select: none;
-        -webkit-touch-callout: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-      }
-      .button {
-      font-size: 12px;
-      border-radius: 6px;
-      max-height: 100px;
-      padding: 8px 12px;
-      border:1px solid #dddddd;
-      color: #515151;
-      line-height: 5;
-      transition: background-color .4s ease-in-out,color .4s ease-in-out;
-      }
-      .button:hover {
-      background: #1a1a1a;
-	border: 1px solid #1a1a1a;
-      color: #f5f5f5;
-      }
-      .button:focus {
-      background: #transparent;
-      color: #1a1a1a;
-      }
-      @media (max-width: 767px) {
-        .title {
-          margin-top: 20px;
-        }
-        .footer, .push {
-          height: 130px; /* .push must be the same height as .footer */
-        }
-        .wrapper {
-          margin: 0 auto -130px; /* the bottom margin is the negative value of the footer's height */
-        }
-        .engtext {
-          line-height: 1.7;
-          margin-bottom: 20px;
-          font-size: 100%;
-        }
-        .chitext {
-          margin-bottom: 30px;
-        }
-      }
-    </style>
+  /* The host's own 404, drawn from css/portal.css so a wrong address reads as
+     this portal rather than as a page from somewhere else. It is the cover
+     component the client pages use for "Link not recognised": the title says
+     what happened, the line says what to do about it, and the line never
+     restates the title.
+
+     Both languages, printed rather than switched, because every other cover in
+     this portal carries both and this page has no script to choose with. It is
+     the same composition as index.html — the mark on a bar of the portal's own
+     height, the panel on the optical centre of what is left — so the two root
+     pages of this host agree with each other.
+
+     What went with the old page: a `noscript` redirect to adspacestudios.com,
+     which was there because that page could not draw itself without script.
+     This one needs none, so the redirect would only have thrown a reader off a
+     page they could already read; a client following a portal link belongs
+     here, not on the marketing site. Also `/css/main.css` and `/fonts/Custom.TTF`,
+     neither of which exists on this host. */
+  html, body { height: 100%; }
+  body {
+    margin: 0; display: flex; flex-direction: column;
+    background: var(--page); color: var(--ink);
+  }
+  .doorbar {
+    height: var(--head-h); flex: 0 0 auto;
+    display: flex; align-items: center;
+    padding: 0 24px;
+  }
+  .doorbar img { height: 26px; width: auto; display: block; }
+  .door {
+    flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
+    /* The bar has taken its height off the top, so half of it comes off the
+       bottom and the panel sits on the optical centre of what is left. */
+    padding: 24px 24px calc(24px + var(--head-h) / 2);
+  }
+  .door-panel { max-width: 440px; width: 100%; text-align: center; }
+  .door-panel h1 {
+    margin: 0 0 10px; font-family: var(--font-head); font-weight: 600;
+    font-size: 24px; letter-spacing: -.02em; line-height: 1.25;
+  }
+  .door-panel p { margin: 0; color: var(--ink-soft); font-size: 15px; line-height: 1.65; }
+  /* The second language is the same line in another voice, not a second
+     message, so it sits under the first at one step and in the same ink. */
+  .door-zh { margin-top: 16px; }
+  .door-zh h2 {
+    margin: 0 0 8px; font-weight: 600; font-size: 17px; letter-spacing: -.01em;
+    line-height: 1.3; color: var(--ink);
+  }
+  /* The way out, and the way to ask. Equal halves on a phone, as every other
+     pair of actions in this portal is. */
+  .door-acts { margin-top: 24px; display: flex; gap: 8px; justify-content: center; }
+  /* `.btn` carries `flex: 1` for the rows it usually sits in, which here made
+     Contact support a 316px slab beside a 116px one. At a desk each takes its
+     own width off the 116px floor; on a phone they are equal halves. */
+  .door-acts > .btn { flex: 0 0 auto; }
+  @media (max-width: 640px) {
+    .doorbar { padding: 0 16px; }
+    .door { padding: 20px 16px calc(20px + var(--head-h) / 2); }
+    .door-acts > .btn { flex: 1 1 0; min-width: 0; }
+  }
+</style>
 </head>
-<body>
-<div class="wrapper">
-      <div class="title"></div>
-      <div class="engtext"><p>Page Not Found
-	      <br>
-	     <a rel="nofollow" href="https://adspacestudios.com" style="text-decoration:none">
-         <span class="button">Website</span></a>
-          <a href="mailto:support@adspace.me?cc=advertise@adspacestudios.com&subject=Digital%20Portal%20Assistance%20(digital.adspace.me)&body=(your%20message%20here)" style="text-decoration:none">
-         <span class="button">Contact Support</span></a>
-          </p></div>
-          
-      <div class="chitext"></div>
-      <div class="push"></div>
-      </div>
-    
-      <div class="footer" style="text-align:center">
-      <!-- <p id="screen-log" style="font-size:10px;margin-top:30px">
-      © 2026 ADSPACE PLT -->
-      <img src="https://mycdn.adspace.me/adspace-brandname.png" style="width:60px;">
-      </p>
-      </div>
- 
-     
-      
+<body lang="en">
+
+<header class="doorbar">
+  <img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace"
+       onerror="this.replaceWith(Object.assign(document.createElement('b'),{textContent:'ADspace'}))">
+</header>
+
+<main class="door">
+  <div class="door-panel">
+    <h1>Page not found</h1>
+    <p>Please check the link or contact your ADspace account manager.</p>
+    <div class="door-zh" lang="zh">
+      <h2>找不到页面</h2>
+      <p>请检查链接，或联系您的 ADspace 客户经理。</p>
+    </div>
+    <div class="door-acts">
+      <a class="btn btn-primary" href="https://adspacestudios.com" rel="nofollow">Visit website</a>
+      <a class="btn" href="mailto:advertise@adspacestudios.com?subject=Digital%20Portal%20assistance">Contact support</a>
+    </div>
+  </div>
+</main>
+
 </body>
 </html>

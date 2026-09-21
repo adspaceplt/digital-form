@@ -44,11 +44,13 @@
     var d = dateOf(s);
     return d ? d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : String(s || '');
   }
-  /* The rate a line is billed at, which is the catalogue rate carrying its
-     term adjustment: six months is the baseline, a shorter term holds margin
-     and a longer one earns a discount. One definition, in money.js, so the
-     console, the letter and the client's page cannot disagree. */
-  function rateOf(l) { return MON.rateFor(l.rate, l.tenure); }
+  /* The rate a line is billed at: the rate that was typed, carrying its term
+     adjustment where the line was ticked to take one. One definition, in
+     money.js, so the console, the letter and the client's page cannot
+     disagree — and a line stored before the tick existed carries no flag at
+     all, which money.js reads as on, so a letter issued then redraws at the
+     figure it printed. */
+  function rateOf(l) { return MON.rateFor(l.rate, l.tenure, l.term_adjust); }
   function amountOf(l) { return Number(l.qty || 0) * rateOf(l) * Math.max(1, Number(l.tenure || 1)); }
 
   /* One price, worked the same way when the letter is issued and when it is
@@ -557,7 +559,7 @@
         String(l.detail || '').split(/\r?\n/).forEach(function (d) {
           if (d.replace(/\s/g, '')) incl = incl.concat(wrap(d, descW, 8.5));
         });
-        var metaWord = [l.unit, MON.termWord(l.tenure), periodOf(l), l.note].filter(Boolean).join('  ·  ');
+        var metaWord = [l.unit, MON.termNote(l.tenure, l.term_adjust), periodOf(l), l.note].filter(Boolean).join('  ·  ');
         var meta = metaWord ? wrap(metaWord, descW, 8.5) : [];
         var split = incl.length && meta.length ? 4 : 0;
         if (y - (names.length * LROW + (incl.length + meta.length) * LSUB + split + LGAP) < 70) { newPage(); head(); thead(); }

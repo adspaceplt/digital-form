@@ -1539,9 +1539,43 @@
             (d.data || []).forEach(function (f) {
               (state.files[f.option_id] || (state.files[f.option_id] = [])).push(f);
             });
-            paintOptions();
+            loadQc(ids, paintOptions);
           }, paintOptions);
       });
+  }
+
+  /* Who has checked each booking, for the round it is on. The gate itself is
+     the database's — a trigger refuses the move into Client review whatever
+     the browser sends — so this read is only what the screen needs to say
+     who checked and what is being waited for. `option_qc` carries one
+     foreign key to `team_members`, so the embed is unambiguous; a refused
+     read leaves the checks unknown and costs the card nothing, because the
+     gate does not live here. */
+  function loadQc(ids, then) {
+    state.qc = {};
+    db.from('option_qc').select('*, team_members(name)').in('option_id', ids)
+      .order('checked_at').then(function (r) {
+        (r.data || []).forEach(function (q) {
+          (state.qc[q.option_id] || (state.qc[q.option_id] = [])).push(q);
+        });
+        then();
+      }, then);
+  }
+
+  /* The checks that count are the ones made on the file as it stands: a
+     booking sent back to the creator moves its round on, so last week's
+     sign-off cannot release this week's cut. */
+  function qcRows(o) {
+    return ((state.qc || {})[o.id] || []).filter(function (q) {
+      return (q.round || 0) === (o.revision_round || 0);
+    });
+  }
+  function qcHeld(o) {
+    return o.state === 'submitted' && o.qc_second_wanted && qcRows(o).length < 2;
+  }
+  function qcNames(o) {
+    var names = qcRows(o).map(function (q) { return (q.team_members || {}).name || 'a colleague'; });
+    return names.length ? names.join(' and ') : 'nobody yet';
   }
 
   /* The Draft step has two routes into it and only ever named one. A field
@@ -2784,6 +2818,14 @@
         '</div>' +
       '</div>' : '') +
       '<div class="kstep kstep-work">' +
+        /* A booking held for a second pair of eyes says so where the button
+           that will not move it is, and names who has already checked, so
+           the person who walks past the desk knows what to ask for. */
+        (qcHeld(o)
+          ? '<p class="msg warn qc-hold">' +
+              esc('Checked by ' + qcNames(o) + '. Waiting on a second reviewer.') +
+            '</p>'
+          : '') +
         '<div class="kactions">' +
           '<button class="btn btn-sm btn-primary" data-a="save" type="button">Save</button>' +
           /* Blue moves work to somebody else, and exactly one step on this
@@ -3256,7 +3298,10 @@
     }).eq('id', o.id).then(function (r) {
       if (r.error) { m.textContent = r.error.message; m.className = 'msg err'; return; }
       log('campaign.stage', logSubject(), ((o.creators || {}).name || 'A creator') + ' · changes requested');
-      loadOptions();
+      /* The round has moved, so the checks above it no longer count. Whether
+         a second pair of eyes is wanted is a judgement about the file that
+         just changed, so it is asked again rather than carried over. */
+      db.rpc('campaign_qc_reset', { p_option: o.id }).then(loadOptions, loadOptions);
     });
   }
 
@@ -3309,20 +3354,55 @@
         qcCount();
       });
     });
+    /* What has already happened to this file, and what it is waiting for.
+       Nothing is said on a first check, because one person checking and
+       releasing is the ordinary case and a line about it is furniture. */
+    var rows = qcRows(o), note = $('qcNote');
+    var mine = (bridge.actorName && bridge.actorName()) || '';
+    qc.already = rows.some(function (q) {
+      return ((q.team_members || {}).name || '') === mine;
+    });
+    if (!rows.length) { note.hidden = true; note.textContent = ''; }
+    else {
+      note.hidden = false;
+      note.className = 'qc-note' + (qc.already && o.qc_second_wanted ? ' is-blocked' : '');
+      note.textContent = o.qc_second_wanted
+        ? (qc.already
+            ? 'You checked this on ' + shortWhen(rows[0].checked_at) +
+              ' and asked for a second reviewer. Somebody else has to complete the check.'
+            : 'Checked by ' + qcNames(o) + ' on ' + shortWhen(rows[0].checked_at) +
+              '. Yours is the second review.')
+        : 'Checked by ' + qcNames(o) + ' on ' + shortWhen(rows[0].checked_at) + '.';
+    }
+    /* Asking for a second pair of eyes is a decision taken once: once
+       somebody has, the booking is held and the only move left is to
+       complete the check. */
+    $('qcSecond').hidden = Boolean(o.qc_second_wanted);
     qcCount();
     $('qcSheet').hidden = false;
     var first = box.querySelector('input');
     if (first) first.focus();
   }
 
+  function shortWhen(iso) {
+    var d = iso ? new Date(iso) : null;
+    if (!d || isNaN(d.getTime())) return 'an earlier date';
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  }
+
   function qcCount() {
     if (!qc) return;
     var all = qcAll();
     var n = all.filter(function (_, i) { return qc.done[i]; }).length;
+    var short = n < all.length;
     $('qcCount').textContent = n + ' of ' + all.length + ' checked';
     /* All of them, or the gate is decoration. The count is what says why the
-       button will not move, so nothing has to be explained in a sentence. */
-    $('qcGo').disabled = n < all.length;
+       button will not move, so nothing has to be explained in a sentence.
+       A booking held for a second reviewer will not move for the person who
+       asked, and saying that before the press is error prevention rather
+       than a refusal afterwards. */
+    $('qcGo').disabled = short || (qc.o.qc_second_wanted && qc.already);
+    $('qcSecond').disabled = short;
   }
 
   function shutQc() { $('qcSheet').hidden = true; qc = null; }
@@ -3334,21 +3414,62 @@
     if (e.key === 'Escape' && !$('qcSheet').hidden) shutQc();
   });
 
-  $('qcGo').addEventListener('click', function () {
+  $('qcGo').addEventListener('click', function () { qcPass(false); });
+  $('qcSecond').addEventListener('click', function () { qcPass(true); });
+
+  /* The one call that releases a booking, and the one that holds it for a
+     second pair of eyes. The database decides which: it records this
+     person's check, and releases only where the gate is satisfied — one
+     checker, or two distinct ones where somebody asked for a second. The
+     page never writes `reviewing` itself, and a trigger refuses that move
+     whatever is sent, so the nine ticks are a gate rather than a speed bump
+     on one screen.
+
+     `want` is a decision, not a state: pressing it a second time as the same
+     person is the same check, the count does not move, and the booking stays
+     held. That is the no-self-approval rule, and it lives in the database. */
+  function qcPass(want) {
     if (!qc) return;
-    var o = qc.o, patch = qc.patch;
-    /* Who checked it and when. The step itself is the evidence the check was
-       made, because nothing else opens this gate, so the record carries the
-       name rather than a second copy of the list. */
-    log('campaign.qc', logSubject(),
-      ((o.creators || {}).name || 'A creator') + ' · quality checked by ' +
-      ((bridge.actorName && bridge.actorName()) || 'the team'));
-    /* The run is spent. A booking sent back for changes is checked again from
-       the top, because it is a different file. */
-    delete qcKept[o.id];
-    shutQc();
-    advanceOption(o, 'reviewing', patch);
-  });
+    var o = qc.o, patch = qc.patch, who = (bridge.actorName && bridge.actorName()) || 'the team';
+    $('qcGo').disabled = true; $('qcSecond').disabled = true;
+    /* Whatever else the sheet was going to save with the move (a pasted
+       draft link) is written first: the function moves the state and nothing
+       else, so a field somebody typed in the card is not lost to the press. */
+    var fields = Object.keys(patch || {}).filter(function (k) { return k !== 'state'; });
+    var pre = fields.length
+      ? db.from('campaign_options').update(patch).eq('id', o.id)
+      : Promise.resolve({});
+    pre.then(function () {
+      return db.rpc('campaign_qc_pass', { p_option: o.id, p_want_second: !!want });
+    }).then(function (r) {
+      qcCount();
+      if (r.error) { msg('qcMsg', r.error.message, 'err'); return; }
+      var out = r.data || {};
+      if (out.error) { msg('qcMsg', SAID_QC[out.error] || out.error, 'err'); return; }
+      /* Who checked and when. Every check is required, so the row is the
+         evidence that all nine were made; nine booleans a person would be
+         nine times the data for the same fact. */
+      log('campaign.qc', logSubject(),
+        ((o.creators || {}).name || 'A creator') + ' · quality checked by ' + who +
+        (out.state === 'waiting' ? ' · second reviewer asked for' : ''));
+      /* The run is spent. A booking sent back for changes is checked again
+         from the top, because it is a different file. */
+      delete qcKept[o.id];
+      shutQc();
+      loadOptions();
+    }).catch(function (e) {
+      qcCount();
+      msg('qcMsg', String((e && e.message) || e), 'err');
+    });
+  }
+
+  /* Every refusal in the team's own words, never the database's. */
+  var SAID_QC = {
+    denied: 'You do not have permission to release this.',
+    'no-booking': 'That booking is no longer there.',
+    'not-submitted': 'Nothing has been handed in for this booking yet.',
+    'qc-required': 'Release to client needs the quality check completed.'
+  };
 
   function advanceOption(o, to, fields) {
     var patch = Object.assign({}, fields || {}, { state: to });

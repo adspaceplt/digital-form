@@ -2268,10 +2268,26 @@ body.is-plain .topbar { background: var(--chrome); }
 .qcfoot { flex-wrap: wrap; }
 .qcfoot > .btn { margin-left: 0; }
 .qcfoot > #qcGo { margin-left: auto; }
+/* Three actions do not divide a phone's width: at a third each, "Ask a
+   second reviewer" clips to two words and says nothing. They take a row each
+   in the order they are read — the forward action, the one that holds it,
+   then the way out — so the rule about a wrapped foot is satisfied line by
+   line. Two of them (once somebody has asked for a second, and the control
+   leaves) are still two halves. */
 @media (max-width: 560px) {
   .qcfoot > .lpicksum { flex: 1 0 100%; margin-bottom: 10px; }
   .qcfoot > .btn { flex: 1 1 0; min-width: 0; margin-left: 0; }
+  .qcfoot:has(#qcSecond:not([hidden])) > .btn { flex: 1 0 100%; }
 }
+/* What has already happened to this file. It is a fact and reads as one;
+   where the reader is the person who asked for a second pair of eyes, it is
+   also the reason the blue button will not move, so it takes the caution. */
+.qc-note {
+  margin: 0 0 12px; font-size: 13px; color: var(--ink-soft); line-height: 1.5;
+}
+.qc-note.is-blocked { color: var(--warn); font-weight: 600; }
+/* And the same fact on the card, where the button that will not move is. */
+.qc-hold { margin: 0 0 10px; }
 
 /* The reference somebody types instead of the one the database makes. It sits
    under the lines it prices and above the actions, on the block step, and the
@@ -4715,10 +4731,13 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   color: var(--ink-soft); background: var(--chrome); border-radius: 4px; padding: 2px 4px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-/* Anything a person can attach, a person can remove. */
+/* Anything a person can attach, a person can remove. `--ctl-h`, not the small
+   control's height: this is an icon button, and the floor for one is 38px at a
+   desk and 44 under a finger whatever the glyph inside it measures. It sat at
+   32 for months on a card nothing walked. */
 .filecard-x {
   position: absolute; top: 4px; right: 4px; z-index: 2;
-  width: var(--ctl-h-sm); height: var(--ctl-h-sm); border-radius: 50%;
+  width: var(--ctl-h); height: var(--ctl-h); border-radius: 50%;
   border: 1px solid var(--line); background: var(--card); color: var(--ink-soft);
   font-size: 15px; line-height: 1; display: grid; place-items: center;
   transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
@@ -4809,8 +4828,13 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    because a reviewer has to see what the client will see and `cover` would
    cut the caption safe area off the top and bottom. */
 .handedin .filecard { aspect-ratio: 9 / 16; }
+/* The card's own ground is the letterbox's, not `--sunk`: the player paints
+   black over the whole card, so a light ground is a flash before the first
+   frame arrives and a light ground behind a white file name the moment it
+   does not. The name below is white, and what it is white on has to be
+   something a reader — and the contrast check — can see. */
 .filecard.filecard-video {
-  width: auto; aspect-ratio: 9 / 16; padding-bottom: 0;
+  width: auto; aspect-ratio: 9 / 16; padding-bottom: 0; background: #000;
 }
 .filecard.filecard-video video {
   position: absolute; inset: 0; z-index: 1;
@@ -5801,13 +5825,21 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 }
 .is-narrow .sched-row > .sched-when:nth-of-type(2)::before { grid-column: 1 / -1; }
 .is-narrow .sched-edit .input { min-width: 0; width: 100%; }
+/* A column is a column on every row, or it is not a column. The second track
+   was `auto`, so it was sized by its own row's chip: "Pending draft" opened it
+   at 76px and "Submitted" at 72, and the state and the fee under it started
+   4px apart on every line. It is `--state-w`, the width this portal already
+   gives a state column, measured against the widest word the vocabulary has
+   ("Changes requested", 123px) and against the fee beneath it (RM 12,000.00,
+   85px). Both cells then end at the card's own padding rather than wherever
+   their own words happen to stop. */
 .is-narrow .pick-row {
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) var(--state-w);
   grid-template-areas: "who state" "plat rate";
   gap: 2px 10px;
 }
 .is-narrow .pick-row > .pick-who { grid-area: who; }
-.is-narrow .pick-row > .pick-state { grid-area: state; }
+.is-narrow .pick-row > .pick-state { grid-area: state; justify-self: stretch; text-align: right; }
 .is-narrow .pick-row > .pick-plat { grid-area: plat; }
 .is-narrow .pick-row > .svc-rate { grid-area: rate; text-align: right; }
 .is-narrow .crm-head.sched-row, .is-narrow .crm-head.pick-row { display: none; }
