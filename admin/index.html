@@ -17,10 +17,14 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260921h">
-<!-- Read before the stylesheet paints, so choosing dark does not flash white
-     on every load. The console only: the client pages have no dark at all. -->
-<script>try{if(localStorage.getItem('adspace-theme')==='dark')document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
+<link rel="stylesheet" href="/css/portal.css?v=20260921i">
+<!-- Read before the stylesheet paints, so neither the stored choice nor the
+     device's own setting flashes the other register on every load. A choice
+     made here wins for ever; with none stored the console follows the device,
+     which is what a tool the team sits in all day should do. The client pages
+     are untouched and have no dark at all: nobody decides on a proposal in a
+     register they did not choose, which is what that rule was always about. -->
+<script>try{var t=localStorage.getItem('adspace-theme');if(t==='dark'||(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
@@ -28,25 +32,25 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260921h"></script>
-<script src="/js/words.js?v=20260921h"></script>
-<script src="/js/copy.js?v=20260921h"></script>
-<script src="/js/ask.js?v=20260921h"></script>
-<script src="/js/confirm.js?v=20260921h"></script>
-<script src="/js/sheet.js?v=20260921h"></script>
-<script src="/js/state.js?v=20260921h"></script>
-<script src="/js/group.js?v=20260921h"></script>
-<script src="/js/menu.js?v=20260921h"></script>
-<script src="/js/cmdbar.js?v=20260921h"></script>
-<script src="/js/api.js?v=20260921h"></script>
-<script src="/js/money.js?v=20260921h"></script>
-<script src="/js/mockups.js?v=20260921h"></script>
+<script src="/js/config.js?v=20260921i"></script>
+<script src="/js/words.js?v=20260921i"></script>
+<script src="/js/copy.js?v=20260921i"></script>
+<script src="/js/ask.js?v=20260921i"></script>
+<script src="/js/confirm.js?v=20260921i"></script>
+<script src="/js/sheet.js?v=20260921i"></script>
+<script src="/js/state.js?v=20260921i"></script>
+<script src="/js/group.js?v=20260921i"></script>
+<script src="/js/menu.js?v=20260921i"></script>
+<script src="/js/cmdbar.js?v=20260921i"></script>
+<script src="/js/api.js?v=20260921i"></script>
+<script src="/js/money.js?v=20260921i"></script>
+<script src="/js/mockups.js?v=20260921i"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260921h" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260921i" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -149,6 +153,21 @@
       </div>
     </nav>
 
+    <!-- The record of every change the portal holds. It sat at the end of the
+         console bar, beside the bell and the account, where it read as one of
+         the three controls that act on *you* rather than as a place in the
+         product. It is a place, so it is in the rail — at the foot, under a
+         hairline and below the two chunks of four, because it is not a ninth
+         section: it is not a route, it keeps no selected state, and it opens
+         a record over whatever you were doing. It borrows `.navitem` for its
+         geometry so the rail is one column top to bottom, and `.railfoot`
+         takes the weight back out. -->
+    <div class="sidebar-foot">
+      <button class="navitem railfoot" id="activityOpen" type="button" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 8v4.3l3 1.8"/></svg><span>Activity record</span>
+      </button>
+    </div>
+
   </aside>
 
   <div class="console-main">
@@ -173,10 +192,17 @@
         <button class="btn btn-sm btn-quiet aboutpop-hide" id="sectionAboutHide" type="button">Hide</button>
       </div>
       <span class="console-spacer"></span>
-      <!-- The activity record was a full width card sitting under the client
-           list, which is a lot of furniture for something read once a month. -->
-      <button class="headlink" id="activityOpen" type="button" aria-label="Activity record" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.4"/><path d="M3 4v4h4"/><path d="M12 8v4.3l3 1.8"/></svg><span class="headlink-word">Activity record</span>
+      <!-- The register this console is read in, on the control that changes
+           it. It was an item inside the account menu, two presses away and
+           filed with who you are and the way out, which is not what it is: it
+           is a property of the screen in front of you. It names the theme it
+           switches *to*, the way a light switch does, so in light it carries
+           the moon. The glyph is the whole control, as it is on the bell
+           beside it; the word is on `aria-label`, which is where the bar
+           already keeps a name it has no room to print. -->
+      <button class="headlink themeswitch" id="themeToggle" type="button" aria-pressed="false" aria-label="Switch to dark">
+        <svg class="themeswitch-to-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.8 6.8 0 0 0 9.8 9.8z"/></svg>
+        <svg class="themeswitch-to-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></svg>
       </button>
 
       <!-- Who you are, the register you read in, and the way out: three
@@ -208,9 +234,9 @@
         </button>
         <div class="kmenu acct-menu" id="acctMenu" hidden>
           <span class="acct-who">Signed in as<b id="whoami"></b></span>
-          <button class="kmenu-item" id="themeToggle" type="button" aria-pressed="false">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.8 6.8 0 0 0 9.8 9.8z"/></svg>Switch to <span id="themeWord">dark</span>
-          </button>
+          <!-- The theme is on the bar now, on its own control. A second copy
+               here would be the same fact twice, and the menu is who you are
+               and the way out. -->
           <button class="kmenu-item" id="signOut" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 20H6.5A1.5 1.5 0 0 1 5 18.5v-13A1.5 1.5 0 0 1 6.5 4H12"/></svg>Sign out
           </button>
@@ -2659,13 +2685,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260921h"></script>
-<script src="/js/documents.js?v=20260921h"></script>
-<script src="/js/letters.js?v=20260921h"></script>
-<script src="/js/register.js?v=20260921h"></script>
-<script src="/js/crm.js?v=20260921h"></script>
-<script src="/js/team.js?v=20260921h"></script>
-<script src="/js/campaigns.js?v=20260921h"></script>
-<script src="/js/ops.js?v=20260921h"></script>
+<script src="/js/admin.js?v=20260921i"></script>
+<script src="/js/documents.js?v=20260921i"></script>
+<script src="/js/letters.js?v=20260921i"></script>
+<script src="/js/register.js?v=20260921i"></script>
+<script src="/js/crm.js?v=20260921i"></script>
+<script src="/js/team.js?v=20260921i"></script>
+<script src="/js/campaigns.js?v=20260921i"></script>
+<script src="/js/ops.js?v=20260921i"></script>
 </body>
 </html>

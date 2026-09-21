@@ -141,19 +141,33 @@
    their text, so the primary button stays the highest contrast thing in the
    view rather than vanishing. Depth cannot come from a grey shadow on a dark
    ground, so the shadows go black and the surfaces step instead. */
+/* The grounds are neutral and the warmth is on the marks — the same rule the
+   light palette states, applied here at last. Dark had never been brought in
+   line with it and had drifted onto a different hue axis: measured, every
+   non-neutral token sat at **hue 70 to 100 degrees**, which is yellow-green,
+   while light's warm marks sit at **42**. Olive at that luminance is what
+   reads as muddy brown, which is how the user reported it on 2026-09-21
+   against another dark application. `--page` and `--card` are the two largest
+   surfaces and are what the eye calls "the colour of the app", so they are
+   exactly neutral, as `#f5f5f5` and white are in light; `--sunk` and
+   `--line-soft` already were. The ink ramp and the borders keep their warmth
+   and keep it at 42. Every value holds the luminance it replaced, so every
+   documented contrast pair is preserved (`--ink` on `--page` 15.60 to 15.65,
+   `--line-ctl` on `--card` 4.39 to 4.46), and `uxaudit` measures all of them
+   on the real page in this theme. */
 :root[data-theme="dark"] {
-    --ink:        #eff0ea;
-    --ink-soft:   #c6c8be;
-    --ink-mute:   #a6a89e;
-    --line-ctl:   #83857c;
-    --line:       #3a3c36;
+    --ink:        #f2efec;
+    --ink-soft:   #cdc8c3;
+    --ink-mute:   #ada8a3;
+    --line-ctl:   #898480;
+    --line:       #3e3b38;
     --card-line:  transparent;
     --line-soft:  #2e2e2e;
-    --page:       #161814;
-    --card:       #1e201d;
+    --page:       #171717;
+    --card:       #1f1f1f;
     --sunk:       #272727;
-    --fill:       #eff0ea;
-    --on-fill:    #191b17;
+    --fill:       #f2efec;
+    --on-fill:    #1c1a19;
     /* One value per semantic colour, doing both jobs: legible as text on every
        dark surface and deep enough to carry dark text when it is a fill. A
        paler mint passed the same checks and read as a highlighter pen next to
@@ -185,7 +199,7 @@
     --action-ring:    #8ab4f8;
     --focus:      rgba(138,180,248,.34);
     --scrim:      rgba(0,0,0,.62);
-    --chrome:     rgba(22,24,20,.88);
+    --chrome:     rgba(23,23,23,.88);
     --shadow:     0 1px 2px rgba(0,0,0,.5);
     --shadow-lift: 0 1px 2px rgba(0,0,0,.5), 0 12px 32px rgba(0,0,0,.55);
   color-scheme: dark;
@@ -1933,7 +1947,29 @@ body.is-plain .topbar { background: var(--chrome); }
   color: var(--ink-mute);
 }
 
-.sidebar-nav { display: flex; flex-direction: column; gap: 2px; flex: 1 1 auto; }
+/* `min-height: 0` because a flex child's automatic minimum size is its
+   content: on a short screen the nav would refuse to shrink and push the foot
+   off the bottom of the rail rather than scrolling. The same rule `.rectabs`
+   needed, for the same reason. */
+.sidebar-nav {
+  display: flex; flex-direction: column; gap: 2px;
+  flex: 1 1 auto; min-height: 0; overflow-y: auto;
+}
+/* The foot of the rail, under the two chunks of four. `.sidebar-nav` takes
+   the slack, so anything after it sits on the floor whatever the rail holds.
+   The hairline is what says the row below it is not a ninth section: it is
+   not a route, it takes no selected state, and it opens a record over the
+   page rather than navigating to one. It borrows `.navitem` for its box, so
+   the column reads as one column, and gives the weight back. */
+.sidebar-foot {
+  flex: 0 0 auto; margin-top: 12px; padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.railfoot { color: var(--ink-mute); font-weight: 500; }
+.railfoot svg { stroke-width: 1.6; }
+@media (hover: hover) {
+  .railfoot:hover { color: var(--ink-soft); background: var(--sunk); }
+}
 /* Two chunks of four rather than one run of eight, so the rail is scanned by
    group before it is read by name. The step between them is the block step;
    inside one, the 2px the items already had. */
@@ -2145,6 +2181,21 @@ body.is-plain .topbar { background: var(--chrome); }
   .headlink { min-width: var(--ctl-h); justify-content: center; padding: 0; text-decoration: none; }
 }
 .headlink:hover { color: var(--ink); background: var(--line-soft); text-decoration-color: currentColor; }
+
+/* The theme switch. It is a `.headlink` because the three controls at the end
+   of this bar are one shape by decision (2026-09-20), and it is icon only at
+   every width: the glyph is the whole control, so it never carries the
+   underline a link's word does, and its name lives on `aria-label`. One of
+   the two glyphs is drawn — the one naming the theme the press will move to,
+   which is what the word it replaces used to say. */
+.themeswitch {
+  min-width: var(--ctl-h); justify-content: center; padding: 0;
+  text-decoration: none;
+}
+.themeswitch svg { width: 16px; height: 16px; }
+.themeswitch .themeswitch-to-light { display: none; }
+:root[data-theme="dark"] .themeswitch .themeswitch-to-dark { display: none; }
+:root[data-theme="dark"] .themeswitch .themeswitch-to-light { display: inline; }
 
 /* ---------- Sheet ----------
    Opens over the work and hands it straight back, so reading the record never
@@ -5186,6 +5237,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    the shared page bar over an empty page, which is the client pages' own
    composition, so a refresh read for a second as somebody else's portal. */
 .console.is-booting .sidebar-nav,
+.console.is-booting .sidebar-foot,
 .console.is-booting .console-head > * { visibility: hidden; }
 .console.is-booting .console-body { display: none; }
 .console.is-booting #consoleBoot { display: block; }
