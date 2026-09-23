@@ -3788,7 +3788,7 @@ body > .shell { width: 100%; }
 /* The last track is the dates: the final date in the row face, the draft and
    the scheduled publish date under it in the small face. 190px is measured
    against `Draft 28 Sept · Publish 5 Oct` at 12px. */
-.task-row { grid-template-columns: minmax(0, 1fr) var(--state-w) 140px 190px; }
+.task-row { grid-template-columns: var(--ctl-h) minmax(0, 1fr) 132px 156px var(--state-w) var(--ctl-h); }
 .task-open {
   display: flex; flex-direction: column; justify-content: center; gap: 2px;
   min-width: 0; align-self: stretch; margin: -10px 0; padding: 10px 0;
@@ -4322,14 +4322,24 @@ body > .shell { width: 100%; }
    leaves: the scope select above already answers whose queue this is, and a
    phone row spends its width on what somebody came for. */
 .is-narrow .task-row {
-  grid-template-columns: minmax(0, 1fr) 132px;
-  grid-template-areas: "name stage" "name due";
-  row-gap: 4px; align-items: start;
+  grid-template-columns: var(--ctl-h) minmax(0, 1fr) var(--ctl-h);
+  grid-template-areas: "check name act" ". meta act";
+  row-gap: 4px; column-gap: 8px; align-items: center;
 }
-.is-narrow .task-row > .task-open { grid-area: name; align-self: center; }
-.is-narrow .task-row > .task-stage { grid-area: stage; justify-self: stretch; text-align: right; }
-.is-narrow .task-row > .task-due { grid-area: due; justify-self: stretch; text-align: right; }
-.is-narrow .task-row > .task-owner { display: none; }
+.is-narrow .task-row > .trow-check { grid-area: check; align-self: start; }
+.is-narrow .task-row > .task-open { grid-area: name; }
+.is-narrow .task-row > .trow-meta {
+  grid-area: meta; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0;
+}
+.is-narrow .trow-meta > .task-owner { flex: 0 1 auto; max-width: 34%; }
+/* In your own list every owner is you, so a phone spends that width on the
+   date and the status instead. */
+.is-narrow .is-mine .trow-meta > .task-owner { display: none; }
+.is-narrow .trow-meta > .task-due { flex: 0 0 auto; }
+.is-narrow .trow-meta > .task-stage { flex: 0 0 auto; margin-left: auto; }
+.is-narrow .trow-meta .state-select { width: auto; min-width: 104px; }
+.is-narrow .task-row > .team-act { grid-area: act; align-self: start; }
+.is-narrow .task-row.crm-head { display: none; }
 .is-narrow .tlink-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "kind kind"; }
 .is-narrow .tlink-row > .tlink-kind { grid-area: kind; }
 /* The report's row, here rather than beside the desktop rule it belongs to:
@@ -6460,8 +6470,13 @@ body.is-canvas { overflow: hidden; }
    target rule is there to catch. */
 .cmdbar-views .acttab { min-height: var(--ctl-h-sm); min-width: 0; padding: 0 11px; font-size: 12.5px; }
 @media (max-width: 640px) {
-  .cmdbar-views { flex: 1 1 calc(50% - 5px); justify-content: stretch; }
+  .cmdbar-views { flex: 1 1 calc(50% - 5px); justify-content: stretch; min-width: 0; }
   .cmdbar-views .acttab { flex: 1 1 0; text-align: center; }
+}
+/* Five views at 320: the segments give up their side padding before the
+   bar gives up the page's edge. */
+@media (max-width: 400px) {
+  .cmdbar-views .acttab { padding: 0 4px; font-size: 12px; }
 }
 
 /* THE BOARD. One column per stage of one workflow, in the workflow's own
@@ -6849,3 +6864,287 @@ body.is-canvas { overflow: hidden; }
    buttons beside it. Reported from a phone on 2026-09-21. `.readfield` is the
    shape this portal gives a value that is only read; its size is the size the
    thing it holds is set in. */
+
+/* ---------- The task page: one next step ----------
+   A compact head on the page ground, then the one thing to do next, then the
+   work. The head is not a card: the number, the state and the ⋯ share one
+   line, the name sits under them, and one line says whose it is and what it
+   makes. Hairlines separate; nothing here is a rounded box. */
+.thead { padding: 4px 0 16px; margin: 0 0 16px; border-bottom: 1px solid var(--line); }
+.thead-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h); }
+.thead-ctl { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.thead .rec-token { margin-left: -6px; }
+.thead .rec-name { display: flex; align-items: center; gap: 4px; margin-top: 4px; min-width: 0; }
+.thead .rec-name h2 {
+  margin: 0; min-width: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em;
+  line-height: 25px; overflow-wrap: anywhere;
+}
+.thead-meta {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px;
+  margin: 4px 0 0; font-size: 13px; color: var(--ink-soft);
+}
+.thead-meta > span:empty { display: none; }
+/* The timer, while it runs, beside the title it is timing. Green, because it
+   is a live state; the word says so too. */
+.thead-run { color: var(--ok); font-weight: 600; font-variant-numeric: tabular-nums; }
+.thead-run[hidden] { display: none; }
+.thead .msg:empty { display: none; }
+
+/* The record grid gains a row for the next step above the tabs; the rail
+   still runs the height of all three. */
+.rec.rec-task {
+  grid-template-rows: auto auto 1fr;
+  grid-template-areas: "next rail" "tabs rail" "pane rail";
+}
+.tnext { grid-area: next; min-width: 0; padding: 0 0 20px; }
+.tnext .msg:empty { display: none; }
+.tnext .msg { margin-top: 8px; }
+/* The workflow as thin bars, one a step: done quiet, current in the action
+   colour, the rest a hairline. Not buttons, and named for a screen reader. */
+.tsteps { margin: 0 0 14px; }
+.tsteps[hidden] { display: none; }
+.tsteps-bar { list-style: none; margin: 0; padding: 0; display: flex; gap: 3px; }
+.tsteps-bar li { flex: 1 1 0; height: 4px; border-radius: 2px; background: var(--line); }
+.tsteps-bar li.is-done { background: var(--line-ctl); }
+.tsteps-bar li.is-now { background: var(--action); }
+.tsteps-word { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.tsteps-word b { color: var(--ink); font-weight: 600; }
+.tnext-title { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; line-height: 1.35; }
+/* A blocker is the warn colour and says so in words; the list under it is
+   each thing that is missing, and the button is the first of them. */
+.tnext.is-blocked .tnext-title { color: var(--warn); }
+.tnext-line { margin: 4px 0 0; font-size: 13.5px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.tnext-line[hidden] { display: none; }
+.tnext-list { margin: 8px 0 0; padding-left: 18px; font-size: 13.5px; color: var(--ink); }
+.tnext-list[hidden] { display: none; }
+.tnext-list li + li { margin-top: 2px; }
+.tnext-late { margin: 8px 0 0; font-size: 13px; font-weight: 600; color: var(--warn); }
+.tnext-late[hidden] { display: none; }
+/* One filled action, and at most one quiet one beside it. They keep their
+   own widths at a desk; on a phone they are the row's two halves. */
+.tnext-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.tnext-acts[hidden] { display: none; }
+.tnext-acts .btn { flex: 0 0 auto; }
+@media (max-width: 640px) {
+  .tnext-acts .btn { flex: 1 1 0; min-width: 0; }
+}
+
+/* The Work pane: the brief, the video, the checklist, the files and links.
+   A section with nothing in it is not drawn. */
+.tsec { margin: 0 0 24px; }
+.tsec:last-child { margin-bottom: 0; }
+.tsec[hidden] { display: none; }
+.tsec-title { margin: 0 0 8px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.tsec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 8px; }
+.tsec-head .tsec-title { margin: 0; }
+.tsec-head .btn { margin-block: calc((22px - var(--ctl-h-sm)) / 2); }
+#taskOv:empty { display: none; }
+#taskOv .tsec:last-child { margin-bottom: 24px; }
+.tlinkform { padding: 12px 0; margin: 0 0 12px; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
+.tlinkform[hidden] { display: none; }
+.tlinkform .row:first-child { margin-top: 0; }
+
+/* The rail's facts: a label beside its value, one a line, because a rail is
+   read down. The value can carry its own control (Change beside the owner,
+   the pen on a date) and its own small print under it. */
+.tfacts { display: grid; gap: 6px; margin: 0; }
+.tfacts:empty { display: none; }
+.tfacts > div { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; align-items: baseline; }
+.tfacts dt { font-size: 13px; color: var(--ink-mute); }
+.tfacts dd {
+  margin: 0; min-width: 0; font-size: 13.5px; color: var(--ink); overflow-wrap: anywhere;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px;
+}
+.tfacts dd small { flex-basis: 100%; font-size: 12px; color: var(--ink-mute); }
+.tfacts .linkbtn {
+  min-height: var(--ctl-h); margin-block: calc((20px - var(--ctl-h)) / 2); padding: 0 6px;
+  font-size: 13px; color: var(--ink-soft); cursor: pointer;
+}
+.tfacts .linkbtn[hidden], .towner[hidden], .towner-pick[hidden] { display: none; }
+.towner-pick { max-width: 100%; }
+.tlink { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+/* A date is the row's own control: the value and a pen, at the control
+   floor, with a negative block margin so a 38px target does not set the
+   height of a 20px line. */
+.tdate, .tdate-src {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: var(--ctl-h); margin-block: calc((20px - var(--ctl-h)) / 2); margin-left: -8px; padding: 0 8px;
+  border: 0; border-radius: var(--radius-ctl); background: none; color: var(--ink);
+  font: inherit; font-size: 13.5px; font-variant-numeric: tabular-nums; cursor: pointer; text-decoration: none;
+}
+.tdate svg { width: 13px; height: 13px; color: var(--ink-mute); flex: 0 0 auto; }
+@media (hover: hover) { .tdate:hover, .tdate-src:hover { background: var(--line-soft); } }
+.tdate:active, .tdate-src:active { transform: scale(.97); }
+.tdate.is-over, .tdate-read.is-over { color: var(--warn); font-weight: 600; }
+.tdate-src { color: var(--ink-soft); }
+.tdate-pick { width: 100%; max-width: 190px; }
+#taskDatesBlock .msg:empty, #taskPeopleBlock .msg:empty { display: none; }
+#taskDatesBlock .msg, #taskPeopleBlock .msg { margin-top: 8px; }
+/* Everything else a reader might look up, behind one fold. */
+.tmore { margin-top: 10px; }
+.tmore[hidden] { display: none; }
+.tmore > summary {
+  display: inline-flex; align-items: center; gap: 6px; min-height: var(--ctl-h);
+  margin-left: -8px; padding: 0 8px; border-radius: var(--radius-ctl);
+  font-size: 13px; color: var(--ink-soft); cursor: pointer; list-style: none;
+}
+.tmore > summary::-webkit-details-marker { display: none; }
+.tmore > summary::after {
+  content: ""; width: 6px; height: 6px; margin-left: 2px;
+  border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor;
+  transform: rotate(45deg) translateY(-2px); transition: transform var(--t) var(--ease);
+}
+.tmore[open] > summary::after { transform: rotate(-135deg) translateY(-1px); }
+@media (hover: hover) { .tmore > summary:hover { background: var(--line-soft); color: var(--ink); } }
+.tmore > .tfacts { margin-top: 6px; }
+/* The hand-over sheet states what the next person takes on. */
+.givefacts { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.givelist { margin: 0; padding-left: 16px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-width: 1100px) {
+  .rec.rec-task { grid-template-rows: none; grid-template-areas: none; }
+  .rec.rec-task > .tnext { grid-area: auto; order: 0; }
+}
+@media (max-width: 640px) {
+  .tfacts > div { grid-template-columns: 104px minmax(0, 1fr); }
+}
+
+
+/* ---------- My Work as a daily task list ----------
+   The row is where routine work happens: the circle completes an everyday
+   task, the owner and the due date are changed where they are printed, the
+   status is a select, and the ⋯ holds the rest. Hairlines between rows and
+   nothing else. */
+.trow-check { display: flex; align-items: center; justify-content: center; }
+.tcheck {
+  position: relative; width: var(--ctl-h); height: var(--ctl-h); margin: calc((22px - var(--ctl-h)) / 2) 0;
+  border: 0; background: none; cursor: pointer; flex: 0 0 auto;
+}
+.tcheck::before {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 18px; height: 18px;
+  margin: -9px 0 0 -9px; border: 1.6px solid var(--line-ctl); border-radius: 50%;
+  transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
+}
+.tcheck::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 5px; height: 9px;
+  margin: -6px 0 0 -3px; border-right: 2px solid var(--on-ok); border-bottom: 2px solid var(--on-ok);
+  transform: rotate(45deg) scale(0); transition: transform var(--t-fast) var(--ease-out);
+}
+@media (hover: hover) { .tcheck:hover::before { border-color: var(--ok); } }
+.tcheck.is-done::before { background: var(--ok-solid); border-color: var(--ok-solid); }
+.tcheck.is-done::after { transform: rotate(45deg) scale(1); }
+.tcheck:active { transform: scale(.94); }
+.tcheck[hidden] { display: none; }
+/* A content deliverable finishes through its workflow, so its row carries a
+   quiet mark in the circle's place and no control. */
+/* The ring stands where the checkbox would, on the title's own line. */
+.tring { width: 18px; height: 18px; }
+.is-narrow .task-row > .trow-check { min-height: 22px; }
+/* The owner and the due date are the row's own controls: the value, at the
+   control floor, with the negative margin that keeps a 38px target from
+   setting the height of a 20px line. */
+.tinline {
+  display: inline-flex; align-items: center; max-width: 100%; min-height: var(--ctl-h);
+  margin: calc((20px - var(--ctl-h)) / 2) 0 calc((20px - var(--ctl-h)) / 2) -8px; padding: 0 8px;
+  border: 0; border-radius: var(--radius-ctl); background: none; color: inherit;
+  font: inherit; font-size: 13px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+@media (hover: hover) { .tinline:hover { background: var(--line-soft); color: var(--ink); } }
+.tinline[hidden] { display: none; }
+.tinline-pick { width: 100%; min-width: 0; }
+.task-due { display: block; }
+.task-due.is-over .tinline, .task-due.is-over > span { color: var(--warn); font-weight: 600; }
+.task-row > .team-act { justify-self: end; }
+.trun { color: var(--ok); font-weight: 600; margin-right: 2px; }
+
+/* The Workload view: one row a person. */
+.load-row { grid-template-columns: minmax(0, 1fr) repeat(6, 88px); }
+.load-n { text-align: right; font-size: 14px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.load-n.is-over { color: var(--warn); font-weight: 600; }
+.load-lab { display: none; }
+.load-row.crm-head > span:not(:first-child) { text-align: right; }
+.is-narrow .load-row { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: none; row-gap: 6px; }
+/* The person heads their own counts: the shared phone rule names this cell
+   `name`, and with no template the name area lands wherever it can. */
+.is-narrow .load-row > .svc-name { grid-area: 1 / 1 / 2 / -1; }
+.is-narrow .load-n { text-align: left; display: flex; flex-direction: column; font-size: 15px; }
+.is-narrow .load-lab { display: block; font-size: 12px; color: var(--ink-mute); }
+
+/* ---------- The quick drawer ----------
+   Beside the list at a desk, the whole height of the screen on a phone. One
+   surface, no shadow beyond the scrim, hairlines between its parts. */
+.drawer { position: fixed; inset: 0; z-index: 80; }
+.drawer[hidden] { display: none; }
+.drawer-scrim { position: absolute; inset: 0; background: var(--scrim); opacity: 0; transition: opacity var(--t) var(--ease-out); }
+.drawer.is-open .drawer-scrim { opacity: 1; }
+.drawer-card {
+  position: absolute; top: 0; right: 0; bottom: 0; width: min(520px, 100%);
+  display: flex; flex-direction: column; background: var(--card); outline: none;
+  transform: translateX(24px); opacity: 0;
+  transition: transform var(--t-slow) var(--ease), opacity var(--t) var(--ease-out);
+}
+.drawer.is-open .drawer-card { transform: none; opacity: 1; }
+.drawer-head { padding: 12px 20px 14px; border-bottom: 1px solid var(--line); }
+.drawer-top { display: flex; align-items: center; gap: 4px; min-height: var(--ctl-h); }
+.drawer-top .tcheck { margin: 0 0 0 -10px; }
+.drawer-top .rec-token { margin-left: -6px; }
+.drawer-top-end { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.drawer-title { margin: 6px 0 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em; line-height: 25px; overflow-wrap: anywhere; }
+.drawer-ctx { margin: 4px 0 0; font-size: 13px; color: var(--ink-soft); }
+.drawer-ctx[hidden] { display: none; }
+.drawer-head .tfacts { margin-top: 12px; }
+.drawer-head .tfacts .state-select { max-width: var(--state-w); }
+.drawer-body { flex: 1 1 auto; overflow-y: auto; padding: 16px 20px 8px; -webkit-overflow-scrolling: touch; }
+.drawer-body .tsec { margin-bottom: 20px; }
+.drawer-body .checkrow { padding: 6px 0; }
+.drawer-foot {
+  display: grid; gap: 10px; padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+}
+.drawer-foot .msg:empty { display: none; }
+.drawer-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.drawer-acts[hidden] { display: none; }
+.drawer-acts .btn { flex: 0 0 auto; }
+.drawer-why { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--ink-soft); }
+.drawer-why.is-blocked { color: var(--warn); font-weight: 600; }
+.drawer-full { justify-self: start; font-size: 13px; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 2px; min-height: var(--ctl-h); display: inline-flex; align-items: center; }
+/* Adding to the task where its list is: a field and the one button. */
+.dwadd { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.dwadd[hidden] { display: none; }
+.dwadd .input, .dwadd .input-sm { flex: 1 1 auto; min-width: 0; }
+.dwadd .select-sm { flex: 0 0 auto; width: auto; }
+.dwadd .btn { flex: 0 0 auto; min-width: 0; }
+.dwadd-comment { align-items: flex-end; }
+.dwcomments { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.dwcomments li p { margin: 0; font-size: 13.5px; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+.dwcomments li span { font-size: 12px; color: var(--ink-mute); }
+@media (max-width: 640px) {
+  .drawer-card { width: 100%; top: env(safe-area-inset-top, 0px); transform: translateY(24px); }
+  .drawer-head, .drawer-body, .drawer-foot { padding-left: 16px; padding-right: 16px; }
+  .drawer-acts .btn { flex: 1 1 0; min-width: 0; }
+}
+
+/* Add task: the three fields, then the folded rest, then what was just made. */
+#qkForm .row { margin-top: 12px; }
+#qkForm .tmore { margin-top: 8px; }
+#qkForm .tmore > .row:first-of-type { margin-top: 4px; }
+#qkForm .hint { margin: 10px 0 8px; }
+.qkmade { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+.qkmade:empty { display: none; }
+.qkmade li > span:first-child { color: var(--ok); font-weight: 600; }
+/* From template: a tick per template, what it makes under its name. */
+.tpl-head { display: flex; align-items: center; justify-content: space-between; margin: 12px 0 4px; }
+.tpllist { display: grid; border-top: 1px solid var(--line-soft); }
+.tplrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+.tplrow .tickline { margin: 0; align-items: flex-start; }
+.tplrow .tickline span b { display: block; font-weight: 600; font-size: 13.5px; }
+.tplrow .tickline small { display: block; font-size: 12px; color: var(--ink-mute); }
+
+/* Owner, due date and status are three columns at a desk and one line on a
+   phone: the wrapper is invisible to the desk grid and a row of its own on a
+   narrow one. */
+.trow-meta { display: contents; }
+.due-short { display: none; }
+.is-narrow .due-long { display: none; }
+.is-narrow .due-short { display: inline; }

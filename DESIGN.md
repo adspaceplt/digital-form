@@ -809,6 +809,10 @@ set is a status a page could set wrongly. The thirteen questions are one
 row each, a state and an owner, and one row repaints on its own answer so a
 person working down the list keeps their place.
 
+**A day of work is a list, and a record is one press further.** My Work was a project tracker: every task opened a full record with panes and a rail, so ticking off an invoice took three screens. A task somebody does in ten minutes is a row with a tick; a task that moves through a workflow is the same row with a ring saying how far along it is, because a tick there would skip the gates the workflow exists to hold. The row carries what a day is run on (what, whose, when, where it stands) and nothing the record already states; the drawer carries what a task needs to be worked (its checklist, links, comments, the next action) without leaving the list; the record is for the task that needs its stages, its dates and its history. Adding a task asks three things and lets Enter make the next one, because the test is ten seconds a task. **Statuses are the reader's, stages are the workflow's**: five plain words are read off the stage group, so a content workflow keeps its stages and a person scanning a list reads To do, In progress, Waiting, Review and Done.
+
+**A record states one next step, derived, and one decides it.** The head's status, the next-step panel and the stepper all read one derivation of the task, the month and the workflow, so they cannot disagree; the contradictions that were reported (an owner warning beside a named owner, a meeting called scheduled beside a month that has none) were two places each reading their own copy. Everything uncommon is in the ⋯, where each act asks what it needs: a reason to go back, a reason to skip, a note to hand over.
+
 **Handing work on is one act, not two.** A stage move and an owner change
 made separately leave a gap in which the task is at the next stage and still
 somebody else's; made together they are one event that says who took it and
