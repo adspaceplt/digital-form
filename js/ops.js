@@ -121,58 +121,58 @@
      `ready-needs-owner-and-due` has made the database's vocabulary the
      reader's problem. */
   var SAID = {
-    'not-team': 'Your team record could not be read. Ask an admin to check it.',
+    'not-team': 'Team record not found. Contact an admin.',
     'denied': 'You do not have access to do that.',
     'not-found': 'That task is no longer there.',
-    'stale': 'Somebody changed this task while it was open. It has been reloaded.',
-    'not-yours': 'That extension is somebody else\'s to decide.',
-    'decided': 'That extension has already been answered.',
+    'stale': 'Updated by someone else. Reloaded.',
+    'not-yours': 'Not yours to decide.',
+    'decided': 'Already decided.',
     'no-date': 'A date is required.',
     /* The team's own milestone has to land before the commitment it feeds,
        and the latest it may fall is the day before. Named here rather than
        left as the database's own word, like every other refusal. */
-    'draft-not-before-final': 'The first draft is due at the latest one day before the final due date.',
-    'bad-transition': 'That is not a move this workflow offers from here.',
-    'no-such-stage': 'That is not a stage in this workflow.',
+    'draft-not-before-final': 'Draft due must be before the final due date.',
+    'bad-transition': 'Move not allowed from this stage.',
+    'no-such-stage': 'Stage not in this workflow.',
     'ready-needs-owner-and-due': 'Ready needs an owner and a final due date.',
-    'footage-not-ready': 'Editing is refused while the footage is marked not ready.',
+    'footage-not-ready': 'Footage not ready for editing.',
     'needs-draft': 'Client review needs a draft or review link.',
     'needs-final-link': 'Delivered needs a final link.',
-    'needs-delivery-or-reason': 'Done needs a delivery, or a reason for closing without one.',
-    'checklist-incomplete': 'A required checklist item is still open.',
+    'needs-delivery-or-reason': 'Add a delivery or a closing reason.',
+    'checklist-incomplete': 'Required checklist items are open.',
     'reason-required': 'A reason is required.',
-    'category-required': 'Say what it is waiting on.',
+    'category-required': 'Select what it is waiting on.',
     'title-required': 'A description is required.',
     'client-required': 'A client is required.',
-    'client-not-active': 'That client is not active. Choose an active client, or Lead for one that is not yet.',
-    'not-a-lead': 'That record is already a client. Choose Client instead.',
+    'client-not-active': 'Client not active. Choose an active client or Lead.',
+    'not-a-lead': 'Already a client. Choose Client.',
     'bad-scope': 'Choose Client, Lead or Internal.',
     'bad-task-type': 'Choose a task type.',
-    'bad-period': 'The content month is not a month.',
-    'bad-week': 'The week is 1 to 5.',
+    'bad-period': 'Invalid content month.',
+    'bad-week': 'Week must be 1 to 5.',
     'skip-reason-required': 'Skipping a step needs a reason.',
-    'planning-incomplete': 'Production waits on planning being marked complete on the engagement.',
-    'meeting-required': 'Production waits on the content meeting being held, or marked not applicable.',
-    'needs-final-or-reason': 'Published needs a final link, or a note saying where it went.',
-    'no-such-person': 'That person is not on the team.',
-    'bad-count': 'The number of tasks is 1 to 60.',
-    'bad-weeks': 'Set the weeks as up to five figures.',
-    'weeks-do-not-add-up': 'The weeks do not add up to the number of tasks.',
-    'already-generated': 'This month was already generated from this sheet. Open it again to generate more.',
-    'bad-frequency': 'Choose weekly, monthly or every so many days.',
-    'interval-required': 'Say how many days apart.',
-    'bad-state': 'That is not a state this list offers.',
-    'no-such-check': 'That check is not on this engagement.',
-    'meeting-in-past': 'A meeting is put in the diary for today or later.',
+    'planning-incomplete': 'Planning not complete for this month.',
+    'meeting-required': 'Content meeting not held or marked N/A.',
+    'needs-final-or-reason': 'Add a final link or a note.',
+    'no-such-person': 'Not a team member.',
+    'bad-count': 'Task count must be 1 to 60.',
+    'bad-weeks': 'Enter up to five weekly figures.',
+    'weeks-do-not-add-up': 'Weekly figures must match the total.',
+    'already-generated': 'Already generated from this sheet.',
+    'bad-frequency': 'Choose weekly, monthly or every N days.',
+    'interval-required': 'Enter the number of days.',
+    'bad-state': 'Invalid status.',
+    'no-such-check': 'Check not found.',
+    'meeting-in-past': 'Meeting date must be today or later.',
     'bad-channel': 'Choose where the meeting is held.',
-    'checklist-open': 'Ready waits on every check being Ready or Not applicable.',
-    'workflow-required': 'No workflow is set up. Ask an admin.',
-    'bad-kind': 'That is not a kind of link this portal keeps.',
-    'url-required': 'An address is required.',
-    'ends-before-it-starts': 'That ends before it starts.',
+    'checklist-open': 'All checks must be Ready or N/A.',
+    'workflow-required': 'No workflow set up. Contact an admin.',
+    'bad-kind': 'Invalid link type.',
+    'url-required': 'A link is required.',
+    'ends-before-it-starts': 'End date is before the start.',
     'not-blocked': 'This task is not blocked.',
-    'confirm-required': 'Type the task number exactly as it is shown.',
-    'override-denied': 'Skipping a step needs ops Manage.'
+    'confirm-required': 'Type the task number as shown.',
+    'override-denied': 'Skipping a step needs Manage access.'
   };
   /* The database refuses Ready with one key for two causes, so the words
      are built from the task it refused: naming an owner beside the owner
@@ -1566,7 +1566,7 @@
       if (a === 'timer') rowTimer(t, el, done);
       if (a === 'cancel') {
         ADspaceConfirm.ask({
-          title: 'Cancel task', body: 'The task stops here and leaves the open list. It can be reopened.',
+          title: 'Cancel task', body: 'Removes it from open work. It can be reopened.',
           go: 'Cancel task', tone: 'danger', cancel: 'Keep task',
           field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
         }, function (why) {
@@ -2499,7 +2499,7 @@
     }
     if (g === 'waiting') {
       n.title = 'On hold';
-      n.line = 'Resume it when the work can continue.';
+      n.line = 'Pending next stage changes.';
       var res = resumeTo(t);
       if (work && res) n.go = { label: 'Resume', run: function () { move(res); } };
       return n;
@@ -2515,7 +2515,7 @@
         n.title = 'Not ready for production';
         var words = { owner: 'Assign an owner', due: 'Add a final due date' };
         n.list = need.length > 1 ? need.map(function (k) { return words[k]; }) : [];
-        n.line = need.length > 1 ? 'Two things are missing.'
+        n.line = need.length > 1 ? 'Two items missing.'
           : (need[0] === 'owner' ? 'Assign an owner to continue.' : 'Add a final due date to continue.');
         if (need[0] === 'owner') {
           if (manage) n.go = assign;
@@ -2534,7 +2534,7 @@
     /* The step itself. */
     if (g === 'intake' && target === 'ready') {
       n.title = 'Mark ready for production';
-      n.line = 'The owner and the final due date are set.';
+      n.line = 'Owner and final due date set.';
       if (work) n.go = { label: 'Mark ready', run: function () { move('ready'); } };
       if (state.eng && mt === 'none' && work) {
         n.alt = { label: 'Schedule meeting', run: function () { openMeetFor(); } };
@@ -2552,7 +2552,7 @@
                    meeting: 'Schedule the content meeting',
                    'meeting-held': 'Hold the content meeting (' + niceDate(state.eng.meeting_at) + ')' };
         n.list = pn.length > 1 ? pn.map(function (k) { return mw[k]; }) : [];
-        n.line = pn[0] === 'planning' ? 'Planning is not marked complete for ' + monthWord(state.eng.period) + '.'
+        n.line = pn[0] === 'planning' ? 'Planning incomplete for ' + monthWord(state.eng.period) + '.'
           : pn[0] === 'meeting' ? 'Production waits on the content meeting.'
           : 'Production opens once the content meeting on ' + niceDate(state.eng.meeting_at) + ' is held.';
         if (pn.length > 1) n.line = 'Production waits on the month.';
@@ -2561,7 +2561,7 @@
         return n;
       }
       n.title = 'Start production';
-      n.line = 'Starting moves the task to ' + tstage.label + ' and starts your timer.';
+      n.line = 'Moves to ' + tstage.label + ' and starts your timer.';
       if (work) n.go = { label: 'Start work', run: function () { move(target, null, true); } };
       return n;
     }
@@ -2569,13 +2569,13 @@
       if (!hasLink('draft') && !hasLink('review')) {
         n.blocked = true;
         n.title = 'Not ready for client review';
-        n.line = 'Add the draft or review link the client will open.';
+        n.line = 'Add the draft or review link.';
         if (work) n.go = { label: 'Add draft link', run: function () { openLinkForm('draft'); } };
         if (work && isWork(g)) n.alt = timerAct(t);
         return n;
       }
       n.title = g === 'internal_review' ? 'Internal review' : 'Send to the client';
-      n.line = 'Send it to the client once it passes review.';
+      n.line = 'Send once it passes review.';
       if (work) n.go = { label: 'Send to client', run: function () { move(target); } };
       if (work && hasNext(t, 'changes_requested')) n.alt = { label: 'Request changes', run: function () { askChanges(); } };
       else if (work && isWork(g)) n.alt = timerAct(t);
@@ -2584,7 +2584,7 @@
     if (g === 'revision') {
       n.title = 'Changes requested';
       var why = lastNote('stage_changed', t.stage_key);
-      n.line = why ? 'Asked for: ' + why : 'Make the changes, then send it for review again.';
+      n.line = why ? 'Requested: ' + why : 'Make the changes, then resend for review.';
       if (work && target) n.go = { label: 'Resume work', run: function () { move(target, null, true); } };
       return n;
     }
@@ -2599,7 +2599,7 @@
     }
     if (g === 'client_review') {
       n.title = 'Waiting on the client';
-      n.line = 'Record the client\'s decision when it arrives.';
+      n.line = 'Record the client\'s decision.';
       if (work && target) n.go = { label: verbFor(target, t), run: function () { move(target); } };
       if (work && hasNext(t, 'changes_requested')) n.alt = { label: 'Request changes', run: function () { askChanges(); } };
       return n;
@@ -2608,7 +2608,7 @@
       var finalKind = target === 'published' ? 'publish' : 'deliver';
       if (target === 'published' && !t.publish_at) {
         n.title = 'Schedule publishing';
-        n.line = 'Set the publish date agreed with the client.';
+        n.line = 'Set the agreed publish date.';
         if (work) n.go = { label: 'Schedule', run: function () { editDate('publish'); } };
         if (work && hasLink('final')) n.alt = { label: 'Mark published', run: function () { move(target); } };
         return n;
@@ -2621,24 +2621,24 @@
         return n;
       }
       n.title = finalKind === 'publish' ? 'Publish' : 'Deliver';
-      n.line = t.publish_at ? 'Scheduled for ' + niceDate(t.publish_at) + '.' : 'The final link is attached.';
+      n.line = t.publish_at ? 'Scheduled for ' + niceDate(t.publish_at) + '.' : 'Final link attached.';
       if (work) n.go = { label: verbFor(target, t), run: function () { move(target); } };
       return n;
     }
     if (tg === 'done' && !t.delivered_at) {
       n.title = 'Complete the task';
-      n.line = 'Nothing was delivered through the portal, so completing it asks why.';
+      n.line = 'No delivery recorded. A reason is required.';
       if (work) n.go = { label: 'Complete task', run: function () { askComplete(target); } };
       return n;
     }
     if (target) {
       n.title = tstage ? tstage.label : sentence(target);
-      n.line = 'The next step on this workflow.';
+      n.line = 'Next workflow step.';
       if (work) n.go = { label: verbFor(target, t), run: function () { move(target); } };
       return n;
     }
     n.title = stageLabel(t);
-    n.line = 'No further step from here.';
+    n.line = 'No further steps.';
     return n;
   }
   /* An everyday task's next step is one of five words, and the button is the
@@ -2658,12 +2658,12 @@
     if (!work) return n;
     if (p === 'todo') { n.title = n.title || 'To do'; n.go = go('Start', 'doing'); n.alt = go('Mark complete', 'complete'); }
     else if (p === 'doing') { n.title = n.title || 'In progress'; n.go = go('Mark complete', 'complete'); n.alt = go('Send for review', 'review'); }
-    else if (p === 'waiting') { n.title = n.title || 'Waiting'; n.line = n.line || 'Resume it when the work can continue.'; n.go = go('Resume', 'doing'); n.alt = go('Mark complete', 'complete'); }
+    else if (p === 'waiting') { n.title = n.title || 'Waiting'; n.line = n.line || 'Pending next stage changes.'; n.go = go('Resume', 'doing'); n.alt = go('Mark complete', 'complete'); }
     else if (p === 'review') {
       n.title = n.title || 'Ready for review';
       n.go = go('Approve', 'complete');
       n.alt = { label: 'Request changes', run: function () {
-        ADspaceConfirm.ask({ title: 'Request changes', body: 'The task goes back to In progress and the owner is told.',
+        ADspaceConfirm.ask({ title: 'Request changes', body: 'Returns it to In progress and notifies the owner.',
           go: 'Request changes', field: { label: 'What needs to change', rows: 3, need: 'Say what needs to change.' }
         }, function (why) { move('doing', why); });
       } };
@@ -2703,8 +2703,8 @@
   }
   function timerLine(t, toWork) {
     var s = state.session;
-    var run = s && s.task_id === t.id ? 'Your timer is running. ' : '';
-    return run + (toWork ? 'Move on when this step is done.' : 'Send it for review when the draft is ready.');
+    var run = s && s.task_id === t.id ? 'Timer running. ' : '';
+    return run + (toWork ? 'Move on when done.' : 'Send for review when ready.');
   }
   function timerAct(t) {
     var s = state.session;
@@ -2738,7 +2738,7 @@
     if (n.go && /Start work|Resume work/.test(n.go.label) || (n.alt && n.alt.label === 'Start work')) {
       var other = s && s.task_id !== t.id
         ? (state.tasks || []).filter(function (x) { return x.id === s.task_id; })[0] : null;
-      if (other) line.textContent = (n.line ? n.line + ' ' : '') + 'Your timer is on T' + other.task_no + ' and moves here.';
+      if (other) line.textContent = (n.line ? n.line + ' ' : '') + 'Timer moves here from T' + other.task_no + '.';
     }
     var list = $('taskNextList');
     list.innerHTML = n.list.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('');
@@ -2749,8 +2749,8 @@
     var over = daysAway(t.current_final_due_at);
     late.hidden = !isLate(t);
     late.textContent = isLate(t)
-      ? 'Late: the final due date passed ' + Math.abs(over) + (Math.abs(over) === 1 ? ' day' : ' days') +
-        ' ago and it has not reached client review.'
+      ? 'Late: ' + Math.abs(over) + (Math.abs(over) === 1 ? ' day' : ' days') +
+        ' past final due, not yet at client review.'
       : '';
     var acts = $('taskNextActs');
     acts.innerHTML = '';
@@ -3539,7 +3539,7 @@
   function askChanges() {
     ADspaceConfirm.ask({
       title: 'Request changes',
-      body: 'The task goes to Changes requested and the owner is told.',
+      body: 'Moves it to Changes requested and notifies the owner.',
       go: 'Request changes',
       field: { label: 'What needs to change', rows: 3, need: 'Say what needs to change.' }
     }, function (why) { move('changes_requested', why); });
@@ -3547,7 +3547,7 @@
   function askComplete(key) {
     ADspaceConfirm.ask({
       title: 'Complete task',
-      body: 'Nothing was delivered through the portal. Say how it was closed.',
+      body: 'No delivery recorded. State how it was closed.',
       go: 'Complete task',
       field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
     }, function (why) { move(key, why); });
@@ -3555,7 +3555,7 @@
   function askCancel() {
     ADspaceConfirm.ask({
       title: 'Cancel task',
-      body: 'The task stops here and leaves the open queue. Reopen brings it back.',
+      body: 'Removes it from open work. It can be reopened.',
       go: 'Cancel task', tone: 'danger', cancel: 'Keep task',
       field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
     }, function (why) { move('cancelled', why); });
@@ -4117,7 +4117,7 @@
     var t = state.task;
     if (!t || !may('ops', 'work')) return;
     var r = state.rule;
-    $('recWhat').textContent = (r ? 'Repeating: ' + ruleWord(r) + '.' : 'A copy of this task is made on each date, with its description, format and people carried over.');
+    $('recWhat').textContent = (r ? 'Repeating: ' + ruleWord(r) + '.' : 'Creates a copy on each date with the same description, format and people.');
     $('recFreq').value = (r && r.frequency) || 'monthly';
     var day = r && r.day_of_month;
     if (!day && t.publish_at) { var m = /^\d{4}-\d{2}-(\d{2})/.exec(t.publish_at); day = m ? Math.min(28, Number(m[1])) : null; }
