@@ -3416,8 +3416,8 @@
       return n;
     }
     var owner = ownerId(t);
-    var assign = { label: 'Assign task owner', run: function () { editOwner(); } };
-    var setDue = { label: 'Set due date', run: function () { editDate('final'); } };
+    var assign = { label: 'Assign task owner', run: function () { factHere('dwOwnerChange', editOwner); } };
+    var setDue = { label: 'Set due date', run: function () { factHere('dwDue', function () { editDate('final'); }); } };
 
     if (t.stage_key === 'blocked') {
       n.title = 'Blocked';
@@ -3604,7 +3604,7 @@
       if (target === 'published' && !t.publish_at) {
         n.title = 'Schedule publishing';
         n.line = 'Set the agreed publish date.';
-        if (work) n.go = { label: 'Schedule', run: function () { editDate('publish'); } };
+        if (work) n.go = { label: 'Schedule', run: function () { factHere('dwPublish', function () { editDate('publish'); }); } };
         if (work && hasLink('final')) n.alt = stepAct(t, target);
         return n;
       }
@@ -3668,6 +3668,21 @@
       } };
     }
     return n;
+  }
+  /* A step that changes a fact uses the control the reader is looking at:
+     the sheet's own row while the sheet is open, the record's otherwise. The
+     step card reached for the record's controls from the sheet, where they
+     are not on the screen, so Assign task owner and Set due date did
+     nothing. A fact the sheet does not draw opens the full record. */
+  function factHere(id, onRecord) {
+    if (!state.drawer) { onRecord(); return; }
+    var b = $(id);
+    if (b) {
+      try { b.scrollIntoView({ block: 'center' }); } catch (e) {}
+      b.click();
+      return;
+    }
+    openFull(state.drawer);
   }
   /* The two seeded workflows name their working stages `in_progress`; the
      content workflow names its own `active`. Both are the work in hand. */

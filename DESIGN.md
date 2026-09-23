@@ -878,6 +878,13 @@ why, and sends it back where it was cancelled from where the workflow allows,
 else to the workflow's own way out; the stamp leaves with the move. A sentence
 in a dialog is a claim, and a claim is tested like any other.
 
+**A button acts where the reader is.** The step card is drawn in the sheet
+and on the full record by one function, and its fact buttons (Assign task
+owner, Set due date) reached for the record's rows — which are not on the
+screen while the sheet is open, so the press did nothing at all. A shared
+component's action names the place it acts on from where it is drawn: the
+sheet's own row in the sheet, the record's on the record.
+
 **An open ⋯ answers Escape before the sheet under it does.** A menu over a
 sheet is the top layer, so Escape shuts the menu and hands the focus back to
 its button; the next Escape shuts the sheet. Shutting both on one press threw
@@ -905,7 +912,10 @@ the band's heading was about.
 **A label that wraps in a half-width button is the wrong label.** On a phone
 the step card's two actions are equal halves, and "Client requested changes"
 wrapped to two lines in its half. Both reviews send work back with **Request
-changes**; the step sheet says which loop it enters.
+changes**; the step sheet says which loop it enters. The select bar met the
+same fault from the other side: three buttons in thirds put "Assign task owner"
+on two lines, so on a phone the way out (Done) moves to the count's line and
+the two acts share the next line as equal halves.
 
 **A figure the rate card prefills is the person's to change.** The term
 adjustment is a percentage now, prefilled from the card by the term's range

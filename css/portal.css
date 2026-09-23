@@ -7249,14 +7249,15 @@ body.is-canvas { overflow: hidden; }
    scrolls, so the count and the two acts are never a screen from the ticks. */
 .bulkbar {
   position: sticky; top: var(--head-h); z-index: 20;
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
   margin: 0 0 12px; padding: 8px 12px;
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-sm);
 }
 .bulkbar[hidden] { display: none; }
 .bulkbar .tickline { margin: 0; font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.bulkbar-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.bulkbar-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
 .bulkbar-acts .btn { flex: 0 0 auto; }
+.bulkbar-done { flex: 0 0 auto; }
 .trow-pick { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
 .task-row.is-picked { background: var(--line-soft); }
 /* A control's edge is read against what is outside it, and the chosen row's
@@ -7264,8 +7265,12 @@ body.is-canvas { overflow: hidden; }
    ticked row takes the mute ink instead, which clears 3:1 on the fill in both
    themes; a tinted one keeps its own colour. */
 .task-row.is-picked .state-select:not(.is-ok):not(.is-warn):not(.is-danger) { border-color: var(--ink-mute); }
+/* On a phone the way out shares the count's line, and the two acts share
+   the next as equal halves: three to a line put "Assign task owner" on two
+   lines inside its own button. */
 @media (max-width: 640px) {
-  .bulkbar-acts { width: 100%; }
+  .bulkbar-done { order: 1; margin-left: auto; }
+  .bulkbar-acts { order: 2; width: 100%; margin-left: 0; }
   .bulkbar-acts .btn { flex: 1 1 0; min-width: 0; }
 }
 
