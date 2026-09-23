@@ -3642,6 +3642,13 @@ body.is-plain .topbar { background: var(--chrome); }
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   font-size: 12.5px; color: var(--ink-mute);
 }
+/* On a client's page the bar and the foot run to the screen's edges: their
+   contents sit on the page gutter at every width, so the mark is at the
+   left edge and the actions at the right on a wide screen rather than both
+   stopping 1240px apart in the middle of it. The console keeps its own bar
+   and the content stays centred, because a page of text has a width it
+   reads at and a bar does not. */
+:root[data-face="client"] .topbar-inner, :root[data-face="client"] .portalfoot-in { max-width: none; }
 .portalfoot-copy { min-width: 0; }
 .portalfoot-link { flex: 0 0 auto; color: var(--ink-mute); text-decoration: none; }
 .portalfoot-link:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
@@ -3778,7 +3785,10 @@ body > .shell { width: 100%; }
    control inside a control is one a screen reader trips over. What opens the
    task is the name cell, which is the widest, runs the row's full height and
    is where the eye already is. */
-.task-row { grid-template-columns: minmax(0, 1fr) var(--state-w) 140px 150px; }
+/* The last track is the dates: the final date in the row face, the draft and
+   the scheduled publish date under it in the small face. 190px is measured
+   against `Draft 28 Sept · Publish 5 Oct` at 12px. */
+.task-row { grid-template-columns: minmax(0, 1fr) var(--state-w) 140px 190px; }
 .task-open {
   display: flex; flex-direction: column; justify-content: center; gap: 2px;
   min-width: 0; align-self: stretch; margin: -10px 0; padding: 10px 0;
@@ -3794,10 +3804,18 @@ body > .shell { width: 100%; }
 /* The refusal a stage move met, under the row it was made on. */
 .task-note { margin: 0; padding: 0 15px 10px; }
 .task-owner { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.task-due { font-size: 13px; color: var(--ink-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.task-due {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  font-size: 13px; color: var(--ink-soft); white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.task-due > b { font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.task-due > small { font-size: 12px; color: var(--ink-mute); min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* Overdue carries the word as well as the colour, so the mark survives
    greyscale and a reader who cannot tell warn from mute. */
-.task-due.is-over { color: var(--warn); font-weight: 600; }
+.task-due.is-over > b { color: var(--warn); font-weight: 600; }
+/* Priority rides the meta line as a chip, only where it is the exception. */
+.task-open small .task-pri { vertical-align: 1px; margin-left: 2px; }
+.is-narrow .task-row > .task-due > small { display: none; }
 .task-go { display: inline-flex; align-items: center; justify-content: flex-end; color: var(--ink-mute); }
 .task-go .crm-chev { width: 16px; height: 16px; }
 
@@ -3860,6 +3878,122 @@ body > .shell { width: 100%; }
    the meta line wrapped the owner's name onto a line of its own. */
 .is-narrow .rec-id.rec-id-plain { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "token ctl" "who who"; row-gap: 4px; }
 .is-narrow .rec-id.rec-id-plain .rec-ctl { align-self: center; }
+/* The task's name is its code and its description on one line, in the
+   heading's own face, because together they are the file name a saved export
+   takes. The code reads mute so the description carries the weight; a task
+   with no description says so in the same mute. */
+.task-code { color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.task-code[hidden] { display: none; }
+#taskDesc.is-blank { color: var(--ink-mute); font-weight: 500; }
+/* The pen that edits the description and the control that copies the name
+   sit on the name's line at the icon button's floor, taking the negative
+   block margin the rate card's ⋯ takes so a 38px target does not set the
+   height of a 25px line. */
+.rec-name .rec-pen {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  width: var(--ctl-h); height: var(--ctl-h); margin-block: calc((25px - var(--ctl-h)) / 2);
+  border: 0; border-radius: var(--radius-ctl); background: none; color: var(--ink-mute); cursor: pointer;
+}
+.rec-name .rec-pen svg { width: 15px; height: 15px; }
+.rec-name .rec-pen[hidden] { display: none; }
+@media (hover: hover) { .rec-name .rec-pen:hover { background: var(--line-soft); color: var(--ink); } }
+.rec-name .rec-pen:active { transform: scale(.97); }
+.rec-name .rec-pen.is-saving { color: var(--action); }
+.rec-name .rec-pen.is-done { color: var(--ok); background: var(--ok-bg); }
+/* The field takes the heading's size; its box is the small control's, so the
+   head grows by as little as a field can when the pen is pressed. */
+.rec-name h2 .askfield { font-size: 19px; min-height: var(--ctl-h-sm); padding-block: 2px; }
+/* A hint under its own field sits on the field, not a block step away. */
+.field > .hint { margin: 6px 0 0; }
+/* Five figures for five weeks on one line, two lines on a phone. The codes
+   a preview answers with wrap as a paragraph under the control that asked. */
+.genweeks { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.genout { margin: 12px 0 0; overflow-wrap: anywhere; }
+#genPreview { margin-top: 4px; }
+/* Several ticks in a sheet stack one to a line; inline they flowed two to a
+   line with the third wrapping under them. */
+.tickstack { display: grid; gap: 2px; margin: 0 0 12px; }
+/* The tick and the percentage it applies share a line, the field at its own
+   width with the sign riding inside its box. */
+.adjrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; }
+.adjrow .tickline { flex: 0 1 auto; }
+.pctfield { display: flex; align-items: center; gap: 10px; }
+.pctfield .field-label { margin: 0; }
+.pctbox { position: relative; display: inline-flex; align-items: center; }
+.pctbox .input { width: 104px; padding-right: 26px; }
+.pctsign { position: absolute; right: 10px; font-size: 13px; color: var(--ink-mute); pointer-events: none; }
+.tickstack .tickline { display: flex; }
+
+/* THE CLIENT RECORD'S WORK PANE. A filter row in the pane's own margin
+   (not a command bar: that is a route's), then a card per month with the
+   engagement's facts at its head and the month's tasks under them. */
+.workfilters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 12px; }
+.workfilters .cmdbar-find { flex: 1 1 190px; max-width: 420px; }
+.workfilters .select-sm { flex: 0 1 auto; }
+.workfilters .cmdbar-count { margin-left: auto; }
+/* The pane is 591px at a 1280 window, which is narrow by its own measure:
+   the search takes a line and the three selects share the next, with the
+   count ending it. Below the tight width the selects go two to a line. */
+.is-narrow .workfilters .cmdbar-find { flex-basis: 100%; max-width: none; }
+.is-narrow .workfilters .select-sm { flex: 1 1 calc(33.333% - 8px); min-width: 0; }
+.is-narrow .workfilters .cmdbar-count { flex-basis: 100%; margin-left: 0; }
+.is-tight .workfilters .select-sm { flex: 1 1 calc(50% - 6px); }
+/* The engagement is the month's own record, so it sits in the month's card
+   above the tasks as a bounded block with the same edge the tables carry. */
+.engcard { border: 1px solid var(--card-line); border-radius: var(--radius); background: var(--card); padding: 14px 15px; margin: 0 0 12px; }
+.eng-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; }
+.eng-who { min-width: 0; display: grid; gap: 3px; }
+.eng-who h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.eng-meta { margin: 0; font-size: 12.5px; color: var(--ink-soft); display: flex; flex-wrap: wrap; gap: 4px 14px; min-width: 0; }
+.eng-lab { color: var(--ink-mute); }
+.eng-ctl { display: flex; align-items: center; gap: 8px; }
+.eng-ctl .state-select { width: var(--state-w); }
+.eng-ctl .iconbtn { margin-block: calc((var(--ctl-h-sm) - var(--ctl-h)) / 2); }
+.eng-meet { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 12px 0; margin-top: 12px; border-top: 1px solid var(--line-soft); font-size: 13.5px; }
+.eng-meetword { color: var(--ink); }
+.eng-meetword.is-held { color: var(--ok); }
+.eng-meet .btn-sm { margin-left: auto; }
+.eng-checks { border-top: 1px solid var(--line-soft); }
+.eng-checks > summary {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer;
+  min-height: var(--ctl-h); font-size: 13.5px; font-weight: 600; list-style: none; padding: 4px 0;
+}
+.eng-checks > summary::-webkit-details-marker { display: none; }
+.eng-checks > summary::before { content: ''; width: 8px; height: 8px; border-right: 1.8px solid var(--ink-mute); border-bottom: 1.8px solid var(--ink-mute); transform: rotate(-45deg); margin-right: 8px; flex: 0 0 auto; transition: transform var(--t) var(--ease); }
+.eng-checks[open] > summary::before { transform: rotate(45deg); }
+.eng-checks > summary > span:first-child { flex: 1 1 auto; }
+.eng-checkcount { font-weight: 500; color: var(--ink-mute); white-space: nowrap; }
+.eng-checklist { display: grid; gap: 0; padding: 4px 0 2px; }
+/* Thirteen questions, one row each: the question, its state, its owner. The
+   state track is the state column's own width, the owner's the widest name. */
+/* The state track is 150px, measured against `Waiting on client` at 12.5px
+   600 (131px with the chevron), not the 124px state column that clipped it
+   to `Waiting on clie`; the owner track is the same width so the two
+   controls read as a pair. Three tracks at the pane's 591px leave the
+   question 240px, which the longest (`Pre-ads checklist completed`, 176px)
+   fits; below the tight width the question takes a line of its own and the
+   two controls share the next as equal halves. */
+.engcheck { display: grid; grid-template-columns: minmax(0, 1fr) 150px 150px; gap: 8px 12px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line-soft); }
+.engcheck:first-child { border-top: 0; }
+.engcheck-lab { font-size: 13.5px; min-width: 0; }
+.engcheck-who { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Both selects fill their track. The state one names its class twice, because
+   the global `.select-sm.state-select` rule later in the file sets the 124px
+   state width at the same specificity and would otherwise win. */
+.engcheck .select-sm.state-select, .engcheck .select-sm { width: 100%; }
+/* Below the tight width the two controls share the second line, the state
+   taking the larger share: at 390 the card's inner width is 328px, equal
+   halves are 158 and `Waiting on client` needs 153 plus its chevron, which
+   clipped it to `Waiting on clie`; 11:9 gives the state 174. */
+.is-tight .engcheck { grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); grid-template-areas: "lab lab" "state owner"; }
+.is-tight .engcheck-lab { grid-area: lab; }
+.is-tight .engcheck > :nth-child(2) { grid-area: state; }
+.is-tight .engcheck > :nth-child(3) { grid-area: owner; }
+/* The head keeps its control on the right wherever the name has 200px
+   beside it, which the narrow pane does; only the tight one stacks. */
+.is-tight .eng-head { grid-template-columns: minmax(0, 1fr); }
+.is-tight .eng-ctl { justify-content: flex-start; }
+.eng-open { display: inline-block; margin-top: 8px; font-size: 13px; }
 
 /* A checklist item is a statement that something was done, so the row is the
    label, when it was made, and one target that clears the control floor. */
@@ -3891,7 +4025,7 @@ body > .shell { width: 100%; }
    lines. */
 .railmoves { display: flex; flex-wrap: wrap; gap: 8px; }
 .railmove { width: auto; }
-.railback { min-width: 0; }
+.railback, .railhand { min-width: 0; }
 .railother { margin-top: 12px; }
 .railother .field-label { display: block; margin-bottom: 4px; }
 .railother .select { width: 100%; }
@@ -5629,7 +5763,13 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .tl-pen.is-saving { color: var(--action); }
 /* The field takes the value's place inside the row's own left cell, so the
    picker grows where the date was rather than in the duration's track. */
-.tl-lead .askfield { min-width: 0; flex: 1 1 auto; }
+/* The field is the row's own size, not the heading's: `.askfield` is written
+   for a title at 19px and the Client since row is 13px, so the picker stood
+   half again as tall as the rows around it and in the heading's weight. */
+.tl-lead .askfield {
+  min-width: 0; flex: 1 1 auto; font-size: 13px; font-weight: 400; letter-spacing: 0;
+  min-height: var(--ctl-h-sm); padding: 2px 8px;
+}
 
 .raillog { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 /* The glyph names the section the event belongs to; the three lines beside

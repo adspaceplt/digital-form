@@ -215,15 +215,56 @@ Three things worth knowing:
   here stops the one running elsewhere, and the page says which task that was
   before you press.
 
-## 8. What is not built yet
+## 8. Phase 4: the name, whose the work is, and the month
 
-Phase 1 is the data model and the server, phase 2 is My Work. Still to come:
+Applied by hand in the SQL editor, in this order, each safe to run twice:
 
-- **Phase 3, shipped**: the board, the calendar, capacity and the bell, above.
-- **Phase 4** the report functions and the Reports views, the client record's
-  Operations tab, Content Review integration, recurring rules edited on screen
-  and a month generated from them (the function, `ops_generate_recurring`, is
-  already there).
+1. `supabase/migrations/2026-09-23-operations-phase4.sql`. Adds the task's
+   code, description, type and manager, the engagement tables, the content
+   workflow, and the functions that create, name, duplicate, generate,
+   repeat and hand a task on. Nothing already there is changed: every task
+   keeps its serial, its stage and its history; a task from before gets its
+   old title as its description and no code. General and Video are retired
+   for new tasks and the tasks on them carry on. The same section is in
+   `supabase/schema.sql`, so a full re-run of the schema is not needed.
+2. `supabase/migrations/2026-09-23-price-list-preview.sql`, which reads and
+   writes nothing and lists what the price list would change, line by line.
+3. `supabase/migrations/2026-09-23-price-list.sql`, the rate card of
+   2026-09-23. No price moves; wording changes on lines that still hold the
+   seed's value, and two Meta advertising lines are added. A line corrected
+   on the Services page is left alone.
+
+What the team then has:
+
+- **A task is named by a code and a description.** `2610W203 Content Post`
+  is October 2026, week 2, the client's third task that month. The code is
+  given on save and never changes; the description is edited in the record
+  head, and the whole name copies on a press because it is the file name.
+- **Scope is Client, Lead or Internal**, chosen on the sheet and checked once
+  at creation. Task type (Engagement, Ad hoc, Goodwill, Special) replaces the
+  template; the deliverable format is the rate card's list and optional.
+- **Three dates**: the scheduled publish date (tentative until the content
+  meeting), the first draft date, the final due date.
+- **Duplicate** and **Repeat** in a task's ⋯; **Generate** beside New task
+  for a month of tasks at once, previewed before anything is made, and for
+  running the month's repeat rules.
+- **The client record's Work pane**: the client's tasks by month, each month
+  with its engagement (manager, pieces planned, the Drive folder, the content
+  meeting, the thirteen readiness questions) and its status, which the
+  database grants only when the questions are answered and the meeting is
+  held or marked not applicable. Production on a task waits on the same two
+  facts.
+- **Hand over** beside the forward move: the next stage and the next person
+  in one act, recorded and notified; a step the piece does not need can be
+  skipped forward with a reason.
+- **The term adjustment on a service line is a percentage**, prefilled from
+  the rate card by the term's range and yours to change; the letter and the
+  client's page read the figure the line holds.
+
+## 9. What is not built yet
+
+- **Content Review integration** and the reports the engagement record makes
+  possible (planned against delivered per month).
 - **Phase 5** the spreadsheet import, described in `OPERATIONS-MIGRATION.md`.
 
 Each phase is deployable on its own and none of them breaks an existing part
