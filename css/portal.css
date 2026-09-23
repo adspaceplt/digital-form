@@ -3785,10 +3785,13 @@ body > .shell { width: 100%; }
    control inside a control is one a screen reader trips over. What opens the
    task is the name cell, which is the widest, runs the row's full height and
    is where the eye already is. */
-/* The last track is the dates: the final date in the row face, the draft and
-   the scheduled publish date under it in the small face. 190px is measured
-   against `Draft 28 Sept · Publish 5 Oct` at 12px. */
-.task-row { grid-template-columns: minmax(0, 1fr) var(--state-w) 140px 190px; }
+/* The tracks are the tick, the task, the Task Owner, the due date, the stage
+   and the ⋯. The stage track is wider than the portal's 124px state column
+   because the SOP's stage names are longer than a campaign step's: measured
+   at 12.5px, `Performance review` needs 157px and `Changes requested` 155,
+   and in 124px they drew as "Performance r" and "Changes requ". A name longer
+   than that (a label the team writes) ends in an ellipsis rather than a cut. */
+.task-row { grid-template-columns: var(--ctl-h) minmax(0, 1fr) 132px 156px 160px var(--ctl-h); }
 .task-open {
   display: flex; flex-direction: column; justify-content: center; gap: 2px;
   min-width: 0; align-self: stretch; margin: -10px 0; padding: 10px 0;
@@ -3800,7 +3803,10 @@ body > .shell { width: 100%; }
 @media (hover: hover) { .task-open:hover b { text-decoration: underline; text-underline-offset: 2px; } }
 .task-open:active { transform: scale(.997); }
 .task-stage { min-width: 0; }
-.task-stage .state-select { width: 100%; }
+/* Two classes on the select, because the global `.select-sm.state-select`
+   later in the file sets 124px and a one-class rule here lost to it: the
+   track widened and the select inside it did not. */
+.task-stage .state-select, .task-stage .select-sm.state-select { width: 100%; }
 /* The refusal a stage move met, under the row it was made on. */
 .task-note { margin: 0; padding: 0 15px 10px; }
 .task-owner { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -3820,6 +3826,7 @@ body > .shell { width: 100%; }
 .task-go .crm-chev { width: 16px; height: 16px; }
 
 .tlink-row { grid-template-columns: minmax(0, 1fr) 120px auto; }
+.tlink-row > .team-act { align-items: center; gap: 4px; }
 .tlink-kind { min-width: 0; }
 .tsess-row { grid-template-columns: minmax(0, 1fr) 150px 110px; }
 .tsess-who { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -4163,6 +4170,9 @@ body > .shell { width: 100%; }
   width: var(--state-w); min-width: 0; height: var(--ctl-h-sm); min-height: var(--ctl-h-sm);
   padding: 0 26px 0 10px; font-size: 12.5px; font-weight: 600; line-height: 1.4;
   background-size: 13px; background-position: right 8px center;
+  /* A state longer than its column ends in an ellipsis, never a cut: a word
+     sliced mid letter reads as a fault, three dots as a name that goes on. */
+  text-overflow: ellipsis;
 }
 .state-select.is-ok   { color: var(--ok);   border-color: var(--ok);   background-color: var(--ok-bg); }
 .state-select.is-warn { color: var(--warn); border-color: var(--warn); background-color: var(--warn-bg); }
@@ -4313,23 +4323,40 @@ body > .shell { width: 100%; }
 .is-narrow .reg-row > .team-act { grid-area: act; justify-self: end; }
 .is-narrow .reg-row > .reg-who { grid-area: who; }
 .is-narrow .reg-row > .reg-date { grid-area: date; justify-self: stretch; text-align: right; }
-/* A phone task row is a two column table, not a card with things pushed
-   right: who and what on the left, where it stands over when it is owed on
-   the right. The right track is fixed and measured against its worst case,
-   the `Waiting for client` chip at 122px and the state select's own 124px, so
-   the state starts at the same x on every row; both cells stretch and align
-   right, so the card has two margins rather than one ragged one. The owner
-   leaves: the scope select above already answers whose queue this is, and a
-   phone row spends its width on what somebody came for. */
+/* A narrow task row is the tick, the task and its ⋯ on the first line, and
+   the Task Owner, the due date and the stage under the task, the stage at a
+   stated width ending at the card's right padding on every row. The meta
+   line runs under the ⋯, so the stage ends where the ⋯ does: one right
+   margin. It used to wrap wherever the words ran out, which on one card put
+   two stages at two heights and three different x: a select is as wide as
+   its longest option, and under a finger its text is 16px so iOS does not
+   zoom, so which rows fitted was decided by the words in them. Now nothing
+   on the line wraps: the Task Owner gives way with an ellipsis, the date
+   never does, and on a list a phone's width (tight) the stage takes a line
+   of its own on every row instead. 160px is the desk stage track; 200px is
+   `Performance review` at 16px. */
 .is-narrow .task-row {
-  grid-template-columns: minmax(0, 1fr) 132px;
-  grid-template-areas: "name stage" "name due";
-  row-gap: 4px; align-items: start;
+  grid-template-columns: var(--ctl-h) minmax(0, 1fr) var(--ctl-h);
+  grid-template-areas: "check name act" ". meta meta";
+  row-gap: 4px; column-gap: 8px; align-items: center;
 }
-.is-narrow .task-row > .task-open { grid-area: name; align-self: center; }
-.is-narrow .task-row > .task-stage { grid-area: stage; justify-self: stretch; text-align: right; }
-.is-narrow .task-row > .task-due { grid-area: due; justify-self: stretch; text-align: right; }
-.is-narrow .task-row > .task-owner { display: none; }
+.is-narrow .task-row > .trow-check { grid-area: check; align-self: start; }
+.is-narrow .task-row > .task-open { grid-area: name; }
+.is-narrow .task-row > .trow-meta {
+  grid-area: meta; display: flex; flex-wrap: nowrap; align-items: center; gap: 4px 12px; min-width: 0;
+}
+.is-narrow .trow-meta > .task-owner { flex: 0 1 auto; min-width: 0; max-width: 34%; }
+/* In your own list every owner is you, so a phone spends that width on the
+   date and the status instead. */
+.is-narrow .is-mine .trow-meta > .task-owner { display: none; }
+.is-narrow .trow-meta > .task-due { flex: 0 0 auto; }
+.is-narrow .trow-meta > .task-stage { flex: 0 0 auto; margin-left: auto; display: flex; justify-content: flex-end; }
+.is-narrow .trow-meta .state-select { width: 160px; max-width: 100%; }
+@media (pointer: coarse) { .is-narrow .trow-meta .state-select { width: 200px; } }
+.is-tight .task-row > .trow-meta { flex-wrap: wrap; }
+.is-tight .trow-meta > .task-stage { flex: 0 0 100%; margin-left: 0; }
+.is-narrow .task-row > .team-act { grid-area: act; align-self: start; }
+.is-narrow .task-row.crm-head { display: none; }
 .is-narrow .tlink-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "kind kind"; }
 .is-narrow .tlink-row > .tlink-kind { grid-area: kind; }
 /* The report's row, here rather than beside the desktop rule it belongs to:
@@ -6460,8 +6487,13 @@ body.is-canvas { overflow: hidden; }
    target rule is there to catch. */
 .cmdbar-views .acttab { min-height: var(--ctl-h-sm); min-width: 0; padding: 0 11px; font-size: 12.5px; }
 @media (max-width: 640px) {
-  .cmdbar-views { flex: 1 1 calc(50% - 5px); justify-content: stretch; }
+  .cmdbar-views { flex: 1 1 calc(50% - 5px); justify-content: stretch; min-width: 0; }
   .cmdbar-views .acttab { flex: 1 1 0; text-align: center; }
+}
+/* Five views at 320: the segments give up their side padding before the
+   bar gives up the page's edge. */
+@media (max-width: 400px) {
+  .cmdbar-views .acttab { padding: 0 4px; font-size: 12px; }
 }
 
 /* THE BOARD. One column per stage of one workflow, in the workflow's own
@@ -6849,3 +6881,435 @@ body.is-canvas { overflow: hidden; }
    buttons beside it. Reported from a phone on 2026-09-21. `.readfield` is the
    shape this portal gives a value that is only read; its size is the size the
    thing it holds is set in. */
+
+/* ---------- The task page: one next step ----------
+   A compact head on the page ground, then the one thing to do next, then the
+   work. The head is not a card: the number, the state and the ⋯ share one
+   line, the name sits under them, and one line says whose it is and what it
+   makes. Hairlines separate; nothing here is a rounded box. */
+.thead { padding: 4px 0 16px; margin: 0 0 16px; border-bottom: 1px solid var(--line); }
+.thead-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h); }
+.thead-ctl { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.thead .rec-token { margin-left: -6px; }
+.thead .rec-name { display: flex; align-items: center; gap: 4px; margin-top: 4px; min-width: 0; }
+.thead .rec-name h2 {
+  margin: 0; min-width: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em;
+  line-height: 25px; overflow-wrap: anywhere;
+}
+.thead-meta {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px;
+  margin: 4px 0 0; font-size: 13px; color: var(--ink-soft);
+}
+.thead-meta > span:empty { display: none; }
+/* The timer, while it runs, beside the title it is timing. Green, because it
+   is a live state; the word says so too. */
+.thead-run { color: var(--ok); font-weight: 600; font-variant-numeric: tabular-nums; }
+.thead-run[hidden] { display: none; }
+.thead .msg:empty { display: none; }
+
+/* The record grid gains a row for the next step above the tabs; the rail
+   still runs the height of all three. */
+.rec.rec-task {
+  grid-template-rows: auto auto 1fr;
+  grid-template-areas: "next rail" "tabs rail" "pane rail";
+}
+.tnext { grid-area: next; min-width: 0; padding: 0 0 20px; }
+.tnext .msg:empty { display: none; }
+.tnext .msg { margin-top: 8px; }
+/* The workflow as thin bars, one a step: done quiet, current in the action
+   colour, the rest a hairline. Not buttons, and named for a screen reader. */
+.tsteps { margin: 0 0 14px; }
+.tsteps[hidden] { display: none; }
+.tsteps-bar { list-style: none; margin: 0; padding: 0; display: flex; gap: 3px; }
+.tsteps-bar li { flex: 1 1 0; height: 4px; border-radius: 2px; background: var(--line); }
+.tsteps-bar li.is-done { background: var(--line-ctl); }
+.tsteps-bar li.is-now { background: var(--action); }
+.tsteps-word { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.tsteps-word b { color: var(--ink); font-weight: 600; }
+.tnext-title { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; line-height: 1.35; }
+/* A blocker is the warn colour and says so in words; the list under it is
+   each thing that is missing, and the button is the first of them. */
+.tnext.is-blocked .tnext-title { color: var(--warn); }
+.tnext-line { margin: 4px 0 0; font-size: 13.5px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.tnext-line[hidden] { display: none; }
+.tnext-list { margin: 8px 0 0; padding-left: 18px; font-size: 13.5px; color: var(--ink); }
+.tnext-list[hidden] { display: none; }
+.tnext-list li + li { margin-top: 2px; }
+.tnext-late { margin: 8px 0 0; font-size: 13px; font-weight: 600; color: var(--warn); }
+.tnext-late[hidden] { display: none; }
+/* One filled action, and at most one quiet one beside it. They keep their
+   own widths at a desk; on a phone they are the row's two halves. */
+.tnext-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.tnext-acts[hidden] { display: none; }
+.tnext-acts .btn { flex: 0 0 auto; }
+@media (max-width: 640px) {
+  .tnext-acts .btn { flex: 1 1 0; min-width: 0; }
+}
+
+/* The Work pane: the brief, the video, the checklist, the files and links.
+   A section with nothing in it is not drawn. */
+.tsec { margin: 0 0 24px; }
+.tsec:last-child { margin-bottom: 0; }
+.tsec[hidden] { display: none; }
+.tsec-title { margin: 0 0 8px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.tsec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 8px; }
+.tsec-head .tsec-title { margin: 0; }
+.tsec-head .btn { margin-block: calc((22px - var(--ctl-h-sm)) / 2); }
+/* A section's quiet action ends on the pane's right margin whatever its
+   length, as the sheet's card actions do: a centred word in a 92px box
+   stopped short of the longer labels beside it. */
+.tsec-head .btn-quiet { min-width: 0; margin-right: -8px; }
+#taskOv:empty { display: none; }
+#taskOv .tsec:last-child { margin-bottom: 24px; }
+.tlinkform { padding: 12px 0; margin: 0 0 12px; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
+.tlinkform[hidden] { display: none; }
+.tlinkform .row:first-child { margin-top: 0; }
+
+/* The rail's facts: a label beside its value, one a line, because a rail is
+   read down. The value can carry its own control (Change beside the owner,
+   the pen on a date) and its own small print under it. */
+.tfacts { display: grid; gap: 6px; margin: 0; }
+.tfacts:empty { display: none; }
+.tfacts > div { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; align-items: baseline; }
+.tfacts dt { font-size: 13px; color: var(--ink-mute); }
+.tfacts dd {
+  margin: 0; min-width: 0; font-size: 13.5px; color: var(--ink); overflow-wrap: anywhere;
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px;
+}
+.tfacts dd small { flex-basis: 100%; font-size: 12px; color: var(--ink-mute); }
+.tfacts .linkbtn {
+  min-height: var(--ctl-h); margin-block: calc((20px - var(--ctl-h)) / 2); padding: 0 6px;
+  font-size: 13px; color: var(--ink-soft); cursor: pointer;
+}
+.tfacts .linkbtn[hidden], .towner[hidden], .towner-pick[hidden] { display: none; }
+.towner-pick { max-width: 100%; }
+.tlink { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+/* A date is the row's own control: the value and a pen, at the control
+   floor, with a negative block margin so a 38px target does not set the
+   height of a 20px line. */
+.tdate, .tdate-src {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: var(--ctl-h); margin-block: calc((20px - var(--ctl-h)) / 2); margin-left: -8px; padding: 0 8px;
+  border: 0; border-radius: var(--radius-ctl); background: none; color: var(--ink);
+  font: inherit; font-size: 13.5px; font-variant-numeric: tabular-nums; cursor: pointer; text-decoration: none;
+}
+.tdate svg { width: 13px; height: 13px; color: var(--ink-mute); flex: 0 0 auto; }
+@media (hover: hover) { .tdate:hover, .tdate-src:hover { background: var(--line-soft); } }
+.tdate:active, .tdate-src:active { transform: scale(.97); }
+.tdate.is-over, .tdate-read.is-over { color: var(--warn); font-weight: 600; }
+.tdate-src { color: var(--ink-soft); }
+.tdate-pick { width: 100%; max-width: 190px; }
+#taskDatesBlock .msg:empty, #taskPeopleBlock .msg:empty { display: none; }
+#taskDatesBlock .msg, #taskPeopleBlock .msg { margin-top: 8px; }
+/* Everything else a reader might look up, behind one fold. */
+.tmore { margin-top: 10px; }
+.tmore[hidden] { display: none; }
+.tmore > summary {
+  display: inline-flex; align-items: center; gap: 6px; min-height: var(--ctl-h);
+  margin-left: -8px; padding: 0 8px; border-radius: var(--radius-ctl);
+  font-size: 13px; color: var(--ink-soft); cursor: pointer; list-style: none;
+}
+.tmore > summary::-webkit-details-marker { display: none; }
+.tmore > summary::after {
+  content: ""; width: 6px; height: 6px; margin-left: 2px;
+  border-right: 1.6px solid currentColor; border-bottom: 1.6px solid currentColor;
+  transform: rotate(45deg) translateY(-2px); transition: transform var(--t) var(--ease);
+}
+.tmore[open] > summary::after { transform: rotate(-135deg) translateY(-1px); }
+@media (hover: hover) { .tmore > summary:hover { background: var(--line-soft); color: var(--ink); } }
+.tmore > .tfacts { margin-top: 6px; }
+/* The hand-over sheet states what the next person takes on. */
+.givefacts { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.givelist { margin: 0; padding-left: 16px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-width: 1100px) {
+  .rec.rec-task { grid-template-rows: none; grid-template-areas: none; }
+  .rec.rec-task > .tnext { grid-area: auto; order: 0; }
+}
+@media (max-width: 640px) {
+  .tfacts > div { grid-template-columns: 104px minmax(0, 1fr); }
+}
+
+
+/* ---------- My Work as a daily task list ----------
+   The row is where routine work happens: the circle completes an everyday
+   task, the owner and the due date are changed where they are printed, the
+   status is a select, and the ⋯ holds the rest. Hairlines between rows and
+   nothing else. */
+.trow-check { display: flex; align-items: center; justify-content: center; }
+.tcheck {
+  position: relative; width: var(--ctl-h); height: var(--ctl-h); margin: calc((22px - var(--ctl-h)) / 2) 0;
+  border: 0; background: none; cursor: pointer; flex: 0 0 auto;
+}
+.tcheck::before {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 18px; height: 18px;
+  margin: -9px 0 0 -9px; border: 1.6px solid var(--line-ctl); border-radius: 50%;
+  transition: background var(--t-fast) var(--ease-out), border-color var(--t-fast) var(--ease-out);
+}
+.tcheck::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 5px; height: 9px;
+  margin: -6px 0 0 -3px; border-right: 2px solid var(--on-ok); border-bottom: 2px solid var(--on-ok);
+  transform: rotate(45deg) scale(0); transition: transform var(--t-fast) var(--ease-out);
+}
+@media (hover: hover) { .tcheck:hover::before { border-color: var(--ok); } }
+.tcheck.is-done::before { background: var(--ok-solid); border-color: var(--ok-solid); }
+.tcheck.is-done::after { transform: rotate(45deg) scale(1); }
+.tcheck:active { transform: scale(.94); }
+.tcheck[hidden] { display: none; }
+/* A content deliverable finishes through its workflow, so its row carries a
+   quiet mark in the circle's place and no control. */
+/* The ring stands where the checkbox would, on the title's own line. */
+.tring { width: 18px; height: 18px; }
+.is-narrow .task-row > .trow-check { min-height: 22px; }
+/* The owner and the due date are the row's own controls: the value, at the
+   control floor, with the negative margin that keeps a 38px target from
+   setting the height of a 20px line. */
+.tinline {
+  display: inline-flex; align-items: center; max-width: 100%; min-height: var(--ctl-h);
+  /* A word as short as Today is still a whole target. */
+  min-width: var(--ctl-h);
+  margin: calc((20px - var(--ctl-h)) / 2) 0 calc((20px - var(--ctl-h)) / 2) -8px; padding: 0 8px;
+  border: 0; border-radius: var(--radius-ctl); background: none; color: inherit;
+  font: inherit; font-size: 13px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+@media (hover: hover) { .tinline:hover { background: var(--line-soft); color: var(--ink); } }
+.tinline[hidden] { display: none; }
+.tinline-pick { width: 100%; min-width: 0; }
+.task-due { display: block; }
+.task-due.is-over .tinline, .task-due.is-over > span { color: var(--warn); font-weight: 600; }
+.task-row > .team-act { justify-self: end; }
+.trun { color: var(--ok); font-weight: 600; margin-right: 2px; }
+
+/* The Workload view: one row a person. */
+.load-row { grid-template-columns: minmax(0, 1fr) repeat(6, 88px); }
+.load-n { text-align: right; font-size: 14px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.load-n.is-over { color: var(--warn); font-weight: 600; }
+.load-lab { display: none; }
+.load-row.crm-head > span:not(:first-child) { text-align: right; }
+.is-narrow .load-row { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-areas: none; row-gap: 6px; }
+/* The person heads their own counts: the shared phone rule names this cell
+   `name`, and with no template the name area lands wherever it can. */
+.is-narrow .load-row > .svc-name { grid-area: 1 / 1 / 2 / -1; }
+.is-narrow .load-n { text-align: left; display: flex; flex-direction: column; font-size: 15px; }
+.is-narrow .load-lab { display: block; font-size: 12px; color: var(--ink-mute); }
+
+/* ---------- The task, opened from a list ----------
+   The portal's own sheet, docked to the right at a desk so the list it was
+   opened from stays on the screen beside it, and the bottom sheet every other
+   form is on a phone. It sits one layer under the other sheets (85 against
+   90), because the date, the move and the delete sheets open over it. Inside,
+   one card a question on the page's own ground: where it stands and what to
+   do next, the facts, the brief, the checklist, the files, the talk, the time
+   and what happened lately. The cards are what the user asked for on
+   2026-09-23; a column of hairlines had read as one long form. */
+.sheet.sheet-side { z-index: 85; justify-content: flex-end; align-items: stretch; padding: 0; }
+.sheet-side > .sheet-card.taskcard {
+  width: min(520px, 100%); max-height: none; height: 100%;
+  padding: 0; border-radius: 0; background: var(--page);
+  box-shadow: none; border-left: 1px solid var(--line);
+  animation: mk-side-in var(--t-slow) var(--ease);
+}
+@keyframes mk-side-in { from { transform: translateX(28px); opacity: 0; } to { transform: none; opacity: 1; } }
+.qhead {
+  display: block; margin: 0; padding: 10px 20px 14px;
+  background: var(--card); border-bottom: 1px solid var(--line);
+}
+.qhead-top { display: flex; align-items: center; gap: 4px; min-height: var(--ctl-h); }
+.qhead-top .tcheck { margin: 0 0 0 -10px; }
+.qhead-top .rec-token { margin-left: -6px; }
+.qhead-end { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.qhead-end .chip { align-self: center; }
+.qhead-title { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em; line-height: 25px; overflow-wrap: anywhere; }
+.qhead-ctx { margin: 4px 0 0; font-size: 13px; color: var(--ink-soft); }
+.qhead-ctx[hidden] { display: none; }
+.sheet-side .qbody {
+  flex: 1 1 auto; margin: 0; padding: 16px 16px 24px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch;
+}
+.qcard { background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius); padding: 14px 16px; }
+.qcard[hidden] { display: none; }
+.qcard-title { margin: 0 0 8px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+/* A card's heading and its one quiet action share a line; the action's 32px
+   target does not set the height of a 20px heading. */
+.qcard-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 8px; }
+.qcard-head .qcard-title { margin: 0; }
+/* No floor on its width: a centred word in a 116px box ended short of the
+   card's right margin while "Add comment" reached it, so the quiet actions
+   down the sheet had two right edges. */
+.qcard-act { min-width: 0; margin-block: calc((20px - var(--ctl-h-sm)) / 2); margin-right: -8px; }
+.qcard-act svg { width: 13px; height: 13px; margin-right: 4px; flex: 0 0 auto; }
+.qcard-act[hidden] { display: none; }
+/* A card's small form: the field, then the action and the way out, on the
+   card's own left margin in the portal's order. */
+.qform { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft); display: grid; gap: 6px; }
+.qform[hidden] { display: none; }
+.qform > .input, .qform > textarea.input, .qform .field > .input, .qform .field > .select { width: 100%; }
+.qform .row { margin-top: 0; }
+.qform-kind { flex: 0 0 132px; }
+.qform-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.qform-acts .btn { flex: 0 0 auto; }
+.qempty { margin: 0; font-size: 13.5px; color: var(--ink-mute); }
+/* One row a thing the card holds, with its ⋯ at the end where the item can
+   be changed or taken off. */
+.qitem { display: flex; align-items: flex-start; gap: 8px; }
+.qitem > :first-child { flex: 1 1 auto; min-width: 0; }
+.qitem > .kmenu-wrap { flex: 0 0 auto; margin-block: calc((22px - var(--ctl-h)) / 2); }
+.qitem + .qitem { border-top: 1px solid var(--line-soft); }
+.qlinks, .qcomments { list-style: none; margin: 0; padding: 0; }
+.qlinks li, .qcomments li { padding: 8px 0; }
+.qlinks li:first-child, .qcomments li:first-child { padding-top: 2px; }
+.qlink-main { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.qlink-main a, .qlink-main span.qlink-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; color: var(--ink); }
+.qcomments p { margin: 0; font-size: 13.5px; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+.qcomments small { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-mute); }
+.qhead-name { display: flex; align-items: flex-start; gap: 6px; margin-top: 6px; }
+.qhead-name .qhead-title { margin: 0; flex: 0 1 auto; min-width: 0; }
+.qhead-name .rec-pen {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  width: var(--ctl-h); height: var(--ctl-h); margin-block: calc((25px - var(--ctl-h)) / 2);
+  border: 0; border-radius: var(--radius-ctl); background: none; color: var(--ink-mute); cursor: pointer;
+}
+.qhead-name .rec-pen svg { width: 15px; height: 15px; }
+.qhead-name .rec-pen[hidden] { display: none; }
+@media (hover: hover) { .qhead-name .rec-pen:hover { background: var(--line-soft); color: var(--ink); } }
+.qhead-name .askfield { flex: 1 1 auto; font-size: 17px; font-weight: 600; }
+.qpri { max-width: var(--state-w); }
+.qcard-count { margin-left: 4px; font-size: 13px; font-weight: 400; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+/* The hairline between items is the item row's, so it runs under the ⋯ as
+   well; the check row's own rule would stop short of it. A single-line row
+   centres its ⋯ on the line, inside the row's own height. */
+.qcard .checkrow { padding: 6px 0; }
+.qitem > .checkrow { border-bottom: 0; }
+.qitem-mid { align-items: center; }
+.qitem-mid > .kmenu-wrap { margin-block: calc((32px - var(--ctl-h)) / 2); }
+.qcard .tmore { margin-top: 6px; }
+.qcard .tmore > div { margin-top: 6px; }
+/* The step: what it is, why, and the one action. A blocker is the warn
+   colour and says so in words; the next person rides on the same press. */
+.qnext-title { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.35; }
+.qnext.is-blocked .qnext-title { color: var(--warn); }
+.qnext-line { margin: 4px 0 0; font-size: 13.5px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.qnext-line:empty, .qnext-line[hidden] { display: none; }
+.qhand { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; }
+.qhand[hidden] { display: none; }
+.qhand .tickline { margin: 0; }
+.qhand .select { flex: 1 1 180px; max-width: 260px; }
+.qhand .select[hidden] { display: none; }
+.qhand .tickline[hidden] { display: none; }
+.qhand-lab { font-size: 13px; color: var(--ink-soft); }
+.qhand-lab[hidden] { display: none; }
+.tnext .qhand { margin-top: 12px; }
+.tnext .qrate { margin-top: 12px; }
+.qnext-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.qnext-acts:empty { display: none; }
+.qnext-acts .btn { flex: 0 0 auto; }
+.qnext .msg:empty { display: none; }
+.qnext .msg { margin-top: 8px; }
+/* A finished task is rated on the card that says it is finished. Five marks,
+   each a control at the floor, the chosen ones filled. */
+.qrate { margin-top: 12px; }
+.qrate[hidden] { display: none; }
+.qrate-lab { margin: 0 0 4px; font-size: 13px; color: var(--ink-mute); }
+.qstars { display: flex; gap: 2px; margin-left: -8px; }
+.qstar {
+  width: var(--ctl-h); height: var(--ctl-h); display: inline-grid; place-items: center;
+  border: 0; border-radius: var(--radius-ctl); background: none; color: var(--line-ctl); cursor: pointer; padding: 0;
+}
+.qstar svg { width: 20px; height: 20px; }
+.qstar.is-on { color: var(--warn); }
+@media (hover: hover) { .qstar:hover { background: var(--line-soft); } }
+.qstar:active { transform: scale(.94); }
+.qrate-note { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.qfull {
+  align-self: flex-start; display: inline-flex; align-items: center; min-height: var(--ctl-h);
+  font-size: 13px; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 2px;
+}
+.stephand { margin-top: 12px; }
+.stephand[hidden] { display: none; }
+.stephand .tickline { margin: 0; }
+.stephand .tickline[hidden] { display: none; }
+@media (max-width: 640px) {
+  /* On a phone it is the sheet every other form is: from the floor, the
+     screen's width, rounded at the top. */
+  .sheet.sheet-side { align-items: flex-end; justify-content: center; }
+  .sheet-side > .sheet-card.taskcard {
+    width: 100%; height: auto; max-height: 92vh; border-left: 0;
+    border-radius: var(--radius) var(--radius) 0 0;
+    animation: mk-sheet-up var(--t-slow) var(--ease);
+  }
+  @supports (max-height: 92dvh) { .sheet-side > .sheet-card.taskcard { max-height: 92dvh; } }
+  .qhead { padding: 10px 16px 12px; border-radius: var(--radius) var(--radius) 0 0; }
+  .sheet-side .qbody { padding: 12px 12px calc(20px + env(safe-area-inset-bottom, 0px)); }
+  .qcard { padding: 12px 14px; }
+  .qnext-acts .btn { flex: 1 1 0; min-width: 0; }
+  .qform-acts .btn { flex: 1 1 0; min-width: 0; }
+  .qform .row { flex-direction: column; }
+  .qform-kind { flex: 1 1 auto; }
+  .qhand .select { max-width: none; }
+}
+
+/* The bar's ⋯: the same outlined control at every width, beside the one
+   filled action. */
+.work-more { position: relative; display: inline-block; }
+.work-more[hidden] { display: none; }
+.work-more-btn {
+  display: inline-grid; place-items: center; padding: 0;
+  width: var(--ctl-h-sm); min-width: 0; height: var(--ctl-h-sm);
+  border: 1px solid var(--line-ctl); border-radius: var(--radius-ctl);
+  background: var(--card); color: var(--ink-soft);
+}
+.work-more-btn[aria-expanded="true"] { background: var(--line-soft); color: var(--ink); }
+
+/* Several tasks at once. It stays under the console bar while the list
+   scrolls, so the count and the two acts are never a screen from the ticks. */
+.bulkbar {
+  position: sticky; top: var(--head-h); z-index: 20;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  margin: 0 0 12px; padding: 8px 12px;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-sm);
+}
+.bulkbar[hidden] { display: none; }
+.bulkbar .tickline { margin: 0; font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.bulkbar-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.bulkbar-acts .btn { flex: 0 0 auto; }
+.bulkbar-done { flex: 0 0 auto; }
+.trow-pick { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+.task-row.is-picked { background: var(--line-soft); }
+/* A control's edge is read against what is outside it, and the chosen row's
+   fill takes `--line-ctl` to 2.92:1 in light. The untinted stage select on a
+   ticked row takes the mute ink instead, which clears 3:1 on the fill in both
+   themes; a tinted one keeps its own colour. */
+.task-row.is-picked .state-select:not(.is-ok):not(.is-warn):not(.is-danger) { border-color: var(--ink-mute); }
+/* On a phone the way out shares the count's line, and the two acts share
+   the next as equal halves: three to a line put "Assign task owner" on two
+   lines inside its own button. */
+@media (max-width: 640px) {
+  .bulkbar-done { order: 1; margin-left: auto; }
+  .bulkbar-acts { order: 2; width: 100%; margin-left: 0; }
+  .bulkbar-acts .btn { flex: 1 1 0; min-width: 0; }
+}
+
+/* Add task: the three fields, then the folded rest, then what was just made. */
+#qkForm .row { margin-top: 12px; }
+#qkForm .tmore { margin-top: 8px; }
+#qkForm .tmore > .row:first-of-type { margin-top: 4px; }
+#qkForm .hint { margin: 10px 0 8px; }
+.qkmade { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+.qkmade:empty { display: none; }
+.qkmade li > span:first-child { color: var(--ok); font-weight: 600; }
+/* From template: a tick per template, what it makes under its name. */
+.tpl-head { display: flex; align-items: center; justify-content: space-between; margin: 12px 0 4px; }
+.tpllist { display: grid; border-top: 1px solid var(--line-soft); }
+.tplrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
+.tplrow .tickline { margin: 0; align-items: flex-start; }
+.tplrow .tickline span b { display: block; font-weight: 600; font-size: 13.5px; }
+.tplrow .tickline small { display: block; font-size: 12px; color: var(--ink-mute); }
+
+/* Owner, due date and status are three columns at a desk and one line on a
+   phone: the wrapper is invisible to the desk grid and a row of its own on a
+   narrow one. */
+.trow-meta { display: contents; }
+.due-short { display: none; }
+.is-narrow .due-long { display: none; }
+.is-narrow .due-short { display: inline; }

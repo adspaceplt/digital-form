@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260923a">
+<link rel="stylesheet" href="/css/portal.css?v=20260923e">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -32,25 +32,25 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260923a"></script>
-<script src="/js/words.js?v=20260923a"></script>
-<script src="/js/copy.js?v=20260923a"></script>
-<script src="/js/ask.js?v=20260923a"></script>
-<script src="/js/confirm.js?v=20260923a"></script>
-<script src="/js/sheet.js?v=20260923a"></script>
-<script src="/js/state.js?v=20260923a"></script>
-<script src="/js/group.js?v=20260923a"></script>
-<script src="/js/menu.js?v=20260923a"></script>
-<script src="/js/cmdbar.js?v=20260923a"></script>
-<script src="/js/api.js?v=20260923a"></script>
-<script src="/js/money.js?v=20260923a"></script>
-<script src="/js/mockups.js?v=20260923a"></script>
+<script src="/js/config.js?v=20260923e"></script>
+<script src="/js/words.js?v=20260923e"></script>
+<script src="/js/copy.js?v=20260923e"></script>
+<script src="/js/ask.js?v=20260923e"></script>
+<script src="/js/confirm.js?v=20260923e"></script>
+<script src="/js/sheet.js?v=20260923e"></script>
+<script src="/js/state.js?v=20260923e"></script>
+<script src="/js/group.js?v=20260923e"></script>
+<script src="/js/menu.js?v=20260923e"></script>
+<script src="/js/cmdbar.js?v=20260923e"></script>
+<script src="/js/api.js?v=20260923e"></script>
+<script src="/js/money.js?v=20260923e"></script>
+<script src="/js/mockups.js?v=20260923e"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260923a" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260923e" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -1660,6 +1660,8 @@
                  inherited: a group given `ops: work` does not quietly gain
                  the team's numbers. -->
             <button class="acttab btn-sm" data-view="report" id="workViewReport" type="button" aria-pressed="false" hidden>Report</button>
+            <!-- Who is carrying what, for whoever may see the team's queue. -->
+            <button class="acttab btn-sm" data-view="load" id="workViewLoad" type="button" aria-pressed="false" hidden>Workload</button>
           </span>
           <!-- Whose work is a view, not a filter. Assigned, created and
                following are everybody's; the whole team's queue is offered
@@ -1671,21 +1673,32 @@
             <option value="following">Following</option>
             <option value="all" id="workScopeAll" hidden>The whole team</option>
           </select>
-          <select class="select select-sm" id="workStage" aria-label="Filter by stage">
-            <option value="open">Open work</option>
-            <option value="active">In progress</option>
-            <option value="soon">Due soon</option>
-            <option value="internal_review">Internal review</option>
-            <option value="client_review">Client review</option>
-            <option value="waiting_client">Waiting on client</option>
-            <option value="waiting">On hold or blocked</option>
-            <!-- The final date is the day the work is owed at client review,
-                 so this is every task past that date and still short of it.
-                 It is the view a manager opens, and it is a filter rather
-                 than a band because it cuts across every stage. -->
-            <option value="late">Late</option>
-            <option value="done">Finished</option>
-            <option value="">Everything</option>
+          <!-- What a person looks at first: their day, then where the work
+               has got to, then its history. Each is a view over the same rows,
+               so the count and the grouping follow it. The stage views are the
+               ones My Work was published with, keyed on the stage group the
+               workflow carries and never on a stage key. -->
+          <select class="select select-sm" id="workStage" aria-label="View">
+            <optgroup label="Your day">
+              <option value="day">My day</option>
+              <option value="today">Due today</option>
+              <option value="overdue">Overdue</option>
+              <option value="soon">Due soon</option>
+              <option value="upcoming">Upcoming</option>
+            </optgroup>
+            <optgroup label="Where the work is">
+              <option value="active">In progress</option>
+              <option value="internal_review">AQC review</option>
+              <option value="client_review">Client review</option>
+              <option value="waiting_client">Waiting on client</option>
+              <option value="after">Scheduled and live</option>
+              <option value="waiting">On hold or blocked</option>
+              <option value="late">Late</option>
+            </optgroup>
+            <optgroup label="History">
+              <option value="done">Completed</option>
+              <option value="all">All tasks</option>
+            </optgroup>
           </select>
           <!-- The axis. Banding by when work is owed answers "what do I do
                today" and cannot answer "how is October going" or "what is
@@ -1697,16 +1710,19 @@
                draws in place of Group by, whose axis the board has fixed. -->
           <select class="select select-sm" id="workWf" aria-label="Workflow" data-nofilter hidden></select>
           <select class="select select-sm" id="workGroup" aria-label="Group by">
-            <option value="due">By due date</option>
-            <option value="client">By client</option>
+            <option value="due">By day</option>
             <option value="stage">By stage</option>
-            <option value="owner">By owner</option>
+            <option value="status">By status</option>
+            <option value="owner">By task owner</option>
+            <option value="client">By client</option>
+            <option value="engagement">By engagement</option>
           </select>
           <!-- How far back finished work is read. Open work is never bounded
                by it, so nothing overdue can fall out of the queue however old
                it is. It draws only while finished work is being asked for,
                because that is the only time it governs anything. -->
           <select class="select select-sm" id="workPeriod" aria-label="How far back to read finished work" hidden>
+            <option value="week">This week</option>
             <option value="month">This month</option>
             <option value="q">Last 3 months</option>
             <option value="year">This year</option>
@@ -1716,16 +1732,40 @@
               <span class="cmdbar-count" id="workCount"></span>
             </span>
             <span class="cmdbar-acts">
-              <!-- A month of tasks at once, or this month's recurring ones:
-                   one neutral control beside the primary, behind the ⋯ on a
-                   phone like the Documents bar's second action. -->
-              <button class="btn btn-sm" id="workGen" type="button" hidden>Generate</button>
-              <button class="btn btn-sm btn-primary" id="workNew" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New task</button>
+              <!-- Everything the bar does besides adding one task, behind one
+                   ⋯ at every width: adding many at once, making them from a
+                   template, choosing several to act on, and, for an admin,
+                   the next task number. Four outline buttons beside the
+                   primary were a wrapped second row at a desk. -->
+              <span class="kmenu-wrap work-more" id="workMoreWrap" hidden>
+                <button class="kmenu-btn btn-sm work-more-btn" id="workMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                </button>
+                <div class="kmenu" id="workMore" hidden role="menu">
+                  <button class="kmenu-item" data-a="bulk" type="button" role="menuitem">Bulk add</button>
+                  <button class="kmenu-item" data-a="template" type="button" role="menuitem">From template</button>
+                  <button class="kmenu-item" data-a="select" type="button" role="menuitem" data-need="ops:manage">Select tasks</button>
+                  <button class="kmenu-item" data-a="numbering" type="button" role="menuitem" hidden>Task numbering</button>
+                </div>
+              </span>
+              <button class="btn btn-sm btn-primary" id="workNew" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">Add task</span></button>
             </span>
           </span>
         </div>
         <div class="msg" id="workMsg"></div>
-        <div id="workQueue"></div>
+        <!-- Several tasks at once: the ones ticked in the list, what they
+             are, and the two acts that apply to many. It stays under the bar
+             while the list scrolls, so the count and Delete are never a
+             screen away from the ticks. -->
+        <div class="bulkbar" id="workBulk" hidden>
+          <label class="tickline bulkbar-all"><input type="checkbox" id="workBulkAll"> <span id="workBulkCount">0 selected</span></label>
+          <span class="bulkbar-acts">
+            <button class="btn btn-sm" id="workBulkOwner" type="button" disabled>Assign task owner</button>
+            <button class="btn btn-sm btn-danger" id="workBulkDelete" type="button" disabled>Delete</button>
+          </span>
+          <button class="btn btn-sm btn-quiet bulkbar-done" id="workBulkDone" type="button">Done</button>
+        </div>
+        <div id="workQueue" data-narrow="860"></div>
         <!-- The board: the week's hours against each person's capacity, then
              one column per stage. -->
         <div id="workCap" hidden></div>
@@ -1735,6 +1775,7 @@
              rows, because "how long does Editing take" is a question about
              every task there has ever been and not about the page. -->
         <div id="workReport" hidden></div>
+        <div id="workLoad" hidden></div>
       </div>
 
       <!-- One task, on the same workspace shape a client and a campaign use:
@@ -1742,203 +1783,176 @@
       <div id="workRec" hidden>
         <button class="backlink" id="workBack" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
 
-        <section class="panel rec-head" id="taskHead">
-          <!-- No mark. A task has no logo and no monogram worth drawing: the
-               number is what an invoice, a message and a spreadsheet row all
-               name it by, and pressed into a 46px disc it read as a badly
-               fitted logo. It is the first line of who this is, in the token
-               face the Register gives a serial, and a copy control for the
-               same reason that one is. -->
-          <div class="rec-id rec-id-plain">
+        <!-- A compact head on the page ground, not a card: the number, the
+             state and the ⋯ on one line, the name under them, and one line
+             saying whose it is and what it makes. The owner and the dates are
+             the rail's, so the head does not repeat them. -->
+        <header class="thead" id="taskHead">
+          <div class="thead-top">
             <button class="serial-copy rec-token" id="taskMark" type="button"></button>
-            <div class="rec-who">
-              <!-- The name is the code and the description: the code is the
-                   database's and never changes, the description is the
-                   team's and is edited where it sits. The whole line is the
-                   file name a saved export takes, so it copies on a press. -->
-              <div class="rec-name">
-                <h2 id="taskName"><span class="task-code" id="taskCode" hidden></span> <span id="taskDesc"></span></h2>
-                <button class="rec-pen" id="taskDescEdit" type="button" aria-label="Edit description" hidden>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
-                </button>
-                <button class="rec-pen" id="taskCopyTitle" type="button" aria-label="Copy title">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg>
-                </button>
-              </div>
-              <p class="rec-id-meta" id="taskMeta"></p>
-            </div>
-            <div class="rec-ctl">
+            <div class="thead-ctl">
               <span class="chip" id="taskStage"></span>
               <div class="kmenu-wrap" id="taskMenuWrap">
                 <button class="kmenu-btn" id="taskMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                 </button>
+                <!-- Everything that is not the next step: the way back, the
+                     moves off the ordinary path, the hand-over, and the acts
+                     that end or remove the task. Each is asked again by the
+                     database when it is pressed. -->
                 <div class="kmenu" id="taskMenu" hidden role="menu">
+                  <button class="kmenu-item" data-a="revert" type="button" role="menuitem" hidden>Revert</button>
+                  <button class="kmenu-item" data-a="move" type="button" role="menuitem">Move to another stage</button>
+                  <button class="kmenu-item" data-a="handover" type="button" role="menuitem" data-need="ops:manage">Hand over task</button>
                   <button class="kmenu-item" data-a="block" type="button" role="menuitem">Mark blocked</button>
-                  <!-- A copy is a new task with a new code and none of this
-                       one's history; Repeat sets the rule that makes one on
-                       each date. Both are the team's everyday acts (Work). -->
                   <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Duplicate</button>
                   <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat</button>
+                  <!-- Stage time is recorded by every move, so a timer is
+                       never the way work is tracked; it stays here for the
+                       person who wants their own hours on a task. -->
+                  <button class="kmenu-item" data-a="timer" type="button" role="menuitem" hidden>Start timer</button>
                   <button class="kmenu-item" data-a="reopen" type="button" role="menuitem" hidden>Reopen</button>
+                  <button class="kmenu-item" data-a="cancel" type="button" role="menuitem" hidden>Cancel task</button>
                   <button class="kmenu-item" data-a="archive" type="button" role="menuitem" data-need="ops:manage">Archive</button>
-                  <!-- Archive reverses and Cancel is an outcome; neither
-                       removes the task keyed in twice. This does, and there
-                       is no restore, so it is a sheet that takes the number
-                       typed back. -->
                   <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem" data-need="ops:manage">Delete</button>
                 </div>
               </div>
             </div>
           </div>
-          <!-- What this task is waiting on, derived on every repaint. -->
-          <p class="camp-next" id="taskNext" hidden></p>
+          <div class="rec-name">
+            <h2 id="taskName"><span class="task-code" id="taskCode" hidden></span> <span id="taskDesc"></span></h2>
+            <button class="rec-pen" id="taskDescEdit" type="button" aria-label="Edit description" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </button>
+            <button class="rec-pen" id="taskCopyTitle" type="button" aria-label="Copy title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg>
+            </button>
+          </div>
+          <p class="thead-meta"><span id="taskMeta"></span><span class="thead-run" id="taskRun" hidden></span></p>
           <div class="msg" id="taskMsg"></div>
-        </section>
+        </header>
         <div class="undobar" id="taskUndo" hidden></div>
 
-        <div class="rec">
+        <div class="rec rec-task">
+          <!-- The one thing to do next, derived on every repaint from the task,
+               its links and the month it belongs to, and never stored. Where
+               the workflow is, what it is waiting on, and one action. -->
+          <section class="tnext" id="taskNextStep" aria-labelledby="taskNextTitle">
+            <div class="tsteps" id="taskSteps"></div>
+            <h3 class="tnext-title" id="taskNextTitle"></h3>
+            <p class="tnext-line" id="taskNextLine"></p>
+            <ul class="tnext-list" id="taskNextList" hidden></ul>
+            <p class="tnext-late" id="taskNextLate" hidden></p>
+            <div class="qhand" id="taskHand" hidden>
+              <label class="tickline" id="taskHandTickWrap"><input type="checkbox" id="taskHandTick"> <span>Change Task Owner</span></label>
+              <label class="qhand-lab" id="taskHandLab" for="taskHandTo" hidden>Performance review by</label>
+              <select class="select select-sm" id="taskHandTo" aria-label="New Task Owner" hidden></select>
+            </div>
+            <div class="tnext-acts" id="taskNextActs"></div>
+            <div class="qrate" id="taskRate" hidden></div>
+            <div class="msg" id="taskNextMsg"></div>
+          </section>
+
           <nav class="rectabs" id="taskTabs" role="tablist" aria-label="Task">
-            <button class="tab is-on" data-pane="overview" type="button" role="tab" aria-selected="true">Overview</button>
-            <button class="tab" data-pane="checklist" type="button" role="tab" aria-selected="false">Checklist</button>
-            <button class="tab" data-pane="links" type="button" role="tab" aria-selected="false">Links</button>
-            <button class="tab" data-pane="time" type="button" role="tab" aria-selected="false">Time</button>
+            <button class="tab is-on" data-pane="work" type="button" role="tab" aria-selected="true">Work</button>
             <button class="tab" data-pane="activity" type="button" role="tab" aria-selected="false">Activity</button>
+            <button class="tab" data-pane="time" type="button" role="tab" aria-selected="false">Time</button>
           </nav>
 
-          <div class="rec-pane" data-pane="overview">
+          <div class="rec-pane" data-pane="work">
+            <!-- The brief and the video details, where the task has them. -->
             <div id="taskOv"></div>
+            <section class="tsec" id="taskCheckSec" hidden>
+              <h3 class="tsec-title">Checklist</h3>
+              <div id="taskCheck"></div>
+            </section>
+            <section class="tsec" id="taskLinkSec">
+              <div class="tsec-head">
+                <h3 class="tsec-title">Files and links</h3>
+                <button class="btn btn-quiet btn-sm" id="taskLinkAdd" type="button" data-need="ops:work">Add link</button>
+              </div>
+              <!-- The evidence a stage gate asks for. A draft link is what opens
+                   Client review and a final link is what opens publishing, so
+                   the kind is a field and not a guess. -->
+              <div class="tlinkform" id="taskLinkForm" hidden>
+                <div class="row">
+                  <div class="field">
+                    <label class="field-label" for="taskLinkKind">Kind</label>
+                    <select class="select" id="taskLinkKind">
+                      <option value="draft">Draft</option>
+                      <option value="review">Review</option>
+                      <option value="final">Final</option>
+                      <option value="brief">Brief</option>
+                      <option value="asset">Asset</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="taskLinkLabel">Label</label>
+                    <input class="input" id="taskLinkLabel" placeholder="Cut 1" autocomplete="off">
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="field">
+                    <label class="field-label" for="taskLinkUrl">Address</label>
+                    <input class="input" id="taskLinkUrl" type="url" placeholder="https://" autocomplete="off" spellcheck="false">
+                  </div>
+                </div>
+                <div class="row">
+                  <button class="btn btn-primary" id="taskLinkSave" type="button">Save</button>
+                  <button class="btn btn-quiet" id="taskLinkCancel" type="button">Cancel</button>
+                </div>
+                <div class="msg" id="taskLinkMsg"></div>
+              </div>
+              <div id="taskLinks"></div>
+            </section>
           </div>
 
-          <div class="rec-pane" data-pane="checklist" hidden>
-            <div class="viewhead"><div class="headmark"><h2>Checklist</h2></div></div>
-            <div id="taskCheck"></div>
-          </div>
-
-          <div class="rec-pane" data-pane="links" hidden>
-            <div class="viewhead">
-              <div class="headmark"><h2>Links</h2></div>
-              <button class="btn btn-sm btn-primary" id="taskLinkAdd" type="button" data-need="ops:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
-            </div>
-            <!-- The evidence a stage gate asks for. A draft link is what opens
-                 Client review and a final link is what opens Delivered, so the
-                 kind is a field and not a guess. -->
-            <div class="panel" id="taskLinkForm" hidden>
-              <div class="row">
-                <div class="field">
-                  <label class="field-label" for="taskLinkKind">Kind</label>
-                  <select class="select" id="taskLinkKind">
-                    <option value="draft">Draft</option>
-                    <option value="review">Review</option>
-                    <option value="final">Final</option>
-                    <option value="brief">Brief</option>
-                    <option value="asset">Asset</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                <div class="field">
-                  <label class="field-label" for="taskLinkLabel">Label</label>
-                  <input class="input" id="taskLinkLabel" placeholder="Cut 1" autocomplete="off">
-                </div>
-              </div>
-              <div class="row">
-                <div class="field">
-                  <label class="field-label" for="taskLinkUrl">Address</label>
-                  <input class="input" id="taskLinkUrl" type="url" placeholder="https://" autocomplete="off" spellcheck="false">
-                </div>
-              </div>
-              <div class="row">
-                <button class="btn btn-primary" id="taskLinkSave" type="button">Save</button>
-                <button class="btn btn-quiet" id="taskLinkCancel" type="button">Cancel</button>
-              </div>
-              <div class="msg" id="taskLinkMsg"></div>
-            </div>
-            <div id="taskLinks"></div>
+          <div class="rec-pane" data-pane="activity" hidden>
+            <div id="taskLog"></div>
           </div>
 
           <div class="rec-pane" data-pane="time" hidden>
-            <div class="viewhead"><div class="headmark"><h2>Time</h2></div></div>
             <!-- Recorded work only. Nothing here runs without somebody
                  pressing Start, and nothing records idle time, keystrokes,
                  screens or location. -->
             <div id="taskTime"></div>
           </div>
 
-          <div class="rec-pane" data-pane="activity" hidden>
-            <div class="viewhead"><div class="headmark"><h2>Activity</h2></div></div>
-            <div id="taskLog"></div>
-          </div>
-
           <aside class="rec-rail" aria-label="Task facts">
-            <!-- Where the task stands, and the one move that carries it on.
-                 Every other move the workflow allows is in the select beside
-                 it, because a row of eight buttons is a row nobody reads. -->
-            <div class="railblock" id="taskStageBlock">
-              <h3 class="railtitle">Stage</h3>
-              <div id="taskStageBox"></div>
-            </div>
-            <div class="railblock" id="taskTimerBlock">
-              <h3 class="railtitle">Your time</h3>
-              <div id="taskTimer"></div>
-            </div>
-            <!-- The dates are stated here and nowhere else. The Overview had
-                 them too, so a task record printed 10 Sept, 15 Sept and
-                 18 Sept twice on one screen, and the control that moves one
-                 sat with the copy that was not in the rail. -->
-            <div class="railblock rail-after" id="taskDatesBlock">
-              <h3 class="railtitle">Key dates</h3>
-              <dl class="raildates" id="taskDates"></dl>
-              <!-- An extension somebody has asked for and nobody has answered.
-                   It sits with the dates it is about, because that is the one
-                   place the dates are stated, and it carries its own actions:
-                   the person asked answers it, the person who asked takes it
-                   back. -->
-              <div class="dueask" id="dueAsk" hidden></div>
-              <div class="msg" id="dueAskMsg"></div>
-              <!-- Two dates, two authorities, so two controls rather than one
-                   word covering both. The first draft is the team's own
-                   milestone and is theirs to set; the final date is the
-                   client's commitment, and where the task is somebody else's
-                   the control says it will ask. Outlined `.btn-sm`, because
-                   the quiet text button this replaced read as a sentence of
-                   information rather than as something to press. -->
-              <div class="rail-date-edit rail-date-go" id="taskDateEdit" data-need="ops:work">
-                <button class="btn btn-sm" id="taskDraftDate" type="button">Change draft date</button>
-                <button class="btn btn-sm" id="taskDateMove" type="button">Request extension</button>
-              </div>
-            </div>
-            <!-- The owner is named once, on the identity line, and changed
-                 here. A read-only Owner row above the select that changes it
-                 was the same fact three times on one screen. -->
             <div class="railblock rail-after" id="taskPeopleBlock">
               <h3 class="railtitle">People</h3>
-              <dl class="facts" id="taskPeople"></dl>
-              <div class="rail-date-edit" id="taskOwnerEdit" data-need="ops:manage">
-                <label for="taskOwner">Owner</label>
-                <select class="select select-sm" id="taskOwner"></select>
-                <button class="btn btn-sm" id="taskOwnerSave" type="button">Save</button>
-              </div>
+              <dl class="tfacts" id="taskPeople"></dl>
               <div class="msg" id="taskOwnerMsg"></div>
             </div>
-            <!-- The month's engagement this task belongs to: where planning
-                 stands and whether the content meeting is held, because
-                 production waits on both, and the way to the record. -->
-            <div class="railblock rail-after" id="taskEngBlock" hidden>
-              <h3 class="railtitle">Engagement</h3>
-              <div id="taskEng"></div>
+            <!-- Each date is a row that edits itself: a first date is set from
+                 the picker on the row, and moving a date that is already set
+                 asks for the reason a replan report reads. -->
+            <div class="railblock rail-after" id="taskDatesBlock">
+              <h3 class="railtitle">Dates</h3>
+              <dl class="tfacts" id="taskDates"></dl>
+              <div class="dueask" id="dueAsk" hidden></div>
+              <div class="msg" id="dueAskMsg"></div>
+              <div class="msg" id="taskDatesMsg"></div>
             </div>
-            <div class="railblock rail-after">
+            <div class="railblock rail-after is-last" id="taskDetailsBlock">
               <h3 class="railtitle">Details</h3>
-              <dl class="facts" id="taskFacts"></dl>
-            </div>
-            <div class="railblock rail-after" id="taskRecentBlock" hidden>
-              <h3 class="railtitle">Recent activity</h3>
-              <div id="taskRecent"></div>
+              <dl class="tfacts" id="taskFacts"></dl>
+              <details class="tmore" id="taskMoreWrap">
+                <summary>More details</summary>
+                <dl class="tfacts" id="taskMore"></dl>
+              </details>
             </div>
           </aside>
         </div>
       </div>
+    </div>
 
+    <!-- The task sheets sit outside the My Work section, because a task is
+         also made, copied and generated from a client record. Every one is
+         fixed to the viewport, so where it lives in the markup is nothing
+         but where it can be reached from. -->
+    <div id="workSheets">
       <!-- A date move states what it was and takes a reason, because a report
            that cannot see why a promise moved cannot see replanning. -->
       <div class="sheet" id="dueSheet" hidden>
@@ -1989,7 +2003,7 @@
           <div class="sheet-body">
             <p class="hint" id="tdelWhat"></p>
             <label class="field-label" for="tdelConfirm">Type the task number to confirm</label>
-            <input class="input" id="tdelConfirm" autocomplete="off" placeholder="T1002">
+            <input class="input" id="tdelConfirm" autocomplete="off" placeholder="#WT00001">
             <label class="field-label" for="tdelReason" style="margin-top:12px">Reason</label>
             <input class="input" id="tdelReason" autocomplete="off" placeholder="Optional">
           </div>
@@ -2033,13 +2047,6 @@
         </div>
       </div>
 
-    </div>
-
-    <!-- The task sheets sit outside the My Work section, because a task is
-         also made, copied and generated from a client record. Every one is
-         fixed to the viewport, so where it lives in the markup is nothing
-         but where it can be reached from. -->
-    <div id="workSheets">
       <!-- A copy: the planning fields travel, the history does not, and what
            else travels is the person's to say. -->
       <div class="sheet" id="dupSheet" hidden>
@@ -2089,7 +2096,7 @@
       <div class="sheet" id="genSheet" hidden>
         <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="genTitle">
           <div class="sheet-head">
-            <h3 id="genTitle">Generate tasks</h3>
+            <h3 id="genTitle">Bulk add tasks</h3>
             <button class="iconbtn" id="genClose" type="button" aria-label="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
@@ -2184,7 +2191,7 @@
                   </select>
                 </div>
                 <div class="field">
-                  <label class="field-label" for="genOwner">Owner</label>
+                  <label class="field-label" for="genOwner">Task Owner</label>
                   <select class="select" id="genOwner"></select>
                 </div>
               </div>
@@ -2198,7 +2205,7 @@
             </div>
           </div>
           <div class="sheet-foot">
-            <button class="btn btn-primary" id="genGo" type="button">Generate</button>
+            <button class="btn btn-primary" id="genGo" type="button">Add tasks</button>
             <button class="btn btn-quiet" id="genCancel" type="button">Cancel</button>
           </div>
           <div class="msg" id="genMsg"></div>
@@ -2341,7 +2348,7 @@
                 </select>
               </div>
               <div class="field">
-                <label class="field-label" for="ntOwner">Owner</label>
+                <label class="field-label" for="ntOwner">Task Owner</label>
                 <select class="select" id="ntOwner"></select>
               </div>
             </div>
@@ -2511,47 +2518,458 @@
         </div>
       </div>
 
-      <!-- Handing the work on: the next stage and the next person in one
-           act, recorded together. A step the deliverable does not need may
-           be skipped here, forward along the line, with a reason on the
-           record. -->
-      <div class="sheet" id="handSheet" hidden>
-        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="handTitle">
+      <!-- ADD TASK. Three things and it is made: what, who and when. The rest
+           is folded, and a task made here opens nothing: Enter makes it and
+           the title field is ready for the next. -->
+      <div class="sheet" id="quickSheet" hidden>
+        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="qkHead">
           <div class="sheet-head">
-            <h3 id="handTitle">Hand over</h3>
-            <button class="iconbtn" id="handClose" type="button" aria-label="Close">
+            <h3 id="qkHead">Add task</h3>
+            <button class="iconbtn" id="qkClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <form class="sheet-body" id="qkForm" autocomplete="off">
+            <label class="field-label" for="qkTitle">Task</label>
+            <input class="input" id="qkTitle" placeholder="Write September caption" maxlength="200">
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="qkOwner">Task Owner</label>
+                <select class="select" id="qkOwner"></select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="qkDue">Due</label>
+                <input class="input" id="qkDue" type="date">
+              </div>
+            </div>
+            <details class="tmore qkmore" id="qkMore">
+              <summary>More options</summary>
+              <div class="row">
+                <div class="field">
+                  <label class="field-label" for="qkLink">Client or engagement</label>
+                  <select class="select" id="qkLink"></select>
+                </div>
+                <div class="field">
+                  <label class="field-label" for="qkPri">Priority</label>
+                  <select class="select" id="qkPri">
+                    <option value="3">Normal</option>
+                    <option value="2">High</option>
+                    <option value="1">Urgent</option>
+                    <option value="4">Low</option>
+                  </select>
+                </div>
+              </div>
+              <label class="field-label" for="qkDesc">Description</label>
+              <textarea class="input" id="qkDesc" rows="2" placeholder="Optional"></textarea>
+              <label class="field-label" for="qkCheck" style="margin-top:12px">Checklist</label>
+              <textarea class="input" id="qkCheck" rows="3" placeholder="One item a line"></textarea>
+              <p class="hint">Files, links and repeats are added on the task once it exists. A content deliverable with a code has its own form.</p>
+              <button class="btn btn-sm" id="qkFull" type="button">Content deliverable</button>
+            </details>
+            <button type="submit" hidden></button>
+            <ul class="qkmade" id="qkMade" aria-live="polite"></ul>
+          </form>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="qkGo" type="button">Add task</button>
+            <button class="btn btn-quiet" id="qkDone" type="button">Done</button>
+          </div>
+          <div class="msg" id="qkMsg"></div>
+        </div>
+      </div>
+
+      <!-- THE TASK, OPENED FROM A LIST. The portal's own sheet, docked to the
+           right at a desk so the list it came from stays on the screen, and
+           the bottom sheet every other form is on a phone. It holds what a
+           day's work on one task needs and nothing that belongs to the client
+           or the month: what it is, where it stands and the one thing to do
+           next, then the facts, the work and the talk about it, each in its
+           own card. The full record is one press further, for the rare task
+           that needs it; detailed time and activity open only when asked. -->
+      <div class="sheet sheet-side" id="taskDrawer" hidden>
+        <div class="sheet-card taskcard" role="dialog" aria-modal="true" aria-labelledby="dwTitle" tabindex="-1">
+          <div class="sheet-head qhead">
+            <div class="qhead-top">
+              <button class="tcheck" id="dwCheck" type="button" hidden></button>
+              <button class="serial-copy rec-token" id="dwNo" type="button"></button>
+              <span class="qhead-end">
+                <span class="chip" id="dwStatus"></span>
+                <span class="kmenu-wrap" id="dwMenuWrap">
+                  <button class="kmenu-btn" id="dwMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
+                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                  </button>
+                  <!-- What is not the next step: a move off the ordinary
+                       path, a change of hands with no move, the copies, and
+                       the acts that end or remove the task. -->
+                  <div class="kmenu" id="dwMenu" hidden role="menu">
+                    <button class="kmenu-item" data-a="revert" type="button" role="menuitem" hidden>Revert</button>
+                    <button class="kmenu-item" data-a="full" type="button" role="menuitem">Open full record</button>
+                    <button class="kmenu-item" data-a="move" type="button" role="menuitem">Move to another stage</button>
+                    <button class="kmenu-item" data-a="handover" type="button" role="menuitem" data-need="ops:manage">Hand over with a note</button>
+                    <button class="kmenu-item" data-a="block" type="button" role="menuitem">Mark blocked</button>
+                    <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat</button>
+                    <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Duplicate</button>
+                    <button class="kmenu-item" data-a="reopen" type="button" role="menuitem" hidden>Reopen</button>
+                    <button class="kmenu-item" data-a="cancel" type="button" role="menuitem">Cancel task</button>
+                    <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem" data-need="ops:manage">Delete</button>
+                  </div>
+                </span>
+                <button class="iconbtn" id="dwClose" type="button" aria-label="Close">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                </button>
+              </span>
+            </div>
+            <div class="qhead-name">
+              <h2 class="qhead-title" id="dwTitle"></h2>
+              <button class="rec-pen" id="dwTitleEdit" type="button" aria-label="Edit title" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              </button>
+            </div>
+            <p class="qhead-ctx" id="dwCtx"></p>
+          </div>
+          <div class="sheet-body qbody" id="dwBody">
+            <!-- Where it stands and the one thing to do next. A move can hand
+                 the task to the next person in the same press. -->
+            <section class="qcard qnext" id="dwNext" aria-labelledby="dwNextTitle">
+              <h3 class="qnext-title" id="dwNextTitle"></h3>
+              <p class="qnext-line" id="dwNextLine"></p>
+              <ul class="tnext-list" id="dwNextList" hidden></ul>
+              <p class="tnext-late" id="dwNextLate" hidden></p>
+              <div class="qhand" id="dwHand" hidden>
+                <label class="tickline" id="dwHandTickWrap"><input type="checkbox" id="dwHandTick"> <span>Change Task Owner</span></label>
+                <label class="qhand-lab" id="dwHandLab" for="dwHandTo" hidden>Performance review by</label>
+                <select class="select select-sm" id="dwHandTo" aria-label="New Task Owner" hidden></select>
+              </div>
+              <div class="qnext-acts" id="dwActs"></div>
+              <div class="qrate" id="dwRate" hidden></div>
+              <div class="msg" id="dwMsg"></div>
+            </section>
+            <section class="qcard">
+              <dl class="tfacts" id="dwFacts"></dl>
+            </section>
+            <!-- Each card is a heading, its one quiet action on the right, and
+                 what it holds. The action opens the card's own small form
+                 (the field, then Add and Cancel in the portal's order), so a
+                 card never carries a field and a button nobody asked for. -->
+            <section class="qcard" id="dwDescSec">
+              <div class="qcard-head">
+                <h3 class="qcard-title">Brief</h3>
+                <button class="btn btn-quiet btn-sm qcard-act" id="dwDescEdit" type="button">Edit</button>
+              </div>
+              <div id="dwDesc"></div>
+              <form class="qform" id="dwDescForm" autocomplete="off" hidden>
+                <label class="field-label" for="dwDescText">Brief</label>
+                <textarea class="input" id="dwDescText" rows="4" maxlength="4000"></textarea>
+                <div class="qform-acts">
+                  <button class="btn btn-sm btn-primary" type="submit">Save</button>
+                  <button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button>
+                </div>
+              </form>
+            </section>
+            <section class="qcard" id="dwCheckSec">
+              <div class="qcard-head">
+                <h3 class="qcard-title">Checklist <span class="qcard-count" id="dwCheckCount"></span></h3>
+                <button class="btn btn-quiet btn-sm qcard-act" id="dwCheckOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add item</button>
+              </div>
+              <div id="dwChecks"></div>
+              <form class="qform" id="dwCheckForm" autocomplete="off" hidden>
+                <label class="field-label" for="dwCheckAdd">Item</label>
+                <input class="input" id="dwCheckAdd" placeholder="What needs doing" maxlength="300">
+                <div class="qform-acts">
+                  <button class="btn btn-sm btn-primary" type="submit">Add</button>
+                  <button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button>
+                </div>
+              </form>
+            </section>
+            <section class="qcard" id="dwLinkSec">
+              <div class="qcard-head">
+                <h3 class="qcard-title">Files and links</h3>
+                <button class="btn btn-quiet btn-sm qcard-act" id="dwLinkOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
+              </div>
+              <div id="dwLinks"></div>
+              <form class="qform" id="dwLinkForm" autocomplete="off" hidden>
+                <div class="row">
+                  <div class="field">
+                    <label class="field-label" for="dwLinkUrl">Address</label>
+                    <input class="input" id="dwLinkUrl" type="url" placeholder="https://" spellcheck="false">
+                  </div>
+                  <div class="field qform-kind">
+                    <label class="field-label" for="dwLinkKind">Kind</label>
+                    <select class="select" id="dwLinkKind">
+                      <option value="other">Link</option>
+                      <option value="draft">Draft</option>
+                      <option value="review">Review</option>
+                      <option value="final">Final</option>
+                      <option value="brief">Brief</option>
+                      <option value="asset">File</option>
+                    </select>
+                  </div>
+                </div>
+                <label class="field-label" for="dwLinkLabel">Label</label>
+                <input class="input" id="dwLinkLabel" placeholder="Optional" maxlength="120">
+                <div class="qform-acts">
+                  <button class="btn btn-sm btn-primary" type="submit" id="dwLinkSave">Add</button>
+                  <button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button>
+                </div>
+              </form>
+            </section>
+            <section class="qcard" id="dwCommentSec">
+              <div class="qcard-head">
+                <h3 class="qcard-title">Comments</h3>
+                <button class="btn btn-quiet btn-sm qcard-act" id="dwCommentOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add comment</button>
+              </div>
+              <div id="dwComments"></div>
+              <form class="qform" id="dwCommentForm" autocomplete="off" hidden>
+                <label class="field-label" for="dwComment">Comment</label>
+                <textarea class="input" id="dwComment" rows="3" maxlength="2000"></textarea>
+                <div class="qform-acts">
+                  <button class="btn btn-sm btn-primary" type="submit" id="dwCommentSave">Post</button>
+                  <button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button>
+                </div>
+              </form>
+            </section>
+            <section class="qcard" id="dwTimeSec">
+              <h3 class="qcard-title">Time</h3>
+              <dl class="tfacts" id="dwTime"></dl>
+              <details class="tmore" id="dwTimeMore">
+                <summary>Time in each stage</summary>
+                <div id="dwTimeList"></div>
+              </details>
+            </section>
+            <section class="qcard" id="dwLogSec">
+              <h3 class="qcard-title">Recent activity</h3>
+              <div id="dwLog"></div>
+              <details class="tmore" id="dwLogMore">
+                <summary>All activity</summary>
+                <div id="dwLogAll"></div>
+              </details>
+            </section>
+            <a class="qfull" id="dwFull" href="#">Open full record</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- A MOVE THAT NEEDS SOMETHING SAID. Where a step takes a date, a note
+           or a link before the database will allow it, the step asks for it
+           here, with the next person on the same press. A move that needs
+           nothing is made from the list or the task without this sheet. -->
+      <div class="sheet" id="stepSheet" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="stepTitle">
+          <div class="sheet-head">
+            <h3 id="stepTitle">Move</h3>
+            <button class="iconbtn" id="stepClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <p class="hint" id="stepWhat"></p>
+            <div class="row" id="stepDateRow" hidden>
+              <div class="field">
+                <label class="field-label" for="stepDate" id="stepDateLabel">Date</label>
+                <input class="input" id="stepDate" type="date">
+              </div>
+            </div>
+            <div class="row" id="stepWhyRow" hidden>
+              <div class="field">
+                <label class="field-label" for="stepWhy" id="stepWhyLabel">Why it differs from the scheduled date</label>
+                <input class="input" id="stepWhy" autocomplete="off" placeholder="Required">
+              </div>
+            </div>
+            <div class="row" id="stepLinkRow" hidden>
+              <div class="field">
+                <label class="field-label" for="stepLink">Link to the live post</label>
+                <input class="input" id="stepLink" type="url" placeholder="https://" autocomplete="off" spellcheck="false">
+              </div>
+            </div>
+            <div class="row" id="stepNoteRow">
+              <div class="field">
+                <label class="field-label" for="stepNote" id="stepNoteLabel">Note</label>
+                <textarea class="input" id="stepNote" rows="3" placeholder="Optional"></textarea>
+              </div>
+            </div>
+            <div class="stephand" id="stepHand">
+              <label class="tickline" id="stepHandTickWrap"><input type="checkbox" id="stepHandTick"> <span>Change Task Owner</span></label>
+              <div class="row" id="stepHandRow" hidden>
+                <div class="field">
+                  <label class="field-label" for="stepHandTo" id="stepHandLabel">New Task Owner</label>
+                  <select class="select" id="stepHandTo"></select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="stepGo" type="button">Move</button>
+            <button class="btn btn-quiet" id="stepCancel" type="button">Cancel</button>
+          </div>
+          <div class="msg" id="stepMsg"></div>
+        </div>
+      </div>
+
+      <!-- FROM TEMPLATE. The tasks a month always needs, made in one press and
+           linked to the client or engagement once, so nobody types the same
+           client name eight times. -->
+      <div class="sheet" id="tplSheet" hidden>
+        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="tplHead">
+          <div class="sheet-head">
+            <h3 id="tplHead">From template</h3>
+            <button class="iconbtn" id="tplClose" type="button" aria-label="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
           </div>
           <div class="sheet-body">
             <div class="row">
               <div class="field">
-                <label class="field-label" for="handStage">Move to</label>
+                <label class="field-label" for="tplLink">Client or engagement</label>
+                <select class="select" id="tplLink"></select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="tplBase">Made for</label>
+                <input class="input" id="tplBase" type="date">
+              </div>
+            </div>
+            <div class="tpl-head">
+              <span class="field-label">Templates</span>
+              <button class="btn btn-quiet btn-sm" id="tplNew" type="button" hidden>New template</button>
+            </div>
+            <div class="tpllist" id="tplList"></div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="tplGo" type="button">Create tasks</button>
+            <button class="btn btn-quiet" id="tplCancel" type="button">Cancel</button>
+          </div>
+          <div class="msg" id="tplMsg"></div>
+        </div>
+      </div>
+
+      <!-- One template, added or edited: its name, the title its tasks take,
+           who they go to, when they are due after the day they are made for,
+           and the checklist they carry. -->
+      <div class="sheet" id="tplEditSheet" hidden>
+        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="teHead">
+          <div class="sheet-head">
+            <h3 id="teHead">Template</h3>
+            <button class="iconbtn" id="teClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="teName">Name</label>
+                <input class="input" id="teName" placeholder="Monthly social media report" maxlength="120">
+              </div>
+              <div class="field">
+                <label class="field-label" for="teTitle">Task title</label>
+                <input class="input" id="teTitle" placeholder="Same as the name" maxlength="200">
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="teOwner">Task Owner</label>
+                <select class="select" id="teOwner"></select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="teDue">Due, days after</label>
+                <input class="input" id="teDue" type="number" min="0" max="365" inputmode="numeric" placeholder="0">
+              </div>
+              <div class="field">
+                <label class="field-label" for="teEst">Estimate, minutes</label>
+                <input class="input" id="teEst" type="number" min="0" max="6000" inputmode="numeric" placeholder="Optional">
+              </div>
+            </div>
+            <label class="field-label" for="teKind">Workflow</label>
+            <select class="select" id="teKind">
+              <option value="task">Everyday task</option>
+              <option value="content">Content deliverable</option>
+            </select>
+            <label class="field-label" for="teCheck" style="margin-top:12px">Checklist</label>
+            <textarea class="input" id="teCheck" rows="4" placeholder="One item a line"></textarea>
+            <label class="tickline"><input type="checkbox" id="teActive" checked> <span>Offered when making tasks</span></label>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="teGo" type="button">Save</button>
+            <button class="btn btn-quiet" id="teCancel" type="button">Cancel</button>
+          </div>
+          <div class="msg" id="teMsg"></div>
+        </div>
+      </div>
+
+      <!-- Off the ordinary path: any move the workflow allows from here, with
+           the next person on the same move if the work changes hands. A move
+           backwards takes a reason; passing over a step is an override the
+           database keeps for ops Manage, and takes a reason too. -->
+      <div class="sheet" id="handSheet" hidden>
+        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="handTitle">
+          <div class="sheet-head">
+            <h3 id="handTitle">Move to another stage</h3>
+            <button class="iconbtn" id="handClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <p class="hint" id="handWhat"></p>
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="handStage">Stage</label>
                 <select class="select" id="handStage"></select>
               </div>
               <div class="field">
-                <label class="field-label" for="handTo">Hand to</label>
+                <label class="field-label" for="handTo">Task Owner</label>
                 <select class="select" id="handTo"></select>
               </div>
             </div>
             <div class="row" id="handSkipRow" hidden>
               <div class="field">
-                <label class="field-label" for="handSkip">Why the steps between are skipped</label>
-                <input class="input" id="handSkip" autocomplete="off" placeholder="Required when a step is passed over">
+                <label class="field-label" for="handSkip" id="handSkipLabel">Reason</label>
+                <input class="input" id="handSkip" autocomplete="off" placeholder="Required">
               </div>
             </div>
             <div class="row">
               <div class="field">
-                <label class="field-label" for="handNote">Note for the next person</label>
+                <label class="field-label" for="handNote">Note</label>
                 <textarea class="input" id="handNote" rows="2" placeholder="Optional"></textarea>
               </div>
             </div>
           </div>
           <div class="sheet-foot">
-            <button class="btn btn-primary" id="handGo" type="button">Hand over</button>
+            <button class="btn btn-primary" id="handGo" type="button">Move</button>
             <button class="btn btn-quiet" id="handCancel" type="button">Cancel</button>
           </div>
           <div class="msg" id="handMsg"></div>
+        </div>
+      </div>
+
+      <!-- Changing responsibility without changing the stage. The sheet says
+           what the next person is taking on (what is left on the checklist and
+           when it is owed) before the hand-over is made, and the note goes on
+           the record for them. -->
+      <div class="sheet" id="giveSheet" hidden>
+        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="giveTitle">
+          <div class="sheet-head">
+            <h3 id="giveTitle">Hand over task</h3>
+            <button class="iconbtn" id="giveClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="giveTo">New Task Owner</label>
+                <select class="select" id="giveTo"></select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="giveNote">Note for the new Task Owner</label>
+                <textarea class="input" id="giveNote" rows="3" placeholder="Optional"></textarea>
+              </div>
+            </div>
+            <dl class="tfacts givefacts" id="giveFacts"></dl>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="giveGo" type="button">Hand over</button>
+            <button class="btn btn-quiet" id="giveCancel" type="button">Cancel</button>
+          </div>
+          <div class="msg" id="giveMsg"></div>
         </div>
       </div>
     </div>
@@ -3168,13 +3586,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260923a"></script>
-<script src="/js/documents.js?v=20260923a"></script>
-<script src="/js/letters.js?v=20260923a"></script>
-<script src="/js/register.js?v=20260923a"></script>
-<script src="/js/crm.js?v=20260923a"></script>
-<script src="/js/team.js?v=20260923a"></script>
-<script src="/js/campaigns.js?v=20260923a"></script>
-<script src="/js/ops.js?v=20260923a"></script>
+<script src="/js/admin.js?v=20260923e"></script>
+<script src="/js/documents.js?v=20260923e"></script>
+<script src="/js/letters.js?v=20260923e"></script>
+<script src="/js/register.js?v=20260923e"></script>
+<script src="/js/crm.js?v=20260923e"></script>
+<script src="/js/team.js?v=20260923e"></script>
+<script src="/js/campaigns.js?v=20260923e"></script>
+<script src="/js/ops.js?v=20260923e"></script>
 </body>
 </html>

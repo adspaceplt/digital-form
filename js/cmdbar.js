@@ -187,6 +187,10 @@
         primary.replaceChild(span, n);
       }
     });
+    /* A word the page already wrapped is the same word, and names the button
+       the same way. */
+    var said = primary.querySelector('.btn-word');
+    if (!word && said) word = said.textContent.trim();
     if (!primary.querySelector('svg')) primary.insertAdjacentHTML('afterbegin', GLYPH_PLUS);
     if (word && !primary.getAttribute('aria-label')) primary.setAttribute('aria-label', word);
     primary.classList.add('cmd-primary');

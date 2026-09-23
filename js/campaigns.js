@@ -1964,20 +1964,19 @@
     var ahead = pending.map(function (o) { return o.visit_date; })
       .filter(function (d) { return d && d >= today(); }).sort();
     var one = isDelivery() ? 'delivery' : 'shoot', many = isDelivery() ? 'deliveries' : 'shoots';
-    if (submitted) return submitted + (submitted === 1 ? ' draft is' : ' drafts are') + ' waiting to be released to the client.';
-    if (shortlisted) return shortlisted + (shortlisted === 1 ? ' creator has' : ' creators have') + ' been chosen and still need confirming.';
-    if (c.state === 'draft') return 'Not published yet. The client cannot see it.';
-    if (changes) return changes + (changes === 1 ? ' creator is' : ' creators are') + ' reworking a draft.';
-    if (undated) return undated + ' ' + (undated === 1 ? one + ' has' : many + ' have') + ' no date yet.';
+    if (submitted) return submitted + (submitted === 1 ? ' draft' : ' drafts') + ' to release to the client.';
+    if (shortlisted) return shortlisted + (shortlisted === 1 ? ' creator' : ' creators') + ' to confirm.';
+    if (c.state === 'draft') return 'Not published. Hidden from the client.';
+    if (changes) return changes + (changes === 1 ? ' draft' : ' drafts') + ' in revision.';
+    if (undated) return undated + ' ' + (undated === 1 ? one : many) + ' without a date.';
     if (ahead.length) {
-      return ahead.length + ' ' + (ahead.length === 1 ? one + ' is' : many + ' are') + ' scheduled, next on ' + niceDate(ahead[0]) + '.';
+      return ahead.length + ' ' + (ahead.length === 1 ? one : many) + ' scheduled. Next: ' + niceDate(ahead[0]) + '.';
     }
     if (pending.length) {
-      return pending.length + ' ' + (pending.length === 1 ? one + ' has' : many + ' have') +
-        ' passed and still read Pending visit.';
+      return pending.length + ' past ' + (pending.length === 1 ? one : many) + ' still at Pending visit.';
     }
-    if (drafts) return drafts + (drafts === 1 ? ' draft is' : ' drafts are') + ' with the creators.';
-    if (posted) return posted + (posted === 1 ? ' post is' : ' posts are') + ' live and waiting on results.';
+    if (drafts) return drafts + (drafts === 1 ? ' draft' : ' drafts') + ' with creators.';
+    if (posted) return posted + (posted === 1 ? ' post' : ' posts') + ' live, results pending.';
     return '';
   }
 

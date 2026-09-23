@@ -202,7 +202,7 @@ rule, and a theme nobody audits is a theme that quietly fails AA.
 | `--head-h` | 64px (56px on a phone) | The chrome bar, on every page. `.topbar-inner` takes `calc(var(--head-h) - 1px)` because `.topbar` carries the hairline outside its box while `.console-head` carries it inside, and without that the two differ by exactly the border |
 | `--ctl-h` | 38px (44px coarse pointer) | Every button, input, select, icon button |
 | `--ctl-h-sm` | 32px (44px coarse) | `.btn-sm`, `.input-sm`, `.select-sm`, every status select |
-| `--state-w` | 124px | Every status select, on a head as in a row |
+| `--state-w` | 124px | Every status select, on a head as in a row. My Work's task row states its own 160px stage track, measured against the SOP's longest stage name |
 | `--ctl-text` / `--field-text` | 13px / 14px (16px coarse, stops iOS zoom) | Control label / field text |
 | Button min width | 116px | So a row of buttons does not step |
 | Icon glyph | 15px stroke, 1.8 | Same glyph for the same action everywhere; never mix outline and filled |
@@ -486,7 +486,7 @@ measures the table whenever its header is not on screen (`padding`).
 | What a record is waiting on | One line under the identity (`.camp-next`), derived on every repaint and never stored: a state written once by the action that caused it goes stale the moment somebody reverts |
 | One of many, then the one | A **queue** and an open record (`.queue` > `.qrow`, the creator's page): the queue orders by what has to be done, marks the one that needs the reader, and opens it by itself; the open one is in the address. Four full records stacked, each with its own upload box, is a page you have to read to find the one that matters |
 | Deciding on one thing in a gallery | A **canvas** (`.canvas`): the thing at the size it deserves on a stage, and everything the decision rests on in a rail beside it — what it is, the copy in full, what was said last time, where it stands, and the one place to decide. Prev/next and the arrow keys step the set, Escape closes. The canvas **moves** the gallery item's own blocks into it and puts them back on close, so there is one decision control in the page and it cannot drift from the one in the gallery |
-| Search, filter, count and the one action | `.cmdbar` > `.cmdbar-find` (a search box with its glyph, bounded 190 to 420px) + the filter selects + `.cmdbar-end` > `.cmdbar-count` + the `?` + one `.btn-sm.btn-primary`, on every console list: clients, my work, content review, campaigns, creators, short links, documents, the rate card, the team. The count reads `7 services` whole and `3 of 41` once a filter is on, never sits in a section head, and is not drawn at all when it is empty. The end group is one element so a wrap cannot split it: on a phone it takes the last row whole, the count and the `?` on the left and the actions on the right, and every route's bar is the same three rows |
+| Search, filter, count and the one action | `.cmdbar` > `.cmdbar-find` (a search box with its glyph, bounded 190 to 420px) + the filter selects + `.cmdbar-end` > `.cmdbar-count` + the `?` + one `.btn-sm.btn-primary`, on every console list: clients, my work, content review, campaigns, creators, short links, documents, the rate card, the team. The count reads `7 services` whole and `3 of 41` once a filter is on, never sits in a section head, and is not drawn at all when it is empty. The end group is one element so a wrap cannot split it: on a phone it takes the last row whole, the count and the `?` on the left and the actions on the right, and every route's bar is the same three rows. Where a route has more than one other act, they sit behind one ⋯ beside the primary rather than as a wrapped row of outline buttons (My Work: Bulk add, From template, Select tasks, and Task numbering for an admin); that ⋯ is a bar control like the rest, 32px at a desk (the `.btn-sm` floor) and 44 under a finger |
 | Links to reach a person | `.plink` chips (phone, WhatsApp, email); equal widths on a phone |
 | A form that adds or edits one record | A **sheet** over the list (`js/sheet.js`, `.sheet-card.formsheet`): head with a close mark, a scrolling `.sheet-body`, a foot with Cancel quiet and the primary, equal halves below 560. The scrim closes it only while nothing has been typed; Escape and the close mark always do. One shape for a creator, a colleague and a user group |
 | The command bar on a phone | Below 640 the bar is **one row**: a **search** mark and a **Filters** mark on the left (`.cmdbar-search`, `.cmdbar-filters`, the second carrying a badge that counts the filters off their default), then the count and the primary action as a filled `+` on the right, with the view segment as a second row where a route has one. Search **grows into the field** on the `.namebox` move and shuts again when it is left empty. The selects come up in a **sheet from the floor** (`#cmdSheet`) under labels, with Done and Clear; a second action is behind a **⋯** beside the primary. `js/cmdbar.js` is the one copy. The desk bar is untouched |
@@ -809,6 +809,10 @@ set is a status a page could set wrongly. The thirteen questions are one
 row each, a state and an owner, and one row repaints on its own answer so a
 person working down the list keeps their place.
 
+**A day of work is a list, and a record is one press further.** My Work was a project tracker: every task opened a full record with panes and a rail, so ticking off an invoice took three screens. A task somebody does in ten minutes is a row with a tick; a task that moves through a workflow is the same row with a ring saying how far along it is, because a tick there would skip the gates the workflow exists to hold. The row carries what a day is run on (what, whose, when, where it stands) and nothing the record already states; the drawer carries what a task needs to be worked (its checklist, links, comments, the next action) without leaving the list; the record is for the task that needs its stages, its dates and its history. Adding a task asks three things and lets Enter make the next one, because the test is ten seconds a task. **Statuses are the reader's, stages are the workflow's**: five plain words are read off the stage group, so a content workflow keeps its stages and a person scanning a list reads To do, In progress, Waiting, Review and Done.
+
+**A record states one next step, derived, and one decides it.** The head's status, the next-step panel and the stepper all read one derivation of the task, the month and the workflow, so they cannot disagree; the contradictions that were reported (an owner warning beside a named owner, a meeting called scheduled beside a month that has none) were two places each reading their own copy. Everything uncommon is in the ⋯, where each act asks what it needs: a reason to go back, a reason to skip, a note to hand over.
+
 **Handing work on is one act, not two.** A stage move and an owner change
 made separately leave a gap in which the task is at the next stage and still
 somebody else's; made together they are one event that says who took it and
@@ -817,6 +821,120 @@ step the deliverable does not need be skipped, forward along the line, with
 a reason written against every step passed over, because a workflow is the
 ordinary path and not the only one, and a skip with no reason is a skip
 nobody can explain later.
+
+**A task opens beside the list, and the list stays where it was.** A task is
+one finishable action, read many times a day, and opening it into a page of
+its own put a record's structure (panes, a rail of people and dates, a
+stepper across the page) between somebody and a tick. So a row opens the
+portal's own sheet from the side (`.sheet.sheet-side`, from the floor on a
+phone), with the list still behind it: the number, the state and the title
+at the head; then one card per part — what happens next, the facts a day
+turns on (Task Owner, Due, Created by, Priority), the brief, the checklist,
+files and links, comments, time and recent activity. The cards are layered
+on the page ground, because a single white page with the parts divided by
+hairlines was the "no layers" the user sent back. Everything uncommon is in
+the sheet's ⋯, and the full record is one press further under its own
+address, for the task that needs it.
+
+**Blue is a hand-off, even on a task.** The step that gives the work to
+somebody else — to AQC review, to the client, back to whoever created it for
+the performance review — is the blue `.btn-go`; the step that records your
+own progress (Mark ready, Mark in progress, Mark approved, Complete) is the
+ink fill. A card of blue buttons said nothing about which press passes the
+work on, which is the one thing the colour is for.
+
+**The Task Owner changes on the step, when somebody asks it to.** Handing on
+is the moment a task changes hands, so the step card carries an unticked
+**Change Task Owner** tick; ticked, the list of people opens and the same
+press moves the stage and the owner. Unticked, the task stays with whoever
+has it. The performance review is the exception that proves it: it goes back
+to whoever created the task, so its person is already chosen.
+
+**A draft link is optional; the press records how the draft went.** The team
+sends drafts through each client's WhatsApp group, so a step that could only
+go on with a link attached was a step that asked for busywork. Where the task
+holds no draft link the step reads **Sent on WhatsApp**, and pressing it
+moves the task with that said in its record; where it holds one, the step
+sends the link. A row or board move into Client review without a link opens
+the step sheet with the WhatsApp line already written, rather than refusing.
+The database keeps the rule: Client review needs the link or a note saying
+how the draft was sent.
+
+**Everything added can be put right, and taken back.** A checklist item, a
+link, a comment, the title, the brief and the priority are each corrected
+where they are drawn, from the row's own ⋯ (Rename or Edit, then Remove or
+Delete in red), and a removal draws its Undo under the card it was taken
+from. A comment is never rewritten: an edit and a deletion are later events
+that name it, so the thread shows how it now stands and the history keeps
+every word. A required check has no ⋯, because it is the review's own gate.
+Every stage move has its Revert in the sheet's ⋯, with a reason.
+
+**A confirmation's promise is one the product keeps.** Cancelling a task has
+always said "It can be reopened", and for a content deliverable nothing could
+reopen it: the ⋯ offered Reopen only on workflows with a revision stage, and a
+move out of Cancelled left the stamp behind, so the task read Cancelled at the
+stage it had been moved to. Reopen is offered on every cancelled task, asks
+why, and sends it back where it was cancelled from where the workflow allows,
+else to the workflow's own way out; the stamp leaves with the move. A sentence
+in a dialog is a claim, and a claim is tested like any other.
+
+**A button acts where the reader is.** The step card is drawn in the sheet
+and on the full record by one function, and its fact buttons (Assign task
+owner, Set due date) reached for the record's rows — which are not on the
+screen while the sheet is open, so the press did nothing at all. A shared
+component's action names the place it acts on from where it is drawn: the
+sheet's own row in the sheet, the record's on the record.
+
+**An open ⋯ answers Escape before the sheet under it does.** A menu over a
+sheet is the top layer, so Escape shuts the menu and hands the focus back to
+its button; the next Escape shuts the sheet. Shutting both on one press threw
+away the place a keyboard user had reached.
+
+**The quiet actions down a sheet share one right edge.** A card's one quiet
+action (Add item, Add link, Add comment, Edit) takes no width floor, so its
+text ends on the card's margin whatever its length; a centred word in a
+116px box stopped short of it while the longer labels reached it, which
+drew two right edges down one sheet. Each carries its glyph, a plus to add
+and a pen to edit.
+
+**A ticked row's fill must not cost a control its edge.** A control's
+boundary is read against what is outside it, and the chosen-row fill
+(`--line-soft`) takes `--line-ctl` to 2.92:1. On a ticked row the untinted
+stage select takes the mute ink for its edge instead; a tinted one keeps its
+colour. A state that changes a row's ground is a state whose controls are
+measured again.
+
+**The phone's short words say what the desk's say.** The due cell prints
+`25 Sept · in 2 days` at a desk and the date alone on a phone, but a task due
+today reads **Today** on both: a bare date on the phone dropped the one word
+the band's heading was about.
+
+**A label that wraps in a half-width button is the wrong label.** On a phone
+the step card's two actions are equal halves, and "Client requested changes"
+wrapped to two lines in its half. Both reviews send work back with **Request
+changes**; the step sheet says which loop it enters. The select bar met the
+same fault from the other side: three buttons in thirds put "Assign task owner"
+on two lines, so on a phone the way out (Done) moves to the count's line and
+the two acts share the next line as equal halves.
+
+**A stage is read whole, and on a narrow list it keeps one place.** The SOP's
+stage names are longer than a campaign step's, and in the portal's 124px state
+column `Performance review` drew as "Performance r" and the two revision loops
+as "Revision (Inter" and "Revision (Clier" — two stages told apart by a sliced
+letter. My Work's stage track is measured against its own vocabulary (160px:
+`Performance review` needs 157 at 12.5px), and every state select ends a name
+longer than its column in an ellipsis rather than a cut, because a word sliced
+mid letter reads as a fault. A select is as wide as its longest option and
+under a finger its text is 16px, so on a narrow list the stage used to share
+the date's line where the words let it and take a line of its own where they
+did not: one card held stages at two heights and three x. Now nothing on that
+line wraps (the Task Owner gives way with an ellipsis; the date never does),
+the stage ends it at a stated width on every row, and on a list a phone's
+width it takes a line of its own on every row. **A list states its own narrow
+line** where its desk row needs more than the pane's 640 (`data-narrow`, read
+by `ADspaceState.fit`): My Work's six tracks left the task's name 64 to 108px
+between 640 and 860, so there the list takes the narrow row the phone already
+reads.
 
 **A figure the rate card prefills is the person's to change.** The term
 adjustment is a percentage now, prefilled from the card by the term's range
