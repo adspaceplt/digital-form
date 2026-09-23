@@ -202,7 +202,7 @@ rule, and a theme nobody audits is a theme that quietly fails AA.
 | `--head-h` | 64px (56px on a phone) | The chrome bar, on every page. `.topbar-inner` takes `calc(var(--head-h) - 1px)` because `.topbar` carries the hairline outside its box while `.console-head` carries it inside, and without that the two differ by exactly the border |
 | `--ctl-h` | 38px (44px coarse pointer) | Every button, input, select, icon button |
 | `--ctl-h-sm` | 32px (44px coarse) | `.btn-sm`, `.input-sm`, `.select-sm`, every status select |
-| `--state-w` | 124px | Every status select, on a head as in a row |
+| `--state-w` | 124px | Every status select, on a head as in a row. My Work's task row states its own 160px stage track, measured against the SOP's longest stage name |
 | `--ctl-text` / `--field-text` | 13px / 14px (16px coarse, stops iOS zoom) | Control label / field text |
 | Button min width | 116px | So a row of buttons does not step |
 | Icon glyph | 15px stroke, 1.8 | Same glyph for the same action everywhere; never mix outline and filled |
@@ -916,6 +916,25 @@ changes**; the step sheet says which loop it enters. The select bar met the
 same fault from the other side: three buttons in thirds put "Assign task owner"
 on two lines, so on a phone the way out (Done) moves to the count's line and
 the two acts share the next line as equal halves.
+
+**A stage is read whole, and on a narrow list it keeps one place.** The SOP's
+stage names are longer than a campaign step's, and in the portal's 124px state
+column `Performance review` drew as "Performance r" and the two revision loops
+as "Revision (Inter" and "Revision (Clier" — two stages told apart by a sliced
+letter. My Work's stage track is measured against its own vocabulary (160px:
+`Performance review` needs 157 at 12.5px), and every state select ends a name
+longer than its column in an ellipsis rather than a cut, because a word sliced
+mid letter reads as a fault. A select is as wide as its longest option and
+under a finger its text is 16px, so on a narrow list the stage used to share
+the date's line where the words let it and take a line of its own where they
+did not: one card held stages at two heights and three x. Now nothing on that
+line wraps (the Task Owner gives way with an ellipsis; the date never does),
+the stage ends it at a stated width on every row, and on a list a phone's
+width it takes a line of its own on every row. **A list states its own narrow
+line** where its desk row needs more than the pane's 640 (`data-narrow`, read
+by `ADspaceState.fit`): My Work's six tracks left the task's name 64 to 108px
+between 640 and 860, so there the list takes the narrow row the phone already
+reads.
 
 **A figure the rate card prefills is the person's to change.** The term
 adjustment is a percentage now, prefilled from the card by the term's range

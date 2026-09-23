@@ -1798,15 +1798,26 @@
   function stageCell(t) {
     var s = stageOf(t);
     var nexts = ((s && s.next_stage_keys) || []).filter(function (k) { return k !== 'blocked'; });
+    var word = function (k) {
+      return stepWord(state.stages[t.workflow_id + '|' + k], t.engagement_id) || labelOfStage(t, k);
+    };
     if (!may('ops', 'work') || isFinished(t) || !nexts.length) {
-      return '<span class="tone ' + stageTone(t) + '">' + esc(stageLabel(t)) + '</span>';
+      return '<span class="tone ' + stageTone(t) + '">' + esc(word(t.stage_key)) + '</span>';
     }
     return '<select class="select select-sm state-select ' + stageTone(t) + '" ' +
       'aria-label="Stage of ' + esc(t.title) + '">' +
-      '<option value="">' + esc(stageLabel(t)) + '</option>' +
+      '<option value="">' + esc(word(t.stage_key)) + '</option>' +
       nexts.map(function (k) {
-        return '<option value="' + esc(k) + '">' + esc(labelOfStage(t, k)) + '</option>';
+        return '<option value="' + esc(k) + '">' + esc(word(k)) + '</option>';
       }).join('') + '</select>';
+  }
+  /* The meeting stage is named for the meeting, not for a claim about it:
+     whether it is in the diary is the month's to say, and the head says it.
+     One word for the row and the stepper; a band or a board column keeps the
+     name the workflow gives the stage. */
+  function stepWord(s, inMonth) {
+    if (!s) return '';
+    return s.key === 'meeting_scheduled' && inMonth ? 'Content meeting' : s.label;
   }
 
   function rowMenu(t) {
@@ -3799,11 +3810,7 @@
     box.hidden = false;
     var target = nextOf(t);
     var done = isFinished(t) && !t.cancelled_at;
-    /* The meeting stage is named for the meeting, not for a claim about it:
-       whether it is in the diary is the month's to say, and the head says it. */
-    var word = function (s) {
-      return s.key === 'meeting_scheduled' && state.eng ? 'Content meeting' : s.label;
-    };
+    var word = function (s) { return stepWord(s, state.eng); };
     box.innerHTML =
       '<ol class="tsteps-bar" aria-label="Workflow">' + line.map(function (s, i) {
         var cls = (done || i < at) ? 'is-done' : i === at ? 'is-now' : '';
@@ -5428,7 +5435,8 @@
         '<span class="cmdbar-count" id="cwCount"></span>' +
       '</div>' +
       '<div class="msg" id="cwMsg"></div>' +
-      '<div id="cwList"></div>';
+      '<div id="cwList" data-narrow="860"></div>';
+    if (UI.fit) UI.fit('#cwList');
     $('cwFind').value = cw.find; $('cwStatus').value = cw.status;
     $('cwPeriod').value = cw.period; $('cwWho').value = cw.who;
     $('cwFind').addEventListener('input', function () {

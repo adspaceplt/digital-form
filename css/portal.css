@@ -3785,10 +3785,13 @@ body > .shell { width: 100%; }
    control inside a control is one a screen reader trips over. What opens the
    task is the name cell, which is the widest, runs the row's full height and
    is where the eye already is. */
-/* The last track is the dates: the final date in the row face, the draft and
-   the scheduled publish date under it in the small face. 190px is measured
-   against `Draft 28 Sept · Publish 5 Oct` at 12px. */
-.task-row { grid-template-columns: var(--ctl-h) minmax(0, 1fr) 132px 156px var(--state-w) var(--ctl-h); }
+/* The tracks are the tick, the task, the Task Owner, the due date, the stage
+   and the ⋯. The stage track is wider than the portal's 124px state column
+   because the SOP's stage names are longer than a campaign step's: measured
+   at 12.5px, `Performance review` needs 157px and `Changes requested` 155,
+   and in 124px they drew as "Performance r" and "Changes requ". A name longer
+   than that (a label the team writes) ends in an ellipsis rather than a cut. */
+.task-row { grid-template-columns: var(--ctl-h) minmax(0, 1fr) 132px 156px 160px var(--ctl-h); }
 .task-open {
   display: flex; flex-direction: column; justify-content: center; gap: 2px;
   min-width: 0; align-self: stretch; margin: -10px 0; padding: 10px 0;
@@ -3800,7 +3803,10 @@ body > .shell { width: 100%; }
 @media (hover: hover) { .task-open:hover b { text-decoration: underline; text-underline-offset: 2px; } }
 .task-open:active { transform: scale(.997); }
 .task-stage { min-width: 0; }
-.task-stage .state-select { width: 100%; }
+/* Two classes on the select, because the global `.select-sm.state-select`
+   later in the file sets 124px and a one-class rule here lost to it: the
+   track widened and the select inside it did not. */
+.task-stage .state-select, .task-stage .select-sm.state-select { width: 100%; }
 /* The refusal a stage move met, under the row it was made on. */
 .task-note { margin: 0; padding: 0 15px 10px; }
 .task-owner { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -4164,6 +4170,9 @@ body > .shell { width: 100%; }
   width: var(--state-w); min-width: 0; height: var(--ctl-h-sm); min-height: var(--ctl-h-sm);
   padding: 0 26px 0 10px; font-size: 12.5px; font-weight: 600; line-height: 1.4;
   background-size: 13px; background-position: right 8px center;
+  /* A state longer than its column ends in an ellipsis, never a cut: a word
+     sliced mid letter reads as a fault, three dots as a name that goes on. */
+  text-overflow: ellipsis;
 }
 .state-select.is-ok   { color: var(--ok);   border-color: var(--ok);   background-color: var(--ok-bg); }
 .state-select.is-warn { color: var(--warn); border-color: var(--warn); background-color: var(--warn-bg); }
@@ -4314,31 +4323,38 @@ body > .shell { width: 100%; }
 .is-narrow .reg-row > .team-act { grid-area: act; justify-self: end; }
 .is-narrow .reg-row > .reg-who { grid-area: who; }
 .is-narrow .reg-row > .reg-date { grid-area: date; justify-self: stretch; text-align: right; }
-/* A phone task row is a two column table, not a card with things pushed
-   right: who and what on the left, where it stands over when it is owed on
-   the right. The right track is fixed and measured against its worst case,
-   the `Waiting for client` chip at 122px and the state select's own 124px, so
-   the state starts at the same x on every row; both cells stretch and align
-   right, so the card has two margins rather than one ragged one. The owner
-   leaves: the scope select above already answers whose queue this is, and a
-   phone row spends its width on what somebody came for. */
+/* A narrow task row is the tick, the task and its ⋯ on the first line, and
+   the Task Owner, the due date and the stage under the task, the stage at a
+   stated width ending at the card's right padding on every row. The meta
+   line runs under the ⋯, so the stage ends where the ⋯ does: one right
+   margin. It used to wrap wherever the words ran out, which on one card put
+   two stages at two heights and three different x: a select is as wide as
+   its longest option, and under a finger its text is 16px so iOS does not
+   zoom, so which rows fitted was decided by the words in them. Now nothing
+   on the line wraps: the Task Owner gives way with an ellipsis, the date
+   never does, and on a list a phone's width (tight) the stage takes a line
+   of its own on every row instead. 160px is the desk stage track; 200px is
+   `Performance review` at 16px. */
 .is-narrow .task-row {
   grid-template-columns: var(--ctl-h) minmax(0, 1fr) var(--ctl-h);
-  grid-template-areas: "check name act" ". meta act";
+  grid-template-areas: "check name act" ". meta meta";
   row-gap: 4px; column-gap: 8px; align-items: center;
 }
 .is-narrow .task-row > .trow-check { grid-area: check; align-self: start; }
 .is-narrow .task-row > .task-open { grid-area: name; }
 .is-narrow .task-row > .trow-meta {
-  grid-area: meta; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; min-width: 0;
+  grid-area: meta; display: flex; flex-wrap: nowrap; align-items: center; gap: 4px 12px; min-width: 0;
 }
-.is-narrow .trow-meta > .task-owner { flex: 0 1 auto; max-width: 34%; }
+.is-narrow .trow-meta > .task-owner { flex: 0 1 auto; min-width: 0; max-width: 34%; }
 /* In your own list every owner is you, so a phone spends that width on the
    date and the status instead. */
 .is-narrow .is-mine .trow-meta > .task-owner { display: none; }
 .is-narrow .trow-meta > .task-due { flex: 0 0 auto; }
-.is-narrow .trow-meta > .task-stage { flex: 0 0 auto; margin-left: auto; }
-.is-narrow .trow-meta .state-select { width: auto; min-width: 104px; }
+.is-narrow .trow-meta > .task-stage { flex: 0 0 auto; margin-left: auto; display: flex; justify-content: flex-end; }
+.is-narrow .trow-meta .state-select { width: 160px; max-width: 100%; }
+@media (pointer: coarse) { .is-narrow .trow-meta .state-select { width: 200px; } }
+.is-tight .task-row > .trow-meta { flex-wrap: wrap; }
+.is-tight .trow-meta > .task-stage { flex: 0 0 100%; margin-left: 0; }
 .is-narrow .task-row > .team-act { grid-area: act; align-self: start; }
 .is-narrow .task-row.crm-head { display: none; }
 .is-narrow .tlink-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "kind kind"; }
