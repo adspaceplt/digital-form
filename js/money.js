@@ -67,7 +67,48 @@
   function termOf(months) { return TERMS[Math.max(1, Number(months || 1))] || { factor: 1, word: '', adj: '' }; }
   function termFactor(months) { return termOf(months).factor; }
   function termWord(months) { return termOf(months).word; }
-  function termAdj(months) { return termOf(months).adj || ''; }
+
+  /* THE PERCENTAGE, FROM 2026-09-23. The rate card prices a term as a
+     percentage on the rate now, by range rather than by exact month: one to
+     three months carry 25% for the margin a short term costs, four and five
+     carry 15%, six to eleven is the baseline, twelve and more earn 5% off and
+     twenty-four and more 10% off. The figure is prefilled on the line from
+     this table and is the person's to change (`client_services.term_pct`),
+     because a client negotiates a term and the number on the letter is the
+     number that was agreed, not the card's.
+
+     What is stored decides how a line is read: a line carrying a percentage
+     is billed at the rate times that percentage; a line carrying none is
+     billed by the older factor table above, so a letter issued before the
+     percentage existed redraws at the figure it printed. The three shapes a
+     stored value can take are therefore all meaningful — a number, `0` for a
+     term the person chose to leave unadjusted, and `null` for a line from
+     before — and none of them is a default. */
+  var TERM_PCT = [
+    [1, 3, 25], [4, 5, 15], [6, 11, 0], [12, 23, -5], [24, 999, -10]
+  ];
+  function termPct(months) {
+    var n = Math.max(1, Math.floor(Number(months || 1)));
+    for (var i = 0; i < TERM_PCT.length; i++) {
+      if (n >= TERM_PCT[i][0] && n <= TERM_PCT[i][1]) return TERM_PCT[i][2];
+    }
+    return 0;
+  }
+  function hasPct(pct) { return pct !== null && pct !== undefined && pct !== '' && !isNaN(Number(pct)); }
+  /* The name of an adjustment, for the tick that applies it and the line
+     that carries it: named for what it does to the figure, in the direction
+     it goes, so "apply the 25% short term adjustment" and "apply the 5% long
+     term discount" are never one unlabelled tick. */
+  function pctAdj(pct) {
+    var p = Number(pct);
+    if (!p) return '';
+    var shown = String(Math.round(Math.abs(p) * 100) / 100);
+    return p > 0 ? shown + '% short term adjustment' : shown + '% long term discount';
+  }
+  function termAdj(months, pct) {
+    if (hasPct(pct)) return pctAdj(pct);
+    return termOf(months).adj || '';
+  }
   /* The adjustment is asked for, never applied by itself. A line priced at
      RM 400 over three months printed RM 444.44 because the factor was applied
      to every line that had a term, so the rate somebody typed was not the rate
@@ -82,14 +123,23 @@
   function adjusts(adjust) { return adjust !== false; }
   /* The rate the client is actually billed each month, rounded to the cent
      where it is charged so a monthly figure times its term cannot disagree
-     with the total by a fraction of a sen. */
-  function rateFor(rate, months, adjust) {
-    var f = adjusts(adjust) ? termFactor(months) : 1;
+     with the total by a fraction of a sen. With a percentage on the line the
+     rate carries it; without one the older factor table prices the term. */
+  function rateFor(rate, months, adjust, pct) {
+    if (!adjusts(adjust)) return Math.round(Number(rate || 0) * 100) / 100;
+    var f = hasPct(pct) ? 1 + Number(pct) / 100 : termFactor(months);
     return Math.round(Number(rate || 0) * f * 100) / 100;
   }
   /* The word beside the figure, which is only true where the tick is on: a
      line billed at the rate that was typed has nothing to explain. */
-  function termNote(months, adjust) { return adjusts(adjust) ? termWord(months) : ''; }
+  function termNote(months, adjust, pct) {
+    if (!adjusts(adjust)) return '';
+    if (hasPct(pct)) {
+      var adj = pctAdj(pct);
+      return adj ? Math.max(1, Number(months || 1)) + ' month term, ' + adj : '';
+    }
+    return termWord(months);
+  }
 
   // Named the same wherever it is charged, because it is the same tax.
   function taxLabel() { return TAX.label; }
@@ -104,8 +154,10 @@
     termWord: termWord,
     termAdj: termAdj,
     termNote: termNote,
+    termPct: termPct,
     rateFor: rateFor,
     TERMS: TERMS,
+    TERM_PCT: TERM_PCT,
     sign: signOf,
     market: market,
     MARKETS: MARKETS,

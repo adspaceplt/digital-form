@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260921i">
+<link rel="stylesheet" href="/css/portal.css?v=20260923a">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -32,25 +32,25 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260921i"></script>
-<script src="/js/words.js?v=20260921i"></script>
-<script src="/js/copy.js?v=20260921i"></script>
-<script src="/js/ask.js?v=20260921i"></script>
-<script src="/js/confirm.js?v=20260921i"></script>
-<script src="/js/sheet.js?v=20260921i"></script>
-<script src="/js/state.js?v=20260921i"></script>
-<script src="/js/group.js?v=20260921i"></script>
-<script src="/js/menu.js?v=20260921i"></script>
-<script src="/js/cmdbar.js?v=20260921i"></script>
-<script src="/js/api.js?v=20260921i"></script>
-<script src="/js/money.js?v=20260921i"></script>
-<script src="/js/mockups.js?v=20260921i"></script>
+<script src="/js/config.js?v=20260923a"></script>
+<script src="/js/words.js?v=20260923a"></script>
+<script src="/js/copy.js?v=20260923a"></script>
+<script src="/js/ask.js?v=20260923a"></script>
+<script src="/js/confirm.js?v=20260923a"></script>
+<script src="/js/sheet.js?v=20260923a"></script>
+<script src="/js/state.js?v=20260923a"></script>
+<script src="/js/group.js?v=20260923a"></script>
+<script src="/js/menu.js?v=20260923a"></script>
+<script src="/js/cmdbar.js?v=20260923a"></script>
+<script src="/js/api.js?v=20260923a"></script>
+<script src="/js/money.js?v=20260923a"></script>
+<script src="/js/mockups.js?v=20260923a"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260921i" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260923a" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -428,6 +428,10 @@
             <button class="tab" data-pane="brand" type="button" role="tab" aria-selected="false">Brand</button>
             <button class="tab" data-pane="services" data-part="clients.services" type="button" role="tab" aria-selected="false">Services</button>
             <button class="tab" data-pane="documents" data-part="clients.documents" type="button" role="tab" aria-selected="false">Documents</button>
+            <!-- The client's own work: its tasks by month, and the
+                 engagement record each month hangs off. Drawn where My Work
+                 is readable, by the same script that draws My Work. -->
+            <button class="tab" data-pane="work" data-part="ops" type="button" role="tab" aria-selected="false">Work</button>
             <button class="tab" data-pane="activity" data-needs-activity type="button" role="tab" aria-selected="false">Activity</button>
           </nav>
 
@@ -636,9 +640,14 @@
                and the person quoting had to work backwards to their own
                figure. The row is drawn only where the term carries a factor,
                so a tick that would do nothing is never offered. -->
-          <div class="row" style="margin-top:12px" id="svAdjRow" hidden>
+          <div class="row adjrow" style="margin-top:12px" id="svAdjRow" hidden>
             <label class="tickline"><input type="checkbox" id="svAdjust">
               <span id="svAdjustWord">Apply the term adjustment</span></label>
+            <!-- The percentage the tick applies: the rate card's for the
+                 term, prefilled and the person's to change, because the
+                 number on the letter is the number that was agreed. -->
+            <label class="pctfield"><span class="field-label">Percentage</span>
+              <span class="pctbox"><input class="input input-sm" id="svPct" type="number" step="0.5" inputmode="decimal" placeholder="0"><span class="pctsign">%</span></span></label>
           </div>
           <div class="row" style="margin-top:12px">
             <div><label class="field-label" for="svDetail">What it includes</label>
@@ -804,6 +813,10 @@
             <div class="msg" id="pickMsg"></div>
           </div>
         </div>
+
+          <div class="rec-pane" data-pane="work" hidden>
+            <div id="crmWorkPane"></div>
+          </div>
 
           <div class="rec-pane" data-pane="activity" hidden>
         <!-- Every call, visit and message, newest first. -->
@@ -1648,15 +1661,24 @@
                  the team's numbers. -->
             <button class="acttab btn-sm" data-view="report" id="workViewReport" type="button" aria-pressed="false" hidden>Report</button>
           </span>
-          <select class="select select-sm" id="workScope" aria-label="Whose work" data-nofilter hidden>
-            <option value="mine">My work</option>
-            <option value="all">The whole team</option>
+          <!-- Whose work is a view, not a filter. Assigned, created and
+               following are everybody's; the whole team's queue is offered
+               only where `ops.all` is granted, because that is the only place
+               it can arrive. -->
+          <select class="select select-sm" id="workScope" aria-label="Whose work" data-nofilter>
+            <option value="mine">Assigned to me</option>
+            <option value="created">Created by me</option>
+            <option value="following">Following</option>
+            <option value="all" id="workScopeAll" hidden>The whole team</option>
           </select>
           <select class="select select-sm" id="workStage" aria-label="Filter by stage">
             <option value="open">Open work</option>
             <option value="active">In progress</option>
-            <option value="review">With a reviewer</option>
-            <option value="waiting">Waiting or blocked</option>
+            <option value="soon">Due soon</option>
+            <option value="internal_review">Internal review</option>
+            <option value="client_review">Client review</option>
+            <option value="waiting_client">Waiting on client</option>
+            <option value="waiting">On hold or blocked</option>
             <!-- The final date is the day the work is owed at client review,
                  so this is every task past that date and still short of it.
                  It is the view a manager opens, and it is a filter rather
@@ -1694,6 +1716,10 @@
               <span class="cmdbar-count" id="workCount"></span>
             </span>
             <span class="cmdbar-acts">
+              <!-- A month of tasks at once, or this month's recurring ones:
+                   one neutral control beside the primary, behind the ⋯ on a
+                   phone like the Documents bar's second action. -->
+              <button class="btn btn-sm" id="workGen" type="button" hidden>Generate</button>
               <button class="btn btn-sm btn-primary" id="workNew" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New task</button>
             </span>
           </span>
@@ -1726,7 +1752,19 @@
           <div class="rec-id rec-id-plain">
             <button class="serial-copy rec-token" id="taskMark" type="button"></button>
             <div class="rec-who">
-              <div class="rec-name"><h2 id="taskName"></h2></div>
+              <!-- The name is the code and the description: the code is the
+                   database's and never changes, the description is the
+                   team's and is edited where it sits. The whole line is the
+                   file name a saved export takes, so it copies on a press. -->
+              <div class="rec-name">
+                <h2 id="taskName"><span class="task-code" id="taskCode" hidden></span> <span id="taskDesc"></span></h2>
+                <button class="rec-pen" id="taskDescEdit" type="button" aria-label="Edit description" hidden>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                </button>
+                <button class="rec-pen" id="taskCopyTitle" type="button" aria-label="Copy title">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg>
+                </button>
+              </div>
               <p class="rec-id-meta" id="taskMeta"></p>
             </div>
             <div class="rec-ctl">
@@ -1737,6 +1775,11 @@
                 </button>
                 <div class="kmenu" id="taskMenu" hidden role="menu">
                   <button class="kmenu-item" data-a="block" type="button" role="menuitem">Mark blocked</button>
+                  <!-- A copy is a new task with a new code and none of this
+                       one's history; Repeat sets the rule that makes one on
+                       each date. Both are the team's everyday acts (Work). -->
+                  <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Duplicate</button>
+                  <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat</button>
                   <button class="kmenu-item" data-a="reopen" type="button" role="menuitem" hidden>Reopen</button>
                   <button class="kmenu-item" data-a="archive" type="button" role="menuitem" data-need="ops:manage">Archive</button>
                   <!-- Archive reverses and Cancel is an outcome; neither
@@ -1877,6 +1920,13 @@
               </div>
               <div class="msg" id="taskOwnerMsg"></div>
             </div>
+            <!-- The month's engagement this task belongs to: where planning
+                 stands and whether the content meeting is held, because
+                 production waits on both, and the way to the record. -->
+            <div class="railblock rail-after" id="taskEngBlock" hidden>
+              <h3 class="railtitle">Engagement</h3>
+              <div id="taskEng"></div>
+            </div>
             <div class="railblock rail-after">
               <h3 class="railtitle">Details</h3>
               <dl class="facts" id="taskFacts"></dl>
@@ -1951,6 +2001,7 @@
         </div>
       </div>
 
+
       <!-- Blocked names what it is waiting on. "Blocked" on its own is a
            state nobody can act on. -->
       <div class="sheet" id="blockSheet" hidden>
@@ -1982,6 +2033,238 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- The task sheets sit outside the My Work section, because a task is
+         also made, copied and generated from a client record. Every one is
+         fixed to the viewport, so where it lives in the markup is nothing
+         but where it can be reached from. -->
+    <div id="workSheets">
+      <!-- A copy: the planning fields travel, the history does not, and what
+           else travels is the person's to say. -->
+      <div class="sheet" id="dupSheet" hidden>
+        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="dupTitle">
+          <div class="sheet-head">
+            <h3 id="dupTitle">Duplicate task</h3>
+            <button class="iconbtn" id="dupClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <p class="hint" id="dupWhat"></p>
+            <div class="tickstack">
+              <label class="tickline"><input type="checkbox" id="dupDesc" checked> <span>Keep the description</span></label>
+              <label class="tickline"><input type="checkbox" id="dupDates"> <span>Copy the dates</span></label>
+              <label class="tickline"><input type="checkbox" id="dupPeople"> <span>Copy the owner and contributors</span></label>
+            </div>
+            <div class="row" id="dupCodeRow">
+              <div class="field">
+                <label class="field-label" for="dupPeriod">Content month</label>
+                <select class="select" id="dupPeriod"></select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="dupWeek">Week</label>
+                <select class="select" id="dupWeek">
+                  <option value="1">Week 1</option>
+                  <option value="2">Week 2</option>
+                  <option value="3">Week 3</option>
+                  <option value="4">Week 4</option>
+                  <option value="5">Week 5</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="dupGo" type="button">Duplicate</button>
+            <button class="btn btn-quiet" id="dupCancel" type="button">Cancel</button>
+          </div>
+          <div class="msg" id="dupMsg"></div>
+        </div>
+      </div>
+
+      <!-- A month of tasks for one client, or this month's recurring tasks.
+           The count is typed, never read off a contract: a quantity nobody
+           confirmed is a quantity nobody planned. Preview shows the codes
+           that would be made and writes nothing. -->
+      <div class="sheet" id="genSheet" hidden>
+        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="genTitle">
+          <div class="sheet-head">
+            <h3 id="genTitle">Generate tasks</h3>
+            <button class="iconbtn" id="genClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="genWhat">What</label>
+                <select class="select" id="genWhat">
+                  <option value="month">A month of tasks for a client</option>
+                  <option value="recur">This month's recurring tasks</option>
+                </select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="genPeriod">Content month</label>
+                <select class="select" id="genPeriod"></select>
+              </div>
+            </div>
+            <div id="genMonthBox">
+              <div class="row">
+                <div class="field">
+                  <label class="field-label" for="genClient">Client</label>
+                  <select class="select" id="genClient"></select>
+                  <label class="tickline"><input type="checkbox" id="genPaused"> <span>Include paused clients</span></label>
+                </div>
+                <div class="field">
+                  <label class="field-label" for="genCount">Number of tasks</label>
+                  <input class="input" id="genCount" type="number" min="1" max="60" step="1" inputmode="numeric" value="8">
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label class="field-label" for="genSpread">Weeks</label>
+                  <select class="select" id="genSpread">
+                    <option value="even">Spread over weeks 1 to 4</option>
+                    <option value="set">Set how many in each week</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row genweeks" id="genWeeksRow" hidden>
+                <div class="field"><label class="field-label" for="genW1">Week 1</label><input class="input" id="genW1" type="number" min="0" max="60" inputmode="numeric" value="0"></div>
+                <div class="field"><label class="field-label" for="genW2">Week 2</label><input class="input" id="genW2" type="number" min="0" max="60" inputmode="numeric" value="0"></div>
+                <div class="field"><label class="field-label" for="genW3">Week 3</label><input class="input" id="genW3" type="number" min="0" max="60" inputmode="numeric" value="0"></div>
+                <div class="field"><label class="field-label" for="genW4">Week 4</label><input class="input" id="genW4" type="number" min="0" max="60" inputmode="numeric" value="0"></div>
+                <div class="field"><label class="field-label" for="genW5">Week 5</label><input class="input" id="genW5" type="number" min="0" max="60" inputmode="numeric" value="0"></div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label class="field-label" for="genType">Task type</label>
+                  <select class="select" id="genType">
+                    <option value="engagement">Engagement</option>
+                    <option value="adhoc">Ad hoc</option>
+                    <option value="goodwill">Goodwill</option>
+                    <option value="special">Special</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label class="field-label" for="genFormat">Deliverable format</label>
+                  <select class="select" id="genFormat">
+                    <option value="">Not set</option>
+                    <option value="ad_campaign">Ad Campaign</option>
+                    <option value="static">Graphic: Static</option>
+                    <option value="gif">Graphic: GIF</option>
+                    <option value="carousel">Graphic: Carousel</option>
+                    <option value="reels_30">Reels: up to 30s</option>
+                    <option value="reels_60">Reels: up to 60s</option>
+                    <option value="reels_120">Reels: up to 120s</option>
+                    <option value="report">Report</option>
+                    <option value="account_mgmt">Account Management</option>
+                    <option value="koc">KOC</option>
+                    <option value="kol">KOL</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label class="field-label" for="genPriority">Priority</label>
+                  <select class="select" id="genPriority">
+                    <option value="1">Urgent</option>
+                    <option value="2">High</option>
+                    <option value="3" selected>Normal</option>
+                    <option value="4">Low</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label class="field-label" for="genComplex">Complexity</label>
+                  <select class="select" id="genComplex">
+                    <option value="simple">Light</option>
+                    <option value="standard" selected>Standard</option>
+                    <option value="complex">Complex</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label class="field-label" for="genOwner">Owner</label>
+                  <select class="select" id="genOwner"></select>
+                </div>
+              </div>
+              <!-- The codes that would be made, from the database's own next
+                 number, so the preview and the run cannot disagree. -->
+              <button class="btn btn-sm" id="genPreview" type="button">Preview the codes</button>
+              <p class="hint genout" id="genOut" hidden></p>
+            </div>
+            <div id="genRecurBox" hidden>
+              <p class="hint">Every active repeat rule is run once for the month. A task already made for a date is not made again.</p>
+            </div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="genGo" type="button">Generate</button>
+            <button class="btn btn-quiet" id="genCancel" type="button">Cancel</button>
+          </div>
+          <div class="msg" id="genMsg"></div>
+        </div>
+      </div>
+
+      <!-- The rule that makes a copy of this task on each date. One live rule
+           a task; saving again edits it, and Stop ends it. -->
+      <div class="sheet" id="recSheet" hidden>
+        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="recTitle">
+          <div class="sheet-head">
+            <h3 id="recTitle">Repeat</h3>
+            <button class="iconbtn" id="recClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <p class="hint" id="recWhat"></p>
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="recFreq">How often</label>
+                <select class="select" id="recFreq">
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly" selected>Monthly</option>
+                  <option value="custom">Every so many days</option>
+                </select>
+              </div>
+              <div class="field" id="recDayField">
+                <label class="field-label" for="recDay">Day of the month</label>
+                <input class="input" id="recDay" type="number" min="1" max="28" inputmode="numeric">
+              </div>
+              <div class="field" id="recIntervalField" hidden>
+                <label class="field-label" for="recInterval">Every</label>
+                <input class="input" id="recInterval" type="number" min="1" max="365" inputmode="numeric" placeholder="Days">
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="recEnds">Ends on</label>
+                <input class="input" id="recEnds" type="date">
+              </div>
+              <div class="field">
+                <label class="field-label" for="recMax">Or after this many</label>
+                <input class="input" id="recMax" type="number" min="1" max="500" inputmode="numeric" placeholder="No limit">
+              </div>
+              <div class="field">
+                <label class="field-label" for="recWeek">Week in the code</label>
+                <select class="select" id="recWeek">
+                  <option value="">From the date</option>
+                  <option value="1">Week 1</option>
+                  <option value="2">Week 2</option>
+                  <option value="3">Week 3</option>
+                  <option value="4">Week 4</option>
+                  <option value="5">Week 5</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="recGo" type="button">Save</button>
+            <button class="btn btn-warn" id="recStop" type="button" hidden>Stop repeating</button>
+            <button class="btn btn-quiet" id="recCancel" type="button">Cancel</button>
+          </div>
+          <div class="msg" id="recMsg"></div>
+        </div>
+      </div>
       <!-- What a task needs to exist: whose it is, what it is, and when it is
            owed. Everything else the template seeds and the record edits. -->
       <div class="sheet" id="taskSheet" hidden>
@@ -1993,83 +2276,282 @@
             </button>
           </div>
           <div class="sheet-body">
+            <!-- Whose the task is, checked once at creation and never again:
+                 a client that later becomes a past client keeps its tasks.
+                 Client offers the clients engaged now, Lead the records that
+                 have not yet become one, Internal nobody. -->
             <div class="row">
               <div class="field">
                 <label class="field-label" for="ntScope">Scope</label>
                 <select class="select" id="ntScope">
-                  <option value="client">For a client</option>
+                  <option value="client">Client</option>
+                  <option value="lead">Lead</option>
                   <option value="internal">Internal</option>
                 </select>
               </div>
               <div class="field" id="ntClientField">
-                <label class="field-label" for="ntClient">Client</label>
+                <label class="field-label" for="ntClient" id="ntClientLabel">Client</label>
                 <select class="select" id="ntClient"></select>
+                <!-- A paused client is still a client and is offered on request,
+                     never by default: the list is the working book of business.
+                     The tick sits inside the client's own field, under the list
+                     it widens, so it is beside that list at every width. -->
+                <label class="tickline" id="ntPausedWrap"><input type="checkbox" id="ntPaused">
+                  <span>Include paused clients</span></label>
+              </div>
+              <div class="field">
+                <label class="field-label" for="ntType">Task type</label>
+                <select class="select" id="ntType">
+                  <option value="engagement">Engagement</option>
+                  <option value="adhoc">Ad hoc</option>
+                  <option value="goodwill">Goodwill</option>
+                  <option value="special">Special</option>
+                </select>
+              </div>
+            </div>
+            <!-- The name. The code is the database's (content month, planned
+                 week, the client's running number for the month) and is
+                 generated on save; what is typed here is the description
+                 after it, which stays editable and may be left blank. The
+                 line under the field shows what the name will read as. -->
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="ntDesc">Content description</label>
+                <input class="input" id="ntDesc" placeholder="Content Post" autocomplete="off">
+                <p class="hint" id="ntCodeHint" hidden></p>
               </div>
             </div>
             <div class="row">
               <div class="field">
-                <label class="field-label" for="ntTemplate">Template</label>
-                <select class="select" id="ntTemplate"></select>
+                <label class="field-label" for="ntFormat">Deliverable format</label>
+                <select class="select" id="ntFormat">
+                  <option value="">Not set</option>
+                  <option value="ad_campaign">Ad Campaign</option>
+                  <option value="static">Graphic: Static</option>
+                  <option value="gif">Graphic: GIF</option>
+                  <option value="carousel">Graphic: Carousel</option>
+                  <option value="reels_30">Reels: up to 30s</option>
+                  <option value="reels_60">Reels: up to 60s</option>
+                  <option value="reels_120">Reels: up to 120s</option>
+                  <option value="report">Report</option>
+                  <option value="account_mgmt">Account Management</option>
+                  <option value="koc">KOC</option>
+                  <option value="kol">KOL</option>
+                  <option value="other">Other</option>
+                </select>
               </div>
               <div class="field">
                 <label class="field-label" for="ntOwner">Owner</label>
                 <select class="select" id="ntOwner"></select>
               </div>
             </div>
+            <!-- Three dates, three meanings. The scheduled publish date is
+                 tentative until the content meeting and is never required;
+                 the first draft date is the team's own; the final due date is
+                 the commitment, and the draft lands before it. -->
             <div class="row">
               <div class="field">
-                <label class="field-label" for="ntTitle">Title</label>
-                <input class="input" id="ntTitle" placeholder="October grid, post 3" autocomplete="off">
-              </div>
-            </div>
-            <div class="row">
-              <div class="field">
-                <label class="field-label" for="ntDesc">Description</label>
-                <textarea class="input" id="ntDesc" rows="2" placeholder="Optional"></textarea>
-              </div>
-            </div>
-            <div class="row">
-              <div class="field">
-                <label class="field-label" for="ntPublish">Publish date</label>
+                <label class="field-label" for="ntPublish">Scheduled publish date</label>
                 <input class="input" id="ntPublish" type="date">
               </div>
               <div class="field">
-                <label class="field-label" for="ntFinal">Final due</label>
+                <label class="field-label" for="ntDraft">First draft date</label>
+                <input class="input" id="ntDraft" type="date">
+              </div>
+              <div class="field">
+                <label class="field-label" for="ntFinal">Final due date</label>
                 <input class="input" id="ntFinal" type="date">
               </div>
+            </div>
+            <!-- The month and the week the code is built from, prefilled from
+                 the publish date and locked once the task exists: a date that
+                 moves later never renames the file. -->
+            <div class="row" id="ntCodeRow">
+              <div class="field">
+                <label class="field-label" for="ntPeriod">Content month</label>
+                <select class="select" id="ntPeriod"></select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="ntWeek">Week</label>
+                <select class="select" id="ntWeek">
+                  <option value="1">Week 1</option>
+                  <option value="2">Week 2</option>
+                  <option value="3">Week 3</option>
+                  <option value="4">Week 4</option>
+                  <option value="5">Week 5</option>
+                </select>
+              </div>
+            </div>
+            <!-- Priority is how soon; complexity is how much. Two questions,
+                 two selects, side by side. -->
+            <div class="row">
               <div class="field">
                 <label class="field-label" for="ntPriority">Priority</label>
                 <select class="select" id="ntPriority">
-                  <option value="1">1 highest</option>
-                  <option value="2">2</option>
-                  <option value="3" selected>3 normal</option>
-                  <option value="4">4</option>
-                  <option value="5">5 lowest</option>
+                  <option value="1">Urgent</option>
+                  <option value="2">High</option>
+                  <option value="3" selected>Normal</option>
+                  <option value="4">Low</option>
                 </select>
               </div>
-              <!-- The template's own default fills this and stays editable,
-                   which is this portal's rule for every catalogue value. It
-                   was on the record and in no form, so nobody could set it. -->
               <div class="field">
                 <label class="field-label" for="ntComplex">Complexity</label>
                 <select class="select" id="ntComplex">
-                  <option value="">From the template</option>
-                  <option value="simple">Simple</option>
-                  <option value="standard">Standard</option>
+                  <option value="simple">Light</option>
+                  <option value="standard" selected>Standard</option>
                   <option value="complex">Complex</option>
                 </select>
               </div>
             </div>
-            <!-- The template's own offsets fill the dates from the publish
-                 date where one is given, so a person types the date the
-                 client knows and not the three the team works back to. -->
-            <p class="hint" id="ntHint"></p>
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="ntBrief">Brief</label>
+                <textarea class="input" id="ntBrief" rows="2" placeholder="Optional"></textarea>
+              </div>
+            </div>
           </div>
           <div class="sheet-foot">
             <button class="btn btn-primary" id="ntGo" type="button">Create task</button>
             <button class="btn btn-quiet" id="ntCancel" type="button">Cancel</button>
           </div>
           <div class="msg" id="ntMsg"></div>
+        </div>
+      </div>
+
+      <!-- The month's engagement: who manages it, how many pieces were
+           planned, and where the files live. -->
+      <div class="sheet" id="engSheet" hidden>
+        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="engTitle">
+          <div class="sheet-head">
+            <h3 id="engTitle">Engagement</h3>
+            <button class="iconbtn" id="engClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="engPeriod">Content month</label>
+                <select class="select" id="engPeriod"></select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="engManager">Manager</label>
+                <select class="select" id="engManager"></select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="engPlanned">Pieces planned</label>
+                <input class="input" id="engPlanned" type="number" min="0" max="200" inputmode="numeric">
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="engDrive">Drive folder link</label>
+                <input class="input" id="engDrive" type="url" placeholder="https://drive.google.com/drive/folders/…" autocomplete="off">
+              </div>
+            </div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="engGo" type="button">Save</button>
+            <button class="btn btn-quiet" id="engCancel" type="button">Cancel</button>
+          </div>
+          <div class="msg" id="engMsg"></div>
+        </div>
+      </div>
+
+      <!-- The content meeting. A date today or later when it is first put
+           in the diary; once held it stays as it was. Not applicable is its
+           own answer, because a month with no meeting is still a month. -->
+      <div class="sheet" id="meetSheet" hidden>
+        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="meetTitle">
+          <div class="sheet-head">
+            <h3 id="meetTitle">Content meeting</h3>
+            <button class="iconbtn" id="meetClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="meetDate">Date</label>
+                <input class="input" id="meetDate" type="date">
+              </div>
+              <div class="field">
+                <label class="field-label" for="meetTime">Time</label>
+                <input class="input" id="meetTime" type="time">
+              </div>
+              <div class="field">
+                <label class="field-label" for="meetChannel">Where</label>
+                <select class="select" id="meetChannel">
+                  <option value="onsite">On site</option>
+                  <option value="google_meet">Google Meet</option>
+                  <option value="zoom">Zoom</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="meetOwner">Led by</label>
+                <select class="select" id="meetOwner"></select>
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="meetNote">Notes</label>
+                <textarea class="input" id="meetNote" rows="3" placeholder="Optional"></textarea>
+              </div>
+            </div>
+            <label class="tickline"><input type="checkbox" id="meetNa"> <span>No meeting this month</span></label>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="meetGo" type="button">Save</button>
+            <button class="btn btn-quiet" id="meetCancel" type="button">Cancel</button>
+          </div>
+          <div class="msg" id="meetMsg"></div>
+        </div>
+      </div>
+
+      <!-- Handing the work on: the next stage and the next person in one
+           act, recorded together. A step the deliverable does not need may
+           be skipped here, forward along the line, with a reason on the
+           record. -->
+      <div class="sheet" id="handSheet" hidden>
+        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="handTitle">
+          <div class="sheet-head">
+            <h3 id="handTitle">Hand over</h3>
+            <button class="iconbtn" id="handClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="handStage">Move to</label>
+                <select class="select" id="handStage"></select>
+              </div>
+              <div class="field">
+                <label class="field-label" for="handTo">Hand to</label>
+                <select class="select" id="handTo"></select>
+              </div>
+            </div>
+            <div class="row" id="handSkipRow" hidden>
+              <div class="field">
+                <label class="field-label" for="handSkip">Why the steps between are skipped</label>
+                <input class="input" id="handSkip" autocomplete="off" placeholder="Required when a step is passed over">
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="handNote">Note for the next person</label>
+                <textarea class="input" id="handNote" rows="2" placeholder="Optional"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="handGo" type="button">Hand over</button>
+            <button class="btn btn-quiet" id="handCancel" type="button">Cancel</button>
+          </div>
+          <div class="msg" id="handMsg"></div>
         </div>
       </div>
     </div>
@@ -2686,13 +3168,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260921i"></script>
-<script src="/js/documents.js?v=20260921i"></script>
-<script src="/js/letters.js?v=20260921i"></script>
-<script src="/js/register.js?v=20260921i"></script>
-<script src="/js/crm.js?v=20260921i"></script>
-<script src="/js/team.js?v=20260921i"></script>
-<script src="/js/campaigns.js?v=20260921i"></script>
-<script src="/js/ops.js?v=20260921i"></script>
+<script src="/js/admin.js?v=20260923a"></script>
+<script src="/js/documents.js?v=20260923a"></script>
+<script src="/js/letters.js?v=20260923a"></script>
+<script src="/js/register.js?v=20260923a"></script>
+<script src="/js/crm.js?v=20260923a"></script>
+<script src="/js/team.js?v=20260923a"></script>
+<script src="/js/campaigns.js?v=20260923a"></script>
+<script src="/js/ops.js?v=20260923a"></script>
 </body>
 </html>

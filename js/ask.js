@@ -70,7 +70,9 @@
 
     function save() {
       var v = field.value.trim();
-      if (!v) { field.focus(); return; }
+      /* A name cannot be blank; a description under a code can, because the
+         code is then the name. The caller says which. */
+      if (!v && !opts.allowEmpty) { field.focus(); return; }
       if (v === was) { shut(); return; }
       shut();
       opts.save(v);

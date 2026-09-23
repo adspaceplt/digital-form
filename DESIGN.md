@@ -773,6 +773,72 @@ so the column under the finger can be found at all.
 
 **A stored key is not a word on a screen.** The task record printed `reel` under a template named Reel and `simple` under a field offering Simple, so the record contradicted the form that filled it one tab along. The key stays what it is and the words a person reads are named once, with sentence case as the fallback so a value somebody adds next year is still a word rather than a slug.
 
+**A task is named by a code and a description, and the two are different
+kinds of fact.** The code (`2609W401`: the content month, the planned week,
+the client's running number for the month) is the database's, generated
+once and never rewritten, because it is a label the team files by and a
+label that follows a date is a label nobody can find. The description is the
+team's, edited where it sits in the record head with the pen becoming the
+tick, and may be blank under a code because the code is then the name. The
+line the two make is the file name a saved export takes, so it copies on a
+press. What is deliberately not done is renaming the serial: `T1008` is the
+identity an invoice, a message and a spreadsheet row already quote, and the
+code is the name somebody reads, so the record carries both, the serial in
+the token face above the name. A number is not derived from the date on the
+sheet either: the sheet says what the name will read as (`2610W2nn`) and
+the number is given on save, because two browsers guessing the next one is
+how two tasks share a code.
+
+**Whose the work is, is decided once.** A task made for a client is a
+client's task whatever the client later becomes; a task made for a lead is a
+lead's. So the scope is checked at creation against the record's stage and
+never again, and the sheet offers only the records the scope can take:
+Client offers the clients engaged now, with paused ones on request, Lead
+the records that have not yet become one. The database asks the same
+question on save, so the list on the sheet is a courtesy and not the gate.
+
+**A month is a record, and the pieces made in it hang off it.** The
+engagement is one client's work for one month: who manages it, how many
+pieces were planned, where the files live, the content meeting, and the
+thirteen questions that say whether the month is ready. It lives on the
+client record, because that is where the month is planned, and the task
+rail names it because that is where the month is worked. Production waits
+on two facts about it (planning complete, the meeting held or marked not
+applicable), and both are the database's to check: a status a page could
+set is a status a page could set wrongly. The thirteen questions are one
+row each, a state and an owner, and one row repaints on its own answer so a
+person working down the list keeps their place.
+
+**Handing work on is one act, not two.** A stage move and an owner change
+made separately leave a gap in which the task is at the next stage and still
+somebody else's; made together they are one event that says who took it and
+at which step, and the person is told. The sheet that does it also lets a
+step the deliverable does not need be skipped, forward along the line, with
+a reason written against every step passed over, because a workflow is the
+ordinary path and not the only one, and a skip with no reason is a skip
+nobody can explain later.
+
+**A figure the rate card prefills is the person's to change.** The term
+adjustment is a percentage now, prefilled from the card by the term's range
+and stored on the line, because a client negotiates a term and the number on
+the letter is the number that was agreed, not the card's. The field follows
+the card only while it still holds the card's own figure for the term it was
+filled for: a typed 20% stays when the term is corrected from three months
+to two, and the card's 25 becomes the card's −5 when three becomes twelve.
+The stored value decides how the line is read and none of its shapes is a
+default: a number is the percentage, zero is a term the person chose to
+leave unadjusted, and null is a line from before the percentage existed,
+priced by the older factor table so the letter it is on redraws at the
+figure it printed.
+
+**A page's bar runs to its edges; a page's text does not.** On a client's
+page the bar and the foot were capped at the content's 1240px and centred,
+so on a wide screen the mark and the actions stopped short of the edges with
+nothing beside them. A bar has no reading width, so it takes the screen's
+and its contents sit on the page gutter at every width; the content keeps its
+cap, because a column of text has a width it reads at. The console is
+untouched: its bar was never the page's.
+
 **The control that explains a thing comes from that control, and never opens by itself.** The line saying what a section is for was a block under the command bar, so it could only be reached from that route's directory: open a client, a campaign or a task and the bar is off the screen, and the one control that explains the section did nothing at all. It is a panel hung off the section's name now, which works in every state of every route. What it must not do is open on arrival: a surface over the page lands on the command bar, which is the row somebody came to use, and on a phone it intercepts the press. While a route is new the title's glyph carries the action colour instead, so the invitation is on the control and the screen stays the reader's; after three visits even that retires. And the line is **one sentence**: the first pass ran to two and named the panes inside a record, which explains the product rather than the section.
 
 **A navigation rail is ordered by how often each route is opened, and its two

@@ -142,8 +142,30 @@
     'checklist-incomplete': 'A required checklist item is still open.',
     'reason-required': 'A reason is required.',
     'category-required': 'Say what it is waiting on.',
-    'title-required': 'A title is required.',
+    'title-required': 'A description is required.',
     'client-required': 'A client is required.',
+    'client-not-active': 'That client is not active. Choose an active client, or Lead for one that is not yet.',
+    'not-a-lead': 'That record is already a client. Choose Client instead.',
+    'bad-scope': 'Choose Client, Lead or Internal.',
+    'bad-task-type': 'Choose a task type.',
+    'bad-period': 'The content month is not a month.',
+    'bad-week': 'The week is 1 to 5.',
+    'skip-reason-required': 'Skipping a step needs a reason.',
+    'planning-incomplete': 'Production waits on planning being marked complete on the engagement.',
+    'meeting-required': 'Production waits on the content meeting being held, or marked not applicable.',
+    'needs-final-or-reason': 'Published needs a final link, or a note saying where it went.',
+    'no-such-person': 'That person is not on the team.',
+    'bad-count': 'The number of tasks is 1 to 60.',
+    'bad-weeks': 'Set the weeks as up to five figures.',
+    'weeks-do-not-add-up': 'The weeks do not add up to the number of tasks.',
+    'already-generated': 'This month was already generated from this sheet. Open it again to generate more.',
+    'bad-frequency': 'Choose weekly, monthly or every so many days.',
+    'interval-required': 'Say how many days apart.',
+    'bad-state': 'That is not a state this list offers.',
+    'no-such-check': 'That check is not on this engagement.',
+    'meeting-in-past': 'A meeting is put in the diary for today or later.',
+    'bad-channel': 'Choose where the meeting is held.',
+    'checklist-open': 'Ready waits on every check being Ready or Not applicable.',
     'workflow-required': 'No workflow is set up. Ask an admin.',
     'bad-kind': 'That is not a kind of link this portal keeps.',
     'url-required': 'An address is required.',
@@ -234,13 +256,46 @@
      what it is; what a person reads is named here, and anything a workflow of
      somebody's own adds falls through to sentence case rather than to the raw
      key. */
+  /* The deliverable format, in the words the rate card sells it by. The older
+     keys stay named, because a task created before the list changed still
+     carries one. */
   var DELIVER_WORD = {
-    static: 'Static post', carousel: 'Carousel', reel: 'Reel', video: 'Video',
-    story: 'Story', report: 'Report', copywriting: 'Copywriting',
-    design: 'Design', adhoc: 'Ad-hoc request'
+    ad_campaign: 'Ad Campaign', static: 'Graphic: Static', gif: 'Graphic: GIF',
+    carousel: 'Graphic: Carousel', reels_30: 'Reels: up to 30s',
+    reels_60: 'Reels: up to 60s', reels_120: 'Reels: up to 120s', report: 'Report',
+    account_mgmt: 'Account Management', koc: 'KOC', kol: 'KOL', other: 'Other',
+    reel: 'Reel', video: 'Video', story: 'Story', copywriting: 'Copywriting',
+    design: 'Design', adhoc: 'Ad-hoc request', graphic: 'Graphic'
   };
-  var COMPLEX_WORD = { simple: 'Simple', standard: 'Standard', complex: 'Complex' };
-  var PRIORITY_WORD = { '1': '1 highest', '2': '2', '3': '3 normal', '4': '4', '5': '5 lowest' };
+  /* What a task is for: engagement work is what a contract pays for, ad hoc
+     is asked for outside it, goodwill is given, special is anything else the
+     team names. */
+  var TASK_TYPE_WORD = { engagement: 'Engagement', adhoc: 'Ad hoc', goodwill: 'Goodwill', special: 'Special' };
+  /* `simple` is the stored key and Light is the word the team uses for it. */
+  var COMPLEX_WORD = { simple: 'Light', standard: 'Standard', complex: 'Complex' };
+  /* Priority is how soon, on four words; the fifth level a row written before
+     this list can still carry reads as Low. */
+  var PRIORITY_WORD = { '1': 'Urgent', '2': 'High', '3': 'Normal', '4': 'Low', '5': 'Low' };
+  function formatWord(t) {
+    if (!t || !t.deliverable_type) return '';
+    return DELIVER_WORD[t.deliverable_type] || sentence(t.deliverable_type);
+  }
+  /* Whose it is, as the row and the head say it: the client's name, the
+     lead's name marked as a lead, or Internal. */
+  function whoseWord(t) {
+    var name = t.clients && t.clients.name;
+    if (t.scope === 'internal') return 'Internal';
+    if (t.scope === 'lead') return name ? 'Lead · ' + name : 'Lead';
+    return name || '';
+  }
+  /* Urgent and High carry a chip because they are the exception; Normal and
+     Low are the ordinary case and say nothing, which is the accent rule. */
+  function priorityChip(t) {
+    var p = Number(t.priority_level);
+    if (p === 1) return '<span class="tone is-warn task-pri">Urgent</span>';
+    if (p === 2) return '<span class="tone task-pri">High</span>';
+    return '';
+  }
   function sentence(s) {
     s = String(s || '').replace(/_/g, ' ');
     return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
@@ -271,7 +326,9 @@
       db.from('ops_workflow_stages').select('*').order('position'),
       db.from('ops_task_templates').select('*').eq('active', true).order('name'),
       db.from('team_members').select('id, name, email, active, capacity_minutes_week').eq('active', true).order('name'),
-      db.from('clients').select('id, name').order('name')
+      /* The stage decides which list a client is offered on: Client is the
+         clients engaged now, Lead the records not yet one. */
+      db.from('clients').select('id, name, stage').order('name')
     ]).then(function (r) {
       state.workflows = (r[0] && r[0].data) || [];
       state.stages = {};
@@ -348,7 +405,12 @@
           });
         state.owners = {};
         state.ownerIds = {};
+        state.onTask = {};
         ((r[3] && r[3].data) || []).forEach(function (a) {
+          /* Following is being on the task in any other capacity than owning
+             it: a reviewer or a contributor is somebody the task's changes
+             concern without the task being theirs to carry. */
+          (state.onTask[a.task_id] = state.onTask[a.task_id] || {})[a.team_member_id] = a.responsibility;
           if (a.responsibility !== 'owner') return;
           state.owners[a.task_id] = (a.team_members && a.team_members.name) || '';
           state.ownerIds[a.task_id] = a.team_member_id;
@@ -468,29 +530,64 @@
     if (f === 'open') return !isFinished(t);
     if (f === 'done') return isFinished(t);
     if (f === 'active') return Boolean(s && s.is_active_work);
-    if (f === 'review') return Boolean(s && s.is_review);
-    if (f === 'waiting') return Boolean(s && s.is_waiting) || t.stage_key === 'blocked';
+    /* Owed within the week, and not already over: overdue is its own answer. */
+    if (f === 'soon') {
+      var n = daysAway(t.current_final_due_at);
+      return !isFinished(t) && n !== null && n >= 0 && n <= 7;
+    }
+    /* The two reviews are two questions, keyed on the stage group the
+       workflow already carries and never on a stage key, because the two
+       seeded workflows name the same stage differently. */
+    if (f === 'internal_review') return Boolean(s && s.stage_group === 'internal_review');
+    if (f === 'client_review') return Boolean(s && s.stage_group === 'client_review');
+    /* Waiting on the client: the work is with them for a decision, or is
+       held because they have not answered. */
+    if (f === 'waiting_client') {
+      return Boolean(s && s.stage_group === 'client_review') ||
+        (t.stage_key === 'blocked' && t.blocked_category === 'client');
+    }
+    if (f === 'waiting') {
+      return Boolean(s && (s.stage_group === 'waiting' || s.stage_group === 'kiv')) ||
+        t.stage_key === 'blocked';
+    }
     /* Every task past its final date and still short of client review. It cuts
        across every stage, so it is a filter and never a band. */
     if (f === 'late') return isLate(t);
     return true;
   }
   function inScope(t) {
-    if (state.scope !== 'mine') return true;
+    if (state.scope === 'all') return true;
     var me = bridge.me && bridge.me();
     if (!me || !me.id) return true;
-    /* The whole team's queue arrives where `ops.all` is granted, so "my work"
-       is a filter over what came back and never a second read. Keyed on the
-       id and not the name: two colleagues can share a first name, and a rename
-       would quietly empty somebody's queue. */
+    /* The whole team's queue arrives where `ops.all` is granted, so every
+       view here is a filter over what came back and never a second read.
+       Keyed on the id and not the name: two colleagues can share a first
+       name, and a rename would quietly empty somebody's queue. */
+    if (state.scope === 'created') return t.created_by === me.id;
+    /* Following is being on the task as its reviewer or a contributor: the
+       work is not yours to carry, and its changes still concern you. */
+    if (state.scope === 'following') {
+      var role = state.onTask && state.onTask[t.id] && state.onTask[t.id][me.id];
+      return Boolean(role && role !== 'owner');
+    }
     return state.ownerIds[t.id] === me.id;
   }
   function matches(t) {
     if (!state.find) return true;
-    var hay = [t.title, t.description, t.remarks, t.deliverable_type,
+    var hay = [t.title, t.code, t.content_desc, t.description, t.remarks,
+               formatWord(t), TASK_TYPE_WORD[t.task_type] || t.task_type,
                (t.clients && t.clients.name), state.owners[t.id],
                'T' + t.task_no].join(' ').toLowerCase();
     return hay.indexOf(state.find) > -1;
+  }
+  /* Inside a band the rows read by how soon, then by when: an Urgent task
+     owed on Friday sits above a Normal one owed on Thursday, because the band
+     has already said which week it is. */
+  function byPriority(a, b) {
+    var pa = Number(a.priority_level) || 3, pb = Number(b.priority_level) || 3;
+    if (pa !== pb) return pa - pb;
+    var da = a.current_final_due_at || '9999', dbb = b.current_final_due_at || '9999';
+    return da < dbb ? -1 : da > dbb ? 1 : 0;
   }
 
   /* Which container the view draws in. The other two are hidden, and the
@@ -577,8 +674,8 @@
         shut: !filtered && GRP.shut('work', state.group + ':' + g.key,
                                     shutByDefault(g), g.rows.length === rows.length),
         table: function () {
-          var table = GRP.table('svc-row task-row', ['Task', 'Stage', 'Owner', 'Due']);
-          GRP.more(table, g.rows, 30, 'tasks', rowOf);
+          var table = GRP.table('svc-row task-row', ['Task', 'Stage', 'Owner', 'Dates']);
+          GRP.more(table, g.rows.slice().sort(byPriority), 30, 'tasks', rowOf);
           return table;
         }
       }));
@@ -598,7 +695,10 @@
   function boardWorkflow(all) {
     var counts = {};
     all.forEach(function (t) { counts[t.workflow_id] = (counts[t.workflow_id] || 0) + 1; });
-    var wfs = state.workflows.filter(function (w) { return w.active !== false; });
+    /* A retired workflow is still the workflow of every task already on it,
+       so it is offered while any of them is in view; a workflow with nothing
+       on it is offered only while it is live. */
+    var wfs = state.workflows.filter(function (w) { return w.active !== false || counts[w.id]; });
     if (!state.wf || !wfs.some(function (w) { return w.id === state.wf; })) {
       var best = wfs.slice().sort(function (a, b) { return (counts[b.id] || 0) - (counts[a.id] || 0); })[0];
       state.wf = best ? best.id : null;
@@ -1252,7 +1352,10 @@
      name cell: the widest cell, full row height, where the eye already is.
      The chevron went with the button, because a mark that is no longer a
      target is furniture. */
-  function rowOf(t) {
+  function rowOf(t, elsewhere) {
+    /* The same row on a client record: the owner comes from that pane's own
+       read, and opening the task is a move to My Work. */
+    var owners = elsewhere ? cw.owners : state.owners;
     var el = document.createElement('div');
     el.className = 'svc-row task-row' + (isFinished(t) ? ' is-off' : '');
     el.setAttribute('data-task', t.id);
@@ -1264,16 +1367,30 @@
        word in the cell still states the days over either way, because that
        is a fact about the date and not a judgement on the task. */
     var over = isLate(t);
-    var meta = [(t.clients && t.clients.name) || (t.scope === 'internal' ? 'Internal' : ''),
-                DELIVER_WORD[t.deliverable_type] || sentence(t.deliverable_type)]
+    /* Whose it is, what kind of work, what shape: the three facts a queue is
+       scanned by after the name. Priority rides the meta line as a chip only
+       where it is the exception. */
+    var meta = [whoseWord(t), TASK_TYPE_WORD[t.task_type] || '', formatWord(t)]
       .filter(Boolean).join(' · ');
+    /* The final date leads the cell because it is the commitment; the draft
+       and the scheduled publish date ride under it in the small face, so the
+       three dates the brief asks for are one column and not three. */
+    var under = [
+      t.current_first_draft_due_at ? 'Draft ' + shortDate(t.current_first_draft_due_at) : '',
+      t.publish_at ? 'Publish ' + shortDate(t.publish_at) : ''
+    ].filter(Boolean).join(' · ');
     el.innerHTML =
       '<button class="task-open" type="button"><b>' + esc(t.title) + '</b>' +
-        '<small>' + esc(meta) + '</small></button>' +
+        /* The chip leads the line, so on a phone the ellipsis takes the
+           format and never the one word that is the exception. */
+        '<small>' + (priorityChip(t) ? priorityChip(t) + ' ' : '') + esc(meta) + '</small></button>' +
       '<span class="task-stage">' + stageCell(t) + '</span>' +
-      '<span class="task-owner">' + (state.owners[t.id] ? esc(state.owners[t.id]) : '<span class="mute">—</span>') + '</span>' +
-      '<span class="task-due' + (over ? ' is-over' : '') + '">' + esc(dueWord(t.current_final_due_at)) + '</span>';
-    el.querySelector('.task-open').addEventListener('click', function () { openTask(t.id, true); });
+      '<span class="task-owner">' + (owners[t.id] ? esc(owners[t.id]) : '<span class="mute">—</span>') + '</span>' +
+      '<span class="task-due' + (over ? ' is-over' : '') + '"><b>' + esc(dueWord(t.current_final_due_at)) + '</b>' +
+        (under ? '<small>' + esc(under) + '</small>' : '') + '</span>';
+    el.querySelector('.task-open').addEventListener('click', function () {
+      if (elsewhere) openTaskElsewhere(t.id); else openTask(t.id, true);
+    });
     var sel = el.querySelector('.state-select');
     if (sel) sel.addEventListener('change', function () { rowMove(t, el, sel); });
     return el;
@@ -1380,7 +1497,7 @@
      disagree with it. */
   function readTask(id, after) {
     Promise.all([
-      db.from('ops_tasks').select('*, clients(name)').eq('id', id).single(),
+      db.from('ops_tasks').select('*, clients(name, slug)').eq('id', id).single(),
       db.from('ops_task_checklist_items').select('*').eq('task_id', id).order('position'),
       db.from('ops_task_links').select('*').eq('task_id', id).order('created_at'),
       db.from('ops_work_sessions')
@@ -1395,7 +1512,10 @@
          it is part of where the task stands and a second round trip would
          paint the rail twice. A refused read leaves no block rather than
          failing the record: the dates themselves are still true. */
-      db.from('ops_due_requests').select('*').eq('task_id', id).eq('state', 'asked')
+      db.from('ops_due_requests').select('*').eq('task_id', id).eq('state', 'asked'),
+      /* The live repeat rule set on this task, if any: the rail says so and
+         the Repeat sheet opens on it. A refused read leaves no rule. */
+      db.from('ops_recurring_rules').select('*').eq('source_task_id', id).eq('active', true)
     ]).then(function (r) {
       /* Who owns it is part of the record, so a refused read of the
          assignments is named rather than drawn as an unowned task. */
@@ -1406,6 +1526,7 @@
       }
       var t = r[0].data;
       state.due = (((r[7] && r[7].data) || [])[0]) || null;
+      state.rule = (((r[8] && r[8].data) || [])[0]) || null;
       t.assignees = ((r[5] && r[5].data) || []).map(function (a) {
         return { team_member_id: a.team_member_id, responsibility: a.responsibility,
                  name: (a.team_members && a.team_members.name) || '' };
@@ -1418,7 +1539,15 @@
         events: (r[4] && r[4].data) || [],
         video: (r[6] && r[6].data && r[6].data[0]) || null
       };
-      loadSession(function () { paintTask(); if (after) after(); });
+      /* The month's engagement, where the task has one: production waits on
+         it, so the rail says where it stands. Read after the task, because
+         the task is what names it; a refused read leaves no block. */
+      var go = function () { loadSession(function () { paintTask(); if (after) after(); }); };
+      if (!t.engagement_id) { state.eng = null; go(); return; }
+      db.from('ops_engagements').select('*').eq('id', t.engagement_id).then(function (q) {
+        state.eng = (q && !q.error && q.data && q.data[0]) || null;
+        go();
+      }, function () { state.eng = null; go(); });
     }, function (e) {
       msg('taskMsg', (e && e.message) || String(e), 'err');
     });
@@ -1457,13 +1586,31 @@
       mark.textContent = 'T' + t.task_no;
       mark.setAttribute('aria-label', 'Copy T' + t.task_no);
     }
-    $('taskName').textContent = t.title || 'Untitled task';
-    var who = state.owners[t.id] ||
-      (t.assignees || []).filter(function (a) { return a.responsibility === 'owner'; })
-        .map(function (a) { return a.name; })[0] || '';
+    /* The name is the code and the description. The code is the database's
+       and is drawn in the token face; the description is the team's, edited
+       where it sits, and may be blank on a task that carries a code. A task
+       from before the codes carries its old title as the description. */
+    var code = $('taskCode'), desc = $('taskDesc');
+    if (code) {
+      code.textContent = t.code || '';
+      code.hidden = !t.code;
+    }
+    if (desc) {
+      var d = t.code ? (t.content_desc || '') : (t.content_desc || t.title || 'Untitled task');
+      desc.textContent = d;
+      desc.classList.toggle('is-blank', !d);
+      if (!d) desc.textContent = 'No description';
+    }
+    var pen = $('taskDescEdit');
+    if (pen) pen.hidden = !may('ops', 'work') || isFinished(t);
+    /* The record's own read of who owns it comes first: the queue's copy is
+       from an earlier read and a hand-over has just changed it. */
+    var who = (t.assignees || []).filter(function (a) { return a.responsibility === 'owner'; })
+        .map(function (a) { return a.name; })[0] || state.owners[t.id] || '';
     $('taskMeta').textContent = [
-      (t.clients && t.clients.name) || (t.scope === 'internal' ? 'Internal' : ''),
-      DELIVER_WORD[t.deliverable_type] || sentence(t.deliverable_type),
+      whoseWord(t),
+      TASK_TYPE_WORD[t.task_type] || '',
+      formatWord(t),
       who ? 'Owner ' + who : ''
     ].filter(Boolean).join(' · ');
     var chip = $('taskStage');
@@ -1831,7 +1978,7 @@
   // ---- Activity ------------------------------------------------------------
   var EVENT_WORD = {
     task_created: 'Created', stage_changed: 'Stage moved', due_changed: 'Date moved',
-    assignment_changed: 'Owner changed', contributor_changed: 'Contributors changed',
+    assignment_changed: 'Owner changed', handover: 'Handed on', contributor_changed: 'Contributors changed',
     reviewer_changed: 'Reviewer changed', blocked: 'Blocked', unblocked: 'Unblocked',
     work_started: 'Work started', work_stopped: 'Work stopped', work_corrected: 'Hours corrected',
     revision_requested: 'Revision requested', revision_completed: 'Revision done',
@@ -1843,7 +1990,9 @@
        is still `due_changed`, so a report reads replanning the same way
        whether or not an approval was needed. */
     due_requested: 'Extension requested', due_approved: 'Extension approved',
-    due_declined: 'Extension declined'
+    due_declined: 'Extension declined',
+    renamed: 'Description changed', stage_skipped: 'Step skipped',
+    recurrence_set: 'Recurrence set', recurrence_off: 'Recurrence stopped'
   };
   /* The reason a date moved is a stored key and the sheet offers a word for
      it; the record printed the key. Named once, with sentence case as the
@@ -1872,7 +2021,22 @@
         (d.reason ? ' · ' + reasonWord(d.reason) : '');
     }
     if (e.event_type === 'stage_changed') {
-      return (from.stage_key ? labelForKey(from.stage_key) + ' to ' : '') + labelForKey(to.stage_key);
+      return (from.stage_key ? labelForKey(from.stage_key) + ' to ' : '') + labelForKey(to.stage_key) +
+        (d.skip_reason ? ' · skipped: ' + d.skip_reason : '');
+    }
+    /* Who skipped what and why is written against every stage passed over. */
+    if (e.event_type === 'stage_skipped') {
+      return labelForKey(from.stage_key) + (d.reason ? ' · ' + d.reason : '');
+    }
+    if (e.event_type === 'renamed') {
+      return (from.content_desc ? '"' + from.content_desc + '" to ' : '') + '"' + (to.content_desc || '') + '"';
+    }
+    /* A hand-on is an owner change made on a stage move, and reads as one:
+       who to, at which step. */
+    if (e.event_type === 'assignment_changed') {
+      var who = nameOf(to.owner_id) || 'Nobody';
+      return (d.handover ? 'Handed to ' + who + ' at ' + labelForKey(d.stage_key)
+                         : 'To ' + who);
     }
     if (e.event_type === 'due_changed') {
       return (to.kind === 'final' ? 'Final due' : 'First draft due') + ' ' +
@@ -1922,6 +2086,7 @@
   function paintRail(t) {
     paintStageBox(t);
     paintTimer(t);
+    paintEngBlock(t);
 
     var dates = $('taskDates');
     /* Only a commitment can be overdue. A publish date that has passed is a
@@ -1935,8 +2100,9 @@
        they exist. */
     var rows = [
       ['First draft', t.current_first_draft_due_at, true, t.original_first_draft_due_at],
-      ['Final', t.current_final_due_at, true, t.original_final_due_at],
-      ['Publish', t.publish_at, false, null],
+      ['Final due', t.current_final_due_at, true, t.original_final_due_at],
+      /* Tentative until the content meeting, so it is named for what it is. */
+      ['Scheduled publish', t.publish_at, false, null],
       ['Draft in', t.first_draft_submitted_at, false, null],
       ['Delivered', t.delivered_at, false, null],
       ['Completed', t.completed_at, false, null]
@@ -1971,12 +2137,21 @@
     }).join('');
 
     var wf = state.workflows.filter(function (w) { return w.id === t.workflow_id; })[0];
+    /* The content month and week the code was built from are stated once
+       here, because the code says them in four characters and a reader
+       should not have to decode it. */
     $('taskFacts').innerHTML = [
+      ['Scope', t.scope === 'internal' ? 'Internal' : t.scope === 'lead' ? 'Lead' : 'Client'],
+      ['Type', TASK_TYPE_WORD[t.task_type] || sentence(t.task_type)],
+      ['Format', formatWord(t)],
+      ['Content month', t.code_period ? monthWord(t.code_period) + (t.code_week ? ' · Week ' + t.code_week : '') : ''],
       ['Workflow', (wf && wf.name) || ''],
-      ['Deliverable', DELIVER_WORD[t.deliverable_type] || sentence(t.deliverable_type)],
       ['Languages', (t.language_codes || []).join(', ')],
       ['Priority', PRIORITY_WORD[String(t.priority_level)] || String(t.priority_level)],
       ['Complexity', COMPLEX_WORD[t.complexity] || sentence(t.complexity)],
+      ['Created by', nameOf(t.created_by)],
+      ['Manager', nameOf(t.manager_id)],
+      ['Repeats', ruleWord(state.rule)],
       ['Added', niceDate(t.created_at)]
     ].filter(function (p) { return p[1]; }).map(function (p) {
       return '<div><dt>' + esc(p[0]) + '</dt><dd>' + esc(p[1]) + '</dd></div>';
@@ -2117,6 +2292,9 @@
       (can ? '<div class="railmoves">' +
                '<button class="btn btn-go railmove" data-go="' + esc(first) + '" type="button">Move to ' + esc(labelForKey(first)) + '</button>' +
                (back ? '<button class="btn btn-sm railback" data-back="' + esc(back) + '" type="button">Revert to ' + esc(labelForKey(back)) + '</button>' : '') +
+               /* The move and the next person in one act, or a step skipped
+                  with a reason: a neutral outline beside the forward move. */
+               '<button class="btn btn-sm railhand" data-hand type="button">Hand over</button>' +
              '</div>'
            : '<p class="mute">' + esc(stageLabel(t)) + '</p>') +
       (can && rest.length
@@ -2131,6 +2309,8 @@
     if (go) go.addEventListener('click', function () { move(first); });
     var rv = box.querySelector('[data-back]');
     if (rv) rv.addEventListener('click', function () { move(back); });
+    var hd = box.querySelector('[data-hand]');
+    if (hd) hd.addEventListener('click', openHand);
     var other = box.querySelector('#taskOther');
     if (other) other.addEventListener('change', function () {
       if (!other.value) return;
@@ -2346,79 +2526,945 @@
   }
 
   // ---- New task ------------------------------------------------------------
-  function openNew() {
+  /* Which clients a scope offers. Client is the working book of business
+     (active, and paused on request); Lead is every record that has not yet
+     become one. The database asks the same question again on save
+     (`ops_scope_error`), so the list here is a courtesy and not the gate. */
+  var CLIENT_STAGES = { active: 1 }, PAUSED_STAGES = { paused: 1 };
+  var LEAD_STAGES = { lead: 1, contacted: 1, proposal: 1 };
+  function clientsFor(scope, paused) {
+    return state.clients.filter(function (c) {
+      if (scope === 'lead') return LEAD_STAGES[c.stage];
+      return CLIENT_STAGES[c.stage] || (paused && PAUSED_STAGES[c.stage]);
+    });
+  }
+  function monthKey(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  }
+  function monthWord(key) {
+    var m = /^(\d{4})-(\d{2})$/.exec(key || '');
+    if (!m) return key || '';
+    var d = new Date(Number(m[1]), Number(m[2]) - 1, 1);
+    return d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+  }
+  /* The week the code names is the planned publishing week of the content
+     month: days 1 to 7 are week 1 and so on, week 5 for the tail. */
+  function weekOfDay(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || '');
+    if (!m) return null;
+    return Math.min(5, Math.floor((Number(m[3]) - 1) / 7) + 1);
+  }
+  /* What the user touched is kept; what they did not is refilled from the
+     publish date whenever it changes. */
+  var ntTouched = {};
+  /* Opened from the bar with nothing, or from a client record with the
+     client, and from a month's card with its month and its engagement. */
+  var ntPrefill = null;
+  function openNew(prefill) {
     if (!may('ops', 'work')) return;
-    var cl = $('ntClient');
-    cl.innerHTML = '<option value="">Choose a client</option>' + state.clients.map(function (c) {
-      return '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>';
-    }).join('');
-    var tp = $('ntTemplate');
-    tp.innerHTML = '<option value="">No template</option>' + state.templates.map(function (x) {
-      return '<option value="' + esc(x.id) + '">' + esc(x.name) + '</option>';
-    }).join('');
+    ntTouched = {};
+    ntPrefill = (prefill && prefill.client) ? prefill : null;
     var ow = $('ntOwner');
     var me = bridge.me && bridge.me();
     ow.innerHTML = '<option value="">Nobody yet</option>' + state.members.map(function (m) {
       return '<option value="' + esc(m.id) + '"' + (me && me.id === m.id ? ' selected' : '') + '>' + esc(m.name) + '</option>';
     }).join('');
-    $('ntTitle').value = '';
+    /* The content month: this one and the six after it, and the one before
+       for work being keyed in late. */
+    var now = new Date(), months = [];
+    for (var i = -1; i <= 6; i++) months.push(new Date(now.getFullYear(), now.getMonth() + i, 1));
+    $('ntPeriod').innerHTML = months.map(function (d) {
+      var k = monthKey(d);
+      return '<option value="' + k + '"' + (k === monthKey(now) ? ' selected' : '') + '>' + esc(monthWord(k)) + '</option>';
+    }).join('');
+    $('ntWeek').value = String(weekOfDay(now.toISOString()));
     $('ntDesc').value = '';
+    $('ntBrief').value = '';
     $('ntPublish').value = '';
+    $('ntDraft').value = '';
     $('ntFinal').value = '';
     $('ntScope').value = 'client';
+    $('ntType').value = 'engagement';
+    $('ntFormat').value = '';
+    $('ntPaused').checked = false;
     $('ntPriority').value = '3';
-    $('ntComplex').value = '';
+    $('ntComplex').value = 'standard';
+    if (ntPrefill) {
+      var pc = ntPrefill.client;
+      $('ntScope').value = LEAD_STAGES[pc.stage] ? 'lead' : 'client';
+      if (pc.stage === 'paused') $('ntPaused').checked = true;
+      if (ntPrefill.period && $('ntPeriod').querySelector('option[value="' + ntPrefill.period + '"]')) {
+        $('ntPeriod').value = ntPrefill.period; ntTouched.period = true;
+      }
+    }
     ntScopeChanged();
-    ntHint();
+    if (ntPrefill) {
+      $('ntClient').value = ntPrefill.client.id;
+      ntCodeHint();
+    }
     msg('ntMsg', '');
     sheet('taskSheet', true);
   }
   function ntScopeChanged() {
-    $('ntClientField').hidden = $('ntScope').value !== 'client';
+    var scope = $('ntScope').value;
+    var was = $('ntClient').value;
+    $('ntClientField').hidden = scope === 'internal';
+    $('ntPausedWrap').hidden = scope !== 'client';
+    $('ntClientLabel').textContent = scope === 'lead' ? 'Lead' : 'Client';
+    var list = clientsFor(scope, $('ntPaused').checked);
+    $('ntClient').innerHTML = '<option value="">' + (scope === 'lead' ? 'Choose a lead' : 'Choose a client') + '</option>' +
+      list.map(function (c) {
+        return '<option value="' + esc(c.id) + '"' + (c.id === was ? ' selected' : '') + '>' + esc(c.name) +
+          (c.stage === 'paused' ? ' (paused)' : '') + '</option>';
+      }).join('');
+    /* An internal task carries no code, so the month and the week that build
+       one have nothing to say; and engagement work is for a client. */
+    $('ntCodeRow').hidden = scope === 'internal';
+    if (scope !== 'client' && $('ntType').value === 'engagement' && !ntTouched.type) $('ntType').value = 'adhoc';
+    if (scope === 'client' && !ntTouched.type) $('ntType').value = 'engagement';
+    ntCodeHint();
   }
-  function ntHint() {
-    var tpl = state.templates.filter(function (x) { return x.id === $('ntTemplate').value; })[0];
-    var line = $('ntHint');
-    if (!tpl) { line.textContent = ''; line.hidden = true; return; }
-    var bits = [];
-    if (tpl.first_draft_offset_business_days) bits.push('first draft ' + tpl.first_draft_offset_business_days + ' working days before publishing');
-    if (tpl.final_offset_business_days) bits.push('final ' + tpl.final_offset_business_days + ' working days before');
-    line.textContent = bits.length
-      ? 'With a publish date, this template dates the work back from it: ' + bits.join(', ') + '.'
-      : '';
-    line.hidden = !line.textContent;
+  /* The publish date seeds the month and the week the code is built from,
+     unless the person has already chosen them. */
+  function ntPublishChanged() {
+    var v = $('ntPublish').value;
+    if (v) {
+      var k = v.slice(0, 7);
+      if (!ntTouched.period && $('ntPeriod').querySelector('option[value="' + k + '"]')) $('ntPeriod').value = k;
+      if (!ntTouched.week) $('ntWeek').value = String(weekOfDay(v));
+    }
+    ntCodeHint();
+  }
+  /* What the name will read as. The running number is the database's and is
+     not guessed here, which is why it reads `nn`. */
+  function ntCodeHint() {
+    var line = $('ntCodeHint');
+    if (!line) return;
+    if ($('ntScope').value === 'internal') { line.hidden = true; line.textContent = ''; return; }
+    var k = $('ntPeriod').value || '';
+    var code = k.slice(2, 4) + k.slice(5, 7) + 'W' + ($('ntWeek').value || '1') + 'nn';
+    var d = String($('ntDesc').value || '').trim();
+    line.textContent = 'Named ' + code + (d ? ' ' + d : '') + '. The number is given on save.';
+    line.hidden = false;
   }
   /* The same press twice is one task. The key is what makes the two presses
      the same act, so it is built from what was typed and not from a counter. */
   var ntKey = '';
   function createTask() {
     var scope = $('ntScope').value;
-    var title = String($('ntTitle').value || '').trim();
-    if (!title) { msg('ntMsg', 'A title is required.', 'err'); $('ntTitle').focus(); return; }
-    if (scope === 'client' && !$('ntClient').value) {
-      msg('ntMsg', 'A client is required.', 'err'); $('ntClient').focus(); return;
+    var desc = String($('ntDesc').value || '').trim();
+    if (scope === 'internal' && !desc) {
+      msg('ntMsg', 'A description is required.', 'err'); $('ntDesc').focus(); return;
+    }
+    if (scope !== 'internal' && !$('ntClient').value) {
+      msg('ntMsg', scope === 'lead' ? 'A lead is required.' : 'A client is required.', 'err');
+      $('ntClient').focus(); return;
+    }
+    var draft = $('ntDraft').value, fin = $('ntFinal').value;
+    if (draft && fin && draft >= fin) {
+      msg('ntMsg', said('draft-not-before-final'), 'err'); $('ntDraft').focus(); return;
     }
     var payload = {
       scope: scope,
-      client_id: scope === 'client' ? $('ntClient').value : null,
-      template_id: $('ntTemplate').value || null,
+      client_id: scope === 'internal' ? null : $('ntClient').value,
+      task_type: $('ntType').value || 'adhoc',
+      content_desc: desc || null,
+      deliverable_type: $('ntFormat').value || null,
       owner_id: $('ntOwner').value || null,
-      title: title,
-      description: String($('ntDesc').value || '').trim() || null,
+      description: String($('ntBrief').value || '').trim() || null,
       priority_level: Number($('ntPriority').value) || 3,
       complexity: $('ntComplex').value || null,
       publish_at: $('ntPublish').value ? $('ntPublish').value + 'T00:00:00Z' : null,
-      final_due_at: $('ntFinal').value ? $('ntFinal').value + 'T00:00:00Z' : null
+      first_draft_due_at: draft ? draft + 'T00:00:00Z' : null,
+      final_due_at: fin ? fin + 'T00:00:00Z' : null,
+      code_period: scope === 'internal' ? null : $('ntPeriod').value || null,
+      code_week: scope === 'internal' ? null : Number($('ntWeek').value) || null,
+      /* Made from a client record, the task joins the month's engagement
+         where that month has one. */
+      engagement_id: (ntPrefill && scope !== 'internal')
+        ? ((cw.engs || []).filter(function (e) { return e.period === $('ntPeriod').value; })[0] || {}).id || null
+        : null
     };
     if (!ntKey) ntKey = 'nt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
     var btn = $('ntGo');
     btn.disabled = true;
+    var fromClient = Boolean(ntPrefill);
     call('ops_create_task', { p_payload: payload, p_idem: ntKey }, 'ntMsg', function (t) {
       btn.disabled = false;
       ntKey = '';
       sheet('taskSheet', false);
-      openTask(t.id, true);
+      /* Made from a client record, the task takes its place on that record's
+         list rather than carrying the person off to My Work. */
+      if (fromClient && cw.box && cw.client && cw.client.id === payload.client_id) readClientWork();
+      else openTask(t.id, true);
     }, function () { btn.disabled = false; });
+  }
+
+  /* The description is edited where it sits: the pen becomes the tick, the
+     code beside it never changes, and a blank is allowed on a task that has
+     a code because the code is then the name. */
+  function editDesc() {
+    var t = state.task;
+    if (!t || !window.ADspaceAsk) return;
+    var host = $('taskDesc'), pen = $('taskDescEdit');
+    var was = t.code ? (t.content_desc || '') : (t.content_desc || t.title || '');
+    window.ADspaceAsk.rename(host, pen, {
+      label: 'Content description', saveLabel: 'Save description', value: was,
+      allowEmpty: Boolean(t.code), max: 160,
+      save: function (v) {
+        call('ops_set_content_desc', { p_task: t.id, p_desc: v, p_version: t.version }, 'taskMsg',
+          function (d) {
+            applyTask(d);
+            readTask(t.id);
+          });
+      }
+    });
+  }
+  function copyTitle() {
+    var t = state.task;
+    if (!t || !window.ADspaceCopy) return;
+    window.ADspaceCopy.to($('taskCopyTitle'), t.title || '');
+  }
+
+  // ---- Duplicate, generate, repeat ---------------------------------------
+  /* The content months a select offers: the one before this, this one and
+     the six after, so work keyed in late and work planned ahead both fit. */
+  function fillMonths(sel, chosen) {
+    var now = new Date(), months = [];
+    for (var i = -1; i <= 6; i++) months.push(monthKey(new Date(now.getFullYear(), now.getMonth() + i, 1)));
+    if (chosen && months.indexOf(chosen) < 0) months.unshift(chosen);
+    var pick = chosen || monthKey(now);
+    sel.innerHTML = months.map(function (k) {
+      return '<option value="' + k + '"' + (k === pick ? ' selected' : '') + '>' + esc(monthWord(k)) + '</option>';
+    }).join('');
+  }
+  function fillOwners(sel, me) {
+    sel.innerHTML = '<option value="">Nobody yet</option>' + state.members.map(function (m) {
+      return '<option value="' + esc(m.id) + '"' + (me && me.id === m.id ? ' selected' : '') + '>' + esc(m.name) + '</option>';
+    }).join('');
+  }
+  function fillClients(sel, paused, was) {
+    var list = clientsFor('client', paused);
+    sel.innerHTML = '<option value="">Choose a client</option>' + list.map(function (c) {
+      return '<option value="' + esc(c.id) + '"' + (c.id === was ? ' selected' : '') + '>' + esc(c.name) +
+        (c.stage === 'paused' ? ' (paused)' : '') + '</option>';
+    }).join('');
+  }
+
+  /* DUPLICATE. A copy with a new code; the person says what else travels. */
+  var dupKey = '';
+  function openDup() {
+    var t = state.task;
+    if (!t || !may('ops', 'work')) return;
+    dupKey = '';
+    $('dupWhat').textContent = 'A copy of ' + (t.title || 'T' + t.task_no) +
+      ' with a new code. Its history, its time and its links stay here.';
+    $('dupDesc').checked = true;
+    $('dupDates').checked = false;
+    $('dupPeople').checked = false;
+    $('dupCodeRow').hidden = t.scope === 'internal';
+    fillMonths($('dupPeriod'), t.code_period || null);
+    $('dupWeek').value = String(t.code_week || weekOfDay(new Date().toISOString()));
+    msg('dupMsg', '');
+    sheet('dupSheet', true);
+  }
+  function doDup() {
+    var t = state.task;
+    if (!t) return;
+    if (!dupKey) dupKey = 'dup-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    var opts = {
+      keep_desc: $('dupDesc').checked,
+      copy_dates: $('dupDates').checked,
+      copy_assignees: $('dupPeople').checked
+    };
+    if (t.scope !== 'internal') {
+      opts.code_period = $('dupPeriod').value || null;
+      opts.code_week = Number($('dupWeek').value) || null;
+    }
+    var btn = $('dupGo');
+    btn.disabled = true;
+    call('ops_duplicate_task', { p_task: t.id, p_opts: opts, p_idem: dupKey }, 'dupMsg', function (d) {
+      btn.disabled = false;
+      dupKey = '';
+      sheet('dupSheet', false);
+      openTask(d.id, true);
+    }, function () { btn.disabled = false; });
+  }
+
+  /* GENERATE. A month of tasks for one client, or the month's recurring
+     tasks. The codes are previewed from the database's own next number, so
+     the preview and the run cannot disagree. */
+  var genKey = '';
+  function openGen() {
+    if (!may('ops', 'work')) return;
+    genKey = '';
+    $('genWhat').value = 'month';
+    fillMonths($('genPeriod'), null);
+    $('genPaused').checked = false;
+    fillClients($('genClient'), false, '');
+    $('genCount').value = '8';
+    $('genSpread').value = 'even';
+    ['genW1', 'genW2', 'genW3', 'genW4', 'genW5'].forEach(function (id) { $(id).value = '0'; });
+    $('genType').value = 'engagement';
+    $('genFormat').value = '';
+    $('genPriority').value = '3';
+    $('genComplex').value = 'standard';
+    fillOwners($('genOwner'), null);
+    $('genOut').hidden = true; $('genOut').textContent = '';
+    genWhatChanged();
+    msg('genMsg', '');
+    sheet('genSheet', true);
+  }
+  function genWhatChanged() {
+    var recur = $('genWhat').value === 'recur';
+    $('genMonthBox').hidden = recur;
+    $('genRecurBox').hidden = !recur;
+    $('genGo').textContent = recur ? 'Run' : 'Generate';
+    $('genWeeksRow').hidden = $('genSpread').value !== 'set';
+  }
+  function genWeeks() {
+    if ($('genSpread').value !== 'set') return null;
+    return ['genW1', 'genW2', 'genW3', 'genW4', 'genW5'].map(function (id) {
+      return Math.max(0, Math.floor(Number($(id).value) || 0));
+    });
+  }
+  function genPayload() {
+    var count = Math.floor(Number($('genCount').value) || 0);
+    var weeks = genWeeks();
+    if (weeks) {
+      var sum = weeks.reduce(function (a, b) { return a + b; }, 0);
+      if (sum !== count) { msg('genMsg', said('weeks-do-not-add-up') + ' The weeks come to ' + sum + '.', 'err'); return null; }
+    }
+    if (!$('genClient').value) { msg('genMsg', 'A client is required.', 'err'); $('genClient').focus(); return null; }
+    if (count < 1 || count > 60) { msg('genMsg', said('bad-count'), 'err'); $('genCount').focus(); return null; }
+    return {
+      client_id: $('genClient').value,
+      period: $('genPeriod').value,
+      count: count,
+      weeks: weeks,
+      scope: 'client',
+      task_type: $('genType').value || 'engagement',
+      deliverable_type: $('genFormat').value || null,
+      priority_level: Number($('genPriority').value) || 3,
+      complexity: $('genComplex').value || null,
+      owner_id: $('genOwner').value || null
+    };
+  }
+  function genPreview() {
+    var pl = genPayload();
+    if (!pl) return;
+    call('ops_generate_month', { p_payload: pl, p_dry_run: true }, 'genMsg', function (d) {
+      var codes = ((d && d.tasks) || []).map(function (x) { return x.code; });
+      var out = $('genOut');
+      out.hidden = false;
+      out.textContent = codes.length
+        ? codes.length + (codes.length === 1 ? ' task: ' : ' tasks: ') + codes.join(', ')
+        : 'Nothing would be made.';
+    });
+  }
+  function doGen() {
+    var btn = $('genGo');
+    if ($('genWhat').value === 'recur') {
+      btn.disabled = true;
+      call('ops_generate_recurring', { p_period: $('genPeriod').value }, 'genMsg', function (d) {
+        btn.disabled = false;
+        sheet('genSheet', false);
+        var n = (d && d.created) || 0, s = (d && d.skipped) || 0;
+        msg('workMsg', (n === 1 ? '1 task made' : n + ' tasks made') + ' for ' + monthWord($('genPeriod').value) +
+          (s ? ', ' + s + ' already there.' : '.'), 'ok');
+        load();
+      }, function () { btn.disabled = false; });
+      return;
+    }
+    var pl = genPayload();
+    if (!pl) return;
+    if (!genKey) genKey = 'gen-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    btn.disabled = true;
+    call('ops_generate_month', { p_payload: pl, p_dry_run: false, p_idem: genKey }, 'genMsg', function (d) {
+      btn.disabled = false;
+      genKey = '';
+      sheet('genSheet', false);
+      var n = (d && d.count) || 0;
+      var who = ($('genClient').selectedOptions[0] || {}).textContent || '';
+      msg('workMsg', (n === 1 ? '1 task made' : n + ' tasks made') + ' for ' + who + ', ' + monthWord(pl.period) + '.', 'ok');
+      load();
+    }, function () { btn.disabled = false; });
+  }
+
+  /* REPEAT. The rule that copies this task on each date. */
+  var FREQ_WORD = { weekly: 'Weekly', monthly: 'Monthly', custom: 'Every {n} days' };
+  function ruleWord(r) {
+    if (!r) return '';
+    var w = r.frequency === 'custom' ? 'Every ' + (r.interval_days || '?') + ' days'
+          : r.frequency === 'weekly' ? 'Weekly'
+          : 'Monthly' + (r.day_of_month ? ' on the ' + r.day_of_month + ordinal(r.day_of_month) : '');
+    if (r.ends_on) w += ' until ' + niceDate(r.ends_on);
+    else if (r.max_count) w += ', ' + r.max_count + ' times';
+    if (r.generated_count) w += ' · ' + r.generated_count + ' made';
+    return w;
+  }
+  function ordinal(n) {
+    n = Number(n) || 0;
+    var s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+    return s[(v - 20) % 10] || s[v] || s[0];
+  }
+  function openRec() {
+    var t = state.task;
+    if (!t || !may('ops', 'work')) return;
+    var r = state.rule;
+    $('recWhat').textContent = (r ? 'Repeating: ' + ruleWord(r) + '.' : 'A copy of this task is made on each date, with its description, format and people carried over.');
+    $('recFreq').value = (r && r.frequency) || 'monthly';
+    var day = r && r.day_of_month;
+    if (!day && t.publish_at) { var m = /^\d{4}-\d{2}-(\d{2})/.exec(t.publish_at); day = m ? Math.min(28, Number(m[1])) : null; }
+    $('recDay').value = day || '';
+    $('recInterval').value = (r && r.interval_days) || '';
+    $('recEnds').value = (r && r.ends_on) ? String(r.ends_on).slice(0, 10) : '';
+    $('recMax').value = (r && r.max_count) || '';
+    $('recWeek').value = (r && r.code_week) ? String(r.code_week) : '';
+    $('recStop').hidden = !r;
+    $('recGo').textContent = r ? 'Save' : 'Start repeating';
+    recFreqChanged();
+    msg('recMsg', '');
+    sheet('recSheet', true);
+  }
+  function recFreqChanged() {
+    var f = $('recFreq').value;
+    $('recDayField').hidden = f !== 'monthly';
+    $('recIntervalField').hidden = f !== 'custom';
+  }
+  function doRec() {
+    var t = state.task;
+    if (!t) return;
+    var f = $('recFreq').value;
+    if (f === 'custom' && !(Number($('recInterval').value) >= 1)) {
+      msg('recMsg', said('interval-required'), 'err'); $('recInterval').focus(); return;
+    }
+    var payload = {
+      frequency: f,
+      day_of_month: f === 'monthly' ? (Number($('recDay').value) || null) : null,
+      interval_days: f === 'custom' ? Number($('recInterval').value) : null,
+      ends_on: $('recEnds').value || null,
+      max_count: Number($('recMax').value) || null,
+      code_week: Number($('recWeek').value) || null
+    };
+    var btn = $('recGo');
+    btn.disabled = true;
+    call('ops_set_recurring', { p_task: t.id, p_payload: payload }, 'recMsg', function () {
+      btn.disabled = false;
+      sheet('recSheet', false);
+      readTask(t.id);
+    }, function () { btn.disabled = false; });
+  }
+  function stopRec() {
+    var t = state.task;
+    if (!t) return;
+    call('ops_set_recurring', { p_task: t.id, p_payload: { active: false } }, 'recMsg', function () {
+      sheet('recSheet', false);
+      readTask(t.id);
+    });
+  }
+
+  // ---- The engagement: one client's work for one month -------------------
+  /* The thirteen readiness questions, in the team's words, in the order the
+     database seeds them. A key is stored; a word is read. */
+  var CHECK_WORD = {
+    client_name: 'Client name confirmed', legal_name: 'Legal name confirmed',
+    brand_name: 'Brand name confirmed', brand_profile: 'Brand profile received',
+    social_profiles: 'Social profiles received', client_info: 'Client information received',
+    platform_ready: 'Platforms ready', platform_setup: 'Platform setup done',
+    platform_create: 'Platforms created', partner_access_requested: 'Partner access requested',
+    partner_access_received: 'Partner access received', pre_ads_required: 'Pre-ads checklist required',
+    pre_ads_completed: 'Pre-ads checklist completed'
+  };
+  var CHECK_ORDER = ['client_name', 'legal_name', 'brand_name', 'brand_profile', 'social_profiles',
+    'client_info', 'platform_ready', 'platform_setup', 'platform_create',
+    'partner_access_requested', 'partner_access_received', 'pre_ads_required', 'pre_ads_completed'];
+  var CHECK_STATE = [
+    ['not_started', 'Not started', 'is-off'], ['waiting_client', 'Waiting on client', 'is-warn'],
+    ['in_progress', 'In progress', ''], ['ready', 'Ready', 'is-ok'], ['na', 'Not applicable', 'is-off']
+  ];
+  var ENG_STATE = [
+    ['planning', 'Planning', 'is-off'], ['ready', 'Ready', 'is-ok'],
+    ['in_production', 'In production', ''], ['completed', 'Completed', 'is-ok'], ['cancelled', 'Cancelled', 'is-off']
+  ];
+  var CHANNEL_WORD = { onsite: 'On site', google_meet: 'Google Meet', zoom: 'Zoom', other: 'Other' };
+  function wordOf(list, key) {
+    var hit = list.filter(function (x) { return x[0] === key; })[0];
+    return hit ? hit[1] : sentence(key);
+  }
+  function toneOf(list, key) {
+    var hit = list.filter(function (x) { return x[0] === key; })[0];
+    return hit ? hit[2] : '';
+  }
+  function checkWord(k) { return CHECK_WORD[k] || sentence(k); }
+  /* What the engagement is waiting on, in one line. */
+  function meetingWord(e) {
+    if (!e) return '';
+    if (e.meeting_na) return 'No meeting this month';
+    if (!e.meeting_at) return 'Not scheduled';
+    var when = niceTime(e.meeting_at);
+    return when + (e.meeting_channel ? ' · ' + (CHANNEL_WORD[e.meeting_channel] || sentence(e.meeting_channel)) : '') +
+      (e.meeting_owner_id ? ' · ' + nameOf(e.meeting_owner_id) : '');
+  }
+  function meetingHeld(e) {
+    return Boolean(e && (e.meeting_na || (e.meeting_at && new Date(e.meeting_at) <= new Date())));
+  }
+
+  /* THE CLIENT RECORD'S WORK PANE. The client's tasks by month, each month
+     under its engagement record, drawn by this script because the words, the
+     gates and the sheets are My Work's. Reads its own rows: a client record
+     is opened for one client, and the queue's read is for a person. */
+  var cw = { box: null, client: null, tasks: [], engs: [], checks: [], owners: {}, ownerIds: {},
+             find: '', status: 'open', period: '', who: '' };
+  function clientWork(box, client) {
+    if (!box || !client) return;
+    cw.box = box; cw.client = client;
+    cw.find = ''; cw.status = 'open'; cw.period = ''; cw.who = '';
+    UI.skeleton(box, 4);
+    var ready = function () { readClientWork(); };
+    if (!state.workflows.length) loadCatalogue(ready); else ready();
+  }
+  function readClientWork() {
+    var box = cw.box, c = cw.client;
+    Promise.all([
+      db.from('ops_tasks').select('*, clients(name, slug)').eq('client_id', c.id).is('archived_at', null)
+        .order('code_period', { ascending: false, nullsFirst: false })
+        .order('current_final_due_at', { ascending: true, nullsFirst: false }).limit(600),
+      db.from('ops_engagements').select('*').eq('client_id', c.id).order('period', { ascending: false }),
+      db.from('ops_task_assignees')
+        .select('task_id, responsibility, team_member_id, team_members!ops_task_assignees_team_member_id_fkey(name)')
+        .is('ended_at', null)
+    ]).then(function (r) {
+      var bad = (r[0] && r[0].error) || (r[1] && r[1].error);
+      if (bad) { UI.failLine(box, 'This client\'s work', bad.message, readClientWork); return; }
+      cw.tasks = (r[0] && r[0].data) || [];
+      cw.engs = (r[1] && r[1].data) || [];
+      cw.owners = {}; cw.ownerIds = {};
+      ((r[2] && r[2].data) || []).forEach(function (a) {
+        if (a.responsibility !== 'owner') return;
+        cw.owners[a.task_id] = (a.team_members && a.team_members.name) || '';
+        cw.ownerIds[a.task_id] = a.team_member_id;
+      });
+      var ids = cw.engs.map(function (e) { return e.id; });
+      if (!ids.length) { cw.checks = []; paintClientWork(); return; }
+      db.from('ops_engagement_checks').select('*').in('engagement_id', ids).then(function (q) {
+        cw.checks = (q && !q.error && q.data) || [];
+        paintClientWork();
+      }, function () { cw.checks = []; paintClientWork(); });
+    }, function (e) {
+      UI.failLine(box, 'This client\'s work', (e && e.message) || String(e), readClientWork);
+    });
+  }
+  function cwPeriodOf(t) {
+    return t.code_period || (t.current_final_due_at ? String(t.current_final_due_at).slice(0, 7) : '') || 'none';
+  }
+  function cwMatches(t) {
+    if (cw.period && cwPeriodOf(t) !== cw.period) return false;
+    if (cw.who && cw.ownerIds[t.id] !== cw.who) return false;
+    var s = stageOf(t);
+    if (cw.status === 'open' && isFinished(t)) return false;
+    if (cw.status === 'done' && !isFinished(t)) return false;
+    if (cw.status === 'late' && !isLate(t)) return false;
+    if (cw.status === 'client_review' && !(s && s.stage_group === 'client_review')) return false;
+    if (cw.status === 'internal_review' && !(s && s.stage_group === 'internal_review')) return false;
+    if (cw.status === 'active' && !(s && s.is_active_work)) return false;
+    if (cw.find) {
+      var hay = [t.title, t.code, t.content_desc, formatWord(t), cw.owners[t.id], 'T' + t.task_no].join(' ').toLowerCase();
+      if (hay.indexOf(cw.find) < 0) return false;
+    }
+    return true;
+  }
+  function paintClientWork() {
+    var box = cw.box, c = cw.client;
+    if (!box) return;
+    var canWork = may('ops', 'work');
+    /* The periods on the page: every engagement's month and every task's,
+       newest first, so the select offers only months that hold something. */
+    var periods = {};
+    cw.engs.forEach(function (e) { periods[e.period] = 1; });
+    cw.tasks.forEach(function (t) { periods[cwPeriodOf(t)] = 1; });
+    var months = Object.keys(periods).filter(function (k) { return k !== 'none'; }).sort().reverse();
+    var owners = {};
+    cw.tasks.forEach(function (t) { if (cw.ownerIds[t.id]) owners[cw.ownerIds[t.id]] = cw.owners[t.id]; });
+
+    box.innerHTML =
+      '<div class="viewhead"><span class="headmark"><h2>Work</h2></span>' +
+        (canWork
+          ? '<button class="btn btn-sm" id="cwEng" type="button">New month</button>' +
+            '<button class="btn btn-primary" id="cwNew" type="button">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New task</button>'
+          : '') +
+      '</div>' +
+      '<div class="workfilters">' +
+        '<label class="cmdbar-find"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>' +
+          '<input class="input input-sm" id="cwFind" type="search" placeholder="Search tasks" aria-label="Search tasks" autocomplete="off"></label>' +
+        '<select class="select select-sm" id="cwStatus" aria-label="Filter by status">' +
+          '<option value="open">Open work</option><option value="active">In progress</option>' +
+          '<option value="internal_review">Internal review</option><option value="client_review">Client review</option>' +
+          '<option value="late">Late</option><option value="done">Finished</option><option value="">Everything</option>' +
+        '</select>' +
+        '<select class="select select-sm" id="cwPeriod" aria-label="Filter by month"><option value="">Every month</option>' +
+          months.map(function (k) { return '<option value="' + k + '">' + esc(monthWord(k)) + '</option>'; }).join('') +
+        '</select>' +
+        '<select class="select select-sm" id="cwWho" aria-label="Filter by owner"><option value="">Anybody</option>' +
+          Object.keys(owners).map(function (id) { return '<option value="' + esc(id) + '">' + esc(owners[id]) + '</option>'; }).join('') +
+        '</select>' +
+        '<span class="cmdbar-count" id="cwCount"></span>' +
+      '</div>' +
+      '<div class="msg" id="cwMsg"></div>' +
+      '<div id="cwList"></div>';
+    $('cwFind').value = cw.find; $('cwStatus').value = cw.status;
+    $('cwPeriod').value = cw.period; $('cwWho').value = cw.who;
+    $('cwFind').addEventListener('input', function () {
+      var v = String(this.value || '').trim().toLowerCase();
+      if (v === cw.find) return;
+      cw.find = v; paintClientList();
+    });
+    $('cwStatus').addEventListener('change', function () { cw.status = this.value; paintClientList(); });
+    $('cwPeriod').addEventListener('change', function () { cw.period = this.value; paintClientList(); });
+    $('cwWho').addEventListener('change', function () { cw.who = this.value; paintClientList(); });
+    var nb = $('cwNew');
+    if (nb) nb.addEventListener('click', function () { openNew({ client: c }); });
+    var eb = $('cwEng');
+    if (eb) eb.addEventListener('click', function () { openEng(null, c); });
+    paintClientList();
+  }
+  function paintClientList() {
+    var list = $('cwList'), c = cw.client;
+    if (!list) return;
+    var rows = cw.tasks.filter(cwMatches);
+    var count = $('cwCount');
+    if (count) {
+      count.textContent = !cw.tasks.length ? ''
+        : rows.length === cw.tasks.length ? rows.length + (rows.length === 1 ? ' task' : ' tasks')
+        : rows.length + ' of ' + cw.tasks.length;
+    }
+    list.innerHTML = '';
+    /* A month is a card: the engagement's own facts at its head where one
+       exists, the month's tasks under it. Newest month first, this month
+       open, the rest shut, because a year of months is a page nobody
+       scrolls. Tasks with no month go last under their own heading. */
+    var by = {};
+    rows.forEach(function (t) {
+      var k = cwPeriodOf(t);
+      (by[k] = by[k] || []).push(t);
+    });
+    var keys = Object.keys(by);
+    cw.engs.forEach(function (e) {
+      if (!cw.period || cw.period === e.period) { if (keys.indexOf(e.period) < 0) { keys.push(e.period); by[e.period] = []; } }
+    });
+    keys = keys.filter(function (k) { return k !== 'none'; }).sort().reverse().concat(by.none ? ['none'] : []);
+    if (!keys.length) {
+      UI.emptyLine(list, cw.tasks.length ? 'No matches.' : 'No tasks.',
+        cw.tasks.length ? 'Clear the filters' : (may('ops', 'work') ? 'Add the first task' : ''),
+        cw.tasks.length
+          ? function () { cw.find = ''; cw.status = 'open'; cw.period = ''; cw.who = ''; paintClientWork(); }
+          : function () { openNew({ client: c }); });
+      return;
+    }
+    var thisMonth = monthKey(new Date());
+    keys.forEach(function (k) {
+      var eng = cw.engs.filter(function (e) { return e.period === k; })[0] || null;
+      var trs = (by[k] || []).slice().sort(byPriority);
+      var late = trs.filter(isLate).length;
+      var open = trs.filter(function (t) { return !isFinished(t); }).length;
+      var card = GRP.section({
+        route: 'cwork', key: k, name: k === 'none' ? 'No month' : monthWord(k),
+        count: trs.length,
+        marks: (eng ? '<span class="tone ' + toneOf(ENG_STATE, eng.status) + '">' + esc(wordOf(ENG_STATE, eng.status)) + '</span>' : '') +
+               (late ? '<span class="tone is-warn">' + late + ' late</span>' : ''),
+        shut: GRP.shut('cwork', k, k !== thisMonth && !(eng && eng.status !== 'completed' && open), false),
+        table: function () {
+          var wrap = document.createElement('div');
+          if (eng) wrap.appendChild(engCard(eng));
+          if (trs.length) {
+            var table = GRP.table('svc-row task-row', ['Task', 'Stage', 'Owner', 'Dates']);
+            GRP.more(table, trs, 30, 'tasks', function (t) { return rowOf(t, true); });
+            wrap.appendChild(table);
+          } else if (eng) {
+            var line = document.createElement('div');
+            UI.emptyLine(line, 'No tasks this month.', may('ops', 'work') ? 'Add a task' : '',
+              function () { openNew({ client: c, period: k, engagement: eng }); });
+            wrap.appendChild(line);
+          }
+          return wrap;
+        }
+      });
+      list.appendChild(card);
+    });
+  }
+
+  /* THE ENGAGEMENT CARD: the month's facts, the meeting, the readiness
+     list. Everything in it is a control where the person may work the
+     section and a fact where they may not. */
+  function engCard(e) {
+    var can = may('ops', 'work');
+    var el = document.createElement('section');
+    el.className = 'engcard';
+    el.setAttribute('data-eng', e.id);
+    var checks = cw.checks.filter(function (x) { return x.engagement_id === e.id; })
+      .sort(function (a, b) { return CHECK_ORDER.indexOf(a.key) - CHECK_ORDER.indexOf(b.key); });
+    var ready = checks.filter(function (x) { return x.state === 'ready' || x.state === 'na'; }).length;
+    var facts = [
+      ['Manager', nameOf(e.manager_id)],
+      ['Planned', e.planned_count ? e.planned_count + (e.planned_count === 1 ? ' piece' : ' pieces') : ''],
+      ['Files', e.drive_url ? '<a class="ovlink" href="' + esc(e.drive_url) + '" target="_blank" rel="noopener">Drive folder</a>' : '']
+    ].filter(function (p) { return p[1]; });
+    el.innerHTML =
+      '<div class="eng-head">' +
+        '<div class="eng-who"><h3>' + esc(monthWord(e.period)) + '</h3>' +
+          '<p class="eng-meta">' + facts.map(function (p) { return '<span><span class="eng-lab">' + esc(p[0]) + '</span> ' + p[1] + '</span>'; }).join('') + '</p></div>' +
+        '<div class="eng-ctl">' +
+          (can
+            ? '<select class="select select-sm state-select ' + toneOf(ENG_STATE, e.status) + '" data-a="status" aria-label="Status of ' + esc(monthWord(e.period)) + '">' +
+                ENG_STATE.map(function (s) { return '<option value="' + s[0] + '"' + (s[0] === e.status ? ' selected' : '') + '>' + esc(s[1]) + '</option>'; }).join('') +
+              '</select>' +
+              '<button class="iconbtn" data-a="edit" type="button" aria-label="Edit engagement">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>'
+            : '<span class="tone ' + toneOf(ENG_STATE, e.status) + '">' + esc(wordOf(ENG_STATE, e.status)) + '</span>') +
+        '</div>' +
+      '</div>' +
+      '<div class="msg" data-a="msg"></div>' +
+      '<div class="eng-meet"><span class="eng-lab">Content meeting</span>' +
+        '<span class="eng-meetword' + (meetingHeld(e) ? ' is-held' : '') + '">' + esc(meetingWord(e)) + '</span>' +
+        (can ? '<button class="btn btn-sm" data-a="meet" type="button">' + (e.meeting_at || e.meeting_na ? 'Change' : 'Set meeting') + '</button>' : '') +
+      '</div>' +
+      '<details class="eng-checks"' + (e.status === 'planning' ? ' open' : '') + '>' +
+        '<summary><span>Readiness</span><span class="eng-checkcount">' + ready + ' of ' + checks.length + ' ready</span></summary>' +
+        '<div class="eng-checklist">' +
+          checks.map(function (x) {
+            return '<div class="engcheck" data-key="' + esc(x.key) + '">' +
+              '<span class="engcheck-lab">' + esc(checkWord(x.key)) + '</span>' +
+              (can
+                ? '<select class="select select-sm state-select ' + toneOf(CHECK_STATE, x.state) + '" data-a="check" aria-label="' + esc(checkWord(x.key)) + '">' +
+                    CHECK_STATE.map(function (s) { return '<option value="' + s[0] + '"' + (s[0] === x.state ? ' selected' : '') + '>' + esc(s[1]) + '</option>'; }).join('') +
+                  '</select>' +
+                  '<select class="select select-sm" data-a="owner" aria-label="Owner of ' + esc(checkWord(x.key)) + '"><option value="">Nobody</option>' +
+                    state.members.map(function (m) { return '<option value="' + esc(m.id) + '"' + (m.id === x.owner_id ? ' selected' : '') + '>' + esc(m.name) + '</option>'; }).join('') +
+                  '</select>'
+                : '<span class="tone ' + toneOf(CHECK_STATE, x.state) + '">' + esc(wordOf(CHECK_STATE, x.state)) + '</span>' +
+                  '<span class="engcheck-who">' + esc(nameOf(x.owner_id)) + '</span>') +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</details>';
+    var st = el.querySelector('[data-a="status"]');
+    if (st) st.addEventListener('change', function () {
+      var want = st.value;
+      call2('ops_engagement_set_status', { p_engagement: e.id, p_status: want, p_version: e.version }, el, function () {
+        readClientWork();
+      }, function () { st.value = e.status; });
+    });
+    var ed = el.querySelector('[data-a="edit"]');
+    if (ed) ed.addEventListener('click', function () { openEng(e, cw.client); });
+    var mt = el.querySelector('[data-a="meet"]');
+    if (mt) mt.addEventListener('click', function () { openMeet(e); });
+    Array.prototype.forEach.call(el.querySelectorAll('.engcheck'), function (row) {
+      var key = row.getAttribute('data-key');
+      var cs = row.querySelector('[data-a="check"]'), os = row.querySelector('[data-a="owner"]');
+      var send = function () {
+        call2('ops_engagement_set_check', {
+          p_engagement: e.id, p_key: key, p_state: cs.value, p_owner: os.value || null
+        }, el, function (d) {
+          /* The one row is repainted from the answer, never the list: a
+             person working down thirteen selects keeps their place. */
+          var fresh = ((d && d.checks) || []).filter(function (x) { return x.key === key; })[0];
+          if (fresh) {
+            cs.className = 'select select-sm state-select ' + toneOf(CHECK_STATE, fresh.state);
+            cw.checks = cw.checks.map(function (x) { return x.engagement_id === e.id && x.key === key ? fresh : x; });
+            var n = cw.checks.filter(function (x) { return x.engagement_id === e.id && (x.state === 'ready' || x.state === 'na'); }).length;
+            var cc = el.querySelector('.eng-checkcount');
+            if (cc) cc.textContent = n + ' of ' + checks.length + ' ready';
+          }
+        });
+      };
+      if (cs) cs.addEventListener('change', send);
+      if (os) os.addEventListener('change', send);
+    });
+    return el;
+  }
+  /* A refusal is named on the card it was made on. */
+  function call2(fn, args, el, then, onFail) {
+    var m = el.querySelector('[data-a="msg"]');
+    var say = function (text, tone) { if (m) { m.textContent = text || ''; m.className = 'msg ' + (text ? (tone || 'err') : ''); } };
+    say('');
+    db.rpc(fn, args).then(function (r) {
+      if (r.error) { say(r.error.message); if (onFail) onFail(); return; }
+      var d = r.data;
+      if (d && d.error) { say(said(d.error)); if (onFail) onFail(); return; }
+      if (then) then(d);
+    }, function (e) { say((e && e.message) || String(e)); if (onFail) onFail(); });
+  }
+
+  /* The engagement's own facts: made for a month that has none, edited for
+     one that has. */
+  var engEditing = null;
+  function openEng(e, client) {
+    if (!may('ops', 'work')) return;
+    engEditing = e || null;
+    $('engTitle').textContent = e ? monthWord(e.period) + ' for ' + esc(client.name) : 'New month for ' + client.name;
+    fillMonths($('engPeriod'), e ? e.period : null);
+    $('engPeriod').disabled = Boolean(e);
+    var me = bridge.me && bridge.me();
+    $('engManager').innerHTML = state.members.map(function (m) {
+      var pick = e ? m.id === e.manager_id : (me && me.id === m.id);
+      return '<option value="' + esc(m.id) + '"' + (pick ? ' selected' : '') + '>' + esc(m.name) + '</option>';
+    }).join('');
+    $('engPlanned').value = e ? (e.planned_count || '') : '';
+    $('engDrive').value = (e && e.drive_url) || '';
+    msg('engMsg', '');
+    sheet('engSheet', true);
+  }
+  function saveEng() {
+    var c = cw.client;
+    if (!c) return;
+    var payload = {
+      client_id: c.id, period: engEditing ? engEditing.period : $('engPeriod').value,
+      manager_id: $('engManager').value || null,
+      planned_count: Number($('engPlanned').value) || 0,
+      drive_url: String($('engDrive').value || '').trim()
+    };
+    var btn = $('engGo');
+    btn.disabled = true;
+    call('ops_engagement_upsert', { p_payload: payload }, 'engMsg', function () {
+      btn.disabled = false;
+      sheet('engSheet', false);
+      readClientWork();
+    }, function () { btn.disabled = false; });
+  }
+  var meetEditing = null;
+  function openMeet(e) {
+    if (!may('ops', 'work')) return;
+    meetEditing = e;
+    var at = e.meeting_at ? new Date(e.meeting_at) : null;
+    $('meetDate').value = at ? at.getFullYear() + '-' + String(at.getMonth() + 1).padStart(2, '0') + '-' + String(at.getDate()).padStart(2, '0') : '';
+    $('meetTime').value = at ? String(at.getHours()).padStart(2, '0') + ':' + String(at.getMinutes()).padStart(2, '0') : '';
+    /* Error prevention: a meeting first put in the diary is today or later. */
+    if (!e.meeting_at) $('meetDate').setAttribute('min', monthKey(new Date()) + '-' + String(new Date().getDate()).padStart(2, '0'));
+    else $('meetDate').removeAttribute('min');
+    $('meetChannel').value = e.meeting_channel || 'google_meet';
+    var me = bridge.me && bridge.me();
+    $('meetOwner').innerHTML = state.members.map(function (m) {
+      var pick = e.meeting_owner_id ? m.id === e.meeting_owner_id : (me && me.id === m.id);
+      return '<option value="' + esc(m.id) + '"' + (pick ? ' selected' : '') + '>' + esc(m.name) + '</option>';
+    }).join('');
+    $('meetNote').value = e.meeting_note || '';
+    $('meetNa').checked = Boolean(e.meeting_na);
+    meetNaChanged();
+    msg('meetMsg', '');
+    sheet('meetSheet', true);
+  }
+  function meetNaChanged() {
+    var na = $('meetNa').checked;
+    ['meetDate', 'meetTime', 'meetChannel', 'meetOwner'].forEach(function (id) { $(id).disabled = na; });
+  }
+  function saveMeet() {
+    var e = meetEditing;
+    if (!e) return;
+    var na = $('meetNa').checked;
+    var args = { p_engagement: e.id, p_note: String($('meetNote').value || '').trim() || null, p_na: na };
+    if (!na) {
+      if (!$('meetDate').value) { msg('meetMsg', said('no-date'), 'err'); $('meetDate').focus(); return; }
+      var when = new Date($('meetDate').value + 'T' + ($('meetTime').value || '10:00') + ':00');
+      args.p_at = when.toISOString();
+      args.p_channel = $('meetChannel').value || null;
+      args.p_owner = $('meetOwner').value || null;
+    } else { args.p_at = null; }
+    var btn = $('meetGo');
+    btn.disabled = true;
+    call('ops_engagement_set_meeting', args, 'meetMsg', function () {
+      btn.disabled = false;
+      sheet('meetSheet', false);
+      readClientWork();
+    }, function () { btn.disabled = false; });
+  }
+
+  /* The task rail's Engagement block: where the month stands and whether
+     the meeting is held, because production waits on both. */
+  function paintEngBlock(t) {
+    var block = $('taskEngBlock'), box = $('taskEng');
+    if (!block || !box) return;
+    var e = state.eng;
+    if (!e) { block.hidden = true; box.innerHTML = ''; return; }
+    block.hidden = false;
+    var slug = t.clients && t.clients.slug;
+    box.innerHTML =
+      '<dl class="facts">' +
+        '<div><dt>Month</dt><dd>' + esc(monthWord(e.period)) + '</dd></div>' +
+        '<div><dt>Status</dt><dd><span class="tone ' + toneOf(ENG_STATE, e.status) + '">' + esc(wordOf(ENG_STATE, e.status)) + '</span></dd></div>' +
+        '<div><dt>Content meeting</dt><dd>' + esc(meetingWord(e)) + '</dd></div>' +
+        (e.manager_id ? '<div><dt>Manager</dt><dd>' + esc(nameOf(e.manager_id)) + '</dd></div>' : '') +
+      '</dl>' +
+      (slug ? '<a class="ovlink eng-open" href="/admin/?s=clients&client=' + encodeURIComponent(slug) + '&tab=work">Open the month ›</a>' : '');
+  }
+
+  /* HAND OVER. The next stage and the next person in one act, recorded
+     together; a step the deliverable does not need is skipped here, with a
+     reason on the record. */
+  function openHand() {
+    var t = state.task;
+    if (!t || !may('ops', 'work')) return;
+    var here = stageOf(t);
+    var nexts = (here && here.next_stage_keys) || [];
+    /* Every stage ahead on the line, and every move the workflow allows
+       from here; a stage that is not an allowed move is a skip. */
+    var opts = stagesOf(t.workflow_id).filter(function (s) {
+      if (s.key === t.stage_key) return false;
+      if (nexts.indexOf(s.key) > -1) return s.key !== 'blocked';
+      return here && s.position > here.position && !SIDE[s.stage_group] && !SIDE[here.stage_group];
+    });
+    $('handStage').innerHTML = opts.map(function (s) {
+      var skip = nexts.indexOf(s.key) < 0;
+      return '<option value="' + esc(s.key) + '" data-skip="' + (skip ? '1' : '') + '">' + esc(s.label) + (skip ? ' (skips a step)' : '') + '</option>';
+    }).join('');
+    var first = forwardOf(t, nexts);
+    if (first) $('handStage').value = first;
+    var owner = ownerId(t);
+    $('handTo').innerHTML = '<option value="">Keep the owner</option>' + state.members.map(function (m) {
+      return '<option value="' + esc(m.id) + '"' + (false ? ' selected' : '') + '>' + esc(m.name) + (m.id === owner ? ' (owner now)' : '') + '</option>';
+    }).join('');
+    $('handSkip').value = '';
+    $('handNote').value = '';
+    handStageChanged();
+    msg('handMsg', '');
+    sheet('handSheet', true);
+  }
+  function handStageChanged() {
+    var sel = $('handStage');
+    var o = sel.options[sel.selectedIndex];
+    $('handSkipRow').hidden = !(o && o.getAttribute('data-skip'));
+  }
+  function doHand() {
+    var t = state.task;
+    if (!t) return;
+    var sel = $('handStage');
+    var o = sel.options[sel.selectedIndex];
+    var skipping = Boolean(o && o.getAttribute('data-skip'));
+    var reason = String($('handSkip').value || '').trim();
+    if (skipping && !reason) { msg('handMsg', said('skip-reason-required'), 'err'); $('handSkip').focus(); return; }
+    var btn = $('handGo');
+    btn.disabled = true;
+    call('ops_transition_task', {
+      p_task: t.id, p_next: sel.value, p_version: t.version,
+      p_note: String($('handNote').value || '').trim() || null,
+      p_assignee: $('handTo').value || null,
+      p_skip_reason: skipping ? reason : null
+    }, 'handMsg', function (d) {
+      btn.disabled = false;
+      sheet('handSheet', false);
+      /* The queue behind the record agrees without a second read. */
+      var to = $('handTo').value;
+      if (to) { state.owners[t.id] = nameOf(to); state.ownerIds[t.id] = to; }
+      applyTask(d);
+      readTask(t.id);
+    }, function () { btn.disabled = false; });
+  }
+
+  /* A task opened from a client record: the address first, because My Work
+     reads it on entry, then the route. */
+  function openTaskElsewhere(id) {
+    history.replaceState(null, '', '/admin/?s=work&task=' + encodeURIComponent(id));
+    if (bridge.show) bridge.show('work');
   }
 
   // ---- Wiring --------------------------------------------------------------
@@ -2473,6 +3519,10 @@
     if (mk) mk.addEventListener('click', function () {
       if (window.ADspaceCopy) window.ADspaceCopy.to(mk, mk.textContent);
     });
+    var pen = $('taskDescEdit');
+    if (pen) pen.addEventListener('click', editDesc);
+    var cpt = $('taskCopyTitle');
+    if (cpt) cpt.addEventListener('click', copyTitle);
 
     // Panes
     var tabs = $('taskTabs');
@@ -2507,6 +3557,8 @@
         var a = it.getAttribute('data-a'), t = state.task;
         if (!t) return;
         if (a === 'block') openBlock();
+        if (a === 'duplicate') openDup();
+        if (a === 'repeat') openRec();
         if (a === 'archive') {
           call('ops_archive_task', { p_task: t.id, p_on: !t.archived_at }, 'taskMsg', function () {
             showList();
@@ -2646,14 +3698,82 @@
     });
     var ns = $('ntScope');
     if (ns) ns.addEventListener('change', ntScopeChanged);
-    var nt = $('ntTemplate');
-    if (nt) nt.addEventListener('change', ntHint);
+    var np = $('ntPaused');
+    if (np) np.addEventListener('change', ntScopeChanged);
+    var nty = $('ntType');
+    if (nty) nty.addEventListener('change', function () { ntTouched.type = true; });
+    var npub = $('ntPublish');
+    if (npub) npub.addEventListener('change', ntPublishChanged);
+    var nper = $('ntPeriod');
+    if (nper) nper.addEventListener('change', function () { ntTouched.period = true; ntCodeHint(); });
+    var nwk = $('ntWeek');
+    if (nwk) nwk.addEventListener('change', function () { ntTouched.week = true; ntCodeHint(); });
+    var nd = $('ntDesc');
+    if (nd) nd.addEventListener('input', ntCodeHint);
     var ng = $('ntGo');
     if (ng) ng.addEventListener('click', createTask);
 
+    // Duplicate, generate, repeat
+    ['dupClose', 'dupCancel'].forEach(function (id) {
+      var b = $(id); if (b) b.addEventListener('click', function () { sheet('dupSheet', false); });
+    });
+    /* Every name here is its own: `wire()` is one function scope, and a
+       handler above reads its element lazily, so a second `var gp` would
+       hand Group by the Preview button. */
+    var dupGoBtn = $('dupGo');
+    if (dupGoBtn) dupGoBtn.addEventListener('click', doDup);
+    ['genClose', 'genCancel'].forEach(function (id) {
+      var b = $(id); if (b) b.addEventListener('click', function () { sheet('genSheet', false); });
+    });
+    var genWhatSel = $('genWhat');
+    if (genWhatSel) genWhatSel.addEventListener('change', genWhatChanged);
+    var genSpreadSel = $('genSpread');
+    if (genSpreadSel) genSpreadSel.addEventListener('change', genWhatChanged);
+    var genPausedTick = $('genPaused');
+    if (genPausedTick) genPausedTick.addEventListener('change', function () {
+      fillClients($('genClient'), genPausedTick.checked, $('genClient').value);
+    });
+    var genPreviewBtn = $('genPreview');
+    if (genPreviewBtn) genPreviewBtn.addEventListener('click', genPreview);
+    var genGoBtn = $('genGo');
+    if (genGoBtn) genGoBtn.addEventListener('click', doGen);
+    var workGenBtn = $('workGen');
+    if (workGenBtn) workGenBtn.addEventListener('click', openGen);
+    ['recClose', 'recCancel'].forEach(function (id) {
+      var b = $(id); if (b) b.addEventListener('click', function () { sheet('recSheet', false); });
+    });
+    var recFreqSel = $('recFreq');
+    if (recFreqSel) recFreqSel.addEventListener('change', recFreqChanged);
+    var recGoBtn = $('recGo');
+    if (recGoBtn) recGoBtn.addEventListener('click', doRec);
+    var recStopBtn = $('recStop');
+    if (recStopBtn) recStopBtn.addEventListener('click', stopRec);
+
+    // The engagement, the meeting, the hand-over
+    ['engClose', 'engCancel'].forEach(function (id) {
+      var b = $(id); if (b) b.addEventListener('click', function () { sheet('engSheet', false); });
+    });
+    var engGoBtn = $('engGo');
+    if (engGoBtn) engGoBtn.addEventListener('click', saveEng);
+    ['meetClose', 'meetCancel'].forEach(function (id) {
+      var b = $(id); if (b) b.addEventListener('click', function () { sheet('meetSheet', false); });
+    });
+    var meetGoBtn = $('meetGo');
+    if (meetGoBtn) meetGoBtn.addEventListener('click', saveMeet);
+    var meetNaTick = $('meetNa');
+    if (meetNaTick) meetNaTick.addEventListener('change', meetNaChanged);
+    ['handClose', 'handCancel'].forEach(function (id) {
+      var b = $(id); if (b) b.addEventListener('click', function () { sheet('handSheet', false); });
+    });
+    var handStageSel = $('handStage');
+    if (handStageSel) handStageSel.addEventListener('change', handStageChanged);
+    var handGoBtn = $('handGo');
+    if (handGoBtn) handGoBtn.addEventListener('click', doHand);
+
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
-      ['dueSheet', 'blockSheet', 'taskSheet'].forEach(function (id) {
+      ['dueSheet', 'blockSheet', 'taskSheet', 'dupSheet', 'genSheet', 'recSheet',
+       'engSheet', 'meetSheet', 'handSheet'].forEach(function (id) {
         if ($(id) && !$(id).hidden) sheet(id, false);
       });
     });
@@ -2698,12 +3818,18 @@
   function enter() {
     var nw = $('workNew');
     if (nw) nw.hidden = !may('ops', 'work');
-    var sc = $('workScope');
-    /* The select is offered only where the whole team's queue can arrive.
-       Hiding it changes nothing the database does; showing it where it cannot
-       work would offer a view that comes back empty and say nothing. */
-    if (sc) sc.hidden = !may('ops.all', 'view');
-    if (sc && sc.hidden) state.scope = 'mine';
+    var workGen = $('workGen');
+    if (workGen) workGen.hidden = !may('ops', 'work');
+    /* Assigned, created and following are everybody's views. The whole
+       team's queue is offered only where it can arrive: showing it where it
+       cannot would offer a view that comes back empty and say nothing. */
+    var all = $('workScopeAll');
+    if (all) {
+      var team = may('ops.all', 'view');
+      all.hidden = !team;
+      all.disabled = !team;
+      if (!team && state.scope === 'all') { state.scope = 'mine'; if ($('workScope')) $('workScope').value = 'mine'; }
+    }
     /* `ops.reports` is granted and never inherited, so a group given
        `ops: work` is not quietly handed the team's numbers. Hiding the button
        changes nothing the database does — `ops_report` refuses the same
@@ -2819,7 +3945,9 @@
        reachable through a press, so a change made to the row underneath it
        has no way to reach the screen. */
     openId: function () { return (state.task && state.task.id) || null; },
-    reload: function () { if (state.task) readTask(state.task.id); }
+    reload: function () { if (state.task) readTask(state.task.id); },
+    /* The client record's Work pane: drawn by this script into that pane. */
+    clientWork: clientWork
   };
   if (bridge.opsReady) bridge.opsReady();
   if (bridge.me && bridge.me()) signedIn();

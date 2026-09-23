@@ -818,7 +818,7 @@
      services it quotes and Billing was a scroll away from the contact it
      names. The pane is in the address, so a refresh, a pasted link, Back and
      Forward all land on the section somebody was working in. */
-  var PANES = ['overview', 'contacts', 'billing', 'brand', 'services', 'documents', 'activity'];
+  var PANES = ['overview', 'contacts', 'billing', 'brand', 'services', 'documents', 'work', 'activity'];
   var pane = 'overview';
 
   function paneFromUrl() {
@@ -842,6 +842,11 @@
     });
     if (key === 'activity' && !(state.log || []).length) loadClientLog();
     if (key === 'overview') paintSummary();
+    /* The client's work is My Work's to draw: the words, the gates and the
+       sheets are that script's, and a second copy here would drift. */
+    if (key === 'work' && window.ADspaceOps && window.ADspaceOps.clientWork) {
+      window.ADspaceOps.clientWork($('crmWorkPane'), state.client);
+    }
   }
 
   gateTabs();
@@ -2247,7 +2252,7 @@
   /* qty × the billed rate × months. A one-off line has one month. The billed
      rate is the catalogue rate carrying its term adjustment, worked out once
      in money.js so this, the letter and the client's page cannot disagree. */
-  function rateOf(l) { return MON.rateFor(l.rate, l.tenure, l.term_adjust); }
+  function rateOf(l) { return MON.rateFor(l.rate, l.tenure, l.term_adjust, l.term_pct); }
   function amountOf(l) { return Number(l.qty || 0) * rateOf(l) * Math.max(1, Number(l.tenure || 1)); }
   /* A start kept as a month (older lines) reads as its first day. */
   function startDay(s) { s = String(s || ''); return s.length === 7 ? s + '-01' : s; }
@@ -2260,7 +2265,7 @@
   // never something the reader has to work out for themselves. It says nothing
   // where the line is billed at the rate that was typed, because then there is
   // nothing to explain.
-  function adjWord(l) { return MON.termNote(l.tenure, l.term_adjust); }
+  function adjWord(l) { return MON.termNote(l.tenure, l.term_adjust, l.term_pct); }
 
   function loadServices() {
     var box = $('crmServices');
@@ -2423,13 +2428,37 @@
   /* The tick is offered only where the term has a factor, and it says what
      pressing it will do at the term that is typed: an unlabelled "apply the
      adjustment" leaves the reader to remember which way three months goes. */
-  function syncAdjust() {
-    var adj = MON.termAdj(Number(val('svTenure') || 1));
-    $('svAdjRow').hidden = !adj;
+  /* The percentage is the rate card's for the term typed until the person
+     types one of their own, and from then on it is theirs: a negotiated 20%
+     must not snap back to 25 because the term was corrected. Cleared, the
+     line falls back to the older factor table, which is what a line from
+     before the percentage existed carries. */
+  var svPctCard = null;
+  function svPctValue() {
+    var v = String($('svPct').value || '').trim();
+    return v === '' ? null : Number(v);
+  }
+  /* `typing` is the person editing the field itself: the word follows and
+     the figure is left alone, or clearing it to type a new one would refill
+     it under their cursor. */
+  function syncAdjust(typing) {
+    var months = Number(val('svTenure') || 1);
+    var card = MON.termPct(months);
+    var cur = svPctValue();
+    /* The field follows the card while it still holds the card's own figure
+       for the term it was filled for; a figure of the person's own stays. */
+    if (typing !== true && (cur === null || cur === svPctCard)) {
+      $('svPct').value = card ? String(card) : '';
+      svPctCard = card;
+    }
+    var adj = MON.termAdj(months, svPctValue());
+    $('svAdjRow').hidden = !adj && !card;
     if (adj) $('svAdjustWord').textContent = 'Apply the ' + adj;
+    else if (card) $('svAdjustWord').textContent = 'Apply the term adjustment';
     else $('svAdjust').checked = false;
   }
-  $('svTenure').addEventListener('input', syncAdjust);
+  $('svTenure').addEventListener('input', function () { syncAdjust(false); });
+  $('svPct').addEventListener('input', function () { syncAdjust(true); });
   function openService(l) {
     editingService = l || null;
     loadCatalog(function () {
@@ -2449,6 +2478,17 @@
          read as it was stored, and a line quoted before the tick existed was
          backfilled to carry it, so nobody's figure moves. */
       $('svAdjust').checked = l ? l.term_adjust !== false : false;
+      /* A line already holding a percentage shows it; one from before the
+         percentage existed shows the factor it was quoted at as a
+         percentage, so the figure it prints is the figure on its letter. */
+      svPctCard = l ? MON.termPct(l.tenure) : null;
+      if (l && l.term_pct !== null && l.term_pct !== undefined) {
+        $('svPct').value = String(l.term_pct);
+      } else if (l && l.term_adjust !== false && MON.termFactor(l.tenure) !== 1) {
+        $('svPct').value = String(Math.round((MON.termFactor(l.tenure) - 1) * 10000) / 100);
+      } else {
+        $('svPct').value = '';
+      }
       syncPick(!l);
       msg('svMsg', '');
       openSheet('crmServiceBox');
@@ -2474,7 +2514,11 @@
       detail: val('svDetail') || null,
       // Stored on every save, never left to the column's default, because the
       // rule that reads it treats a missing value as "on".
-      term_adjust: !$('svAdjRow').hidden && $('svAdjust').checked
+      term_adjust: !$('svAdjRow').hidden && $('svAdjust').checked,
+      /* The percentage the tick applies, stored with the line whether or not
+         the tick is on, so the figure the letter and the client's page work
+         out is the one the person saw. */
+      term_pct: !$('svAdjRow').hidden ? svPctValue() : null
     };
     if (editingService) { saveService(editingService, row); return; }
     row.client_id = state.client.id;
