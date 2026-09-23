@@ -888,6 +888,8 @@
     /* A deleted task takes its own events with it, so the only record of the
        deletion is here. Filed under My Work, which is the section it is about. */
     'ops.deleted':           ['Task deleted', 'is-danger', 'ops'],
+    /* An admin setting the next task number. */
+    'ops.numbering':         ['Numbering changed', '', 'ops'],
     'client.added':          ['Client added', 'is-ok', 'clients'],
     'team.added':            ['Team member added', 'is-ok', 'team'],
     'team.changed':          ['Access changed', 'is-warn', 'team'],

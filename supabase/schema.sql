@@ -8027,9 +8027,12 @@ grant execute on function public.ops_delete_task(uuid, text, text) to authentica
 --      takes a template's default title, owner and due offset in calendar
 --      days from a base date.
 --
---   3. `ops_transition_task`: skipping a step is a manual override and needs
---      ops Manage (every move the workflow lists stays at ops Work); and a
---      move into a terminal stage closes every running timer on the task.
+--   3. `ops_transition_task`: skipping a step keeps the published rule (ops
+--      Work, with a reason) and can never land on a revision stage; a task
+--      reaches Client review only after AQC review, with the draft link or a
+--      note saying how the draft was sent (the WhatsApp group); a revision
+--      takes a note; every review and revision records its round; and a move
+--      into a terminal stage closes every running timer on the task.
 --
 --   4. `ops_hand_over_task` (ops Manage, the note kept on the event),
 --      `ops_set_publish_date` (ops Work), `ops_add_checklist_item` and
@@ -8039,18 +8042,61 @@ grant execute on function public.ops_delete_task(uuid, text, text) to authentica
 --   5. Three columns on `ops_task_templates` (default_title,
 --      default_owner_id, due_offset_days) and one index for cancelled work.
 --
---   No existing task is rewritten, moved or renamed. No policy changes.
+--   6. The task number reads #WT00001 (`ops_serial`), in the notifications,
+--      the activity record and the delete check alike; `ops_next_task_no` and
+--      `ops_set_next_task_no` let an admin read and set the next number.
+--
+--   7. The content workflow's words, its two revision loops and what follows
+--      approval: In progress, Ready to start and AQC review are relabelled
+--      where they still read as seeded; Revision (Internal) (from AQC review)
+--      and Revision (Client) (from Client review) are added; and after
+--      Approved come Scheduled, Live, Performance review (three days after
+--      going live, handed back to whoever created the task), Taken down and
+--      Completed. Changes requested stays for any task already in it and is
+--      no longer offered as a next step.
+--
+--   8. The live date and the rating: five columns on `ops_tasks` (live_at,
+--      rating, rating_note, rated_by, rated_at), `ops_mark_live` (a date other
+--      than the scheduled one says why) and `ops_rate_task` (one to five, a
+--      finished task only, a change filed as a second event).
+--
+--   9. `ops_delete_tasks`: several tasks deleted in one act, ops Manage, the
+--      count typed back and a reason, each one filed as its own deletion.
+--
+--  10. What was added can be put right: `ops_update_task` (the brief and the
+--      priority), `ops_edit_checklist_item` and `ops_remove_checklist_item`
+--      (never a required check), `ops_update_link`, and `ops_edit_comment` /
+--      `ops_remove_comment` (the writer or ops Manage), each filed as a later
+--      event so the history keeps what it was.
+--
+--   No existing task is rewritten, moved or renamed. No policy changes. The
+--   test tasks are cleared by a separate file, 2026-09-24-clear-test-tasks.sql,
+--   which is run once and on purpose.
 --
 -- Rollback: re-run sections 9.8 and 9.10 of 2026-09-23-operations-phase4.sql
--- (the previous ops_create_task and ops_transition_task), then
+-- (the previous ops_create_task, ops_transition_task, ops_log and
+-- ops_delete_task), then
+--   drop function if exists public.ops_rate_task(uuid, integer, text);
+--   drop function if exists public.ops_mark_live(uuid, timestamptz, text, integer, uuid, text);
+--   drop function if exists public.ops_remove_comment(uuid, boolean);
+--   drop function if exists public.ops_edit_comment(uuid, text);
+--   drop function if exists public.ops_update_link(uuid, text, text, text, integer);
+--   drop function if exists public.ops_remove_checklist_item(uuid);
+--   drop function if exists public.ops_edit_checklist_item(uuid, text);
+--   drop function if exists public.ops_update_task(uuid, jsonb, integer);
+--   drop function if exists public.ops_delete_tasks(uuid[], text, text);
+--   drop function if exists public.ops_set_next_task_no(bigint);
+--   drop function if exists public.ops_next_task_no();
+--   drop function if exists public.ops_serial(bigint);
 --   drop function if exists public.ops_hand_over_task(uuid, uuid, text, integer);
 --   drop function if exists public.ops_set_publish_date(uuid, timestamptz, integer);
 --   drop function if exists public.ops_add_checklist_item(uuid, text);
 --   drop function if exists public.ops_add_comment(uuid, text);
 --   drop function if exists public.ops_save_template(uuid, jsonb);
 --   drop index if exists public.ops_tasks_cancelled_idx;
--- The `task` workflow and the three template columns may stay: nothing reads
--- them once the functions are rolled back. Remove them only where no task was
+-- The `task` workflow, the three template columns and the five live and
+-- rating columns may stay: nothing reads them once the functions are rolled
+-- back. Remove them only where no task was
 -- created on the workflow:
 --   delete from public.ops_workflow_stages where workflow_id in
 --     (select id from public.ops_workflows where key = 'task');
@@ -8300,8 +8346,12 @@ end $$;
 grant execute on function public.ops_create_task(jsonb, text) to authenticated;
 
 -- 3. Moving a task --------------------------------------------------------------
-/* The phase 4 move, with two rules added: a skip is an override, and a
-   finished task stops its timers. */
+/* The phase 4 move, with the rules this file adds: a skip keeps the
+   published rule (ops Work, with a reason); AQC review comes before the
+   client; a draft reaches the client as a link or with a note saying how;
+   a revision says what changes; each review and revision counts its round;
+   a finished task stops its timers; and a task that leaves Cancelled is no
+   longer cancelled. */
 create or replace function public.ops_transition_task(
   p_task uuid, p_next text, p_version integer default null, p_note text default null,
   p_assignee uuid default null, p_skip_reason text default null)
@@ -8404,7 +8454,11 @@ begin
                         and e.to_value ->> 'stage_key' = 'internal_review') then
     return jsonb_build_object('error', 'needs-aqc');
   end if;
-  if p_next = 'client_review' and not has_draft then
+  /* The draft reaches the client as a link on the task or through the
+     team's WhatsApp group with the client. Either way the record says how:
+     the link, or a note naming where it went. */
+  if p_next = 'client_review' and not has_draft
+     and nullif(btrim(coalesce(p_note, '')), '') is null then
     return jsonb_build_object('error', 'needs-draft');
   end if;
   /* A revision says what has to change, and so does taking a post down. */
@@ -8495,7 +8549,11 @@ begin
     completed_at = case when nxt.is_terminal and p_next <> 'cancelled' then coalesce(completed_at, now())
                         when not nxt.is_terminal then null
                         else completed_at end,
+    /* Leaving Cancelled for a live stage is a reopening, and the stamp
+       leaves with it, as completed_at does; left behind, the task went on
+       reading cancelled at the stage it had been reopened to. */
     cancelled_at = case when p_next = 'cancelled' then coalesce(cancelled_at, now())
+                        when not nxt.is_terminal then null
                         else cancelled_at end,
     blocked_at = case when p_next = 'blocked' then blocked_at else null end,
     blocked_category = case when p_next = 'blocked' then blocked_category else null end
@@ -8655,7 +8713,8 @@ end $$;
 grant execute on function public.ops_add_checklist_item(uuid, text) to authenticated;
 
 /* A comment is an event: it is read in the task's own history, in order,
-   with who wrote it, and it cannot be edited or removed afterwards. */
+   with who wrote it. The event itself is never rewritten; a correction or a
+   removal is a later event (section 15). */
 create or replace function public.ops_add_comment(p_task uuid, p_body text)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -9106,5 +9165,201 @@ begin
   return public.ops_next_task_no();
 end $$;
 grant execute on function public.ops_set_next_task_no(bigint) to authenticated;
+
+-- 15. Changing and taking back what was added ------------------------------------
+/* Everything a person adds to a task can be put right afterwards: the brief
+   and the priority, a checklist item, a link, a comment. Each change is an
+   event beside the others, so the record shows what it was and what it
+   became. A required check is the review's own gate and is neither renamed
+   nor removed. A comment is never rewritten: a correction or a removal is a
+   later event, and the history keeps what was said and when. */
+create or replace function public.ops_update_task(
+  p_task uuid, p_payload jsonb, p_version integer default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m     public.team_members;
+  t     public.ops_tasks;
+  d     text;
+  pr    integer;
+  was   jsonb := '{}'::jsonb;
+  now_  jsonb := '{}'::jsonb;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.ops_may_see_task(p_task) then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into t from public.ops_tasks where id = p_task for update;
+  if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if p_version is not null and p_version <> t.version then
+    return jsonb_build_object('error', 'stale', 'task', public.ops_task_json(p_task));
+  end if;
+  d := t.description;
+  pr := t.priority_level;
+  if p_payload ? 'description' then
+    d := nullif(btrim(coalesce(p_payload ->> 'description', '')), '');
+    if length(coalesce(d, '')) > 4000 then return jsonb_build_object('error', 'too-long'); end if;
+  end if;
+  if p_payload ? 'priority_level' then
+    pr := (p_payload ->> 'priority_level')::integer;
+    if pr is null or pr < 1 or pr > 4 then return jsonb_build_object('error', 'bad-priority'); end if;
+  end if;
+  if d is not distinct from t.description and pr is not distinct from t.priority_level then
+    return public.ops_task_json(p_task);
+  end if;
+  if d is distinct from t.description then
+    was := was || jsonb_build_object('description', t.description);
+    now_ := now_ || jsonb_build_object('description', d);
+  end if;
+  if pr is distinct from t.priority_level then
+    was := was || jsonb_build_object('priority_level', t.priority_level);
+    now_ := now_ || jsonb_build_object('priority_level', pr);
+  end if;
+  update public.ops_tasks set description = d, priority_level = pr,
+         version = version + 1, updated_at = now()
+   where id = p_task;
+  perform public.ops_log(p_task, 'details_changed', was, now_, '{}'::jsonb);
+  return public.ops_task_json(p_task);
+end $$;
+grant execute on function public.ops_update_task(uuid, jsonb, integer) to authenticated;
+
+create or replace function public.ops_edit_checklist_item(p_item uuid, p_label text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m   public.team_members;
+  c   public.ops_task_checklist_items;
+  lbl text;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  select * into c from public.ops_task_checklist_items where id = p_item for update;
+  if c.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.ops_may_see_task(c.task_id) then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if c.required then return jsonb_build_object('error', 'item-required'); end if;
+  lbl := nullif(btrim(coalesce(p_label, '')), '');
+  if lbl is null then return jsonb_build_object('error', 'label-required'); end if;
+  if length(lbl) > 300 then return jsonb_build_object('error', 'too-long'); end if;
+  if lbl = c.label then return to_jsonb(c); end if;
+  update public.ops_task_checklist_items set label = lbl where id = p_item;
+  perform public.ops_log(c.task_id, 'checklist_changed',
+    jsonb_build_object('label', c.label),
+    jsonb_build_object('label', lbl, 'renamed', true), '{}'::jsonb);
+  return (select to_jsonb(x) from public.ops_task_checklist_items x where x.id = p_item);
+end $$;
+grant execute on function public.ops_edit_checklist_item(uuid, text) to authenticated;
+
+create or replace function public.ops_remove_checklist_item(p_item uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m   public.team_members;
+  c   public.ops_task_checklist_items;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  select * into c from public.ops_task_checklist_items where id = p_item for update;
+  if c.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.ops_may_see_task(c.task_id) then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if c.required then return jsonb_build_object('error', 'item-required'); end if;
+  delete from public.ops_task_checklist_items where id = p_item;
+  perform public.ops_log(c.task_id, 'checklist_changed',
+    jsonb_build_object('label', c.label, 'done', c.completed_at is not null),
+    jsonb_build_object('label', c.label, 'removed', true), '{}'::jsonb);
+  return jsonb_build_object('removed', to_jsonb(c));
+end $$;
+grant execute on function public.ops_remove_checklist_item(uuid) to authenticated;
+
+create or replace function public.ops_update_link(
+  p_link uuid, p_label text, p_url text, p_kind text, p_version integer default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m   public.team_members;
+  l   public.ops_task_links;
+  t   public.ops_tasks;
+  lbl text;
+  u   text;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  select * into l from public.ops_task_links where id = p_link for update;
+  if l.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.ops_may_see_task(l.task_id) then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if p_kind not in ('brief', 'asset', 'draft', 'review', 'final', 'other') then
+    return jsonb_build_object('error', 'bad-kind');
+  end if;
+  u := nullif(btrim(coalesce(p_url, '')), '');
+  if u is null then return jsonb_build_object('error', 'url-required'); end if;
+  select * into t from public.ops_tasks where id = l.task_id for update;
+  if p_version is not null and p_version <> t.version then
+    return jsonb_build_object('error', 'stale', 'task', public.ops_task_json(l.task_id));
+  end if;
+  lbl := coalesce(nullif(btrim(coalesce(p_label, '')), ''), initcap(p_kind) || ' link');
+  if lbl = l.label and u = l.url and p_kind = l.kind then
+    return jsonb_build_object('link_id', l.id, 'task', public.ops_task_json(l.task_id));
+  end if;
+  update public.ops_task_links set label = lbl, url = u, kind = p_kind where id = p_link;
+  update public.ops_tasks set version = version + 1, updated_at = now() where id = l.task_id;
+  perform public.ops_log(l.task_id, 'file_changed',
+    jsonb_build_object('link_id', l.id, 'label', l.label, 'url', l.url, 'kind', l.kind),
+    jsonb_build_object('link_id', l.id, 'label', lbl, 'url', u, 'kind', p_kind), '{}'::jsonb);
+  return jsonb_build_object('link_id', l.id, 'task', public.ops_task_json(l.task_id));
+end $$;
+grant execute on function public.ops_update_link(uuid, text, text, text, integer) to authenticated;
+
+/* A comment is corrected or removed by the person who wrote it, or by ops
+   Manage, through a later event that names it. */
+create or replace function public.ops_edit_comment(p_event uuid, p_body text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m    public.team_members;
+  e    public.ops_task_events;
+  body text;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  select * into e from public.ops_task_events where id = p_event;
+  if e.id is null or e.event_type <> 'commented' then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.ops_may_see_task(e.task_id) then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if e.actor_id is distinct from m.id and not public.allowed('ops', 'manage') then
+    return jsonb_build_object('error', 'not-yours');
+  end if;
+  body := nullif(btrim(coalesce(p_body, '')), '');
+  if body is null then return jsonb_build_object('error', 'comment-required'); end if;
+  if length(body) > 2000 then return jsonb_build_object('error', 'too-long'); end if;
+  perform public.ops_log(e.task_id, 'comment_edited',
+    jsonb_build_object('event_id', e.id), jsonb_build_object('event_id', e.id),
+    jsonb_build_object('note', body));
+  return public.ops_task_json(e.task_id);
+end $$;
+grant execute on function public.ops_edit_comment(uuid, text) to authenticated;
+
+create or replace function public.ops_remove_comment(p_event uuid, p_on boolean default true)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  e public.ops_task_events;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  select * into e from public.ops_task_events where id = p_event;
+  if e.id is null or e.event_type <> 'commented' then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.ops_may_see_task(e.task_id) then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if e.actor_id is distinct from m.id and not public.allowed('ops', 'manage') then
+    return jsonb_build_object('error', 'not-yours');
+  end if;
+  perform public.ops_log(e.task_id, case when p_on then 'comment_removed' else 'comment_restored' end,
+    jsonb_build_object('event_id', e.id), jsonb_build_object('event_id', e.id), '{}'::jsonb);
+  return public.ops_task_json(e.task_id);
+end $$;
+grant execute on function public.ops_remove_comment(uuid, boolean) to authenticated;
 
 -- END OF MY WORK AS A DAILY TASK TRACKER -----------------------------------

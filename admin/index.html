@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260923c">
+<link rel="stylesheet" href="/css/portal.css?v=20260923d">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -32,25 +32,25 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260923c"></script>
-<script src="/js/words.js?v=20260923c"></script>
-<script src="/js/copy.js?v=20260923c"></script>
-<script src="/js/ask.js?v=20260923c"></script>
-<script src="/js/confirm.js?v=20260923c"></script>
-<script src="/js/sheet.js?v=20260923c"></script>
-<script src="/js/state.js?v=20260923c"></script>
-<script src="/js/group.js?v=20260923c"></script>
-<script src="/js/menu.js?v=20260923c"></script>
-<script src="/js/cmdbar.js?v=20260923c"></script>
-<script src="/js/api.js?v=20260923c"></script>
-<script src="/js/money.js?v=20260923c"></script>
-<script src="/js/mockups.js?v=20260923c"></script>
+<script src="/js/config.js?v=20260923d"></script>
+<script src="/js/words.js?v=20260923d"></script>
+<script src="/js/copy.js?v=20260923d"></script>
+<script src="/js/ask.js?v=20260923d"></script>
+<script src="/js/confirm.js?v=20260923d"></script>
+<script src="/js/sheet.js?v=20260923d"></script>
+<script src="/js/state.js?v=20260923d"></script>
+<script src="/js/group.js?v=20260923d"></script>
+<script src="/js/menu.js?v=20260923d"></script>
+<script src="/js/cmdbar.js?v=20260923d"></script>
+<script src="/js/api.js?v=20260923d"></script>
+<script src="/js/money.js?v=20260923d"></script>
+<script src="/js/mockups.js?v=20260923d"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260923c" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260923d" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -1673,18 +1673,32 @@
             <option value="following">Following</option>
             <option value="all" id="workScopeAll" hidden>The whole team</option>
           </select>
-          <!-- What a person looks at first: their day, then the questions a
-               day raises. Each is a view over the same rows, so the count and
-               the grouping follow it. -->
+          <!-- What a person looks at first: their day, then where the work
+               has got to, then its history. Each is a view over the same rows,
+               so the count and the grouping follow it. The stage views are the
+               ones My Work was published with, keyed on the stage group the
+               workflow carries and never on a stage key. -->
           <select class="select select-sm" id="workStage" aria-label="View">
-            <option value="day">My day</option>
-            <option value="today">Due today</option>
-            <option value="overdue">Overdue</option>
-            <option value="upcoming">Upcoming</option>
-            <option value="waiting">Waiting</option>
-            <option value="review">Review</option>
-            <option value="done">Completed</option>
-            <option value="all">All tasks</option>
+            <optgroup label="Your day">
+              <option value="day">My day</option>
+              <option value="today">Due today</option>
+              <option value="overdue">Overdue</option>
+              <option value="soon">Due soon</option>
+              <option value="upcoming">Upcoming</option>
+            </optgroup>
+            <optgroup label="Where the work is">
+              <option value="active">In progress</option>
+              <option value="internal_review">AQC review</option>
+              <option value="client_review">Client review</option>
+              <option value="waiting_client">Waiting on client</option>
+              <option value="after">Scheduled and live</option>
+              <option value="waiting">On hold or blocked</option>
+              <option value="late">Late</option>
+            </optgroup>
+            <optgroup label="History">
+              <option value="done">Completed</option>
+              <option value="all">All tasks</option>
+            </optgroup>
           </select>
           <!-- The axis. Banding by when work is owed answers "what do I do
                today" and cannot answer "how is October going" or "what is
@@ -1697,9 +1711,10 @@
           <select class="select select-sm" id="workWf" aria-label="Workflow" data-nofilter hidden></select>
           <select class="select select-sm" id="workGroup" aria-label="Group by">
             <option value="due">By day</option>
-            <option value="owner">By owner</option>
+            <option value="stage">By stage</option>
+            <option value="status">By status</option>
+            <option value="owner">By task owner</option>
             <option value="client">By client</option>
-            <option value="stage">By status</option>
             <option value="engagement">By engagement</option>
           </select>
           <!-- How far back finished work is read. Open work is never bounded
@@ -1717,16 +1732,39 @@
               <span class="cmdbar-count" id="workCount"></span>
             </span>
             <span class="cmdbar-acts">
-              <!-- A month of tasks at once, or this month's recurring ones:
-                   one neutral control beside the primary, behind the ⋯ on a
-                   phone like the Documents bar's second action. -->
-              <button class="btn btn-sm" id="workTpl" type="button" hidden>From template</button>
-              <button class="btn btn-sm" id="workGen" type="button" hidden>Generate</button>
+              <!-- Everything the bar does besides adding one task, behind one
+                   ⋯ at every width: adding many at once, making them from a
+                   template, choosing several to act on, and, for an admin,
+                   the next task number. Four outline buttons beside the
+                   primary were a wrapped second row at a desk. -->
+              <span class="kmenu-wrap work-more" id="workMoreWrap" hidden>
+                <button class="kmenu-btn btn-sm work-more-btn" id="workMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
+                  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+                </button>
+                <div class="kmenu" id="workMore" hidden role="menu">
+                  <button class="kmenu-item" data-a="bulk" type="button" role="menuitem">Bulk add</button>
+                  <button class="kmenu-item" data-a="template" type="button" role="menuitem">From template</button>
+                  <button class="kmenu-item" data-a="select" type="button" role="menuitem" data-need="ops:manage">Select tasks</button>
+                  <button class="kmenu-item" data-a="numbering" type="button" role="menuitem" hidden>Task numbering</button>
+                </div>
+              </span>
               <button class="btn btn-sm btn-primary" id="workNew" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">Add task</span></button>
             </span>
           </span>
         </div>
         <div class="msg" id="workMsg"></div>
+        <!-- Several tasks at once: the ones ticked in the list, what they
+             are, and the two acts that apply to many. It stays under the bar
+             while the list scrolls, so the count and Delete are never a
+             screen away from the ticks. -->
+        <div class="bulkbar" id="workBulk" hidden>
+          <label class="tickline bulkbar-all"><input type="checkbox" id="workBulkAll"> <span id="workBulkCount">0 selected</span></label>
+          <span class="bulkbar-acts">
+            <button class="btn btn-sm" id="workBulkOwner" type="button" disabled>Assign task owner</button>
+            <button class="btn btn-sm btn-danger" id="workBulkDelete" type="button" disabled>Delete</button>
+            <button class="btn btn-sm btn-quiet" id="workBulkDone" type="button">Done</button>
+          </span>
+        </div>
         <div id="workQueue"></div>
         <!-- The board: the week's hours against each person's capacity, then
              one column per stage. -->
@@ -1769,6 +1807,10 @@
                   <button class="kmenu-item" data-a="block" type="button" role="menuitem">Mark blocked</button>
                   <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Duplicate</button>
                   <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat</button>
+                  <!-- Stage time is recorded by every move, so a timer is
+                       never the way work is tracked; it stays here for the
+                       person who wants their own hours on a task. -->
+                  <button class="kmenu-item" data-a="timer" type="button" role="menuitem" hidden>Start timer</button>
                   <button class="kmenu-item" data-a="reopen" type="button" role="menuitem" hidden>Reopen</button>
                   <button class="kmenu-item" data-a="cancel" type="button" role="menuitem" hidden>Cancel task</button>
                   <button class="kmenu-item" data-a="archive" type="button" role="menuitem" data-need="ops:manage">Archive</button>
@@ -1801,7 +1843,13 @@
             <p class="tnext-line" id="taskNextLine"></p>
             <ul class="tnext-list" id="taskNextList" hidden></ul>
             <p class="tnext-late" id="taskNextLate" hidden></p>
+            <div class="qhand" id="taskHand" hidden>
+              <label class="tickline" id="taskHandTickWrap"><input type="checkbox" id="taskHandTick"> <span>Change Task Owner</span></label>
+              <label class="qhand-lab" id="taskHandLab" for="taskHandTo" hidden>Performance review by</label>
+              <select class="select select-sm" id="taskHandTo" aria-label="New Task Owner" hidden></select>
+            </div>
             <div class="tnext-acts" id="taskNextActs"></div>
+            <div class="qrate" id="taskRate" hidden></div>
             <div class="msg" id="taskNextMsg"></div>
           </section>
 
@@ -1898,7 +1946,13 @@
           </aside>
         </div>
       </div>
+    </div>
 
+    <!-- The task sheets sit outside the My Work section, because a task is
+         also made, copied and generated from a client record. Every one is
+         fixed to the viewport, so where it lives in the markup is nothing
+         but where it can be reached from. -->
+    <div id="workSheets">
       <!-- A date move states what it was and takes a reason, because a report
            that cannot see why a promise moved cannot see replanning. -->
       <div class="sheet" id="dueSheet" hidden>
@@ -1949,7 +2003,7 @@
           <div class="sheet-body">
             <p class="hint" id="tdelWhat"></p>
             <label class="field-label" for="tdelConfirm">Type the task number to confirm</label>
-            <input class="input" id="tdelConfirm" autocomplete="off" placeholder="T1002">
+            <input class="input" id="tdelConfirm" autocomplete="off" placeholder="#WT00001">
             <label class="field-label" for="tdelReason" style="margin-top:12px">Reason</label>
             <input class="input" id="tdelReason" autocomplete="off" placeholder="Optional">
           </div>
@@ -1993,13 +2047,6 @@
         </div>
       </div>
 
-    </div>
-
-    <!-- The task sheets sit outside the My Work section, because a task is
-         also made, copied and generated from a client record. Every one is
-         fixed to the viewport, so where it lives in the markup is nothing
-         but where it can be reached from. -->
-    <div id="workSheets">
       <!-- A copy: the planning fields travel, the history does not, and what
            else travels is the person's to say. -->
       <div class="sheet" id="dupSheet" hidden>
@@ -2049,7 +2096,7 @@
       <div class="sheet" id="genSheet" hidden>
         <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="genTitle">
           <div class="sheet-head">
-            <h3 id="genTitle">Generate tasks</h3>
+            <h3 id="genTitle">Bulk add tasks</h3>
             <button class="iconbtn" id="genClose" type="button" aria-label="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
@@ -2144,7 +2191,7 @@
                   </select>
                 </div>
                 <div class="field">
-                  <label class="field-label" for="genOwner">Owner</label>
+                  <label class="field-label" for="genOwner">Task Owner</label>
                   <select class="select" id="genOwner"></select>
                 </div>
               </div>
@@ -2158,7 +2205,7 @@
             </div>
           </div>
           <div class="sheet-foot">
-            <button class="btn btn-primary" id="genGo" type="button">Generate</button>
+            <button class="btn btn-primary" id="genGo" type="button">Add tasks</button>
             <button class="btn btn-quiet" id="genCancel" type="button">Cancel</button>
           </div>
           <div class="msg" id="genMsg"></div>
@@ -2301,7 +2348,7 @@
                 </select>
               </div>
               <div class="field">
-                <label class="field-label" for="ntOwner">Owner</label>
+                <label class="field-label" for="ntOwner">Task Owner</label>
                 <select class="select" id="ntOwner"></select>
               </div>
             </div>
@@ -2487,7 +2534,7 @@
             <input class="input" id="qkTitle" placeholder="Write September caption" maxlength="200">
             <div class="row">
               <div class="field">
-                <label class="field-label" for="qkOwner">Owner</label>
+                <label class="field-label" for="qkOwner">Task Owner</label>
                 <select class="select" id="qkOwner"></select>
               </div>
               <div class="field">
@@ -2530,29 +2577,38 @@
         </div>
       </div>
 
-      <!-- THE QUICK DRAWER. A task opened from the list opens here, beside the
-           list, with everything a routine change needs; the full record is one
-           press further for the rare task that needs it. -->
-      <div class="drawer" id="taskDrawer" hidden>
-        <div class="drawer-scrim" id="dwScrim"></div>
-        <aside class="drawer-card" role="dialog" aria-modal="true" aria-labelledby="dwTitle" tabindex="-1">
-          <header class="drawer-head">
-            <div class="drawer-top">
+      <!-- THE TASK, OPENED FROM A LIST. The portal's own sheet, docked to the
+           right at a desk so the list it came from stays on the screen, and
+           the bottom sheet every other form is on a phone. It holds what a
+           day's work on one task needs and nothing that belongs to the client
+           or the month: what it is, where it stands and the one thing to do
+           next, then the facts, the work and the talk about it, each in its
+           own card. The full record is one press further, for the rare task
+           that needs it; detailed time and activity open only when asked. -->
+      <div class="sheet sheet-side" id="taskDrawer" hidden>
+        <div class="sheet-card taskcard" role="dialog" aria-modal="true" aria-labelledby="dwTitle" tabindex="-1">
+          <div class="sheet-head qhead">
+            <div class="qhead-top">
               <button class="tcheck" id="dwCheck" type="button" hidden></button>
               <button class="serial-copy rec-token" id="dwNo" type="button"></button>
-              <span class="drawer-top-end">
+              <span class="qhead-end">
                 <span class="chip" id="dwStatus"></span>
                 <span class="kmenu-wrap" id="dwMenuWrap">
                   <button class="kmenu-btn" id="dwMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
                     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                   </button>
+                  <!-- What is not the next step: a move off the ordinary
+                       path, a change of hands with no move, the copies, and
+                       the acts that end or remove the task. -->
                   <div class="kmenu" id="dwMenu" hidden role="menu">
+                    <button class="kmenu-item" data-a="revert" type="button" role="menuitem" hidden>Revert</button>
                     <button class="kmenu-item" data-a="full" type="button" role="menuitem">Open full record</button>
-                    <button class="kmenu-item" data-a="timer" type="button" role="menuitem">Start timer</button>
-                    <button class="kmenu-item" data-a="handover" type="button" role="menuitem" data-need="ops:manage">Hand over with a note</button>
                     <button class="kmenu-item" data-a="move" type="button" role="menuitem">Move to another stage</button>
+                    <button class="kmenu-item" data-a="handover" type="button" role="menuitem" data-need="ops:manage">Hand over with a note</button>
+                    <button class="kmenu-item" data-a="block" type="button" role="menuitem">Mark blocked</button>
                     <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat</button>
                     <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Duplicate</button>
+                    <button class="kmenu-item" data-a="reopen" type="button" role="menuitem" hidden>Reopen</button>
                     <button class="kmenu-item" data-a="cancel" type="button" role="menuitem">Cancel task</button>
                     <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem" data-need="ops:manage">Delete</button>
                   </div>
@@ -2562,56 +2618,190 @@
                 </button>
               </span>
             </div>
-            <h2 class="drawer-title" id="dwTitle"></h2>
-            <p class="drawer-ctx" id="dwCtx"></p>
-            <dl class="tfacts" id="dwFacts"></dl>
-          </header>
-          <div class="drawer-body" id="dwBody">
-            <section class="tsec" id="dwDescSec">
-              <h3 class="tsec-title">Description</h3>
-              <div id="dwDesc"></div>
-            </section>
-            <section class="tsec" id="dwCheckSec">
-              <h3 class="tsec-title">Checklist</h3>
-              <div id="dwChecks"></div>
-              <form class="dwadd" id="dwCheckForm" autocomplete="off">
-                <input class="input input-sm" id="dwCheckAdd" placeholder="Add an item" aria-label="Add a checklist item" maxlength="300">
-                <button class="btn btn-sm" type="submit">Add</button>
-              </form>
-            </section>
-            <section class="tsec" id="dwLinkSec">
-              <h3 class="tsec-title">Files and links</h3>
-              <div id="dwLinks"></div>
-              <form class="dwadd" id="dwLinkForm" autocomplete="off">
-                <input class="input input-sm" id="dwLinkUrl" type="url" placeholder="https://" aria-label="Link address" spellcheck="false">
-                <select class="select select-sm" id="dwLinkKind" aria-label="Kind of link">
-                  <option value="other">Link</option>
-                  <option value="draft">Draft</option>
-                  <option value="final">Final</option>
-                  <option value="asset">File</option>
-                </select>
-                <button class="btn btn-sm" type="submit">Add</button>
-              </form>
-            </section>
-            <section class="tsec" id="dwCommentSec">
-              <h3 class="tsec-title">Comments</h3>
-              <div id="dwComments"></div>
-              <form class="dwadd dwadd-comment" id="dwCommentForm" autocomplete="off">
-                <textarea class="input" id="dwComment" rows="2" placeholder="Add a comment" aria-label="Add a comment" maxlength="2000"></textarea>
-                <button class="btn btn-sm" type="submit">Comment</button>
-              </form>
-            </section>
-            <section class="tsec" id="dwLogSec">
-              <h3 class="tsec-title">Recent activity</h3>
-              <div id="dwLog"></div>
-            </section>
+            <div class="qhead-name">
+              <h2 class="qhead-title" id="dwTitle"></h2>
+              <button class="rec-pen" id="dwTitleEdit" type="button" aria-label="Edit title" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+              </button>
+            </div>
+            <p class="qhead-ctx" id="dwCtx"></p>
           </div>
-          <footer class="drawer-foot">
-            <div class="msg" id="dwMsg"></div>
-            <div class="drawer-acts" id="dwActs"></div>
-            <a class="drawer-full" id="dwFull" href="#">Open full record</a>
-          </footer>
-        </aside>
+          <div class="sheet-body qbody" id="dwBody">
+            <!-- Where it stands and the one thing to do next. A move can hand
+                 the task to the next person in the same press. -->
+            <section class="qcard qnext" id="dwNext" aria-labelledby="dwNextTitle">
+              <h3 class="qnext-title" id="dwNextTitle"></h3>
+              <p class="qnext-line" id="dwNextLine"></p>
+              <ul class="tnext-list" id="dwNextList" hidden></ul>
+              <p class="tnext-late" id="dwNextLate" hidden></p>
+              <div class="qhand" id="dwHand" hidden>
+                <label class="tickline" id="dwHandTickWrap"><input type="checkbox" id="dwHandTick"> <span>Change Task Owner</span></label>
+                <label class="qhand-lab" id="dwHandLab" for="dwHandTo" hidden>Performance review by</label>
+                <select class="select select-sm" id="dwHandTo" aria-label="New Task Owner" hidden></select>
+              </div>
+              <div class="qnext-acts" id="dwActs"></div>
+              <div class="qrate" id="dwRate" hidden></div>
+              <div class="msg" id="dwMsg"></div>
+            </section>
+            <section class="qcard">
+              <dl class="tfacts" id="dwFacts"></dl>
+            </section>
+            <!-- Each card is a heading, its one quiet action on the right, and
+                 what it holds. The action opens the card's own small form
+                 (the field, then Add and Cancel in the portal's order), so a
+                 card never carries a field and a button nobody asked for. -->
+            <section class="qcard" id="dwDescSec">
+              <div class="qcard-head">
+                <h3 class="qcard-title">Brief</h3>
+                <button class="btn btn-quiet btn-sm qcard-act" id="dwDescEdit" type="button">Edit</button>
+              </div>
+              <div id="dwDesc"></div>
+              <form class="qform" id="dwDescForm" autocomplete="off" hidden>
+                <label class="field-label" for="dwDescText">Brief</label>
+                <textarea class="input" id="dwDescText" rows="4" maxlength="4000"></textarea>
+                <div class="qform-acts">
+                  <button class="btn btn-sm btn-primary" type="submit">Save</button>
+                  <button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button>
+                </div>
+              </form>
+            </section>
+            <section class="qcard" id="dwCheckSec">
+              <div class="qcard-head">
+                <h3 class="qcard-title">Checklist <span class="qcard-count" id="dwCheckCount"></span></h3>
+                <button class="btn btn-quiet btn-sm qcard-act" id="dwCheckOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add item</button>
+              </div>
+              <div id="dwChecks"></div>
+              <form class="qform" id="dwCheckForm" autocomplete="off" hidden>
+                <label class="field-label" for="dwCheckAdd">Item</label>
+                <input class="input" id="dwCheckAdd" placeholder="What needs doing" maxlength="300">
+                <div class="qform-acts">
+                  <button class="btn btn-sm btn-primary" type="submit">Add</button>
+                  <button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button>
+                </div>
+              </form>
+            </section>
+            <section class="qcard" id="dwLinkSec">
+              <div class="qcard-head">
+                <h3 class="qcard-title">Files and links</h3>
+                <button class="btn btn-quiet btn-sm qcard-act" id="dwLinkOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
+              </div>
+              <div id="dwLinks"></div>
+              <form class="qform" id="dwLinkForm" autocomplete="off" hidden>
+                <div class="row">
+                  <div class="field">
+                    <label class="field-label" for="dwLinkUrl">Address</label>
+                    <input class="input" id="dwLinkUrl" type="url" placeholder="https://" spellcheck="false">
+                  </div>
+                  <div class="field qform-kind">
+                    <label class="field-label" for="dwLinkKind">Kind</label>
+                    <select class="select" id="dwLinkKind">
+                      <option value="other">Link</option>
+                      <option value="draft">Draft</option>
+                      <option value="review">Review</option>
+                      <option value="final">Final</option>
+                      <option value="brief">Brief</option>
+                      <option value="asset">File</option>
+                    </select>
+                  </div>
+                </div>
+                <label class="field-label" for="dwLinkLabel">Label</label>
+                <input class="input" id="dwLinkLabel" placeholder="Optional" maxlength="120">
+                <div class="qform-acts">
+                  <button class="btn btn-sm btn-primary" type="submit" id="dwLinkSave">Add</button>
+                  <button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button>
+                </div>
+              </form>
+            </section>
+            <section class="qcard" id="dwCommentSec">
+              <div class="qcard-head">
+                <h3 class="qcard-title">Comments</h3>
+                <button class="btn btn-quiet btn-sm qcard-act" id="dwCommentOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add comment</button>
+              </div>
+              <div id="dwComments"></div>
+              <form class="qform" id="dwCommentForm" autocomplete="off" hidden>
+                <label class="field-label" for="dwComment">Comment</label>
+                <textarea class="input" id="dwComment" rows="3" maxlength="2000"></textarea>
+                <div class="qform-acts">
+                  <button class="btn btn-sm btn-primary" type="submit" id="dwCommentSave">Post</button>
+                  <button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button>
+                </div>
+              </form>
+            </section>
+            <section class="qcard" id="dwTimeSec">
+              <h3 class="qcard-title">Time</h3>
+              <dl class="tfacts" id="dwTime"></dl>
+              <details class="tmore" id="dwTimeMore">
+                <summary>Time in each stage</summary>
+                <div id="dwTimeList"></div>
+              </details>
+            </section>
+            <section class="qcard" id="dwLogSec">
+              <h3 class="qcard-title">Recent activity</h3>
+              <div id="dwLog"></div>
+              <details class="tmore" id="dwLogMore">
+                <summary>All activity</summary>
+                <div id="dwLogAll"></div>
+              </details>
+            </section>
+            <a class="qfull" id="dwFull" href="#">Open full record</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- A MOVE THAT NEEDS SOMETHING SAID. Where a step takes a date, a note
+           or a link before the database will allow it, the step asks for it
+           here, with the next person on the same press. A move that needs
+           nothing is made from the list or the task without this sheet. -->
+      <div class="sheet" id="stepSheet" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="stepTitle">
+          <div class="sheet-head">
+            <h3 id="stepTitle">Move</h3>
+            <button class="iconbtn" id="stepClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <p class="hint" id="stepWhat"></p>
+            <div class="row" id="stepDateRow" hidden>
+              <div class="field">
+                <label class="field-label" for="stepDate" id="stepDateLabel">Date</label>
+                <input class="input" id="stepDate" type="date">
+              </div>
+            </div>
+            <div class="row" id="stepWhyRow" hidden>
+              <div class="field">
+                <label class="field-label" for="stepWhy" id="stepWhyLabel">Why it differs from the scheduled date</label>
+                <input class="input" id="stepWhy" autocomplete="off" placeholder="Required">
+              </div>
+            </div>
+            <div class="row" id="stepLinkRow" hidden>
+              <div class="field">
+                <label class="field-label" for="stepLink">Link to the live post</label>
+                <input class="input" id="stepLink" type="url" placeholder="https://" autocomplete="off" spellcheck="false">
+              </div>
+            </div>
+            <div class="row" id="stepNoteRow">
+              <div class="field">
+                <label class="field-label" for="stepNote" id="stepNoteLabel">Note</label>
+                <textarea class="input" id="stepNote" rows="3" placeholder="Optional"></textarea>
+              </div>
+            </div>
+            <div class="stephand" id="stepHand">
+              <label class="tickline" id="stepHandTickWrap"><input type="checkbox" id="stepHandTick"> <span>Change Task Owner</span></label>
+              <div class="row" id="stepHandRow" hidden>
+                <div class="field">
+                  <label class="field-label" for="stepHandTo" id="stepHandLabel">New Task Owner</label>
+                  <select class="select" id="stepHandTo"></select>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="stepGo" type="button">Move</button>
+            <button class="btn btn-quiet" id="stepCancel" type="button">Cancel</button>
+          </div>
+          <div class="msg" id="stepMsg"></div>
+        </div>
       </div>
 
       <!-- FROM TEMPLATE. The tasks a month always needs, made in one press and
@@ -2674,7 +2864,7 @@
             </div>
             <div class="row">
               <div class="field">
-                <label class="field-label" for="teOwner">Owner</label>
+                <label class="field-label" for="teOwner">Task Owner</label>
                 <select class="select" id="teOwner"></select>
               </div>
               <div class="field">
@@ -2723,7 +2913,7 @@
                 <select class="select" id="handStage"></select>
               </div>
               <div class="field">
-                <label class="field-label" for="handTo">Owner</label>
+                <label class="field-label" for="handTo">Task Owner</label>
                 <select class="select" id="handTo"></select>
               </div>
             </div>
@@ -2763,13 +2953,13 @@
           <div class="sheet-body">
             <div class="row">
               <div class="field">
-                <label class="field-label" for="giveTo">New owner</label>
+                <label class="field-label" for="giveTo">New Task Owner</label>
                 <select class="select" id="giveTo"></select>
               </div>
             </div>
             <div class="row">
               <div class="field">
-                <label class="field-label" for="giveNote">Note for the new owner</label>
+                <label class="field-label" for="giveNote">Note for the new Task Owner</label>
                 <textarea class="input" id="giveNote" rows="3" placeholder="Optional"></textarea>
               </div>
             </div>
@@ -3396,13 +3586,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260923c"></script>
-<script src="/js/documents.js?v=20260923c"></script>
-<script src="/js/letters.js?v=20260923c"></script>
-<script src="/js/register.js?v=20260923c"></script>
-<script src="/js/crm.js?v=20260923c"></script>
-<script src="/js/team.js?v=20260923c"></script>
-<script src="/js/campaigns.js?v=20260923c"></script>
-<script src="/js/ops.js?v=20260923c"></script>
+<script src="/js/admin.js?v=20260923d"></script>
+<script src="/js/documents.js?v=20260923d"></script>
+<script src="/js/letters.js?v=20260923d"></script>
+<script src="/js/register.js?v=20260923d"></script>
+<script src="/js/crm.js?v=20260923d"></script>
+<script src="/js/team.js?v=20260923d"></script>
+<script src="/js/campaigns.js?v=20260923d"></script>
+<script src="/js/ops.js?v=20260923d"></script>
 </body>
 </html>

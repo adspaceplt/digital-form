@@ -114,6 +114,23 @@
     var h = Math.floor(m / 60), r = m % 60;
     return h + 'h' + (r ? ' ' + r + 'm' : '');
   }
+  function plusDays(v, n) {
+    var d = dayOf(v);
+    if (!d) return null;
+    d = new Date(d.getTime());
+    d.setDate(d.getDate() + n);
+    return d.toISOString();
+  }
+  /* THE NUMBER A TASK IS QUOTED BY. `#WT` and five figures, the same words
+     `ops_serial` gives the database, so a number read off the screen is the
+     number the activity record and a search both know. */
+  function serialOf(t) {
+    return t && t.task_no != null ? '#WT' + String(t.task_no).padStart(5, '0') : '';
+  }
+  function isAdmin() {
+    var m = bridge.me && bridge.me();
+    return Boolean(m && (m.is_admin || m.role === 'admin'));
+  }
 
   // ---- What the database said, in the team's words -------------------------
   /* Every one of these is a refusal a person can act on, so it is said in the
@@ -136,7 +153,7 @@
     'no-such-stage': 'Stage not in this workflow.',
     'ready-needs-owner-and-due': 'Ready needs an owner and a final due date.',
     'footage-not-ready': 'Footage not ready for editing.',
-    'needs-draft': 'Client review needs a draft or review link.',
+    'needs-draft': 'Add the draft link, or say how it was sent.',
     'needs-final-link': 'Delivered needs a final link.',
     'needs-delivery-or-reason': 'Add a delivery or a closing reason.',
     'checklist-incomplete': 'Required checklist items are open.',
@@ -172,7 +189,18 @@
     'ends-before-it-starts': 'End date is before the start.',
     'not-blocked': 'This task is not blocked.',
     'confirm-required': 'Type the task number as shown.',
-    'override-denied': 'Skipping a step needs Manage access.'
+    'needs-aqc': 'AQC review comes before client review.',
+    'note-required': 'A note is required for this step.',
+    'needs-schedule': 'Set the publish date first.',
+    'needs-live-date': 'Confirm the date it went live.',
+    'live-in-future': 'A post cannot go live after today.',
+    'live-reason-required': 'Say why it went live on a different date.',
+    'not-finished': 'Only a finished task can be rated.',
+    'bad-rating': 'Choose one to five.',
+    'none-selected': 'No tasks selected.',
+    'too-many': 'Select up to 500 tasks at a time.',
+    'number-taken': 'That number is already used.',
+    'bad-number': 'Enter a number from 1.'
   };
   /* The database refuses Ready with one key for two causes, so the words
      are built from the task it refused: naming an owner beside the owner
@@ -204,7 +232,10 @@
     session: null,         // my one open work session, whichever task it is on
     detail: { checklist: [], links: [], sessions: [], events: [], video: null },
     moved: null,           // the last stage move, named on the row the repaint draws
-    tick: null
+    tick: null,
+    selecting: false,      // the list's ticks are showing
+    picked: {},            // task id -> 1, for the ticked rows
+    shown: []              // the rows the list last drew, which Select all means
   };
 
   /* Every stage in every workflow, keyed workflow id + '|' + key, so a row
@@ -294,6 +325,14 @@
     if (!t || !t.deliverable_type) return '';
     return DELIVER_WORD[t.deliverable_type] || sentence(t.deliverable_type);
   }
+  /* The format as a line under a name says it: once. A task made in bulk is
+     named for its format, so "Graphic: Static" under "2609W101 Graphic:
+     Static" is the same fact twice. */
+  function metaFormat(t) {
+    var f = formatWord(t);
+    if (!f) return '';
+    return String(t.title || '').toLowerCase().indexOf(f.toLowerCase()) > -1 ? '' : f;
+  }
   /* Whose it is, as the row and the head say it: the client's name, the
      lead's name marked as a lead, or Internal. */
   function whoseWord(t) {
@@ -315,12 +354,35 @@
     return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
   }
 
+  /* After approval the post is a fact and then a live one, so Scheduled and
+     Live are green; the performance review waits on a person, so it is warn;
+     a post taken down is an outcome and reads mute. */
   var STAGE_TONE = {
-    intake: 'is-off', kiv: 'is-off', cancelled: 'is-off',
-    internal_review: 'is-warn', client_review: 'is-warn', waiting: 'is-warn',
-    approved: 'is-ok', delivered: 'is-ok', done: 'is-ok',
+    intake: 'is-off', kiv: 'is-off', cancelled: 'is-off', taken_down: 'is-off',
+    internal_review: 'is-warn', client_review: 'is-warn', waiting: 'is-warn', performance: 'is-warn',
+    approved: 'is-ok', delivered: 'is-ok', done: 'is-ok', scheduled: 'is-ok', live: 'is-ok',
     blocked: 'is-danger'
   };
+  /* WHEN A TASK IS NEXT OWED. Up to client review it is the final due date,
+     the commitment. After approval the date that matters is the one the post
+     goes out, and once it is live, the day its performance is reviewed —
+     three days on. A post live since Monday is not "overdue" because its
+     client review date has passed; it is due for review on Thursday. */
+  var REVIEW_AFTER_DAYS = 3;
+  function dueOf(t) {
+    var s = stageOf(t), g = s ? s.stage_group : '';
+    if (!isFinished(t) && (g === 'approved' || g === 'scheduled') && t.publish_at) return t.publish_at;
+    if (!isFinished(t) && (g === 'live' || g === 'performance') && t.live_at) return plusDays(t.live_at, REVIEW_AFTER_DAYS);
+    return t.current_final_due_at;
+  }
+  /* The word the due column puts before a date that is not the final due. */
+  function dueLead(t) {
+    var s = stageOf(t), g = s ? s.stage_group : '';
+    if (isFinished(t)) return '';
+    if ((g === 'approved' || g === 'scheduled') && t.publish_at) return 'Publish';
+    if ((g === 'live' || g === 'performance') && t.live_at) return 'Review';
+    return '';
+  }
   function stageTone(t) {
     var s = stageOf(t);
     if (!s) return '';
@@ -487,10 +549,12 @@
     if (isEveryday(t)) return t.stage_key === 'complete' ? 'done' : (PLAIN[t.stage_key] ? t.stage_key : 'todo');
     var s = stageOf(t);
     var g = s ? s.stage_group : '';
-    if (g === 'waiting' || g === 'kiv') return 'waiting';
-    if (g === 'internal_review' || g === 'client_review') return 'review';
+    /* Scheduled and live wait on a date rather than on anybody's hands, so
+       they read with the waiting work; a performance review is a review. */
+    if (g === 'waiting' || g === 'kiv' || g === 'scheduled' || g === 'live') return 'waiting';
+    if (g === 'internal_review' || g === 'client_review' || g === 'performance') return 'review';
     if (isWork(g) || g === 'revision' || g === 'approved' || g === 'delivered') return 'doing';
-    if (g === 'done') return 'done';
+    if (g === 'done' || g === 'taken_down') return 'done';
     return 'todo';
   }
   function doneToday(t) {
@@ -527,7 +591,7 @@
   ];
   function bandOf(t) {
     if (isFinished(t)) return doneToday(t) ? 'donetoday' : 'done';
-    var n = daysAway(t.current_final_due_at), p = plainOf(t);
+    var n = daysAway(dueOf(t)), p = plainOf(t);
     if (n !== null && n < 0) return 'overdue';
     if (n === 0) return 'today';
     if (p === 'waiting') return 'waiting';
@@ -545,25 +609,50 @@
   }
 
   /* THE AXIS. The same rows asked a different question: by day is what
-     orders a day, by owner is who is carrying it, by client is how the work
-     is sold, by status is where it is piling up, by engagement is the month
-     it belongs to. */
+     orders a day, by stage is where each piece of work has got to, by status
+     is the same in five words across every workflow, by task owner is who is
+     carrying it, by client is how the work is sold, by engagement is the
+     month it belongs to. */
+  /* Completed work is read by the month it was finished in, newest first:
+     a year of it under one heading is a card nobody opens. */
+  function doneMonth(t) {
+    var d = new Date(t.completed_at || t.cancelled_at || t.updated_at || Date.now());
+    return monthKey(d);
+  }
   function groupsOf(rows) {
     var mode = state.group, out = [], by = {};
     function put(key, name, sort) {
       if (!by[key]) { by[key] = { key: key, name: name, sort: sort, rows: [] }; out.push(by[key]); }
       return by[key];
     }
+    /* Completed, read by day, is read by month instead: every row in it is
+       finished, so the bands of a day would put them all under one. */
+    var byMonth = mode === 'due' && state.filter === 'done';
+    var wfPos = {};
+    (state.workflows || []).forEach(function (w, i) { wfPos[w.id] = i; });
     rows.forEach(function (t) {
-      if (mode === 'client') {
+      if (byMonth) {
+        var mk = doneMonth(t);
+        put('m-' + mk, monthWord(mk), mk).rows.push(t);
+      } else if (mode === 'client') {
         var c = (t.clients && t.clients.name) || (t.scope === 'internal' ? 'Internal' : 'No client');
         put('c-' + c, c, c).rows.push(t);
-      } else if (mode === 'stage') {
+      } else if (mode === 'status') {
         var p = plainOf(t);
         put('s-' + p, PLAIN[p].word, String(PLAIN_ORDER.indexOf(p))).rows.push(t);
+      } else if (mode === 'stage') {
+        /* The stage itself, named as the workflow names it. Two workflows
+           that call a stage the same thing share one card, ordered where the
+           first of them puts it. */
+        var s = stageOf(t);
+        var lab = isFinished(t) && !s ? 'Finished' : stageLabel(t);
+        var pos = s ? String(wfPos[s.workflow_id] || 0).padStart(2, '0') + String(s.position).padStart(3, '0') : '99999';
+        var g = put('g-' + lab.toLowerCase(), lab, pos);
+        if (pos < g.sort) g.sort = pos;
+        g.rows.push(t);
       } else if (mode === 'owner') {
         var o = state.owners[t.id] || '';
-        put('o-' + (o || 'none'), o || 'Nobody yet', o ? '1' + o : '2').rows.push(t);
+        put('o-' + (o || 'none'), o || 'No task owner', o ? '1' + o : '2').rows.push(t);
       } else if (mode === 'engagement') {
         var e = t.engagement_id ? engName(t) || 'Engagement' : '';
         put('e-' + (t.engagement_id || 'none'), e || 'No engagement', e ? '1' + e : '2').rows.push(t);
@@ -573,7 +662,9 @@
             String(BANDS.map(function (x) { return x.key; }).indexOf(b))).rows.push(t);
       }
     });
-    if (mode === 'due') {
+    if (byMonth) {
+      out.sort(function (a, b) { return String(b.sort).localeCompare(String(a.sort)); });
+    } else if (mode === 'due') {
       var order = BANDS.map(function (x) { return x.key; });
       out.sort(function (a, b) { return order.indexOf(a.key) - order.indexOf(b.key); });
     } else {
@@ -581,36 +672,56 @@
     }
     return out;
   }
-  /* By day every band is worth reading except what was finished before
-     today. Off that axis the headings are the page: thirty client cards with
-     a count each are scanned, thirty open ones are not. */
+  /* By day every band is worth reading except what is finished: Completed
+     today and the older Completed card stay shut until they are opened, so
+     finished work is one press away and never in the way. Completed, read by
+     month, opens this month and shuts the rest. Off the day axis the
+     headings are the page: thirty client cards with a count each are
+     scanned, thirty open ones are not. */
   function shutByDefault(g) {
+    if (state.group === 'due' && state.filter === 'done') return g.key !== 'm-' + monthKey(new Date());
     if (state.group !== 'due') return true;
-    return g.key === 'done' && state.filter !== 'done';
+    return g.key === 'done' || g.key === 'donetoday';
   }
   function marksOf(g) {
     if (g.key === 'overdue') return '<span class="tone is-warn">Overdue</span>';
     if (state.group === 'due') return '';
     var late = g.rows.filter(function (t) {
-      return !isFinished(t) && daysAway(t.current_final_due_at) < 0;
+      return !isFinished(t) && daysAway(dueOf(t)) < 0;
     }).length;
     return late ? '<span class="tone is-warn">' + late + ' overdue</span>' : '';
   }
 
   /* THE VIEW: the question a person is asking of their work. My day is the
-     whole of it in the order above; the rest narrow it. `late` survives from
-     links sent before the views were renamed. */
+     whole of it in the order above; the day views narrow it by date, and the
+     stage views are the ones My Work was published with, keyed on the stage
+     group the workflow carries, because two workflows name the same stage
+     differently. */
   function inFilter(t) {
     var f = state.filter || 'day';
-    var fin = isFinished(t), n = daysAway(t.current_final_due_at), p = plainOf(t);
+    var fin = isFinished(t), n = daysAway(dueOf(t)), p = plainOf(t);
+    var s = stageOf(t), g = s ? s.stage_group : '';
     if (f === 'all') return true;
     if (f === 'done') return fin;
     if (f === 'day') return fin ? doneToday(t) : true;
     if (fin) return false;
     if (f === 'today') return n !== null && n <= 0;
     if (f === 'overdue') return n !== null && n < 0;
+    /* Owed within the week and not already over: overdue is its own answer. */
+    if (f === 'soon') return n !== null && n >= 0 && n <= 7;
     if (f === 'upcoming') return n === null || n > 0;
-    if (f === 'waiting') return p === 'waiting';
+    /* The work in hand, on either word a workflow uses for it: the stage's
+       own flag, or its group. */
+    if (f === 'active') return Boolean(s && (s.is_active_work || isWork(g)));
+    if (f === 'internal_review') return g === 'internal_review';
+    if (f === 'client_review') return g === 'client_review';
+    /* With the client for a decision, or held because they have not
+       answered. */
+    if (f === 'waiting_client') return g === 'client_review' || (t.stage_key === 'blocked' && t.blocked_category === 'client');
+    /* Everything after the client said yes: approved, scheduled, live and
+       under review for how it performed. */
+    if (f === 'after') return g === 'approved' || g === 'scheduled' || g === 'live' || g === 'performance';
+    if (f === 'waiting') return g === 'waiting' || g === 'kiv' || t.stage_key === 'blocked';
     if (f === 'review') return p === 'review';
     if (f === 'late') return isLate(t);
     return true;
@@ -637,8 +748,9 @@
     var hay = [t.title, t.code, t.content_desc, t.description, t.remarks,
                formatWord(t), TASK_TYPE_WORD[t.task_type] || t.task_type,
                (t.clients && t.clients.name), state.owners[t.id],
-               'T' + t.task_no].join(' ').toLowerCase();
-    return hay.indexOf(state.find) > -1;
+               serialOf(t), stageLabel(t)].join(' ').toLowerCase();
+    /* A number is found whether it is typed with the hash or without it. */
+    return hay.indexOf(state.find) > -1 || hay.indexOf('#' + state.find) > -1;
   }
   /* Inside a band the rows read by how soon, then by when: an Urgent task
      owed on Friday sits above a Normal one owed on Thursday, because the band
@@ -697,7 +809,9 @@
     }
     if (!all.length) {
       UI.emptyLine(box, state.filter === 'day' ? 'Nothing on your list.' : 'No tasks.', may('ops', 'work') ? 'Add a task' : '', function () { openQuick(); });
+      state.shown = [];
       paintUndone();
+      paintBulk();
       return;
     }
     if (!rows.length) {
@@ -712,12 +826,23 @@
         showPeriod();
         paint();
       });
+      state.shown = [];
+      state.picked = {};
+      paintBulk();
       return;
     }
     box.innerHTML = '';
     box.classList.toggle('is-mine', state.scope === 'mine');
     if (state.view === 'board') { paintBoard(all, rows); paintMoved(); return; }
     if (state.view === 'calendar') { paintCalendar(rows); return; }
+    /* The ticks are over the rows on the page, so a pick that the view no
+       longer shows is let go rather than deleted out of sight. */
+    if (state.selecting) {
+      var shown = {};
+      rows.forEach(function (t) { shown[t.id] = 1; });
+      Object.keys(state.picked).forEach(function (id) { if (!shown[id]) delete state.picked[id]; });
+    }
+    state.shown = rows;
     /* A *search* opens every card, because somebody who typed a title wants
        the row wherever it is and a shut card would hide the one match and say
        nothing. Choosing a stage in the bar is not that: it picks which work is
@@ -739,7 +864,7 @@
         shut: !filtered && GRP.shut('work', state.group + ':' + g.key,
                                     shutByDefault(g), g.rows.length === rows.length),
         table: function () {
-          var table = GRP.table('svc-row task-row', ['', 'Task', 'Owner', 'Due', 'Status', '']);
+          var table = GRP.table('svc-row task-row', ['', 'Task', 'Task Owner', 'Due', 'Stage', '']);
           GRP.more(table, g.rows.slice().sort(byPriority), 30, 'tasks', function (t) { return rowOf(t); });
           return table;
         }
@@ -748,6 +873,127 @@
     paintMoved();
     paintRowSaid();
     paintUndone();
+    paintBulk();
+  }
+
+  // ---- Several tasks at once ------------------------------------------------
+  /* A year of tasks is hundreds a month, and a list that can only be cleared
+     one row at a time is a list nobody clears. Select turns the first cell of
+     every row into a tick; the bar under the command bar counts them and
+     offers the two acts that make sense for many at once. Both are Manage,
+     both are asked again by the database, and a deletion states its count and
+     takes a reason, because there is no restore. */
+  function setSelecting(on) {
+    state.selecting = Boolean(on) && may('ops', 'manage');
+    state.picked = {};
+    if (state.selecting && state.view !== 'list') applyView('list');
+    paint();
+    var bar = $('workBulk');
+    if (bar && state.selecting) { var all = $('workBulkAll'); if (all) try { all.focus(); } catch (e) {} }
+  }
+  function pickedIds() { return Object.keys(state.picked || {}); }
+  function paintBulk() {
+    var bar = $('workBulk');
+    if (!bar) return;
+    bar.hidden = !state.selecting || state.view !== 'list';
+    if (bar.hidden) return;
+    var n = pickedIds().length;
+    var shown = (state.shown || []).length;
+    $('workBulkCount').textContent = n + ' selected';
+    var all = $('workBulkAll');
+    all.checked = n > 0 && n === shown;
+    all.indeterminate = n > 0 && n < shown;
+    all.setAttribute('aria-label', n === shown && n ? 'Clear the selection' : 'Select every task shown');
+    $('workBulkOwner').disabled = !n;
+    $('workBulkDelete').disabled = !n;
+  }
+  function pickRow(id, on) {
+    if (on) state.picked[id] = 1; else delete state.picked[id];
+    var row = document.querySelector('#workQueue [data-task="' + id + '"]');
+    if (row) row.classList.toggle('is-picked', Boolean(on));
+    paintBulk();
+  }
+  function bulkDelete() {
+    var ids = pickedIds();
+    if (!ids.length) return;
+    var n = ids.length;
+    ADspaceConfirm.ask({
+      title: 'Delete ' + n + (n === 1 ? ' task' : ' tasks'),
+      body: (n === 1 ? 'It goes' : 'They go') + ' with every stage move, comment, link, checklist item and time entry. There is no restore.',
+      go: 'Delete', tone: 'danger',
+      fields: [
+        { name: 'n', label: 'Type ' + n + ' to confirm', match: String(n), mismatch: 'Type ' + n + ' to confirm.' },
+        { name: 'why', label: 'Reason', need: 'A reason is required.' }
+      ]
+    }, function (v) {
+      db.rpc('ops_delete_tasks', { p_tasks: ids, p_confirm: v.n, p_reason: v.why }).then(function (r) {
+        var d = r.data;
+        if (r.error || (d && d.error)) { msg('workMsg', r.error ? r.error.message : said(d.error), 'err'); return; }
+        var gone = (d && d.deleted) || 0;
+        state.picked = {};
+        msg('workMsg', gone + (gone === 1 ? ' task deleted.' : ' tasks deleted.'), 'ok');
+        load();
+      }, function (e) { msg('workMsg', (e && e.message) || String(e), 'err'); });
+    });
+  }
+  function bulkOwner() {
+    var ids = pickedIds();
+    if (!ids.length) return;
+    ADspaceConfirm.ask({
+      title: 'Assign task owner',
+      body: 'The ' + (ids.length === 1 ? 'task goes' : ids.length + ' tasks go') + ' to one person, with the change on each task\'s record.',
+      go: 'Assign',
+      field: { label: 'Task Owner', choices: [['', 'Choose a person']].concat(state.members.map(function (m) { return [m.id, m.name]; })),
+               need: 'Choose a person.' }
+    }, function (who) {
+      var done = 0, bad = null, i = 0;
+      var next = function () {
+        if (i >= ids.length) {
+          if (bad) msg('workMsg', done + ' of ' + ids.length + ' assigned. ' + bad, 'err');
+          else msg('workMsg', (done === 1 ? '1 task' : done + ' tasks') + ' assigned to ' + nameOf(who) + '.', 'ok');
+          state.picked = {};
+          load();
+          return;
+        }
+        var id = ids[i++];
+        var t = (state.tasks || []).filter(function (x) { return x.id === id; })[0];
+        db.rpc('ops_assign_task', { p_task: id, p_owner: who, p_version: t ? t.version : null }).then(function (r) {
+          var d = r.data;
+          if (r.error || (d && d.error)) { bad = bad || (r.error ? r.error.message : said(d.error, t)); }
+          else done++;
+          next();
+        }, function (e) { bad = bad || ((e && e.message) || String(e)); next(); });
+      };
+      next();
+    });
+  }
+
+  /* THE NEXT NUMBER. What the next task will be called, and the place to set
+     it, for an admin: the database refuses a number already used and files
+     the change in the activity record. */
+  function openNumbering() {
+    if (!isAdmin()) return;
+    db.rpc('ops_next_task_no').then(function (r) {
+      var d = r.data;
+      if (r.error || (d && d.error)) { msg('workMsg', r.error ? r.error.message : said(d.error), 'err'); return; }
+      ADspaceConfirm.ask({
+        title: 'Task numbering',
+        body: 'The next task is ' + d.serial + '.' + (d.highest_serial ? ' The highest in use is ' + d.highest_serial + '.' : ' No task holds a number yet.'),
+        go: 'Save',
+        field: { label: 'Next number', value: String(d.next), need: 'Enter a number.' }
+      }, function (v) {
+        var want = Math.floor(Number(String(v).replace(/[^0-9]/g, '')));
+        if (!want) { msg('workMsg', said('bad-number'), 'err'); return; }
+        db.rpc('ops_set_next_task_no', { p_next: want }).then(function (q) {
+          var e = q.data;
+          if (q.error || (e && e.error)) {
+            msg('workMsg', q.error ? q.error.message : said(e.error) + (e.highest ? ' The highest in use is ' + e.highest + '.' : ''), 'err');
+            return;
+          }
+          msg('workMsg', 'The next task is ' + e.serial + '.', 'ok');
+        });
+      });
+    });
   }
 
   // ---- The board -----------------------------------------------------------
@@ -1002,7 +1248,7 @@
         done();
         /* The same path the select on the card takes, so the gates, the
            refusal and where it is named are all one thing. */
-        if (ok) moveTo(task, card, next);
+        if (ok) stepFromRow(task, card, next);
       }
       function done() {
         document.removeEventListener('pointermove', move, true);
@@ -1032,7 +1278,7 @@
     el.setAttribute('data-task', t.id);
     /* Late, not merely past: the same rule the queue row draws. */
     var over = isLate(t);
-    var top = ['T' + t.task_no,
+    var top = [serialOf(t),
                (t.clients && t.clients.name) || (t.scope === 'internal' ? 'Internal' : '')]
       .filter(Boolean);
     var who = state.owners[t.id] || '';
@@ -1055,15 +1301,20 @@
       '<div class="bcard-foot">' +
         '<span class="bcard-who">' +
           (who ? '<span class="bcard-name">' + esc(who) + '</span>'
-               : '<span class="bcard-name mute">Unassigned</span>') + '</span>' +
-        (t.current_final_due_at
+               : '<span class="bcard-name mute">No task owner</span>') + '</span>' +
+        (dueOf(t)
           ? '<span class="bcard-due' + (over ? ' is-over' : '') + '">' +
-              esc(shortDate(t.current_final_due_at)) + '</span>'
+              esc((dueLead(t) ? dueLead(t) + ' ' : '') + shortDate(dueOf(t))) + '</span>'
           : '') +
       '</div>';
-    el.querySelector('.bcard-title').addEventListener('click', function () { openTask(t.id, true); });
+    /* A card opens the task beside the board, as a row does beside the list. */
+    el.querySelector('.bcard-title').addEventListener('click', function () { openDrawer(t.id); });
     var sel = el.querySelector('.state-select');
-    if (sel) sel.addEventListener('change', function () { rowMove(t, el, sel); });
+    if (sel) sel.addEventListener('change', function () {
+      var want = sel.value;
+      sel.value = '';
+      if (want) stepFromRow(t, el, want);
+    });
     /* Wherever the move is allowed at all, under a finger as under a pointer.
        A keyboard still has no drag, so the select on every card stays and is
        the path both share: this is an addition, never a replacement. */
@@ -1265,8 +1516,11 @@
     if (!state.month) state.month = monthStart(new Date());
     var m = state.month, today = todayStart();
     var byDay = {};
+    /* Each task on the day it is next owed: the commitment until client
+       review, the publish date once it is approved, and the review date once
+       it is live — which makes the calendar the month's content calendar. */
     rows.forEach(function (t) {
-      var d = dayOf(t.current_final_due_at);
+      var d = dayOf(dueOf(t));
       if (!d) return;
       (byDay[d.getTime()] = byDay[d.getTime()] || []).push(t);
     });
@@ -1317,7 +1571,7 @@
       state.month = monthStart(new Date()); paintCalendar(rows);
     });
     Array.prototype.forEach.call(box.querySelectorAll('.cal-chip'), function (b) {
-      b.addEventListener('click', function () { openTask(b.getAttribute('data-task'), true); });
+      b.addEventListener('click', function () { openDrawer(b.getAttribute('data-task')); });
     });
   }
 
@@ -1413,11 +1667,11 @@
   }
 
   /* THE ROW IS THE WORKSPACE. A routine change never needs the task opened:
-     the circle completes it, the owner and the due date are changed where they
-     are printed, the status is a select on an everyday task, and the ⋯ holds
-     the rest. What opens the task is the title, into the drawer beside the
-     list. Nothing here repeats the engagement's own facts: the line under the
-     title is the one piece of context that places the task. */
+     the circle completes an everyday task, the owner and the due date are
+     changed where they are printed, the stage is a select, and the ⋯ holds the
+     rest. What opens the task is the title, into the sheet beside the list.
+     Nothing here repeats the engagement's own facts: the line under the title
+     is the one piece of context that places the task. */
   /* A content task is not ticked off from the list: its workflow moves it.
      Where the checkbox stands on an everyday task, the ring says how far
      along its own line it has come, which is what a list is scanned for. */
@@ -1425,37 +1679,59 @@
     var line = lineOf(t);
     var at = line.map(function (s) { return s.key; }).indexOf(t.stage_key);
     var n = line.length;
-    var done = fin ? n : Math.max(0, at);
+    /* A cancelled task ended without being finished, so its ring is empty
+       and never the green of work that was done. */
+    var cancelled = Boolean(t.cancelled_at);
+    var done = cancelled ? 0 : fin ? n : Math.max(0, at);
     var r = 7, len = 2 * Math.PI * r, off = len * (1 - (n ? done / n : 0));
-    var said = fin ? 'Finished' : n && at > -1 ? 'Step ' + (at + 1) + ' of ' + n : stageLabel(t);
-    return '<svg class="ring tring' + (fin ? ' is-ok' : '') + '" viewBox="0 0 20 20" role="img" aria-label="' + esc(said) + '">' +
+    var said = cancelled ? 'Cancelled' : fin ? 'Finished' : n && at > -1 ? 'Step ' + (at + 1) + ' of ' + n : stageLabel(t);
+    return '<svg class="ring tring' + (fin && !cancelled ? ' is-ok' : '') + '" viewBox="0 0 20 20" role="img" aria-label="' + esc(said) + '">' +
       '<circle class="ring-track" cx="10" cy="10" r="' + r + '"/>' +
       '<circle class="ring-arc" cx="10" cy="10" r="' + r + '" stroke-dasharray="' + len.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '"/></svg>';
+  }
+  /* The due cell's words: the date and how far off it is, with what the date
+     is for where it is not the final due (a publish date, a review date). */
+  function dueCell(t) {
+    var v = dueOf(t), kind = dueLead(t);
+    if (!v) return { long: 'No date', short: 'No date', label: 'No due date' };
+    var w = dueWord(v);
+    if (kind) w = kind + ' ' + (w === 'Today' || w === 'Tomorrow' ? w.toLowerCase() : w);
+    /* The phone's shorter words say the same thing the desk's do: a task
+       due today reads Today on both, not a bare date. */
+    var n = daysAway(v);
+    var near = n === 0 ? 'Today' : n === 1 ? 'Tomorrow' : '';
+    var sh = near || shortDate(v) + (n < 0 ? ' · late' : '');
+    if (kind) sh = kind + ' ' + (near ? near.toLowerCase() : shortDate(v));
+    return { long: w, short: sh, label: (kind ? kind + ' ' : 'Due ') + niceDate(v) };
   }
   function rowOf(t, elsewhere) {
     var owners = elsewhere ? cw.owners : state.owners;
     var ownerIds = elsewhere ? (cw.ownerIds || {}) : state.ownerIds;
     var el = document.createElement('div');
     var fin = isFinished(t);
-    el.className = 'svc-row task-row' + (fin ? ' is-off' : '');
+    var picking = !elsewhere && state.selecting;
+    var picked = picking && state.picked[t.id];
+    el.className = 'svc-row task-row' + (fin ? ' is-off' : '') + (picked ? ' is-picked' : '');
     el.setAttribute('data-task', t.id);
-    var over = isLate(t);
+    var over = isLate(t) || (!fin && dueLead(t) && daysAway(dueOf(t)) < 0);
     var work = may('ops', 'work');
     var every = isEveryday(t);
     var p = plainOf(t);
     var ctx = engName(t) || whoseWord(t);
     var mine = state.session && state.session.task_id === t.id;
-    var check = every && work
-      ? '<button class="tcheck' + (p === 'done' ? ' is-done' : '') + '" type="button" data-a="check" aria-pressed="' + (p === 'done') + '" aria-label="' +
-          esc((p === 'done' ? 'Reopen ' : 'Mark complete: ') + (t.title || 'task')) + '"></button>'
-      : wfRing(t, fin);
+    var check = picking
+      ? '<input type="checkbox" class="trow-pick" data-a="pick"' + (picked ? ' checked' : '') + ' aria-label="Select ' + esc(t.title || serialOf(t)) + '">'
+      : every && work && p !== 'cancelled'
+        ? '<button class="tcheck' + (p === 'done' ? ' is-done' : '') + '" type="button" data-a="check" aria-pressed="' + (p === 'done') + '" aria-label="' +
+            esc((p === 'done' ? 'Reopen ' : 'Mark complete: ') + (t.title || 'task')) + '"></button>'
+        : wfRing(t, fin);
     var who = owners[t.id] || '';
     var canOwn = may('ops', 'manage') && !fin;
-    var dueTxt = t.current_final_due_at ? dueWord(t.current_final_due_at) : 'No date';
-    /* A phone has room for the date and the mark, not the sentence. */
-    var dueShort = t.current_final_due_at
-      ? shortDate(t.current_final_due_at) + (daysAway(t.current_final_due_at) < 0 ? ' · late' : '') : 'No date';
-    var dueHtml = '<span class="due-long">' + esc(dueTxt) + '</span><span class="due-short">' + esc(dueShort) + '</span>';
+    var dc = dueCell(t);
+    /* The final due is the one a row edits; a publish or review date is the
+       step's, and is changed where the step is. */
+    var dueEdit = work && !fin && !dueLead(t);
+    var dueHtml = '<span class="due-long">' + esc(dc.long) + '</span><span class="due-short">' + esc(dc.short) + '</span>';
     el.innerHTML =
       '<span class="trow-check">' + check + '</span>' +
       '<button class="task-open" type="button"><b>' + esc(t.title) + '</b>' +
@@ -1464,19 +1740,22 @@
           esc(ctx) + '</small></button>' +
       '<span class="trow-meta">' +
       '<span class="task-owner">' + (canOwn
-        ? '<button class="tinline" type="button" data-a="owner" aria-label="Owner of ' + esc(t.title) + ': ' + esc(who || 'nobody') + '. Change">' +
+        ? '<button class="tinline" type="button" data-a="owner" aria-label="Task Owner of ' + esc(t.title) + ': ' + esc(who || 'nobody') + '. Change">' +
             (who ? esc(who) : '<span class="mute">Assign</span>') + '</button>'
         : (who ? esc(who) : '<span class="mute">—</span>')) + '</span>' +
-      '<span class="task-due' + (over ? ' is-over' : '') + '">' + (work && !fin
-        ? '<button class="tinline" type="button" data-a="due" aria-label="Due ' + esc(dueTxt) + '. Change">' + dueHtml + '</button>'
-        : '<span>' + (fin ? esc(niceDate(t.completed_at || t.cancelled_at)) : dueHtml) + '</span>') + '</span>' +
+      '<span class="task-due' + (over ? ' is-over' : '') + '">' + (dueEdit
+        ? '<button class="tinline" type="button" data-a="due" aria-label="' + esc(dc.label) + '. Change">' + dueHtml + '</button>'
+        : '<span aria-label="' + esc(fin ? 'Finished ' + niceDate(t.completed_at || t.cancelled_at) : dc.label) + '">' +
+            (fin ? esc(niceDate(t.completed_at || t.cancelled_at)) : dueHtml) + '</span>') + '</span>' +
       '<span class="task-stage">' + statusCell(t) + '</span>' +
       '</span>' +
       '<span class="team-act">' + (work ? rowMenu(t) : '') + '</span>';
     el.querySelector('.task-open').addEventListener('click', function () {
-      if (elsewhere) openTaskElsewhere(t.id); else openDrawer(t.id);
+      if (elsewhere) openDrawer(t.id, { from: 'client' }); else openDrawer(t.id);
     });
     var done = function () { if (elsewhere) readClientWork(); else load(); };
+    var pk = el.querySelector('[data-a="pick"]');
+    if (pk) pk.addEventListener('change', function () { pickRow(t.id, pk.checked); });
     var ck = el.querySelector('[data-a="check"]');
     if (ck) ck.addEventListener('click', function () { toggleDone(t, el, done); });
     var ow = el.querySelector('[data-a="owner"]');
@@ -1488,20 +1767,22 @@
       var want = sel.value;
       sel.value = '';
       if (!want) return;
-      moveTo(t, el, want, function () {}, done);
+      stepFromRow(t, el, want, done);
     });
     wireRowMenu(el, t, done);
     return el;
   }
 
   /* An everyday task's status is a select of five words. A content
-     deliverable's is read through the same words, and its moves are made in
-     the drawer, where the step it needs is named. */
+     deliverable shows its own stage — the step it is actually at, named as
+     its workflow names it — with the steps it may move to, which is how My
+     Work was published: five words over thirteen stages hid where the work
+     was, and that is the one thing the column is for. */
   function statusCell(t) {
+    if (!isEveryday(t)) return stageCell(t);
     var p = plainOf(t);
-    if (!isEveryday(t) || !may('ops', 'work') || p === 'cancelled') {
-      var sw = isEveryday(t) ? PLAIN[p].word : PLAIN[p].word;
-      return '<span class="tone ' + PLAIN[p].tone + '" title="' + esc(stageLabel(t)) + '">' + esc(sw) + '</span>';
+    if (!may('ops', 'work') || p === 'cancelled') {
+      return '<span class="tone ' + PLAIN[p].tone + '">' + esc(PLAIN[p].word) + '</span>';
     }
     return '<select class="select select-sm state-select ' + PLAIN[p].tone + '" aria-label="Status of ' + esc(t.title) + '">' +
       '<option value="">' + esc(PLAIN[p].word) + '</option>' +
@@ -1509,10 +1790,11 @@
         return '<option value="' + PLAIN_KEY[k] + '">' + esc(PLAIN[k].word) + '</option>';
       }).join('') + '</select>';
   }
-  /* The board moves a task between its workflow's own stages, so its card
-     keeps the stage select: a select where the person may work the task and
-     the stage can still move, the read-only chip everywhere else. Blocked
-     needs a category first, so it is asked for on the record. */
+  /* The stage and the steps it may move to: a select where the person may
+     work the task and the stage can still move, the read-only chip
+     everywhere else. Blocked needs a category first, so it is asked for on
+     the task. A step that needs something said (a note, a date, a link) asks
+     for it in the step sheet; the rest move on the pick. */
   function stageCell(t) {
     var s = stageOf(t);
     var nexts = ((s && s.next_stage_keys) || []).filter(function (k) { return k !== 'blocked'; });
@@ -1528,7 +1810,6 @@
   }
 
   function rowMenu(t) {
-    var mine = state.session && state.session.task_id === t.id;
     var fin = isFinished(t);
     var s = stageOf(t);
     var canCancel = !fin && s && (s.next_stage_keys || []).indexOf('cancelled') > -1;
@@ -1538,7 +1819,6 @@
       '<span class="kmenu" hidden role="menu">' +
         '<button class="kmenu-item" data-m="open" type="button" role="menuitem">Open</button>' +
         '<button class="kmenu-item" data-m="full" type="button" role="menuitem">Open full record</button>' +
-        (fin ? '' : '<button class="kmenu-item" data-m="timer" type="button" role="menuitem">' + (mine ? 'Stop timer' : 'Start timer') + '</button>') +
         (canCancel ? '<button class="kmenu-item" data-m="cancel" type="button" role="menuitem">Cancel task</button>' : '') +
       '</span></span>';
   }
@@ -1561,9 +1841,9 @@
       menu.hidden = true;
       btn.setAttribute('aria-expanded', 'false');
       var a = it.getAttribute('data-m');
-      if (a === 'open') openDrawer(t.id);
+      var from = el.closest('#cwList') ? { from: 'client' } : null;
+      if (a === 'open') openDrawer(t.id, from);
       if (a === 'full') openFull(t.id);
-      if (a === 'timer') rowTimer(t, el, done);
       if (a === 'cancel') {
         ADspaceConfirm.ask({
           title: 'Cancel task', body: 'Removes it from open work. It can be reopened.',
@@ -1582,7 +1862,7 @@
   }
   document.addEventListener('click', function (e) {
     if (e.target.closest && e.target.closest('.team-act .kmenu-wrap')) return;
-    Array.prototype.forEach.call(document.querySelectorAll('#workQueue .team-act .kmenu'), function (m) { m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll('#workQueue .team-act .kmenu, #cwList .team-act .kmenu'), function (m) { m.hidden = true; });
   });
 
   /* ONE PRESS COMPLETES IT, and the way back is drawn at once. Completing
@@ -1626,7 +1906,7 @@
   function inlineOwner(t, el, btn, was, done) {
     var sel = document.createElement('select');
     sel.className = 'select select-sm tinline-pick';
-    sel.setAttribute('aria-label', 'Owner of ' + (t.title || 'task'));
+    sel.setAttribute('aria-label', 'Task Owner of ' + (t.title || 'task'));
     sel.innerHTML = (was ? '' : '<option value="">Choose a person</option>') + state.members.map(function (m) {
       return '<option value="' + esc(m.id) + '"' + (m.id === was ? ' selected' : '') + '>' + esc(m.name) + '</option>';
     }).join('');
@@ -1644,7 +1924,7 @@
         var d = r.data;
         if (r.error || (d && d.error)) { sel.disabled = false; put(); rowNote(el, r.error ? r.error.message : said(d.error, t)); return; }
         state.owners[t.id] = nameOf(pick); state.ownerIds[t.id] = pick;
-        state.rowSaid = { id: t.id, word: 'Owner changed to ' + nameOf(pick) + '.' };
+        state.rowSaid = { id: t.id, word: 'Task Owner changed to ' + nameOf(pick) + '.' };
         done();
       }, function (e) { sel.disabled = false; put(); rowNote(el, (e && e.message) || String(e)); });
     });
@@ -1688,20 +1968,6 @@
     }, function (e) { bad((e && e.message) || String(e)); });
   }
 
-  function rowTimer(t, el, done) {
-    var s = state.session;
-    if (s && s.task_id === t.id) {
-      db.rpc('ops_stop_work', { p_session: s.id, p_note: null }).then(function (r) {
-        if (r.error || (r.data && r.data.error)) { rowNote(el, r.error ? r.error.message : said(r.data.error, t)); return; }
-        state.session = null; stopTick(); done();
-      });
-      return;
-    }
-    db.rpc('ops_start_work', { p_task: t.id }).then(function (r) {
-      if (r.error || (r.data && r.data.error)) { rowNote(el, r.error ? r.error.message : said(r.data.error, t)); return; }
-      loadSession(done);
-    });
-  }
   /* The note an inline change left, on the row the repaint drew. */
   function paintRowSaid() {
     var m = state.rowSaid;
@@ -1719,9 +1985,19 @@
      and says why under the row, because the row is where the act happened and
      the command bar is a screen away from it on a long list. */
   function rowMove(t, el, sel) {
-    moveTo(t, el, sel.value, function () { sel.value = ''; });
+    stepFromRow(t, el, sel.value);
+    sel.value = '';
   }
   function plainOfKey(k) { return k === 'complete' ? 'done' : k; }
+  /* A step from a row, a card or a drop. Where the database needs something
+     said before it will allow the move — what has to change, why a post came
+     down, the date it is scheduled for or went live — the step sheet asks
+     for it; every other move is made on the pick. */
+  function stepFromRow(t, el, next, after) {
+    if (!next) return;
+    if (needsSay(t, next)) { openStep(t, next, { el: el, after: after }); return; }
+    moveTo(t, el, next, null, after);
+  }
   /* One path for every way a stage is moved on this page — the select on a
      list row, the select on a board card, and a card dragged into a column.
      All three go through `ops_transition_task` and therefore through the same
@@ -1736,6 +2012,9 @@
       .then(function (r) {
         if (r.error) { back(); rowNote(el, r.error.message); return; }
         var d = r.data;
+        /* No draft link on the task: the step asks how it was sent, with
+           WhatsApp already written in, rather than refusing the move. */
+        if (d && d.error === 'needs-draft') { back(); openStep(t, next, { el: el, after: after, note: WA_NOTE }); return; }
         if (d && d.error) { back(); rowNote(el, said(d.error, t)); return; }
         /* A move that repaints the list and says nothing is a move nobody can
            tell they made: the row is rebuilt somewhere else in the band order
@@ -1756,6 +2035,7 @@
     if (row) rowNote(row, 'Moved to ' + m.word + '.', 'ok');
   }
   function rowNote(el, text, tone) {
+    if (!el || !el.parentNode) { if (text) msg('workMsg', text, tone || 'err'); return; }
     var was = el.nextSibling;
     if (was && was.classList && was.classList.contains('task-note')) was.remove();
     if (!text) return;
@@ -1766,45 +2046,81 @@
     if (tone === 'ok') setTimeout(function () { if (note.parentNode) note.remove(); }, 6000);
   }
 
-  // ---- The quick drawer ----------------------------------------------------
-  /* A task opened from the list opens here, beside it: the name, who has it,
-     when it is due and where it stands, then what it is, what is left on it,
-     its files, its comments and what happened lately, and at the foot the one
-     next thing to do. The full record is one press further, and the address
-     of the full record is still what a link to a task opens. */
-  function openDrawer(id) {
+  // ---- The task, opened from a list -----------------------------------------
+  /* A task opened from the list, the board, the calendar, the bell or a
+     client's Work pane opens here, in the portal's own sheet docked beside
+     the list: what it is and where it stands, the one thing to do next, then
+     the facts, the brief, the checklist, the files, the talk, the time and
+     what happened lately, each in its own card. The list stays where it was.
+     The full record is one press further, for the rare task that needs it,
+     and its address is still what a link to a task opens. */
+  function openDrawer(id, o) {
     var d = $('taskDrawer');
-    if (!d) return;
+    if (!d || !id) return;
+    o = o || {};
+    if (!d.hidden && state.drawer === id) return;
     state.drawer = id;
+    state.drawerFrom = o.from || 'work';
     state.drawerDirty = false;
-    var row = (state.tasks || []).filter(function (x) { return x.id === id; })[0];
+    if (d.hidden) state.drawerOpener = document.activeElement;
+    var row = (state.tasks || []).concat(cw.tasks || []).filter(function (x) { return x.id === id; })[0];
     $('dwTitle').textContent = row ? row.title : '';
+    $('dwNo').textContent = row ? serialOf(row) : '';
+    $('dwStatus').textContent = '';
     $('dwCtx').textContent = '';
+    $('dwCtx').hidden = true;
     $('dwFacts').innerHTML = '';
+    $('dwNextTitle').textContent = '';
+    $('dwNextLine').textContent = '';
+    $('dwActs').innerHTML = '';
+    $('dwHand').hidden = true;
+    $('dwHand').removeAttribute('data-key');
+    $('dwRate').hidden = true;
+    CARD_FORMS.forEach(closeCardForm);
+    ['dwTimeMore', 'dwLogMore'].forEach(function (x) { if ($(x)) $(x).open = false; });
     UI.skeleton($('dwChecks'), 2);
     msg('dwMsg', '');
     d.hidden = false;
-    document.body.classList.add('sheet-open');
-    var card = d.querySelector('.drawer-card');
-    requestAnimationFrame(function () { d.classList.add('is-open'); try { card.focus(); } catch (e) {} });
+    var card = d.querySelector('.sheet-card');
+    if (card) { try { card.focus(); } catch (e) {} }
+    var body = $('dwBody');
+    if (body) body.scrollTop = 0;
+    if (state.drawerFrom === 'work' && bridge.setUrl) bridge.setUrl();
     readTask(id);
   }
   function closeDrawer(noReload) {
     var d = $('taskDrawer');
     if (!d || d.hidden) return;
-    d.classList.remove('is-open');
     d.hidden = true;
-    document.body.classList.remove('sheet-open');
-    var dirty = state.drawerDirty;
-    var id = state.drawer;
+    var dirty = state.drawerDirty, id = state.drawer, from = state.drawerFrom;
     state.drawer = null;
-    state.task = null;
-    if (!noReload && dirty) load();
-    var row = id && document.querySelector('#workQueue [data-task="' + id + '"] .task-open');
-    if (row) try { row.focus(); } catch (e) {}
+    state.drawerFrom = null;
+    if (!state.openId) state.task = null;
+    if (!noReload && dirty) { if (from === 'client') readClientWork(); else load(); }
+    if (from === 'work' && bridge.setUrl) bridge.setUrl();
+    var opener = state.drawerOpener;
+    state.drawerOpener = null;
+    var row = id && document.querySelector('[data-task="' + id + '"] .task-open, [data-task="' + id + '"] .bcard-title');
+    var back = opener && document.body.contains(opener) && opener.offsetParent !== null ? opener : row;
+    if (back) { try { back.focus(); } catch (e) {} }
+  }
+  /* Typed words in the card are the reader's; a stray click beside it does
+     not throw them away. */
+  function drawerTyped() {
+    return ['dwCheckAdd', 'dwLinkUrl', 'dwLinkLabel', 'dwComment', 'dwDescText'].some(function (x) {
+      return $(x) && String($(x).value || '').trim();
+    });
   }
   function openFull(id) {
+    var from = state.drawerFrom;
     closeDrawer(true);
+    /* From a client's record the full record is My Work's, so the address
+       comes first, the way the bell opens a task. */
+    if (from === 'client' || !$('sectionWork') || $('sectionWork').hidden) {
+      history.replaceState(null, '', '/admin/?s=work&task=' + encodeURIComponent(id));
+      if (bridge.show) bridge.show('work');
+      return;
+    }
     openTask(id, true);
   }
 
@@ -1812,141 +2128,684 @@
     if (!state.drawer || !t || t.id !== state.drawer) return;
     var p = plainOf(t), every = isEveryday(t), work = may('ops', 'work');
     var fin = isFinished(t);
-    $('dwNo').textContent = 'T' + t.task_no;
-    $('dwNo').setAttribute('aria-label', 'Copy T' + t.task_no);
+    var n = derive(t);
+    $('dwNo').textContent = serialOf(t);
+    $('dwNo').setAttribute('aria-label', 'Copy ' + serialOf(t));
     var ck = $('dwCheck');
     ck.hidden = !(every && work);
     ck.className = 'tcheck' + (p === 'done' ? ' is-done' : '');
     ck.setAttribute('aria-pressed', String(p === 'done'));
     ck.setAttribute('aria-label', p === 'done' ? 'Reopen' : 'Mark complete');
-    /* The status is a row of the facts below, where it can be changed; a
-       chip up here would say it twice. */
-    $('dwStatus').hidden = true;
+    var chip = $('dwStatus');
+    chip.className = 'chip ' + n.tone;
+    chip.textContent = n.status;
     $('dwTitle').textContent = t.title || 'Untitled task';
-    /* One line of context, and the way to the rest of it. The engagement's
-       own facts are not repeated here: they are the engagement's. */
-    var ctx = engName(t) || whoseWord(t);
+    /* One line that places it, and the way to where the rest of it lives:
+       the month or the client is its own record, not this sheet's. */
+    var ctx = [engName(t) || whoseWord(t), metaFormat(t)].filter(Boolean).join(' · ');
     var ml = t.engagement_id ? monthLink(t) : null;
     var cl = !ml && t.clients && t.clients.slug
-      ? { label: 'View client', href: '/admin/?s=clients&client=' + encodeURIComponent(t.clients.slug) } : null;
+      ? { label: t.scope === 'lead' ? 'View lead' : 'View client', href: '/admin/?s=clients&client=' + encodeURIComponent(t.clients.slug) } : null;
     var link = ml ? { label: 'View engagement', href: ml.href } : cl;
     $('dwCtx').innerHTML = esc(ctx) + (link ? (ctx ? ' · ' : '') + '<a class="tlink" href="' + esc(link.href) + '">' + esc(link.label) + '</a>' : '');
     $('dwCtx').hidden = !ctx && !link;
 
+    paintNext(NEXT_DW(), t, n);
+
+    // The facts a day's work turns on.
     var who = ownerName(t);
     var canOwn = may('ops', 'manage') && !fin;
     var dueTxt = t.current_final_due_at ? niceDate(t.current_final_due_at) : 'Not set';
     var over = isLate(t);
+    var pen = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
     var facts =
-      frow('Owner', '<span id="dwOwnerName">' + (who ? esc(who) : '<span class="mute">Nobody</span>') + '</span>',
+      frow('Task Owner', '<span id="dwOwnerName">' + (who ? esc(who) : '<span class="mute">Nobody</span>') + '</span>',
         canOwn ? '<button class="linkbtn" id="dwOwnerChange" type="button">' + (who ? 'Change' : 'Assign') + '</button>' : '') +
       frow('Due', work && !fin
-        ? '<button class="tdate' + (over ? ' is-over' : '') + '" id="dwDue" type="button" aria-label="Due ' + esc(dueTxt) + '. Change">' + esc(dueTxt) +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>'
-        : '<span class="tdate-read' + (over ? ' is-over' : '') + '">' + esc(dueTxt) + '</span>') +
-      frow('Status', every && work && p !== 'cancelled' ? statusCell(t)
-        : esc(every ? PLAIN[p].word : stageLabel(t)) + (every ? '' : ' <span class="mute">· ' + esc(wfName(t)) + '</span>'));
+        ? '<button class="tdate' + (over ? ' is-over' : '') + '" id="dwDue" type="button" aria-label="Due ' + esc(dueTxt) + '. Change">' + esc(dueTxt) + pen + '</button>'
+        : '<span class="tdate-read' + (over ? ' is-over' : '') + '">' + esc(dueTxt) + '</span>');
+    /* After approval the dates the step runs on: when it goes out, and when
+       it went live. */
+    var sg = (stageOf(t) || {}).stage_group;
+    var after = sg === 'approved' || sg === 'scheduled' || sg === 'live' || sg === 'performance' || sg === 'taken_down' || t.stage_key === 'completed';
+    if (!every && (t.publish_at || after)) {
+      var pubTxt = t.publish_at ? niceDate(t.publish_at) : 'Not set';
+      facts += frow('Publish', work && !fin && (sg === 'approved' || sg === 'scheduled' || !after)
+        ? '<button class="tdate" id="dwPublish" type="button" aria-label="Scheduled publish ' + esc(pubTxt) + '. Change">' + esc(pubTxt) + pen + '</button>'
+        : '<span class="tdate-read">' + esc(pubTxt) + '</span>');
+    }
+    if (t.live_at) facts += frow('Live', esc(niceDate(t.live_at)));
+    facts += frow('Created by', esc(nameOf(t.created_by) || '—'));
+    /* How soon, on four words; a select where the reader may change it. */
+    facts += frow('Priority', work && !fin
+      ? '<select class="select select-sm qpri" id="dwPriority" aria-label="Priority">' +
+          [['1', 'Urgent'], ['2', 'High'], ['3', 'Normal'], ['4', 'Low']].map(function (o) {
+            return '<option value="' + o[0] + '"' + (String(Math.min(4, Number(t.priority_level) || 3)) === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
+          }).join('') + '</select>'
+      : esc(PRIORITY_WORD[String(t.priority_level)] || 'Normal'));
     $('dwFacts').innerHTML = facts;
     var oc = $('dwOwnerChange');
     if (oc) oc.addEventListener('click', function () {
-      inlineOwner(t, $('dwFacts'), oc, ownerId(t), function () { state.drawerDirty = true; readTask(t.id, function () { msg('dwMsg', 'Owner changed.', 'ok'); }); });
+      inlineOwner(t, $('dwFacts'), oc, ownerId(t), function () {
+        state.drawerDirty = true;
+        readTask(t.id, function () { msg('dwMsg', 'Task Owner changed.', 'ok'); });
+      });
     });
     var dd = $('dwDue');
     if (dd) dd.addEventListener('click', function () {
-      inlineDue(t, $('dwFacts'), dd, function () { state.drawerDirty = true; readTask(t.id, function () { msg('dwMsg', state.rowSaid ? state.rowSaid.word : 'Saved.', 'ok'); state.rowSaid = null; }); });
+      if (t.current_final_due_at) { openDue('final'); return; }
+      inlineDue(t, $('dwFacts'), dd, function () {
+        state.drawerDirty = true;
+        readTask(t.id, function () { msg('dwMsg', state.rowSaid ? state.rowSaid.word : 'Saved.', 'ok'); state.rowSaid = null; });
+      });
     });
-    var ss = $('dwFacts').querySelector('.state-select');
-    if (ss) ss.addEventListener('change', function () {
-      var want = ss.value; ss.value = '';
-      if (want) move(want);
+    var dp = $('dwPublish');
+    if (dp) dp.addEventListener('click', function () { inlinePublish(t, dp); });
+    var dpr = $('dwPriority');
+    if (dpr) dpr.addEventListener('change', function () {
+      var was = String(Math.min(4, Number(t.priority_level) || 3));
+      call('ops_update_task', { p_task: t.id, p_payload: { priority_level: Number(dpr.value) }, p_version: t.version }, 'dwMsg', function () {
+        readTask(t.id, function () { msg('dwMsg', 'Priority saved.', 'ok'); });
+      }, function () { dpr.value = was; });
     });
+    $('dwTitleEdit').hidden = !work || fin;
 
-    // Description
+    // The brief
     var desc = String(t.description || '').trim();
-    $('dwDesc').innerHTML = desc ? '<p class="ovnote">' + esc(desc) + '</p>' : '';
-    $('dwDescSec').hidden = !desc;
+    $('dwDesc').innerHTML = desc ? '<p class="ovnote">' + esc(desc) + '</p>' : '<p class="qempty">No brief.</p>';
+    $('dwDescEdit').hidden = !work || fin;
+    /* The card's quiet action carries its glyph like the others do. */
+    $('dwDescEdit').innerHTML = (desc
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add');
+    $('dwDescSec').hidden = !desc && (!work || fin);
 
     // Checklist
     var items = state.detail.checklist;
     var cbox = $('dwChecks');
     cbox.innerHTML = items.map(function (c) {
-      return '<label class="checkrow' + (c.completed_at ? ' is-done' : '') + '">' +
+      var menu = work && !fin && !c.required
+        ? itemMenu(c.label, [['rename', 'Rename'], ['remove', 'Remove', true]]) : '';
+      return '<div class="qitem qitem-mid" data-row="' + esc(c.id) + '"><label class="checkrow' + (c.completed_at ? ' is-done' : '') + '">' +
         '<input type="checkbox" data-item="' + esc(c.id) + '"' + (c.completed_at ? ' checked' : '') + (work ? '' : ' disabled') + '>' +
-        '<span class="checkrow-label">' + esc(c.label) + '</span></label>';
-    }).join('');
+        '<span class="checkrow-label">' + esc(c.label) + (c.required ? ' <span class="tone is-warn">Required</span>' : '') + '</span></label>' +
+        menu + '</div>';
+    }).join('') || (work && !fin ? '<p class="qempty">No items.</p>' : '');
+    var doneN = items.filter(function (c) { return c.completed_at; }).length;
+    $('dwCheckCount').textContent = items.length ? doneN + ' of ' + items.length : '';
     Array.prototype.forEach.call(cbox.querySelectorAll('[data-item]'), function (cb) {
       cb.addEventListener('change', function () {
         var want = cb.checked, line = cb.closest('.checkrow');
         call('ops_set_checklist', { p_item: cb.getAttribute('data-item'), p_done: want }, 'dwMsg', function (row) {
-          if (!row) { cb.checked = !want; return; }
+          if (!row || !row.id) { cb.checked = !want; return; }
           state.detail.checklist = state.detail.checklist.map(function (c) { return c.id === row.id ? row : c; });
           if (line) line.classList.toggle('is-done', Boolean(row.completed_at));
+          var dn = state.detail.checklist.filter(function (c) { return c.completed_at; }).length;
+          $('dwCheckCount').textContent = dn + ' of ' + state.detail.checklist.length;
           state.drawerDirty = true;
+          /* A performance review is completed once its checks are done, so
+             the step card says so the moment the last one is ticked. */
+          if (state.task && state.task.id === t.id) paintNext(NEXT_DW(), state.task, derive(state.task));
         }, function () { cb.checked = !want; });
       });
     });
-    $('dwCheckForm').hidden = !work || fin;
+    Array.prototype.forEach.call(cbox.querySelectorAll('.qitem'), function (row) {
+      var c = items.filter(function (x) { return x.id === row.getAttribute('data-row'); })[0];
+      wireItemMenu(row, function (a) {
+        if (a === 'rename') renameItem(t, c);
+        if (a === 'remove') removeItem(t, c, $('dwChecks'), 'dwMsg');
+      });
+    });
+    $('dwCheckOpen').hidden = !work || fin;
     $('dwCheckSec').hidden = !items.length && (!work || fin);
 
     // Files and links
     var live = state.detail.links.filter(function (l) { return !l.archived_at; });
-    $('dwLinks').innerHTML = live.length ? '<ul class="ovlinks">' + live.map(function (l) {
+    $('dwLinks').innerHTML = live.length ? '<ul class="qlinks">' + live.map(function (l) {
       var href = safeUrl(l.url);
-      return '<li><span class="tone">' + esc(l.kind) + '</span>' +
-        (href ? '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(l.label || l.url) + '</a>' : '<span>' + esc(l.label) + '</span>') + '</li>';
-    }).join('') + '</ul>' : '';
-    $('dwLinkForm').hidden = !work || fin;
+      var menu = work && !fin ? itemMenu(l.label || l.url, [['edit', 'Edit'], ['remove', 'Remove', true]]) : '';
+      return '<li class="qitem" data-link="' + esc(l.id) + '"><span class="qlink-main"><span class="tone">' + esc(LINK_WORD[l.kind] || sentence(l.kind)) + '</span>' +
+        (href ? '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(l.label || l.url) + '</a>' : '<span class="qlink-name">' + esc(l.label) + '</span>') +
+        '</span>' + menu + '</li>';
+    }).join('') + '</ul>' : '<p class="qempty">No files or links.</p>';
+    Array.prototype.forEach.call($('dwLinks').querySelectorAll('.qitem'), function (row) {
+      var l = live.filter(function (x) { return x.id === row.getAttribute('data-link'); })[0];
+      wireItemMenu(row, function (a) {
+        if (a === 'edit') openLinkEdit(l);
+        if (a === 'remove') removeLinkIn(t, l, $('dwLinks'), 'dwMsg');
+      });
+    });
+    $('dwLinkOpen').hidden = !work || fin;
     $('dwLinkSec').hidden = !live.length && (!work || fin);
 
-    // Comments, oldest first, as a conversation reads.
-    var comments = state.detail.events.filter(function (e) { return e.event_type === 'commented'; }).slice().reverse();
-    $('dwComments').innerHTML = comments.length ? '<ul class="dwcomments">' + comments.map(function (e) {
-      return '<li><p>' + esc((e.detail && e.detail.note) || '') + '</p><span>' + esc(whoName(e)) + ' · ' + esc(niceTime(e.created_at)) + '</span></li>';
-    }).join('') + '</ul>' : '';
-    $('dwCommentForm').hidden = !work;
+    // Comments, oldest first, as a conversation reads, each as it now stands.
+    var comments = commentsOf(state.detail.events);
+    var me = myId();
+    $('dwComments').innerHTML = comments.length ? '<ul class="qcomments">' + comments.map(function (c) {
+      var mine = work && (c.actor_id === me || may('ops', 'manage'));
+      var menu = mine ? itemMenu('comment', [['edit', 'Edit'], ['remove', 'Delete', true]]) : '';
+      return '<li class="qitem" data-comment="' + esc(c.id) + '"><div><p>' + esc(c.body) + '</p>' +
+        '<small>' + esc(whoName(c.e)) + ' · ' + esc(niceTime(c.at)) + (c.edited ? ' · edited' : '') + '</small></div>' + menu + '</li>';
+    }).join('') + '</ul>' : (work ? '<p class="qempty">No comments.</p>' : '');
+    Array.prototype.forEach.call($('dwComments').querySelectorAll('.qitem'), function (row) {
+      var c = comments.filter(function (x) { return x.id === row.getAttribute('data-comment'); })[0];
+      wireItemMenu(row, function (a) {
+        if (a === 'edit') editComment(t, c);
+        if (a === 'remove') removeComment(t, c, $('dwComments'));
+      });
+    });
+    $('dwCommentOpen').hidden = !work;
     $('dwCommentSec').hidden = !comments.length && !work;
 
-    // Recent activity
-    var recent = state.detail.events.filter(function (e) { return e.event_type !== 'commented'; }).slice(0, 5);
-    $('dwLog').innerHTML = recent.length ? '<ul class="raillog raillog-plain">' + recent.map(function (e) {
+    paintDrawerTime(t);
+
+    // Recent activity, and the whole of it on request.
+    /* The talk is the Comments card's; what happened to the task is here. */
+    var rest = state.detail.events.filter(function (e) { return !/^comment/.test(e.event_type); });
+    var line = function (e) {
       var dt = eventDetail(e);
       return '<li><span class="raillog-what">' + esc(EVENT_WORD[e.event_type] || e.event_type.replace(/_/g, ' ')) + '</span>' +
         (dt ? '<span class="raillog-detail">' + esc(dt) + '</span>' : '') +
         '<span class="raillog-when">' + esc(niceTime(e.created_at)) + (whoName(e) ? ' · ' + esc(whoName(e)) : '') + '</span></li>';
-    }).join('') + '</ul>' : '';
-    $('dwLogSec').hidden = !recent.length;
+    };
+    $('dwLog').innerHTML = rest.length ? '<ul class="raillog raillog-plain">' + rest.slice(0, 3).map(line).join('') + '</ul>' : '';
+    $('dwLogMore').hidden = rest.length <= 3;
+    $('dwLogAll').innerHTML = rest.length > 3 ? '<ul class="raillog raillog-plain">' + rest.slice(3).map(line).join('') + '</ul>' : '';
+    $('dwLogSec').hidden = !rest.length;
 
-    // The one next thing.
-    var n = derive(t);
-    var acts = $('dwActs');
-    acts.innerHTML = '';
-    if (n.go) acts.appendChild(actButton(n.go, true));
-    if (n.alt) acts.appendChild(actButton(n.alt, false));
-    acts.hidden = !n.go && !n.alt;
-    if (n.blocked || (!n.go && n.line)) {
-      var line = document.createElement('p');
-      line.className = 'drawer-why' + (n.blocked ? ' is-blocked' : '');
-      line.textContent = (n.blocked ? n.title + '. ' : '') + (n.line || '');
-      acts.insertBefore(line, acts.firstChild);
-      acts.hidden = false;
-    }
     $('dwFull').href = '/admin/?s=work&task=' + encodeURIComponent(t.id);
 
     // The ⋯
     var menu = $('dwMenu');
     var s = stageOf(t);
     var nexts = (s && s.next_stage_keys) || [];
-    menu.querySelector('[data-a="timer"]').hidden = !work || fin;
-    menu.querySelector('[data-a="timer"]').textContent = state.session && state.session.task_id === t.id ? 'Stop timer' : 'Start timer';
-    menu.querySelector('[data-a="move"]').hidden = !work || fin || every;
+    /* The way back is the move a person makes most after a mistake, so it
+       leads the ⋯ wherever the workflow still allows it. */
+    var back = cameFrom(t);
+    var rv = menu.querySelector('[data-a="revert"]');
+    var canBack = work && back && nexts.indexOf(back) > -1 && !fin && t.stage_key !== 'blocked';
+    rv.hidden = !canBack;
+    if (canBack) rv.textContent = 'Revert to ' + labelForKey(back);
+    menu.querySelector('[data-a="move"]').hidden = !work || fin || !nexts.length;
+    menu.querySelector('[data-a="block"]').hidden = !work || fin || t.stage_key === 'blocked' || every;
     menu.querySelector('[data-a="repeat"]').hidden = !work;
     menu.querySelector('[data-a="duplicate"]').hidden = !work;
+    menu.querySelector('[data-a="reopen"]').hidden = !work || !canReopen(t);
     menu.querySelector('[data-a="cancel"]').hidden = !work || fin || nexts.indexOf('cancelled') < 0;
     menu.querySelector('[data-a="handover"]').hidden = fin;
   }
-  function wfName(t) {
-    var w = (state.workflows || []).filter(function (x) { return x.id === t.workflow_id; })[0];
-    return (w && w.name) || '';
+  // ---- Changing and taking back what was added --------------------------------
+  /* A row the reader may change carries a ⋯ at its end, holding the acts for
+     that one thing. It is the row menu every list in this console has. */
+  function itemMenu(label, items) {
+    return '<span class="kmenu-wrap">' +
+      '<button class="kmenu-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(label) + '">' +
+        '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>' +
+      '<span class="kmenu" hidden role="menu">' + items.map(function (x) {
+        return '<button class="kmenu-item' + (x[2] ? ' is-danger' : '') + '" data-i="' + x[0] + '" type="button" role="menuitem">' + esc(x[1]) + '</button>';
+      }).join('') + '</span></span>';
+  }
+  function shutItemMenus(except) {
+    Array.prototype.forEach.call(document.querySelectorAll('.qitem .kmenu, .tlink-row .kmenu'), function (m) {
+      if (m === except) return;
+      m.hidden = true;
+      var b = m.parentNode && m.parentNode.querySelector('.kmenu-btn');
+      if (b) b.setAttribute('aria-expanded', 'false');
+    });
+  }
+  function wireItemMenu(row, onPick) {
+    var btn = row.querySelector('.kmenu-btn'), menu = row.querySelector('.kmenu');
+    if (!btn || !menu) return;
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      shutItemMenus(menu);
+      var open = menu.hidden;
+      menu.hidden = !open;
+      btn.setAttribute('aria-expanded', String(open));
+      if (open && window.ADspaceMenu) window.ADspaceMenu.place(btn, menu);
+    });
+    menu.addEventListener('click', function (e) {
+      var it = e.target.closest('[data-i]');
+      if (!it) return;
+      menu.hidden = true;
+      btn.setAttribute('aria-expanded', 'false');
+      onPick(it.getAttribute('data-i'));
+    });
+  }
+  document.addEventListener('click', function (e) {
+    if (e.target.closest && e.target.closest('.qitem .kmenu-wrap, .tlink-row .kmenu-wrap')) return;
+    shutItemMenus(null);
+  });
+
+  /* A checklist item is renamed in place of the words it had, and removed
+     with the way back drawn under the list. A required check is the review's
+     own gate, so it carries no ⋯ at all. */
+  function renameItem(t, c) {
+    if (!c) return;
+    ADspaceConfirm.ask({
+      title: 'Rename item', go: 'Save',
+      field: { label: 'Item', value: c.label, need: 'Say what needs doing.' }
+    }, function (v) {
+      call('ops_edit_checklist_item', { p_item: c.id, p_label: v }, msgHere('taskMsg'), function () {
+        readTask(t.id, function () { msg(msgHere('taskMsg'), 'Item renamed.', 'ok'); });
+      });
+    });
+  }
+  function removeItem(t, c, host, where) {
+    if (!c) return;
+    call('ops_remove_checklist_item', { p_item: c.id }, where, function (d) {
+      var gone = (d && d.removed) || c;
+      readTask(t.id, function () {
+        undoBar('Removed ' + gone.label + '.', function () {
+          call('ops_add_checklist_item', { p_task: t.id, p_label: gone.label }, where, function (row) {
+            var back = function () { readTask(t.id); };
+            if (gone.completed_at && row && row.id) {
+              call('ops_set_checklist', { p_item: row.id, p_done: true }, where, back, back);
+            } else back();
+          });
+        }, host);
+      });
+    });
+  }
+
+  /* A link is corrected in the card's own form, and removed with its Undo. */
+  var linkEditing = null;
+  function openLinkEdit(l) {
+    if (!l) return;
+    linkEditing = l.id;
+    openCardForm('dwLinkForm');
+    $('dwLinkUrl').value = l.url || '';
+    $('dwLinkKind').value = l.kind || 'other';
+    $('dwLinkLabel').value = l.label || '';
+    $('dwLinkSave').textContent = 'Save';
+    $('dwLinkUrl').focus();
+  }
+  function removeLinkIn(t, l, host, where) {
+    if (!l) return;
+    call('ops_set_link_archived', { p_link: l.id, p_on: true }, where, function () {
+      readTask(t.id, function () {
+        undoBar((l.label || 'The link') + ' removed.', function () {
+          call('ops_set_link_archived', { p_link: l.id, p_on: false }, where, function () { readTask(t.id); });
+        }, host);
+      });
+    });
+  }
+
+  /* COMMENTS, AS THEY NOW STAND. A comment is never rewritten: a correction
+     and a removal are later events that name it, so the thread is read by
+     folding them in, oldest first, and the history keeps every word. */
+  function commentsOf(events) {
+    var by = {}, out = [];
+    (events || []).slice().reverse().forEach(function (e) {
+      if (e.event_type === 'commented') {
+        var c = { id: e.id, body: (e.detail && e.detail.note) || '', actor_id: e.actor_id, at: e.created_at, edited: null, gone: false, e: e };
+        by[e.id] = c;
+        out.push(c);
+        return;
+      }
+      if (e.event_type !== 'comment_edited' && e.event_type !== 'comment_removed' && e.event_type !== 'comment_restored') return;
+      var ref = (e.to_value && e.to_value.event_id) || (e.from_value && e.from_value.event_id);
+      var hit = by[ref];
+      if (!hit) return;
+      if (e.event_type === 'comment_edited') { hit.body = (e.detail && e.detail.note) || hit.body; hit.edited = e.created_at; }
+      else hit.gone = e.event_type === 'comment_removed';
+    });
+    return out.filter(function (c) { return !c.gone; });
+  }
+  function editComment(t, c) {
+    if (!c) return;
+    ADspaceConfirm.ask({
+      title: 'Edit comment', go: 'Save',
+      field: { label: 'Comment', rows: 3, value: c.body, need: 'A comment cannot be empty.' }
+    }, function (v) {
+      call('ops_edit_comment', { p_event: c.id, p_body: v }, msgHere('taskMsg'), function () {
+        readTask(t.id, function () { msg(msgHere('taskMsg'), 'Comment edited.', 'ok'); });
+      });
+    });
+  }
+  function removeComment(t, c, host) {
+    if (!c) return;
+    call('ops_remove_comment', { p_event: c.id, p_on: true }, msgHere('taskMsg'), function () {
+      readTask(t.id, function () {
+        undoBar('Comment deleted.', function () {
+          call('ops_remove_comment', { p_event: c.id, p_on: false }, msgHere('taskMsg'), function () { readTask(t.id); });
+        }, host);
+      });
+    });
+  }
+
+  /* One small form open in the sheet at a time, so there is one filled
+     action beside the step's own, never three. */
+  var CARD_FORMS = ['dwDescForm', 'dwCheckForm', 'dwLinkForm', 'dwCommentForm'];
+  function openCardForm(id) {
+    CARD_FORMS.forEach(function (f) { if (f !== id && $(f)) closeCardForm(f); });
+    var form = $(id);
+    if (!form) return;
+    form.hidden = false;
+    var opener = { dwDescForm: 'dwDescEdit', dwCheckForm: 'dwCheckOpen', dwLinkForm: 'dwLinkOpen', dwCommentForm: 'dwCommentOpen' }[id];
+    if ($(opener)) $(opener).setAttribute('aria-expanded', 'true');
+  }
+  function closeCardForm(id) {
+    var form = $(id);
+    if (!form) return;
+    form.hidden = true;
+    Array.prototype.forEach.call(form.querySelectorAll('input, textarea'), function (x) { x.value = ''; });
+    if (id === 'dwLinkForm') { linkEditing = null; $('dwLinkKind').value = 'other'; $('dwLinkSave').textContent = 'Add'; }
+    var opener = { dwDescForm: 'dwDescEdit', dwCheckForm: 'dwCheckOpen', dwLinkForm: 'dwLinkOpen', dwCommentForm: 'dwCommentOpen' }[id];
+    if ($(opener)) $(opener).setAttribute('aria-expanded', 'false');
+  }
+  /* The title is edited where it sits, the pen becoming the tick. A task with
+     a code keeps its code; what is edited is the words after it. */
+  function editSheetTitle() {
+    var t = state.task;
+    if (!t || !window.ADspaceAsk) return;
+    var was = t.code ? (t.content_desc || '') : (t.content_desc || t.title || '');
+    window.ADspaceAsk.rename($('dwTitle'), $('dwTitleEdit'), {
+      label: 'Title', saveLabel: 'Save title', value: was,
+      allowEmpty: Boolean(t.code), max: 160,
+      save: function (v) {
+        call('ops_set_content_desc', { p_task: t.id, p_desc: v, p_version: t.version }, 'dwMsg', function (d) {
+          applyTask(d);
+          readTask(t.id, function () { msg('dwMsg', 'Title saved.', 'ok'); });
+        });
+      }
+    });
+  }
+
+  /* The words a stored link kind is read by. */
+  var LINK_WORD = { draft: 'Draft', review: 'Review', final: 'Final', brief: 'Brief', asset: 'File', other: 'Link' };
+
+  /* TIME, SAID ONCE AND BRIEFLY: how long it has been at this stage, how
+     long since it was made, and the hours somebody recorded where there are
+     any. The stage by stage table is the detail, opened on request. */
+  function paintDrawerTime(t) {
+    var spans = stageSpans();
+    var here = spans.filter(function (x) { return x.running; })[0];
+    var since = spans.reduce(function (a, x) { return a + x.mins; }, 0);
+    var rec = (state.detail.sessions || []).reduce(function (a, x) { return a + (Number(x.minutes) || 0); }, 0);
+    var rows = '';
+    if (here && !isFinished(t)) rows += frow('In this stage', esc(spanWord(here.mins)));
+    if (spans.length) rows += frow(isFinished(t) ? 'Start to finish' : 'Since created', esc(spanWord(since)));
+    if (rec) rows += frow('Recorded', esc(minutesWord(rec)));
+    $('dwTime').innerHTML = rows;
+    var box = $('dwTimeList');
+    box.innerHTML = '';
+    if (spans.length) box.appendChild(stageTable(spans));
+    $('dwTimeMore').hidden = spans.length < 2;
+    $('dwTimeSec').hidden = !rows;
+  }
+
+  /* THE NEXT STEP, IN THE SHEET AND ON THE FULL RECORD ALIKE. One derived
+     state, drawn by one function into either place, so the two can never
+     say different things about the same task. */
+  function NEXT_DW() {
+    return { box: $('dwNext'), title: $('dwNextTitle'), line: $('dwNextLine'), list: $('dwNextList'),
+             late: $('dwNextLate'), hand: $('dwHand'), tick: $('dwHandTick'), tickWrap: $('dwHandTickWrap'),
+             lab: $('dwHandLab'), to: $('dwHandTo'), acts: $('dwActs'), rate: $('dwRate'), msg: 'dwMsg', ids: 'dw' };
+  }
+  function NEXT_REC() {
+    return { box: $('taskNextStep'), title: $('taskNextTitle'), line: $('taskNextLine'), list: $('taskNextList'),
+             late: $('taskNextLate'), hand: $('taskHand'), tick: $('taskHandTick'), tickWrap: $('taskHandTickWrap'),
+             lab: $('taskHandLab'), to: $('taskHandTo'), acts: $('taskNextActs'), rate: $('taskRate'), msg: 'taskNextMsg', ids: 'task' };
+  }
+  function paintNext(b, t, n) {
+    if (!b.box) return;
+    b.box.classList.toggle('is-blocked', Boolean(n.blocked));
+    b.title.textContent = n.title;
+    b.line.textContent = n.line || '';
+    b.line.hidden = !n.line;
+    b.list.innerHTML = (n.list || []).map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('');
+    b.list.hidden = !(n.list || []).length;
+    /* The final date is the day the work is owed AT CLIENT REVIEW, so the
+       line says which of the two has happened. */
+    var over = daysAway(t.current_final_due_at);
+    b.late.hidden = !isLate(t);
+    b.late.textContent = isLate(t)
+      ? 'Late: ' + Math.abs(over) + (Math.abs(over) === 1 ? ' day' : ' days') + ' past final due, not yet at client review.'
+      : '';
+    paintHand(b, t, n);
+    b.acts.innerHTML = '';
+    if (n.go) b.acts.appendChild(actButton(n.go, true, b));
+    if (n.alt) b.acts.appendChild(actButton(n.alt, false, b));
+    b.acts.hidden = !n.go && !n.alt;
+    paintRate(b, t, n);
+  }
+  /* WHO TAKES IT NEXT. A step is where work changes hands, so the step is
+     where the Task Owner can change — optionally, with a tick, because most
+     steps stay with the person who made them. A performance review goes back
+     to whoever created the task unless somebody else is named, so that one
+     names its reviewer rather than asking. */
+  function paintHand(b, t, n) {
+    if (!b.hand) return;
+    var mv = n.go && n.go.move;
+    var show = Boolean(mv) && may('ops', 'work');
+    b.hand.hidden = !show;
+    if (!show) return;
+    var key = t.id + '|' + mv;
+    var perf = mv === 'performance_review';
+    if (b.hand.getAttribute('data-key') === key) return;
+    b.hand.setAttribute('data-key', key);
+    var cur = ownerId(t);
+    b.to.innerHTML = '<option value="">Choose a person</option>' + state.members.filter(function (m) {
+      return perf || m.id !== cur;
+    }).map(function (m) {
+      return '<option value="' + esc(m.id) + '">' + esc(m.name) + (m.id === t.created_by ? ' (created it)' : '') + '</option>';
+    }).join('');
+    var def = perf ? t.created_by : (mv === 'internal_review' && t.created_by !== cur ? t.created_by : '');
+    b.to.value = def && b.to.querySelector('option[value="' + def + '"]') ? def : '';
+    b.tick.checked = false;
+    b.tickWrap.hidden = perf;
+    b.lab.hidden = !perf;
+    b.to.hidden = !perf;
+  }
+  function handOf(b) {
+    if (!b || !b.hand || b.hand.hidden) return { who: null };
+    if (!b.lab.hidden) return { who: b.to.value || null };
+    if (!b.tick.checked) return { who: null };
+    if (!b.to.value) return { missing: true };
+    return { who: b.to.value };
+  }
+  /* A finished task is rated on the card that says it is finished: one to
+     five, changeable, each rating a line in its history. */
+  var STAR = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3.2l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17.2l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg>';
+  function paintRate(b, t, n) {
+    if (!b.rate) return;
+    var show = Boolean(n.rate) && Boolean(t.completed_at);
+    b.rate.hidden = !show;
+    if (!show) return;
+    var r = Number(t.rating) || 0;
+    var can = may('ops', 'work');
+    b.rate.innerHTML = '<p class="qrate-lab">' + (r ? 'Rated ' + r + ' of 5' + (t.rated_by ? ' by ' + esc(nameOf(t.rated_by) || '') : '') : 'How did it go?') + '</p>' +
+      '<div class="qstars" role="group" aria-label="Rating">' + [1, 2, 3, 4, 5].map(function (k) {
+        return '<button class="qstar' + (k <= r ? ' is-on' : '') + '" type="button" data-star="' + k + '" aria-pressed="' + (k === r) + '"' +
+          (can ? '' : ' disabled') + ' aria-label="' + k + (k === 1 ? ' star' : ' stars') + '">' + STAR + '</button>';
+      }).join('') + '</div>' +
+      (t.rating_note ? '<p class="qrate-note">' + esc(t.rating_note) + '</p>' : '');
+    Array.prototype.forEach.call(b.rate.querySelectorAll('[data-star]'), function (btn) {
+      btn.addEventListener('click', function () {
+        var k = Number(btn.getAttribute('data-star'));
+        call('ops_rate_task', { p_task: t.id, p_rating: k, p_note: null }, b.msg, function () {
+          readTask(t.id, function () { msg(b.msg, 'Rated ' + k + ' of 5.', 'ok'); });
+        });
+      });
+    });
+  }
+
+  /* THE PUBLISH DATE, where the sheet prints it. */
+  function inlinePublish(t, btn) {
+    var inp = document.createElement('input');
+    inp.type = 'date';
+    inp.className = 'input input-sm tinline-pick';
+    inp.setAttribute('aria-label', 'Scheduled publish date');
+    inp.value = dateValue(t.publish_at);
+    btn.hidden = true;
+    btn.parentNode.appendChild(inp);
+    inp.focus();
+    if (inp.showPicker) { try { inp.showPicker(); } catch (e) {} }
+    var put = function () { if (inp.parentNode) inp.remove(); btn.hidden = false; };
+    inp.addEventListener('blur', function () { if (!inp.disabled) setTimeout(put, 150); });
+    inp.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.stopPropagation(); put(); btn.focus(); } });
+    inp.addEventListener('change', function () {
+      if (inp.value === dateValue(t.publish_at)) return;
+      inp.disabled = true;
+      call('ops_set_publish_date', { p_task: t.id, p_at: inp.value ? inp.value + 'T00:00:00Z' : null, p_version: t.version }, 'dwMsg', function () {
+        state.drawerDirty = true;
+        readTask(t.id, function () { msg('dwMsg', 'Publish date saved.', 'ok'); });
+      }, function () { inp.disabled = false; put(); });
+    });
+  }
+
+  // ---- A step that needs something said ------------------------------------
+  /* The moves the database will not make without a word or a date: a
+     revision says what has to change, taking a post down says why, a
+     schedule needs its date and going live is confirmed with the day it
+     happened. Every other move is made on the press. */
+  function needsSay(t, key) {
+    var s = state.stages[t.workflow_id + '|' + key];
+    if (!s) return false;
+    if (s.stage_group === 'revision' && key !== 'changes_requested') return true;
+    if (key === 'taken_down' || key === 'live') return true;
+    if (key === 'scheduled' && !t.publish_at) return true;
+    return false;
+  }
+  /* The moves that hand the work to somebody else carry the action colour;
+     the ones that record the team's own progress are the ink primary. */
+  function handsOff(key, t) {
+    var s = state.stages[t.workflow_id + '|' + key];
+    var g = s && s.stage_group;
+    return g === 'internal_review' || g === 'client_review' || g === 'performance';
+  }
+  var stepCtx = null;
+  function openStep(t, key, o) {
+    o = o || {};
+    var s = state.stages[t.workflow_id + '|' + key];
+    var g = s && s.stage_group;
+    stepCtx = { t: t, key: key, o: o };
+    var verb = verbFor(key, t);
+    $('stepTitle').textContent = verb;
+    $('stepWhat').textContent = stageLabel(t) + ' to ' + labelOfStage(t, key) + '.';
+    var live = key === 'live', sched = key === 'scheduled';
+    $('stepDateRow').hidden = !(live || sched);
+    $('stepDateLabel').textContent = live ? 'Date it went live' : 'Publish date';
+    $('stepDate').value = live ? dateValue(new Date()) : dateValue(t.publish_at);
+    if (live) $('stepDate').setAttribute('max', dateValue(new Date())); else $('stepDate').removeAttribute('max');
+    $('stepWhy').value = '';
+    $('stepLink').value = '';
+    $('stepLinkRow').hidden = !live;
+    stepDateChanged();
+    var toClient = key === 'client_review' && o.note != null;
+    var needNote = (g === 'revision' && key !== 'changes_requested') || key === 'taken_down' || toClient;
+    $('stepNoteLabel').textContent = g === 'revision' ? 'What needs to change'
+      : key === 'taken_down' ? 'Why it is taken down'
+      : toClient ? 'How the draft was sent'
+      : live ? 'Note (where it is posted, if there is no link)' : 'Note';
+    $('stepNote').placeholder = needNote ? 'Required' : 'Optional';
+    $('stepNote').value = toClient ? o.note : '';
+    var perf = key === 'performance_review';
+    var cur = state.ownerIds[t.id] || ownerId(t);
+    $('stepHandTickWrap').hidden = perf;
+    $('stepHandTick').checked = perf || Boolean(o.assignee);
+    $('stepHandRow').hidden = !$('stepHandTick').checked;
+    $('stepHandLabel').textContent = perf ? 'Performance review by' : 'New Task Owner';
+    $('stepHandTo').innerHTML = '<option value="">Choose a person</option>' + state.members.filter(function (m) {
+      return perf || m.id !== cur;
+    }).map(function (m) {
+      return '<option value="' + esc(m.id) + '">' + esc(m.name) + (m.id === t.created_by ? ' (created it)' : '') + '</option>';
+    }).join('');
+    $('stepHandTo').value = o.assignee || (perf ? t.created_by || '' : '');
+    $('stepHand').hidden = !may('ops', 'work');
+    var go = $('stepGo');
+    go.textContent = verb;
+    go.className = 'btn ' + (handsOff(key, t) ? 'btn-go' : 'btn-primary');
+    go.disabled = false;
+    msg('stepMsg', '');
+    sheet('stepSheet', true);
+  }
+  /* Going live on a day other than the one it was scheduled for is allowed,
+     and asks why, because a report that cannot see why a date moved cannot
+     see replanning. */
+  function stepDateChanged() {
+    var c = stepCtx;
+    var show = Boolean(c && c.key === 'live' && c.t.publish_at && $('stepDate').value &&
+      $('stepDate').value !== dateValue(c.t.publish_at));
+    $('stepWhyRow').hidden = !show;
+    if (show) $('stepWhyLabel').textContent = 'Why not on ' + niceDate(c.t.publish_at) + ', the scheduled date';
+  }
+  function doStep() {
+    var c = stepCtx;
+    if (!c) return;
+    var t = c.t, key = c.key;
+    var s = state.stages[t.workflow_id + '|' + key];
+    var g = s && s.stage_group;
+    var note = String($('stepNote').value || '').trim();
+    var toClient = key === 'client_review' && c.o.note != null;
+    var needNote = (g === 'revision' && key !== 'changes_requested') || key === 'taken_down' || toClient;
+    if (needNote && !note) {
+      msg('stepMsg', g === 'revision' ? 'Say what needs to change.' : toClient ? 'Say how the draft was sent.' : 'Say why it is taken down.', 'err');
+      $('stepNote').focus();
+      return;
+    }
+    var who = null;
+    if (key === 'performance_review' || $('stepHandTick').checked) {
+      who = $('stepHandTo').value || null;
+      if (!who && key !== 'performance_review') { msg('stepMsg', 'Choose the new Task Owner.', 'err'); $('stepHandTo').focus(); return; }
+    }
+    var btn = $('stepGo');
+    btn.disabled = true;
+    var fail = function (text) { btn.disabled = false; msg('stepMsg', text, 'err'); };
+    var ok = function (d) { btn.disabled = false; sheet('stepSheet', false); stepDone(c, d, who); };
+    var rpc = function (fn, args, then) {
+      db.rpc(fn, args).then(function (r) {
+        var d = r.data;
+        if (r.error) { fail(r.error.message); return; }
+        if (d && d.error) { fail(said(d.error, t)); return; }
+        then(d);
+      }, function (e) { fail((e && e.message) || String(e)); });
+    };
+    if (key === 'scheduled') {
+      var day = $('stepDate').value;
+      if (!day) { fail('Set the publish date.'); $('stepDate').focus(); return; }
+      rpc('ops_set_publish_date', { p_task: t.id, p_at: day + 'T00:00:00Z', p_version: t.version }, function (d) {
+        rpc('ops_transition_task', {
+          p_task: t.id, p_next: key, p_version: d && d.version != null ? d.version : null,
+          p_note: note || null, p_assignee: who
+        }, ok);
+      });
+      return;
+    }
+    if (key === 'live') {
+      var liveDay = $('stepDate').value;
+      if (!liveDay) { fail('Confirm the date it went live.'); $('stepDate').focus(); return; }
+      var why = String($('stepWhy').value || '').trim();
+      if (t.publish_at && liveDay !== dateValue(t.publish_at) && !why) { fail(said('live-reason-required')); $('stepWhy').focus(); return; }
+      var url = String($('stepLink').value || '').trim();
+      if (url && !/^https?:\/\//i.test(url)) { fail('A link starts with https://'); $('stepLink').focus(); return; }
+      var goLive = function (ver) {
+        rpc('ops_mark_live', {
+          p_task: t.id, p_live_at: liveDay + 'T00:00:00Z', p_reason: why || null,
+          p_version: ver, p_assignee: who, p_note: note || null
+        }, ok);
+      };
+      if (url) {
+        rpc('ops_add_link', { p_task: t.id, p_kind: 'final', p_label: 'Live post', p_url: url, p_version: t.version }, function (d) {
+          goLive(d && d.task && d.task.version != null ? d.task.version : null);
+        });
+      } else goLive(t.version);
+      return;
+    }
+    rpc('ops_transition_task', { p_task: t.id, p_next: key, p_version: t.version, p_note: note || null, p_assignee: who }, ok);
+  }
+  function stepDone(c, d, who) {
+    var t = c.t;
+    if (who) { state.owners[t.id] = nameOf(who); state.ownerIds[t.id] = who; }
+    if (state.task && state.task.id === t.id) {
+      if (d && d.id) applyTask(d);
+      if (state.drawer) state.drawerDirty = true;
+      readTask(t.id, function () { msg(state.drawer ? 'dwMsg' : 'taskNextMsg', 'Moved to ' + labelOfStage(t, c.key) + '.', 'ok'); });
+      return;
+    }
+    state.moved = { id: t.id, word: labelOfStage(t, c.key) };
+    if (c.o.after) c.o.after(); else load();
   }
 
   // ---- Add task ------------------------------------------------------------
@@ -2093,7 +2952,7 @@
       if (i >= picks.length) {
         btn.disabled = false;
         sheet('tplSheet', false);
-        msg('workMsg', made + (made === 1 ? ' task made.' : ' tasks made.'), 'ok');
+        msg('workMsg', made + (made === 1 ? ' task added.' : ' tasks added.'), 'ok');
         load();
         return;
       }
@@ -2173,8 +3032,8 @@
     var by = {}, order = [];
     (state.tasks || []).forEach(function (t) {
       var id = state.ownerIds[t.id] || '';
-      if (!by[id]) { by[id] = { name: state.owners[t.id] || 'Nobody yet', overdue: 0, today: 0, doing: 0, waiting: 0, review: 0, done: 0 }; order.push(id); }
-      var r = by[id], n = daysAway(t.current_final_due_at), p = plainOf(t);
+      if (!by[id]) { by[id] = { name: state.owners[t.id] || 'No task owner', overdue: 0, today: 0, doing: 0, waiting: 0, review: 0, done: 0 }; order.push(id); }
+      var r = by[id], n = daysAway(dueOf(t)), p = plainOf(t);
       if (isFinished(t)) {
         var at = new Date(t.completed_at || t.cancelled_at).getTime();
         if (t.completed_at && at >= ws) r.done++;
@@ -2188,7 +3047,7 @@
     });
     order.sort(function (a, b) { return a ? (b ? by[a].name.localeCompare(by[b].name) : -1) : 1; });
     if (!order.length) { UI.emptyLine(box, 'No tasks.'); return; }
-    var table = GRP.table('svc-row load-row', ['Owner', 'Overdue', 'Due today', 'In progress', 'Waiting', 'Review', 'Done this week']);
+    var table = GRP.table('svc-row load-row', ['Task Owner', 'Overdue', 'Due today', 'In progress', 'Waiting', 'Review', 'Done this week']);
     order.forEach(function (id) {
       var r = by[id];
       var row = document.createElement('div');
@@ -2238,7 +3097,9 @@
       db.from('ops_work_sessions')
         .select('*, team_members!ops_work_sessions_team_member_id_fkey(name)')
         .eq('task_id', id).order('started_at', { ascending: false }),
-      db.from('ops_task_events').select('*').eq('task_id', id).order('created_at', { ascending: false }).limit(60),
+      /* Enough history that a comment and the correction made to it a week
+         later are both read. */
+      db.from('ops_task_events').select('*').eq('task_id', id).order('created_at', { ascending: false }).limit(250),
       db.from('ops_task_assignees')
         .select('*, team_members!ops_task_assignees_team_member_id_fkey(name)')
         .eq('task_id', id).is('ended_at', null),
@@ -2320,8 +3181,8 @@
        name it by, so it heads the record in the token face and copies on a
        press, the way a serial does on the Register. */
     if (mark) {
-      mark.textContent = 'T' + t.task_no;
-      mark.setAttribute('aria-label', 'Copy T' + t.task_no);
+      mark.textContent = serialOf(t);
+      mark.setAttribute('aria-label', 'Copy ' + serialOf(t));
     }
     /* The name is the code and the description. The code is the database's
        and is drawn in the token face; the description is the team's, edited
@@ -2344,7 +3205,7 @@
        under People, so the head does not say it a second time. */
     $('taskMeta').textContent = [
       whoseWord(t),
-      formatWord(t),
+      metaFormat(t),
       TASK_TYPE_WORD[t.task_type] || ''
     ].filter(Boolean).join(' · ');
     var chip = $('taskStage');
@@ -2413,11 +3274,20 @@
     var g = s && s.stage_group;
     if (key === 'ready') return 'Mark ready';
     if (key === 'published') return 'Mark published';
-    if (key === 'approved') return 'Approve';
+    if (key === 'approved') return 'Mark approved';
+    /* Both reviews send work back with the same two words; the step sheet
+       names which loop it enters. A longer label wrapped in the half-width
+       button a phone gives the card. */
     if (key === 'changes_requested' || g === 'revision') return 'Request changes';
+    if (key === 'internal_review') return 'Send to AQC review';
     if (key === 'client_review' || g === 'client_review') return 'Send to client';
+    if (key === 'scheduled') return 'Schedule';
+    if (key === 'live') return 'Mark live';
+    if (key === 'performance_review') return 'Review performance';
+    if (key === 'taken_down') return 'Take down';
+    if (key === 'completed') return 'Complete';
     if (g === 'internal_review') return 'Send for review';
-    if (isWork(g)) return 'Start work';
+    if (isWork(g)) return 'Mark in progress';
     if (g === 'ready') return 'Mark ready';
     if (g === 'delivered') return 'Mark delivered';
     if (g === 'done') return 'Complete task';
@@ -2428,14 +3298,18 @@
   /* The stage the ordinary path goes to next. The workflow says which moves
      exist; this picks the one a person means. From planning that is Ready
      (the content meeting is the month's, not a stage anybody has to walk
-     through); from Changes requested it is back into the work, not the
-     nearest stage ahead, which would have offered Approved. */
+     through); from a revision it is back to the review that sent it, never
+     the nearest stage ahead; after a performance review it is Completed, and
+     taking a post down is always the choice somebody makes and never the
+     step a button offers first. */
   function nextOf(t) {
     var here = stageOf(t);
     var nexts = (here && here.next_stage_keys) || [];
     if (!here || !nexts.length) return null;
     var g = here.stage_group;
     if (g === 'intake' && nexts.indexOf('ready') > -1) return 'ready';
+    if (t.stage_key === 'revision_internal' && nexts.indexOf('internal_review') > -1) return 'internal_review';
+    if (t.stage_key === 'revision_client' && nexts.indexOf('client_review') > -1) return 'client_review';
     if (g === 'revision') {
       var act = nexts.filter(function (k) {
         var s = state.stages[t.workflow_id + '|' + k];
@@ -2443,17 +3317,63 @@
       })[0];
       if (act) return act;
     }
+    if (g === 'performance' && nexts.indexOf('completed') > -1) return 'completed';
     var f = forwardOf(t, nexts);
     var fs = f && state.stages[t.workflow_id + '|' + f];
     return fs && !SIDE[fs.stage_group] ? f : null;
   }
   /* Every stage on the line, in the workflow's order. The lanes beside it
-     and the revision loop are not steps: they are where a task goes off the
-     line and comes back. */
+     and the two revision loops are not steps: they are where a task goes off
+     the line and comes back. A post taken down is an ending somebody chose,
+     and Published is the step Completed replaced, so each is on the line
+     only for a task that is standing on it. */
   function lineOf(t) {
-    return stagesOf(t.workflow_id).filter(function (s) {
-      return !SIDE[s.stage_group] && s.stage_group !== 'revision';
+    var all = stagesOf(t.workflow_id);
+    var hasCompleted = all.some(function (s) { return s.key === 'completed'; });
+    return all.filter(function (s) {
+      if (SIDE[s.stage_group] || s.stage_group === 'revision') return false;
+      if (s.key === t.stage_key) return true;
+      if (s.stage_group === 'taken_down') return false;
+      if (s.key === 'published' && hasCompleted) return false;
+      return true;
     });
+  }
+  /* Which round of a review or a revision this is, off the task's own
+     history: the database writes the round on every move into one. */
+  function roundOf(t) {
+    var e = (state.detail.events || []).filter(function (x) {
+      return x.event_type === 'stage_changed' && x.to_value && x.to_value.stage_key === t.stage_key;
+    })[0];
+    var r = e && e.detail && Number(e.detail.round);
+    if (r) return r;
+    return (state.detail.events || []).filter(function (x) {
+      return x.event_type === 'stage_changed' && x.to_value && x.to_value.stage_key === t.stage_key;
+    }).length || 1;
+  }
+  /* An action that moves the task: named for the act, toned by whether it
+     hands the work to somebody else, and carrying the stage so the card can
+     offer the Task Owner change on the same press. */
+  function stepAct(t, key, label, tone) {
+    return {
+      label: label || verbFor(key, t), move: key,
+      tone: tone || (handsOff(key, t) ? 'go' : ''),
+      run: function (hand) { stepGo(t, key, hand); }
+    };
+  }
+  /* The team sends drafts through each client's WhatsApp group, so a draft
+     link is optional: the press that sends it records that it went there. */
+  var WA_NOTE = 'Sent to the client on WhatsApp.';
+  function linked() { return hasLink('draft') || hasLink('review'); }
+  function waAct(t) {
+    return {
+      label: 'Sent on WhatsApp', move: 'client_review', tone: 'go',
+      run: function (hand) { move('client_review', WA_NOTE, { assignee: hand && hand.who || null }); }
+    };
+  }
+  function stepGo(t, key, hand) {
+    var who = hand && hand.who || null;
+    if (needsSay(t, key)) { openStep(t, key, { assignee: who }); return; }
+    move(key, null, { assignee: who });
   }
 
   function derive(t) {
@@ -2462,7 +3382,7 @@
     var work = may('ops', 'work'), manage = may('ops', 'manage');
     var n = {
       status: stageLabel(t), tone: stageTone(t),
-      title: '', line: '', list: [], go: null, alt: null, blocked: false
+      title: '', line: '', list: [], go: null, alt: null, blocked: false, rate: false
     };
     var mt = engMeeting(state.eng);
     /* The head says what is true of the meeting, not what the stage is
@@ -2478,15 +3398,25 @@
     if (t.cancelled_at) {
       n.title = 'Cancelled';
       n.line = 'Cancelled on ' + niceDate(t.cancelled_at) + '.';
+      var why0 = lastNote('stage_changed', 'cancelled');
+      if (why0) n.line += ' ' + why0;
+      if (work && reopenTo(t)) n.alt = { label: 'Reopen', run: function () { askReopenTo(t); } };
       return n;
     }
     if (t.completed_at) {
-      n.title = 'Complete';
-      n.line = 'Completed on ' + niceDate(t.completed_at) + '.';
+      var down = g === 'taken_down';
+      n.title = down ? 'Taken down' : 'Complete';
+      n.line = (down ? 'Taken down on ' : 'Completed on ') + niceDate(t.completed_at) + '.';
+      if (down) {
+        var why = lastNote('stage_changed', t.stage_key);
+        if (why) n.line += ' ' + why;
+        if (work && hasNext(t, 'live')) n.alt = stepAct(t, 'live', 'Put it back live');
+      }
+      n.rate = true;
       return n;
     }
     var owner = ownerId(t);
-    var assign = { label: 'Assign owner', run: function () { editOwner(); } };
+    var assign = { label: 'Assign task owner', run: function () { editOwner(); } };
     var setDue = { label: 'Set due date', run: function () { editDate('final'); } };
 
     if (t.stage_key === 'blocked') {
@@ -2512,30 +3442,30 @@
       var need = readyNeeds(t);
       if (need.length) {
         n.blocked = true;
-        n.title = 'Not ready for production';
-        var words = { owner: 'Assign an owner', due: 'Add a final due date' };
+        n.title = 'Not ready to start';
+        var words = { owner: 'Assign a task owner', due: 'Add a final due date' };
         n.list = need.length > 1 ? need.map(function (k) { return words[k]; }) : [];
         n.line = need.length > 1 ? 'Two items missing.'
-          : (need[0] === 'owner' ? 'Assign an owner to continue.' : 'Add a final due date to continue.');
+          : (need[0] === 'owner' ? 'Assign a task owner to continue.' : 'Add a final due date to continue.');
         if (need[0] === 'owner') {
           if (manage) n.go = assign;
-          else { n.line = 'Ask a manager to assign an owner.'; if (need.length > 1 && work) n.go = setDue; }
+          else { n.line = 'Ask a manager to assign a task owner.'; if (need.length > 1 && work) n.go = setDue; }
         } else if (work) n.go = setDue;
         return n;
       }
     }
     if (!owner && work) {
       n.title = 'Nobody owns this task';
-      n.line = manage ? 'Assign an owner to continue.' : 'Ask a manager to assign an owner.';
+      n.line = manage ? 'Assign a task owner to continue.' : 'Ask a manager to assign a task owner.';
       if (manage) n.go = assign;
       return n;
     }
 
     /* The step itself. */
     if (g === 'intake' && target === 'ready') {
-      n.title = 'Mark ready for production';
-      n.line = 'Owner and final due date set.';
-      if (work) n.go = { label: 'Mark ready', run: function () { move('ready'); } };
+      n.title = 'Mark ready to start';
+      n.line = 'Task owner and final due date set.';
+      if (work) n.go = stepAct(t, 'ready');
       if (state.eng && mt === 'none' && work) {
         n.alt = { label: 'Schedule meeting', run: function () { openMeetFor(); } };
       }
@@ -2547,61 +3477,126 @@
       var pn = productionNeeds(t);
       if (pn.length) {
         n.blocked = true;
-        n.title = 'Not ready for production';
+        n.title = 'Not ready to start';
         var mw = { planning: 'Mark planning complete for ' + monthWord(state.eng.period),
                    meeting: 'Schedule the content meeting',
                    'meeting-held': 'Hold the content meeting (' + niceDate(state.eng.meeting_at) + ')' };
         n.list = pn.length > 1 ? pn.map(function (k) { return mw[k]; }) : [];
         n.line = pn[0] === 'planning' ? 'Planning incomplete for ' + monthWord(state.eng.period) + '.'
-          : pn[0] === 'meeting' ? 'Production waits on the content meeting.'
-          : 'Production opens once the content meeting on ' + niceDate(state.eng.meeting_at) + ' is held.';
-        if (pn.length > 1) n.line = 'Production waits on the month.';
+          : pn[0] === 'meeting' ? 'The work waits on the content meeting.'
+          : 'The work opens once the content meeting on ' + niceDate(state.eng.meeting_at) + ' is held.';
+        if (pn.length > 1) n.line = 'The work waits on the month.';
         if (work && pn.indexOf('meeting') > -1) n.go = { label: 'Schedule meeting', run: function () { openMeetFor(); } };
         else n.go = monthLink(t);
         return n;
       }
-      n.title = 'Start production';
-      n.line = 'Moves to ' + tstage.label + ' and starts your timer.';
-      if (work) n.go = { label: 'Start work', run: function () { move(target, null, true); } };
+      n.title = 'Start the work';
+      n.line = 'Moves to ' + tstage.label + '.';
+      if (work) n.go = stepAct(t, target);
       return n;
     }
-    if (tg === 'client_review' || (tstage && tstage.key === 'client_review')) {
-      if (!hasLink('draft') && !hasLink('review')) {
-        n.blocked = true;
-        n.title = 'Not ready for client review';
-        n.line = 'Add the draft or review link.';
-        if (work) n.go = { label: 'Add draft link', run: function () { openLinkForm('draft'); } };
-        if (work && isWork(g)) n.alt = timerAct(t);
-        return n;
-      }
-      n.title = g === 'internal_review' ? 'Internal review' : 'Send to the client';
-      n.line = 'Send once it passes review.';
-      if (work) n.go = { label: 'Send to client', run: function () { move(target); } };
-      if (work && hasNext(t, 'changes_requested')) n.alt = { label: 'Request changes', run: function () { askChanges(); } };
-      else if (work && isWork(g)) n.alt = timerAct(t);
+    var round = (g === 'internal_review' || g === 'client_review' || g === 'revision') ? roundOf(t) : 0;
+    var roundWord = round > 1 ? ', round ' + round : '';
+    /* In progress, heading for AQC review: the work is sent to whoever
+       checks it, with the draft the check needs. */
+    if (isWork(g) && target === 'internal_review') {
+      n.title = 'Send to AQC review';
+      n.line = 'Send it for review when the draft is ready.';
+      if (work) n.go = stepAct(t, 'internal_review');
+      return n;
+    }
+    /* AQC review: pass it to the client, or send it back with what to
+       change. The client sees the work only once it has passed. */
+    if (g === 'internal_review') {
+      n.title = 'AQC review' + roundWord;
+      /* The draft goes to the client as the link on the task, or through the
+         client's WhatsApp group; the press records which. */
+      n.line = linked() || target !== 'client_review'
+        ? 'Pass it to the client, or send it back with what to change.'
+        : 'Pass it to the client on WhatsApp, or send it back with what to change.';
+      if (work && target === 'client_review') n.go = linked() ? stepAct(t, target, 'Pass to client') : waAct(t);
+      else if (work && target) n.go = stepAct(t, target);
+      if (work && hasNext(t, 'revision_internal')) n.alt = stepAct(t, 'revision_internal');
+      else if (work && hasNext(t, 'changes_requested')) n.alt = { label: 'Request changes', run: function () { askChanges(); } };
       return n;
     }
     if (g === 'revision') {
+      var asked = lastNote('stage_changed', t.stage_key);
+      if (t.stage_key === 'revision_internal' || t.stage_key === 'revision_client') {
+        n.title = stageLabel(t) + roundWord;
+        n.line = asked ? 'Requested: ' + asked : 'Make the changes, then send it back.';
+        if (work && target === 'client_review' && !linked()) n.go = waAct(t);
+        else if (work && target) n.go = stepAct(t, target);
+        if (work && t.stage_key === 'revision_client' && hasNext(t, 'internal_review')) n.alt = stepAct(t, 'internal_review');
+        return n;
+      }
       n.title = 'Changes requested';
-      var why = lastNote('stage_changed', t.stage_key);
-      n.line = why ? 'Requested: ' + why : 'Make the changes, then resend for review.';
-      if (work && target) n.go = { label: 'Resume work', run: function () { move(target, null, true); } };
+      n.line = asked ? 'Requested: ' + asked : 'Make the changes, then resend for review.';
+      if (work && target) n.go = stepAct(t, target, 'Resume work');
+      return n;
+    }
+    if (tg === 'client_review' || (tstage && tstage.key === 'client_review')) {
+      n.title = 'Send to the client';
+      n.line = linked() ? 'Send once it passes review.' : 'Send it on WhatsApp, or add the draft link below.';
+      if (work) n.go = linked() ? stepAct(t, target) : waAct(t);
+      if (work && hasNext(t, 'changes_requested')) n.alt = { label: 'Request changes', run: function () { askChanges(); } };
       return n;
     }
     if (isWork(g)) {
       var toWork = isWork(tg);
       n.title = toWork ? 'Next: ' + labelForKey(target) : 'Finish the draft';
-      n.line = timerLine(t, toWork);
-      if (work && target) n.go = { label: toWork ? 'Start ' + labelForKey(target).toLowerCase() : verbFor(target, t),
-                                   run: function () { move(target); } };
-      if (work) n.alt = timerAct(t);
+      n.line = toWork ? 'Move on when this step is done.' : 'Send for review when ready.';
+      if (work && target) n.go = stepAct(t, target, toWork ? 'Start ' + labelForKey(target).toLowerCase() : null);
       return n;
     }
     if (g === 'client_review') {
-      n.title = 'Waiting on the client';
+      n.title = 'Client review' + roundWord;
       n.line = 'Record the client\'s decision.';
-      if (work && target) n.go = { label: verbFor(target, t), run: function () { move(target); } };
-      if (work && hasNext(t, 'changes_requested')) n.alt = { label: 'Request changes', run: function () { askChanges(); } };
+      if (work && target) n.go = stepAct(t, target);
+      if (work && hasNext(t, 'revision_client')) n.alt = stepAct(t, 'revision_client');
+      else if (work && hasNext(t, 'changes_requested')) n.alt = { label: 'Request changes', run: function () { askChanges(); } };
+      return n;
+    }
+    /* After the client said yes: a date to go out on, then the day it went
+       out, then three days on, how it performed. */
+    if (g === 'approved' && hasNext(t, 'scheduled')) {
+      n.title = 'Approved';
+      n.line = t.publish_at ? 'Scheduled publish date ' + niceDate(t.publish_at) + '.' : 'Set the publish date to schedule it.';
+      if (work) n.go = stepAct(t, 'scheduled');
+      if (work && hasNext(t, 'live')) n.alt = stepAct(t, 'live');
+      return n;
+    }
+    if (g === 'scheduled') {
+      var dn = daysAway(t.publish_at);
+      n.title = 'Scheduled';
+      n.line = t.publish_at
+        ? (dn < 0 ? 'Was due out ' + niceDate(t.publish_at) + '. Confirm when it went live.'
+          : dn === 0 ? 'Goes live today.' : 'Goes live ' + niceDate(t.publish_at) + '.')
+        : 'No publish date set.';
+      if (work && hasNext(t, 'live')) n.go = stepAct(t, 'live');
+      return n;
+    }
+    if (g === 'live') {
+      var rev = t.live_at ? plusDays(t.live_at, REVIEW_AFTER_DAYS) : null;
+      var rn = daysAway(rev);
+      n.title = 'Live';
+      n.line = t.live_at
+        ? 'Live since ' + niceDate(t.live_at) + '. ' + (rn !== null && rn > 0
+            ? 'Review its performance from ' + niceDate(rev) + '.'
+            : 'Its performance is due for review.')
+        : 'Live.';
+      if (work && hasNext(t, 'performance_review')) n.go = stepAct(t, 'performance_review');
+      if (work && hasNext(t, 'taken_down')) n.alt = stepAct(t, 'taken_down');
+      return n;
+    }
+    if (g === 'performance') {
+      var req = state.detail.checklist.filter(function (c) { return c.required; });
+      var open = req.filter(function (c) { return !c.completed_at; }).length;
+      n.title = 'Performance review';
+      n.line = open ? open + ' of ' + req.length + ' checks to go. Keep it live, or take it down if it is not working.'
+        : 'Checks done. Complete it, or take it down.';
+      if (work && !open && hasNext(t, 'completed')) n.go = stepAct(t, 'completed');
+      if (work && hasNext(t, 'taken_down')) n.alt = stepAct(t, 'taken_down');
       return n;
     }
     if (target === 'published' || tg === 'delivered') {
@@ -2610,22 +3605,22 @@
         n.title = 'Schedule publishing';
         n.line = 'Set the agreed publish date.';
         if (work) n.go = { label: 'Schedule', run: function () { editDate('publish'); } };
-        if (work && hasLink('final')) n.alt = { label: 'Mark published', run: function () { move(target); } };
+        if (work && hasLink('final')) n.alt = stepAct(t, target);
         return n;
       }
       if (!hasLink('final')) {
         n.blocked = true;
         n.title = finalKind === 'publish' ? 'Not ready to publish' : 'Not ready to deliver';
         n.line = 'Add the final link.';
-        if (work) n.go = { label: 'Add final link', run: function () { openLinkForm('final'); } };
+        if (work) n.go = { label: 'Add final link', run: function () { addLinkHere('final'); } };
         return n;
       }
       n.title = finalKind === 'publish' ? 'Publish' : 'Deliver';
       n.line = t.publish_at ? 'Scheduled for ' + niceDate(t.publish_at) + '.' : 'Final link attached.';
-      if (work) n.go = { label: verbFor(target, t), run: function () { move(target); } };
+      if (work) n.go = stepAct(t, target);
       return n;
     }
-    if (tg === 'done' && !t.delivered_at) {
+    if (tg === 'done' && !t.delivered_at && target !== 'completed') {
       n.title = 'Complete the task';
       n.line = 'No delivery recorded. A reason is required.';
       if (work) n.go = { label: 'Complete task', run: function () { askComplete(target); } };
@@ -2634,7 +3629,7 @@
     if (target) {
       n.title = tstage ? tstage.label : sentence(target);
       n.line = 'Next workflow step.';
-      if (work) n.go = { label: verbFor(target, t), run: function () { move(target); } };
+      if (work) n.go = stepAct(t, target);
       return n;
     }
     n.title = stageLabel(t);
@@ -2642,28 +3637,32 @@
     return n;
   }
   /* An everyday task's next step is one of five words, and the button is the
-     act: start it, finish it, send it for review, pick it up again. */
+     act: mark it in progress, finish it, send it for review, pick it up again. */
   function deriveEveryday(t, n, work) {
     var p = plainOf(t);
     n.status = PLAIN[p].word; n.tone = PLAIN[p].tone;
-    var go = function (label, key, timer) { return { label: label, run: function () { move(key, null, timer); } }; };
+    /* An everyday task changes hands from its Task Owner row, not on a
+       step: its steps are one person's day. */
+    var go = function (label, key, tone) {
+      return { label: label, tone: tone || '', run: function () { move(key); } };
+    };
     if (p === 'cancelled') { n.title = 'Cancelled'; n.line = 'Cancelled on ' + niceDate(t.cancelled_at) + '.';
-      if (work) n.alt = go('Reopen', 'todo'); return n; }
-    if (p === 'done') { n.title = 'Done'; n.line = 'Completed on ' + niceDate(t.completed_at) + '.';
-      if (work) n.alt = go('Reopen', 'todo'); return n; }
+      if (work && reopenTo(t)) n.alt = { label: 'Reopen', run: function () { askReopenTo(t); } }; return n; }
+    if (p === 'done') { n.title = 'Done'; n.line = 'Completed on ' + niceDate(t.completed_at) + '.'; n.rate = true;
+      if (work) n.alt = { label: 'Reopen', run: function () { move('todo'); } }; return n; }
     if (!ownerId(t)) {
       n.title = 'Nobody owns this task';
-      n.line = may('ops', 'manage') ? 'Assign an owner to continue.' : 'Ask a manager to assign an owner.';
+      n.line = may('ops', 'manage') ? 'Assign a task owner to continue.' : 'Ask a manager to assign a task owner.';
     }
     if (!work) return n;
-    if (p === 'todo') { n.title = n.title || 'To do'; n.go = go('Start', 'doing'); n.alt = go('Mark complete', 'complete'); }
+    if (p === 'todo') { n.title = n.title || 'To do'; n.go = go('Mark in progress', 'doing'); n.alt = go('Mark complete', 'complete'); }
     else if (p === 'doing') { n.title = n.title || 'In progress'; n.go = go('Mark complete', 'complete'); n.alt = go('Send for review', 'review'); }
     else if (p === 'waiting') { n.title = n.title || 'Waiting'; n.line = n.line || 'Pending next stage changes.'; n.go = go('Resume', 'doing'); n.alt = go('Mark complete', 'complete'); }
     else if (p === 'review') {
       n.title = n.title || 'Ready for review';
       n.go = go('Approve', 'complete');
       n.alt = { label: 'Request changes', run: function () {
-        ADspaceConfirm.ask({ title: 'Request changes', body: 'Returns it to In progress and notifies the owner.',
+        ADspaceConfirm.ask({ title: 'Request changes', body: 'Returns it to In progress and notifies the task owner.',
           go: 'Request changes', field: { label: 'What needs to change', rows: 3, need: 'Say what needs to change.' }
         }, function (why) { move('doing', why); });
       } };
@@ -2701,26 +3700,35 @@
     if (!slug) return null;
     return { label: 'Open the month', href: '/admin/?s=clients&client=' + encodeURIComponent(slug) + '&tab=work' };
   }
-  function timerLine(t, toWork) {
-    var s = state.session;
-    var run = s && s.task_id === t.id ? 'Timer running. ' : '';
-    return run + (toWork ? 'Move on when done.' : 'Send for review when ready.');
+  /* The link a gate asks for is added where the reader is: in the sheet's
+     own form, or the record's. */
+  function addLinkHere(kind) {
+    if (state.drawer) {
+      openCardForm('dwLinkForm');
+      var k = $('dwLinkKind'), u = $('dwLinkUrl');
+      if (k) k.value = kind;
+      if (u) { try { u.scrollIntoView({ block: 'center' }); } catch (e) {} u.focus(); }
+      return;
+    }
+    openLinkForm(kind);
   }
+  /* A timer is kept for the person who wants their own hours on a task, from
+     the full record's ⋯. Stage time is what tracks the work. */
   function timerAct(t) {
     var s = state.session;
     if (s && s.task_id === t.id) {
-      return { label: 'Stop work', run: function () {
-        call('ops_stop_work', { p_session: s.id, p_note: null }, msgHere(), function () {
+      return { label: 'Stop timer', run: function () {
+        call('ops_stop_work', { p_session: s.id, p_note: null }, msgHere('taskMsg'), function () {
           stopTick(); readTask(t.id);
         });
       } };
     }
-    return { label: 'Start work', run: function () { startWork(t); } };
+    return { label: 'Start timer', run: function () { startWork(t); } };
   }
   /* One open session a person across every task: starting here stops the one
-     running elsewhere, and the line says which before the press. */
+     running elsewhere. */
   function startWork(t, then) {
-    call('ops_start_work', { p_task: t.id }, msgHere(), function () {
+    call('ops_start_work', { p_task: t.id }, msgHere('taskMsg'), function () {
       loadSession(function () { startTick(); if (then) then(); else paintTask(); });
     });
   }
@@ -2728,50 +3736,30 @@
   // ---- The next step -------------------------------------------------------
   function paintNextStep(t, n) {
     paintSteps(t);
-    $('taskNextTitle').textContent = n.title;
-    $('taskNextStep').classList.toggle('is-blocked', n.blocked);
-    var line = $('taskNextLine');
-    line.textContent = n.line || '';
-    line.hidden = !n.line;
-    /* Somebody else's timer on another task is named before they press. */
-    var s = state.session;
-    if (n.go && /Start work|Resume work/.test(n.go.label) || (n.alt && n.alt.label === 'Start work')) {
-      var other = s && s.task_id !== t.id
-        ? (state.tasks || []).filter(function (x) { return x.id === s.task_id; })[0] : null;
-      if (other) line.textContent = (n.line ? n.line + ' ' : '') + 'Timer moves here from T' + other.task_no + '.';
-    }
-    var list = $('taskNextList');
-    list.innerHTML = n.list.map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('');
-    list.hidden = !n.list.length;
-    /* The final date is the day the work is owed AT CLIENT REVIEW, so the
-       line says which of the two has happened. */
-    var late = $('taskNextLate');
-    var over = daysAway(t.current_final_due_at);
-    late.hidden = !isLate(t);
-    late.textContent = isLate(t)
-      ? 'Late: ' + Math.abs(over) + (Math.abs(over) === 1 ? ' day' : ' days') +
-        ' past final due, not yet at client review.'
-      : '';
-    var acts = $('taskNextActs');
-    acts.innerHTML = '';
-    if (n.go) acts.appendChild(actButton(n.go, true));
-    if (n.alt) acts.appendChild(actButton(n.alt, false));
-    acts.hidden = !n.go && !n.alt;
+    paintNext(NEXT_REC(), t, n);
   }
-  function actButton(a, primary) {
-    var b;
+  /* One filled action and one outlined beside it. Blue only where the move
+     hands the work to somebody else; everything the team records about its
+     own progress is the ink primary, as Add and Save are. */
+  function actButton(a, primary, b) {
+    var el;
     if (a.href) {
-      b = document.createElement('a');
-      b.href = a.href;
+      el = document.createElement('a');
+      el.href = a.href;
     } else {
-      b = document.createElement('button');
-      b.type = 'button';
-      b.addEventListener('click', function () { a.run(); });
+      el = document.createElement('button');
+      el.type = 'button';
+      el.addEventListener('click', function () {
+        var hand = handOf(b);
+        if (hand.missing) { msg(b ? b.msg : msgHere(), 'Choose the new Task Owner.', 'err'); if (b && b.to) b.to.focus(); return; }
+        a.run(hand);
+      });
     }
-    b.className = 'btn ' + (primary ? 'btn-go' : 'btn-quiet');
-    b.textContent = a.label;
-    if (primary) b.id = 'taskGo'; else b.id = 'taskAlt';
-    return b;
+    el.className = 'btn ' + (primary ? (a.tone === 'go' ? 'btn-go' : 'btn-primary') : '');
+    el.textContent = a.label;
+    var pre = (b && b.ids) || 'task';
+    el.id = pre + (primary ? 'Go' : 'Alt');
+    return el;
   }
 
   /* The workflow as a row of steps: done quiet, current named, next said. Not
@@ -2850,14 +3838,28 @@
       ['Subtitles', v.subtitle_required ? 'Required' : '']
     ]) : '';
 
+    var canBrief = may('ops', 'work') && !isFinished(t);
     box.innerHTML =
-      (brief ? '<section class="tsec"><h3 class="tsec-title">Brief</h3>' + brief + '</section>' : '') +
+      (brief || canBrief ? '<section class="tsec"><div class="tsec-head"><h3 class="tsec-title">Brief</h3>' +
+        (canBrief ? '<button class="btn btn-quiet btn-sm" data-a="brief" type="button">' + (t.description ? 'Edit' : 'Add') + '</button>' : '') +
+        '</div>' + (brief || '<p class="qempty">No brief.</p>') + '</section>' : '') +
       (v ? '<section class="tsec"><div class="tsec-head"><h3 class="tsec-title">Video</h3>' +
         (may('ops', 'work')
           ? '<button class="btn btn-quiet btn-sm" data-a="footage" type="button">' +
             (v.footage_ready ? 'Mark footage not ready' : 'Mark footage ready') + '</button>' : '') +
         '</div>' + video + '</section>' : '');
 
+    var bf = box.querySelector('[data-a="brief"]');
+    if (bf) bf.addEventListener('click', function () {
+      ADspaceConfirm.ask({
+        title: t.description ? 'Edit brief' : 'Add brief', go: 'Save',
+        field: { label: 'Brief', rows: 5, value: t.description || '', required: false }
+      }, function (v) {
+        call('ops_update_task', { p_task: t.id, p_payload: { description: v }, p_version: t.version }, 'taskMsg', function () {
+          readTask(t.id, function () { msg('taskMsg', 'Brief saved.', 'ok'); });
+        });
+      });
+    });
     var ft = box.querySelector('[data-a="footage"]');
     if (ft) ft.addEventListener('click', function () {
       call('ops_set_video', { p_task: t.id, p_payload: { footage_ready: !v.footage_ready } },
@@ -2874,15 +3876,24 @@
     if (sec) sec.hidden = !items.length;
     if (!items.length) { box.innerHTML = ''; return; }
     var can = may('ops', 'work');
+    var t0 = state.task;
+    var fin0 = t0 && isFinished(t0);
     box.innerHTML = '<div class="softpanel">' + items.map(function (c) {
-      return '<label class="checkrow' + (c.completed_at ? ' is-done' : '') + '">' +
+      return '<div class="qitem qitem-mid" data-row="' + esc(c.id) + '"><label class="checkrow' + (c.completed_at ? ' is-done' : '') + '">' +
         '<input type="checkbox" data-item="' + esc(c.id) + '"' +
           (c.completed_at ? ' checked' : '') + (can ? '' : ' disabled') + '>' +
         '<span class="checkrow-label">' + esc(c.label) +
           (c.required ? ' <span class="tone is-warn">Required</span>' : '') + '</span>' +
         '<span class="checkrow-when">' + esc(c.completed_at ? niceTime(c.completed_at) : '') + '</span>' +
-        '</label>';
+        '</label>' + (can && !fin0 && !c.required ? itemMenu(c.label, [['rename', 'Rename'], ['remove', 'Remove', true]]) : '') + '</div>';
     }).join('') + '</div>';
+    Array.prototype.forEach.call(box.querySelectorAll('.qitem'), function (row) {
+      var c = items.filter(function (x) { return x.id === row.getAttribute('data-row'); })[0];
+      wireItemMenu(row, function (a) {
+        if (a === 'rename') renameItem(state.task, c);
+        if (a === 'remove') removeItem(state.task, c, $('taskCheck'), 'taskMsg');
+      });
+    });
     /* The row it ticked is updated where it sits, never by repainting the
        list: a list that redraws under the pointer takes the focus away from
        somebody working down it with a keyboard, and the tick they just made
@@ -2930,15 +3941,23 @@
         '<span class="tlink-kind"><span class="tone">' + esc(l.kind) + '</span></span>' +
         '<span class="team-act">' +
           (href ? '<a class="btn btn-sm" href="' + esc(href) + '" target="_blank" rel="noopener">Open</a>' : '') +
-          (can ? '<button class="iconbtn" data-off="' + esc(l.id) + '" type="button" aria-label="Remove ' + esc(l.label) + '">' +
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>' : '') +
+          /* Correcting and taking off are the row's ⋯, as they are in the
+             sheet: one way to change a link wherever it is drawn. */
+          (can ? itemMenu(l.label || l.url, [['edit', 'Edit'], ['remove', 'Remove', true]]) : '') +
         '</span>';
+      /* The ⋯ acts on this link. */
+      wireItemMenu(row, function (a) {
+        if (a === 'remove') { removeLink(l.id); return; }
+        if (a !== 'edit') return;
+        openLinkForm(l.kind);
+        recLinkEditing = l.id;
+        $('taskLinkUrl').value = l.url || '';
+        $('taskLinkLabel').value = l.label || '';
+        $('taskLinkSave').textContent = 'Save';
+      });
       table.appendChild(row);
     });
     box.appendChild(table);
-    Array.prototype.forEach.call(box.querySelectorAll('[data-off]'), function (b) {
-      b.addEventListener('click', function () { removeLink(b.getAttribute('data-off')); });
-    });
   }
 
   /* Taking a link off is a soft remove with the way back drawn where the act
@@ -2962,8 +3981,11 @@
     });
   }
 
+  var recLinkEditing = null;
   function openLinkForm(kind) {
     showPane('work', true);
+    recLinkEditing = null;
+    $('taskLinkSave').textContent = 'Save';
     $('taskLinkForm').hidden = false;
     if (typeof kind === 'string') $('taskLinkKind').value = kind;
     $('taskLinkUrl').value = '';
@@ -3031,6 +4053,28 @@
     return order.map(function (k) { return by[k]; });
   }
 
+  /* One row a stage, with how many times the work came back to it: three
+     visits to a revision is the finding, and the figure is the total. */
+  function stageTable(spans) {
+    var st = GRP.table('svc-row tsess-row', ['Stage', 'Visits', 'Time']);
+    spans.forEach(function (s) {
+      var row = document.createElement('div');
+      row.className = 'svc-row tsess-row';
+      row.innerHTML =
+        '<span class="svc-name"><b>' + esc(labelForKey(s.key)) + '</b>' +
+          (s.running ? '<small>still here</small>' : '') + '</span>' +
+        '<span class="tsess-who">' + (s.visits > 1 ? esc(String(s.visits)) : '') + '</span>' +
+        '<span class="tsess-mins">' + esc(minutesWord(s.mins)) + '</span>';
+      st.appendChild(row);
+    });
+    var since = spans.reduce(function (a, s) { return a + s.mins; }, 0);
+    var cyc = document.createElement('div');
+    cyc.className = 'svc-row tsess-row is-total';
+    cyc.innerHTML = '<span class="svc-name"><b>Since it was created</b></span>' +
+      '<span class="tsess-who"></span><span class="tsess-mins">' + esc(minutesWord(since)) + '</span>';
+    st.appendChild(cyc);
+    return st;
+  }
   function paintTime() {
     var box = $('taskTime');
     if (!box) return;
@@ -3042,24 +4086,7 @@
       head.className = 'ovsec-title';
       head.textContent = 'Time in each stage';
       box.appendChild(head);
-      var st = GRP.table('svc-row tsess-row', ['Stage', 'Visits', 'Time']);
-      spans.forEach(function (s) {
-        var row = document.createElement('div');
-        row.className = 'svc-row tsess-row';
-        row.innerHTML =
-          '<span class="svc-name"><b>' + esc(labelForKey(s.key)) + '</b>' +
-            (s.running ? '<small>still here</small>' : '') + '</span>' +
-          '<span class="tsess-who">' + (s.visits > 1 ? esc(String(s.visits)) : '') + '</span>' +
-          '<span class="tsess-mins">' + esc(minutesWord(s.mins)) + '</span>';
-        st.appendChild(row);
-      });
-      var since = spans.reduce(function (a, s) { return a + s.mins; }, 0);
-      var cyc = document.createElement('div');
-      cyc.className = 'svc-row tsess-row is-total';
-      cyc.innerHTML = '<span class="svc-name"><b>Since it was created</b></span>' +
-        '<span class="tsess-who"></span><span class="tsess-mins">' + esc(minutesWord(since)) + '</span>';
-      st.appendChild(cyc);
-      box.appendChild(st);
+      box.appendChild(stageTable(spans));
     }
 
     var rows = state.detail.sessions;
@@ -3113,7 +4140,10 @@
     due_declined: 'Extension declined',
     renamed: 'Description changed', stage_skipped: 'Step skipped',
     recurrence_set: 'Recurrence set', recurrence_off: 'Recurrence stopped',
-    publish_changed: 'Publish date changed', commented: 'Comment'
+    publish_changed: 'Publish date changed', commented: 'Comment',
+    live_confirmed: 'Went live', rated: 'Rated',
+    details_changed: 'Details changed', file_changed: 'Link changed',
+    comment_edited: 'Comment edited', comment_removed: 'Comment deleted', comment_restored: 'Comment restored'
   };
   /* The reason a date moved is a stored key and the sheet offers a word for
      it; the record printed the key. Named once, with sentence case as the
@@ -3143,8 +4173,18 @@
         (d.reason ? ' · ' + reasonWord(d.reason) : '');
     }
     if (e.event_type === 'stage_changed') {
+      /* A review and a revision say which round they are, because the second
+         time round is the finding. */
       return (from.stage_key ? labelForKey(from.stage_key) + ' to ' : '') + labelForKey(to.stage_key) +
+        (Number(d.round) > 1 ? ', round ' + d.round : '') +
         (d.skip_reason ? ' · skipped: ' + d.skip_reason : '') + (d.note ? ' · ' + d.note : '');
+    }
+    if (e.event_type === 'live_confirmed') {
+      return niceDate(to.live_at) + (from.scheduled && dateValue(from.scheduled) !== dateValue(to.live_at)
+        ? ', scheduled ' + niceDate(from.scheduled) : '') + (d.reason ? ' · ' + d.reason : '');
+    }
+    if (e.event_type === 'rated') {
+      return (from.rating ? from.rating + ' to ' : '') + to.rating + ' of 5' + (d.note ? ' · ' + d.note : '');
     }
     if (e.event_type === 'publish_changed') {
       return (from.value ? niceDate(from.value) + ' to ' : '') + (to.value ? niceDate(to.value) : 'none');
@@ -3170,7 +4210,19 @@
         (d.reason ? ' · ' + reasonWord(d.reason) : '');
     }
     if (e.event_type === 'work_stopped') return minutesWord(to.minutes);
-    if (e.event_type === 'checklist_changed') return to.label + (to.done ? ' ticked' : ' cleared');
+    if (e.event_type === 'checklist_changed') {
+      if (to.renamed) return (from.label ? from.label + ' to ' : '') + to.label;
+      if (to.removed) return to.label + ' removed';
+      if (to.added) return to.label + ' added';
+      return to.label + (to.done ? ' ticked' : ' cleared');
+    }
+    if (e.event_type === 'details_changed') {
+      var bits = [];
+      if ('priority_level' in to) bits.push('Priority ' + (PRIORITY_WORD[String(from.priority_level)] || 'Normal') + ' to ' + (PRIORITY_WORD[String(to.priority_level)] || 'Normal'));
+      if ('description' in to) bits.push(to.description ? 'Brief changed' : 'Brief cleared');
+      return bits.join(' · ');
+    }
+    if (e.event_type === 'file_changed') return (to.label || '') + (to.kind && from.kind !== to.kind ? ' · ' + (LINK_WORD[to.kind] || to.kind) : '');
     if (e.event_type === 'blocked') return d.category ? String(d.category).replace(/_/g, ' ') : '';
     if (e.event_type === 'file_added' || e.event_type === 'file_removed' || e.event_type === 'file_restored') {
       return to.label || to.kind || '';
@@ -3218,20 +4270,22 @@
     paintDetails(t);
   }
 
-  /* PEOPLE. The owner is named here and nowhere else, with the one control
-     that changes it beside the name. A change saves on the pick, says it is
-     saving, says Saved, and puts the old name back if the database says no. */
+  /* PEOPLE. The Task Owner is named here and nowhere else, with the one
+     control that changes it beside the name. A change saves on the pick,
+     says it is saving, says Saved, and puts the old name back if the
+     database says no. Beside it, who created the task, because that is who
+     set its dates and who a performance review goes back to. */
   function paintPeople(t) {
     var people = t.assignees || [];
     var who = ownerName(t);
-    var mgr = nameOf(t.manager_id) || (state.eng && nameOf(state.eng.manager_id)) || '';
+    var made = nameOf(t.created_by);
     var client = t.clients && t.clients.name;
     var canOwn = may('ops', 'manage');
-    var rows = frow('Owner',
+    var rows = frow('Task Owner',
       '<span class="towner" id="taskOwnerName">' + (who ? esc(who) : '<span class="mute">Nobody</span>') + '</span>' +
-      '<select class="select select-sm towner-pick" id="taskOwner" aria-label="Owner" hidden></select>',
+      '<select class="select select-sm towner-pick" id="taskOwner" aria-label="Task Owner" hidden></select>',
       canOwn ? '<button class="linkbtn" id="taskOwnerChange" type="button">' + (who ? 'Change' : 'Assign') + '</button>' : '');
-    if (mgr) rows += frow('Manager', esc(mgr));
+    if (made) rows += frow('Created by', esc(made));
     if (client) {
       var slug = t.clients.slug;
       rows += frow(t.scope === 'lead' ? 'Lead' : 'Client',
@@ -3395,7 +4449,6 @@
       ['Languages', (t.language_codes || []).join(', ')],
       ['Estimate', t.estimate_minutes ? minutesWord(t.estimate_minutes) : ''],
       ['Repeats', ruleWord(state.rule)],
-      ['Created by', nameOf(t.created_by)],
       ['Added', niceDate(t.created_at)]
     ].filter(function (p) { return p[1]; }).map(function (p) { return frow(p[0], esc(p[1])); }).join('');
     if (e) {
@@ -3419,10 +4472,15 @@
   function forwardOf(t, nexts) {
     var here = stageOf(t);
     var pos = here ? here.position : 0;
+    /* A revision is where work is sent back and a take-down is an ending
+       somebody chooses, so neither is ever the step forward, wherever the
+       workflow puts them. */
     var ahead = nexts.map(function (k) {
       return state.stages[t.workflow_id + '|' + k];
-    }).filter(function (s) { return s && s.position > pos && !SIDE[s.stage_group]; })
-      .sort(function (a, b) { return a.position - b.position; });
+    }).filter(function (s) {
+      return s && s.position > pos && !SIDE[s.stage_group] &&
+        s.stage_group !== 'revision' && s.stage_group !== 'taken_down';
+    }).sort(function (a, b) { return a.position - b.position; });
     return ahead.length ? ahead[0].key : nexts[0];
   }
   /* Where the task came from: the last stage change in its own events, which
@@ -3500,30 +4558,38 @@
     menu.querySelector('[data-a="block"]').hidden = !work || t.stage_key === 'blocked' || fin;
     menu.querySelector('[data-a="duplicate"]').hidden = !work;
     menu.querySelector('[data-a="repeat"]').hidden = !work;
-    menu.querySelector('[data-a="reopen"]').hidden = !work || !t.completed_at;
+    menu.querySelector('[data-a="reopen"]').hidden = !work || !canReopen(t);
     menu.querySelector('[data-a="cancel"]').hidden = !work || fin || nexts.indexOf('cancelled') < 0;
     menu.querySelector('[data-a="handover"]').hidden = fin;
+    var tm = menu.querySelector('[data-a="timer"]');
+    if (tm) {
+      tm.hidden = !work || fin;
+      tm.textContent = state.session && state.session.task_id === t.id ? 'Stop timer' : 'Start timer';
+    }
     var arch = menu.querySelector('[data-a="archive"]');
     arch.textContent = t.archived_at ? 'Restore' : 'Archive';
   }
 
-  /* A move. `note` goes on the record with it; `timer` starts the reader's
-     timer once the move has gone through, which is what Start work and
-     Resume work mean. */
-  function move(next, note, timer) {
+  /* A move. `note` goes on the record with it; `o.assignee` hands the task
+     to the next person on the same press, which is one event and one
+     notification rather than a move and a reassignment a moment apart. */
+  function move(next, note, o) {
     var t = state.task;
     if (!t) return;
+    o = o || {};
     if (next === 'blocked') { openBlock(); return; }
     var fn = t.stage_key === 'blocked' ? 'ops_clear_blocked' : 'ops_transition_task';
     var args = t.stage_key === 'blocked'
       ? { p_task: t.id, p_next: next, p_version: t.version }
-      : { p_task: t.id, p_next: next, p_version: t.version, p_note: note || null };
-    var go = $('taskGo');
+      : { p_task: t.id, p_next: next, p_version: t.version, p_note: note || null, p_assignee: o.assignee || null };
+    var go = $(state.drawer ? 'dwGo' : 'taskGo');
     if (go) go.disabled = true;
-    call(fn, args, msgHere(), function () {
-      if (timer && !(state.session && state.session.task_id === t.id)) {
-        startWork(t, function () { readTask(t.id); });
-      } else readTask(t.id);
+    call(fn, args, msgHere(), function (d) {
+      if (o.assignee) { state.owners[t.id] = nameOf(o.assignee); state.ownerIds[t.id] = o.assignee; }
+      var word = isEveryday(t) ? (PLAIN[plainOfKey(next)] || {}).word || labelOfStage(t, next) : labelOfStage(t, next);
+      readTask(t.id, function () {
+        msg(msgHere(), 'Moved to ' + word + (o.assignee ? ', with ' + nameOf(o.assignee) : '') + '.', 'ok');
+      });
     }, function () { if (go) go.disabled = false; });
   }
   /* A move backwards, or out of the line, takes a reason, asked on the page
@@ -3585,25 +4651,55 @@
     state.tick = null;
   }
 
-  /* Reopening needs a reason somebody else will read, so it is the textarea
-     `js/ask.js` draws under the control that sends it rather than a browser
-     dialog, which this portal does not have. It is built once and reopened,
-     because the ⋯ it is launched from closes itself. */
-  var reopen = null;
-  function reopenBox() {
-    if (reopen) return reopen;
-    reopen = window.ADspaceAsk.note($('taskMsg'), {
-      label: 'Why it is being reopened',
-      placeholder: 'Why it is being reopened',
-      send: 'Reopen',
-      save: function (text) {
-        var t = state.task;
-        if (!t) return;
-        call('ops_reopen_task', { p_task: t.id, p_reason: text, p_version: t.version },
-          'taskMsg', function () { readTask(t.id); });
-      }
+  /* `ops_reopen_task` puts a task back at its workflow's Revision stage, so it
+     is offered only where the workflow has one. A content task goes back the
+     way its own workflow allows (a finished post to its performance review,
+     a post taken down back to live), through Move to another stage; an
+     everyday task is reopened by its own tick. */
+  function reopens(t) {
+    return Boolean(state.stages[t.workflow_id + '|revision']);
+  }
+  /* Where a finished task goes back to when it is reopened: the stage it
+     finished from, where the workflow still allows that move, else the
+     first stage the workflow allows out of where it stands. Cancelled is
+     the one ending every workflow lets a task leave, so a cancelled task can
+     always come back; the cancel sheet has always said it could. */
+  function reopenTo(t) {
+    var s = stageOf(t);
+    var nexts = ((s && s.next_stage_keys) || []).filter(function (k) { return k !== 'cancelled'; });
+    var from = cameFrom(t);
+    if (from && nexts.indexOf(from) > -1) return from;
+    return nexts[0] || null;
+  }
+  function canReopen(t) {
+    return Boolean(t && isFinished(t) && ((t.completed_at && reopens(t)) || reopenTo(t)));
+  }
+  function askReopenTo(t) {
+    var to = reopenTo(t);
+    if (!to) return;
+    ADspaceConfirm.ask({
+      title: 'Reopen task',
+      body: 'It goes back to ' + labelForKey(to) + '. The reason is kept in its Activity.',
+      go: 'Reopen',
+      field: { label: 'Why it is being reopened', rows: 2, need: 'A reason is required.' }
+    }, function (why) { move(to, why); });
+  }
+  /* Reopening needs a reason somebody else will read, asked on the page
+     with the consequence stated first, from the sheet and the record alike. */
+  function askReopen() {
+    var t = state.task;
+    if (!t) return;
+    if (!(t.completed_at && reopens(t))) { askReopenTo(t); return; }
+    ADspaceConfirm.ask({
+      title: 'Reopen task',
+      body: 'It goes back into open work at the stage it finished from.',
+      go: 'Reopen',
+      field: { label: 'Why it is being reopened', rows: 2, need: 'A reason is required.' }
+    }, function (why) {
+      call('ops_reopen_task', { p_task: t.id, p_reason: why, p_version: t.version }, msgHere('taskMsg'), function () {
+        readTask(t.id);
+      });
     });
-    return reopen;
   }
 
   // ---- The way back, drawn where the act happened --------------------------
@@ -3669,11 +4765,11 @@
         (state.detail.links.length === 1 ? ' link' : ' links') : '',
       state.detail.checklist.length ? state.detail.checklist.length + ' checklist items' : ''
     ].filter(Boolean);
-    $('tdelWhat').textContent = 'T' + t.task_no + ' · ' + (t.title || 'Untitled task') +
+    $('tdelWhat').textContent = serialOf(t) + ' · ' + (t.title || 'Untitled task') +
       ' goes, with its ' + goes.join(', ') + '. There is no restore.';
     $('tdelConfirm').value = '';
     $('tdelReason').value = '';
-    $('tdelConfirm').setAttribute('placeholder', 'T' + t.task_no);
+    $('tdelConfirm').setAttribute('placeholder', serialOf(t));
     msg('tdelMsg', '');
     sheet('tdelSheet', true);
     $('tdelConfirm').focus();
@@ -3962,7 +5058,7 @@
     var t = state.task;
     if (!t || !may('ops', 'work')) return;
     dupKey = '';
-    $('dupWhat').textContent = 'A copy of ' + (t.title || 'T' + t.task_no) +
+    $('dupWhat').textContent = 'A copy of ' + (t.title || serialOf(t)) +
       ' with a new code. Its history, its time and its links stay here.';
     $('dupDesc').checked = true;
     $('dupDates').checked = false;
@@ -4024,7 +5120,7 @@
     var recur = $('genWhat').value === 'recur';
     $('genMonthBox').hidden = recur;
     $('genRecurBox').hidden = !recur;
-    $('genGo').textContent = recur ? 'Run' : 'Generate';
+    $('genGo').textContent = recur ? 'Run' : 'Add tasks';
     $('genWeeksRow').hidden = $('genSpread').value !== 'set';
   }
   function genWeeks() {
@@ -4075,7 +5171,7 @@
         btn.disabled = false;
         sheet('genSheet', false);
         var n = (d && d.created) || 0, s = (d && d.skipped) || 0;
-        msg('workMsg', (n === 1 ? '1 task made' : n + ' tasks made') + ' for ' + monthWord($('genPeriod').value) +
+        msg('workMsg', (n === 1 ? '1 task added' : n + ' tasks added') + ' for ' + monthWord($('genPeriod').value) +
           (s ? ', ' + s + ' already there.' : '.'), 'ok');
         load();
       }, function () { btn.disabled = false; });
@@ -4091,7 +5187,7 @@
       sheet('genSheet', false);
       var n = (d && d.count) || 0;
       var who = ($('genClient').selectedOptions[0] || {}).textContent || '';
-      msg('workMsg', (n === 1 ? '1 task made' : n + ' tasks made') + ' for ' + who + ', ' + monthWord(pl.period) + '.', 'ok');
+      msg('workMsg', (n === 1 ? '1 task added' : n + ' tasks added') + ' for ' + who + ', ' + monthWord(pl.period) + '.', 'ok');
       load();
     }, function () { btn.disabled = false; });
   }
@@ -4274,8 +5370,8 @@
     if (cw.status === 'internal_review' && !(s && s.stage_group === 'internal_review')) return false;
     if (cw.status === 'active' && !(s && s.is_active_work)) return false;
     if (cw.find) {
-      var hay = [t.title, t.code, t.content_desc, formatWord(t), cw.owners[t.id], 'T' + t.task_no].join(' ').toLowerCase();
-      if (hay.indexOf(cw.find) < 0) return false;
+      var hay = [t.title, t.code, t.content_desc, formatWord(t), cw.owners[t.id], serialOf(t), stageLabel(t)].join(' ').toLowerCase();
+      if (hay.indexOf(cw.find) < 0 && hay.indexOf('#' + cw.find) < 0) return false;
     }
     return true;
   }
@@ -4305,7 +5401,7 @@
           '<input class="input input-sm" id="cwFind" type="search" placeholder="Search tasks" aria-label="Search tasks" autocomplete="off"></label>' +
         '<select class="select select-sm" id="cwStatus" aria-label="Filter by status">' +
           '<option value="open">Open work</option><option value="active">In progress</option>' +
-          '<option value="internal_review">Internal review</option><option value="client_review">Client review</option>' +
+          '<option value="internal_review">AQC review</option><option value="client_review">Client review</option>' +
           '<option value="late">Late</option><option value="done">Finished</option><option value="">Everything</option>' +
         '</select>' +
         '<select class="select select-sm" id="cwPeriod" aria-label="Filter by month"><option value="">Every month</option>' +
@@ -4383,7 +5479,7 @@
           var wrap = document.createElement('div');
           if (eng) wrap.appendChild(engCard(eng));
           if (trs.length) {
-            var table = GRP.table('svc-row task-row', ['', 'Task', 'Owner', 'Due', 'Status', '']);
+            var table = GRP.table('svc-row task-row', ['', 'Task', 'Task Owner', 'Due', 'Stage', '']);
             GRP.more(table, trs, 30, 'tasks', function (t) { return rowOf(t, true); });
             wrap.appendChild(table);
           } else if (eng) {
@@ -4710,8 +5806,7 @@
   /* A task opened from a client record: the address first, because My Work
      reads it on entry, then the route. */
   function openTaskElsewhere(id) {
-    history.replaceState(null, '', '/admin/?s=work&task=' + encodeURIComponent(id));
-    if (bridge.show) bridge.show('work');
+    openDrawer(id, { from: 'client' });
   }
 
   // ---- Wiring --------------------------------------------------------------
@@ -4767,8 +5862,53 @@
     wireBell();
     var nw = $('workNew');
     if (nw) nw.addEventListener('click', function () { openQuick(); });
-    var wt = $('workTpl');
-    if (wt) wt.addEventListener('click', function () { openTpl(); });
+
+    // The bar's ⋯: many at once, from a template, several selected, the number
+    var wmb = $('workMoreBtn'), wmn = $('workMore');
+    if (wmb && wmn) {
+      var shutWorkMore = function () { wmn.hidden = true; wmb.setAttribute('aria-expanded', 'false'); };
+      wmb.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = wmn.hidden;
+        wmn.hidden = !open;
+        wmb.setAttribute('aria-expanded', String(open));
+        if (open && window.ADspaceMenu) window.ADspaceMenu.place(wmb, wmn);
+      });
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest || !e.target.closest('#workMoreWrap')) shutWorkMore();
+      });
+      if (window.ADspaceMenu && window.ADspaceMenu.onScroll) window.ADspaceMenu.onScroll(shutWorkMore);
+      wmn.addEventListener('click', function (e) {
+        var it = e.target.closest('.kmenu-item');
+        if (!it) return;
+        shutWorkMore();
+        var a = it.getAttribute('data-a');
+        if (a === 'bulk') openGen();
+        if (a === 'template') openTpl();
+        if (a === 'select') setSelecting(!state.selecting);
+        if (a === 'numbering') openNumbering();
+      });
+    }
+    // Several at once
+    var bAll = $('workBulkAll');
+    if (bAll) bAll.addEventListener('change', function () {
+      var on = bAll.checked;
+      state.picked = {};
+      if (on) (state.shown || []).forEach(function (t) { state.picked[t.id] = 1; });
+      Array.prototype.forEach.call(document.querySelectorAll('#workQueue .task-row[data-task]'), function (row) {
+        var id = row.getAttribute('data-task');
+        var cb = row.querySelector('.trow-pick');
+        if (cb) cb.checked = Boolean(state.picked[id]);
+        row.classList.toggle('is-picked', Boolean(state.picked[id]));
+      });
+      paintBulk();
+    });
+    var bDone = $('workBulkDone');
+    if (bDone) bDone.addEventListener('click', function () { setSelecting(false); });
+    var bDel = $('workBulkDelete');
+    if (bDel) bDel.addEventListener('click', bulkDelete);
+    var bOwn = $('workBulkOwner');
+    if (bOwn) bOwn.addEventListener('click', bulkOwner);
 
     // Add task
     var qf = $('qkForm');
@@ -4795,11 +5935,18 @@
     var te = $('teGo');
     if (te) te.addEventListener('click', tplSave);
 
-    // The drawer
+    // The task, opened from a list
     var dwc = $('dwClose');
     if (dwc) dwc.addEventListener('click', function () { closeDrawer(); });
-    var dws = $('dwScrim');
-    if (dws) dws.addEventListener('click', function () { closeDrawer(); });
+    var dwBox = $('taskDrawer');
+    /* The scrim beside the card closes it, unless words have been typed into
+       the card: a click that misses by a few pixels is not a decision to
+       throw them away. */
+    if (dwBox) dwBox.addEventListener('mousedown', function (e) {
+      if (e.target !== dwBox) return;
+      if (drawerTyped()) return;
+      closeDrawer();
+    });
     var dwn = $('dwNo');
     if (dwn) dwn.addEventListener('click', function () { if (window.ADspaceCopy) window.ADspaceCopy.to(dwn, dwn.textContent); });
     var dwk = $('dwCheck');
@@ -4815,14 +5962,64 @@
       e.preventDefault();
       if (state.drawer) openFull(state.drawer);
     });
+    /* The tick opens the list of people; untouched, the step keeps the task
+       with whoever has it. */
+    [['dwHandTick', 'dwHandTo'], ['taskHandTick', 'taskHandTo']].forEach(function (pair) {
+      var tick = $(pair[0]), to = $(pair[1]);
+      if (!tick || !to) return;
+      tick.addEventListener('change', function () {
+        to.hidden = !tick.checked;
+        if (tick.checked) to.focus();
+      });
+    });
+    /* Each card's quiet action opens its small form; Cancel and Escape put
+       the card back as it was. */
+    [['dwCheckOpen', 'dwCheckForm', 'dwCheckAdd'], ['dwLinkOpen', 'dwLinkForm', 'dwLinkUrl'],
+     ['dwCommentOpen', 'dwCommentForm', 'dwComment']].forEach(function (x) {
+      var b = $(x[0]);
+      if (b) b.addEventListener('click', function () {
+        if (!$(x[1]).hidden) { closeCardForm(x[1]); return; }
+        openCardForm(x[1]);
+        $(x[2]).focus();
+      });
+    });
+    var dde = $('dwDescEdit');
+    if (dde) dde.addEventListener('click', function () {
+      if (!$('dwDescForm').hidden) { closeCardForm('dwDescForm'); return; }
+      openCardForm('dwDescForm');
+      $('dwDescText').value = (state.task && state.task.description) || '';
+      $('dwDescText').focus();
+    });
+    CARD_FORMS.forEach(function (id) {
+      var f = $(id);
+      if (!f) return;
+      var c = f.querySelector('[data-a="cancel"]');
+      if (c) c.addEventListener('click', function () { closeCardForm(id); });
+      f.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); closeCardForm(id); }
+      });
+    });
+    var ddf = $('dwDescForm');
+    if (ddf) ddf.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var t = state.task;
+      if (!t) return;
+      call('ops_update_task', { p_task: t.id, p_payload: { description: String($('dwDescText').value || '').trim() }, p_version: t.version },
+        'dwMsg', function () {
+          closeCardForm('dwDescForm');
+          readTask(t.id, function () { msg('dwMsg', 'Brief saved.', 'ok'); });
+        });
+    });
     var dcf = $('dwCheckForm');
     if (dcf) dcf.addEventListener('submit', function (e) {
       e.preventDefault();
       var t = state.task, inp = $('dwCheckAdd');
       var label = String(inp.value || '').trim();
-      if (!t || !label) return;
+      if (!t) return;
+      if (!label) { msg('dwMsg', 'Say what needs doing.', 'err'); inp.focus(); return; }
       call('ops_add_checklist_item', { p_task: t.id, p_label: label }, 'dwMsg', function () {
         inp.value = '';
+        /* The form stays open for the next item, the way a list is typed. */
         readTask(t.id, function () { $('dwCheckAdd').focus(); });
       });
     });
@@ -4832,20 +6029,30 @@
       var t = state.task, url = String($('dwLinkUrl').value || '').trim();
       if (!t) return;
       if (!/^https?:\/\//i.test(url)) { msg('dwMsg', 'A link starts with https://', 'err'); $('dwLinkUrl').focus(); return; }
-      var label = url.replace(/^https?:\/\//i, '').split(/[\/?#]/)[0];
-      call('ops_add_link', { p_task: t.id, p_kind: $('dwLinkKind').value, p_label: label, p_url: url, p_version: t.version },
-        'dwMsg', function () { $('dwLinkUrl').value = ''; readTask(t.id); });
+      var label = String($('dwLinkLabel').value || '').trim() || url.replace(/^https?:\/\//i, '').split(/[\/?#]/)[0];
+      var editing = linkEditing;
+      var fn = editing ? 'ops_update_link' : 'ops_add_link';
+      var args = editing
+        ? { p_link: editing, p_label: label, p_url: url, p_kind: $('dwLinkKind').value, p_version: t.version }
+        : { p_task: t.id, p_kind: $('dwLinkKind').value, p_label: label, p_url: url, p_version: t.version };
+      call(fn, args, 'dwMsg', function () {
+        closeCardForm('dwLinkForm');
+        readTask(t.id, function () { msg('dwMsg', editing ? 'Link saved.' : 'Link added.', 'ok'); });
+      });
     });
     var dcm = $('dwCommentForm');
     if (dcm) dcm.addEventListener('submit', function (e) {
       e.preventDefault();
       var t = state.task, body = String($('dwComment').value || '').trim();
-      if (!t || !body) return;
+      if (!t) return;
+      if (!body) { msg('dwMsg', 'A comment cannot be empty.', 'err'); $('dwComment').focus(); return; }
       call('ops_add_comment', { p_task: t.id, p_body: body }, 'dwMsg', function () {
-        $('dwComment').value = '';
+        closeCardForm('dwCommentForm');
         readTask(t.id);
       });
     });
+    var dte = $('dwTitleEdit');
+    if (dte) dte.addEventListener('click', editSheetTitle);
     var dmb = $('dwMenuBtn'), dmn = $('dwMenu');
     if (dmb && dmn) {
       dmb.addEventListener('click', function (e) {
@@ -4865,16 +6072,33 @@
         dmb.setAttribute('aria-expanded', 'false');
         var a = it.getAttribute('data-a'), t = state.task;
         if (!t) return;
+        if (a === 'revert') { var back = cameFrom(t); if (back) askBack(back); }
         if (a === 'full') openFull(t.id);
-        if (a === 'timer') { var tl = timerAct(t); if (tl) tl.run(); }
         if (a === 'handover') openGive();
         if (a === 'move') openMove();
+        if (a === 'block') openBlock();
         if (a === 'repeat') openRec();
         if (a === 'duplicate') openDup();
+        if (a === 'reopen') askReopen();
         if (a === 'cancel') askCancel();
         if (a === 'delete') openDelete();
       });
     }
+
+    // The step that needs something said
+    ['stepClose', 'stepCancel'].forEach(function (id) {
+      var b = $(id); if (b) b.addEventListener('click', function () { sheet('stepSheet', false); });
+    });
+    var stepGoBtn = $('stepGo');
+    if (stepGoBtn) stepGoBtn.addEventListener('click', doStep);
+    var stepDay = $('stepDate');
+    if (stepDay) stepDay.addEventListener('change', stepDateChanged);
+    var stepTick = $('stepHandTick');
+    if (stepTick) stepTick.addEventListener('change', function () {
+      $('stepHandRow').hidden = !stepTick.checked;
+      if (stepTick.checked) $('stepHandTo').focus();
+    });
+
     var back = $('workBack');
     if (back) back.addEventListener('click', showList);
     var mk = $('taskMark');
@@ -4925,12 +6149,13 @@
         if (a === 'block') openBlock();
         if (a === 'duplicate') openDup();
         if (a === 'repeat') openRec();
+        if (a === 'timer') { var tl = timerAct(t); if (tl) tl.run(); }
         if (a === 'archive') {
           call('ops_archive_task', { p_task: t.id, p_on: !t.archived_at }, 'taskMsg', function () {
             showList();
           });
         }
-        if (a === 'reopen') reopenBox().open();
+        if (a === 'reopen') askReopen();
         if (a === 'delete') openDelete();
       });
     }
@@ -4968,11 +6193,14 @@
       if (!t) return;
       var url = String($('taskLinkUrl').value || '').trim();
       if (!url) { msg('taskLinkMsg', 'An address is required.', 'err'); $('taskLinkUrl').focus(); return; }
-      call('ops_add_link', {
-        p_task: t.id, p_kind: $('taskLinkKind').value,
-        p_label: String($('taskLinkLabel').value || '').trim(),
-        p_url: url, p_version: t.version
-      }, 'taskLinkMsg', function () {
+      var editing = recLinkEditing;
+      call(editing ? 'ops_update_link' : 'ops_add_link', editing
+        ? { p_link: editing, p_label: String($('taskLinkLabel').value || '').trim(), p_url: url,
+            p_kind: $('taskLinkKind').value, p_version: t.version }
+        : { p_task: t.id, p_kind: $('taskLinkKind').value,
+            p_label: String($('taskLinkLabel').value || '').trim(),
+            p_url: url, p_version: t.version }, 'taskLinkMsg', function () {
+        recLinkEditing = null;
         $('taskLinkForm').hidden = true;
         readTask(t.id);
       });
@@ -5078,8 +6306,6 @@
     if (genPreviewBtn) genPreviewBtn.addEventListener('click', genPreview);
     var genGoBtn = $('genGo');
     if (genGoBtn) genGoBtn.addEventListener('click', doGen);
-    var workGenBtn = $('workGen');
-    if (workGenBtn) workGenBtn.addEventListener('click', openGen);
     ['recClose', 'recCancel'].forEach(function (id) {
       var b = $(id); if (b) b.addEventListener('click', function () { sheet('recSheet', false); });
     });
@@ -5122,16 +6348,50 @@
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
       if (e.target && e.target.closest && e.target.closest('.tinline-pick, .tdate-pick, .towner-pick')) return;
+      /* A question asked over the task answers its own Escape first. */
+      var ask = document.getElementById('askSheet');
+      if (ask && !ask.hidden) return;
+      /* So does an open ⋯: Escape shuts the menu and hands focus back to its
+         button, and the sheet under it stays where it was. */
+      var menus = Array.prototype.filter.call(document.querySelectorAll(
+        '#workMore, #dwMenu, #taskMenu, .qitem .kmenu, .tlink-row .kmenu, #workQueue .team-act .kmenu, #cwList .team-act .kmenu'),
+        function (m) { return !m.hidden; });
+      if (menus.length) {
+        menus.forEach(function (m) {
+          m.hidden = true;
+          var b = m.parentNode && m.parentNode.querySelector('.kmenu-btn');
+          if (b) { b.setAttribute('aria-expanded', 'false'); try { b.focus(); } catch (x) {} }
+        });
+        e.stopPropagation();
+        return;
+      }
       var open = ['dueSheet', 'blockSheet', 'taskSheet', 'dupSheet', 'genSheet', 'recSheet',
-       'engSheet', 'meetSheet', 'handSheet', 'giveSheet', 'tplSheet', 'tplEditSheet'].filter(function (id) {
+       'engSheet', 'meetSheet', 'handSheet', 'giveSheet', 'tplSheet', 'tplEditSheet', 'stepSheet', 'tdelSheet'].filter(function (id) {
         return $(id) && !$(id).hidden;
       });
       open.forEach(function (id) { sheet(id, false); });
       if ($('quickSheet') && !$('quickSheet').hidden) { closeQuick(); return; }
-      /* The drawer shuts on Escape once nothing is open over it. */
-      var ask = document.getElementById('askSheet');
-      if (!open.length && !(ask && !ask.hidden)) closeDrawer();
+      /* The task sheet shuts on Escape once nothing is open over it. */
+      if (!open.length) closeDrawer();
     }, true);
+    /* The task sheet keeps a keyboard inside it while it is the top layer,
+       and hands focus back to the row it came from when it shuts. */
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Tab') return;
+      var box = $('taskDrawer');
+      if (!box || box.hidden) return;
+      var over = document.querySelector('.sheet:not([hidden]):not(#taskDrawer)');
+      if (over) return;
+      var card = box.querySelector('.sheet-card');
+      var f = Array.prototype.filter.call(card.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary'),
+        function (el) { return el.offsetParent !== null; });
+      if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (!card.contains(document.activeElement)) { e.preventDefault(); first.focus(); return; }
+      if (e.shiftKey && (document.activeElement === first || document.activeElement === card)) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
   }
 
   /* Three panes: the work, what happened to it, and how long it took. An
@@ -5157,6 +6417,9 @@
     if (state.openId) q.task = state.openId;
     if (state.openId && state.pane !== 'work') q.pane = state.pane;
     if (!state.openId && state.view !== 'list') q.view = state.view;
+    /* The task open beside the list travels too, so a reload or a copied
+       link lands on the list with that task open. */
+    if (!state.openId && state.drawer && state.drawerFrom === 'work') q.open = state.drawer;
     return q;
   }
 
@@ -5176,10 +6439,13 @@
   function enter() {
     var nw = $('workNew');
     if (nw) nw.hidden = !may('ops', 'work');
-    var workGen = $('workGen');
-    if (workGen) workGen.hidden = !may('ops', 'work');
-    var workTpl = $('workTpl');
-    if (workTpl) workTpl.hidden = !may('ops', 'work');
+    /* The bar's ⋯ holds acts that need the work level at least; the next
+       number is an admin's alone. */
+    var more = $('workMoreWrap');
+    if (more) more.hidden = !may('ops', 'work');
+    var num = $('workMore') && $('workMore').querySelector('[data-a="numbering"]');
+    if (num) num.hidden = !isAdmin();
+    if (state.selecting && !may('ops', 'manage')) state.selecting = false;
     var vl = $('workViewLoad');
     if (vl) vl.hidden = !may('ops.all', 'view');
     /* Assigned, created and following are everybody's views. The whole
@@ -5204,10 +6470,20 @@
 
     var params = new URLSearchParams(location.search);
     var want = params.get('task');
+    var peek = params.get('open');
     var pane = params.get('pane') || 'work';
     applyView(params.get('view') || 'list');
     load();
-    if (!want) { $('workList').hidden = false; $('workRec').hidden = true; if (bridge.setUrl) bridge.setUrl(); return; }
+    if (!want) {
+      $('workList').hidden = false;
+      $('workRec').hidden = true;
+      state.openId = null;
+      /* A task named in the address opens beside the list, as it did when
+         the link was copied. */
+      if (peek) loadCatalogue(function () { openDrawer(peek); });
+      else if (bridge.setUrl) bridge.setUrl();
+      return;
+    }
     loadCatalogue(function () {
       showPane(pane, false);
       openTask(want, false);
@@ -5267,8 +6543,10 @@
     shutBell();
     markRead([id]);
     if (!x.task_id) return;
-    /* The address first, because My Work reads it on entry. */
-    history.replaceState(null, '', '/admin/?s=work&task=' + encodeURIComponent(x.task_id));
+    /* On My Work the task opens beside the list; from anywhere else the
+       address comes first, because My Work reads it on entry. */
+    if ($('sectionWork') && !$('sectionWork').hidden && !$('workList').hidden) { openDrawer(x.task_id); return; }
+    history.replaceState(null, '', '/admin/?s=work&open=' + encodeURIComponent(x.task_id));
     if (bridge.show) bridge.show('work');
   }
   function shutBell() {

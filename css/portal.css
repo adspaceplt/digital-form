@@ -3820,6 +3820,7 @@ body > .shell { width: 100%; }
 .task-go .crm-chev { width: 16px; height: 16px; }
 
 .tlink-row { grid-template-columns: minmax(0, 1fr) 120px auto; }
+.tlink-row > .team-act { align-items: center; gap: 4px; }
 .tlink-kind { min-width: 0; }
 .tsess-row { grid-template-columns: minmax(0, 1fr) 150px 110px; }
 .tsess-who { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -6938,6 +6939,10 @@ body.is-canvas { overflow: hidden; }
 .tsec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 8px; }
 .tsec-head .tsec-title { margin: 0; }
 .tsec-head .btn { margin-block: calc((22px - var(--ctl-h-sm)) / 2); }
+/* A section's quiet action ends on the pane's right margin whatever its
+   length, as the sheet's card actions do: a centred word in a 92px box
+   stopped short of the longer labels beside it. */
+.tsec-head .btn-quiet { min-width: 0; margin-right: -8px; }
 #taskOv:empty { display: none; }
 #taskOv .tsec:last-child { margin-bottom: 24px; }
 .tlinkform { padding: 12px 0; margin: 0 0 12px; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); }
@@ -7046,6 +7051,8 @@ body.is-canvas { overflow: hidden; }
    setting the height of a 20px line. */
 .tinline {
   display: inline-flex; align-items: center; max-width: 100%; min-height: var(--ctl-h);
+  /* A word as short as Today is still a whole target. */
+  min-width: var(--ctl-h);
   margin: calc((20px - var(--ctl-h)) / 2) 0 calc((20px - var(--ctl-h)) / 2) -8px; padding: 0 8px;
   border: 0; border-radius: var(--radius-ctl); background: none; color: inherit;
   font: inherit; font-size: 13px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -7071,58 +7078,195 @@ body.is-canvas { overflow: hidden; }
 .is-narrow .load-n { text-align: left; display: flex; flex-direction: column; font-size: 15px; }
 .is-narrow .load-lab { display: block; font-size: 12px; color: var(--ink-mute); }
 
-/* ---------- The quick drawer ----------
-   Beside the list at a desk, the whole height of the screen on a phone. One
-   surface, no shadow beyond the scrim, hairlines between its parts. */
-.drawer { position: fixed; inset: 0; z-index: 80; }
-.drawer[hidden] { display: none; }
-.drawer-scrim { position: absolute; inset: 0; background: var(--scrim); opacity: 0; transition: opacity var(--t) var(--ease-out); }
-.drawer.is-open .drawer-scrim { opacity: 1; }
-.drawer-card {
-  position: absolute; top: 0; right: 0; bottom: 0; width: min(520px, 100%);
-  display: flex; flex-direction: column; background: var(--card); outline: none;
-  transform: translateX(24px); opacity: 0;
-  transition: transform var(--t-slow) var(--ease), opacity var(--t) var(--ease-out);
+/* ---------- The task, opened from a list ----------
+   The portal's own sheet, docked to the right at a desk so the list it was
+   opened from stays on the screen beside it, and the bottom sheet every other
+   form is on a phone. It sits one layer under the other sheets (85 against
+   90), because the date, the move and the delete sheets open over it. Inside,
+   one card a question on the page's own ground: where it stands and what to
+   do next, the facts, the brief, the checklist, the files, the talk, the time
+   and what happened lately. The cards are what the user asked for on
+   2026-09-23; a column of hairlines had read as one long form. */
+.sheet.sheet-side { z-index: 85; justify-content: flex-end; align-items: stretch; padding: 0; }
+.sheet-side > .sheet-card.taskcard {
+  width: min(520px, 100%); max-height: none; height: 100%;
+  padding: 0; border-radius: 0; background: var(--page);
+  box-shadow: none; border-left: 1px solid var(--line);
+  animation: mk-side-in var(--t-slow) var(--ease);
 }
-.drawer.is-open .drawer-card { transform: none; opacity: 1; }
-.drawer-head { padding: 12px 20px 14px; border-bottom: 1px solid var(--line); }
-.drawer-top { display: flex; align-items: center; gap: 4px; min-height: var(--ctl-h); }
-.drawer-top .tcheck { margin: 0 0 0 -10px; }
-.drawer-top .rec-token { margin-left: -6px; }
-.drawer-top-end { display: flex; align-items: center; gap: 6px; margin-left: auto; }
-.drawer-title { margin: 6px 0 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em; line-height: 25px; overflow-wrap: anywhere; }
-.drawer-ctx { margin: 4px 0 0; font-size: 13px; color: var(--ink-soft); }
-.drawer-ctx[hidden] { display: none; }
-.drawer-head .tfacts { margin-top: 12px; }
-.drawer-head .tfacts .state-select { max-width: var(--state-w); }
-.drawer-body { flex: 1 1 auto; overflow-y: auto; padding: 16px 20px 8px; -webkit-overflow-scrolling: touch; }
-.drawer-body .tsec { margin-bottom: 20px; }
-.drawer-body .checkrow { padding: 6px 0; }
-.drawer-foot {
-  display: grid; gap: 10px; padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid var(--line);
+@keyframes mk-side-in { from { transform: translateX(28px); opacity: 0; } to { transform: none; opacity: 1; } }
+.qhead {
+  display: block; margin: 0; padding: 10px 20px 14px;
+  background: var(--card); border-bottom: 1px solid var(--line);
 }
-.drawer-foot .msg:empty { display: none; }
-.drawer-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-.drawer-acts[hidden] { display: none; }
-.drawer-acts .btn { flex: 0 0 auto; }
-.drawer-why { flex-basis: 100%; margin: 0; font-size: 13px; color: var(--ink-soft); }
-.drawer-why.is-blocked { color: var(--warn); font-weight: 600; }
-.drawer-full { justify-self: start; font-size: 13px; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 2px; min-height: var(--ctl-h); display: inline-flex; align-items: center; }
-/* Adding to the task where its list is: a field and the one button. */
-.dwadd { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
-.dwadd[hidden] { display: none; }
-.dwadd .input, .dwadd .input-sm { flex: 1 1 auto; min-width: 0; }
-.dwadd .select-sm { flex: 0 0 auto; width: auto; }
-.dwadd .btn { flex: 0 0 auto; min-width: 0; }
-.dwadd-comment { align-items: flex-end; }
-.dwcomments { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
-.dwcomments li p { margin: 0; font-size: 13.5px; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
-.dwcomments li span { font-size: 12px; color: var(--ink-mute); }
+.qhead-top { display: flex; align-items: center; gap: 4px; min-height: var(--ctl-h); }
+.qhead-top .tcheck { margin: 0 0 0 -10px; }
+.qhead-top .rec-token { margin-left: -6px; }
+.qhead-end { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.qhead-end .chip { align-self: center; }
+.qhead-title { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em; line-height: 25px; overflow-wrap: anywhere; }
+.qhead-ctx { margin: 4px 0 0; font-size: 13px; color: var(--ink-soft); }
+.qhead-ctx[hidden] { display: none; }
+.sheet-side .qbody {
+  flex: 1 1 auto; margin: 0; padding: 16px 16px 24px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch;
+}
+.qcard { background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius); padding: 14px 16px; }
+.qcard[hidden] { display: none; }
+.qcard-title { margin: 0 0 8px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+/* A card's heading and its one quiet action share a line; the action's 32px
+   target does not set the height of a 20px heading. */
+.qcard-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 8px; }
+.qcard-head .qcard-title { margin: 0; }
+/* No floor on its width: a centred word in a 116px box ended short of the
+   card's right margin while "Add comment" reached it, so the quiet actions
+   down the sheet had two right edges. */
+.qcard-act { min-width: 0; margin-block: calc((20px - var(--ctl-h-sm)) / 2); margin-right: -8px; }
+.qcard-act svg { width: 13px; height: 13px; margin-right: 4px; flex: 0 0 auto; }
+.qcard-act[hidden] { display: none; }
+/* A card's small form: the field, then the action and the way out, on the
+   card's own left margin in the portal's order. */
+.qform { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft); display: grid; gap: 6px; }
+.qform[hidden] { display: none; }
+.qform > .input, .qform > textarea.input, .qform .field > .input, .qform .field > .select { width: 100%; }
+.qform .row { margin-top: 0; }
+.qform-kind { flex: 0 0 132px; }
+.qform-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.qform-acts .btn { flex: 0 0 auto; }
+.qempty { margin: 0; font-size: 13.5px; color: var(--ink-mute); }
+/* One row a thing the card holds, with its ⋯ at the end where the item can
+   be changed or taken off. */
+.qitem { display: flex; align-items: flex-start; gap: 8px; }
+.qitem > :first-child { flex: 1 1 auto; min-width: 0; }
+.qitem > .kmenu-wrap { flex: 0 0 auto; margin-block: calc((22px - var(--ctl-h)) / 2); }
+.qitem + .qitem { border-top: 1px solid var(--line-soft); }
+.qlinks, .qcomments { list-style: none; margin: 0; padding: 0; }
+.qlinks li, .qcomments li { padding: 8px 0; }
+.qlinks li:first-child, .qcomments li:first-child { padding-top: 2px; }
+.qlink-main { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.qlink-main a, .qlink-main span.qlink-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; color: var(--ink); }
+.qcomments p { margin: 0; font-size: 13.5px; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+.qcomments small { display: block; margin-top: 2px; font-size: 12px; color: var(--ink-mute); }
+.qhead-name { display: flex; align-items: flex-start; gap: 6px; margin-top: 6px; }
+.qhead-name .qhead-title { margin: 0; flex: 0 1 auto; min-width: 0; }
+.qhead-name .rec-pen {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  width: var(--ctl-h); height: var(--ctl-h); margin-block: calc((25px - var(--ctl-h)) / 2);
+  border: 0; border-radius: var(--radius-ctl); background: none; color: var(--ink-mute); cursor: pointer;
+}
+.qhead-name .rec-pen svg { width: 15px; height: 15px; }
+.qhead-name .rec-pen[hidden] { display: none; }
+@media (hover: hover) { .qhead-name .rec-pen:hover { background: var(--line-soft); color: var(--ink); } }
+.qhead-name .askfield { flex: 1 1 auto; font-size: 17px; font-weight: 600; }
+.qpri { max-width: var(--state-w); }
+.qcard-count { margin-left: 4px; font-size: 13px; font-weight: 400; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+/* The hairline between items is the item row's, so it runs under the ⋯ as
+   well; the check row's own rule would stop short of it. A single-line row
+   centres its ⋯ on the line, inside the row's own height. */
+.qcard .checkrow { padding: 6px 0; }
+.qitem > .checkrow { border-bottom: 0; }
+.qitem-mid { align-items: center; }
+.qitem-mid > .kmenu-wrap { margin-block: calc((32px - var(--ctl-h)) / 2); }
+.qcard .tmore { margin-top: 6px; }
+.qcard .tmore > div { margin-top: 6px; }
+/* The step: what it is, why, and the one action. A blocker is the warn
+   colour and says so in words; the next person rides on the same press. */
+.qnext-title { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.35; }
+.qnext.is-blocked .qnext-title { color: var(--warn); }
+.qnext-line { margin: 4px 0 0; font-size: 13.5px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.qnext-line:empty, .qnext-line[hidden] { display: none; }
+.qhand { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; }
+.qhand[hidden] { display: none; }
+.qhand .tickline { margin: 0; }
+.qhand .select { flex: 1 1 180px; max-width: 260px; }
+.qhand .select[hidden] { display: none; }
+.qhand .tickline[hidden] { display: none; }
+.qhand-lab { font-size: 13px; color: var(--ink-soft); }
+.qhand-lab[hidden] { display: none; }
+.tnext .qhand { margin-top: 12px; }
+.tnext .qrate { margin-top: 12px; }
+.qnext-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.qnext-acts:empty { display: none; }
+.qnext-acts .btn { flex: 0 0 auto; }
+.qnext .msg:empty { display: none; }
+.qnext .msg { margin-top: 8px; }
+/* A finished task is rated on the card that says it is finished. Five marks,
+   each a control at the floor, the chosen ones filled. */
+.qrate { margin-top: 12px; }
+.qrate[hidden] { display: none; }
+.qrate-lab { margin: 0 0 4px; font-size: 13px; color: var(--ink-mute); }
+.qstars { display: flex; gap: 2px; margin-left: -8px; }
+.qstar {
+  width: var(--ctl-h); height: var(--ctl-h); display: inline-grid; place-items: center;
+  border: 0; border-radius: var(--radius-ctl); background: none; color: var(--line-ctl); cursor: pointer; padding: 0;
+}
+.qstar svg { width: 20px; height: 20px; }
+.qstar.is-on { color: var(--warn); }
+@media (hover: hover) { .qstar:hover { background: var(--line-soft); } }
+.qstar:active { transform: scale(.94); }
+.qrate-note { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.qfull {
+  align-self: flex-start; display: inline-flex; align-items: center; min-height: var(--ctl-h);
+  font-size: 13px; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 2px;
+}
+.stephand { margin-top: 12px; }
+.stephand[hidden] { display: none; }
+.stephand .tickline { margin: 0; }
+.stephand .tickline[hidden] { display: none; }
 @media (max-width: 640px) {
-  .drawer-card { width: 100%; top: env(safe-area-inset-top, 0px); transform: translateY(24px); }
-  .drawer-head, .drawer-body, .drawer-foot { padding-left: 16px; padding-right: 16px; }
-  .drawer-acts .btn { flex: 1 1 0; min-width: 0; }
+  /* On a phone it is the sheet every other form is: from the floor, the
+     screen's width, rounded at the top. */
+  .sheet.sheet-side { align-items: flex-end; justify-content: center; }
+  .sheet-side > .sheet-card.taskcard {
+    width: 100%; height: auto; max-height: 92vh; border-left: 0;
+    border-radius: var(--radius) var(--radius) 0 0;
+    animation: mk-sheet-up var(--t-slow) var(--ease);
+  }
+  @supports (max-height: 92dvh) { .sheet-side > .sheet-card.taskcard { max-height: 92dvh; } }
+  .qhead { padding: 10px 16px 12px; border-radius: var(--radius) var(--radius) 0 0; }
+  .sheet-side .qbody { padding: 12px 12px calc(20px + env(safe-area-inset-bottom, 0px)); }
+  .qcard { padding: 12px 14px; }
+  .qnext-acts .btn { flex: 1 1 0; min-width: 0; }
+  .qform-acts .btn { flex: 1 1 0; min-width: 0; }
+  .qform .row { flex-direction: column; }
+  .qform-kind { flex: 1 1 auto; }
+  .qhand .select { max-width: none; }
+}
+
+/* The bar's ⋯: the same outlined control at every width, beside the one
+   filled action. */
+.work-more { position: relative; display: inline-block; }
+.work-more[hidden] { display: none; }
+.work-more-btn {
+  display: inline-grid; place-items: center; padding: 0;
+  width: var(--ctl-h-sm); min-width: 0; height: var(--ctl-h-sm);
+  border: 1px solid var(--line-ctl); border-radius: var(--radius-ctl);
+  background: var(--card); color: var(--ink-soft);
+}
+.work-more-btn[aria-expanded="true"] { background: var(--line-soft); color: var(--ink); }
+
+/* Several tasks at once. It stays under the console bar while the list
+   scrolls, so the count and the two acts are never a screen from the ticks. */
+.bulkbar {
+  position: sticky; top: var(--head-h); z-index: 20;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px;
+  margin: 0 0 12px; padding: 8px 12px;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius-sm);
+}
+.bulkbar[hidden] { display: none; }
+.bulkbar .tickline { margin: 0; font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.bulkbar-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+.bulkbar-acts .btn { flex: 0 0 auto; }
+.trow-pick { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+.task-row.is-picked { background: var(--line-soft); }
+/* A control's edge is read against what is outside it, and the chosen row's
+   fill takes `--line-ctl` to 2.92:1 in light. The untinted stage select on a
+   ticked row takes the mute ink instead, which clears 3:1 on the fill in both
+   themes; a tinted one keeps its own colour. */
+.task-row.is-picked .state-select:not(.is-ok):not(.is-warn):not(.is-danger) { border-color: var(--ink-mute); }
+@media (max-width: 640px) {
+  .bulkbar-acts { width: 100%; }
+  .bulkbar-acts .btn { flex: 1 1 0; min-width: 0; }
 }
 
 /* Add task: the three fields, then the folded rest, then what was just made. */
