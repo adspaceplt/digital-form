@@ -259,7 +259,7 @@
     $('perfOpen').hidden = true;
     var blocked = why && (why.error === 'no-code' || why.error === 'denied' || why.error === 'db');
     $('perfLockForm').hidden = Boolean(blocked);
-    msg('perfLockMsg', why ? said(why) : '', why ? (why.error === 'code-needed' ? 'warn' : 'err') : '');
+    msg('perfLockMsg', why ? said(why) : '', why ? (why.error === 'code-needed' || why.error === 'expired' ? '' : 'err') : '');
   }
   /* The database said the unlock has gone. Whatever was open closes, so a
      record is never left on the screen after the database stopped serving it. */
@@ -288,7 +288,7 @@
   });
 
   $('perfLockBtn').addEventListener('click', function () {
-    lock(function () { showLock(null); msg('perfLockMsg', 'Locked.', 'ok'); });
+    lock(function () { showLock(null); msg('perfLockMsg', 'Locked.', ''); });
   });
   function lock(then) {
     var t = token || readToken();
@@ -1115,9 +1115,11 @@
   }
   function showMineLock(on, why) {
     $('mineLock').hidden = !on;
+    $('sectionMine').classList.toggle('is-locked', Boolean(on));
     if (!on) return;
     $('mineList').innerHTML = '';
-    $('mineLockLine').textContent = why || ('A 6-digit code goes to ' + guard.email + '.');
+    $('mineLockTitle').textContent = 'Your reviews are locked';
+    $('mineLockLine').textContent = why || ('We will email a code to ' + guard.email + '.');
     $('mineCode').hidden = true; $('mineVerify').hidden = true;
     $('mineSend').hidden = false; $('mineSend').textContent = 'Send code';
     $('mineSend').className = 'btn btn-primary';
@@ -1130,15 +1132,19 @@
       b.disabled = false;
       if (r && r.error) { msg('mineLockMsg', 'Not sent. Please try again in a minute.', 'err'); return; }
       $('mineCode').hidden = false; $('mineVerify').hidden = false;
-      b.textContent = 'Send again'; b.className = 'btn';
+      b.textContent = 'Send again'; b.className = 'btn btn-quiet';
+      $('mineLockTitle').textContent = 'Enter your email code';
       $('mineCode').value = '';
       $('mineCode').focus();
-      msg('mineLockMsg', 'Code sent to ' + guard.email + '.', 'ok');
+      $('mineLockLine').textContent = 'Code sent to ' + guard.email + '.';
+      msg('mineLockMsg', '');
     }, function () { b.disabled = false; msg('mineLockMsg', 'Not sent. Please try again in a minute.', 'err'); });
   }
   function verifyCode() {
     var code = ($('mineCode').value || '').replace(/\D/g, '');
-    if (code.length !== 6) { msg('mineLockMsg', 'Enter the 6-digit code from the email.', 'err'); $('mineCode').focus(); return; }
+    /* Supabase sends 6 digits unless the project's Email OTP length says
+       otherwise (6 to 10), so the field takes whatever length arrived. */
+    if (code.length < 6 || code.length > 10) { msg('mineLockMsg', 'Enter the code from the email.', 'err'); $('mineCode').focus(); return; }
     var b = $('mineVerify');
     b.disabled = true;
     db.auth.verifyOtp({ email: guard.email, token: code, type: 'email' }).then(function (r) {
@@ -1154,7 +1160,7 @@
       if (d.error === 'code-needed') {
         $('mineGuardOn').checked = guard.on;
         guard.pending = function () { setGuard(on); };
-        showMineLock(true, 'Turning this off needs a code. A 6-digit code goes to ' + guard.email + '.');
+        showMineLock(true, 'Turning this off needs a code. We will email one to ' + guard.email + '.');
         return;
       }
       if (d.error) { $('mineGuardOn').checked = guard.on; msg('mineMsg', said(d), 'err'); return; }
