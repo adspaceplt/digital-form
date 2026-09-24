@@ -820,6 +820,18 @@ from the date, the length, the content month and the link, with one Copy.
 The text is folded behind Show, because the everyday act is Copy and nine
 lines of it on every month would be the card.
 
+**Onboarding happens once, so its checklist does too (2026-09-24).** The two
+readiness ticks were seeded on every month, so a client in their eighth month
+was asked again whether they had been onboarded. They belong to the client's
+first month and to no later one; a later month's gate is its content meeting.
+A first month deleted as a mistake hands its ticks to the month that is now
+first, because a record of work done is not the month's to take with it.
+
+**A setup fault names the setting to change.** "Google refused" is true and
+useless: the person reading it has three secrets, an API switch and a scope
+to check. The function reports which secret is missing and the word Google
+gave, and the card turns that into the one thing to fix.
+
 **Readiness is what the team ticks, not a form the portal re-asks
 (2026-09-24).** It was thirteen questions, each with a state select and an
 owner select, and the user sent it back: the team's own Onboarding checklist
