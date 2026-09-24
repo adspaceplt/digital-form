@@ -489,6 +489,10 @@ measures the table whenever its header is not on screen (`padding`).
 | Search, filter, count and the one action | `.cmdbar` > `.cmdbar-find` (a search box with its glyph, bounded 190 to 420px) + the filter selects + `.cmdbar-end` > `.cmdbar-count` + the `?` + one `.btn-sm.btn-primary`, on every console list: clients, my work, content review, campaigns, creators, short links, documents, the rate card, the team. The count reads `7 services` whole and `3 of 41` once a filter is on, never sits in a section head, and is not drawn at all when it is empty. The end group is one element so a wrap cannot split it: on a phone it takes the last row whole, the count and the `?` on the left and the actions on the right, and every route's bar is the same three rows. Where a route has more than one other act, they sit behind one ⋯ beside the primary rather than as a wrapped row of outline buttons (My Work: Bulk add, From template, Select tasks, and Task numbering for an admin); that ⋯ is a bar control like the rest, 32px at a desk (the `.btn-sm` floor) and 44 under a finger |
 | Links to reach a person | `.plink` chips (phone, WhatsApp, email); equal widths on a phone |
 | Fields side by side | `.row.fgrid` (two equal columns) or `.row.fgrid-3` (three), `span-all` / `span-2` for the field that needs the room. Never a pixel width in a style attribute: a field that grows from its own width makes every row of a form split at a different point |
+| A form of more than five fields | **Sections** (`section.fsec` > `h4.fsec-h` + its rows), two to five fields each, in the order the decision is made, divided by one hairline (`--line-soft`) and a 24px step; the first section, and one that follows the choice a sheet opens on, takes no rule. A section's title is 13px/600 ink, never an eyebrow |
+| A choice of two to four | A **segment** (`select[data-seg]`, drawn by `js/form.js`): every option on show, the chosen one raised on the track (`--seg-on`), a radio group the arrow keys walk. The `<select>` stays in the page as the source of truth, out of sight and out of the tab order, so every script reading `.value`, setting it or listening for `change` is untouched. Five or more stays a select (Hick) |
+| The fields a person usually leaves as they are | **More details** (`details.fmore`): one line with the fields folded under it, and the line says what they hold (`Engagement · Normal · Standard`), from `data-none`, `data-some` and `data-on` on the fields, so nothing is hidden and nothing is asked twice. `ADspaceForm.reveal(el)` opens the fold before a refusal focuses a field inside it |
+| A record pane of facts | **Read first** (Billing, Brand): the pane states the values in groups (`readGroup`, the `.ovfacts` label beside value), a missing required value named in warn, and **Edit** opens the same groups in a sheet. Nine boxes to type in are not how a registration number is read |
 | The main action from the keyboard | Cmd + Enter (Ctrl + Enter) presses the nearest action (the small form, else the sheet's foot, else the pane form), never a red one, never on a record sheet with no foot (`js/sheet.js`) |
 | A form that adds or edits one record | A **sheet** over the list (`js/sheet.js`, `.sheet-card.formsheet`): head with a close mark, a scrolling `.sheet-body`, a foot with Cancel quiet and the primary, equal halves below 560. The scrim closes it only while nothing has been typed; Escape and the close mark always do. One shape for a creator, a colleague and a user group |
 | The command bar on a phone | Below 640 the bar is **one row**: a **search** mark and a **Filters** mark on the left (`.cmdbar-search`, `.cmdbar-filters`, the second carrying a badge that counts the filters off their default), then the count and the primary action as a filled `+` on the right, with the view segment as a second row where a route has one. Search **grows into the field** on the `.namebox` move and shuts again when it is left empty. The selects come up in a **sheet from the floor** (`#cmdSheet`) under labels, with Done and Clear; a second action is behind a **⋯** beside the primary. `js/cmdbar.js` is the one copy. The desk bar is untouched |
@@ -2002,9 +2006,17 @@ Chrome's own mark on the right is the pointer's route in, so it stays,
 quietened to the mute ink, and no second calendar is drawn beside it. The
 "Not set" hint starts where the value would and at the value's size.
 
-Buttons: `.btn` outline, `.btn-primary` ink, `.btn-go` accent (the one
-forward action in a view), `.btn-warn` outline warn (reversible caution:
-Unpublish, Remove PDF), `.btn-quiet` text only, `.btn-sm`. Order in a
+Buttons: `.btn` **tonal** (the ink at 6.5% on a transparent edge, `--tonal`,
+`--tonal-hover`, `--tonal-press`; 9% of the light ink in dark), `.btn-primary`
+ink, `.btn-go` accent (the one forward action in a view), `.btn-warn` warn on
+its own tint (reversible caution: Unpublish, Remove PDF), `.btn-quiet` text
+only, `.btn-sm`. **A secondary is shaded, never outlined** (2026-09-24, the
+user: "Secondary buttons become tonal grey across the portal"): an outlined
+button had the same 1px `--line-ctl` ring as every input, select and chip on
+the screen, so a form was a wall of identical boxes and nothing said which
+ones could be pressed. Fields keep the ring; buttons lose it. The same fill
+carries the command bar's search and Filters marks, the ⋯ beside the primary,
+the reach links and the view segment's track. Order in a
 row: Save / secondary / Cancel, and the row starts at its container's own
 left margin, never anchored right. Same width and height for every control
 in a row; `.row` aligns to the top and `.row > .btn` to the bottom. A sheet
