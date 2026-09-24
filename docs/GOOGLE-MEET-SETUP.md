@@ -28,8 +28,10 @@ Safe to run twice.
    `476859264094-…apps.googleusercontent.com`.
 2. **APIs & Services → Library → Google Calendar API → Enable.**
 3. **OAuth consent screen**: User type External, app name `ADspace Digital
-   Portal`, support email adspacestudios@gmail.com. Add the scope
-   `https://www.googleapis.com/auth/calendar.events`. Add
+   Portal`, support email adspacestudios@gmail.com. **Do not add the
+   Calendar scope on the Data access page**: listing a sensitive scope there
+   is what makes the console ask for verification, and it is not needed,
+   because the scope is requested at sign-in in step 3 below. Add
    adspacestudios@gmail.com as a test user, then **Publish app** so the
    status reads **In production** (a token for an app left in Testing
    expires after 7 days).
