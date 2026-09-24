@@ -5920,6 +5920,7 @@
     if (k === 'google-refused' && /insufficient|PERMISSION_DENIED|forbidden/i.test(String(d.reason || ''))) {
       return 'The refresh token does not carry calendar access. Make it again with the calendar.events scope.';
     }
+    if (k === 'meet-pending') return 'The calendar event is booked and Google is still making its Meet link. Press Create Google Meet again in a moment.';
     if (k === 'unreachable') return 'Google Meet could not be reached. Try again, or paste a link.';
     if (k === 'slot-taken') {
       var span = d.start ? clock(d.start) + (d.end ? ' to ' + clock(d.end) : '') : '';
@@ -5983,7 +5984,7 @@
         /* Google not connected is not something this sheet can fix: the
            meeting is saved, the sheet closes, and the line says so under
            the meeting it is about. */
-        if (!d || d.error === 'meet-not-set-up' || d.error === 'google-token' || d.error === 'unreachable') {
+        if (!d || d.error === 'meet-not-set-up' || d.error === 'google-token' || d.error === 'meet-pending' || d.error === 'unreachable') {
           meetWarn = { id: e.id, text: 'Saved. ' + meetSaid(d) };
           finish();
           return;

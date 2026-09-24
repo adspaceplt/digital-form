@@ -63,6 +63,13 @@ async function googleToken(): Promise<{ token?: string; error?: string; missing?
   if (!r.ok || !d.access_token) return { error: 'google-token', reason: String(d.error || r.status) };
   return { token: d.access_token };
 }
+/* The Meet link on an event: the top-level one, else the video entry point. */
+function meetLinkOf(ev: Record<string, unknown>): string | null {
+  if (ev && typeof ev.hangoutLink === 'string' && ev.hangoutLink) return ev.hangoutLink;
+  const cd = ev && ev.conferenceData as { entryPoints?: { entryPointType?: string; uri?: string }[] } | undefined;
+  const v = cd && cd.entryPoints && cd.entryPoints.find((p) => p.entryPointType === 'video' && p.uri);
+  return v && v.uri ? v.uri : null;
+}
 /* What the Calendar API said, in one word the page can name. */
 async function why(r: Response): Promise<string> {
   const d = await r.json().catch(() => ({}));
@@ -135,18 +142,38 @@ Deno.serve(async (req) => {
     start: { dateTime: start.toISOString(), timeZone: TZ },
     end: { dateTime: end.toISOString(), timeZone: TZ }
   };
+  /* An event the portal made earlier without its link (Google had not
+     finished making the Meet when it answered) is asked for one again. */
+  const wantMeet = !eventId || !m.meeting_link;
+  if (wantMeet) {
+    event.conferenceData = { createRequest: { requestId: `${eid}-${Date.now()}`,
+      conferenceSolutionKey: { type: 'hangoutsMeet' } } };
+  }
   let r: Response;
   if (eventId) {
     r = await fetch(`${CAL}/${encodeURIComponent(eventId)}?conferenceDataVersion=1`,
       { method: 'PATCH', headers: g, body: JSON.stringify(event) });
   } else {
-    event.conferenceData = { createRequest: { requestId: `${eid}-${Date.now()}`,
-      conferenceSolutionKey: { type: 'hangoutsMeet' } } };
     r = await fetch(`${CAL}?conferenceDataVersion=1`, { method: 'POST', headers: g, body: JSON.stringify(event) });
   }
   if (!r.ok) return json({ error: 'google-refused', reason: await why(r) }, 200, origin);
   const made = await r.json();
-  const link = made.hangoutLink || m.meeting_link || null;
+  /* Google makes the Meet a moment after the event, so the first answer can
+     carry the event and not yet its link. The event is read again, briefly,
+     until the link is there. */
+  let link = meetLinkOf(made);
+  for (let i = 0; !link && i < 8; i++) {
+    await new Promise((ok) => setTimeout(ok, 750));
+    const again = await fetch(`${CAL}/${encodeURIComponent(made.id)}?conferenceDataVersion=1`, { headers: g });
+    if (again.ok) link = meetLinkOf(await again.json());
+  }
+  link = link || (m.meeting_link ? String(m.meeting_link) : null);
+  if (!link) {
+    /* The event is recorded without a link, so the next press asks Google
+       for the Meet on this event rather than booking a second one. */
+    await db.rpc('ops_engagement_set_meet', { p_engagement: eid, p_link: null, p_event: made.id });
+    return json({ error: 'meet-pending', event: made.id }, 200, origin);
+  }
   const saved = await db.rpc('ops_engagement_set_meet', { p_engagement: eid, p_link: link, p_event: made.id });
   if (saved.error || (saved.data && saved.data.error)) {
     return json({ error: 'not-saved', link, event: made.id }, 200, origin);
