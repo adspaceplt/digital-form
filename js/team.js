@@ -113,6 +113,36 @@
   /* The sections whose parts are granted rather than inherited. */
   var GRANTED_PARTS = { ops: 1, team: 1 };
 
+  /* The levels a part is actually asked for, read off the database's own
+     checks (2026-09-24, the user found a select offering levels that did
+     nothing): the whole team's queue and the reports are only ever read, the
+     templates are read and edited, another person's hours are corrected at
+     Manage alone, and every Activity record tab is read or not read. A part
+     not named here takes all three. The unset option is the first line, so a
+     granted part reads No access once and not twice. */
+  var PART_LEVELS = {
+    'ops.all': ['view'], 'ops.reports': ['view'], 'ops.workflows': ['view', 'work'],
+    'ops.time': ['manage'], 'team.performance': ['view', 'work', 'manage']
+  };
+  function partLevels(key) {
+    if (PART_LEVELS[key]) return PART_LEVELS[key];
+    if (key.indexOf('activity.') === 0) return ['view'];
+    return ['view', 'work', 'manage'];
+  }
+  var RANK = { none: 0, view: 1, work: 2, manage: 3 };
+  /* A level stored before the select was narrowed is shown as what it
+     grants: `work` on the team's queue grants reading it, which is View; `work`
+     on another person's hours grants nothing, because only Manage is asked. */
+  function offered(key, v) {
+    if (!v || v === 'none') return v;
+    var list = partLevels(key);
+    if (list.indexOf(v) > -1) return v;
+    var best = '';
+    list.forEach(function (l) { if (RANK[l] <= RANK[v]) best = l; });
+    if (best) return best;
+    return GRANTED_PARTS[key.split('.')[0]] ? '' : 'none';
+  }
+
   /* What a part holds that its section does not. An inherited part falls back
      to its section, so a stored level equal to it changes nothing; a granted
      part falls back to no access, so a stored `none` changes nothing either.
@@ -396,7 +426,7 @@
        group opens and then what it does not. */
     var word = function (s) {
       var ex = (PARTS[s[0]] || []).map(function (p) {
-        var v = exceptionOf(acc, s[0] + '.' + p[0]);
+        var v = offered(s[0] + '.' + p[0], exceptionOf(acc, s[0] + '.' + p[0]));
         return v ? p[1] + ': ' + (LEVEL_WORD[v] || 'No access') : '';
       }).filter(Boolean);
       return s[1] + (ex.length ? ' (' + ex.join(', ') + ')' : '');
@@ -408,7 +438,7 @@
     /* A part opened above a section that is shut is an exception too. */
     var only = SECTIONS.filter(function (s) { return (acc[s[0]] || 'none') === 'none'; }).map(function (s) {
       var ex = (PARTS[s[0]] || []).map(function (p) {
-        var v = exceptionOf(acc, s[0] + '.' + p[0]);
+        var v = offered(s[0] + '.' + p[0], exceptionOf(acc, s[0] + '.' + p[0]));
         return v && v !== 'none' ? p[1] + ': ' + LEVEL_WORD[v] : '';
       }).filter(Boolean);
       return ex.length ? s[1] + ' (' + ex.join(', ') + ')' : '';
@@ -492,14 +522,19 @@
           LEVELS.filter(function (l) { return sec[2].indexOf(l[0]) > -1; }).map(function (l) {
             return '<option value="' + l[0] + '">' + esc(l[1]) + '</option>';
           }).join('') + '</select></div>' +
-        (parts.length ? '<div class="permgrid permsec-parts" id="grParts-' + sec[0] + '" hidden>' + parts.map(function (p) {
-          return '<label class="permlevel"><span class="field-label">' + esc(p[1]) + '</span>' +
-            '<select class="select select-sm" data-part="' + sec[0] + '.' + p[0] + '" aria-label="' + esc(sec[1] + ': ' + p[1]) + ' access">' +
+        (parts.length ? '<div class="permsec-parts" id="grParts-' + sec[0] + '" hidden>' + parts.map(function (p) {
+          var key = sec[0] + '.' + p[0], granted = GRANTED_PARTS[sec[0]];
+          /* A part is a row: its name on the left and its select on the
+             section select's own right edge, so every choice in the panel
+             reads down one column however long the name is. */
+          return '<label class="permpart"><span class="permpart-name">' + esc(p[1]) + '</span>' +
+            '<select class="select select-sm" data-part="' + key + '" aria-label="' + esc(sec[1] + ': ' + p[1]) + ' access">' +
             /* A granted part is not inherited, so its unset state is No
-               access and saying "Same as section" would be a promise the
-               database does not keep. */
-            '<option value="">' + (GRANTED_PARTS[sec[0]] ? 'No access' : 'Same as section') + '</option>' +
-            LEVELS.map(function (l) { return '<option value="' + l[0] + '">' + esc(l[1]) + '</option>'; }).join('') +
+               access, said once; an inherited part starts at Same as
+               section and may still be shut on its own. */
+            (granted ? '<option value="">No access</option>'
+                     : '<option value="">Same as section</option><option value="none">No access</option>') +
+            partLevels(key).map(function (l) { return '<option value="' + l + '">' + esc(LEVEL_WORD[l]) + '</option>'; }).join('') +
             '</select></label>';
         }).join('') + '</div>' : '') +
       '</div>';
@@ -559,7 +594,7 @@
     var opened = {};
     partPicks().forEach(function (sel) {
       var k = sel.getAttribute('data-part');
-      sel.value = exceptionOf(acc, k);
+      sel.value = offered(k, exceptionOf(acc, k));
       if (sel.value) opened[k.split('.')[0]] = true;
       sel.disabled = Boolean(r && r.slug === 'admin');
     });
