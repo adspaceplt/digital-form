@@ -6631,7 +6631,16 @@
     var wrap = $('notifWrap');
     if (!wrap) return;
     wrap.hidden = !may('ops', 'view');
-    if (!wrap.hidden) loadNotifs();
+    if (wrap.hidden) return;
+    loadNotifs();
+    /* The count was read once, when the console opened, so a change made
+       while somebody was working never lit the bell until they reloaded. It
+       is read again every minute while the tab is on the screen, and the
+       moment somebody comes back to it. */
+    if (!state.notifPoll) {
+      state.notifPoll = setInterval(function () { if (!document.hidden) loadNotifs(); }, 60000);
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) loadNotifs(); });
+    }
   }
   function loadNotifs() {
     var me = bridge.me && bridge.me();

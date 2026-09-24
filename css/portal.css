@@ -7303,7 +7303,7 @@ body.is-canvas { overflow: hidden; }
 #qkForm .tmore .row textarea.input { width: 100%; }
 /* The kind of task is chosen first, at the top of either sheet. */
 .kindseg { display: flex; margin: 0 0 16px; }
-.kindseg .acttab { flex: 1 1 0; text-align: center; }
+.kindseg .acttab { flex: 1 1 0; text-align: center; min-height: var(--ctl-h); font-size: var(--ctl-text); }
 #qkForm .hint { margin: 10px 0 8px; }
 .qkmade { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
 .qkmade:empty { display: none; }
