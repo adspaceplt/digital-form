@@ -5725,14 +5725,13 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 /* My performance's email-code lock: the switch above the list, and the
    prompt in place of the list while the lock is shut. */
 .mineguard { margin-bottom: 12px; }
-.minelock { max-width: 520px; }
-.minelock h3 { margin: 0; font-size: 15px; font-weight: 600; }
-.minelock-line { margin: 6px 0 14px; font-size: 13.5px; color: var(--ink-soft); }
-.minelock-row { display: flex; gap: 8px; flex-wrap: wrap; }
-.minelock-row .input { flex: 1 1 160px; max-width: 200px; letter-spacing: .18em; font-variant-numeric: tabular-nums; }
-.minelock-row .btn { flex: 0 0 auto; }
-.minelock .msg { margin-top: 10px; }
-.minelock .msg:empty { display: none; }
+/* While the lock is shown it sits first, the switch under it on the same
+   centre line, and the list is empty. */
+#sectionMine.is-locked { display: flex; flex-direction: column; }
+#sectionMine.is-locked > .lockcard { order: 0; }
+#sectionMine.is-locked > #mineMsg { order: 1; text-align: center; }
+#sectionMine.is-locked > .mineguard { order: 2; align-self: center; margin: 16px 0 0; }
+#sectionMine.is-locked > #mineList { order: 3; }
 /* Link history: one change a block, newest first, the time and who on one
    line with Restore at its end, what went and came under it. */
 .lhist-row { padding: 12px 0; border-top: 1px solid var(--line-soft); }
@@ -7590,14 +7589,40 @@ body.is-canvas { overflow: hidden; }
    in the task drawer's own side sheet and cards (`.taskcard`, `.qcard`), so
    a record read beside a list is one shape across the console. */
 #teamTabs[hidden], #teamMembersPane[hidden], #teamPerfPane[hidden], #perfOpen[hidden] { display: none; }
-.perf-lock { padding: 18px 20px; max-width: 560px; }
-.perf-lock[hidden] { display: none; }
-.perf-lock-title { margin: 0 0 12px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
-.perf-lock-form[hidden] { display: none; }
-.perf-lock-row { display: flex; gap: 8px; }
-.perf-lock-row .input { flex: 1 1 auto; min-width: 0; }
-.perf-lock-row .btn { flex: 0 0 auto; }
-.perf-lock .msg:not(:empty) { margin-top: 10px; }
+/* A LOCK IS A CARD IN THE MIDDLE OF THE PAGE. Both performance locks (the
+   master code on Team, the email code on My performance) were a form pinned
+   to the pane's top left corner, which read as a fragment of a page rather
+   than as the page's one question (reported by the user on 2026-09-24). One
+   component: a mark, a title, a line, the field and the action stacked at
+   the card's full width, centred in the pane. */
+.lockcard {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  max-width: 400px; margin: 48px auto 0; padding: 32px 28px 28px;
+  background: var(--card); border: 1px solid var(--card-line);
+  border-radius: var(--radius); box-shadow: var(--shadow);
+}
+.lockcard[hidden] { display: none; }
+.lockcard-mark {
+  display: grid; place-items: center; width: 48px; height: 48px; margin-bottom: 16px;
+  border-radius: 50%; background: var(--line-soft); color: var(--ink-soft);
+}
+.lockcard-mark svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.lockcard-title { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; text-wrap: balance; }
+.lockcard-line { margin: 6px 0 0; font-size: 13.5px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.lockcard-form { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 20px; text-align: left; }
+.lockcard-form[hidden] { display: none; }
+.lockcard-form > .lockcard-line { margin: -14px 0 6px; text-align: center; }
+.lockcard-form .field-label { margin: 0; }
+.lockcard-form .input, .lockcard-form .btn { width: 100%; flex: 0 0 auto; }
+.lockcard-form .input[hidden], .lockcard-form .btn[hidden] { display: none; }
+.lockcard-code {
+  text-align: center; font-size: 20px; letter-spacing: .3em; padding-left: calc(12px + .3em);
+  font-variant-numeric: tabular-nums; min-height: 48px;
+}
+.lockcard-code::placeholder { letter-spacing: normal; font-size: 15px; }
+.lockcard .msg { margin-top: 14px; }
+.lockcard .msg:empty { display: none; }
+.lockcard .msg:not(.err):not(.ok):not(.warn) { color: var(--ink-mute); }
 
 /* The month: who, where the review stands, the score, the grade and the
    reward, then the ⋯ that holds the review profile. Every track stated, so
@@ -7644,7 +7669,7 @@ body.is-canvas { overflow: hidden; }
 .is-narrow .crm-head.perf-row, .is-narrow .crm-head.mine-row { display: none; }
 .is-narrow .perf-row > .perf-sum:empty, .is-narrow .mine-row > .perf-sum:empty { display: none; }
 @media (max-width: 640px) {
-  .perf-lock-row { flex-direction: column; }
+  .lockcard { margin-top: 16px; padding: 24px 18px 20px; }
 }
 
 /* ---- The review, in the side sheet ---- */

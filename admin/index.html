@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260924i">
+<link rel="stylesheet" href="/css/portal.css?v=20260924j">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -32,26 +32,26 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260924i"></script>
-<script src="/js/words.js?v=20260924i"></script>
-<script src="/js/copy.js?v=20260924i"></script>
-<script src="/js/ask.js?v=20260924i"></script>
-<script src="/js/confirm.js?v=20260924i"></script>
-<script src="/js/sheet.js?v=20260924i"></script>
-<script src="/js/form.js?v=20260924i"></script>
-<script src="/js/state.js?v=20260924i"></script>
-<script src="/js/group.js?v=20260924i"></script>
-<script src="/js/menu.js?v=20260924i"></script>
-<script src="/js/cmdbar.js?v=20260924i"></script>
-<script src="/js/api.js?v=20260924i"></script>
-<script src="/js/money.js?v=20260924i"></script>
-<script src="/js/mockups.js?v=20260924i"></script>
+<script src="/js/config.js?v=20260924j"></script>
+<script src="/js/words.js?v=20260924j"></script>
+<script src="/js/copy.js?v=20260924j"></script>
+<script src="/js/ask.js?v=20260924j"></script>
+<script src="/js/confirm.js?v=20260924j"></script>
+<script src="/js/sheet.js?v=20260924j"></script>
+<script src="/js/form.js?v=20260924j"></script>
+<script src="/js/state.js?v=20260924j"></script>
+<script src="/js/group.js?v=20260924j"></script>
+<script src="/js/menu.js?v=20260924j"></script>
+<script src="/js/cmdbar.js?v=20260924j"></script>
+<script src="/js/api.js?v=20260924j"></script>
+<script src="/js/money.js?v=20260924j"></script>
+<script src="/js/mockups.js?v=20260924j"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260924i" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260924j" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -3370,14 +3370,14 @@
            Nothing here is read until the code is entered, and the database
            asks for it again on every read and write, not only this page. ---- -->
       <div id="teamPerfPane" hidden>
-        <div class="softpanel perf-lock" id="perfLock" hidden>
-          <h3 class="perf-lock-title" id="perfLockTitle">Performance reviews are locked</h3>
-          <form class="perf-lock-form" id="perfLockForm" autocomplete="off">
+        <div class="lockcard" id="perfLock" hidden>
+          <span class="lockcard-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+          <h3 class="lockcard-title" id="perfLockTitle">Performance reviews are locked</h3>
+          <form class="lockcard-form" id="perfLockForm" autocomplete="off">
+            <p class="lockcard-line">Unlocks for 15 minutes.</p>
             <label class="field-label" for="perfCode">Master code</label>
-            <span class="perf-lock-row">
-              <input class="input" id="perfCode" type="password" autocomplete="off" spellcheck="false" autocapitalize="off">
-              <button class="btn btn-primary" id="perfUnlock" type="submit">Unlock</button>
-            </span>
+            <input class="input" id="perfCode" type="password" autocomplete="off" spellcheck="false" autocapitalize="off">
+            <button class="btn btn-primary" id="perfUnlock" type="submit">Unlock</button>
           </form>
           <div class="msg" id="perfLockMsg"></div>
         </div>
@@ -3465,12 +3465,13 @@
       <label class="tickline mineguard" id="mineGuard" hidden>
         <input type="checkbox" id="mineGuardOn"> <span>Ask for an email code before showing my reviews</span>
       </label>
-      <section class="panel minelock" id="mineLock" hidden aria-labelledby="mineLockTitle">
-        <h3 id="mineLockTitle">Enter your email code</h3>
-        <p class="minelock-line" id="mineLockLine"></p>
-        <div class="minelock-row">
-          <input class="input" id="mineCode" type="text" inputmode="numeric" autocomplete="one-time-code"
-                 maxlength="6" placeholder="6-digit code" aria-label="Email code" hidden>
+      <section class="lockcard" id="mineLock" hidden aria-labelledby="mineLockTitle">
+        <span class="lockcard-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+        <h3 class="lockcard-title" id="mineLockTitle">Your reviews are locked</h3>
+        <p class="lockcard-line" id="mineLockLine"></p>
+        <div class="lockcard-form">
+          <input class="input lockcard-code" id="mineCode" type="text" inputmode="numeric" autocomplete="one-time-code"
+                 maxlength="10" placeholder="Code" aria-label="Email code" hidden>
           <button class="btn btn-primary" id="mineVerify" type="button" hidden>Verify</button>
           <button class="btn btn-primary" id="mineSend" type="button">Send code</button>
         </div>
@@ -4022,14 +4023,14 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260924i"></script>
-<script src="/js/documents.js?v=20260924i"></script>
-<script src="/js/letters.js?v=20260924i"></script>
-<script src="/js/register.js?v=20260924i"></script>
-<script src="/js/crm.js?v=20260924i"></script>
-<script src="/js/team.js?v=20260924i"></script>
-<script src="/js/campaigns.js?v=20260924i"></script>
-<script src="/js/ops.js?v=20260924i"></script>
-<script src="/js/perf.js?v=20260924i"></script>
+<script src="/js/admin.js?v=20260924j"></script>
+<script src="/js/documents.js?v=20260924j"></script>
+<script src="/js/letters.js?v=20260924j"></script>
+<script src="/js/register.js?v=20260924j"></script>
+<script src="/js/crm.js?v=20260924j"></script>
+<script src="/js/team.js?v=20260924j"></script>
+<script src="/js/campaigns.js?v=20260924j"></script>
+<script src="/js/ops.js?v=20260924j"></script>
+<script src="/js/perf.js?v=20260924j"></script>
 </body>
 </html>
