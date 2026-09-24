@@ -182,6 +182,13 @@
     det.addEventListener('change', paintSum);
     det.addEventListener('input', paintSum);
     det.addEventListener('toggle', paintSum);
+    /* A segment under a shut fold was never measured (nothing inside a shut
+       <details> is laid out for the observer to report), so it is fitted the
+       moment the fold opens. */
+    det.addEventListener('toggle', function () {
+      if (!det.open) return;
+      Array.prototype.forEach.call(det.querySelectorAll('.seg'), fit);
+    });
     /* A value set from a script (the sheet resetting on open) fires nothing,
        so the line is read again whenever the sheet around it opens. */
     var sheet = det.closest('.sheet');
