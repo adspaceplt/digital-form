@@ -5392,6 +5392,9 @@
      month does not use. Drawn on the month's card and in a task's next
      step alike, so the month is run from wherever somebody is. */
   function checksHtml(e, list, can) {
+    /* Readiness is onboarding, held on a client's first month only: a later
+       month carries no checks and draws nothing here. */
+    if (!list || !list.length) return '';
     return '<div class="eng-checks">' +
       '<div class="eng-checkhead"><span>Readiness</span><span class="eng-checkcount">' +
         checksDone(list) + ' of ' + list.length + ' done</span></div>' +
@@ -5786,7 +5789,11 @@
     window.ADspaceConfirm.ask({
       title: 'Delete ' + monthWord(e.period) + (client && client.name ? ' for ' + client.name : ''),
       body: (n ? (n === 1 ? 'Its task stays and leaves the month.' : 'Its ' + n + ' tasks stay and leave the month.') + ' ' : '') +
-        'The readiness ticks and the meeting go with it. There is no restore.',
+        (!checksOf(e, cw.checks).length ? 'The meeting goes with it.'
+          : (cw.engs || []).some(function (x) { return x.id !== e.id; })
+            ? 'Its readiness ticks move to the next month; the meeting goes with it.'
+            : 'The readiness ticks and the meeting go with it.') +
+        ' There is no restore.',
       go: 'Delete', tone: 'danger',
       field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
     }, function (why) {
@@ -5895,13 +5902,31 @@
   /* What the edge function answered, in the team's words. */
   function meetSaid(d) {
     var k = d && d.error;
-    if (k === 'meet-not-set-up') return 'Google Meet is not connected yet. Paste a link instead.';
+    if (k === 'meet-not-set-up') {
+      var miss = (d.missing || []).join(', ');
+      return 'Google Meet is not connected yet' + (miss ? ': ' + miss + ' is not set in Supabase' : '') + '. Paste a link instead.';
+    }
+    /* Google turned the shared account's sign-in away: the word it gave says
+       which secret to replace. */
+    if (k === 'google-token') {
+      var rs = String(d.reason || '');
+      if (rs === 'invalid_grant') return 'Google refused the refresh token. Get a new one from OAuth Playground and replace GOOGLE_REFRESH_TOKEN.';
+      if (rs === 'invalid_client' || rs === 'unauthorized_client') return 'Google refused the client ID or secret. Check GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET match the OAuth client the token was made with.';
+      return 'Google refused the sign-in' + (rs ? ' (' + rs + ')' : '') + '.';
+    }
+    if (k === 'google-refused' && /accessNotConfigured|SERVICE_DISABLED/i.test(String(d.reason || ''))) {
+      return 'The Google Calendar API is not enabled on the Google Cloud project.';
+    }
+    if (k === 'google-refused' && /insufficient|PERMISSION_DENIED|forbidden/i.test(String(d.reason || ''))) {
+      return 'The refresh token does not carry calendar access. Make it again with the calendar.events scope.';
+    }
+    if (k === 'unreachable') return 'Google Meet could not be reached. Try again, or paste a link.';
     if (k === 'slot-taken') {
       var span = d.start ? clock(d.start) + (d.end ? ' to ' + clock(d.end) : '') : '';
       return 'The shared calendar already has ' + (d.summary ? '\u201c' + d.summary + '\u201d' : 'a meeting') +
         (span ? ' at ' + span : '') + '. Choose another time.';
     }
-    if (k === 'google-refused') return 'Google refused the booking. Try again.';
+    if (k === 'google-refused') return 'Google refused the booking' + (d.reason ? ' (' + d.reason + ')' : '') + '. Try again.';
     if (k === 'not-saved') return 'The event was made but its link was not saved. Try again.';
     return k ? said(k) : 'Google Meet could not be reached. Paste a link instead.';
   }
@@ -5958,7 +5983,7 @@
         /* Google not connected is not something this sheet can fix: the
            meeting is saved, the sheet closes, and the line says so under
            the meeting it is about. */
-        if (!d || d.error === 'meet-not-set-up' || d.error === 'unreachable') {
+        if (!d || d.error === 'meet-not-set-up' || d.error === 'google-token' || d.error === 'unreachable') {
           meetWarn = { id: e.id, text: 'Saved. ' + meetSaid(d) };
           finish();
           return;
