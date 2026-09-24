@@ -205,8 +205,17 @@
     if (e.key === 'Escape' && !$('acctMenu').hidden) { shutAcct(); $('acctBtn').focus(); }
   });
 
+  /* My performance is the person's own record, so it opens from who they
+     are rather than from the rail everybody shares. */
+  $('myPerf').addEventListener('click', function () {
+    shutAcct();
+    showSection('mine');
+  });
+  /* Signing out ends a performance unlock at once rather than leaving it to
+     run out on a machine somebody else may sit at next. */
   $('signOut').addEventListener('click', function () {
-    db.auth.signOut().then(function () { location.reload(); });
+    var out = function () { db.auth.signOut().then(function () { location.reload(); }); };
+    if (window.ADspacePerf && window.ADspacePerf.lock) window.ADspacePerf.lock(out); else out();
   });
   $('noTeamOut').addEventListener('click', function () {
     db.auth.signOut().then(function () { location.reload(); });
@@ -343,9 +352,14 @@
        falling back for them, exactly as `ops_granted()` does in the
        database. A group given `{"ops":"work"}` reads its own work and
        nothing else, today and after somebody adds a group next year. */
-    ops:       ['all', 'reports', 'workflows', 'time']
+    ops:       ['all', 'reports', 'workflows', 'time'],
+    /* Everybody's monthly performance review. Granted and never inherited
+       like the four above, and for the same reason: administering the team
+       is not reading everybody's scores. The database asks for the master
+       code on top of this, every time. */
+    team:      ['performance']
   };
-  var OPS_GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1 };
+  var OPS_GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws
@@ -383,6 +397,11 @@
       });
     }
     if (name === 'work') return may('ops', 'view');
+    /* Team is two jobs gated apart: members and groups, and the monthly
+       reviews. Either opens the route; the tab strip shows what is held. */
+    if (name === 'team') return may('team', 'view') || may('team.performance', 'view');
+    /* Everybody on the team has a record of their own to read. */
+    if (name === 'mine') return Boolean(me && me.id);
     return may(name, 'view');
   }
 
@@ -462,7 +481,8 @@
     links: 'Short Links',
     register: 'Documents',
     services: 'Services',
-    team: 'Team'
+    team: 'Team',
+    mine: 'My performance'
   };
   /* WHAT EACH SECTION IS FOR, in one line, while the team is new to it.
      This portal carries no explanatory copy, and the user asked for exactly
@@ -485,7 +505,8 @@
     links:     'Short links for slides, print and QR codes, served from ' + ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '.',
     register:  'Every document issued through the portal, and its reference.',
     services:  'The rate card every quotation is priced from.',
-    team:      'Team members, user groups and what each group may open.'
+    team:      'Team members, user groups and what each group may open.',
+    mine:      'Your monthly performance reviews, once each is released at your 1-1.'
   };
   var INTRO_SHOWS = 3;
   function introSeen(name) {
@@ -563,6 +584,7 @@
     $('sectionRegister').hidden  = name !== 'register';
     $('sectionServices').hidden  = name !== 'services';
     $('sectionTeam').hidden      = name !== 'team';
+    $('sectionMine').hidden      = name !== 'mine';
     $('sectionTitle').querySelector('.console-title-word').textContent = SECTION_TITLE[name];
     $('sectionTitle').setAttribute('aria-label', SECTION_TITLE[name] + ', about this section');
     paintIntro(name);
@@ -587,8 +609,14 @@
       return;
     }
     if (name === 'team') {
-      if (!window.ADspaceTeam) { enterLater = 'team'; return; }
-      window.ADspaceTeam.enter();
+      if (!window.ADspaceTeam || !window.ADspacePerf) { enterLater = 'team'; return; }
+      window.ADspacePerf.enterTeam();
+      setUrl();
+      return;
+    }
+    if (name === 'mine') {
+      if (!window.ADspacePerf) { enterLater = 'mine'; return; }
+      window.ADspacePerf.enterMine();
       setUrl();
       return;
     }
@@ -708,6 +736,9 @@
     } else if (section === 'work' && window.ADspaceOps) {
       var w = window.ADspaceOps.urlState();
       Object.keys(w).forEach(function (k) { if (w[k]) q.push(k + '=' + encodeURIComponent(w[k])); });
+    } else if (section === 'team' && window.ADspacePerf) {
+      var pf = window.ADspacePerf.urlState();
+      Object.keys(pf).forEach(function (k) { if (pf[k]) q.push(k + '=' + encodeURIComponent(pf[k])); });
     }
     return q;
   }
@@ -2688,9 +2719,15 @@
       window.ADspaceCRM.enter();
     },
     teamReady: function () {
-      if (enterLater !== 'team' || section !== 'team') return;
+      if (enterLater !== 'team' || section !== 'team' || !window.ADspacePerf) return;
       enterLater = '';
-      window.ADspaceTeam.enter();
+      window.ADspacePerf.enterTeam();
+    },
+    perfReady: function () {
+      if (enterLater === 'mine' && section === 'mine') { enterLater = ''; window.ADspacePerf.enterMine(); return; }
+      if (enterLater !== 'team' || section !== 'team' || !window.ADspaceTeam) return;
+      enterLater = '';
+      window.ADspacePerf.enterTeam();
     },
     opsReady: function () {
       if (enterLater !== 'work' || section !== 'work') return;

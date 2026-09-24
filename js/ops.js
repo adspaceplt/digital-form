@@ -2862,7 +2862,7 @@
     db.from('ops_engagements').select('id, client_id, period, status, clients(name, slug)').in('period', ks)
       .then(function (r) { state.engList = (!r.error && r.data) || []; then(); }, function () { state.engList = []; then(); });
   }
-  function openQuick(pre) {
+  function openQuick(pre, from) {
     if (!may('ops', 'work')) return;
     loadEngs(function () {
       var me = bridge.me && bridge.me();
@@ -2876,7 +2876,11 @@
       $('qkMade').innerHTML = '';
       qkMade = 0; qkKey = '';
       msg('qkMsg', '');
-      sheet('quickSheet', true);
+      /* Switched to from the content form, which stayed on the screen while
+         the months were read: the two change places in one frame, so there
+         is never a moment with no sheet and the page showing through. */
+      if (from) { sheet(from, false); from = null; sheet('quickSheet', true, true); }
+      else sheet('quickSheet', true);
       $('qkTitle').focus();
     });
   }
@@ -4886,9 +4890,13 @@
     msg('blockMsg', '');
     sheet('blockSheet', true);
   }
-  function sheet(id, on) {
+  /* `swap` is the Task / Content deliverable switch: the other form takes
+     the place of this one without arriving again, so the scrim does not fade
+     back in and the card does not lift in from below (`.sheet.is-swap`). */
+  function sheet(id, on, swap) {
     var el = $(id);
     if (!el) return;
+    if (on) el.classList.toggle('is-swap', Boolean(swap));
     el.hidden = !on;
     document.body.classList.toggle('sheet-open', !!on);
     if (on) {
@@ -4932,7 +4940,7 @@
   /* Opened from the bar with nothing, or from a client record with the
      client, and from a month's card with its month and its engagement. */
   var ntPrefill = null;
-  function openNew(prefill) {
+  function openNew(prefill, swap) {
     if (!may('ops', 'work')) return;
     ntTouched = {};
     ntPrefill = (prefill && prefill.client) ? prefill : null;
@@ -4979,7 +4987,7 @@
       ntCodeHint();
     }
     msg('ntMsg', '');
-    sheet('taskSheet', true);
+    sheet('taskSheet', true, swap);
   }
   function ntScopeChanged() {
     var scope = $('ntScope').value;
@@ -6235,9 +6243,22 @@
       var b = $(id); if (b) b.addEventListener('click', closeQuick);
     });
     var qfull = $('qkFull');
-    if (qfull) qfull.addEventListener('click', function () { closeQuick(); openNew(); });
+    /* The switch at the top of both forms. The form being switched to is
+       drawn before this one goes, so the two change places in one frame. */
+    if (qfull) qfull.addEventListener('click', function () {
+      var made = qkMade;
+      openNew(null, true);
+      $('quickSheet').hidden = true;
+      qkMade = 0;
+      if (made) load();
+    });
     var nq = $('ntQuick');
-    if (nq) nq.addEventListener('click', function () { sheet('taskSheet', false); openQuick(); });
+    if (nq) nq.addEventListener('click', function () {
+      if (nq.disabled) return;
+      nq.disabled = true;
+      openQuick(null, 'taskSheet');
+      setTimeout(function () { nq.disabled = false; }, 400);
+    });
 
     // From template
     ['tplClose', 'tplCancel'].forEach(function (id) {
@@ -6872,6 +6893,13 @@
     if (!x) return;
     shutBell();
     markRead([id]);
+    /* A performance review is not a task: a released or answered month opens
+       the person's own record, a dispute opens the team's month. */
+    if (!x.task_id && /^perf\./.test(x.kind || '')) {
+      if (x.kind === 'perf.disputed' && window.ADspacePerf) window.ADspacePerf.openTeam();
+      else if (bridge.show) bridge.show('mine');
+      return;
+    }
     if (!x.task_id) return;
     /* On My Work the task opens beside the list; from anywhere else the
        address comes first, because My Work reads it on entry. */

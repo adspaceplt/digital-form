@@ -2231,6 +2231,17 @@ body.is-plain .topbar { background: var(--chrome); }
    browser it sizes itself to its placeholder, which is how Name ended up at a
    quarter of the card with its label floating above nothing. */
 .sheet-body > .input, .sheet-body > .select, .sheet-body > textarea.input { width: 100%; }
+/* A form in a sheet steps 16px between one field and the next, down the
+   sheet and, on a phone, down a row that has wrapped to one field a line.
+   The My Work sheets had no step at all, so each label sat on the field
+   above it and Bulk add read as one block (reported 2026-09-24); the other
+   sheets carried 12px in a style attribute on each row, which is how the two
+   came to differ. One rule here, in `:where()` so a component's own rule
+   (`.qform .row`, `.perf-plan .row`) still decides for its own rows. A row
+   inside a row, and a row that opens the sheet, take no step. */
+.sheet-body :where(.row) { margin-top: 16px; row-gap: 16px; }
+.sheet-body :where(.row .row), .sheet-body > :where(.row:first-child) { margin-top: 0; }
+.sheet-body :where(.row) + :where(.btn) { margin-top: 16px; }
 
 /* ---------- The question every act asks (js/confirm.js) ----------
    Narrower than a sheet that carries a form: this one holds a sentence and
@@ -2920,8 +2931,13 @@ body.is-plain .topbar { background: var(--chrome); }
   background: var(--line-soft); border-color: var(--line); color: var(--ink);
 }
 /* Raised, because it is the one thing on the page that floats above it. */
+/* An open menu is the top layer of the page it opens on: above every sticky
+   bar under the console head (the select bar is 20, the confirm bar 40), and
+   below the drawer, the sheets and their scrims (55 and up). At 20 it tied
+   with My Work's select bar, which comes later on the page and so drew over
+   the bar's own ⋯ menu (reported 2026-09-24). */
 .kmenu {
-  position: absolute; top: 44px; right: 12px; z-index: 20;
+  position: absolute; top: 44px; right: 12px; z-index: 50;
   width: min(320px, calc(100vw - 48px));
   background: var(--card); border: 1px solid var(--line);
   border-radius: var(--radius); box-shadow: var(--shadow-lift);
@@ -3914,9 +3930,9 @@ body > .shell { width: 100%; }
 .field > .hint { margin: 6px 0 0; }
 /* Five figures for five weeks on one line, two lines on a phone. The codes
    a preview answers with wrap as a paragraph under the control that asked. */
-.genweeks { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.genweeks { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px 12px; }
 .genout { margin: 12px 0 0; overflow-wrap: anywhere; }
-#genPreview { margin-top: 4px; }
+#genPreview { margin-top: 16px; }
 /* Several ticks in a sheet stack one to a line; inline they flowed two to a
    line with the third wrapping under them. */
 .tickstack { display: grid; gap: 2px; margin: 0 0 12px; }
@@ -7306,14 +7322,24 @@ body.is-canvas { overflow: hidden; }
 }
 
 /* Add task: the three fields, then the folded rest, then what was just made. */
-#qkForm .row { margin-top: 12px; }
+#qkForm .row { margin-top: 16px; }
 #qkForm .tmore { margin-top: 8px; }
 #qkForm .tmore > .row:first-of-type { margin-top: 4px; }
 /* Every field in the fold is a row of its own, so each is the sheet's full
-   width and each sits the same 12px under the one above. */
-#qkForm .tmore > .row + .row { margin-top: 12px; }
+   width and each sits the same 16px under the one above, the step every
+   sheet's fields take. */
+#qkForm .tmore > .row + .row { margin-top: 16px; }
 #qkForm .tmore .row textarea.input { width: 100%; }
 /* The kind of task is chosen first, at the top of either sheet. */
+/* Switching Task / Content deliverable is one sheet changing its form, not
+   one sheet leaving and another arriving: no scrim fade, no lift from below,
+   only the card's contents settling in. The swap used to hide one sheet,
+   read the database, then animate the other in from nothing, which read as
+   a stall (reported 2026-09-24). Three classes, so it outranks the phone's
+   own `.sheet-card` lift further down the file. */
+.sheet.is-swap { animation: none; }
+.sheet.is-swap .sheet-card { animation: mk-swap-in var(--t) var(--ease-out); }
+@keyframes mk-swap-in { from { opacity: .55; } }
 .kindseg { display: flex; margin: 0 0 16px; }
 .kindseg .acttab { flex: 1 1 0; text-align: center; min-height: var(--ctl-h); font-size: var(--ctl-text); }
 #qkForm .hint { margin: 10px 0 8px; }
@@ -7335,3 +7361,134 @@ body.is-canvas { overflow: hidden; }
 .due-short { display: none; }
 .is-narrow .due-long { display: none; }
 .is-narrow .due-short { display: inline; }
+
+/* ---------- Performance reviews (2026-09-24) ----------
+   Team > Performance for management, behind the master code, and My
+   performance for the person the record is about. The review itself opens
+   in the task drawer's own side sheet and cards (`.taskcard`, `.qcard`), so
+   a record read beside a list is one shape across the console. */
+#teamTabs[hidden], #teamMembersPane[hidden], #teamPerfPane[hidden], #perfOpen[hidden] { display: none; }
+.perf-lock { padding: 18px 20px; max-width: 560px; }
+.perf-lock[hidden] { display: none; }
+.perf-lock-title { margin: 0 0 12px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.perf-lock-form[hidden] { display: none; }
+.perf-lock-row { display: flex; gap: 8px; }
+.perf-lock-row .input { flex: 1 1 auto; min-width: 0; }
+.perf-lock-row .btn { flex: 0 0 auto; }
+.perf-lock .msg:not(:empty) { margin-top: 10px; }
+
+/* The month: who, where the review stands, the score, the grade and the
+   reward, then the ⋯ that holds the review profile. Every track stated, so
+   a column starts at the same x on every row. The grade track is measured
+   against its widest word, "E · Performance Review" at 11.5px. */
+.perf-row { grid-template-columns: minmax(0, 1fr) var(--state-w) 56px 172px 96px var(--ctl-h); }
+.mine-row { grid-template-columns: minmax(0, 1fr) var(--state-w) 56px 172px 96px 16px; cursor: pointer; }
+.perf-row { padding-top: 10px; padding-bottom: 10px; }
+.perf-open, .mine-month {
+  display: flex; flex-direction: column; justify-content: center; gap: 2px;
+  min-width: 0; text-align: left;
+}
+.perf-open {
+  align-self: stretch; margin: -10px 0; padding: 10px 0; min-height: var(--ctl-h);
+  border: 0; background: none; font: inherit; color: inherit; cursor: pointer;
+}
+.perf-open b, .mine-month b { font-size: 14px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.perf-open small, .mine-month small { font-size: 12px; color: var(--ink-mute); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (hover: hover) { .perf-open:hover b { text-decoration: underline; text-underline-offset: 2px; } }
+.perf-state, .perf-grade { min-width: 0; }
+.perf-score, .perf-reward { font-size: 13.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.perf-dash { color: var(--ink-mute); }
+.perf-sum { display: none; }
+.perf-chev { display: inline-flex; justify-content: flex-end; color: var(--ink-mute); }
+.perf-chev svg { width: 16px; height: 16px; }
+.perf-row > .team-act { align-self: center; }
+
+/* A narrow list (the list measures itself: `data-narrow="780"`, because the
+   six desk tracks need about that much) reads each row as two lines: who and
+   where it stands, then the score, grade and reward as one line of meta. */
+.is-narrow .perf-row, .is-narrow .mine-row {
+  grid-template-columns: minmax(0, 1fr) 120px var(--ctl-h);
+  grid-template-areas: "who state act" "sum sum act";
+  gap: 4px 10px;
+}
+.is-narrow .mine-row { grid-template-columns: minmax(0, 1fr) 120px 16px; }
+.is-narrow .perf-row > .perf-open, .is-narrow .mine-row > .mine-month { grid-area: who; }
+.is-narrow .perf-row > .perf-state, .is-narrow .mine-row > .perf-state { grid-area: state; justify-self: stretch; display: flex; justify-content: flex-end; }
+.is-narrow .perf-row > .team-act { grid-area: act; margin-block: calc((20px - var(--ctl-h)) / 2); }
+.is-narrow .mine-row > .perf-chev { grid-area: act; align-self: center; }
+.is-narrow .perf-row > .perf-sum, .is-narrow .mine-row > .perf-sum { grid-area: sum; display: block; font-size: 12.5px; color: var(--ink-mute); min-height: 16px; }
+.is-narrow .perf-row > .perf-score, .is-narrow .perf-row > .perf-grade, .is-narrow .perf-row > .perf-reward,
+.is-narrow .mine-row > .perf-score, .is-narrow .mine-row > .perf-grade, .is-narrow .mine-row > .perf-reward { display: none; }
+.is-narrow .crm-head.perf-row, .is-narrow .crm-head.mine-row { display: none; }
+.is-narrow .perf-row > .perf-sum:empty, .is-narrow .mine-row > .perf-sum:empty { display: none; }
+@media (max-width: 640px) {
+  .perf-lock-row { flex-direction: column; }
+}
+
+/* ---- The review, in the side sheet ---- */
+.perf-result { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.perf-grade-big {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  width: 52px; height: 52px; border-radius: var(--radius-sm);
+  font-family: var(--font-head); font-size: 28px; font-weight: 600;
+  background: var(--sunk); color: var(--ink);
+}
+.perf-grade-big.is-ok { background: var(--ok-bg); color: var(--ok); }
+.perf-grade-big.is-warn { background: var(--warn-bg); color: var(--warn); }
+.perf-grade-big.is-danger { background: var(--err-bg); color: var(--err); }
+.perf-grade-words { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.perf-grade-words b { font-size: 17px; font-weight: 600; letter-spacing: -.015em; }
+.perf-grade-words small { font-size: 13px; color: var(--ink-soft); }
+.perf-note { margin: 10px 0 0; font-size: 13px; color: var(--ink-soft); }
+.perf-quiet { margin: 0; font-size: 13px; color: var(--ink-mute); }
+.perf-cats { display: grid; }
+.perf-cat {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: start;
+  padding: 10px 0; border-top: 1px solid var(--line-soft);
+}
+.perf-cat:first-child { border-top: 0; padding-top: 2px; }
+.perf-cat-name { display: flex; flex-direction: column; gap: 3px; min-width: 0; font-size: 13.5px; }
+.perf-cat-name label { font-weight: 500; }
+.perf-cat-name small { font-size: 12px; color: var(--ink-mute); }
+.perf-cat-note { color: var(--ink-soft) !important; white-space: pre-line; }
+.perf-cat-val { font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; display: inline-flex; align-items: center; gap: 2px; }
+.perf-cat-val small { font-size: 12px; font-weight: 400; color: var(--ink-mute); }
+.perf-cat .perf-evidence { grid-column: 1 / -1; resize: none; min-height: var(--ctl-h); padding-block: 9px; line-height: 1.45; font-size: 13px; }
+.perf-num { width: 76px; text-align: right; font-variant-numeric: tabular-nums; }
+/* A suggestion is pressed, so it clears the control floor; the negative
+   block margin keeps its footprint the line of text it reads as, the device
+   the rate card's ⋯ uses. */
+.perf-use { align-self: flex-start; text-align: left; display: inline-flex; align-items: center;
+  min-height: var(--ctl-h); margin-block: calc((19px - var(--ctl-h)) / 2); }
+.perf-std { line-height: 1.45; }
+.perf-rates { display: grid; gap: 10px 16px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.perf-rates .perf-use { grid-column: auto; }
+@media (max-width: 460px) { .perf-rates { grid-template-columns: minmax(0, 1fr); } }
+.perf-rate { display: grid; gap: 4px; }
+.perf-pct { display: inline-flex; align-items: center; gap: 4px; }
+.perf-pct small { font-size: 12px; color: var(--ink-mute); }
+.perf-breach, .perf-dispute { padding: 10px 0; border-top: 1px solid var(--line-soft); display: grid; gap: 3px; }
+.perf-breach:first-child, .perf-dispute:first-child { border-top: 0; padding-top: 2px; }
+.perf-breach-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 13.5px; }
+.perf-breach-pts { font-weight: 600; font-variant-numeric: tabular-nums; color: var(--err); }
+.perf-breach-what { margin: 0; font-size: 13.5px; white-space: pre-line; }
+.perf-breach small, .perf-dispute small { font-size: 12px; color: var(--ink-mute); }
+.perf-breach-ev { overflow-wrap: anywhere; }
+/* Quiet and on the text's own margin: its label starts where the breach's
+   words do, not a button's padding further in. */
+.perf-void { justify-self: start; min-width: 0; margin-left: -13px; }
+.perf-answer { margin: 4px 0 0; padding: 8px 10px; background: var(--sunk); border-radius: var(--radius-sm); font-size: 13px; }
+.perf-answer small { display: block; margin-bottom: 2px; }
+.perf-plan { display: grid; gap: 6px; }
+.perf-plan .row { margin-top: 4px; }
+.perf-dpick { display: grid; gap: 4px; }
+.perf-dpick .tickline { align-items: flex-start; padding-top: 10px; }
+.perf-dpick .tickline input { margin-top: 1px; }
+.perf-dpick textarea[hidden] { display: none; }
+.perf-decide .row { margin-top: 0; }
+.perf-decide [data-show][hidden] { display: none; }
+.perf-history { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.perf-history li { display: flex; flex-direction: column; gap: 1px; font-size: 13px; }
+.perf-history b { font-weight: 500; }
+.perf-history small { font-size: 12px; color: var(--ink-mute); }
+.perf-sums { margin-top: 2px; }
