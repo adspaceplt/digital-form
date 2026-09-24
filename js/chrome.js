@@ -39,6 +39,19 @@
   var actions = (tag.getAttribute('data-actions') || '').split(/\s+/).filter(Boolean);
   var wantFooter = tag.getAttribute('data-footer') !== 'off';
 
+  /* A field under 16px makes iPhone Safari zoom the page when it takes
+     focus, and it never zooms back. Since iOS 10 Safari ignores
+     maximum-scale for a pinch, so on iOS alone the value stops the automatic
+     zoom and leaves the reader's own zoom working: fields keep the portal's
+     own sizes instead of a 16px floor. Android does not zoom on focus and its
+     browsers honour maximum-scale for a pinch too, so it never gets it. */
+  (function () {
+    var ua = navigator.userAgent || '';
+    var ios = /iPhone|iPad|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+    var vp = document.querySelector('meta[name="viewport"]');
+    if (ios && vp && !/maximum-scale/.test(vp.content)) vp.content += ', maximum-scale=1';
+  })();
+
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
