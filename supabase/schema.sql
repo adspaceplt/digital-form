@@ -2645,7 +2645,16 @@ begin
   if not cr.active then return jsonb_build_object('error', 'inactive'); end if;
 
   return jsonb_build_object(
-    'creator', jsonb_build_object('name', cr.name, 'code', cr.access_code),
+    /* Who they are to us: the name the team keyed, since when, and the
+       profile links the client's selection page opens, which they may keep
+       up to date themselves. Never `client_rate`: that is the client's
+       price, not theirs to read. */
+    'creator', jsonb_build_object('name', cr.name, 'code', cr.access_code,
+      'since', cr.created_at,
+      'profiles', coalesce((
+        select jsonb_agg(jsonb_build_object('platform', p.platform, 'handle', p.handle, 'url', p.url)
+                         order by p.platform, p.url)
+          from creator_profiles p where p.creator_id = cr.id), '[]'::jsonb)),
     'bookings', coalesce((
       select jsonb_agg(b order by b->>'sort')
       from (
@@ -5930,7 +5939,9 @@ language sql immutable parallel safe as $$
                     'campaign.reinstated', 'campaign.replaced', 'campaign.review',
                     'campaign.stage', 'campaign.submitted', 'campaign.unbooked',
                     'campaign.unkeyed', 'campaign.withdrawn', 'creator.added',
-                    'creator.off', 'creator.on', 'creator.removed', 'creator.updated') then 'campaigns'
+                    'creator.code', 'creator.links', 'creator.links_restored',
+                    'creator.links_self', 'creator.off', 'creator.on', 'creator.removed',
+                    'creator.updated') then 'campaigns'
     when action in ('client.action_done', 'client.action_reopened', 'client.added',
                     'client.billing', 'client.brand', 'client.edited',
                     'client.review_on', 'client.service', 'client.service_changed',
@@ -11256,3 +11267,524 @@ end $$;
 grant execute on function public.ops_generate_month(jsonb, boolean, text) to authenticated;
 
 -- END OF BULK ADD SPREADS THE MONTH ------------------------------------------
+
+-- =========================================================================
+-- A CREATOR'S OWN PROFILE LINKS
+--
+-- A creator keeps their own rednote, Instagram, TikTok and Facebook links up
+-- to date from the creator portal, and the team edits the same rows from the
+-- Creators List. There is one table, `creator_profiles`, so the two sides
+-- cannot drift: the client's selection page reads it too, which is why a
+-- link is only ever what this section says it is.
+--
+-- No approval step (decided with the user on 2026-09-24). The link in hand
+-- and its access code already say who is typing, and a round for every
+-- handle change is a chore on both sides. What replaces the approval is:
+--
+--   * `profile_of()` accepts a real profile on the four platforms and
+--     nothing else. The host is read, never matched anywhere in the text,
+--     and the stored link is rebuilt from the handle, so a changed link can
+--     only ever open that platform's profile page and never another site.
+--   * A profile another creator already holds is refused, without naming
+--     who holds it.
+--   * Every change, the creator's and the team's, is filed twice: a row in
+--     `creator_profile_changes` holding the set before and after, which is
+--     what Restore puts back, and a row in the activity record naming every
+--     link that went and came in full, so a link typed by mistake can be
+--     found and read back.
+--
+-- The fee is not here and not in `get_creator`: `creators.client_rate` is
+-- the client's price and never reaches the creator's page.
+--
+-- Rollback:
+--   drop function if exists public.creator_restore_profiles(uuid);
+--   drop function if exists public.creator_save_profiles(uuid, jsonb);
+--   drop function if exists public.creator_set_profiles(text, jsonb);
+--   drop function if exists public.profiles_replace(uuid, jsonb, text, text, text);
+--   drop function if exists public.profiles_diff(jsonb, jsonb);
+--   drop function if exists public.profile_of(text);
+--   drop table if exists public.creator_profile_changes;
+--   and re-run the get_creator of 2026-09-20.
+-- =========================================================================
+
+/* One reading of a profile link. Returns {platform, handle, url} or null.
+   The host is taken from the URL's own authority and must be the platform's
+   (with or without www. or m.); a URL that merely contains "instagram.com/"
+   somewhere, as a query or a path on another site, is not a profile. The
+   link stored is rebuilt from what was read, so trailing tracking
+   parameters, fragments and anything else typed after the handle are gone.
+   A rednote short link (xhslink) names nobody, so it is kept as typed on its
+   own host with a null handle and cannot claim an identity. */
+create or replace function public.profile_of(p_url text)
+returns jsonb
+language plpgsql immutable set search_path = public as $$
+declare
+  v    text := btrim(coalesce(p_url, ''));
+  m    text[];
+  host text;
+  bare text;
+  path text;
+  q    text;
+  h    text;
+begin
+  if v = '' or length(v) > 300 or v ~ '\s' then return null; end if;
+  if v !~* '^https?://' then v := 'https://' || v; end if;
+  m := regexp_match(v, '^https?://([^/?#]+)([^?#]*)(\?[^#]*)?', 'i');
+  if m is null then return null; end if;
+  host := lower(m[1]);
+  if host ~ '[@:]' then return null; end if;
+  bare := regexp_replace(host, '^(www\.|m\.|mobile\.|web\.)', '');
+  path := coalesce(m[2], '');
+  q := coalesce(m[3], '');
+
+  if bare = 'instagram.com' then
+    m := regexp_match(path, '^/([A-Za-z0-9._]{1,40})/?$');
+    if m is null then return null; end if;
+    h := m[1];
+    if lower(h) in ('p', 'reel', 'reels', 'stories', 'explore', 'tv', 'accounts', 'direct') then
+      return null;
+    end if;
+    return jsonb_build_object('platform', 'instagram', 'handle', h,
+      'url', 'https://www.instagram.com/' || h || '/');
+
+  elsif bare = 'tiktok.com' then
+    m := regexp_match(path, '^/@([A-Za-z0-9._]{1,40})/?$');
+    if m is null then return null; end if;
+    return jsonb_build_object('platform', 'tiktok', 'handle', m[1],
+      'url', 'https://www.tiktok.com/@' || m[1]);
+
+  elsif bare = 'facebook.com' then
+    if path ~* '^/profile\.php/?$' then
+      m := regexp_match(q, '[?&]id=([0-9]{5,20})(&|$)');
+      if m is null then return null; end if;
+      return jsonb_build_object('platform', 'facebook', 'handle', m[1],
+        'url', 'https://www.facebook.com/profile.php?id=' || m[1]);
+    end if;
+    m := regexp_match(path, '^/people/([^/]{1,80})/([0-9]{5,20})/?$');
+    if m is not null then
+      return jsonb_build_object('platform', 'facebook', 'handle', m[2],
+        'url', 'https://www.facebook.com/profile.php?id=' || m[2]);
+    end if;
+    m := regexp_match(path, '^/([A-Za-z0-9.]{2,60})/?$');
+    if m is null then return null; end if;
+    h := m[1];
+    if lower(h) in ('pages', 'groups', 'watch', 'events', 'marketplace', 'people',
+                    'share', 'sharer', 'reel', 'reels', 'stories', 'hashtag', 'login',
+                    'help', 'photo.php', 'story.php', 'permalink.php') then
+      return null;
+    end if;
+    return jsonb_build_object('platform', 'facebook', 'handle', h,
+      'url', 'https://www.facebook.com/' || h);
+
+  elsif bare in ('xiaohongshu.com', 'rednote.com') then
+    m := regexp_match(path, '^/user/profile/([0-9a-zA-Z]{8,40})/?$');
+    if m is null then return null; end if;
+    return jsonb_build_object('platform', 'xhs', 'handle', m[1],
+      'url', 'https://' || host || '/user/profile/' || m[1]);
+
+  elsif bare in ('xhslink.com', 'xhslink.cn') then
+    m := regexp_match(path, '^/([A-Za-z0-9/_-]{2,60})$');
+    if m is null then return null; end if;
+    return jsonb_build_object('platform', 'xhs', 'handle', null,
+      'url', 'https://' || host || '/' || m[1]);
+  end if;
+  return null;
+end $$;
+grant execute on function public.profile_of(text) to anon, authenticated;
+
+/* What a set of links was and what it became, one row a change, the
+   creator's and the team's alike. Read by the team; written only by the
+   functions below, which is why the table carries a select policy and
+   nothing else. Removing a creator removes their history with them. */
+create table if not exists public.creator_profile_changes (
+  id          uuid primary key default gen_random_uuid(),
+  creator_id  uuid not null references public.creators(id) on delete cascade,
+  source      text not null check (source in ('creator', 'team')),
+  actor       text,
+  before      jsonb not null default '[]'::jsonb,
+  after       jsonb not null default '[]'::jsonb,
+  restored_from uuid references public.creator_profile_changes(id) on delete set null,
+  created_at  timestamptz not null default now()
+);
+create index if not exists creator_profile_changes_creator_idx
+  on public.creator_profile_changes(creator_id, created_at desc);
+alter table public.creator_profile_changes enable row level security;
+drop policy if exists creator_profile_changes_read on public.creator_profile_changes;
+create policy creator_profile_changes_read on public.creator_profile_changes
+  for select to authenticated using (public.allowed('campaigns.creators', 'view'));
+
+/* The change in words, every link in full, so a link typed by mistake can
+   be read back off the activity record: one line a platform, "was → is"
+   where one link replaced another, otherwise what went and what came. */
+create or replace function public.profiles_diff(p_before jsonb, p_after jsonb)
+returns text
+language plpgsql immutable set search_path = public as $$
+declare
+  word  constant jsonb := '{"xhs": "rednote", "instagram": "Instagram", "tiktok": "TikTok", "facebook": "Facebook"}';
+  gone  jsonb;
+  came  jsonb;
+  g     jsonb;
+  c     jsonb;
+  x     jsonb;
+  pl    text;
+  parts text[] := '{}';
+begin
+  select coalesce(jsonb_agg(b), '[]'::jsonb) into gone
+    from jsonb_array_elements(coalesce(p_before, '[]'::jsonb)) b
+   where not exists (select 1 from jsonb_array_elements(coalesce(p_after, '[]'::jsonb)) a
+                      where a ->> 'url' = b ->> 'url');
+  select coalesce(jsonb_agg(a), '[]'::jsonb) into came
+    from jsonb_array_elements(coalesce(p_after, '[]'::jsonb)) a
+   where not exists (select 1 from jsonb_array_elements(coalesce(p_before, '[]'::jsonb)) b
+                      where b ->> 'url' = a ->> 'url');
+  for pl in select distinct y ->> 'platform' from jsonb_array_elements(gone || came) y order by 1 loop
+    select coalesce(jsonb_agg(y), '[]'::jsonb) into g from jsonb_array_elements(gone) y where y ->> 'platform' = pl;
+    select coalesce(jsonb_agg(y), '[]'::jsonb) into c from jsonb_array_elements(came) y where y ->> 'platform' = pl;
+    if jsonb_array_length(g) = 1 and jsonb_array_length(c) = 1 then
+      parts := parts || (coalesce(word ->> pl, pl) || ': ' || (g -> 0 ->> 'url') || ' → ' || (c -> 0 ->> 'url'));
+    else
+      for x in select * from jsonb_array_elements(g) loop
+        parts := parts || (coalesce(word ->> pl, pl) || ' removed: ' || (x ->> 'url'));
+      end loop;
+      for x in select * from jsonb_array_elements(c) loop
+        parts := parts || (coalesce(word ->> pl, pl) || ' added: ' || (x ->> 'url'));
+      end loop;
+    end if;
+  end loop;
+  return array_to_string(parts, ' · ');
+end $$;
+grant execute on function public.profiles_diff(jsonb, jsonb) to authenticated;
+
+/* The one write. Every link is read by `profile_of`, a link twice in the
+   payload is one link, and a profile another creator holds is refused
+   without naming them. The same set again changes nothing and files
+   nothing, so a Save pressed twice is one change. Not granted to anybody:
+   it takes a creator's id on trust, so only the three functions below,
+   which have each checked who is asking, may call it. */
+create or replace function public.profiles_replace(
+  p_creator uuid, p_profiles jsonb, p_actor text, p_source text, p_action text)
+returns jsonb
+language plpgsql set search_path = public as $$
+declare
+  cr        public.creators;
+  item      jsonb;
+  v_raw     text;
+  parsed    jsonb;
+  wanted    jsonb := '[]'::jsonb;
+  seen      text[] := '{}';
+  k         text;
+  v_before  jsonb;
+  v_after   jsonb;
+  v_said    text;
+  v_change  uuid;
+begin
+  select * into cr from public.creators where id = p_creator;
+  if cr.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if p_profiles is null or jsonb_typeof(p_profiles) <> 'array' then
+    return jsonb_build_object('error', 'bad-payload');
+  end if;
+  if jsonb_array_length(p_profiles) > 8 then return jsonb_build_object('error', 'too-many'); end if;
+
+  for item in select * from jsonb_array_elements(p_profiles) loop
+    v_raw := case jsonb_typeof(item) when 'string' then item #>> '{}' else item ->> 'url' end;
+    if btrim(coalesce(v_raw, '')) = '' then continue; end if;
+    parsed := public.profile_of(v_raw);
+    if parsed is null then return jsonb_build_object('error', 'unrecognised', 'url', v_raw); end if;
+    k := (parsed ->> 'platform') || ':' || lower(coalesce(parsed ->> 'handle', parsed ->> 'url'));
+    if k = any(seen) then continue; end if;
+    seen := seen || k;
+    if parsed ->> 'handle' is not null and exists (
+      select 1 from public.creator_profiles p
+       where p.platform = parsed ->> 'platform'
+         and lower(p.handle) = lower(parsed ->> 'handle')
+         and p.creator_id <> p_creator) then
+      return jsonb_build_object('error', 'taken', 'url', parsed ->> 'url');
+    end if;
+    wanted := wanted || jsonb_build_array(parsed);
+  end loop;
+
+  if p_source = 'creator' and jsonb_array_length(wanted) = 0 then
+    return jsonb_build_object('error', 'none');
+  end if;
+
+  select coalesce(jsonb_agg(jsonb_build_object('platform', p.platform, 'handle', p.handle, 'url', p.url)
+           order by p.platform, p.url), '[]'::jsonb)
+    into v_before from public.creator_profiles p where p.creator_id = p_creator;
+  select coalesce(jsonb_agg(x order by x ->> 'platform', x ->> 'url'), '[]'::jsonb)
+    into v_after from jsonb_array_elements(wanted) x;
+  if v_before = v_after then
+    return jsonb_build_object('ok', true, 'changed', false, 'profiles', v_after);
+  end if;
+
+  begin
+    delete from public.creator_profiles where creator_id = p_creator;
+    insert into public.creator_profiles (creator_id, platform, url, handle)
+      select p_creator, x ->> 'platform', x ->> 'url', x ->> 'handle'
+        from jsonb_array_elements(v_after) x;
+  exception when unique_violation then
+    /* Two creators claiming one profile at the same moment: the index is the
+       last word, and the delete above is rolled back with the insert. */
+    return jsonb_build_object('error', 'taken');
+  end;
+
+  insert into public.creator_profile_changes (creator_id, source, actor, before, after)
+  values (p_creator, p_source, p_actor, v_before, v_after)
+  returning id into v_change;
+  update public.creators c set updated_at = now() where c.id = p_creator;
+
+  v_said := public.profiles_diff(v_before, v_after);
+  insert into public.activity_log (actor, action, subject, detail)
+  values (p_actor, p_action, cr.name, v_said);
+
+  return jsonb_build_object('ok', true, 'changed', true, 'change', v_change, 'profiles', v_after);
+end $$;
+revoke execute on function public.profiles_replace(uuid, jsonb, text, text, text) from public, anon, authenticated;
+
+/* The creator's own save, from the portal. The code is the key, as it is for
+   every other creator write, and the name on the record is theirs. */
+create or replace function public.creator_set_profiles(p_code text, p_profiles jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  cr public.creators;
+begin
+  select * into cr from public.creators
+   where access_code = upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g'))
+     and active;
+  if cr.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  return public.profiles_replace(cr.id, p_profiles, cr.name, 'creator', 'creator.links_self');
+end $$;
+grant execute on function public.creator_set_profiles(text, jsonb) to anon, authenticated;
+
+/* The team's save, from the Creators List, through the same reader and the
+   same history, so the two sides cannot disagree about what a link is. */
+create or replace function public.creator_save_profiles(p_creator uuid, p_profiles jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members;
+begin
+  if not public.allowed('campaigns.creators', 'work') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into me from public.ops_me();
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  return public.profiles_replace(p_creator, p_profiles, me.name, 'team', 'creator.links');
+end $$;
+grant execute on function public.creator_save_profiles(uuid, jsonb) to authenticated;
+
+/* Putting back the links a change replaced. It is itself a change, filed as
+   one, so restoring the wrong one is undone the same way. */
+create or replace function public.creator_restore_profiles(p_change uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me  public.team_members;
+  ch  public.creator_profile_changes;
+  res jsonb;
+begin
+  if not public.allowed('campaigns.creators', 'work') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into me from public.ops_me();
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  select * into ch from public.creator_profile_changes x where x.id = p_change;
+  if ch.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  res := public.profiles_replace(ch.creator_id, ch.before, me.name, 'team', 'creator.links_restored');
+  if (res ->> 'change') is not null then
+    update public.creator_profile_changes x set restored_from = ch.id where x.id = (res ->> 'change')::uuid;
+  end if;
+  return res;
+end $$;
+grant execute on function public.creator_restore_profiles(uuid) to authenticated;
+
+-- END OF A CREATOR'S OWN PROFILE LINKS --------------------------------------
+
+-- ===========================================================================
+-- MY PERFORMANCE BEHIND AN EMAIL CODE — a second lock a member may put on
+-- their own reviews.
+-- 2026-09-24. Safe to run twice. Run after 2026-09-24-performance-reviews.sql.
+-- Rollback at the foot. Mirrored byte for byte in supabase/schema.sql under
+-- the same banner; tests/perf.js compares the two.
+--
+-- WHAT THIS IS. Asked for by the user on 2026-09-24 ("a second guard layer
+-- ... OTP / link to view the performance section"), with their decisions:
+-- each person switches it on for themselves, and it is a 6-digit code sent
+-- to their email. While it is on, the member's own functions answer
+-- `code-needed` unless the session was verified by an email code in the
+-- last 15 minutes. The proof is the session's own `amr` claim, which the
+-- auth server writes when a code is verified (`verifyOtp`), so nothing the
+-- browser sends can fake it. Turning the lock off needs a fresh code too,
+-- so an unattended open laptop cannot switch it off.
+--
+-- The email is Supabase's own sign-in email, so its template must print the
+-- code: Authentication, Emails, Magic Link, add {{ .Token }}. See
+-- docs/PERFORMANCE-SETUP.md.
+--
+-- ROLLBACK
+--   drop function if exists public.perf_guard_set(boolean), public.perf_guard_info(),
+--     public.perf_guarded(uuid), public.perf_code_fresh();
+--   alter table public.perf_people drop column if exists email_code;
+--   and re-run perf_mine, perf_dispute and perf_acknowledge from
+--   2026-09-24-performance-reviews.sql.
+-- ===========================================================================
+
+alter table public.perf_people add column if not exists email_code boolean not null default false;
+
+/* The session was verified by an email code (or an email link, which the
+   auth server records the same way) in the last 15 minutes. Read from the
+   signed token, never from anything the page passes in. */
+create or replace function public.perf_code_fresh()
+returns boolean
+language sql stable set search_path = public as $$
+  select coalesce((
+    select bool_or(a ->> 'method' in ('otp', 'magiclink')
+                   and (a ->> 'timestamp') ~ '^[0-9]+$'
+                   and (a ->> 'timestamp')::bigint >= extract(epoch from now())::bigint - 900)
+      from jsonb_array_elements(case when jsonb_typeof(auth.jwt() -> 'amr') = 'array'
+                                     then auth.jwt() -> 'amr' else '[]'::jsonb end) a), false)
+$$;
+
+/* Whether a member has put the lock on their own reviews. */
+create or replace function public.perf_guarded(p_member uuid)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce((select email_code from public.perf_people where team_member_id = p_member), false)
+$$;
+
+/* What the page needs to draw the lock: on or off, fresh or not, and the
+   address the code goes to. */
+create or replace function public.perf_guard_info()
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  return jsonb_build_object('on', public.perf_guarded(m.id), 'fresh', public.perf_code_fresh(),
+                            'email', m.email);
+end $$;
+
+/* The member's own switch. On at any time; off only with a fresh code. */
+create or replace function public.perf_guard_set(p_on boolean)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not coalesce(p_on, false) and public.perf_guarded(m.id) and not public.perf_code_fresh() then
+    return jsonb_build_object('error', 'code-needed');
+  end if;
+  insert into public.perf_people (team_member_id, email_code, updated_at)
+  values (m.id, coalesce(p_on, false), now())
+  on conflict (team_member_id) do update set email_code = excluded.email_code, updated_at = now();
+  perform public.perf_log(null, m.id, 'email-code', jsonb_build_object('on', coalesce(p_on, false)));
+  return jsonb_build_object('ok', true, 'on', coalesce(p_on, false));
+end $$;
+
+/* The member's own functions, each refusing while the lock is on and the
+   code is not fresh. Otherwise identical to 2026-09-24-performance-reviews. */
+create or replace function public.perf_mine()
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if public.perf_guarded(m.id) and not public.perf_code_fresh() then
+    return jsonb_build_object('error', 'code-needed');
+  end if;
+  return jsonb_build_object('reviews', coalesce((
+    select jsonb_agg(public.perf_json(r, false) order by r.period desc)
+      from public.perf_reviews r
+     where r.team_member_id = m.id and r.status <> 'draft'), '[]'::jsonb));
+end $$;
+
+create or replace function public.perf_dispute(p_review uuid, p_items jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; r public.perf_reviews; it jsonb; n integer := 0; itm text; bid uuid;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if public.perf_guarded(m.id) and not public.perf_code_fresh() then
+    return jsonb_build_object('error', 'code-needed');
+  end if;
+  select * into r from public.perf_reviews where id = p_review for update;
+  if r.id is null or r.team_member_id <> m.id or r.status = 'draft' then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if r.status <> 'released' or exists (select 1 from public.perf_disputes d
+                                        where d.review_id = r.id and d.version = r.version) then
+    return jsonb_build_object('error', 'dispute-closed');
+  end if;
+  if r.dispute_until <= now() then return jsonb_build_object('error', 'window-closed'); end if;
+  if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then
+    return jsonb_build_object('error', 'nothing-disputed');
+  end if;
+  for it in select * from jsonb_array_elements(p_items) loop
+    itm := it ->> 'item';
+    if itm is null or itm not in ('output', 'accuracy', 'delivery', 'client', 'comms', 'initiative', 'breach') then
+      return jsonb_build_object('error', 'bad-item');
+    end if;
+    if coalesce(btrim(it ->> 'reason'), '') = '' then return jsonb_build_object('error', 'reason-needed', 'item', itm); end if;
+    bid := null;
+    if itm = 'breach' then
+      begin bid := (it ->> 'breach_id')::uuid; exception when others then bid := null; end;
+      if bid is null or not exists (select 1 from public.perf_breaches b
+                                     where b.id = bid and b.team_member_id = m.id
+                                       and b.period = r.period and b.voided_at is null) then
+        return jsonb_build_object('error', 'bad-item');
+      end if;
+    end if;
+    insert into public.perf_disputes (review_id, version, item, breach_id, reason)
+    values (r.id, r.version, itm, bid, btrim(it ->> 'reason'));
+    n := n + 1;
+  end loop;
+  update public.perf_reviews set status = 'disputed', rev = rev + 1, updated_at = now()
+   where id = r.id returning * into r;
+  perform public.perf_log(r.id, r.team_member_id, 'disputed', jsonb_build_object('items', n));
+  perform public.perf_notify(r.reviewer_id, 'perf.disputed',
+    m.name || ' disputed ' || public.perf_month_word(r.period) || '.',
+    'perf.disputed.' || r.id || '.' || r.version);
+  return public.perf_json(r, false);
+end $$;
+
+create or replace function public.perf_acknowledge(p_review uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; r public.perf_reviews;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if public.perf_guarded(m.id) and not public.perf_code_fresh() then
+    return jsonb_build_object('error', 'code-needed');
+  end if;
+  select * into r from public.perf_reviews where id = p_review for update;
+  if r.id is null or r.team_member_id <> m.id or r.status = 'draft' then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if r.status = 'acknowledged' or r.status = 'final' then return public.perf_json(r, false); end if;
+  if r.status = 'disputed' then return jsonb_build_object('error', 'open-dispute'); end if;
+  update public.perf_reviews set status = 'acknowledged', acknowledged_at = now(),
+         dispute_until = least(dispute_until, now()), rev = rev + 1, updated_at = now()
+   where id = r.id returning * into r;
+  perform public.perf_log(r.id, r.team_member_id, 'acknowledged', '{}'::jsonb);
+  return public.perf_json(r, false);
+end $$;
+
+revoke all on function public.perf_code_fresh() from public, anon, authenticated;
+revoke all on function public.perf_guarded(uuid) from public, anon, authenticated;
+revoke all on function public.perf_guard_info() from public, anon, authenticated;
+revoke all on function public.perf_guard_set(boolean) from public, anon, authenticated;
+revoke all on function public.perf_mine() from public, anon, authenticated;
+revoke all on function public.perf_dispute(uuid, jsonb) from public, anon, authenticated;
+revoke all on function public.perf_acknowledge(uuid) from public, anon, authenticated;
+grant execute on function public.perf_guard_info() to authenticated;
+grant execute on function public.perf_guard_set(boolean) to authenticated;
+grant execute on function public.perf_mine() to authenticated;
+grant execute on function public.perf_dispute(uuid, jsonb) to authenticated;
+grant execute on function public.perf_acknowledge(uuid) to authenticated;
+
+-- END OF MY PERFORMANCE BEHIND AN EMAIL CODE ---------------------------------
