@@ -43,21 +43,32 @@ function json(body: unknown, status: number, origin: string | null) {
   });
 }
 
-/* A token for the shared account. No secrets is "not set up"; secrets that
-   Google refuses (a revoked or expired grant) is a refusal, so the two are
-   told apart on the page. */
-async function googleToken(): Promise<{ token?: string; error?: string }> {
-  const id = Deno.env.get('GOOGLE_CLIENT_ID'), secret = Deno.env.get('GOOGLE_CLIENT_SECRET');
-  const refresh = Deno.env.get('GOOGLE_REFRESH_TOKEN');
-  if (!id || !secret || !refresh) return { error: 'meet-not-set-up' };
+/* A token for the shared account. The page is told which secret is missing
+   by name, and what Google said when it refused, so a setup fault is fixed
+   from the message rather than guessed at. Values are trimmed: a secret
+   pasted with a trailing space or line break is otherwise refused by Google
+   as a different secret. */
+const SECRETS = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'GOOGLE_REFRESH_TOKEN'];
+function secret(name: string): string { return (Deno.env.get(name) ?? '').trim(); }
+async function googleToken(): Promise<{ token?: string; error?: string; missing?: string[]; reason?: string }> {
+  const missing = SECRETS.filter((k) => !secret(k));
+  if (missing.length) return { error: 'meet-not-set-up', missing };
   const r = await fetch('https://oauth2.googleapis.com/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ client_id: id, client_secret: secret, refresh_token: refresh, grant_type: 'refresh_token' })
+    body: new URLSearchParams({ client_id: secret('GOOGLE_CLIENT_ID'), client_secret: secret('GOOGLE_CLIENT_SECRET'),
+      refresh_token: secret('GOOGLE_REFRESH_TOKEN'), grant_type: 'refresh_token' })
   });
-  if (!r.ok) return { error: 'google-refused' };
-  const d = await r.json();
-  return d.access_token ? { token: d.access_token } : { error: 'google-refused' };
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok || !d.access_token) return { error: 'google-token', reason: String(d.error || r.status) };
+  return { token: d.access_token };
+}
+/* What the Calendar API said, in one word the page can name. */
+async function why(r: Response): Promise<string> {
+  const d = await r.json().catch(() => ({}));
+  const e = d && d.error;
+  const first = e && Array.isArray(e.errors) && e.errors[0];
+  return String((first && first.reason) || (e && e.status) || r.status);
 }
 
 Deno.serve(async (req) => {
@@ -85,14 +96,14 @@ Deno.serve(async (req) => {
   if (!m || m.error) return json({ error: (m && m.error) || 'denied' }, 200, origin);
 
   const tok = await googleToken();
-  if (!tok.token) return json({ error: tok.error }, 200, origin);
+  if (!tok.token) return json({ error: tok.error, missing: tok.missing, reason: tok.reason }, 200, origin);
   const g = { Authorization: `Bearer ${tok.token}`, 'Content-Type': 'application/json' };
 
   const eventId = m.meeting_event_id ? String(m.meeting_event_id) : '';
   if (action === 'delete') {
     if (eventId) {
       const r = await fetch(`${CAL}/${encodeURIComponent(eventId)}`, { method: 'DELETE', headers: g });
-      if (!r.ok && r.status !== 404 && r.status !== 410) return json({ error: 'google-refused', status: r.status }, 200, origin);
+      if (!r.ok && r.status !== 404 && r.status !== 410) return json({ error: 'google-refused', reason: await why(r) }, 200, origin);
     }
     await db.rpc('ops_engagement_set_meet', { p_engagement: eid, p_link: null, p_event: null });
     return json({ deleted: true }, 200, origin);
@@ -108,7 +119,7 @@ Deno.serve(async (req) => {
   const list = await fetch(`${CAL}?` + new URLSearchParams({
     timeMin: start.toISOString(), timeMax: end.toISOString(), singleEvents: 'true', maxResults: '10'
   }), { headers: g });
-  if (!list.ok) return json({ error: 'google-refused', status: list.status }, 200, origin);
+  if (!list.ok) return json({ error: 'google-refused', reason: await why(list) }, 200, origin);
   const clash = ((await list.json()).items || []).find((x: Record<string, unknown>) =>
     x.id !== eventId && x.status !== 'cancelled' && x.transparency !== 'transparent');
   if (clash) {
@@ -133,7 +144,7 @@ Deno.serve(async (req) => {
       conferenceSolutionKey: { type: 'hangoutsMeet' } } };
     r = await fetch(`${CAL}?conferenceDataVersion=1`, { method: 'POST', headers: g, body: JSON.stringify(event) });
   }
-  if (!r.ok) return json({ error: 'google-refused', status: r.status }, 200, origin);
+  if (!r.ok) return json({ error: 'google-refused', reason: await why(r) }, 200, origin);
   const made = await r.json();
   const link = made.hangoutLink || m.meeting_link || null;
   const saved = await db.rpc('ops_engagement_set_meet', { p_engagement: eid, p_link: link, p_event: made.id });
