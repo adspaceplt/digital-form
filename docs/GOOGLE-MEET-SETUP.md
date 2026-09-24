@@ -30,8 +30,16 @@ Safe to run twice.
 3. **OAuth consent screen**: User type External, app name `ADspace Digital
    Portal`, support email adspacestudios@gmail.com. Add the scope
    `https://www.googleapis.com/auth/calendar.events`. Add
-   adspacestudios@gmail.com as a test user, then **Publish app** (a token
-   for an app left in Testing expires after 7 days).
+   adspacestudios@gmail.com as a test user, then **Publish app** so the
+   status reads **In production** (a token for an app left in Testing
+   expires after 7 days).
+   **Do not submit the app for verification.** Verification is for apps that
+   strangers sign in to; this one is signed in to once, by the shared account
+   itself. An unverified app in production works for up to 100 users, and
+   the only cost is a warning screen at the one sign-in in step 3 below. If a
+   verification request was already submitted, leave it; it does not block
+   anything. Google's findings about the home page (behind a login, purpose
+   not explained) only apply to verification.
 4. **Credentials → the OAuth client** (type Web application). Under
    Authorised redirect URIs add `https://developers.google.com/oauthplayground`.
    Copy the **Client secret**.
@@ -42,7 +50,10 @@ Safe to run twice.
 2. Gear icon (top right) → tick **Use your own OAuth credentials** → paste the
    Client ID and Client secret.
 3. Step 1: type `https://www.googleapis.com/auth/calendar.events` in the box →
-   **Authorize APIs** → sign in as **adspacestudios@gmail.com** → Allow.
+   **Authorize APIs** → sign in as **adspacestudios@gmail.com**. Google shows
+   "Google hasn't verified this app": press **Advanced** → **Go to ADspace
+   Digital Portal (unsafe)** → tick the calendar permission → **Continue**.
+   This is expected for an unverified app and is the only time it appears.
 4. Step 2: **Exchange authorization code for tokens** → copy the
    **Refresh token**.
 
