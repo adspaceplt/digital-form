@@ -420,6 +420,7 @@
             /* Standing a creator down was named by the error you got when a
                delete was refused and existed nowhere on the page. */
             menuItem('state', off ? 'Set active' : 'Set inactive') +
+            menuItem('links', 'Link history') +
             menuItem('del', 'Remove', 'is-danger', 'campaigns:manage') +
           '</div>' +
         '</span>';
@@ -428,6 +429,7 @@
         creatorOpener = this; openCreator(c);
       });
       row.querySelector('[data-a="del"]').addEventListener('click', function () { removeCreator(c); });
+      row.querySelector('[data-a="links"]').addEventListener('click', function () { shutMenus(); openLinkHistory(c, this); });
       row.querySelector('[data-a="state"]').addEventListener('click', function () {
         shutMenus();
         db.from('creators').update({ active: off }).eq('id', c.id).then(function (r) {
@@ -444,6 +446,80 @@
       return row;
     }
   }
+
+  /* ---- Link history ------------------------------------------------------
+     A creator changes their own links from the creator portal with no
+     approval round (decided with the user on 2026-09-24), so the safeguard is
+     that every change is kept with the set it replaced and can be put back
+     here. Read from `creator_profile_changes`; Restore is
+     `creator_restore_profiles`, which files the restore as a change too. */
+  var histFor = null;
+  function histWord(list) {
+    return (list || []).map(function (p) { return (PLATFORM_LABEL[p.platform] || p.platform) + ' ' + p.url; });
+  }
+  function histDiff(before, after) {
+    var urls = function (l) { return (l || []).map(function (p) { return p.url; }); };
+    var b = urls(before), a = urls(after), out = [];
+    (after || []).forEach(function (p) { if (b.indexOf(p.url) < 0) out.push({ tone: 'is-ok', word: 'Added', p: p }); });
+    (before || []).forEach(function (p) { if (a.indexOf(p.url) < 0) out.push({ tone: 'is-danger', word: 'Removed', p: p }); });
+    return out;
+  }
+  function paintLinkHistory() {
+    var c = histFor, box = $('linkHistList');
+    UI.skeleton(box, 3);
+    db.from('creator_profile_changes').select('*').eq('creator_id', c.id)
+      .order('created_at', { ascending: false }).limit(30).then(function (r) {
+        if (r.error) { UI.failLine(box, 'Link history', r.error.message, paintLinkHistory); return; }
+        var rows = r.data || [];
+        if (!rows.length) { UI.emptyLine(box, 'No changes.'); return; }
+        box.innerHTML = rows.map(function (h, i) {
+          var d = histDiff(h.before, h.after);
+          return '<div class="lhist-row">' +
+            '<div class="lhist-head"><span class="lhist-when">' + esc(niceStamp(h.created_at)) + '</span>' +
+              '<span class="lhist-who">' + esc(h.actor || '') + (h.source === 'creator' ? ' <span class="tone">Creator</span>' : '') + '</span>' +
+              '<button class="btn btn-sm" type="button" data-restore="' + esc(h.id) + '">Restore</button></div>' +
+            '<ul class="lhist-diff">' + d.map(function (x) {
+              return '<li><span class="tone ' + x.tone + '">' + x.word + '</span> ' +
+                esc(PLATFORM_LABEL[x.p.platform] || x.p.platform) + ' <a href="' + esc(x.p.url) + '" target="_blank" rel="noopener">' + esc(x.p.url) + '</a></li>';
+            }).join('') + '</ul>' +
+          '</div>';
+        }).join('');
+        Array.prototype.forEach.call(box.querySelectorAll('[data-restore]'), function (btn) {
+          btn.setAttribute('aria-label', 'Restore the links from before this change');
+          btn.addEventListener('click', function () {
+            btn.disabled = true;
+            db.rpc('creator_restore_profiles', { p_change: btn.getAttribute('data-restore') }).then(function (res) {
+              var dd = (res && res.data) || {};
+              if (res.error || dd.error) {
+                btn.disabled = false;
+                msg('linkHistMsg', res.error ? res.error.message
+                  : dd.error === 'taken' ? 'Not restored. That profile now belongs to another creator.'
+                  : 'Not restored. The database refused the request.', 'err');
+                return;
+              }
+              msg('linkHistMsg', dd.changed === false ? 'No change.' : 'Restored.', 'ok');
+              paintLinkHistory();
+              loadRoster();
+            });
+          });
+        });
+      });
+  }
+  function niceStamp(ts) {
+    var x = new Date(ts);
+    if (isNaN(x)) return '';
+    var mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'][x.getMonth()];
+    var h = x.getHours(), m = x.getMinutes();
+    return x.getDate() + ' ' + mon + ' ' + x.getFullYear() + ', ' + ((h % 12) || 12) + ':' + (m < 10 ? '0' : '') + m + (h < 12 ? 'am' : 'pm');
+  }
+  function openLinkHistory(c, opener) {
+    histFor = c;
+    $('linkHistTitle').textContent = 'Link history · ' + c.name;
+    msg('linkHistMsg', '');
+    window.ADspaceSheet.show($('linkHistSheet'), { opener: opener });
+    paintLinkHistory();
+  }
+  $('linkHistClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
 
   /* A creators list ⋯ hangs off a table row, so it is placed on the viewport
      rather than inside the row that would clip it. */
@@ -753,7 +829,6 @@
       msg('creatorMsg', 'Unrecognised profile links: ' + bad.join(', '), 'err');
       return;
     }
-    var profiles = profValues(ROSTER_CTX);
 
     var body = {
       name: name,
@@ -762,26 +837,29 @@
       created_by: who() || null
     };
 
+    /* The links go through the same function the creator's own page uses
+       (`creator_save_profiles`): one reader decides what a link is, a
+       profile another creator holds is refused, and every change is filed
+       with the set before it, which is what Link history restores. */
+    var ed = state.editing;
+    var fieldsMoved = !ed || ed.name !== body.name || (ed.client_rate == null ? null : Number(ed.client_rate)) !== body.client_rate ||
+      (ed.notes || null) !== body.notes;
     var done = function (id, created) {
-      // Replace the whole set rather than diffing: a handful of rows, and it
-      // cannot drift out of step with what the form shows.
-      db.from('creator_profiles').delete().eq('creator_id', id).then(function () {
-        var rows = profiles.map(function (p) {
-          return { creator_id: id, platform: p.platform, url: p.url, handle: p.handle };
-        });
-        var after = function (res) {
-          if (res && res.error) {
-            msg('creatorMsg', /duplicate|unique/i.test(res.error.message)
-              ? 'A profile link is already assigned to another creator.'
-              : res.error.message, 'err');
-            return;
-          }
-          log(created ? 'creator.added' : 'creator.updated', name, '');
-          shutCreatorSheet();
-          loadRoster();
-        };
-        if (!rows.length) after(null);
-        else db.from('creator_profiles').insert(rows).then(after);
+      db.rpc('creator_save_profiles', { p_creator: id, p_profiles: raw }).then(function (res) {
+        var d = (res && res.data) || {};
+        if (res.error || d.error) {
+          var why = res.error ? res.error.message
+            : d.error === 'taken' ? 'This profile belongs to another creator: ' + (d.url || '')
+            : d.error === 'unrecognised' ? 'Not a profile link: ' + (d.url || '')
+            : d.error === 'denied' ? 'Not saved. Links need Creators List: Work.'
+            : 'Not saved. The database refused the request.';
+          msg('creatorMsg', why, 'err');
+          return;
+        }
+        if (created) log('creator.added', name, '');
+        else if (fieldsMoved) log('creator.updated', name, '');
+        shutCreatorSheet();
+        loadRoster();
       });
     };
 
@@ -2460,13 +2538,14 @@
       /* readProfile is what already turns a URL into a platform and an identity
          everywhere else, so a link typed here is read the same way and a URL
          that is not a profile we recognise is simply not recorded. */
-      var rows = (links || []).map(function (x) { return readProfile(x.url); })
-        .filter(Boolean)
-        .map(function (pr) {
-          return { creator_id: c.id, platform: pr.platform, url: pr.url, handle: pr.handle };
-        });
+      /* Through `creator_save_profiles`, with the links the creator already
+         holds, so the addition is one filed change the history can undo. */
+      var added = (links || []).map(function (x) { return x.url; }).filter(function (u) { return readProfile(u); });
       var after = function () { loadOptions(); loadRoster(paintPicker); };
-      if (rows.length) db.from('creator_profiles').insert(rows).then(after, after);
+      if (added.length) {
+        var held = (c.creator_profiles || []).map(function (p) { return p.url; });
+        db.rpc('creator_save_profiles', { p_creator: c.id, p_profiles: held.concat(added) }).then(after, after);
+      }
       else { loadOptions(); setTimeout(paintPicker, 150); }
     });
   }
@@ -2505,7 +2584,6 @@
       .map(function (i) { return i.value.trim(); }).filter(Boolean);
     var bad = raw.filter(function (u) { return !readProfile(u); });
     if (bad.length) { msg('ncMsg', 'Unrecognised profile links: ' + bad.join(', '), 'err'); return; }
-    var profiles = profValues(NC_CTX);
     var plats = readBoxes($('ncPlatforms'));
     if (!plats.length) { msg('ncMsg', 'Select at least one platform.', 'err'); return; }
 
@@ -2515,13 +2593,12 @@
       .select().single().then(function (r) {
         if (r.error) { msg('ncMsg', r.error.message, 'err'); return; }
         var created = r.data;
-        var rows = profiles.map(function (p) {
-          return { creator_id: created.id, platform: p.platform, url: p.url, handle: p.handle };
-        });
         var offer = function (res) {
-          if (res && res.error) {
-            msg('ncMsg', /duplicate|unique/i.test(res.error.message)
-              ? 'A profile link is already assigned to another creator.' : res.error.message, 'err');
+          var d = (res && res.data) || {};
+          if (res && (res.error || d.error)) {
+            msg('ncMsg', res.error ? res.error.message
+              : d.error === 'taken' ? 'This profile belongs to another creator: ' + (d.url || '')
+              : 'Not a profile link: ' + (d.url || ''), 'err');
             return;
           }
           log('creator.added', name, 'from a campaign');
@@ -2532,8 +2609,8 @@
             addOption(created, plats, rate);
           });
         };
-        if (!rows.length) offer(null);
-        else db.from('creator_profiles').insert(rows).then(offer);
+        if (!raw.length) offer(null);
+        else db.rpc('creator_save_profiles', { p_creator: created.id, p_profiles: raw }).then(offer);
       });
   });
 

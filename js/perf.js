@@ -979,6 +979,7 @@
     on('pvAck', function (b) {
       busy(b, true);
       call('perf_acknowledge', { p_review: r.id }, function (d) {
+        if (d.error === 'code-needed') { busy(b, false); msg('pvMsg', 'Your email code has expired. Close this and enter a new one.', 'err'); return; }
         if (d.error) { busy(b, false); msg('pvMsg', said(d), 'err'); return; }
         st.rec = d; st.editing = null; paintSheet(); msg('pvMsg', 'Acknowledged.', 'ok'); paintMineRow(d);
       });
@@ -1083,6 +1084,7 @@
         if (!items.length) { msg('pvMsg', said({ error: 'nothing-disputed' }), 'err'); return; }
         if (missing) { msg('pvMsg', 'Say why for every item you dispute.', 'err'); missing.focus(); return; }
         call('perf_dispute', { p_review: r.id, p_items: items }, function (d) {
+          if (d.error === 'code-needed') { msg('pvMsg', 'Your email code has expired. Close this and enter a new one.', 'err'); return; }
           if (d.error) { msg('pvMsg', said(d), 'err'); return; }
           st.rec = d; st.editing = null; paintSheet(); msg('pvMsg', 'Sent. You will be told when it is answered.', 'ok'); paintMineRow(d);
         });
@@ -1097,12 +1099,87 @@
   });
 
   // ---- My performance --------------------------------------------------------------------
+  /* THE EMAIL-CODE LOCK. A member may put a second lock on their own reviews
+     (asked for by the user on 2026-09-24): while it is on, the database
+     answers `code-needed` unless this session was verified by a code emailed
+     to them in the last 15 minutes, and the proof is the signed token's own
+     claim, so nothing here can fake it. Turning it off asks for a code too.
+     Where the migration has not been run the switch is simply not drawn. */
+  var guard = { on: false, email: '', pending: null };
+  function guardInfo(then) {
+    call('perf_guard_info', {}, function (d) {
+      $('mineGuard').hidden = Boolean(d.error);
+      if (!d.error) { guard.on = Boolean(d.on); guard.email = d.email || ''; $('mineGuardOn').checked = guard.on; }
+      then();
+    });
+  }
+  function showMineLock(on, why) {
+    $('mineLock').hidden = !on;
+    if (!on) return;
+    $('mineList').innerHTML = '';
+    $('mineLockLine').textContent = why || ('A 6-digit code goes to ' + guard.email + '.');
+    $('mineCode').hidden = true; $('mineVerify').hidden = true;
+    $('mineSend').hidden = false; $('mineSend').textContent = 'Send code';
+    $('mineSend').className = 'btn btn-primary';
+    msg('mineLockMsg', '');
+  }
+  function sendCode() {
+    var b = $('mineSend');
+    b.disabled = true;
+    db.auth.signInWithOtp({ email: guard.email, options: { shouldCreateUser: false } }).then(function (r) {
+      b.disabled = false;
+      if (r && r.error) { msg('mineLockMsg', 'Not sent. Please try again in a minute.', 'err'); return; }
+      $('mineCode').hidden = false; $('mineVerify').hidden = false;
+      b.textContent = 'Send again'; b.className = 'btn';
+      $('mineCode').value = '';
+      $('mineCode').focus();
+      msg('mineLockMsg', 'Code sent to ' + guard.email + '.', 'ok');
+    }, function () { b.disabled = false; msg('mineLockMsg', 'Not sent. Please try again in a minute.', 'err'); });
+  }
+  function verifyCode() {
+    var code = ($('mineCode').value || '').replace(/\D/g, '');
+    if (code.length !== 6) { msg('mineLockMsg', 'Enter the 6-digit code from the email.', 'err'); $('mineCode').focus(); return; }
+    var b = $('mineVerify');
+    b.disabled = true;
+    db.auth.verifyOtp({ email: guard.email, token: code, type: 'email' }).then(function (r) {
+      b.disabled = false;
+      if (r && r.error) { msg('mineLockMsg', 'That code is wrong or has expired. Send a new one.', 'err'); return; }
+      showMineLock(false);
+      var next = guard.pending; guard.pending = null;
+      if (next) next(); else enterMine();
+    }, function () { b.disabled = false; msg('mineLockMsg', 'Not verified. Please try again.', 'err'); });
+  }
+  function setGuard(on) {
+    call('perf_guard_set', { p_on: on }, function (d) {
+      if (d.error === 'code-needed') {
+        $('mineGuardOn').checked = guard.on;
+        guard.pending = function () { setGuard(on); };
+        showMineLock(true, 'Turning this off needs a code. A 6-digit code goes to ' + guard.email + '.');
+        return;
+      }
+      if (d.error) { $('mineGuardOn').checked = guard.on; msg('mineMsg', said(d), 'err'); return; }
+      guard.on = Boolean(d.on);
+      msg('mineMsg', guard.on ? 'On. Your reviews ask for an email code.' : 'Off.', 'ok');
+      enterMine();
+    });
+  }
+  $('mineSend').addEventListener('click', sendCode);
+  $('mineVerify').addEventListener('click', verifyCode);
+  $('mineCode').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); verifyCode(); }
+  });
+  $('mineGuardOn').addEventListener('change', function () { setGuard($('mineGuardOn').checked); });
+
   function enterMine() {
     if (!st.mine) UI.skeleton($('mineList'), 3);
-    call('perf_mine', {}, function (d) {
-      if (d.error) { UI.failLine($('mineList'), 'Your reviews', said(d), enterMine); return; }
-      st.mine = d.reviews || [];
-      paintMine();
+    guardInfo(function () {
+      call('perf_mine', {}, function (d) {
+        if (d.error === 'code-needed') { st.mine = null; showMineLock(true); return; }
+        showMineLock(false);
+        if (d.error) { UI.failLine($('mineList'), 'Your reviews', said(d), enterMine); return; }
+        st.mine = d.reviews || [];
+        paintMine();
+      });
     });
   }
   function paintMine() {

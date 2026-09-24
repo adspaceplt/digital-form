@@ -1018,6 +1018,10 @@
     'creator.removed':       ['Creator removed', 'is-danger', 'campaigns'],
     'creator.off':           ['Creator inactive', 'is-warn', 'campaigns'],
     'creator.on':            ['Creator active', 'is-ok', 'campaigns'],
+    'creator.links':         ['Links updated', '', 'campaigns'],
+    'creator.links_self':    ['Creator updated links', 'is-warn', 'campaigns'],
+    'creator.links_restored': ['Links restored', 'is-ok', 'campaigns'],
+    'creator.code':          ['Portal link reset', 'is-warn', 'campaigns'],
     /* Written for months and never named here, so each row landed in the
        record with no label and no section: a tag a function writes is
        always one this map names. */
