@@ -1659,13 +1659,25 @@
     showPeriod();
     if (state.view === 'board') loadCapacity();
   }
+  /* The segment answers the press first and the view is drawn a frame
+     later: drawn in the same task, a long list held the choice back until it
+     was finished, so the press read as a lag, and the surface sliding under
+     the new view had nothing to start from. Two presses inside that frame
+     draw once, the view last chosen. */
+  var viewDraw = 0;
   function setView(v) {
     applyView(v);
-    /* The report reads its own figures, so entering it is what asks for
-       them. Kept between views, so Board and back does not go to the
-       database for numbers that have not moved. */
-    if (v === 'report') loadReport(false); else paint();
     if (bridge.setUrl) bridge.setUrl();
+    var mine = ++viewDraw;
+    requestAnimationFrame(function () {
+      setTimeout(function () {
+        if (mine !== viewDraw) return;
+        /* The report reads its own figures, so entering it is what asks for
+           them. Kept between views, so Board and back does not go to the
+           database for numbers that have not moved. */
+        if (state.view === 'report') loadReport(false); else paint();
+      }, 0);
+    });
   }
 
   /* THE ROW IS THE WORKSPACE. A routine change never needs the task opened:
