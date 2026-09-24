@@ -201,9 +201,9 @@ rule, and a theme nobody audits is a theme that quietly fails AA.
 | `--radius` / `--radius-sm` | 14px / 10px | A bounded section (panel, card, table, sheet) / anything a finger operates (button, input, select). `--radius-panel` and `--radius-ctl` are aliases of those two, `--radius-lg` is 18px for a sheet. **Two corners and nothing between them**: a contacts table at 10px sitting between two panels at 14 is the mismatch nobody can name and everybody sees, and a third pair of tokens beside the first two is how that happened |
 | `--head-h` | 64px (56px on a phone) | The chrome bar, on every page. `.topbar-inner` takes `calc(var(--head-h) - 1px)` because `.topbar` carries the hairline outside its box while `.console-head` carries it inside, and without that the two differ by exactly the border |
 | `--ctl-h` | 38px (44px coarse pointer) | Every button, input, select, icon button |
-| `--ctl-h-sm` | 32px (44px coarse) | `.btn-sm`, `.input-sm`, `.select-sm`, every status select |
+| `--ctl-h-sm` | 32px (38px coarse) | `.btn-sm`, `.input-sm`, `.select-sm`, every status select, every segment |
 | `--state-w` | 124px | Every status select, on a head as in a row. My Work's task row states its own 160px stage track, measured against the SOP's longest stage name |
-| `--ctl-text` / `--field-text` | 13px / 14px (16px coarse, stops iOS zoom) | Control label / field text |
+| `--ctl-text` / `--field-text` | 13px / 14px (14px / 15px coarse; iOS focus zoom stopped by `maximum-scale` on iOS alone) | Control label / field text |
 | Button min width | 116px | So a row of buttons does not step |
 | Icon glyph | 15px stroke, 1.8 | Same glyph for the same action everywhere; never mix outline and filled |
 | Icon button box | 38px (44px coarse) | `.iconbtn`, `.kfold`, `.kmenu-btn`, `.btn-icononly`: the glyph stays 16px, the target never shrinks with it |
@@ -800,14 +800,33 @@ question on save, so the list on the sheet is a courtesy and not the gate.
 **A month is a record, and the pieces made in it hang off it.** The
 engagement is one client's work for one month: who manages it, how many
 pieces were planned, where the files live, the content meeting, and the
-thirteen questions that say whether the month is ready. It lives on the
-client record, because that is where the month is planned, and the task
-rail names it because that is where the month is worked. Production waits
-on two facts about it (planning complete, the meeting held or marked not
-applicable), and both are the database's to check: a status a page could
-set is a status a page could set wrongly. The thirteen questions are one
-row each, a state and an owner, and one row repaints on its own answer so a
-person working down the list keeps their place.
+two ticks that say whether the month is ready. It lives on the client
+record, because that is where the month is planned, and the task rail names
+it because that is where the month is worked. Production waits on two facts
+about it (planning complete, the meeting held or marked not applicable), and
+both are the database's to check: a status a page could set is a status a
+page could set wrongly.
+
+**Readiness is what the team ticks, not a form the portal re-asks
+(2026-09-24).** It was thirteen questions, each with a state select and an
+owner select, and the user sent it back: the team's own Onboarding checklist
+and Pre-advertising checklist are where that detail lives, so the month holds
+two ticks and a Not needed for a checklist the month does not use. Who ticked
+it is the database's to record, never a name picked from a list, because a
+picked name is a claim and a stamped one is a fact. **And the month is run
+from wherever somebody is**: the two ticks, the meeting and Mark planning
+complete are drawn in a task's next step while its production waits on the
+month, and a content deliverable made from My Work joins its client's month
+or makes it. Walking to the client record to open work that was planned in
+My Work was a trip the product asked for and the work did not.
+
+**The kind of a new task is chosen first, as a segment.** Add task ended in a
+line explaining that content deliverables have their own form and an outlined
+button leading to it, at the foot of a fold. Both sheets now open on the same
+two-part segment, Task and Content deliverable, the shape the List / Board
+views already have: a choice made before the form is filled belongs above the
+form, and a sentence explaining where a control is means the control is in
+the wrong place.
 
 **A day of work is a list, and a record is one press further.** My Work was a project tracker: every task opened a full record with panes and a rail, so ticking off an invoice took three screens. A task somebody does in ten minutes is a row with a tick; a task that moves through a workflow is the same row with a ring saying how far along it is, because a tick there would skip the gates the workflow exists to hold. The row carries what a day is run on (what, whose, when, where it stands) and nothing the record already states; the drawer carries what a task needs to be worked (its checklist, links, comments, the next action) without leaving the list; the record is for the task that needs its stages, its dates and its history. Adding a task asks three things and lets Enter make the next one, because the test is ten seconds a task. **Statuses are the reader's, stages are the workflow's**: five plain words are read off the stage group, so a content workflow keeps its stages and a person scanning a list reads To do, In progress, Waiting, Review and Done.
 
@@ -1076,17 +1095,23 @@ every save and both server functions send it. The test for a change like this
 is not "does the new case work" but "what reads this value, and what does each
 of them see when it is absent".
 
-**A field a finger uses is never under 16px.** iOS zooms the page the moment
-one takes focus and does not zoom back out, so the reader is left on a page a
-third too wide, hunting for the control they were about to use, and every tap
-after that lands somewhere they did not aim. The token said 16px under a
-coarse pointer and six rules stated their own size past it, which is the
-failure mode of a token: it is only true where nothing later disagrees. The
-answer is never `user-scalable=no` or `maximum-scale=1` — that stops the zoom
-by taking pinch zoom away from everybody, fails WCAG 1.4.4 and contradicts the
-200% pass this portal already runs. Make the field the size a phone reads, and
-measure it: a zoom is a thing the phone does rather than a thing the page
-draws, which is exactly why nobody sees it in a screenshot.
+**A phone gets the portal's own type scale, and the iPhone's focus zoom is
+stopped at its source (2026-09-24).** For four days every field under a finger
+was 16px in a 44px box, to stop iPhone Safari zooming the page when a smaller
+field takes focus. It worked, and the user sent back the result: every select
+and filter on a phone read as huge beside the 13 and 14px text around it, a
+status select outweighed the task name it sat under, and the phone no longer
+looked like the desk it is the same product as. Since iOS 10 Safari ignores
+`maximum-scale` for a pinch but still honours it for the automatic focus zoom,
+so `js/chrome.js` adds `maximum-scale=1` to the viewport **on iOS alone**: the
+zoom on focus stops and the reader's own pinch zoom keeps working, which is
+what WCAG 1.4.4 asks. Android does not zoom on focus and its browsers would
+honour the value for a pinch too, so it never gets it; `user-scalable=no` is
+still never used anywhere. The phone scale is then the desk's a step up: a
+field 15px in 44px, a small control (`.select-sm`, `.input-sm`, `.btn-sm`,
+every segment and status select) 14px, a status select 13.5px, all 38px
+(`--ctl-h-sm`), which is the desk's full control height. `uxaudit`'s `zoom`
+rule measures that floor at 390, so a size written past the scale still fails.
 
 **One record, one way to edit it, and the way is a card over the thing.** A
 creator was edited in a sheet and a colleague in a panel that unfolded at the

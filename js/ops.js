@@ -182,7 +182,7 @@
     'no-such-check': 'Check not found.',
     'meeting-in-past': 'Meeting date must be today or later.',
     'bad-channel': 'Choose where the meeting is held.',
-    'checklist-open': 'All checks must be Ready or N/A.',
+    'checklist-open': 'Tick both checklists, or mark one not needed, first.',
     'workflow-required': 'No workflow set up. Contact an admin.',
     'bad-kind': 'Invalid link type.',
     'url-required': 'A link is required.',
@@ -2021,7 +2021,7 @@
     db.rpc('ops_transition_task',
       { p_task: t.id, p_next: next, p_version: t.version, p_note: null })
       .then(function (r) {
-        if (r.error) { back(); rowNote(el, r.error.message); return; }
+        if (r.error) { back(); rowNote(el, dbWord(r.error.message)); return; }
         var d = r.data;
         /* No draft link on the task: the step asks how it was sent, with
            WhatsApp already written in, rather than refusing the move. */
@@ -2031,7 +2031,11 @@
            tell they made: the row is rebuilt somewhere else in the band order
            and the select they pressed is gone. What happened is named under
            the row it happened on, once the repaint has drawn it. */
-        state.moved = { id: t.id, word: isEveryday(t) ? (PLAIN[plainOfKey(next)] || {}).word || labelOfStage(t, next) : labelOfStage(t, next) };
+        state.moved = { id: t.id, word: isEveryday(t) ? (PLAIN[plainOfKey(next)] || {}).word || labelOfStage(t, next) : labelOfStage(t, next),
+                        /* The page stays where the reader was: the repaint
+                           rebuilds every band, and a phone that had scrolled
+                           to keep the focused select in view jumped with it. */
+                        y: window.scrollY };
         /* The band a row belongs to can change with its stage, so the queue is
            repainted rather than the cell patched. */
         if (after) after(); else load();
@@ -2042,6 +2046,10 @@
     var m = state.moved;
     if (!m) return;
     state.moved = null;
+    if (typeof m.y === 'number') {
+      try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}
+      window.scrollTo(0, m.y);
+    }
     var row = document.querySelector('[data-task="' + m.id + '"]');
     if (row) rowNote(row, 'Moved to ' + m.word + '.', 'ok');
   }
@@ -2357,7 +2365,7 @@
       }).join('') + '</span></span>';
   }
   function shutItemMenus(except) {
-    Array.prototype.forEach.call(document.querySelectorAll('.qitem .kmenu, .tlink-row .kmenu'), function (m) {
+    Array.prototype.forEach.call(document.querySelectorAll('.qitem .kmenu, .tlink-row .kmenu, .eng-ctl .kmenu'), function (m) {
       if (m === except) return;
       m.hidden = true;
       var b = m.parentNode && m.parentNode.querySelector('.kmenu-btn');
@@ -2384,7 +2392,7 @@
     });
   }
   document.addEventListener('click', function (e) {
-    if (e.target.closest && e.target.closest('.qitem .kmenu-wrap, .tlink-row .kmenu-wrap')) return;
+    if (e.target.closest && e.target.closest('.qitem .kmenu-wrap, .tlink-row .kmenu-wrap, .eng-ctl .kmenu-wrap')) return;
     shutItemMenus(null);
   });
 
@@ -2567,6 +2575,7 @@
     b.line.hidden = !n.line;
     b.list.innerHTML = (n.list || []).map(function (w) { return '<li>' + esc(w) + '</li>'; }).join('');
     b.list.hidden = !(n.list || []).length;
+    paintMonth(b, t, n);
     /* The final date is the day the work is owed AT CLIENT REVIEW, so the
        line says which of the two has happened. */
     var over = daysAway(t.current_final_due_at);
@@ -3150,11 +3159,15 @@
          it, so the rail says where it stands. Read after the task, because
          the task is what names it; a refused read leaves no block. */
       var go = function () { loadSession(function () { paintTask(); if (after) after(); }); };
-      if (!t.engagement_id) { state.eng = null; go(); return; }
-      db.from('ops_engagements').select('*').eq('id', t.engagement_id).then(function (q) {
-        state.eng = (q && !q.error && q.data && q.data[0]) || null;
+      if (!t.engagement_id) { state.eng = null; state.engChecks = []; go(); return; }
+      Promise.all([
+        db.from('ops_engagements').select('*').eq('id', t.engagement_id),
+        db.from('ops_engagement_checks').select('*').eq('engagement_id', t.engagement_id)
+      ]).then(function (q) {
+        state.eng = (q[0] && !q[0].error && q[0].data && q[0].data[0]) || null;
+        state.engChecks = (q[1] && !q[1].error && q[1].data) || [];
         go();
-      }, function () { state.eng = null; go(); });
+      }, function () { state.eng = null; state.engChecks = []; go(); });
     }, function (e) {
       msg(msgHere('taskMsg'), (e && e.message) || String(e), 'err');
     });
@@ -3487,18 +3500,22 @@
     if (isWork(tg) && !isWork(g) && g !== 'revision') {
       var pn = productionNeeds(t);
       if (pn.length) {
+        /* The month is run from here: its two ticks, its meeting and
+           Mark planning complete, so nobody leaves the task for the client
+           record to open the work. */
+        var eng = state.eng;
+        var ck = checksOf(eng, state.engChecks);
+        var open = ck.length - checksDone(ck);
         n.blocked = true;
+        n.month = true;
         n.title = 'Not ready to start';
-        var mw = { planning: 'Mark planning complete for ' + monthWord(state.eng.period),
-                   meeting: 'Schedule the content meeting',
-                   'meeting-held': 'Hold the content meeting (' + niceDate(state.eng.meeting_at) + ')' };
-        n.list = pn.length > 1 ? pn.map(function (k) { return mw[k]; }) : [];
-        n.line = pn[0] === 'planning' ? 'Planning incomplete for ' + monthWord(state.eng.period) + '.'
-          : pn[0] === 'meeting' ? 'The work waits on the content meeting.'
-          : 'The work opens once the content meeting on ' + niceDate(state.eng.meeting_at) + ' is held.';
-        if (pn.length > 1) n.line = 'The work waits on the month.';
-        if (work && pn.indexOf('meeting') > -1) n.go = { label: 'Schedule meeting', run: function () { openMeetFor(); } };
-        else n.go = monthLink(t);
+        n.line = open ? 'Tick ' + monthWord(eng.period) + '\u2019s readiness, then hold the content meeting.'
+          : mt === 'none' ? 'Schedule the content meeting.'
+          : mt === 'set' ? 'The work opens once the content meeting on ' + niceDate(eng.meeting_at) + ' is held.'
+          : 'Readiness done and the meeting held.';
+        if (work && !open && (mt === 'held' || mt === 'na') && eng.status === 'planning') {
+          n.go = { label: 'Mark planning complete', run: function () { markMonthReady(t); } };
+        }
         return n;
       }
       n.title = 'Start the work';
@@ -4649,6 +4666,33 @@
     }, function (why) { move('cancelled', why); });
   }
 
+  function markMonthReady(t) {
+    var e = state.eng;
+    if (!e) return;
+    call('ops_engagement_set_status', { p_engagement: e.id, p_status: 'ready', p_version: e.version }, msgHere(),
+      function () { readTask(t.id, function () { msg(msgHere(), monthWord(e.period) + ' is ready.', 'ok'); }); });
+  }
+  /* The month inside a task's next step: the two ticks and the meeting,
+     each acting on the month and repainting the task after. */
+  function paintMonth(b, t, n) {
+    var box = b.box.querySelector('.tnext-month');
+    if (!n.month || !state.eng) { if (box) box.remove(); return; }
+    if (!box) {
+      box = document.createElement('div');
+      box.className = 'tnext-month';
+      b.list.parentNode.insertBefore(box, b.list.nextSibling);
+    }
+    var e = state.eng, can = may('ops', 'work');
+    box.innerHTML = checksHtml(e, checksOf(e, state.engChecks), can) +
+      '<div class="eng-meet"><span class="eng-lab">Content meeting</span>' +
+        '<span class="eng-meetword' + (meetingHeld(e) ? ' is-held' : '') + '">' + esc(meetingWord(e)) + '</span>' +
+        (can ? '<button class="btn btn-sm" data-a="meet" type="button">' + (e.meeting_at || e.meeting_na ? 'Change' : 'Set meeting') + '</button>' : '') +
+      '</div>';
+    wireChecks(box, e, b.msg, function () { readTask(t.id); });
+    var mb = box.querySelector('[data-a="meet"]');
+    if (mb) mb.addEventListener('click', function () { openMeetFor(); });
+  }
+
   /* The content meeting is the month's, so it is set on the month's record;
      from the task it opens the same sheet and repaints the task after. */
   function openMeetFor() {
@@ -4749,10 +4793,18 @@
      whichever control asked for it, and a stale write — the one a page cannot
      see coming — repaints from the row the database handed back rather than
      leaving the screen claiming something that is no longer true. */
+  /* A function the database does not have yet is a migration nobody has
+     run, and PostgREST's words for it name its schema cache. The console says
+     what to do instead. */
+  function dbWord(m) {
+    m = String(m || '');
+    return /Could not find the function|schema cache|PGRST202/i.test(m)
+      ? 'This needs a database update. Ask an admin to run the latest migration.' : m;
+  }
   function call(fn, args, msgId, then, onFail) {
     db.rpc(fn, args).then(function (r) {
       if (r.error) {
-        msg(msgId, r.error.message, 'err');
+        msg(msgId, dbWord(r.error.message), 'err');
         if (onFail) onFail();
         return;
       }
@@ -4887,6 +4939,10 @@
     if (!may('ops', 'work')) return;
     ntTouched = {};
     ntPrefill = (prefill && prefill.client) ? prefill : null;
+    /* Made from a client record the task lands on that record's list, which
+       the quick form does not do, so the choice is offered from My Work. */
+    var nk = $('ntKind');
+    if (nk) nk.hidden = Boolean(ntPrefill);
     var ow = $('ntOwner');
     var me = bridge.me && bridge.me();
     ow.innerHTML = '<option value="">Nobody yet</option>' + state.members.map(function (m) {
@@ -5012,6 +5068,20 @@
     var btn = $('ntGo');
     btn.disabled = true;
     var fromClient = Boolean(ntPrefill);
+    /* A client's content for a month belongs to that month, so the month is
+       joined, or made, on the way in: nobody goes to the client record first
+       to open it. Asked with nothing to change, the database answers the
+       month as it stands. */
+    if (scope === 'client' && payload.code_period && !payload.engagement_id) {
+      db.rpc('ops_engagement_upsert', { p_payload: { client_id: payload.client_id, period: payload.code_period } }).then(function (r) {
+        var d = r && r.data;
+        if (d && d.id && !d.error) payload.engagement_id = d.id;
+        makeTask();
+      }, makeTask);
+      return;
+    }
+    makeTask();
+    function makeTask() {
     call('ops_create_task', { p_payload: payload, p_idem: ntKey }, 'ntMsg', function (t) {
       btn.disabled = false;
       ntKey = '';
@@ -5021,6 +5091,7 @@
       if (fromClient && cw.box && cw.client && cw.client.id === payload.client_id) readClientWork();
       else openTask(t.id, true);
     }, function () { btn.disabled = false; });
+    }
   }
 
   /* The description is edited where it sits: the pen becomes the tick, the
@@ -5290,18 +5361,10 @@
   // ---- The engagement: one client's work for one month -------------------
   /* The thirteen readiness questions, in the team's words, in the order the
      database seeds them. A key is stored; a word is read. */
-  var CHECK_WORD = {
-    client_name: 'Client name confirmed', legal_name: 'Legal name confirmed',
-    brand_name: 'Brand name confirmed', brand_profile: 'Brand profile received',
-    social_profiles: 'Social profiles received', client_info: 'Client information received',
-    platform_ready: 'Platforms ready', platform_setup: 'Platform setup done',
-    platform_create: 'Platforms created', partner_access_requested: 'Partner access requested',
-    partner_access_received: 'Partner access received', pre_ads_required: 'Pre-ads checklist required',
-    pre_ads_completed: 'Pre-ads checklist completed'
-  };
-  var CHECK_ORDER = ['client_name', 'legal_name', 'brand_name', 'brand_profile', 'social_profiles',
-    'client_info', 'platform_ready', 'platform_setup', 'platform_create',
-    'partner_access_requested', 'partner_access_received', 'pre_ads_required', 'pre_ads_completed'];
+  /* Two ticks (2026-09-24): the detailed checklists are the team's own
+     forms, and the month records that each is done and who ticked it. */
+  var CHECK_WORD = { onboarding: 'Onboarding checklist', pre_ads: 'Pre-advertising checklist' };
+  var CHECK_ORDER = ['onboarding', 'pre_ads'];
   var CHECK_STATE = [
     ['not_started', 'Not started', 'is-off'], ['waiting_client', 'Waiting on client', 'is-warn'],
     ['in_progress', 'In progress', ''], ['ready', 'Ready', 'is-ok'], ['na', 'Not applicable', 'is-off']
@@ -5320,6 +5383,58 @@
     return hit ? hit[2] : '';
   }
   function checkWord(k) { return CHECK_WORD[k] || sentence(k); }
+  function checksOf(e, all) {
+    return (all || []).filter(function (x) { return x.engagement_id === e.id; })
+      .sort(function (a, b) { return CHECK_ORDER.indexOf(a.key) - CHECK_ORDER.indexOf(b.key); });
+  }
+  function checksDone(list) {
+    return list.filter(function (x) { return x.state === 'ready' || x.state === 'na'; }).length;
+  }
+  /* THE MONTH'S READINESS: one tick a checklist, the person who ticked it
+     named under it by the database, and Not needed for a checklist this
+     month does not use. Drawn on the month's card and in a task's next
+     step alike, so the month is run from wherever somebody is. */
+  function checksHtml(e, list, can) {
+    return '<div class="eng-checks">' +
+      '<div class="eng-checkhead"><span>Readiness</span><span class="eng-checkcount">' +
+        checksDone(list) + ' of ' + list.length + ' done</span></div>' +
+      list.map(function (x) {
+        var done = x.state === 'ready', na = x.state === 'na';
+        var by = (done || na) && x.owner_id ? nameOf(x.owner_id) : '';
+        var when = (done || na) && x.updated_at ? shortDate(x.updated_at) : '';
+        var line = done ? 'Ticked' + (by ? ' by ' + by : '') + (when ? ' · ' + when : '')
+          : na ? 'Not needed' + (by ? ' · ' + by : '') + (when ? ' · ' + when : '') : '';
+        return '<div class="mcheck' + (done ? ' is-done' : na ? ' is-na' : '') + '" data-key="' + esc(x.key) + '">' +
+          (can
+            ? '<button class="tcheck' + (done ? ' is-done' : '') + '" type="button" data-a="tick" aria-pressed="' + done + '"' +
+                (na ? ' disabled' : '') + ' aria-label="' + esc(checkWord(x.key)) + '"></button>'
+            : '<span class="tcheck' + (done ? ' is-done' : '') + '" aria-hidden="true"></span>') +
+          '<span class="mcheck-lab"><span>' + esc(checkWord(x.key)) + '</span>' +
+            (line ? '<small>' + esc(line) + '</small>' : '') + '</span>' +
+          (can && !done
+            ? '<button class="btn-quiet btn-sm mcheck-na" type="button" data-a="na">' + (na ? 'Needed' : 'Not needed') + '</button>'
+            : '') +
+        '</div>';
+      }).join('') +
+    '</div>';
+  }
+  /* A tick is sent on the press and the list repainted from the answer. */
+  function wireChecks(root, e, sayIn, after) {
+    Array.prototype.forEach.call(root.querySelectorAll('.mcheck'), function (row) {
+      var key = row.getAttribute('data-key');
+      var cur = row.classList.contains('is-done') ? 'ready' : row.classList.contains('is-na') ? 'na' : 'not_started';
+      var send = function (to, btn) {
+        if (btn) btn.disabled = true;
+        call2('ops_engagement_set_check', { p_engagement: e.id, p_key: key, p_state: to }, sayIn, function (d) {
+          after((d && d.checks) || []);
+        }, function () { if (btn) btn.disabled = false; });
+      };
+      var tk = row.querySelector('[data-a="tick"]');
+      if (tk) tk.addEventListener('click', function () { send(cur === 'ready' ? 'not_started' : 'ready', tk); });
+      var na = row.querySelector('[data-a="na"]');
+      if (na) na.addEventListener('click', function () { send(cur === 'na' ? 'not_started' : 'na', na); });
+    });
+  }
   /* What the engagement is waiting on, in one line. */
   function meetingWord(e) {
     if (!e) return '';
@@ -5526,14 +5641,14 @@
     var el = document.createElement('section');
     el.className = 'engcard';
     el.setAttribute('data-eng', e.id);
-    var checks = cw.checks.filter(function (x) { return x.engagement_id === e.id; })
-      .sort(function (a, b) { return CHECK_ORDER.indexOf(a.key) - CHECK_ORDER.indexOf(b.key); });
-    var ready = checks.filter(function (x) { return x.state === 'ready' || x.state === 'na'; }).length;
+    var checks = checksOf(e, cw.checks);
     var facts = [
       ['Manager', nameOf(e.manager_id)],
       ['Planned', e.planned_count ? e.planned_count + (e.planned_count === 1 ? ' piece' : ' pieces') : ''],
       ['Files', e.drive_url ? '<a class="ovlink" href="' + esc(e.drive_url) + '" target="_blank" rel="noopener">Drive folder</a>' : '']
     ].filter(function (p) { return p[1]; });
+    var items = [['edit', 'Edit']];
+    if (may('ops', 'manage')) items.push(['delete', 'Delete', true]);
     el.innerHTML =
       '<div class="eng-head">' +
         '<div class="eng-who"><h3>' + esc(monthWord(e.period)) + '</h3>' +
@@ -5542,9 +5657,7 @@
           (can
             ? '<select class="select select-sm state-select ' + toneOf(ENG_STATE, e.status) + '" data-a="status" aria-label="Status of ' + esc(monthWord(e.period)) + '">' +
                 ENG_STATE.map(function (s) { return '<option value="' + s[0] + '"' + (s[0] === e.status ? ' selected' : '') + '>' + esc(s[1]) + '</option>'; }).join('') +
-              '</select>' +
-              '<button class="iconbtn" data-a="edit" type="button" aria-label="Edit engagement">' +
-                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>'
+              '</select>' + itemMenu(monthWord(e.period), items)
             : '<span class="tone ' + toneOf(ENG_STATE, e.status) + '">' + esc(wordOf(ENG_STATE, e.status)) + '</span>') +
         '</div>' +
       '</div>' +
@@ -5553,25 +5666,7 @@
         '<span class="eng-meetword' + (meetingHeld(e) ? ' is-held' : '') + '">' + esc(meetingWord(e)) + '</span>' +
         (can ? '<button class="btn btn-sm" data-a="meet" type="button">' + (e.meeting_at || e.meeting_na ? 'Change' : 'Set meeting') + '</button>' : '') +
       '</div>' +
-      '<details class="eng-checks"' + (e.status === 'planning' ? ' open' : '') + '>' +
-        '<summary><span>Readiness</span><span class="eng-checkcount">' + ready + ' of ' + checks.length + ' ready</span></summary>' +
-        '<div class="eng-checklist">' +
-          checks.map(function (x) {
-            return '<div class="engcheck" data-key="' + esc(x.key) + '">' +
-              '<span class="engcheck-lab">' + esc(checkWord(x.key)) + '</span>' +
-              (can
-                ? '<select class="select select-sm state-select ' + toneOf(CHECK_STATE, x.state) + '" data-a="check" aria-label="' + esc(checkWord(x.key)) + '">' +
-                    CHECK_STATE.map(function (s) { return '<option value="' + s[0] + '"' + (s[0] === x.state ? ' selected' : '') + '>' + esc(s[1]) + '</option>'; }).join('') +
-                  '</select>' +
-                  '<select class="select select-sm" data-a="owner" aria-label="Owner of ' + esc(checkWord(x.key)) + '"><option value="">Nobody</option>' +
-                    state.members.map(function (m) { return '<option value="' + esc(m.id) + '"' + (m.id === x.owner_id ? ' selected' : '') + '>' + esc(m.name) + '</option>'; }).join('') +
-                  '</select>'
-                : '<span class="tone ' + toneOf(CHECK_STATE, x.state) + '">' + esc(wordOf(CHECK_STATE, x.state)) + '</span>' +
-                  '<span class="engcheck-who">' + esc(nameOf(x.owner_id)) + '</span>') +
-            '</div>';
-          }).join('') +
-        '</div>' +
-      '</details>';
+      '<div data-a="checks">' + checksHtml(e, checks, can) + '</div>';
     var st = el.querySelector('[data-a="status"]');
     if (st) st.addEventListener('change', function () {
       var want = st.value;
@@ -5579,41 +5674,52 @@
         readClientWork();
       }, function () { st.value = e.status; });
     });
-    var ed = el.querySelector('[data-a="edit"]');
-    if (ed) ed.addEventListener('click', function () { openEng(e, cw.client); });
+    var ctl = el.querySelector('.eng-ctl');
+    if (ctl && ctl.querySelector('.kmenu-btn')) wireItemMenu(ctl, function (k) {
+      if (k === 'edit') openEng(e, cw.client);
+      if (k === 'delete') askDeleteMonth(e, cw.client, readClientWork);
+    });
     var mt = el.querySelector('[data-a="meet"]');
     if (mt) mt.addEventListener('click', function () { openMeet(e); });
-    Array.prototype.forEach.call(el.querySelectorAll('.engcheck'), function (row) {
-      var key = row.getAttribute('data-key');
-      var cs = row.querySelector('[data-a="check"]'), os = row.querySelector('[data-a="owner"]');
-      var send = function () {
-        call2('ops_engagement_set_check', {
-          p_engagement: e.id, p_key: key, p_state: cs.value, p_owner: os.value || null
-        }, el, function (d) {
-          /* The one row is repainted from the answer, never the list: a
-             person working down thirteen selects keeps their place. */
-          var fresh = ((d && d.checks) || []).filter(function (x) { return x.key === key; })[0];
-          if (fresh) {
-            cs.className = 'select select-sm state-select ' + toneOf(CHECK_STATE, fresh.state);
-            cw.checks = cw.checks.map(function (x) { return x.engagement_id === e.id && x.key === key ? fresh : x; });
-            var n = cw.checks.filter(function (x) { return x.engagement_id === e.id && (x.state === 'ready' || x.state === 'na'); }).length;
-            var cc = el.querySelector('.eng-checkcount');
-            if (cc) cc.textContent = n + ' of ' + checks.length + ' ready';
-          }
-        });
-      };
-      if (cs) cs.addEventListener('change', send);
-      if (os) os.addEventListener('change', send);
-    });
+    /* The two ticks repaint themselves from the answer, never the list. */
+    var box = el.querySelector('[data-a="checks"]');
+    var paintChecks = function () {
+      box.innerHTML = checksHtml(e, checksOf(e, cw.checks), can);
+      wireChecks(box, e, el, function (fresh) {
+        cw.checks = cw.checks.filter(function (x) { return x.engagement_id !== e.id; }).concat(fresh);
+        paintChecks();
+      });
+    };
+    paintChecks();
     return el;
+  }
+  /* Deleting a month: ops Manage, a reason, and the tasks it held stay. */
+  function askDeleteMonth(e, client, after) {
+    var n = e.task_count != null ? e.task_count
+      : (cw.tasks || []).filter(function (t) { return t.engagement_id === e.id; }).length;
+    window.ADspaceConfirm.ask({
+      title: 'Delete ' + monthWord(e.period) + (client && client.name ? ' for ' + client.name : ''),
+      body: (n ? (n === 1 ? 'Its task stays and leaves the month.' : 'Its ' + n + ' tasks stay and leave the month.') + ' ' : '') +
+        'The readiness ticks and the meeting go with it. There is no restore.',
+      go: 'Delete', tone: 'danger',
+      field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
+    }, function (why) {
+      db.rpc('ops_delete_engagement', { p_engagement: e.id, p_reason: why }).then(function (r) {
+        var err = r.error ? r.error.message : (r.data && r.data.error ? said(r.data.error) : '');
+        if (err) { window.ADspaceConfirm.ask({ title: 'Not deleted', body: err, go: 'Close', cancel: false }, function () {}); return; }
+        if (after) after();
+      }, function (x) {
+        window.ADspaceConfirm.ask({ title: 'Not deleted', body: (x && x.message) || String(x), go: 'Close', cancel: false }, function () {});
+      });
+    });
   }
   /* A refusal is named on the card it was made on. */
   function call2(fn, args, el, then, onFail) {
-    var m = el.querySelector('[data-a="msg"]');
+    var m = typeof el === 'string' ? $(el) : el.querySelector('[data-a="msg"]');
     var say = function (text, tone) { if (m) { m.textContent = text || ''; m.className = 'msg ' + (text ? (tone || 'err') : ''); } };
     say('');
     db.rpc(fn, args).then(function (r) {
-      if (r.error) { say(r.error.message); if (onFail) onFail(); return; }
+      if (r.error) { say(dbWord(r.error.message)); if (onFail) onFail(); return; }
       var d = r.data;
       if (d && d.error) { say(said(d.error)); if (onFail) onFail(); return; }
       if (then) then(d);
@@ -5943,6 +6049,8 @@
     });
     var qfull = $('qkFull');
     if (qfull) qfull.addEventListener('click', function () { closeQuick(); openNew(); });
+    var nq = $('ntQuick');
+    if (nq) nq.addEventListener('click', function () { sheet('taskSheet', false); openQuick(); });
 
     // From template
     ['tplClose', 'tplCancel'].forEach(function (id) {
@@ -6523,7 +6631,16 @@
     var wrap = $('notifWrap');
     if (!wrap) return;
     wrap.hidden = !may('ops', 'view');
-    if (!wrap.hidden) loadNotifs();
+    if (wrap.hidden) return;
+    loadNotifs();
+    /* The count was read once, when the console opened, so a change made
+       while somebody was working never lit the bell until they reloaded. It
+       is read again every minute while the tab is on the screen, and the
+       moment somebody comes back to it. */
+    if (!state.notifPoll) {
+      state.notifPoll = setInterval(function () { if (!document.hidden) loadNotifs(); }, 60000);
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) loadNotifs(); });
+    }
   }
   function loadNotifs() {
     var me = bridge.me && bridge.me();

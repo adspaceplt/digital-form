@@ -203,7 +203,7 @@
     wrap.className = 'cmd-more';
     var btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'kmenu-btn cmd-more-btn';
+    btn.className = 'kmenu-btn btn-sm cmd-more-btn';
     btn.setAttribute('aria-haspopup', 'true');
     btn.setAttribute('aria-expanded', 'false');
     btn.setAttribute('aria-label', 'More actions');

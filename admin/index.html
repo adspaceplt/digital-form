@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260923e">
+<link rel="stylesheet" href="/css/portal.css?v=20260924a">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -32,25 +32,25 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260923e"></script>
-<script src="/js/words.js?v=20260923e"></script>
-<script src="/js/copy.js?v=20260923e"></script>
-<script src="/js/ask.js?v=20260923e"></script>
-<script src="/js/confirm.js?v=20260923e"></script>
-<script src="/js/sheet.js?v=20260923e"></script>
-<script src="/js/state.js?v=20260923e"></script>
-<script src="/js/group.js?v=20260923e"></script>
-<script src="/js/menu.js?v=20260923e"></script>
-<script src="/js/cmdbar.js?v=20260923e"></script>
-<script src="/js/api.js?v=20260923e"></script>
-<script src="/js/money.js?v=20260923e"></script>
-<script src="/js/mockups.js?v=20260923e"></script>
+<script src="/js/config.js?v=20260924a"></script>
+<script src="/js/words.js?v=20260924a"></script>
+<script src="/js/copy.js?v=20260924a"></script>
+<script src="/js/ask.js?v=20260924a"></script>
+<script src="/js/confirm.js?v=20260924a"></script>
+<script src="/js/sheet.js?v=20260924a"></script>
+<script src="/js/state.js?v=20260924a"></script>
+<script src="/js/group.js?v=20260924a"></script>
+<script src="/js/menu.js?v=20260924a"></script>
+<script src="/js/cmdbar.js?v=20260924a"></script>
+<script src="/js/api.js?v=20260924a"></script>
+<script src="/js/money.js?v=20260924a"></script>
+<script src="/js/mockups.js?v=20260924a"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260923e" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260924a" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -2283,6 +2283,10 @@
             </button>
           </div>
           <div class="sheet-body">
+            <div class="cmdbar-views kindseg" id="ntKind" role="group" aria-label="Kind of task">
+              <button class="acttab" id="ntQuick" type="button" aria-pressed="false">Task</button>
+              <button class="acttab is-on" type="button" aria-pressed="true">Content deliverable</button>
+            </div>
             <!-- Whose the task is, checked once at creation and never again:
                  a client that later becomes a past client keeps its tasks.
                  Client offers the clients engaged now, Lead the records that
@@ -2530,6 +2534,13 @@
             </button>
           </div>
           <form class="sheet-body" id="qkForm" autocomplete="off">
+            <!-- Which form: an everyday task, or a content deliverable with a
+                 code. One segment at the top of both sheets, never a button
+                 at the foot of a fold. -->
+            <div class="cmdbar-views kindseg" role="group" aria-label="Kind of task">
+              <button class="acttab is-on" type="button" aria-pressed="true">Task</button>
+              <button class="acttab" id="qkFull" type="button" aria-pressed="false">Content deliverable</button>
+            </div>
             <label class="field-label" for="qkTitle">Task</label>
             <input class="input" id="qkTitle" placeholder="Write September caption" maxlength="200">
             <div class="row">
@@ -2559,12 +2570,18 @@
                   </select>
                 </div>
               </div>
-              <label class="field-label" for="qkDesc">Description</label>
-              <textarea class="input" id="qkDesc" rows="2" placeholder="Optional"></textarea>
-              <label class="field-label" for="qkCheck" style="margin-top:12px">Checklist</label>
-              <textarea class="input" id="qkCheck" rows="3" placeholder="One item a line"></textarea>
-              <p class="hint">Files, links and repeats are added on the task once it exists. A content deliverable with a code has its own form.</p>
-              <button class="btn btn-sm" id="qkFull" type="button">Content deliverable</button>
+              <div class="row">
+                <div class="field">
+                  <label class="field-label" for="qkDesc">Description</label>
+                  <textarea class="input" id="qkDesc" rows="2" placeholder="Optional"></textarea>
+                </div>
+              </div>
+              <div class="row">
+                <div class="field">
+                  <label class="field-label" for="qkCheck">Checklist</label>
+                  <textarea class="input" id="qkCheck" rows="3" placeholder="One item a line"></textarea>
+                </div>
+              </div>
             </details>
             <button type="submit" hidden></button>
             <ul class="qkmade" id="qkMade" aria-live="polite"></ul>
@@ -3586,13 +3603,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260923e"></script>
-<script src="/js/documents.js?v=20260923e"></script>
-<script src="/js/letters.js?v=20260923e"></script>
-<script src="/js/register.js?v=20260923e"></script>
-<script src="/js/crm.js?v=20260923e"></script>
-<script src="/js/team.js?v=20260923e"></script>
-<script src="/js/campaigns.js?v=20260923e"></script>
-<script src="/js/ops.js?v=20260923e"></script>
+<script src="/js/admin.js?v=20260924a"></script>
+<script src="/js/documents.js?v=20260924a"></script>
+<script src="/js/letters.js?v=20260924a"></script>
+<script src="/js/register.js?v=20260924a"></script>
+<script src="/js/crm.js?v=20260924a"></script>
+<script src="/js/team.js?v=20260924a"></script>
+<script src="/js/campaigns.js?v=20260924a"></script>
+<script src="/js/ops.js?v=20260924a"></script>
 </body>
 </html>
