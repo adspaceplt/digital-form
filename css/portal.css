@@ -1163,6 +1163,25 @@ a { color: inherit; }
 .row > div[style*="flex:0 0"] { flex-grow: 1 !important; }
 .row .input, .row .select { width: 100%; }
 .row .btn { flex: 0 0 auto; }
+/* Fields that share a row share one split, on every row of the form. Each
+   field used to carry its own pixel width in a style attribute (220, 200,
+   200, 220) and grow from it when the row wrapped, so every row of the
+   Billing pane split at a different point and the boxes read as uneven
+   (reported 2026-09-24). A grid of equal columns cannot drift: two, or
+   three, and `span-all` / `span-2` for the field that needs the room. The
+   cell stays the column flex box `.row > div` makes it, so a field still
+   sits on the bottom of its cell when a neighbouring label wraps. */
+.row.fgrid, .row.fgrid-3 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 12px; }
+.row.fgrid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.row.fgrid > .span-all, .row.fgrid-3 > .span-all { grid-column: 1 / -1; }
+.row.fgrid-3 > .span-2 { grid-column: span 2; }
+/* A pane that narrow, or a phone, takes one field a line. */
+.is-tight .row.fgrid, .is-tight .row.fgrid-3 { grid-template-columns: minmax(0, 1fr); }
+.is-tight .row.fgrid-3 > .span-2 { grid-column: auto; }
+@media (max-width: 560px) {
+  .row.fgrid, .row.fgrid-3 { grid-template-columns: minmax(0, 1fr); }
+  .row.fgrid-3 > .span-2 { grid-column: auto; }
+}
 .muted { color: var(--ink-mute); font-size: 12.5px; }
 .msg { font-size: 13px; margin-top: 12px; }
 .msg.err { color: var(--err); }
