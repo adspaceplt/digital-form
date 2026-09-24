@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260924e">
+<link rel="stylesheet" href="/css/portal.css?v=20260924f">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -32,25 +32,25 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260924e"></script>
-<script src="/js/words.js?v=20260924e"></script>
-<script src="/js/copy.js?v=20260924e"></script>
-<script src="/js/ask.js?v=20260924e"></script>
-<script src="/js/confirm.js?v=20260924e"></script>
-<script src="/js/sheet.js?v=20260924e"></script>
-<script src="/js/state.js?v=20260924e"></script>
-<script src="/js/group.js?v=20260924e"></script>
-<script src="/js/menu.js?v=20260924e"></script>
-<script src="/js/cmdbar.js?v=20260924e"></script>
-<script src="/js/api.js?v=20260924e"></script>
-<script src="/js/money.js?v=20260924e"></script>
-<script src="/js/mockups.js?v=20260924e"></script>
+<script src="/js/config.js?v=20260924f"></script>
+<script src="/js/words.js?v=20260924f"></script>
+<script src="/js/copy.js?v=20260924f"></script>
+<script src="/js/ask.js?v=20260924f"></script>
+<script src="/js/confirm.js?v=20260924f"></script>
+<script src="/js/sheet.js?v=20260924f"></script>
+<script src="/js/state.js?v=20260924f"></script>
+<script src="/js/group.js?v=20260924f"></script>
+<script src="/js/menu.js?v=20260924f"></script>
+<script src="/js/cmdbar.js?v=20260924f"></script>
+<script src="/js/api.js?v=20260924f"></script>
+<script src="/js/money.js?v=20260924f"></script>
+<script src="/js/mockups.js?v=20260924f"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260924e" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260924f" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -475,18 +475,18 @@
             <button class="iconbtn" id="crmContactClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
           </div>
           <div class="sheet-body">
-          <div class="row">
+          <div class="row fgrid">
             <div><label class="field-label" for="ctName">Name</label>
               <input class="input" id="ctName" placeholder="John Doe"></div>
-            <div style="flex:0 0 200px"><label class="field-label" for="ctRole">Role</label>
+            <div><label class="field-label" for="ctRole">Role</label>
               <input class="input" id="ctRole" placeholder="Marketing"></div>
           </div>
-          <div class="row">
-            <div style="flex:0 0 200px"><label class="field-label" for="ctPhone">Phone / WhatsApp</label>
+          <div class="row fgrid-3">
+            <div><label class="field-label" for="ctPhone">Phone / WhatsApp</label>
               <input class="input" id="ctPhone" type="tel" placeholder="01x-xxx xxxx"></div>
             <div><label class="field-label" for="ctEmail">Email</label>
               <input class="input" id="ctEmail" type="email" placeholder="name@company.com"></div>
-            <div style="flex:0 0 170px"><label class="field-label" for="ctLang">Preferred language</label>
+            <div><label class="field-label" for="ctLang">Preferred language</label>
               <select class="select" id="ctLang">
                 <option value="en">English</option>
                 <option value="zh">中文</option>
@@ -520,17 +520,17 @@
               <div><label class="field-label" for="crmLegalName">Company name, as registered (capitals)</label>
                 <input class="input crm-caps" id="crmLegalName" placeholder="COMPANY NAME SDN BHD" autocapitalize="characters"></div>
             </div>
-            <div class="row" style="margin-top:12px">
-              <div style="flex:0 0 220px"><label class="field-label" for="crmCompanyNo">Business registration no.</label>
+            <div class="row fgrid" style="margin-top:12px">
+              <div><label class="field-label" for="crmCompanyNo">Business registration no.</label>
                 <input class="input" id="crmCompanyNo" placeholder="202201012345"></div>
-              <div style="flex:0 0 200px"><label class="field-label" for="crmCompanyNoOld">Old registration no.</label>
+              <div><label class="field-label" for="crmCompanyNoOld">Old registration no.</label>
                 <input class="input" id="crmCompanyNoOld" placeholder="1234567-A"></div>
-              <div style="flex:0 0 200px"><label class="field-label" for="crmTin">TIN</label>
+              <div><label class="field-label" for="crmTin">TIN</label>
                 <input class="input" id="crmTin" placeholder="C 1234567890"></div>
-              <div style="flex:0 0 220px"><label class="field-label" for="crmSstNo">SST registration no.</label>
+              <div><label class="field-label" for="crmSstNo">SST registration no.</label>
                 <input class="input" id="crmSstNo" placeholder="W10-1808-12345678"></div>
             </div>
-            <div class="row" style="margin-top:12px">
+            <div class="row fgrid" style="margin-top:12px">
               <div><label class="field-label" for="crmBillContact">Billing contact</label>
                 <select class="select" id="crmBillContact"></select></div>
               <div><label class="field-label" for="crmFinanceEmail">Finance department email</label>
@@ -559,10 +559,10 @@
             <span class="muted" id="crmBrandSummary"></span>
           </div>
           <div id="crmBrandBody">
-            <div class="row" style="margin-top:14px">
+            <div class="row fgrid" style="margin-top:14px">
               <div><label class="field-label" for="crmWebsite">Website</label>
                 <input class="input" id="crmWebsite" type="url" placeholder="https://"></div>
-              <div style="flex:0 0 200px"><label class="field-label" for="crmPhone">Office phone</label>
+              <div><label class="field-label" for="crmPhone">Office phone</label>
                 <input class="input" id="crmPhone" type="tel" placeholder="03-xxxx xxxx"></div>
             </div>
             <!-- The same four handles and the same logo Content Review draws
@@ -571,13 +571,13 @@
                  the one on the client's own post unchanged. -->
             <!-- Two and two. Four across wrapped to three then one inside the
                  record pane, which leaves rednote alone on a row of its own. -->
-            <div class="row" style="margin-top:12px">
+            <div class="row fgrid" style="margin-top:12px">
               <div><label class="field-label" for="crmSocialIg">Instagram</label>
                 <input class="input" id="crmSocialIg" placeholder="@handle"></div>
               <div><label class="field-label" for="crmSocialFb">Facebook page</label>
                 <input class="input" id="crmSocialFb" placeholder="Page name"></div>
             </div>
-            <div class="row" style="margin-top:12px">
+            <div class="row fgrid" style="margin-top:12px">
               <div><label class="field-label" for="crmSocialTiktok">TikTok</label>
                 <input class="input" id="crmSocialTiktok" placeholder="@handle"></div>
               <div><label class="field-label" for="crmSocialXhs">rednote</label>
@@ -618,18 +618,18 @@
             <button class="iconbtn" id="crmServiceClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
           </div>
           <div class="sheet-body">
-          <div class="row">
-            <div><label class="field-label" for="svPick">Service</label>
+          <div class="row fgrid-3">
+            <div class="span-all"><label class="field-label" for="svPick">Service</label>
               <select class="select" id="svPick"></select></div>
-            <div style="flex:0 0 110px"><label class="field-label" for="svQty">Qty</label>
+            <div><label class="field-label" for="svQty">Qty</label>
               <input class="input" id="svQty" type="number" min="0" step="1" value="1"></div>
-            <div style="flex:0 0 170px"><label class="field-label" for="svRate">Rate</label>
+            <div><label class="field-label" for="svRate">Rate</label>
               <input class="input" id="svRate" type="number" min="0" step="10" placeholder="0"></div>
-            <div style="flex:0 0 130px"><label class="field-label" for="svTenure">Months</label>
+            <div><label class="field-label" for="svTenure">Months</label>
               <input class="input" id="svTenure" type="number" min="1" step="1" value="1"></div>
-            <div style="flex:0 0 170px"><label class="field-label" for="svStart">Start</label>
+            <div><label class="field-label" for="svStart">Start</label>
               <input class="input" id="svStart" type="date"></div>
-            <div style="flex:0 0 170px"><label class="field-label" for="svState">State</label>
+            <div><label class="field-label" for="svState">State</label>
               <select class="select" id="svState">
                 <option value="enquired">Enquired</option>
                 <option value="quoted">Quoted</option>
@@ -3095,24 +3095,24 @@
             </button>
           </div>
           <div class="sheet-body">
-            <div class="row">
+            <div class="row fgrid-3">
               <div><label class="field-label" for="tmName">Name</label>
                 <input class="input" id="tmName" placeholder="John Doe"></div>
               <div><label class="field-label" for="tmEmail">Sign-in email</label>
                 <input class="input" id="tmEmail" type="email" placeholder="john@adspacestudios.com"></div>
-              <div style="flex:0 0 190px"><label class="field-label" for="tmRole">Group</label>
+              <div><label class="field-label" for="tmRole">Group</label>
                 <select class="select" id="tmRole"></select></div>
             </div>
             <!-- The HR serial is built from the Employee ID and the designation is
                  printed under a signature, so both are kept here with the person. -->
-            <div class="row">
-              <div style="flex:0 0 190px"><label class="field-label" for="tmStaff">Employee ID</label>
+            <div class="row fgrid-3">
+              <div><label class="field-label" for="tmStaff">Employee ID</label>
                 <input class="input" id="tmStaff" placeholder="AD005" autocapitalize="characters" spellcheck="false"></div>
               <div><label class="field-label" for="tmDesig">Designation</label>
                 <input class="input" id="tmDesig" placeholder="Marketing Executive"></div>
               <!-- A planning figure, in the unit people plan in. Stored in minutes
                    because the sessions it is read against are. -->
-              <div style="flex:0 0 190px"><label class="field-label" for="tmCap">Weekly capacity, hours</label>
+              <div><label class="field-label" for="tmCap">Weekly capacity, hours</label>
                 <input class="input" id="tmCap" type="number" min="0" max="80" step="0.5" placeholder="40"></div>
             </div>
             <div class="msg" id="tmMsg"></div>
@@ -3320,16 +3320,16 @@
             <button class="iconbtn" id="svcClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
           </div>
           <div class="sheet-body">
-        <div class="row">
-          <div style="flex:0 0 220px"><label class="field-label" for="svcCat">Category</label>
+        <div class="row fgrid-3">
+          <div><label class="field-label" for="svcCat">Category</label>
             <select class="select" id="svcCat"></select></div>
-          <div><label class="field-label" for="svcName">Name</label>
+          <div class="span-2"><label class="field-label" for="svcName">Name</label>
             <input class="input" id="svcName" placeholder="Service name"></div>
-          <div style="flex:0 0 160px"><label class="field-label" for="svcRate">Rate</label>
+          <div><label class="field-label" for="svcRate">Rate</label>
             <input class="input" id="svcRate" type="number" min="0" step="10" placeholder="0"></div>
-          <div style="flex:0 0 240px"><label class="field-label" for="svcUnit">Unit</label>
+          <div><label class="field-label" for="svcUnit">Unit</label>
             <input class="input" id="svcUnit" placeholder="Per post"></div>
-          <div style="flex:0 0 150px"><label class="field-label" for="svcMin">Minimum months</label>
+          <div><label class="field-label" for="svcMin">Minimum months</label>
             <input class="input" id="svcMin" type="number" min="1" step="1" value="1"></div>
         </div>
         <div class="row">
@@ -3594,7 +3594,7 @@ raya-2026        https://example.com/raya"></textarea>
       </button>
     </div>
     <div class="sheet-body">
-      <div class="row">
+      <div class="row fgrid">
         <div><label class="field-label" for="docKind">Document</label>
           <select class="select" id="docKind"></select></div>
         <div id="docClientWrap"><label class="field-label" for="docClient">Client</label>
@@ -3605,25 +3605,25 @@ raya-2026        https://example.com/raya"></textarea>
       <!-- The fields run in the order the letter prints them: reference and
            date, To and address, Attn and designation (a colleague's position
            and NRIC), the title, the salutation, the body, the signature. -->
-      <div class="row">
-        <div style="flex:0 0 200px"><label class="field-label" for="docSerial">Reference</label>
+      <div class="row fgrid">
+        <div><label class="field-label" for="docSerial">Reference</label>
           <input class="input" id="docSerial" placeholder="Assigned on issue" autocapitalize="characters" spellcheck="false"></div>
-        <div style="flex:0 0 170px"><label class="field-label" for="docDate">Date</label>
+        <div><label class="field-label" for="docDate">Date</label>
           <input class="input" id="docDate" type="date"></div>
       </div>
-      <div class="row" id="docToRow">
+      <div class="row fgrid" id="docToRow">
         <div><label class="field-label" for="docTo">To</label>
           <input class="input" id="docTo" placeholder="COMPANY NAME SDN BHD"></div>
         <div><label class="field-label" for="docAddr">Address</label>
           <textarea class="input" id="docAddr" rows="3" placeholder="Address"></textarea></div>
       </div>
-      <div class="row" id="docAttnRow">
+      <div class="row fgrid" id="docAttnRow">
         <div><label class="field-label" for="docAttn">Attn</label>
           <input class="input" id="docAttn" placeholder="John Doe"></div>
         <div><label class="field-label" for="docAttnRole">Designation</label>
           <input class="input" id="docAttnRole" placeholder="Designation"></div>
       </div>
-      <div class="row" id="docHrRow" hidden>
+      <div class="row fgrid" id="docHrRow" hidden>
         <div><label class="field-label" for="docRole">Position</label>
           <input class="input" id="docRole" placeholder="Position"></div>
         <div><label class="field-label" for="docIc">NRIC</label>
@@ -3655,7 +3655,7 @@ raya-2026        https://example.com/raya"></textarea>
         <div><label class="field-label" for="docBodyMs">Body, Malay</label>
           <textarea class="input" id="docBodyMs" rows="6" placeholder="Kandungan"></textarea></div>
       </div>
-      <div class="row" id="docSignRow">
+      <div class="row fgrid" id="docSignRow">
         <div><label class="field-label" for="docSigName">Signed by</label>
           <input class="input" id="docSigName" placeholder="John Doe"></div>
         <div><label class="field-label" for="docSigRole">Designation</label>
@@ -3762,14 +3762,14 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260924e"></script>
-<script src="/js/documents.js?v=20260924e"></script>
-<script src="/js/letters.js?v=20260924e"></script>
-<script src="/js/register.js?v=20260924e"></script>
-<script src="/js/crm.js?v=20260924e"></script>
-<script src="/js/team.js?v=20260924e"></script>
-<script src="/js/campaigns.js?v=20260924e"></script>
-<script src="/js/ops.js?v=20260924e"></script>
-<script src="/js/perf.js?v=20260924e"></script>
+<script src="/js/admin.js?v=20260924f"></script>
+<script src="/js/documents.js?v=20260924f"></script>
+<script src="/js/letters.js?v=20260924f"></script>
+<script src="/js/register.js?v=20260924f"></script>
+<script src="/js/crm.js?v=20260924f"></script>
+<script src="/js/team.js?v=20260924f"></script>
+<script src="/js/campaigns.js?v=20260924f"></script>
+<script src="/js/ops.js?v=20260924f"></script>
+<script src="/js/perf.js?v=20260924f"></script>
 </body>
 </html>

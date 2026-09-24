@@ -111,3 +111,81 @@
     isOpen: function (box) { return Boolean(open && (!box || open.box === box)); }
   };
 })();
+
+/* Cmd + Enter on a Mac, Ctrl + Enter elsewhere, presses the action the
+ * reader is on (asked for by the user on 2026-09-24, "like most AI tools").
+ *
+ * What it presses, nearest first:
+ *   1. the submit of the small form the caret is in (a comment, a brief, a
+ *      checklist item in the task sheet), so a chord typed in a comment posts
+ *      the comment and never moves the task on;
+ *   2. else the main action of the sheet on top: its first filled button,
+ *      primary or forward, in the foot (a sheet with no foot, such as the
+ *      task sheet, is a record and not a form, and is left alone);
+ *   3. else the main action of the pane form the caret is in (Billing, Brand).
+ * **A destructive act is never a chord.** A red button is skipped wherever it
+ * is, so Delete, Void and Remove stay a deliberate press on the screen. A
+ * disabled or hidden button is not pressed, which is how a gate that is shut
+ * stays shut. The plain Enter is untouched: in a text box it is a new line.
+ * It is one listener for the whole console, because sheets are opened by four
+ * different helpers and a rule written into each would drift. */
+(function () {
+  var MAC = /Mac|iPhone|iPad|iPod/.test(navigator.platform || navigator.userAgent || '');
+  var GO = '.btn-primary, .btn-go';
+
+  function usable(b) {
+    return b && !b.disabled && !b.hidden && !b.closest('[hidden]') &&
+      !b.classList.contains('btn-danger') && b.getClientRects().length > 0;
+  }
+  function firstIn(root, sel) {
+    var list = root ? root.querySelectorAll(sel) : [];
+    for (var i = 0; i < list.length; i++) if (usable(list[i])) return list[i];
+    return null;
+  }
+  /* The sheet on top: the highest stacking order, the later one on a tie. */
+  function topSheet() {
+    var best = null, bestZ = -Infinity;
+    Array.prototype.forEach.call(document.querySelectorAll('.sheet'), function (s) {
+      if (s.hidden || !s.getClientRects().length) return;
+      var z = parseInt(getComputedStyle(s).zIndex, 10) || 0;
+      if (z >= bestZ) { best = s; bestZ = z; }
+    });
+    return best;
+  }
+  function target(from) {
+    var form = from && from.closest && from.closest('form');
+    if (form) {
+      var sub = firstIn(form, 'button[type="submit"]');
+      if (sub) return sub;
+    }
+    /* Only a sheet with a foot: the task sheet and the review sheet are
+       records with many actions, and a chord there must not move a task on
+       because the caret happened to be on the card. */
+    var sheet = topSheet();
+    if (sheet) return firstIn(sheet.querySelector('.sheet-foot'), GO);
+    var pane = from && from.closest && from.closest('.pane-form, .panel');
+    return pane ? firstIn(pane, GO) : null;
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || e.shiftKey || e.altKey) return;
+    if (!(e.metaKey || e.ctrlKey)) return;
+    if (e.isComposing) return;   // a Chinese or Malay input method is choosing a word
+    if (e.defaultPrevented) return;   // the field already acted on its own Enter (Add task's title)
+    var b = target(document.activeElement);
+    if (!b) return;
+    e.preventDefault();
+    b.click();
+  });
+
+  /* Say so on the control, for the keyboard and the pointer that hovers. */
+  function label() {
+    Array.prototype.forEach.call(document.querySelectorAll('.sheet-foot ' + '.btn-primary, .sheet-foot .btn-go, .qform-acts [type="submit"]'), function (b) {
+      if (b.classList.contains('btn-danger') || b.hasAttribute('aria-keyshortcuts')) return;
+      b.setAttribute('aria-keyshortcuts', 'Meta+Enter Control+Enter');
+      if (!b.title) b.title = MAC ? '⌘ Enter' : 'Ctrl + Enter';
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', label);
+  else label();
+})();
