@@ -181,6 +181,8 @@
     'bad-state': 'Invalid status.',
     'no-such-check': 'Check not found.',
     'meeting-in-past': 'Meeting date must be today or later.',
+    'bad-minutes': 'A meeting runs 15 minutes to 4 hours.',
+    'bad-meeting-link': 'Paste a Google Meet, Zoom or Teams link.',
     'bad-channel': 'Choose where the meeting is held.',
     'checklist-open': 'Tick both checklists, or mark one not needed, first.',
     'workflow-required': 'No workflow set up. Contact an admin.',
@@ -4683,14 +4685,9 @@
       b.list.parentNode.insertBefore(box, b.list.nextSibling);
     }
     var e = state.eng, can = may('ops', 'work');
-    box.innerHTML = checksHtml(e, checksOf(e, state.engChecks), can) +
-      '<div class="eng-meet"><span class="eng-lab">Content meeting</span>' +
-        '<span class="eng-meetword' + (meetingHeld(e) ? ' is-held' : '') + '">' + esc(meetingWord(e)) + '</span>' +
-        (can ? '<button class="btn btn-sm" data-a="meet" type="button">' + (e.meeting_at || e.meeting_na ? 'Change' : 'Set meeting') + '</button>' : '') +
-      '</div>';
+    box.innerHTML = checksHtml(e, checksOf(e, state.engChecks), can) + meetHtml(e, can);
     wireChecks(box, e, b.msg, function () { readTask(t.id); });
-    var mb = box.querySelector('[data-a="meet"]');
-    if (mb) mb.addEventListener('click', function () { openMeetFor(); });
+    wireMeet(box, e, b.msg, function () { openMeetFor(); }, function () { readTask(t.id); });
   }
 
   /* The content meeting is the month's, so it is set on the month's record;
@@ -5447,6 +5444,95 @@
   function meetingHeld(e) {
     return Boolean(e && (e.meeting_na || (e.meeting_at && new Date(e.meeting_at) <= new Date())));
   }
+  /* 11:30am, the way the message to a client writes a time. */
+  function clock(v) {
+    var d = new Date(v);
+    if (isNaN(d.getTime())) return '';
+    var h = d.getHours(), m = d.getMinutes();
+    return ((h % 12) || 12) + ':' + String(m).padStart(2, '0') + (h < 12 ? 'am' : 'pm');
+  }
+  /* THE MESSAGE TO THE CLIENT, in the team's own template, filled from the
+     month: the date, the time it starts and ends, the content month it is
+     about, where it is held and the link. Written here and nowhere else, so
+     the card and the task step copy the same words. */
+  function clientMessage(e) {
+    if (!e || !e.meeting_at || e.meeting_na) return '';
+    var at = new Date(e.meeting_at);
+    var end = new Date(at.getTime() + (Number(e.meeting_minutes) || 30) * 60000);
+    var online = e.meeting_channel !== 'onsite';
+    var lines = [
+      'Meeting Schedule ' + (online ? '\u7ebf\u4e0a\u4f1a\u8bae' : '\u4f1a\u8bae'),
+      '',
+      'Date \u65e5\u671f: ' + String(at.getDate()).padStart(2, '0') + '/' + String(at.getMonth() + 1).padStart(2, '0') + '/' + at.getFullYear(),
+      'Time \u65f6\u95f4: ' + clock(at) + ' \u2013 ' + clock(end),
+      '',
+      'Meeting Agenda \u6458\u8981:',
+      '\u2022  ' + monthWord(e.period) + ' Content Discussion'
+    ];
+    if (e.meeting_channel) {
+      lines.push('', 'Channel \u6e20\u9053:', CHANNEL_WORD[e.meeting_channel] || sentence(e.meeting_channel));
+      if (e.meeting_link) lines.push('Link: ' + e.meeting_link);
+    }
+    return lines.join('\n');
+  }
+  /* The content meeting as it is drawn on the month's card and in a task's
+     next step: when and where, the link once there is one, the button that
+     books Google Meet on the shared calendar, and the message to the client
+     with its Copy. */
+  function meetHtml(e, can) {
+    var set = e.meeting_at && !e.meeting_na;
+    var bookable = can && set && e.meeting_channel === 'google_meet' && !e.meeting_link;
+    return '<div class="eng-meet"><span class="eng-lab">Content meeting</span>' +
+        '<span class="eng-meetword' + (meetingHeld(e) ? ' is-held' : '') + '">' + esc(meetingWord(e)) + '</span>' +
+        (can ? '<span class="eng-meetacts">' +
+          (bookable ? '<button class="btn btn-sm" data-a="book" type="button">Create Google Meet</button>' : '') +
+          '<button class="btn btn-sm" data-a="meet" type="button">' + (e.meeting_at || e.meeting_na ? 'Change' : 'Set meeting') + '</button>' +
+        '</span>' : '') +
+      '</div>' +
+      (set && e.meeting_link
+        ? '<div class="eng-meetlink"><span class="eng-lab">Link</span>' +
+            '<a class="ovlink" href="' + esc(e.meeting_link) + '" target="_blank" rel="noopener">' +
+              esc(e.meeting_link.replace(/^https:\/\//, '')) + '</a></div>'
+        : '') +
+      (set
+        ? '<div class="eng-meetmsg"><div class="eng-meetmsg-head"><span class="eng-lab">Message to client</span>' +
+            '<span class="eng-meetacts">' +
+              '<button class="btn btn-sm" data-a="msgshow" type="button" aria-expanded="false">Show</button>' +
+              '<button class="btn btn-sm" data-a="msgcopy" type="button"><span>Copy</span></button>' +
+            '</span></div>' +
+            '<pre class="eng-meetmsg-text" hidden>' + esc(clientMessage(e)) + '</pre></div>'
+        : '') +
+      (meetWarn && meetWarn.id === e.id ? '<div class="msg warn eng-meetwarn">' + esc(meetWarn.text) + '</div>' : '');
+  }
+  function wireMeet(root, e, sayIn, open, after) {
+    var mb = root.querySelector('[data-a="meet"]');
+    if (mb) mb.addEventListener('click', open);
+    var bk = root.querySelector('[data-a="book"]');
+    if (bk) bk.addEventListener('click', function () {
+      meetWarn = null;
+      bk.disabled = true;
+      bk.textContent = 'Booking';
+      meetCall(e, 'create', function (d) {
+        if (d && !d.error) { after(); return; }
+        bk.disabled = false;
+        bk.textContent = 'Create Google Meet';
+        if (typeof sayIn === 'string') { msg(sayIn, meetSaid(d), 'warn'); return; }
+        var m = sayIn && sayIn.querySelector('[data-a="msg"]');
+        if (m) { m.textContent = meetSaid(d); m.className = 'msg warn'; }
+      });
+    });
+    var sh = root.querySelector('[data-a="msgshow"]');
+    var pre = root.querySelector('.eng-meetmsg-text');
+    if (sh && pre) sh.addEventListener('click', function () {
+      pre.hidden = !pre.hidden;
+      sh.textContent = pre.hidden ? 'Show' : 'Hide';
+      sh.setAttribute('aria-expanded', String(!pre.hidden));
+    });
+    var cp = root.querySelector('[data-a="msgcopy"]');
+    if (cp) cp.addEventListener('click', function () {
+      if (window.ADspaceCopy) window.ADspaceCopy.to(cp, clientMessage(e));
+    });
+  }
 
   /* THE CLIENT RECORD'S WORK PANE. The client's tasks by month, each month
      under its engagement record, drawn by this script because the words, the
@@ -5662,10 +5748,7 @@
         '</div>' +
       '</div>' +
       '<div class="msg" data-a="msg"></div>' +
-      '<div class="eng-meet"><span class="eng-lab">Content meeting</span>' +
-        '<span class="eng-meetword' + (meetingHeld(e) ? ' is-held' : '') + '">' + esc(meetingWord(e)) + '</span>' +
-        (can ? '<button class="btn btn-sm" data-a="meet" type="button">' + (e.meeting_at || e.meeting_na ? 'Change' : 'Set meeting') + '</button>' : '') +
-      '</div>' +
+      meetHtml(e, can) +
       '<div data-a="checks">' + checksHtml(e, checks, can) + '</div>';
     var st = el.querySelector('[data-a="status"]');
     if (st) st.addEventListener('change', function () {
@@ -5679,8 +5762,7 @@
       if (k === 'edit') openEng(e, cw.client);
       if (k === 'delete') askDeleteMonth(e, cw.client, readClientWork);
     });
-    var mt = el.querySelector('[data-a="meet"]');
-    if (mt) mt.addEventListener('click', function () { openMeet(e); });
+    wireMeet(el, e, el, function () { openMeet(e); }, readClientWork);
     /* The two ticks repaint themselves from the answer, never the list. */
     var box = el.querySelector('[data-a="checks"]');
     var paintChecks = function () {
@@ -5764,9 +5846,11 @@
   }
   var meetEditing = null;
   var meetAfter = null;
+  var meetWarn = null;
   function openMeet(e) {
     if (!may('ops', 'work')) return;
     meetEditing = e;
+    meetWarn = null;
     meetAfter = null;
     var at = e.meeting_at ? new Date(e.meeting_at) : null;
     $('meetDate').value = at ? at.getFullYear() + '-' + String(at.getMonth() + 1).padStart(2, '0') + '-' + String(at.getDate()).padStart(2, '0') : '';
@@ -5775,6 +5859,10 @@
     if (!e.meeting_at) $('meetDate').setAttribute('min', monthKey(new Date()) + '-' + String(new Date().getDate()).padStart(2, '0'));
     else $('meetDate').removeAttribute('min');
     $('meetChannel').value = e.meeting_channel || 'google_meet';
+    $('meetMinutes').value = String(e.meeting_minutes || 30);
+    if (!$('meetMinutes').value) $('meetMinutes').value = '30';
+    $('meetLink').value = e.meeting_link || '';
+    $('meetBook').checked = true;
     var me = bridge.me && bridge.me();
     $('meetOwner').innerHTML = state.members.map(function (m) {
       var pick = e.meeting_owner_id ? m.id === e.meeting_owner_id : (me && me.id === m.id);
@@ -5788,29 +5876,98 @@
   }
   function meetNaChanged() {
     var na = $('meetNa').checked;
-    ['meetDate', 'meetTime', 'meetChannel', 'meetOwner'].forEach(function (id) { $(id).disabled = na; });
+    ['meetDate', 'meetTime', 'meetMinutes', 'meetChannel', 'meetOwner', 'meetLink', 'meetBook'].forEach(function (id) { $(id).disabled = na; });
+    meetBookShown();
+  }
+  /* The calendar is offered only where it can do something: a Google Meet
+     meeting with no link typed and no event on the calendar yet. Once there
+     is an event, a moved meeting moves it without being asked. */
+  function meetBookShown() {
+    var e = meetEditing;
+    var show = !$('meetNa').checked && $('meetChannel').value === 'google_meet' &&
+      !String($('meetLink').value || '').trim() && !(e && e.meeting_event_id);
+    $('meetBookLine').hidden = !show;
+  }
+  /* What the edge function answered, in the team's words. */
+  function meetSaid(d) {
+    var k = d && d.error;
+    if (k === 'meet-not-set-up') return 'Google Meet is not connected yet. Paste a link instead.';
+    if (k === 'slot-taken') {
+      var span = d.start ? clock(d.start) + (d.end ? ' to ' + clock(d.end) : '') : '';
+      return 'The shared calendar already has ' + (d.summary ? '\u201c' + d.summary + '\u201d' : 'a meeting') +
+        (span ? ' at ' + span : '') + '. Choose another time.';
+    }
+    if (k === 'google-refused') return 'Google refused the booking. Try again.';
+    if (k === 'not-saved') return 'The event was made but its link was not saved. Try again.';
+    return k ? said(k) : 'Google Meet could not be reached. Paste a link instead.';
+  }
+  /* Ask the shared calendar: `create` books the meeting or moves the event
+     it already has, `delete` takes it off. */
+  function meetCall(e, action, done) {
+    if (!db.functions || !db.functions.invoke) { done({ error: 'meet-not-set-up' }); return; }
+    db.functions.invoke('meet-create', { body: { engagementId: e.id, action: action } }).then(function (r) {
+      if (r.error) { done({ error: 'unreachable' }); return; }
+      done(r.data || {});
+    }, function () { done({ error: 'unreachable' }); });
   }
   function saveMeet() {
     var e = meetEditing;
     if (!e) return;
     var na = $('meetNa').checked;
     var args = { p_engagement: e.id, p_note: String($('meetNote').value || '').trim() || null, p_na: na };
+    var link = String($('meetLink').value || '').trim();
+    var channel = $('meetChannel').value || null;
     if (!na) {
       if (!$('meetDate').value) { msg('meetMsg', said('no-date'), 'err'); $('meetDate').focus(); return; }
+      if (link && !/^https:\/\/([a-z0-9-]+\.)*(meet\.google\.com|zoom\.us|teams\.microsoft\.com|teams\.live\.com)\//i.test(link)) {
+        msg('meetMsg', said('bad-meeting-link'), 'err'); $('meetLink').focus(); return;
+      }
       var when = new Date($('meetDate').value + 'T' + ($('meetTime').value || '10:00') + ':00');
       args.p_at = when.toISOString();
-      args.p_channel = $('meetChannel').value || null;
+      args.p_channel = channel;
       args.p_owner = $('meetOwner').value || null;
+      args.p_minutes = Number($('meetMinutes').value) || 30;
+      args.p_link = link;
     } else { args.p_at = null; }
+    /* What the shared calendar has to do after the save: take the event off
+       where the month no longer meets on Google Meet, move it where it does,
+       and book it where somebody asked for a link. */
+    var calendar = null;
+    if (e.meeting_event_id && (na || channel !== 'google_meet')) calendar = 'delete';
+    else if (!na && channel === 'google_meet' && (e.meeting_event_id || (!link && $('meetBook').checked))) calendar = 'create';
     var btn = $('meetGo');
     btn.disabled = true;
-    call('ops_engagement_set_meeting', args, 'meetMsg', function () {
+    /* Opened from a task, the task repaints; from the month, the month. */
+    var repaint = function () { if (meetAfter) meetAfter(); else readClientWork(); };
+    var finish = function () {
       btn.disabled = false;
       sheet('meetSheet', false);
-      /* Opened from a task, the task repaints; from the month, the month. */
-      var after = meetAfter;
+      repaint();
       meetAfter = null;
-      if (after) after(); else readClientWork();
+    };
+    call('ops_engagement_set_meeting', args, 'meetMsg', function (fresh) {
+      if (!calendar) { finish(); return; }
+      if (fresh && fresh.id) meetEditing = fresh;
+      msg('meetMsg', calendar === 'delete' ? 'Removing it from the shared calendar.' : 'Booking the shared calendar.');
+      meetCall(e, calendar, function (d) {
+        if (d && !d.error) { finish(); return; }
+        /* Google not connected is not something this sheet can fix: the
+           meeting is saved, the sheet closes, and the line says so under
+           the meeting it is about. */
+        if (!d || d.error === 'meet-not-set-up' || d.error === 'unreachable') {
+          meetWarn = { id: e.id, text: 'Saved. ' + meetSaid(d) };
+          finish();
+          return;
+        }
+        /* A clash or a refusal can be put right here: the meeting is saved,
+           the sheet stays open so the time can change, and the list behind
+           it already shows the save. */
+        btn.disabled = false;
+        if (d && d.error === 'slot-taken') $('meetTime').focus();
+        msg('meetMsg', 'Saved. ' + meetSaid(d), 'warn');
+        meetBookShown();
+        repaint();
+      });
     }, function () { btn.disabled = false; });
   }
 
@@ -6460,6 +6617,9 @@
     if (meetGoBtn) meetGoBtn.addEventListener('click', saveMeet);
     var meetNaTick = $('meetNa');
     if (meetNaTick) meetNaTick.addEventListener('change', meetNaChanged);
+    ['meetChannel', 'meetLink'].forEach(function (id) {
+      var el = $(id); if (el) el.addEventListener(id === 'meetLink' ? 'input' : 'change', meetBookShown);
+    });
     ['handClose', 'handCancel'].forEach(function (id) {
       var b = $(id); if (b) b.addEventListener('click', function () { sheet('handSheet', false); });
     });

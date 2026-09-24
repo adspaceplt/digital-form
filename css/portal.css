@@ -3960,6 +3960,16 @@ body > .shell { width: 100%; }
 .eng-meetword { color: var(--ink); }
 .eng-meetword.is-held { color: var(--ok); }
 .eng-meet .btn-sm { margin-left: auto; }
+.eng-meet .eng-meetacts { margin-left: auto; }
+.eng-meetacts { display: flex; flex-wrap: wrap; gap: 8px; }
+.eng-meetacts .btn-sm { margin-left: 0; }
+.eng-meetlink { display: flex; align-items: center; gap: 12px; padding: 0 0 12px; font-size: 13.5px; min-width: 0; }
+.eng-meetlink .ovlink { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.eng-meetmsg { padding: 12px 0; border-top: 1px solid var(--line-soft); font-size: 13.5px; }
+.eng-meetmsg-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.eng-meetmsg-head .eng-meetacts { margin-left: auto; }
+.eng-meetwarn { margin: 0 0 12px; }
+.eng-meetmsg-text { margin: 12px 0 0; padding: 12px 14px; background: var(--sunk); border-radius: var(--radius-sm); font: inherit; font-size: 13px; line-height: 1.55; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
 .eng-checks { border-top: 1px solid var(--line-soft); padding-bottom: 4px; }
 /* Readiness is two ticks (2026-09-24): the heading and its count on one line,
    then one row a checklist — the tick, the name with who ticked it and when
@@ -3983,6 +3993,8 @@ body > .shell { width: 100%; }
 /* In a task's next step the month is a block of the step, under its line. */
 .tnext-month { margin-top: 12px; }
 .tnext-month .eng-meet { margin-top: 4px; padding-bottom: 0; }
+.tnext-month .eng-meetlink { padding-top: 8px; }
+.tnext-month .eng-meetmsg { margin-top: 12px; padding-bottom: 0; }
 /* The head keeps its control on the right wherever the name has 200px
    beside it, which the narrow pane does; only the tight one stacks. */
 .is-tight .eng-head { grid-template-columns: minmax(0, 1fr); }

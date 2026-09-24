@@ -807,6 +807,19 @@ about it (planning complete, the meeting held or marked not applicable), and
 both are the database's to check: a status a page could set is a status a
 page could set wrongly.
 
+**A meeting is booked where it is planned, and the message about it is
+written for the team (2026-09-24).** The content meeting books itself on the
+shared calendar with a Google Meet link, and the calendar is the lock: a slot
+another event holds is refused and named, because the point of one shared
+calendar is that two people cannot book the same half hour. A step that needs
+a service the team has not connected yet does not fail the save it follows:
+the meeting is saved and the line under it says what is missing, in one
+sentence with the way round it. And what the team sends the client is drawn
+from the record, never typed again: the team's own bilingual template, filled
+from the date, the length, the content month and the link, with one Copy.
+The text is folded behind Show, because the everyday act is Copy and nine
+lines of it on every month would be the card.
+
 **Readiness is what the team ticks, not a form the portal re-asks
 (2026-09-24).** It was thirteen questions, each with a state select and an
 owner select, and the user sent it back: the team's own Onboarding checklist
