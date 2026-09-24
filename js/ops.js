@@ -5217,6 +5217,7 @@
   function genWhatChanged() {
     var recur = $('genWhat').value === 'recur';
     $('genMonthBox').hidden = recur;
+    $('genClientField').hidden = recur;
     $('genRecurBox').hidden = !recur;
     $('genGo').textContent = recur ? 'Run' : 'Add tasks';
     $('genWeeksRow').hidden = $('genSpread').value !== 'set';
