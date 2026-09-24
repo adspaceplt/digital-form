@@ -103,10 +103,15 @@
        never inherited, in the page and in `ops_granted()` alike, and their
        unset option reads No access rather than Same as section. */
     ops:       [['all', 'The whole team\'s queue'], ['reports', 'Reports'],
-                ['workflows', 'Templates and recurring'], ['time', 'Another person\'s hours']]
+                ['workflows', 'Templates and recurring'], ['time', 'Another person\'s hours']],
+    /* Everybody's monthly performance review: View reads them, Work scores,
+       releases and answers disputes, Manage also reopens a final record.
+       Granted like the four above, because administering the team is not
+       reading its scores, and the master code is asked for on top. */
+    team:      [['performance', 'Performance reviews']]
   };
   /* The sections whose parts are granted rather than inherited. */
-  var GRANTED_PARTS = { ops: 1 };
+  var GRANTED_PARTS = { ops: 1, team: 1 };
 
   /* What a part holds that its section does not. An inherited part falls back
      to its section, so a stored level equal to it changes nothing; a granted

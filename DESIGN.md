@@ -444,7 +444,7 @@ Scale for gaps between blocks and sections: 4, 8, 12, 16, 24, 32. Component padd
 | Panel padding | 18px 20px (phone 14px) |
 | Fold head (`.disclosure`) | 16px 22px (phone 12px 14px) |
 | Row padding in a table | 10px 15px (phone 12px 15px); a header row `0 15px 8px` |
-| Field row gap (`.row`) | 12px; a second row 12px above |
+| Field row gap (`.row`) | 12px across; **in a sheet, 16px down** between one field and the next, and between fields a row has wrapped on a phone (`.sheet-body :where(.row)`, 2026-09-24). The My Work sheets had no step at all and the others carried 12px in a style attribute per row; no row in a sheet states its own margin now, and `tests/geom.js` measures every sheet at 1280 and 390 |
 | Cell grid gap (`.facts`, `.tally`) | 14px 24px / 14px |
 | Card list gap (`.cards`, `.kcard`) | 14px / 10px |
 | Table sub-heading (`.svc-cat`) | 14px 15px 6px |
