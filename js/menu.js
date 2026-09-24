@@ -30,6 +30,28 @@
     for (var i = 0; i < closers.length; i++) closers[i]();
   }, true);
 
+  /* A resize moves the button and left the menu where it was drawn, pinned
+     to the old coordinates while the bar reflowed under it (reported by the
+     user on 2026-09-24). The open menu follows its button; a button the new
+     width hides or takes off the page closes the menu instead. */
+  var resizing = 0;
+  window.addEventListener('resize', function () {
+    if (resizing || !held || !held.menu) return;
+    resizing = requestAnimationFrame(function () {
+      resizing = 0;
+      if (!held || !held.menu) return;
+      var open = !held.menu.hidden && held.menu.getClientRects().length > 0;
+      if (!open) { held = null; return; }
+      var gone = !document.body.contains(held.btn) || !held.btn.getClientRects().length;
+      if (gone) {
+        held = null;
+        for (var i = 0; i < closers.length; i++) closers[i]();
+        return;
+      }
+      window.ADspaceMenu.place(held.btn, held.menu, held.align);
+    });
+  });
+
   window.ADspaceMenu = {
     /* Placed on the viewport rather than in the row, so the table's own
        overflow cannot clip it, and upwards where the room is above: a ⋯ on
@@ -51,7 +73,7 @@
       menu.style.top = (r.bottom + 4 + h <= window.innerHeight - 8 || r.top - 4 - h < 8)
         ? (r.bottom + 4) + 'px'
         : (r.top - 4 - h) + 'px';
-      held = { btn: btn, top: r.top };
+      held = { btn: btn, top: r.top, menu: menu, align: align };
     },
     // How this page shuts its own menus, for a scroll that has really moved.
     onScroll: function (shut) { closers.push(shut); }

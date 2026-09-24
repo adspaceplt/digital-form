@@ -102,16 +102,26 @@
        hours are all *more* than "work my own tasks". So they are granted and
        never inherited, in the page and in `ops_granted()` alike, and their
        unset option reads No access rather than Same as section. */
-    ops:       [['all', 'The whole team\'s queue'], ['reports', 'Reports'],
-                ['workflows', 'Templates and recurring'], ['time', 'Another person\'s hours']],
+    /* The three views of a person's own work (2026-09-24, the user asked for
+       each view to be granted on its own) follow the section unless set:
+       they show or hide a view of the same tasks, so the database's own
+       rules on which tasks arrive are unchanged. Workload reads the whole
+       team's queue and Report the team's figures, so those two are granted. */
+    ops:       [['list', 'List view'], ['board', 'Board view'], ['calendar', 'Calendar view'],
+                ['all', 'Workload and the whole team\'s tasks'], ['reports', 'Report view'],
+                ['workflows', 'Templates and recurring tasks'], ['time', 'Another person\'s time records']],
     /* Everybody's monthly performance review: View reads them, Work scores,
        releases and answers disputes, Manage also reopens a final record.
        Granted like the four above, because administering the team is not
        reading its scores, and the master code is asked for on top. */
     team:      [['performance', 'Performance reviews']]
   };
-  /* The sections whose parts are granted rather than inherited. */
-  var GRANTED_PARTS = { ops: 1, team: 1 };
+  /* The parts that are granted rather than inherited: each opens more than
+     its section does, so silence means no. The same list the console reads
+     (`OPS_GRANTED` in js/admin.js) and the database asks (`ops_granted()`). */
+  var GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1 };
+  function isGranted(key) { return Boolean(GRANTED[key]); }
+  var VIEW_PARTS = { 'ops.list': 1, 'ops.board': 1, 'ops.calendar': 1 };
 
   /* The levels a part is actually asked for, read off the database's own
      checks (2026-09-24, the user found a select offering levels that did
@@ -122,6 +132,7 @@
      granted part reads No access once and not twice. */
   var PART_LEVELS = {
     'ops.all': ['view'], 'ops.reports': ['view'], 'ops.workflows': ['view', 'work'],
+    'ops.list': ['view'], 'ops.board': ['view'], 'ops.calendar': ['view'],
     'ops.time': ['manage'], 'team.performance': ['view', 'work', 'manage']
   };
   function partLevels(key) {
@@ -130,6 +141,16 @@
     return ['view', 'work', 'manage'];
   }
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
+  /* Whether a part's level says something its section does not. A view-only
+     part that follows its section (the three My Work views) is the same as
+     the section whenever the section opens at all: View on the List view of
+     a group that works My Work is not an exception. */
+  function adds(key, held, same) {
+    if (!held || held === same) return false;
+    var only = partLevels(key);
+    if (VIEW_PARTS[key] && held !== 'none' && RANK[same] >= RANK[only[0]]) return false;
+    return true;
+  }
   /* A level stored before the select was narrowed is shown as what it
      grants: `work` on the team's queue grants reading it, which is View; `work`
      on another person's hours grants nothing, because only Manage is asked. */
@@ -140,7 +161,7 @@
     var best = '';
     list.forEach(function (l) { if (RANK[l] <= RANK[v]) best = l; });
     if (best) return best;
-    return GRANTED_PARTS[key.split('.')[0]] ? '' : 'none';
+    return isGranted(key) ? '' : 'none';
   }
 
   /* What a part holds that its section does not. An inherited part falls back
@@ -152,8 +173,8 @@
     var held = (acc && acc[key]) || '';
     if (!held) return '';
     var sec = key.split('.')[0];
-    var same = GRANTED_PARTS[sec] ? 'none' : ((acc && acc[sec]) || 'none');
-    return held === same ? '' : held;
+    var same = isGranted(key) ? 'none' : ((acc && acc[sec]) || 'none');
+    return adds(key, held, same) ? held : '';
   }
   var CAPS = [];
 
@@ -523,7 +544,7 @@
             return '<option value="' + l[0] + '">' + esc(l[1]) + '</option>';
           }).join('') + '</select></div>' +
         (parts.length ? '<div class="permsec-parts" id="grParts-' + sec[0] + '" hidden>' + parts.map(function (p) {
-          var key = sec[0] + '.' + p[0], granted = GRANTED_PARTS[sec[0]];
+          var key = sec[0] + '.' + p[0], granted = isGranted(key);
           /* A part is a row: its name on the left and its select on the
              section select's own right edge, so every choice in the panel
              reads down one column however long the name is. */
@@ -534,7 +555,11 @@
                section and may still be shut on its own. */
             (granted ? '<option value="">No access</option>'
                      : '<option value="">Same as section</option><option value="none">No access</option>') +
-            partLevels(key).map(function (l) { return '<option value="' + l + '">' + esc(LEVEL_WORD[l]) + '</option>'; }).join('') +
+            /* A My Work view follows its section and has two states, so it
+               offers two: Same as section and No access. (An Activity tab
+               keeps View, which opens one tab over a shut section.) */
+            (VIEW_PARTS[key] ? '' :
+              partLevels(key).map(function (l) { return '<option value="' + l + '">' + esc(LEVEL_WORD[l]) + '</option>'; }).join('')) +
             '</select></label>';
         }).join('') + '</div>' : '') +
       '</div>';
@@ -625,8 +650,8 @@
     partPicks().forEach(function (sel) {
       var k = sel.getAttribute('data-part');
       var sec = k.split('.')[0];
-      var same = GRANTED_PARTS[sec] ? 'none' : (access[sec] || 'none');
-      if (sel.value && sel.value !== same) access[k] = sel.value;
+      var same = isGranted(k) ? 'none' : (access[sec] || 'none');
+      if (sel.value && adds(k, sel.value, same)) access[k] = sel.value;
     });
     if (state.editing) {
       var r = state.editing;

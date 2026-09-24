@@ -5722,16 +5722,6 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    name broken across seven lines. Here the head's width is the window's, so
    the window is the right thing to ask, and the template is the console's own
    rather than a second one written for this page. */
-/* My performance's email-code lock: the switch above the list, and the
-   prompt in place of the list while the lock is shut. */
-.mineguard { margin-bottom: 12px; }
-/* While the lock is shown it sits first, the switch under it on the same
-   centre line, and the list is empty. */
-#sectionMine.is-locked { display: flex; flex-direction: column; }
-#sectionMine.is-locked > .lockcard { order: 0; }
-#sectionMine.is-locked > #mineMsg { order: 1; text-align: center; }
-#sectionMine.is-locked > .mineguard { order: 2; align-self: center; margin: 16px 0 0; }
-#sectionMine.is-locked > #mineList { order: 3; }
 /* Link history: one change a block, newest first, the time and who on one
    line with Restore at its end, what went and came under it. */
 .lhist-row { padding: 12px 0; border-top: 1px solid var(--line-soft); }
@@ -7002,6 +6992,45 @@ body.is-canvas { overflow: hidden; }
   border: 0; border-radius: 8px; background: none; color: var(--ink-mute); padding: 0;
 }
 .cmdbar-find-clear svg { width: 15px; height: 15px; stroke-width: 1.8; }
+/* The padlock beside Performance: shut and mute while the code is needed,
+   open and ink while the reviews are unlocked. */
+.tabrow .perf-lockicon { align-self: center; margin-left: 2px; color: var(--ink-mute); background: none; border-color: transparent; }
+.tabrow .perf-lockicon.is-open { color: var(--ink); }
+.tabrow .perf-lockicon[hidden] { display: none; }
+.perf-lockicon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+@media (hover: hover) { .tabrow .perf-lockicon.is-open:hover { background: var(--tonal); } }
+/* THE VIEW SEGMENT STANDS STILL (2026-09-24). My Work's segment sat after a
+   420px search box that the report and workload views take away, so the
+   segment jumped left and right as the view changed under it (reported by
+   the user with three screenshots). At a desk the segment leads the bar and
+   the search is the phone's mark that grows into the field: whatever a view
+   adds or removes after it, the segment is at the same x. */
+.cmdbar-search[hidden] { display: none !important; }
+@media (min-width: 641px) {
+  .cmdbar-grow .cmdbar-search {
+    display: inline-grid; place-items: center; position: relative; padding: 0;
+    width: var(--ctl-h-sm); min-width: 0; height: var(--ctl-h-sm); flex: 0 0 auto;
+    border: 1px solid transparent; border-radius: var(--radius-ctl);
+    background: var(--tonal); color: var(--ink);
+    transition: max-width var(--t-slow) var(--ease), width var(--t-slow) var(--ease),
+                opacity var(--t) var(--ease-out), margin var(--t-slow) var(--ease);
+  }
+  @media (hover: hover) { .cmdbar-grow .cmdbar-search:hover { background: var(--tonal-hover); } }
+  .cmdbar-grow .cmdbar-search.is-set { border-color: var(--ink-mute); }
+  /* Collapsed, the field costs nothing: no width and none of the bar's gap. */
+  .cmdbar-grow .cmdbar-find {
+    flex: 0 0 auto; width: 0; max-width: 0; min-width: 0; margin-left: -10px;
+    opacity: 0; overflow: hidden;
+    transition: width var(--t-slow) var(--ease), max-width var(--t-slow) var(--ease),
+                margin var(--t-slow) var(--ease), opacity var(--t) var(--ease-out);
+  }
+  .cmdbar-grow.is-searching .cmdbar-find { width: 280px; max-width: 280px; margin-left: 0; opacity: 1; }
+  .cmdbar-grow.is-searching .cmdbar-search {
+    width: 0; max-width: 0; margin-left: -10px; opacity: 0; border-width: 0; overflow: hidden;
+  }
+  .cmdbar-grow.is-searching .cmdbar-find .input { padding-right: 38px; }
+  .cmdbar-grow.is-searching .cmdbar-find-clear { display: grid; }
+}
 @media (max-width: 640px) {
   /* ONE ROW: two marks on the left, what the list holds and what to do about
      it on the right. Search is the widest control in the bar and is used
@@ -7376,9 +7405,9 @@ body.is-canvas { overflow: hidden; }
 .qhead-ctx[hidden] { display: none; }
 .sheet-side .qbody {
   flex: 1 1 auto; margin: 0; padding: 16px 16px 24px; overflow-y: auto;
-  display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch;
+  display: flex; flex-direction: column; gap: 16px; -webkit-overflow-scrolling: touch;
 }
-.qcard { background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius); padding: 14px 16px; }
+.qcard { background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius); padding: 18px 20px; }
 .qcard[hidden] { display: none; }
 .qcard-title { margin: 0 0 8px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
 /* A card's heading and its one quiet action share a line; the action's 32px
@@ -7491,8 +7520,8 @@ body.is-canvas { overflow: hidden; }
   }
   @supports (max-height: 92dvh) { .sheet-side > .sheet-card.taskcard { max-height: 92dvh; } }
   .qhead { padding: 10px 16px 12px; border-radius: var(--radius) var(--radius) 0 0; }
-  .sheet-side .qbody { padding: 12px 12px calc(20px + env(safe-area-inset-bottom, 0px)); }
-  .qcard { padding: 12px 14px; }
+  .sheet-side .qbody { padding: 12px 12px calc(20px + env(safe-area-inset-bottom, 0px)); gap: 12px; }
+  .qcard { padding: 16px 16px; }
   .qnext-acts .btn { flex: 1 1 0; min-width: 0; }
   .qform-acts .btn { flex: 1 1 0; min-width: 0; }
   .qform .row { flex-direction: column; }
@@ -7690,10 +7719,11 @@ body.is-canvas { overflow: hidden; }
 .perf-quiet { margin: 0; font-size: 13px; color: var(--ink-mute); }
 .perf-cats { display: grid; }
 .perf-cat {
-  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: start;
-  padding: 10px 0; border-top: 1px solid var(--line-soft);
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px 12px; align-items: center;
+  padding: 16px 0; border-top: 1px solid var(--line-soft);
 }
-.perf-cat:first-child { border-top: 0; padding-top: 2px; }
+.perf-cat:first-child { border-top: 0; padding-top: 4px; }
+.perf-cat:last-child { padding-bottom: 0; }
 .perf-cat-name { display: flex; flex-direction: column; gap: 3px; min-width: 0; font-size: 13.5px; }
 .perf-cat-name label { font-weight: 500; }
 .perf-cat-name small { font-size: 12px; color: var(--ink-mute); }

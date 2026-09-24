@@ -11788,3 +11788,82 @@ grant execute on function public.perf_dispute(uuid, jsonb) to authenticated;
 grant execute on function public.perf_acknowledge(uuid) to authenticated;
 
 -- END OF MY PERFORMANCE BEHIND AN EMAIL CODE ---------------------------------
+
+-- ===========================================================================
+-- MY PERFORMANCE ALWAYS ASKS FOR AN EMAIL CODE — the lock is no longer a
+-- member's own switch.
+-- 2026-09-24. Safe to run twice. Run after 2026-09-24-performance-email-code.sql.
+-- Rollback at the foot. Mirrored byte for byte in supabase/schema.sql under
+-- the same banner; tests/perf.js compares the two.
+--
+-- WHAT CHANGED. The user, on 2026-09-24: the page "mandatory requires otp
+-- pin", so a tick to turn it on or off is useless. Every member's own
+-- reviews now ask for a code emailed to them in the last 15 minutes, with
+-- no switch: perf_guarded answers true for everybody and perf_guard_set
+-- refuses to turn it off. The `email_code` column stays, unread, so the
+-- rollback is two function bodies.
+--
+-- ROLLBACK
+--   re-run perf_guarded and perf_guard_set from
+--   2026-09-24-performance-email-code.sql.
+-- ===========================================================================
+
+/* Every member's reviews are behind the code. */
+create or replace function public.perf_guarded(p_member uuid)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select true
+$$;
+
+/* The switch is gone. Kept as a function so an open page from before this
+   change is refused in words rather than by a missing function. */
+create or replace function public.perf_guard_set(p_on boolean)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not coalesce(p_on, true) then return jsonb_build_object('error', 'always-on'); end if;
+  return jsonb_build_object('ok', true, 'on', true);
+end $$;
+
+revoke all on function public.perf_guarded(uuid) from public, anon, authenticated;
+revoke all on function public.perf_guard_set(boolean) from public, anon, authenticated;
+grant execute on function public.perf_guard_set(boolean) to authenticated;
+
+-- END OF MY PERFORMANCE ALWAYS ASKS FOR AN EMAIL CODE ------------------------
+
+-- ===========================================================================
+-- A TASK MAY BE MADE FOR A PAST CLIENT — the Client scope takes active and
+-- paused clients, and past ones when asked.
+-- 2026-09-24. Safe to run twice. Run after 2026-09-23-operations-phase4.sql.
+-- Rollback at the foot. Mirrored byte for byte in supabase/schema.sql under
+-- the same banner; tests/ops.js compares the two.
+--
+-- WHAT CHANGED. The new task sheet offered "Include paused clients"; the
+-- user asked for "Include past clients" (2026-09-24). A paused client is
+-- still a client, so paused is offered by default and the tick adds past
+-- clients, whose renewal and wind-down work is still work. The check is
+-- still made once, at creation.
+--
+-- ROLLBACK
+--   re-run ops_scope_error from 2026-09-23-operations-phase4.sql.
+-- ===========================================================================
+
+create or replace function public.ops_scope_error(p_scope text, p_client uuid)
+returns text
+language plpgsql stable as $$
+declare st text;
+begin
+  if p_scope = 'internal' then return null; end if;
+  if p_scope not in ('client', 'lead') then return 'bad-scope'; end if;
+  if p_client is null then return 'client-required'; end if;
+  select stage into st from public.clients where id = p_client;
+  if st is null then return 'client-required'; end if;
+  if p_scope = 'client' and st not in ('active', 'paused', 'past') then return 'client-not-active'; end if;
+  if p_scope = 'lead' and st not in ('lead', 'contacted', 'proposal') then return 'not-a-lead'; end if;
+  return null;
+end $$;
+
+-- END OF A TASK MAY BE MADE FOR A PAST CLIENT --------------------------------

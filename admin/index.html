@@ -17,7 +17,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260924j">
+<link rel="stylesheet" href="/css/portal.css?v=20260924k">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -32,26 +32,26 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260924j"></script>
-<script src="/js/words.js?v=20260924j"></script>
-<script src="/js/copy.js?v=20260924j"></script>
-<script src="/js/ask.js?v=20260924j"></script>
-<script src="/js/confirm.js?v=20260924j"></script>
-<script src="/js/sheet.js?v=20260924j"></script>
-<script src="/js/form.js?v=20260924j"></script>
-<script src="/js/state.js?v=20260924j"></script>
-<script src="/js/group.js?v=20260924j"></script>
-<script src="/js/menu.js?v=20260924j"></script>
-<script src="/js/cmdbar.js?v=20260924j"></script>
-<script src="/js/api.js?v=20260924j"></script>
-<script src="/js/money.js?v=20260924j"></script>
-<script src="/js/mockups.js?v=20260924j"></script>
+<script src="/js/config.js?v=20260924k"></script>
+<script src="/js/words.js?v=20260924k"></script>
+<script src="/js/copy.js?v=20260924k"></script>
+<script src="/js/ask.js?v=20260924k"></script>
+<script src="/js/confirm.js?v=20260924k"></script>
+<script src="/js/sheet.js?v=20260924k"></script>
+<script src="/js/form.js?v=20260924k"></script>
+<script src="/js/state.js?v=20260924k"></script>
+<script src="/js/group.js?v=20260924k"></script>
+<script src="/js/menu.js?v=20260924k"></script>
+<script src="/js/cmdbar.js?v=20260924k"></script>
+<script src="/js/api.js?v=20260924k"></script>
+<script src="/js/money.js?v=20260924k"></script>
+<script src="/js/mockups.js?v=20260924k"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260924j" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260924k" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -497,7 +497,7 @@
             </label>
           </section>
           <section class="fsec">
-            <h4 class="fsec-h">How to reach them</h4>
+            <h4 class="fsec-h">Contact details</h4>
             <div class="row fgrid">
               <div><label class="field-label" for="ctPhone">Phone / WhatsApp</label>
                 <input class="input" id="ctPhone" type="tel" placeholder="01x-xxx xxxx"></div>
@@ -728,7 +728,7 @@
           <details class="fmore" id="svMore">
             <summary>More details <span class="fmore-sum"></span></summary>
             <div class="row">
-              <div><label class="field-label" for="svDetail">What it includes</label>
+              <div><label class="field-label" for="svDetail">Inclusions</label>
                 <textarea class="input textarea" id="svDetail" rows="4" placeholder="One item per line" data-some="Inclusions" data-none="No inclusions"></textarea></div>
             </div>
             <div class="row">
@@ -914,7 +914,7 @@
                the grid every other form uses rather than 170px each (the form
                audit of 2026-09-24). -->
           <section class="fsec">
-            <h4 class="fsec-h">What happened</h4>
+            <h4 class="fsec-h">Call or visit details</h4>
             <div class="row fgrid-3">
               <div><label class="field-label" for="tcKind">Type</label>
                 <select class="select" id="tcKind">
@@ -1763,11 +1763,10 @@
     <div class="console-body" id="sectionWork" hidden>
 
       <div id="workList">
-        <div class="cmdbar">
-          <span class="cmdbar-find">
-            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
-            <input class="input input-sm" id="workFind" type="search" placeholder="Search task or client" aria-label="Search tasks" autocomplete="off">
-          </span>
+        <!-- The view segment leads the bar and the search is a mark that grows
+             into the field, so the segment stands at the same place in every
+             view whatever each view adds after it. -->
+        <div class="cmdbar cmdbar-grow">
           <!-- One set of rows, three ways of reading it: the list bands by
                when the work is owed, the board lays one workflow's stages
                side by side with the work-in-progress guidance on each, and
@@ -1786,6 +1785,10 @@
             <button class="acttab btn-sm" data-view="report" id="workViewReport" type="button" aria-pressed="false" hidden>Report</button>
             <!-- Who is carrying what, for whoever may see the team's queue. -->
             <button class="acttab btn-sm" data-view="load" id="workViewLoad" type="button" aria-pressed="false" hidden>Workload</button>
+          </span>
+          <span class="cmdbar-find">
+            <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+            <input class="input input-sm" id="workFind" type="search" placeholder="Search task or client" aria-label="Search tasks" autocomplete="off">
           </span>
           <!-- Whose work is a view, not a filter. Assigned, created and
                following are everybody's; the whole team's queue is offered
@@ -1980,7 +1983,7 @@
           <nav class="rectabs" id="taskTabs" role="tablist" aria-label="Task">
             <button class="tab is-on" data-pane="work" type="button" role="tab" aria-selected="true">Work</button>
             <button class="tab" data-pane="activity" type="button" role="tab" aria-selected="false">Activity</button>
-            <button class="tab" data-pane="time" type="button" role="tab" aria-selected="false">Time</button>
+            <button class="tab" data-pane="time" type="button" role="tab" aria-selected="false">Time records</button>
           </nav>
 
           <div class="rec-pane" data-pane="work">
@@ -2045,7 +2048,7 @@
 
           <aside class="rec-rail" aria-label="Task facts">
             <div class="railblock rail-after" id="taskPeopleBlock">
-              <h3 class="railtitle">People</h3>
+              <h3 class="railtitle">Assignment</h3>
               <dl class="tfacts" id="taskPeople"></dl>
               <div class="msg" id="taskOwnerMsg"></div>
             </div>
@@ -2229,10 +2232,10 @@
             <!-- What the run is, first: one choice of two, so a segment. -->
             <div class="row">
               <div class="field">
-                <label class="field-label" for="genWhat">What</label>
+                <label class="field-label" for="genWhat">Bulk add type</label>
                 <select class="select" id="genWhat" data-seg>
-                  <option value="month">A month for a client</option>
-                  <option value="recur">This month's repeats</option>
+                  <option value="month">First month</option>
+                  <option value="recur">Recurring month</option>
                 </select>
               </div>
             </div>
@@ -2242,7 +2245,7 @@
                 <div class="field" id="genClientField">
                   <label class="field-label" for="genClient">Client</label>
                   <select class="select" id="genClient"></select>
-                  <label class="tickline"><input type="checkbox" id="genPaused"> <span>Include paused clients</span></label>
+                  <label class="tickline"><input type="checkbox" id="genPaused"> <span>Include past clients</span></label>
                 </div>
                 <div class="field">
                   <label class="field-label" for="genPeriod">Content month</label>
@@ -2252,7 +2255,7 @@
             </section>
             <div id="genMonthBox">
               <section class="fsec">
-                <h4 class="fsec-h">How many</h4>
+                <h4 class="fsec-h">Task quantity</h4>
                 <div class="row fgrid">
                   <div class="field">
                     <label class="field-label" for="genCount">Number of tasks</label>
@@ -2279,7 +2282,7 @@
                 <p class="hint genout" id="genOut" hidden></p>
               </section>
               <section class="fsec">
-                <h4 class="fsec-h">Owner</h4>
+                <h4 class="fsec-h">Assignment</h4>
                 <div class="row">
                   <div class="field">
                     <label class="field-label" for="genOwner">Task Owner</label>
@@ -2369,7 +2372,7 @@
                  the date unless somebody says otherwise, so it folds with its
                  value on the line (the form audit of 2026-09-24). -->
             <section class="fsec">
-              <h4 class="fsec-h">How often</h4>
+              <h4 class="fsec-h">Frequency</h4>
               <div class="row">
                 <div class="field">
                   <label class="field-label" for="recFreq">Repeats</label>
@@ -2392,14 +2395,14 @@
               </div>
             </section>
             <section class="fsec">
-              <h4 class="fsec-h">Ends</h4>
+              <h4 class="fsec-h">End of repeat</h4>
               <div class="row fgrid">
                 <div class="field">
-                  <label class="field-label" for="recEnds">On</label>
+                  <label class="field-label" for="recEnds">End date</label>
                   <input class="input" id="recEnds" type="date">
                 </div>
                 <div class="field">
-                  <label class="field-label" for="recMax">Or after this many</label>
+                  <label class="field-label" for="recMax">Or after this number of tasks</label>
                   <input class="input" id="recMax" type="number" min="1" max="500" inputmode="numeric" placeholder="No limit">
                 </div>
               </div>
@@ -2450,7 +2453,7 @@
                  task is (Client, Lead, Internal) is checked once at creation
                  and never again. -->
             <section class="fsec">
-              <h4 class="fsec-h">What</h4>
+              <h4 class="fsec-h">Task details</h4>
               <div class="row fgrid">
                 <div class="field span-all">
                   <label class="field-label" for="ntScope">Scope</label>
@@ -2487,7 +2490,7 @@
                    own line under the pair, so the client and the format keep
                    one height and the step under them stays 16px. -->
               <label class="tickline" id="ntPausedWrap"><input type="checkbox" id="ntPaused">
-                <span>Include paused clients</span></label>
+                <span>Include past clients</span></label>
               <div class="row">
                 <!-- The code is the database's, given on save; this is the
                      description after it. The line under it shows the name. -->
@@ -2535,7 +2538,7 @@
               </div>
             </section>
             <section class="fsec">
-              <h4 class="fsec-h">Owner</h4>
+              <h4 class="fsec-h">Assignment</h4>
               <div class="row">
                 <div class="field">
                   <label class="field-label" for="ntOwner">Task Owner</label>
@@ -2651,7 +2654,7 @@
                  fields it shuts are read after the reason they are shut. -->
             <label class="tickline meet-na"><input type="checkbox" id="meetNa"> <span>No meeting this month</span></label>
             <section class="fsec">
-              <h4 class="fsec-h">When</h4>
+              <h4 class="fsec-h">Date and time</h4>
               <div class="row fgrid-3">
                 <div class="field">
                   <label class="field-label" for="meetDate">Date</label>
@@ -2674,7 +2677,7 @@
               </div>
             </section>
             <section class="fsec">
-              <h4 class="fsec-h">Where</h4>
+              <h4 class="fsec-h">Meeting channel</h4>
               <div class="row">
                 <div class="field">
                   <label class="field-label" for="meetChannel">Channel</label>
@@ -2943,7 +2946,7 @@
               </form>
             </section>
             <section class="qcard" id="dwTimeSec">
-              <h3 class="qcard-title">Time</h3>
+              <h3 class="qcard-title">Time records</h3>
               <dl class="tfacts" id="dwTime"></dl>
               <details class="tmore" id="dwTimeMore">
                 <summary>Time in each stage</summary>
@@ -3094,7 +3097,7 @@
               <label class="tickline"><input type="checkbox" id="teActive" checked> <span>Offered when making tasks</span></label>
             </section>
             <section class="fsec">
-              <h4 class="fsec-h">Each task it makes</h4>
+              <h4 class="fsec-h">Task settings</h4>
               <div class="row fgrid-3">
                 <div class="field">
                   <label class="field-label" for="teOwner">Task Owner</label>
@@ -3257,6 +3260,10 @@
       <div class="tabrow" id="teamTabs" role="tablist" hidden>
         <button class="tab is-on" id="teamTabMembers" data-tab="members" type="button" role="tab">Members</button>
         <button class="tab" id="teamTabPerf" data-tab="performance" type="button" role="tab">Performance</button>
+        <!-- The lock's state beside the word it guards: shut while the master
+             code is needed, open while the reviews are unlocked, and pressing
+             the open one locks them at once. -->
+        <button class="iconbtn perf-lockicon" id="perfLockBtn" type="button" hidden></button>
       </div>
       <div id="teamMembersPane">
       <!-- Every console route opens on its command bar. The bar above already
@@ -3402,7 +3409,6 @@
               <span class="cmdbar-quiet"><span class="cmdbar-count" id="perfCount"></span></span>
               <span class="cmdbar-acts">
                 <button class="btn btn-sm" id="perfPrintMonth" type="button">Print month</button>
-                <button class="btn btn-sm" id="perfLockBtn" type="button">Lock</button>
               </span>
             </span>
           </div>
@@ -3459,12 +3465,8 @@
          Reached from the account menu. No master code: the database answers
          this read for the person's own record and nobody else's. ---- -->
     <div class="console-body" id="sectionMine" hidden>
-      <!-- A second lock the member may put on their own reviews: while it is
-           on, the database answers only a session verified by an emailed code
-           in the last 15 minutes. -->
-      <label class="tickline mineguard" id="mineGuard" hidden>
-        <input type="checkbox" id="mineGuardOn"> <span>Ask for an email code before showing my reviews</span>
-      </label>
+      <!-- A member's own reviews open only for a session verified by a code
+           emailed to them in the last 15 minutes. -->
       <section class="lockcard" id="mineLock" hidden aria-labelledby="mineLockTitle">
         <span class="lockcard-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
         <h3 class="lockcard-title" id="mineLockTitle">Your reviews are locked</h3>
@@ -3563,7 +3565,7 @@
           </div>
         </section>
         <section class="fsec">
-          <h4 class="fsec-h">What it includes</h4>
+          <h4 class="fsec-h">Inclusions</h4>
           <div class="row">
             <div><label class="field-label" for="svcDetail">One item per line</label>
               <textarea class="input textarea" id="svcDetail" rows="4" placeholder="Instagram, Facebook and TikTok&#10;8 contents each month&#10;Monthly performance report"></textarea></div>
@@ -4023,14 +4025,14 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260924j"></script>
-<script src="/js/documents.js?v=20260924j"></script>
-<script src="/js/letters.js?v=20260924j"></script>
-<script src="/js/register.js?v=20260924j"></script>
-<script src="/js/crm.js?v=20260924j"></script>
-<script src="/js/team.js?v=20260924j"></script>
-<script src="/js/campaigns.js?v=20260924j"></script>
-<script src="/js/ops.js?v=20260924j"></script>
-<script src="/js/perf.js?v=20260924j"></script>
+<script src="/js/admin.js?v=20260924k"></script>
+<script src="/js/documents.js?v=20260924k"></script>
+<script src="/js/letters.js?v=20260924k"></script>
+<script src="/js/register.js?v=20260924k"></script>
+<script src="/js/crm.js?v=20260924k"></script>
+<script src="/js/team.js?v=20260924k"></script>
+<script src="/js/campaigns.js?v=20260924k"></script>
+<script src="/js/ops.js?v=20260924k"></script>
+<script src="/js/perf.js?v=20260924k"></script>
 </body>
 </html>
