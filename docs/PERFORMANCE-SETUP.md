@@ -2,7 +2,7 @@
 
 Six steps, in order. Nothing here needs a deploy beyond the site itself.
 
-## 1. Run the two migrations
+## 1. Run the three migrations
 
 In the Supabase SQL editor, **New query**, paste the whole file (open it on
 GitHub, press **Raw**, select all), click once so nothing is highlighted, and
@@ -13,9 +13,11 @@ in `syntax error at end of input`.
    level security on with no policy on every table, the browser granted only
    the functions.
 2. `supabase/migrations/2026-09-24-performance-email-code.sql`: the email-code
-   lock a member may put on their own reviews (step 6).
+   lock (step 6).
+3. `supabase/migrations/2026-09-24-performance-code-always.sql`: the lock is on
+   for every member, with no switch.
 
-Both are safe to run twice.
+All three are safe to run twice, and must run in this order.
 
 ## 2. Set the master code
 
@@ -57,13 +59,13 @@ A member reads their own released months under **My performance** in the
 account menu. That works only when each person signs in with their own
 account; a shared login would show one person's record to whoever holds it.
 
-## 6. The email-code lock (each person's own choice)
+## 6. The email-code lock (every member)
 
-Under **My performance** a member may tick **Ask for an email code before
-showing my reviews**. From then on their reviews open only after they enter a
-6-digit code emailed to them, good for 15 minutes; turning it off needs a
-code too. The database checks the signed session, so the page cannot be
-talked round it.
+**My performance** opens only after the member enters a code emailed to them,
+good for 15 minutes. There is no switch to turn it off. The database checks
+the signed session, so the page cannot be talked round it. The code is as
+long as **Authentication → Providers → Email → Email OTP length** says (6 to
+10 digits); the field accepts any of those lengths.
 
 The code is Supabase's own sign-in email, so its template must print it,
 once: **Authentication → Emails → Magic Link**, add a line such as
@@ -73,7 +75,9 @@ Your code: {{ .Token }}
 ```
 
 and Save. The link already in that email keeps working for the client portal.
-Until the line is added the email arrives with a link and no code.
+Until the line is added the email arrives with a link and no code. With your
+own SMTP set up, the same template is used: if the email arrives with no code,
+the Magic Link template is still missing the `{{ .Token }}` line.
 
 Supabase's built-in email sender allows only a few emails an hour across the
 whole project. If codes stop arriving, set up your own SMTP under

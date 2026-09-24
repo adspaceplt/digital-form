@@ -3680,7 +3680,7 @@
       tone: 'warn',
       field: {
         label: kind === 'withdrawn' ? 'Reason for withdrawal' : 'Reason for replacement',
-        placeholder: 'What happened. This goes on the record.',
+        placeholder: 'Describe what happened. It is recorded in the activity history.',
         rows: 3,
         need: 'Say why. This is the only note the record keeps.'
       }

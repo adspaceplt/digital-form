@@ -223,7 +223,8 @@
     var canMembers = may('team', 'view'), canPerf = may('team.performance', 'view');
     if (!canPerf) st.tab = 'members';
     if (!canMembers) st.tab = 'performance';
-    $('teamTabs').hidden = !(canMembers && canPerf);
+    $('teamTabs').hidden = !canPerf;
+    $('teamTabMembers').hidden = !canMembers;
     Array.prototype.forEach.call(document.querySelectorAll('#teamTabs .tab'), function (b) {
       var on = b.getAttribute('data-tab') === st.tab;
       b.classList.toggle('is-on', on);
@@ -231,6 +232,7 @@
     });
     $('teamMembersPane').hidden = st.tab !== 'members';
     $('teamPerfPane').hidden = st.tab !== 'performance';
+    $('perfLockBtn').hidden = st.tab !== 'performance';
     if (st.tab === 'members') { if (window.ADspaceTeam) window.ADspaceTeam.enter(); }
     else enterPerf();
   }
@@ -254,7 +256,18 @@
     });
   }
 
+  /* The padlock beside Performance says which state the reviews are in. */
+  var PAD_SHUT = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+  var PAD_OPEN = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.6-1.7"/></svg>';
+  function padlock(open) {
+    var b = $('perfLockBtn');
+    b.innerHTML = open ? PAD_OPEN : PAD_SHUT;
+    b.classList.toggle('is-open', open);
+    b.setAttribute('aria-label', open ? 'Unlocked. Lock performance reviews' : 'Locked');
+    b.title = open ? 'Lock' : 'Locked';
+  }
   function showLock(why) {
+    padlock(false);
     $('perfLock').hidden = false;
     $('perfOpen').hidden = true;
     var blocked = why && (why.error === 'no-code' || why.error === 'denied' || why.error === 'db');
@@ -288,6 +301,7 @@
   });
 
   $('perfLockBtn').addEventListener('click', function () {
+    if (!$('perfLockBtn').classList.contains('is-open')) { if (!$('perfLockForm').hidden) $('perfCode').focus(); return; }
     lock(function () { showLock(null); msg('perfLockMsg', 'Locked.', ''); });
   });
   function lock(then) {
@@ -299,11 +313,15 @@
   }
 
   // ---- The month ----------------------------------------------------------------------
+  var FIRST_MONTH = '2026-06-01';
   function monthOptions() {
     var sel = $('perfMonth'), out = [], d = new Date();
     d.setDate(1);
+    /* Reviews begin with June 2026 (the user, 2026-09-24): no month before
+       it is offered. */
     for (var i = 0; i < 13; i++) {
       var k = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01';
+      if (k < FIRST_MONTH) break;
       out.push('<option value="' + k + '">' + esc(monthWord(k)) + '</option>');
       d.setMonth(d.getMonth() - 1);
     }
@@ -314,6 +332,7 @@
     sel.value = st.period;
   }
   function loadMonth() {
+    padlock(true);
     $('perfLock').hidden = true;
     $('perfOpen').hidden = false;
     monthOptions();
@@ -804,7 +823,7 @@
         Object.keys(SEV_WORD).map(function (k) { return '<option value="' + k + '">' + esc(SEV_WORD[k] + ' (' + SEV_POINTS[k] + ')') + '</option>'; }).join('') + '</select></div></div>' +
       '<div class="row"><div><label class="field-label" for="pvBCat">Category</label><select class="select" id="pvBCat">' + opt(BREACH_CAT) + '</select></div>' +
       '<div><label class="field-label" for="pvBRep">Repeated in the quarter</label><select class="select" id="pvBRep"><option value="">Work it out</option><option value="yes">Yes (−5)</option><option value="no">No</option></select></div></div>' +
-      '<label class="field-label" for="pvBWhat">What happened</label><textarea class="input" id="pvBWhat" rows="2" maxlength="1000"></textarea>' +
+      '<label class="field-label" for="pvBWhat">Breach description</label><textarea class="input" id="pvBWhat" rows="2" maxlength="1000"></textarea>' +
       '<label class="field-label" for="pvBEv">Evidence</label><input class="input" id="pvBEv" maxlength="500" placeholder="Link or reference">' +
       '<label class="tickline"><input type="checkbox" id="pvBLate"> <span>Hidden or reported late (−5)</span></label>' +
       '<div class="qform-acts"><button class="btn btn-sm btn-primary" type="submit">Log breach</button>' +
@@ -1099,17 +1118,16 @@
   });
 
   // ---- My performance --------------------------------------------------------------------
-  /* THE EMAIL-CODE LOCK. A member may put a second lock on their own reviews
-     (asked for by the user on 2026-09-24): while it is on, the database
-     answers `code-needed` unless this session was verified by a code emailed
-     to them in the last 15 minutes, and the proof is the signed token's own
-     claim, so nothing here can fake it. Turning it off asks for a code too.
-     Where the migration has not been run the switch is simply not drawn. */
-  var guard = { on: false, email: '', pending: null };
+  /* THE EMAIL-CODE LOCK. A member's own reviews open only for a session
+     verified by a code emailed to them in the last 15 minutes; the proof is
+     the signed token's own claim, so nothing here can fake it. It was a
+     switch each member set (2026-09-24) and is always on since the same day:
+     the user found the switch useless on a page that always asks. The page
+     only needs the address the code goes to. */
+  var guard = { email: '' };
   function guardInfo(then) {
     call('perf_guard_info', {}, function (d) {
-      $('mineGuard').hidden = Boolean(d.error);
-      if (!d.error) { guard.on = Boolean(d.on); guard.email = d.email || ''; $('mineGuardOn').checked = guard.on; }
+      if (!d.error) guard.email = d.email || '';
       then();
     });
   }
@@ -1151,30 +1169,14 @@
       b.disabled = false;
       if (r && r.error) { msg('mineLockMsg', 'That code is wrong or has expired. Send a new one.', 'err'); return; }
       showMineLock(false);
-      var next = guard.pending; guard.pending = null;
-      if (next) next(); else enterMine();
-    }, function () { b.disabled = false; msg('mineLockMsg', 'Not verified. Please try again.', 'err'); });
-  }
-  function setGuard(on) {
-    call('perf_guard_set', { p_on: on }, function (d) {
-      if (d.error === 'code-needed') {
-        $('mineGuardOn').checked = guard.on;
-        guard.pending = function () { setGuard(on); };
-        showMineLock(true, 'Turning this off needs a code. We will email one to ' + guard.email + '.');
-        return;
-      }
-      if (d.error) { $('mineGuardOn').checked = guard.on; msg('mineMsg', said(d), 'err'); return; }
-      guard.on = Boolean(d.on);
-      msg('mineMsg', guard.on ? 'On. Your reviews ask for an email code.' : 'Off.', 'ok');
       enterMine();
-    });
+    }, function () { b.disabled = false; msg('mineLockMsg', 'Not verified. Please try again.', 'err'); });
   }
   $('mineSend').addEventListener('click', sendCode);
   $('mineVerify').addEventListener('click', verifyCode);
   $('mineCode').addEventListener('keydown', function (e) {
     if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); verifyCode(); }
   });
-  $('mineGuardOn').addEventListener('change', function () { setGuard($('mineGuardOn').checked); });
 
   function enterMine() {
     if (!st.mine) UI.skeleton($('mineList'), 3);

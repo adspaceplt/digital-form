@@ -161,7 +161,7 @@
     'category-required': 'Select what it is waiting on.',
     'title-required': 'A description is required.',
     'client-required': 'A client is required.',
-    'client-not-active': 'Client not active. Choose an active client or Lead.',
+    'client-not-active': 'That record is not a client. Choose a client, or Lead.',
     'not-a-lead': 'Already a client. Choose Client.',
     'bad-scope': 'Choose Client, Lead or Internal.',
     'bad-task-type': 'Choose a task type.',
@@ -810,7 +810,7 @@
         : rows.length + ' of ' + all.length;
     }
     if (!all.length) {
-      UI.emptyLine(box, state.filter === 'day' ? 'Nothing on your list.' : 'No tasks.', may('ops', 'work') ? 'Add a task' : '', function () { openQuick(); });
+      UI.emptyLine(box, state.filter === 'day' ? 'No open tasks on your list.' : 'No tasks.', may('ops', 'work') ? 'Add a task' : '', function () { openQuick(); });
       state.shown = [];
       paintUndone();
       paintBulk();
@@ -1420,7 +1420,7 @@
       return;
     }
     var r = state.report;
-    if (!r) { UI.emptyLine(box, 'No report.'); return; }
+    if (!r) { UI.emptyLine(box, 'No report figures are available for this period.'); return; }
     box.innerHTML = '';
 
     /* Every figure below but the first is taken over a window, and on a phone
@@ -1635,9 +1635,17 @@
     /* The report is refused to anybody the part is not granted to, even from
        the address: `view=report` in a link somebody was sent must not open a
        view the database would only deny. */
-    if (v === 'report' && !may('ops.reports', 'view')) v = 'list';
-    if (v === 'load' && !may('ops.all', 'view')) v = 'list';
-    state.view = v === 'board' || v === 'calendar' || v === 'report' || v === 'load' ? v : 'list';
+    if (v === 'report' && !may('ops.reports', 'view')) v = '';
+    if (v === 'load' && !may('ops.all', 'view')) v = '';
+    /* List, Board and Calendar follow My Work unless the user group shuts
+       one (2026-09-24). A view the group may not open falls to the first it
+       may, and the list stays when every one of them is shut, because a
+       route with no view at all is a blank page. */
+    if ((v === 'list' || v === 'board' || v === 'calendar') && !may('ops.' + v, 'view')) v = '';
+    if (!v || ['list', 'board', 'calendar', 'report', 'load'].indexOf(v) < 0) {
+      v = ['list', 'board', 'calendar'].filter(function (k) { return may('ops.' + k, 'view'); })[0] || 'list';
+    }
+    state.view = v;
     /* The workload is the team's, so it reads the team's queue. */
     if (state.view === 'load' && state.scope !== 'all' && $('workScope')) { state.scope = 'all'; $('workScope').value = 'all'; }
     var seg = $('workViews');
@@ -1654,6 +1662,8 @@
        a stage filter over "what is running" is the question being asked. */
     var find = $('workFind'), stg = $('workStage'), cnt = $('workCount');
     if (find && find.parentElement) find.parentElement.hidden = state.view === 'report' || state.view === 'load';
+    var findMark = find && find.parentElement && find.parentElement.previousElementSibling;
+    if (findMark && findMark.classList.contains('cmdbar-search')) findMark.hidden = state.view === 'report' || state.view === 'load';
     if (stg) stg.hidden = state.view === 'report' || state.view === 'load';
     if (cnt && state.view === 'report') cnt.textContent = '';
     showPeriod();
@@ -3463,7 +3473,7 @@
 
     if (t.stage_key === 'blocked') {
       n.title = 'Blocked';
-      n.line = 'Waiting on ' + (reasonWord(t.blocked_category) || 'something') +
+      n.line = 'Waiting on ' + (reasonWord(t.blocked_category) || 'a blocking issue') +
         (t.blocked_note ? ': ' + t.blocked_note : '') + '.';
       var back = resumeTo(t);
       if (work && back) n.go = { label: 'Unblock', run: function () { move(back); } };
@@ -3471,7 +3481,7 @@
     }
     if (g === 'waiting') {
       n.title = 'On hold';
-      n.line = 'Pending next stage changes.';
+      n.line = 'On hold. Resume the task when the work can continue.';
       var res = resumeTo(t);
       if (work && res) n.go = { label: 'Resume', run: function () { move(res); } };
       return n;
@@ -3487,7 +3497,7 @@
         n.title = 'Not ready to start';
         var words = { owner: 'Assign a task owner', due: 'Add a final due date' };
         n.list = need.length > 1 ? need.map(function (k) { return words[k]; }) : [];
-        n.line = need.length > 1 ? 'Two items missing.'
+        n.line = need.length > 1 ? 'A task owner and a final due date are required before work can begin.'
           : (need[0] === 'owner' ? 'Assign a task owner to continue.' : 'Add a final due date to continue.');
         if (need[0] === 'owner') {
           if (manage) n.go = assign;
@@ -3497,7 +3507,7 @@
       }
     }
     if (!owner && work) {
-      n.title = 'Nobody owns this task';
+      n.title = 'No task owner assigned';
       n.line = manage ? 'Assign a task owner to continue.' : 'Ask a manager to assign a task owner.';
       if (manage) n.go = assign;
       return n;
@@ -3591,7 +3601,7 @@
     if (isWork(g)) {
       var toWork = isWork(tg);
       n.title = toWork ? 'Next: ' + labelForKey(target) : 'Finish the draft';
-      n.line = toWork ? 'Move on when this step is done.' : 'Send for review when ready.';
+      n.line = toWork ? 'Complete this step to move the task to the next stage.' : 'Send the draft for review when it is ready.';
       if (work && target) n.go = stepAct(t, target, toWork ? 'Start ' + labelForKey(target).toLowerCase() : null);
       return n;
     }
@@ -3674,12 +3684,12 @@
     }
     if (target) {
       n.title = tstage ? tstage.label : sentence(target);
-      n.line = 'Next workflow step.';
+      n.line = 'Moves the task to the next workflow stage.';
       if (work) n.go = stepAct(t, target);
       return n;
     }
     n.title = stageLabel(t);
-    n.line = 'No further steps.';
+    n.line = 'This task has no further workflow steps.';
     return n;
   }
   /* An everyday task's next step is one of five words, and the button is the
@@ -3697,13 +3707,13 @@
     if (p === 'done') { n.title = 'Done'; n.line = 'Completed on ' + niceDate(t.completed_at) + '.'; n.rate = true;
       if (work) n.alt = { label: 'Reopen', run: function () { move('todo'); } }; return n; }
     if (!ownerId(t)) {
-      n.title = 'Nobody owns this task';
+      n.title = 'No task owner assigned';
       n.line = may('ops', 'manage') ? 'Assign a task owner to continue.' : 'Ask a manager to assign a task owner.';
     }
     if (!work) return n;
     if (p === 'todo') { n.title = n.title || 'To do'; n.go = go('Mark in progress', 'doing'); n.alt = go('Mark complete', 'complete'); }
     else if (p === 'doing') { n.title = n.title || 'In progress'; n.go = go('Mark complete', 'complete'); n.alt = go('Send for review', 'review'); }
-    else if (p === 'waiting') { n.title = n.title || 'Waiting'; n.line = n.line || 'Pending next stage changes.'; n.go = go('Resume', 'doing'); n.alt = go('Mark complete', 'complete'); }
+    else if (p === 'waiting') { n.title = n.title || 'Waiting'; n.line = n.line || 'Resume the task when the work can continue.'; n.go = go('Resume', 'doing'); n.alt = go('Mark complete', 'complete'); }
     else if (p === 'review') {
       n.title = n.title || 'Ready for review';
       n.go = go('Approve', 'complete');
@@ -4158,7 +4168,7 @@
       UI.emptyLine(sub, 'No recorded work.');
       return;
     }
-    var table = GRP.table('svc-row tsess-row', ['Session', 'Who', 'Minutes']);
+    var table = GRP.table('svc-row tsess-row', ['Session', 'Team member', 'Minutes']);
     rows.forEach(function (s) {
       var row = document.createElement('div');
       row.className = 'svc-row tsess-row';
@@ -4298,7 +4308,7 @@
     var rows = state.detail.events;
     if (!rows.length) { UI.emptyLine(box, 'No activity.'); return; }
     box.innerHTML = '';
-    var table = GRP.table('svc-row tact-row', ['When', 'Event', 'Who']);
+    var table = GRP.table('svc-row tact-row', ['Date and time', 'Event', 'Team member']);
     rows.forEach(function (e) {
       var row = document.createElement('div');
       row.className = 'svc-row tact-row';
@@ -4919,15 +4929,15 @@
 
   // ---- New task ------------------------------------------------------------
   /* Which clients a scope offers. Client is the working book of business
-     (active, and paused on request); Lead is every record that has not yet
+     (active and paused, and past clients on request, 2026-09-24); Lead is every record that has not yet
      become one. The database asks the same question again on save
      (`ops_scope_error`), so the list here is a courtesy and not the gate. */
-  var CLIENT_STAGES = { active: 1 }, PAUSED_STAGES = { paused: 1 };
+  var CLIENT_STAGES = { active: 1, paused: 1 }, PAST_STAGES = { past: 1 };
   var LEAD_STAGES = { lead: 1, contacted: 1, proposal: 1 };
-  function clientsFor(scope, paused) {
+  function clientsFor(scope, past) {
     return state.clients.filter(function (c) {
       if (scope === 'lead') return LEAD_STAGES[c.stage];
-      return CLIENT_STAGES[c.stage] || (paused && PAUSED_STAGES[c.stage]);
+      return CLIENT_STAGES[c.stage] || (past && PAST_STAGES[c.stage]);
     });
   }
   function monthKey(d) {
@@ -4988,7 +4998,7 @@
     if (ntPrefill) {
       var pc = ntPrefill.client;
       $('ntScope').value = LEAD_STAGES[pc.stage] ? 'lead' : 'client';
-      if (pc.stage === 'paused') $('ntPaused').checked = true;
+      if (pc.stage === 'past') $('ntPaused').checked = true;
       if (ntPrefill.period && $('ntPeriod').querySelector('option[value="' + ntPrefill.period + '"]')) {
         $('ntPeriod').value = ntPrefill.period; ntTouched.period = true;
       }
@@ -5011,7 +5021,7 @@
     $('ntClient').innerHTML = '<option value="">' + (scope === 'lead' ? 'Choose a lead' : 'Choose a client') + '</option>' +
       list.map(function (c) {
         return '<option value="' + esc(c.id) + '"' + (c.id === was ? ' selected' : '') + '>' + esc(c.name) +
-          (c.stage === 'paused' ? ' (paused)' : '') + '</option>';
+          (c.stage === 'paused' ? ' (paused)' : c.stage === 'past' ? ' (past)' : '') + '</option>';
       }).join('');
     /* An internal task carries no code, so the month and the week that build
        one have nothing to say; and engagement work is for a client. */
@@ -5154,11 +5164,11 @@
       return '<option value="' + esc(m.id) + '"' + (me && me.id === m.id ? ' selected' : '') + '>' + esc(m.name) + '</option>';
     }).join('');
   }
-  function fillClients(sel, paused, was) {
-    var list = clientsFor('client', paused);
+  function fillClients(sel, past, was) {
+    var list = clientsFor('client', past);
     sel.innerHTML = '<option value="">Choose a client</option>' + list.map(function (c) {
       return '<option value="' + esc(c.id) + '"' + (c.id === was ? ' selected' : '') + '>' + esc(c.name) +
-        (c.stage === 'paused' ? ' (paused)' : '') + '</option>';
+        (c.stage === 'paused' ? ' (paused)' : c.stage === 'past' ? ' (past)' : '') + '</option>';
     }).join('');
   }
 
@@ -6803,6 +6813,10 @@
     if (state.selecting && !may('ops', 'manage')) state.selecting = false;
     var vl = $('workViewLoad');
     if (vl) vl.hidden = !may('ops.all', 'view');
+    ['list', 'board', 'calendar'].forEach(function (k) {
+      var b = document.querySelector('#workViews [data-view="' + k + '"]');
+      if (b) b.hidden = !may('ops.' + k, 'view');
+    });
     /* Assigned, created and following are everybody's views. The whole
        team's queue is offered only where it can arrive: showing it where it
        cannot would offer a view that comes back empty and say nothing. */
