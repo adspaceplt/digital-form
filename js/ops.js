@@ -5698,7 +5698,11 @@
         count: trs.length,
         marks: (eng ? '<span class="tone ' + toneOf(ENG_STATE, eng.status) + '">' + esc(wordOf(ENG_STATE, eng.status)) + '</span>' : '') +
                (late ? '<span class="tone is-warn">' + late + ' late</span>' : ''),
-        shut: GRP.shut('cwork', k, k !== thisMonth && !(eng && eng.status !== 'completed' && open), false),
+        /* Open: this month, a month still being worked, a month still being
+           planned (no tasks yet is exactly when its meeting is set), and a
+           month somebody filtered to, which is the only card on the page. */
+        shut: cw.period === k ? false
+          : GRP.shut('cwork', k, k !== thisMonth && !(eng && eng.status !== 'completed' && (open || !trs.length)), false),
         table: function () {
           var wrap = document.createElement('div');
           if (eng) wrap.appendChild(engCard(eng));
