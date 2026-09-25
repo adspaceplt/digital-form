@@ -43,6 +43,8 @@
   --accent-bg:  #ecf5f0;
   --ok:         #1f7a4d;
   --ok-bg:      #ecf5f0;
+  --pub:        #6a3fb5;
+  --pub-bg:     #f2edfa;
   --ok-solid:   #1f7a4d;
   --on-ok:      #ffffff;
   /* Amber reads as caution only while it is plainly orange. #9c5c16 had
@@ -184,6 +186,8 @@
     --accent-bg:  #17281f;
     --ok:         #4aa876;
     --ok-bg:      #17281f;
+    --pub:        #c4a8f4;
+    --pub-bg:     #251d33;
     --ok-solid:   #4aa876;
     --on-ok:      #07150e;
     --warn:       #cf9350;
@@ -6934,6 +6938,21 @@ body.is-canvas { overflow: hidden; }
 .cal-chip.is-warn { background: var(--warn-bg); color: var(--warn); }
 .cal-chip.is-danger { background: var(--err-bg); color: var(--err); }
 .cal-chip.is-late { box-shadow: inset 3px 0 0 var(--warn); }
+/* The publish date is a date of its own kind, so it has a colour of its own,
+   used nowhere else: the day a post goes out, beside the day work is owed. */
+.cal-chip.is-pub { background: var(--pub-bg); color: var(--pub); }
+.cal-key { display: inline-flex; align-items: center; gap: 12px; margin-left: auto; font-size: 12px; color: var(--ink-mute); }
+.cal-key > span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.cal-key > span::before { content: ""; width: 10px; height: 10px; border-radius: 3px; }
+.cal-key-due::before { background: var(--line-soft); box-shadow: inset 0 0 0 1px var(--line); }
+.cal-key-pub::before { background: var(--pub-bg); box-shadow: inset 0 0 0 1px var(--pub); }
+.calbar .cal-key + .btn-quiet { margin-left: 4px; }
+/* Under 480px the bar has no room for the key, so the publish chip names
+   itself instead. */
+@media (max-width: 479px) {
+  .cal-key { display: none; }
+  .cal-chip.is-pub::before { content: "Publish · "; font-weight: 500; }
+}
 .cal-more { font-size: 11.5px; color: var(--ink-mute); padding: 0 7px; }
 .is-narrow .cal { grid-template-columns: minmax(0, 1fr); }
 .is-narrow .cal-dow, .is-narrow .cal-day.is-out, .is-narrow .cal-day.is-empty { display: none; }

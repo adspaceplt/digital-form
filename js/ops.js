@@ -175,6 +175,9 @@
     'bad-count': 'Task count must be 1 to 60.',
     'bad-weeks': 'Enter up to five weekly figures.',
     'weeks-do-not-add-up': 'Weekly figures must match the total.',
+    'no-month': 'This client has no content month for that month. Add it on the client’s Work pane first.',
+    'month-closed': 'That content month is completed or cancelled.',
+    'month-not-confirmed': 'Confirm the content meeting for that month first.',
     'already-generated': 'Already generated from this sheet.',
     'bad-frequency': 'Choose weekly, monthly or every N days.',
     'interval-required': 'Enter the number of days.',
@@ -1507,10 +1510,11 @@
       }), 'No tasks completed in this period.');
   }
 
-  /* The commitments on the days they fall. One date a task, the final due
-     date, because that is the promise the queue is ordered by and the rail
-     states the rest; a chip is the task at the size a cell can hold and a
-     press opens it. */
+  /* Every task on the days it is owed: the due date in the stage's tone,
+     and the publish date in its own colour, so one month reads as both the
+     team's deadlines and the content calendar. A task whose next date is the
+     publish date shows once, as a publish date. A chip is the task at the
+     size a cell can hold and a press opens it. */
   function monthStart(d) { return new Date(d.getFullYear(), d.getMonth(), 1); }
   function sameDay(a, b) { return a && b && a.getTime() === b.getTime(); }
   function paintCalendar(rows) {
@@ -1521,10 +1525,18 @@
     /* Each task on the day it is next owed: the commitment until client
        review, the publish date once it is approved, and the review date once
        it is live — which makes the calendar the month's content calendar. */
-    rows.forEach(function (t) {
-      var d = dayOf(dueOf(t));
+    var put = function (when, t, kind) {
+      var d = dayOf(when);
       if (!d) return;
-      (byDay[d.getTime()] = byDay[d.getTime()] || []).push(t);
+      (byDay[d.getTime()] = byDay[d.getTime()] || []).push({ t: t, kind: kind });
+    };
+    rows.forEach(function (t) {
+      var due = dueOf(t), pub = t.publish_at;
+      if (due && (!pub || dateValue(due) !== dateValue(pub))) put(due, t, 'due');
+      if (pub) put(pub, t, 'pub');
+    });
+    Object.keys(byDay).forEach(function (k) {
+      byDay[k].sort(function (a, b) { return a.kind === b.kind ? 0 : a.kind === 'due' ? -1 : 1; });
     });
     var title = m.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
     /* The short month draws under 360px, where "September 2026" with its two
@@ -1537,6 +1549,7 @@
       '<button class="btn btn-sm iconbtn" data-cal="prev" type="button" aria-label="Previous month">' + chev('M15 18l-6-6 6-6') + '</button>' +
       '<h3><span class="cal-mlong">' + esc(title) + '</span><span class="cal-mshort">' + esc(short) + '</span></h3>' +
       '<button class="btn btn-sm iconbtn" data-cal="next" type="button" aria-label="Next month">' + chev('M9 18l6-6-6-6') + '</button>' +
+      '<span class="cal-key" aria-hidden="true"><span class="cal-key-due">Due</span><span class="cal-key-pub">Publish</span></span>' +
       '<button class="btn btn-sm btn-quiet" data-cal="today" type="button">Today</button>' +
       '</div>';
     var first = new Date(m), start = new Date(m);
@@ -1552,9 +1565,11 @@
       var out = d.getMonth() !== m.getMonth();
       var cls = 'cal-day' + (out ? ' is-out' : '') + (sameDay(d, today) ? ' is-today' : '') +
         ((d.getDay() === 0 || d.getDay() === 6) ? ' is-weekend' : '') + (!list.length ? ' is-empty' : '');
-      var chips = list.slice(0, 3).map(function (t) {
-        var late = !isFinished(t) && d < today;
-        return '<button class="cal-chip btn-sm ' + stageTone(t) + (late ? ' is-late' : '') + '" type="button" data-task="' + esc(t.id) + '">' +
+      var chips = list.slice(0, 3).map(function (x) {
+        var t = x.t, pub = x.kind === 'pub';
+        var late = !pub && !isFinished(t) && d < today;
+        return '<button class="cal-chip btn-sm ' + (pub ? 'is-pub' : stageTone(t)) + (late ? ' is-late' : '') + '" type="button" data-task="' + esc(t.id) + '"' +
+          ' aria-label="' + esc((pub ? 'Publish: ' : 'Due: ') + (t.title || '')) + '">' +
           esc(t.title) + '</button>';
       }).join('') + (list.length > 3 ? '<span class="cal-more">+' + (list.length - 3) + ' more</span>' : '');
       cells += '<div class="' + cls + '" data-day="' + esc(d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2)) + '">' +
@@ -4573,9 +4588,10 @@
      action the reader has. Nobody is shown a button that is not theirs. */
   function whoDecides(t) { return (t && t.created_by) || null; }
   function myId() { var m = bridge.me && bridge.me(); return (m && m.id) || null; }
+  /* An admin moves any date directly, as the database lets them. */
   function needsAsking(t) {
     var d = whoDecides(t);
-    return Boolean(d && myId() && d !== myId());
+    return Boolean(d && myId() && d !== myId() && !isAdmin());
   }
 
   function paintDue(t) {
@@ -5217,17 +5233,28 @@
     }, function () { btn.disabled = false; });
   }
 
-  /* GENERATE. A month of tasks for one client, or the month's recurring
-     tasks. The codes are previewed from the database's own next number, so
-     the preview and the run cannot disagree. */
-  var genKey = '';
-  function openGen() {
+  /* GENERATE. A month of tasks for one client, into a content month the
+     client already has on their Work pane with its meeting confirmed, or the
+     month's recurring tasks. The month offered is the client's own, the
+     count is what the month planned less what it holds, and the codes are
+     previewed from the database's own next number, so the preview and the
+     run cannot disagree. */
+  var genKey = '', genEngs = [], genAfter = null;
+  function monthOpen(e) {
+    return Boolean(e && e.status !== 'completed' && e.status !== 'cancelled' && (e.meeting_at || e.meeting_na));
+  }
+  function openGen(pre) {
     if (!may('ops', 'work')) return;
+    pre = pre && pre.client_id ? pre : null;
     genKey = '';
+    genAfter = pre && pre.after ? pre.after : null;
     $('genWhat').value = 'month';
-    fillMonths($('genPeriod'), null);
     $('genPaused').checked = false;
-    fillClients($('genClient'), false, '');
+    fillClients($('genClient'), false, pre ? pre.client_id : '');
+    if (pre && $('genClient').value !== pre.client_id) {
+      $('genPaused').checked = true;
+      fillClients($('genClient'), true, pre.client_id);
+    }
     $('genCount').value = '8';
     $('genSpread').value = 'even';
     ['genW1', 'genW2', 'genW3', 'genW4', 'genW5'].forEach(function (id) { $(id).value = '0'; });
@@ -5237,17 +5264,105 @@
     $('genComplex').value = 'standard';
     fillOwners($('genOwner'), null);
     $('genOut').hidden = true; $('genOut').textContent = '';
-    genWhatChanged();
     msg('genMsg', '');
+    genWhatChanged(pre ? pre.period : null);
     sheet('genSheet', true);
   }
-  function genWhatChanged() {
+  function genWhatChanged(want) {
     var recur = $('genWhat').value === 'recur';
     $('genMonthBox').hidden = recur;
     $('genClientField').hidden = recur;
     $('genRecurBox').hidden = !recur;
     $('genGo').textContent = recur ? 'Run' : 'Add tasks';
     $('genWeeksRow').hidden = $('genSpread').value !== 'set';
+    if (recur) {
+      $('genPeriod').disabled = false;
+      $('genPlan').hidden = true;
+      $('genGo').disabled = false;
+      fillMonths($('genPeriod'), null);
+    } else if (typeof want === 'string' || want === null) {
+      genLoadMonths(want);
+    }
+  }
+  /* The client's months that may take tasks: open, and the meeting set or
+     marked not applicable. With the number each has planned and holds. */
+  function genLoadMonths(want) {
+    var cid = $('genClient').value, sel = $('genPeriod');
+    genEngs = [];
+    $('genOut').hidden = true;
+    if (!cid) {
+      sel.innerHTML = '<option value="">Choose a client first</option>';
+      sel.disabled = true;
+      genPlanLine();
+      return;
+    }
+    sel.disabled = true;
+    sel.innerHTML = '<option value="">Loading</option>';
+    db.from('ops_engagements').select('id, period, status, planned_count, meeting_at, meeting_na')
+      .eq('client_id', cid).order('period', { ascending: true }).then(function (r) {
+        if ($('genClient').value !== cid) return;
+        if (r.error) { msg('genMsg', dbWord(r.error.message), 'err'); sel.innerHTML = '<option value="">Not loaded</option>'; return; }
+        var list = (r.data || []).filter(monthOpen);
+        if (!list.length) { genEngs = []; genFillMonths(null); return; }
+        db.from('ops_tasks').select('id, engagement_id, cancelled_at')
+          .in('engagement_id', list.map(function (e) { return e.id; })).then(function (tr) {
+            if ($('genClient').value !== cid) return;
+            var held = {};
+            ((tr && tr.data) || []).forEach(function (t) { if (!t.cancelled_at) held[t.engagement_id] = (held[t.engagement_id] || 0) + 1; });
+            genEngs = list.map(function (e) { return Object.assign({}, e, { held: held[e.id] || 0 }); });
+            genFillMonths(want);
+          });
+      });
+  }
+  function genFillMonths(want) {
+    var sel = $('genPeriod');
+    if (!genEngs.length) {
+      sel.innerHTML = '<option value="">No confirmed month</option>';
+      sel.disabled = true;
+    } else {
+      var now = monthKey(new Date());
+      var pick = want && genEngs.some(function (e) { return e.period === want; }) ? want
+        : (genEngs.filter(function (e) { return e.period >= now; })[0] || genEngs[genEngs.length - 1]).period;
+      sel.innerHTML = genEngs.map(function (e) {
+        return '<option value="' + esc(e.period) + '"' + (e.period === pick ? ' selected' : '') + '>' + esc(monthWord(e.period)) + '</option>';
+      }).join('');
+      sel.disabled = false;
+    }
+    genMonthChanged();
+  }
+  function genEng() {
+    var per = $('genPeriod').value;
+    return genEngs.filter(function (e) { return e.period === per; })[0] || null;
+  }
+  /* The month's plan prefills the count: what it planned, less what it
+     already holds, so a second run tops the month up rather than doubling it. */
+  function genMonthChanged() {
+    if ($('genWhat').value === 'recur') return;
+    var e = genEng();
+    $('genOut').hidden = true;
+    if (e) {
+      var left = Math.max(0, (e.planned_count || 0) - e.held);
+      $('genCount').value = String(left || e.planned_count || 8);
+    }
+    genPlanLine();
+  }
+  function genPlanLine() {
+    var line = $('genPlan'), e = genEng();
+    var cid = $('genClient').value;
+    $('genGo').disabled = !e;
+    $('genPreview').disabled = !e;
+    if (!cid) { line.hidden = true; return; }
+    line.hidden = false;
+    if (!e) {
+      line.textContent = genEngs.length ? '' : 'No content month with a confirmed meeting. Set the month and its meeting on the client’s Work pane.';
+      line.hidden = !line.textContent;
+      return;
+    }
+    var bits = [];
+    bits.push(e.planned_count ? e.planned_count + ' planned' : 'No number planned');
+    bits.push(e.held === 1 ? '1 already added' : e.held + ' already added');
+    bits.push(e.meeting_na ? 'No meeting this month' : 'Meeting ' + niceDate(e.meeting_at));
+    line.textContent = bits.join(' · ');
   }
   function genWeeks() {
     if ($('genSpread').value !== 'set') return null;
@@ -5263,10 +5378,12 @@
       if (sum !== count) { msg('genMsg', said('weeks-do-not-add-up') + ' The weeks come to ' + sum + '.', 'err'); return null; }
     }
     if (!$('genClient').value) { msg('genMsg', 'A client is required.', 'err'); $('genClient').focus(); return null; }
+    if (!genEng()) { msg('genMsg', said('no-month'), 'err'); return null; }
     if (count < 1 || count > 60) { msg('genMsg', said('bad-count'), 'err'); $('genCount').focus(); return null; }
     return {
       client_id: $('genClient').value,
       period: $('genPeriod').value,
+      engagement_id: (genEng() || {}).id || null,
       count: count,
       weeks: weeks,
       scope: 'client',
@@ -5315,6 +5432,7 @@
       var who = ($('genClient').selectedOptions[0] || {}).textContent || '';
       msg('workMsg', (n === 1 ? '1 task added' : n + ' tasks added') + ' for ' + who + ', ' + monthWord(pl.period) + '.', 'ok');
       load();
+      if (genAfter) genAfter();
     }, function () { btn.disabled = false; });
   }
 
@@ -5777,6 +5895,8 @@
       ['Files', e.drive_url ? '<a class="ovlink" href="' + esc(e.drive_url) + '" target="_blank" rel="noopener">Drive folder</a>' : '']
     ].filter(function (p) { return p[1]; });
     var items = [['edit', 'Edit']];
+    /* A month with its meeting confirmed takes tasks, so it offers them. */
+    if (monthOpen(e)) items.unshift(['bulk', 'Bulk add tasks']);
     if (may('ops', 'manage')) items.push(['delete', 'Delete', true]);
     el.innerHTML =
       '<div class="eng-head">' +
@@ -5802,6 +5922,7 @@
     });
     var ctl = el.querySelector('.eng-ctl');
     if (ctl && ctl.querySelector('.kmenu-btn')) wireItemMenu(ctl, function (k) {
+      if (k === 'bulk') openGen({ client_id: cw.client.id, period: e.period, after: readClientWork });
       if (k === 'edit') openEng(e, cw.client);
       if (k === 'delete') askDeleteMonth(e, cw.client, readClientWork);
     });
@@ -6662,13 +6783,19 @@
       var b = $(id); if (b) b.addEventListener('click', function () { sheet('genSheet', false); });
     });
     var genWhatSel = $('genWhat');
-    if (genWhatSel) genWhatSel.addEventListener('change', genWhatChanged);
+    if (genWhatSel) genWhatSel.addEventListener('change', function () { genWhatChanged($('genPeriod').value || null); });
     var genSpreadSel = $('genSpread');
-    if (genSpreadSel) genSpreadSel.addEventListener('change', genWhatChanged);
+    if (genSpreadSel) genSpreadSel.addEventListener('change', function () { genWhatChanged(); });
     var genPausedTick = $('genPaused');
     if (genPausedTick) genPausedTick.addEventListener('change', function () {
-      fillClients($('genClient'), genPausedTick.checked, $('genClient').value);
+      var was = $('genClient').value;
+      fillClients($('genClient'), genPausedTick.checked, was);
+      if ($('genClient').value !== was) genLoadMonths(null);
     });
+    var genClientSel = $('genClient');
+    if (genClientSel) genClientSel.addEventListener('change', function () { genLoadMonths(null); });
+    var genPeriodSel = $('genPeriod');
+    if (genPeriodSel) genPeriodSel.addEventListener('change', genMonthChanged);
     var genPreviewBtn = $('genPreview');
     if (genPreviewBtn) genPreviewBtn.addEventListener('click', genPreview);
     var genGoBtn = $('genGo');
