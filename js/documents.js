@@ -13,8 +13,8 @@
  * The layout is the ADspace letterhead: wordmark, registration and address
  * left, the monogram and the office contact right, PRIVATE & CONFIDENTIAL,
  * Our Ref / Date / To / Attn, the subject, the salutation, the body with the
- * lines and totals, Yours sincerely, the acceptance block, the monogram
- * bottom centre and the page count. Fonts and images come from
+ * lines and totals, Yours sincerely, the acceptance block and the page
+ * count. Fonts and images come from
  * ADSPACE_ORG; blanks fall back to Helvetica and the wordmark.
  */
 (function () {
@@ -398,9 +398,10 @@
       [phoneWord(ORG.phone), ORG.email, ORG.website].filter(Boolean).forEach(function (s) { p.right(s, R, ry, 11); ry -= 12.5; });
       return Math.min(ly, ry) - 10;
     };
-    // The monogram bottom centre and the page count bottom right.
+    /* The page count bottom right. The monogram belongs to the letterhead at
+       the top of the page and nowhere else: the foot carried a second one,
+       which ADspace has dropped (the user, 2026-09-25). */
     p.footMark = function (i, n) {
-      if (logo) { var fh = 20, fw = logo.width * (fh / logo.height); p.page.drawImage(logo, { x: (W - fw) / 2, y: 30, width: fw, height: fh }); }
       p.right('Page ' + (i + 1) + ' of ' + n, R, 30, 7.5, font, mute);
     };
     return p;
@@ -453,8 +454,7 @@
       var need = function (h) { if (y - h < 64) newPage(); };
       newPage();
 
-      // The letterhead, on every page; the monogram again bottom centre, the
-      // page count bottom right. y counts down from the top of the page.
+      // The letterhead, on every page; the page count bottom right. y counts down from the top of the page.
       var head = function () { y = pn.head(); };
       /* Every page names the letter it belongs to, and every page but the one
          that is signed carries a line for the client's initials.
