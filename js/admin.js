@@ -117,22 +117,54 @@
   }
 
   // ---- Auth ---------------------------------------------------------------
+  /* The email carries a link and a code. The link signs in where it is
+     opened; the code signs in here, which is what the installed app needs,
+     since it cannot take a link from the mail app into its own window. */
+  var authEmailSent = '';
+  function authStep(code) {
+    $('authEmailStep').hidden = code;
+    $('authCodeStep').hidden = !code;
+    if (code) { $('authCode').value = ''; $('authCode').focus(); }
+    else $('authEmail').focus();
+  }
   $('authSend').addEventListener('click', function () {
     var email = $('authEmail').value.trim();
     if (!email) return;
+    var b = $('authSend');
+    b.disabled = true;
     // A fixed URL, not location.href, so it matches the Supabase allow list exactly.
     // Supabase silently falls back to its Site URL for anything not on that list.
     db.auth.signInWithOtp({
       email: email,
       options: { emailRedirectTo: location.origin + '/admin/' }
     }).then(function (r) {
-      msg('authMsg', r.error ? r.error.message : 'A sign-in link has been sent.',
-          r.error ? 'err' : 'ok');
-    });
+      b.disabled = false;
+      if (r.error) { msg('authMsg', r.error.message, 'err'); return; }
+      authEmailSent = email;
+      $('authSent').textContent = 'Sent to ' + email + '. Enter the code, or open the link in the email.';
+      msg('authMsg', '');
+      authStep(true);
+    }, function () { b.disabled = false; msg('authMsg', 'Not sent. Please try again.', 'err'); });
   });
   $('authEmail').addEventListener('keydown', function (e) {
     if (e.key === 'Enter') $('authSend').click();
   });
+  function authVerify() {
+    var code = String($('authCode').value || '').replace(/\D/g, '');
+    if (code.length < 6) { msg('authMsg', 'Enter the code from the email.', 'err'); $('authCode').focus(); return; }
+    var b = $('authVerify');
+    b.disabled = true;
+    db.auth.verifyOtp({ email: authEmailSent, token: code, type: 'email' }).then(function (r) {
+      b.disabled = false;
+      if (r && r.error) { msg('authMsg', 'That code is wrong or has expired. Send a new one.', 'err'); return; }
+      msg('authMsg', '');
+    }, function () { b.disabled = false; msg('authMsg', 'Not signed in. Please try again.', 'err'); });
+  }
+  $('authVerify').addEventListener('click', authVerify);
+  $('authCode').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); authVerify(); }
+  });
+  $('authBack').addEventListener('click', function () { msg('authMsg', ''); authStep(false); });
 
   /* Dark is the console's and this browser's. It starts from the device,
      because a tool the team sits in all day should arrive in the register

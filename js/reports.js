@@ -704,10 +704,10 @@
         '<div><label class="field-label" for="rpAccName">Account name</label><input class="input" id="rpAccName" type="text" placeholder="COMPANY NAME"></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpAccGroup">Report together as</label><input class="input" id="rpAccGroup" type="text" placeholder="Facebook and Instagram"></div></div></section>' +
       '<section class="fsec"><h4 class="fsec-h">Followers</h4>' +
-        '<div class="row fgrid"><div><label class="field-label" for="rpAccStart">At start of period</label><input class="input" id="rpAccStart" type="number" inputmode="numeric"></div>' +
-        '<div><label class="field-label" for="rpAccEnd">At end of period</label><input class="input" id="rpAccEnd" type="number" inputmode="numeric"></div></div>' +
+        '<div class="row fgrid"><div><label class="field-label" for="rpAccStart">At start of period</label><input class="input" id="rpAccStart" data-num="int" type="text" inputmode="numeric"></div>' +
+        '<div><label class="field-label" for="rpAccEnd">At end of period</label><input class="input" id="rpAccEnd" data-num="int" type="text" inputmode="numeric"></div></div>' +
         '<details class="fmore" data-none="Worked out from start and end"><summary>Recorded growth</summary>' +
-          '<div class="row fgrid"><div><label class="field-label" for="rpAccGrowth">Growth as reported</label><input class="input" id="rpAccGrowth" type="number" inputmode="numeric"></div>' +
+          '<div class="row fgrid"><div><label class="field-label" for="rpAccGrowth">Growth as reported</label><input class="input" id="rpAccGrowth" data-num="int" type="text" inputmode="numeric"></div>' +
           '<div><label class="field-label" for="rpAccWhy">Reason</label><input class="input" id="rpAccWhy" type="text" placeholder="Optional"></div></div></details></section>' +
       '<section class="fsec"><h4 class="fsec-h">Figures reported</h4>' +
         '<div class="rp-ticks">' + METRICS.map(function (mm) {
@@ -727,6 +727,7 @@
     v('rpAccPlatform', a ? a.platform : 'instagram'); v('rpAccName', a ? a.account_name : st.client.name);
     v('rpAccGroup', a ? a.group_label : ''); v('rpAccStart', a && a.followers_start); v('rpAccEnd', a && a.followers_end);
     v('rpAccGrowth', a && a.growth_override); v('rpAccWhy', a && a.growth_reason);
+    numFields(box);
     v('rpAccBasis', a ? a.er_basis : 'views'); v('rpAccNote', a && a.metric_notes);
     v('rpAccSummary', a && a.summary); v('rpAccWorked', a && a.worked); v('rpAccImprove', a && a.improve); v('rpAccActions', a && a.actions);
     var mets = a ? (a.metrics || []) : ['views', 'engagements'];
@@ -927,11 +928,12 @@
       Array.prototype.forEach.call(box.querySelectorAll('[data-fig]'), function (i) { keep[i.getAttribute('data-fig')] = i.value; });
       $('rpPostFigs').innerHTML = (a.metrics || []).map(function (k) {
         return '<div><label class="field-label" for="rpFig_' + k + '">' + esc(METRIC_WORD[k] || k) + '</label>' +
-          '<input class="input" id="rpFig_' + k + '" data-fig="' + k + '" type="text" inputmode="numeric"></div>';
+          '<input class="input" id="rpFig_' + k + '" data-fig="' + k + '" data-num="int" type="text" inputmode="numeric"></div>';
       }).join('');
       (a.metrics || []).forEach(function (k) {
         $('rpFig_' + k).value = keep[k] != null ? keep[k] : (p && p[k] != null ? p[k] : '');
       });
+      numFields($('rpPostFigs'));
     };
     acc.onchange = figs;
     $('rpPostFigs').innerHTML = '';
@@ -1175,6 +1177,24 @@
     if (m) return Number(m[1]) * 60 + Number(m[2]);
     return numIn(x);
   }
+  /* A figure is shown as it is read: a count with thousands separators, a
+     percentage to one decimal, money in the client's currency (the user,
+     2026-09-25). Each field is tidied when it is left and when it is filled;
+     numIn reads all three shapes back, so nothing typed is lost. */
+  function numOut(kind, x) {
+    if (x === null) return '';
+    if (kind === 'money') return money2(x);
+    if (kind === 'pct') return (Math.round(x * 10) / 10).toLocaleString('en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+    return x.toLocaleString('en-GB', { maximumFractionDigits: 2 });
+  }
+  function numFields(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('input[data-num]'), function (i) {
+      var kind = i.getAttribute('data-num');
+      var tidy = function () { var x = numIn(i.value); if (x !== null) i.value = numOut(kind, x); };
+      tidy();
+      if (!i.getAttribute('data-numw')) { i.setAttribute('data-numw', '1'); i.addEventListener('blur', tidy); }
+    });
+  }
   function playOut(v) { if (v == null || v === '') return ''; var s = Math.round(Number(v)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
   function adCpr(a) {
     if (a.cpr != null && a.cpr !== '') return Number(a.cpr);
@@ -1211,19 +1231,19 @@
     box.innerHTML = '<section class="panel rp-form">' +
       '<label class="tickline"><input type="checkbox" id="rpFirst"> First month of ads, with no comparison</label>' +
       '<section class="fsec"><h4 class="fsec-h">This period</h4>' +
-        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpTReach">Total reach</label><input class="input" id="rpTReach" type="text" inputmode="numeric"></div>' +
-        '<div><label class="field-label" for="rpTImpr">Total impressions</label><input class="input" id="rpTImpr" type="text" inputmode="numeric" placeholder="' + esc(fmt(sumImpr)) + ' from the ads"></div>' +
-        '<div><label class="field-label" for="rpTSpend">Amount spent</label><input class="input" id="rpTSpend" type="text" inputmode="decimal" placeholder="' + esc(money2(sumSpend)) + ' from the ads"></div></div></section>' +
+        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpTReach">Total reach</label><input class="input" id="rpTReach" data-num="int" type="text" inputmode="numeric"></div>' +
+        '<div><label class="field-label" for="rpTImpr">Total impressions</label><input class="input" id="rpTImpr" data-num="int" type="text" inputmode="numeric" placeholder="' + esc(fmt(sumImpr)) + ' from the ads"></div>' +
+        '<div><label class="field-label" for="rpTSpend">Amount spent</label><input class="input" id="rpTSpend" data-num="money" type="text" inputmode="decimal" placeholder="' + esc(money2(sumSpend)) + ' from the ads"></div></div></section>' +
       '<section class="fsec" id="rpPrevSec"><h4 class="fsec-h">Previous period</h4>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpPStart">Start</label><input class="input" id="rpPStart" type="date"></div>' +
         '<div><label class="field-label" for="rpPEnd">End</label><input class="input" id="rpPEnd" type="date"></div></div>' +
-        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpPReach">Reach</label><input class="input" id="rpPReach" type="text" inputmode="numeric"></div>' +
-        '<div><label class="field-label" for="rpPImpr">Impressions</label><input class="input" id="rpPImpr" type="text" inputmode="numeric"></div>' +
-        '<div><label class="field-label" for="rpPSpend">Amount spent</label><input class="input" id="rpPSpend" type="text" inputmode="decimal"></div></div></section>' +
+        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpPReach">Reach</label><input class="input" id="rpPReach" data-num="int" type="text" inputmode="numeric"></div>' +
+        '<div><label class="field-label" for="rpPImpr">Impressions</label><input class="input" id="rpPImpr" data-num="int" type="text" inputmode="numeric"></div>' +
+        '<div><label class="field-label" for="rpPSpend">Amount spent</label><input class="input" id="rpPSpend" data-num="money" type="text" inputmode="decimal"></div></div></section>' +
       (objs.length ? '<details class="fmore" data-none="Added up from the ads" data-some="Typed for some objectives"><summary>Results by objective</summary>' +
         objs.map(function (o) {
           return '<div class="row fgrid"><div><label class="field-label" for="rpGR_' + o[0] + '">' + esc(o[1]) + ' results</label>' +
-            '<input class="input" id="rpGR_' + o[0] + '" data-gres="' + o[0] + '" type="text" inputmode="numeric" placeholder="From the ads"></div>' +
+            '<input class="input" id="rpGR_' + o[0] + '" data-gres="' + o[0] + '" data-num="int" type="text" inputmode="numeric" placeholder="From the ads"></div>' +
             '<div><label class="field-label" for="rpGL_' + o[0] + '">Result type</label><input class="input" id="rpGL_' + o[0] + '" data-glab="' + o[0] + '" type="text" list="rpResultTypes"></div></div>';
         }).join('') + '</details>' : '') +
       '<datalist id="rpResultTypes">' + RESULT_TYPES.map(function (x) { return '<option value="' + esc(x) + '">'; }).join('') + '</datalist>' +
@@ -1237,6 +1257,7 @@
       var gg = (t.groups || {})[o[0]] || {};
       v('rpGR_' + o[0], gg.results); v('rpGL_' + o[0], gg.label);
     });
+    numFields(box);
     var showPrev = function () { $('rpPrevSec').hidden = $('rpFirst').checked; };
     $('rpFirst').onchange = showPrev; showPrev();
     if (window.ADspaceForm) window.ADspaceForm.scan(box);
@@ -1341,23 +1362,23 @@
           '<div class="rp-thumbfield"><span class="rp-thumb rp-thumb-lg" id="rpAdThumbShow"></span>' +
           '<input class="input" id="rpAdThumb" type="file" accept="image/*"><button class="btn btn-sm btn-quiet" type="button" id="rpAdThumbX">Remove</button></div></div></div></section>' +
       '<section class="fsec"><h4 class="fsec-h">Figures</h4>' +
-        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpAdSpend">Amount spent</label><input class="input" id="rpAdSpend" type="text" inputmode="decimal"></div>' +
-        '<div><label class="field-label" for="rpAdResults">Results</label><input class="input" id="rpAdResults" type="text" inputmode="numeric"></div>' +
-        '<div><label class="field-label" for="rpAdCtr">CTR (%)</label><input class="input" id="rpAdCtr" type="text" inputmode="decimal"></div></div>' +
-        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpAdReach">Reach</label><input class="input" id="rpAdReach" type="text" inputmode="numeric"></div>' +
-        '<div><label class="field-label" for="rpAdImpr">Impressions</label><input class="input" id="rpAdImpr" type="text" inputmode="numeric"></div>' +
-        '<div><label class="field-label" for="rpAdCpr">Cost per result</label><input class="input" id="rpAdCpr" type="text" inputmode="decimal" placeholder="Worked out"></div></div>' +
+        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpAdSpend">Amount spent</label><input class="input" id="rpAdSpend" data-num="money" type="text" inputmode="decimal"></div>' +
+        '<div><label class="field-label" for="rpAdResults">Results</label><input class="input" id="rpAdResults" data-num="int" type="text" inputmode="numeric"></div>' +
+        '<div><label class="field-label" for="rpAdCtr">CTR (%)</label><input class="input" id="rpAdCtr" data-num="pct" type="text" inputmode="decimal"></div></div>' +
+        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpAdReach">Reach</label><input class="input" id="rpAdReach" data-num="int" type="text" inputmode="numeric"></div>' +
+        '<div><label class="field-label" for="rpAdImpr">Impressions</label><input class="input" id="rpAdImpr" data-num="int" type="text" inputmode="numeric"></div>' +
+        '<div><label class="field-label" for="rpAdCpr">Cost per result</label><input class="input" id="rpAdCpr" data-num="money" type="text" inputmode="decimal" placeholder="Worked out"></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpAdBasis">Cost per result is</label><select class="select" id="rpAdBasis" data-seg>' +
           '<option value="">Automatic</option><option value="result">Per result</option><option value="thousand">Per 1,000 reached</option></select></div></div></section>' +
       '<section class="fsec"><h4 class="fsec-h">Results by age (%)</h4><div class="row fgrid-3 fgrid">' +
-        AGE_BANDS.map(function (b) { return '<div><label class="field-label" for="rpAge_' + b.replace('+', 'p') + '">' + esc(b) + '</label><input class="input" id="rpAge_' + b.replace('+', 'p') + '" data-age="' + esc(b) + '" type="text" inputmode="decimal"></div>'; }).join('') +
-      '</div></section>' +
+        AGE_BANDS.map(function (b) { return '<div><label class="field-label" for="rpAge_' + b.replace('+', 'p') + '">' + esc(b) + '</label><input class="input" id="rpAge_' + b.replace('+', 'p') + '" data-age="' + esc(b) + '" data-num="pct" type="text" inputmode="decimal"></div>'; }).join('') +
+      '</div><p class="rp-agesum" id="rpAgeSum"></p></section>' +
       '<section class="fsec"><h4 class="fsec-h">Video</h4>' +
-        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpAdHook">Hook rate (%)</label><input class="input" id="rpAdHook" type="text" inputmode="decimal"></div>' +
-        '<div><label class="field-label" for="rpAdHold">Hold rate (%)</label><input class="input" id="rpAdHold" type="text" inputmode="decimal"></div>' +
+        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpAdHook">Hook rate (%)</label><input class="input" id="rpAdHook" data-num="pct" type="text" inputmode="decimal"></div>' +
+        '<div><label class="field-label" for="rpAdHold">Hold rate (%)</label><input class="input" id="rpAdHold" data-num="pct" type="text" inputmode="decimal"></div>' +
         '<div><label class="field-label" for="rpAdPlay">Average play time</label><input class="input" id="rpAdPlay" type="text" placeholder="0:03"></div></div>' +
         '<details class="fmore" data-none="Plays at 25%, 50%, 75%, 95% and 100%"><summary>Audience retention</summary><div class="row fgrid-3 fgrid">' +
-          RET.map(function (r0) { return '<div><label class="field-label" for="rpRet_' + r0[0] + '">Still watching at ' + r0[1] + ' (%)</label><input class="input" id="rpRet_' + r0[0] + '" data-ret="' + r0[0] + '" type="text" inputmode="decimal"></div>'; }).join('') +
+          RET.map(function (r0) { return '<div><label class="field-label" for="rpRet_' + r0[0] + '">Still watching at ' + r0[1] + ' (%)</label><input class="input" id="rpRet_' + r0[0] + '" data-ret="' + r0[0] + '" data-num="pct" type="text" inputmode="decimal"></div>'; }).join('') +
         '</div></details></section>' +
       '<section class="fsec"><h4 class="fsec-h">Remarks</h4><div class="row"><div><label class="field-label" for="rpAdRemark">Remarks on this ad</label><textarea class="input" id="rpAdRemark" rows="2"></textarea></div></div></section>',
       FOOT('Save'));
@@ -1373,6 +1394,23 @@
     v('rpAdHook', a.hook_rate); v('rpAdHold', a.hold_rate); $('rpAdPlay').value = playOut(a.avg_play);
     RET.forEach(function (r0) { v('rpRet_' + r0[0], (a.retention || {})[r0[0]]); });
     v('rpAdRemark', a.remark);
+    numFields(box);
+    /* The age split is a share of the results, so it adds up to 100%. The
+       running total says so while it is typed. */
+    var ageTotal = function () {
+      var any = false, sum = 0;
+      Array.prototype.forEach.call(box.querySelectorAll('[data-age]'), function (i) {
+        var x = numIn(i.value); if (x !== null) { any = true; sum += x; }
+      });
+      return any ? Math.round(sum * 10) / 10 : null;
+    };
+    var paintAge = function () {
+      var t = ageTotal(), el = $('rpAgeSum');
+      el.textContent = t === null ? 'Adds up to 100%.' : 'Total ' + numOut('pct', t) + (Math.abs(t - 100) <= 0.5 ? '' : ', should be 100%');
+      el.classList.toggle('is-warn', t !== null && Math.abs(t - 100) > 0.5);
+    };
+    Array.prototype.forEach.call(box.querySelectorAll('[data-age]'), function (i) { i.oninput = paintAge; });
+    paintAge();
     var fillResult = function () {
       if ($('rpAdResult').value.trim()) return;
       var o = OBJECTIVES.filter(function (x) { return x[0] === $('rpAdObj').value; })[0];
@@ -1418,6 +1456,11 @@
       Array.prototype.forEach.call(box.querySelectorAll('[data-age]'), function (i) { var x = n(i.id); if (x !== null) row.age[i.getAttribute('data-age')] = x; });
       Array.prototype.forEach.call(box.querySelectorAll('[data-ret]'), function (i) { var x = n(i.id); if (x !== null) row.retention[i.getAttribute('data-ret')] = x; });
       if (bad) { say(sm, 'A figure is a number: a whole number for results, reach and impressions.', 'err'); if (window.ADspaceForm && window.ADspaceForm.reveal) window.ADspaceForm.reveal(bad); bad.focus(); return; }
+      var ageT = ageTotal();
+      if (ageT !== null && Math.abs(ageT - 100) > 0.5) {
+        say(sm, 'The age split must add up to 100%. It comes to ' + numOut('pct', ageT) + '.', 'err');
+        box.querySelector('[data-age]').focus(); return;
+      }
       if (row.starts_on && row.ends_on && row.ends_on < row.starts_on) { say(sm, 'The ad must end on or after the day it starts.', 'err'); return; }
       go.disabled = true;
       var editing = a.id && !copy;
