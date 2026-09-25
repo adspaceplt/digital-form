@@ -249,6 +249,11 @@
 * { box-sizing: border-box; margin: 0; }
 :root { color-scheme: light; }
 html { -webkit-text-size-adjust: 100%; }
+/* iOS paints a translucent blue box over whatever a finger touched, square
+   even on a rounded control, and it stayed over the grown search field (the
+   user, 2026-09-25). Every control here answers a press itself — the scale on
+   :active and the focus ring — so the platform's box is only noise. */
+html, * { -webkit-tap-highlight-color: transparent; }
 body {
   font-family: var(--font);
   background: var(--page);
@@ -3975,7 +3980,12 @@ body > .shell { width: 100%; }
 .rep-lab { display: none; }
 /* The window every figure but the first is taken over. Stated on the report,
    because on a phone the select that sets it is inside the filters sheet. */
-.repwin { margin: 0 0 12px; }
+.repwin { margin: 0 0 24px; }
+/* The report reads as sections, not a list: a heading 12px over its table and
+   32px between one section and the next (2026-09-25, the user: "the spacing
+   so packed"). */
+#workReport .ovsec-title { margin-bottom: 12px; }
+#workReport .crm-table + .ovsec-title, #workReport .repempty + .ovsec-title { margin-top: 32px; }
 .ovsec-title { font-size: 15px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 8px; }
 .ovsec-title + .crm-table { margin-bottom: 0; }
 .crm-table + .ovsec-title, .empty + .ovsec-title, .repempty + .ovsec-title { margin-top: 24px; }
@@ -4309,6 +4319,11 @@ body > .shell { width: 100%; }
 .ring-track { stroke: var(--line); }
 .ring-arc { stroke: var(--ink-soft); stroke-linecap: round; }
 .ring.is-ok .ring-arc { stroke: var(--ok); }
+/* Complete: a filled green disc with a white tick, never a full ring, which
+   reads as an empty circle. The same size as the ring it replaces. */
+.ring-done { width: 18px; height: 18px; flex: 0 0 auto; }
+.ring-done circle { fill: var(--ok-solid); }
+.ring-done path { fill: none; stroke: var(--on-ok); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .csv-total {
   display: flex; justify-content: flex-end; gap: 28px; flex-wrap: wrap;
   padding: 11px 15px; border-top: 1px solid var(--line); font-size: 13px; color: var(--ink-mute);
@@ -5953,6 +5968,9 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .tl-pen svg { width: 15px; height: 15px; }
 @media (hover: hover) { .tl-pen:hover { background: var(--line-soft); color: var(--ink); } }
 .tl-pen.is-saving { color: var(--action); }
+/* A stage row ends with its duration and the pen that corrects its date, so
+   every pen on the block stands in one column with Client since's. */
+.tl-end { display: inline-flex; align-items: center; gap: 2px; justify-self: end; min-width: 0; }
 /* The field takes the value's place inside the row's own left cell, so the
    picker grows where the date was rather than in the duration's track. */
 /* The field is the row's own size, not the heading's: `.askfield` is written
