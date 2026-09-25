@@ -151,6 +151,11 @@
         <button class="navitem" data-section="register" type="button" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m9 15 2 2 4-4"/></svg><span>Documents</span>
         </button>
+        <!-- Every client's reports in one place, and where a new one is
+             started: the report type, the client, the month. -->
+        <button class="navitem" data-section="reports" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Reports</span>
+        </button>
         <button class="navitem" data-section="links" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13.5a4 4 0 0 0 5.7.4l3-3a4 4 0 0 0-5.6-5.7l-1.7 1.7"/><path d="M14 10.5a4 4 0 0 0-5.7-.4l-3 3a4 4 0 0 0 5.6 5.7l1.7-1.7"/></svg><span>Short Links</span>
         </button>
@@ -3612,6 +3617,25 @@
       </div>
       <div class="msg" id="svcListMsg"></div>
       <div id="svcList"></div>
+    </div>
+
+    <!-- ---- Reports: every client's reports, by where each stands, and
+         where a new one is started. A report opens on its client's record. ---- -->
+    <div class="console-body" id="sectionReports" hidden>
+      <div class="cmdbar">
+        <span class="cmdbar-find">
+          <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+          <input class="input input-sm" id="rhFind" type="search" placeholder="Search client or month" aria-label="Search reports" autocomplete="off">
+        </span>
+        <select class="select select-sm" id="rhKind" aria-label="Report type" hidden></select>
+        <span class="cmdbar-end">
+          <span class="cmdbar-quiet"><span class="cmdbar-count" id="rhCount"></span></span>
+          <span class="cmdbar-acts">
+            <button class="btn btn-sm btn-primary" id="rhNew" type="button" data-need="clients.reports:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="btn-word">New report</span></button>
+          </span>
+        </span>
+      </div>
+      <div id="rhList"></div>
     </div>
 
     <div class="console-body" id="sectionLinks" hidden>

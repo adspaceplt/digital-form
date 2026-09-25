@@ -11916,7 +11916,7 @@ end $$;
 --   drop function if exists public.sm_report_confirm(uuid);
 --   drop function if exists public.sm_report_return(uuid, text);
 --   drop function if exists public.sm_report_submit(uuid);
---   drop function if exists public.sm_report_create(uuid, date, date);
+--   drop function if exists public.sm_report_create(uuid, date, date, text);
 --   drop function if exists public.sm_report_snapshot(uuid, boolean);
 --   drop function if exists public.sm_report_log(uuid, text, text);
 --   drop table if exists public.sm_report_versions, public.sm_report_posts,
@@ -11928,6 +11928,10 @@ end $$;
 create table if not exists public.sm_reports (
   id            uuid primary key default gen_random_uuid(),
   client_id     uuid not null references public.clients(id) on delete cascade,
+  -- Which report this is. One engine of steps for every kind; the kind
+  -- decides what is entered and how the PDF is drawn. Social media is built,
+  -- advertising is next.
+  kind          text not null default 'social',
   title         text not null default 'Social Media Report',
   period_start  date not null,
   period_end    date not null,
@@ -11946,12 +11950,13 @@ create table if not exists public.sm_reports (
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
   constraint sm_reports_status check (status in ('draft', 'review', 'confirmed', 'published')),
+  constraint sm_reports_kind check (kind in ('social', 'ads')),
   constraint sm_reports_rank check (rank_metric in ('views', 'reach', 'impressions', 'engagements', 'interactions')),
   constraint sm_reports_period check (period_end >= period_start),
   constraint sm_reports_title check (length(btrim(title)) between 1 and 120)
 );
 create unique index if not exists sm_reports_client_period_idx
-  on public.sm_reports (client_id, period_start, period_end);
+  on public.sm_reports (client_id, kind, period_start, period_end);
 
 create table if not exists public.sm_report_platforms (
   id              uuid primary key default gen_random_uuid(),
@@ -12058,6 +12063,7 @@ begin
      or new.submitted_by is distinct from old.submitted_by or new.submitted_at is distinct from old.submitted_at
      or new.confirmed_by is distinct from old.confirmed_by or new.confirmed_at is distinct from old.confirmed_at
      or new.return_note is distinct from old.return_note or new.client_id is distinct from old.client_id
+     or new.kind is distinct from old.kind
      or new.created_by is distinct from old.created_by or new.created_at is distinct from old.created_at then
     raise exception 'sm-status-by-function' using errcode = 'P0001';
   end if;
@@ -12155,7 +12161,7 @@ begin
   select * into c from public.clients where id = r.client_id;
   return jsonb_build_object(
     'report', jsonb_build_object(
-      'id', r.id, 'title', r.title, 'client_name', c.name, 'client_logo_url', c.logo_url,
+      'id', r.id, 'kind', r.kind, 'title', r.title, 'client_name', c.name, 'client_logo_url', c.logo_url,
       'period_start', r.period_start, 'period_end', r.period_end,
       'headline', r.headline, 'intro', r.intro, 'insights', r.insights, 'rank_metric', r.rank_metric,
       'status', case when p_final then 'final' else r.status end,
@@ -12169,11 +12175,12 @@ begin
 end $$;
 grant execute on function public.sm_report_snapshot(uuid, boolean) to authenticated;
 
-/* A new report for a client and a period. The accounts of the client's
-   latest earlier report are carried forward, each starting with the
-   followers that report ended on, so a month starts with its accounts in
-   place and only the figures to type. */
-create or replace function public.sm_report_create(p_client uuid, p_start date, p_end date)
+/* A new report of a kind for a client and a period. The accounts of the
+   client's latest earlier report of the same kind are carried forward, each
+   starting with the followers that report ended on, so a month starts with
+   its accounts in place and only the figures to type. Only the kinds the
+   console can draw are accepted. */
+create or replace function public.sm_report_create(p_client uuid, p_start date, p_end date, p_kind text default 'social')
 returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
@@ -12186,13 +12193,15 @@ begin
     return jsonb_build_object('error', 'not-found');
   end if;
   if p_start is null or p_end is null or p_end < p_start then return jsonb_build_object('error', 'bad-period'); end if;
-  select id into rid from public.sm_reports where client_id = p_client and period_start = p_start and period_end = p_end;
+  if coalesce(p_kind, '') not in ('social') then return jsonb_build_object('error', 'bad-kind'); end if;
+  select id into rid from public.sm_reports
+   where client_id = p_client and kind = p_kind and period_start = p_start and period_end = p_end;
   if rid is not null then return jsonb_build_object('error', 'exists', 'id', rid); end if;
   perform set_config('adspace.sm_fn', 'on', true);
-  insert into public.sm_reports (client_id, period_start, period_end, created_by)
-  values (p_client, p_start, p_end, me.id) returning id into rid;
+  insert into public.sm_reports (client_id, kind, period_start, period_end, created_by)
+  values (p_client, p_kind, p_start, p_end, me.id) returning id into rid;
   select id into prev from public.sm_reports
-   where client_id = p_client and id <> rid and period_start < p_start
+   where client_id = p_client and kind = p_kind and id <> rid and period_start < p_start
    order by period_start desc limit 1;
   if prev is not null then
     insert into public.sm_report_platforms (report_id, platform, account_name, handle, group_key, group_label,
@@ -12207,7 +12216,7 @@ begin
   perform public.sm_report_log(rid, 'report.created');
   return jsonb_build_object('ok', true, 'id', rid, 'carried', prev is not null);
 end $$;
-grant execute on function public.sm_report_create(uuid, date, date) to authenticated;
+grant execute on function public.sm_report_create(uuid, date, date, text) to authenticated;
 
 create or replace function public.sm_report_submit(p_id uuid)
 returns jsonb
@@ -12415,7 +12424,7 @@ begin
     return jsonb_build_object('error', 'no-access');
   end if;
   return jsonb_build_object('reports', coalesce((
-    select jsonb_agg(jsonb_build_object('id', v.id, 'title', r.title, 'period_start', r.period_start,
+    select jsonb_agg(jsonb_build_object('id', v.id, 'kind', r.kind, 'title', r.title, 'period_start', r.period_start,
              'period_end', r.period_end, 'version_no', v.version_no, 'published_at', v.published_at)
            order by r.period_start desc)
       from public.sm_reports r

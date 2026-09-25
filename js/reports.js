@@ -42,6 +42,13 @@
     draft: ['Draft', ''], review: ['In review', 'is-warn'],
     confirmed: ['Confirmed', ''], published: ['Published', 'is-ok']
   };
+  /* The kinds of report the builder makes. Each is one engine of steps —
+     draft, review, confirmed, published — with its own entry and its own
+     PDF; the type is chosen when a report is started. The advertising
+     report is next and joins this list when its entry and PDF are built. */
+  var TYPES = [{ key: 'social', name: 'Social media report' }];
+  var TYPE_WORD = {};
+  TYPES.forEach(function (t) { TYPE_WORD[t.key] = t.name; });
   var PLATFORMS = [['facebook', 'Facebook'], ['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['rednote', 'rednote'],
                    ['youtube', 'YouTube'], ['linkedin', 'LinkedIn'], ['x', 'X'], ['threads', 'Threads'], ['other', 'Other']];
   var PLATFORM_WORD = {};
@@ -214,37 +221,53 @@
       '<button class="btn btn-quiet" type="button" data-a="cancel">Cancel</button>';
   };
 
-  function newSheet(opener) {
+  /* Start a report: its type (drawn once there is more than one), the
+     client where it is started from the Reports route, and the month or a
+     custom period. From a client's record the client is that record. */
+  function newSheet(opener, o) {
+    o = o || {};
     var box = sheetShell('rpNewSheet', 'New report',
-      '<section class="fsec"><div class="row">' +
-        '<div><label class="field-label" for="rpNewMonth">Month</label><input class="input" id="rpNewMonth" type="month"></div></div>' +
+      '<section class="fsec">' +
+        '<div class="row" id="rpNewKindRow"><div><label class="field-label" for="rpNewKind">Report type</label>' +
+          '<select class="select" id="rpNewKind">' + TYPES.map(function (t) { return '<option value="' + t.key + '">' + esc(t.name) + '</option>'; }).join('') + '</select></div></div>' +
+        '<div class="row" id="rpNewClientRow"><div><label class="field-label" for="rpNewClient">Client</label><select class="select" id="rpNewClient"></select></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpNewMonth">Month</label><input class="input" id="rpNewMonth" type="month"></div></div>' +
       '<details class="fmore" data-none="Whole month" data-some="Custom period"><summary>Custom period</summary>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpNewStart">Start</label><input class="input" id="rpNewStart" type="date"></div>' +
         '<div><label class="field-label" for="rpNewEnd">End</label><input class="input" id="rpNewEnd" type="date"></div></div></details>' +
       '</section>', FOOT('Create'));
+    $('rpNewKindRow').hidden = TYPES.length < 2;
+    $('rpNewClientRow').hidden = !o.clients;
+    if (o.clients) {
+      $('rpNewClient').innerHTML = '<option value="">Choose a client</option>' + o.clients.map(function (c) {
+        return '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>';
+      }).join('');
+    }
     var now = new Date();
     var last = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     $('rpNewMonth').value = last.getFullYear() + '-' + String(last.getMonth() + 1).padStart(2, '0');
     $('rpNewStart').value = ''; $('rpNewEnd').value = '';
-    say(box.querySelector('[data-m="sheet"]'), '');
+    var sm = box.querySelector('[data-m="sheet"]');
+    say(sm, '');
     var go = box.querySelector('[data-a="go"]');
     go.onclick = function () {
       var m = $('rpNewMonth').value, a = $('rpNewStart').value, b = $('rpNewEnd').value;
+      var client = o.clients ? $('rpNewClient').value : (st.client && st.client.id);
+      if (!client) { say(sm, 'Choose a client.', 'err'); $('rpNewClient').focus(); return; }
       if (!a || !b) {
-        if (!/^\d{4}-\d{2}$/.test(m)) { say(box.querySelector('[data-m="sheet"]'), 'Choose a month.', 'err'); return; }
+        if (!/^\d{4}-\d{2}$/.test(m)) { say(sm, 'Choose a month.', 'err'); return; }
         var y = Number(m.slice(0, 4)), mo = Number(m.slice(5, 7));
         a = ymd(new Date(y, mo - 1, 1)); b = ymd(new Date(y, mo, 0));
       }
       go.disabled = true;
-      db.rpc('sm_report_create', { p_client: st.client.id, p_start: a, p_end: b }).then(function (r) {
+      db.rpc('sm_report_create', { p_client: client, p_start: a, p_end: b, p_kind: $('rpNewKind').value || 'social' }).then(function (r) {
         go.disabled = false;
         var d = r.data || {};
-        if (r.error || d.error) {
-          if (d.error === 'exists' && d.id) { window.ADspaceSheet.clean(); window.ADspaceSheet.close(); openReport(d.id); return; }
-          say(box.querySelector('[data-m="sheet"]'), said(r.error || d), 'err'); return;
-        }
+        var id = d.id;
+        if (r.error || (d.error && !(d.error === 'exists' && id))) { say(sm, said(r.error || d), 'err'); return; }
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
-        openReport(d.id);
+        if (o.clients) { openFromHub(client, id); return; }
+        openReport(id);
       });
     };
     window.ADspaceSheet.show(box, { opener: opener });
@@ -940,8 +963,97 @@
     });
   }
 
+  // ---- The Reports route: every client's reports, by where each stands ------
+  var hub = { rows: [], clients: [], wired: false };
+  var HUB_BANDS = [
+    ['review', 'In review'], ['confirmed', 'Confirmed'], ['draft', 'Drafts'], ['published', 'Published']
+  ];
+  function enterHub() {
+    var list = $('rhList');
+    if (!list) return;
+    if (!hub.wired) {
+      hub.wired = true;
+      $('rhFind').addEventListener('input', paintHub);
+      $('rhKind').addEventListener('change', paintHub);
+      $('rhNew').addEventListener('click', function () { newSheet($('rhNew'), { clients: hub.clients }); });
+    }
+    /* The type filter is drawn once there is more than one type. */
+    $('rhKind').hidden = TYPES.length < 2;
+    $('rhKind').innerHTML = '<option value="">Every type</option>' + TYPES.map(function (t) { return '<option value="' + t.key + '">' + esc(t.name) + '</option>'; }).join('');
+    $('rhNew').hidden = !may('work');
+    UI.skeleton(list, 4);
+    Promise.all([
+      db.from('sm_reports').select('id, kind, title, client_id, period_start, period_end, status, version_no, updated_at').order('period_start', { ascending: false }),
+      db.from('clients').select('id, name, slug, stage').order('name', { ascending: true })
+    ]).then(function (got) {
+      if (got[0].error) { UI.failLine(list, 'reports', said(got[0].error), enterHub); return; }
+      hub.rows = got[0].data || [];
+      hub.clients = (got[1].data || []).filter(function (c) { return c.stage !== 'lead'; });
+      if (!hub.clients.length) hub.clients = got[1].data || [];
+      hub.byClient = {};
+      (got[1].data || []).forEach(function (c) { hub.byClient[c.id] = c; });
+      paintHub();
+    });
+  }
+  function paintHub() {
+    var list = $('rhList');
+    if (!list) return;
+    var q = ($('rhFind').value || '').trim().toLowerCase();
+    var kind = $('rhKind').value;
+    var rows = hub.rows.filter(function (r) {
+      if (kind && r.kind !== kind) return false;
+      if (!q) return true;
+      var c = hub.byClient[r.client_id] || {};
+      return (String(c.name || '') + ' ' + periodWord(r.period_start, r.period_end) + ' ' + (TYPE_WORD[r.kind] || '')).toLowerCase().indexOf(q) > -1;
+    });
+    $('rhCount').textContent = rows.length === hub.rows.length ? rows.length + ' report' + (rows.length === 1 ? '' : 's') : rows.length + ' of ' + hub.rows.length;
+    list.innerHTML = '';
+    if (!hub.rows.length) {
+      UI.emptyLine(list, 'No reports.', may('work') ? 'Start the first report' : null, may('work') ? function () { newSheet($('rhNew'), { clients: hub.clients }); } : null);
+      return;
+    }
+    if (!rows.length) { UI.emptyLine(list, 'No matches.', 'Clear the search', function () { $('rhFind').value = ''; $('rhKind').value = ''; paintHub(); }); return; }
+    var GRP = window.ADspaceGroup;
+    var bands = HUB_BANDS.filter(function (bd) { return rows.some(function (r) { return r.status === bd[0]; }); });
+    bands.forEach(function (bd) {
+      var mine = rows.filter(function (r) { return r.status === bd[0]; });
+      var lone = bands.length === 1;
+      list.appendChild(GRP.section({
+        route: 'reports', key: bd[0], name: bd[1], count: mine.length,
+        shut: q ? false : GRP.shut('reports', bd[0], bd[0] === 'published', lone),
+        table: function () {
+          var t = GRP.table('rh-row', ['Client', 'Report', 'Version', 'Updated', '']);
+          GRP.more(t, mine, 30, 'reports', function (r) {
+            var c = hub.byClient[r.client_id] || {};
+            var b2 = document.createElement('button');
+            b2.type = 'button'; b2.className = 'crm-row rh-row';
+            b2.innerHTML = '<span class="rp-name"><b>' + esc(c.name || '') + '</b><small>' + esc(TYPE_WORD[r.kind] || '') + '</small></span>' +
+              '<span class="rp-ver">' + esc(periodWord(r.period_start, r.period_end)) + '</span>' +
+              '<span class="rp-ver">v' + r.version_no + '</span>' +
+              '<span class="rp-ver">' + esc(stampWord(r.updated_at)) + '</span>' +
+              '<span class="rp-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>';
+            b2.addEventListener('click', function () { openFromHub(r.client_id, r.id); });
+            return b2;
+          });
+          return t;
+        }
+      }));
+    });
+  }
+  /* A report opens on its client's record, where it is edited: the address
+     is written first, then the record is shown, the way the bell opens a
+     task. */
+  function openFromHub(clientId, reportId) {
+    var c = hub.byClient && hub.byClient[clientId];
+    var key = c && (c.slug || c.id) || clientId;
+    history.pushState(null, '', '/admin/?client=' + encodeURIComponent(key) + '&tab=reports&report=' + encodeURIComponent(reportId));
+    if (bridge.show) bridge.show('clients');
+  }
+
   window.ADspaceReports = {
     clientPane: clientPane, parseRows: parseRows, readDate: readDate,
-    openId: function () { return st.open && st.open.id ? st.open.id : ''; }
+    openId: function () { return st.open && st.open.id ? st.open.id : ''; },
+    enterHub: enterHub
   };
+  if (bridge.reportsReady) bridge.reportsReady();
 })();

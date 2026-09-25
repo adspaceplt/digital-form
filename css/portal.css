@@ -7857,3 +7857,13 @@ body.is-canvas { overflow: hidden; }
 .is-narrow .rp-post-row > .rp-num:nth-child(5) { grid-area: n2; font-size: 12.5px; color: var(--ink-mute); }
 .is-narrow .rp-post-row > :last-child { grid-area: act; }
 .is-tight .rp-ticks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* The Reports route: one row a report across every client. */
+.rh-row { display: grid; align-items: center; gap: 0 12px; grid-template-columns: minmax(0, 1fr) 150px 64px 110px 20px; }
+.rh-row.crm-head { padding: 12px 15px 8px; }
+.is-narrow .rh-row.crm-head { display: none; }
+.is-narrow .rh-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name ver" "per upd"; gap: 4px 12px; }
+.is-narrow .rh-row > .rp-name { grid-area: name; }
+.is-narrow .rh-row > :nth-child(2) { grid-area: per; }
+.is-narrow .rh-row > :nth-child(3) { grid-area: ver; text-align: right; }
+.is-narrow .rh-row > :nth-child(4) { grid-area: upd; text-align: right; }
+.is-narrow .rh-row > .rp-go { display: none; }

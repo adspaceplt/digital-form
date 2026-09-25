@@ -407,6 +407,7 @@
       });
     }
     if (name === 'work') return may('ops', 'view');
+    if (name === 'reports') return may('clients.reports', 'view');
     /* Team is two jobs gated apart: members and groups, and the monthly
        reviews. Either opens the route; the tab strip shows what is held. */
     if (name === 'team') return may('team', 'view') || may('team.performance', 'view');
@@ -490,6 +491,7 @@
     campaigns: 'Creator Campaigns',
     links: 'Short Links',
     register: 'Documents',
+    reports: 'Reports',
     services: 'Services',
     team: 'Team',
     mine: 'My performance'
@@ -514,6 +516,7 @@
     campaigns: 'Creator campaigns, from selection through to posting.',
     links:     'Short links for slides, print and QR codes, served from ' + ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '.',
     register:  'Every document issued through the portal, and its reference.',
+    reports:   'Client reports, from first draft to the version the client reads.',
     services:  'The rate card every quotation is priced from.',
     team:      'Team members, user groups and what each group may open.',
     mine:      'Your monthly performance reviews, once each is released at your 1-1.'
@@ -575,7 +578,7 @@
 
   // The first section this person is allowed, for when the one asked for is not.
   function firstAllowed() {
-    var order = ['clients', 'review', 'campaigns', 'links', 'register', 'services', 'team'];
+    var order = ['clients', 'review', 'campaigns', 'links', 'register', 'reports', 'services', 'team'];
     for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
     return 'clients';
   }
@@ -592,6 +595,7 @@
     $('sectionCampaigns').hidden = name !== 'campaigns';
     $('sectionLinks').hidden     = name !== 'links';
     $('sectionRegister').hidden  = name !== 'register';
+    $('sectionReports').hidden   = name !== 'reports';
     $('sectionServices').hidden  = name !== 'services';
     $('sectionTeam').hidden      = name !== 'team';
     $('sectionMine').hidden      = name !== 'mine';
@@ -627,6 +631,12 @@
     if (name === 'mine') {
       if (!window.ADspacePerf) { enterLater = 'mine'; return; }
       window.ADspacePerf.enterMine();
+      setUrl();
+      return;
+    }
+    if (name === 'reports') {
+      if (!window.ADspaceReports) { enterLater = 'reports'; return; }
+      window.ADspaceReports.enterHub();
       setUrl();
       return;
     }
@@ -2750,6 +2760,11 @@
       if (enterLater !== 'team' || section !== 'team' || !window.ADspaceTeam) return;
       enterLater = '';
       window.ADspacePerf.enterTeam();
+    },
+    reportsReady: function () {
+      if (enterLater !== 'reports' || section !== 'reports') return;
+      enterLater = '';
+      window.ADspaceReports.enterHub();
     },
     opsReady: function () {
       if (enterLater !== 'work' || section !== 'work') return;

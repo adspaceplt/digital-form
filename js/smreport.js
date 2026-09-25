@@ -947,17 +947,22 @@
 
     // ---------------------------------------------------------------- Cover
     (function cover() {
-      /* The title's baseline on the golden section of the page's height,
-         on the text column's own margin, the client and the month under it,
-         each line one step of the scale below the last. */
+      /* The rate card's cover, on the scale: the title stands in from the
+         margin by S(9), 87pt, so it starts 120pt from the page's edge where
+         the rate card starts its title at 126pt, with its baseline on the
+         golden section of the page's height. The client and the month sit
+         under it on the same indent, each line a step of the scale below the
+         last. The head's wordmark stays on the margin, so the title reads as
+         set in from the page and not as another line of the running head. */
       newPage('cover');
+      var cx = M + S(9), cw = R - cx;
       var cy = H / PHI;
-      var tlines = sh.linesOf(String(rep.title || 'Social Media Report'), CW, TY.cover, med);
+      var tlines = sh.linesOf(String(rep.title || 'Social Media Report'), cw, TY.cover, med);
       cy += (tlines.length - 1) * S(6);
-      tlines.forEach(function (ln, i) { sh.draw(pg.page, ln, M, cy, TY.cover, INK); if (i < tlines.length - 1) cy -= S(6); });
+      tlines.forEach(function (ln, i) { sh.draw(pg.page, ln, cx, cy, TY.cover, INK); if (i < tlines.length - 1) cy -= S(6); });
       cy -= S(6);
-      sh.linesOf(String(rep.client_name || ''), CW, TY.coverSub, reg).forEach(function (ln) { sh.draw(pg.page, ln, M, cy, TY.coverSub, INK); cy -= S(4); });
-      tline(periodW, M, cy, TY.coverMeta, book, INK, CW);
+      sh.linesOf(String(rep.client_name || ''), cw, TY.coverSub, reg).forEach(function (ln) { sh.draw(pg.page, ln, cx, cy, TY.coverSub, INK); cy -= S(4); });
+      tline(periodW, cx, cy, TY.coverMeta, book, INK, cw);
     })();
 
     var ins = rep.insights || {};
@@ -1209,32 +1214,6 @@
         rows.push({ fill: FILL, cells: totalCells });
         table(cols, head, rows);
       });
-    })();
-
-    // ------------------------------------------------------- Methodology
-    (function method() {
-      newPage('Methodology');
-      pageTitle('Methodology');
-      var rows = [];
-      rows.push(['Period', periodW]);
-      rows.push(['Source', 'Platform analytics (Meta Business Suite, TikTok Analytics)']);
-      mdl.groups.forEach(function (gg) {
-        var parts = [];
-        if (gg.volume) parts.push(METRIC_WORD[gg.volume]);
-        if (gg.engKey) parts.push(METRIC_WORD[gg.engKey].toLowerCase());
-        rows.push([gg.label, (parts.length ? parts.join(' and ') + ' per post' : 'No post metrics') + (gg.notes ? '. ' + words(gg.notes).trim().replace(/\.$/, '') : '')]);
-        if (gg.basis) rows.push(['Engagement rate (' + gg.label + ')', engWord(gg) + ' ÷ ' + (gg.basis === 'followers' ? 'followers at period end' : gg.basis)]);
-        gg.accounts.forEach(function (a) {
-          if (num(a.growth_override) !== null) rows.push([(PLATFORM_WORD[a.platform] || a.platform) + ' follower growth', signed(a.growth_override) + ', as reported' + (words(a.growth_reason).trim() ? ' (' + words(a.growth_reason).trim() + ')' : '')]);
-        });
-      });
-      rows.push(['Views, reach, impressions', 'Reported separately; not combined']);
-      rows.push(['Not available', 'Metric not provided by the platform; excluded from totals']);
-      rows.push(['Ranking', 'Top posts by ' + METRIC_WORD[mdl.rank].toLowerCase()]);
-      rows.push(['Document', isDraft ? 'Draft, ' + (stampWord(rep.generated_at) || longDate(new Date().toISOString().slice(0, 10)))
-        : 'Version ' + (rep.version_no || 1) + ', issued ' + stampWord(rep.generated_at)]);
-      table([{ w: 1 / (PHI * PHI), align: 'left' }, { w: 1 / PHI, align: 'left' }], null,
-        rows.map(function (r) { return { cells: [{ t: r[0], f: reg }, r[1]] }; }), { labelCol: true });
     })();
 
     // ------------------------------------------------------- Heads and feet
