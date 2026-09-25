@@ -1620,8 +1620,8 @@
       var all = c.data || [];
       hub.byClient = {};
       all.forEach(function (x) { hub.byClient[x.id] = x; });
-      hub.clients = all.filter(function (x) { return x.stage !== 'lead'; });
-      if (!hub.clients.length) hub.clients = all;
+      /* A report is started for a client engaged now: Active only. */
+      hub.clients = all.filter(function (x) { return x.stage === 'active'; });
     });
   }
   function paintHub() {
