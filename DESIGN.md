@@ -273,8 +273,9 @@ in Slate Book 11pt on a 14.5pt line with 14pt between paragraphs
 CONFIDENTIAL, the subject, ADSPACE PLT) in Slate Regular
 (`ADSPACE_ORG.fontBold` = `/css/SlateRg.TTF`; no Medium file exists),
 registration 9pt, table 10pt, notes 8.5pt, page count 7.5pt. Margins 54pt.
-The monogram (`/css/adspace-mark.png`) sits 21pt tall top right and 20pt
-bottom centre. No Company Profile QR on a letter. Config holds file
+The monogram (`/css/adspace-mark.png`) sits 21pt tall top right, as part of
+the letterhead, and nowhere else on the page: the foot carried a second one
+until 2026-09-25, when the user confirmed ADspace has dropped it. No Company Profile QR on a letter. Config holds file
 paths, never font names.
 
 **On screen, one brand face, on the display sizes only.** Slate Regular
@@ -403,7 +404,7 @@ flourish and this is the operative sentence.
 
 **The initials go where the hand that writes them rests**, which is the side of
 the page the signature is on: bottom right on every page but the signed one,
-with the reference bottom left, the monogram bottom centre and the page number a
+with the reference bottom left and the page number a
 row below the initials, so the only two marks in the right of the foot cannot
 collide.
 
@@ -1874,7 +1875,7 @@ contact row and the Overview cannot disagree.
 
 **A document is drawn on one letterhead, whichever kind it is.** The Letter of
 Offer held the only copy of the pen: the page size, the margins, the wordmark,
-the address block, the monogram top right and bottom centre, the page count.
+the address block, the monogram top right, the page count.
 Writing a second letter meant writing those again, and two copies of a
 letterhead drift the way two copies of a colour do. `js/documents.js` exports
 the pen and `js/letters.js` draws the quotation cover, the client letters and
