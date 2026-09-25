@@ -145,3 +145,10 @@ theories and visualizations", "why blue, we're monochrome"). The rules now:
 
 The fixture report is nine pages where the first pass drew eighteen, with the
 same content.
+
+## The name (2026-09-25)
+
+The report is the **Social Media Report**: the cover title, the PDF title and
+the file name (`{Client}-Social-Media-Report-{Mon}-{YYYY}-v{n}.pdf`). "Social
+Media Accounts Report" was the previous vendor's name; the user asked for a
+more modern and straightforward one.

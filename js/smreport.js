@@ -527,9 +527,9 @@
       var clientLogo = got[1];
       return draw(PDF, pdf, fonts, logo, clientLogo, sh, mdl, thumbs, warn, opts).then(function (pages) {
         return sh.ready().then(function () {
-          pdf.setTitle(String(rep.client_name || '') + ' ' + String(rep.title || 'Social Media Accounts Report') + ' ' + periodWord(rep.period_start, rep.period_end));
+          pdf.setTitle(String(rep.client_name || '') + ' ' + String(rep.title || 'Social Media Report') + ' ' + periodWord(rep.period_start, rep.period_end));
           pdf.setAuthor(CFG.agencyName || 'ADspace');
-          pdf.setSubject('Social media performance report');
+          pdf.setSubject('Social media report');
           pdf.setCreator('ADspace Digital Portal');
           pdf.setProducer('ADspace Digital Portal');
           return pdf.save({ useObjectStreams: true }).then(function (bytes) {
@@ -915,7 +915,7 @@
       newPage('cover');
       var cx = M + 72, cw = R - cx;
       var cy = 497;
-      var tlines = sh.linesOf(String(rep.title || 'Social Media Accounts Report'), cw, 25.92, med);
+      var tlines = sh.linesOf(String(rep.title || 'Social Media Report'), cw, 25.92, med);
       cy += (tlines.length - 1) * 31;
       tlines.forEach(function (ln) { sh.draw(pg.page, ln, cx, cy, 25.92, INK); cy -= 31; });
       cy -= 2;
