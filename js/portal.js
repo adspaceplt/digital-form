@@ -61,6 +61,7 @@
       withdrawn: 'Withdrawn', withdrawnSay: 'Request withdrawn.',
       reply: 'Reply', more: 'More actions',
       document: 'Document', total: 'Total', issued: 'Issued', download: 'Download', noLetters: 'No letters.', offer: 'Letter of Offer',
+      reports: 'Social media reports', report: 'Report', published: 'Published', version: 'Version',
       review: 'Content Review', open: 'Open', campaign: 'Creator campaign',
       bank: 'Bank', reference: 'Payment reference', person: 'Person', email: 'Email',
       signInEmail: 'Sign-in email', noAccessRows: 'No entries.',
@@ -89,6 +90,7 @@
       withdrawn: '已撤回', withdrawnSay: '申请已撤回。',
       reply: '回复', more: '更多操作',
       document: '文件', total: '总额', issued: '已签发', download: '下载', noLetters: '暂无函件。', offer: '报价函',
+      reports: '社交媒体报告', report: '报告', published: '已发布', version: '版本',
       review: '内容审阅', open: '打开', campaign: '博主推广',
       bank: '银行', reference: '付款备注', person: '姓名', email: '电子邮箱',
       signInEmail: '登录邮箱', noAccessRows: '暂无记录。',
@@ -298,6 +300,63 @@
     });
   }
 
+  // ---- Social media reports -------------------------------------------------
+  /* The versions the team has confirmed and published, newest month first;
+     the section is not drawn until there is one. Download draws the file in
+     the browser from the published snapshot, so it is the same file the team
+     issued. A database without the reports migration answers with an error,
+     which is read as "none". */
+  var SMR = window.ADspaceSmReport;
+  function monthOf(a, b) {
+    var x = new Date(String(a) + 'T00:00:00'), y = new Date(String(b) + 'T00:00:00');
+    var whole = x.getDate() === 1 && new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate() === y.getDate() &&
+      x.getMonth() === y.getMonth() && x.getFullYear() === y.getFullYear();
+    if (lang === 'zh' && whole) return x.getFullYear() + '年' + (x.getMonth() + 1) + '月';
+    return SMR ? SMR.periodWord(a, b) : String(a) + ' – ' + String(b);
+  }
+  function paintReports(w, c) {
+    var wrap = $('repWrap'), box = $('repBox');
+    if (!wrap || !box || !c.id) return;
+    db.rpc('portal_reports', { p_client: c.id }).then(function (r) {
+      var list = (!r.error && r.data && r.data.reports) || [];
+      wrap.hidden = !list.length;
+      if (!list.length) { box.innerHTML = ''; return; }
+      var tb = table('<div class="crm-head svc-row doc-row"><span>' + esc(w.report) + '</span><span class="svc-rate">' + esc(w.version) +
+        '</span><span>' + esc(w.state) + '</span><span></span></div>');
+      list.forEach(function (v) {
+        var row = document.createElement('div');
+        row.className = 'svc-row doc-row';
+        var items = SMR ? [['download', w.download]] : [];
+        row.innerHTML =
+          '<span class="svc-name"><b>' + esc(monthOf(v.period_start, v.period_end)) + '</b><small>' + esc(v.title + ' · ' + niceDate(v.published_at)) + '</small></span>' +
+          '<span class="svc-rate svc-amt">' + esc('v' + v.version_no) + '</span>' +
+          '<span class="svc-state">' + chip(w.published, 'is-ok') + '</span>' +
+          menuCell(items);
+        wireMenu(row);
+        if (items.length) row.querySelector('[data-a="download"]').addEventListener('click', function () { downloadReport(v); });
+        tb.appendChild(row);
+      });
+      box.innerHTML = ''; box.appendChild(tb);
+    });
+  }
+  function downloadReport(v) {
+    msg('repMsg', '', '');
+    db.rpc('portal_report', { p_version: v.id }).then(function (r) {
+      var snap = r.data && r.data.snapshot;
+      if (r.error || !snap) throw new Error((r.error && r.error.message) || 'not-found');
+      return SMR.render(snap).then(function (out) {
+        var blob = new Blob([out.bytes], { type: 'application/pdf' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = SMR.fileName(snap, v.version_no);
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 30000);
+      });
+    }).catch(function () {
+      msg('repMsg', lang === 'zh' ? '无法下载报告，请刷新页面后重试。' : 'The report could not be downloaded. Refresh the page and try again.', 'err');
+    });
+  }
+
   // ---- Build ---------------------------------------------------------------
   function build() {
     var w = t();
@@ -311,7 +370,7 @@
     if (window.ADspaceChrome) window.ADspaceChrome.preparedFor('', '');
 
     ['ovHead:overview', 'ctHead:contacts', 'svcHead:services', 'rqHead:requests',
-     'docHead:letters', 'engHead:engagements',
+     'docHead:letters', 'repHead:reports', 'engHead:engagements',
      'payHead:payment', 'accHead:account'].forEach(function (p) {
       var a = p.split(':'); $(a[0]).textContent = w[a[1]];
     });
@@ -488,6 +547,8 @@
       });
       dbox.innerHTML = ''; dbox.appendChild(dtb);
     }
+
+    paintReports(w, c);
 
     // Engagements: the two client pages, opened with their own links.
     var eng = [];

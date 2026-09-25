@@ -4961,6 +4961,9 @@ body.no-view-clients-requests [data-need="clients.requests:view"],
 body.no-manage-clients-calls [data-need="clients.calls:manage"],
 body.no-work-clients-calls [data-need="clients.calls:work"],
 body.no-view-clients-calls [data-need="clients.calls:view"],
+body.no-manage-clients-reports [data-need="clients.reports:manage"],
+body.no-work-clients-reports [data-need="clients.reports:work"],
+body.no-view-clients-reports [data-need="clients.reports:view"],
 body.no-manage-review-sets [data-need="review.sets:manage"],
 body.no-work-review-sets [data-need="review.sets:work"],
 body.no-view-review-sets [data-need="review.sets:view"],
@@ -7795,3 +7798,90 @@ body.is-canvas { overflow: hidden; }
 .perf-history b { font-weight: 500; }
 .perf-history small { font-size: 12px; color: var(--ink-mute); }
 .perf-sums { margin-top: 2px; }
+
+/* ---- Social media reports (the client record's Reports pane) -------------
+   A list of the client's reports, then one report open: its head with the
+   one next step, its accounts, its posts and its text. Rows are the record's
+   own register rows, each table stating its tracks on the header and the
+   row alike, and on a narrow pane two lines with the state or the ⋯ ending
+   the first. */
+.rp-viewhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; }
+.rp-viewhead h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.rp-row, .rp-acc-row, .rp-post-row { display: grid; align-items: center; gap: 0 12px; }
+.rp-row { grid-template-columns: minmax(0, 1fr) 64px 190px var(--state-w) 20px; }
+.rp-acc-row { grid-template-columns: minmax(0, 1fr) 150px 84px minmax(0, 1fr) var(--ctl-h); }
+.rp-post-row { grid-template-columns: 34px minmax(0, 1fr) 104px 84px 84px var(--ctl-h); }
+.rp-row.crm-head, .rp-acc-row.crm-head, .rp-post-row.crm-head { padding: 12px 15px 8px; }
+.rp-acc-row.crm-row, .rp-post-row.crm-row { padding: 10px 15px; min-height: 52px; }
+.rp-name { display: flex; flex-direction: column; min-width: 0; }
+.rp-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-name small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-ver, .rp-live, .rp-date, .rp-figs { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-live .mute, .rp-num .mute { color: var(--ink-mute); }
+.rp-num { font-size: 13.5px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.rp-post-row.crm-head > :nth-child(4), .rp-post-row.crm-head > :nth-child(5),
+.rp-acc-row.crm-head > :nth-child(2), .rp-acc-row.crm-head > :nth-child(3) { text-align: right; }
+.rp-go { color: var(--ink-mute); display: flex; justify-content: flex-end; }
+.rp-go svg { width: 16px; height: 16px; }
+.rp-thumb { width: 34px; height: 42px; border-radius: 6px; background: var(--sunk); overflow: hidden; display: block; }
+.rp-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.rp-thumb-lg { width: 64px; height: 80px; flex: 0 0 auto; }
+.rp-thumbfield { display: flex; align-items: center; gap: 12px; }
+.rp-thumbfield .input { flex: 1 1 auto; min-width: 0; }
+.rp-editbox { display: grid; gap: 24px; }
+.rp-head { display: grid; gap: 12px; }
+.rp-head-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; }
+.rp-who h3 { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em; }
+.rp-meta { margin: 2px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.rp-ctl { display: flex; align-items: center; gap: 8px; }
+.rp-ctl .chip { align-self: center; }
+.rp-note { margin: 0; font-size: 13px; color: var(--warn); }
+.rp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.rp-actions .btn svg { width: 15px; height: 15px; }
+.rp-wait { font-size: 12.5px; color: var(--ink-mute); }
+.rp-sec { display: grid; gap: 12px; }
+.rp-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h-sm); }
+.rp-sec-head .ovsec-title { margin: 0; }
+.rp-sec-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.rp-sec-head .btn svg { width: 14px; height: 14px; }
+.rp-posts { display: grid; gap: 16px; }
+.rp-postgroup { display: grid; gap: 8px; }
+.rp-group { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); }
+.rp-group .mute { font-weight: 400; color: var(--ink-mute); margin-left: 4px; }
+.rp-ticks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 12px; margin-bottom: 16px; }
+.rp-textfoot { display: flex; align-items: center; gap: 12px; }
+.rp-paste { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.rp-paste-sum { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
+.rp-facts dd { white-space: normal; }
+/* A narrow pane: two lines a row. */
+.is-narrow .rp-row.crm-head, .is-narrow .rp-acc-row.crm-head, .is-narrow .rp-post-row.crm-head { display: none; }
+.is-narrow .rp-row { grid-template-columns: minmax(0, 1fr) var(--state-w); grid-template-areas: "name state" "live ver"; gap: 4px 12px; }
+.is-narrow .rp-row > .rp-name { grid-area: name; }
+.is-narrow .rp-row > .rp-state { grid-area: state; justify-self: stretch; text-align: right; }
+.is-narrow .rp-row > .rp-live { grid-area: live; }
+.is-narrow .rp-row > .rp-ver { grid-area: ver; text-align: right; }
+.is-narrow .rp-row > .rp-go { display: none; }
+.is-narrow .rp-acc-row { grid-template-columns: minmax(0, 1fr) 84px auto; grid-template-areas: "name grow act" "fol fol act" "figs figs act"; gap: 4px 12px; }
+.is-narrow .rp-acc-row > .rp-name { grid-area: name; }
+.is-narrow .rp-acc-row > .rp-num:nth-child(2) { grid-area: fol; text-align: left; font-size: 12.5px; color: var(--ink-mute); }
+.is-narrow .rp-acc-row > .rp-num:nth-child(3) { grid-area: grow; }
+.is-narrow .rp-acc-row > .rp-figs { grid-area: figs; }
+.is-narrow .rp-acc-row > :last-child { grid-area: act; }
+.is-narrow .rp-post-row { grid-template-columns: 34px minmax(0, 1fr) 72px auto; grid-template-areas: "th name n1 act" "th date n2 act"; gap: 2px 12px; }
+.is-narrow .rp-post-row > .rp-thumb { grid-area: th; }
+.is-narrow .rp-post-row > .rp-name { grid-area: name; }
+.is-narrow .rp-post-row > .rp-date { grid-area: date; font-size: 12px; color: var(--ink-mute); }
+.is-narrow .rp-post-row > .rp-num:nth-child(4) { grid-area: n1; }
+.is-narrow .rp-post-row > .rp-num:nth-child(5) { grid-area: n2; font-size: 12.5px; color: var(--ink-mute); }
+.is-narrow .rp-post-row > :last-child { grid-area: act; }
+.is-tight .rp-ticks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* The Reports route: one row a report across every client. */
+.rh-row { display: grid; align-items: center; gap: 0 12px; grid-template-columns: minmax(0, 1fr) 150px 64px 110px 20px; }
+.rh-row.crm-head { padding: 12px 15px 8px; }
+.is-narrow .rh-row.crm-head { display: none; }
+.is-narrow .rh-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name ver" "per upd"; gap: 4px 12px; }
+.is-narrow .rh-row > .rp-name { grid-area: name; }
+.is-narrow .rh-row > :nth-child(2) { grid-area: per; }
+.is-narrow .rh-row > :nth-child(3) { grid-area: ver; text-align: right; }
+.is-narrow .rh-row > :nth-child(4) { grid-area: upd; text-align: right; }
+.is-narrow .rh-row > .rp-go { display: none; }
