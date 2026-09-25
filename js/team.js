@@ -518,36 +518,68 @@
     });
   }
 
-  /* One select per section, then the two capabilities and Admin as switches.
-     Seven selects rather than twenty eight tickboxes, and the row above reads
-     back as a sentence. */
-  /* One block per section: the section's own select is the main control on
-     its head line, and its parts sit directly under it, each a select that
-     starts at Same as section. A part is read where its section is, never in
-     a second list that names the sections again (the user's own structure,
-     2026-09-22). A section with no parts is the head line alone. */
+  /* What each level allows in each section, said once under its segment so a
+     person granting it reads the consequence before saving (2026-09-25, the
+     permissions revamp the user approved: "Build the revamp"). Each line is
+     what the database's own checks open at that level. */
+  var DESC = {
+    ops: { none: 'My Work is hidden.', view: 'See and update your own tasks.',
+           work: 'Also create tasks and bulk add a month.', manage: 'Also assign task owners and delete tasks.' },
+    clients: { none: 'Clients is hidden.', view: 'Read client records.',
+               work: 'Add leads, edit records, log calls and issue letters.', manage: 'Also delete clients and void letters.' },
+    review: { none: 'Content Review is hidden.', view: 'Read content sets and posts.',
+              work: 'Add sets and posts, import from Drive and publish.', manage: 'Also delete content sets.' },
+    campaigns: { none: 'Creator Campaigns is hidden.', view: 'Read campaigns and the Creators List.',
+                 work: 'Run campaigns, book creators and release drafts.', manage: 'Also delete campaigns and remove creators.' },
+    register: { none: 'Documents is hidden.', view: 'Read and download documents.',
+                work: 'Issue, reissue and add documents.', manage: 'Also void and delete documents.' },
+    links: { none: 'Short Links is hidden.', view: 'Read short links.',
+             work: 'Add, edit and pause short links.', manage: 'Also delete short links.' },
+    services: { none: 'Services is hidden.', view: 'Read the rate card.',
+                work: 'Add and edit rate card lines.', manage: 'Also delete rate card lines.' },
+    team: { none: 'Team is hidden.', manage: 'Add colleagues, edit user groups and send invitations.' },
+    activity: { none: 'The activity record is hidden.', view: 'Read the activity record, tab by tab.' }
+  };
+
+  /* A group starts from one of four shapes and is adjusted from there; a
+     change that matches none of them reads as Custom. Sensitive parts (HR
+     letters, performance reviews, Team) are never in a preset below Admin:
+     they are opened deliberately, in Fine-tune. */
+  var PRESETS = {
+    manager: { ops: 'manage', clients: 'manage', review: 'manage', campaigns: 'manage', register: 'manage',
+               links: 'manage', services: 'manage', team: 'none', activity: 'view',
+               'ops.all': 'view', 'ops.reports': 'view', 'ops.workflows': 'work', 'ops.time': 'manage',
+               'register.hr': 'none' },
+    staff:   { ops: 'work', clients: 'work', review: 'work', campaigns: 'work', register: 'view',
+               links: 'work', services: 'view', team: 'none', activity: 'none', 'register.hr': 'none' },
+    viewer:  { ops: 'view', clients: 'view', review: 'view', campaigns: 'view', register: 'view',
+               links: 'view', services: 'view', team: 'none', activity: 'view', 'register.hr': 'none' }
+  };
+
+  /* One block per section: its name and the Fine-tune fold on the head line,
+     the four levels as a segment, and one line saying what the chosen level
+     allows. The parts sit folded under Fine-tune, each a select that starts
+     at Same as section, and the fold counts only the parts that differ. A part
+     is read where its section is, never in a second list (2026-09-22). */
   $('grFlags').innerHTML =
     SECTIONS.map(function (sec) {
       var parts = PARTS[sec[0]] || [];
-      /* A section with parts folds them under its head line, the way the
-         accounting portal the user showed folds each of its sections: the
-         select on the head is the main control and is always in reach, and
-         the parts open where an exception is held or where somebody asks. */
       return '<div class="permsec" data-sec="' + sec[0] + '">' +
-        '<div class="permsec-main">' +
+        '<div class="permsec-head"><span class="permsec-name">' + esc(sec[1]) + '</span>' +
           (parts.length
             ? '<button class="permsec-toggle" type="button" aria-expanded="false" aria-controls="grParts-' + sec[0] + '">' +
-                '<span class="disclosure-caret" aria-hidden="true">&#9656;</span><span class="permsec-name">' + esc(sec[1]) + '</span></button>'
-            : '<span class="permsec-name">' + esc(sec[1]) + '</span>') +
-          '<select class="select select-sm" data-sec="' + sec[0] + '" aria-label="' + esc(sec[1]) + ' access">' +
+                '<span>Fine-tune</span><span class="permsec-n" data-n="' + sec[0] + '"></span>' +
+                '<span class="disclosure-caret" aria-hidden="true">&#9656;</span></button>'
+            : '') + '</div>' +
+        '<select class="select" data-seg data-sec="' + sec[0] + '" aria-label="' + esc(sec[1]) + ' access">' +
           LEVELS.filter(function (l) { return sec[2].indexOf(l[0]) > -1; }).map(function (l) {
             return '<option value="' + l[0] + '">' + esc(l[1]) + '</option>';
-          }).join('') + '</select></div>' +
+          }).join('') + '</select>' +
+        '<p class="permsec-desc" id="grDesc-' + sec[0] + '"></p>' +
         (parts.length ? '<div class="permsec-parts" id="grParts-' + sec[0] + '" hidden>' + parts.map(function (p) {
           var key = sec[0] + '.' + p[0], granted = isGranted(key);
-          /* A part is a row: its name on the left and its select on the
-             section select's own right edge, so every choice in the panel
-             reads down one column however long the name is. */
+          /* A part is a row: its name on the left and its select on one right
+             edge, so every choice under the fold reads down one column. */
           return '<label class="permpart"><span class="permpart-name">' + esc(p[1]) + '</span>' +
             '<select class="select select-sm" data-part="' + key + '" aria-label="' + esc(sec[1] + ': ' + p[1]) + ' access">' +
             /* A granted part is not inherited, so its unset state is No
@@ -555,21 +587,24 @@
                section and may still be shut on its own. */
             (granted ? '<option value="">No access</option>'
                      : '<option value="">Same as section</option><option value="none">No access</option>') +
-            /* A My Work view follows its section and has two states, so it
-               offers two: Same as section and No access. (An Activity tab
-               keeps View, which opens one tab over a shut section.) */
+            /* A My Work view follows its section and has two states. */
             (VIEW_PARTS[key] ? '' :
               partLevels(key).map(function (l) { return '<option value="' + l + '">' + esc(LEVEL_WORD[l]) + '</option>'; }).join('')) +
             '</select></label>';
         }).join('') + '</div>' : '') +
       '</div>';
     }).join('') +
-    CAPS.concat([['is_admin', 'Admin (everything)']]).map(function (f) {
+    CAPS.concat([['is_admin', 'Admin: every section and every part']]).map(function (f) {
       return '<label class="perm"><input type="checkbox" data-f="' + f[0] + '"><span>' + esc(f[1]) + '</span></label>';
     }).join('');
   function flagBoxes() { return Array.prototype.slice.call($('grFlags').querySelectorAll('input')); }
   function levelPicks() { return Array.prototype.slice.call($('grFlags').querySelectorAll('select[data-sec]')); }
   function partPicks() { return Array.prototype.slice.call($('grFlags').querySelectorAll('select[data-part]')); }
+  levelPicks().forEach(function (sel) {
+    if (window.ADspaceForm) window.ADspaceForm.segment(sel);
+    if (sel.__seg) sel.__seg.setAttribute('aria-describedby', 'grDesc-' + sel.getAttribute('data-sec'));
+  });
+  if (window.ADspaceForm) window.ADspaceForm.segment($('grPreset'));
   function foldSec(sec, open) {
     var box = $('grParts-' + sec), btn = $('grFlags').querySelector('.permsec[data-sec="' + sec + '"] .permsec-toggle');
     if (!box || !btn) return;
@@ -582,6 +617,99 @@
       foldSec(sec, $('grParts-' + sec).hidden);
     });
   });
+
+  /* The access the panel holds now, as it would be stored: every section,
+     and a part only where it says something its section does not. */
+  function readAccess() {
+    var access = {};
+    levelPicks().forEach(function (sel) { access[sel.getAttribute('data-sec')] = sel.value || 'none'; });
+    partPicks().forEach(function (sel) {
+      var k = sel.getAttribute('data-part');
+      var same = isGranted(k) ? 'none' : (access[k.split('.')[0]] || 'none');
+      if (sel.value && adds(k, sel.value, same)) access[k] = sel.value;
+    });
+    return access;
+  }
+  /* The same access in one comparable shape, whatever was stored before. */
+  function canon(acc) {
+    var out = {};
+    SECTIONS.forEach(function (s) { out[s[0]] = (acc && acc[s[0]]) || 'none'; });
+    Object.keys(PARTS).forEach(function (sec) {
+      PARTS[sec].forEach(function (p) {
+        var k = sec + '.' + p[0], v = offered(k, exceptionOf(acc, k));
+        if (v) out[k] = v;
+      });
+    });
+    return JSON.stringify(Object.keys(out).sort().map(function (k) { return k + '=' + out[k]; }));
+  }
+  function presetOf() {
+    var adm = flagBoxes().filter(function (cb) { return cb.getAttribute('data-f') === 'is_admin'; })[0];
+    if (adm && adm.checked) return 'admin';
+    var now = canon(readAccess());
+    var hit = Object.keys(PRESETS).filter(function (k) { return canon(PRESETS[k]) === now; })[0];
+    return hit || 'custom';
+  }
+  /* "A, B and C" inside a level; the levels themselves are joined with a
+     comma before the last ("work A and B, and view C"), so the two kinds of
+     "and" are never read as one list. */
+  function listWords(xs, sep) {
+    if (xs.length < 2) return xs.join('');
+    return xs.slice(0, -1).join(', ') + (sep || ' and ') + xs[xs.length - 1];
+  }
+  /* The group in one sentence, read from the panel as it stands. */
+  function sumText(acc, admin, tuned) {
+    if (admin) return 'This group can do everything, in every section.';
+    var by = { manage: [], work: [], view: [] };
+    SECTIONS.forEach(function (s) { var v = acc[s[0]] || 'none'; if (by[v]) by[v].push(s[1]); });
+    var said = ['manage', 'work', 'view'].filter(function (lv) { return by[lv].length; }).map(function (lv) {
+      return lv + ' ' + listWords(by[lv]);
+    });
+    var line = said.length ? 'This group can ' + listWords(said, ', and ') + '.' : 'This group has no access.';
+    if (tuned) line += ' ' + tuned + (tuned === 1 ? ' page is' : ' pages are') + ' fine-tuned.';
+    return line;
+  }
+  /* Everything that follows a change: each section's line and count, the
+     preset it matches, and the sentence at the top. */
+  function paintPanel() {
+    var access = readAccess();
+    var adm = flagBoxes().filter(function (cb) { return cb.getAttribute('data-f') === 'is_admin'; })[0];
+    var admin = Boolean(adm && adm.checked), locked = Boolean(state.editing && state.editing.slug === 'admin');
+    var tuned = 0;
+    SECTIONS.forEach(function (s) {
+      var d = $('grDesc-' + s[0]);
+      if (d) d.textContent = admin ? 'Every level, as an admin.' : (DESC[s[0]][access[s[0]] || 'none'] || '');
+      var n = (PARTS[s[0]] || []).filter(function (p) { return (s[0] + '.' + p[0]) in access; }).length;
+      tuned += n;
+      var box = $('grFlags').querySelector('[data-n="' + s[0] + '"]');
+      if (box) box.textContent = n ? '(' + n + ')' : '';
+    });
+    /* An admin opens everything, so the levels under it decide nothing and
+       are not offered for change while the tick is on. */
+    levelPicks().concat(partPicks()).forEach(function (sel) { sel.disabled = locked || admin; });
+    $('grPreset').value = presetOf();
+    $('grPreset').disabled = locked;
+    $('grPresetNote').hidden = $('grPreset').value !== 'custom';
+    $('grSum').textContent = sumText(access, admin, tuned);
+  }
+  function applyPreset(k) {
+    flagBoxes().forEach(function (cb) { if (cb.getAttribute('data-f') === 'is_admin') cb.checked = k === 'admin'; });
+    if (k !== 'admin') {
+      var acc = PRESETS[k];
+      levelPicks().forEach(function (sel) { sel.value = acc[sel.getAttribute('data-sec')] || 'none'; });
+      partPicks().forEach(function (sel) {
+        var key = sel.getAttribute('data-part');
+        sel.value = offered(key, exceptionOf(acc, key));
+      });
+      Object.keys(PARTS).forEach(function (sec) {
+        foldSec(sec, PARTS[sec].some(function (p) { return (sec + '.' + p[0]) in acc; }));
+      });
+    }
+    paintPanel();
+  }
+  $('grPreset').addEventListener('change', function () {
+    if (this.value && this.value !== 'custom') applyPreset(this.value);
+  });
+  $('grFlags').addEventListener('change', paintPanel);
 
   /* One sheet adds a group or edits one, the same sheet a colleague and a
      creator are edited in. */
@@ -629,6 +757,7 @@
       cb.checked = r ? Boolean(r[k]) : false;
       cb.disabled = Boolean(r && r.slug === 'admin');
     });
+    paintPanel();
     msg('grMsg', '');
     window.ADspaceSheet.show($('groupAddBox'), {
       opener: groupOpener,
@@ -643,16 +772,9 @@
     if (!name) { msg('grMsg', 'A name is required.', 'err'); return; }
     var flags = {};
     flagBoxes().forEach(function (cb) { flags[cb.getAttribute('data-f')] = cb.checked; });
-    var access = {};
-    levelPicks().forEach(function (sel) { access[sel.getAttribute('data-sec')] = sel.value || 'none'; });
     // Only an exception is stored; Same as section is the absence of a key,
     // and so is a part set to exactly what its section already gives.
-    partPicks().forEach(function (sel) {
-      var k = sel.getAttribute('data-part');
-      var sec = k.split('.')[0];
-      var same = isGranted(k) ? 'none' : (access[sec] || 'none');
-      if (sel.value && adds(k, sel.value, same)) access[k] = sel.value;
-    });
+    var access = readAccess();
     if (state.editing) {
       var r = state.editing;
       var patch = {};

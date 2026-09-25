@@ -4858,33 +4858,39 @@ body > .shell { width: 100%; }
 .perm input { flex: 0 0 auto; width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
 .perm input:disabled { opacity: .45; }
 .perm:has(input:disabled) { cursor: default; color: var(--ink-mute); }
-/* One block per section. The head line is the section's name and its own
-   select, the main control; the parts sit under it, indented so they read
-   as the section's and not as eight more sections. */
-.permsec { padding: 10px 0; border-top: 1px solid var(--line-soft); }
+/* One block per section (the revamp of 2026-09-25): the name and the
+   Fine-tune fold on the head line, the four levels as a segment the panel's
+   width, and one line saying what the chosen level allows. */
+.permsec { display: flex; flex-direction: column; gap: 8px; padding: 14px 0; border-top: 1px solid var(--line-soft); }
 .permsec:first-child { padding-top: 4px; border-top: 0; }
-.permsec-main { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.permsec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 22px; }
 .permsec-name { font-size: 14px; font-weight: 600; color: var(--ink); }
-/* The fold is the name itself, so the target is the word and not a mark
-   beside it; it clears the control floor like every other control. */
+.permsec-desc { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-mute); }
+/* The fold names what it holds and how many differ from the section; it
+   clears the control floor with the negative block margin the ⋯ uses, so the
+   head line keeps the name's height. */
 .permsec-toggle {
   display: inline-flex; align-items: center; gap: 6px; min-height: var(--ctl-h); min-width: var(--ctl-h);
   margin-block: calc((22px - var(--ctl-h)) / 2); padding: 0; border: 0; background: none;
-  color: var(--ink); font: inherit; text-align: left; cursor: pointer;
+  color: var(--ink-soft); font: inherit; font-size: 13px; text-align: right; cursor: pointer;
 }
+.permsec-n { color: var(--ink); font-weight: 600; }
+.permsec-n:empty { display: none; }
 .permsec-toggle .disclosure-caret { display: inline-block; color: var(--ink-mute); transition: transform var(--t) var(--ease); }
 .permsec-toggle[aria-expanded="true"] .disclosure-caret { transform: rotate(90deg); }
-/* Every select in the panel is one width and ends on one right edge, the
-   section's and its parts' alike, so the levels read down a single column.
-   The parts were a four-across grid of label-over-select for a while, and a
-   name that wrapped ("The whole team's queue") pushed its select below its
-   neighbours' — four selects at three heights, which the user sent back on
-   2026-09-24. A part is a row now: the name, then the select. */
-.permsec-main .select, .permpart .select { width: 200px; flex: 0 0 auto; }
-@media (max-width: 640px) { .permsec-main .select, .permpart .select { width: 160px; } }
+/* The sentence at the top reads the group back as it stands. */
+.permsum {
+  margin: 0; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--sunk);
+  font-size: 13.5px; line-height: 1.5; color: var(--ink);
+}
+.permpreset-note { margin-left: 6px; color: var(--ink-soft); font-weight: 600; }
+/* Every part select under a fold is one width and ends on one right edge, so
+   the levels read down a single column (2026-09-24). */
+.permpart .select { width: 200px; flex: 0 0 auto; }
+@media (max-width: 640px) { .permpart .select { width: 160px; } }
 .permsec-parts {
   display: flex; flex-direction: column; gap: 2px;
-  margin-top: 6px; padding-left: 16px; border-left: 2px solid var(--line-soft);
+  margin-top: 2px; padding-left: 16px; border-left: 2px solid var(--line-soft);
 }
 .permpart { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h); }
 .permpart-name { min-width: 0; font-size: 13.5px; color: var(--ink-soft); }
@@ -7004,10 +7010,12 @@ body.is-canvas { overflow: hidden; }
    segment jumped left and right as the view changed under it (reported by
    the user with three screenshots). At a desk the segment leads the bar and
    the search is the phone's mark that grows into the field: whatever a view
-   adds or removes after it, the segment is at the same x. */
+   adds or removes after it, the segment is at the same x. Every other
+   console bar takes the same mark (2026-09-25, the user: "other pages still
+   have a huge large search bar"), so a search is one shape everywhere. */
 .cmdbar-search[hidden] { display: none !important; }
 @media (min-width: 641px) {
-  .cmdbar-grow .cmdbar-search {
+  .cmdbar .cmdbar-search {
     display: inline-grid; place-items: center; position: relative; padding: 0;
     width: var(--ctl-h-sm); min-width: 0; height: var(--ctl-h-sm); flex: 0 0 auto;
     border: 1px solid transparent; border-radius: var(--radius-ctl);
@@ -7015,21 +7023,21 @@ body.is-canvas { overflow: hidden; }
     transition: max-width var(--t-slow) var(--ease), width var(--t-slow) var(--ease),
                 opacity var(--t) var(--ease-out), margin var(--t-slow) var(--ease);
   }
-  @media (hover: hover) { .cmdbar-grow .cmdbar-search:hover { background: var(--tonal-hover); } }
-  .cmdbar-grow .cmdbar-search.is-set { border-color: var(--ink-mute); }
+  @media (hover: hover) { .cmdbar .cmdbar-search:hover { background: var(--tonal-hover); } }
+  .cmdbar .cmdbar-search.is-set { border-color: var(--ink-mute); }
   /* Collapsed, the field costs nothing: no width and none of the bar's gap. */
-  .cmdbar-grow .cmdbar-find {
+  .cmdbar .cmdbar-find {
     flex: 0 0 auto; width: 0; max-width: 0; min-width: 0; margin-left: -10px;
     opacity: 0; overflow: hidden;
     transition: width var(--t-slow) var(--ease), max-width var(--t-slow) var(--ease),
                 margin var(--t-slow) var(--ease), opacity var(--t) var(--ease-out);
   }
-  .cmdbar-grow.is-searching .cmdbar-find { width: 280px; max-width: 280px; margin-left: 0; opacity: 1; }
-  .cmdbar-grow.is-searching .cmdbar-search {
+  .cmdbar.is-searching .cmdbar-find { width: 280px; max-width: 280px; margin-left: 0; opacity: 1; }
+  .cmdbar.is-searching .cmdbar-search {
     width: 0; max-width: 0; margin-left: -10px; opacity: 0; border-width: 0; overflow: hidden;
   }
-  .cmdbar-grow.is-searching .cmdbar-find .input { padding-right: 38px; }
-  .cmdbar-grow.is-searching .cmdbar-find-clear { display: grid; }
+  .cmdbar.is-searching .cmdbar-find .input { padding-right: 38px; }
+  .cmdbar.is-searching .cmdbar-find-clear { display: grid; }
 }
 @media (max-width: 640px) {
   /* ONE ROW: two marks on the left, what the list holds and what to do about
