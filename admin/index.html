@@ -451,6 +451,9 @@
             <button class="tab" data-pane="brand" type="button" role="tab" aria-selected="false">Brand</button>
             <button class="tab" data-pane="services" data-part="clients.services" type="button" role="tab" aria-selected="false">Services</button>
             <button class="tab" data-pane="documents" data-part="clients.documents" type="button" role="tab" aria-selected="false">Documents</button>
+            <!-- The client's monthly social media reports: prepared here, checked
+                 by a second person, then published to the client's portal. -->
+            <button class="tab" data-pane="reports" data-part="clients.reports" type="button" role="tab" aria-selected="false">Reports</button>
             <!-- The client's own work: its tasks by month, and the
                  engagement record each month hangs off. Drawn where My Work
                  is readable, by the same script that draws My Work. -->
@@ -904,6 +907,10 @@
 
           <div class="rec-pane" data-pane="work" hidden>
             <div id="crmWorkPane"></div>
+          </div>
+
+          <div class="rec-pane" data-pane="reports" hidden>
+            <div id="crmReportsPane"></div>
           </div>
 
           <div class="rec-pane" data-pane="activity" hidden>
@@ -4052,6 +4059,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/documents.js?v=20260925c"></script>
 <script src="/js/letters.js?v=20260925c"></script>
 <script src="/js/smreport.js?v=20260925c"></script>
+<script src="/js/reports.js?v=20260925c"></script>
 <script src="/js/register.js?v=20260925c"></script>
 <script src="/js/crm.js?v=20260925c"></script>
 <script src="/js/team.js?v=20260925c"></script>

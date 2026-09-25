@@ -29,6 +29,7 @@
 <script src="/js/api.js?v=20260925c"></script>
 <script src="/js/money.js?v=20260925c"></script>
 <script src="/js/documents.js?v=20260925c"></script>
+<script src="/js/smreport.js?v=20260925c"></script>
 </head>
 <body>
 
@@ -114,6 +115,15 @@
     <div class="viewhead"><span class="headmark"><h3 id="docHead">Letters</h3></span></div>
     <div class="msg" id="docMsg"></div>
     <div id="docBox"></div>
+
+    <!-- The monthly social media reports the team has confirmed and
+         published. A draft never reaches this page: the database sends only
+         the published version. -->
+    <div id="repWrap" hidden>
+      <div class="viewhead"><span class="headmark"><h3 id="repHead">Social media reports</h3></span></div>
+      <div class="msg" id="repMsg"></div>
+      <div id="repBox"></div>
+    </div>
 
     <div id="engWrap" hidden>
       <div class="viewhead"><span class="headmark"><h3 id="engHead">Engagements</h3></span></div>

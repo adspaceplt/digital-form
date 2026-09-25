@@ -152,3 +152,26 @@ The report is the **Social Media Report**: the cover title, the PDF title and
 the file name (`{Client}-Social-Media-Report-{Mon}-{YYYY}-v{n}.pdf`). "Social
 Media Accounts Report" was the previous vendor's name; the user asked for a
 more modern and straightforward one.
+
+## Sections, margins and the golden ratio (2026-09-25, third pass)
+
+Sent back by the user: a report with little in it was squeezed onto part of a
+page, and the 54pt margin left too much white paper. The rules now:
+
+| Rule | Where it applies |
+|---|---|
+| **Every section starts its own page**: Executive summary, Findings and recommendations, one page per platform, Top posts, one appendix page per platform, Methodology. A section with nothing in it is not drawn. A thin report is shorter by whole sections, never by squeezing. | Every page |
+| **A chart keeps one height**: views by week is the text column over φ² (201.9pt), views by post half a step shorter (158.8pt). Nothing shrinks to fit. | Executive summary, platform pages |
+| **One scale for everything**: 10pt times √φ step by step (6.18, 7.86, 10, 12.72, 16.18, 20.58, 26.18, 33.3, 42.36). The margin is S(5), 33.3pt, which widens the text column from 487pt to 529pt. Page title S(3), block title S(1), body and table text S(0), captions S(−1). A table line is S(1), a row at least S(3). A heading sits S(2) above its content, blocks S(4) apart. | Every page |
+| **The head and foot stay the rate card's**: the Optima wordmark (S(2), the rate card's 16pt) top left, the client's name right, PRIVATE & CONFIDENTIAL and the reference at the foot, the page count on the right. | Every page |
+
+## Publishing to the client (2026-09-25)
+
+The report is prepared on the client record's **Reports** pane and reaches the
+client only once it is finished and confirmed internally, as the user asked:
+Draft → Submit for review → Confirm (a manager who did not submit it) →
+Publish to client. Publishing freezes the report as a numbered version; the
+client portal reads only that version. Revise makes the next version a draft
+while the client keeps reading the published one; Unpublish takes it off the
+portal with a reason. The rules are in
+`supabase/migrations/2026-09-25-social-media-reports.sql`.

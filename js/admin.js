@@ -346,7 +346,7 @@
      opened the Parts fold is where it always was. HR letters were a section
      and are `register.hr` now. */
   var PARTS = {
-    clients:   ['contacts', 'billing', 'services', 'documents', 'requests', 'calls'],
+    clients:   ['contacts', 'billing', 'services', 'documents', 'requests', 'calls', 'reports'],
     review:    ['sets', 'settings'],
     campaigns: ['campaigns', 'creators', 'finance'],
     register:  ['documents', 'hr'],
@@ -949,6 +949,14 @@
     'client.service':        ['Service added', 'is-ok', 'clients'],
     'client.service_changed': ['Service changed', '', 'clients'],
     'client.service_removed': ['Service removed', 'is-danger', 'clients'],
+    'report.created':        ['Report started', 'is-ok', 'clients'],
+    'report.submitted':      ['Report submitted', '', 'clients'],
+    'report.returned':       ['Report returned', 'is-warn', 'clients'],
+    'report.confirmed':      ['Report confirmed', 'is-ok', 'clients'],
+    'report.published':      ['Report published', 'is-ok', 'clients'],
+    'report.revised':        ['Report revised', '', 'clients'],
+    'report.unpublished':    ['Report unpublished', 'is-warn', 'clients'],
+    'report.deleted':        ['Report deleted', 'is-danger', 'clients'],
     'document.issued':       ['Document issued', 'is-ok', 'register'],
     'document.voided':       ['Document voided', 'is-danger', 'register'],
     'document.restored':     ['Document restored', 'is-ok', 'register'],

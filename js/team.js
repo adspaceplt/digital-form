@@ -80,7 +80,8 @@
      until 2026-09-22; it is a part now, with the same four levels. */
   var PARTS = {
     clients:   [['contacts', 'Contacts'], ['billing', 'Billing'], ['services', 'Services'],
-                ['documents', 'Documents'], ['requests', 'Requests'], ['calls', 'Calls and visits']],
+                ['documents', 'Documents'], ['requests', 'Requests'], ['calls', 'Calls and visits'],
+                ['reports', 'Social media reports']],
     review:    [['sets', 'Content sets'], ['settings', 'Client settings']],
     campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance']],
     register:  [['documents', 'Client documents'], ['hr', 'HR letters']],
@@ -526,7 +527,7 @@
     ops: { none: 'My Work is hidden.', view: 'See and update your own tasks.',
            work: 'Also create tasks and bulk add a month.', manage: 'Also assign task owners and delete tasks.' },
     clients: { none: 'Clients is hidden.', view: 'Read client records.',
-               work: 'Add leads, edit records, log calls and issue letters.', manage: 'Also delete clients and void letters.' },
+               work: 'Add leads, edit records, log calls, issue letters and prepare reports.', manage: 'Also delete clients, void letters, and confirm and publish reports.' },
     review: { none: 'Content Review is hidden.', view: 'Read content sets and posts.',
               work: 'Add sets and posts, import from Drive and publish.', manage: 'Also delete content sets.' },
     campaigns: { none: 'Creator Campaigns is hidden.', view: 'Read campaigns and the Creators List.',
