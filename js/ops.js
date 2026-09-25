@@ -5298,6 +5298,7 @@
     ['genW1', 'genW2', 'genW3', 'genW4', 'genW5'].forEach(function (id) { $(id).value = '0'; });
     $('genType').value = 'engagement';
     $('genFormat').value = '';
+    genFmts = []; genFmtLast = '';
     $('genPriority').value = '3';
     $('genComplex').value = 'standard';
     fillOwners($('genOwner'), null);
@@ -5321,6 +5322,7 @@
     } else if (typeof want === 'string' || want === null) {
       genLoadMonths(want);
     }
+    genFmtPaint();
   }
   /* The client's months that may take tasks: open, and the meeting set or
      marked not applicable. With the number each has planned and holds. */
@@ -5382,6 +5384,7 @@
       var left = Math.max(0, (e.planned_count || 0) - e.held);
       $('genCount').value = String(left || e.planned_count || 8);
     }
+    genFmtPaint();
     genPlanLine();
   }
   function genPlanLine() {
@@ -5408,6 +5411,59 @@
       return Math.max(0, Math.floor(Number($(id).value) || 0));
     });
   }
+  /* A FORMAT A TASK. A month is usually mixed, so the format is set once for
+     every task or task by task, in the order the tasks are made: the week each
+     falls in comes from the same rule the database spreads them by. What was
+     picked for a row is kept by its place while the count or the weeks change. */
+  var genFmts = [], genFmtLast = '';
+  function genWeekOf(count) {
+    var weeks = genWeeks() || [1, 2, 3, 4].map(function (w) {
+      return Math.ceil(w * count / 4) - Math.ceil((w - 1) * count / 4);
+    });
+    var out = [];
+    weeks.forEach(function (n, i) { for (var k = 0; k < n; k++) out.push(i + 1); });
+    return out;
+  }
+  function genFmtCount() {
+    return Math.max(0, Math.min(60, Math.floor(Number($('genCount').value) || 0)));
+  }
+  function genFmtPaint() {
+    var each = $('genFormat').value === 'each';
+    var list = $('genFmtList');
+    list.hidden = !each;
+    if (!each) { list.innerHTML = ''; $('genFmtSum').hidden = true; return; }
+    var n = genFmtCount(), wk = genWeekOf(n);
+    var opts = Array.prototype.filter.call($('genFormat').options, function (o) { return o.value !== 'each'; });
+    var html = '';
+    for (var i = 0; i < n; i++) {
+      var v = genFmts[i] == null ? genFmtLast : genFmts[i];
+      html += '<div class="field"><label class="field-label" for="genFmt' + (i + 1) + '">Task ' + (i + 1) +
+        (wk[i] ? ', week ' + wk[i] : '') + '</label><select class="select" id="genFmt' + (i + 1) + '" data-i="' + i + '">' +
+        opts.map(function (o) {
+          return '<option value="' + esc(o.value) + '"' + (o.value === v ? ' selected' : '') + '>' + esc(o.text) + '</option>';
+        }).join('') + '</select></div>';
+    }
+    list.innerHTML = html;
+    genFmtSumPaint();
+  }
+  function genFmtVals() {
+    return Array.prototype.map.call($('genFmtList').querySelectorAll('select'), function (x) { return x.value; });
+  }
+  /* The mix in one line, the commonest first: 5 Graphic: Static · 3 Reels. */
+  function genFmtSumPaint() {
+    var tally = {}, order = [];
+    genFmtVals().forEach(function (v) {
+      var k = v || '';
+      if (!(k in tally)) { tally[k] = 0; order.push(k); }
+      tally[k]++;
+    });
+    order.sort(function (a, b) { return tally[b] - tally[a]; });
+    var line = $('genFmtSum');
+    line.textContent = order.map(function (k) {
+      return tally[k] + ' ' + (k ? (DELIVER_WORD[k] || k) : 'not set');
+    }).join(' · ');
+    line.hidden = !order.length;
+  }
   function genPayload() {
     var count = Math.floor(Number($('genCount').value) || 0);
     var weeks = genWeeks();
@@ -5418,6 +5474,7 @@
     if (!$('genClient').value) { msg('genMsg', 'A client is required.', 'err'); $('genClient').focus(); return null; }
     if (!genEng()) { msg('genMsg', said('no-month'), 'err'); return null; }
     if (count < 1 || count > 60) { msg('genMsg', said('bad-count'), 'err'); $('genCount').focus(); return null; }
+    if ($('genFormat').value === 'each' && genFmtVals().length !== count) genFmtPaint();
     return {
       client_id: $('genClient').value,
       period: $('genPeriod').value,
@@ -5426,7 +5483,8 @@
       weeks: weeks,
       scope: 'client',
       task_type: $('genType').value || 'engagement',
-      deliverable_type: $('genFormat').value || null,
+      deliverable_type: $('genFormat').value === 'each' ? null : ($('genFormat').value || null),
+      formats: $('genFormat').value === 'each' ? genFmtVals() : null,
       priority_level: Number($('genPriority').value) || 3,
       complexity: $('genComplex').value || null,
       owner_id: $('genOwner').value || null
@@ -5436,7 +5494,9 @@
     var pl = genPayload();
     if (!pl) return;
     call('ops_generate_month', { p_payload: pl, p_dry_run: true }, 'genMsg', function (d) {
-      var codes = ((d && d.tasks) || []).map(function (x) { return x.code; });
+      var codes = ((d && d.tasks) || []).map(function (x) {
+        return x.format ? x.code + ' ' + (DELIVER_WORD[x.format] || x.format) : x.code;
+      });
       var out = $('genOut');
       out.hidden = false;
       out.textContent = codes.length
@@ -6835,6 +6895,23 @@
     if (genClientSel) genClientSel.addEventListener('change', function () { genLoadMonths(null); });
     var genPeriodSel = $('genPeriod');
     if (genPeriodSel) genPeriodSel.addEventListener('change', genMonthChanged);
+    var genFormatSel = $('genFormat');
+    if (genFormatSel) genFormatSel.addEventListener('change', function () {
+      /* Switching to Set each task starts every row from the one format
+         that was chosen; switching back takes one format for them all. */
+      if (genFormatSel.value === 'each') genFmts = [];
+      else genFmtLast = genFormatSel.value;
+      genFmtPaint();
+    });
+    ['genCount', 'genW1', 'genW2', 'genW3', 'genW4', 'genW5'].forEach(function (id) {
+      var f = $(id); if (f) f.addEventListener('input', genFmtPaint);
+    });
+    var genFmtBox = $('genFmtList');
+    if (genFmtBox) genFmtBox.addEventListener('change', function (ev) {
+      var x = ev.target.closest('select[data-i]');
+      if (x) genFmts[Number(x.getAttribute('data-i'))] = x.value;
+      genFmtSumPaint();
+    });
     var genPreviewBtn = $('genPreview');
     if (genPreviewBtn) genPreviewBtn.addEventListener('click', genPreview);
     var genGoBtn = $('genGo');

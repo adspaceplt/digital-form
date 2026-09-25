@@ -26,7 +26,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260925j">
+<link rel="stylesheet" href="/css/portal.css?v=20260925k">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -41,26 +41,26 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260925j"></script>
-<script src="/js/words.js?v=20260925j"></script>
-<script src="/js/copy.js?v=20260925j"></script>
-<script src="/js/ask.js?v=20260925j"></script>
-<script src="/js/confirm.js?v=20260925j"></script>
-<script src="/js/sheet.js?v=20260925j"></script>
-<script src="/js/form.js?v=20260925j"></script>
-<script src="/js/state.js?v=20260925j"></script>
-<script src="/js/group.js?v=20260925j"></script>
-<script src="/js/menu.js?v=20260925j"></script>
-<script src="/js/cmdbar.js?v=20260925j"></script>
-<script src="/js/api.js?v=20260925j"></script>
-<script src="/js/money.js?v=20260925j"></script>
-<script src="/js/mockups.js?v=20260925j"></script>
+<script src="/js/config.js?v=20260925k"></script>
+<script src="/js/words.js?v=20260925k"></script>
+<script src="/js/copy.js?v=20260925k"></script>
+<script src="/js/ask.js?v=20260925k"></script>
+<script src="/js/confirm.js?v=20260925k"></script>
+<script src="/js/sheet.js?v=20260925k"></script>
+<script src="/js/form.js?v=20260925k"></script>
+<script src="/js/state.js?v=20260925k"></script>
+<script src="/js/group.js?v=20260925k"></script>
+<script src="/js/menu.js?v=20260925k"></script>
+<script src="/js/cmdbar.js?v=20260925k"></script>
+<script src="/js/api.js?v=20260925k"></script>
+<script src="/js/money.js?v=20260925k"></script>
+<script src="/js/mockups.js?v=20260925k"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260925j" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260925k" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -2321,6 +2321,35 @@
                 <button class="btn btn-sm" id="genPreview" type="button">Preview the codes</button>
                 <p class="hint genout" id="genOut" hidden></p>
               </section>
+              <!-- A month is usually mixed (three Reels, five graphics), so the
+                   format is set once for every task or task by task, the way
+                   the weeks above are spread evenly or set each week. -->
+              <section class="fsec">
+                <h4 class="fsec-h">Deliverable format</h4>
+                <div class="row">
+                  <div class="field">
+                    <label class="field-label" for="genFormat">Format</label>
+                    <select class="select" id="genFormat">
+                      <option value="">Not set</option>
+                      <option value="ad_campaign">Ad Campaign</option>
+                      <option value="static">Graphic: Static</option>
+                      <option value="gif">Graphic: GIF</option>
+                      <option value="carousel">Graphic: Carousel</option>
+                      <option value="reels_30">Reels: up to 30s</option>
+                      <option value="reels_60">Reels: up to 60s</option>
+                      <option value="reels_120">Reels: up to 120s</option>
+                      <option value="report">Report</option>
+                      <option value="account_mgmt">Account Management</option>
+                      <option value="koc">KOC</option>
+                      <option value="kol">KOL</option>
+                      <option value="other">Other</option>
+                      <option value="each">Set each task</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row fgrid genfmts" id="genFmtList" hidden></div>
+                <p class="hint" id="genFmtSum" hidden></p>
+              </section>
               <section class="fsec">
                 <h4 class="fsec-h">Assignment</h4>
                 <div class="row">
@@ -2340,26 +2369,6 @@
                       <option value="adhoc">Ad hoc</option>
                       <option value="goodwill">Goodwill</option>
                       <option value="special">Special</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="row">
-                  <div class="field">
-                    <label class="field-label" for="genFormat">Deliverable format</label>
-                    <select class="select" id="genFormat" data-none="No format">
-                      <option value="">Not set</option>
-                      <option value="ad_campaign">Ad Campaign</option>
-                      <option value="static">Graphic: Static</option>
-                      <option value="gif">Graphic: GIF</option>
-                      <option value="carousel">Graphic: Carousel</option>
-                      <option value="reels_30">Reels: up to 30s</option>
-                      <option value="reels_60">Reels: up to 60s</option>
-                      <option value="reels_120">Reels: up to 120s</option>
-                      <option value="report">Report</option>
-                      <option value="account_mgmt">Account Management</option>
-                      <option value="koc">KOC</option>
-                      <option value="kol">KOL</option>
-                      <option value="other">Other</option>
                     </select>
                   </div>
                 </div>
@@ -4112,16 +4121,16 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260925j"></script>
-<script src="/js/documents.js?v=20260925j"></script>
-<script src="/js/letters.js?v=20260925j"></script>
-<script src="/js/smreport.js?v=20260925j"></script>
-<script src="/js/reports.js?v=20260925j"></script>
-<script src="/js/register.js?v=20260925j"></script>
-<script src="/js/crm.js?v=20260925j"></script>
-<script src="/js/team.js?v=20260925j"></script>
-<script src="/js/campaigns.js?v=20260925j"></script>
-<script src="/js/ops.js?v=20260925j"></script>
-<script src="/js/perf.js?v=20260925j"></script>
+<script src="/js/admin.js?v=20260925k"></script>
+<script src="/js/documents.js?v=20260925k"></script>
+<script src="/js/letters.js?v=20260925k"></script>
+<script src="/js/smreport.js?v=20260925k"></script>
+<script src="/js/reports.js?v=20260925k"></script>
+<script src="/js/register.js?v=20260925k"></script>
+<script src="/js/crm.js?v=20260925k"></script>
+<script src="/js/team.js?v=20260925k"></script>
+<script src="/js/campaigns.js?v=20260925k"></script>
+<script src="/js/ops.js?v=20260925k"></script>
+<script src="/js/perf.js?v=20260925k"></script>
 </body>
 </html>
