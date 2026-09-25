@@ -33,15 +33,34 @@
      count at the foot, the page title in Slate Regular 18pt, all text in the
      one ink #404040. The report is an ADspace document, so it wears the same
      paper as the rate card and the packages. */
+  /* 2026-09-25, second revision: the user found the 54pt margin left too
+     much white paper, and asked for the margins, the type, the line heights
+     and the tables to follow the golden ratio. So every size and every space
+     on the page is one step of one scale: 10pt (the body) multiplied by
+     √φ, step by step, so that two steps apart is exactly φ.
+
+       S(-2) 6.18  S(-1) 7.86  S(0) 10  S(1) 12.72  S(2) 16.18
+       S(3) 20.58  S(4) 26.18  S(5) 33.30  S(6) 42.36
+
+     The margin is S(5), 33.3pt (11.7mm), which widens the text column from
+     487pt to 529pt. The head, the foot and the ink stay the rate card's. */
   var W = 595.28, H = 841.89;
-  var M = 54;                   // 0.75in, the rate card's margin
-  var R = W - M, CW = R - M;    // the text column: 487.3pt
-  var PHI = 0.618;
-  var HEAD_Y = 781.7;           // the wordmark's baseline
-  var LABEL_X = 264.5;          // the head label, where the rate card sets FOR INTERNAL USE
-  var TOP = H - 88.1;           // the page title's baseline, as the rate card's Ala Carté
-  var FLOOR = 74;               // nothing draws below this; the foot is under it
-  var GUT = 20;
+  var PHI = 1.6180339887;
+  var S = function (k) { return 10 * Math.pow(PHI, k / 2); };
+  var M = S(5);                 // 33.3pt on every side
+  var R = W - M, CW = R - M;    // the text column: 528.7pt
+  var HEAD_Y = H - M - 11.6;    // the wordmark's baseline: its cap height under the top margin
+  var TOP = HEAD_Y - S(5);      // the page title's baseline, one margin under the head
+  var FOOT_Y = M + S(1);        // PRIVATE & CONFIDENTIAL and the page count
+  var FLOOR = FOOT_Y + S(4);    // nothing draws below this; the foot is under it
+  // The type roles, each a step of the scale.
+  var TY = {
+    cover: S(5), coverSub: S(3), coverMeta: S(1),
+    title: S(3), block: S(1), lead: S(1), body: S(0), cell: S(0), small: S(-1),
+    figure: S(3)
+  };
+  // The spaces between things, each a step of the scale.
+  var SP = { tight: S(-2), line: S(-1), under: S(2), block: S(4) };
 
   // ---- Words ------------------------------------------------------------------
   var PLATFORM_WORD = {
@@ -601,17 +620,33 @@
     var para = function (s, x, w, size, lh, f, color) {
       sh.linesOf(s, w, size, f || book).forEach(function (ln) { need(lh); sh.draw(pg.page, ln, x, y, size, color || INK); y -= lh; });
     };
-    /* The page title, as the rate card sets Ala Carté: Slate Regular 18pt,
-       the first block 12pt under it. */
-    var pageTitle = function (s) { tline(s, M, y, 18, reg, INK, CW); y -= 24; };
-    /* A block's title, as the rate card sets Social Media Contents over its
-       table: Slate Regular 11pt, the block 6pt under it. `keep` is the height
-       of what must follow it on the same page. */
+    /* The page title in Slate Regular at S(3), the first block S(2) under
+       it. Every section starts a page of its own, so a report with little in
+       it is shorter by whole sections and never squeezed onto half a page. */
+    var pageTitle = function (s) { tline(s, M, y, TY.title, reg, INK, CW); y -= TY.title * 0.25 + SP.under; };
+    /* A block's title in Slate Regular at S(1), the block S(-1) under it.
+       `y` is always the top edge of what comes next, so the space between
+       two blocks is exactly S(4) whatever they are, and under a title S(2).
+       `keep` is the height of what must follow it on the same page. */
     var blockTitle = function (s, keep) {
-      need(20 + (keep || 40));
-      tline(s, M, y, 11.04, reg, INK, CW); y -= 8;
+      need(TY.block + SP.line + (keep || 40));
+      y -= TY.block * 0.72;
+      tline(s, M, y, TY.block, reg, INK, CW); y -= TY.block * 0.28 + SP.line;
     };
     var gap = function (h) { y -= h; };
+    var BLOCK = SP.block;
+    /* Lines of prose from the top edge `y`: the first baseline its cap height
+       down, each next one a φ line (S(2)) under it, and the block after it
+       S(4) under the last line's descent. */
+    var proseBlock = function (lines) {
+      var last = null;
+      lines.forEach(function (l) {
+        if (l.gap) { if (last !== null) y -= l.gap; return; }
+        if (last === null) y -= l.size * 0.72; else y -= S(2);
+        need(S(2)); sh.draw(pg.page, l.ln, M, y, l.size, INK); last = l;
+      });
+      if (last) y -= last.size * 0.28 + BLOCK;
+    };
 
     var groupWord = function (p) { return p._group ? p._group.label : ''; };
     var typeWord = function (p) { return TYPE_WORD[p.content_type] || (p.content_type ? String(p.content_type) : ''); };
@@ -649,7 +684,10 @@
        label column in #f2f2f2 where a table reads by row. A row that no
        longer fits starts a new page with the header drawn again; a row of
        plain text taller than a page is split between pages. */
-    var T = { size: 9.5, lh: 12.2, padX: 5.3, padY: 3.1, minH: 18.24 };
+    /* The cell: 10pt text on a √φ line (12.72), S(-2) at either side, and a
+       row of S(3) at least, so the text sits in the row with the same space
+       above and below it. */
+    var T = { size: TY.cell, lh: S(1), padX: S(-2), padY: (S(3) - S(1)) / 2, minH: S(3) };
     function cellLines(c, w) {
       if (c == null) return [];
       if (typeof c === 'string' || typeof c === 'number') c = { t: String(c) };
@@ -662,11 +700,11 @@
       });
       if (c.items) {
         /* A numbered list inside a cell: the number in Slate Medium, the item
-           hanging 14pt in, 4pt between items. */
+           hanging S(1) in, the row's own padding between items. */
         c.items.forEach(function (it, i) {
-          var ls = sh.linesOf(it, w - T.padX * 2 - 14, size, f);
-          ls.forEach(function (ln, k) { out.push({ ln: ln, f: f, size: size, num: k === 0 ? String(i + 1) : null, indent: 14 }); });
-          if (i < c.items.length - 1) out.push({ gap: 4 });
+          var ls = sh.linesOf(it, w - T.padX * 2 - S(1), size, f);
+          ls.forEach(function (ln, k) { out.push({ ln: ln, f: f, size: size, num: k === 0 ? String(i + 1) : null, indent: S(1) }); });
+          if (i < c.items.length - 1) out.push({ gap: T.padY });
         });
       }
       return out;
@@ -788,13 +826,13 @@
     function figures(cells) {
       var cols = cells.map(function () { return { w: 1 / cells.length, align: 'center' }; });
       table(cols, cells.map(function (c) { return c.label; }), [{
-        minH: 36,
+        minH: S(5),
         cells: cells.map(function (c) {
           var na = c.value === 'Not available';
           return { fn: function (x, top, w, h) {
-            var size = na ? 10 : (String(c.value).length > 8 ? 17 : 19);
+            var size = na ? TY.body : (String(c.value).length > 8 ? S(2) : TY.figure);
             center(c.value, x + w / 2, top - h / 2 - size * 0.34, size, na ? book : med, na ? MUTE : INK);
-          }, h: 36 };
+          }, h: S(5) };
         })
       }]);
     }
@@ -813,16 +851,16 @@
       for (var v = 0; v <= scaleMax + step * 0.001; v += step) {
         var yy = base + plotH * (v / scaleMax);
         hline(yy, plotX, plotX + plotW, v === 0 ? FILL2 : FILL, v === 0 ? 0.6 : 0.48);
-        right(v.toLocaleString('en-GB'), plotX - 6, yy - 2.6, 7.5, book, MUTE);
+        right(v.toLocaleString('en-GB'), plotX - S(-2), yy - 2.7, TY.small, book, MUTE);
       }
       return scaleMax;
     }
     function legend(items, x, yy) {
       var lx = x;
       items.forEach(function (it) {
-        rect(lx, yy - 1, 7, 7, it.color);
-        text(it.label, lx + 11, yy, 8, book, INK);
-        lx += 11 + width(it.label, 8, book) + 16;
+        rect(lx, yy - 1, S(-1), S(-1), it.color);
+        text(it.label, lx + S(1), yy, TY.small, book, INK);
+        lx += S(1) + width(it.label, TY.small, book) + S(2);
       });
     }
 
@@ -834,7 +872,7 @@
     function weeklyChart(groups, h) {
       var start = dateOf(rep.period_start), end = dateOf(rep.period_end);
       var posts = mdl.posts.filter(function (p) { return p._group && dateOf(p.posted_on) && volOf(p) !== null; });
-      if (!posts.length) { text('No data.', M, y - 12, 9.5, book, MUTE); y -= 20; return; }
+      if (!posts.length) { text('No data.', M, y - 12, TY.body, book, MUTE); y -= 20; return; }
       if (!start || !end) { start = dateOf(posts[0].posted_on); end = dateOf(posts[posts.length - 1].posted_on); }
       var days = Math.round((end - start) / 864e5) + 1;
       var weeks = [];
@@ -853,7 +891,7 @@
       need(h + 30);
       var top = y;
       if (groups.length > 1) { legend(groups.map(function (gg, i) { return { label: gg.label, color: SERIES[i] || DATA3 }; }), M, top - 6); }
-      var axisW = 40, plotX = M + axisW, plotW = CW - axisW;
+      var axisW = S(6), plotX = M + axisW, plotW = CW - axisW;
       var base = top - h + 14, plotH = h - 14 - (groups.length > 1 ? 34 : 22);
       var scaleMax = axis(plotX, plotW, base, plotH, maxV);
       var slot = plotW / weeks.length, bw = Math.min(56, slot * 0.46);
@@ -865,8 +903,8 @@
           rect(cx - bw / 2, yy, bw, Math.max(0.8, bh - (gi < groups.length - 1 ? 1 : 0)), SERIES[gi] || DATA3);
           yy += bh;
         });
-        center(fmt(wk.total), cx, base + plotH * (wk.total / scaleMax) + 5, 8.5, med, INK);
-        center(wk.label, cx, base - 11, 7.5, book, MUTE);
+        center(fmt(wk.total), cx, base + plotH * (wk.total / scaleMax) + 5, TY.small, med, INK);
+        center(wk.label, cx, base - 11, TY.small, book, MUTE);
       });
       y = top - h - 4;
     }
@@ -882,7 +920,7 @@
       var avg = posts.reduce(function (t, p) { return t + volOf(p); }, 0) / posts.length;
       need(h + 10);
       var top = y;
-      var axisW = 40, plotX = M + axisW, plotW = CW - axisW;
+      var axisW = S(6), plotX = M + axisW, plotW = CW - axisW;
       var base = top - h + 14, plotH = h - 14 - 16;
       var scaleMax = axis(plotX, plotW, base, plotH, maxV);
       var slot = plotW / posts.length, bw = Math.max(2, Math.min(22, slot - 3));
@@ -892,50 +930,58 @@
         var cx = plotX + slot * i + slot / 2;
         var bh = Math.max(0.8, plotH * (volOf(p) / scaleMax));
         rect(cx - bw / 2, base, bw, bh, p === best ? INK : DATA2);
-        if (p === best) center(fmt(volOf(p)), cx, base + bh + 4, 8.5, med, INK);
+        if (p === best) center(fmt(volOf(p)), cx, base + bh + 4, TY.small, med, INK);
         var day = shortDay(p.posted_on);
-        var lw = width(day, 7, book);
-        if (day !== lastDay && cx - lw / 2 > lastX + 3) { center(day, cx, base - 10, 7, book, MUTE); lastX = cx + lw / 2; }
+        var lw = width(day, TY.small, book);
+        if (day !== lastDay && cx - lw / 2 > lastX + 3) { center(day, cx, base - 11, TY.small, book, MUTE); lastX = cx + lw / 2; }
         lastDay = day;
       });
       var ay = base + plotH * (avg / scaleMax);
       hline(ay, plotX, plotX + plotW, INK, 0.6, [2.5, 2]);
       var al = 'Average ' + fmt(Math.round(avg));
-      var alw = width(al, 7.5, reg);
-      rect(plotX + plotW - alw - 6, ay + 2, alw + 6, 10, PAPER);
-      right(al, plotX + plotW - 2, ay + 4, 7.5, reg, INK);
+      var alw = width(al, TY.small, reg);
+      rect(plotX + plotW - alw - 6, ay + 2, alw + 6, TY.small + 3, PAPER);
+      right(al, plotX + plotW - 2, ay + 4, TY.small, reg, INK);
       y = top - h - 2;
     }
 
     // ---------------------------------------------------------------- Cover
     (function cover() {
-      /* The rate card's cover: the head and foot every page carries, and the
-         title in Slate Medium on the page's golden axis, one step in from the
-         margin. Under it, whose report and which month. */
+      /* The title's baseline on the golden section of the page's height,
+         on the text column's own margin, the client and the month under it,
+         each line one step of the scale below the last. */
       newPage('cover');
-      var cx = M + 72, cw = R - cx;
-      var cy = 497;
-      var tlines = sh.linesOf(String(rep.title || 'Social Media Report'), cw, 25.92, med);
-      cy += (tlines.length - 1) * 31;
-      tlines.forEach(function (ln) { sh.draw(pg.page, ln, cx, cy, 25.92, INK); cy -= 31; });
-      cy -= 2;
-      sh.linesOf(String(rep.client_name || ''), cw, 14, reg).forEach(function (ln) { sh.draw(pg.page, ln, cx, cy, 14, INK); cy -= 19; });
-      tline(periodW, cx, cy, 11.04, book, INK, cw);
+      var cy = H / PHI;
+      var tlines = sh.linesOf(String(rep.title || 'Social Media Report'), CW, TY.cover, med);
+      cy += (tlines.length - 1) * S(6);
+      tlines.forEach(function (ln, i) { sh.draw(pg.page, ln, M, cy, TY.cover, INK); if (i < tlines.length - 1) cy -= S(6); });
+      cy -= S(6);
+      sh.linesOf(String(rep.client_name || ''), CW, TY.coverSub, reg).forEach(function (ln) { sh.draw(pg.page, ln, M, cy, TY.coverSub, INK); cy -= S(4); });
+      tline(periodW, M, cy, TY.coverMeta, book, INK, CW);
     })();
 
+    var ins = rep.insights || {};
+
     // ------------------------------------------------------- Executive summary
+    /* Each section below starts a page of its own and never shrinks to fit
+       another onto it: a client with little to report gets fewer pages, not
+       pages cut off halfway. A chart keeps one height wherever it is. */
+    var CHART_WEEK = CW / (PHI * PHI);         // 201.9pt: the column over φ²
+    var CHART_POSTS = CW / Math.pow(PHI, 2.5); // 158.8pt: half a step shorter
     (function summary() {
       newPage('Executive summary');
       pageTitle('Executive summary');
       var t = mdl.totals;
       var head = words(rep.headline).trim();
-      if (head) { sh.linesOf(head, CW, 13, med).slice(0, 3).forEach(function (ln) { sh.draw(pg.page, ln, M, y, 13, INK); y -= 18; }); y -= 4; }
-      [rep.intro, (rep.insights || {}).executive_summary].forEach(function (blk) {
-        if (!words(blk).trim()) return;
-        paragraphsOf(blk).filter(function (s) { return s.trim(); }).forEach(function (s) { para(s, M, CW, 11.04, 15.5, book, INK); y -= 4; });
-        y -= 4;
+      var prose = [];
+      if (head) sh.linesOf(head, CW, TY.lead, med).slice(0, 3).forEach(function (ln) { prose.push({ ln: ln, size: TY.lead, f: med }); });
+      [rep.intro, ins.executive_summary].forEach(function (blk) {
+        paragraphsOf(blk).filter(function (s) { return s.trim(); }).forEach(function (s) {
+          if (prose.length) prose.push({ gap: SP.tight });
+          sh.linesOf(s, CW, TY.body, book).forEach(function (ln) { prose.push({ ln: ln, size: TY.body }); });
+        });
       });
-      y -= 4;
+      proseBlock(prose);
       figures([
         { label: 'Posts published', value: String(t.posts) },
         { label: 'Follower growth', value: signed(t.growth) },
@@ -943,18 +989,23 @@
         { label: t.engWords.length === 1 ? 'Total ' + t.engWords[0].toLowerCase() : 'Total engagements', value: fmt(t.eng) },
         { label: 'Engagement rate', value: pct(t.er) }
       ]);
-      gap(20);
+      gap(BLOCK);
       // The split by platform, one row a platform: the table the figures total.
       if (mdl.groups.length > 1) {
-        blockTitle('By platform', 18.24 * (mdl.groups.length + 1));
-        table([{ w: 0.3, align: 'left' }, { w: 0.12 }, { w: 0.15 }, { w: 0.15 }, { w: 0.14 }, { w: 0.14 }],
+        blockTitle('By platform', T.minH * (mdl.groups.length + 1));
+        table([{ w: 0.26, align: 'left' }, { w: 0.1 }, { w: 0.16 }, { w: 0.14 }, { w: 0.16 }, { w: 0.18 }],
           [{ t: 'Platform', align: 'left' }, 'Posts', 'Follower growth', 'Views', 'Engagements', 'Engagement rate'],
           mdl.groups.map(function (gg) {
             return { cells: [gg.label, String(gg.posts.length), signed(gg.growth), fmt(gg.views), fmt(gg.eng), pct(gg.er)] };
           }), { labelCol: true });
-        gap(20);
+        gap(BLOCK);
       }
-      var ins = rep.insights || {};
+      blockTitle((t.volumeWords.length === 1 ? t.volumeWords[0] : 'Views') + ' by week', CHART_WEEK);
+      weeklyChart(mdl.groups, CHART_WEEK);
+    })();
+
+    // ------------------------------------------------ Findings and recommendations
+    (function findings() {
       var obs = points(ins.performed_well);
       var acts = points(ins.next_actions);
       var more = [
@@ -964,31 +1015,21 @@
         ['Improvements', ins.improvements]
       ].filter(function (r) { return words(r[1]).trim(); });
       if (!obs.length && words(ins.performed_well).trim()) more.unshift(['Highlights', ins.performed_well]);
-      /* The chart gives up height, down to 110pt, so that what follows it
-         finishes on this page rather than leaving one row on a page of its
-         own. */
-      var halfW = CW / 2;
-      var listsH = (obs.length || acts.length) ? 18.24 + T.padY * 2 +
-        Math.max(linesH(cellLines({ items: obs }, halfW)), linesH(cellLines({ items: acts }, halfW)), T.lh) + 16 : 0;
-      var moreH = more.length ? 20 + 28 + more.reduce(function (tt, r) { return tt + Math.max(T.minH, linesH(cellLines({ items: points(r[1]) }, CW * 0.74)) + T.padY * 2); }, 0) : 0;
-      var chartH = Math.max(110, Math.min(160, y - FLOOR - 28 - 16 - listsH - moreH));
-      blockTitle((t.volumeWords.length === 1 ? t.volumeWords[0] : 'Views') + ' by week', chartH);
-      weeklyChart(mdl.groups, chartH);
-      gap(16);
+      if (!obs.length && !acts.length && !more.length) return;
+      newPage('Findings and recommendations');
+      pageTitle('Findings and recommendations');
       if (obs.length || acts.length) {
         var one = [{ w: 0.5, align: 'left' }, { w: 0.5, align: 'left' }];
         var cells = [obs.length ? { items: obs } : { t: 'None.', color: MUTE }, acts.length ? { items: acts } : { t: 'None.', color: MUTE }];
         table(one, [{ t: 'Key findings', align: 'left' }, { t: 'Next steps', align: 'left' }], [{ cells: cells, split: true }]);
       }
-      /* The rest of the team's remarks, under the two lists and never
-         repeating them: Key findings is the Highlights field and Next steps the
-         Action plan, so those two are not drawn a second time. The rate card's
-         What's Included shape: the label in its grey column, the points
-         numbered beside it; it continues on the next page where it must. */
+      /* The rest of the team's remarks, never repeating the two lists above:
+         Key findings is the Highlights field and Next steps the Action plan.
+         The label in its grey column, the points numbered beside it. */
       if (more.length) {
-        gap(20);
-        blockTitle('Remarks and recommendations', 18.24 * 2);
-        table([{ w: 0.26, align: 'left' }, { w: 0.74, align: 'left' }], null,
+        if (obs.length || acts.length) gap(BLOCK);
+        blockTitle('Remarks and recommendations', T.minH * 2);
+        table([{ w: 1 / (PHI * PHI), align: 'left' }, { w: 1 / PHI, align: 'left' }], null,
           more.map(function (r) { return { cells: [{ t: r[0], f: reg }, { items: points(r[1]) }], split: true }; }),
           { labelCol: true });
       }
@@ -999,8 +1040,7 @@
       newPage(gg.label);
       pageTitle(gg.label);
       if (words(gg.summary).trim()) {
-        sh.linesOf(gg.summary, CW, 12, med).slice(0, 3).forEach(function (ln) { sh.draw(pg.page, ln, M, y, 12, INK); y -= 17; });
-        y -= 6;
+        proseBlock(sh.linesOf(gg.summary, CW, TY.lead, med).slice(0, 3).map(function (ln) { return { ln: ln, size: TY.lead }; }));
       }
       var cells = [{ label: 'Posts', value: String(gg.posts.length) }];
       gg.accounts.forEach(function (a) {
@@ -1010,65 +1050,66 @@
       if (gg.engKey) cells.push({ label: 'Total ' + METRIC_WORD[gg.engKey].toLowerCase(), value: fmt(gg.eng) });
       cells.push({ label: 'Engagement rate', value: pct(gg.er) });
       figures(cells.slice(0, 6));
-      gap(20);
+      gap(BLOCK);
       var movers = gg.accounts.filter(function (a) { return num(a.followers_start) !== null && num(a.followers_end) !== null; });
       if (movers.length) {
-        blockTitle('Followers', 18.24 * (movers.length + 1));
-        table([{ w: 0.34, align: 'left' }, { w: 0.22 }, { w: 0.22 }, { w: 0.22 }],
+        blockTitle('Followers', T.minH * (movers.length + 1));
+        table([{ w: 1 / (PHI * PHI) }, { w: 0.2 }, { w: 0.2 }, { w: 1 - 1 / (PHI * PHI) - 0.4 }].map(function (c, i) { if (!i) c.align = 'left'; return c; }),
           [{ t: 'Account', align: 'left' }, 'Start of period', 'End of period', 'Growth'],
           movers.map(function (a) { return { cells: [PLATFORM_WORD[a.platform] || a.platform, fmt(a.followers_start), fmt(a.followers_end), signed(growthOf(a))] }; }),
           { labelCol: true });
-        gap(20);
+        gap(BLOCK);
       }
       if (gg.volume && gg.posts.some(function (p) { return volOf(p) !== null; })) {
-        blockTitle(METRIC_WORD[gg.volume] + ' by post', 136);
-        postsChart(gg, 136);
-        gap(16);
+        blockTitle(METRIC_WORD[gg.volume] + ' by post', CHART_POSTS);
+        postsChart(gg, CHART_POSTS);
+        gap(BLOCK);
       }
       // The five best, one table: the ranking and every figure it rests on.
       var ranked = gg.posts.filter(function (p) { return mdl.rankOf(p) !== null; })
         .sort(function (a, b) { return mdl.rankOf(b) - mdl.rankOf(a); }).slice(0, 5);
       if (ranked.length) {
         var topV = ranked.reduce(function (m, p) { return Math.max(m, volOf(p) || 0); }, 0) || 1;
-        var ROWH = 46;
-        blockTitle('Top ' + ranked.length + ' posts by ' + METRIC_WORD[mdl.rank].toLowerCase(), 18.24 + ROWH * 2);
-        table([{ w: 0.07 }, { w: 0.38, align: 'left' }, { w: 0.25 }, { w: 0.15 }, { w: 0.15 }],
+        var ROWH = S(6);
+        var TH = ROWH - S(-2) * 2, TW = TH * 0.8;
+        blockTitle('Top ' + ranked.length + ' posts by ' + METRIC_WORD[mdl.rank].toLowerCase(), T.minH + ROWH * 2);
+        table([{ w: 0.07 }, { w: 0.36 }, { w: 0.25 }, { w: 0.14 }, { w: 0.18 }].map(function (c, i) { if (i === 1) c.align = 'left'; return c; }),
           ['Rank', { t: 'Post', align: 'left' }, volWord(gg), engWord(gg), 'Engagement rate'],
           ranked.map(function (p, i) {
             return { minH: ROWH, cells: [
               { t: String(i + 1), f: med, align: 'center' },
               { fn: function (x, top, w, h) {
-                thumbIn(p, x + T.padX, top - 4, 29, h - 8);
-                var tx = x + T.padX + 37, tw = w - T.padX * 2 - 37;
-                tline(clip(postName(p), tw, 9.5, med), tx, top - h / 2 + 2, 9.5, med, INK);
-                tline([dayWord(p.posted_on), typeWord(p)].filter(Boolean).join('  ·  '), tx, top - h / 2 - 10, 8, book, SOFT, tw);
+                thumbIn(p, x + T.padX, top - S(-2), TW, TH);
+                var tx = x + T.padX + TW + S(-2), tw = w - T.padX * 2 - TW - S(-2);
+                tline(clip(postName(p), tw, TY.body, med), tx, top - h / 2 + 2, TY.body, med, INK);
+                tline([dayWord(p.posted_on), typeWord(p)].filter(Boolean).join('  ·  '), tx, top - h / 2 - S(1) + 2, TY.small, book, SOFT, tw);
               }, h: ROWH },
               { fn: function (x, top, w, h) {
-                var v = volOf(p), vs = fmt(v), vw = 46;
+                var v = volOf(p), vs = fmt(v), vw = S(6);
                 var bx = x + T.padX, bwMax = w - T.padX * 2 - vw;
-                rect(bx, top - h / 2 - 3, bwMax, 6, FILL);
-                if (v !== null) rect(bx, top - h / 2 - 3, Math.max(0.8, bwMax * v / topV), 6, i === 0 ? INK : DATA2);
-                right(vs, x + w - T.padX, top - h / 2 - 3.2, 9.5, i === 0 ? med : book, INK);
+                rect(bx, top - h / 2 - 3, bwMax, S(-2), FILL);
+                if (v !== null) rect(bx, top - h / 2 - 3, Math.max(0.8, bwMax * v / topV), S(-2), i === 0 ? INK : DATA2);
+                right(vs, x + w - T.padX, top - h / 2 - 3.2, TY.body, i === 0 ? med : book, INK);
               }, h: ROWH },
               { t: fmt(engOf(p)), align: 'center' },
               { t: pct(erOf(p)), align: 'center' }
             ] };
           }));
-        gap(20);
+        gap(BLOCK);
       }
-      // What the month showed on this platform: three columns, the rate card's header row over them.
+      // What the month showed on this platform: three columns, the header row over them.
       var notes = [['Highlights', gg.worked], ['Areas for improvement', gg.improve], ['Recommendations', gg.actions]]
         .filter(function (b) { return words(b[1]).trim(); });
       if (notes.length) {
         var nc = notes.map(function () { return { w: 1 / notes.length, align: 'left' }; });
         var row = { cells: notes.map(function (b) { return { items: points(b[1]) }; }), split: true };
-        var probeH = Math.max.apply(null, notes.map(function (b, i) { return linesH(cellLines({ items: points(b[1]) }, CW / notes.length)); })) + T.padY * 2;
-        if (notes.length > 1 && probeH + 18.24 + 20 <= TOP - FLOOR) {
-          blockTitle('Remarks', 18.24 + Math.min(probeH, 120));
+        var probeH = Math.max.apply(null, notes.map(function (b) { return linesH(cellLines({ items: points(b[1]) }, CW / notes.length)); })) + T.padY * 2;
+        if (notes.length > 1 && probeH + T.minH + BLOCK <= TOP - FLOOR) {
+          blockTitle('Remarks', T.minH + Math.min(probeH, 120));
           table(nc, notes.map(function (b) { return { t: b[0], align: 'left' }; }), [row]);
         } else {
           blockTitle('Remarks', 60);
-          table([{ w: 0.26, align: 'left' }, { w: 0.74, align: 'left' }], null,
+          table([{ w: 1 / (PHI * PHI), align: 'left' }, { w: 1 / PHI, align: 'left' }], null,
             notes.map(function (b) { return { cells: [{ t: b[0], f: reg }, { items: points(b[1]) }], split: true }; }), { labelCol: true });
         }
       }
@@ -1078,42 +1119,46 @@
     if (mdl.top.length) {
       newPage('Top posts');
       pageTitle('Top posts');
-      var IMG_W = 72, IMG_H = 96;
-      table([{ w: 0.08 }, { w: 0.2 }, { w: 0.72, align: 'left' }],
+      var IMG_W = S(8), IMG_H = IMG_W * 1.25;   // 4:5, the portrait post
+      var dw = CW / PHI - T.padX * 2;           // the details column: the golden major
+      table([{ w: 0.1 }, { w: 1 - 1 / PHI - 0.1 }, { w: 1 / PHI, align: 'left' }],
         ['Rank', 'Post', { t: 'Details', align: 'left' }],
         mdl.top.map(function (p, i) {
           var gp = p._group;
-          var dw = CW * 0.72 - T.padX * 2;
-          var cap = words(p.caption).trim() ? sh.linesOf(paragraphsOf(p.caption).filter(function (s) { return s.trim(); }).join(' '), dw, 8.5, book).slice(0, 3) : [];
-          var notable = words(p.notable).trim() ? sh.linesOf(p.notable, dw, 9, book) : [];
+          var cap = words(p.caption).trim() ? sh.linesOf(paragraphsOf(p.caption).filter(function (s) { return s.trim(); }).join(' '), dw, TY.small, book).slice(0, 3) : [];
+          var notable = words(p.notable).trim() ? sh.linesOf(p.notable, dw, TY.body, book) : [];
           var metrics = [];
           if (gp && gp.volume) metrics.push([METRIC_WORD[gp.volume], fmt(p[gp.volume])]);
           metrics.push([engWord(gp), fmt(engOf(p))]);
           metrics.push(['Engagement rate', pct(erOf(p))]);
-          var textH = 83 + (cap.length ? cap.length * 11 + 6 : 0) + (notable.length ? 12 + notable.length * 12 : 0);
-          var h = Math.max(IMG_H + 12, textH + 8);
+          // The details column, top to bottom, each offset a step of the scale.
+          var NAME = S(2), META = NAME + S(2), BOX = META + S(-1), LABH = S(2), VALH = S(3);
+          var AFTER = BOX + LABH + VALH + S(2);
+          var textH = AFTER + (cap.length ? cap.length * S(0) + S(-2) : 0) + (notable.length ? S(0) + notable.length * S(1) : 0) + S(-2);
+          var h = Math.max(IMG_H + S(-2) * 2, textH);
           return { minH: h, cells: [
-            { t: String(i + 1), f: med, size: 14, align: 'center' },
+            { t: String(i + 1), f: med, size: S(2), align: 'center' },
             { fn: function (x, top, w, hh) { thumbIn(p, x + (w - IMG_W) / 2, top - (hh - IMG_H) / 2, IMG_W, IMG_H); }, h: h },
             { fn: function (x, top, w, hh) {
-              var tx = x + T.padX, ty = top - 16;
-              tline(clip(postName(p), dw, 11, med), tx, ty, 11, med, INK); ty -= 13;
-              tline([gp ? gp.label : '', dayWord(p.posted_on), typeWord(p)].filter(Boolean).join('  ·  '), tx, ty, 8, book, SOFT, dw); ty -= 10;
+              var tx = x + T.padX;
+              tline(clip(postName(p), dw, TY.lead, med), tx, top - NAME, TY.lead, med, INK);
+              tline([gp ? gp.label : '', dayWord(p.posted_on), typeWord(p)].filter(Boolean).join('  ·  '), tx, top - META, TY.small, book, SOFT, dw);
               // The figures as a small table of their own.
-              var mw = Math.min(110, dw / metrics.length);
+              var mw = Math.min(S(9), dw / metrics.length);
+              var by = top - BOX;
               metrics.forEach(function (m, k) {
                 var mx = tx + k * mw;
-                rect(mx, ty - 13, mw, 13, FILL); frame(mx, ty - 13, mw, 13);
-                center(m[0], mx + mw / 2, ty - 9.4, 7.5, reg, INK);
-                frame(mx, ty - 30, mw, 17);
-                center(m[1], mx + mw / 2, ty - 25, 10, med, INK);
+                rect(mx, by - LABH, mw, LABH, FILL); frame(mx, by - LABH, mw, LABH);
+                center(m[0], mx + mw / 2, by - LABH / 2 - TY.small * 0.34, TY.small, reg, INK);
+                frame(mx, by - LABH - VALH, mw, VALH);
+                center(m[1], mx + mw / 2, by - LABH - VALH / 2 - TY.body * 0.34, TY.body, med, INK);
               });
-              ty -= 44;
-              cap.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, 8.5, SOFT); ty -= 11; });
-              if (cap.length) ty -= 6;
+              var ty = top - AFTER;
+              cap.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, TY.small, SOFT); ty -= S(0); });
+              if (cap.length) ty -= S(-2);
               if (notable.length) {
-                tline('Remarks', tx, ty, 8.5, reg, INK); ty -= 12;
-                notable.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, 9, INK); ty -= 12; });
+                tline('Remarks', tx, ty, TY.small, reg, INK); ty -= S(1);
+                notable.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, TY.body, INK); ty -= S(1); });
               }
             }, h: h }
           ] };
@@ -1121,35 +1166,37 @@
     }
 
     // ------------------------------------------------------- Appendix
+    /* All posts, one platform a page, so a platform's list always opens at
+       the top of a page and closes on its own total. */
     (function appendix() {
-      var all = mdl.groups.reduce(function (a, gg) { return a.concat(gg.posts); }, []);
-      if (!all.length) return;
-      newPage('Appendix: all posts');
-      pageTitle('Appendix: all posts');
-      mdl.groups.forEach(function (gg, gi) {
+      mdl.groups.forEach(function (gg) {
         if (!gg.posts.length) return;
+        var name = 'Appendix: ' + gg.label;
+        newPage(name);
+        pageTitle(name);
         var hasType = gg.posts.some(function (p) { return typeWord(p); });
-        var cols = [{ w: hasType ? 0.36 : 0.44, align: 'left' }, { w: 0.1 }];
+        var cols = [{ w: hasType ? 0.34 : 0.42, align: 'left' }, { w: 0.1 }];
         var head = [{ t: 'Post', align: 'left' }, 'Date'];
         if (hasType) { cols.push({ w: 0.1 }); head.push('Format'); }
-        cols.push({ w: 0.12 }, { w: 0.16 }, { w: 0.16 });
+        cols.push({ w: 0.12 }, { w: 0.16 }, { w: 0.18 });
         head.push(volWord(gg), engWord(gg), 'Engagement rate');
-        var ROWH = 50;
+        var ROWH = S(7);
+        var TH = ROWH - S(-2) * 2, TW = TH * 0.8;
         var rows = gg.posts.map(function (p) {
           var capTxt = paragraphsOf(p.caption).filter(function (s) { return s.trim(); }).join(' ');
           var remark = words(p.observation).trim();
           var cells = [{ fn: function (x, top, w, h) {
-            thumbIn(p, x + T.padX, top - 5, 30, h - 10);
-            var tx = x + T.padX + 38, tw = w - T.padX * 2 - 38;
+            thumbIn(p, x + T.padX, top - S(-2), TW, TH);
+            var tx = x + T.padX + TW + S(-2), tw = w - T.padX * 2 - TW - S(-2);
             var lines = [];
-            lines.push({ s: clip(postName(p), tw, 9, med), f: med, size: 9, c: INK });
-            if (capTxt) sh.linesOf(capTxt, tw, 7.5, book).slice(0, remark ? 1 : 2).forEach(function (ln, k, arr) { lines.push({ ln: ln, size: 7.5, c: SOFT }); });
-            if (remark) lines.push({ s: clip('Remarks: ' + remark, tw, 7.5, book), f: book, size: 7.5, c: INK });
-            var bh = 11 + (lines.length - 1) * 9.5;
-            var ly = top - (h - bh) / 2 - 8;
+            lines.push({ s: clip(postName(p), tw, TY.body, med), f: med, size: TY.body, c: INK });
+            if (capTxt) sh.linesOf(capTxt, tw, TY.small, book).slice(0, remark ? 1 : 2).forEach(function (ln) { lines.push({ ln: ln, size: TY.small, c: SOFT }); });
+            if (remark) lines.push({ s: clip('Remarks: ' + remark, tw, TY.small, book), f: book, size: TY.small, c: INK });
+            var bh = TY.body + (lines.length - 1) * S(0);
+            var ly = top - (h - bh) / 2 - TY.body * 0.8;
             lines.forEach(function (l, k) {
               if (l.ln) sh.draw(pg.page, l.ln, tx, ly, l.size, l.c); else tline(l.s, tx, ly, l.size, l.f, l.c);
-              ly -= k === 0 ? 11 : 9.5;
+              ly -= k === 0 ? S(1) : S(0);
             });
           }, h: ROWH }, shortDay(p.posted_on)];
           if (hasType) cells.push(typeWord(p) || '');
@@ -1160,8 +1207,6 @@
         if (hasType) totalCells.push('');
         totalCells.push({ t: fmt(gg.views), f: med }, { t: fmt(gg.eng), f: med }, { t: pct(gg.er), f: med });
         rows.push({ fill: FILL, cells: totalCells });
-        if (gi) gap(20);
-        blockTitle(gg.label, 18.24 + ROWH * 2);
         table(cols, head, rows);
       });
     })();
@@ -1188,29 +1233,35 @@
       rows.push(['Ranking', 'Top posts by ' + METRIC_WORD[mdl.rank].toLowerCase()]);
       rows.push(['Document', isDraft ? 'Draft, ' + (stampWord(rep.generated_at) || longDate(new Date().toISOString().slice(0, 10)))
         : 'Version ' + (rep.version_no || 1) + ', issued ' + stampWord(rep.generated_at)]);
-      table([{ w: 0.32, align: 'left' }, { w: 0.68, align: 'left' }], null,
+      table([{ w: 1 / (PHI * PHI), align: 'left' }, { w: 1 / PHI, align: 'left' }], null,
         rows.map(function (r) { return { cells: [{ t: r[0], f: reg }, r[1]] }; }), { labelCol: true });
     })();
 
     // ------------------------------------------------------- Heads and feet
-    /* The rate card's furniture on every page, the cover included. The head
-       label names whose report this is, where the rate card names its
-       audience; the italic line under PRIVATE & CONFIDENTIAL is the report's
-       reference, where the rate card prints its version. Slate Book Italic is
-       not among the portal's fonts, so the line is Slate Book slanted. */
+    /* The rate card's furniture on every page, the cover included, on the
+       new margin: the Optima wordmark at S(2) top left and the client's name
+       in small capitals on the right margin; PRIVATE & CONFIDENTIAL over the
+       report's reference at the foot, the page count on the right. Slate
+       Book Italic is not among the portal's fonts, so the reference is Slate
+       Book slanted. */
     var n = pages.length;
     var label = String(rep.client_name || '').toUpperCase();
     var ymd = function (iso) { var d = iso ? new Date(iso) : new Date(); return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0'); };
     var refLine = isDraft ? 'Draft ' + ymd(rep.generated_at) : 'v.' + (rep.version_no || 1) + ' issued ' + ymd(rep.generated_at);
     var slant = function (s, x, yy, size, f) { pg.page.drawText(String(s), { x: x, y: yy, size: size, font: f, color: INK, ySkew: PDF.degrees(12) }); };
+    var markW = width('ADspace', S(2), mark);
     pages.forEach(function (p, i) {
       pg = p;
-      text('ADspace', M, HEAD_Y, 16.08, mark, INK);
-      if (label) tline(clip(label, R - LABEL_X, 7.92, med), LABEL_X, 782.6, 7.92, med, INK);
-      text('PRIVATE & CONFIDENTIAL', M, 49, 7.92, med, INK);
-      if (/^[\u0000-ɏ -⁯]*$/.test(refLine)) slant(refLine, M, 30.7, 7.92, book);
-      else tline(refLine, M, 30.7, 7.92, book, INK, CW);
-      right('Page ' + (i + 1) + ' of ' + n, R, 47, 7.92, book, INK);
+      text('ADspace', M, HEAD_Y, S(2), mark, INK);
+      if (label) {
+        var lab = clip(label, CW - markW - S(4), TY.small, med);
+        var lw = sh.lineWidth(sh.linesOf(lab, 1e6, TY.small, med)[0] || [], TY.small);
+        tline(lab, R - lw, HEAD_Y + 0.9, TY.small, med, INK);
+      }
+      text('PRIVATE & CONFIDENTIAL', M, FOOT_Y, TY.small, med, INK);
+      if (/^[\u0000-ɏ -⁯]*$/.test(refLine)) slant(refLine, M, M, TY.small, book);
+      else tline(refLine, M, M, TY.small, book, INK, CW);
+      right('Page ' + (i + 1) + ' of ' + n, R, FOOT_Y, TY.small, book, INK);
     });
     return Promise.resolve(n);
   }
