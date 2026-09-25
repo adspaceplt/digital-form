@@ -1378,6 +1378,7 @@
     var tabOf = document.querySelector('#campTabs .tab[data-pane="' + key + '"]');
     if (tabOf && tabOf.hasAttribute('data-part') && !mayPart(tabOf.getAttribute('data-part'), 'view')) key = 'overview';
     campPane = key;
+    if ($('campNextGo')) $('campNextGo').hidden = key === 'client';
     Array.prototype.forEach.call(document.querySelectorAll('#campTabs .tab'), function (b) {
       var on = b.getAttribute('data-pane') === key;
       b.classList.toggle('is-on', on);
@@ -2074,6 +2075,24 @@
     var next = nextAction(c, live);
     $('campNext').textContent = next;
     $('campNext').hidden = !next;
+    /* The client's picks wait on the team to confirm them, and that button is
+       under the list on the Selection pane. The line that says so carries the
+       way there, or the one step that locks a selection is a tab nobody
+       thought to open (reported 2026-09-25). */
+    if (live.some(function (o) { return o.state === 'shortlisted'; }) && campPane !== 'client') {
+      var go = document.createElement('button');
+      go.type = 'button'; go.className = 'btn btn-sm camp-next-go'; go.id = 'campNextGo';
+      go.textContent = 'Review and confirm';
+      go.addEventListener('click', function () {
+        var tab = document.querySelector('#campTabs .tab[data-pane="client"]');
+        if (tab) tab.click();
+        setTimeout(function () {
+          var lock = $('campLock');
+          if (lock && !lock.hidden) { lock.scrollIntoView({ block: 'center' }); lock.focus(); }
+        }, 0);
+      });
+      $('campNext').appendChild(go);
+    }
     paintSchedule(live);
     paintDeliverables(live);
     paintPicks(live);
@@ -2118,6 +2137,10 @@
     if ($('campLockRow')) $('campLockRow').hidden = !waiting.length;
     $('campLock').textContent = 'Confirm ' + waiting.length +
       (waiting.length === 1 ? ' creator' : ' creators');
+    if ($('campLockRow2')) {
+      $('campLockRow2').hidden = !waiting.length;
+      $('campLock2').textContent = $('campLock').textContent;
+    }
 
     var working = state.options.filter(isLive);
     $('bulkToggle').hidden = !working.length;
@@ -3881,6 +3904,7 @@
   });
 
   // ---- Locking the selection ---------------------------------------------
+  if ($('campLock2')) $('campLock2').addEventListener('click', function () { $('campLock').click(); });
   $('campLock').addEventListener('click', function () {
     var picked = state.options.filter(function (o) { return o.state === 'shortlisted'; });
     if (!picked.length) {

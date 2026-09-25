@@ -6208,6 +6208,8 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   background: var(--warn-bg); color: var(--warn);
   font-size: 13px; font-weight: 600;
 }
+.camp-next:has(.camp-next-go) { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
+.camp-next-go { margin-block: -4px; }
 
 /* Four columns, not five. The pane is about 590px beside the rail, and a
    fifth track squeezed the creator's name to two lines and pushed the state
