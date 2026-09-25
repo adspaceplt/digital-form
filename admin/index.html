@@ -26,7 +26,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260925h">
+<link rel="stylesheet" href="/css/portal.css?v=20260925i">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -41,26 +41,26 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260925h"></script>
-<script src="/js/words.js?v=20260925h"></script>
-<script src="/js/copy.js?v=20260925h"></script>
-<script src="/js/ask.js?v=20260925h"></script>
-<script src="/js/confirm.js?v=20260925h"></script>
-<script src="/js/sheet.js?v=20260925h"></script>
-<script src="/js/form.js?v=20260925h"></script>
-<script src="/js/state.js?v=20260925h"></script>
-<script src="/js/group.js?v=20260925h"></script>
-<script src="/js/menu.js?v=20260925h"></script>
-<script src="/js/cmdbar.js?v=20260925h"></script>
-<script src="/js/api.js?v=20260925h"></script>
-<script src="/js/money.js?v=20260925h"></script>
-<script src="/js/mockups.js?v=20260925h"></script>
+<script src="/js/config.js?v=20260925i"></script>
+<script src="/js/words.js?v=20260925i"></script>
+<script src="/js/copy.js?v=20260925i"></script>
+<script src="/js/ask.js?v=20260925i"></script>
+<script src="/js/confirm.js?v=20260925i"></script>
+<script src="/js/sheet.js?v=20260925i"></script>
+<script src="/js/form.js?v=20260925i"></script>
+<script src="/js/state.js?v=20260925i"></script>
+<script src="/js/group.js?v=20260925i"></script>
+<script src="/js/menu.js?v=20260925i"></script>
+<script src="/js/cmdbar.js?v=20260925i"></script>
+<script src="/js/api.js?v=20260925i"></script>
+<script src="/js/money.js?v=20260925i"></script>
+<script src="/js/mockups.js?v=20260925i"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260925h" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260925i" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -1998,7 +1998,7 @@
             <ul class="tnext-list" id="taskNextList" hidden></ul>
             <p class="tnext-late" id="taskNextLate" hidden></p>
             <div class="qhand" id="taskHand" hidden>
-              <label class="tickline" id="taskHandTickWrap"><input type="checkbox" id="taskHandTick"> <span>Change Task Owner</span></label>
+              <label class="tickline" id="taskHandTickWrap"><input type="checkbox" id="taskHandTick"> <span>Keep me as the Task Owner</span></label>
               <label class="qhand-lab" id="taskHandLab" for="taskHandTo" hidden>Performance review by</label>
               <select class="select select-sm" id="taskHandTo" aria-label="New Task Owner" hidden></select>
             </div>
@@ -2780,14 +2780,16 @@
                 <input class="input" id="qkDue" type="date">
               </div>
             </div>
+            <!-- Who the task is for is asked every time: a client, one of
+                 their months, or Internal, chosen on purpose. -->
+            <div class="row">
+              <div class="field">
+                <label class="field-label" for="qkLink">Client</label>
+                <select class="select" id="qkLink" aria-required="true"></select>
+              </div>
+            </div>
             <details class="fmore qkmore" id="qkMore">
               <summary>More details <span class="fmore-sum"></span></summary>
-              <div class="row">
-                <div class="field">
-                  <label class="field-label" for="qkLink">Client or engagement</label>
-                  <select class="select" id="qkLink"></select>
-                </div>
-              </div>
               <div class="row">
                 <div class="field">
                   <label class="field-label" for="qkPri">Priority</label>
@@ -2881,7 +2883,7 @@
               <ul class="tnext-list" id="dwNextList" hidden></ul>
               <p class="tnext-late" id="dwNextLate" hidden></p>
               <div class="qhand" id="dwHand" hidden>
-                <label class="tickline" id="dwHandTickWrap"><input type="checkbox" id="dwHandTick"> <span>Change Task Owner</span></label>
+                <label class="tickline" id="dwHandTickWrap"><input type="checkbox" id="dwHandTick"> <span>Keep me as the Task Owner</span></label>
                 <label class="qhand-lab" id="dwHandLab" for="dwHandTo" hidden>Performance review by</label>
                 <select class="select select-sm" id="dwHandTo" aria-label="New Task Owner" hidden></select>
               </div>
@@ -2926,6 +2928,27 @@
                 </div>
               </form>
             </section>
+            <section class="qcard" id="dwCommentSec">
+              <div class="qcard-head">
+                <h3 class="qcard-title">Comments</h3>
+                <button class="btn btn-quiet btn-sm qcard-act" id="dwCommentOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add comment</button>
+              </div>
+              <div id="dwComments"></div>
+              <form class="qform" id="dwCommentForm" autocomplete="off" hidden>
+                <label class="field-label" for="dwComment">Comment</label>
+                <textarea class="input" id="dwComment" rows="3" maxlength="2000"></textarea>
+                <div class="qform-acts">
+                  <button class="btn btn-sm btn-primary" type="submit" id="dwCommentSave">Post</button>
+                  <button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button>
+                </div>
+              </form>
+            </section>
+            <!-- What a day's work on the task rarely needs is one line away:
+                 the files and links, the time, the history (the team,
+                 2026-09-25: "make those unnecessary ones folded as More"). -->
+            <details class="qmore" id="dwMore">
+              <summary>More <span class="qmore-sum" id="dwMoreSum">Files and links, time, activity</span></summary>
+              <div class="qmore-body">
             <section class="qcard" id="dwLinkSec">
               <div class="qcard-head">
                 <h3 class="qcard-title">Files and links</h3>
@@ -2958,21 +2981,6 @@
                 </div>
               </form>
             </section>
-            <section class="qcard" id="dwCommentSec">
-              <div class="qcard-head">
-                <h3 class="qcard-title">Comments</h3>
-                <button class="btn btn-quiet btn-sm qcard-act" id="dwCommentOpen" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add comment</button>
-              </div>
-              <div id="dwComments"></div>
-              <form class="qform" id="dwCommentForm" autocomplete="off" hidden>
-                <label class="field-label" for="dwComment">Comment</label>
-                <textarea class="input" id="dwComment" rows="3" maxlength="2000"></textarea>
-                <div class="qform-acts">
-                  <button class="btn btn-sm btn-primary" type="submit" id="dwCommentSave">Post</button>
-                  <button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button>
-                </div>
-              </form>
-            </section>
             <section class="qcard" id="dwTimeSec">
               <h3 class="qcard-title">Time records</h3>
               <dl class="tfacts" id="dwTime"></dl>
@@ -2989,6 +2997,8 @@
                 <div id="dwLogAll"></div>
               </details>
             </section>
+              </div>
+            </details>
             <a class="qfull" id="dwFull" href="#">Open full record</a>
           </div>
         </div>
@@ -3033,10 +3043,10 @@
               </div>
             </div>
             <div class="stephand" id="stepHand">
-              <label class="tickline" id="stepHandTickWrap"><input type="checkbox" id="stepHandTick"> <span>Change Task Owner</span></label>
+              <label class="tickline" id="stepHandTickWrap"><input type="checkbox" id="stepHandTick"> <span>Keep me as the Task Owner</span></label>
               <div class="row" id="stepHandRow" hidden>
                 <div class="field">
-                  <label class="field-label" for="stepHandTo" id="stepHandLabel">New Task Owner</label>
+                  <label class="field-label" for="stepHandTo" id="stepHandLabel">Next Task Owner</label>
                   <select class="select" id="stepHandTo"></select>
                 </div>
               </div>
@@ -4090,16 +4100,16 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260925h"></script>
-<script src="/js/documents.js?v=20260925h"></script>
-<script src="/js/letters.js?v=20260925h"></script>
-<script src="/js/smreport.js?v=20260925h"></script>
-<script src="/js/reports.js?v=20260925h"></script>
-<script src="/js/register.js?v=20260925h"></script>
-<script src="/js/crm.js?v=20260925h"></script>
-<script src="/js/team.js?v=20260925h"></script>
-<script src="/js/campaigns.js?v=20260925h"></script>
-<script src="/js/ops.js?v=20260925h"></script>
-<script src="/js/perf.js?v=20260925h"></script>
+<script src="/js/admin.js?v=20260925i"></script>
+<script src="/js/documents.js?v=20260925i"></script>
+<script src="/js/letters.js?v=20260925i"></script>
+<script src="/js/smreport.js?v=20260925i"></script>
+<script src="/js/reports.js?v=20260925i"></script>
+<script src="/js/register.js?v=20260925i"></script>
+<script src="/js/crm.js?v=20260925i"></script>
+<script src="/js/team.js?v=20260925i"></script>
+<script src="/js/campaigns.js?v=20260925i"></script>
+<script src="/js/ops.js?v=20260925i"></script>
+<script src="/js/perf.js?v=20260925i"></script>
 </body>
 </html>

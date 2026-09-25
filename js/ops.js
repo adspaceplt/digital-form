@@ -175,6 +175,7 @@
     'bad-count': 'Task count must be 1 to 60.',
     'bad-weeks': 'Enter up to five weekly figures.',
     'weeks-do-not-add-up': 'Weekly figures must match the total.',
+    'not-owner': 'Only the Task Owner can change the status.',
     'no-month': 'This client has no content month for that month. Add it on the client’s Work pane first.',
     'month-closed': 'That content month is completed or cancelled.',
     'month-not-confirmed': 'Confirm the content meeting for that month first.',
@@ -1294,7 +1295,7 @@
            icon-only control that says nothing is one a screen reader cannot
            offer; and it is not a keyboard path — a keyboard moves a stage
            with the select below it, which every card carries. */
-        (may('ops', 'work') && !isFinished(t)
+        (mayMove(t) && !isFinished(t)
           ? '<span class="bcard-grip" aria-hidden="true" title="Drag to move stage">' +
             '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/>' +
             '<circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/>' +
@@ -1323,7 +1324,7 @@
     /* Wherever the move is allowed at all, under a finger as under a pointer.
        A keyboard still has no drag, so the select on every card stays and is
        the path both share: this is an addition, never a replacement. */
-    if (may('ops', 'work') && !isFinished(t)) wireDrag(el, t);
+    if (mayMove(t) && !isFinished(t)) wireDrag(el, t);
     return el;
   }
 
@@ -1765,7 +1766,7 @@
     var mine = state.session && state.session.task_id === t.id;
     var check = picking
       ? '<input type="checkbox" class="trow-pick" data-a="pick"' + (picked ? ' checked' : '') + ' aria-label="Select ' + esc(t.title || serialOf(t)) + '">'
-      : every && work && p !== 'cancelled'
+      : every && mayMove(t) && p !== 'cancelled'
         ? '<button class="tcheck' + (p === 'done' ? ' is-done' : '') + '" type="button" data-a="check" aria-pressed="' + (p === 'done') + '" aria-label="' +
             esc((p === 'done' ? 'Reopen ' : 'Mark complete: ') + (t.title || 'task')) + '"></button>'
         : wfRing(t, fin);
@@ -1825,7 +1826,7 @@
   function statusCell(t) {
     if (!isEveryday(t)) return stageCell(t);
     var p = plainOf(t);
-    if (!may('ops', 'work') || p === 'cancelled') {
+    if (!mayMove(t) || p === 'cancelled') {
       return '<span class="tone ' + PLAIN[p].tone + '">' + esc(PLAIN[p].word) + '</span>';
     }
     return '<select class="select select-sm state-select ' + PLAIN[p].tone + '" aria-label="Status of ' + esc(t.title) + '">' +
@@ -1845,7 +1846,7 @@
     var word = function (k) {
       return stepWord(state.stages[t.workflow_id + '|' + k], t.engagement_id) || labelOfStage(t, k);
     };
-    if (!may('ops', 'work') || isFinished(t) || !nexts.length) {
+    if (!mayMove(t) || isFinished(t) || !nexts.length) {
       return '<span class="tone ' + stageTone(t) + '">' + esc(word(t.stage_key)) + '</span>';
     }
     return '<select class="select select-sm state-select ' + stageTone(t) + '" ' +
@@ -1867,7 +1868,7 @@
   function rowMenu(t) {
     var fin = isFinished(t);
     var s = stageOf(t);
-    var canCancel = !fin && s && (s.next_stage_keys || []).indexOf('cancelled') > -1;
+    var canCancel = !fin && mayMove(t) && s && (s.next_stage_keys || []).indexOf('cancelled') > -1;
     return '<span class="kmenu-wrap">' +
       '<button class="kmenu-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(t.title) + '">' +
         '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>' +
@@ -2124,6 +2125,8 @@
     if (!d.hidden && state.drawer === id) return;
     state.drawer = id;
     state.drawerFrom = o.from || 'work';
+    /* Each task opens with its extras folded. */
+    if ($('dwMore')) $('dwMore').open = false;
     state.drawerDirty = false;
     if (d.hidden) state.drawerOpener = document.activeElement;
     var row = (state.tasks || []).concat(cw.tasks || []).filter(function (x) { return x.id === id; })[0];
@@ -2195,7 +2198,7 @@
     $('dwNo').textContent = serialOf(t);
     $('dwNo').setAttribute('aria-label', 'Copy ' + serialOf(t));
     var ck = $('dwCheck');
-    ck.hidden = !(every && work);
+    ck.hidden = !(every && mayMove(t));
     ck.className = 'tcheck' + (p === 'done' ? ' is-done' : '');
     ck.setAttribute('aria-pressed', String(p === 'done'));
     ck.setAttribute('aria-label', p === 'done' ? 'Reopen' : 'Mark complete');
@@ -2627,18 +2630,27 @@
     b.late.textContent = isLate(t)
       ? 'Late: ' + Math.abs(over) + (Math.abs(over) === 1 ? ' day' : ' days') + ' past final due, not yet at client review.'
       : '';
-    paintHand(b, t, n);
     b.acts.innerHTML = '';
+    /* Somebody who is not the Task Owner reads the step and cannot take it. */
+    if ((n.go || n.alt) && !mayMove(t)) {
+      if (b.hand) b.hand.hidden = true;
+      var ow = nameOf((state.ownerIds && state.ownerIds[t.id]) || ownerId(t)) || 'the Task Owner';
+      b.acts.innerHTML = '<p class="qnext-owner">With ' + esc(ow) + '. Only the Task Owner moves this task.</p>';
+      b.acts.hidden = false;
+      paintRate(b, t, n);
+      return;
+    }
+    paintHand(b, t, n);
     if (n.go) b.acts.appendChild(actButton(n.go, true, b));
     if (n.alt) b.acts.appendChild(actButton(n.alt, false, b));
     b.acts.hidden = !n.go && !n.alt;
     paintRate(b, t, n);
   }
-  /* WHO TAKES IT NEXT. A step is where work changes hands, so the step is
-     where the Task Owner can change — optionally, with a tick, because most
-     steps stay with the person who made them. A performance review goes back
-     to whoever created the task unless somebody else is named, so that one
-     names its reviewer rather than asking. */
+  /* WHO TAKES IT NEXT. A step is where work changes hands, so the step asks
+     who takes it: the person is chosen by default, and a tick keeps the task
+     with the owner who has it (the team, 2026-09-25: "change owner we do it as
+     mandatory but the tick ... Mark as myself"). A performance review goes
+     back to whoever created the task unless somebody else is named. */
   function paintHand(b, t, n) {
     if (!b.hand) return;
     var mv = n.go && n.go.move;
@@ -2657,15 +2669,18 @@
     }).join('');
     var def = perf ? t.created_by : (mv === 'internal_review' && t.created_by !== cur ? t.created_by : '');
     b.to.value = def && b.to.querySelector('option[value="' + def + '"]') ? def : '';
-    b.tick.checked = false;
+    /* A step that hands the work on asks for the person; a step that
+       records the owner's own progress keeps it with them unless unticked. */
+    b.tick.checked = !perf && !handsToColleague(mv, t);
     b.tickWrap.hidden = perf;
-    b.lab.hidden = !perf;
-    b.to.hidden = !perf;
+    b.lab.textContent = perf ? 'Performance review by' : 'Next Task Owner';
+    b.lab.hidden = b.tick.checked;
+    b.to.hidden = b.tick.checked;
   }
   function handOf(b) {
     if (!b || !b.hand || b.hand.hidden) return { who: null };
-    if (!b.lab.hidden) return { who: b.to.value || null };
-    if (!b.tick.checked) return { who: null };
+    if (!b.tickWrap.hidden && b.tick.checked) return { who: null };
+    if (b.tickWrap.hidden) return { who: b.to.value || null };
     if (!b.to.value) return { missing: true };
     return { who: b.to.value };
   }
@@ -2734,6 +2749,13 @@
   }
   /* The moves that hand the work to somebody else carry the action colour;
      the ones that record the team's own progress are the ink primary. */
+  /* A step that gives the work to a colleague: the AQC review. The client's
+     review and the performance review are the owner's own steps or name
+     their person, so the owner keeps the task unless they untick. */
+  function handsToColleague(key, t) {
+    var s = state.stages[t.workflow_id + '|' + key];
+    return Boolean(s && s.stage_group === 'internal_review');
+  }
   function handsOff(key, t) {
     var s = state.stages[t.workflow_id + '|' + key];
     var g = s && s.stage_group;
@@ -2768,9 +2790,9 @@
     var perf = key === 'performance_review';
     var cur = state.ownerIds[t.id] || ownerId(t);
     $('stepHandTickWrap').hidden = perf;
-    $('stepHandTick').checked = perf || Boolean(o.assignee);
-    $('stepHandRow').hidden = !$('stepHandTick').checked;
-    $('stepHandLabel').textContent = perf ? 'Performance review by' : 'New Task Owner';
+    $('stepHandTick').checked = !perf && !o.assignee && !handsToColleague(key, t);
+    $('stepHandRow').hidden = $('stepHandTick').checked;
+    $('stepHandLabel').textContent = perf ? 'Performance review by' : 'Next Task Owner';
     $('stepHandTo').innerHTML = '<option value="">Choose a person</option>' + state.members.filter(function (m) {
       return perf || m.id !== cur;
     }).map(function (m) {
@@ -2810,7 +2832,7 @@
       return;
     }
     var who = null;
-    if (key === 'performance_review' || $('stepHandTick').checked) {
+    if (key === 'performance_review' || !$('stepHandTick').checked) {
       who = $('stepHandTo').value || null;
       if (!who && key !== 'performance_review') { msg('stepMsg', 'Choose the new Task Owner.', 'err'); $('stepHandTo').focus(); return; }
     }
@@ -2884,7 +2906,8 @@
         String(b.period).localeCompare(String(a.period));
     });
     var clients = state.clients.filter(function (c) { return c.stage === 'active' || c.stage === 'paused'; });
-    sel.innerHTML = '<option value="">No client (internal)</option>' +
+    sel.innerHTML = '<option value="">Choose a client</option>' +
+      '<option value="i:"' + (chosen === 'i:' ? ' selected' : '') + '>Internal (no client)</option>' +
       (engs.length ? '<optgroup label="Engagements">' + engs.map(function (e) {
         var v = 'e:' + e.id;
         return '<option value="' + v + '"' + (v === chosen ? ' selected' : '') + '>' +
@@ -2913,7 +2936,7 @@
       }).join('');
       $('qkDue').value = dateValue(new Date());
       linkOptions($('qkLink'), pre && pre.link || '');
-      $('qkMore').open = Boolean(pre && pre.link);
+      $('qkMore').open = false;
       $('qkTitle').value = ''; $('qkDesc').value = ''; $('qkCheck').value = ''; $('qkPri').value = '3';
       $('qkMade').innerHTML = '';
       qkMade = 0; qkKey = '';
@@ -2930,7 +2953,9 @@
     var title = String($('qkTitle').value || '').trim();
     if (!title) { msg('qkMsg', 'Say what the task is.', 'err'); $('qkTitle').focus(); return; }
     if (!$('qkDue').value) { msg('qkMsg', 'A due date is required.', 'err'); $('qkDue').focus(); return; }
-    var link = $('qkLink').value || '';
+    if (!$('qkLink').value) { msg('qkMsg', 'Choose a client, or Internal.', 'err'); $('qkLink').focus(); return; }
+    if (!$('qkOwner').value) { msg('qkMsg', 'Choose the Task Owner.', 'err'); $('qkOwner').focus(); return; }
+    var link = $('qkLink').value === 'i:' ? '' : $('qkLink').value;
     var payload = {
       title: title, workflow_key: 'task',
       scope: link ? 'client' : 'internal',
@@ -2953,7 +2978,7 @@
       var li = document.createElement('li');
       li.innerHTML = '<span>Added</span> <b></b> <span class="mute"></span>';
       li.querySelector('b').textContent = t.title;
-      li.querySelector('.mute').textContent = '· ' + (nameOf(payload.owner_id) || 'nobody') + ' · ' + shortDate(payload.final_due_at);
+      li.querySelector('.mute').textContent = '· ' + nameOf(payload.owner_id) + ' · ' + shortDate(payload.final_due_at);
       $('qkMade').insertBefore(li, $('qkMade').firstChild);
       $('qkTitle').value = ''; $('qkDesc').value = ''; $('qkCheck').value = '';
       msg('qkMsg', '');
@@ -3011,7 +3036,8 @@
       return c.getAttribute('data-tpl');
     });
     if (!picks.length) { msg('tplMsg', 'Tick the templates to make.', 'err'); return; }
-    var link = $('tplLink').value || '';
+    if (!$('tplLink').value) { msg('tplMsg', 'Choose a client, or Internal.', 'err'); $('tplLink').focus(); return; }
+    var link = $('tplLink').value === 'i:' ? '' : $('tplLink').value;
     var base = $('tplBase').value || dateValue(new Date());
     var btn = $('tplGo');
     btn.disabled = true;
@@ -3889,6 +3915,15 @@
   function ownerId(t) {
     var a = (t.assignees || []).filter(function (x) { return x.responsibility === 'owner'; })[0];
     return (a && a.team_member_id) || null;
+  }
+  /* The stage is the Task Owner's to move, and an admin's; everybody else
+     reads it. The database refuses the rest (`not-owner`); the page does not
+     offer it. */
+  function mayMove(t) {
+    if (!t || !may('ops', 'work')) return false;
+    if (isAdmin()) return true;
+    var o = (state.ownerIds && state.ownerIds[t.id]) || ownerId(t);
+    return !o || o === myId();
   }
   function hasLink(kind) {
     return state.detail.links.some(function (l) { return l.kind === kind && !l.archived_at; });
@@ -4993,7 +5028,7 @@
     if (nk) nk.hidden = Boolean(ntPrefill);
     var ow = $('ntOwner');
     var me = bridge.me && bridge.me();
-    ow.innerHTML = '<option value="">Nobody yet</option>' + state.members.map(function (m) {
+    ow.innerHTML = state.members.map(function (m) {
       return '<option value="' + esc(m.id) + '"' + (me && me.id === m.id ? ' selected' : '') + '>' + esc(m.name) + '</option>';
     }).join('');
     /* The content month: this one and the six after it, and the one before
@@ -5180,8 +5215,11 @@
       return '<option value="' + k + '"' + (k === pick ? ' selected' : '') + '>' + esc(monthWord(k)) + '</option>';
     }).join('');
   }
+  /* Every task has an owner from the start: whoever is making it, unless
+     they choose somebody else. */
   function fillOwners(sel, me) {
-    sel.innerHTML = '<option value="">Nobody yet</option>' + state.members.map(function (m) {
+    me = me || (bridge.me && bridge.me());
+    sel.innerHTML = state.members.map(function (m) {
       return '<option value="' + esc(m.id) + '"' + (me && me.id === m.id ? ' selected' : '') + '>' + esc(m.name) + '</option>';
     }).join('');
   }
@@ -6450,14 +6488,15 @@
       e.preventDefault();
       if (state.drawer) openFull(state.drawer);
     });
-    /* The tick opens the list of people; untouched, the step keeps the task
-       with whoever has it. */
-    [['dwHandTick', 'dwHandTo'], ['taskHandTick', 'taskHandTo']].forEach(function (pair) {
-      var tick = $(pair[0]), to = $(pair[1]);
+    /* The tick keeps the task with its owner and puts the list of people
+       away; unticked, the step asks who takes it. */
+    [['dwHandTick', 'dwHandTo', 'dwHandLab'], ['taskHandTick', 'taskHandTo', 'taskHandLab']].forEach(function (x) {
+      var tick = $(x[0]), to = $(x[1]), lab = $(x[2]);
       if (!tick || !to) return;
       tick.addEventListener('change', function () {
-        to.hidden = !tick.checked;
-        if (tick.checked) to.focus();
+        to.hidden = tick.checked;
+        if (lab) lab.hidden = tick.checked;
+        if (!tick.checked) to.focus();
       });
     });
     /* Each card's quiet action opens its small form; Cancel and Escape put
@@ -6583,8 +6622,8 @@
     if (stepDay) stepDay.addEventListener('change', stepDateChanged);
     var stepTick = $('stepHandTick');
     if (stepTick) stepTick.addEventListener('change', function () {
-      $('stepHandRow').hidden = !stepTick.checked;
-      if (stepTick.checked) $('stepHandTo').focus();
+      $('stepHandRow').hidden = stepTick.checked;
+      if (!stepTick.checked) $('stepHandTo').focus();
     });
 
     var back = $('workBack');
