@@ -4055,6 +4055,8 @@ body > .shell { width: 100%; }
    a preview answers with wrap as a paragraph under the control that asked. */
 .genweeks { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px 12px; }
 .genout { margin: 12px 0 0; overflow-wrap: anywhere; }
+/* The mix under the format rows, one step clear of the last field. */
+#genFmtSum { margin: 8px 0 0; }
 #genPreview { margin-top: 16px; }
 /* Several ticks in a sheet stack one to a line; inline they flowed two to a
    line with the third wrapping under them. */
