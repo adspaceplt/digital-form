@@ -1429,24 +1429,24 @@
        on the screen. */
     var win = document.createElement('p');
     win.className = 'routenote repwin';
-    win.textContent = niceDate(r.from) + ' to ' + niceDate(r.to);
+    win.textContent = 'Reporting period: ' + niceDate(r.from) + ' to ' + niceDate(r.to);
     box.appendChild(win);
 
     /* 1. What is running. The first question a manager asks, answered in the
           words on the stage itself, so "what is on shooting" reads as a row
           rather than as a group somebody has to translate. */
-    repTable(box, 'What is running', ['Stage', '', 'Tasks'], 'svc-row rep-row',
+    repTable(box, 'Open work by stage', ['Stage', '', 'Tasks'], 'svc-row rep-row',
       (r.running || []).map(function (s) {
         return { html: '<span class="svc-name"><b>' + esc(s.label) + '</b></span>' +
                        '<span class="rep-mid"></span>' +
                        '<span class="rep-num">' + esc(String(s.count)) + '</span>' };
-      }), 'Nothing open.');
+      }), 'No open tasks.');
 
     /* 2. What is late, which is the flag the user asked be put in front of a
           manager: past the commitment and still short of client review. The
           title opens the task, because a list of problems nobody can act on
           from is a list nobody reads twice. */
-    repTable(box, 'Late', ['Task', 'Owner', 'Over by'], 'svc-row rep-row',
+    repTable(box, 'Overdue work', ['Task', 'Owner', 'Over by'], 'svc-row rep-row',
       (r.late || []).map(function (t) {
         return {
           open: t.task_id,
@@ -1455,56 +1455,56 @@
                   '<b>' + esc(t.title || 'Untitled') + '</b>' +
                   '<small>' + esc([t.client, t.stage].filter(Boolean).join(' · ')) + '</small>' +
                 '</button></span>' +
-                '<span class="rep-mid">' + repLab('Owner') +
+                '<span class="rep-mid">' + repLab('Task owner') +
                   (t.owner ? esc(t.owner) : '<span class="mute">—</span>') + '</span>' +
                 '<span class="rep-num is-over">' + esc(dayCount(Number(t.days_over))) + '</span>'
         };
-      }), 'Nothing is late.');
+      }), 'No overdue tasks.');
 
     /* 3. How long each stage takes. A median, its 90th percentile and the
           count it was taken over, never a bare figure: a median over two
           tasks is not a measurement, and the tail is what a person is
           actually trying to find. */
-    repTable(box, 'Time in each stage', ['Stage', 'Slowest tenth', 'Typical'], 'svc-row rep-row',
+    repTable(box, 'Stage duration', ['Stage', 'Slowest 10%', 'Median'], 'svc-row rep-row',
       (r.stage_time || []).map(function (s) {
         return { html: '<span class="svc-name"><b>' + esc(s.label) + '</b>' +
                          '<small>' + esc(s.n + (s.n === 1 ? ' time' : ' times')) + '</small></span>' +
-                       '<span class="rep-mid">' + repLab('Slowest tenth') +
+                       '<span class="rep-mid">' + repLab('Slowest 10%') +
                          esc(spanWord(s.p90_minutes)) + '</span>' +
                        '<span class="rep-num">' + esc(spanWord(s.median_minutes)) + '</span>' };
-      }), 'No stage moves in this period.');
+      }), 'No stage changes in this period.');
 
     /* 4. Was it there on time. Replanning sits beside the rate and never
           inside it: an extension would otherwise erase the miss it was
           granted for, and a rate that cannot be missed measures nothing. */
     var ot = r.on_time || {};
     var reached = Number(ot.reached || 0);
-    repTable(box, 'At client review on time', ['', '', ''], 'svc-row rep-row',
+    repTable(box, 'On-time delivery to client review', ['', '', ''], 'svc-row rep-row',
       !reached ? [] : [
         { html: '<span class="svc-name"><b>On time</b></span><span class="rep-mid">' +
                 esc(Math.round((Number(ot.met) / reached) * 100) + '%') +
                 '</span><span class="rep-num">' + esc(String(ot.met)) + '</span>' },
-        { html: '<span class="svc-name"><b>Late</b></span><span class="rep-mid"></span>' +
+        { html: '<span class="svc-name"><b>Delivered late</b></span><span class="rep-mid"></span>' +
                 '<span class="rep-num' + (Number(ot.missed) ? ' is-over' : '') + '">' +
                 esc(String(ot.missed)) + '</span>' },
-        { html: '<span class="svc-name"><b>Date was moved</b>' +
-                '<small>counted beside the rate, never inside it</small></span>' +
+        { html: '<span class="svc-name"><b>Due date extended</b>' +
+                '<small>Reported separately from the on-time rate</small></span>' +
                 '<span class="rep-mid"></span><span class="rep-num">' +
                 esc(String(ot.replanned || 0)) + '</span>' }
-      ], 'Nothing reached client review.');
+      ], 'No tasks reached client review in this period.');
 
     /* 5. By person. The foundation of a KPI and not a KPI: what somebody
           finished, how much of it was on time, and how long their work took
           end to end. No score and no ranking — a number a person can check is
           worth more than a league table nobody trusts. */
-    repTable(box, 'By person', ['Person', 'On time', 'Typical'], 'svc-row rep-row',
+    repTable(box, 'Team member summary', ['Team member', 'On time', 'Median cycle'], 'svc-row rep-row',
       (r.by_person || []).map(function (m) {
         return { html: '<span class="svc-name"><b>' + esc(m.name) + '</b>' +
                          '<small>' + esc(m.completed + ' finished') + '</small></span>' +
                        '<span class="rep-mid">' + repLab('On time') +
                          esc(m.on_time + ' of ' + m.completed) + '</span>' +
                        '<span class="rep-num">' + esc(spanWord(m.median_cycle_minutes)) + '</span>' };
-      }), 'Nothing finished.');
+      }), 'No tasks completed in this period.');
   }
 
   /* The commitments on the days they fall. One date a task, the final due
@@ -1709,7 +1709,12 @@
     var done = cancelled ? 0 : fin ? n : Math.max(0, at);
     var r = 7, len = 2 * Math.PI * r, off = len * (1 - (n ? done / n : 0));
     var said = cancelled ? 'Cancelled' : fin ? 'Finished' : n && at > -1 ? 'Step ' + (at + 1) + ' of ' + n : stageLabel(t);
-    return '<svg class="ring tring' + (fin && !cancelled ? ' is-ok' : '') + '" viewBox="0 0 20 20" role="img" aria-label="' + esc(said) + '">' +
+    /* Finished is the filled green tick, never a full ring. */
+    if (fin && !cancelled) {
+      return '<svg class="ring-done tring" viewBox="0 0 20 20" role="img" aria-label="' + esc(said) + '">' +
+        '<circle cx="10" cy="10" r="9.5"/><path d="M6 10.3l2.8 2.8L14.3 7.4"/></svg>';
+    }
+    return '<svg class="ring tring" viewBox="0 0 20 20" role="img" aria-label="' + esc(said) + '">' +
       '<circle class="ring-track" cx="10" cy="10" r="' + r + '"/>' +
       '<circle class="ring-arc" cx="10" cy="10" r="' + r + '" stroke-dasharray="' + len.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '"/></svg>';
   }
@@ -6797,7 +6802,12 @@
        while finished work can be on the page. On the report it is the window
        every figure is taken over, so it is always drawn there. */
     var on = state.view === 'report' || state.filter === 'done' || state.filter === 'all';
-    if (pd) pd.hidden = !on;
+    if (pd) {
+      pd.hidden = !on;
+      /* The select says the window the figures are taken over: it opened on
+         its first option while the report read the month. */
+      if (pd.value !== (state.period || 'month')) { pd.value = state.period || 'month'; if (window.ADspaceForm) window.ADspaceForm.paint(pd); }
+    }
     return on;
   }
 

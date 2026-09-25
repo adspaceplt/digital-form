@@ -243,6 +243,7 @@
       var last = i + 1 === log.length;
       var next = last ? Date.now() : Date.parse(log[i + 1].at);
       out.push({
+        i: i,
         stage: log[i].stage,
         word: stageWord(log[i].stage)[1],
         at: log[i].at,
@@ -278,13 +279,19 @@
     }).map(function (f) { return f[2]; });
   }
   /* A ring for how much of a group is filled, with the count beside it. */
+  /* Complete is a filled green disc with a white tick: a full ring read as
+     an empty circle, the one shape that says "not started" (the user,
+     2026-09-25). */
   function ring(done, total) {
+    if (done >= total) return '<span class="ringline">' + RING_DONE + 'Complete</span>';
     var r = 8, len = 2 * Math.PI * r, off = len * (1 - (total ? done / total : 0));
-    return '<span class="ringline"><svg class="ring' + (done >= total ? ' is-ok' : '') + '" viewBox="0 0 20 20" aria-hidden="true">' +
+    return '<span class="ringline"><svg class="ring" viewBox="0 0 20 20" aria-hidden="true">' +
       '<circle class="ring-track" cx="10" cy="10" r="' + r + '"/>' +
       '<circle class="ring-arc" cx="10" cy="10" r="' + r + '" stroke-dasharray="' + len.toFixed(2) + '" stroke-dashoffset="' + off.toFixed(2) + '"/>' +
       '</svg>' + (done >= total ? 'Complete' : done + ' of ' + total) + '</span>';
   }
+
+  var RING_DONE = '<svg class="ring-done" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9.5"/><path d="M6 10.3l2.8 2.8L14.3 7.4"/></svg>';
 
   var state = { clients: [], team: [], client: null, editing: null, contacts: [], touches: [], services: [], documents: [], docMap: {}, log: [], lastSeen: {} };
 
@@ -1268,14 +1275,20 @@
        limit — which is why Account status no longer states a clock of its
        own: the stage select in the head says where the record is, and this
        says for how long. */
+    /* Every stage's date is filled in by the stage moves and stays the
+       person's to correct (the user, 2026-09-25: a client keyed in today
+       who has been a client since April read "Lead, today"). The pen sits
+       beside the duration, and the duration is counted from the date as it
+       now stands. */
     var trip = journeyOf(c).map(function (s) {
       var span = s.days === 0 ? (s.now ? 'Today' : 'Same day') : spanWord(s.days);
       var over = s.now && isStale(c);
-      return '<div class="tl-row' + (s.now ? ' is-now' : '') + '">' +
+      return '<div class="tl-row tl-stage' + (s.now ? ' is-now' : '') + '">' +
         '<span class="tl-lead"><span class="tl-what">' + esc(s.word) + '</span>' +
-          '<span class="tl-when">' + esc(niceDate(s.at)) + '</span></span>' +
-        '<span class="tl-span' + (over ? ' is-late' : '') + '">' +
-          esc(span + (s.now && s.days > 0 ? ' so far' : '') + (over ? ' · Overdue' : '')) +
+          '<span class="tl-when" data-stage-val="' + s.i + '">' + esc(niceDate(s.at)) + '</span></span>' +
+        '<span class="tl-end"><span class="tl-span' + (over ? ' is-late' : '') + '">' +
+          esc(span + (s.now && s.days > 0 ? ' so far' : '') + (over ? ' · Overdue' : '')) + '</span>' +
+          '<button class="tl-pen" type="button" data-stage-pen="' + s.i + '" aria-label="Edit the ' + esc(s.word) + ' date">' + PEN + '</button>' +
         '</span></div>';
     }).join('');
 
@@ -1300,7 +1313,69 @@
     if (!trip && !dates) { block.hidden = true; box.innerHTML = ''; return; }
     box.innerHTML = trip + (trip && dates ? '<div class="tl-rule"></div>' : '') + dates;
     wireSince(c);
+    wireStages(c);
     block.hidden = false;
+  }
+
+  /* The day a stage began, as the log keeps it. A day typed is midnight UTC
+     of that day, the same as Client since. */
+  function logOf(c) {
+    var log = (c.stage_log || []).slice();
+    if (!log.length && c.stage_since) log = [{ stage: c.stage || 'lead', at: c.stage_since }];
+    return log.map(function (x) { return { stage: x.stage, at: x.at }; });
+  }
+  function dayOf(at) { return at ? String(new Date(at).toISOString()).slice(0, 10) : ''; }
+
+  /* One save for the dates the timeline holds: the stage log, the current
+     stage's start (the last entry) and Client since, which is the first
+     stage's start, so the two can never disagree. The order is checked
+     before anything is sent: a stage cannot begin before the one before it
+     or after the one after it, and no date is in the future. */
+  function saveDates(c, list, created, what) {
+    var days = list.map(function (x) { return dayOf(x.at); });
+    for (var i = 1; i < days.length; i++) {
+      if (days[i] < days[i - 1]) {
+        return 'The ' + stageWord(list[i].stage)[1] + ' date cannot be before the ' + stageWord(list[i - 1].stage)[1] + ' date.';
+      }
+    }
+    if (days.concat([dayOf(created)]).some(function (d) { return d > today(); })) return 'A date cannot be in the future.';
+    var row = { stage_log: list, stage_since: list.length ? list[list.length - 1].at : c.stage_since, created_at: created };
+    db.from('clients').update(row).eq('id', c.id).select('id').then(function (r) {
+      if (r.error) { msg('crmSinceMsg', r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { msg('crmSinceMsg', 'Not saved. The database refused the request.', 'err'); return; }
+      c.stage_log = list; c.stage_since = row.stage_since; c.created_at = created;
+      var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
+      if (mine) { mine.stage_log = list; mine.stage_since = row.stage_since; mine.created_at = created; }
+      railDates(c);
+      msg('crmSinceMsg', 'Saved.', 'ok');
+      log('client.edited', c.name, what);
+    });
+    return null;
+  }
+  function wireStages(c) {
+    Array.prototype.forEach.call(document.querySelectorAll('#crmTimeline [data-stage-pen]'), function (pen) {
+      var i = Number(pen.getAttribute('data-stage-pen'));
+      var val = document.querySelector('#crmTimeline [data-stage-val="' + i + '"]');
+      if (!val) return;
+      pen.addEventListener('click', function () {
+        var log = logOf(c);
+        var word = stageWord(log[i].stage)[1];
+        ADspaceAsk.rename(val, pen, {
+          type: 'date',
+          value: dayOf(log[i].at),
+          label: word + ' date',
+          saveLabel: 'Save the ' + word + ' date',
+          save: function (day) {
+            var at = day + 'T00:00:00.000Z';
+            log[i].at = at;
+            /* The first stage began when the client did. */
+            var created = i === 0 ? at : c.created_at;
+            var bad = saveDates(c, log, created, word + ' from ' + niceDate(at));
+            if (bad) { msg('crmSinceMsg', bad, 'err'); railDates(c); }
+          }
+        });
+      });
+    });
   }
 
   /* Imported records may predate this portal. Their real start date is an
@@ -1317,19 +1392,14 @@
         value: c.created_at ? String(c.created_at).slice(0, 10) : '',
         label: 'Client since',
         saveLabel: 'Save client since',
+        /* Client since is the first stage's start, so moving it moves that
+           stage with it and the durations are counted from the new day. */
         save: function (day) {
           var created = day + 'T00:00:00.000Z';
-          db.from('clients').update({ created_at: created }).eq('id', c.id)
-            .select('id').then(function (r) {
-              if (r.error) { msg('crmSinceMsg', r.error.message, 'err'); return; }
-              if (!(r.data || []).length) { msg('crmSinceMsg', 'Not saved. The database refused the request.', 'err'); return; }
-              c.created_at = created;
-              var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
-              if (mine) mine.created_at = created;
-              railDates(c);
-              msg('crmSinceMsg', 'Saved.', 'ok');
-              log('client.edited', c.name, 'Client since ' + niceDate(created));
-            });
+          var log = logOf(c);
+          if (log.length) log[0].at = created;
+          var bad = saveDates(c, log, created, 'Client since ' + niceDate(created));
+          if (bad) { msg('crmSinceMsg', bad, 'err'); railDates(c); }
         }
       });
     });
