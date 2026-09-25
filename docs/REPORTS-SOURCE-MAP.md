@@ -124,3 +124,24 @@ Section names: Executive summary, Top post, Key findings, Next steps,
 Highlights, Areas for improvement, Recommendations, Top posts, Remarks and
 recommendations (Highlights, Performance drivers, Underperformance,
 Opportunities, Improvements, Action plan), Appendix: all posts, Methodology.
+
+## Structure and charts (2026-09-25, second pass)
+
+The first pass took the rate card's head and foot and left the pages as loose
+text and blue charts. Sent back by the user ("plain", "doesn't follow the design
+theories and visualizations", "why blue, we're monochrome"). The rules now:
+
+| Rule | Where it applies |
+|---|---|
+| **Monochrome.** One ink (#404040) for every word and every mark that carries a value; #a6a6a6 for a second series and the ordinary bars; #cccccc for a third. No accent colour anywhere; the report no longer reads `rep.accent`. | Every page |
+| **Data is set in the rate card's table.** Header row #f2f2f2, white rows, every cell edged 0.48pt in #f2f2f2, text vertically centred with 5.3pt either side, a label column in #f2f2f2 where the table reads by row, 18.24pt minimum row. A row that no longer fits starts a new page and the header is drawn again; a list row may split, the label repeating with (cont.). | Figures, by platform, followers, top five, remarks, appendix, methodology |
+| **Headline figures are a two-row table**, the label over the value in Slate Medium. | Executive summary, platform pages |
+| **One chart a question.** Views by week (stacked by platform, the week's total over each column) answers how the month moved; views by post (posting order, the best post in ink with its value, the average as a dashed line) answers which posts beat the month's own mean. The previous per-day bar chart put two scales of post on one date axis and read as noise. | Executive summary, platform pages |
+| **Each fact once.** The top post, the most viewed three, the most interacted three and a top-five bar list were four views of one ranking; they are one table (rank, thumbnail, post, views with a data bar, engagements, rate). Key findings and next steps are the Highlights and Action plan fields, so the remarks table under them carries only the other four fields and no separate remarks page is drawn. | Executive summary, platform pages |
+| **A post without a title is named** by its format and date (`Reel, 5 Aug (2)`), never "Untitled post". | Everywhere a post is named |
+| **Thumbnails sit in a fixed frame** in the header grey, the image whole inside it, so a column of them is one column. | Top five, top posts, appendix |
+| **The appendix is a table**, about twelve posts a page with a total row per platform, where it was three posts a page. | Appendix |
+| **The chart gives up height** (160pt down to 110pt) so the executive summary finishes on its page rather than leaving one row on a page of its own. | Executive summary |
+
+The fixture report is nine pages where the first pass drew eighteen, with the
+same content.

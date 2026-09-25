@@ -410,7 +410,8 @@
         /* Inside a long token a break is allowed after a slash, a hyphen and
            the marks a web address is built from, so a link wraps at a
            sensible place rather than being cut mid word. */
-        if (/[\/\-?&=_.,;:!]/.test(ch(cp)) && i + 1 < list.length && list[i + 1] !== 0x20) {
+        if (/[\/\-?&=_.,;:!]/.test(ch(cp)) && i + 1 < list.length && list[i + 1] !== 0x20 &&
+            !(/[.,]/.test(ch(cp)) && list[i + 1] >= 0x30 && list[i + 1] <= 0x39)) {   // never inside 4,381 or 0.62
           cur.brk = true; flush();
         }
       }
@@ -542,35 +543,42 @@
   function draw(PDF, pdf, fonts, logo, clientLogo, sh, mdl, thumbs, warn, opts) {
     var rep = mdl.rep;
     var book = fonts.font, reg = fonts.bold, med = fonts.med || reg, mark = fonts.mark || med;
-    var INK = PDF.rgb(0.251, 0.251, 0.251), SOFT = PDF.rgb(0.32, 0.31, 0.28), MUTE = PDF.rgb(0.42, 0.40, 0.38);
-    var LINE = PDF.rgb(0.85, 0.84, 0.82), HAIR = PDF.rgb(0.90, 0.89, 0.87), PAPER = PDF.rgb(1, 1, 1);
-    var ACCENT = hexRgb(PDF, rep.accent, PDF.rgb(0.043, 0.341, 0.816));
-    var ACCENT_SOFT = mix(PDF, ACCENT, 0.86);
-    var FIELD = PDF.rgb(0.106, 0.102, 0.090);
+    /* Monochrome, on the rate card's own values: one ink for every word and
+       every mark that carries a value, the rate card's two table greys for
+       structure, and two lighter greys for the marks that are only context.
+       Nothing on the page is coloured. */
+    var g = function (v) { return PDF.rgb(v, v, v); };
+    var INK = g(0.251);            // #404040, the rate card's one ink
+    var SOFT = g(0.40);            // secondary text: captions, dates
+    var MUTE = g(0.45);            // axis labels, notes
+    var FILL = g(0.949);           // #f2f2f2: header row, label column, cell edges
+    var FILL2 = g(0.851);          // #d9d9d9: a group heading cell
+    var EDGE = g(0.949);           // the rate card draws its grid in the header grey
+    var DATA2 = g(0.651);          // #a6a6a6: a second series, the ordinary bars
+    var DATA3 = g(0.80);           // #cccccc: a third series
+    var PAPER = g(1);
+    var SERIES = [INK, DATA2, DATA3];
     var isDraft = rep.status !== 'final' || opts.proof;
     var periodW = periodWord(rep.period_start, rep.period_end);
-    var runHead = [rep.client_name, rep.title || 'Social Media Accounts Report', periodW].filter(Boolean).join('  ·  ');
 
-    var pages = [];   // { page, kind, section }
+    var pages = [];
     var pg = null, y = 0;
     var text = function (s, x, yy, size, f, color) { pg.page.drawText(String(s == null ? '' : s), { x: x, y: yy, size: size || 10.5, font: f || book, color: color || INK }); };
     var width = function (s, size, f) { return (f || book).widthOfTextAtSize(String(s == null ? '' : s), size || 10.5); };
     var right = function (s, xr, yy, size, f, color) { text(s, xr - width(s, size, f), yy, size, f, color); };
-    var rule = function (yy, x1, x2, color, thick) { pg.page.drawLine({ start: { x: x1 == null ? M : x1, y: yy }, end: { x: x2 == null ? R : x2, y: yy }, thickness: thick || 0.6, color: color || LINE }); };
-    var rect = function (x, yy, w, h, color, opacity) { pg.page.drawRectangle({ x: x, y: yy, width: w, height: h, color: color, borderWidth: 0, opacity: opacity == null ? 1 : opacity }); };
-    /* Latin-only strings (labels, numbers) go straight to the face; anything a
-       person typed goes through the shaper. */
-    var safe = function (s) { return sh.linesOf(String(s == null ? '' : s), 1e6, 10, book)[0]; };
+    var center = function (s, xc, yy, size, f, color) { text(s, xc - width(s, size, f) / 2, yy, size, f, color); };
+    var rect = function (x, yy, w, h, color) { pg.page.drawRectangle({ x: x, y: yy, width: w, height: h, color: color, borderWidth: 0 }); };
+    var frame = function (x, yy, w, h, color, thick) { pg.page.drawRectangle({ x: x, y: yy, width: w, height: h, borderColor: color || EDGE, borderWidth: thick || 0.48 }); };
+    var hline = function (yy, x1, x2, color, thick, dash) {
+      var o = { start: { x: x1, y: yy }, end: { x: x2, y: yy }, thickness: thick || 0.48, color: color || EDGE };
+      if (dash) o.dashArray = dash;
+      pg.page.drawLine(o);
+    };
     var tline = function (s, x, yy, size, f, color, maxW) {
       var line = sh.linesOf(String(s == null ? '' : s), maxW || 1e6, size, f || book)[0] || [];
       sh.draw(pg.page, line, x, yy, size, color || INK);
       return sh.lineWidth(line, size);
     };
-    var tright = function (s, xr, yy, size, f, color) {
-      var line = sh.linesOf(String(s == null ? '' : s), 1e6, size, f || book)[0] || [];
-      sh.draw(pg.page, line, xr - sh.lineWidth(line, size), yy, size, color || INK);
-    };
-    /* One line, ellipsised to a width. */
     var clip = function (s, maxW, size, f) {
       var str = String(s == null ? '' : s);
       var line = sh.linesOf(str, 1e6, size, f || book)[0] || [];
@@ -588,69 +596,322 @@
       pages.push(pg);
       y = TOP;
     };
+    var room = function () { return y - FLOOR; };
     var need = function (h) { if (y - h < FLOOR) { newPage(pg.section); return true; } return false; };
-    /* Paragraphs: wrapped, drawn, page breaks inside them allowed, a widow of
-       one line at the top of a page avoided where the paragraph has more
-       than two lines. */
-    var para = function (s, x, w, size, lh, f, color, keepFirst) {
-      var lines = sh.linesOf(s, w, size, f || book);
-      lines.forEach(function (ln, i) {
-        if (i === 0 && keepFirst) need(lh * Math.min(2, lines.length));
-        else need(lh);
-        sh.draw(pg.page, ln, x, y, size, color || INK);
-        y -= lh;
-      });
-      return lines.length;
+    var para = function (s, x, w, size, lh, f, color) {
+      sh.linesOf(s, w, size, f || book).forEach(function (ln) { need(lh); sh.draw(pg.page, ln, x, y, size, color || INK); y -= lh; });
     };
-    var paraBlock = function (s, x, w, size, lh, f, color, gap) {
-      var ps = paragraphsOf(s);
-      ps.forEach(function (p, i) {
-        if (!p.trim()) { y -= (gap == null ? lh * 0.6 : gap); return; }
-        para(p, x, w, size, lh, f, color, true);
-      });
+    /* The page title, as the rate card sets Ala Carté: Slate Regular 18pt,
+       the first block 12pt under it. */
+    var pageTitle = function (s) { tline(s, M, y, 18, reg, INK, CW); y -= 24; };
+    /* A block's title, as the rate card sets Social Media Contents over its
+       table: Slate Regular 11pt, the block 6pt under it. `keep` is the height
+       of what must follow it on the same page. */
+    var blockTitle = function (s, keep) {
+      need(20 + (keep || 40));
+      tline(s, M, y, 11.04, reg, INK, CW); y -= 8;
     };
-    var sectionLabel = function (s, x, yy, color) { tline(String(s || ''), x, yy, 8.5, reg, color || MUTE, R - x); };
-    var pageTitle = function (s, sub) {
-      tline(s, M, y, 18, reg, INK, CW); y -= 20;
-      if (sub) { tline(sub, M, y, 9.5, book, MUTE, CW); y -= 16; }
-      y -= 10;
-    };
-    var subTitle = function (s) {
-      need(34);
-      y -= 8;
-      tline(s, M, y, 11.04, reg, INK, CW); y -= 16;
-    };
-    var fitImage = function (img, boxW, boxH) {
-      var s = Math.min(boxW / img.width, boxH / img.height);
-      return { w: img.width * s, h: img.height * s };
-    };
-    var thumbBox = function (img, x, yTop, boxW, boxH, label) {
-      if (img) {
-        var d = fitImage(img, boxW, boxH);
-        pg.page.drawImage(img, { x: x, y: yTop - d.h, width: d.w, height: d.h });
-        return d;
-      }
-      var hh = Math.min(boxH, boxW * 1.1);
-      rect(x, yTop - hh, boxW, hh, HAIR);
-      var wds = sh.linesOf(label || 'No image', boxW - 12, 7.5, book);
-      var ly = yTop - hh / 2 + (wds.length * 10) / 2 - 8;
-      wds.forEach(function (ln) { sh.draw(pg.page, ln, x + 6, ly, 7.5, MUTE); ly -= 10; });
-      return { w: boxW, h: hh };
-    };
+    var gap = function (h) { y -= h; };
+
     var groupWord = function (p) { return p._group ? p._group.label : ''; };
     var typeWord = function (p) { return TYPE_WORD[p.content_type] || (p.content_type ? String(p.content_type) : ''); };
-    var metricPairs = function (p, g) {
-      var keys = g ? g.metrics : METRICS.filter(function (k) { return num(p[k]) !== null; });
-      return keys.map(function (k) { return { label: METRIC_WORD[k], value: fmt(p[k]), na: num(p[k]) === null }; });
+    var shortDay = function (s) { var d = dateOf(s); return d ? d.getDate() + ' ' + MON3[d.getMonth()] : ''; };
+    /* A post without a title is named by what it is and when it went out, so
+       a ranking reads as a list of posts and not as "Untitled post" five
+       times. Two on one day are numbered in posting order. */
+    var sameDay = {};
+    mdl.posts.forEach(function (p) { var k = (p._group ? p._group.key : '') + '|' + p.posted_on; (sameDay[k] = sameDay[k] || []).push(p); });
+    var postName = function (p) {
+      if (words(p.title).trim()) return words(p.title).trim();
+      var k = (p._group ? p._group.key : '') + '|' + p.posted_on;
+      var list = sameDay[k] || [p];
+      var base = (typeWord(p) || 'Post') + ', ' + shortDay(p.posted_on);
+      return list.length > 1 ? base + ' (' + (list.indexOf(p) + 1) + ')' : base;
     };
+    var volOf = function (p) { var gg = p._group; return gg && gg.volume ? num(p[gg.volume]) : null; };
+    var erOf = function (p) {
+      var gg = p._group, e = engOf(p);
+      if (!gg || !gg.basis || e === null) return null;
+      if (gg.basis === 'followers') {
+        var f = sumOf(gg.accounts, function (a) { return num(a.followers_end); });
+        return f ? e / f : null;
+      }
+      var d = num(p[gg.basis]);
+      return d ? e / d : null;
+    };
+    var volWord = function (gg) { return gg && gg.volume ? METRIC_WORD[gg.volume] : 'Views'; };
+    var engWord = function (gg) { return gg && gg.engKey ? METRIC_WORD[gg.engKey] : 'Engagements'; };
+
+    // ---------------------------------------------------------------- Tables
+    /* The rate card's table, the one structure this document draws its data
+       in: a header row in #f2f2f2, white rows, every cell edged 0.48pt in the
+       same grey, the text vertically centred with 5pt at either side, and a
+       label column in #f2f2f2 where a table reads by row. A row that no
+       longer fits starts a new page with the header drawn again; a row of
+       plain text taller than a page is split between pages. */
+    var T = { size: 9.5, lh: 12.2, padX: 5.3, padY: 3.1, minH: 18.24 };
+    function cellLines(c, w) {
+      if (c == null) return [];
+      if (typeof c === 'string' || typeof c === 'number') c = { t: String(c) };
+      if (c.fn) return null;
+      var f = c.f || book, size = c.size || T.size;
+      var out = [];
+      String(c.t == null ? '' : c.t).split('\n').forEach(function (part, i) {
+        if (c.items) return;
+        sh.linesOf(part, w - T.padX * 2, size, f).forEach(function (ln) { out.push({ ln: ln, f: f, size: size }); });
+      });
+      if (c.items) {
+        /* A numbered list inside a cell: the number in Slate Medium, the item
+           hanging 14pt in, 4pt between items. */
+        c.items.forEach(function (it, i) {
+          var ls = sh.linesOf(it, w - T.padX * 2 - 14, size, f);
+          ls.forEach(function (ln, k) { out.push({ ln: ln, f: f, size: size, num: k === 0 ? String(i + 1) : null, indent: 14 }); });
+          if (i < c.items.length - 1) out.push({ gap: 4 });
+        });
+      }
+      return out;
+    }
+    function linesH(ls) { return ls.reduce(function (t, l) { return t + (l.gap ? l.gap : T.lh); }, 0); }
+    function drawLines(ls, x, top, w, h, c) {
+      var total = linesH(ls);
+      /* Lists read from the top of their cell, so two columns of points start
+         on one line; everything else is centred, as the rate card sets it. */
+      var off = c && c.top ? T.padY : (h - total) / 2;
+      var yy = top - off - (T.lh - T.size) / 2 - T.size * 0.8;
+      var align = (c && c.align) || 'left';
+      ls.forEach(function (l) {
+        if (l.gap) { yy -= l.gap; return; }
+        var lw = sh.lineWidth(l.ln, l.size);
+        var lx = x + T.padX + (l.indent || 0);
+        if (align === 'center') lx = x + (w - lw) / 2;
+        else if (align === 'right') lx = x + w - T.padX - lw;
+        if (l.num) text(l.num, x + T.padX, yy, l.size, med, INK);
+        sh.draw(pg.page, l.ln, lx, yy, l.size, (c && c.color) || INK);
+        yy -= T.lh;
+      });
+    }
+    function norm(c) { return (typeof c === 'string' || typeof c === 'number') ? { t: String(c) } : (c || { t: '' }); }
+    /* cols: [{ w, align }] (widths are fractions of the column when they add
+       to 1 or less, else points); head: labels or null; rows: [{ cells,
+       fill, minH }]. A cell is text, { t, f, size, align, color, fill },
+       { items: [...] } or { fn(x, top, w, h), h }. */
+    function table(cols, head, rows, o) {
+      o = o || {};
+      var tw = o.width || CW, x0 = o.x == null ? M : o.x;
+      var tot = cols.reduce(function (t, c) { return t + c.w; }, 0);
+      var ws = cols.map(function (c) { return c.w * (tw / tot); });
+      var xs = []; ws.reduce(function (acc, w, i) { xs[i] = acc; return acc + w; }, x0);
+      var headH = 0;
+      var drawHead = function () {
+        if (!head) return;
+        var hl = head.map(function (hc, i) { return cellLines({ t: norm(hc).t, f: reg }, ws[i]); });
+        headH = Math.max(T.minH, Math.max.apply(null, hl.map(linesH)) + T.padY * 2);
+        head.forEach(function (hc, i) {
+          rect(xs[i], y - headH, ws[i], headH, norm(hc).fill || FILL);
+          frame(xs[i], y - headH, ws[i], headH);
+          drawLines(hl[i], xs[i], y, ws[i], headH, { align: norm(hc).align || cols[i].align || 'center' });
+        });
+        y -= headH;
+      };
+      var headNeed = function () {
+        if (!head) return 0;
+        var hl = head.map(function (hc, i) { return cellLines({ t: norm(hc).t, f: reg }, ws[i]); });
+        return Math.max(T.minH, Math.max.apply(null, hl.map(linesH)) + T.padY * 2);
+      };
+      var first = true;
+      rows.forEach(function (row, ri) {
+        var cells = row.cells.map(norm);
+        var ls = cells.map(function (c, i) { return c.fn ? null : cellLines(c, ws[i]); });
+        var contentH = Math.max.apply(null, cells.map(function (c, i) { return c.fn ? (c.h || 0) : linesH(ls[i]) + T.padY * 2; }));
+        var h = Math.max(row.minH || T.minH, contentH);
+        var pageSpace = TOP - FLOOR - headNeed();
+        if (first) { need(headNeed() + (row.split ? Math.min(h, T.lh * 3 + T.padY * 2) : Math.min(h, pageSpace))); drawHead(); first = false; }
+        else if (y - h < FLOOR && h <= pageSpace) { newPage(pg.section); drawHead(); }
+        if (h > pageSpace || (y - h < FLOOR && row.split)) {
+          /* Too tall for any page, or allowed to break: the text cells are
+             split line by line, and a label column repeats with (cont.). */
+          var cur = ls.map(function () { return 0; });
+          var part0 = true;
+          var remaining = function () { return ls.some(function (l, i) { return l && cur[i] < l.length; }); };
+          while (remaining()) {
+            var avail = y - FLOOR - T.padY * 2;
+            if (avail < T.lh * 2) { newPage(pg.section); drawHead(); continue; }
+            var part = ls.map(function (l, i) {
+              if (!l) return [];
+              if (o.labelCol && i === 0) {
+                var lab = part0 ? l : cellLines({ t: cells[0].t + ' (cont.)', f: cells[0].f }, ws[0]);
+                cur[0] = l.length;
+                return lab;
+              }
+              var out = [], used = 0;
+              while (cur[i] < l.length && used + (l[cur[i]].gap || T.lh) <= avail) { out.push(l[cur[i]]); used += l[cur[i]].gap || T.lh; cur[i]++; }
+              while (out.length && out[0].gap) out.shift();
+              while (out.length && out[out.length - 1].gap) out.pop();
+              return out;
+            });
+            var ph = Math.max(T.minH, Math.max.apply(null, part.map(linesH)) + T.padY * 2);
+            cells.forEach(function (c, i) {
+              rect(xs[i], y - ph, ws[i], ph, c.fill || row.fill || (o.labelCol && i === 0 ? FILL : PAPER));
+              frame(xs[i], y - ph, ws[i], ph);
+              drawLines(part[i], xs[i], y, ws[i], ph, { align: c.align || cols[i].align || 'center', color: c.color, top: !!c.items });
+            });
+            y -= ph;
+            part0 = false;
+            if (remaining()) { newPage(pg.section); drawHead(); }
+          }
+          return;
+        }
+        cells.forEach(function (c, i) {
+          rect(xs[i], y - h, ws[i], h, c.fill || row.fill || (o.labelCol && i === 0 ? FILL : PAPER));
+          frame(xs[i], y - h, ws[i], h);
+          if (c.fn) c.fn(xs[i], y, ws[i], h);
+          else drawLines(ls[i], xs[i], y, ws[i], h, { align: c.align || cols[i].align || 'center', color: c.color, top: !!c.items });
+        });
+        y -= h;
+      });
+      if (first && head) { need(headNeed()); drawHead(); }
+    }
+
+    /* A thumbnail in a fixed frame, so a column of them is one column: the
+       frame is the header grey and the image fits inside it whole. */
+    function thumbIn(p, x, top, w, h) {
+      rect(x, top - h, w, h, FILL);
+      var img = thumbs[p.id];
+      if (!img) return;
+      var s = Math.min(w / img.width, h / img.height);
+      var dw = img.width * s, dh = img.height * s;
+      pg.page.drawImage(img, { x: x + (w - dw) / 2, y: top - h + (h - dh) / 2, width: dw, height: dh });
+    }
+
+    /* The figures that head a page: the rate card's table, a label row over a
+       value row, the value in Slate Medium. */
+    function figures(cells) {
+      var cols = cells.map(function () { return { w: 1 / cells.length, align: 'center' }; });
+      table(cols, cells.map(function (c) { return c.label; }), [{
+        minH: 36,
+        cells: cells.map(function (c) {
+          var na = c.value === 'Not available';
+          return { fn: function (x, top, w, h) {
+            var size = na ? 10 : (String(c.value).length > 8 ? 17 : 19);
+            center(c.value, x + w / 2, top - h / 2 - size * 0.34, size, na ? book : med, na ? MUTE : INK);
+          }, h: 36 };
+        })
+      }]);
+    }
+
+    function niceStep(raw) {
+      var p = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+      var m = raw / p;
+      var s = m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10;
+      return s * p;
+    }
+    /* The value axis every chart shares: three or four round gridlines in the
+       edge grey, labels in the mute ink at their left. */
+    function axis(plotX, plotW, base, plotH, maxV) {
+      var step = niceStep(maxV / 3);
+      var scaleMax = step * Math.ceil(maxV / step);
+      for (var v = 0; v <= scaleMax + step * 0.001; v += step) {
+        var yy = base + plotH * (v / scaleMax);
+        hline(yy, plotX, plotX + plotW, v === 0 ? FILL2 : FILL, v === 0 ? 0.6 : 0.48);
+        right(v.toLocaleString('en-GB'), plotX - 6, yy - 2.6, 7.5, book, MUTE);
+      }
+      return scaleMax;
+    }
+    function legend(items, x, yy) {
+      var lx = x;
+      items.forEach(function (it) {
+        rect(lx, yy - 1, 7, 7, it.color);
+        text(it.label, lx + 11, yy, 8, book, INK);
+        lx += 11 + width(it.label, 8, book) + 16;
+      });
+    }
+
+    /* Views by week: the period in seven-day weeks, one column a week, the
+       platforms stacked in the fixed order the report lists them, a 1pt paper
+       gap between segments, and the week's total over its column. The job is
+       change over time and share of it, so the weeks are the axis and not the
+       posts: thirty bars of one post each read as noise. */
+    function weeklyChart(groups, h) {
+      var start = dateOf(rep.period_start), end = dateOf(rep.period_end);
+      var posts = mdl.posts.filter(function (p) { return p._group && dateOf(p.posted_on) && volOf(p) !== null; });
+      if (!posts.length) { text('No data.', M, y - 12, 9.5, book, MUTE); y -= 20; return; }
+      if (!start || !end) { start = dateOf(posts[0].posted_on); end = dateOf(posts[posts.length - 1].posted_on); }
+      var days = Math.round((end - start) / 864e5) + 1;
+      var weeks = [];
+      for (var d0 = 0; d0 < days; d0 += 7) {
+        var a = new Date(start.getTime() + d0 * 864e5), b = new Date(start.getTime() + Math.min(days - 1, d0 + 6) * 864e5);
+        weeks.push({ a: a, b: b, by: {}, total: 0,
+          label: a.getDate() + (a.getMonth() !== b.getMonth() ? ' ' + MON3[a.getMonth()] : '') + ' to ' + b.getDate() + ' ' + MON3[b.getMonth()] });
+      }
+      posts.forEach(function (p) {
+        var k = Math.floor((dateOf(p.posted_on) - start) / 864e5 / 7);
+        var wk = weeks[Math.max(0, Math.min(weeks.length - 1, k))];
+        wk.by[p._group.key] = (wk.by[p._group.key] || 0) + volOf(p);
+        wk.total += volOf(p);
+      });
+      var maxV = weeks.reduce(function (m, w) { return Math.max(m, w.total); }, 0) || 1;
+      need(h + 30);
+      var top = y;
+      if (groups.length > 1) { legend(groups.map(function (gg, i) { return { label: gg.label, color: SERIES[i] || DATA3 }; }), M, top - 6); }
+      var axisW = 40, plotX = M + axisW, plotW = CW - axisW;
+      var base = top - h + 14, plotH = h - 14 - (groups.length > 1 ? 34 : 22);
+      var scaleMax = axis(plotX, plotW, base, plotH, maxV);
+      var slot = plotW / weeks.length, bw = Math.min(56, slot * 0.46);
+      weeks.forEach(function (wk, i) {
+        var cx = plotX + slot * i + slot / 2, yy = base;
+        groups.forEach(function (gg, gi) {
+          var v = wk.by[gg.key] || 0; if (!v) return;
+          var bh = plotH * (v / scaleMax);
+          rect(cx - bw / 2, yy, bw, Math.max(0.8, bh - (gi < groups.length - 1 ? 1 : 0)), SERIES[gi] || DATA3);
+          yy += bh;
+        });
+        center(fmt(wk.total), cx, base + plotH * (wk.total / scaleMax) + 5, 8.5, med, INK);
+        center(wk.label, cx, base - 11, 7.5, book, MUTE);
+      });
+      y = top - h - 4;
+    }
+
+    /* Views by post, in posting order: one column a post, the ordinary ones
+       in the second grey and the month's best in ink with its value over it,
+       and the average as a dashed ink line, so the page answers which posts
+       beat the month's own mean without a sentence saying so. */
+    function postsChart(gg, h) {
+      var posts = gg.posts.filter(function (p) { return volOf(p) !== null; });
+      if (!posts.length) return;
+      var maxV = posts.reduce(function (m, p) { return Math.max(m, volOf(p)); }, 0) || 1;
+      var avg = posts.reduce(function (t, p) { return t + volOf(p); }, 0) / posts.length;
+      need(h + 10);
+      var top = y;
+      var axisW = 40, plotX = M + axisW, plotW = CW - axisW;
+      var base = top - h + 14, plotH = h - 14 - 16;
+      var scaleMax = axis(plotX, plotW, base, plotH, maxV);
+      var slot = plotW / posts.length, bw = Math.max(2, Math.min(22, slot - 3));
+      var best = posts.reduce(function (b, p) { return volOf(p) > volOf(b) ? p : b; }, posts[0]);
+      var lastDay = null, lastX = -1e9;
+      posts.forEach(function (p, i) {
+        var cx = plotX + slot * i + slot / 2;
+        var bh = Math.max(0.8, plotH * (volOf(p) / scaleMax));
+        rect(cx - bw / 2, base, bw, bh, p === best ? INK : DATA2);
+        if (p === best) center(fmt(volOf(p)), cx, base + bh + 4, 8.5, med, INK);
+        var day = shortDay(p.posted_on);
+        var lw = width(day, 7, book);
+        if (day !== lastDay && cx - lw / 2 > lastX + 3) { center(day, cx, base - 10, 7, book, MUTE); lastX = cx + lw / 2; }
+        lastDay = day;
+      });
+      var ay = base + plotH * (avg / scaleMax);
+      hline(ay, plotX, plotX + plotW, INK, 0.6, [2.5, 2]);
+      var al = 'Average ' + fmt(Math.round(avg));
+      var alw = width(al, 7.5, reg);
+      rect(plotX + plotW - alw - 6, ay + 2, alw + 6, 10, PAPER);
+      right(al, plotX + plotW - 2, ay + 4, 7.5, reg, INK);
+      y = top - h - 2;
+    }
 
     // ---------------------------------------------------------------- Cover
     (function cover() {
-      /* The rate card's cover, and nothing else on it: the head and the foot
-         every page carries, and the title set in Slate Medium on the page's
-         golden axis, indented one step from the margin. Under it, whose report
-         and which month. What the month achieved is the executive summary's
-         to say, on the next page. */
+      /* The rate card's cover: the head and foot every page carries, and the
+         title in Slate Medium on the page's golden axis, one step in from the
+         margin. Under it, whose report and which month. */
       newPage('cover');
       var cx = M + 72, cw = R - cx;
       var cy = 497;
@@ -668,353 +929,240 @@
       pageTitle('Executive summary');
       var t = mdl.totals;
       var head = words(rep.headline).trim();
-      if (head) { sh.linesOf(head, CW, 14.5, med).slice(0, 4).forEach(function (ln) { sh.draw(pg.page, ln, M, y, 14.5, INK); y -= 20; }); y -= 4; }
-      if (words(rep.intro).trim()) { paraBlock(rep.intro, M, CW, 10.5, 15.5, book, SOFT); }
-      y -= 8;
-      // The band: five figures, hairlines above and below, nothing boxed.
-      var cells = [
+      if (head) { sh.linesOf(head, CW, 13, med).slice(0, 3).forEach(function (ln) { sh.draw(pg.page, ln, M, y, 13, INK); y -= 18; }); y -= 4; }
+      [rep.intro, (rep.insights || {}).executive_summary].forEach(function (blk) {
+        if (!words(blk).trim()) return;
+        paragraphsOf(blk).filter(function (s) { return s.trim(); }).forEach(function (s) { para(s, M, CW, 11.04, 15.5, book, INK); y -= 4; });
+        y -= 4;
+      });
+      y -= 4;
+      figures([
         { label: 'Posts published', value: String(t.posts) },
         { label: 'Follower growth', value: signed(t.growth) },
-        { label: t.volumeWords.length === 1 ? 'Total ' + t.volumeWords[0].toLowerCase() : 'Total views, reach and impressions', value: fmt(t.views) },
+        { label: t.volumeWords.length === 1 ? 'Total ' + t.volumeWords[0].toLowerCase() : 'Total views', value: fmt(t.views) },
         { label: t.engWords.length === 1 ? 'Total ' + t.engWords[0].toLowerCase() : 'Total engagements', value: fmt(t.eng) },
         { label: 'Engagement rate', value: pct(t.er) }
-      ];
-      band(cells);
-      y -= 8;
-      // One chart: the month, post by post.
-      subTitle(t.volumeWords.length === 1 ? t.volumeWords[0] + ' by post' : 'Views, reach and impressions by post');
-      chartByDate(M, y, CW, 104, mdl.posts.filter(function (p) { return p._group; }), mdl.groups);
-      y -= 104 + 26;
-      // The featured post and the two lists, side by side where there is room.
-      need(150);
-      var best = mdl.best;
-      var colL = CW * 0.5 - GUT / 2, colR = CW * 0.5 - GUT / 2, xr = M + colL + GUT;
-      var yTop = y;
-      if (best) {
-        sectionLabel('Top post', M, y); y -= 14;
-        var img = thumbs[best.id];
-        var d = thumbBox(img, M, y, 72, 96, best.title);
-        var tx = M + 84, tw = colL - 84, ty = y - 9;
-        sh.linesOf(best.title || 'Untitled post', tw, 11, med).slice(0, 3).forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, 11, INK); ty -= 14.5; });
-        tline([groupWord(best), dayWord(best.posted_on), typeWord(best)].filter(Boolean).join('  ·  '), tx, ty, 8.5, book, MUTE, tw); ty -= 13;
-        var g = best._group;
-        var ml = [];
-        if (g && g.volume) ml.push(fmt(best[g.volume]) + ' ' + METRIC_WORD[g.volume].toLowerCase());
-        if (engOf(best) !== null) ml.push(fmt(engOf(best)) + ' ' + (g && g.engKey ? METRIC_WORD[g.engKey].toLowerCase() : 'engagements'));
-        tline(ml.join('  ·  '), tx, ty, 9.5, reg, INK, tw); ty -= 14;
-        if (words(best.notable).trim()) {
-          sh.linesOf(best.notable, tw, 9, book).slice(0, 4).forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, 9, SOFT); ty -= 12.5; });
-        }
-        y = Math.min(y - d.h - 6, ty - 4);
+      ]);
+      gap(20);
+      // The split by platform, one row a platform: the table the figures total.
+      if (mdl.groups.length > 1) {
+        blockTitle('By platform', 18.24 * (mdl.groups.length + 1));
+        table([{ w: 0.3, align: 'left' }, { w: 0.12 }, { w: 0.15 }, { w: 0.15 }, { w: 0.14 }, { w: 0.14 }],
+          [{ t: 'Platform', align: 'left' }, 'Posts', 'Follower growth', 'Views', 'Engagements', 'Engagement rate'],
+          mdl.groups.map(function (gg) {
+            return { cells: [gg.label, String(gg.posts.length), signed(gg.growth), fmt(gg.views), fmt(gg.eng), pct(gg.er)] };
+          }), { labelCol: true });
+        gap(20);
       }
-      var obs = points(rep.insights && (rep.insights.performed_well || rep.insights.executive_summary)).slice(0, 3);
-      var acts = points(rep.insights && rep.insights.next_actions).slice(0, 3);
-      var ly = yTop;
-      /* The two lists stand beside the featured post only where they fit on
-         the page; otherwise they follow it across the full column, breaking
-         over the page like any paragraph. They ran into the foot before. */
-      var listH = function (items, w) {
-        return 15 + (items.length ? items.reduce(function (t, it) { return t + sh.linesOf(it, w - 16, 9.5, book).length * 13 + 4; }, 0) : 14);
-      };
-      var halfW = (CW - GUT) / 2;
-      if (yTop - listH(obs, colR) - 6 - listH(acts, colR) < FLOOR &&
-          y - 14 - Math.max(listH(obs, halfW), listH(acts, halfW)) >= FLOOR) {
-        /* Under the featured post, the two lists side by side. */
-        y -= 14;
-        var yCols = y, low = y;
-        [[obs, 'Key findings', M], [acts, 'Next steps', M + halfW + GUT]].forEach(function (c) {
-          ly = yCols;
-          list(c[1], c[0], c[2], halfW);
-          low = Math.min(low, ly);
-        });
-        y = low - 6;
-        return;
+      var ins = rep.insights || {};
+      var obs = points(ins.performed_well);
+      var acts = points(ins.next_actions);
+      var more = [
+        ['Performance drivers', ins.why_well],
+        ['Underperformance', ins.underperformed],
+        ['Opportunities', ins.opportunities],
+        ['Improvements', ins.improvements]
+      ].filter(function (r) { return words(r[1]).trim(); });
+      if (!obs.length && words(ins.performed_well).trim()) more.unshift(['Highlights', ins.performed_well]);
+      /* The chart gives up height, down to 110pt, so that what follows it
+         finishes on this page rather than leaving one row on a page of its
+         own. */
+      var halfW = CW / 2;
+      var listsH = (obs.length || acts.length) ? 18.24 + T.padY * 2 +
+        Math.max(linesH(cellLines({ items: obs }, halfW)), linesH(cellLines({ items: acts }, halfW)), T.lh) + 16 : 0;
+      var moreH = more.length ? 20 + 28 + more.reduce(function (tt, r) { return tt + Math.max(T.minH, linesH(cellLines({ items: points(r[1]) }, CW * 0.74)) + T.padY * 2); }, 0) : 0;
+      var chartH = Math.max(110, Math.min(160, y - FLOOR - 28 - 16 - listsH - moreH));
+      blockTitle((t.volumeWords.length === 1 ? t.volumeWords[0] : 'Views') + ' by week', chartH);
+      weeklyChart(mdl.groups, chartH);
+      gap(16);
+      if (obs.length || acts.length) {
+        var one = [{ w: 0.5, align: 'left' }, { w: 0.5, align: 'left' }];
+        var cells = [obs.length ? { items: obs } : { t: 'None.', color: MUTE }, acts.length ? { items: acts } : { t: 'None.', color: MUTE }];
+        table(one, [{ t: 'Key findings', align: 'left' }, { t: 'Next steps', align: 'left' }], [{ cells: cells, split: true }]);
       }
-      if (yTop - listH(obs, colR) - 6 - listH(acts, colR) < FLOOR) {
-        var flow = function (title, items) {
-          var first = items.length ? sh.linesOf(items[0], CW - 16, 9.5, book).length : 1;
-          need(29 + (first <= 4 ? first : 2) * 13); y -= 14;
-          sectionLabel(title, M, y); y -= 15;
-          if (!items.length) { text('None.', M, y, 9.5, book, MUTE); y -= 14; return; }
-          items.forEach(function (it, i) {
-            var lines = sh.linesOf(it, CW - 16, 9.5, book);
-            need((lines.length <= 4 ? lines.length : 2) * 13);   // a short item is never split
-            text(String(i + 1), M, y, 9.5, med, ACCENT);
-            lines.forEach(function (ln) { need(13); sh.draw(pg.page, ln, M + 16, y, 9.5, INK); y -= 13; });
-            y -= 4;
-          });
-        };
-        flow('Key findings', obs);
-        flow('Next steps', acts);
-        return;
+      /* The rest of the team's remarks, under the two lists and never
+         repeating them: Key findings is the Highlights field and Next steps the
+         Action plan, so those two are not drawn a second time. The rate card's
+         What's Included shape: the label in its grey column, the points
+         numbered beside it; it continues on the next page where it must. */
+      if (more.length) {
+        gap(20);
+        blockTitle('Remarks and recommendations', 18.24 * 2);
+        table([{ w: 0.26, align: 'left' }, { w: 0.74, align: 'left' }], null,
+          more.map(function (r) { return { cells: [{ t: r[0], f: reg }, { items: points(r[1]) }], split: true }; }),
+          { labelCol: true });
       }
-      function list(title, items, x, w) {
-        sectionLabel(title, x, ly); ly -= 15;
-        if (!items.length) { text('None.', x, ly, 9.5, book, MUTE); ly -= 14; return; }
-        items.forEach(function (it, i) {
-          var lines = sh.linesOf(it, w - 16, 9.5, book);
-          text(String(i + 1), x, ly, 9.5, med, ACCENT);
-          lines.forEach(function (ln) { sh.draw(pg.page, ln, x + 16, ly, 9.5, INK); ly -= 13; });
-          ly -= 4;
-        });
-      }
-      list('Key findings', obs, xr, colR);
-      ly -= 6;
-      list('Next steps', acts, xr, colR);
-      y = Math.min(y, ly) - 6;
     })();
 
     // ------------------------------------------------------- Platform pages
-    mdl.groups.forEach(function (g) {
-      newPage(g.label);
-      pageTitle(g.label);
-      if (words(g.summary).trim()) {
-        sh.linesOf(g.summary, CW, 13, med).slice(0, 4).forEach(function (ln) { sh.draw(pg.page, ln, M, y, 13, INK); y -= 18; });
+    mdl.groups.forEach(function (gg) {
+      newPage(gg.label);
+      pageTitle(gg.label);
+      if (words(gg.summary).trim()) {
+        sh.linesOf(gg.summary, CW, 12, med).slice(0, 3).forEach(function (ln) { sh.draw(pg.page, ln, M, y, 12, INK); y -= 17; });
         y -= 6;
       }
-      var cells = [{ label: 'Posts', value: String(g.posts.length) }];
-      g.accounts.forEach(function (a) {
-        var gr = growthOf(a);
-        cells.push({ label: (g.accounts.length > 1 ? (PLATFORM_WORD[a.platform] || a.platform) + ' follower growth' : 'Follower growth'), value: signed(gr) });
+      var cells = [{ label: 'Posts', value: String(gg.posts.length) }];
+      gg.accounts.forEach(function (a) {
+        cells.push({ label: (gg.accounts.length > 1 ? (PLATFORM_WORD[a.platform] || a.platform) + ' follower growth' : 'Follower growth'), value: signed(growthOf(a)) });
       });
-      if (g.volume) cells.push({ label: 'Total ' + METRIC_WORD[g.volume].toLowerCase(), value: fmt(g.views) });
-      if (g.engKey) cells.push({ label: 'Total ' + METRIC_WORD[g.engKey].toLowerCase(), value: fmt(g.eng) });
-      cells.push({ label: 'Engagement rate', value: pct(g.er) });
-      band(cells.slice(0, 6));
-      y -= 8;
-      // Follower movement where both ends are known.
-      var movers = g.accounts.filter(function (a) { return num(a.followers_start) !== null && num(a.followers_end) !== null; });
+      if (gg.volume) cells.push({ label: 'Total ' + METRIC_WORD[gg.volume].toLowerCase(), value: fmt(gg.views) });
+      if (gg.engKey) cells.push({ label: 'Total ' + METRIC_WORD[gg.engKey].toLowerCase(), value: fmt(gg.eng) });
+      cells.push({ label: 'Engagement rate', value: pct(gg.er) });
+      figures(cells.slice(0, 6));
+      gap(20);
+      var movers = gg.accounts.filter(function (a) { return num(a.followers_start) !== null && num(a.followers_end) !== null; });
       if (movers.length) {
-        subTitle('Follower growth');
-        movers.forEach(function (a) {
-          need(24);
-          var s = num(a.followers_start), e = num(a.followers_end), maxv = Math.max(s, e, 1);
-          var lx = M + 120, lw = CW - 120 - 70;
-          text(PLATFORM_WORD[a.platform] || a.platform, M, y, 9.5, reg, INK);
-          rect(lx, y - 2, lw * (s / maxv), 8, HAIR);
-          rect(lx, y - 2, lw * (e / maxv), 4, ACCENT);
-          right(fmt(s) + ' to ' + fmt(e), R, y, 9, book, SOFT);
-          y -= 20;
-        });
-        y -= 6;
+        blockTitle('Followers', 18.24 * (movers.length + 1));
+        table([{ w: 0.34, align: 'left' }, { w: 0.22 }, { w: 0.22 }, { w: 0.22 }],
+          [{ t: 'Account', align: 'left' }, 'Start of period', 'End of period', 'Growth'],
+          movers.map(function (a) { return { cells: [PLATFORM_WORD[a.platform] || a.platform, fmt(a.followers_start), fmt(a.followers_end), signed(growthOf(a))] }; }),
+          { labelCol: true });
+        gap(20);
       }
-      if (g.volume && g.posts.some(function (p) { return num(p[g.volume]) !== null; })) {
-        subTitle(METRIC_WORD[g.volume] + ' by post');
-        need(140);
-        chartByDate(M, y, CW, 120, g.posts, [g]);
-        y -= 120 + 26;
+      if (gg.volume && gg.posts.some(function (p) { return volOf(p) !== null; })) {
+        blockTitle(METRIC_WORD[gg.volume] + ' by post', 136);
+        postsChart(gg, 136);
+        gap(16);
       }
-      if (g.engKey && g.posts.some(function (p) { return engOf(p) !== null; })) {
-        subTitle('Top 5 posts by ' + METRIC_WORD[g.engKey].toLowerCase());
-        var rows = g.posts.filter(function (p) { return engOf(p) !== null; }).sort(function (a, b) { return engOf(b) - engOf(a); }).slice(0, 5);
-        hbars(rows.map(function (p) { return { label: p.title || 'Untitled post', value: engOf(p), sub: dayWord(p.posted_on) }; }));
-        y -= 8;
+      // The five best, one table: the ranking and every figure it rests on.
+      var ranked = gg.posts.filter(function (p) { return mdl.rankOf(p) !== null; })
+        .sort(function (a, b) { return mdl.rankOf(b) - mdl.rankOf(a); }).slice(0, 5);
+      if (ranked.length) {
+        var topV = ranked.reduce(function (m, p) { return Math.max(m, volOf(p) || 0); }, 0) || 1;
+        var ROWH = 46;
+        blockTitle('Top ' + ranked.length + ' posts by ' + METRIC_WORD[mdl.rank].toLowerCase(), 18.24 + ROWH * 2);
+        table([{ w: 0.07 }, { w: 0.38, align: 'left' }, { w: 0.25 }, { w: 0.15 }, { w: 0.15 }],
+          ['Rank', { t: 'Post', align: 'left' }, volWord(gg), engWord(gg), 'Engagement rate'],
+          ranked.map(function (p, i) {
+            return { minH: ROWH, cells: [
+              { t: String(i + 1), f: med, align: 'center' },
+              { fn: function (x, top, w, h) {
+                thumbIn(p, x + T.padX, top - 4, 29, h - 8);
+                var tx = x + T.padX + 37, tw = w - T.padX * 2 - 37;
+                tline(clip(postName(p), tw, 9.5, med), tx, top - h / 2 + 2, 9.5, med, INK);
+                tline([dayWord(p.posted_on), typeWord(p)].filter(Boolean).join('  ·  '), tx, top - h / 2 - 10, 8, book, SOFT, tw);
+              }, h: ROWH },
+              { fn: function (x, top, w, h) {
+                var v = volOf(p), vs = fmt(v), vw = 46;
+                var bx = x + T.padX, bwMax = w - T.padX * 2 - vw;
+                rect(bx, top - h / 2 - 3, bwMax, 6, FILL);
+                if (v !== null) rect(bx, top - h / 2 - 3, Math.max(0.8, bwMax * v / topV), 6, i === 0 ? INK : DATA2);
+                right(vs, x + w - T.padX, top - h / 2 - 3.2, 9.5, i === 0 ? med : book, INK);
+              }, h: ROWH },
+              { t: fmt(engOf(p)), align: 'center' },
+              { t: pct(erOf(p)), align: 'center' }
+            ] };
+          }));
+        gap(20);
       }
-      // Most viewed and most engaged, side by side.
-      if (g.mostViewed.length || g.mostEngaged.length) {
-        need(120);
-        var colW = CW * 0.5 - GUT / 2, yTop = y, yL = y, yR = y;
-        var mini = function (title, list, metric, x, yy) {
-          sectionLabel(title, x, yy); yy -= 14;
-          list.forEach(function (p, i) {
-            var img = thumbs[p.id];
-            var d = thumbBox(img, x, yy, 30, 40, '');
-            var tx = x + 40, tw = colW - 40;
-            text(String(i + 1), x + 34, yy - 9, 8, med, ACCENT);
-            tline(clip(p.title || 'Untitled post', tw - 10, 9.5, med), tx + 10, yy - 9, 9.5, med, INK);
-            tline(dayWord(p.posted_on) + '  ·  ' + fmt(metric(p)) + ' ' + (metric === engOf ? (g.engKey ? METRIC_WORD[g.engKey].toLowerCase() : 'engagements') : METRIC_WORD[g.volume].toLowerCase()), tx + 10, yy - 22, 8.5, book, MUTE, tw - 10);
-            yy -= Math.max(d.h, 30) + 10;
-          });
-          return yy;
-        };
-        if (g.mostViewed.length) yL = mini('Most ' + (g.volume === 'views' ? 'viewed' : g.volume === 'reach' ? 'reach' : 'impressions'), g.mostViewed, function (p) { return num(p[g.volume]); }, M, yTop);
-        if (g.mostEngaged.length) yR = mini('Most ' + (g.engKey === 'interactions' ? 'interacted' : 'engaged'), g.mostEngaged, engOf, M + colW + GUT, yTop);
-        y = Math.min(yL, yR) - 4;
-      }
-      var block = function (title, s) {
-        if (!words(s).trim()) return;
-        subTitle(title);
-        var ps = points(s);
-        ps.forEach(function (p) { para(p, M, CW, 10.5, 15.5, book, INK, true); y -= 4; });
-        y -= 4;
-      };
-      /* The notes a platform page ends on are short, so they stand side by
-         side in columns where they fit on the page, rather than one or two
-         lines spilling onto a page of their own; long ones stack. */
-      var notes = [['Highlights', g.worked], ['Areas for improvement', g.improve], ['Recommendations', g.actions]]
+      // What the month showed on this platform: three columns, the rate card's header row over them.
+      var notes = [['Highlights', gg.worked], ['Areas for improvement', gg.improve], ['Recommendations', gg.actions]]
         .filter(function (b) { return words(b[1]).trim(); });
-      if (notes.length > 1) {
-        var nw = (CW - GUT * (notes.length - 1)) / notes.length;
-        var laid = notes.map(function (b) {
-          var ls = []; points(b[1]).forEach(function (pt) { ls = ls.concat(sh.linesOf(pt, nw, 10, book)); ls.push(null); });
-          return { title: b[0], lines: ls };
-        });
-        var tallest = laid.reduce(function (m, b) { return Math.max(m, 24 + b.lines.length * 14); }, 0);
-        if (y - 8 - tallest >= FLOOR) {
-          y -= 8;
-          laid.forEach(function (b, k) {
-            var x = M + k * (nw + GUT), yy = y;
-            tline(b.title, x, yy, 11.04, reg, INK, nw); yy -= 16;
-            b.lines.forEach(function (ln) { if (ln === null) { yy -= 4; return; } sh.draw(pg.page, ln, x, yy, 10, INK); yy -= 14; });
-          });
-          y -= tallest;
-          return;
+      if (notes.length) {
+        var nc = notes.map(function () { return { w: 1 / notes.length, align: 'left' }; });
+        var row = { cells: notes.map(function (b) { return { items: points(b[1]) }; }), split: true };
+        var probeH = Math.max.apply(null, notes.map(function (b, i) { return linesH(cellLines({ items: points(b[1]) }, CW / notes.length)); })) + T.padY * 2;
+        if (notes.length > 1 && probeH + 18.24 + 20 <= TOP - FLOOR) {
+          blockTitle('Remarks', 18.24 + Math.min(probeH, 120));
+          table(nc, notes.map(function (b) { return { t: b[0], align: 'left' }; }), [row]);
+        } else {
+          blockTitle('Remarks', 60);
+          table([{ w: 0.26, align: 'left' }, { w: 0.74, align: 'left' }], null,
+            notes.map(function (b) { return { cells: [{ t: b[0], f: reg }, { items: points(b[1]) }], split: true }; }), { labelCol: true });
         }
       }
-      notes.forEach(function (b) { need(52); block(b[0], b[1]); });
     });
 
     // ------------------------------------------------------- Top posts
     if (mdl.top.length) {
       newPage('Top posts');
       pageTitle('Top posts');
-      mdl.top.forEach(function (p, i) {
-        var g = p._group;
-        var img = thumbs[p.id];
-        var thumbW = 78, thumbH = 100;
-        var tx = M + 44 + thumbW + 14, tw = R - tx;
-        var excerpt = words(p.caption).trim() ? sh.linesOf(paragraphsOf(p.caption).filter(function (s) { return s.trim(); }).join(' '), tw, 9.5, book) : [];
-        var ex = excerpt.slice(0, 4);
-        var notable = words(p.notable).trim() ? sh.linesOf(p.notable, tw, 9.5, book) : [];
-        var textH = 16 + 13 + 14 + ex.length * 13 + (ex.length ? 6 : 0) + notable.length * 13 + (notable.length ? 6 : 0);
-        var entryH = Math.max(thumbH, textH) + 18;
-        need(entryH);
-        var top = y;
-        text(String(i + 1), M, top - 22, 26, med, ACCENT);
-        thumbBox(img, M + 44, top, thumbW, thumbH, p.title);
-        var ty = top - 9;
-        sh.linesOf(p.title || 'Untitled post', tw, 12, med).slice(0, 2).forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, 12, INK); ty -= 15; });
-        tline([g ? g.label : '', dayWord(p.posted_on), typeWord(p)].filter(Boolean).join('  ·  '), tx, ty, 8.5, book, MUTE, tw); ty -= 13;
-        var ml = metricPairs(p, g).filter(function (m) { return !m.na; }).map(function (m) { return m.value + ' ' + m.label.toLowerCase(); });
-        tline(ml.join('  ·  '), tx, ty, 9.5, reg, INK, tw); ty -= 15;
-        if (ex.length) {
-          ex.forEach(function (ln, k) {
-            if (k === ex.length - 1 && excerpt.length > ex.length) { sh.draw(pg.page, ln, tx, ty, 9.5, SOFT); }
-            else sh.draw(pg.page, ln, tx, ty, 9.5, SOFT);
-            ty -= 13;
-          });
-          
-          ty -= 3;
-        }
-        if (notable.length) {
-          sectionLabel('Remarks', tx, ty); ty -= 12;
-          notable.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, 9.5, INK); ty -= 13; });
-        }
-        y = top - entryH;
-        rule(y + 8, M, R, HAIR, 0.5);
-      });
+      var IMG_W = 72, IMG_H = 96;
+      table([{ w: 0.08 }, { w: 0.2 }, { w: 0.72, align: 'left' }],
+        ['Rank', 'Post', { t: 'Details', align: 'left' }],
+        mdl.top.map(function (p, i) {
+          var gp = p._group;
+          var dw = CW * 0.72 - T.padX * 2;
+          var cap = words(p.caption).trim() ? sh.linesOf(paragraphsOf(p.caption).filter(function (s) { return s.trim(); }).join(' '), dw, 8.5, book).slice(0, 3) : [];
+          var notable = words(p.notable).trim() ? sh.linesOf(p.notable, dw, 9, book) : [];
+          var metrics = [];
+          if (gp && gp.volume) metrics.push([METRIC_WORD[gp.volume], fmt(p[gp.volume])]);
+          metrics.push([engWord(gp), fmt(engOf(p))]);
+          metrics.push(['Engagement rate', pct(erOf(p))]);
+          var textH = 83 + (cap.length ? cap.length * 11 + 6 : 0) + (notable.length ? 12 + notable.length * 12 : 0);
+          var h = Math.max(IMG_H + 12, textH + 8);
+          return { minH: h, cells: [
+            { t: String(i + 1), f: med, size: 14, align: 'center' },
+            { fn: function (x, top, w, hh) { thumbIn(p, x + (w - IMG_W) / 2, top - (hh - IMG_H) / 2, IMG_W, IMG_H); }, h: h },
+            { fn: function (x, top, w, hh) {
+              var tx = x + T.padX, ty = top - 16;
+              tline(clip(postName(p), dw, 11, med), tx, ty, 11, med, INK); ty -= 13;
+              tline([gp ? gp.label : '', dayWord(p.posted_on), typeWord(p)].filter(Boolean).join('  ·  '), tx, ty, 8, book, SOFT, dw); ty -= 10;
+              // The figures as a small table of their own.
+              var mw = Math.min(110, dw / metrics.length);
+              metrics.forEach(function (m, k) {
+                var mx = tx + k * mw;
+                rect(mx, ty - 13, mw, 13, FILL); frame(mx, ty - 13, mw, 13);
+                center(m[0], mx + mw / 2, ty - 9.4, 7.5, reg, INK);
+                frame(mx, ty - 30, mw, 17);
+                center(m[1], mx + mw / 2, ty - 25, 10, med, INK);
+              });
+              ty -= 44;
+              cap.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, 8.5, SOFT); ty -= 11; });
+              if (cap.length) ty -= 6;
+              if (notable.length) {
+                tline('Remarks', tx, ty, 8.5, reg, INK); ty -= 12;
+                notable.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, 9, INK); ty -= 12; });
+              }
+            }, h: h }
+          ] };
+        }));
     }
-
-    // ------------------------------------------------------- Remarks
-    (function remarks() {
-      var ins = rep.insights || {};
-      var sections = [
-        ['Highlights', ins.performed_well],
-        ['Performance drivers', ins.why_well],
-        ['Underperformance', ins.underperformed],
-        ['Opportunities', ins.opportunities],
-        ['Improvements', ins.improvements],
-        ['Action plan', ins.next_actions]
-      ].filter(function (s) { return words(s[1]).trim(); });
-      if (!sections.length) return;
-      newPage('Remarks and recommendations');
-      pageTitle('Remarks and recommendations');
-      if (words(ins.executive_summary).trim()) { paraBlock(ins.executive_summary, M, CW, 11, 16, book, INK); y -= 6; }
-      sections.forEach(function (s) {
-        subTitle(s[0]);
-        var ps = points(s[1]);
-        ps.forEach(function (p, i) {
-          var lines = sh.linesOf(p, CW - 22, 10.5, book);
-          need(15.5 * Math.min(2, lines.length));
-          text(String(i + 1), M, y, 10.5, med, ACCENT);
-          lines.forEach(function (ln, k) { if (k) need(15.5); sh.draw(pg.page, ln, M + 22, y, 10.5, INK); y -= 15.5; });
-          y -= 5;
-        });
-        y -= 4;
-      });
-    })();
 
     // ------------------------------------------------------- Appendix
     (function appendix() {
-      var all = mdl.groups.reduce(function (a, g) { return a.concat(g.posts); }, []);
+      var all = mdl.groups.reduce(function (a, gg) { return a.concat(gg.posts); }, []);
       if (!all.length) return;
       newPage('Appendix: all posts');
       pageTitle('Appendix: all posts');
-      var thumbW = Math.round(CW * 0.3), thumbHMax = 170;
-      var tx = M + thumbW + GUT, tw = R - tx;
-      var current = null;
-      mdl.groups.forEach(function (g) {
-        g.posts.forEach(function (p, idx) {
-          var img = thumbs[p.id];
-          var d = img ? fitImage(img, thumbW, thumbHMax) : { w: thumbW, h: Math.min(thumbHMax, thumbW * 1.1) };
-          var ctx = [g.label, dayWord(p.posted_on), typeWord(p), p.theme].filter(function (s) { return words(s).trim(); }).join('  ·  ');
-          var titleLines = sh.linesOf(p.title || 'Untitled post', tw, 12, med);
-          var capParas = paragraphsOf(p.caption);
-          var capLines = [];
-          capParas.forEach(function (cp) {
-            if (!cp.trim()) { capLines.push(null); return; }
-            sh.linesOf(cp, tw, 10, book).forEach(function (ln) { capLines.push(ln); });
-          });
-          while (capLines.length && capLines[capLines.length - 1] === null) capLines.pop();
-          var pairs = metricPairs(p, g);
-          var headH = 12 + titleLines.length * 15 + 4;
-          var bandH = pairs.length ? 34 : 0;
-          var obsLines = words(p.observation).trim() ? sh.linesOf(p.observation, tw, 9.5, book) : [];
-          var urlLines = words(p.url).trim() ? sh.linesOf(p.url, tw, 8.5, book) : [];
-          var LH = 14.5;
-          /* The heading stays with at least the first two caption lines, and a
-             thumbnail never stands at the foot of a page on its own. */
-          var firstBlock = Math.max(headH + Math.min(2, capLines.length) * LH + (capLines.length ? 0 : bandH), d.h + 4);
-          if (current !== g.key) {
-            need(firstBlock + 30);
-            rule(y + 4, M, R, LINE, 0.6); y -= 16;
-            sectionLabel(g.label, M, y); y -= 18;
-            current = g.key;
-          } else need(firstBlock + 8);
-          var top = y;
-          if (img) pg.page.drawImage(img, { x: M, y: top - d.h, width: d.w, height: d.h });
-          else thumbBox(null, M, top, thumbW, d.h, 'No image');
-          var ty = top - 8;
-          sectionLabel(ctx, tx, ty); ty -= 15;
-          titleLines.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, 12, INK); ty -= 15; });
-          ty -= 4;
-          var pageOfTop = pg;
-          // The caption, continuing over the page where it must.
-          for (var i = 0; i < capLines.length; i++) {
-            var ln = capLines[i];
-            if (ty - LH < FLOOR) {
-              newPage(pg.section);
-              ty = y;
-              sectionLabel(clip(p.title || 'Untitled post', tw - 60, 8.5, reg) + ' (cont.)', tx, ty, MUTE); ty -= 16;
-            }
-            if (ln === null) { ty -= LH * 0.55; continue; }
-            sh.draw(pg.page, ln, tx, ty, 10, INK);
-            ty -= LH;
-          }
-          
-          ty -= 4;
-          // Metrics as a compact band under the caption.
-          if (pairs.length) {
-            if (ty - bandH < FLOOR) { newPage(pg.section); ty = y; sectionLabel(clip(p.title || 'Untitled post', tw - 60, 8.5, reg) + ' (cont.)', tx, ty, MUTE); ty -= 16; }
-            rule(ty + 2, tx, R, HAIR, 0.5); ty -= 14;
-            var cellW = Math.min(88, tw / pairs.length);
-            pairs.forEach(function (m, k) {
-              var cx = tx + k * cellW;
-              text(m.value, cx, ty, 11, m.na ? book : med, m.na ? MUTE : INK);
-              sectionLabel(m.label, cx, ty - 11, MUTE);
+      mdl.groups.forEach(function (gg, gi) {
+        if (!gg.posts.length) return;
+        var hasType = gg.posts.some(function (p) { return typeWord(p); });
+        var cols = [{ w: hasType ? 0.36 : 0.44, align: 'left' }, { w: 0.1 }];
+        var head = [{ t: 'Post', align: 'left' }, 'Date'];
+        if (hasType) { cols.push({ w: 0.1 }); head.push('Format'); }
+        cols.push({ w: 0.12 }, { w: 0.16 }, { w: 0.16 });
+        head.push(volWord(gg), engWord(gg), 'Engagement rate');
+        var ROWH = 50;
+        var rows = gg.posts.map(function (p) {
+          var capTxt = paragraphsOf(p.caption).filter(function (s) { return s.trim(); }).join(' ');
+          var remark = words(p.observation).trim();
+          var cells = [{ fn: function (x, top, w, h) {
+            thumbIn(p, x + T.padX, top - 5, 30, h - 10);
+            var tx = x + T.padX + 38, tw = w - T.padX * 2 - 38;
+            var lines = [];
+            lines.push({ s: clip(postName(p), tw, 9, med), f: med, size: 9, c: INK });
+            if (capTxt) sh.linesOf(capTxt, tw, 7.5, book).slice(0, remark ? 1 : 2).forEach(function (ln, k, arr) { lines.push({ ln: ln, size: 7.5, c: SOFT }); });
+            if (remark) lines.push({ s: clip('Remarks: ' + remark, tw, 7.5, book), f: book, size: 7.5, c: INK });
+            var bh = 11 + (lines.length - 1) * 9.5;
+            var ly = top - (h - bh) / 2 - 8;
+            lines.forEach(function (l, k) {
+              if (l.ln) sh.draw(pg.page, l.ln, tx, ly, l.size, l.c); else tline(l.s, tx, ly, l.size, l.f, l.c);
+              ly -= k === 0 ? 11 : 9.5;
             });
-            ty -= 24;
-          }
-          if (urlLines.length) { urlLines.forEach(function (ln) { if (ty - 12 < FLOOR) { newPage(pg.section); ty = y; } sh.draw(pg.page, ln, tx, ty, 8.5, MUTE); ty -= 12; }); ty -= 2; }
-          if (obsLines.length) {
-            if (ty - 14 - obsLines.length * 13 < FLOOR) { newPage(pg.section); ty = y; }
-            sectionLabel('Remarks', tx, ty); ty -= 13;
-            obsLines.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, 9.5, INK); ty -= 13; });
-          }
-          var bottom = (pg === pageOfTop) ? Math.min(ty, top - d.h - 4) : ty;
-          y = bottom - 10;
-          if (y - 20 > FLOOR) { rule(y + 2, M, R, HAIR, 0.5); y -= 14; }
+          }, h: ROWH }, shortDay(p.posted_on)];
+          if (hasType) cells.push(typeWord(p) || '');
+          cells.push(fmt(volOf(p)), fmt(engOf(p)), pct(erOf(p)));
+          return { minH: ROWH, cells: cells };
         });
+        var totalCells = [{ t: 'Total', f: reg }, ''];
+        if (hasType) totalCells.push('');
+        totalCells.push({ t: fmt(gg.views), f: med }, { t: fmt(gg.eng), f: med }, { t: pct(gg.er), f: med });
+        rows.push({ fill: FILL, cells: totalCells });
+        if (gi) gap(20);
+        blockTitle(gg.label, 18.24 + ROWH * 2);
+        table(cols, head, rows);
       });
     })();
 
@@ -1025,13 +1173,13 @@
       var rows = [];
       rows.push(['Period', periodW]);
       rows.push(['Source', 'Platform analytics (Meta Business Suite, TikTok Analytics)']);
-      mdl.groups.forEach(function (g) {
+      mdl.groups.forEach(function (gg) {
         var parts = [];
-        if (g.volume) parts.push(METRIC_WORD[g.volume]);
-        if (g.engKey) parts.push(METRIC_WORD[g.engKey].toLowerCase());
-        rows.push([g.label, (parts.length ? parts.join(' and ') + ' per post' : 'No post metrics') + (g.notes ? '. ' + words(g.notes).trim().replace(/\.$/, '') : '')]);
-        if (g.basis) rows.push(['Engagement rate (' + g.label + ')', (g.engKey ? METRIC_WORD[g.engKey] : 'Engagements') + ' ÷ ' + (g.basis === 'followers' ? 'followers at period end' : g.basis)]);
-        g.accounts.forEach(function (a) {
+        if (gg.volume) parts.push(METRIC_WORD[gg.volume]);
+        if (gg.engKey) parts.push(METRIC_WORD[gg.engKey].toLowerCase());
+        rows.push([gg.label, (parts.length ? parts.join(' and ') + ' per post' : 'No post metrics') + (gg.notes ? '. ' + words(gg.notes).trim().replace(/\.$/, '') : '')]);
+        if (gg.basis) rows.push(['Engagement rate (' + gg.label + ')', engWord(gg) + ' ÷ ' + (gg.basis === 'followers' ? 'followers at period end' : gg.basis)]);
+        gg.accounts.forEach(function (a) {
           if (num(a.growth_override) !== null) rows.push([(PLATFORM_WORD[a.platform] || a.platform) + ' follower growth', signed(a.growth_override) + ', as reported' + (words(a.growth_reason).trim() ? ' (' + words(a.growth_reason).trim() + ')' : '')]);
         });
       });
@@ -1040,18 +1188,8 @@
       rows.push(['Ranking', 'Top posts by ' + METRIC_WORD[mdl.rank].toLowerCase()]);
       rows.push(['Document', isDraft ? 'Draft, ' + (stampWord(rep.generated_at) || longDate(new Date().toISOString().slice(0, 10)))
         : 'Version ' + (rep.version_no || 1) + ', issued ' + stampWord(rep.generated_at)]);
-      var labW = 160, vx = M + labW, vw = CW - labW;
-      rows.forEach(function (r) {
-        var ls = sh.linesOf(r[1], vw, 10, book), ll = sh.linesOf(r[0], labW - 12, 10, reg);
-        var rowsN = Math.max(ls.length, ll.length);
-        need(rowsN * 14.5 + 8);
-        ll.forEach(function (ln, k) { sh.draw(pg.page, ln, M, y - k * 14.5, 10, INK); });
-        ls.forEach(function (ln, k) { sh.draw(pg.page, ln, vx, y - k * 14.5, 10, INK); });
-        y -= rowsN * 14.5;
-        y -= 3;
-        rule(y + 8, M, R, HAIR, 0.5);
-        y -= 7;
-      });
+      table([{ w: 0.32, align: 'left' }, { w: 0.68, align: 'left' }], null,
+        rows.map(function (r) { return { cells: [{ t: r[0], f: reg }, r[1]] }; }), { labelCol: true });
     })();
 
     // ------------------------------------------------------- Heads and feet
@@ -1070,120 +1208,11 @@
       text('ADspace', M, HEAD_Y, 16.08, mark, INK);
       if (label) tline(clip(label, R - LABEL_X, 7.92, med), LABEL_X, 782.6, 7.92, med, INK);
       text('PRIVATE & CONFIDENTIAL', M, 49, 7.92, med, INK);
-      /* A title typed in Chinese goes through the shaper upright; Latin is
-         slanted, as the rate card's reference line is set. */
-      if (/^[\u0000-\u024f\u2000-\u206f]*$/.test(refLine)) slant(refLine, M, 30.7, 7.92, book);
+      if (/^[\u0000-ɏ -⁯]*$/.test(refLine)) slant(refLine, M, 30.7, 7.92, book);
       else tline(refLine, M, 30.7, 7.92, book, INK, CW);
       right('Page ' + (i + 1) + ' of ' + n, R, 47, 7.92, book, INK);
     });
     return Promise.resolve(n);
-
-    // ---- Components -----------------------------------------------------------
-    /* Five figures across the column, nothing boxed. */
-    function band(cells) {
-      need(70);
-      var cw = CW / cells.length;
-      rule(y + 6, M, R, LINE, 0.6);
-      y -= 26;
-      cells.forEach(function (c, i) {
-        var x = M + i * cw;
-        var v = String(c.value);
-        var size = v.length > 9 ? 16 : (v.length > 7 ? 19 : 22);
-        var na = v === 'Not available';
-        text(na ? 'Not available' : v, x, y, na ? 11 : size, na ? book : med, na ? MUTE : INK);
-        var ll = sh.linesOf(String(c.label || ''), cw - 10, 8.5, reg).slice(0, 2);
-        var ly = y - 15;
-        ll.forEach(function (ln) { sh.draw(pg.page, ln, x, ly, 8.5, MUTE); ly -= 11; });
-        if (c.note) sh.linesOf(c.note, cw - 10, 8, book).slice(0, 2).forEach(function (ln) { sh.draw(pg.page, ln, x, ly, 8, MUTE); ly -= 10; });
-      });
-      y -= 48;
-      rule(y + 6, M, R, LINE, 0.6);
-      y -= 10;
-    }
-    /* Bars by posting date across the period; several posts on one day sit
-       side by side. The tallest bar carries its title and value. */
-    function chartByDate(x, top, w, h, posts, groups) {
-      var start = dateOf(rep.period_start), end = dateOf(rep.period_end);
-      var dated = posts.filter(function (p) { return dateOf(p.posted_on); });
-      if (!dated.length) { text('No dated posts.', x, top - 12, 9.5, book, MUTE); return; }
-      if (!start || !end) { start = dateOf(dated[0].posted_on); end = dateOf(dated[dated.length - 1].posted_on); }
-      var days = Math.max(1, Math.round((end - start) / 864e5) + 1);
-      var valueOf = function (p) { var g = p._group; return g && g.volume ? num(p[g.volume]) : null; };
-      var maxV = 0;
-      dated.forEach(function (p) { var v = valueOf(p); if (v !== null && v > maxV) maxV = v; });
-      if (!maxV) { text('No data.', x, top - 12, 9.5, book, MUTE); return; }
-      var axisW = 40, plotX = x + axisW, plotW = w - axisW, base = top - h + 16, plotH = h - 30;
-      // Three gridlines with round labels.
-      var step = niceStep(maxV / 3);
-      for (var v = 0; v <= maxV + step * 0.001; v += step) {
-        var yy = base + plotH * (v / (step * Math.ceil(maxV / step)));
-        pg.page.drawLine({ start: { x: plotX, y: yy }, end: { x: x + w, y: yy }, thickness: 0.4, color: HAIR });
-        right(v.toLocaleString('en-GB'), plotX - 6, yy - 3, 7.5, book, MUTE);
-      }
-      var scaleMax = step * Math.ceil(maxV / step);
-      var slot = plotW / days;
-      var byDay = {};
-      dated.forEach(function (p) { var k = Math.round((dateOf(p.posted_on) - start) / 864e5); (byDay[k] = byDay[k] || []).push(p); });
-      var tones = {};
-      groups.forEach(function (g, i) { tones[g.key] = i === 0 ? ACCENT : (i === 1 ? PDF.rgb(0.33, 0.31, 0.28) : mix(PDF, ACCENT, 0.5)); });
-      var peak = null;
-      Object.keys(byDay).forEach(function (k) {
-        var list = byDay[k], gap = 1.2;
-        var bw = Math.max(1.5, (slot - 2 - gap * (list.length - 1)) / list.length);
-        list.forEach(function (p, j) {
-          var v = valueOf(p); if (v === null) return;
-          var bx = plotX + Number(k) * slot + 1 + j * (bw + gap);
-          var bh = Math.max(0.8, plotH * (v / scaleMax));
-          rect(bx, base, bw, bh, tones[p._group.key] || ACCENT);
-          if (v === maxV && !peak) peak = { x: bx + bw / 2, y: base + bh, p: p };
-        });
-      });
-      // Month axis: the 1st, then every fifth day.
-      for (var dd = 0; dd < days; dd++) {
-        var d = new Date(start.getTime() + dd * 864e5);
-        if (dd === 0 || (dd + 1) % 5 === 0 || dd === days - 1) {
-          text(String(d.getDate()) + (dd === 0 ? ' ' + MON3[d.getMonth()] : ''), plotX + dd * slot + 1, base - 11, 7.5, book, MUTE);
-        }
-      }
-      pg.page.drawLine({ start: { x: plotX, y: base }, end: { x: x + w, y: base }, thickness: 0.6, color: LINE });
-      if (peak) {
-        var label = clip((peak.p.title || 'Untitled post') + ', ' + fmt(valueOf(peak.p)), 200, 8, reg);
-        var lw = width(label, 8, reg);
-        var lx = Math.min(Math.max(peak.x - lw / 2, plotX), x + w - lw);
-        text(label, lx, peak.y + 5, 8, reg, INK);
-      }
-      // Legend, top right of the plot, where more than one group is drawn.
-      if (groups.length > 1) {
-        var lxx = x + w;
-        groups.slice().reverse().forEach(function (g) {
-          var lab = g.label, lw2 = width(lab, 7.5, book);
-          lxx -= lw2;
-          text(lab, lxx, top - 2, 7.5, book, MUTE);
-          lxx -= 12;
-          rect(lxx, top - 1, 8, 6, tones[g.key]);
-          lxx -= 14;
-        });
-      }
-    }
-    function niceStep(raw) {
-      var p = Math.pow(10, Math.floor(Math.log10(raw || 1)));
-      var m = raw / p;
-      var s = m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10;
-      return s * p;
-    }
-    /* Horizontal bars, label left, value right. */
-    function hbars(rows) {
-      var maxV = rows.reduce(function (m, r) { return Math.max(m, r.value); }, 0) || 1;
-      var labelW = 200, valW = 50, bx = M + labelW + 10, bw = CW - labelW - 10 - valW;
-      rows.forEach(function (r) {
-        need(18);
-        tline(clip(r.label, labelW - 4, 9, book), M, y, 9, book, INK);
-        var len = Math.max(0.8, bw * (r.value / maxV));
-        rect(bx, y - 1.5, len, 8, ACCENT, r.value === maxV ? 1 : 0.55);
-        right(fmt(r.value), R, y, 9, reg, INK);
-        y -= 16;
-      });
-    }
   }
 
   function fileName(snap, versionNo) {
