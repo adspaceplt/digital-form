@@ -95,7 +95,7 @@ led with the best-performing post and the pages did not follow that template.
 | Cover | Title only, Slate Medium 25.92pt at x 126, baseline 497 | Same title position; client (Slate Regular 14pt) and month (Slate Book 11pt) under it; nothing else |
 | Page title | Slate Regular 18pt, baseline 753.8 | Same |
 | Sub heading | Slate Regular 11pt | Same |
-| Foot, left | `PRIVATE & CONFIDENTIAL` Slate Medium 7.92pt, then `v.2.0.5 exp. 20261231` in Slate Book Italic | Same caption, then the title, the month and the version or draft line |
+| Foot, left | `PRIVATE & CONFIDENTIAL` Slate Medium 7.92pt, then `v.2.0.5 exp. 20261231` in Slate Book Italic | Same caption, then `v.1 issued 20260925` or `Draft 20260925` |
 | Foot, right | `Page n of N`, Slate Book 7.92pt | Same, on the right margin |
 | Ink | #404040 | #404040 |
 
@@ -108,3 +108,19 @@ Three layout faults the SKS render showed were fixed at the same time:
 - the executive summary's lists ran into the foot;
 - appendix thumbnails ran into the foot;
 - a platform page's last two notes spilled onto a page of their own. They now sit side by side where they fit.
+
+## Wording (2026-09-25)
+
+The user asked for corporate, official and straightforward wording, with no
+explanatory sentences anywhere, the foot included. The report prints
+headings, labels, figures and what the team typed, and nothing else:
+
+- page titles carry no sub-line;
+- figure bands carry no notes;
+- no sentence is generated for the headline, the top posts or the appendix;
+- the methodology is a label and value table.
+
+Section names: Executive summary, Top post, Key findings, Next steps,
+Highlights, Areas for improvement, Recommendations, Top posts, Remarks and
+recommendations (Highlights, Performance drivers, Underperformance,
+Opportunities, Improvements, Action plan), Appendix: all posts, Methodology.

@@ -665,33 +665,24 @@
     // ------------------------------------------------------- Executive summary
     (function summary() {
       newPage('Executive summary');
-      pageTitle('Executive summary', periodW + '  ·  ' + listWords(mdl.groups.map(function (g) { return g.label; })) + '  ·  ' + mdl.totals.posts + (mdl.totals.posts === 1 ? ' post' : ' posts'));
+      pageTitle('Executive summary');
       var t = mdl.totals;
       var head = words(rep.headline).trim();
-      if (!head) {
-        var bits = [];
-        bits.push(t.posts + (t.posts === 1 ? ' post' : ' posts') + ' across ' + listWords(mdl.groups.map(function (g) { return g.label; })));
-        if (t.views !== null) bits.push(fmt(t.views) + ' ' + (t.volumeWords.length === 1 ? t.volumeWords[0].toLowerCase() : 'views, reach and impressions'));
-        if (t.eng !== null) bits.push(fmt(t.eng) + ' ' + (t.engWords.length === 1 ? t.engWords[0].toLowerCase() : 'engagements and interactions'));
-        if (t.growth !== null) bits.push(signed(t.growth) + ' followers');
-        head = bits.join(', ') + ' in ' + periodW + '.';
-      }
-      sh.linesOf(head, CW, 14.5, med).slice(0, 4).forEach(function (ln) { sh.draw(pg.page, ln, M, y, 14.5, INK); y -= 20; });
-      y -= 4;
+      if (head) { sh.linesOf(head, CW, 14.5, med).slice(0, 4).forEach(function (ln) { sh.draw(pg.page, ln, M, y, 14.5, INK); y -= 20; }); y -= 4; }
       if (words(rep.intro).trim()) { paraBlock(rep.intro, M, CW, 10.5, 15.5, book, SOFT); }
       y -= 8;
       // The band: five figures, hairlines above and below, nothing boxed.
       var cells = [
-        { label: 'Content published', value: String(t.posts) },
-        { label: 'Net follower growth', value: signed(t.growth), note: mdl.groups.length > 1 ? 'across ' + mdl.accounts.length + ' accounts' : '' },
+        { label: 'Posts published', value: String(t.posts) },
+        { label: 'Follower growth', value: signed(t.growth) },
         { label: t.volumeWords.length === 1 ? 'Total ' + t.volumeWords[0].toLowerCase() : 'Total views, reach and impressions', value: fmt(t.views) },
-        { label: t.engWords.length === 1 ? 'Total ' + t.engWords[0].toLowerCase() : 'Total engagements', value: fmt(t.eng), note: t.engWords.length > 1 ? t.engWords.map(function (w) { return w.toLowerCase(); }).join(' and ') : '' },
-        { label: 'Engagement rate', value: pct(t.er), note: t.basis ? 'of ' + t.basis : 'basis differs by platform' }
+        { label: t.engWords.length === 1 ? 'Total ' + t.engWords[0].toLowerCase() : 'Total engagements', value: fmt(t.eng) },
+        { label: 'Engagement rate', value: pct(t.er) }
       ];
       band(cells);
       y -= 8;
       // One chart: the month, post by post.
-      subTitle(t.volumeWords.length === 1 ? t.volumeWords[0] + ' per post through the month' : 'Views, reach and impressions per post through the month');
+      subTitle(t.volumeWords.length === 1 ? t.volumeWords[0] + ' by post' : 'Views, reach and impressions by post');
       chartByDate(M, y, CW, 104, mdl.posts.filter(function (p) { return p._group; }), mdl.groups);
       y -= 104 + 26;
       // The featured post and the two lists, side by side where there is room.
@@ -700,7 +691,7 @@
       var colL = CW * 0.5 - GUT / 2, colR = CW * 0.5 - GUT / 2, xr = M + colL + GUT;
       var yTop = y;
       if (best) {
-        sectionLabel('Best-performing post', M, y); y -= 14;
+        sectionLabel('Top post', M, y); y -= 14;
         var img = thumbs[best.id];
         var d = thumbBox(img, M, y, 72, 96, best.title);
         var tx = M + 84, tw = colL - 84, ty = y - 9;
@@ -731,7 +722,7 @@
         /* Under the featured post, the two lists side by side. */
         y -= 14;
         var yCols = y, low = y;
-        [[obs, 'Three observations', M], [acts, 'Three next actions', M + halfW + GUT]].forEach(function (c) {
+        [[obs, 'Key findings', M], [acts, 'Next steps', M + halfW + GUT]].forEach(function (c) {
           ly = yCols;
           list(c[1], c[0], c[2], halfW);
           low = Math.min(low, ly);
@@ -744,7 +735,7 @@
           var first = items.length ? sh.linesOf(items[0], CW - 16, 9.5, book).length : 1;
           need(29 + (first <= 4 ? first : 2) * 13); y -= 14;
           sectionLabel(title, M, y); y -= 15;
-          if (!items.length) { text('None recorded.', M, y, 9.5, book, MUTE); y -= 14; return; }
+          if (!items.length) { text('None.', M, y, 9.5, book, MUTE); y -= 14; return; }
           items.forEach(function (it, i) {
             var lines = sh.linesOf(it, CW - 16, 9.5, book);
             need((lines.length <= 4 ? lines.length : 2) * 13);   // a short item is never split
@@ -753,13 +744,13 @@
             y -= 4;
           });
         };
-        flow('Three observations', obs);
-        flow('Three next actions', acts);
+        flow('Key findings', obs);
+        flow('Next steps', acts);
         return;
       }
       function list(title, items, x, w) {
         sectionLabel(title, x, ly); ly -= 15;
-        if (!items.length) { text('None recorded.', x, ly, 9.5, book, MUTE); ly -= 14; return; }
+        if (!items.length) { text('None.', x, ly, 9.5, book, MUTE); ly -= 14; return; }
         items.forEach(function (it, i) {
           var lines = sh.linesOf(it, w - 16, 9.5, book);
           text(String(i + 1), x, ly, 9.5, med, ACCENT);
@@ -767,20 +758,16 @@
           ly -= 4;
         });
       }
-      list('Three observations', obs, xr, colR);
+      list('Key findings', obs, xr, colR);
       ly -= 6;
-      list('Three next actions', acts, xr, colR);
+      list('Next steps', acts, xr, colR);
       y = Math.min(y, ly) - 6;
     })();
 
     // ------------------------------------------------------- Platform pages
     mdl.groups.forEach(function (g) {
       newPage(g.label);
-      var accLine = g.accounts.map(function (a) {
-        var w = PLATFORM_WORD[a.platform] || a.platform;
-        return w + (a.handle ? ' @' + String(a.handle).replace(/^@/, '') : (a.account_name ? ' · ' + a.account_name : ''));
-      }).join('  ·  ');
-      pageTitle(g.label, accLine);
+      pageTitle(g.label);
       if (words(g.summary).trim()) {
         sh.linesOf(g.summary, CW, 13, med).slice(0, 4).forEach(function (ln) { sh.draw(pg.page, ln, M, y, 13, INK); y -= 18; });
         y -= 6;
@@ -788,18 +775,17 @@
       var cells = [{ label: 'Posts', value: String(g.posts.length) }];
       g.accounts.forEach(function (a) {
         var gr = growthOf(a);
-        var note = num(a.followers_start) !== null && num(a.followers_end) !== null ? fmt(a.followers_start) + ' to ' + fmt(a.followers_end) : (num(a.growth_override) !== null ? 'recorded growth' : '');
-        cells.push({ label: (g.accounts.length > 1 ? (PLATFORM_WORD[a.platform] || a.platform) + ' followers' : 'Follower growth'), value: signed(gr), note: note });
+        cells.push({ label: (g.accounts.length > 1 ? (PLATFORM_WORD[a.platform] || a.platform) + ' follower growth' : 'Follower growth'), value: signed(gr) });
       });
       if (g.volume) cells.push({ label: 'Total ' + METRIC_WORD[g.volume].toLowerCase(), value: fmt(g.views) });
       if (g.engKey) cells.push({ label: 'Total ' + METRIC_WORD[g.engKey].toLowerCase(), value: fmt(g.eng) });
-      cells.push({ label: 'Engagement rate', value: pct(g.er), note: g.basis ? 'of ' + g.basis : 'no basis set' });
+      cells.push({ label: 'Engagement rate', value: pct(g.er) });
       band(cells.slice(0, 6));
       y -= 8;
       // Follower movement where both ends are known.
       var movers = g.accounts.filter(function (a) { return num(a.followers_start) !== null && num(a.followers_end) !== null; });
       if (movers.length) {
-        subTitle('Follower movement');
+        subTitle('Follower growth');
         movers.forEach(function (a) {
           need(24);
           var s = num(a.followers_start), e = num(a.followers_end), maxv = Math.max(s, e, 1);
@@ -813,13 +799,13 @@
         y -= 6;
       }
       if (g.volume && g.posts.some(function (p) { return num(p[g.volume]) !== null; })) {
-        subTitle(METRIC_WORD[g.volume] + ' per post, by posting date');
+        subTitle(METRIC_WORD[g.volume] + ' by post');
         need(140);
         chartByDate(M, y, CW, 120, g.posts, [g]);
         y -= 120 + 26;
       }
       if (g.engKey && g.posts.some(function (p) { return engOf(p) !== null; })) {
-        subTitle(METRIC_WORD[g.engKey] + ', the five highest posts');
+        subTitle('Top 5 posts by ' + METRIC_WORD[g.engKey].toLowerCase());
         var rows = g.posts.filter(function (p) { return engOf(p) !== null; }).sort(function (a, b) { return engOf(b) - engOf(a); }).slice(0, 5);
         hbars(rows.map(function (p) { return { label: p.title || 'Untitled post', value: engOf(p), sub: dayWord(p.posted_on) }; }));
         y -= 8;
@@ -855,7 +841,7 @@
       /* The notes a platform page ends on are short, so they stand side by
          side in columns where they fit on the page, rather than one or two
          lines spilling onto a page of their own; long ones stack. */
-      var notes = [['What worked', g.worked], ['What should improve', g.improve], ['Recommended next actions', g.actions]]
+      var notes = [['Highlights', g.worked], ['Areas for improvement', g.improve], ['Recommendations', g.actions]]
         .filter(function (b) { return words(b[1]).trim(); });
       if (notes.length > 1) {
         var nw = (CW - GUT * (notes.length - 1)) / notes.length;
@@ -880,8 +866,8 @@
 
     // ------------------------------------------------------- Top posts
     if (mdl.top.length) {
-      newPage('Top-performing posts');
-      pageTitle('Top-performing posts', 'Ranked by ' + METRIC_WORD[mdl.rank].toLowerCase() + ' across every platform  ·  full captions in the appendix');
+      newPage('Top posts');
+      pageTitle('Top posts');
       mdl.top.forEach(function (p, i) {
         var g = p._group;
         var img = thumbs[p.id];
@@ -907,38 +893,32 @@
             else sh.draw(pg.page, ln, tx, ty, 9.5, SOFT);
             ty -= 13;
           });
-          if (excerpt.length > ex.length) { text('Continued in the appendix.', tx, ty, 8.5, book, MUTE); ty -= 13; }
+          
           ty -= 3;
         }
         if (notable.length) {
-          sectionLabel('Why it stood out', tx, ty); ty -= 12;
+          sectionLabel('Remarks', tx, ty); ty -= 12;
           notable.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, 9.5, INK); ty -= 13; });
         }
         y = top - entryH;
         rule(y + 8, M, R, HAIR, 0.5);
       });
-      if (mdl.mostEngaged && mdl.top.indexOf(mdl.mostEngaged) < 0) {
-        need(30);
-        y -= 4;
-        tline('Most engaged post of the month: ' + (mdl.mostEngaged.title || 'Untitled post') + ' (' + fmt(engOf(mdl.mostEngaged)) + ' ' + ((mdl.mostEngaged._group && mdl.mostEngaged._group.engKey) ? METRIC_WORD[mdl.mostEngaged._group.engKey].toLowerCase() : 'engagements') + ', ' + dayWord(mdl.mostEngaged.posted_on) + ').', M, y, 9.5, book, SOFT, CW);
-        y -= 14;
-      }
     }
 
     // ------------------------------------------------------- Remarks
     (function remarks() {
       var ins = rep.insights || {};
       var sections = [
-        ['What performed well', ins.performed_well],
-        ['Why it performed well', ins.why_well],
-        ['What underperformed', ins.underperformed],
+        ['Highlights', ins.performed_well],
+        ['Performance drivers', ins.why_well],
+        ['Underperformance', ins.underperformed],
         ['Opportunities', ins.opportunities],
-        ['Recommended improvements', ins.improvements],
-        ['Actions for the following month', ins.next_actions]
+        ['Improvements', ins.improvements],
+        ['Action plan', ins.next_actions]
       ].filter(function (s) { return words(s[1]).trim(); });
       if (!sections.length) return;
       newPage('Remarks and recommendations');
-      pageTitle('Remarks and recommendations', periodW);
+      pageTitle('Remarks and recommendations');
       if (words(ins.executive_summary).trim()) { paraBlock(ins.executive_summary, M, CW, 11, 16, book, INK); y -= 6; }
       sections.forEach(function (s) {
         subTitle(s[0]);
@@ -958,8 +938,8 @@
     (function appendix() {
       var all = mdl.groups.reduce(function (a, g) { return a.concat(g.posts); }, []);
       if (!all.length) return;
-      newPage('Appendix: every post');
-      pageTitle('Appendix: every post', mdl.totals.posts + (mdl.totals.posts === 1 ? ' post' : ' posts') + '  ·  ' + periodW + '  ·  full captions as published');
+      newPage('Appendix: all posts');
+      pageTitle('Appendix: all posts');
       var thumbW = Math.round(CW * 0.3), thumbHMax = 170;
       var tx = M + thumbW + GUT, tw = R - tx;
       var current = null;
@@ -993,7 +973,7 @@
           } else need(firstBlock + 8);
           var top = y;
           if (img) pg.page.drawImage(img, { x: M, y: top - d.h, width: d.w, height: d.h });
-          else thumbBox(null, M, top, thumbW, d.h, 'No thumbnail');
+          else thumbBox(null, M, top, thumbW, d.h, 'No image');
           var ty = top - 8;
           sectionLabel(ctx, tx, ty); ty -= 15;
           titleLines.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, 12, INK); ty -= 15; });
@@ -1005,17 +985,17 @@
             if (ty - LH < FLOOR) {
               newPage(pg.section);
               ty = y;
-              sectionLabel('Continued  ·  ' + clip(p.title || 'Untitled post', tw - 60, 7.5, reg) + '  ·  ' + g.label, tx, ty, MUTE); ty -= 16;
+              sectionLabel(clip(p.title || 'Untitled post', tw - 60, 8.5, reg) + ' (cont.)', tx, ty, MUTE); ty -= 16;
             }
             if (ln === null) { ty -= LH * 0.55; continue; }
             sh.draw(pg.page, ln, tx, ty, 10, INK);
             ty -= LH;
           }
-          if (!capLines.length) { text('No caption recorded.', tx, ty, 9, book, MUTE); ty -= 14; }
+          
           ty -= 4;
           // Metrics as a compact band under the caption.
           if (pairs.length) {
-            if (ty - bandH < FLOOR) { newPage(pg.section); ty = y; sectionLabel('Continued  ·  ' + clip(p.title || 'Untitled post', tw - 60, 7.5, reg), tx, ty, MUTE); ty -= 16; }
+            if (ty - bandH < FLOOR) { newPage(pg.section); ty = y; sectionLabel(clip(p.title || 'Untitled post', tw - 60, 8.5, reg) + ' (cont.)', tx, ty, MUTE); ty -= 16; }
             rule(ty + 2, tx, R, HAIR, 0.5); ty -= 14;
             var cellW = Math.min(88, tw / pairs.length);
             pairs.forEach(function (m, k) {
@@ -1028,7 +1008,7 @@
           if (urlLines.length) { urlLines.forEach(function (ln) { if (ty - 12 < FLOOR) { newPage(pg.section); ty = y; } sh.draw(pg.page, ln, tx, ty, 8.5, MUTE); ty -= 12; }); ty -= 2; }
           if (obsLines.length) {
             if (ty - 14 - obsLines.length * 13 < FLOOR) { newPage(pg.section); ty = y; }
-            sectionLabel('Observation', tx, ty); ty -= 13;
+            sectionLabel('Remarks', tx, ty); ty -= 13;
             obsLines.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, 9.5, INK); ty -= 13; });
           }
           var bottom = (pg === pageOfTop) ? Math.min(ty, top - d.h - 4) : ty;
@@ -1040,27 +1020,38 @@
 
     // ------------------------------------------------------- Methodology
     (function method() {
-      newPage('Methodology and data notes');
-      pageTitle('Methodology and data notes', periodW);
-      var lines = [];
-      lines.push('Figures are the platforms’ own, read from Meta Business Suite, TikTok and each platform’s analytics for the posts published in ' + periodW + ', and entered into the ADspace Digital Portal by the account team.');
-      lines.push('A metric printed as 0 was measured and was zero. A metric printed as Not available was not provided by the platform for that post, and is left out of every total it would otherwise be part of.');
-      lines.push('Views, reach and impressions are kept apart and never added together: each platform is totalled on the metric it reports, named on its own page.');
+      newPage('Methodology');
+      pageTitle('Methodology');
+      var rows = [];
+      rows.push(['Period', periodW]);
+      rows.push(['Source', 'Platform analytics (Meta Business Suite, TikTok Analytics)']);
       mdl.groups.forEach(function (g) {
         var parts = [];
-        if (g.volume) parts.push(METRIC_WORD[g.volume].toLowerCase());
+        if (g.volume) parts.push(METRIC_WORD[g.volume]);
         if (g.engKey) parts.push(METRIC_WORD[g.engKey].toLowerCase());
-        var s = g.label + ': ' + (parts.length ? parts.join(' and ') + ' per post' : 'no post metrics recorded') +
-          (g.basis ? '. Engagement rate is ' + (g.engKey ? METRIC_WORD[g.engKey].toLowerCase() : 'engagements') + ' divided by ' + (g.basis === 'followers' ? 'followers at the end of the period' : 'total ' + g.basis) + '.' : '. No engagement-rate basis was set.') +
-          (g.notes ? ' ' + g.notes : '');
-        lines.push(s);
+        rows.push([g.label, (parts.length ? parts.join(' and ') + ' per post' : 'No post metrics') + (g.notes ? '. ' + words(g.notes).trim().replace(/\.$/, '') : '')]);
+        if (g.basis) rows.push(['Engagement rate (' + g.label + ')', (g.engKey ? METRIC_WORD[g.engKey] : 'Engagements') + ' ÷ ' + (g.basis === 'followers' ? 'followers at period end' : g.basis)]);
         g.accounts.forEach(function (a) {
-          if (num(a.growth_override) !== null) lines.push((PLATFORM_WORD[a.platform] || a.platform) + ' follower growth of ' + signed(a.growth_override) + ' is a recorded figure' + (words(a.growth_reason).trim() ? ': ' + words(a.growth_reason).trim() : '.') );
+          if (num(a.growth_override) !== null) rows.push([(PLATFORM_WORD[a.platform] || a.platform) + ' follower growth', signed(a.growth_override) + ', as reported' + (words(a.growth_reason).trim() ? ' (' + words(a.growth_reason).trim() + ')' : '')]);
         });
       });
-      lines.push('Best-performing posts are ranked by ' + METRIC_WORD[mdl.rank].toLowerCase() + '; where a platform ranks on a different metric its own page says so. The reasons a post stood out are the account team’s observations, not generated.');
-      lines.push((isDraft ? 'This is a draft generated for internal review on ' : 'Version ' + (rep.version_no || 1) + ' of this report was issued on ') + (stampWord(rep.generated_at) || longDate(new Date().toISOString().slice(0, 10))) + (rep.generated_by_name ? ' by ' + rep.generated_by_name : '') + '. Each issued version is kept with the data it was drawn from.');
-      lines.forEach(function (s) { para(s, M, CW, 10, 14.5, book, INK, true); y -= 8; });
+      rows.push(['Views, reach, impressions', 'Reported separately; not combined']);
+      rows.push(['Not available', 'Metric not provided by the platform; excluded from totals']);
+      rows.push(['Ranking', 'Top posts by ' + METRIC_WORD[mdl.rank].toLowerCase()]);
+      rows.push(['Document', isDraft ? 'Draft, ' + (stampWord(rep.generated_at) || longDate(new Date().toISOString().slice(0, 10)))
+        : 'Version ' + (rep.version_no || 1) + ', issued ' + stampWord(rep.generated_at)]);
+      var labW = 160, vx = M + labW, vw = CW - labW;
+      rows.forEach(function (r) {
+        var ls = sh.linesOf(r[1], vw, 10, book), ll = sh.linesOf(r[0], labW - 12, 10, reg);
+        var rowsN = Math.max(ls.length, ll.length);
+        need(rowsN * 14.5 + 8);
+        ll.forEach(function (ln, k) { sh.draw(pg.page, ln, M, y - k * 14.5, 10, INK); });
+        ls.forEach(function (ln, k) { sh.draw(pg.page, ln, vx, y - k * 14.5, 10, INK); });
+        y -= rowsN * 14.5;
+        y -= 3;
+        rule(y + 8, M, R, HAIR, 0.5);
+        y -= 7;
+      });
     })();
 
     // ------------------------------------------------------- Heads and feet
@@ -1071,9 +1062,8 @@
        not among the portal's fonts, so the line is Slate Book slanted. */
     var n = pages.length;
     var label = String(rep.client_name || '').toUpperCase();
-    var refLine = [rep.title || 'Social Media Accounts Report', periodW,
-      isDraft ? 'Draft for internal review, generated ' + (stampWord(rep.generated_at) || longDate(new Date().toISOString().slice(0, 10)))
-              : 'Version ' + (rep.version_no || 1) + ', issued ' + stampWord(rep.generated_at)].filter(Boolean).join('  ·  ');
+    var ymd = function (iso) { var d = iso ? new Date(iso) : new Date(); return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0'); };
+    var refLine = isDraft ? 'Draft ' + ymd(rep.generated_at) : 'v.' + (rep.version_no || 1) + ' issued ' + ymd(rep.generated_at);
     var slant = function (s, x, yy, size, f) { pg.page.drawText(String(s), { x: x, y: yy, size: size, font: f, color: INK, ySkew: PDF.degrees(12) }); };
     pages.forEach(function (p, i) {
       pg = p;
@@ -1121,7 +1111,7 @@
       var valueOf = function (p) { var g = p._group; return g && g.volume ? num(p[g.volume]) : null; };
       var maxV = 0;
       dated.forEach(function (p) { var v = valueOf(p); if (v !== null && v > maxV) maxV = v; });
-      if (!maxV) { text('No values to chart.', x, top - 12, 9.5, book, MUTE); return; }
+      if (!maxV) { text('No data.', x, top - 12, 9.5, book, MUTE); return; }
       var axisW = 40, plotX = x + axisW, plotW = w - axisW, base = top - h + 16, plotH = h - 30;
       // Three gridlines with round labels.
       var step = niceStep(maxV / 3);
