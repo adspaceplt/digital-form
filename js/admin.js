@@ -13,6 +13,16 @@
      The console rail is this page's, so it asks the chrome to wire that one
      the same way rather than repeating the fallback here. */
   if (window.ADspaceChrome) window.ADspaceChrome.mark('sideLogo', 'sideWordmark');
+  /* Installable, and a lost connection answered with a page that says so.
+     The worker caches nothing else (see /admin/sw.js), so a release still
+     reaches everybody on their next load. */
+  try {
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/admin/sw.js', { scope: '/admin/' }).catch(function () {});
+      });
+    }
+  } catch (e) {}
   if (!API.configured || !db) { $('notConfigured').hidden = false; return; }
 
   /* One dropdown in plain language beats two dropdowns of jargon. */
