@@ -851,8 +851,9 @@
     if (key === 'work' && window.ADspaceOps && window.ADspaceOps.clientWork) {
       window.ADspaceOps.clientWork($('crmWorkPane'), state.client);
     }
-    /* The monthly reports are drawn by their own script, which owns the
-       editor, the publish steps and the PDF. */
+    /* The client's finished reports, drawn by the report script: the reports
+       are prepared in the Reports section, and this tab lists what came out
+       of it, the way Documents lists the letters. */
     if (key === 'reports' && window.ADspaceReports) {
       window.ADspaceReports.clientPane($('crmReportsPane'), state.client);
     }
@@ -3533,8 +3534,6 @@
       /* Overview is the default, so it stays out of the address: a link to a
          client is the client, not the client on its first pane. */
       if (o.client && pane && pane !== 'overview') o.tab = pane;
-      /* An open report is part of the address, so a refresh lands on it. */
-      if (o.client && pane === 'reports' && window.ADspaceReports) o.report = window.ADspaceReports.openId();
       return o;
     },
     byKey: clientByKey,

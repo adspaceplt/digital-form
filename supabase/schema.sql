@@ -12546,7 +12546,7 @@ create index if not exists sm_report_ads_report_idx on public.sm_report_ads (rep
 alter table public.sm_report_ads enable row level security;
 drop policy if exists sm_ads_all on public.sm_report_ads;
 create policy sm_ads_all on public.sm_report_ads for all to authenticated
-  using (public.allowed('clients.reports', 'view')) with check (public.allowed('clients.reports', 'work'));
+  using (public.allowed('reports', 'view')) with check (public.allowed('reports', 'work'));
 drop trigger if exists sm_ads_guard on public.sm_report_ads;
 create trigger sm_ads_guard before insert or update or delete on public.sm_report_ads
   for each row execute function public.sm_report_child_guard();
@@ -12555,7 +12555,8 @@ create trigger sm_ads_guard before insert or update or delete on public.sm_repor
    form: the status the PDF prints as issued, and the time it was issued.
    The client's market is read through jsonb, because it decides which
    taxes the spend note names and a database without the column still draws
-   the report. */
+   the report. Reports View reads any report; Clients View reads a finished
+   one, which is what the client record's Reports tab shows. */
 create or replace function public.sm_report_snapshot(p_id uuid, p_final boolean default false)
 returns jsonb
 language plpgsql security definer stable set search_path = public as $$
@@ -12563,9 +12564,16 @@ declare
   r public.sm_reports;
   c public.clients;
 begin
-  if not public.allowed('clients.reports', 'view') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('reports', 'view') and not public.allowed('clients', 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
   select * into r from public.sm_reports where id = p_id;
   if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  -- Somebody who reads Clients but not Reports reads the finished report
+  -- only: once it is confirmed, never while it is being prepared.
+  if not public.allowed('reports', 'view') and r.status not in ('confirmed', 'published') then
+    return jsonb_build_object('error', 'denied');
+  end if;
   select * into c from public.clients where id = r.client_id;
   return jsonb_build_object(
     'report', jsonb_build_object(
@@ -12605,7 +12613,7 @@ declare
   totals jsonb := '{}'::jsonb;
   pgroups jsonb;
 begin
-  if me.id is null or not public.allowed('clients.reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if me.id is null or not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
   if p_client is null or not exists (select 1 from public.clients where id = p_client) then
     return jsonb_build_object('error', 'not-found');
   end if;
@@ -12667,7 +12675,7 @@ declare
   me public.team_members := public.ops_me();
   r public.sm_reports;
 begin
-  if me.id is null or not public.allowed('clients.reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if me.id is null or not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
   select * into r from public.sm_reports where id = p_id for update;
   if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
   if r.status <> 'draft' then return jsonb_build_object('error', 'not-draft', 'status', r.status); end if;
@@ -12692,3 +12700,278 @@ begin
 end $$;
 grant execute on function public.sm_report_submit(uuid) to authenticated;
 -- END OF SOCIAL MEDIA ADVERTISING REPORTS
+
+-- =========================================================================
+-- THE REPORTS SECTION
+--
+-- Reports were a part of Clients (`clients.reports`), so a colleague who
+-- prepared reports had to be able to read every client record, and the
+-- report opened on the client's record. They are a section of their own now:
+--
+--   reports View    read every report, preview its PDF
+--   reports Work    start a report, enter its figures and text, submit it,
+--                   revise a published one
+--   reports Manage  also confirm, return, publish, unpublish and delete
+--
+-- A group's level moves across once: its `clients.reports` level where it
+-- set one, else its Clients level (which the part fell back to), `none`
+-- included, and the old key goes. Guarded on the new key, so a re-run moves
+-- nothing. The client record keeps a Reports tab that shows the finished
+-- reports only, read by anybody who reads Clients through the two functions
+-- at the foot of this section; the tables themselves answer Reports alone.
+--
+-- Rollback:
+--   update public.team_roles set access = (access - 'reports')
+--     || jsonb_build_object('clients.reports', access ->> 'reports') where access ? 'reports';
+--   drop function if exists public.sm_client_reports(uuid);
+--   drop function if exists public.sm_report_file(uuid);
+--   and re-run the policies and functions of 2026-09-25-social-media-reports.sql.
+-- =========================================================================
+
+update public.team_roles
+   set access = (access - 'clients.reports')
+       || jsonb_build_object('reports', coalesce(access ->> 'clients.reports', access ->> 'clients', 'none'))
+ where not (access ? 'reports');
+update public.team_members
+   set access = (access - 'clients.reports')
+       || jsonb_build_object('reports', coalesce(access ->> 'clients.reports', access ->> 'clients', 'none'))
+ where not (access ? 'reports');
+
+drop policy if exists sm_reports_read on public.sm_reports;
+create policy sm_reports_read on public.sm_reports for select to authenticated
+  using (public.allowed('reports', 'view'));
+drop policy if exists sm_reports_write on public.sm_reports;
+create policy sm_reports_write on public.sm_reports for update to authenticated
+  using (public.allowed('reports', 'work')) with check (public.allowed('reports', 'work'));
+drop policy if exists sm_platforms_all on public.sm_report_platforms;
+create policy sm_platforms_all on public.sm_report_platforms for all to authenticated
+  using (public.allowed('reports', 'view')) with check (public.allowed('reports', 'work'));
+drop policy if exists sm_posts_all on public.sm_report_posts;
+create policy sm_posts_all on public.sm_report_posts for all to authenticated
+  using (public.allowed('reports', 'view')) with check (public.allowed('reports', 'work'));
+drop policy if exists sm_versions_read on public.sm_report_versions;
+create policy sm_versions_read on public.sm_report_versions for select to authenticated
+  using (public.allowed('reports', 'view'));
+
+-- A report is started for a client from the Reports section, so the client
+-- list is read there too.
+drop policy if exists clients_read on public.clients;
+create policy clients_read on public.clients for select to authenticated
+  using (public.allowed('clients', 'view') or public.allowed('review', 'view')
+      or public.allowed('campaigns', 'view') or public.allowed('reports', 'view'));
+
+/* Back to draft with a note saying what to change. The person who
+   submitted it may take it back while it waits; otherwise it is the
+   reviewer's act, which is Manage. */
+create or replace function public.sm_report_return(p_id uuid, p_note text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  r public.sm_reports;
+begin
+  if me.id is null or not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into r from public.sm_reports where id = p_id for update;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if r.status not in ('review', 'confirmed') then return jsonb_build_object('error', 'not-returnable', 'status', r.status); end if;
+  if not public.allowed('reports', 'manage')
+     and not (r.status = 'review' and r.submitted_by = me.id) then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  if coalesce(btrim(p_note), '') = '' then return jsonb_build_object('error', 'note-required'); end if;
+  perform set_config('adspace.sm_fn', 'on', true);
+  update public.sm_reports set status = 'draft', return_note = btrim(p_note),
+    confirmed_by = null, confirmed_at = null where id = p_id;
+  perform set_config('adspace.sm_fn', 'off', true);
+  perform public.sm_report_log(p_id, 'report.returned', btrim(p_note));
+  return jsonb_build_object('ok', true, 'status', 'draft');
+end $$;
+grant execute on function public.sm_report_return(uuid, text) to authenticated;
+
+/* The internal confirmation: somebody who may manage reports, and never
+   the person who submitted it, reads it and says it is right. */
+create or replace function public.sm_report_confirm(p_id uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  r public.sm_reports;
+begin
+  if me.id is null or not public.allowed('reports', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into r from public.sm_reports where id = p_id for update;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if r.status <> 'review' then return jsonb_build_object('error', 'not-in-review', 'status', r.status); end if;
+  if r.submitted_by = me.id then return jsonb_build_object('error', 'self-confirm'); end if;
+  perform set_config('adspace.sm_fn', 'on', true);
+  update public.sm_reports set status = 'confirmed', confirmed_by = me.id, confirmed_at = now() where id = p_id;
+  perform set_config('adspace.sm_fn', 'off', true);
+  perform public.sm_report_log(p_id, 'report.confirmed');
+  return jsonb_build_object('ok', true, 'status', 'confirmed');
+end $$;
+grant execute on function public.sm_report_confirm(uuid) to authenticated;
+
+/* Publish: the confirmed report is frozen as its version and the client
+   can read it. The same press twice publishes once. */
+create or replace function public.sm_report_publish(p_id uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  r public.sm_reports;
+  snap jsonb;
+  vid uuid;
+begin
+  if me.id is null or not public.allowed('reports', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into r from public.sm_reports where id = p_id for update;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if r.status = 'published' then
+    select id into vid from public.sm_report_versions where report_id = p_id and version_no = r.version_no;
+    return jsonb_build_object('ok', true, 'status', 'published', 'version_id', vid, 'again', true);
+  end if;
+  if r.status <> 'confirmed' then return jsonb_build_object('error', 'not-confirmed', 'status', r.status); end if;
+  snap := public.sm_report_snapshot(p_id, true);
+  perform set_config('adspace.sm_fn', 'on', true);
+  insert into public.sm_report_versions (report_id, version_no, snapshot, published_by)
+  values (p_id, r.version_no, snap, me.name)
+  on conflict (report_id, version_no) do update
+    set snapshot = excluded.snapshot, published_by = excluded.published_by, published_at = now(),
+        withdrawn_at = null, withdrawn_by = null, withdraw_reason = null
+  returning id into vid;
+  update public.sm_reports set status = 'published' where id = p_id;
+  perform set_config('adspace.sm_fn', 'off', true);
+  perform public.sm_report_log(p_id, 'report.published');
+  return jsonb_build_object('ok', true, 'status', 'published', 'version_id', vid);
+end $$;
+grant execute on function public.sm_report_publish(uuid) to authenticated;
+
+/* Revise a published report: a new draft with the next version number.
+   The client goes on reading the published version until the revision is
+   published in its place. */
+create or replace function public.sm_report_revise(p_id uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  r public.sm_reports;
+begin
+  if me.id is null or not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into r from public.sm_reports where id = p_id for update;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if r.status <> 'published' then return jsonb_build_object('error', 'not-published', 'status', r.status); end if;
+  perform set_config('adspace.sm_fn', 'on', true);
+  update public.sm_reports set status = 'draft', version_no = r.version_no + 1, return_note = null,
+    submitted_by = null, submitted_at = null, confirmed_by = null, confirmed_at = null where id = p_id;
+  perform set_config('adspace.sm_fn', 'off', true);
+  perform public.sm_report_log(p_id, 'report.revised');
+  return jsonb_build_object('ok', true, 'status', 'draft', 'version_no', r.version_no + 1);
+end $$;
+grant execute on function public.sm_report_revise(uuid) to authenticated;
+
+/* Take the published version off the client's portal, with a reason. The
+   version is kept, marked withdrawn; a published report goes back to
+   confirmed so it can be published again. */
+create or replace function public.sm_report_unpublish(p_id uuid, p_reason text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  r public.sm_reports;
+  n int;
+begin
+  if me.id is null or not public.allowed('reports', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  if coalesce(btrim(p_reason), '') = '' then return jsonb_build_object('error', 'reason-required'); end if;
+  select * into r from public.sm_reports where id = p_id for update;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  perform set_config('adspace.sm_fn', 'on', true);
+  update public.sm_report_versions set withdrawn_at = now(), withdrawn_by = me.name, withdraw_reason = btrim(p_reason)
+   where report_id = p_id and withdrawn_at is null;
+  get diagnostics n = row_count;
+  if n = 0 then
+    perform set_config('adspace.sm_fn', 'off', true);
+    return jsonb_build_object('error', 'not-published');
+  end if;
+  if r.status = 'published' then
+    update public.sm_reports set status = 'confirmed' where id = p_id;
+  end if;
+  perform set_config('adspace.sm_fn', 'off', true);
+  perform public.sm_report_log(p_id, 'report.unpublished', btrim(p_reason));
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.sm_report_unpublish(uuid, text) to authenticated;
+
+/* A report that was never published may be deleted, with its period typed
+   back. One that a client has read is not: unpublish it instead, so the
+   record of what the client was shown stands. */
+create or replace function public.sm_report_delete(p_id uuid, p_confirm text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members := public.ops_me();
+  r public.sm_reports;
+  word text;
+  cname text;
+begin
+  if me.id is null or not public.allowed('reports', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  select * into r from public.sm_reports where id = p_id for update;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if exists (select 1 from public.sm_report_versions where report_id = p_id) then
+    return jsonb_build_object('error', 'has-versions');
+  end if;
+  word := public.sm_period_word(r.period_start, r.period_end);
+  if lower(btrim(coalesce(p_confirm, ''))) <> lower(word) then return jsonb_build_object('error', 'confirm-mismatch'); end if;
+  select name into cname from public.clients where id = r.client_id;
+  perform set_config('adspace.sm_fn', 'on', true);
+  delete from public.sm_reports where id = p_id;
+  perform set_config('adspace.sm_fn', 'off', true);
+  insert into public.activity_log (actor, action, subject, detail)
+  values (me.name, 'report.deleted', cname, word || ' · v' || r.version_no);
+  return jsonb_build_object('ok', true);
+end $$;
+grant execute on function public.sm_report_delete(uuid, text) to authenticated;
+
+/* The client record's Reports tab: a client's finished reports, for
+   anybody who reads Clients or Reports. Finished is confirmed or published,
+   or a report being revised whose earlier version the client still reads. */
+create or replace function public.sm_client_reports(p_client uuid)
+returns jsonb
+language plpgsql security definer stable set search_path = public as $$
+begin
+  if not public.allowed('clients', 'view') and not public.allowed('reports', 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  return jsonb_build_object('reports', coalesce((
+    select jsonb_agg(jsonb_build_object('id', r.id, 'kind', r.kind, 'period_start', r.period_start,
+             'period_end', r.period_end, 'status', r.status, 'version_no', r.version_no,
+             'confirmed_at', r.confirmed_at, 'live_version', v.version_no, 'published_at', v.published_at)
+           order by r.period_start desc, r.kind)
+      from public.sm_reports r
+      left join lateral (select x.version_no, x.published_at from public.sm_report_versions x
+                          where x.report_id = r.id and x.withdrawn_at is null
+                          order by x.version_no desc limit 1) v on true
+     where r.client_id = p_client
+       and (r.status in ('confirmed', 'published') or v.version_no is not null)), '[]'::jsonb));
+end $$;
+grant execute on function public.sm_client_reports(uuid) to authenticated;
+
+/* The file of a finished report: the version the client reads where one is
+   published, else the confirmed report as it stands. */
+create or replace function public.sm_report_file(p_id uuid)
+returns jsonb
+language plpgsql security definer stable set search_path = public as $$
+declare
+  r public.sm_reports;
+  snap jsonb;
+begin
+  if not public.allowed('clients', 'view') and not public.allowed('reports', 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into r from public.sm_reports where id = p_id;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select x.snapshot into snap from public.sm_report_versions x
+   where x.report_id = p_id and x.withdrawn_at is null order by x.version_no desc limit 1;
+  if snap is not null then return jsonb_build_object('snapshot', snap); end if;
+  if r.status <> 'confirmed' then return jsonb_build_object('error', 'not-finished'); end if;
+  return jsonb_build_object('snapshot', public.sm_report_snapshot(p_id, false));
+end $$;
+grant execute on function public.sm_report_file(uuid) to authenticated;
+-- END OF THE REPORTS SECTION

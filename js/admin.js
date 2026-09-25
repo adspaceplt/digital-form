@@ -339,14 +339,14 @@
      a permanent deletion has no way back, so it is `manage`. */
   /* The rail's order, which is also the Activity record's and the Team
      panel's: one sequence across the console rather than three. */
-  var SECTIONS = ['ops', 'clients', 'review', 'campaigns', 'register', 'links', 'services', 'team', 'activity'];
+  var SECTIONS = ['ops', 'clients', 'review', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'activity'];
   /* A part is a pane or a list inside a section, keyed `section.part`. It
      takes its own level where the group set one and its section's where it
      did not, in the page exactly as in `allowed()`, so a group that never
      opened the Parts fold is where it always was. HR letters were a section
      and are `register.hr` now. */
   var PARTS = {
-    clients:   ['contacts', 'billing', 'services', 'documents', 'requests', 'calls', 'reports'],
+    clients:   ['contacts', 'billing', 'services', 'documents', 'requests', 'calls'],
     review:    ['sets', 'settings'],
     campaigns: ['campaigns', 'creators', 'finance'],
     register:  ['documents', 'hr'],
@@ -407,7 +407,6 @@
       });
     }
     if (name === 'work') return may('ops', 'view');
-    if (name === 'reports') return may('clients.reports', 'view');
     /* Team is two jobs gated apart: members and groups, and the monthly
        reviews. Either opens the route; the tab strip shows what is held. */
     if (name === 'team') return may('team', 'view') || may('team.performance', 'view');
@@ -756,6 +755,9 @@
     } else if (section === 'work' && window.ADspaceOps) {
       var w = window.ADspaceOps.urlState();
       Object.keys(w).forEach(function (k) { if (w[k]) q.push(k + '=' + encodeURIComponent(w[k])); });
+    } else if (section === 'reports' && window.ADspaceReports) {
+      var rp = window.ADspaceReports.urlState();
+      Object.keys(rp).forEach(function (k) { if (rp[k]) q.push(k + '=' + encodeURIComponent(rp[k])); });
     } else if (section === 'team' && window.ADspacePerf) {
       var pf = window.ADspacePerf.urlState();
       Object.keys(pf).forEach(function (k) { if (pf[k]) q.push(k + '=' + encodeURIComponent(pf[k])); });

@@ -1,14 +1,19 @@
 /*
- * Social media reports — the client record's Reports pane.
+ * Reports — the console's Reports section, and the client record's tab.
  *
- * A client's monthly report is prepared here, checked by somebody else,
- * and only then published to the client's own portal. The steps and who may
- * take each are the database's (`sm_report_*` in supabase/schema.sql); this
- * page draws the one next step the reader may take and names a refusal in
- * the team's words. A report is edited only while it is a draft: the
- * database refuses the rest, and the page draws it read only.
+ * A client's monthly report is started, entered, checked and published here,
+ * in its own section (`?s=reports`), so a colleague can prepare reports
+ * without reading client records. The client record's Reports tab lists the
+ * finished reports only (confirmed or published), the way its Documents tab
+ * lists the letters.
  *
- *   Draft      Submit for review            clients.reports Work
+ * A report is entered in four steps: its figures, its rows (accounts and
+ * posts, or ads), the commentary, then Check and submit. The steps and who
+ * may take each are the database's (`sm_report_*` in supabase/schema.sql);
+ * this page draws the one next step the reader may take and names a refusal
+ * in the team's words. A report is edited only while it is a draft.
+ *
+ *   Draft      Submit for review            reports Work
  *   In review  Confirm / Return             Manage, never the submitter
  *   Confirmed  Publish to client / Return   Manage
  *   Published  Revise, Unpublish            Work / Manage
@@ -26,7 +31,7 @@
   var bridge = window.ADspaceAdmin || {};
   var UI = window.ADspaceState;
   var SM = function () { return window.ADspaceSmReport; };
-  function may(level) { return bridge.may ? bridge.may('clients.reports', level) : false; }
+  function may(level) { return bridge.may ? bridge.may('reports', level) : false; }
   function me() { return bridge.me ? bridge.me() : null; }
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
@@ -45,7 +50,7 @@
   /* The kinds of report the builder makes. Each is one engine of steps —
      draft, review, confirmed, published — with its own entry and its own
      PDF; the type is chosen when a report is started. */
-  var TYPES = [{ key: 'social', name: 'Social media report' }, { key: 'ads', name: 'Social media advertising report' }];
+  var TYPES = [{ key: 'social', name: 'Social media accounts report' }, { key: 'ads', name: 'Social media advertising report' }];
   var TYPE_WORD = {};
   TYPES.forEach(function (t) { TYPE_WORD[t.key] = t.name; });
   var PLATFORMS = [['facebook', 'Facebook'], ['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['rednote', 'rednote'],
@@ -61,17 +66,19 @@
   var FORMAT_WORD = {};
   FORMATS.forEach(function (f) { FORMAT_WORD[f[0]] = f[1]; });
   var BASIS = [['', 'Not calculated'], ['views', 'Views'], ['reach', 'Reach'], ['impressions', 'Impressions'], ['followers', 'Followers at period end']];
-  var INSIGHTS = [
-    ['executive_summary', 'Executive summary', 'One or two sentences on the month.', 3],
-    ['performed_well', 'Key findings', 'One point a line.', 4],
-    ['next_actions', 'Next steps', 'One point a line.', 4],
-    ['why_well', 'Performance drivers', 'One point a line.', 3],
-    ['underperformed', 'Underperformance', 'One point a line.', 3],
-    ['opportunities', 'Opportunities', 'One point a line.', 3],
-    ['improvements', 'Improvements', 'One point a line.', 3]
-  ];
+  /* The commentary a report carries: what the month was, what stood out,
+     what to improve and what comes next. Every page already has its own
+     heading, so nothing here asks for a title or a headline. The three
+     further sections are folded, because most months do not need them. */
+  var TEXT = {
+    social: [['intro', 'Summary', 'Two or three sentences', 4], ['performed_well', 'Key findings', 'One point a line', 4],
+             ['underperformed', 'Areas to improve', 'One point a line', 3], ['next_actions', 'Next steps', 'One point a line', 4]],
+    ads:    [['intro', 'Summary', 'Two or three sentences', 4], ['worked', 'What worked', 'One point a line', 4],
+             ['fix', 'What to fix', 'One point a line', 3], ['focus', 'Focus for next month', 'One point a line', 3]]
+  };
+  var TEXT_MORE = [['why_well', 'Performance drivers'], ['opportunities', 'Opportunities'], ['improvements', 'Improvements']];
   var SAID = {
-    'denied': 'This needs a higher access level for Social media reports.',
+    'denied': 'This needs a higher access level for Reports.',
     'not-found': 'This report no longer exists.',
     'exists': 'A report for this period already exists.',
     'bad-period': 'The period must end on or after the day it starts.',
@@ -79,13 +86,14 @@
     'no-platforms': 'Add an account before submitting.',
     'no-posts': 'Add the month\'s posts before submitting.',
     'no-ads': 'Add the period\'s ads before submitting.',
-    'bad-kind': 'Advertising reports need a database update. Run the 2026-09-25 ads report migration.',
+    'bad-kind': 'Reports need a database update. Run the 2026-09-25 report builder migration.',
     'note-required': 'Say what needs changing.',
     'not-returnable': 'Only a report in review or confirmed can be returned.',
     'not-in-review': 'Only a report in review can be confirmed.',
     'self-confirm': 'Somebody else confirms a report you submitted.',
     'not-confirmed': 'Confirm the report before publishing it.',
     'not-published': 'This report is not published.',
+    'not-finished': 'This report is not finished yet.',
     'reason-required': 'Give a reason.',
     'has-versions': 'A report the client has seen cannot be deleted. Unpublish it instead.',
     'confirm-mismatch': 'That does not match the period.',
@@ -97,7 +105,7 @@
     var m = String((e && (e.error || e.message)) || e || '');
     var key = Object.keys(SAID).filter(function (k) { return m.indexOf(k) > -1; })[0];
     if (key) return SAID[key];
-    if (/function .* does not exist|schema cache/i.test(m)) return 'Reports need a database update. Run the 2026-09-25 migration.';
+    if (/function .* does not exist|schema cache/i.test(m)) return 'Reports need a database update. Run the 2026-09-25 report builder migration.';
     return m || 'Not saved.';
   }
 
@@ -118,85 +126,91 @@
     return '<span class="chip ' + w[1] + '">' + esc(w[0]) + '</span>';
   }
   function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
 
   var ICON = {
     back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
     more: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>',
     file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>',
-    close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>'
+    close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+    tick: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+    go: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>'
   };
 
   // ---- State ----------------------------------------------------------------
-  var st = { host: null, client: null, list: [], versions: {}, open: null, platforms: [], posts: [], busy: false };
+  /* `host` is the editor's box in the Reports section; `client` is the open
+     report's client, read with the report. */
+  var st = { host: null, client: null, open: null, platforms: [], posts: [], ads: [], busy: false, step: '' };
 
-  // ---- The pane ---------------------------------------------------------------
+  // ---- The client record's Reports tab: the finished reports only ------------
   function clientPane(host, client) {
     if (!host || !client) return;
-    var same = st.client && st.client.id === client.id && st.host === host;
-    st.host = host; st.client = client;
-    var want = new URLSearchParams(location.search).get('report');
-    if (want && (!st.open || st.open.id !== want)) { openReport(want, true); return; }
-    if (!want && st.open && same) { paintEditor(); return; }
-    st.open = null;
-    loadList();
-  }
-
-  function loadList() {
-    var host = st.host;
+    var canOpen = may('view');
     host.innerHTML = '<div class="viewhead rp-viewhead"><h3>Reports</h3>' +
-      (may('work') ? '<button class="btn btn-primary" type="button" data-a="new">' + ICON.plus + 'New report</button>' : '') +
-      '</div><div class="rp-listbox"></div><div class="msg" data-m="list"></div>';
-    var btn = host.querySelector('[data-a="new"]');
-    if (btn) btn.addEventListener('click', function () { newSheet(btn); });
-    var box = host.querySelector('.rp-listbox');
-    UI.skeleton(box, 3);
-    db.from('sm_reports').select('id, title, period_start, period_end, status, version_no, updated_at, return_note')
-      .eq('client_id', st.client.id).order('period_start', { ascending: false }).then(function (r) {
-        if (r.error) { UI.failLine(box, 'reports', said(r.error), loadList); return; }
-        st.list = r.data || [];
-        var ids = st.list.map(function (x) { return x.id; });
-        if (!ids.length) { paintList(); return; }
-        db.from('sm_report_versions').select('id, report_id, version_no, published_at, withdrawn_at')
-          .in('report_id', ids).then(function (v) {
-            st.versions = {};
-            (v.data || []).forEach(function (x) {
-              if (x.withdrawn_at) return;
-              var cur = st.versions[x.report_id];
-              if (!cur || x.version_no > cur.version_no) st.versions[x.report_id] = x;
-            });
-            paintList();
-          });
+      (canOpen ? '<button class="btn btn-sm" type="button" data-a="hub">Open in Reports</button>' : '') +
+      '</div><div class="rp-outbox"></div><div class="msg" data-m="out"></div>';
+    var hubBtn = host.querySelector('[data-a="hub"]');
+    if (hubBtn) hubBtn.addEventListener('click', function () { goReport(''); });
+    var box = host.querySelector('.rp-outbox');
+    UI.skeleton(box, 2);
+    db.rpc('sm_client_reports', { p_client: client.id }).then(function (r) {
+      var d = r.data || {};
+      if (r.error || d.error) { UI.failLine(box, 'reports', said(r.error || d), function () { clientPane(host, client); }); return; }
+      var rows = d.reports || [];
+      if (!rows.length) { UI.emptyLine(box, 'No finished reports.'); return; }
+      box.innerHTML = '<div class="crm-table softpanel rp-out-table">' +
+        '<div class="crm-head rp-out-row"><span>Report</span><span>Status</span><span>Version</span><span></span></div>' +
+        rows.map(function (x) {
+          var live = x.live_version != null;
+          return '<div class="crm-row rp-out-row" data-id="' + esc(x.id) + '">' +
+            '<span class="rp-name"><b>' + esc(periodWord(x.period_start, x.period_end)) + '</b><small>' + esc(TYPE_WORD[x.kind] || '') + '</small></span>' +
+            '<span class="rp-state">' + chip(live ? 'published' : 'confirmed') + '</span>' +
+            '<span class="rp-ver">' + (live ? 'Version ' + x.live_version + ', ' + esc(stampWord(x.published_at))
+                                             : 'Version ' + x.version_no + ', not yet published') + '</span>' +
+            '<span class="rp-out-act"><button class="btn btn-sm" type="button" data-a="dl">' + ICON.file + 'Download</button></span></div>';
+        }).join('') + '</div>';
+      var m = host.querySelector('[data-m="out"]');
+      Array.prototype.forEach.call(box.querySelectorAll('[data-a="dl"]'), function (b) {
+        b.addEventListener('click', function () {
+          var id = b.closest('[data-id]').getAttribute('data-id');
+          b.disabled = true; say(m, 'Drawing the PDF…');
+          db.rpc('sm_report_file', { p_id: id }).then(function (x) {
+            var got = x.data || {};
+            if (x.error || got.error || !got.snapshot) throw new Error(x.error ? x.error.message : (got.error || 'not-found'));
+            if (got.snapshot.error) throw new Error(got.snapshot.error);
+            return saveFile(got.snapshot);
+          }).then(function (warn) {
+            b.disabled = false;
+            say(m, warn ? 'Downloaded. ' + warn : 'Downloaded.', warn ? 'warn' : 'ok');
+          }).catch(function (e) { b.disabled = false; say(m, said(e), 'err'); });
+        });
       });
-  }
-
-  function paintList() {
-    var box = st.host.querySelector('.rp-listbox');
-    if (!box) return;
-    if (!st.list.length) {
-      UI.emptyLine(box, 'No reports.', may('work') ? 'Start the first report' : null, may('work') ? function () { newSheet(st.host.querySelector('[data-a="new"]')); } : null);
-      return;
-    }
-    box.innerHTML = '<div class="crm-table softpanel rp-table">' +
-      '<div class="crm-head rp-row"><span>Period</span><span>Version</span><span>On the client portal</span><span>Status</span><span></span></div>' +
-      st.list.map(function (x) {
-        var live = st.versions[x.id];
-        return '<button class="crm-row rp-row" type="button" data-id="' + esc(x.id) + '">' +
-          '<span class="rp-name"><b>' + esc(periodWord(x.period_start, x.period_end)) + '</b><small>' + esc(x.title) + '</small></span>' +
-          '<span class="rp-ver">v' + x.version_no + '</span>' +
-          '<span class="rp-live">' + (live ? 'Version ' + live.version_no + ', ' + esc(stampWord(live.published_at)) : '<span class="mute">Not published</span>') + '</span>' +
-          '<span class="rp-state">' + chip(x.status) + '</span>' +
-          '<span class="rp-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>' +
-          '</button>';
-      }).join('') + '</div>';
-    Array.prototype.forEach.call(box.querySelectorAll('.rp-row[data-id]'), function (b) {
-      b.addEventListener('click', function () { openReport(b.getAttribute('data-id')); });
     });
   }
 
-  /* The open report is in the address through the record's own writer, and
-     opening one is a move somebody made, so it pushes an entry. */
-  function setAddress() { if (bridge.pushUrl) bridge.pushUrl(); }
+  /* Draw a snapshot and hand the browser the file. Resolves with any warning
+     the engine raised (a logo it could not load), else nothing. */
+  function saveFile(snap) {
+    if (!SM()) return Promise.reject(new Error('The report engine did not load. Refresh the page.'));
+    return SM().render(snap).then(function (out) {
+      var blob = new Blob([out.bytes], { type: 'application/pdf' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = SM().fileName(snap);
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 30000);
+      return out.warnings && out.warnings.length ? out.warnings.join(' ') : '';
+    });
+  }
+
+  /* Open a report in the Reports section from anywhere: the address first,
+     then the section, the way the bell opens a task. A blank id opens the
+     list. */
+  function goReport(id) {
+    history.pushState(null, '', '/admin/?s=reports' + (id ? '&report=' + encodeURIComponent(id) : ''));
+    if (bridge.show) bridge.show('reports');
+  }
 
   // ---- A new report -------------------------------------------------------------
   var sheets = {};
@@ -222,28 +236,26 @@
       '<button class="btn btn-quiet" type="button" data-a="cancel">Cancel</button>';
   };
 
-  /* Start a report: its type (drawn once there is more than one), the
-     client where it is started from the Reports route, and the month or a
-     custom period. From a client's record the client is that record. */
-  function newSheet(opener, o) {
-    o = o || {};
+  /* Start a report: the type first, as a segment, then the client and the
+     month (or a custom period). */
+  function newSheet(opener) {
     var box = sheetShell('rpNewSheet', 'New report',
       '<section class="fsec">' +
-        '<div class="row" id="rpNewKindRow"><div><label class="field-label" for="rpNewKind">Report type</label>' +
-          '<select class="select" id="rpNewKind">' + TYPES.map(function (t) { return '<option value="' + t.key + '">' + esc(t.name) + '</option>'; }).join('') + '</select></div></div>' +
-        '<div class="row" id="rpNewClientRow"><div><label class="field-label" for="rpNewClient">Client</label><select class="select" id="rpNewClient"></select></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpNewKind">Report type</label>' +
+          '<select class="select" id="rpNewKind" data-seg>' + TYPES.map(function (t) {
+            return '<option value="' + t.key + '">' + esc(t.name.replace(/ report$/, '')) + '</option>';
+          }).join('') + '</select></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpNewClient">Client</label><select class="select" id="rpNewClient"></select></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpNewMonth">Month</label><input class="input" id="rpNewMonth" type="month"></div></div>' +
       '<details class="fmore" data-none="Whole month" data-some="Custom period"><summary>Custom period</summary>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpNewStart">Start</label><input class="input" id="rpNewStart" type="date"></div>' +
         '<div><label class="field-label" for="rpNewEnd">End</label><input class="input" id="rpNewEnd" type="date"></div></div></details>' +
       '</section>', FOOT('Create'));
-    $('rpNewKindRow').hidden = TYPES.length < 2;
-    $('rpNewClientRow').hidden = !o.clients;
-    if (o.clients) {
-      $('rpNewClient').innerHTML = '<option value="">Choose a client</option>' + o.clients.map(function (c) {
-        return '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>';
-      }).join('');
-    }
+    $('rpNewClient').innerHTML = '<option value="">Choose a client</option>' + hub.clients.map(function (c) {
+      return '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>';
+    }).join('');
+    $('rpNewKind').value = ($('rhKind') && $('rhKind').value) || 'social';
+    if (window.ADspaceForm) window.ADspaceForm.paint($('rpNewKind'));
     var now = new Date();
     var last = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     $('rpNewMonth').value = last.getFullYear() + '-' + String(last.getMonth() + 1).padStart(2, '0');
@@ -253,7 +265,7 @@
     var go = box.querySelector('[data-a="go"]');
     go.onclick = function () {
       var m = $('rpNewMonth').value, a = $('rpNewStart').value, b = $('rpNewEnd').value;
-      var client = o.clients ? $('rpNewClient').value : (st.client && st.client.id);
+      var client = $('rpNewClient').value;
       if (!client) { say(sm, 'Choose a client.', 'err'); $('rpNewClient').focus(); return; }
       if (!a || !b) {
         if (!/^\d{4}-\d{2}$/.test(m)) { say(sm, 'Choose a month.', 'err'); return; }
@@ -267,7 +279,6 @@
         var id = d.id;
         if (r.error || (d.error && !(d.error === 'exists' && id))) { say(sm, said(r.error || d), 'err'); return; }
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
-        if (o.clients) { openFromHub(client, id); return; }
         openReport(id);
       });
     };
@@ -275,12 +286,33 @@
   }
 
   // ---- One report -----------------------------------------------------------------
+  /* The steps a report is entered in. The last is where it is checked and
+     handed on; a report that has left draft opens there, because that is
+     where its next step is. */
+  var STEPS = {
+    social: [['accounts', 'Accounts'], ['posts', 'Posts'], ['text', 'Commentary'], ['check', 'Check and submit']],
+    ads:    [['figures', 'Figures'], ['ads', 'Ads'], ['text', 'Commentary'], ['check', 'Check and submit']]
+  };
+  function stepsOf(r) { return STEPS[r && r.kind === 'ads' ? 'ads' : 'social']; }
+  function firstStep() {
+    var r = st.open;
+    if (!r || r.status !== 'draft') return 'check';
+    var s = stepsOf(r);
+    for (var i = 0; i < s.length - 1; i++) if (!stepDone(s[i][0])) return s[i][0];
+    return 'check';
+  }
+
   function openReport(id, fromAddress) {
-    st.open = { id: id };
-    if (!fromAddress) setAddress();
+    var same = st.open && st.open.id === id && st.open.client_id;
+    st.open = st.open && st.open.id === id ? st.open : { id: id };
+    var want = new URLSearchParams(location.search).get('step');
+    showEditor();
+    if (!fromAddress) { st.step = ''; if (bridge.pushUrl) bridge.pushUrl(); }
+    else if (want) st.step = want;
+    if (same && fromAddress) { paintEditor(); return; }
     var host = st.host;
     host.innerHTML = '<button class="backlink" type="button" data-a="back">' + ICON.back + 'Reports</button><div class="rp-editbox"></div>';
-    host.querySelector('[data-a="back"]').addEventListener('click', function () { st.open = null; setAddress(); loadList(); });
+    host.querySelector('[data-a="back"]').addEventListener('click', function () { st.open = null; goReport(''); });
     UI.skeleton(host.querySelector('.rp-editbox'), 4);
     Promise.all([
       db.from('sm_reports').select('*').eq('id', id).maybeSingle(),
@@ -291,17 +323,19 @@
       var box = host.querySelector('.rp-editbox');
       var bad = got.filter(function (r) { return r.error; })[0];
       if (bad) { UI.failLine(box, 'the report', said(bad.error), function () { openReport(id, true); }); return; }
-      if (!got[0].data || got[0].data.client_id !== st.client.id) { UI.emptyLine(box, 'No such report.'); return; }
+      if (!got[0].data) { UI.emptyLine(box, 'No such report.', 'Back to Reports', function () { goReport(''); }); return; }
       st.open = got[0].data;
       st.platforms = got[1].data || [];
       st.posts = got[2].data || [];
       sortPosts();
       st.openVersions = got[3].data || [];
       st.ads = [];
-      if (st.open.kind !== 'ads') { paintEditor(); return; }
-      db.from('sm_report_ads').select('*').eq('report_id', id).order('position', { ascending: true }).then(function (a) {
-        if (a.error) { UI.failLine(box, 'the ads', said(a.error), function () { openReport(id, true); }); return; }
-        st.ads = a.data || [];
+      var more = [db.from('clients').select('id, name, market, slug').eq('id', st.open.client_id).maybeSingle()];
+      if (st.open.kind === 'ads') more.push(db.from('sm_report_ads').select('*').eq('report_id', id).order('position', { ascending: true }));
+      return Promise.all(more).then(function (x) {
+        if (x[1] && x[1].error) { UI.failLine(box, 'the ads', said(x[1].error), function () { openReport(id, true); }); return; }
+        st.client = (x[0] && x[0].data) || { id: st.open.client_id, name: '' };
+        if (x[1]) { st.ads = x[1].data || []; sortAds(); }
         paintEditor();
       });
     });
@@ -310,68 +344,175 @@
   function editable() { return st.open && st.open.status === 'draft' && may('work'); }
   function myId() { var m = me(); return m && m.id; }
 
-  function paintEditor() {
-    var r = st.open;
-    var box = st.host.querySelector('.rp-editbox');
-    if (!box) { openReport(r.id, true); return; }
-    var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
-    var ed = editable();
-    var head = '<section class="panel rp-head">' +
-      '<div class="rp-head-top"><div class="rp-who"><h3>' + esc(periodWord(r.period_start, r.period_end)) + '</h3>' +
-      '<p class="rp-meta">' + esc(r.title) + ' · Version ' + r.version_no +
-        (live ? ' · On the client portal: version ' + live.version_no + ', ' + esc(stampWord(live.published_at)) : '') + '</p></div>' +
-      '<div class="rp-ctl">' + chip(r.status) + moreMenu(r, live) + '</div></div>' +
-      (r.status === 'draft' && r.return_note ? '<p class="rp-note is-warn"><b>Returned:</b> ' + esc(r.return_note) + '</p>' : '') +
-      '<div class="rp-actions">' + actions(r) + '</div><div class="msg" data-m="head"></div></section>';
-    if (r.kind === 'ads') {
-      box.innerHTML = head +
-        '<div class="rp-sec"><h3 class="ovsec-title">Account figures</h3><div class="rp-totals"></div></div>' +
-        '<div class="rp-sec"><div class="rp-sec-head"><h3 class="ovsec-title">Ads</h3>' +
-          (ed ? '<span class="rp-sec-acts"><button class="btn btn-sm" type="button" data-a="pasteads">Paste rows</button>' +
-            '<button class="btn btn-sm" type="button" data-a="addad">' + ICON.plus + 'Add ad</button></span>' : '') + '</div>' +
-          '<div class="rp-ads"></div></div>' +
-        '<div class="rp-sec"><h3 class="ovsec-title">Report text</h3><div class="rp-text"></div></div>';
-      paintTotals(); paintAds(); paintAdsText();
-      wireHead(box);
-      var ab2, pb2;
-      if ((ab2 = box.querySelector('[data-a="addad"]'))) ab2.addEventListener('click', function () { adSheet(null, ab2); });
-      if ((pb2 = box.querySelector('[data-a="pasteads"]'))) pb2.addEventListener('click', function () { pasteAdsSheet(pb2); });
-      return;
-    }
-    box.innerHTML = head +
-      '<div class="rp-sec"><div class="rp-sec-head"><h3 class="ovsec-title">Accounts</h3>' +
-        (ed ? '<button class="btn btn-sm" type="button" data-a="addacc">' + ICON.plus + 'Add account</button>' : '') + '</div>' +
-        '<div class="rp-accs"></div></div>' +
-      '<div class="rp-sec"><div class="rp-sec-head"><h3 class="ovsec-title">Posts</h3>' +
-        (ed && st.platforms.length ? '<span class="rp-sec-acts"><button class="btn btn-sm" type="button" data-a="paste">Paste rows</button>' +
-          '<button class="btn btn-sm" type="button" data-a="addpost">' + ICON.plus + 'Add post</button></span>' : '') + '</div>' +
-        '<div class="rp-posts"></div></div>' +
-      '<div class="rp-sec"><h3 class="ovsec-title">Report text</h3><div class="rp-text"></div></div>';
-    paintAccounts(); paintPosts(); paintText();
-    wireHead(box);
-    var b;
-    if ((b = box.querySelector('[data-a="addacc"]'))) b.addEventListener('click', function () { accountSheet(null, b); });
-    if ((b = box.querySelector('[data-a="addpost"]'))) { var ab = b; ab.addEventListener('click', function () { postSheet(null, ab); }); }
-    if ((b = box.querySelector('[data-a="paste"]'))) { var pb = b; pb.addEventListener('click', function () { pasteSheet(pb); }); }
+  /* What each step holds, in the words its button says under its name. */
+  function commentaryCount() {
+    var r = st.open || {}, ins = r.insights || {};
+    return TEXT[r.kind === 'ads' ? 'ads' : 'social'].filter(function (x) {
+      return String((x[0] === 'intro' ? (r.intro || ins.executive_summary) : ins[x[0]]) || '').trim();
+    }).length;
+  }
+  function stepDone(k) {
+    var r = st.open || {}, t = r.ads_totals || {};
+    if (k === 'accounts') return st.platforms.length > 0;
+    if (k === 'posts') return st.posts.length > 0;
+    if (k === 'ads') return st.ads.length > 0;
+    if (k === 'figures') return t.reach != null;
+    if (k === 'text') return commentaryCount() > 0;
+    return r.status && r.status !== 'draft';
+  }
+  function stepNote(k) {
+    var r = st.open || {};
+    if (k === 'accounts') return st.platforms.length ? plural(st.platforms.length, 'account') : 'None yet';
+    if (k === 'posts') return st.posts.length ? plural(st.posts.length, 'post') : 'None yet';
+    if (k === 'ads') return st.ads.length ? plural(st.ads.length, 'ad') : 'None yet';
+    if (k === 'figures') return (r.ads_totals || {}).reach != null ? 'Reach entered' : 'Reach not entered';
+    if (k === 'text') { var n = commentaryCount(); return n ? n + ' of 4 written' : 'Not written'; }
+    return (STATUS[r.status] || STATUS.draft)[0];
   }
 
-  /* One next step, named for what pressing it does. Blue only where it hands
-     the report to somebody else: to a reviewer, or to the client. */
-  function actions(r) {
-    var out = [];
-    var mine = r.submitted_by && r.submitted_by === myId();
-    if (r.status === 'draft' && may('work')) out.push('<button class="btn btn-go" type="button" data-a="submit">Submit for review</button>');
-    if (r.status === 'review' && may('manage') && !mine) out.push('<button class="btn btn-primary" type="button" data-a="confirm">Confirm</button>');
-    if (r.status === 'confirmed' && may('manage')) out.push('<button class="btn btn-go" type="button" data-a="publish">Publish to client</button>');
-    if (r.status === 'published' && may('work')) out.push('<button class="btn" type="button" data-a="revise">Revise</button>');
-    if ((r.status === 'review' && (may('manage') || mine)) || (r.status === 'confirmed' && may('manage'))) {
-      out.push('<button class="btn" type="button" data-a="return">' + (r.status === 'review' && mine && !may('manage') ? 'Take back' : 'Return') + '</button>');
-    }
-    out.push('<button class="btn" type="button" data-a="pdf">' + ICON.file + (r.status === 'published' ? 'Download PDF' : 'Preview PDF') + '</button>');
-    if (r.status === 'review' && mine && may('manage')) out.push('<span class="rp-wait">Waiting on another manager to confirm.</span>');
-    else if (r.status === 'review' && !may('manage')) out.push('<span class="rp-wait">Waiting on a manager to confirm.</span>');
-    return out.join('');
+  function paintEditor() {
+    var r = st.open;
+    var box = st.host && st.host.querySelector('.rp-editbox');
+    if (!box || !r || !r.client_id) { openReport(r ? r.id : '', true); return; }
+    if (!st.step || !stepsOf(r).some(function (s) { return s[0] === st.step; })) st.step = firstStep();
+    var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
+    box.innerHTML = '<section class="panel rp-head">' +
+      '<div class="rp-head-top"><div class="rp-who"><h3>' + esc(st.client.name || 'Report') + '</h3>' +
+      '<p class="rp-meta">' + esc(TYPE_WORD[r.kind] || '') + ' · ' + esc(periodWord(r.period_start, r.period_end)) + ' · Version ' + r.version_no +
+        (live ? ' · Version ' + live.version_no + ' on the client portal' : '') + '</p></div>' +
+      '<div class="rp-ctl">' + chip(r.status) +
+        '<button class="btn btn-sm" type="button" data-a="pdf">' + ICON.file + (r.status === 'published' ? 'Download PDF' : 'Preview PDF') + '</button>' +
+        moreMenu(r, live) + '</div></div>' +
+      (r.status === 'draft' && r.return_note ? '<p class="rp-note is-warn"><b>Returned:</b> ' + esc(r.return_note) + '</p>' : '') +
+      '<div class="msg" data-m="head"></div></section>' +
+      '<nav class="rp-steps" aria-label="Steps"></nav>' +
+      '<div class="rp-stepbox"></div>';
+    wireHead(box);
+    paintSteps();
+    paintStep();
   }
+
+  function paintSteps() {
+    var nav = st.host && st.host.querySelector('.rp-steps');
+    if (!nav || !st.open) return;
+    nav.innerHTML = stepsOf(st.open).map(function (s, i) {
+      var on = s[0] === st.step, done = s[0] !== 'check' && stepDone(s[0]);
+      return '<button class="rp-step' + (on ? ' is-on' : '') + (done ? ' is-done' : '') + '" type="button" data-step="' + s[0] + '"' +
+        (on ? ' aria-current="step"' : '') + '>' +
+        '<span class="rp-step-n" aria-hidden="true">' + (done ? ICON.tick : String(i + 1)) + '</span>' +
+        '<span class="rp-step-t"><b>' + esc(s[1]) + '</b><small>' + esc(stepNote(s[0])) + '</small></span></button>';
+    }).join('');
+    Array.prototype.forEach.call(nav.querySelectorAll('.rp-step'), function (b) {
+      b.addEventListener('click', function () { goStep(b.getAttribute('data-step')); });
+    });
+  }
+  function goStep(k) {
+    st.step = k;
+    if (bridge.setUrl) bridge.setUrl();
+    paintSteps();
+    paintStep();
+    var nav = st.host.querySelector('.rp-steps');
+    if (nav && nav.getBoundingClientRect().top < 0) nav.scrollIntoView({ block: 'start' });
+  }
+  function nextOf(k) {
+    var s = stepsOf(st.open);
+    for (var i = 0; i < s.length - 1; i++) if (s[i][0] === k) return s[i + 1];
+    return null;
+  }
+
+  /* One step at a time. Each ends on the move to the next, named for it. */
+  function paintStep() {
+    var box = st.host.querySelector('.rp-stepbox');
+    if (!box) return;
+    var r = st.open, ed = editable(), k = st.step;
+    var head = function (title, acts) {
+      return '<div class="rp-sec-head"><h3 class="ovsec-title">' + esc(title) + '</h3>' + (acts ? '<span class="rp-sec-acts">' + acts + '</span>' : '') + '</div>';
+    };
+    var next = nextOf(k);
+    var foot = next && (!ed || (k !== 'text' && k !== 'figures'))
+      ? '<div class="rp-stepfoot"><button class="btn' + (ed ? ' btn-primary' : '') + '" type="button" data-a="next">Next: ' + esc(next[1]) + '</button></div>' : '';
+    if (k === 'accounts') {
+      box.innerHTML = '<div class="rp-sec">' + head('Accounts', ed ? '<button class="btn btn-sm" type="button" data-a="addacc">' + ICON.plus + 'Add account</button>' : '') +
+        '<div class="rp-accs"></div></div>' + foot;
+      paintAccounts();
+    } else if (k === 'posts') {
+      box.innerHTML = '<div class="rp-sec">' + head('Posts', ed && st.platforms.length ? '<button class="btn btn-sm" type="button" data-a="paste">Paste rows</button>' +
+          '<button class="btn btn-sm" type="button" data-a="addpost">' + ICON.plus + 'Add post</button>' : '') +
+        (ed && st.platforms.length ? '<div class="rp-rank"><label class="field-label" for="rpRank">Top posts ranked by</label><select class="select select-sm" id="rpRank">' +
+          ['views', 'reach', 'impressions', 'engagements', 'interactions'].map(function (m0) { return '<option value="' + m0 + '">' + esc(METRIC_WORD[m0]) + '</option>'; }).join('') +
+          '</select><span class="msg" data-m="rank"></span></div>' : '') +
+        '<div class="rp-posts"></div></div>' + foot;
+      if ($('rpRank')) {
+        $('rpRank').value = r.rank_metric || 'views';
+        $('rpRank').addEventListener('change', function () {
+          var sel = this, m = box.querySelector('[data-m="rank"]');
+          db.from('sm_reports').update({ rank_metric: sel.value }).eq('id', r.id).select('*').then(function (res) {
+            if (res.error || !(res.data || []).length) { say(m, said(res.error || 'The database refused the change.'), 'err'); return; }
+            st.open = res.data[0]; say(m, 'Saved.', 'ok');
+          });
+        });
+      }
+      paintPosts();
+    } else if (k === 'figures') {
+      box.innerHTML = '<div class="rp-sec">' + head('Account figures') + '<div class="rp-totals"></div></div>' + foot;
+      paintTotals();
+    } else if (k === 'ads') {
+      box.innerHTML = '<div class="rp-sec">' + head('Ads', ed ? '<button class="btn btn-sm" type="button" data-a="pasteads">Paste rows</button>' +
+          '<button class="btn btn-sm" type="button" data-a="addad">' + ICON.plus + 'Add ad</button>' : '') +
+        '<div class="rp-ads"></div></div>' + foot;
+      paintAds();
+    } else if (k === 'text') {
+      box.innerHTML = '<div class="rp-sec">' + head('Commentary') + '<div class="rp-text"></div></div>' + foot;
+      paintText();
+    } else {
+      paintCheck(box);
+    }
+    var b;
+    if ((b = box.querySelector('[data-a="next"]'))) b.addEventListener('click', function () { goStep(next[0]); });
+    if ((b = box.querySelector('[data-a="addacc"]'))) { var ac = b; ac.addEventListener('click', function () { accountSheet(null, ac); }); }
+    if ((b = box.querySelector('[data-a="addpost"]'))) { var ab = b; ab.addEventListener('click', function () { postSheet(null, ab); }); }
+    if ((b = box.querySelector('[data-a="paste"]'))) { var pb = b; pb.addEventListener('click', function () { pasteSheet(pb); }); }
+    if ((b = box.querySelector('[data-a="addad"]'))) { var ad = b; ad.addEventListener('click', function () { adSheet(null, ad); }); }
+    if ((b = box.querySelector('[data-a="pasteads"]'))) { var pa = b; pa.addEventListener('click', function () { pasteAdsSheet(pa); }); }
+  }
+
+  /* The last step: what the report holds, what is still missing, and the one
+     step the reader may take next. Blue only where it hands the report to
+     somebody else: to a reviewer, or to the client. */
+  function paintCheck(box) {
+    var r = st.open;
+    var rows = stepsOf(r).slice(0, 3).map(function (s) {
+      var need = s[0] !== 'text' && s[0] !== 'figures';
+      var done = stepDone(s[0]);
+      return '<div class="rp-check' + (done ? ' is-done' : need ? ' is-missing' : '') + '">' +
+        '<span class="rp-check-mark" aria-hidden="true">' + (done ? ICON.tick : '') + '</span>' +
+        '<span class="rp-check-t"><b>' + esc(s[1]) + '</b><small>' + esc(stepNote(s[0]) + (!done ? (need ? ' · Required' : ' · Optional') : '')) + '</small></span>' +
+        '<button class="btn btn-sm btn-quiet" type="button" data-to="' + s[0] + '">' + (editable() ? 'Edit' : 'View') + '</button></div>';
+    }).join('');
+    var missing = stepsOf(r).slice(0, 3).filter(function (s) { return s[0] !== 'text' && s[0] !== 'figures' && !stepDone(s[0]); });
+    var mine = r.submitted_by && r.submitted_by === myId();
+    var acts = [], wait = '';
+    if (r.status === 'draft' && may('work')) acts.push('<button class="btn btn-go" type="button" data-a="submit"' + (missing.length ? ' disabled' : '') + '>Submit for review</button>');
+    if (r.status === 'review' && may('manage') && !mine) acts.push('<button class="btn btn-primary" type="button" data-a="confirm">Confirm</button>');
+    if (r.status === 'confirmed' && may('manage')) acts.push('<button class="btn btn-go" type="button" data-a="publish">Publish to client</button>');
+    if (r.status === 'published' && may('work')) acts.push('<button class="btn" type="button" data-a="revise">Revise</button>');
+    if ((r.status === 'review' && (may('manage') || mine)) || (r.status === 'confirmed' && may('manage'))) {
+      acts.push('<button class="btn" type="button" data-a="return">' + (r.status === 'review' && mine && !may('manage') ? 'Take back' : 'Return') + '</button>');
+    }
+    if (r.status === 'draft' && missing.length) wait = 'Add ' + missing.map(function (s) { return s[1].toLowerCase(); }).join(' and ') + ' to submit.';
+    else if (r.status === 'review' && mine && may('manage')) wait = 'Waiting on another manager to confirm.';
+    else if (r.status === 'review' && !may('manage')) wait = 'Waiting on a manager to confirm.';
+    else if (r.status === 'confirmed' && !may('manage')) wait = 'Waiting on a manager to publish.';
+    box.innerHTML = '<div class="rp-sec"><div class="rp-sec-head"><h3 class="ovsec-title">Check and submit</h3></div>' +
+      '<div class="ovcard rp-checks">' + rows + '</div>' +
+      (acts.length || wait ? '<div class="rp-actions">' + acts.join('') + (wait ? '<span class="rp-wait">' + esc(wait) + '</span>' : '') + '</div>' : '') +
+      '<div class="msg" data-m="check"></div></div>';
+    Array.prototype.forEach.call(box.querySelectorAll('[data-to]'), function (b) {
+      b.addEventListener('click', function () { goStep(b.getAttribute('data-to')); });
+    });
+    wireSteps(box);
+  }
+
   function moreMenu(r, live) {
     var items = [];
     if (live && may('manage')) items.push('<button class="kmenu-item is-danger" data-soft type="button" data-a="unpublish">Unpublish</button>');
@@ -381,36 +522,52 @@
       '<div class="kmenu" hidden>' + items.join('') + '</div></span>';
   }
 
-  function wireHead(box) {
-    var r = st.open, m = box.querySelector('[data-m="head"]');
-    var on = function (a, fn) { var b = box.querySelector('.rp-head [data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { fn(b); }); };
-    var step = function (fn, args, done, btn) {
-      if (btn) btn.disabled = true;
-      db.rpc(fn, args).then(function (res) {
-        if (btn) btn.disabled = false;
-        var d = res.data || {};
-        if (res.error || d.error) { say(m, said(res.error || d), 'err'); return; }
-        openReport(r.id, true);
-        setTimeout(function () { say(st.host.querySelector('[data-m="head"]'), done, 'ok'); }, 0);
-      });
-    };
-    on('submit', function (b) {
-      window.ADspaceConfirm.ask({ title: 'Submit for review?', body: 'A manager checks it before it can be published. It cannot be edited while it is in review.', go: 'Submit' },
-        function () { step('sm_report_submit', { p_id: r.id }, 'Submitted for review.', b); });
+  /* A step that moves the report repaints it from the database and says what
+     happened under the head, where the status chip has just changed. */
+  function stepCall(fn, args, done, btn, m) {
+    if (btn) btn.disabled = true;
+    db.rpc(fn, args).then(function (res) {
+      if (btn) btn.disabled = false;
+      var d = res.data || {};
+      if (res.error || d.error) { say(m, said(res.error || d), 'err'); return; }
+      var id = st.open.id;
+      st.open = { id: id }; st.step = '';
+      if (bridge.setUrl) bridge.setUrl();
+      openReport(id, true);
+      var tries = 0;
+      (function tell() {
+        var el = st.host && st.host.querySelector('.rp-head [data-m="head"]');
+        if (el && st.open && st.open.client_id) { say(el, done, 'ok'); return; }
+        if (++tries < 40) setTimeout(tell, 50);
+      })();
     });
-    on('confirm', function (b) { step('sm_report_confirm', { p_id: r.id }, 'Confirmed.', b); });
+  }
+
+  function wireSteps(box) {
+    var r = st.open, m = box.querySelector('[data-m="check"]');
+    var on = function (a, fn) { var b = box.querySelector('[data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { fn(b); }); };
+    on('submit', function (b) {
+      window.ADspaceConfirm.ask({ title: 'Submit for review?', body: 'A manager checks it before it is published. It is locked while in review.', go: 'Submit' },
+        function () { stepCall('sm_report_submit', { p_id: r.id }, 'Submitted for review.', b, m); });
+    });
+    on('confirm', function (b) { stepCall('sm_report_confirm', { p_id: r.id }, 'Confirmed.', b, m); });
     on('publish', function (b) {
-      window.ADspaceConfirm.ask({ title: 'Publish to ' + st.client.name + '?', body: 'The client can read and download this version in their portal.', go: 'Publish' },
-        function () { step('sm_report_publish', { p_id: r.id }, 'Published to the client portal.', b); });
+      window.ADspaceConfirm.ask({ title: 'Publish to ' + st.client.name + '?', body: 'The client can read and download it in their portal.', go: 'Publish' },
+        function () { stepCall('sm_report_publish', { p_id: r.id }, 'Published to the client portal.', b, m); });
     });
     on('revise', function (b) {
-      window.ADspaceConfirm.ask({ title: 'Revise this report?', body: 'A new draft, version ' + (r.version_no + 1) + '. The client keeps reading version ' + r.version_no + ' until the revision is published.', go: 'Revise' },
-        function () { step('sm_report_revise', { p_id: r.id }, 'Version ' + (r.version_no + 1) + ' is a draft.', b); });
+      window.ADspaceConfirm.ask({ title: 'Revise this report?', body: 'Version ' + (r.version_no + 1) + ' starts as a draft. The client keeps version ' + r.version_no + ' until it is published.', go: 'Revise' },
+        function () { stepCall('sm_report_revise', { p_id: r.id }, 'Version ' + (r.version_no + 1) + ' is a draft.', b, m); });
     });
     on('return', function (b) {
       window.ADspaceConfirm.ask({ title: 'Return to draft?', go: 'Return', field: { label: 'What needs changing', rows: 3, need: 'Say what needs changing.' } },
-        function (note) { step('sm_report_return', { p_id: r.id, p_note: note }, 'Returned to draft.', b); });
+        function (note) { stepCall('sm_report_return', { p_id: r.id, p_note: note }, 'Returned to draft.', b, m); });
     });
+  }
+
+  function wireHead(box) {
+    var r = st.open, m = box.querySelector('[data-m="head"]');
+    var on = function (a, fn) { var b = box.querySelector('.rp-head [data-a="' + a + '"]'); if (b) b.addEventListener('click', function () { fn(b); }); };
     on('pdf', function (b) { downloadPdf(b, m); });
     on('more', function (b) {
       var menu = b.parentNode.querySelector('.kmenu');
@@ -420,9 +577,9 @@
     });
     on('unpublish', function (b) {
       b.closest('.kmenu').hidden = true;
-      window.ADspaceConfirm.ask({ title: 'Unpublish this report?', body: 'The client can no longer read it in their portal. It can be published again.', go: 'Unpublish', tone: 'warn',
+      window.ADspaceConfirm.ask({ title: 'Unpublish this report?', body: 'The client can no longer read it. It can be published again.', go: 'Unpublish', tone: 'warn',
         field: { label: 'Reason', need: 'Give a reason.' } },
-        function (why) { step('sm_report_unpublish', { p_id: r.id, p_reason: why }, 'Unpublished.', null); });
+        function (why) { stepCall('sm_report_unpublish', { p_id: r.id, p_reason: why }, 'Unpublished.', null, m); });
     });
     on('delete', function (b) {
       b.closest('.kmenu').hidden = true;
@@ -433,7 +590,7 @@
           db.rpc('sm_report_delete', { p_id: r.id, p_confirm: typed }).then(function (res) {
             var d = res.data || {};
             if (res.error || d.error) { say(m, said(res.error || d), 'err'); return; }
-            st.open = null; setAddress(); loadList();
+            st.open = null; goReport('');
           });
         });
     });
@@ -445,7 +602,6 @@
   function downloadPdf(btn, m) {
     var r = st.open;
     var live = (st.openVersions || []).filter(function (v) { return !v.withdrawn_at; })[0];
-    if (!SM()) { say(m, 'The report engine did not load. Refresh the page.', 'err'); return; }
     btn.disabled = true;
     say(m, 'Drawing the PDF…');
     var get = r.status === 'published' && live
@@ -457,22 +613,15 @@
           if (x.error || (x.data && x.data.error)) throw new Error(x.error ? x.error.message : x.data.error);
           return x.data;
         });
-    get.then(function (snap) {
-      return SM().render(snap).then(function (out) {
-        var blob = new Blob([out.bytes], { type: 'application/pdf' });
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = SM().fileName(snap, snap.report && snap.report.version_no).replace(/\.pdf$/, r.status === 'published' ? '.pdf' : '-draft.pdf');
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(function () { URL.revokeObjectURL(a.href); }, 30000);
-        btn.disabled = false;
-        say(m, out.warnings && out.warnings.length ? 'Downloaded. ' + out.warnings.join(' ') : 'Downloaded.', out.warnings && out.warnings.length ? 'warn' : 'ok');
-      });
+    get.then(saveFile).then(function (warn) {
+      btn.disabled = false;
+      say(m, warn ? 'Downloaded. ' + warn : 'Downloaded.', warn ? 'warn' : 'ok');
     }).catch(function (e) {
       btn.disabled = false;
       say(m, said(e), 'err');
     });
   }
+
 
   // ---- Accounts ----------------------------------------------------------------------
   function growthOf(a) {
@@ -483,6 +632,7 @@
   function signed(n) { return n == null ? '—' : (n > 0 ? '+' : '') + Number(n).toLocaleString('en-GB'); }
 
   function paintAccounts() {
+    paintSteps();
     var box = st.host.querySelector('.rp-accs');
     if (!box) return;
     var ed = editable();
@@ -558,19 +708,19 @@
         '<div><label class="field-label" for="rpAccEnd">At end of period</label><input class="input" id="rpAccEnd" type="number" inputmode="numeric"></div></div>' +
         '<details class="fmore" data-none="Worked out from start and end"><summary>Recorded growth</summary>' +
           '<div class="row fgrid"><div><label class="field-label" for="rpAccGrowth">Growth as reported</label><input class="input" id="rpAccGrowth" type="number" inputmode="numeric"></div>' +
-          '<div><label class="field-label" for="rpAccWhy">Reason</label><input class="input" id="rpAccWhy" type="text" placeholder="Platform reports growth only"></div></div></details></section>' +
+          '<div><label class="field-label" for="rpAccWhy">Reason</label><input class="input" id="rpAccWhy" type="text" placeholder="Optional"></div></div></details></section>' +
       '<section class="fsec"><h4 class="fsec-h">Figures reported</h4>' +
         '<div class="rp-ticks">' + METRICS.map(function (mm) {
           return '<label class="tickline"><input type="checkbox" data-metric="' + mm[0] + '"> <span>' + esc(mm[1]) + '</span></label>';
         }).join('') + '</div>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpAccBasis">Engagement rate based on</label><select class="select" id="rpAccBasis">' +
           BASIS.map(function (x) { return '<option value="' + x[0] + '">' + esc(x[1]) + '</option>'; }).join('') + '</select></div>' +
-        '<div><label class="field-label" for="rpAccNote">Metric note</label><input class="input" id="rpAccNote" type="text" placeholder="Meta reports this as Impressions/Views"></div></div></section>' +
-      '<section class="fsec"><h4 class="fsec-h">Remarks</h4>' +
+        '<div><label class="field-label" for="rpAccNote">Metric note</label><input class="input" id="rpAccNote" type="text" placeholder="Optional"></div></div></section>' +
+      '<details class="fmore" data-none="Optional"><summary>Remarks for this account</summary>' +
         '<div class="row"><div><label class="field-label" for="rpAccSummary">Summary line</label><input class="input" id="rpAccSummary" type="text"></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpAccWorked">Highlights</label><textarea class="input" id="rpAccWorked" rows="3" placeholder="One point a line"></textarea></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpAccImprove">Areas for improvement</label><textarea class="input" id="rpAccImprove" rows="3" placeholder="One point a line"></textarea></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpAccActions">Recommendations</label><textarea class="input" id="rpAccActions" rows="3" placeholder="One point a line"></textarea></div></div></section>',
+        '<div class="row"><div><label class="field-label" for="rpAccActions">Recommendations</label><textarea class="input" id="rpAccActions" rows="3" placeholder="One point a line"></textarea></div></div></details>',
       FOOT('Save'));
     box.querySelector('h3').textContent = a ? 'Edit account' : 'Add account';
     var v = function (id, x) { $(id).value = x == null ? '' : x; };
@@ -581,8 +731,9 @@
     v('rpAccSummary', a && a.summary); v('rpAccWorked', a && a.worked); v('rpAccImprove', a && a.improve); v('rpAccActions', a && a.actions);
     var mets = a ? (a.metrics || []) : ['views', 'engagements'];
     Array.prototype.forEach.call(box.querySelectorAll('[data-metric]'), function (c) { c.checked = mets.indexOf(c.getAttribute('data-metric')) > -1; });
-    var more = box.querySelector('details.fmore');
-    if (more) more.open = Boolean(a && a.growth_override != null);
+    var folds = box.querySelectorAll('details.fmore');
+    if (folds[0]) folds[0].open = Boolean(a && a.growth_override != null);
+    if (folds[1]) folds[1].open = Boolean(a && (a.summary || a.worked || a.improve || a.actions));
     if (window.ADspaceForm) box.querySelectorAll('details.fmore').forEach(function (d) { window.ADspaceForm.refresh(d); });
     var sm = box.querySelector('[data-m="sheet"]'); say(sm, '');
     var go = box.querySelector('[data-a="go"]');
@@ -663,6 +814,7 @@
     return (FORMAT_WORD[p.content_type] || 'Post') + (d ? ', ' + d.getDate() + ' ' + MON[d.getMonth()] : '');
   }
   function paintPosts() {
+    paintSteps();
     var box = st.host.querySelector('.rp-posts');
     if (!box) return;
     var ed = editable();
@@ -743,7 +895,7 @@
       '<section class="fsec"><h4 class="fsec-h">Post</h4>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpPostAcc">Account</label><select class="select" id="rpPostAcc"></select></div>' +
         '<div><label class="field-label" for="rpPostDate">Date</label><input class="input" id="rpPostDate" type="date"></div></div>' +
-        '<div class="row fgrid"><div><label class="field-label" for="rpPostTitle">Title</label><input class="input" id="rpPostTitle" type="text" placeholder="Named by its format and date when blank"></div>' +
+        '<div class="row fgrid"><div><label class="field-label" for="rpPostTitle">Title</label><input class="input" id="rpPostTitle" type="text" placeholder="Optional"></div>' +
         '<div><label class="field-label" for="rpPostFormat">Format</label><select class="select" id="rpPostFormat">' +
           FORMATS.map(function (f) { return '<option value="' + f[0] + '">' + esc(f[1]) + '</option>'; }).join('') + '</select></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpPostThumb">Thumbnail</label>' +
@@ -892,7 +1044,7 @@
   function pasteSheet(opener) {
     var box = sheetShell('rpPasteSheet', 'Paste rows',
       '<section class="fsec"><div class="row"><div><label class="field-label" for="rpPasteAcc">Account</label><select class="select" id="rpPasteAcc"></select></div></div>' +
-      '<div class="row"><div><label class="field-label" for="rpPasteText">Rows from a spreadsheet, with the header row</label>' +
+      '<div class="row"><div><label class="field-label" for="rpPasteText">Rows from a spreadsheet, header row first</label>' +
         '<textarea class="input rp-paste" id="rpPasteText" rows="8" placeholder="Date&#9;Title&#9;Views&#9;Interactions"></textarea></div></div>' +
       '<p class="rp-paste-sum" id="rpPasteSum"></p></section>', FOOT('Add posts'));
     var acc = $('rpPasteAcc');
@@ -933,56 +1085,69 @@
     window.ADspaceSheet.show(box, { opener: opener });
   }
 
-  // ---- The report's own text ----------------------------------------------------------------
+  // ---- The report's commentary ---------------------------------------------------------------
+  /* Four fields, the same for both kinds: a summary, what stood out, what to
+     improve, and what comes next. A summary written as an executive summary
+     before this form existed is read into the one field. The pages already
+     carry their own headings, so no title or headline is asked for. */
   function paintText() {
     var box = st.host.querySelector('.rp-text');
     if (!box) return;
-    var r = st.open, ins = r.insights || {};
+    var r = st.open, ins = r.insights || {}, ads = r.kind === 'ads';
+    var fields = TEXT[ads ? 'ads' : 'social'];
+    var valOf = function (k) {
+      if (k !== 'intro') return ins[k];
+      return [r.intro, ins.executive_summary].filter(function (x) { return String(x || '').trim(); }).join('\n\n');
+    };
+    var more = ads ? [] : TEXT_MORE;
     if (!editable()) {
-      var rows = [['Title', r.title], ['Headline', r.headline], ['Introduction', r.intro]]
-        .concat(INSIGHTS.map(function (x) { return [x[1], ins[x[0]]]; }))
+      var rows = fields.concat(more).map(function (x) { return [x[1], valOf(x[0])]; })
         .filter(function (x) { return String(x[1] || '').trim(); });
-      box.innerHTML = rows.length ? '<div class="ovcard"><dl class="ovfacts rp-facts">' + rows.map(function (x) {
+      if (!rows.length) { UI.emptyLine(box, 'No commentary.'); return; }
+      box.innerHTML = '<div class="ovcard"><dl class="ovfacts rp-facts">' + rows.map(function (x) {
         return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]).replace(/\n/g, '<br>') + '</dd>';
-      }).join('') + '</dl></div>' : '';
-      if (!rows.length) UI.emptyLine(box, 'No text.');
+      }).join('') + '</dl></div>';
       return;
     }
-    box.innerHTML = '<section class="panel rp-textform">' +
-      '<section class="fsec"><h4 class="fsec-h">Opening</h4>' +
-        '<div class="row fgrid"><div><label class="field-label" for="rpTitle">Title</label><input class="input" id="rpTitle" type="text"></div>' +
-        '<div><label class="field-label" for="rpRank">Rank top posts by</label><select class="select" id="rpRank">' +
-          ['views', 'reach', 'impressions', 'engagements', 'interactions'].map(function (k) { return '<option value="' + k + '">' + esc(METRIC_WORD[k]) + '</option>'; }).join('') +
-        '</select></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpHeadline">Headline</label><input class="input" id="rpHeadline" type="text"></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpIntro">Introduction</label><textarea class="input" id="rpIntro" rows="3"></textarea></div></div></section>' +
-      '<section class="fsec"><h4 class="fsec-h">Findings and recommendations</h4>' +
-        INSIGHTS.map(function (x) {
-          return '<div class="row"><div><label class="field-label" for="rpIns_' + x[0] + '">' + esc(x[1]) + '</label>' +
-            '<textarea class="input" id="rpIns_' + x[0] + '" rows="' + x[3] + '" placeholder="' + esc(x[2]) + '"></textarea></div></div>';
-        }).join('') + '</section>' +
-      '<div class="rp-textfoot"><button class="btn btn-primary" type="button" data-a="savetext">Save</button><div class="msg" data-m="text"></div></div></section>';
-    $('rpTitle').value = r.title || '';
-    $('rpRank').value = r.rank_metric || 'views';
-    $('rpHeadline').value = r.headline || '';
-    $('rpIntro').value = r.intro || '';
-    INSIGHTS.forEach(function (x) { $('rpIns_' + x[0]).value = ins[x[0]] || ''; });
-    var btn = box.querySelector('[data-a="savetext"]'), m = box.querySelector('[data-m="text"]');
-    btn.addEventListener('click', function () {
-      var title = $('rpTitle').value.trim();
-      if (!title) { say(m, 'A title is required.', 'err'); $('rpTitle').focus(); return; }
+    var area = function (x) {
+      return '<div class="row"><div><label class="field-label" for="rpT_' + x[0] + '">' + esc(x[1]) + '</label>' +
+        '<textarea class="input" id="rpT_' + x[0] + '" rows="' + (x[3] || 3) + '"' + (x[2] ? ' placeholder="' + esc(x[2]) + '"' : '') + '></textarea></div></div>';
+    };
+    box.innerHTML = '<section class="panel rp-form">' +
+      '<p class="rp-hint">' + (ads ? 'One point a line. Start a line with a dash for a sub-point.' : 'One point a line.') + '</p>' +
+      fields.map(area).join('') +
+      (more.length ? '<details class="fmore" data-none="Optional"><summary>More sections</summary>' +
+        more.map(function (x) { return area([x[0], x[1], 'One point a line', 3]); }).join('') + '</details>' : '') +
+      '<div class="rp-stepfoot"><button class="btn btn-primary" type="button" data-a="savenext">Save and continue</button>' +
+        '<button class="btn" type="button" data-a="savetext">Save</button><div class="msg" data-m="text"></div></div></section>';
+    fields.concat(more).forEach(function (x) { $('rpT_' + x[0]).value = valOf(x[0]) || ''; });
+    var fold = box.querySelector('details.fmore');
+    if (fold) fold.open = more.some(function (x) { return String(ins[x[0]] || '').trim(); });
+    if (window.ADspaceForm) window.ADspaceForm.scan(box);
+    var m = box.querySelector('[data-m="text"]');
+    var save = function (btn, then) {
       var insights = {};
-      INSIGHTS.forEach(function (x) { var v = $('rpIns_' + x[0]).value.trim(); if (v) insights[x[0]] = v; });
-      var row = { title: title, rank_metric: $('rpRank').value, headline: $('rpHeadline').value.trim() || null,
-                  intro: $('rpIntro').value.trim() || null, insights: insights };
+      Object.keys(ins).forEach(function (k) { insights[k] = ins[k]; });
+      delete insights.executive_summary;
+      fields.concat(more).forEach(function (x) {
+        if (x[0] === 'intro') return;
+        var v = $('rpT_' + x[0]).value.trim();
+        if (v) insights[x[0]] = v; else delete insights[x[0]];
+      });
+      var row = { intro: $('rpT_intro').value.trim() || null, headline: null, insights: insights };
       btn.disabled = true;
       db.from('sm_reports').update(row).eq('id', r.id).select('*').then(function (res) {
         btn.disabled = false;
         if (res.error || !(res.data || []).length) { say(m, said(res.error || 'The database refused the change.'), 'err'); return; }
         st.open = res.data[0];
+        paintSteps();
+        if (then) { then(); return; }
         say(m, 'Saved.', 'ok');
       });
-    });
+    };
+    var sb = box.querySelector('[data-a="savetext"]'), sn = box.querySelector('[data-a="savenext"]');
+    sb.addEventListener('click', function () { save(sb); });
+    sn.addEventListener('click', function () { save(sn, function () { goStep('check'); }); });
   }
 
   // ---- The advertising report ------------------------------------------------------------
@@ -999,12 +1164,6 @@
                       'Engagement', 'ThruPlays', 'Ad recall lift', 'Reach', 'Impressions', 'App installs'];
   var AGE_BANDS = ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
   var RET = [['p25', '25%'], ['p50', '50%'], ['p75', '75%'], ['p95', '95%'], ['p100', '100%']];
-  var ADS_TEXT = [
-    ['intro', 'Summary', 'A paragraph: what the spend bought, the standout ad, and the one finding that matters most.', 5],
-    ['worked', 'What worked', 'One point a line. Start a line with a dash for a sub-point.', 5],
-    ['fix', 'What to fix', 'One point a line. Start a line with a dash for a sub-point.', 4],
-    ['focus', 'Recommended focus for the following month', 'One point a line. Start a line with a dash for a sub-point.', 4]
-  ];
   function money2(v) { return v == null || v === '' || isNaN(Number(v)) ? '—' : (String(st.client && st.client.market || '').toUpperCase() === 'SG' ? 'S$ ' : 'RM ') + Number(v).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
   function numIn(v) {
     var x = String(v == null ? '' : v).replace(/RM|MYR|SGD|S\$|%|,|\s/gi, '');
@@ -1049,8 +1208,9 @@
       }).join('') + '</dl></div>';
       return;
     }
-    box.innerHTML = '<section class="panel rp-textform">' +
-      '<section class="fsec"><h4 class="fsec-h">This period</h4><label class="tickline"><input type="checkbox" id="rpFirst"> First month of ads: the report carries the reading guidance and no comparison</label>' +
+    box.innerHTML = '<section class="panel rp-form">' +
+      '<label class="tickline"><input type="checkbox" id="rpFirst"> First month of ads, with no comparison</label>' +
+      '<section class="fsec"><h4 class="fsec-h">This period</h4>' +
         '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpTReach">Total reach</label><input class="input" id="rpTReach" type="text" inputmode="numeric"></div>' +
         '<div><label class="field-label" for="rpTImpr">Total impressions</label><input class="input" id="rpTImpr" type="text" inputmode="numeric" placeholder="' + esc(fmt(sumImpr)) + ' from the ads"></div>' +
         '<div><label class="field-label" for="rpTSpend">Amount spent</label><input class="input" id="rpTSpend" type="text" inputmode="decimal" placeholder="' + esc(money2(sumSpend)) + ' from the ads"></div></div></section>' +
@@ -1063,11 +1223,12 @@
       (objs.length ? '<details class="fmore" data-none="Added up from the ads" data-some="Typed for some objectives"><summary>Results by objective</summary>' +
         objs.map(function (o) {
           return '<div class="row fgrid"><div><label class="field-label" for="rpGR_' + o[0] + '">' + esc(o[1]) + ' results</label>' +
-            '<input class="input" id="rpGR_' + o[0] + '" data-gres="' + o[0] + '" type="text" inputmode="numeric" placeholder="Added up from the ads"></div>' +
+            '<input class="input" id="rpGR_' + o[0] + '" data-gres="' + o[0] + '" type="text" inputmode="numeric" placeholder="From the ads"></div>' +
             '<div><label class="field-label" for="rpGL_' + o[0] + '">Result type</label><input class="input" id="rpGL_' + o[0] + '" data-glab="' + o[0] + '" type="text" list="rpResultTypes"></div></div>';
         }).join('') + '</details>' : '') +
       '<datalist id="rpResultTypes">' + RESULT_TYPES.map(function (x) { return '<option value="' + esc(x) + '">'; }).join('') + '</datalist>' +
-      '<div class="rp-textfoot"><button class="btn btn-primary" type="button" data-a="savetotals">Save</button><div class="msg" data-m="totals"></div></div></section>';
+      '<div class="rp-stepfoot"><button class="btn btn-primary" type="button" data-a="savenext">Save and continue</button>' +
+        '<button class="btn" type="button" data-a="savetotals">Save</button><div class="msg" data-m="totals"></div></div></section>';
     var v = function (id, x) { $(id).value = x == null ? '' : x; };
     $('rpFirst').checked = !!r.first_month;
     v('rpTReach', t.reach); v('rpTImpr', t.impressions); v('rpTSpend', t.spend);
@@ -1079,8 +1240,8 @@
     var showPrev = function () { $('rpPrevSec').hidden = $('rpFirst').checked; };
     $('rpFirst').onchange = showPrev; showPrev();
     if (window.ADspaceForm) window.ADspaceForm.scan(box);
-    var btn = box.querySelector('[data-a="savetotals"]'), m = box.querySelector('[data-m="totals"]');
-    btn.addEventListener('click', function () {
+    var m = box.querySelector('[data-m="totals"]');
+    var saveTotals = function (btn, then) {
       var out = {}, bad = null;
       [['reach', 'rpTReach'], ['impressions', 'rpTImpr'], ['spend', 'rpTSpend'], ['prev_reach', 'rpPReach'], ['prev_impressions', 'rpPImpr'], ['prev_spend', 'rpPSpend']].forEach(function (f) {
         var raw = $(f[1]).value.trim();
@@ -1105,12 +1266,18 @@
         btn.disabled = false;
         if (res.error || !(res.data || []).length) { say(m, said(res.error || 'The database refused the change.'), 'err'); return; }
         st.open = res.data[0];
+        paintSteps();
+        if (then) { then(); return; }
         say(m, 'Saved.', 'ok');
       });
-    });
+    };
+    var sb = box.querySelector('[data-a="savetotals"]'), sn = box.querySelector('[data-a="savenext"]');
+    sb.addEventListener('click', function () { saveTotals(sb); });
+    sn.addEventListener('click', function () { saveTotals(sn, function () { goStep('ads'); }); });
   }
 
   function paintAds() {
+    paintSteps();
     var box = st.host.querySelector('.rp-ads');
     if (!box) return;
     var ed = editable();
@@ -1162,7 +1329,7 @@
   function adSheet(a, opener, copy) {
     var box = sheetShell('rpAdSheet', 'Ad',
       '<section class="fsec"><h4 class="fsec-h">Ad</h4>' +
-        '<div class="row"><div><label class="field-label" for="rpAdName">Ad name</label><input class="input" id="rpAdName" type="text" placeholder="As it is named in Ads Manager"></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpAdName">Ad name</label><input class="input" id="rpAdName" type="text" placeholder="As in Ads Manager"></div></div>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpAdObj">Objective</label><select class="select" id="rpAdObj">' +
           OBJECTIVES.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('') + '</select></div>' +
         '<div><label class="field-label" for="rpAdResult">Result type</label><input class="input" id="rpAdResult" type="text" list="rpAdResultTypes"></div></div>' +
@@ -1370,10 +1537,10 @@
 
   function pasteAdsSheet(opener) {
     var box = sheetShell('rpPasteAdsSheet', 'Paste rows',
-      '<section class="fsec"><div class="row"><div><label class="field-label" for="rpPAObj">Objective, where the rows do not name one</label><select class="select" id="rpPAObj">' +
+      '<section class="fsec"><div class="row"><div><label class="field-label" for="rpPAObj">Objective if the rows do not say</label><select class="select" id="rpPAObj">' +
         OBJECTIVES.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('') + '</select></div></div>' +
-      '<div class="row"><div><label class="field-label" for="rpPAText">Rows exported from Ads Manager, with the header row</label>' +
-        '<textarea class="input rp-paste" id="rpPAText" rows="8" placeholder="Ad name&#9;Objective&#9;Results&#9;Reach&#9;Impressions&#9;Amount spent (MYR)&#9;CTR (all)"></textarea></div></div>' +
+      '<div class="row"><div><label class="field-label" for="rpPAText">Rows from Ads Manager, header row first</label>' +
+        '<textarea class="input rp-paste" id="rpPAText" rows="8" placeholder="Ad name&#9;Results&#9;Amount spent"></textarea></div></div>' +
       '<p class="rp-paste-sum" id="rpPASum"></p></section>', FOOT('Add ads'));
     $('rpPAText').value = '';
     var sum = $('rpPASum'), sm = box.querySelector('[data-m="sheet"]');
@@ -1409,78 +1576,52 @@
     window.ADspaceSheet.show(box, { opener: opener });
   }
 
-  function paintAdsText() {
-    var box = st.host.querySelector('.rp-text');
-    if (!box) return;
-    var r = st.open, ins = r.insights || {};
-    var valOf = function (k) { return k === 'intro' ? r.intro : ins[k]; };
-    if (!editable()) {
-      var rows = [['Title', r.title]].concat(ADS_TEXT.map(function (x) { return [x[1], valOf(x[0])]; }))
-        .filter(function (x) { return String(x[1] || '').trim(); });
-      box.innerHTML = rows.length ? '<div class="ovcard"><dl class="ovfacts rp-facts">' + rows.map(function (x) {
-        return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]).replace(/\n/g, '<br>') + '</dd>';
-      }).join('') + '</dl></div>' : '';
-      if (!rows.length) UI.emptyLine(box, 'No text.');
-      return;
-    }
-    box.innerHTML = '<section class="panel rp-textform">' +
-      '<section class="fsec"><div class="row"><div><label class="field-label" for="rpTitle">Title</label><input class="input" id="rpTitle" type="text"></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpHeadline">Headline</label><input class="input" id="rpHeadline" type="text" placeholder="One line over the figures, optional"></div></div></section>' +
-      '<section class="fsec">' + ADS_TEXT.map(function (x) {
-        return '<div class="row"><div><label class="field-label" for="rpAT_' + x[0] + '">' + esc(x[1]) + '</label>' +
-          '<textarea class="input" id="rpAT_' + x[0] + '" rows="' + x[3] + '" placeholder="' + esc(x[2]) + '"></textarea></div></div>';
-      }).join('') + '</section>' +
-      '<div class="rp-textfoot"><button class="btn btn-primary" type="button" data-a="savetext">Save</button><div class="msg" data-m="text"></div></div></section>';
-    $('rpTitle').value = r.title || '';
-    $('rpHeadline').value = r.headline || '';
-    ADS_TEXT.forEach(function (x) { $('rpAT_' + x[0]).value = valOf(x[0]) || ''; });
-    var btn = box.querySelector('[data-a="savetext"]'), m = box.querySelector('[data-m="text"]');
-    btn.addEventListener('click', function () {
-      var title = $('rpTitle').value.trim();
-      if (!title) { say(m, 'A title is required.', 'err'); $('rpTitle').focus(); return; }
-      var insights = {};
-      ADS_TEXT.forEach(function (x) { if (x[0] === 'intro') return; var v = $('rpAT_' + x[0]).value.trim(); if (v) insights[x[0]] = v; });
-      var row = { title: title, headline: $('rpHeadline').value.trim() || null, intro: $('rpAT_intro').value.trim() || null, insights: insights };
-      btn.disabled = true;
-      db.from('sm_reports').update(row).eq('id', r.id).select('*').then(function (res) {
-        btn.disabled = false;
-        if (res.error || !(res.data || []).length) { say(m, said(res.error || 'The database refused the change.'), 'err'); return; }
-        st.open = res.data[0];
-        say(m, 'Saved.', 'ok');
-      });
-    });
-  }
-
   // ---- The Reports route: every client's reports, by where each stands ------
-  var hub = { rows: [], clients: [], wired: false };
+  var hub = { rows: [], clients: [], byClient: {}, wired: false };
   var HUB_BANDS = [
-    ['review', 'In review'], ['confirmed', 'Confirmed'], ['draft', 'Drafts'], ['published', 'Published']
+    ['draft', 'Drafts'], ['review', 'In review'], ['confirmed', 'Confirmed'], ['published', 'Published']
   ];
+  function showEditor() {
+    st.host = $('rhEdit');
+    if ($('rhHub')) $('rhHub').hidden = true;
+    if (st.host) st.host.hidden = false;
+  }
+  function showList() {
+    if ($('rhHub')) $('rhHub').hidden = false;
+    if ($('rhEdit')) { $('rhEdit').hidden = true; $('rhEdit').innerHTML = ''; }
+    st.open = null; st.step = '';
+  }
+  /* The route: the list, or one report where the address names one. */
   function enterHub() {
     var list = $('rhList');
     if (!list) return;
+    var want = new URLSearchParams(location.search).get('report');
     if (!hub.wired) {
       hub.wired = true;
       $('rhFind').addEventListener('input', paintHub);
       $('rhKind').addEventListener('change', paintHub);
-      $('rhNew').addEventListener('click', function () { newSheet($('rhNew'), { clients: hub.clients }); });
+      $('rhNew').addEventListener('click', function () { newSheet($('rhNew')); });
     }
-    /* The type filter is drawn once there is more than one type. */
-    $('rhKind').hidden = TYPES.length < 2;
     $('rhKind').innerHTML = '<option value="">Every type</option>' + TYPES.map(function (t) { return '<option value="' + t.key + '">' + esc(t.name) + '</option>'; }).join('');
     $('rhNew').hidden = !may('work');
+    loadClients();
+    if (want) { openReport(want, true); return; }
+    showList();
     UI.skeleton(list, 4);
-    Promise.all([
-      db.from('sm_reports').select('id, kind, title, client_id, period_start, period_end, status, version_no, updated_at').order('period_start', { ascending: false }),
-      db.from('clients').select('id, name, slug, stage').order('name', { ascending: true })
-    ]).then(function (got) {
-      if (got[0].error) { UI.failLine(list, 'reports', said(got[0].error), enterHub); return; }
-      hub.rows = got[0].data || [];
-      hub.clients = (got[1].data || []).filter(function (c) { return c.stage !== 'lead'; });
-      if (!hub.clients.length) hub.clients = got[1].data || [];
+    db.from('sm_reports').select('id, kind, client_id, period_start, period_end, status, version_no, updated_at').order('period_start', { ascending: false }).then(function (r) {
+      if (r.error) { UI.failLine(list, 'reports', said(r.error), enterHub); return; }
+      hub.rows = r.data || [];
+      clientsReady.then(paintHub);
+    });
+  }
+  var clientsReady = Promise.resolve();
+  function loadClients() {
+    clientsReady = db.from('clients').select('id, name, slug, stage').order('name', { ascending: true }).then(function (c) {
+      var all = c.data || [];
       hub.byClient = {};
-      (got[1].data || []).forEach(function (c) { hub.byClient[c.id] = c; });
-      paintHub();
+      all.forEach(function (x) { hub.byClient[x.id] = x; });
+      hub.clients = all.filter(function (x) { return x.stage !== 'lead'; });
+      if (!hub.clients.length) hub.clients = all;
     });
   }
   function paintHub() {
@@ -1494,10 +1635,10 @@
       var c = hub.byClient[r.client_id] || {};
       return (String(c.name || '') + ' ' + periodWord(r.period_start, r.period_end) + ' ' + (TYPE_WORD[r.kind] || '')).toLowerCase().indexOf(q) > -1;
     });
-    $('rhCount').textContent = rows.length === hub.rows.length ? rows.length + ' report' + (rows.length === 1 ? '' : 's') : rows.length + ' of ' + hub.rows.length;
+    $('rhCount').textContent = rows.length === hub.rows.length ? plural(rows.length, 'report') : rows.length + ' of ' + hub.rows.length;
     list.innerHTML = '';
     if (!hub.rows.length) {
-      UI.emptyLine(list, 'No reports.', may('work') ? 'Start the first report' : null, may('work') ? function () { newSheet($('rhNew'), { clients: hub.clients }); } : null);
+      UI.emptyLine(list, 'No reports.', may('work') ? 'Start the first report' : null, may('work') ? function () { newSheet($('rhNew')); } : null);
       return;
     }
     if (!rows.length) { UI.emptyLine(list, 'No matches.', 'Clear the search', function () { $('rhFind').value = ''; $('rhKind').value = ''; paintHub(); }); return; }
@@ -1510,7 +1651,7 @@
         route: 'reports', key: bd[0], name: bd[1], count: mine.length,
         shut: q ? false : GRP.shut('reports', bd[0], bd[0] === 'published', lone),
         table: function () {
-          var t = GRP.table('rh-row', ['Client', 'Report', 'Version', 'Updated', '']);
+          var t = GRP.table('rh-row', ['Client', 'Period', 'Version', 'Updated', '']);
           GRP.more(t, mine, 30, 'reports', function (r) {
             var c = hub.byClient[r.client_id] || {};
             var b2 = document.createElement('button');
@@ -1519,8 +1660,8 @@
               '<span class="rp-ver">' + esc(periodWord(r.period_start, r.period_end)) + '</span>' +
               '<span class="rp-ver">v' + r.version_no + '</span>' +
               '<span class="rp-ver">' + esc(stampWord(r.updated_at)) + '</span>' +
-              '<span class="rp-go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>';
-            b2.addEventListener('click', function () { openFromHub(r.client_id, r.id); });
+              '<span class="rp-go" aria-hidden="true">' + ICON.go + '</span>';
+            b2.addEventListener('click', function () { openReport(r.id); });
             return b2;
           });
           return t;
@@ -1528,19 +1669,16 @@
       }));
     });
   }
-  /* A report opens on its client's record, where it is edited: the address
-     is written first, then the record is shown, the way the bell opens a
-     task. */
-  function openFromHub(clientId, reportId) {
-    var c = hub.byClient && hub.byClient[clientId];
-    var key = c && (c.slug || c.id) || clientId;
-    history.pushState(null, '', '/admin/?client=' + encodeURIComponent(key) + '&tab=reports&report=' + encodeURIComponent(reportId));
-    if (bridge.show) bridge.show('clients');
-  }
 
   window.ADspaceReports = {
     clientPane: clientPane, parseRows: parseRows, readDate: readDate, parseAdRows: parseAdRows,
     openId: function () { return st.open && st.open.id ? st.open.id : ''; },
+    /* The address while the section is open: the report, and the step where
+       it is not the one the report would open on anyway. */
+    urlState: function () {
+      if (!st.open || !st.open.id) return {};
+      return { report: st.open.id, step: st.open.client_id ? st.step : '' };
+    },
     enterHub: enterHub
   };
   if (bridge.reportsReady) bridge.reportsReady();

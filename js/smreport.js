@@ -637,7 +637,7 @@
       var clientLogo = got[1];
       return draw(PDF, pdf, fonts, logo, clientLogo, sh, mdl, thumbs, warn, opts).then(function (pages) {
         return sh.ready().then(function () {
-          pdf.setTitle(String(rep.client_name || '') + ' ' + String(rep.title || 'Social Media Report') + ' ' + periodWord(rep.period_start, rep.period_end));
+          pdf.setTitle(String(rep.client_name || '') + ' ' + titleOf(rep) + ' ' + periodWord(rep.period_start, rep.period_end));
           pdf.setAuthor(CFG.agencyName || 'ADspace');
           pdf.setSubject(rep.kind === 'ads' ? 'Social media advertising report' : 'Social media report');
           pdf.setCreator('ADspace Digital Portal');
@@ -796,7 +796,7 @@
           var t0 = typeof it === 'string' ? it : it.t;
           var ls = sh.linesOf(t0, w - T.padX * 2 - S(1), size, f);
           ls.forEach(function (ln, k) { out.push({ ln: ln, f: f, size: size, num: k === 0 ? String(i + 1) : null, indent: S(1) }); });
-          ((it && it.sub) || []).forEach(function (sb, j) {
+          ((typeof it === 'object' && it && it.sub) || []).forEach(function (sb, j) {
             out.push({ gap: T.padY / 2 });
             sh.linesOf(sb, w - T.padX * 2 - S(1) * 2, size, f).forEach(function (ln, k) {
               out.push({ ln: ln, f: f, size: size, num: k === 0 ? String.fromCharCode(97 + j) : null, numIndent: S(1), indent: S(1) * 2 });
@@ -1055,7 +1055,7 @@
       newPage('cover');
       var cx = M + S(9), cw = R - cx;
       var cy = H / PHI;
-      var tlines = sh.linesOf(String(rep.title || 'Social Media Report'), cw, TY.cover, med);
+      var tlines = sh.linesOf(titleOf(rep), cw, TY.cover, med);
       cy += (tlines.length - 1) * S(6);
       tlines.forEach(function (ln, i) { sh.draw(pg.page, ln, cx, cy, TY.cover, INK); if (i < tlines.length - 1) cy -= S(6); });
       cy -= S(6);
@@ -1116,7 +1116,7 @@
       var acts = points(ins.next_actions);
       var more = [
         ['Performance drivers', ins.why_well],
-        ['Underperformance', ins.underperformed],
+        ['Areas to improve', ins.underperformed],
         ['Opportunities', ins.opportunities],
         ['Improvements', ins.improvements]
       ].filter(function (r) { return words(r[1]).trim(); });
@@ -1669,12 +1669,24 @@
     return Promise.resolve(n);
   }
 
-  function fileName(snap, versionNo) {
+  /* The report's name as the cover and the file print it. The first kind was
+     stored as `Social Media Report` and is named Social Media Accounts Report
+     since the builder took a second kind (2026-09-25), so the stored default
+     reads as the new name; a title the team typed is kept. */
+  function titleOf(rep) {
+    var t = String((rep && rep.title) || '').trim();
+    if (rep && rep.kind === 'ads') return t || 'Social Media Advertising Report';
+    return !t || t === 'Social Media Report' ? 'Social Media Accounts Report' : t;
+  }
+
+  /* A file named the way the team would name it by hand: the client, the
+     report and the period, and nothing a reader has to decode. The version
+     and the draft mark are on the page itself. */
+  function fileName(snap) {
     var rep = (snap && snap.report) || {};
-    var slug = function (s) { return String(s || '').normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-'); };
-    var d = dateOf(rep.period_start);
-    var when = d ? MON3[d.getMonth()].slice(0, 3) + '-' + d.getFullYear() : '';
-    return [slug(rep.client_name), rep.kind === 'ads' ? 'Social-Media-Ads-Report' : 'Social-Media-Report', when, 'v' + (versionNo || rep.version_no || 1)].filter(Boolean).join('-') + '.pdf';
+    var name = [rep.client_name, titleOf(rep),
+                periodWord(rep.period_start, rep.period_end)].filter(Boolean).join(' ');
+    return name.replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim() + '.pdf';
   }
 
   window.ADspaceSmReport = {
