@@ -7877,6 +7877,21 @@ body.is-canvas { overflow: hidden; }
 .is-narrow .rp-post-row > .rp-num:nth-child(5) { grid-area: n2; font-size: 12.5px; color: var(--ink-mute); }
 .is-narrow .rp-post-row > :last-child { grid-area: act; }
 .is-tight .rp-ticks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* The ads of an advertising report, grouped by objective. */
+.rp-ad-row { display: grid; align-items: center; gap: 0 12px; grid-template-columns: 34px minmax(0, 1fr) 104px 72px 104px var(--ctl-h); }
+.rp-ad-row.crm-head { padding: 12px 15px 8px; }
+.rp-ad-row.crm-row { padding: 10px 15px; min-height: 52px; }
+.rp-ad-row.crm-head > :nth-child(n+3):nth-child(-n+5) { text-align: right; }
+.rp-ads { display: grid; gap: 16px; }
+.rp-totals .fsec > .fsec-h + .tickline { margin-bottom: 4px; }
+.is-narrow .rp-ad-row.crm-head { display: none; }
+.is-narrow .rp-ad-row { grid-template-columns: 34px minmax(0, 1fr) 96px auto; grid-template-areas: "th name spend act" "th res cpr act"; gap: 2px 12px; }
+.is-narrow .rp-ad-row > .rp-thumb { grid-area: th; }
+.is-narrow .rp-ad-row > .rp-name { grid-area: name; }
+.is-narrow .rp-ad-row > .rp-num:nth-child(3) { grid-area: spend; }
+.is-narrow .rp-ad-row > .rp-num:nth-child(4) { grid-area: res; text-align: left; font-size: 12.5px; color: var(--ink-mute); }
+.is-narrow .rp-ad-row > .rp-num:nth-child(5) { grid-area: cpr; font-size: 12.5px; color: var(--ink-mute); }
+.is-narrow .rp-ad-row > :last-child { grid-area: act; }
 /* The Reports route: one row a report across every client. */
 .rh-row { display: grid; align-items: center; gap: 0 12px; grid-template-columns: minmax(0, 1fr) 150px 64px 110px 20px; }
 .rh-row.crm-head { padding: 12px 15px 8px; }

@@ -44,9 +44,8 @@
   };
   /* The kinds of report the builder makes. Each is one engine of steps —
      draft, review, confirmed, published — with its own entry and its own
-     PDF; the type is chosen when a report is started. The advertising
-     report is next and joins this list when its entry and PDF are built. */
-  var TYPES = [{ key: 'social', name: 'Social media report' }];
+     PDF; the type is chosen when a report is started. */
+  var TYPES = [{ key: 'social', name: 'Social media report' }, { key: 'ads', name: 'Social media advertising report' }];
   var TYPE_WORD = {};
   TYPES.forEach(function (t) { TYPE_WORD[t.key] = t.name; });
   var PLATFORMS = [['facebook', 'Facebook'], ['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['rednote', 'rednote'],
@@ -79,6 +78,8 @@
     'not-draft': 'Only a draft can be submitted.',
     'no-platforms': 'Add an account before submitting.',
     'no-posts': 'Add the month\'s posts before submitting.',
+    'no-ads': 'Add the period\'s ads before submitting.',
+    'bad-kind': 'Advertising reports need a database update. Run the 2026-09-25 ads report migration.',
     'note-required': 'Say what needs changing.',
     'not-returnable': 'Only a report in review or confirmed can be returned.',
     'not-in-review': 'Only a report in review can be confirmed.',
@@ -296,7 +297,13 @@
       st.posts = got[2].data || [];
       sortPosts();
       st.openVersions = got[3].data || [];
-      paintEditor();
+      st.ads = [];
+      if (st.open.kind !== 'ads') { paintEditor(); return; }
+      db.from('sm_report_ads').select('*').eq('report_id', id).order('position', { ascending: true }).then(function (a) {
+        if (a.error) { UI.failLine(box, 'the ads', said(a.error), function () { openReport(id, true); }); return; }
+        st.ads = a.data || [];
+        paintEditor();
+      });
     });
   }
 
@@ -316,6 +323,21 @@
       '<div class="rp-ctl">' + chip(r.status) + moreMenu(r, live) + '</div></div>' +
       (r.status === 'draft' && r.return_note ? '<p class="rp-note is-warn"><b>Returned:</b> ' + esc(r.return_note) + '</p>' : '') +
       '<div class="rp-actions">' + actions(r) + '</div><div class="msg" data-m="head"></div></section>';
+    if (r.kind === 'ads') {
+      box.innerHTML = head +
+        '<div class="rp-sec"><h3 class="ovsec-title">Account figures</h3><div class="rp-totals"></div></div>' +
+        '<div class="rp-sec"><div class="rp-sec-head"><h3 class="ovsec-title">Ads</h3>' +
+          (ed ? '<span class="rp-sec-acts"><button class="btn btn-sm" type="button" data-a="pasteads">Paste rows</button>' +
+            '<button class="btn btn-sm" type="button" data-a="addad">' + ICON.plus + 'Add ad</button></span>' : '') + '</div>' +
+          '<div class="rp-ads"></div></div>' +
+        '<div class="rp-sec"><h3 class="ovsec-title">Report text</h3><div class="rp-text"></div></div>';
+      paintTotals(); paintAds(); paintAdsText();
+      wireHead(box);
+      var ab2, pb2;
+      if ((ab2 = box.querySelector('[data-a="addad"]'))) ab2.addEventListener('click', function () { adSheet(null, ab2); });
+      if ((pb2 = box.querySelector('[data-a="pasteads"]'))) pb2.addEventListener('click', function () { pasteAdsSheet(pb2); });
+      return;
+    }
     box.innerHTML = head +
       '<div class="rp-sec"><div class="rp-sec-head"><h3 class="ovsec-title">Accounts</h3>' +
         (ed ? '<button class="btn btn-sm" type="button" data-a="addacc">' + ICON.plus + 'Add account</button>' : '') + '</div>' +
@@ -405,7 +427,7 @@
     on('delete', function (b) {
       b.closest('.kmenu').hidden = true;
       var word = periodWord(r.period_start, r.period_end);
-      window.ADspaceConfirm.ask({ title: 'Delete this report?', body: 'Its accounts, posts and text go with it. There is no restore.', go: 'Delete', tone: 'danger',
+      window.ADspaceConfirm.ask({ title: 'Delete this report?', body: (r.kind === 'ads' ? 'Its ads and text go with it.' : 'Its accounts, posts and text go with it.') + ' There is no restore.', go: 'Delete', tone: 'danger',
         field: { label: 'Type ' + word + ' to confirm', match: word, mismatch: 'That does not match the period.' } },
         function (typed) {
           db.rpc('sm_report_delete', { p_id: r.id, p_confirm: typed }).then(function (res) {
@@ -963,6 +985,472 @@
     });
   }
 
+  // ---- The advertising report ------------------------------------------------------------
+  /* An advertising report is the account's figures for the period, one row
+     an ad and objective, and the team's words. The account's reach is typed,
+     because it cannot be added up from the ads; impressions and spend are
+     summed from the ads where nobody typed them. */
+  var OBJECTIVES = [['leads', 'Leads', 'Leads'], ['messaging', 'Messaging', 'Messaging conversations'], ['sales', 'Sales', 'Purchases'],
+                    ['traffic', 'Traffic', 'Link clicks'], ['engagement', 'Engagement', 'Post engagements'],
+                    ['awareness', 'Awareness', 'Reach'], ['app', 'App promotion', 'App installs']];
+  var OBJ_WORD = {};
+  OBJECTIVES.forEach(function (o) { OBJ_WORD[o[0]] = o[1]; });
+  var RESULT_TYPES = ['Leads', 'Messaging conversations', 'Purchases', 'Link clicks', 'Landing page views', 'Post engagements',
+                      'Engagement', 'ThruPlays', 'Ad recall lift', 'Reach', 'Impressions', 'App installs'];
+  var AGE_BANDS = ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
+  var RET = [['p25', '25%'], ['p50', '50%'], ['p75', '75%'], ['p95', '95%'], ['p100', '100%']];
+  var ADS_TEXT = [
+    ['intro', 'Summary', 'A paragraph: what the spend bought, the standout ad, and the one finding that matters most.', 5],
+    ['worked', 'What worked', 'One point a line. Start a line with a dash for a sub-point.', 5],
+    ['fix', 'What to fix', 'One point a line. Start a line with a dash for a sub-point.', 4],
+    ['focus', 'Recommended focus for the following month', 'One point a line. Start a line with a dash for a sub-point.', 4]
+  ];
+  function money2(v) { return v == null || v === '' || isNaN(Number(v)) ? '—' : (String(st.client && st.client.market || '').toUpperCase() === 'SG' ? 'S$ ' : 'RM ') + Number(v).toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function numIn(v) {
+    var x = String(v == null ? '' : v).replace(/RM|MYR|SGD|S\$|%|,|\s/gi, '');
+    return x === '' || x === '-' || isNaN(Number(x)) ? null : Number(x);
+  }
+  function playIn(v) {
+    var x = String(v == null ? '' : v).trim();
+    var m = /^(\d+):(\d{1,2})$/.exec(x);
+    if (m) return Number(m[1]) * 60 + Number(m[2]);
+    return numIn(x);
+  }
+  function playOut(v) { if (v == null || v === '') return ''; var s = Math.round(Number(v)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+  function adCpr(a) {
+    if (a.cpr != null && a.cpr !== '') return Number(a.cpr);
+    var reach = /reach/i.test(String(a.result_label || ''));
+    if (a.spend == null || !Number(a.results)) return null;
+    return Number(a.spend) / Number(a.results) * (reach ? 1000 : 1);
+  }
+  function sortAds() {
+    var ord = {}; OBJECTIVES.forEach(function (o, i) { ord[o[0]] = i; });
+    st.ads.sort(function (a, b) { return (ord[a.objective] - ord[b.objective]) || (a.position - b.position); });
+  }
+
+  /* The account's figures: typed where they cannot be added up, the rest
+     summed from the ads; the previous period where this is not the first
+     month, carried forward from the last advertising report. */
+  function paintTotals() {
+    var box = st.host.querySelector('.rp-totals');
+    if (!box) return;
+    var r = st.open, t = r.ads_totals || {};
+    var sumSpend = st.ads.reduce(function (s0, a) { return s0 + (Number(a.spend) || 0); }, 0);
+    var sumImpr = st.ads.reduce(function (s0, a) { return s0 + (Number(a.impressions) || 0); }, 0);
+    var objs = OBJECTIVES.filter(function (o) { return st.ads.some(function (a) { return a.objective === o[0]; }); });
+    if (!editable()) {
+      var rows = [['First month', r.first_month ? 'Yes, with the reading guidance' : 'No, compared with the previous period'],
+        ['Total reach', fmt(t.reach)], ['Total impressions', t.impressions != null ? fmt(t.impressions) : fmt(sumImpr) + ' (from the ads)'],
+        ['Amount spent', t.spend != null ? money2(t.spend) : money2(sumSpend) + ' (from the ads)']];
+      if (!r.first_month) rows.push(['Previous period', t.prev_start ? periodWord(t.prev_start, t.prev_end) : '—'],
+        ['Previous reach', fmt(t.prev_reach)], ['Previous impressions', fmt(t.prev_impressions)], ['Previous amount spent', money2(t.prev_spend)]);
+      box.innerHTML = '<div class="ovcard"><dl class="ovfacts rp-facts">' + rows.map(function (x) {
+        return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>';
+      }).join('') + '</dl></div>';
+      return;
+    }
+    box.innerHTML = '<section class="panel rp-textform">' +
+      '<section class="fsec"><h4 class="fsec-h">This period</h4><label class="tickline"><input type="checkbox" id="rpFirst"> First month of ads: the report carries the reading guidance and no comparison</label>' +
+        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpTReach">Total reach</label><input class="input" id="rpTReach" type="text" inputmode="numeric"></div>' +
+        '<div><label class="field-label" for="rpTImpr">Total impressions</label><input class="input" id="rpTImpr" type="text" inputmode="numeric" placeholder="' + esc(fmt(sumImpr)) + ' from the ads"></div>' +
+        '<div><label class="field-label" for="rpTSpend">Amount spent</label><input class="input" id="rpTSpend" type="text" inputmode="decimal" placeholder="' + esc(money2(sumSpend)) + ' from the ads"></div></div></section>' +
+      '<section class="fsec" id="rpPrevSec"><h4 class="fsec-h">Previous period</h4>' +
+        '<div class="row fgrid"><div><label class="field-label" for="rpPStart">Start</label><input class="input" id="rpPStart" type="date"></div>' +
+        '<div><label class="field-label" for="rpPEnd">End</label><input class="input" id="rpPEnd" type="date"></div></div>' +
+        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpPReach">Reach</label><input class="input" id="rpPReach" type="text" inputmode="numeric"></div>' +
+        '<div><label class="field-label" for="rpPImpr">Impressions</label><input class="input" id="rpPImpr" type="text" inputmode="numeric"></div>' +
+        '<div><label class="field-label" for="rpPSpend">Amount spent</label><input class="input" id="rpPSpend" type="text" inputmode="decimal"></div></div></section>' +
+      (objs.length ? '<details class="fmore" data-none="Added up from the ads" data-some="Typed for some objectives"><summary>Results by objective</summary>' +
+        objs.map(function (o) {
+          return '<div class="row fgrid"><div><label class="field-label" for="rpGR_' + o[0] + '">' + esc(o[1]) + ' results</label>' +
+            '<input class="input" id="rpGR_' + o[0] + '" data-gres="' + o[0] + '" type="text" inputmode="numeric" placeholder="Added up from the ads"></div>' +
+            '<div><label class="field-label" for="rpGL_' + o[0] + '">Result type</label><input class="input" id="rpGL_' + o[0] + '" data-glab="' + o[0] + '" type="text" list="rpResultTypes"></div></div>';
+        }).join('') + '</details>' : '') +
+      '<datalist id="rpResultTypes">' + RESULT_TYPES.map(function (x) { return '<option value="' + esc(x) + '">'; }).join('') + '</datalist>' +
+      '<div class="rp-textfoot"><button class="btn btn-primary" type="button" data-a="savetotals">Save</button><div class="msg" data-m="totals"></div></div></section>';
+    var v = function (id, x) { $(id).value = x == null ? '' : x; };
+    $('rpFirst').checked = !!r.first_month;
+    v('rpTReach', t.reach); v('rpTImpr', t.impressions); v('rpTSpend', t.spend);
+    v('rpPStart', t.prev_start); v('rpPEnd', t.prev_end); v('rpPReach', t.prev_reach); v('rpPImpr', t.prev_impressions); v('rpPSpend', t.prev_spend);
+    objs.forEach(function (o) {
+      var gg = (t.groups || {})[o[0]] || {};
+      v('rpGR_' + o[0], gg.results); v('rpGL_' + o[0], gg.label);
+    });
+    var showPrev = function () { $('rpPrevSec').hidden = $('rpFirst').checked; };
+    $('rpFirst').onchange = showPrev; showPrev();
+    if (window.ADspaceForm) window.ADspaceForm.scan(box);
+    var btn = box.querySelector('[data-a="savetotals"]'), m = box.querySelector('[data-m="totals"]');
+    btn.addEventListener('click', function () {
+      var out = {}, bad = null;
+      [['reach', 'rpTReach'], ['impressions', 'rpTImpr'], ['spend', 'rpTSpend'], ['prev_reach', 'rpPReach'], ['prev_impressions', 'rpPImpr'], ['prev_spend', 'rpPSpend']].forEach(function (f) {
+        var raw = $(f[1]).value.trim();
+        if (!raw) return;
+        var n = numIn(raw);
+        if (n === null || n < 0) { bad = bad || $(f[1]); return; }
+        out[f[0]] = n;
+      });
+      if (bad) { say(m, 'A figure is a number.', 'err'); bad.focus(); return; }
+      if ($('rpPStart').value) out.prev_start = $('rpPStart').value;
+      if ($('rpPEnd').value) out.prev_end = $('rpPEnd').value;
+      if (out.prev_start && out.prev_end && out.prev_end < out.prev_start) { say(m, 'The previous period must end on or after the day it starts.', 'err'); return; }
+      if (t.prev_groups) out.prev_groups = t.prev_groups;
+      var groups = {};
+      Array.prototype.forEach.call(box.querySelectorAll('[data-gres]'), function (i) {
+        var k = i.getAttribute('data-gres'), n = numIn(i.value), lab = $('rpGL_' + k).value.trim();
+        if (n !== null || lab) groups[k] = { results: n, label: lab || null };
+      });
+      if (Object.keys(groups).length) out.groups = groups;
+      btn.disabled = true;
+      db.from('sm_reports').update({ ads_totals: out, first_month: $('rpFirst').checked }).eq('id', r.id).select('*').then(function (res) {
+        btn.disabled = false;
+        if (res.error || !(res.data || []).length) { say(m, said(res.error || 'The database refused the change.'), 'err'); return; }
+        st.open = res.data[0];
+        say(m, 'Saved.', 'ok');
+      });
+    });
+  }
+
+  function paintAds() {
+    var box = st.host.querySelector('.rp-ads');
+    if (!box) return;
+    var ed = editable();
+    if (!st.ads.length) {
+      UI.emptyLine(box, 'No ads.', ed ? 'Add an ad' : null, ed ? function () { adSheet(null, box); } : null);
+      return;
+    }
+    box.innerHTML = OBJECTIVES.map(function (o) {
+      var ads = st.ads.filter(function (a) { return a.objective === o[0]; });
+      if (!ads.length) return '';
+      var spend = ads.reduce(function (s0, a) { return s0 + (Number(a.spend) || 0); }, 0);
+      return '<div class="rp-postgroup"><p class="rp-group">' + esc(o[1]) +
+        ' <span class="mute">' + ads.length + ' ad' + (ads.length === 1 ? '' : 's') + ' · ' + esc(money2(spend)) + '</span></p>' +
+        '<div class="crm-table softpanel rp-ad-table">' +
+        '<div class="crm-head rp-ad-row"><span></span><span>Ad</span><span>Amount spent</span><span>Results</span><span>Cost per result</span><span></span></div>' +
+        ads.map(function (a) {
+          var sub = [a.result_label, a.audience ? a.audience + ' audience' : '', a.starts_on ? dayWord(a.starts_on) + (a.ends_on ? ' to ' + dayWord(a.ends_on) : '') : ''].filter(Boolean).join(' · ');
+          var c = adCpr(a);
+          return '<div class="crm-row rp-ad-row" data-id="' + esc(a.id) + '">' +
+            '<span class="rp-thumb">' + (a.thumb_data ? '<img src="' + esc(a.thumb_data) + '" alt="">' : '') + '</span>' +
+            '<span class="rp-name"><b>' + esc(a.name) + '</b><small>' + esc(sub) + '</small></span>' +
+            '<span class="rp-num">' + esc(money2(a.spend)) + '</span>' +
+            '<span class="rp-num">' + esc(fmt(a.results)) + '</span>' +
+            '<span class="rp-num">' + esc(c == null ? '—' : money2(c)) + '</span>' +
+            (ed ? rowMenu(['Edit', 'Duplicate', 'Remove']) : '<span></span>') + '</div>';
+        }).join('') + '</div></div>';
+    }).join('');
+    if (ed) wireRows(box, function (id, act, btn) {
+      var a = st.ads.filter(function (x) { return x.id === id; })[0];
+      if (act === 'Edit') adSheet(a, btn);
+      if (act === 'Duplicate') adSheet(Object.assign({}, a, { id: null, objective: a.objective }), btn, true);
+      if (act === 'Remove') removeAd(a);
+    });
+  }
+
+  function removeAd(a) {
+    db.from('sm_report_ads').delete().eq('id', a.id).select('id').then(function (res) {
+      if (res.error || !(res.data || []).length) { say(st.host.querySelector('[data-m="head"]'), said(res.error || 'Not removed. The database refused the request.'), 'err'); return; }
+      st.ads = st.ads.filter(function (x) { return x.id !== a.id; });
+      paintAds(); paintTotals();
+      undoBar(a.name + ' removed.', st.host.querySelector('.rp-ads'), function () {
+        db.from('sm_report_ads').insert(a).select('*').then(function (x) {
+          if (!x.error) { st.ads.push(x.data[0]); sortAds(); paintAds(); paintTotals(); }
+        });
+      });
+    });
+  }
+
+  function adSheet(a, opener, copy) {
+    var box = sheetShell('rpAdSheet', 'Ad',
+      '<section class="fsec"><h4 class="fsec-h">Ad</h4>' +
+        '<div class="row"><div><label class="field-label" for="rpAdName">Ad name</label><input class="input" id="rpAdName" type="text" placeholder="As it is named in Ads Manager"></div></div>' +
+        '<div class="row fgrid"><div><label class="field-label" for="rpAdObj">Objective</label><select class="select" id="rpAdObj">' +
+          OBJECTIVES.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('') + '</select></div>' +
+        '<div><label class="field-label" for="rpAdResult">Result type</label><input class="input" id="rpAdResult" type="text" list="rpAdResultTypes"></div></div>' +
+        '<datalist id="rpAdResultTypes">' + RESULT_TYPES.map(function (x) { return '<option value="' + esc(x) + '">'; }).join('') + '</datalist>' +
+        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpAdAud">Audience</label><input class="input" id="rpAdAud" type="text" placeholder="Broad, Interest"></div>' +
+        '<div><label class="field-label" for="rpAdStart">Starts</label><input class="input" id="rpAdStart" type="date"></div>' +
+        '<div><label class="field-label" for="rpAdEnd">Ends</label><input class="input" id="rpAdEnd" type="date"></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpAdThumb">Image</label>' +
+          '<div class="rp-thumbfield"><span class="rp-thumb rp-thumb-lg" id="rpAdThumbShow"></span>' +
+          '<input class="input" id="rpAdThumb" type="file" accept="image/*"><button class="btn btn-sm btn-quiet" type="button" id="rpAdThumbX">Remove</button></div></div></div></section>' +
+      '<section class="fsec"><h4 class="fsec-h">Figures</h4>' +
+        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpAdSpend">Amount spent</label><input class="input" id="rpAdSpend" type="text" inputmode="decimal"></div>' +
+        '<div><label class="field-label" for="rpAdResults">Results</label><input class="input" id="rpAdResults" type="text" inputmode="numeric"></div>' +
+        '<div><label class="field-label" for="rpAdCtr">CTR (%)</label><input class="input" id="rpAdCtr" type="text" inputmode="decimal"></div></div>' +
+        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpAdReach">Reach</label><input class="input" id="rpAdReach" type="text" inputmode="numeric"></div>' +
+        '<div><label class="field-label" for="rpAdImpr">Impressions</label><input class="input" id="rpAdImpr" type="text" inputmode="numeric"></div>' +
+        '<div><label class="field-label" for="rpAdCpr">Cost per result</label><input class="input" id="rpAdCpr" type="text" inputmode="decimal" placeholder="Worked out"></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpAdBasis">Cost per result is</label><select class="select" id="rpAdBasis" data-seg>' +
+          '<option value="">Automatic</option><option value="result">Per result</option><option value="thousand">Per 1,000 reached</option></select></div></div></section>' +
+      '<section class="fsec"><h4 class="fsec-h">Results by age (%)</h4><div class="row fgrid-3 fgrid">' +
+        AGE_BANDS.map(function (b) { return '<div><label class="field-label" for="rpAge_' + b.replace('+', 'p') + '">' + esc(b) + '</label><input class="input" id="rpAge_' + b.replace('+', 'p') + '" data-age="' + esc(b) + '" type="text" inputmode="decimal"></div>'; }).join('') +
+      '</div></section>' +
+      '<section class="fsec"><h4 class="fsec-h">Video</h4>' +
+        '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpAdHook">Hook rate (%)</label><input class="input" id="rpAdHook" type="text" inputmode="decimal"></div>' +
+        '<div><label class="field-label" for="rpAdHold">Hold rate (%)</label><input class="input" id="rpAdHold" type="text" inputmode="decimal"></div>' +
+        '<div><label class="field-label" for="rpAdPlay">Average play time</label><input class="input" id="rpAdPlay" type="text" placeholder="0:03"></div></div>' +
+        '<details class="fmore" data-none="Plays at 25%, 50%, 75%, 95% and 100%"><summary>Audience retention</summary><div class="row fgrid-3 fgrid">' +
+          RET.map(function (r0) { return '<div><label class="field-label" for="rpRet_' + r0[0] + '">Still watching at ' + r0[1] + ' (%)</label><input class="input" id="rpRet_' + r0[0] + '" data-ret="' + r0[0] + '" type="text" inputmode="decimal"></div>'; }).join('') +
+        '</div></details></section>' +
+      '<section class="fsec"><h4 class="fsec-h">Remarks</h4><div class="row"><div><label class="field-label" for="rpAdRemark">Remarks on this ad</label><textarea class="input" id="rpAdRemark" rows="2"></textarea></div></div></section>',
+      FOOT('Save'));
+    box.querySelector('h3').textContent = a && !copy ? 'Edit ad' : 'Add ad';
+    var v = function (id, x) { $(id).value = x == null ? '' : x; };
+    a = a || {};
+    v('rpAdName', a.name); $('rpAdObj').value = a.objective || st.lastObj || 'leads';
+    v('rpAdResult', a.result_label); v('rpAdAud', a.audience);
+    v('rpAdStart', a.starts_on || (a.id || copy ? null : st.open.period_start)); v('rpAdEnd', a.ends_on || (a.id || copy ? null : st.open.period_end));
+    v('rpAdSpend', a.spend); v('rpAdResults', a.results); v('rpAdCtr', a.ctr); v('rpAdReach', a.reach); v('rpAdImpr', a.impressions);
+    v('rpAdCpr', a.cpr); $('rpAdBasis').value = a.cpr_basis || '';
+    AGE_BANDS.forEach(function (b) { v('rpAge_' + b.replace('+', 'p'), (a.age || {})[b]); });
+    v('rpAdHook', a.hook_rate); v('rpAdHold', a.hold_rate); $('rpAdPlay').value = playOut(a.avg_play);
+    RET.forEach(function (r0) { v('rpRet_' + r0[0], (a.retention || {})[r0[0]]); });
+    v('rpAdRemark', a.remark);
+    var fillResult = function () {
+      if ($('rpAdResult').value.trim()) return;
+      var o = OBJECTIVES.filter(function (x) { return x[0] === $('rpAdObj').value; })[0];
+      $('rpAdResult').placeholder = o ? o[2] : '';
+    };
+    $('rpAdObj').onchange = fillResult; fillResult();
+    var thumb = a.thumb_data || null;
+    var showThumb = function () { $('rpAdThumbShow').innerHTML = thumb ? '<img src="' + esc(thumb) + '" alt="">' : ''; $('rpAdThumbX').hidden = !thumb; };
+    $('rpAdThumb').value = ''; showThumb();
+    var sm = box.querySelector('[data-m="sheet"]'); say(sm, '');
+    $('rpAdThumb').onchange = function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      shrink(f).then(function (d) { thumb = d; showThumb(); say(sm, ''); }, function (e) { say(sm, e.message, 'err'); });
+    };
+    $('rpAdThumbX').onclick = function () { thumb = null; $('rpAdThumb').value = ''; showThumb(); };
+    if (window.ADspaceForm) {
+      box.querySelectorAll('details.fmore').forEach(function (d) { window.ADspaceForm.refresh(d); });
+      window.ADspaceForm.paint($('rpAdBasis'));
+    }
+    var go = box.querySelector('[data-a="go"]');
+    go.onclick = function () {
+      var name = $('rpAdName').value.trim();
+      if (!name) { say(sm, 'An ad name is required.', 'err'); $('rpAdName').focus(); return; }
+      var bad = null;
+      var n = function (id, whole) {
+        var raw = $(id).value.trim(); if (!raw) return null;
+        var x = numIn(raw);
+        if (x === null || x < 0 || (whole && x !== Math.round(x))) { bad = bad || $(id); return null; }
+        return x;
+      };
+      var row = {
+        name: name, objective: $('rpAdObj').value, result_label: $('rpAdResult').value.trim() || null,
+        audience: $('rpAdAud').value.trim() || null, starts_on: $('rpAdStart').value || null, ends_on: $('rpAdEnd').value || null,
+        spend: n('rpAdSpend'), results: n('rpAdResults', true), ctr: n('rpAdCtr'), reach: n('rpAdReach', true), impressions: n('rpAdImpr', true),
+        cpr: n('rpAdCpr'), cpr_basis: $('rpAdBasis').value || null,
+        hook_rate: n('rpAdHook'), hold_rate: n('rpAdHold'), thumb_data: thumb || null, remark: $('rpAdRemark').value.trim() || null,
+        age: {}, retention: {}
+      };
+      var play = $('rpAdPlay').value.trim();
+      row.avg_play = play ? playIn(play) : null;
+      if (play && row.avg_play === null) bad = bad || $('rpAdPlay');
+      Array.prototype.forEach.call(box.querySelectorAll('[data-age]'), function (i) { var x = n(i.id); if (x !== null) row.age[i.getAttribute('data-age')] = x; });
+      Array.prototype.forEach.call(box.querySelectorAll('[data-ret]'), function (i) { var x = n(i.id); if (x !== null) row.retention[i.getAttribute('data-ret')] = x; });
+      if (bad) { say(sm, 'A figure is a number: a whole number for results, reach and impressions.', 'err'); if (window.ADspaceForm && window.ADspaceForm.reveal) window.ADspaceForm.reveal(bad); bad.focus(); return; }
+      if (row.starts_on && row.ends_on && row.ends_on < row.starts_on) { say(sm, 'The ad must end on or after the day it starts.', 'err'); return; }
+      go.disabled = true;
+      var editing = a.id && !copy;
+      var q = editing ? db.from('sm_report_ads').update(row).eq('id', a.id).select('*')
+                      : db.from('sm_report_ads').insert(Object.assign({ report_id: st.open.id, position: st.ads.length + 1 }, row)).select('*');
+      q.then(function (res) {
+        go.disabled = false;
+        if (res.error || !(res.data || []).length) { say(sm, said(res.error || 'The database refused the change.'), 'err'); return; }
+        var saved = res.data[0];
+        if (editing) st.ads = st.ads.map(function (x) { return x.id === a.id ? saved : x; });
+        else st.ads.push(saved);
+        st.lastObj = row.objective;
+        sortAds();
+        window.ADspaceSheet.clean(); window.ADspaceSheet.close();
+        paintAds(); paintTotals();
+      });
+    };
+    window.ADspaceSheet.show(box, { opener: opener });
+  }
+
+  /* Rows from an Ads Manager export, with its own header row. A breakdown
+     by age comes in as one row an ad and band; those rows are gathered into
+     one ad, its age split taken from its results (or its impressions where
+     it has none), and its figures added up. Video plays are turned into the
+     hook rate, the hold rate and the retention curve. */
+  var AD_HEAD = [
+    [/^(ad name|ad|name)$/, 'name'], [/^(ad set name|ad set|audience)$/, 'audience'], [/^objective$/, 'objective'],
+    [/^(result type|result indicator|results? type)$/, 'result_label'], [/^results$/, 'results'],
+    [/^reach$/, 'reach'], [/^impressions$/, 'impressions'], [/^amount spent/, 'spend'],
+    [/^ctr/, 'ctr'], [/^cost per results?/, 'cpr'],
+    [/^(reporting starts|starts?|start date|start)$/, 'starts_on'], [/^(reporting ends|ends?|end date|end)$/, 'ends_on'],
+    [/^age$/, 'age'],
+    [/^(3-second video plays|video plays at 3 ?s|3-second plays)$/, 'plays3'], [/^thruplays$/, 'thruplays'], [/^video plays$/, 'plays'],
+    [/^video plays at 25%/, 'v25'], [/^video plays at 50%/, 'v50'], [/^video plays at 75%/, 'v75'], [/^video plays at 95%/, 'v95'], [/^video plays at 100%/, 'v100'],
+    [/^video average play time/, 'avg_play'], [/^hook rate/, 'hook_rate'], [/^hold rate/, 'hold_rate']
+  ];
+  function objectiveOf(v) {
+    var x = String(v || '').toLowerCase().replace(/^outcome_/, '').replace(/_/g, ' ').trim();
+    if (!x) return null;
+    if (/lead/.test(x)) return 'leads';
+    if (/messag|conversation/.test(x)) return 'messaging';
+    if (/sale|conversion|purchase|catalog/.test(x)) return 'sales';
+    if (/traffic|link click/.test(x)) return 'traffic';
+    if (/app/.test(x)) return 'app';
+    if (/engage|video view|page like/.test(x)) return 'engagement';
+    if (/aware|reach|brand/.test(x)) return 'awareness';
+    return null;
+  }
+  function parseAdRows(text, year, fallbackObj) {
+    var lines = String(text || '').replace(/\r/g, '').split('\n').filter(function (l) { return l.trim(); });
+    if (lines.length < 2) return { error: 'Paste a header row and at least one ad.' };
+    var sep = lines[0].indexOf('\t') > -1 ? '\t' : ',';
+    var head = lines[0].split(sep).map(function (h) {
+      var k = h.trim().toLowerCase().replace(/^"|"$/g, '').replace(/\s+/g, ' ');
+      var hit = AD_HEAD.filter(function (x) { return x[0].test(k); })[0];
+      return hit ? hit[1] : null;
+    });
+    if (head.indexOf('name') < 0) return { error: 'The header row needs an Ad name column.' };
+    var byKey = {}, order = [], skipped = 0;
+    lines.slice(1).forEach(function (l) {
+      var cells = l.split(sep).map(function (c) { return c.trim().replace(/^"|"$/g, ''); }), raw = {};
+      head.forEach(function (k, i) { if (k) raw[k] = cells[i] || ''; });
+      if (!raw.name) { skipped++; return; }
+      var obj = objectiveOf(raw.objective) || fallbackObj;
+      var key = [raw.name, obj, raw.audience || '', raw.starts_on || ''].join('|');
+      var ad = byKey[key];
+      if (!ad) {
+        ad = byKey[key] = { name: raw.name, objective: obj, audience: raw.audience || null, result_label: raw.result_label || null,
+          starts_on: raw.starts_on ? readDate(raw.starts_on, year) : null, ends_on: raw.ends_on ? readDate(raw.ends_on, year) : null,
+          _n: {}, _age: {}, _rows: 0, _ctrw: 0 };
+        order.push(key);
+      }
+      ad._rows++;
+      ['results', 'reach', 'impressions', 'spend', 'plays3', 'thruplays', 'plays', 'v25', 'v50', 'v75', 'v95', 'v100'].forEach(function (k) {
+        var x = numIn(raw[k]); if (x !== null) ad._n[k] = (ad._n[k] || 0) + x;
+      });
+      ['cpr', 'hook_rate', 'hold_rate'].forEach(function (k) { var x = numIn(raw[k]); if (x !== null) ad._n[k] = x; });
+      var pl = playIn(raw.avg_play); if (pl !== null) ad._n.avg_play = pl;
+      var ctr = numIn(raw.ctr), im = numIn(raw.impressions);
+      if (ctr !== null) { ad._n.ctrSum = (ad._n.ctrSum || 0) + ctr * (im || 1); ad._ctrw += (im || 1); }
+      if (raw.age) {
+        var band = String(raw.age).replace(/\s/g, '').replace(/–/g, '-');
+        if (AGE_BANDS.indexOf(band) > -1) {
+          ad._age[band] = { results: numIn(raw.results) || 0, impressions: numIn(raw.impressions) || 0 };
+        }
+      }
+    });
+    var rows = order.map(function (k) {
+      var ad = byKey[k], n = ad._n;
+      var out = { name: ad.name, objective: ad.objective, audience: ad.audience, result_label: ad.result_label,
+        starts_on: ad.starts_on, ends_on: ad.ends_on,
+        results: n.results != null ? Math.round(n.results) : null, reach: n.reach != null ? Math.round(n.reach) : null,
+        impressions: n.impressions != null ? Math.round(n.impressions) : null,
+        spend: n.spend != null ? Math.round(n.spend * 100) / 100 : null,
+        ctr: ad._ctrw ? Math.round(n.ctrSum / ad._ctrw * 100) / 100 : null,
+        cpr: ad._rows === 1 && n.cpr != null ? n.cpr : null,
+        avg_play: n.avg_play != null ? n.avg_play : null, age: {}, retention: {} };
+      if (n.hook_rate != null) out.hook_rate = n.hook_rate;
+      else if (n.plays3 != null && n.impressions) out.hook_rate = Math.round(n.plays3 / n.impressions * 10000) / 100;
+      if (n.hold_rate != null) out.hold_rate = n.hold_rate;
+      else if (n.thruplays != null && n.impressions) out.hold_rate = Math.round(n.thruplays / n.impressions * 10000) / 100;
+      var base = n.plays || n.plays3;
+      if (base) [['p25', 'v25'], ['p50', 'v50'], ['p75', 'v75'], ['p95', 'v95'], ['p100', 'v100']].forEach(function (r0) {
+        if (n[r0[1]] != null) out.retention[r0[0]] = Math.round(n[r0[1]] / base * 1000) / 10;
+      });
+      var bands = Object.keys(ad._age);
+      if (bands.length) {
+        var byRes = bands.reduce(function (t0, b) { return t0 + ad._age[b].results; }, 0);
+        var f = byRes ? 'results' : 'impressions';
+        var tot = bands.reduce(function (t0, b) { return t0 + ad._age[b][f]; }, 0);
+        if (tot) AGE_BANDS.forEach(function (b) { out.age[b] = ad._age[b] ? Math.round(ad._age[b][f] / tot * 1000) / 10 : 0; });
+      }
+      return out;
+    });
+    return { rows: rows, skipped: skipped, columns: head.filter(Boolean), byAge: head.indexOf('age') > -1 };
+  }
+
+  function pasteAdsSheet(opener) {
+    var box = sheetShell('rpPasteAdsSheet', 'Paste rows',
+      '<section class="fsec"><div class="row"><div><label class="field-label" for="rpPAObj">Objective, where the rows do not name one</label><select class="select" id="rpPAObj">' +
+        OBJECTIVES.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('') + '</select></div></div>' +
+      '<div class="row"><div><label class="field-label" for="rpPAText">Rows exported from Ads Manager, with the header row</label>' +
+        '<textarea class="input rp-paste" id="rpPAText" rows="8" placeholder="Ad name&#9;Objective&#9;Results&#9;Reach&#9;Impressions&#9;Amount spent (MYR)&#9;CTR (all)"></textarea></div></div>' +
+      '<p class="rp-paste-sum" id="rpPASum"></p></section>', FOOT('Add ads'));
+    $('rpPAText').value = '';
+    var sum = $('rpPASum'), sm = box.querySelector('[data-m="sheet"]');
+    sum.textContent = ''; say(sm, '');
+    var year = Number(String(st.open.period_start).slice(0, 4));
+    var go = box.querySelector('[data-a="go"]');
+    var read = function () {
+      var out = parseAdRows($('rpPAText').value, year, $('rpPAObj').value);
+      if (out.error) { sum.textContent = $('rpPAText').value.trim() ? out.error : ''; go.disabled = true; return out; }
+      sum.textContent = out.rows.length + ' ad' + (out.rows.length === 1 ? '' : 's') + ' ready' +
+        (out.byAge ? ', the age split gathered from the rows' : '') +
+        (out.skipped ? ', ' + out.skipped + ' without a name skipped' : '') + '.';
+      go.disabled = !out.rows.length;
+      return out;
+    };
+    $('rpPAText').oninput = read; $('rpPAObj').onchange = read;
+    go.disabled = true;
+    go.onclick = function () {
+      var out = read();
+      if (!out.rows || !out.rows.length) return;
+      var n = st.ads.length;
+      var rows = out.rows.map(function (r0, i) { return Object.assign({ report_id: st.open.id, position: n + i + 1 }, r0); });
+      go.disabled = true;
+      db.from('sm_report_ads').insert(rows).select('*').then(function (res) {
+        go.disabled = false;
+        if (res.error) { say(sm, said(res.error), 'err'); return; }
+        st.ads = st.ads.concat(res.data || []);
+        sortAds();
+        window.ADspaceSheet.clean(); window.ADspaceSheet.close();
+        paintAds(); paintTotals();
+      });
+    };
+    window.ADspaceSheet.show(box, { opener: opener });
+  }
+
+  function paintAdsText() {
+    var box = st.host.querySelector('.rp-text');
+    if (!box) return;
+    var r = st.open, ins = r.insights || {};
+    var valOf = function (k) { return k === 'intro' ? r.intro : ins[k]; };
+    if (!editable()) {
+      var rows = [['Title', r.title]].concat(ADS_TEXT.map(function (x) { return [x[1], valOf(x[0])]; }))
+        .filter(function (x) { return String(x[1] || '').trim(); });
+      box.innerHTML = rows.length ? '<div class="ovcard"><dl class="ovfacts rp-facts">' + rows.map(function (x) {
+        return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]).replace(/\n/g, '<br>') + '</dd>';
+      }).join('') + '</dl></div>' : '';
+      if (!rows.length) UI.emptyLine(box, 'No text.');
+      return;
+    }
+    box.innerHTML = '<section class="panel rp-textform">' +
+      '<section class="fsec"><div class="row"><div><label class="field-label" for="rpTitle">Title</label><input class="input" id="rpTitle" type="text"></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpHeadline">Headline</label><input class="input" id="rpHeadline" type="text" placeholder="One line over the figures, optional"></div></div></section>' +
+      '<section class="fsec">' + ADS_TEXT.map(function (x) {
+        return '<div class="row"><div><label class="field-label" for="rpAT_' + x[0] + '">' + esc(x[1]) + '</label>' +
+          '<textarea class="input" id="rpAT_' + x[0] + '" rows="' + x[3] + '" placeholder="' + esc(x[2]) + '"></textarea></div></div>';
+      }).join('') + '</section>' +
+      '<div class="rp-textfoot"><button class="btn btn-primary" type="button" data-a="savetext">Save</button><div class="msg" data-m="text"></div></div></section>';
+    $('rpTitle').value = r.title || '';
+    $('rpHeadline').value = r.headline || '';
+    ADS_TEXT.forEach(function (x) { $('rpAT_' + x[0]).value = valOf(x[0]) || ''; });
+    var btn = box.querySelector('[data-a="savetext"]'), m = box.querySelector('[data-m="text"]');
+    btn.addEventListener('click', function () {
+      var title = $('rpTitle').value.trim();
+      if (!title) { say(m, 'A title is required.', 'err'); $('rpTitle').focus(); return; }
+      var insights = {};
+      ADS_TEXT.forEach(function (x) { if (x[0] === 'intro') return; var v = $('rpAT_' + x[0]).value.trim(); if (v) insights[x[0]] = v; });
+      var row = { title: title, headline: $('rpHeadline').value.trim() || null, intro: $('rpAT_intro').value.trim() || null, insights: insights };
+      btn.disabled = true;
+      db.from('sm_reports').update(row).eq('id', r.id).select('*').then(function (res) {
+        btn.disabled = false;
+        if (res.error || !(res.data || []).length) { say(m, said(res.error || 'The database refused the change.'), 'err'); return; }
+        st.open = res.data[0];
+        say(m, 'Saved.', 'ok');
+      });
+    });
+  }
+
   // ---- The Reports route: every client's reports, by where each stands ------
   var hub = { rows: [], clients: [], wired: false };
   var HUB_BANDS = [
@@ -1051,7 +1539,7 @@
   }
 
   window.ADspaceReports = {
-    clientPane: clientPane, parseRows: parseRows, readDate: readDate,
+    clientPane: clientPane, parseRows: parseRows, readDate: readDate, parseAdRows: parseAdRows,
     openId: function () { return st.open && st.open.id ? st.open.id : ''; },
     enterHub: enterHub
   };
