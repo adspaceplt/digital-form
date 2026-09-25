@@ -83,7 +83,7 @@
      and the stylesheet keys on that. No containment, nothing for a menu to
      trip over, and the same single copy of each row template serves the phone
      and the narrow pane, because on a phone the pane is narrow too. */
-  var FIT = '.console-body, .rec-pane, .rec-rail';
+  var FIT = '.console-body, .rec-pane, .rec-rail, [data-narrow]';
   /* Two thresholds, because two different things go wrong at two different
      widths. At 640 a row of four columns has to become two lines — that is the
      services row, the contacts row, the schedule. At 460 even a two column row
@@ -98,7 +98,12 @@
        class when it is shown and the observer fires with a real size. */
     var w = el.clientWidth;
     if (!w) return;
-    el.classList.toggle('is-narrow', w <= NARROW);
+    /* A list whose desk row needs more than 640 to be read states its own
+       line (`data-narrow`). My Work's row is six tracks, and between 640 and
+       its own line the task's name was left 64 to 108px — so there it takes
+       the narrow row, which is the one the phone already reads. */
+    var n = parseInt(el.getAttribute('data-narrow'), 10) || NARROW;
+    el.classList.toggle('is-narrow', w <= n);
     el.classList.toggle('is-tight', w <= TIGHT);
   }
 

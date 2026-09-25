@@ -679,7 +679,7 @@
       patch.client_code = codeOf(patch.client_code);
       if (!CODE_OK.test(patch.client_code)) {
         msg('crmMsg', 'A Client ID is 2 to 12 letters or digits, with no spaces or slashes.', 'err');
-        $('crmClientCode').focus();
+        if (window.ADspaceForm) ADspaceForm.reveal($('crmClientCode')); else $('crmClientCode').focus();
         return;
       }
     }
@@ -786,13 +786,10 @@
     });
     $('crmLinks').innerHTML = links.join('');
 
-    BILLING.forEach(function (f) { $(f[0]).value = c[f[1]] || ''; });
-    $('crmSstApplies').checked = c.sst_applies !== false;
-    $('crmSstLabel').textContent = 'Charge ' + MON.taxLabel() + ' on this client\'s quotes';
+    fillBilling(c);
     paintBilling(c);
-    BRAND.forEach(function (f) { $(f[0]).value = c[f[1]] || ''; });
-    $('crmNotes').value = c.brand_notes || '';
-    paintLogoPreview();
+    fillBrand(c);
+    paintBrandRead(c);
     var linksOn = BRAND.filter(function (f) { return c[f[1]]; }).length;
     $('crmBrandSummary').textContent =
       [linksOn ? linksOn + ' of ' + BRAND.length : '', c.brand_notes ? 'Notes' : '']
@@ -1527,9 +1524,14 @@
            focused instead of describing a different screen. */
         showPane('billing');
         setUrl();
-        msg('crmBillMsg', 'Billing details required before Active: ' + missing.join(', ') + '.', 'err');
-        var first = BILLING.filter(function (f) { return missing.indexOf(f[2]) > -1; })[0];
-        if (first && $(first[0])) $(first[0]).focus();
+        if (mayPart('clients.billing', 'work')) {
+          openBilling(this);
+          msg('crmBillMsg', 'Billing details required before Active: ' + missing.join(', ') + '.', 'err');
+          var first = BILLING.filter(function (f) { return missing.indexOf(f[2]) > -1; })[0];
+          if (first && $(first[0])) $(first[0]).focus();
+        } else {
+          msg('crmBillNote', 'Billing details required before Active: ' + missing.join(', ') + '.', 'err');
+        }
         return;
       }
     }
@@ -1567,12 +1569,96 @@
     if (maySeeBilling()) gate.setAttribute('data-go', 'billing'); else gate.removeAttribute('data-go');
     $('crmGateText').textContent = 'Required before Active: ' + missing.join(', ') + '.';
     $('crmBillSummary').innerHTML = ring(BILLING_REQUIRED.length - missing.length, BILLING_REQUIRED.length);
+    paintBillRead(c);
     var pick = billContact(c);
     $('crmBillContact').innerHTML = '<option value="">None</option>' + (state.contacts || []).map(function (ct) {
       return '<option value="' + esc(ct.id) + '"' + (pick && pick.id === ct.id ? ' selected' : '') + '>' + esc(ct.name) +
         (ct.is_primary ? ' · Main contact' : '') + '</option>';
     }).join('');
   }
+
+  /* Read first. The pane states what is held in the three groups the sheet
+     edits, in the order an invoice reads them; a required value that is
+     missing says so in red, an optional one takes the mute dash every other
+     empty cell in the console takes. */
+  function readGroup(title, rows) {
+    return '<section class="readgroup"><h4 class="fsec-h">' + esc(title) + '</h4><dl class="ovfacts">' +
+      rows.map(function (r) {
+        var v = r[1];
+        var dd = v ? '<dd' + (r[3] ? ' class="is-pre"' : '') + '>' + v + '</dd>'
+          : r[2] ? '<dd class="is-missing">Required</dd>' : '<dd class="is-empty">—</dd>';
+        return '<div><dt>' + esc(r[0]) + '</dt>' + dd + '</div>';
+      }).join('') + '</dl></section>';
+  }
+  function paintBillRead(c) {
+    var box = $('crmBillRead');
+    if (!box) return;
+    var pick = billContact(c);
+    var t = function (k) { return c[k] ? esc(c[k]) : ''; };
+    box.innerHTML =
+      readGroup('Company', [['Registered name', t('legal_name'), true]]) +
+      readGroup('Registration and tax', [
+        ['Business registration no.', t('company_no'), true],
+        ['Old registration no.', t('company_no_old')],
+        ['TIN', t('tin')],
+        ['SST registration no.', t('sst_no')],
+        ['SST on quotes', c.sst_applies === false ? 'Not charged' : 'Charged, ' + esc(MON.taxLabel())]
+      ]) +
+      readGroup('Billing contact and address', [
+        ['Billing contact', pick ? esc(pick.name) + (pick.is_primary ? ' <span class="muted">· Main contact</span>' : '') : '', true],
+        ['Finance email', t('finance_email')],
+        ['Billing address', t('billing_address'), true, true]
+      ]);
+  }
+  /* The sheet's fields are the record's values whenever it opens, so a Cancel
+     leaves nothing half typed behind for the next Edit. */
+  function fillBilling(c) {
+    BILLING.forEach(function (f) { if (f[0] !== 'crmBillContact') $(f[0]).value = c[f[1]] || ''; });
+    $('crmSstApplies').checked = c.sst_applies !== false;
+    $('crmSstLabel').textContent = 'Charge ' + MON.taxLabel() + ' on this client\'s quotes';
+  }
+  function openBilling(opener) {
+    fillBilling(state.client);
+    paintBilling(state.client);
+    msg('crmBillMsg', ''); msg('crmBillNote', '');
+    openSheet('crmBillSheet', opener || $('crmBillEdit'));
+  }
+  $('crmBillEdit').addEventListener('click', function () { openBilling(this); });
+  $('crmBillCancel').addEventListener('click', function () {
+    shutSheet('crmBillSheet'); fillBilling(state.client); paintBilling(state.client); msg('crmBillMsg', '');
+  });
+  sheetClose('crmBillClose', 'crmBillCancel');
+
+  function paintBrandRead(c) {
+    var box = $('crmBrandRead');
+    if (!box) return;
+    var handle = function (k, label) {
+      return c[k] ? '<a class="readlink" href="' + esc(profileUrl(k, c[k])) + '" target="_blank" rel="noopener">' + esc(c[k]) + '</a>' : '';
+    };
+    var site = c.website ? '<a class="readlink" href="' + esc(/^https?:/i.test(c.website) ? c.website : 'https://' + c.website) +
+      '" target="_blank" rel="noopener">' + esc(c.website.replace(/^https?:\/\//i, '').replace(/\/$/, '')) + '</a>' : '';
+    var logo = c.logo_url ? '<span class="readlogo"><img src="' + esc(c.logo_url) + '" alt="" onerror="this.remove()"></span>Set' : '';
+    box.innerHTML =
+      readGroup('Website and office', [['Website', site], ['Office phone', c.phone ? esc(c.phone) : '']]) +
+      readGroup('Social handles', [
+        ['Instagram', handle('handle_ig')], ['Facebook', handle('handle_fb')],
+        ['TikTok', handle('handle_tiktok')], ['rednote', c.handle_xhs ? esc(c.handle_xhs) : '']
+      ]) +
+      readGroup('Logo and notes', [['Logo', logo], ['Brand notes', c.brand_notes ? esc(c.brand_notes) : '', false, true]]);
+  }
+  function fillBrand(c) {
+    BRAND.forEach(function (f) { $(f[0]).value = c[f[1]] || ''; });
+    $('crmNotes').value = c.brand_notes || '';
+    paintLogoPreview();
+  }
+  $('crmBrandEdit').addEventListener('click', function () {
+    fillBrand(state.client); msg('crmBrandMsg', ''); msg('crmBrandNote', '');
+    openSheet('crmBrandSheet', this);
+  });
+  $('crmBrandCancel').addEventListener('click', function () {
+    shutSheet('crmBrandSheet'); fillBrand(state.client); msg('crmBrandMsg', '');
+  });
+  sheetClose('crmBrandClose', 'crmBrandCancel');
 
   // The registered name goes on an invoice in capitals, so it is kept that way.
   $('crmLegalName').addEventListener('input', function () {
@@ -1590,8 +1676,10 @@
       Object.keys(patch).forEach(function (k) { state.client[k] = patch[k]; });
       var still = billingMissing(state.client);
       log('client.billing', state.client.name, still.length ? still.length + ' fields still needed' : 'complete');
+      if (window.ADspaceSheet) window.ADspaceSheet.clean();
+      shutSheet('crmBillSheet');
       openClient(state.client);
-      msg('crmBillMsg', still.length
+      msg('crmBillNote', still.length
         ? 'Saved. Required before Active: ' + still.join(', ') + '.'
         : 'Saved.',
         still.length ? 'warn' : 'ok');
@@ -1622,8 +1710,10 @@
         if (r.error) { msg('crmBrandMsg', r.error.message, 'err'); return; }
         Object.keys(patch).forEach(function (k) { state.client[k] = patch[k]; });
         log('client.brand', state.client.name, '');
+        if (window.ADspaceSheet) window.ADspaceSheet.clean();
+        shutSheet('crmBrandSheet');
         openClient(state.client);
-        msg('crmBrandMsg', 'Saved.', 'ok');
+        msg('crmBrandNote', 'Saved.', 'ok');
       });
   });
 

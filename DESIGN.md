@@ -201,9 +201,9 @@ rule, and a theme nobody audits is a theme that quietly fails AA.
 | `--radius` / `--radius-sm` | 14px / 10px | A bounded section (panel, card, table, sheet) / anything a finger operates (button, input, select). `--radius-panel` and `--radius-ctl` are aliases of those two, `--radius-lg` is 18px for a sheet. **Two corners and nothing between them**: a contacts table at 10px sitting between two panels at 14 is the mismatch nobody can name and everybody sees, and a third pair of tokens beside the first two is how that happened |
 | `--head-h` | 64px (56px on a phone) | The chrome bar, on every page. `.topbar-inner` takes `calc(var(--head-h) - 1px)` because `.topbar` carries the hairline outside its box while `.console-head` carries it inside, and without that the two differ by exactly the border |
 | `--ctl-h` | 38px (44px coarse pointer) | Every button, input, select, icon button |
-| `--ctl-h-sm` | 32px (44px coarse) | `.btn-sm`, `.input-sm`, `.select-sm`, every status select |
-| `--state-w` | 124px | Every status select, on a head as in a row |
-| `--ctl-text` / `--field-text` | 13px / 14px (16px coarse, stops iOS zoom) | Control label / field text |
+| `--ctl-h-sm` | 32px (38px coarse) | `.btn-sm`, `.input-sm`, `.select-sm`, every status select, every segment |
+| `--state-w` | 124px | Every status select, on a head as in a row. My Work's task row states its own 160px stage track, measured against the SOP's longest stage name |
+| `--ctl-text` / `--field-text` | 13px / 14px (14px / 15px coarse; iOS focus zoom stopped by `maximum-scale` on iOS alone) | Control label / field text |
 | Button min width | 116px | So a row of buttons does not step |
 | Icon glyph | 15px stroke, 1.8 | Same glyph for the same action everywhere; never mix outline and filled |
 | Icon button box | 38px (44px coarse) | `.iconbtn`, `.kfold`, `.kmenu-btn`, `.btn-icononly`: the glyph stays 16px, the target never shrinks with it |
@@ -273,8 +273,9 @@ in Slate Book 11pt on a 14.5pt line with 14pt between paragraphs
 CONFIDENTIAL, the subject, ADSPACE PLT) in Slate Regular
 (`ADSPACE_ORG.fontBold` = `/css/SlateRg.TTF`; no Medium file exists),
 registration 9pt, table 10pt, notes 8.5pt, page count 7.5pt. Margins 54pt.
-The monogram (`/css/adspace-mark.png`) sits 21pt tall top right and 20pt
-bottom centre. No Company Profile QR on a letter. Config holds file
+The monogram (`/css/adspace-mark.png`) sits 21pt tall top right, as part of
+the letterhead, and nowhere else on the page: the foot carried a second one
+until 2026-09-25, when the user confirmed ADspace has dropped it. No Company Profile QR on a letter. Config holds file
 paths, never font names.
 
 **On screen, one brand face, on the display sizes only.** Slate Regular
@@ -403,7 +404,7 @@ flourish and this is the operative sentence.
 
 **The initials go where the hand that writes them rests**, which is the side of
 the page the signature is on: bottom right on every page but the signed one,
-with the reference bottom left, the monogram bottom centre and the page number a
+with the reference bottom left and the page number a
 row below the initials, so the only two marks in the right of the foot cannot
 collide.
 
@@ -444,7 +445,7 @@ Scale for gaps between blocks and sections: 4, 8, 12, 16, 24, 32. Component padd
 | Panel padding | 18px 20px (phone 14px) |
 | Fold head (`.disclosure`) | 16px 22px (phone 12px 14px) |
 | Row padding in a table | 10px 15px (phone 12px 15px); a header row `0 15px 8px` |
-| Field row gap (`.row`) | 12px; a second row 12px above |
+| Field row gap (`.row`) | 12px across; **in a sheet, 16px down** between one field and the next, and between fields a row has wrapped on a phone (`.sheet-body :where(.row)`, 2026-09-24). The My Work sheets had no step at all and the others carried 12px in a style attribute per row; no row in a sheet states its own margin now, and `tests/geom.js` measures every sheet at 1280 and 390 |
 | Cell grid gap (`.facts`, `.tally`) | 14px 24px / 14px |
 | Card list gap (`.cards`, `.kcard`) | 14px / 10px |
 | Table sub-heading (`.svc-cat`) | 14px 15px 6px |
@@ -486,8 +487,14 @@ measures the table whenever its header is not on screen (`padding`).
 | What a record is waiting on | One line under the identity (`.camp-next`), derived on every repaint and never stored: a state written once by the action that caused it goes stale the moment somebody reverts |
 | One of many, then the one | A **queue** and an open record (`.queue` > `.qrow`, the creator's page): the queue orders by what has to be done, marks the one that needs the reader, and opens it by itself; the open one is in the address. Four full records stacked, each with its own upload box, is a page you have to read to find the one that matters |
 | Deciding on one thing in a gallery | A **canvas** (`.canvas`): the thing at the size it deserves on a stage, and everything the decision rests on in a rail beside it — what it is, the copy in full, what was said last time, where it stands, and the one place to decide. Prev/next and the arrow keys step the set, Escape closes. The canvas **moves** the gallery item's own blocks into it and puts them back on close, so there is one decision control in the page and it cannot drift from the one in the gallery |
-| Search, filter, count and the one action | `.cmdbar` > `.cmdbar-find` (a search box with its glyph, bounded 190 to 420px) + the filter selects + `.cmdbar-end` > `.cmdbar-count` + the `?` + one `.btn-sm.btn-primary`, on every console list: clients, my work, content review, campaigns, creators, short links, documents, the rate card, the team. The count reads `7 services` whole and `3 of 41` once a filter is on, never sits in a section head, and is not drawn at all when it is empty. The end group is one element so a wrap cannot split it: on a phone it takes the last row whole, the count and the `?` on the left and the actions on the right, and every route's bar is the same three rows |
+| Search, filter, count and the one action | `.cmdbar` > `.cmdbar-find` (a search mark that grows into a 280px field when pressed and shuts when left empty, one shape on every bar at every width) + the filter selects + `.cmdbar-end` > `.cmdbar-count` + the `?` + one `.btn-sm.btn-primary`, on every console list: clients, my work, content review, campaigns, creators, short links, documents, the rate card, the team. The count reads `7 services` whole and `3 of 41` once a filter is on, never sits in a section head, and is not drawn at all when it is empty. The end group is one element so a wrap cannot split it: on a phone it takes the last row whole, the count and the `?` on the left and the actions on the right, and every route's bar is the same three rows. Where a route has more than one other act, they sit behind one ⋯ beside the primary rather than as a wrapped row of outline buttons (My Work: Bulk add, From template, Select tasks, and Task numbering for an admin); that ⋯ is a bar control like the rest, 32px at a desk (the `.btn-sm` floor) and 44 under a finger |
 | Links to reach a person | `.plink` chips (phone, WhatsApp, email); equal widths on a phone |
+| Fields side by side | `.row.fgrid` (two equal columns) or `.row.fgrid-3` (three), `span-all` / `span-2` for the field that needs the room. Never a pixel width in a style attribute: a field that grows from its own width makes every row of a form split at a different point |
+| A form of more than five fields | **Sections** (`section.fsec` > `h4.fsec-h` + its rows), two to five fields each, in the order the decision is made, divided by one hairline (`--line-soft`) and a 24px step; the first section, and one that follows the choice a sheet opens on, takes no rule. A section's title is 13px/600 ink, never an eyebrow |
+| A choice of two to four | A **segment** (`select[data-seg]`, drawn by `js/form.js`): every option on show, the chosen one raised on the track (`--seg-on`) by one surface that **slides** to a new choice (`::before`, moved on `transform`; snapped on first placement and on resize; stilled by reduced motion), a radio group the arrow keys walk. The `<select>` stays in the page as the source of truth, out of sight and out of the tab order, so every script reading `.value`, setting it or listening for `change` is untouched. Five or more stays a select (Hick) |
+| The fields a person usually leaves as they are | **More details** (`details.fmore`): one line with the fields folded under it, and the line says what they hold (`Engagement · Normal · Standard`), from `data-none`, `data-some` and `data-on` on the fields, so nothing is hidden and nothing is asked twice. `ADspaceForm.reveal(el)` opens the fold before a refusal focuses a field inside it |
+| A record pane of facts | **Read first** (Billing, Brand): the pane states the values in groups (`readGroup`, the `.ovfacts` label beside value), a missing required value named in warn, and **Edit** opens the same groups in a sheet. Nine boxes to type in are not how a registration number is read |
+| The main action from the keyboard | Cmd + Enter (Ctrl + Enter) presses the nearest action (the small form, else the sheet's foot, else the pane form), never a red one, never on a record sheet with no foot (`js/sheet.js`) |
 | A form that adds or edits one record | A **sheet** over the list (`js/sheet.js`, `.sheet-card.formsheet`): head with a close mark, a scrolling `.sheet-body`, a foot with Cancel quiet and the primary, equal halves below 560. The scrim closes it only while nothing has been typed; Escape and the close mark always do. One shape for a creator, a colleague and a user group |
 | The command bar on a phone | Below 640 the bar is **one row**: a **search** mark and a **Filters** mark on the left (`.cmdbar-search`, `.cmdbar-filters`, the second carrying a badge that counts the filters off their default), then the count and the primary action as a filled `+` on the right, with the view segment as a second row where a route has one. Search **grows into the field** on the `.namebox` move and shuts again when it is left empty. The selects come up in a **sheet from the floor** (`#cmdSheet`) under labels, with Done and Clear; a second action is behind a **⋯** beside the primary. `js/cmdbar.js` is the one copy. The desk bar is untouched |
 | What a section is for | The route's name in the console head (`.console-title`, a button with a 14px info glyph) opens the one line that says what the section is for. Not a `?` in the command bar: the line is about the section, and the section's name is where a reader looks for it |
@@ -800,14 +807,62 @@ question on save, so the list on the sheet is a courtesy and not the gate.
 **A month is a record, and the pieces made in it hang off it.** The
 engagement is one client's work for one month: who manages it, how many
 pieces were planned, where the files live, the content meeting, and the
-thirteen questions that say whether the month is ready. It lives on the
-client record, because that is where the month is planned, and the task
-rail names it because that is where the month is worked. Production waits
-on two facts about it (planning complete, the meeting held or marked not
-applicable), and both are the database's to check: a status a page could
-set is a status a page could set wrongly. The thirteen questions are one
-row each, a state and an owner, and one row repaints on its own answer so a
-person working down the list keeps their place.
+two ticks that say whether the month is ready. It lives on the client
+record, because that is where the month is planned, and the task rail names
+it because that is where the month is worked. Production waits on two facts
+about it (planning complete, the meeting held or marked not applicable), and
+both are the database's to check: a status a page could set is a status a
+page could set wrongly.
+
+**A meeting is booked where it is planned, and the message about it is
+written for the team (2026-09-24).** The content meeting books itself on the
+shared calendar with a Google Meet link, and the calendar is the lock: a slot
+another event holds is refused and named, because the point of one shared
+calendar is that two people cannot book the same half hour. A step that needs
+a service the team has not connected yet does not fail the save it follows:
+the meeting is saved and the line under it says what is missing, in one
+sentence with the way round it. And what the team sends the client is drawn
+from the record, never typed again: the team's own bilingual template, filled
+from the date, the length, the content month and the link, with one Copy.
+The text is folded behind Show, because the everyday act is Copy and nine
+lines of it on every month would be the card.
+
+**Onboarding happens once, so its checklist does too (2026-09-24).** The two
+readiness ticks were seeded on every month, so a client in their eighth month
+was asked again whether they had been onboarded. They belong to the client's
+first month and to no later one; a later month's gate is its content meeting.
+A first month deleted as a mistake hands its ticks to the month that is now
+first, because a record of work done is not the month's to take with it.
+
+**A setup fault names the setting to change.** "Google refused" is true and
+useless: the person reading it has three secrets, an API switch and a scope
+to check. The function reports which secret is missing and the word Google
+gave, and the card turns that into the one thing to fix.
+
+**Readiness is what the team ticks, not a form the portal re-asks
+(2026-09-24).** It was thirteen questions, each with a state select and an
+owner select, and the user sent it back: the team's own Onboarding checklist
+and Pre-advertising checklist are where that detail lives, so the month holds
+two ticks and a Not needed for a checklist the month does not use. Who ticked
+it is the database's to record, never a name picked from a list, because a
+picked name is a claim and a stamped one is a fact. **And the month is run
+from wherever somebody is**: the two ticks, the meeting and Mark planning
+complete are drawn in a task's next step while its production waits on the
+month, and a content deliverable made from My Work joins its client's month
+or makes it. Walking to the client record to open work that was planned in
+My Work was a trip the product asked for and the work did not.
+
+**The kind of a new task is chosen first, as a segment.** Add task ended in a
+line explaining that content deliverables have their own form and an outlined
+button leading to it, at the foot of a fold. Both sheets now open on the same
+two-part segment, Task and Content deliverable, the shape the List / Board
+views already have: a choice made before the form is filled belongs above the
+form, and a sentence explaining where a control is means the control is in
+the wrong place.
+
+**A day of work is a list, and a record is one press further.** My Work was a project tracker: every task opened a full record with panes and a rail, so ticking off an invoice took three screens. A task somebody does in ten minutes is a row with a tick; a task that moves through a workflow is the same row with a ring saying how far along it is, because a tick there would skip the gates the workflow exists to hold. The row carries what a day is run on (what, whose, when, where it stands) and nothing the record already states; the drawer carries what a task needs to be worked (its checklist, links, comments, the next action) without leaving the list; the record is for the task that needs its stages, its dates and its history. Adding a task asks three things and lets Enter make the next one, because the test is ten seconds a task. **Statuses are the reader's, stages are the workflow's**: five plain words are read off the stage group, so a content workflow keeps its stages and a person scanning a list reads To do, In progress, Waiting, Review and Done.
+
+**A record states one next step, derived, and one decides it.** The head's status, the next-step panel and the stepper all read one derivation of the task, the month and the workflow, so they cannot disagree; the contradictions that were reported (an owner warning beside a named owner, a meeting called scheduled beside a month that has none) were two places each reading their own copy. Everything uncommon is in the ⋯, where each act asks what it needs: a reason to go back, a reason to skip, a note to hand over.
 
 **Handing work on is one act, not two.** A stage move and an owner change
 made separately leave a gap in which the task is at the next stage and still
@@ -817,6 +872,120 @@ step the deliverable does not need be skipped, forward along the line, with
 a reason written against every step passed over, because a workflow is the
 ordinary path and not the only one, and a skip with no reason is a skip
 nobody can explain later.
+
+**A task opens beside the list, and the list stays where it was.** A task is
+one finishable action, read many times a day, and opening it into a page of
+its own put a record's structure (panes, a rail of people and dates, a
+stepper across the page) between somebody and a tick. So a row opens the
+portal's own sheet from the side (`.sheet.sheet-side`, from the floor on a
+phone), with the list still behind it: the number, the state and the title
+at the head; then one card per part — what happens next, the facts a day
+turns on (Task Owner, Due, Created by, Priority), the brief, the checklist,
+files and links, comments, time and recent activity. The cards are layered
+on the page ground, because a single white page with the parts divided by
+hairlines was the "no layers" the user sent back. Everything uncommon is in
+the sheet's ⋯, and the full record is one press further under its own
+address, for the task that needs it.
+
+**Blue is a hand-off, even on a task.** The step that gives the work to
+somebody else — to AQC review, to the client, back to whoever created it for
+the performance review — is the blue `.btn-go`; the step that records your
+own progress (Mark ready, Mark in progress, Mark approved, Complete) is the
+ink fill. A card of blue buttons said nothing about which press passes the
+work on, which is the one thing the colour is for.
+
+**The Task Owner changes on the step, when somebody asks it to.** Handing on
+is the moment a task changes hands, so the step card carries an unticked
+**Change Task Owner** tick; ticked, the list of people opens and the same
+press moves the stage and the owner. Unticked, the task stays with whoever
+has it. The performance review is the exception that proves it: it goes back
+to whoever created the task, so its person is already chosen.
+
+**A draft link is optional; the press records how the draft went.** The team
+sends drafts through each client's WhatsApp group, so a step that could only
+go on with a link attached was a step that asked for busywork. Where the task
+holds no draft link the step reads **Sent on WhatsApp**, and pressing it
+moves the task with that said in its record; where it holds one, the step
+sends the link. A row or board move into Client review without a link opens
+the step sheet with the WhatsApp line already written, rather than refusing.
+The database keeps the rule: Client review needs the link or a note saying
+how the draft was sent.
+
+**Everything added can be put right, and taken back.** A checklist item, a
+link, a comment, the title, the brief and the priority are each corrected
+where they are drawn, from the row's own ⋯ (Rename or Edit, then Remove or
+Delete in red), and a removal draws its Undo under the card it was taken
+from. A comment is never rewritten: an edit and a deletion are later events
+that name it, so the thread shows how it now stands and the history keeps
+every word. A required check has no ⋯, because it is the review's own gate.
+Every stage move has its Revert in the sheet's ⋯, with a reason.
+
+**A confirmation's promise is one the product keeps.** Cancelling a task has
+always said "It can be reopened", and for a content deliverable nothing could
+reopen it: the ⋯ offered Reopen only on workflows with a revision stage, and a
+move out of Cancelled left the stamp behind, so the task read Cancelled at the
+stage it had been moved to. Reopen is offered on every cancelled task, asks
+why, and sends it back where it was cancelled from where the workflow allows,
+else to the workflow's own way out; the stamp leaves with the move. A sentence
+in a dialog is a claim, and a claim is tested like any other.
+
+**A button acts where the reader is.** The step card is drawn in the sheet
+and on the full record by one function, and its fact buttons (Assign task
+owner, Set due date) reached for the record's rows — which are not on the
+screen while the sheet is open, so the press did nothing at all. A shared
+component's action names the place it acts on from where it is drawn: the
+sheet's own row in the sheet, the record's on the record.
+
+**An open ⋯ answers Escape before the sheet under it does.** A menu over a
+sheet is the top layer, so Escape shuts the menu and hands the focus back to
+its button; the next Escape shuts the sheet. Shutting both on one press threw
+away the place a keyboard user had reached.
+
+**The quiet actions down a sheet share one right edge.** A card's one quiet
+action (Add item, Add link, Add comment, Edit) takes no width floor, so its
+text ends on the card's margin whatever its length; a centred word in a
+116px box stopped short of it while the longer labels reached it, which
+drew two right edges down one sheet. Each carries its glyph, a plus to add
+and a pen to edit.
+
+**A ticked row's fill must not cost a control its edge.** A control's
+boundary is read against what is outside it, and the chosen-row fill
+(`--line-soft`) takes `--line-ctl` to 2.92:1. On a ticked row the untinted
+stage select takes the mute ink for its edge instead; a tinted one keeps its
+colour. A state that changes a row's ground is a state whose controls are
+measured again.
+
+**The phone's short words say what the desk's say.** The due cell prints
+`25 Sept · in 2 days` at a desk and the date alone on a phone, but a task due
+today reads **Today** on both: a bare date on the phone dropped the one word
+the band's heading was about.
+
+**A label that wraps in a half-width button is the wrong label.** On a phone
+the step card's two actions are equal halves, and "Client requested changes"
+wrapped to two lines in its half. Both reviews send work back with **Request
+changes**; the step sheet says which loop it enters. The select bar met the
+same fault from the other side: three buttons in thirds put "Assign task owner"
+on two lines, so on a phone the way out (Done) moves to the count's line and
+the two acts share the next line as equal halves.
+
+**A stage is read whole, and on a narrow list it keeps one place.** The SOP's
+stage names are longer than a campaign step's, and in the portal's 124px state
+column `Performance review` drew as "Performance r" and the two revision loops
+as "Revision (Inter" and "Revision (Clier" — two stages told apart by a sliced
+letter. My Work's stage track is measured against its own vocabulary (160px:
+`Performance review` needs 157 at 12.5px), and every state select ends a name
+longer than its column in an ellipsis rather than a cut, because a word sliced
+mid letter reads as a fault. A select is as wide as its longest option and
+under a finger its text is 16px, so on a narrow list the stage used to share
+the date's line where the words let it and take a line of its own where they
+did not: one card held stages at two heights and three x. Now nothing on that
+line wraps (the Task Owner gives way with an ellipsis; the date never does),
+the stage ends it at a stated width on every row, and on a list a phone's
+width it takes a line of its own on every row. **A list states its own narrow
+line** where its desk row needs more than the pane's 640 (`data-narrow`, read
+by `ADspaceState.fit`): My Work's six tracks left the task's name 64 to 108px
+between 640 and 860, so there the list takes the narrow row the phone already
+reads.
 
 **A figure the rate card prefills is the person's to change.** The term
 adjustment is a percentage now, prefilled from the card by the term's range
@@ -958,17 +1127,23 @@ every save and both server functions send it. The test for a change like this
 is not "does the new case work" but "what reads this value, and what does each
 of them see when it is absent".
 
-**A field a finger uses is never under 16px.** iOS zooms the page the moment
-one takes focus and does not zoom back out, so the reader is left on a page a
-third too wide, hunting for the control they were about to use, and every tap
-after that lands somewhere they did not aim. The token said 16px under a
-coarse pointer and six rules stated their own size past it, which is the
-failure mode of a token: it is only true where nothing later disagrees. The
-answer is never `user-scalable=no` or `maximum-scale=1` — that stops the zoom
-by taking pinch zoom away from everybody, fails WCAG 1.4.4 and contradicts the
-200% pass this portal already runs. Make the field the size a phone reads, and
-measure it: a zoom is a thing the phone does rather than a thing the page
-draws, which is exactly why nobody sees it in a screenshot.
+**A phone gets the portal's own type scale, and the iPhone's focus zoom is
+stopped at its source (2026-09-24).** For four days every field under a finger
+was 16px in a 44px box, to stop iPhone Safari zooming the page when a smaller
+field takes focus. It worked, and the user sent back the result: every select
+and filter on a phone read as huge beside the 13 and 14px text around it, a
+status select outweighed the task name it sat under, and the phone no longer
+looked like the desk it is the same product as. Since iOS 10 Safari ignores
+`maximum-scale` for a pinch but still honours it for the automatic focus zoom,
+so `js/chrome.js` adds `maximum-scale=1` to the viewport **on iOS alone**: the
+zoom on focus stops and the reader's own pinch zoom keeps working, which is
+what WCAG 1.4.4 asks. Android does not zoom on focus and its browsers would
+honour the value for a pinch too, so it never gets it; `user-scalable=no` is
+still never used anywhere. The phone scale is then the desk's a step up: a
+field 15px in 44px, a small control (`.select-sm`, `.input-sm`, `.btn-sm`,
+every segment and status select) 14px, a status select 13.5px, all 38px
+(`--ctl-h-sm`), which is the desk's full control height. `uxaudit`'s `zoom`
+rule measures that floor at 390, so a size written past the scale still fails.
 
 **One record, one way to edit it, and the way is a card over the thing.** A
 creator was edited in a sheet and a colleague in a panel that unfolded at the
@@ -1700,7 +1875,7 @@ contact row and the Overview cannot disagree.
 
 **A document is drawn on one letterhead, whichever kind it is.** The Letter of
 Offer held the only copy of the pen: the page size, the margins, the wordmark,
-the address block, the monogram top right and bottom centre, the page count.
+the address block, the monogram top right, the page count.
 Writing a second letter meant writing those again, and two copies of a
 letterhead drift the way two copies of a colour do. `js/documents.js` exports
 the pen and `js/letters.js` draws the quotation cover, the client letters and
@@ -1768,6 +1943,8 @@ of, never from a verb: there is no `clients.billing.delete`.
 
 **A screen already read a section at a time is a screen whose access is a section at a time.** The Activity record's tab strip has named its sections for months — Clients, My Work, Team, Content Review, Creator Campaigns, Short Links, Documents, Services — while its access was one switch over all of them, so a manager who wanted the team to see how campaigns were progressing had to hand them every client's billing change and every letter as well. The parts model was already the right shape: a part answers with its own level where one is set and its section's where none is, so the ordinary group is untouched and the exception is one select. What it needed was the thing a policy cannot guess — which section a row belongs to. That map lives in the console, about a third of it does not follow the tag's prefix, and a map restated in two places drifts, so the two copies are compared and the suite fails on any difference. A tag nothing has named yet answers a section that has no part, which falls back: a row written by next year's feature is read by whoever can read the record, rather than hidden from everybody by a map that has not caught up.
 
+**A panel that grants access says what it grants.** The group panel was nine selects of No access / View / Work / Manage and forty part selects under them, so what a group could actually do was a question answered by reading every one. It now opens on the answer: one sentence reading the panel back, a starting shape (Admin, Manager, Staff, View only) so the ordinary group is one press, each section a segment with a line under it naming what the chosen level allows in that section, and the parts folded under Fine-tune with a count of the ones that differ. The sentence and the counts are derived from the controls on every change, and the shape a group matches is worked out, never stored, so nothing can say Staff while the panel says otherwise. The sensitive parts (Team, HR letters, performance reviews) are in no preset below Admin, because a shape somebody picks in one press should never open what is opened deliberately.
+
 **A switch beside the ladder goes the day a level can say it.** Billing was one
 (`can_billing`), kept because a pane inside a record is not a section. It hid
 the pane and not the facts: the letters in Documents print the registered name
@@ -1832,9 +2009,17 @@ Chrome's own mark on the right is the pointer's route in, so it stays,
 quietened to the mute ink, and no second calendar is drawn beside it. The
 "Not set" hint starts where the value would and at the value's size.
 
-Buttons: `.btn` outline, `.btn-primary` ink, `.btn-go` accent (the one
-forward action in a view), `.btn-warn` outline warn (reversible caution:
-Unpublish, Remove PDF), `.btn-quiet` text only, `.btn-sm`. Order in a
+Buttons: `.btn` **tonal** (the ink at 6.5% on a transparent edge, `--tonal`,
+`--tonal-hover`, `--tonal-press`; 9% of the light ink in dark), `.btn-primary`
+ink, `.btn-go` accent (the one forward action in a view), `.btn-warn` warn on
+its own tint (reversible caution: Unpublish, Remove PDF), `.btn-quiet` text
+only, `.btn-sm`. **A secondary is shaded, never outlined** (2026-09-24, the
+user: "Secondary buttons become tonal grey across the portal"): an outlined
+button had the same 1px `--line-ctl` ring as every input, select and chip on
+the screen, so a form was a wall of identical boxes and nothing said which
+ones could be pressed. Fields keep the ring; buttons lose it. The same fill
+carries the command bar's search and Filters marks, the ⋯ beside the primary,
+the reach links and the view segment's track. Order in a
 row: Save / secondary / Cancel, and the row starts at its container's own
 left margin, never anchored right. Same width and height for every control
 in a row; `.row` aligns to the top and `.row > .btn` to the bottom. A sheet

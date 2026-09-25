@@ -2645,7 +2645,16 @@ begin
   if not cr.active then return jsonb_build_object('error', 'inactive'); end if;
 
   return jsonb_build_object(
-    'creator', jsonb_build_object('name', cr.name, 'code', cr.access_code),
+    /* Who they are to us: the name the team keyed, since when, and the
+       profile links the client's selection page opens, which they may keep
+       up to date themselves. Never `client_rate`: that is the client's
+       price, not theirs to read. */
+    'creator', jsonb_build_object('name', cr.name, 'code', cr.access_code,
+      'since', cr.created_at,
+      'profiles', coalesce((
+        select jsonb_agg(jsonb_build_object('platform', p.platform, 'handle', p.handle, 'url', p.url)
+                         order by p.platform, p.url)
+          from creator_profiles p where p.creator_id = cr.id), '[]'::jsonb)),
     'bookings', coalesce((
       select jsonb_agg(b order by b->>'sort')
       from (
@@ -5930,7 +5939,9 @@ language sql immutable parallel safe as $$
                     'campaign.reinstated', 'campaign.replaced', 'campaign.review',
                     'campaign.stage', 'campaign.submitted', 'campaign.unbooked',
                     'campaign.unkeyed', 'campaign.withdrawn', 'creator.added',
-                    'creator.off', 'creator.on', 'creator.removed', 'creator.updated') then 'campaigns'
+                    'creator.code', 'creator.links', 'creator.links_restored',
+                    'creator.links_self', 'creator.off', 'creator.on', 'creator.removed',
+                    'creator.updated') then 'campaigns'
     when action in ('client.action_done', 'client.action_reopened', 'client.added',
                     'client.billing', 'client.brand', 'client.edited',
                     'client.review_on', 'client.service', 'client.service_changed',
@@ -5944,7 +5955,7 @@ language sql immutable parallel safe as $$
                     'service.override') then 'clients'
     when action in ('qr.created', 'qr.restored', 'qr.revoked', 'shortlink.created',
                     'shortlink.deleted', 'shortlink.imported', 'shortlink.updated') then 'links'
-    when action in ('ops.deleted') then 'ops'
+    when action in ('ops.deleted', 'ops.month_deleted', 'ops.numbering') then 'ops'
     when action in ('document.deleted', 'document.issued', 'document.reissued',
                     'document.restored', 'document.signed', 'document.superseded',
                     'document.unsigned', 'document.verified', 'document.voided',
@@ -8005,3 +8016,3854 @@ end $$;
 grant execute on function public.ops_delete_task(uuid, text, text) to authenticated;
 
 -- END OF PHASE 4 -----------------------------------------------------------
+
+-- ===========================================================================
+-- MY WORK AS A DAILY TASK TRACKER — everyday tasks, quick creation, comments,
+-- checklist items, templates, and the next-step rules the task page shows.
+-- 2026-09-24. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/ops.js compares the two.
+--
+-- WHAT THIS CHANGES, AND WHAT IT LEAVES ALONE.
+--
+--   A task is one finishable action. Most of them do not need the content
+--   workflow's nine stages and its gates, so there is a second, small
+--   workflow for them: `task` — To do, In progress, Waiting, Review, Done —
+--   where any stage may follow any other and nothing is gated. A content
+--   deliverable stays on the content workflow with every gate it had.
+--
+--   1. The `task` workflow, seeded once, into a database that has none.
+--
+--   2. `ops_create_task` names an everyday task by what it is (no content
+--      code), takes the client and the month from a linked engagement, and
+--      takes a template's default title, owner and due offset in calendar
+--      days from a base date.
+--
+--   3. `ops_transition_task`: skipping a step keeps the published rule (ops
+--      Work, with a reason) and can never land on a revision stage; a task
+--      reaches Client review only after AQC review, with the draft link or a
+--      note saying how the draft was sent (the WhatsApp group); a revision
+--      takes a note; every review and revision records its round; and a move
+--      into a terminal stage closes every running timer on the task.
+--
+--   4. `ops_hand_over_task` (ops Manage, the note kept on the event),
+--      `ops_set_publish_date` (ops Work), `ops_add_checklist_item` and
+--      `ops_add_comment` (ops Work), `ops_save_template` (the granted part
+--      ops.workflows, Work).
+--
+--   5. Three columns on `ops_task_templates` (default_title,
+--      default_owner_id, due_offset_days) and one index for cancelled work.
+--
+--   6. The task number reads #WT00001 (`ops_serial`), in the notifications,
+--      the activity record and the delete check alike; `ops_next_task_no` and
+--      `ops_set_next_task_no` let an admin read and set the next number.
+--
+--   7. The content workflow's words, its two revision loops and what follows
+--      approval: In progress, Ready to start and AQC review are relabelled
+--      where they still read as seeded; Revision (Internal) (from AQC review)
+--      and Revision (Client) (from Client review) are added; and after
+--      Approved come Scheduled, Live, Performance review (three days after
+--      going live, handed back to whoever created the task), Taken down and
+--      Completed. Changes requested stays for any task already in it and is
+--      no longer offered as a next step.
+--
+--   8. The live date and the rating: five columns on `ops_tasks` (live_at,
+--      rating, rating_note, rated_by, rated_at), `ops_mark_live` (a date other
+--      than the scheduled one says why) and `ops_rate_task` (one to five, a
+--      finished task only, a change filed as a second event).
+--
+--   9. `ops_delete_tasks`: several tasks deleted in one act, ops Manage, the
+--      count typed back and a reason, each one filed as its own deletion.
+--
+--  10. What was added can be put right: `ops_update_task` (the brief and the
+--      priority), `ops_edit_checklist_item` and `ops_remove_checklist_item`
+--      (never a required check), `ops_update_link`, and `ops_edit_comment` /
+--      `ops_remove_comment` (the writer or ops Manage), each filed as a later
+--      event so the history keeps what it was.
+--
+--   No existing task is rewritten, moved or renamed. No policy changes. The
+--   test tasks are cleared by a separate file, 2026-09-24-clear-test-tasks.sql,
+--   which is run once and on purpose.
+--
+-- Rollback: re-run sections 9.8 and 9.10 of 2026-09-23-operations-phase4.sql
+-- (the previous ops_create_task, ops_transition_task, ops_log and
+-- ops_delete_task), then
+--   drop function if exists public.ops_rate_task(uuid, integer, text);
+--   drop function if exists public.ops_mark_live(uuid, timestamptz, text, integer, uuid, text);
+--   drop function if exists public.ops_remove_comment(uuid, boolean);
+--   drop function if exists public.ops_edit_comment(uuid, text);
+--   drop function if exists public.ops_update_link(uuid, text, text, text, integer);
+--   drop function if exists public.ops_remove_checklist_item(uuid);
+--   drop function if exists public.ops_edit_checklist_item(uuid, text);
+--   drop function if exists public.ops_update_task(uuid, jsonb, integer);
+--   drop function if exists public.ops_delete_tasks(uuid[], text, text);
+--   drop function if exists public.ops_set_next_task_no(bigint);
+--   drop function if exists public.ops_next_task_no();
+--   drop function if exists public.ops_serial(bigint);
+--   drop function if exists public.ops_hand_over_task(uuid, uuid, text, integer);
+--   drop function if exists public.ops_set_publish_date(uuid, timestamptz, integer);
+--   drop function if exists public.ops_add_checklist_item(uuid, text);
+--   drop function if exists public.ops_add_comment(uuid, text);
+--   drop function if exists public.ops_save_template(uuid, jsonb);
+--   drop index if exists public.ops_tasks_cancelled_idx;
+-- The `task` workflow, the three template columns and the five live and
+-- rating columns may stay: nothing reads them once the functions are rolled
+-- back. Remove them only where no task was
+-- created on the workflow:
+--   delete from public.ops_workflow_stages where workflow_id in
+--     (select id from public.ops_workflows where key = 'task');
+--   delete from public.ops_workflows where key = 'task';
+-- ===========================================================================
+
+-- 1. The everyday workflow ------------------------------------------------------
+do $$
+declare w uuid;
+begin
+  if exists (select 1 from public.ops_workflows where key = 'task') then return; end if;
+  insert into public.ops_workflows (key, name, description)
+  values ('task', 'Everyday task', 'To do, in progress, waiting, review and done.')
+  returning id into w;
+  insert into public.ops_workflow_stages
+    (workflow_id, key, label, position, stage_group, is_active_work, is_waiting,
+     is_review, is_terminal, wip_guidance, next_stage_keys) values
+    (w, 'todo',      'To do',       1, 'intake',          false, false, false, false, null, array['doing','waiting','review','complete','cancelled']),
+    (w, 'doing',     'In progress', 2, 'active',          true,  false, false, false, null, array['todo','waiting','review','complete','cancelled']),
+    (w, 'waiting',   'Waiting',     3, 'waiting',         false, true,  false, false, null, array['todo','doing','review','complete','cancelled']),
+    (w, 'review',    'Review',      4, 'internal_review', false, true,  true,  false, null, array['todo','doing','waiting','complete','cancelled']),
+    (w, 'complete',  'Done',        5, 'done',            false, false, false, true,  null, array['todo','doing']),
+    (w, 'cancelled', 'Cancelled',   6, 'cancelled',       false, false, false, true,  null, array['todo']);
+end $$;
+
+alter table public.ops_task_templates add column if not exists default_title    text;
+alter table public.ops_task_templates add column if not exists default_owner_id uuid references public.team_members(id);
+alter table public.ops_task_templates add column if not exists due_offset_days  integer;
+create index if not exists ops_tasks_cancelled_idx on public.ops_tasks(cancelled_at desc)
+  where cancelled_at is not null;
+
+-- 2. Making a task --------------------------------------------------------------
+create or replace function public.ops_create_task(p_payload jsonb, p_idem text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m     public.team_members;
+  tpl   public.ops_task_templates;
+  wf    uuid;
+  tid   uuid;
+  owner uuid;
+  publish timestamptz;
+  fd    timestamptz;
+  fin   timestamptz;
+  item  jsonb;
+  i     integer := 0;
+  scope text;
+  ttype text;
+  cid   uuid;
+  bad   text;
+  descr text;
+  period text;
+  week  integer;
+  seq   integer;
+  code  text;
+  title text;
+  first_stage text;
+  wkey  text;
+  base  timestamptz;
+  eng   public.ops_engagements;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+
+  -- The same press twice is one task.
+  if p_idem is not null then
+    select id into tid from public.ops_tasks where idem_key = p_idem;
+    if tid is not null then return public.ops_task_json(tid); end if;
+  end if;
+
+  scope := coalesce(p_payload ->> 'scope', 'client');
+  cid := (p_payload ->> 'client_id')::uuid;
+  /* A task linked to a month's engagement takes the client from it: the
+     person names the month once and the client comes with it. */
+  if (p_payload ->> 'engagement_id') is not null then
+    select * into eng from public.ops_engagements where id = (p_payload ->> 'engagement_id')::uuid;
+    if eng.id is null then return jsonb_build_object('error', 'not-found'); end if;
+    if cid is null then cid := eng.client_id; scope := 'client'; end if;
+  end if;
+  bad := public.ops_scope_error(scope, cid);
+  if bad is not null then return jsonb_build_object('error', bad); end if;
+
+  ttype := coalesce(p_payload ->> 'task_type', 'adhoc');
+  if ttype not in ('engagement', 'adhoc', 'goodwill', 'special') then
+    return jsonb_build_object('error', 'bad-task-type');
+  end if;
+
+  /* The description is the team's to edit and may start blank on a task that
+     carries a code; a task with no code is named by its description alone, so
+     there it is required. `title` is accepted from older callers as the
+     description. */
+  descr := nullif(btrim(coalesce(p_payload ->> 'content_desc', p_payload ->> 'title', '')), '');
+
+  if (p_payload ->> 'template_id') is not null then
+    select * into tpl from public.ops_task_templates
+     where id = (p_payload ->> 'template_id')::uuid;
+    descr := coalesce(descr, nullif(btrim(coalesce(tpl.default_title, tpl.name, '')), ''));
+  end if;
+  /* New work goes on the content workflow. A caller may still name another
+     (a template's own, or one somebody adds), and a task already on a retired
+     workflow is never moved. */
+  wf := coalesce((p_payload ->> 'workflow_id')::uuid,
+                 (select id from public.ops_workflows where key = p_payload ->> 'workflow_key' and active),
+                 tpl.workflow_id,
+                 (select id from public.ops_workflows where key = 'content' and active),
+                 (select id from public.ops_workflows where active order by created_at limit 1));
+  if wf is null then return jsonb_build_object('error', 'workflow-required'); end if;
+  select key into first_stage from public.ops_workflow_stages
+   where workflow_id = wf order by position limit 1;
+  select key into wkey from public.ops_workflows where id = wf;
+
+  publish := (p_payload ->> 'publish_at')::timestamptz;
+  fd := coalesce((p_payload ->> 'first_draft_due_at')::timestamptz,
+        case when publish is not null and tpl.first_draft_offset_business_days is not null
+             then public.ops_add_business_days(publish, -tpl.first_draft_offset_business_days)
+             when tpl.first_draft_offset_business_days is not null
+             then public.ops_add_business_days(now(), tpl.first_draft_offset_business_days)
+        end);
+  /* A template's due date is a number of calendar days from the day the
+     work is made for (the base date the caller names, else today). */
+  base := coalesce((p_payload ->> 'base_date')::timestamptz, now());
+  fin := coalesce((p_payload ->> 'final_due_at')::timestamptz,
+        case when tpl.due_offset_days is not null
+             then date_trunc('day', base) + make_interval(days => tpl.due_offset_days)
+             when publish is not null and tpl.final_offset_business_days is not null
+             then public.ops_add_business_days(publish, -tpl.final_offset_business_days)
+             when tpl.final_offset_business_days is not null
+             then public.ops_add_business_days(now(), tpl.final_offset_business_days)
+        end);
+  if fd is not null and fin is not null and not public.ops_due_order_ok(fd, fin) then
+    return jsonb_build_object('error', 'draft-not-before-final');
+  end if;
+
+  /* The name. The month is the content month (the scheduled publish date's,
+     else the one the caller names, else this one); the week is the planned
+     publishing week, chosen by the caller and prefilled by the page from the
+     date; the running number is the client's for the month. Generated once,
+     under the lock, and never rewritten: a publish date that moves later
+     leaves the name as it was, because the name is a label and not a fact
+     about the date. */
+  if wkey = 'task' then
+    /* An everyday task is named by what it is. It carries no content code,
+       because the code numbers a client's deliverables for the month and a
+       task is not one; the content month is kept where it is known, so the
+       task can be grouped with the month it belongs to. */
+    if descr is null then return jsonb_build_object('error', 'title-required'); end if;
+    title := descr;
+    period := coalesce(nullif(p_payload ->> 'code_period', ''), eng.period);
+  elsif scope <> 'internal' then
+    period := coalesce(nullif(p_payload ->> 'code_period', ''),
+                       case when publish is not null then to_char(publish, 'YYYY-MM') end,
+                       to_char(now(), 'YYYY-MM'));
+    if period !~ '^\d{4}-\d{2}$' then return jsonb_build_object('error', 'bad-period'); end if;
+    week := coalesce((p_payload ->> 'code_week')::integer,
+                     case when publish is not null
+                          then least(5, ((extract(day from publish)::integer - 1) / 7) + 1) end,
+                     1);
+    if week < 1 or week > 5 then return jsonb_build_object('error', 'bad-week'); end if;
+    seq := public.ops_next_seq(cid, period);
+    code := public.ops_code_of(period, week, seq);
+    title := btrim(code || ' ' || coalesce(descr, ''));
+  else
+    if descr is null then return jsonb_build_object('error', 'title-required'); end if;
+    title := descr;
+  end if;
+
+  insert into public.ops_tasks (
+    scope, client_id, campaign_id, batch_id, source_type, source_id, template_id,
+    workflow_id, stage_key, title, description, remarks, deliverable_type,
+    language_codes, priority_level, complexity, estimate_minutes, publish_at,
+    original_first_draft_due_at, current_first_draft_due_at,
+    original_final_due_at, current_final_due_at, created_by, idem_key,
+    legacy_source, legacy_key, data_quality,
+    task_type, code, code_period, code_week, code_seq, content_desc,
+    engagement_id, manager_id, parent_task_id)
+  values (
+    scope, cid,
+    (p_payload ->> 'campaign_id')::uuid,
+    (p_payload ->> 'batch_id')::uuid,
+    p_payload ->> 'source_type',
+    (p_payload ->> 'source_id')::uuid,
+    tpl.id, wf, coalesce(first_stage, 'intake'),
+    title, p_payload ->> 'description', p_payload ->> 'remarks',
+    coalesce(p_payload ->> 'deliverable_type', tpl.deliverable_type, 'other'),
+    coalesce((select array_agg(x) from jsonb_array_elements_text(
+               coalesce(p_payload -> 'language_codes', '[]'::jsonb)) x), '{}'),
+    coalesce((p_payload ->> 'priority_level')::smallint, 3),
+    coalesce(p_payload ->> 'complexity', tpl.default_complexity),
+    coalesce((p_payload ->> 'estimate_minutes')::integer, tpl.default_estimate_minutes),
+    publish, fd, fd, fin, fin, m.id, p_idem,
+    p_payload ->> 'legacy_source', p_payload ->> 'legacy_key',
+    coalesce(p_payload ->> 'data_quality', 'complete'),
+    ttype, code, period, week, seq, descr,
+    coalesce((p_payload ->> 'engagement_id')::uuid, eng.id),
+    coalesce((p_payload ->> 'manager_id')::uuid, m.id),
+    (p_payload ->> 'parent_task_id')::uuid)
+  returning id into tid;
+
+  owner := coalesce((p_payload ->> 'owner_id')::uuid, tpl.default_owner_id);
+  if owner is not null then
+    insert into public.ops_task_assignees (task_id, team_member_id, responsibility, assigned_by)
+    values (tid, owner, 'owner', m.id);
+    perform public.ops_log(tid, 'assignment_changed', null,
+      jsonb_build_object('owner_id', owner), '{}'::jsonb);
+  end if;
+  if (p_payload ->> 'reviewer_id') is not null then
+    insert into public.ops_task_assignees (task_id, team_member_id, responsibility, assigned_by)
+    values (tid, (p_payload ->> 'reviewer_id')::uuid, 'reviewer', m.id);
+  end if;
+
+  -- The template's checklist, or the one the caller hands over (a duplicate
+  -- carries its source's labels, unticked), in the order stated.
+  for item in select * from jsonb_array_elements(
+      coalesce(p_payload -> 'checklist', tpl.checklist, '[]'::jsonb)) loop
+    i := i + 1;
+    insert into public.ops_task_checklist_items (task_id, label, position)
+    values (tid, item #>> '{}', i);
+  end loop;
+
+  if (p_payload -> 'video') is not null then
+    insert into public.ops_video_details (
+      task_id, output_duration_seconds, footage_duration_seconds,
+      subtitle_required, motion_graphics_required, aspect_ratios,
+      script_ready, footage_ready, shoot_required, shoot_at, variant_count)
+    values (tid,
+      ((p_payload -> 'video') ->> 'output_duration_seconds')::integer,
+      ((p_payload -> 'video') ->> 'footage_duration_seconds')::integer,
+      coalesce(((p_payload -> 'video') ->> 'subtitle_required')::boolean, false),
+      coalesce(((p_payload -> 'video') ->> 'motion_graphics_required')::boolean, false),
+      coalesce((select array_agg(x) from jsonb_array_elements_text(
+                 coalesce((p_payload -> 'video') -> 'aspect_ratios', '[]'::jsonb)) x), '{}'),
+      ((p_payload -> 'video') ->> 'script_ready')::boolean,
+      ((p_payload -> 'video') ->> 'footage_ready')::boolean,
+      coalesce(((p_payload -> 'video') ->> 'shoot_required')::boolean, false),
+      ((p_payload -> 'video') ->> 'shoot_at')::timestamptz,
+      coalesce(((p_payload -> 'video') ->> 'variant_count')::integer, 1));
+  end if;
+
+  perform public.ops_log(tid, 'task_created', null,
+    jsonb_build_object('title', title, 'code', code,
+                       'first_draft_due_at', fd, 'final_due_at', fin),
+    case when (p_payload ->> 'duplicated_from') is null then '{}'::jsonb
+         else jsonb_build_object('duplicated_from', p_payload ->> 'duplicated_from') end);
+  return public.ops_task_json(tid);
+end $$;
+grant execute on function public.ops_create_task(jsonb, text) to authenticated;
+
+-- 3. Moving a task --------------------------------------------------------------
+/* The phase 4 move, with the rules this file adds: a skip keeps the
+   published rule (ops Work, with a reason); AQC review comes before the
+   client; a draft reaches the client as a link or with a note saying how;
+   a revision says what changes; each review and revision counts its round;
+   a finished task stops its timers; and a task that leaves Cancelled is no
+   longer cancelled. */
+create or replace function public.ops_transition_task(
+  p_task uuid, p_next text, p_version integer default null, p_note text default null,
+  p_assignee uuid default null, p_skip_reason text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m   public.team_members;
+  t   public.ops_tasks;
+  cur public.ops_workflow_stages;
+  nxt public.ops_workflow_stages;
+  sk  public.ops_workflow_stages;
+  eng public.ops_engagements;
+  has_owner boolean;
+  has_draft boolean;
+  has_final boolean;
+  was_owner uuid;
+  side text[] := array['blocked', 'waiting', 'kiv', 'cancelled'];
+  skipping boolean := false;
+  ws  public.ops_work_sessions;
+  wmins integer;
+  v_round integer;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.ops_may_see_task(p_task) then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+
+  select * into t from public.ops_tasks where id = p_task for update;
+  if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if p_version is not null and p_version <> t.version then
+    return jsonb_build_object('error', 'stale', 'task', public.ops_task_json(p_task));
+  end if;
+  if t.stage_key = p_next then return public.ops_task_json(p_task); end if;
+
+  cur := public.ops_stage(t.workflow_id, t.stage_key);
+  nxt := public.ops_stage(t.workflow_id, p_next);
+  if nxt.id is null then return jsonb_build_object('error', 'no-such-stage'); end if;
+  if not (p_next = any (cur.next_stage_keys)) then
+    /* A step the deliverable does not need is skipped, forward along the
+       line, with a reason on the record: who skipped it and why is written
+       against every stage that was passed over. Nothing beside the line can
+       be skipped into or out of, and nothing is skipped backwards. */
+    /* A revision is where work is sent back from a review, so it is never
+       a step somebody skips forward into. */
+    if not (cur.stage_group = any (side)) and not (nxt.stage_group = any (side))
+       and nxt.stage_group <> 'revision'
+       and nxt.position > cur.position then
+      if nullif(btrim(coalesce(p_skip_reason, '')), '') is null then
+        return jsonb_build_object('error', 'skip-reason-required');
+      end if;
+      skipping := true;
+    else
+      return jsonb_build_object('error', 'bad-transition',
+        'allowed', to_jsonb(cur.next_stage_keys));
+    end if;
+  end if;
+
+  /* A performance review goes back to whoever created the task unless the
+     move names somebody else. */
+  if p_next = 'performance_review' and p_assignee is null and exists (
+       select 1 from public.team_members where id = t.created_by and active) then
+    p_assignee := t.created_by;
+  end if;
+
+  -- What each gate needs before it opens.
+  has_owner := exists (select 1 from public.ops_task_assignees
+                        where task_id = p_task and responsibility = 'owner' and ended_at is null)
+               or p_assignee is not null;
+  has_draft := exists (select 1 from public.ops_task_links
+                        where task_id = p_task and archived_at is null
+                          and kind in ('draft', 'review'));
+  has_final := exists (select 1 from public.ops_task_links
+                        where task_id = p_task and archived_at is null and kind = 'final');
+
+  if p_next = 'ready' and (not has_owner or t.current_final_due_at is null) then
+    return jsonb_build_object('error', 'ready-needs-owner-and-due');
+  end if;
+  if p_next = 'editing' and exists (
+       select 1 from public.ops_video_details v
+        where v.task_id = p_task and v.footage_ready is false) then
+    return jsonb_build_object('error', 'footage-not-ready');
+  end if;
+  /* Production waits on the engagement: planning marked complete, and the
+     content meeting held or marked not applicable. A task with no engagement
+     (ad hoc, internal) has nothing to wait on. */
+  if p_next = 'in_production' and t.engagement_id is not null then
+    select * into eng from public.ops_engagements where id = t.engagement_id;
+    if eng.status = 'planning' then return jsonb_build_object('error', 'planning-incomplete'); end if;
+    if not (eng.meeting_na or (eng.meeting_at is not null and eng.meeting_at <= now())) then
+      return jsonb_build_object('error', 'meeting-required');
+    end if;
+  end if;
+  /* AQC review comes first: the client sees the work only once it has been
+     through AQC review at least once. */
+  if p_next = 'client_review'
+     and exists (select 1 from public.ops_workflow_stages s
+                  where s.workflow_id = t.workflow_id and s.key = 'internal_review')
+     and not exists (select 1 from public.ops_task_events e
+                      where e.task_id = p_task and e.event_type = 'stage_changed'
+                        and e.to_value ->> 'stage_key' = 'internal_review') then
+    return jsonb_build_object('error', 'needs-aqc');
+  end if;
+  /* The draft reaches the client as a link on the task or through the
+     team's WhatsApp group with the client. Either way the record says how:
+     the link, or a note naming where it went. */
+  if p_next = 'client_review' and not has_draft
+     and nullif(btrim(coalesce(p_note, '')), '') is null then
+    return jsonb_build_object('error', 'needs-draft');
+  end if;
+  /* A revision says what has to change, and so does taking a post down. */
+  if ((nxt.stage_group = 'revision' and p_next <> 'changes_requested') or p_next = 'taken_down')
+     and nullif(btrim(coalesce(p_note, '')), '') is null then
+    return jsonb_build_object('error', 'note-required');
+  end if;
+  /* After approval: a schedule needs its date, going live is confirmed with
+     its own date through ops_mark_live and needs the post's link or a note,
+     and a task is completed only once its performance checklist is done. */
+  if p_next = 'scheduled' and t.publish_at is null then
+    return jsonb_build_object('error', 'needs-schedule');
+  end if;
+  if p_next = 'live' and t.live_at is null then
+    return jsonb_build_object('error', 'needs-live-date');
+  end if;
+  if p_next = 'live' and not has_final and coalesce(p_note, '') = '' then
+    return jsonb_build_object('error', 'needs-final-or-reason');
+  end if;
+  if p_next = 'completed' and exists (
+       select 1 from public.ops_task_checklist_items c
+        where c.task_id = p_task and c.required and c.completed_at is null) then
+    return jsonb_build_object('error', 'checklist-incomplete');
+  end if;
+  if p_next = 'delivered' and not has_final then
+    return jsonb_build_object('error', 'needs-final-link');
+  end if;
+  if p_next = 'done' and t.delivered_at is null
+     and coalesce(p_note, '') = '' then
+    return jsonb_build_object('error', 'needs-delivery-or-reason');
+  end if;
+  if p_next = 'published' and not has_final and coalesce(p_note, '') = '' then
+    return jsonb_build_object('error', 'needs-final-or-reason');
+  end if;
+
+  /* The hand to the next person, recorded on the move: the previous owner
+     ends, the new one begins, and the event names both with the stage it
+     happened at. Work level, because handing the work on is part of doing
+     it; reassigning a task without moving it stays Manage. */
+  if p_assignee is not null then
+    select team_member_id into was_owner from public.ops_task_assignees
+     where task_id = p_task and responsibility = 'owner' and ended_at is null;
+    if p_assignee is distinct from was_owner then
+      if not exists (select 1 from public.team_members where id = p_assignee and active) then
+        return jsonb_build_object('error', 'no-such-person');
+      end if;
+      update public.ops_task_assignees set ended_at = now()
+       where task_id = p_task and responsibility = 'owner' and ended_at is null;
+      insert into public.ops_task_assignees (task_id, team_member_id, responsibility, assigned_by)
+      values (p_task, p_assignee, 'owner', m.id);
+      perform public.ops_log(p_task, 'assignment_changed',
+        jsonb_build_object('owner_id', was_owner),
+        jsonb_build_object('owner_id', p_assignee),
+        jsonb_build_object('handover', true, 'stage_key', p_next, 'from_stage_key', t.stage_key));
+    end if;
+  end if;
+
+  if skipping then
+    for sk in select * from public.ops_workflow_stages
+               where workflow_id = t.workflow_id
+                 and position > cur.position and position < nxt.position
+                 and not (stage_group = any (side))
+               order by position loop
+      perform public.ops_log(p_task, 'stage_skipped',
+        jsonb_build_object('stage_key', sk.key), jsonb_build_object('stage_key', p_next),
+        jsonb_build_object('reason', btrim(p_skip_reason)));
+    end loop;
+  end if;
+
+  /* The round: how many times this task has now entered this review or
+     this revision, counted off its own history, so nothing is stored that
+     a reverted move could leave wrong. */
+  if nxt.is_review or nxt.stage_group = 'revision' then
+    select count(*) + 1 into v_round from public.ops_task_events e
+     where e.task_id = p_task and e.event_type = 'stage_changed'
+       and e.to_value ->> 'stage_key' = p_next;
+  end if;
+
+  update public.ops_tasks set
+    stage_key = p_next,
+    version = version + 1,
+    updated_at = now(),
+    first_draft_submitted_at = case
+      when first_draft_submitted_at is null and nxt.is_review then now()
+      else first_draft_submitted_at end,
+    delivered_at = case when p_next = 'delivered' then coalesce(delivered_at, now())
+                        else delivered_at end,
+    completed_at = case when nxt.is_terminal and p_next <> 'cancelled' then coalesce(completed_at, now())
+                        when not nxt.is_terminal then null
+                        else completed_at end,
+    /* Leaving Cancelled for a live stage is a reopening, and the stamp
+       leaves with it, as completed_at does; left behind, the task went on
+       reading cancelled at the stage it had been reopened to. */
+    cancelled_at = case when p_next = 'cancelled' then coalesce(cancelled_at, now())
+                        when not nxt.is_terminal then null
+                        else cancelled_at end,
+    blocked_at = case when p_next = 'blocked' then blocked_at else null end,
+    blocked_category = case when p_next = 'blocked' then blocked_category else null end
+  where id = p_task;
+
+  /* The performance review brings its own checklist, the same five checks
+     for a brand post and a KOC post, added once however often the task
+     comes back to the stage. */
+  if p_next = 'performance_review' then
+    insert into public.ops_task_checklist_items (task_id, label, position, required)
+    select p_task, x.label,
+           coalesce((select max(c.position) from public.ops_task_checklist_items c
+                      where c.task_id = p_task), 0) + x.n,
+           true
+      from (values (1, 'Reach and views checked'),
+                   (2, 'Engagement checked (likes, comments, shares, saves)'),
+                   (3, 'Comments checked for brand safety'),
+                   (4, 'Leads or sales checked, where tracked'),
+                   (5, 'Keep live or take down decided')) as x(n, label)
+     where not exists (select 1 from public.ops_task_checklist_items c
+                        where c.task_id = p_task and c.label = x.label);
+  end if;
+
+  /* A finished task is not being worked on, so every timer running on it
+     stops with it, each filed as the stop it is. */
+  if nxt.is_terminal then
+    for ws in select * from public.ops_work_sessions
+               where task_id = p_task and ended_at is null loop
+      wmins := greatest(0, (extract(epoch from (now() - ws.started_at)) / 60)::integer);
+      update public.ops_work_sessions set ended_at = now(), minutes = wmins where id = ws.id;
+      perform public.ops_log(p_task, 'work_stopped', null,
+        jsonb_build_object('session_id', ws.id, 'minutes', wmins),
+        jsonb_build_object('note', 'Stopped when the task finished'));
+    end loop;
+  end if;
+
+  perform public.ops_log(p_task, 'stage_changed',
+    jsonb_build_object('stage_key', t.stage_key),
+    jsonb_build_object('stage_key', p_next),
+    (case when p_note is null then '{}'::jsonb else jsonb_build_object('note', p_note) end)
+    || (case when skipping then jsonb_build_object('skip_reason', btrim(p_skip_reason)) else '{}'::jsonb end)
+    || (case when v_round is not null then jsonb_build_object('round', v_round) else '{}'::jsonb end));
+  if p_next = 'delivered' then
+    perform public.ops_log(p_task, 'delivered', null, null, '{}'::jsonb);
+  end if;
+  if nxt.is_terminal and p_next <> 'cancelled' then
+    perform public.ops_log(p_task, 'completed', null, null, '{}'::jsonb);
+  end if;
+  if p_next = 'cancelled' then
+    perform public.ops_log(p_task, 'cancelled', null, null,
+      jsonb_build_object('reason', p_note));
+  end if;
+  return public.ops_task_json(p_task);
+end $$;
+grant execute on function public.ops_transition_task(uuid, text, integer, text, uuid, text) to authenticated;
+
+/* Changing responsibility without changing the stage. The note is for the
+   person taking it on, so it is kept on the event and not in a column. */
+create or replace function public.ops_hand_over_task(
+  p_task uuid, p_owner uuid, p_note text default null, p_version integer default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m   public.team_members;
+  t   public.ops_tasks;
+  was uuid;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.ops_may_see_task(p_task) then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('ops', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  if p_owner is null then return jsonb_build_object('error', 'no-such-person'); end if;
+
+  select * into t from public.ops_tasks where id = p_task for update;
+  if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if p_version is not null and p_version <> t.version then
+    return jsonb_build_object('error', 'stale', 'task', public.ops_task_json(p_task));
+  end if;
+  if not exists (select 1 from public.team_members where id = p_owner and active) then
+    return jsonb_build_object('error', 'no-such-person');
+  end if;
+
+  select team_member_id into was from public.ops_task_assignees
+   where task_id = p_task and responsibility = 'owner' and ended_at is null;
+  if p_owner is not distinct from was then return public.ops_task_json(p_task); end if;
+
+  update public.ops_task_assignees set ended_at = now()
+   where task_id = p_task and responsibility = 'owner' and ended_at is null;
+  insert into public.ops_task_assignees (task_id, team_member_id, responsibility, assigned_by)
+  values (p_task, p_owner, 'owner', m.id);
+  update public.ops_tasks set version = version + 1, updated_at = now() where id = p_task;
+  perform public.ops_log(p_task, 'assignment_changed',
+    jsonb_build_object('owner_id', was),
+    jsonb_build_object('owner_id', p_owner),
+    jsonb_build_object('handover', true, 'stage_key', t.stage_key)
+      || case when nullif(btrim(coalesce(p_note, '')), '') is null then '{}'::jsonb
+              else jsonb_build_object('note', btrim(p_note)) end);
+  return public.ops_task_json(p_task);
+end $$;
+grant execute on function public.ops_hand_over_task(uuid, uuid, text, integer) to authenticated;
+
+/* The scheduled publish date: tentative until the content meeting, never
+   a commitment, so it moves on the press and gates nothing. */
+create or replace function public.ops_set_publish_date(
+  p_task uuid, p_at timestamptz, p_version integer default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  t public.ops_tasks;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.ops_may_see_task(p_task) then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+
+  select * into t from public.ops_tasks where id = p_task for update;
+  if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if p_version is not null and p_version <> t.version then
+    return jsonb_build_object('error', 'stale', 'task', public.ops_task_json(p_task));
+  end if;
+  if t.publish_at is not distinct from p_at then return public.ops_task_json(p_task); end if;
+
+  update public.ops_tasks set publish_at = p_at, version = version + 1, updated_at = now()
+   where id = p_task;
+  perform public.ops_log(p_task, 'publish_changed',
+    jsonb_build_object('value', t.publish_at), jsonb_build_object('value', p_at), '{}'::jsonb);
+  return public.ops_task_json(p_task);
+end $$;
+grant execute on function public.ops_set_publish_date(uuid, timestamptz, integer) to authenticated;
+
+-- 4. Adding to a task -----------------------------------------------------------
+/* One more thing to tick, at the foot of the list. */
+create or replace function public.ops_add_checklist_item(p_task uuid, p_label text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m   public.team_members;
+  lbl text;
+  pos integer;
+  iid uuid;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.ops_may_see_task(p_task) then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  lbl := nullif(btrim(coalesce(p_label, '')), '');
+  if lbl is null then return jsonb_build_object('error', 'label-required'); end if;
+  if length(lbl) > 300 then return jsonb_build_object('error', 'too-long'); end if;
+  select coalesce(max(position), 0) + 1 into pos from public.ops_task_checklist_items where task_id = p_task;
+  insert into public.ops_task_checklist_items (task_id, label, position)
+  values (p_task, lbl, pos) returning id into iid;
+  perform public.ops_log(p_task, 'checklist_changed', null,
+    jsonb_build_object('label', lbl, 'added', true), '{}'::jsonb);
+  return (select to_jsonb(c) from public.ops_task_checklist_items c where c.id = iid);
+end $$;
+grant execute on function public.ops_add_checklist_item(uuid, text) to authenticated;
+
+/* A comment is an event: it is read in the task's own history, in order,
+   with who wrote it. The event itself is never rewritten; a correction or a
+   removal is a later event (section 15). */
+create or replace function public.ops_add_comment(p_task uuid, p_body text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m    public.team_members;
+  body text;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.ops_may_see_task(p_task) then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  body := nullif(btrim(coalesce(p_body, '')), '');
+  if body is null then return jsonb_build_object('error', 'comment-required'); end if;
+  if length(body) > 2000 then return jsonb_build_object('error', 'too-long'); end if;
+  perform public.ops_log(p_task, 'commented', null, null, jsonb_build_object('note', body));
+  return public.ops_task_json(p_task);
+end $$;
+grant execute on function public.ops_add_comment(uuid, text) to authenticated;
+
+-- 5. Templates ------------------------------------------------------------------
+/* A template is the task somebody makes every month: its title, its owner,
+   when it is due relative to the day it is made for, its checklist and its
+   estimate. Kept by whoever holds the granted part ops.workflows. */
+create or replace function public.ops_save_template(p_id uuid, p_payload jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m    public.team_members;
+  nm   text;
+  wf   uuid;
+  tid  uuid;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.ops_granted('ops.workflows', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  nm := nullif(btrim(coalesce(p_payload ->> 'name', '')), '');
+  if nm is null then return jsonb_build_object('error', 'name-required'); end if;
+  if exists (select 1 from public.ops_task_templates
+              where lower(name) = lower(nm) and id is distinct from p_id) then
+    return jsonb_build_object('error', 'name-taken');
+  end if;
+  wf := coalesce((select id from public.ops_workflows where key = coalesce(p_payload ->> 'workflow_key', 'task')),
+                 (select id from public.ops_workflows where key = 'task'));
+  if wf is null then return jsonb_build_object('error', 'workflow-required'); end if;
+  if p_id is null then
+    insert into public.ops_task_templates (name, deliverable_type, workflow_id, default_title,
+      default_owner_id, due_offset_days, default_estimate_minutes, checklist, active)
+    values (nm, coalesce(nullif(p_payload ->> 'deliverable_type', ''), 'other'), wf,
+      nullif(btrim(coalesce(p_payload ->> 'default_title', '')), ''),
+      (p_payload ->> 'default_owner_id')::uuid,
+      (p_payload ->> 'due_offset_days')::integer,
+      (p_payload ->> 'default_estimate_minutes')::integer,
+      coalesce(p_payload -> 'checklist', '[]'::jsonb),
+      coalesce((p_payload ->> 'active')::boolean, true))
+    returning id into tid;
+  else
+    update public.ops_task_templates set
+      name = nm,
+      deliverable_type = coalesce(nullif(p_payload ->> 'deliverable_type', ''), deliverable_type),
+      workflow_id = wf,
+      default_title = nullif(btrim(coalesce(p_payload ->> 'default_title', '')), ''),
+      default_owner_id = (p_payload ->> 'default_owner_id')::uuid,
+      due_offset_days = (p_payload ->> 'due_offset_days')::integer,
+      default_estimate_minutes = (p_payload ->> 'default_estimate_minutes')::integer,
+      checklist = coalesce(p_payload -> 'checklist', '[]'::jsonb),
+      active = coalesce((p_payload ->> 'active')::boolean, active),
+      updated_at = now()
+    where id = p_id
+    returning id into tid;
+    if tid is null then return jsonb_build_object('error', 'not-found'); end if;
+  end if;
+  return (select to_jsonb(x) from public.ops_task_templates x where x.id = tid);
+end $$;
+grant execute on function public.ops_save_template(uuid, jsonb) to authenticated;
+
+-- 10. The task number reads #WT00001 ---------------------------------------------
+/* One running number for every task, written with a fixed prefix and five
+   digits. The number is the same column it always was; how it is written
+   lives here and nowhere else in the database. */
+create or replace function public.ops_serial(p_no bigint)
+returns text
+language sql immutable set search_path = public as $$
+  select '#WT' || lpad(p_no::text, 5, '0')
+$$;
+grant execute on function public.ops_serial(bigint) to authenticated;
+
+/* ops_log as phase 4 left it, with the number written by ops_serial and the
+   round named when work comes back for a review or a revision. */
+create or replace function public.ops_log(
+  p_task uuid, p_type text, p_from jsonb, p_to jsonb, p_detail jsonb default '{}'::jsonb)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  m      public.team_members;
+  t      public.ops_tasks;
+  owner  uuid;
+  who    text;
+  body   text;
+  st     public.ops_workflow_stages;
+begin
+  m := public.ops_me();
+  insert into public.ops_task_events (task_id, event_type, actor_id, actor_email,
+                                      from_value, to_value, detail)
+  values (p_task, p_type, m.id, m.email, p_from, p_to, coalesce(p_detail, '{}'::jsonb));
+
+  select * into t from public.ops_tasks where id = p_task;
+  if t.id is null then return; end if;
+  who := coalesce(nullif(m.name, ''), m.email, 'Somebody');
+
+  if p_type = 'assignment_changed' then
+    owner := (p_to ->> 'owner_id')::uuid;
+    if owner is not null and owner is distinct from m.id then
+      perform public.ops_notify(owner, p_task, 'assigned',
+        public.ops_serial(t.task_no) || ' · ' || public.ops_title(t),
+        case when coalesce((p_detail ->> 'handover')::boolean, false)
+             then 'Handed to you by ' || who || ' at ' ||
+                  coalesce((public.ops_stage(t.workflow_id, p_detail ->> 'stage_key')).label, p_detail ->> 'stage_key') || '.'
+             else 'Assigned to you by ' || who || '.' end,
+        'assigned:' || p_task::text || ':' || owner::text || ':' || to_char(now(), 'YYYYMMDDHH24MI'));
+    end if;
+    return;
+  end if;
+
+  select team_member_id into owner from public.ops_task_assignees
+   where task_id = p_task and responsibility = 'owner' and ended_at is null
+   limit 1;
+  if owner is null or owner = m.id then return; end if;
+
+  if p_type = 'stage_changed' then
+    st := public.ops_stage(t.workflow_id, p_to ->> 'stage_key');
+    body := 'Moved to ' || coalesce(st.label, p_to ->> 'stage_key')
+      || coalesce(', round ' || (p_detail ->> 'round'), '') || ' by ' || who || '.';
+  elsif p_type = 'due_changed' then
+    body := 'The ' || case when p_to ->> 'kind' = 'final' then 'final' else 'first draft' end
+      || ' date moved to ' || to_char((p_to ->> 'value')::timestamptz, 'DD Mon YYYY')
+      || ' by ' || who || '.';
+  elsif p_type = 'blocked' then
+    body := 'Marked blocked by ' || who || ': '
+      || coalesce(p_detail ->> 'category', 'reason not given') || '.';
+  elsif p_type = 'unblocked' then
+    body := 'Unblocked by ' || who || '.';
+  elsif p_type = 'revision_requested' then
+    body := 'A revision was requested by ' || who || '.';
+  elsif p_type = 'approval_recorded' then
+    body := 'A review decision was recorded by ' || who || '.';
+  elsif p_type = 'reopened' then
+    body := 'Reopened by ' || who || '.';
+  elsif p_type = 'cancelled' then
+    body := 'Cancelled by ' || who || '.';
+  else
+    return;
+  end if;
+
+  perform public.ops_notify(owner, p_task, p_type,
+    public.ops_serial(t.task_no) || ' · ' || public.ops_title(t), body,
+    p_type || ':' || p_task::text || ':' || owner::text || ':' || to_char(now(), 'YYYYMMDDHH24MI'));
+end $$;
+
+/* The deletion names the task the way every screen does, and the number is
+   typed back with or without the # and in any case. */
+create or replace function public.ops_delete_task(
+  p_task uuid, p_confirm text, p_reason text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m   public.team_members;
+  t   public.ops_tasks;
+  cl  text;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('ops', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.ops_may_see_task(p_task) then return jsonb_build_object('error', 'denied'); end if;
+
+  select * into t from public.ops_tasks where id = p_task for update;
+  if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+
+  if upper(regexp_replace(coalesce(p_confirm, ''), '[^A-Za-z0-9]', '', 'g'))
+     <> upper(regexp_replace(public.ops_serial(t.task_no), '[^A-Za-z0-9]', '', 'g')) then
+    return jsonb_build_object('error', 'confirm-required');
+  end if;
+
+  select c.name into cl from public.clients c where c.id = t.client_id;
+
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(m.name, m.email), 'ops.deleted',
+          public.ops_serial(t.task_no),
+          public.ops_title(t) ||
+          coalesce(' · ' || cl, case when t.scope = 'internal' then ' · Internal' else '' end) ||
+          coalesce(' · ' || nullif(btrim(p_reason), ''), ''));
+
+  delete from public.ops_tasks where id = p_task;
+  return jsonb_build_object('deleted', true, 'task_no', t.task_no);
+end $$;
+grant execute on function public.ops_delete_task(uuid, text, text) to authenticated;
+
+-- 11. The content workflow: its words, AQC review, and what follows approval ----
+/* In progress, Ready to start and AQC review are the team's words, applied
+   only where a stage still reads as seeded, so a label somebody changed is
+   left alone. Two revision loops replace the one: Revision (Internal) is
+   reached from AQC review only and Revision (Client) from Client review
+   only, each back to the review it came from. After approval the work is
+   Scheduled, goes Live on a confirmed date, has its Performance review, and
+   ends Completed or Taken down. Changes requested and Published stay for any
+   task already in them and are no longer offered as next steps. Positions
+   are appended after the last one, so nothing already placed moves. */
+do $$
+declare
+  w uuid;
+  p integer;
+begin
+  select id into w from public.ops_workflows where key = 'content';
+  if w is null then return; end if;
+
+  update public.ops_workflow_stages set label = 'In progress'
+   where workflow_id = w and key = 'in_production' and label = 'In production';
+  update public.ops_workflow_stages set label = 'Ready to start'
+   where workflow_id = w and key = 'ready' and label = 'Ready for production';
+  update public.ops_workflow_stages set label = 'AQC review'
+   where workflow_id = w and key = 'internal_review' and label = 'Internal quality review';
+
+  if not exists (select 1 from public.ops_workflow_stages
+                  where workflow_id = w and key = 'revision_internal') then
+    select coalesce(max(position), 0) into p from public.ops_workflow_stages where workflow_id = w;
+    insert into public.ops_workflow_stages
+      (workflow_id, key, label, position, stage_group, is_active_work, is_waiting,
+       is_review, is_terminal, wip_guidance, next_stage_keys) values
+      (w, 'revision_internal',  'Revision (Internal)', p + 1, 'revision',    true,  false, false, false, null,
+          array['internal_review', 'blocked', 'on_hold']),
+      (w, 'revision_client',    'Revision (Client)',   p + 2, 'revision',    true,  false, false, false, null,
+          array['client_review', 'internal_review', 'blocked', 'on_hold']),
+      (w, 'scheduled',          'Scheduled',           p + 3, 'scheduled',   false, true,  false, false, null,
+          array['live', 'revision_client', 'on_hold', 'cancelled']),
+      (w, 'live',               'Live',                p + 4, 'live',        false, true,  false, false, null,
+          array['performance_review', 'taken_down']),
+      (w, 'performance_review', 'Performance review',  p + 5, 'performance', false, false, true,  false, null,
+          array['completed', 'taken_down', 'live']),
+      (w, 'taken_down',         'Taken down',          p + 6, 'taken_down',  false, false, false, true,  null,
+          array['live']),
+      (w, 'completed',          'Completed',           p + 7, 'done',        false, false, false, true,  null,
+          array['performance_review']);
+
+    update public.ops_workflow_stages set next_stage_keys =
+      array['client_review', 'revision_internal', 'in_production', 'blocked']
+     where workflow_id = w and key = 'internal_review';
+    update public.ops_workflow_stages set next_stage_keys =
+      array['approved', 'revision_client', 'blocked', 'on_hold']
+     where workflow_id = w and key = 'client_review';
+    update public.ops_workflow_stages set next_stage_keys =
+      array['scheduled', 'live', 'revision_client']
+     where workflow_id = w and key = 'approved';
+    update public.ops_workflow_stages set next_stage_keys =
+      array['ready', 'in_production', 'internal_review', 'revision_internal', 'client_review',
+            'revision_client', 'scheduled', 'cancelled']
+     where workflow_id = w and key = 'blocked';
+    update public.ops_workflow_stages set next_stage_keys =
+      array['planning', 'ready', 'in_production', 'internal_review', 'revision_internal',
+            'client_review', 'revision_client', 'scheduled', 'cancelled']
+     where workflow_id = w and key = 'on_hold';
+  end if;
+end $$;
+
+-- 12. The live date and the rating -------------------------------------------------
+/* When the work actually went live, and what the team made of the task once
+   it was finished. A column each, added, never a rewrite. */
+alter table public.ops_tasks add column if not exists live_at     timestamptz;
+alter table public.ops_tasks add column if not exists rating      smallint;
+alter table public.ops_tasks add column if not exists rating_note text;
+alter table public.ops_tasks add column if not exists rated_by    uuid references public.team_members(id);
+alter table public.ops_tasks add column if not exists rated_at    timestamptz;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'ops_tasks_rating_range') then
+    alter table public.ops_tasks add constraint ops_tasks_rating_range
+      check (rating is null or rating between 1 and 5);
+  end if;
+end $$;
+
+/* Going live. The date is today unless somebody says otherwise; a date that
+   differs from the scheduled one says why, and both dates and the reason are
+   on the record. The move itself is ops_transition_task, with every gate it
+   has, and the date is put back if the move is refused. */
+create or replace function public.ops_mark_live(
+  p_task uuid, p_live_at timestamptz, p_reason text default null,
+  p_version integer default null, p_assignee uuid default null, p_note text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m    public.team_members;
+  t    public.ops_tasks;
+  res  jsonb;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.ops_may_see_task(p_task) then return jsonb_build_object('error', 'denied'); end if;
+  select * into t from public.ops_tasks where id = p_task for update;
+  if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if p_version is not null and p_version <> t.version then
+    return jsonb_build_object('error', 'stale', 'task', public.ops_task_json(p_task));
+  end if;
+  if p_live_at is null then return jsonb_build_object('error', 'no-date'); end if;
+  if (p_live_at at time zone 'Asia/Kuala_Lumpur')::date
+     > (now() at time zone 'Asia/Kuala_Lumpur')::date then
+    return jsonb_build_object('error', 'live-in-future');
+  end if;
+  if t.publish_at is not null
+     and (p_live_at at time zone 'Asia/Kuala_Lumpur')::date
+         <> (t.publish_at at time zone 'Asia/Kuala_Lumpur')::date
+     and nullif(btrim(coalesce(p_reason, '')), '') is null then
+    return jsonb_build_object('error', 'live-reason-required');
+  end if;
+
+  update public.ops_tasks set live_at = p_live_at where id = p_task;
+  res := public.ops_transition_task(p_task, 'live', p_version, p_note, p_assignee, null);
+  if res ? 'error' then
+    update public.ops_tasks set live_at = t.live_at where id = p_task;
+    return res;
+  end if;
+  perform public.ops_log(p_task, 'live_confirmed',
+    jsonb_build_object('scheduled', t.publish_at),
+    jsonb_build_object('live_at', p_live_at),
+    case when nullif(btrim(coalesce(p_reason, '')), '') is null then '{}'::jsonb
+         else jsonb_build_object('reason', btrim(p_reason)) end);
+  return public.ops_task_json(p_task);
+end $$;
+grant execute on function public.ops_mark_live(uuid, timestamptz, text, integer, uuid, text) to authenticated;
+
+/* A finished task is rated one to five, with a line if there is one to say.
+   Changing the rating is a second event, never an overwrite of the first. */
+create or replace function public.ops_rate_task(p_task uuid, p_rating integer, p_note text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  t public.ops_tasks;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.ops_may_see_task(p_task) then return jsonb_build_object('error', 'denied'); end if;
+  select * into t from public.ops_tasks where id = p_task for update;
+  if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if t.completed_at is null then return jsonb_build_object('error', 'not-finished'); end if;
+  if p_rating is null or p_rating < 1 or p_rating > 5 then
+    return jsonb_build_object('error', 'bad-rating');
+  end if;
+  update public.ops_tasks set
+    rating = p_rating,
+    rating_note = nullif(btrim(coalesce(p_note, '')), ''),
+    rated_by = m.id,
+    rated_at = now()
+  where id = p_task;
+  perform public.ops_log(p_task, 'rated',
+    case when t.rating is null then null else jsonb_build_object('rating', t.rating) end,
+    jsonb_build_object('rating', p_rating),
+    case when nullif(btrim(coalesce(p_note, '')), '') is null then '{}'::jsonb
+         else jsonb_build_object('note', btrim(p_note)) end);
+  return public.ops_task_json(p_task);
+end $$;
+grant execute on function public.ops_rate_task(uuid, integer, text) to authenticated;
+
+-- 13. Several tasks deleted at once --------------------------------------------------
+/* The same act as ops_delete_task, for a selection: ops Manage, every task in
+   it one the person may see or none is deleted, the count typed back, a
+   reason, and a row in the activity record for each task, because the task's
+   own history goes with it. At most 500 in one act. */
+create or replace function public.ops_delete_tasks(p_tasks uuid[], p_confirm text, p_reason text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m     public.team_members;
+  t     public.ops_tasks;
+  want  integer := coalesce(array_length(p_tasks, 1), 0);
+  n     integer := 0;
+  cl    text;
+  why   text := nullif(btrim(coalesce(p_reason, '')), '');
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('ops', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  if want = 0 then return jsonb_build_object('error', 'none-selected'); end if;
+  if want > 500 then return jsonb_build_object('error', 'too-many'); end if;
+  if btrim(coalesce(p_confirm, '')) <> want::text then
+    return jsonb_build_object('error', 'confirm-required');
+  end if;
+  if why is null then return jsonb_build_object('error', 'reason-required'); end if;
+  if exists (select 1 from unnest(p_tasks) x where not public.ops_may_see_task(x)) then
+    return jsonb_build_object('error', 'denied');
+  end if;
+
+  for t in select * from public.ops_tasks where id = any (p_tasks) order by task_no for update loop
+    select c.name into cl from public.clients c where c.id = t.client_id;
+    insert into public.activity_log (actor, action, subject, detail)
+    values (coalesce(m.name, m.email), 'ops.deleted', public.ops_serial(t.task_no),
+            public.ops_title(t) ||
+            coalesce(' · ' || cl, case when t.scope = 'internal' then ' · Internal' else '' end) ||
+            ' · ' || why);
+    delete from public.ops_tasks where id = t.id;
+    n := n + 1;
+  end loop;
+  return jsonb_build_object('deleted', n);
+end $$;
+grant execute on function public.ops_delete_tasks(uuid[], text, text) to authenticated;
+
+-- 14. The next number, for an admin -------------------------------------------------
+/* What the next task will be numbered, and the place to set it: an admin
+   only, never below or on a number a task already holds, and filed in the
+   activity record. */
+create or replace function public.ops_next_task_no()
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  lv   bigint;
+  ic   boolean;
+  nxt  bigint;
+  top  bigint;
+begin
+  if not public.allowed('admin') then return jsonb_build_object('error', 'denied'); end if;
+  select last_value, is_called into lv, ic from public.ops_task_no_seq;
+  nxt := case when ic then lv + 1 else lv end;
+  select max(task_no) into top from public.ops_tasks;
+  return jsonb_build_object('next', nxt, 'serial', public.ops_serial(nxt),
+    'highest', top, 'highest_serial', case when top is null then null else public.ops_serial(top) end);
+end $$;
+grant execute on function public.ops_next_task_no() to authenticated;
+
+create or replace function public.ops_set_next_task_no(p_next bigint)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m    public.team_members;
+  top  bigint;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('admin') then return jsonb_build_object('error', 'denied'); end if;
+  if p_next is null or p_next < 1 or p_next > 9999999 then
+    return jsonb_build_object('error', 'bad-number');
+  end if;
+  select max(task_no) into top from public.ops_tasks;
+  if top is not null and p_next <= top then
+    return jsonb_build_object('error', 'number-taken', 'highest', public.ops_serial(top));
+  end if;
+  perform setval('public.ops_task_no_seq', p_next, false);
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(m.name, m.email), 'ops.numbering', 'My Work',
+          'Next task number set to ' || public.ops_serial(p_next));
+  return public.ops_next_task_no();
+end $$;
+grant execute on function public.ops_set_next_task_no(bigint) to authenticated;
+
+-- 15. Changing and taking back what was added ------------------------------------
+/* Everything a person adds to a task can be put right afterwards: the brief
+   and the priority, a checklist item, a link, a comment. Each change is an
+   event beside the others, so the record shows what it was and what it
+   became. A required check is the review's own gate and is neither renamed
+   nor removed. A comment is never rewritten: a correction or a removal is a
+   later event, and the history keeps what was said and when. */
+create or replace function public.ops_update_task(
+  p_task uuid, p_payload jsonb, p_version integer default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m     public.team_members;
+  t     public.ops_tasks;
+  d     text;
+  pr    integer;
+  was   jsonb := '{}'::jsonb;
+  now_  jsonb := '{}'::jsonb;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.ops_may_see_task(p_task) then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  select * into t from public.ops_tasks where id = p_task for update;
+  if t.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if p_version is not null and p_version <> t.version then
+    return jsonb_build_object('error', 'stale', 'task', public.ops_task_json(p_task));
+  end if;
+  d := t.description;
+  pr := t.priority_level;
+  if p_payload ? 'description' then
+    d := nullif(btrim(coalesce(p_payload ->> 'description', '')), '');
+    if length(coalesce(d, '')) > 4000 then return jsonb_build_object('error', 'too-long'); end if;
+  end if;
+  if p_payload ? 'priority_level' then
+    pr := (p_payload ->> 'priority_level')::integer;
+    if pr is null or pr < 1 or pr > 4 then return jsonb_build_object('error', 'bad-priority'); end if;
+  end if;
+  if d is not distinct from t.description and pr is not distinct from t.priority_level then
+    return public.ops_task_json(p_task);
+  end if;
+  if d is distinct from t.description then
+    was := was || jsonb_build_object('description', t.description);
+    now_ := now_ || jsonb_build_object('description', d);
+  end if;
+  if pr is distinct from t.priority_level then
+    was := was || jsonb_build_object('priority_level', t.priority_level);
+    now_ := now_ || jsonb_build_object('priority_level', pr);
+  end if;
+  update public.ops_tasks set description = d, priority_level = pr,
+         version = version + 1, updated_at = now()
+   where id = p_task;
+  perform public.ops_log(p_task, 'details_changed', was, now_, '{}'::jsonb);
+  return public.ops_task_json(p_task);
+end $$;
+grant execute on function public.ops_update_task(uuid, jsonb, integer) to authenticated;
+
+create or replace function public.ops_edit_checklist_item(p_item uuid, p_label text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m   public.team_members;
+  c   public.ops_task_checklist_items;
+  lbl text;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  select * into c from public.ops_task_checklist_items where id = p_item for update;
+  if c.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.ops_may_see_task(c.task_id) then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if c.required then return jsonb_build_object('error', 'item-required'); end if;
+  lbl := nullif(btrim(coalesce(p_label, '')), '');
+  if lbl is null then return jsonb_build_object('error', 'label-required'); end if;
+  if length(lbl) > 300 then return jsonb_build_object('error', 'too-long'); end if;
+  if lbl = c.label then return to_jsonb(c); end if;
+  update public.ops_task_checklist_items set label = lbl where id = p_item;
+  perform public.ops_log(c.task_id, 'checklist_changed',
+    jsonb_build_object('label', c.label),
+    jsonb_build_object('label', lbl, 'renamed', true), '{}'::jsonb);
+  return (select to_jsonb(x) from public.ops_task_checklist_items x where x.id = p_item);
+end $$;
+grant execute on function public.ops_edit_checklist_item(uuid, text) to authenticated;
+
+create or replace function public.ops_remove_checklist_item(p_item uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m   public.team_members;
+  c   public.ops_task_checklist_items;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  select * into c from public.ops_task_checklist_items where id = p_item for update;
+  if c.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.ops_may_see_task(c.task_id) then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if c.required then return jsonb_build_object('error', 'item-required'); end if;
+  delete from public.ops_task_checklist_items where id = p_item;
+  perform public.ops_log(c.task_id, 'checklist_changed',
+    jsonb_build_object('label', c.label, 'done', c.completed_at is not null),
+    jsonb_build_object('label', c.label, 'removed', true), '{}'::jsonb);
+  return jsonb_build_object('removed', to_jsonb(c));
+end $$;
+grant execute on function public.ops_remove_checklist_item(uuid) to authenticated;
+
+create or replace function public.ops_update_link(
+  p_link uuid, p_label text, p_url text, p_kind text, p_version integer default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m   public.team_members;
+  l   public.ops_task_links;
+  t   public.ops_tasks;
+  lbl text;
+  u   text;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  select * into l from public.ops_task_links where id = p_link for update;
+  if l.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.ops_may_see_task(l.task_id) then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if p_kind not in ('brief', 'asset', 'draft', 'review', 'final', 'other') then
+    return jsonb_build_object('error', 'bad-kind');
+  end if;
+  u := nullif(btrim(coalesce(p_url, '')), '');
+  if u is null then return jsonb_build_object('error', 'url-required'); end if;
+  select * into t from public.ops_tasks where id = l.task_id for update;
+  if p_version is not null and p_version <> t.version then
+    return jsonb_build_object('error', 'stale', 'task', public.ops_task_json(l.task_id));
+  end if;
+  lbl := coalesce(nullif(btrim(coalesce(p_label, '')), ''), initcap(p_kind) || ' link');
+  if lbl = l.label and u = l.url and p_kind = l.kind then
+    return jsonb_build_object('link_id', l.id, 'task', public.ops_task_json(l.task_id));
+  end if;
+  update public.ops_task_links set label = lbl, url = u, kind = p_kind where id = p_link;
+  update public.ops_tasks set version = version + 1, updated_at = now() where id = l.task_id;
+  perform public.ops_log(l.task_id, 'file_changed',
+    jsonb_build_object('link_id', l.id, 'label', l.label, 'url', l.url, 'kind', l.kind),
+    jsonb_build_object('link_id', l.id, 'label', lbl, 'url', u, 'kind', p_kind), '{}'::jsonb);
+  return jsonb_build_object('link_id', l.id, 'task', public.ops_task_json(l.task_id));
+end $$;
+grant execute on function public.ops_update_link(uuid, text, text, text, integer) to authenticated;
+
+/* A comment is corrected or removed by the person who wrote it, or by ops
+   Manage, through a later event that names it. */
+create or replace function public.ops_edit_comment(p_event uuid, p_body text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m    public.team_members;
+  e    public.ops_task_events;
+  body text;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  select * into e from public.ops_task_events where id = p_event;
+  if e.id is null or e.event_type <> 'commented' then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.ops_may_see_task(e.task_id) then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if e.actor_id is distinct from m.id and not public.allowed('ops', 'manage') then
+    return jsonb_build_object('error', 'not-yours');
+  end if;
+  body := nullif(btrim(coalesce(p_body, '')), '');
+  if body is null then return jsonb_build_object('error', 'comment-required'); end if;
+  if length(body) > 2000 then return jsonb_build_object('error', 'too-long'); end if;
+  perform public.ops_log(e.task_id, 'comment_edited',
+    jsonb_build_object('event_id', e.id), jsonb_build_object('event_id', e.id),
+    jsonb_build_object('note', body));
+  return public.ops_task_json(e.task_id);
+end $$;
+grant execute on function public.ops_edit_comment(uuid, text) to authenticated;
+
+create or replace function public.ops_remove_comment(p_event uuid, p_on boolean default true)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  e public.ops_task_events;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  select * into e from public.ops_task_events where id = p_event;
+  if e.id is null or e.event_type <> 'commented' then return jsonb_build_object('error', 'not-found'); end if;
+  if not public.ops_may_see_task(e.task_id) then return jsonb_build_object('error', 'denied'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if e.actor_id is distinct from m.id and not public.allowed('ops', 'manage') then
+    return jsonb_build_object('error', 'not-yours');
+  end if;
+  perform public.ops_log(e.task_id, case when p_on then 'comment_removed' else 'comment_restored' end,
+    jsonb_build_object('event_id', e.id), jsonb_build_object('event_id', e.id), '{}'::jsonb);
+  return public.ops_task_json(e.task_id);
+end $$;
+grant execute on function public.ops_remove_comment(uuid, boolean) to authenticated;
+
+-- END OF MY WORK AS A DAILY TASK TRACKER -----------------------------------
+
+-- ===========================================================================
+-- THE MONTH IN TWO TICKS — the readiness list is two checklists, who ticked
+-- is recorded by the database, and a month can be deleted.
+-- 2026-09-24. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/ops.js compares the two.
+--
+-- WHAT THIS CHANGES, AND WHAT IT LEAVES ALONE.
+--
+--   1. A month's readiness is two ticks, Onboarding checklist and
+--      Pre-advertising checklist, in place of thirteen questions with a state
+--      and an owner each. The detailed checklists are the team's own forms;
+--      the portal records that each is done. Every existing month takes the
+--      two rows once: Onboarding is ticked where every onboarding question
+--      was Ready or Not applicable, Pre-advertising where its checklist was
+--      completed (Not applicable where it was not required), and the
+--      thirteen rows then go.
+--
+--   2. `ops_engagement_upsert` seeds the two rows on a new month.
+--
+--   3. `ops_engagement_set_check` records the person who made the change as
+--      the check's owner. The owner is no longer chosen by hand.
+--
+--   4. `ops_delete_engagement` (ops Manage): a month is deleted with a reason.
+--      Its tasks stay and leave the month; its checks and its own history go
+--      with it; the activity record keeps `ops.month_deleted` naming the
+--      client, the month and how many tasks it held.
+--
+--   5. `activity_section` files `ops.month_deleted` under My Work. It is at
+--      the foot, after the end marker, like every copy of that function.
+--
+--   The gate is unchanged: Ready and In production still need every check
+--   Ready or Not applicable, and the meeting held or marked not applicable.
+--
+-- ROLLBACK
+--   drop function if exists public.ops_delete_engagement(uuid, text);
+--   Then re-run 2026-09-23-operations-phase4.sql for the thirteen-question
+--   ops_engagement_upsert and ops_engagement_set_check. The thirteen rows
+--   removed from existing months are not restored: their answers were folded
+--   into the two ticks and the fold is not reversible.
+-- ===========================================================================
+
+-- 1. Two ticks on every month that exists ------------------------------------
+insert into public.ops_engagement_checks (engagement_id, key, state, updated_at)
+select e.id, 'onboarding',
+       case when exists (select 1 from public.ops_engagement_checks c
+                          where c.engagement_id = e.id
+                            and c.key in ('client_name', 'legal_name', 'brand_name', 'brand_profile',
+                                          'social_profiles', 'client_info', 'platform_ready',
+                                          'platform_setup', 'platform_create',
+                                          'partner_access_requested', 'partner_access_received'))
+             and not exists (select 1 from public.ops_engagement_checks c
+                              where c.engagement_id = e.id
+                                and c.key in ('client_name', 'legal_name', 'brand_name', 'brand_profile',
+                                              'social_profiles', 'client_info', 'platform_ready',
+                                              'platform_setup', 'platform_create',
+                                              'partner_access_requested', 'partner_access_received')
+                                and c.state not in ('ready', 'na'))
+            then 'ready' else 'not_started' end,
+       now()
+  from public.ops_engagements e
+on conflict (engagement_id, key) do nothing;
+
+insert into public.ops_engagement_checks (engagement_id, key, state, updated_at)
+select e.id, 'pre_ads',
+       case when exists (select 1 from public.ops_engagement_checks c
+                          where c.engagement_id = e.id and c.key = 'pre_ads_completed' and c.state = 'ready')
+            then 'ready'
+            when exists (select 1 from public.ops_engagement_checks c
+                          where c.engagement_id = e.id and c.key in ('pre_ads_required', 'pre_ads_completed')
+                            and c.state = 'na')
+            then 'na'
+            else 'not_started' end,
+       now()
+  from public.ops_engagements e
+on conflict (engagement_id, key) do nothing;
+
+delete from public.ops_engagement_checks where key not in ('onboarding', 'pre_ads');
+
+-- 2. A new month is seeded with the two ------------------------------------------
+/* One a client a month. A second call for the same month edits the one row
+   rather than making a second; the two checks are seeded on creation and
+   never re-seeded. */
+create or replace function public.ops_engagement_upsert(p_payload jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  cid uuid;
+  per text;
+  eid uuid;
+  k text;
+  fresh boolean := false;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  cid := (p_payload ->> 'client_id')::uuid;
+  per := p_payload ->> 'period';
+  if cid is null or not exists (select 1 from public.clients where id = cid) then
+    return jsonb_build_object('error', 'client-required');
+  end if;
+  if per is null or per !~ '^\d{4}-\d{2}$' then return jsonb_build_object('error', 'bad-period'); end if;
+
+  select e.id into eid from public.ops_engagements e where e.client_id = cid and e.period = per;
+  if eid is null then
+    insert into public.ops_engagements (client_id, period, manager_id, planned_count, drive_url, created_by)
+    values (cid, per, coalesce((p_payload ->> 'manager_id')::uuid, m.id),
+            coalesce((p_payload ->> 'planned_count')::integer, 0),
+            nullif(p_payload ->> 'drive_url', ''), m.id)
+    on conflict (client_id, period) do nothing
+    returning id into eid;
+    /* Somebody else made it between the read and the write: theirs stands. */
+    if eid is null then
+      select e.id into eid from public.ops_engagements e where e.client_id = cid and e.period = per;
+    else
+      fresh := true;
+    end if;
+  end if;
+  if fresh then
+    foreach k in array array['onboarding', 'pre_ads'] loop
+      insert into public.ops_engagement_checks (engagement_id, key) values (eid, k)
+      on conflict do nothing;
+    end loop;
+    perform public.ops_engagement_log(eid, 'created', p_payload - 'client_id');
+  else
+    if not public.ops_may_see_engagement(eid) then return jsonb_build_object('error', 'denied'); end if;
+    /* Asked for with nothing to change, the month is answered as it stands:
+       a task made for a month joins it without editing it. */
+    if (p_payload - 'client_id' - 'period') = '{}'::jsonb then
+      return public.ops_engagement_json(eid) || jsonb_build_object('created', false);
+    end if;
+    update public.ops_engagements set
+      manager_id = coalesce((p_payload ->> 'manager_id')::uuid, manager_id),
+      planned_count = coalesce((p_payload ->> 'planned_count')::integer, planned_count),
+      drive_url = case when p_payload ? 'drive_url' then nullif(p_payload ->> 'drive_url', '') else drive_url end,
+      updated_at = now(), version = version + 1
+    where id = eid;
+    perform public.ops_engagement_log(eid, 'edited', p_payload - 'client_id' - 'period');
+  end if;
+  return public.ops_engagement_json(eid) || jsonb_build_object('created', fresh);
+end $$;
+grant execute on function public.ops_engagement_upsert(jsonb) to authenticated;
+
+-- 3. Who ticked it is who is recorded --------------------------------------------
+/* The owner of a check is the person who last changed it, stamped here and
+   never chosen on the page. `p_owner` is kept so a caller written for the
+   older shape is not refused; it is not read. */
+create or replace function public.ops_engagement_set_check(
+  p_engagement uuid, p_key text, p_state text, p_owner uuid default null, p_note text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; was text;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.ops_may_see_engagement(p_engagement) then return jsonb_build_object('error', 'denied'); end if;
+  if p_state not in ('not_started', 'waiting_client', 'in_progress', 'ready', 'na') then
+    return jsonb_build_object('error', 'bad-state');
+  end if;
+  select state into was from public.ops_engagement_checks
+   where engagement_id = p_engagement and key = p_key;
+  if was is null then return jsonb_build_object('error', 'no-such-check'); end if;
+  if was = p_state and p_note is null then return public.ops_engagement_json(p_engagement); end if;
+  update public.ops_engagement_checks
+     set state = p_state, owner_id = m.id,
+         note = case when p_note is null then note else nullif(btrim(p_note), '') end,
+         updated_by = m.id, updated_at = now()
+   where engagement_id = p_engagement and key = p_key;
+  perform public.ops_engagement_log(p_engagement, 'check_changed',
+    jsonb_build_object('key', p_key, 'from', was, 'to', p_state));
+  return public.ops_engagement_json(p_engagement);
+end $$;
+grant execute on function public.ops_engagement_set_check(uuid, text, text, uuid, text) to authenticated;
+
+-- 4. A month is deleted -----------------------------------------------------------
+/* A month keyed in for the wrong client or the wrong period has to be able
+   to go. ops Manage, a reason, and a row in the activity record, because the
+   month's own history goes with it. Its tasks are not deleted: they stay, with
+   their codes, and simply leave the month. */
+create or replace function public.ops_delete_engagement(p_engagement uuid, p_reason text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m  public.team_members;
+  e  public.ops_engagements;
+  cl text;
+  n  integer;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('ops', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.ops_may_see_engagement(p_engagement) then return jsonb_build_object('error', 'denied'); end if;
+  if nullif(btrim(coalesce(p_reason, '')), '') is null then
+    return jsonb_build_object('error', 'reason-required');
+  end if;
+  select * into e from public.ops_engagements where id = p_engagement for update;
+  if e.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select c.name into cl from public.clients c where c.id = e.client_id;
+  select count(*) into n from public.ops_tasks t where t.engagement_id = e.id;
+
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(m.name, m.email), 'ops.month_deleted', coalesce(cl, 'Client'),
+          to_char(to_date(e.period || '-01', 'YYYY-MM-DD'), 'Mon YYYY') ||
+          case when n = 1 then ' · 1 task left the month'
+               when n > 1 then ' · ' || n || ' tasks left the month' else '' end ||
+          ' · ' || btrim(p_reason));
+
+  delete from public.ops_engagements where id = e.id;
+  return jsonb_build_object('deleted', true, 'period', e.period, 'tasks', n);
+end $$;
+grant execute on function public.ops_delete_engagement(uuid, text) to authenticated;
+
+-- END OF THE MONTH IN TWO TICKS --------------------------------------------
+
+-- ===========================================================================
+-- THE CONTENT MEETING ON GOOGLE MEET — a length, a link, and the calendar
+-- event it lives on.
+-- 2026-09-24. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/ops.js compares the two.
+--
+-- WHAT THIS CHANGES, AND WHAT IT LEAVES ALONE.
+--
+--   1. Three columns on `ops_engagements`: `meeting_minutes` (how long, 15 to
+--      240, 30 by default, so the message to the client can say when it
+--      ends), `meeting_link` (the Meet link, generated or pasted), and
+--      `meeting_event_id` (the event on the shared Google calendar, so a
+--      moved meeting moves the event and a cancelled one removes it).
+--
+--   2. `ops_engagement_set_meeting` takes the length and a pasted link. Its
+--      older six-argument shape is dropped first, because PostgREST cannot
+--      tell a call that names six arguments from one that names six and
+--      leaves two to their defaults. Marking the month as having no meeting
+--      clears the link; the calendar event is removed by the page through
+--      the meet-create function.
+--
+--   3. `ops_engagement_meet_prepare` and `ops_engagement_set_meet`, the two
+--      calls the meet-create edge function makes as the signed-in person: the
+--      first answers what the calendar needs (and refuses a person who may
+--      not work the month), the second records the link and the event. Both
+--      ask what every write on the month asks: ops Work, and a month the
+--      person may see.
+--
+--   4. `ops_log` tells a task's owner when somebody else comments on it, with
+--      the first 140 characters of the comment. Every other rule is as the
+--      daily tracker left it: nobody is told about their own act.
+--
+-- ROLLBACK
+--   drop function if exists public.ops_engagement_meet_prepare(uuid);
+--   drop function if exists public.ops_engagement_set_meet(uuid, text, text);
+--   drop function if exists public.ops_engagement_set_meeting(uuid, timestamptz, text, uuid, text, boolean, integer, text);
+--   Re-run 2026-09-23-operations-phase4.sql for the six-argument
+--   ops_engagement_set_meeting and 2026-09-24-my-work-daily-tasks.sql for
+--   ops_log, then:
+--   alter table public.ops_engagements drop column if exists meeting_minutes,
+--     drop column if exists meeting_link, drop column if exists meeting_event_id;
+-- ===========================================================================
+
+-- 1. The length, the link and the event --------------------------------------
+alter table public.ops_engagements add column if not exists meeting_minutes integer not null default 30;
+alter table public.ops_engagements add column if not exists meeting_link text;
+alter table public.ops_engagements add column if not exists meeting_event_id text;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'ops_engagements_minutes_check') then
+    alter table public.ops_engagements add constraint ops_engagements_minutes_check
+      check (meeting_minutes between 15 and 240);
+  end if;
+end $$;
+
+-- 2. The meeting takes its length and a pasted link ------------------------------
+drop function if exists public.ops_engagement_set_meeting(uuid, timestamptz, text, uuid, text, boolean);
+/* The content meeting. When it is first put in the diary the date is today
+   or later; once it has been held the record stays as it was, because a past
+   meeting is a fact and not a mistake. Not applicable is its own answer, and
+   clears the link. A link is Google Meet's, Zoom's or Teams', never anything
+   else, because it is sent to a client as it stands. */
+create or replace function public.ops_engagement_set_meeting(
+  p_engagement uuid, p_at timestamptz, p_channel text default null,
+  p_owner uuid default null, p_note text default null, p_na boolean default false,
+  p_minutes integer default null, p_link text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; e public.ops_engagements; lk text;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.ops_may_see_engagement(p_engagement) then return jsonb_build_object('error', 'denied'); end if;
+  select * into e from public.ops_engagements where id = p_engagement for update;
+  if e.id is null then return jsonb_build_object('error', 'not-found'); end if;
+
+  if coalesce(p_na, false) then
+    update public.ops_engagements set meeting_na = true, meeting_note = coalesce(p_note, meeting_note),
+           meeting_link = null, updated_at = now(), version = version + 1 where id = p_engagement;
+    perform public.ops_engagement_log(p_engagement, 'meeting_na', jsonb_build_object('note', p_note));
+    return public.ops_engagement_json(p_engagement);
+  end if;
+  if p_at is null then return jsonb_build_object('error', 'no-date'); end if;
+  if p_channel is not null and p_channel not in ('onsite', 'google_meet', 'zoom', 'other') then
+    return jsonb_build_object('error', 'bad-channel');
+  end if;
+  if e.meeting_at is null and p_at::date < current_date then
+    return jsonb_build_object('error', 'meeting-in-past');
+  end if;
+  if p_minutes is not null and (p_minutes < 15 or p_minutes > 240) then
+    return jsonb_build_object('error', 'bad-minutes');
+  end if;
+  lk := nullif(btrim(coalesce(p_link, '')), '');
+  if lk is not null and lk !~* '^https://([a-z0-9-]+\.)*(meet\.google\.com|zoom\.us|teams\.microsoft\.com|teams\.live\.com)/' then
+    return jsonb_build_object('error', 'bad-meeting-link');
+  end if;
+  update public.ops_engagements set
+    meeting_at = p_at, meeting_channel = coalesce(p_channel, meeting_channel),
+    meeting_owner_id = coalesce(p_owner, meeting_owner_id, m.id),
+    meeting_note = case when p_note is null then meeting_note else nullif(btrim(p_note), '') end,
+    meeting_minutes = coalesce(p_minutes, meeting_minutes),
+    meeting_link = case when p_link is null then meeting_link else lk end,
+    meeting_na = false, updated_at = now(), version = version + 1
+  where id = p_engagement;
+  perform public.ops_engagement_log(p_engagement, 'meeting_set',
+    jsonb_build_object('at', p_at, 'channel', p_channel, 'owner_id', p_owner, 'was', e.meeting_at,
+                       'minutes', p_minutes));
+  return public.ops_engagement_json(p_engagement);
+end $$;
+grant execute on function public.ops_engagement_set_meeting(uuid, timestamptz, text, uuid, text, boolean, integer, text) to authenticated;
+
+-- 3. The two calls the calendar function makes ------------------------------------
+/* What the shared calendar needs to book the month's meeting, asked as the
+   person pressing the button: a person who may not work the month is refused
+   here, before Google is asked anything. */
+create or replace function public.ops_engagement_meet_prepare(p_engagement uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; e public.ops_engagements; cl text;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.ops_may_see_engagement(p_engagement) then return jsonb_build_object('error', 'denied'); end if;
+  select * into e from public.ops_engagements where id = p_engagement;
+  if e.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select c.name into cl from public.clients c where c.id = e.client_id;
+  return jsonb_build_object(
+    'id', e.id, 'client_name', coalesce(cl, 'Client'),
+    'month_word', to_char(to_date(e.period || '-01', 'YYYY-MM-DD'), 'Mon YYYY'),
+    'meeting_at', e.meeting_at, 'meeting_minutes', e.meeting_minutes,
+    'meeting_channel', e.meeting_channel, 'meeting_na', e.meeting_na,
+    'meeting_link', e.meeting_link, 'meeting_event_id', e.meeting_event_id);
+end $$;
+grant execute on function public.ops_engagement_meet_prepare(uuid) to authenticated;
+
+/* The link and the event the calendar made, recorded on the month. A null
+   pair is the event removed, and takes the Meet link with it; a Zoom or
+   Teams link somebody typed is theirs and stays. */
+create or replace function public.ops_engagement_set_meet(p_engagement uuid, p_link text, p_event text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  if not public.ops_may_see_engagement(p_engagement) then return jsonb_build_object('error', 'denied'); end if;
+  if p_link is not null and p_link !~* '^https://meet\.google\.com/' then
+    return jsonb_build_object('error', 'bad-meeting-link');
+  end if;
+  update public.ops_engagements set meeting_link = case
+           when p_link is not null then p_link
+           when p_event is null and meeting_link ~* '^https://meet\.google\.com/' then null
+           else meeting_link end,
+         meeting_event_id = p_event, meeting_channel = case when p_link is not null then 'google_meet' else meeting_channel end,
+         updated_at = now(), version = version + 1
+   where id = p_engagement;
+  perform public.ops_engagement_log(p_engagement, case when p_event is null then 'meet_removed' else 'meet_booked' end,
+    jsonb_build_object('link', p_link, 'event', p_event));
+  return public.ops_engagement_json(p_engagement);
+end $$;
+grant execute on function public.ops_engagement_set_meet(uuid, text, text) to authenticated;
+
+
+-- 4. A comment tells the task's owner ------------------------------------------------
+/* ops_log as the daily tracker left it, and a comment somebody else made on
+   a task tells its owner what was said. */
+create or replace function public.ops_log(
+  p_task uuid, p_type text, p_from jsonb, p_to jsonb, p_detail jsonb default '{}'::jsonb)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  m      public.team_members;
+  t      public.ops_tasks;
+  owner  uuid;
+  who    text;
+  body   text;
+  st     public.ops_workflow_stages;
+begin
+  m := public.ops_me();
+  insert into public.ops_task_events (task_id, event_type, actor_id, actor_email,
+                                      from_value, to_value, detail)
+  values (p_task, p_type, m.id, m.email, p_from, p_to, coalesce(p_detail, '{}'::jsonb));
+
+  select * into t from public.ops_tasks where id = p_task;
+  if t.id is null then return; end if;
+  who := coalesce(nullif(m.name, ''), m.email, 'Somebody');
+
+  if p_type = 'assignment_changed' then
+    owner := (p_to ->> 'owner_id')::uuid;
+    if owner is not null and owner is distinct from m.id then
+      perform public.ops_notify(owner, p_task, 'assigned',
+        public.ops_serial(t.task_no) || ' · ' || public.ops_title(t),
+        case when coalesce((p_detail ->> 'handover')::boolean, false)
+             then 'Handed to you by ' || who || ' at ' ||
+                  coalesce((public.ops_stage(t.workflow_id, p_detail ->> 'stage_key')).label, p_detail ->> 'stage_key') || '.'
+             else 'Assigned to you by ' || who || '.' end,
+        'assigned:' || p_task::text || ':' || owner::text || ':' || to_char(now(), 'YYYYMMDDHH24MI'));
+    end if;
+    return;
+  end if;
+
+  select team_member_id into owner from public.ops_task_assignees
+   where task_id = p_task and responsibility = 'owner' and ended_at is null
+   limit 1;
+  if owner is null or owner = m.id then return; end if;
+
+  if p_type = 'stage_changed' then
+    st := public.ops_stage(t.workflow_id, p_to ->> 'stage_key');
+    body := 'Moved to ' || coalesce(st.label, p_to ->> 'stage_key')
+      || coalesce(', round ' || (p_detail ->> 'round'), '') || ' by ' || who || '.';
+  elsif p_type = 'due_changed' then
+    body := 'The ' || case when p_to ->> 'kind' = 'final' then 'final' else 'first draft' end
+      || ' date moved to ' || to_char((p_to ->> 'value')::timestamptz, 'DD Mon YYYY')
+      || ' by ' || who || '.';
+  elsif p_type = 'blocked' then
+    body := 'Marked blocked by ' || who || ': '
+      || coalesce(p_detail ->> 'category', 'reason not given') || '.';
+  elsif p_type = 'unblocked' then
+    body := 'Unblocked by ' || who || '.';
+  elsif p_type = 'revision_requested' then
+    body := 'A revision was requested by ' || who || '.';
+  elsif p_type = 'approval_recorded' then
+    body := 'A review decision was recorded by ' || who || '.';
+  elsif p_type = 'reopened' then
+    body := 'Reopened by ' || who || '.';
+  elsif p_type = 'cancelled' then
+    body := 'Cancelled by ' || who || '.';
+  elsif p_type = 'commented' then
+    body := who || ' commented: ' ||
+      case when length(coalesce(p_detail ->> 'note', '')) > 140
+           then left(p_detail ->> 'note', 139) || '…' else coalesce(p_detail ->> 'note', '') end;
+  else
+    return;
+  end if;
+
+  perform public.ops_notify(owner, p_task, p_type,
+    public.ops_serial(t.task_no) || ' · ' || public.ops_title(t), body,
+    p_type || ':' || p_task::text || ':' || owner::text || ':' ||
+      /* Two comments in one minute are two things said; the same change
+         twice in a minute is one. */
+      case when p_type = 'commented' then md5(body) else to_char(now(), 'YYYYMMDDHH24MI') end);
+end $$;
+
+
+-- END OF THE CONTENT MEETING ON GOOGLE MEET --------------------------------
+
+-- ===========================================================================
+-- READINESS IS THE FIRST MONTH'S — onboarding is done once a client, not
+-- every month.
+-- 2026-09-24. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/ops.js compares the two.
+--
+-- WHAT THIS CHANGES, AND WHAT IT LEAVES ALONE.
+--
+--   The Onboarding and Pre-advertising checklists are what happens when a
+--   client starts, so they belong to the client's first month and to no
+--   later one (the user, 2026-09-24: "the readiness is only when its the
+--   first engagement with clients, not every single month"). A later month
+--   carries no checks at all, so its gate to Ready is the content meeting
+--   alone: `ops_engagement_set_status` already refuses only while a check
+--   row is open, and a month with none has none open. Nothing about the gate
+--   itself is rewritten.
+--
+--   1. Existing months: each client's first month (the earliest period)
+--      takes the furthest state either check reached on any of the client's
+--      months, with who ticked it and when, so a tick somebody made on the
+--      second month is not lost; then the rows on every later month go.
+--   2. `ops_engagement_upsert` seeds the two checks only when the client has
+--      no other month.
+--   3. Deleting a client's first month hands its checks to the earliest month
+--      left, by trigger, so onboarding that was ticked is not deleted with a
+--      month keyed in by mistake.
+--
+-- ROLLBACK
+--   drop trigger if exists ops_engagements_hand_on_checks on public.ops_engagements;
+--   drop function if exists public.ops_engagements_hand_on_checks();
+--   Re-run 2026-09-24-the-month-in-two-ticks.sql for the upsert that seeds
+--   every month. The rows removed from later months are not put back.
+-- ===========================================================================
+
+-- 1. The first month keeps what any month recorded --------------------------------
+insert into public.ops_engagement_checks (engagement_id, key)
+select f.id, k.key
+  from (select distinct on (client_id) id, client_id from public.ops_engagements
+         order by client_id, period, created_at) f
+ cross join (values ('onboarding'), ('pre_ads')) k(key)
+ where exists (select 1 from public.ops_engagement_checks c
+                 join public.ops_engagements e on e.id = c.engagement_id
+                where e.client_id = f.client_id)
+on conflict do nothing;
+
+with firsts as (
+  select distinct on (client_id) id, client_id from public.ops_engagements
+   order by client_id, period, created_at
+), best as (
+  select distinct on (e.client_id, c.key)
+         e.client_id, c.key, c.state, c.owner_id, c.updated_by, c.updated_at, c.note
+    from public.ops_engagement_checks c
+    join public.ops_engagements e on e.id = c.engagement_id
+   order by e.client_id, c.key,
+            case c.state when 'ready' then 0 when 'na' then 1 when 'in_progress' then 2
+                         when 'waiting_client' then 3 else 4 end,
+            c.updated_at desc nulls last
+)
+update public.ops_engagement_checks c
+   set state = b.state, owner_id = b.owner_id, updated_by = b.updated_by,
+       updated_at = b.updated_at, note = b.note
+  from firsts f join best b on b.client_id = f.client_id
+ where c.engagement_id = f.id and c.key = b.key and c.state is distinct from b.state;
+
+delete from public.ops_engagement_checks c
+ using public.ops_engagements e
+ where e.id = c.engagement_id
+   and e.id <> (select f.id from public.ops_engagements f where f.client_id = e.client_id
+                 order by f.period, f.created_at limit 1);
+
+-- 2. A new month is seeded only when it is the client's first ----------------------
+/* One a client a month. A second call for the same month edits the one row
+   rather than making a second. The two checks are onboarding, so they are
+   seeded on the client's first month and on no later one. */
+create or replace function public.ops_engagement_upsert(p_payload jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  cid uuid;
+  per text;
+  eid uuid;
+  k text;
+  fresh boolean := false;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  cid := (p_payload ->> 'client_id')::uuid;
+  per := p_payload ->> 'period';
+  if cid is null or not exists (select 1 from public.clients where id = cid) then
+    return jsonb_build_object('error', 'client-required');
+  end if;
+  if per is null or per !~ '^\d{4}-\d{2}$' then return jsonb_build_object('error', 'bad-period'); end if;
+
+  select e.id into eid from public.ops_engagements e where e.client_id = cid and e.period = per;
+  if eid is null then
+    insert into public.ops_engagements (client_id, period, manager_id, planned_count, drive_url, created_by)
+    values (cid, per, coalesce((p_payload ->> 'manager_id')::uuid, m.id),
+            coalesce((p_payload ->> 'planned_count')::integer, 0),
+            nullif(p_payload ->> 'drive_url', ''), m.id)
+    on conflict (client_id, period) do nothing
+    returning id into eid;
+    /* Somebody else made it between the read and the write: theirs stands. */
+    if eid is null then
+      select e.id into eid from public.ops_engagements e where e.client_id = cid and e.period = per;
+    else
+      fresh := true;
+    end if;
+  end if;
+  if fresh then
+    if not exists (select 1 from public.ops_engagements o where o.client_id = cid and o.id <> eid) then
+    foreach k in array array['onboarding', 'pre_ads'] loop
+      insert into public.ops_engagement_checks (engagement_id, key) values (eid, k)
+      on conflict do nothing;
+    end loop;
+    end if;
+    perform public.ops_engagement_log(eid, 'created', p_payload - 'client_id');
+  else
+    if not public.ops_may_see_engagement(eid) then return jsonb_build_object('error', 'denied'); end if;
+    /* Asked for with nothing to change, the month is answered as it stands:
+       a task made for a month joins it without editing it. */
+    if (p_payload - 'client_id' - 'period') = '{}'::jsonb then
+      return public.ops_engagement_json(eid) || jsonb_build_object('created', false);
+    end if;
+    update public.ops_engagements set
+      manager_id = coalesce((p_payload ->> 'manager_id')::uuid, manager_id),
+      planned_count = coalesce((p_payload ->> 'planned_count')::integer, planned_count),
+      drive_url = case when p_payload ? 'drive_url' then nullif(p_payload ->> 'drive_url', '') else drive_url end,
+      updated_at = now(), version = version + 1
+    where id = eid;
+    perform public.ops_engagement_log(eid, 'edited', p_payload - 'client_id' - 'period');
+  end if;
+  return public.ops_engagement_json(eid) || jsonb_build_object('created', fresh);
+end $$;
+grant execute on function public.ops_engagement_upsert(jsonb) to authenticated;
+
+-- 3. The first month's checks outlive the month --------------------------------------
+/* A first month deleted as a mistake takes the onboarding record to the
+   earliest month left rather than with it. Where that month already holds
+   checks, they stand. */
+create or replace function public.ops_engagements_hand_on_checks()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+declare nxt uuid;
+begin
+  select e.id into nxt from public.ops_engagements e
+   where e.client_id = old.client_id and e.id <> old.id
+   order by e.period, e.created_at limit 1;
+  if nxt is not null and not exists (select 1 from public.ops_engagement_checks where engagement_id = nxt) then
+    update public.ops_engagement_checks set engagement_id = nxt where engagement_id = old.id;
+  end if;
+  return old;
+end $$;
+drop trigger if exists ops_engagements_hand_on_checks on public.ops_engagements;
+create trigger ops_engagements_hand_on_checks before delete on public.ops_engagements
+  for each row execute function public.ops_engagements_hand_on_checks();
+
+-- END OF READINESS IS THE FIRST MONTH'S -------------------------------------
+
+-- ===========================================================================
+-- PERFORMANCE REVIEWS — the monthly score, the breach log, the dispute and
+-- the signed record: each person reads their own, and management reads
+-- everyone's behind a master code.
+-- 2026-09-24. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/perf.js compares the two.
+--
+-- WHAT THIS IS.
+--
+--   The ADspace Performance Framework v2.0 and its calculator workbook, as a
+--   record: six categories out of 100, breaches that deduct (capped at 35),
+--   grade caps for a Level 3 or 4 breach, the five grades, reward
+--   eligibility, the development and accountability paths. Decided with the
+--   user on 2026-09-24:
+--     - Grades read Distinction, Strong, Baseline, Needs Guidance,
+--       Performance Review.
+--     - Grade C is reward eligible, unless the month before was also C; a
+--       Level 3 or 4 breach that month makes any month not eligible.
+--     - The member sees nothing of a month, breaches included, until it is
+--       released, which happens at the monthly 1-1.
+--     - A released month may be disputed for 3 days, one dispute a version,
+--       item by item, each with a reason; management answers each with a
+--       reason; the member acknowledges; management finalises.
+--     - Budget pacing counts only for somebody who runs client ads.
+--
+-- WHO READS WHAT, AND HOW THE DATABASE MAKES IT TRUE.
+--
+--   Every table below has row level security on and NO policy at all, so a
+--   browser reads and writes nothing directly, whatever it sends. Everything
+--   goes through the functions:
+--     - `perf_mine()` and the member's own acts answer only for the signed-in
+--       person's own released months.
+--     - Every management function asks `team.performance` (granted, never
+--       inherited: `ops_granted()` reads the exact key, so a group given Team
+--       does not get this) AND a live unlock token, which only the master
+--       code produces. An admin passes the first test and still needs the
+--       second.
+--     - Nobody acts on their own review, and the management list leaves the
+--       caller out: their own months are in My performance like everybody's.
+--   The master code is stored as a bcrypt hash in `app_secrets`, which no
+--   browser can read. Five wrong tries lock that person out for 15 minutes;
+--   an unlock lasts 15 minutes from the last use.
+--
+-- SET OR CHANGE THE MASTER CODE (in the Supabase SQL editor, never in chat):
+--   select public.perf_code_reset('your code here');
+-- Changing it ends every open unlock.
+--
+-- ROLLBACK
+--   drop function if exists public.perf_code_reset(text), public.perf_code_set(),
+--     public.perf_unlock(text), public.perf_lock(text), public.perf_gate_info(),
+--     public.perf_month(text, date), public.perf_open(text, uuid, date),
+--     public.perf_save(text, uuid, date, jsonb, integer), public.perf_release(text, uuid, integer),
+--     public.perf_unrelease(text, uuid, text), public.perf_decide(text, uuid, text, text, numeric),
+--     public.perf_finalise(text, uuid), public.perf_reopen(text, uuid, text),
+--     public.perf_breach_log(text, uuid, jsonb), public.perf_breach_void(text, uuid, text),
+--     public.perf_profile_set(text, uuid, jsonb), public.perf_mine(),
+--     public.perf_dispute(uuid, jsonb), public.perf_acknowledge(uuid),
+--     public.perf_printed(uuid, text), public.perf_check(text, text),
+--     public.perf_log(uuid, uuid, text, jsonb), public.perf_calc(public.perf_reviews),
+--     public.perf_json(public.perf_reviews, boolean), public.perf_ops_rate(uuid, date),
+--     public.perf_breaches_json(uuid, date, boolean), public.perf_notify(uuid, text, text, text),
+--     public.perf_grade_of(numeric), public.perf_grade_word(text), public.perf_band(numeric, numeric),
+--     public.perf_pacing_band(numeric), public.perf_deduction(integer, boolean, boolean),
+--     public.perf_month_word(date), public.perf_reviewed(uuid) cascade;
+--   drop table if exists public.perf_events, public.perf_disputes, public.perf_breaches,
+--     public.perf_reviews, public.perf_people, public.perf_unlocks, public.perf_attempts cascade;
+--   delete from public.app_secrets where key = 'perf_code';
+-- ===========================================================================
+
+create table if not exists public.app_secrets (
+  key         text primary key,
+  value       text not null,
+  updated_at  timestamptz not null default now()
+);
+
+-- 1. The record ---------------------------------------------------------------------
+/* Who is reviewed and how. A row exists only once somebody has set it; a
+   colleague with none is reviewed, unless they are an admin, which is the
+   owner's own account. */
+create table if not exists public.perf_people (
+  team_member_id uuid primary key references public.team_members(id) on delete cascade,
+  department     text check (department in ('creative', 'marketing')),
+  role_family    text check (role_family in ('visual', 'video', 'planner', 'account')),
+  runs_ads       boolean not null default false,
+  reviewed       boolean,
+  updated_at     timestamptz not null default now()
+);
+
+create table if not exists public.perf_reviews (
+  id              uuid primary key default gen_random_uuid(),
+  team_member_id  uuid not null references public.team_members(id) on delete cascade,
+  period          date not null check (extract(day from period) = 1),
+  status          text not null default 'draft'
+                  check (status in ('draft', 'released', 'disputed', 'resolved', 'acknowledged', 'final')),
+  s_output        numeric(4,1) check (s_output between 0 and 25),
+  s_accuracy      numeric(4,1) check (s_accuracy between 0 and 15),
+  s_delivery      numeric(4,1) check (s_delivery between 0 and 15),
+  s_client        numeric(4,1) check (s_client between 0 and 20),
+  s_comms         numeric(4,1) check (s_comms between 0 and 15),
+  s_initiative    numeric(4,1) check (s_initiative between 0 and 10),
+  r_posting       numeric(5,1) check (r_posting between 0 and 100),
+  r_timeline      numeric(5,1) check (r_timeline between 0 and 100),
+  r_satisfaction  numeric(5,1) check (r_satisfaction between 0 and 100),
+  r_pacing        numeric(6,1) check (r_pacing between 0 and 1000),
+  r_sla           numeric(5,1) check (r_sla between 0 and 100),
+  notes           jsonb not null default '{}'::jsonb,
+  improvement     text,
+  review_by       date,
+  reward_step     text,
+  serial          text,
+  reviewer_id     uuid references public.team_members(id) on delete set null,
+  released_at     timestamptz,
+  dispute_until   timestamptz,
+  acknowledged_at timestamptz,
+  finalised_at    timestamptz,
+  finalised_by    uuid references public.team_members(id) on delete set null,
+  result          jsonb,
+  version         integer not null default 1,
+  rev             integer not null default 0,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
+  unique (team_member_id, period)
+);
+create unique index if not exists perf_reviews_serial_idx
+  on public.perf_reviews(serial) where serial is not null;
+
+create table if not exists public.perf_breaches (
+  id             uuid primary key default gen_random_uuid(),
+  team_member_id uuid not null references public.team_members(id) on delete cascade,
+  occurred_on    date not null,
+  period         date not null,
+  category       text not null check (category in ('client', 'delivery', 'compliance', 'asset')),
+  severity       integer not null check (severity between 1 and 4),
+  repeated       boolean not null default false,
+  late           boolean not null default false,
+  what           text not null,
+  evidence       text,
+  logged_by      uuid references public.team_members(id) on delete set null,
+  logged_at      timestamptz not null default now(),
+  voided_at      timestamptz,
+  voided_by      uuid references public.team_members(id) on delete set null,
+  void_reason    text
+);
+create index if not exists perf_breaches_member_idx on public.perf_breaches(team_member_id, period);
+
+create table if not exists public.perf_disputes (
+  id           uuid primary key default gen_random_uuid(),
+  review_id    uuid not null references public.perf_reviews(id) on delete cascade,
+  version      integer not null default 1,
+  item         text not null check (item in ('output', 'accuracy', 'delivery', 'client', 'comms', 'initiative', 'breach')),
+  breach_id    uuid references public.perf_breaches(id) on delete set null,
+  reason       text not null,
+  raised_at    timestamptz not null default now(),
+  decision     text check (decision in ('upheld', 'partly', 'not_upheld')),
+  response     text,
+  before_value numeric(4,1),
+  after_value  numeric(4,1),
+  decided_by   uuid references public.team_members(id) on delete set null,
+  decided_at   timestamptz
+);
+create index if not exists perf_disputes_review_idx on public.perf_disputes(review_id);
+
+/* Append only: what happened to a review, who did it and when, including
+   every unlock and every printed copy. Nothing here is read by the member. */
+create table if not exists public.perf_events (
+  id             uuid primary key default gen_random_uuid(),
+  review_id      uuid references public.perf_reviews(id) on delete cascade,
+  team_member_id uuid references public.team_members(id) on delete cascade,
+  actor_id       uuid,
+  actor_email    text,
+  kind           text not null,
+  detail         jsonb not null default '{}'::jsonb,
+  created_at     timestamptz not null default now()
+);
+create index if not exists perf_events_review_idx on public.perf_events(review_id, created_at desc);
+
+create table if not exists public.perf_unlocks (
+  token_hash     text primary key,
+  team_member_id uuid not null references public.team_members(id) on delete cascade,
+  created_at     timestamptz not null default now(),
+  expires_at     timestamptz not null
+);
+create table if not exists public.perf_attempts (
+  team_member_id uuid primary key references public.team_members(id) on delete cascade,
+  failures       integer not null default 0,
+  locked_until   timestamptz
+);
+
+-- 2. Nobody reads a table directly -------------------------------------------------
+alter table public.app_secrets enable row level security;
+alter table public.perf_people enable row level security;
+alter table public.perf_reviews enable row level security;
+alter table public.perf_breaches enable row level security;
+alter table public.perf_disputes enable row level security;
+alter table public.perf_events enable row level security;
+alter table public.perf_unlocks enable row level security;
+alter table public.perf_attempts enable row level security;
+revoke all on public.app_secrets, public.perf_people, public.perf_reviews, public.perf_breaches,
+  public.perf_disputes, public.perf_events, public.perf_unlocks, public.perf_attempts
+  from anon, authenticated;
+do $$
+declare p record;
+begin
+  for p in select policyname, tablename from pg_policies
+            where schemaname = 'public'
+              and tablename in ('perf_people', 'perf_reviews', 'perf_breaches', 'perf_disputes',
+                                'perf_events', 'perf_unlocks', 'perf_attempts') loop
+    execute format('drop policy if exists %I on public.%I', p.policyname, p.tablename);
+  end loop;
+end $$;
+
+create or replace function public.perf_events_frozen()
+returns trigger language plpgsql as $$
+begin
+  if pg_trigger_depth() > 1 then return coalesce(old, new); end if;
+  raise exception 'perf-events-append-only';
+end $$;
+drop trigger if exists perf_events_frozen on public.perf_events;
+create trigger perf_events_frozen before update or delete on public.perf_events
+  for each row execute function public.perf_events_frozen();
+
+-- 3. The rules, stated once ----------------------------------------------------------
+create or replace function public.perf_grade_of(p_score numeric)
+returns text language sql immutable as $$
+  select case when p_score >= 90 then 'A' when p_score >= 80 then 'B'
+              when p_score >= 70 then 'C' when p_score >= 60 then 'D' else 'E' end
+$$;
+create or replace function public.perf_grade_word(p_grade text)
+returns text language sql immutable as $$
+  select case p_grade when 'A' then 'Distinction' when 'B' then 'Strong' when 'C' then 'Baseline'
+                      when 'D' then 'Needs Guidance' when 'E' then 'Performance Review' end
+$$;
+create or replace function public.perf_deduction(p_severity integer, p_repeated boolean, p_late boolean)
+returns integer language sql immutable as $$
+  select (case p_severity when 1 then -3 when 2 then -7 when 3 then -15 when 4 then -30 else 0 end)
+       + (case when p_repeated then -5 else 0 end) + (case when p_late then -5 else 0 end)
+$$;
+/* Green at the target, amber within 10% of it, red below that. */
+create or replace function public.perf_band(p_rate numeric, p_target numeric)
+returns text language sql immutable as $$
+  select case when p_rate is null then null when p_rate >= p_target then 'green'
+              when p_rate >= p_target * 0.9 then 'amber' else 'red' end
+$$;
+/* Budget pacing is a variance, so lower is better: within 10% green, within
+   20% amber, the workbook's own rule. */
+create or replace function public.perf_pacing_band(p_variance numeric)
+returns text language sql immutable as $$
+  select case when p_variance is null then null when p_variance <= 10 then 'green'
+              when p_variance <= 20 then 'amber' else 'red' end
+$$;
+create or replace function public.perf_month_word(p_period date)
+returns text language sql immutable as $$
+  select trim(to_char(p_period, 'FMMonth YYYY'))
+$$;
+
+/* Is this colleague on the monthly review? Their own setting where one was
+   made, else everybody but an admin. */
+create or replace function public.perf_reviewed(p_member uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select coalesce((select pp.reviewed from public.perf_people pp where pp.team_member_id = m.id),
+                  not (m.is_admin or m.role = 'admin'))
+    from public.team_members m where m.id = p_member
+$$;
+
+-- 4. The gate -----------------------------------------------------------------------
+create or replace function public.perf_code_set()
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.app_secrets where key = 'perf_code' and value <> '')
+$$;
+
+/* Run by the owner in the SQL editor. Never granted to a browser. */
+create or replace function public.perf_code_reset(p_code text)
+returns text
+language plpgsql security definer set search_path = public, extensions as $$
+begin
+  if length(coalesce(p_code, '')) < 6 then
+    raise exception 'The master code needs at least 6 characters.';
+  end if;
+  insert into public.app_secrets (key, value) values ('perf_code', crypt(p_code, gen_salt('bf', 8)))
+  on conflict (key) do update set value = excluded.value, updated_at = now();
+  delete from public.perf_unlocks;
+  delete from public.perf_attempts;
+  return 'Master code set.';
+end $$;
+
+create or replace function public.perf_log(p_review uuid, p_member uuid, p_kind text, p_detail jsonb)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members;
+begin
+  m := public.ops_me();
+  insert into public.perf_events (review_id, team_member_id, actor_id, actor_email, kind, detail)
+  values (p_review, p_member, m.id, m.email, p_kind, coalesce(p_detail, '{}'::jsonb));
+end $$;
+
+/* The two tests every management function asks, in one place: the granted
+   part at the level the act needs, and a live unlock. A live unlock is
+   extended by its use, so somebody working through the month is not asked
+   again mid review. Null means pass. */
+create or replace function public.perf_check(p_token text, p_level text)
+returns text
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; n integer;
+begin
+  m := public.ops_me();
+  if m.id is null then return 'not-team'; end if;
+  if not public.ops_granted('team.performance', p_level) then return 'denied'; end if;
+  if not public.perf_code_set() then return 'no-code'; end if;
+  update public.perf_unlocks set expires_at = now() + interval '15 minutes'
+   where token_hash = encode(sha256(convert_to(coalesce(p_token, ''), 'UTF8')), 'hex')
+     and team_member_id = m.id and expires_at > now();
+  get diagnostics n = row_count;
+  if n = 0 then return 'code-needed'; end if;
+  return null;
+end $$;
+
+create or replace function public.perf_gate_info()
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; a public.perf_attempts;
+begin
+  m := public.ops_me();
+  if m.id is null or not public.ops_granted('team.performance', 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into a from public.perf_attempts where team_member_id = m.id;
+  return jsonb_build_object('code_set', public.perf_code_set(),
+    'locked_until', case when a.locked_until > now() then a.locked_until end,
+    'can_work', public.ops_granted('team.performance', 'work'),
+    'can_manage', public.ops_granted('team.performance', 'manage'));
+end $$;
+
+create or replace function public.perf_unlock(p_code text)
+returns jsonb
+language plpgsql security definer set search_path = public, extensions as $$
+declare
+  m public.team_members; h text; a public.perf_attempts; tok text; f integer;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.ops_granted('team.performance', 'view') then return jsonb_build_object('error', 'denied'); end if;
+  select value into h from public.app_secrets where key = 'perf_code';
+  if coalesce(h, '') = '' then return jsonb_build_object('error', 'no-code'); end if;
+  select * into a from public.perf_attempts where team_member_id = m.id;
+  if a.locked_until > now() then
+    return jsonb_build_object('error', 'locked', 'until', a.locked_until);
+  end if;
+  if crypt(coalesce(p_code, ''), h) <> h then
+    f := case when a.locked_until is not null then 1 else coalesce(a.failures, 0) + 1 end;
+    insert into public.perf_attempts (team_member_id, failures, locked_until)
+    values (m.id, f, case when f >= 5 then now() + interval '15 minutes' end)
+    on conflict (team_member_id) do update
+      set failures = excluded.failures, locked_until = excluded.locked_until;
+    perform public.perf_log(null, null, 'unlock_failed', jsonb_build_object('failures', f));
+    if f >= 5 then
+      return jsonb_build_object('error', 'locked', 'until', now() + interval '15 minutes');
+    end if;
+    return jsonb_build_object('error', 'wrong-code', 'left', 5 - f);
+  end if;
+  delete from public.perf_attempts where team_member_id = m.id;
+  delete from public.perf_unlocks where expires_at < now();
+  tok := replace(gen_random_uuid()::text, '-', '') || replace(gen_random_uuid()::text, '-', '');
+  insert into public.perf_unlocks (token_hash, team_member_id, expires_at)
+  values (encode(sha256(convert_to(tok, 'UTF8')), 'hex'), m.id, now() + interval '15 minutes');
+  perform public.perf_log(null, null, 'unlocked', '{}'::jsonb);
+  return jsonb_build_object('token', tok, 'expires_at', now() + interval '15 minutes');
+end $$;
+
+create or replace function public.perf_lock(p_token text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+begin
+  delete from public.perf_unlocks
+   where token_hash = encode(sha256(convert_to(coalesce(p_token, ''), 'UTF8')), 'hex');
+  return jsonb_build_object('ok', true);
+end $$;
+
+-- 5. The calculator -----------------------------------------------------------------
+create or replace function public.perf_breaches_json(p_member uuid, p_period date, p_with_void boolean)
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'id', b.id, 'occurred_on', b.occurred_on, 'category', b.category,
+           'severity', b.severity, 'repeated', b.repeated, 'late', b.late,
+           'what', b.what, 'evidence', b.evidence,
+           'deduction', public.perf_deduction(b.severity, b.repeated, b.late),
+           'logged_by', (select name from public.team_members where id = b.logged_by),
+           'logged_at', b.logged_at, 'voided_at', b.voided_at, 'void_reason', b.void_reason)
+         order by b.occurred_on, b.logged_at), '[]'::jsonb)
+    from public.perf_breaches b
+   where b.team_member_id = p_member and b.period = p_period
+     and (p_with_void or b.voided_at is null)
+$$;
+
+/* One definition of the month's result, read by the management page, the
+   member's page and the printed copy alike. A final review keeps the result
+   it was finalised with, so a later change to an earlier month cannot move
+   a record somebody has signed. */
+create or replace function public.perf_calc(r public.perf_reviews)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  base numeric; raw_ded integer; ded integer; fin numeric; l3 boolean; l4 boolean;
+  g text; cap integer; rk integer; prev public.perf_reviews; prev_g text; ok boolean;
+  complete boolean; path text; ads boolean; bd text; bc text; bm text;
+  rank_of constant text := 'ABCDE';
+begin
+  if r.status = 'final' and r.result is not null then return r.result; end if;
+  complete := r.s_output is not null and r.s_accuracy is not null and r.s_delivery is not null
+          and r.s_client is not null and r.s_comms is not null and r.s_initiative is not null;
+  base := coalesce(r.s_output, 0) + coalesce(r.s_accuracy, 0) + coalesce(r.s_delivery, 0)
+        + coalesce(r.s_client, 0) + coalesce(r.s_comms, 0) + coalesce(r.s_initiative, 0);
+  select coalesce(sum(public.perf_deduction(severity, repeated, late)), 0),
+         coalesce(bool_or(severity = 3), false), coalesce(bool_or(severity = 4), false)
+    into raw_ded, l3, l4
+    from public.perf_breaches
+   where team_member_id = r.team_member_id and period = r.period and voided_at is null;
+  ded := greatest(raw_ded, -35);
+  fin := greatest(0, least(100, base + ded));
+  g := public.perf_grade_of(fin);
+  cap := case when l4 then 4 when l3 then 2 else 0 end;
+  rk := greatest(position(g in rank_of), cap);
+  g := substr(rank_of, rk, 1);
+
+  select * into prev from public.perf_reviews
+   where team_member_id = r.team_member_id and period = (r.period - interval '1 month')::date
+     and status <> 'draft';
+  if prev.id is not null then
+    prev_g := (public.perf_calc(prev)) ->> 'grade';
+  end if;
+  ok := (g in ('A', 'B') or (g = 'C' and prev_g is distinct from 'C')) and not l3 and not l4;
+  path := case when g = 'E' or l3 or l4 then 'accountability' when g = 'D' then 'development' end;
+
+  ads := coalesce((select runs_ads from public.perf_people where team_member_id = r.team_member_id), false);
+  bd := (select b from unnest(array[public.perf_band(r.r_posting, 95), public.perf_band(r.r_timeline, 90)]) b
+          where b is not null order by position(b in 'green amber red') desc limit 1);
+  bc := (select b from unnest(array[public.perf_band(r.r_satisfaction, 90),
+                                    case when ads then public.perf_pacing_band(r.r_pacing) end]) b
+          where b is not null order by position(b in 'green amber red') desc limit 1);
+  bm := public.perf_band(r.r_sla, 90);
+
+  return jsonb_build_object(
+    'complete', complete, 'base', base, 'deduction', ded, 'deduction_raw', raw_ded,
+    'final', fin, 'raw_grade', public.perf_grade_of(fin), 'grade', g,
+    'grade_word', public.perf_grade_word(g),
+    'capped', case when rk > position(public.perf_grade_of(fin) in rank_of) then (case when l4 then 'D' else 'B' end) end,
+    'l3', l3, 'l4', l4, 'review', l4,
+    'eligible', ok, 'previous_grade', prev_g,
+    'path', path,
+    'suggested', jsonb_build_object(
+      'delivery', case bd when 'green' then 15 when 'amber' then 12 when 'red' then 7.5 end,
+      'delivery_band', bd,
+      'client', case bc when 'green' then 20 when 'amber' then 16 when 'red' then 10 end,
+      'client_band', bc,
+      'comms', case bm when 'green' then 15 when 'amber' then 12 when 'red' then 7.5 end,
+      'comms_band', bm));
+end $$;
+
+/* What My Work already knows: the tasks this person owned that were finished
+   in the month with a due date, and how many were finished by it. A hint for
+   the reviewer, never a score. */
+create or replace function public.perf_ops_rate(p_member uuid, p_period date)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare d integer; o integer;
+begin
+  if to_regclass('public.ops_tasks') is null then return null; end if;
+  select count(*),
+         count(*) filter (where coalesce(t.completed_at, t.delivered_at)::date <= t.current_final_due_at::date)
+    into d, o
+    from public.ops_tasks t
+   where t.completed_at >= p_period and t.completed_at < (p_period + interval '1 month')
+     and t.current_final_due_at is not null
+     and (select a.team_member_id from public.ops_task_assignees a
+           where a.task_id = t.id and a.responsibility = 'owner'
+           order by a.ended_at nulls first, a.assigned_at desc limit 1) = p_member;
+  return jsonb_build_object('done', d, 'on_time', o);
+end $$;
+
+create or replace function public.perf_json(r public.perf_reviews, p_full boolean)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare m public.team_members; pp public.perf_people; out jsonb;
+begin
+  select * into m from public.team_members where id = r.team_member_id;
+  select * into pp from public.perf_people where team_member_id = r.team_member_id;
+  out := jsonb_build_object(
+    'id', r.id, 'team_member_id', r.team_member_id, 'period', r.period,
+    'month', public.perf_month_word(r.period), 'status', r.status,
+    'member', jsonb_build_object('name', m.name, 'staff_code', m.staff_code,
+      'designation', m.designation, 'department', pp.department,
+      'role_family', pp.role_family, 'runs_ads', coalesce(pp.runs_ads, false)),
+    'scores', jsonb_build_object('output', r.s_output, 'accuracy', r.s_accuracy,
+      'delivery', r.s_delivery, 'client', r.s_client, 'comms', r.s_comms,
+      'initiative', r.s_initiative),
+    'rates', jsonb_build_object('posting', r.r_posting, 'timeline', r.r_timeline,
+      'satisfaction', r.r_satisfaction, 'pacing', r.r_pacing, 'sla', r.r_sla),
+    'notes', r.notes, 'improvement', r.improvement, 'review_by', r.review_by,
+    'reward_step', r.reward_step, 'serial', r.serial,
+    'reviewer', (select name from public.team_members where id = r.reviewer_id),
+    'released_at', r.released_at, 'dispute_until', r.dispute_until,
+    'dispute_open', r.status = 'released' and r.dispute_until > now()
+                    and not exists (select 1 from public.perf_disputes d
+                                     where d.review_id = r.id and d.version = r.version),
+    'acknowledged_at', r.acknowledged_at, 'finalised_at', r.finalised_at,
+    'finalised_by', (select name from public.team_members where id = r.finalised_by),
+    'version', r.version, 'rev', r.rev,
+    'result', public.perf_calc(r),
+    'breaches', public.perf_breaches_json(r.team_member_id, r.period, false),
+    'disputes', coalesce((select jsonb_agg(jsonb_build_object(
+        'id', d.id, 'item', d.item, 'breach_id', d.breach_id, 'reason', d.reason,
+        'breach_what', (select b.what from public.perf_breaches b where b.id = d.breach_id),
+        'raised_at', d.raised_at, 'decision', d.decision, 'response', d.response,
+        'before_value', d.before_value, 'after_value', d.after_value,
+        'decided_by', (select name from public.team_members where id = d.decided_by),
+        'decided_at', d.decided_at) order by d.raised_at)
+        from public.perf_disputes d where d.review_id = r.id and d.version = r.version), '[]'::jsonb));
+  if p_full then
+    out := out || jsonb_build_object(
+      'voided', (select coalesce(jsonb_agg(x), '[]'::jsonb)
+                   from jsonb_array_elements(public.perf_breaches_json(r.team_member_id, r.period, true)) x
+                  where x ->> 'voided_at' is not null),
+      'ops', public.perf_ops_rate(r.team_member_id, r.period),
+      'events', coalesce((select jsonb_agg(jsonb_build_object(
+          'kind', e.kind, 'detail', e.detail, 'at', e.created_at,
+          'by', coalesce((select name from public.team_members where id = e.actor_id), e.actor_email))
+          order by e.created_at desc)
+          from public.perf_events e where e.review_id = r.id), '[]'::jsonb));
+  end if;
+  return out;
+end $$;
+
+create or replace function public.perf_notify(p_member uuid, p_kind text, p_title text, p_dedupe text)
+returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if p_member is null or to_regclass('public.ops_notifications') is null then return; end if;
+  insert into public.ops_notifications (team_member_id, task_id, kind, title, body, dedupe_key)
+  values (p_member, null, p_kind, p_title, null, p_dedupe)
+  on conflict (dedupe_key) do nothing;
+end $$;
+
+-- 6. Management: the month, one review, the breach log ------------------------------
+create or replace function public.perf_month(p_token text, p_period date)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare err text; m public.team_members; p date := date_trunc('month', p_period)::date;
+begin
+  err := public.perf_check(p_token, 'view');
+  if err is not null then return jsonb_build_object('error', err); end if;
+  m := public.ops_me();
+  return jsonb_build_object(
+    'period', p, 'month', public.perf_month_word(p),
+    'people', coalesce((select jsonb_agg(x order by x ->> 'name') from (
+      select jsonb_build_object(
+        'team_member_id', t.id, 'name', t.name, 'staff_code', t.staff_code,
+        'designation', t.designation,
+        'department', pp.department, 'role_family', pp.role_family,
+        'runs_ads', coalesce(pp.runs_ads, false),
+        'reviewed', public.perf_reviewed(t.id),
+        'breaches', (select count(*) from public.perf_breaches b
+                      where b.team_member_id = t.id and b.period = p and b.voided_at is null),
+        'review', case when r.id is null then null else jsonb_build_object(
+          'id', r.id, 'status', r.status, 'result', public.perf_calc(r),
+          'open_disputes', (select count(*) from public.perf_disputes d
+                             where d.review_id = r.id and d.version = r.version and d.decision is null),
+          'dispute_until', r.dispute_until) end) as x
+        from public.team_members t
+        left join public.perf_people pp on pp.team_member_id = t.id
+        left join public.perf_reviews r on r.team_member_id = t.id and r.period = p
+       where t.active and t.id <> m.id) q), '[]'::jsonb));
+end $$;
+
+create or replace function public.perf_open(p_token text, p_member uuid, p_period date)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare err text; m public.team_members; r public.perf_reviews; p date := date_trunc('month', p_period)::date;
+begin
+  err := public.perf_check(p_token, 'view');
+  if err is not null then return jsonb_build_object('error', err); end if;
+  m := public.ops_me();
+  if p_member = m.id then return jsonb_build_object('error', 'own-review'); end if;
+  select * into r from public.perf_reviews where team_member_id = p_member and period = p;
+  if r.id is null then
+    /* Not started: the shape of a draft, written nowhere until it is saved. */
+    r.team_member_id := p_member; r.period := p; r.status := 'draft';
+    r.notes := '{}'::jsonb; r.version := 1; r.rev := 0;
+  end if;
+  return public.perf_json(r, true);
+end $$;
+
+create or replace function public.perf_save(p_token text, p_member uuid, p_period date,
+                                            p_payload jsonb, p_rev integer)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  err text; m public.team_members; r public.perf_reviews; p date := date_trunc('month', p_period)::date;
+  sc jsonb := coalesce(p_payload -> 'scores', '{}'::jsonb);
+  rt jsonb := coalesce(p_payload -> 'rates', '{}'::jsonb);
+  k text; v jsonb; mx numeric; rb date;
+begin
+  err := public.perf_check(p_token, 'work');
+  if err is not null then return jsonb_build_object('error', err); end if;
+  m := public.ops_me();
+  if p_member = m.id then return jsonb_build_object('error', 'own-review'); end if;
+  if not exists (select 1 from public.team_members where id = p_member and active) then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if jsonb_typeof(sc) <> 'object' or jsonb_typeof(rt) <> 'object'
+     or (p_payload ? 'notes' and jsonb_typeof(p_payload -> 'notes') <> 'object') then
+    return jsonb_build_object('error', 'bad-payload');
+  end if;
+  for k, v in select key, value from jsonb_each(sc) loop
+    mx := case k when 'output' then 25 when 'accuracy' then 15 when 'delivery' then 15
+                 when 'client' then 20 when 'comms' then 15 when 'initiative' then 10 end;
+    if mx is null then return jsonb_build_object('error', 'bad-score', 'key', k); end if;
+    if jsonb_typeof(v) <> 'null' then
+      if jsonb_typeof(v) <> 'number' then return jsonb_build_object('error', 'bad-score', 'key', k, 'max', mx); end if;
+      if (v #>> '{}')::numeric not between 0 and mx or round((v #>> '{}')::numeric, 1) <> (v #>> '{}')::numeric then
+        return jsonb_build_object('error', 'bad-score', 'key', k, 'max', mx);
+      end if;
+    end if;
+  end loop;
+  for k, v in select key, value from jsonb_each(rt) loop
+    mx := case k when 'pacing' then 1000 when 'posting' then 100 when 'timeline' then 100
+                 when 'satisfaction' then 100 when 'sla' then 100 end;
+    if mx is null then return jsonb_build_object('error', 'bad-rate', 'key', k); end if;
+    if jsonb_typeof(v) <> 'null' then
+      if jsonb_typeof(v) <> 'number' then return jsonb_build_object('error', 'bad-rate', 'key', k); end if;
+      if (v #>> '{}')::numeric not between 0 and mx then return jsonb_build_object('error', 'bad-rate', 'key', k); end if;
+    end if;
+  end loop;
+  if coalesce(p_payload ->> 'review_by', '') <> '' then
+    begin
+      rb := (p_payload ->> 'review_by')::date;
+    exception when others then
+      return jsonb_build_object('error', 'bad-date');
+    end;
+  end if;
+
+  select * into r from public.perf_reviews where team_member_id = p_member and period = p for update;
+  if r.id is null then
+    insert into public.perf_reviews (team_member_id, period) values (p_member, p)
+    on conflict (team_member_id, period) do nothing;
+    select * into r from public.perf_reviews where team_member_id = p_member and period = p for update;
+    perform public.perf_log(r.id, p_member, 'started', '{}'::jsonb);
+  elsif p_rev is not null and r.rev <> p_rev then
+    return jsonb_build_object('error', 'stale', 'record', public.perf_json(r, true));
+  end if;
+  /* The scores are the draft's. What the month asks of the person next (the
+     improvement, the date it is reviewed by, the step or reward) is written
+     at the 1-1 and may be filled in until the record is final. */
+  if r.status = 'final' or (r.status <> 'draft'
+       and (p_payload - 'improvement' - 'review_by' - 'reward_step') <> '{}'::jsonb) then
+    return jsonb_build_object('error', 'not-draft');
+  end if;
+
+  update public.perf_reviews set
+    s_output     = case when sc ? 'output'     then (sc ->> 'output')::numeric     else s_output end,
+    s_accuracy   = case when sc ? 'accuracy'   then (sc ->> 'accuracy')::numeric   else s_accuracy end,
+    s_delivery   = case when sc ? 'delivery'   then (sc ->> 'delivery')::numeric   else s_delivery end,
+    s_client     = case when sc ? 'client'     then (sc ->> 'client')::numeric     else s_client end,
+    s_comms      = case when sc ? 'comms'      then (sc ->> 'comms')::numeric      else s_comms end,
+    s_initiative = case when sc ? 'initiative' then (sc ->> 'initiative')::numeric else s_initiative end,
+    r_posting      = case when rt ? 'posting'      then (rt ->> 'posting')::numeric      else r_posting end,
+    r_timeline     = case when rt ? 'timeline'     then (rt ->> 'timeline')::numeric     else r_timeline end,
+    r_satisfaction = case when rt ? 'satisfaction' then (rt ->> 'satisfaction')::numeric else r_satisfaction end,
+    r_pacing       = case when rt ? 'pacing'       then (rt ->> 'pacing')::numeric       else r_pacing end,
+    r_sla          = case when rt ? 'sla'          then (rt ->> 'sla')::numeric          else r_sla end,
+    notes       = case when p_payload ? 'notes' then coalesce(p_payload -> 'notes', '{}'::jsonb) else notes end,
+    improvement = case when p_payload ? 'improvement' then nullif(btrim(p_payload ->> 'improvement'), '') else improvement end,
+    review_by   = case when p_payload ? 'review_by' then rb else review_by end,
+    reward_step = case when p_payload ? 'reward_step' then nullif(btrim(p_payload ->> 'reward_step'), '') else reward_step end,
+    updated_at = now(), rev = rev + 1
+  where id = r.id
+  returning * into r;
+  if p_payload <> '{}'::jsonb then
+    perform public.perf_log(r.id, p_member, 'scored', jsonb_build_object('fields',
+      (select coalesce(jsonb_agg(k2), '[]'::jsonb) from jsonb_object_keys(p_payload) k2)));
+  end if;
+  return public.perf_json(r, true);
+end $$;
+
+create or replace function public.perf_release(p_token text, p_review uuid, p_rev integer)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare err text; m public.team_members; r public.perf_reviews; tm public.team_members;
+begin
+  err := public.perf_check(p_token, 'work');
+  if err is not null then return jsonb_build_object('error', err); end if;
+  m := public.ops_me();
+  select * into r from public.perf_reviews where id = p_review for update;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if r.team_member_id = m.id then return jsonb_build_object('error', 'own-review'); end if;
+  if p_rev is not null and r.rev <> p_rev then
+    return jsonb_build_object('error', 'stale', 'record', public.perf_json(r, true));
+  end if;
+  if r.status <> 'draft' then return jsonb_build_object('error', 'not-draft'); end if;
+  if not (public.perf_calc(r) ->> 'complete')::boolean then
+    return jsonb_build_object('error', 'incomplete');
+  end if;
+  select * into tm from public.team_members where id = r.team_member_id;
+  if r.serial is null and coalesce(btrim(tm.staff_code), '') = '' then
+    return jsonb_build_object('error', 'no-staff-code');
+  end if;
+  update public.perf_reviews set status = 'released', released_at = now(),
+         dispute_until = now() + interval '3 days', reviewer_id = m.id,
+         serial = coalesce(serial, 'ADHR/' || upper(btrim(tm.staff_code)) || '/PR' || to_char(period, 'YYMM')),
+         rev = rev + 1, updated_at = now()
+   where id = r.id returning * into r;
+  perform public.perf_log(r.id, r.team_member_id, 'released', jsonb_build_object('version', r.version));
+  perform public.perf_notify(r.team_member_id, 'perf.released',
+    'Your ' || public.perf_month_word(r.period) || ' performance review is ready.',
+    'perf.released.' || r.id || '.' || r.version);
+  return public.perf_json(r, true);
+end $$;
+
+create or replace function public.perf_unrelease(p_token text, p_review uuid, p_reason text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare err text; m public.team_members; r public.perf_reviews;
+begin
+  err := public.perf_check(p_token, 'work');
+  if err is not null then return jsonb_build_object('error', err); end if;
+  m := public.ops_me();
+  if coalesce(btrim(p_reason), '') = '' then return jsonb_build_object('error', 'reason-needed'); end if;
+  select * into r from public.perf_reviews where id = p_review for update;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if r.team_member_id = m.id then return jsonb_build_object('error', 'own-review'); end if;
+  if r.status <> 'released' or exists (select 1 from public.perf_disputes d
+                                        where d.review_id = r.id and d.version = r.version) then
+    return jsonb_build_object('error', 'cannot-return');
+  end if;
+  update public.perf_reviews set status = 'draft', released_at = null, dispute_until = null,
+         rev = rev + 1, updated_at = now()
+   where id = r.id returning * into r;
+  perform public.perf_log(r.id, r.team_member_id, 'returned', jsonb_build_object('reason', btrim(p_reason)));
+  perform public.perf_notify(r.team_member_id, 'perf.returned',
+    'Your ' || public.perf_month_word(r.period) || ' review was taken back for correction.',
+    'perf.returned.' || r.id || '.' || r.rev);
+  return public.perf_json(r, true);
+end $$;
+
+create or replace function public.perf_decide(p_token text, p_dispute uuid, p_decision text,
+                                              p_response text, p_value numeric)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  err text; m public.team_members; d public.perf_disputes; r public.perf_reviews;
+  b public.perf_breaches; mx numeric; was numeric; col text;
+begin
+  err := public.perf_check(p_token, 'work');
+  if err is not null then return jsonb_build_object('error', err); end if;
+  m := public.ops_me();
+  if p_decision not in ('upheld', 'partly', 'not_upheld') then return jsonb_build_object('error', 'bad-decision'); end if;
+  if coalesce(btrim(p_response), '') = '' then return jsonb_build_object('error', 'reason-needed'); end if;
+  select * into d from public.perf_disputes where id = p_dispute for update;
+  if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  select * into r from public.perf_reviews where id = d.review_id for update;
+  if r.team_member_id = m.id then return jsonb_build_object('error', 'own-review'); end if;
+  if r.status <> 'disputed' or d.decision is not null or d.version <> r.version then
+    return jsonb_build_object('error', 'already-decided');
+  end if;
+
+  if d.item = 'breach' then
+    select * into b from public.perf_breaches where id = d.breach_id for update;
+    was := b.severity;
+    if p_decision = 'upheld' then
+      update public.perf_breaches set voided_at = now(), voided_by = m.id, void_reason = 'Dispute upheld'
+       where id = b.id;
+    elsif p_decision = 'partly' then
+      if p_value is null or p_value not in (1, 2, 3) or p_value >= b.severity then
+        return jsonb_build_object('error', 'bad-severity');
+      end if;
+      update public.perf_breaches set severity = p_value::integer where id = b.id;
+    end if;
+  else
+    mx := case d.item when 'output' then 25 when 'accuracy' then 15 when 'delivery' then 15
+                      when 'client' then 20 when 'comms' then 15 when 'initiative' then 10 end;
+    col := 's_' || d.item;
+    execute format('select %I from public.perf_reviews where id = $1', col) into was using r.id;
+    if p_decision in ('upheld', 'partly') then
+      if p_value is null or p_value < 0 or p_value > mx or round(p_value, 1) <> p_value then
+        return jsonb_build_object('error', 'bad-score', 'max', mx);
+      end if;
+      execute format('update public.perf_reviews set %I = $1 where id = $2', col) using p_value, r.id;
+    end if;
+  end if;
+
+  update public.perf_disputes set decision = p_decision, response = btrim(p_response),
+         before_value = was,
+         after_value = case when p_decision = 'not_upheld' then was
+                            when d.item = 'breach' and p_decision = 'upheld' then 0
+                            else p_value end,
+         decided_by = m.id, decided_at = now()
+   where id = d.id;
+  if not exists (select 1 from public.perf_disputes x
+                  where x.review_id = r.id and x.version = r.version and x.decision is null) then
+    update public.perf_reviews set status = 'resolved' where id = r.id;
+    perform public.perf_notify(r.team_member_id, 'perf.answered',
+      'Your dispute on ' || public.perf_month_word(r.period) || ' has been answered.',
+      'perf.answered.' || r.id || '.' || r.version);
+  end if;
+  update public.perf_reviews set rev = rev + 1, updated_at = now() where id = r.id returning * into r;
+  perform public.perf_log(r.id, r.team_member_id, 'decided',
+    jsonb_build_object('item', d.item, 'decision', p_decision, 'was', was,
+                       'after', case when p_decision = 'not_upheld' then was else p_value end));
+  return public.perf_json(r, true);
+end $$;
+
+create or replace function public.perf_finalise(p_token text, p_review uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare err text; m public.team_members; r public.perf_reviews; res jsonb;
+begin
+  err := public.perf_check(p_token, 'work');
+  if err is not null then return jsonb_build_object('error', err); end if;
+  m := public.ops_me();
+  select * into r from public.perf_reviews where id = p_review for update;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if r.team_member_id = m.id then return jsonb_build_object('error', 'own-review'); end if;
+  if r.status = 'disputed' then return jsonb_build_object('error', 'open-dispute'); end if;
+  if r.status not in ('released', 'resolved', 'acknowledged') then
+    return jsonb_build_object('error', 'not-released');
+  end if;
+  if r.status <> 'acknowledged' and r.dispute_until > now() then
+    return jsonb_build_object('error', 'window-open', 'until', r.dispute_until);
+  end if;
+  res := public.perf_calc(r);
+  update public.perf_reviews set status = 'final', result = res, finalised_at = now(),
+         finalised_by = m.id, rev = rev + 1, updated_at = now()
+   where id = r.id returning * into r;
+  perform public.perf_log(r.id, r.team_member_id, 'finalised',
+    jsonb_build_object('grade', res ->> 'grade', 'final', res -> 'final'));
+  return public.perf_json(r, true);
+end $$;
+
+create or replace function public.perf_reopen(p_token text, p_review uuid, p_reason text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare err text; m public.team_members; r public.perf_reviews;
+begin
+  err := public.perf_check(p_token, 'manage');
+  if err is not null then return jsonb_build_object('error', err); end if;
+  m := public.ops_me();
+  if coalesce(btrim(p_reason), '') = '' then return jsonb_build_object('error', 'reason-needed'); end if;
+  select * into r from public.perf_reviews where id = p_review for update;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if r.team_member_id = m.id then return jsonb_build_object('error', 'own-review'); end if;
+  if r.status <> 'final' then return jsonb_build_object('error', 'not-final'); end if;
+  perform public.perf_log(r.id, r.team_member_id, 'reopened',
+    jsonb_build_object('reason', btrim(p_reason), 'was', public.perf_json(r, false)));
+  update public.perf_reviews set status = 'draft', result = null, released_at = null,
+         dispute_until = null, acknowledged_at = null, finalised_at = null, finalised_by = null,
+         version = version + 1, rev = rev + 1, updated_at = now()
+   where id = r.id returning * into r;
+  return public.perf_json(r, true);
+end $$;
+
+create or replace function public.perf_breach_log(p_token text, p_member uuid, p_payload jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  err text; m public.team_members; on_ date; p date; cat text; sev integer; rep boolean;
+  st text; nb public.perf_breaches;
+begin
+  err := public.perf_check(p_token, 'work');
+  if err is not null then return jsonb_build_object('error', err); end if;
+  m := public.ops_me();
+  if p_member = m.id then return jsonb_build_object('error', 'own-review'); end if;
+  if not exists (select 1 from public.team_members where id = p_member and active) then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  begin on_ := (p_payload ->> 'occurred_on')::date; exception when others then on_ := null; end;
+  if on_ is null or on_ > current_date then return jsonb_build_object('error', 'bad-date'); end if;
+  cat := p_payload ->> 'category';
+  if cat is null or cat not in ('client', 'delivery', 'compliance', 'asset') then
+    return jsonb_build_object('error', 'bad-category');
+  end if;
+  sev := case when (p_payload ->> 'severity') ~ '^[1-4]$' then (p_payload ->> 'severity')::integer end;
+  if sev is null then return jsonb_build_object('error', 'bad-severity'); end if;
+  if coalesce(btrim(p_payload ->> 'what'), '') = '' then return jsonb_build_object('error', 'what-needed'); end if;
+  p := date_trunc('month', on_)::date;
+  select status into st from public.perf_reviews where team_member_id = p_member and period = p;
+  if st is not null and st <> 'draft' then
+    return jsonb_build_object('error', 'month-released', 'month', public.perf_month_word(p));
+  end if;
+  /* The same kind of breach earlier in the same quarter is a repeat, unless
+     the reviewer says otherwise. */
+  rep := case when p_payload ? 'repeated' and jsonb_typeof(p_payload -> 'repeated') = 'boolean'
+              then (p_payload ->> 'repeated')::boolean
+              else exists (select 1 from public.perf_breaches b
+                            where b.team_member_id = p_member and b.category = cat
+                              and b.voided_at is null
+                              and date_trunc('quarter', b.occurred_on) = date_trunc('quarter', on_)
+                              and b.occurred_on <= on_) end;
+  insert into public.perf_breaches (team_member_id, occurred_on, period, category, severity,
+                                    repeated, late, what, evidence, logged_by)
+  values (p_member, on_, p, cat, sev, rep, coalesce((p_payload ->> 'late')::boolean, false),
+          btrim(p_payload ->> 'what'), nullif(btrim(p_payload ->> 'evidence'), ''), m.id)
+  returning * into nb;
+  perform public.perf_log((select id from public.perf_reviews where team_member_id = p_member and period = p),
+    p_member, 'breach_logged', jsonb_build_object('breach', nb.id, 'category', cat, 'severity', sev,
+      'repeated', rep, 'late', nb.late, 'deduction', public.perf_deduction(sev, rep, nb.late)));
+  return jsonb_build_object('ok', true, 'id', nb.id, 'repeated', rep,
+    'deduction', public.perf_deduction(sev, rep, nb.late), 'period', p);
+end $$;
+
+create or replace function public.perf_breach_void(p_token text, p_breach uuid, p_reason text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare err text; m public.team_members; b public.perf_breaches; st text;
+begin
+  err := public.perf_check(p_token, 'work');
+  if err is not null then return jsonb_build_object('error', err); end if;
+  m := public.ops_me();
+  if coalesce(btrim(p_reason), '') = '' then return jsonb_build_object('error', 'reason-needed'); end if;
+  select * into b from public.perf_breaches where id = p_breach for update;
+  if b.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if b.team_member_id = m.id then return jsonb_build_object('error', 'own-review'); end if;
+  if b.voided_at is not null then return jsonb_build_object('ok', true); end if;
+  select status into st from public.perf_reviews where team_member_id = b.team_member_id and period = b.period;
+  if st is not null and st <> 'draft' then
+    return jsonb_build_object('error', 'month-released', 'month', public.perf_month_word(b.period));
+  end if;
+  update public.perf_breaches set voided_at = now(), voided_by = m.id, void_reason = btrim(p_reason)
+   where id = b.id;
+  perform public.perf_log((select id from public.perf_reviews where team_member_id = b.team_member_id and period = b.period),
+    b.team_member_id, 'breach_voided', jsonb_build_object('breach', b.id, 'reason', btrim(p_reason)));
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.perf_profile_set(p_token text, p_member uuid, p_payload jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare err text; m public.team_members; dep text; fam text;
+begin
+  err := public.perf_check(p_token, 'work');
+  if err is not null then return jsonb_build_object('error', err); end if;
+  m := public.ops_me();
+  if p_member = m.id then return jsonb_build_object('error', 'own-review'); end if;
+  dep := nullif(p_payload ->> 'department', '');
+  fam := nullif(p_payload ->> 'role_family', '');
+  if dep is not null and dep not in ('creative', 'marketing') then return jsonb_build_object('error', 'bad-department'); end if;
+  if fam is not null and fam not in ('visual', 'video', 'planner', 'account') then return jsonb_build_object('error', 'bad-role'); end if;
+  insert into public.perf_people (team_member_id, department, role_family, runs_ads, reviewed)
+  values (p_member, dep, fam, coalesce((p_payload ->> 'runs_ads')::boolean, false),
+          case when p_payload ? 'reviewed' then (p_payload ->> 'reviewed')::boolean end)
+  on conflict (team_member_id) do update set
+    department = case when p_payload ? 'department' then dep else perf_people.department end,
+    role_family = case when p_payload ? 'role_family' then fam else perf_people.role_family end,
+    runs_ads = case when p_payload ? 'runs_ads' then coalesce((p_payload ->> 'runs_ads')::boolean, false) else perf_people.runs_ads end,
+    reviewed = case when p_payload ? 'reviewed' then (p_payload ->> 'reviewed')::boolean else perf_people.reviewed end,
+    updated_at = now();
+  perform public.perf_log(null, p_member, 'profile', p_payload);
+  return jsonb_build_object('ok', true);
+end $$;
+
+-- 7. The member: their own months, a dispute, an acknowledgement --------------------
+create or replace function public.perf_mine()
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  return jsonb_build_object('reviews', coalesce((
+    select jsonb_agg(public.perf_json(r, false) order by r.period desc)
+      from public.perf_reviews r
+     where r.team_member_id = m.id and r.status <> 'draft'), '[]'::jsonb));
+end $$;
+
+create or replace function public.perf_dispute(p_review uuid, p_items jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; r public.perf_reviews; it jsonb; n integer := 0; itm text; bid uuid;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  select * into r from public.perf_reviews where id = p_review for update;
+  if r.id is null or r.team_member_id <> m.id or r.status = 'draft' then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if r.status <> 'released' or exists (select 1 from public.perf_disputes d
+                                        where d.review_id = r.id and d.version = r.version) then
+    return jsonb_build_object('error', 'dispute-closed');
+  end if;
+  if r.dispute_until <= now() then return jsonb_build_object('error', 'window-closed'); end if;
+  if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then
+    return jsonb_build_object('error', 'nothing-disputed');
+  end if;
+  for it in select * from jsonb_array_elements(p_items) loop
+    itm := it ->> 'item';
+    if itm is null or itm not in ('output', 'accuracy', 'delivery', 'client', 'comms', 'initiative', 'breach') then
+      return jsonb_build_object('error', 'bad-item');
+    end if;
+    if coalesce(btrim(it ->> 'reason'), '') = '' then return jsonb_build_object('error', 'reason-needed', 'item', itm); end if;
+    bid := null;
+    if itm = 'breach' then
+      begin bid := (it ->> 'breach_id')::uuid; exception when others then bid := null; end;
+      if bid is null or not exists (select 1 from public.perf_breaches b
+                                     where b.id = bid and b.team_member_id = m.id
+                                       and b.period = r.period and b.voided_at is null) then
+        return jsonb_build_object('error', 'bad-item');
+      end if;
+    end if;
+    insert into public.perf_disputes (review_id, version, item, breach_id, reason)
+    values (r.id, r.version, itm, bid, btrim(it ->> 'reason'));
+    n := n + 1;
+  end loop;
+  update public.perf_reviews set status = 'disputed', rev = rev + 1, updated_at = now()
+   where id = r.id returning * into r;
+  perform public.perf_log(r.id, r.team_member_id, 'disputed', jsonb_build_object('items', n));
+  perform public.perf_notify(r.reviewer_id, 'perf.disputed',
+    m.name || ' disputed ' || public.perf_month_word(r.period) || '.',
+    'perf.disputed.' || r.id || '.' || r.version);
+  return public.perf_json(r, false);
+end $$;
+
+create or replace function public.perf_acknowledge(p_review uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; r public.perf_reviews;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  select * into r from public.perf_reviews where id = p_review for update;
+  if r.id is null or r.team_member_id <> m.id or r.status = 'draft' then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if r.status = 'acknowledged' or r.status = 'final' then return public.perf_json(r, false); end if;
+  if r.status = 'disputed' then return jsonb_build_object('error', 'open-dispute'); end if;
+  update public.perf_reviews set status = 'acknowledged', acknowledged_at = now(),
+         dispute_until = least(dispute_until, now()), rev = rev + 1, updated_at = now()
+   where id = r.id returning * into r;
+  perform public.perf_log(r.id, r.team_member_id, 'acknowledged', '{}'::jsonb);
+  return public.perf_json(r, false);
+end $$;
+
+/* A copy was drawn: by the member for their own month, or by management with
+   a live unlock. The record keeps who printed what. */
+create or replace function public.perf_printed(p_review uuid, p_token text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; r public.perf_reviews;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  select * into r from public.perf_reviews where id = p_review;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if r.team_member_id <> m.id and public.perf_check(p_token, 'view') is not null then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  if r.team_member_id = m.id and r.status = 'draft' then return jsonb_build_object('error', 'not-found'); end if;
+  perform public.perf_log(r.id, r.team_member_id, 'printed', jsonb_build_object('version', r.version));
+  return jsonb_build_object('ok', true);
+end $$;
+
+-- 8. Who may call what ----------------------------------------------------------------
+/* Postgres lets PUBLIC execute every new function and Supabase grants anon
+   and authenticated as well, so each is closed first. The helpers stay
+   closed: the calculator and the record builder would read anybody's
+   breaches for whoever called them, and the code reset is the owner's in the
+   SQL editor. The functions a page calls are opened to a signed-in browser
+   and answer for themselves. */
+revoke all on function public.perf_code_reset(text) from public, anon, authenticated;
+revoke all on function public.perf_log(uuid, uuid, text, jsonb) from public, anon, authenticated;
+revoke all on function public.perf_calc(public.perf_reviews) from public, anon, authenticated;
+revoke all on function public.perf_json(public.perf_reviews, boolean) from public, anon, authenticated;
+revoke all on function public.perf_ops_rate(uuid, date) from public, anon, authenticated;
+revoke all on function public.perf_breaches_json(uuid, date, boolean) from public, anon, authenticated;
+revoke all on function public.perf_notify(uuid, text, text, text) from public, anon, authenticated;
+revoke all on function public.perf_reviewed(uuid) from public, anon, authenticated;
+revoke all on function public.perf_check(text, text) from public, anon, authenticated;
+revoke all on function public.perf_events_frozen() from public, anon, authenticated;
+revoke all on function public.perf_grade_of(numeric) from public, anon, authenticated;
+revoke all on function public.perf_grade_word(text) from public, anon, authenticated;
+revoke all on function public.perf_deduction(integer, boolean, boolean) from public, anon, authenticated;
+revoke all on function public.perf_band(numeric, numeric) from public, anon, authenticated;
+revoke all on function public.perf_pacing_band(numeric) from public, anon, authenticated;
+revoke all on function public.perf_month_word(date) from public, anon, authenticated;
+revoke all on function public.perf_code_set() from public, anon, authenticated;
+revoke all on function public.perf_gate_info() from public, anon, authenticated;
+revoke all on function public.perf_unlock(text) from public, anon, authenticated;
+revoke all on function public.perf_lock(text) from public, anon, authenticated;
+revoke all on function public.perf_month(text, date) from public, anon, authenticated;
+revoke all on function public.perf_open(text, uuid, date) from public, anon, authenticated;
+revoke all on function public.perf_save(text, uuid, date, jsonb, integer) from public, anon, authenticated;
+revoke all on function public.perf_release(text, uuid, integer) from public, anon, authenticated;
+revoke all on function public.perf_unrelease(text, uuid, text) from public, anon, authenticated;
+revoke all on function public.perf_decide(text, uuid, text, text, numeric) from public, anon, authenticated;
+revoke all on function public.perf_finalise(text, uuid) from public, anon, authenticated;
+revoke all on function public.perf_reopen(text, uuid, text) from public, anon, authenticated;
+revoke all on function public.perf_breach_log(text, uuid, jsonb) from public, anon, authenticated;
+revoke all on function public.perf_breach_void(text, uuid, text) from public, anon, authenticated;
+revoke all on function public.perf_profile_set(text, uuid, jsonb) from public, anon, authenticated;
+revoke all on function public.perf_mine() from public, anon, authenticated;
+revoke all on function public.perf_dispute(uuid, jsonb) from public, anon, authenticated;
+revoke all on function public.perf_acknowledge(uuid) from public, anon, authenticated;
+revoke all on function public.perf_printed(uuid, text) from public, anon, authenticated;
+grant execute on function public.perf_code_set() to authenticated;
+grant execute on function public.perf_gate_info() to authenticated;
+grant execute on function public.perf_unlock(text) to authenticated;
+grant execute on function public.perf_lock(text) to authenticated;
+grant execute on function public.perf_month(text, date) to authenticated;
+grant execute on function public.perf_open(text, uuid, date) to authenticated;
+grant execute on function public.perf_save(text, uuid, date, jsonb, integer) to authenticated;
+grant execute on function public.perf_release(text, uuid, integer) to authenticated;
+grant execute on function public.perf_unrelease(text, uuid, text) to authenticated;
+grant execute on function public.perf_decide(text, uuid, text, text, numeric) to authenticated;
+grant execute on function public.perf_finalise(text, uuid) to authenticated;
+grant execute on function public.perf_reopen(text, uuid, text) to authenticated;
+grant execute on function public.perf_breach_log(text, uuid, jsonb) to authenticated;
+grant execute on function public.perf_breach_void(text, uuid, text) to authenticated;
+grant execute on function public.perf_profile_set(text, uuid, jsonb) to authenticated;
+grant execute on function public.perf_mine() to authenticated;
+grant execute on function public.perf_dispute(uuid, jsonb) to authenticated;
+grant execute on function public.perf_acknowledge(uuid) to authenticated;
+grant execute on function public.perf_printed(uuid, text) to authenticated;
+
+-- END OF PERFORMANCE REVIEWS ------------------------------------------------
+
+-- ===========================================================================
+-- BULK ADD SPREADS THE MONTH — a month of tasks is shared across its four
+-- weeks, not piled into the last one.
+-- 2026-09-24. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/ops.js compares the two.
+--
+-- WHAT THIS CHANGES, AND WHAT IT LEAVES ALONE.
+--
+--   `ops_generate_month` with no week counts gave weeks 1 to 3 the whole
+--   quarter of the count and week 4 everything left over, so six tasks came
+--   out 1, 1, 1, 3 and one, two or three tasks all landed in week 4 (the
+--   user, 2026-09-24: "it should proceed to divide every 30 days ... not just
+--   keep all at the last week"). Task i, counted from 0, now falls in week
+--   floor(i * 4 / n) + 1: eight is two a week, six is 2, 1, 2, 1, five is
+--   2, 1, 1, 1, two is weeks 1 and 3. The running number still runs 01 to n
+--   across the month.
+--
+--   The tentative publish date moves with it: each task sits inside its own
+--   week, the week's tasks spread over its seven days, where every task in a
+--   week used to share that week's first day.
+--
+--   Week counts typed on the sheet (Set how many in each week) are used as
+--   typed, as before. Tasks already made keep their codes: a code is written
+--   once and never rewritten.
+--
+-- ROLLBACK
+--   Re-run section 9.12 of 2026-09-23-operations-phase4.sql.
+-- ===========================================================================
+
+-- 1. A month of content at once, spread over the month ------------------------
+create or replace function public.ops_generate_month(
+  p_payload jsonb, p_dry_run boolean default false, p_idem text default null)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m      public.team_members;
+  cid    uuid;
+  per    text;
+  n      integer;
+  weeks  integer[];
+  bad    text;
+  eng    uuid;
+  k      integer;
+  w      integer;
+  seq    integer;
+  seqs   integer;
+  made   jsonb := '[]'::jsonb;
+  one    jsonb;
+  key    text;
+  scope  text;
+  first_day date;
+  last_off integer;
+  publish timestamptz;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not public.allowed('ops', 'work') then return jsonb_build_object('error', 'denied'); end if;
+
+  cid := (p_payload ->> 'client_id')::uuid;
+  per := p_payload ->> 'period';
+  n := coalesce((p_payload ->> 'count')::integer, 0);
+  scope := coalesce(p_payload ->> 'scope', 'client');
+  bad := public.ops_scope_error(scope, cid);
+  if bad is not null then return jsonb_build_object('error', bad); end if;
+  if per is null or per !~ '^\d{4}-\d{2}$' then return jsonb_build_object('error', 'bad-period'); end if;
+  if n < 1 or n > 60 then return jsonb_build_object('error', 'bad-count'); end if;
+
+  if (p_payload -> 'weeks') is not null and jsonb_typeof(p_payload -> 'weeks') = 'array' then
+    select array_agg(x::integer) into weeks from jsonb_array_elements_text(p_payload -> 'weeks') x;
+    if array_length(weeks, 1) < 1 or array_length(weeks, 1) > 5 then
+      return jsonb_build_object('error', 'bad-weeks');
+    end if;
+    if (select sum(v) from unnest(weeks) v) <> n then return jsonb_build_object('error', 'weeks-do-not-add-up'); end if;
+  else
+    /* Evenly over four weeks, the extras early: task i (from 0) falls in
+       week floor(i * 4 / n) + 1, so eight is two a week, six is 2, 1, 2, 1,
+       and two is weeks 1 and 3 rather than both in week 4. */
+    weeks := array[]::integer[];
+    for w in 1 .. 4 loop
+      weeks := weeks || (ceil(w * n / 4.0)::integer - ceil((w - 1) * n / 4.0)::integer);
+    end loop;
+  end if;
+
+  /* The same press twice is one month, not two. */
+  if not p_dry_run and p_idem is not null then
+    if exists (select 1 from public.ops_tasks where idem_key = 'month:' || p_idem || ':1') then
+      return jsonb_build_object('error', 'already-generated');
+    end if;
+  end if;
+
+  first_day := (per || '-01')::date;
+  last_off := ((first_day + interval '1 month')::date - first_day) - 1;
+  /* One lock for the whole run, taken before anything is read: two operators
+     generating the same month queue here, so the second sees the first's
+     engagement and the first's numbers rather than racing both. */
+  perform pg_advisory_xact_lock(hashtext('ops_code:' || cid::text || ':' || per));
+  if not p_dry_run then
+    eng := coalesce((p_payload ->> 'engagement_id')::uuid,
+                    (select e.id from public.ops_engagements e where e.client_id = cid and e.period = per));
+    if eng is null then
+      eng := (public.ops_engagement_upsert(jsonb_build_object(
+                'client_id', cid, 'period', per, 'planned_count', n,
+                'manager_id', coalesce((p_payload ->> 'manager_id')::uuid, m.id))) ->> 'id')::uuid;
+    else
+      update public.ops_engagements set planned_count = greatest(planned_count, n), updated_at = now()
+       where id = eng and planned_count < n;
+    end if;
+  end if;
+
+  /* One lock for the whole month, so the preview and the run see the same
+     next number and two operators generating for one client queue. */
+  seq := public.ops_next_seq(cid, per) - 1;
+  seqs := 0;
+  for w in 1 .. array_length(weeks, 1) loop
+    for k in 1 .. coalesce(weeks[w], 0) loop
+      seq := seq + 1;
+      seqs := seqs + 1;
+      /* A tentative date inside the task's own week, the week's tasks
+         spread across its seven days, so the calendar has somewhere to put
+         each one; the content meeting fixes the real date. Never past the
+         month's last day, which only a fifth week can reach. */
+      publish := (first_day + least((w - 1) * 7 + ((k - 1) * 7) / weeks[w], last_off))::timestamptz;
+      if p_dry_run then
+        made := made || jsonb_build_object('code', public.ops_code_of(per, w, seq), 'week', w, 'seq', seq);
+      else
+        key := case when p_idem is null then null else 'month:' || p_idem || ':' || seqs::text end;
+        one := public.ops_create_task(jsonb_build_object(
+          'scope', scope, 'client_id', cid, 'engagement_id', eng,
+          'task_type', coalesce(p_payload ->> 'task_type', 'engagement'),
+          'deliverable_type', p_payload ->> 'deliverable_type',
+          'priority_level', (p_payload ->> 'priority_level')::integer,
+          'complexity', p_payload ->> 'complexity',
+          'owner_id', (p_payload ->> 'owner_id')::uuid,
+          'manager_id', (p_payload ->> 'manager_id')::uuid,
+          'code_period', per, 'code_week', w,
+          'publish_at', publish), key);
+        if one ? 'error' then return one; end if;
+        made := made || jsonb_build_object('id', one ->> 'id', 'code', one ->> 'code', 'week', w, 'seq', seq);
+      end if;
+    end loop;
+  end loop;
+  return jsonb_build_object('engagement_id', eng, 'period', per, 'count', seqs,
+                            'tasks', made, 'dry_run', p_dry_run);
+end $$;
+grant execute on function public.ops_generate_month(jsonb, boolean, text) to authenticated;
+
+-- END OF BULK ADD SPREADS THE MONTH ------------------------------------------
+
+-- =========================================================================
+-- A CREATOR'S OWN PROFILE LINKS
+--
+-- A creator keeps their own rednote, Instagram, TikTok and Facebook links up
+-- to date from the creator portal, and the team edits the same rows from the
+-- Creators List. There is one table, `creator_profiles`, so the two sides
+-- cannot drift: the client's selection page reads it too, which is why a
+-- link is only ever what this section says it is.
+--
+-- No approval step (decided with the user on 2026-09-24). The link in hand
+-- and its access code already say who is typing, and a round for every
+-- handle change is a chore on both sides. What replaces the approval is:
+--
+--   * `profile_of()` accepts a real profile on the four platforms and
+--     nothing else. The host is read, never matched anywhere in the text,
+--     and the stored link is rebuilt from the handle, so a changed link can
+--     only ever open that platform's profile page and never another site.
+--   * A profile another creator already holds is refused, without naming
+--     who holds it.
+--   * Every change, the creator's and the team's, is filed twice: a row in
+--     `creator_profile_changes` holding the set before and after, which is
+--     what Restore puts back, and a row in the activity record naming every
+--     link that went and came in full, so a link typed by mistake can be
+--     found and read back.
+--
+-- The fee is not here and not in `get_creator`: `creators.client_rate` is
+-- the client's price and never reaches the creator's page.
+--
+-- Rollback:
+--   drop function if exists public.creator_restore_profiles(uuid);
+--   drop function if exists public.creator_save_profiles(uuid, jsonb);
+--   drop function if exists public.creator_set_profiles(text, jsonb);
+--   drop function if exists public.profiles_replace(uuid, jsonb, text, text, text);
+--   drop function if exists public.profiles_diff(jsonb, jsonb);
+--   drop function if exists public.profile_of(text);
+--   drop table if exists public.creator_profile_changes;
+--   and re-run the get_creator of 2026-09-20.
+-- =========================================================================
+
+/* One reading of a profile link. Returns {platform, handle, url} or null.
+   The host is taken from the URL's own authority and must be the platform's
+   (with or without www. or m.); a URL that merely contains "instagram.com/"
+   somewhere, as a query or a path on another site, is not a profile. The
+   link stored is rebuilt from what was read, so trailing tracking
+   parameters, fragments and anything else typed after the handle are gone.
+   A rednote short link (xhslink) names nobody, so it is kept as typed on its
+   own host with a null handle and cannot claim an identity. */
+create or replace function public.profile_of(p_url text)
+returns jsonb
+language plpgsql immutable set search_path = public as $$
+declare
+  v    text := btrim(coalesce(p_url, ''));
+  m    text[];
+  host text;
+  bare text;
+  path text;
+  q    text;
+  h    text;
+begin
+  if v = '' or length(v) > 300 or v ~ '\s' then return null; end if;
+  if v !~* '^https?://' then v := 'https://' || v; end if;
+  m := regexp_match(v, '^https?://([^/?#]+)([^?#]*)(\?[^#]*)?', 'i');
+  if m is null then return null; end if;
+  host := lower(m[1]);
+  if host ~ '[@:]' then return null; end if;
+  bare := regexp_replace(host, '^(www\.|m\.|mobile\.|web\.)', '');
+  path := coalesce(m[2], '');
+  q := coalesce(m[3], '');
+
+  if bare = 'instagram.com' then
+    m := regexp_match(path, '^/([A-Za-z0-9._]{1,40})/?$');
+    if m is null then return null; end if;
+    h := m[1];
+    if lower(h) in ('p', 'reel', 'reels', 'stories', 'explore', 'tv', 'accounts', 'direct') then
+      return null;
+    end if;
+    return jsonb_build_object('platform', 'instagram', 'handle', h,
+      'url', 'https://www.instagram.com/' || h || '/');
+
+  elsif bare = 'tiktok.com' then
+    m := regexp_match(path, '^/@([A-Za-z0-9._]{1,40})/?$');
+    if m is null then return null; end if;
+    return jsonb_build_object('platform', 'tiktok', 'handle', m[1],
+      'url', 'https://www.tiktok.com/@' || m[1]);
+
+  elsif bare = 'facebook.com' then
+    if path ~* '^/profile\.php/?$' then
+      m := regexp_match(q, '[?&]id=([0-9]{5,20})(&|$)');
+      if m is null then return null; end if;
+      return jsonb_build_object('platform', 'facebook', 'handle', m[1],
+        'url', 'https://www.facebook.com/profile.php?id=' || m[1]);
+    end if;
+    m := regexp_match(path, '^/people/([^/]{1,80})/([0-9]{5,20})/?$');
+    if m is not null then
+      return jsonb_build_object('platform', 'facebook', 'handle', m[2],
+        'url', 'https://www.facebook.com/profile.php?id=' || m[2]);
+    end if;
+    m := regexp_match(path, '^/([A-Za-z0-9.]{2,60})/?$');
+    if m is null then return null; end if;
+    h := m[1];
+    if lower(h) in ('pages', 'groups', 'watch', 'events', 'marketplace', 'people',
+                    'share', 'sharer', 'reel', 'reels', 'stories', 'hashtag', 'login',
+                    'help', 'photo.php', 'story.php', 'permalink.php') then
+      return null;
+    end if;
+    return jsonb_build_object('platform', 'facebook', 'handle', h,
+      'url', 'https://www.facebook.com/' || h);
+
+  elsif bare in ('xiaohongshu.com', 'rednote.com') then
+    m := regexp_match(path, '^/user/profile/([0-9a-zA-Z]{8,40})/?$');
+    if m is null then return null; end if;
+    return jsonb_build_object('platform', 'xhs', 'handle', m[1],
+      'url', 'https://' || host || '/user/profile/' || m[1]);
+
+  elsif bare in ('xhslink.com', 'xhslink.cn') then
+    m := regexp_match(path, '^/([A-Za-z0-9/_-]{2,60})$');
+    if m is null then return null; end if;
+    return jsonb_build_object('platform', 'xhs', 'handle', null,
+      'url', 'https://' || host || '/' || m[1]);
+  end if;
+  return null;
+end $$;
+grant execute on function public.profile_of(text) to anon, authenticated;
+
+/* What a set of links was and what it became, one row a change, the
+   creator's and the team's alike. Read by the team; written only by the
+   functions below, which is why the table carries a select policy and
+   nothing else. Removing a creator removes their history with them. */
+create table if not exists public.creator_profile_changes (
+  id          uuid primary key default gen_random_uuid(),
+  creator_id  uuid not null references public.creators(id) on delete cascade,
+  source      text not null check (source in ('creator', 'team')),
+  actor       text,
+  before      jsonb not null default '[]'::jsonb,
+  after       jsonb not null default '[]'::jsonb,
+  restored_from uuid references public.creator_profile_changes(id) on delete set null,
+  created_at  timestamptz not null default now()
+);
+create index if not exists creator_profile_changes_creator_idx
+  on public.creator_profile_changes(creator_id, created_at desc);
+alter table public.creator_profile_changes enable row level security;
+drop policy if exists creator_profile_changes_read on public.creator_profile_changes;
+create policy creator_profile_changes_read on public.creator_profile_changes
+  for select to authenticated using (public.allowed('campaigns.creators', 'view'));
+
+/* The change in words, every link in full, so a link typed by mistake can
+   be read back off the activity record: one line a platform, "was → is"
+   where one link replaced another, otherwise what went and what came. */
+create or replace function public.profiles_diff(p_before jsonb, p_after jsonb)
+returns text
+language plpgsql immutable set search_path = public as $$
+declare
+  word  constant jsonb := '{"xhs": "rednote", "instagram": "Instagram", "tiktok": "TikTok", "facebook": "Facebook"}';
+  gone  jsonb;
+  came  jsonb;
+  g     jsonb;
+  c     jsonb;
+  x     jsonb;
+  pl    text;
+  parts text[] := '{}';
+begin
+  select coalesce(jsonb_agg(b), '[]'::jsonb) into gone
+    from jsonb_array_elements(coalesce(p_before, '[]'::jsonb)) b
+   where not exists (select 1 from jsonb_array_elements(coalesce(p_after, '[]'::jsonb)) a
+                      where a ->> 'url' = b ->> 'url');
+  select coalesce(jsonb_agg(a), '[]'::jsonb) into came
+    from jsonb_array_elements(coalesce(p_after, '[]'::jsonb)) a
+   where not exists (select 1 from jsonb_array_elements(coalesce(p_before, '[]'::jsonb)) b
+                      where b ->> 'url' = a ->> 'url');
+  for pl in select distinct y ->> 'platform' from jsonb_array_elements(gone || came) y order by 1 loop
+    select coalesce(jsonb_agg(y), '[]'::jsonb) into g from jsonb_array_elements(gone) y where y ->> 'platform' = pl;
+    select coalesce(jsonb_agg(y), '[]'::jsonb) into c from jsonb_array_elements(came) y where y ->> 'platform' = pl;
+    if jsonb_array_length(g) = 1 and jsonb_array_length(c) = 1 then
+      parts := parts || (coalesce(word ->> pl, pl) || ': ' || (g -> 0 ->> 'url') || ' → ' || (c -> 0 ->> 'url'));
+    else
+      for x in select * from jsonb_array_elements(g) loop
+        parts := parts || (coalesce(word ->> pl, pl) || ' removed: ' || (x ->> 'url'));
+      end loop;
+      for x in select * from jsonb_array_elements(c) loop
+        parts := parts || (coalesce(word ->> pl, pl) || ' added: ' || (x ->> 'url'));
+      end loop;
+    end if;
+  end loop;
+  return array_to_string(parts, ' · ');
+end $$;
+grant execute on function public.profiles_diff(jsonb, jsonb) to authenticated;
+
+/* The one write. Every link is read by `profile_of`, a link twice in the
+   payload is one link, and a profile another creator holds is refused
+   without naming them. The same set again changes nothing and files
+   nothing, so a Save pressed twice is one change. Not granted to anybody:
+   it takes a creator's id on trust, so only the three functions below,
+   which have each checked who is asking, may call it. */
+create or replace function public.profiles_replace(
+  p_creator uuid, p_profiles jsonb, p_actor text, p_source text, p_action text)
+returns jsonb
+language plpgsql set search_path = public as $$
+declare
+  cr        public.creators;
+  item      jsonb;
+  v_raw     text;
+  parsed    jsonb;
+  wanted    jsonb := '[]'::jsonb;
+  seen      text[] := '{}';
+  k         text;
+  v_before  jsonb;
+  v_after   jsonb;
+  v_said    text;
+  v_change  uuid;
+begin
+  select * into cr from public.creators where id = p_creator;
+  if cr.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if p_profiles is null or jsonb_typeof(p_profiles) <> 'array' then
+    return jsonb_build_object('error', 'bad-payload');
+  end if;
+  if jsonb_array_length(p_profiles) > 8 then return jsonb_build_object('error', 'too-many'); end if;
+
+  for item in select * from jsonb_array_elements(p_profiles) loop
+    v_raw := case jsonb_typeof(item) when 'string' then item #>> '{}' else item ->> 'url' end;
+    if btrim(coalesce(v_raw, '')) = '' then continue; end if;
+    parsed := public.profile_of(v_raw);
+    if parsed is null then return jsonb_build_object('error', 'unrecognised', 'url', v_raw); end if;
+    k := (parsed ->> 'platform') || ':' || lower(coalesce(parsed ->> 'handle', parsed ->> 'url'));
+    if k = any(seen) then continue; end if;
+    seen := seen || k;
+    if parsed ->> 'handle' is not null and exists (
+      select 1 from public.creator_profiles p
+       where p.platform = parsed ->> 'platform'
+         and lower(p.handle) = lower(parsed ->> 'handle')
+         and p.creator_id <> p_creator) then
+      return jsonb_build_object('error', 'taken', 'url', parsed ->> 'url');
+    end if;
+    wanted := wanted || jsonb_build_array(parsed);
+  end loop;
+
+  if p_source = 'creator' and jsonb_array_length(wanted) = 0 then
+    return jsonb_build_object('error', 'none');
+  end if;
+
+  select coalesce(jsonb_agg(jsonb_build_object('platform', p.platform, 'handle', p.handle, 'url', p.url)
+           order by p.platform, p.url), '[]'::jsonb)
+    into v_before from public.creator_profiles p where p.creator_id = p_creator;
+  select coalesce(jsonb_agg(x order by x ->> 'platform', x ->> 'url'), '[]'::jsonb)
+    into v_after from jsonb_array_elements(wanted) x;
+  if v_before = v_after then
+    return jsonb_build_object('ok', true, 'changed', false, 'profiles', v_after);
+  end if;
+
+  begin
+    delete from public.creator_profiles where creator_id = p_creator;
+    insert into public.creator_profiles (creator_id, platform, url, handle)
+      select p_creator, x ->> 'platform', x ->> 'url', x ->> 'handle'
+        from jsonb_array_elements(v_after) x;
+  exception when unique_violation then
+    /* Two creators claiming one profile at the same moment: the index is the
+       last word, and the delete above is rolled back with the insert. */
+    return jsonb_build_object('error', 'taken');
+  end;
+
+  insert into public.creator_profile_changes (creator_id, source, actor, before, after)
+  values (p_creator, p_source, p_actor, v_before, v_after)
+  returning id into v_change;
+  update public.creators c set updated_at = now() where c.id = p_creator;
+
+  v_said := public.profiles_diff(v_before, v_after);
+  insert into public.activity_log (actor, action, subject, detail)
+  values (p_actor, p_action, cr.name, v_said);
+
+  return jsonb_build_object('ok', true, 'changed', true, 'change', v_change, 'profiles', v_after);
+end $$;
+revoke execute on function public.profiles_replace(uuid, jsonb, text, text, text) from public, anon, authenticated;
+
+/* The creator's own save, from the portal. The code is the key, as it is for
+   every other creator write, and the name on the record is theirs. */
+create or replace function public.creator_set_profiles(p_code text, p_profiles jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  cr public.creators;
+begin
+  select * into cr from public.creators
+   where access_code = upper(regexp_replace(coalesce(p_code, ''), '[^A-Za-z0-9]', '', 'g'))
+     and active;
+  if cr.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  return public.profiles_replace(cr.id, p_profiles, cr.name, 'creator', 'creator.links_self');
+end $$;
+grant execute on function public.creator_set_profiles(text, jsonb) to anon, authenticated;
+
+/* The team's save, from the Creators List, through the same reader and the
+   same history, so the two sides cannot disagree about what a link is. */
+create or replace function public.creator_save_profiles(p_creator uuid, p_profiles jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me public.team_members;
+begin
+  if not public.allowed('campaigns.creators', 'work') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into me from public.ops_me();
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  return public.profiles_replace(p_creator, p_profiles, me.name, 'team', 'creator.links');
+end $$;
+grant execute on function public.creator_save_profiles(uuid, jsonb) to authenticated;
+
+/* Putting back the links a change replaced. It is itself a change, filed as
+   one, so restoring the wrong one is undone the same way. */
+create or replace function public.creator_restore_profiles(p_change uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me  public.team_members;
+  ch  public.creator_profile_changes;
+  res jsonb;
+begin
+  if not public.allowed('campaigns.creators', 'work') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into me from public.ops_me();
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  select * into ch from public.creator_profile_changes x where x.id = p_change;
+  if ch.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  res := public.profiles_replace(ch.creator_id, ch.before, me.name, 'team', 'creator.links_restored');
+  if (res ->> 'change') is not null then
+    update public.creator_profile_changes x set restored_from = ch.id where x.id = (res ->> 'change')::uuid;
+  end if;
+  return res;
+end $$;
+grant execute on function public.creator_restore_profiles(uuid) to authenticated;
+
+-- END OF A CREATOR'S OWN PROFILE LINKS --------------------------------------
+
+-- ===========================================================================
+-- MY PERFORMANCE BEHIND AN EMAIL CODE — a second lock a member may put on
+-- their own reviews.
+-- 2026-09-24. Safe to run twice. Run after 2026-09-24-performance-reviews.sql.
+-- Rollback at the foot. Mirrored byte for byte in supabase/schema.sql under
+-- the same banner; tests/perf.js compares the two.
+--
+-- WHAT THIS IS. Asked for by the user on 2026-09-24 ("a second guard layer
+-- ... OTP / link to view the performance section"), with their decisions:
+-- each person switches it on for themselves, and it is a 6-digit code sent
+-- to their email. While it is on, the member's own functions answer
+-- `code-needed` unless the session was verified by an email code in the
+-- last 15 minutes. The proof is the session's own `amr` claim, which the
+-- auth server writes when a code is verified (`verifyOtp`), so nothing the
+-- browser sends can fake it. Turning the lock off needs a fresh code too,
+-- so an unattended open laptop cannot switch it off.
+--
+-- The email is Supabase's own sign-in email, so its template must print the
+-- code: Authentication, Emails, Magic Link, add {{ .Token }}. See
+-- docs/PERFORMANCE-SETUP.md.
+--
+-- ROLLBACK
+--   drop function if exists public.perf_guard_set(boolean), public.perf_guard_info(),
+--     public.perf_guarded(uuid), public.perf_code_fresh();
+--   alter table public.perf_people drop column if exists email_code;
+--   and re-run perf_mine, perf_dispute and perf_acknowledge from
+--   2026-09-24-performance-reviews.sql.
+-- ===========================================================================
+
+alter table public.perf_people add column if not exists email_code boolean not null default false;
+
+/* The session was verified by an email code (or an email link, which the
+   auth server records the same way) in the last 15 minutes. Read from the
+   signed token, never from anything the page passes in. */
+create or replace function public.perf_code_fresh()
+returns boolean
+language sql stable set search_path = public as $$
+  select coalesce((
+    select bool_or(a ->> 'method' in ('otp', 'magiclink')
+                   and (a ->> 'timestamp') ~ '^[0-9]+$'
+                   and (a ->> 'timestamp')::bigint >= extract(epoch from now())::bigint - 900)
+      from jsonb_array_elements(case when jsonb_typeof(auth.jwt() -> 'amr') = 'array'
+                                     then auth.jwt() -> 'amr' else '[]'::jsonb end) a), false)
+$$;
+
+/* Whether a member has put the lock on their own reviews. */
+create or replace function public.perf_guarded(p_member uuid)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select coalesce((select email_code from public.perf_people where team_member_id = p_member), false)
+$$;
+
+/* What the page needs to draw the lock: on or off, fresh or not, and the
+   address the code goes to. */
+create or replace function public.perf_guard_info()
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  return jsonb_build_object('on', public.perf_guarded(m.id), 'fresh', public.perf_code_fresh(),
+                            'email', m.email);
+end $$;
+
+/* The member's own switch. On at any time; off only with a fresh code. */
+create or replace function public.perf_guard_set(p_on boolean)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not coalesce(p_on, false) and public.perf_guarded(m.id) and not public.perf_code_fresh() then
+    return jsonb_build_object('error', 'code-needed');
+  end if;
+  insert into public.perf_people (team_member_id, email_code, updated_at)
+  values (m.id, coalesce(p_on, false), now())
+  on conflict (team_member_id) do update set email_code = excluded.email_code, updated_at = now();
+  perform public.perf_log(null, m.id, 'email-code', jsonb_build_object('on', coalesce(p_on, false)));
+  return jsonb_build_object('ok', true, 'on', coalesce(p_on, false));
+end $$;
+
+/* The member's own functions, each refusing while the lock is on and the
+   code is not fresh. Otherwise identical to 2026-09-24-performance-reviews. */
+create or replace function public.perf_mine()
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if public.perf_guarded(m.id) and not public.perf_code_fresh() then
+    return jsonb_build_object('error', 'code-needed');
+  end if;
+  return jsonb_build_object('reviews', coalesce((
+    select jsonb_agg(public.perf_json(r, false) order by r.period desc)
+      from public.perf_reviews r
+     where r.team_member_id = m.id and r.status <> 'draft'), '[]'::jsonb));
+end $$;
+
+create or replace function public.perf_dispute(p_review uuid, p_items jsonb)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; r public.perf_reviews; it jsonb; n integer := 0; itm text; bid uuid;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if public.perf_guarded(m.id) and not public.perf_code_fresh() then
+    return jsonb_build_object('error', 'code-needed');
+  end if;
+  select * into r from public.perf_reviews where id = p_review for update;
+  if r.id is null or r.team_member_id <> m.id or r.status = 'draft' then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if r.status <> 'released' or exists (select 1 from public.perf_disputes d
+                                        where d.review_id = r.id and d.version = r.version) then
+    return jsonb_build_object('error', 'dispute-closed');
+  end if;
+  if r.dispute_until <= now() then return jsonb_build_object('error', 'window-closed'); end if;
+  if jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0 then
+    return jsonb_build_object('error', 'nothing-disputed');
+  end if;
+  for it in select * from jsonb_array_elements(p_items) loop
+    itm := it ->> 'item';
+    if itm is null or itm not in ('output', 'accuracy', 'delivery', 'client', 'comms', 'initiative', 'breach') then
+      return jsonb_build_object('error', 'bad-item');
+    end if;
+    if coalesce(btrim(it ->> 'reason'), '') = '' then return jsonb_build_object('error', 'reason-needed', 'item', itm); end if;
+    bid := null;
+    if itm = 'breach' then
+      begin bid := (it ->> 'breach_id')::uuid; exception when others then bid := null; end;
+      if bid is null or not exists (select 1 from public.perf_breaches b
+                                     where b.id = bid and b.team_member_id = m.id
+                                       and b.period = r.period and b.voided_at is null) then
+        return jsonb_build_object('error', 'bad-item');
+      end if;
+    end if;
+    insert into public.perf_disputes (review_id, version, item, breach_id, reason)
+    values (r.id, r.version, itm, bid, btrim(it ->> 'reason'));
+    n := n + 1;
+  end loop;
+  update public.perf_reviews set status = 'disputed', rev = rev + 1, updated_at = now()
+   where id = r.id returning * into r;
+  perform public.perf_log(r.id, r.team_member_id, 'disputed', jsonb_build_object('items', n));
+  perform public.perf_notify(r.reviewer_id, 'perf.disputed',
+    m.name || ' disputed ' || public.perf_month_word(r.period) || '.',
+    'perf.disputed.' || r.id || '.' || r.version);
+  return public.perf_json(r, false);
+end $$;
+
+create or replace function public.perf_acknowledge(p_review uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members; r public.perf_reviews;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if public.perf_guarded(m.id) and not public.perf_code_fresh() then
+    return jsonb_build_object('error', 'code-needed');
+  end if;
+  select * into r from public.perf_reviews where id = p_review for update;
+  if r.id is null or r.team_member_id <> m.id or r.status = 'draft' then
+    return jsonb_build_object('error', 'not-found');
+  end if;
+  if r.status = 'acknowledged' or r.status = 'final' then return public.perf_json(r, false); end if;
+  if r.status = 'disputed' then return jsonb_build_object('error', 'open-dispute'); end if;
+  update public.perf_reviews set status = 'acknowledged', acknowledged_at = now(),
+         dispute_until = least(dispute_until, now()), rev = rev + 1, updated_at = now()
+   where id = r.id returning * into r;
+  perform public.perf_log(r.id, r.team_member_id, 'acknowledged', '{}'::jsonb);
+  return public.perf_json(r, false);
+end $$;
+
+revoke all on function public.perf_code_fresh() from public, anon, authenticated;
+revoke all on function public.perf_guarded(uuid) from public, anon, authenticated;
+revoke all on function public.perf_guard_info() from public, anon, authenticated;
+revoke all on function public.perf_guard_set(boolean) from public, anon, authenticated;
+revoke all on function public.perf_mine() from public, anon, authenticated;
+revoke all on function public.perf_dispute(uuid, jsonb) from public, anon, authenticated;
+revoke all on function public.perf_acknowledge(uuid) from public, anon, authenticated;
+grant execute on function public.perf_guard_info() to authenticated;
+grant execute on function public.perf_guard_set(boolean) to authenticated;
+grant execute on function public.perf_mine() to authenticated;
+grant execute on function public.perf_dispute(uuid, jsonb) to authenticated;
+grant execute on function public.perf_acknowledge(uuid) to authenticated;
+
+-- END OF MY PERFORMANCE BEHIND AN EMAIL CODE ---------------------------------
+
+-- ===========================================================================
+-- MY PERFORMANCE ALWAYS ASKS FOR AN EMAIL CODE — the lock is no longer a
+-- member's own switch.
+-- 2026-09-24. Safe to run twice. Run after 2026-09-24-performance-email-code.sql.
+-- Rollback at the foot. Mirrored byte for byte in supabase/schema.sql under
+-- the same banner; tests/perf.js compares the two.
+--
+-- WHAT CHANGED. The user, on 2026-09-24: the page "mandatory requires otp
+-- pin", so a tick to turn it on or off is useless. Every member's own
+-- reviews now ask for a code emailed to them in the last 15 minutes, with
+-- no switch: perf_guarded answers true for everybody and perf_guard_set
+-- refuses to turn it off. The `email_code` column stays, unread, so the
+-- rollback is two function bodies.
+--
+-- ROLLBACK
+--   re-run perf_guarded and perf_guard_set from
+--   2026-09-24-performance-email-code.sql.
+-- ===========================================================================
+
+/* Every member's reviews are behind the code. */
+create or replace function public.perf_guarded(p_member uuid)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select true
+$$;
+
+/* The switch is gone. Kept as a function so an open page from before this
+   change is refused in words rather than by a missing function. */
+create or replace function public.perf_guard_set(p_on boolean)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare m public.team_members;
+begin
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if not coalesce(p_on, true) then return jsonb_build_object('error', 'always-on'); end if;
+  return jsonb_build_object('ok', true, 'on', true);
+end $$;
+
+revoke all on function public.perf_guarded(uuid) from public, anon, authenticated;
+revoke all on function public.perf_guard_set(boolean) from public, anon, authenticated;
+grant execute on function public.perf_guard_set(boolean) to authenticated;
+
+-- END OF MY PERFORMANCE ALWAYS ASKS FOR AN EMAIL CODE ------------------------
+
+-- ===========================================================================
+-- A TASK MAY BE MADE FOR A PAST CLIENT — the Client scope takes active and
+-- paused clients, and past ones when asked.
+-- 2026-09-24. Safe to run twice. Run after 2026-09-23-operations-phase4.sql.
+-- Rollback at the foot. Mirrored byte for byte in supabase/schema.sql under
+-- the same banner; tests/ops.js compares the two.
+--
+-- WHAT CHANGED. The new task sheet offered "Include paused clients"; the
+-- user asked for "Include past clients" (2026-09-24). A paused client is
+-- still a client, so paused is offered by default and the tick adds past
+-- clients, whose renewal and wind-down work is still work. The check is
+-- still made once, at creation.
+--
+-- ROLLBACK
+--   re-run ops_scope_error from 2026-09-23-operations-phase4.sql.
+-- ===========================================================================
+
+create or replace function public.ops_scope_error(p_scope text, p_client uuid)
+returns text
+language plpgsql stable as $$
+declare st text;
+begin
+  if p_scope = 'internal' then return null; end if;
+  if p_scope not in ('client', 'lead') then return 'bad-scope'; end if;
+  if p_client is null then return 'client-required'; end if;
+  select stage into st from public.clients where id = p_client;
+  if st is null then return 'client-required'; end if;
+  if p_scope = 'client' and st not in ('active', 'paused', 'past') then return 'client-not-active'; end if;
+  if p_scope = 'lead' and st not in ('lead', 'contacted', 'proposal') then return 'not-a-lead'; end if;
+  return null;
+end $$;
+
+-- END OF A TASK MAY BE MADE FOR A PAST CLIENT --------------------------------

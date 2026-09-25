@@ -3,6 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- White to the edge of the browser's own bar: the page, Safari's header
+     and Chrome's tab strip on a phone are one surface. -->
+<meta name="theme-color" content="#ffffff">
+<meta name="color-scheme" content="light">
 <!-- The front door of an internal tool. Nothing here is for a search engine. -->
 <meta name="robots" content="noindex, nofollow">
 <title>Digital Portal</title>
@@ -11,7 +15,7 @@
 <link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
 <!-- The one brand face, fetched alongside the stylesheet rather than after it. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260923a">
+<link rel="stylesheet" href="/css/portal.css?v=20260925c">
 <style>
   /* A cover and nothing else: the mark at the top, the name in the middle.
      There is no sign in here and no list of the rooms inside, because every
@@ -24,9 +28,12 @@
      set of tokens: the same ground, the same ink, the same display face. It
      needs no script, so it still reads with JavaScript off. */
   html, body { height: 100%; }
+  /* White, not the portal's off-white ground: a cover with nothing on it but
+     the mark and a name has no cards to lift off a ground, so the ground is
+     the page (the user, 2026-09-24). */
   body {
     margin: 0; display: flex; flex-direction: column;
-    background: var(--page); color: var(--ink);
+    background: var(--card); color: var(--ink);
   }
   .doorbar {
     height: var(--head-h); flex: 0 0 auto;
@@ -44,16 +51,14 @@
        the optical centre of what is left rather than below it. */
     padding: 0 24px calc(var(--head-h) / 2);
   }
-  /* The display scale this portal already uses (24px, 26px on the review hero,
-     21px on a phone), not a landing page headline. At 56px the title was more
-     than twice the height of the 26px mark above it, which put the label above
-     the brand; at this size the mark leads and the word underneath names the
-     room. Tracking loosens to -.02em with it, because -.03em is a correction
-     for large type and reads as cramped once the type is small. */
+  /* A name, not a headline: the room is named at the size a label is read
+     at, in the ink the portal's secondary text takes, so the mark leads and
+     the page reads as quiet rather than announced (the user, 2026-09-24:
+     "smaller words, to be more minimalist and modern"). It was the display
+     face at 22 to 30px. */
   .door h1 {
-    margin: 0; font-family: var(--font-head); font-weight: 600;
-    font-size: clamp(22px, 4.4vw, 30px); letter-spacing: -.02em;
-    line-height: 1.2; text-align: center;
+    margin: 0; font-weight: 500; font-size: 15px; letter-spacing: -.005em;
+    line-height: 1.4; text-align: center; color: var(--ink-soft);
   }
   @media (max-width: 640px) { .doorbar { padding: 0 16px; } }
 </style>

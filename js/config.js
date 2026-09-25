@@ -23,7 +23,7 @@ window.ADSPACE_ORG = {
   // The KOC job form a creator fills in for payment, named on their own page
   // once their work has been approved.
   ap01: '/ap01.html',
-  // The letterhead: the monogram top right and bottom centre, the wordmark
+  // The letterhead: the monogram top right (the letterhead only), the wordmark
   // set in Optima, the text in Slate Book, the heavier lines in Slate
   // Regular.
   // Files, not font names, same origin or served with CORS. A blank mark

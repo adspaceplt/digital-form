@@ -63,6 +63,15 @@
       failOne: '{file} could not be uploaded. Please try again.',
       failMany: '{n} files could not be uploaded. Please try again.',
 
+      since: 'Creator since {d}',
+      bookingsN: function (n) { return n + (n === 1 ? ' booking' : ' bookings'); },
+      linksEdit: 'Edit links', linksAdd: 'Add links', linksTitle: 'Profile links',
+      linksNone: 'No profile links.',
+      save: 'Save', cancel: 'Cancel', close: 'Close', saved: 'Saved.', noChange: 'No change.',
+      linkBad: 'This is not a profile link: {url}',
+      linkTaken: 'This profile is registered to another creator. Please contact your ADspace account manager.',
+      linkNone: 'Keep at least one profile link.',
+      linkFail: 'Not saved. Please try again.',
       payHead: 'Payment details', payLine: 'Approved. Please complete your payment details.',
       payGo: 'Fill in the form',
       rateHead: 'Your experience',
@@ -114,6 +123,15 @@
       failOne: '{file} 上传失败，请重试。',
       failMany: '{n} 个文件上传失败，请重试。',
 
+      since: '{d} 起合作',
+      bookingsN: function (n) { return n + ' 个合作'; },
+      linksEdit: '编辑链接', linksAdd: '添加链接', linksTitle: '主页链接',
+      linksNone: '暂无主页链接。',
+      save: '保存', cancel: '取消', close: '关闭', saved: '已保存。', noChange: '没有更改。',
+      linkBad: '此链接不是主页链接：{url}',
+      linkTaken: '此主页已登记在另一位创作者名下，请联系您的 ADspace 客户经理。',
+      linkNone: '请至少保留一个主页链接。',
+      linkFail: '未能保存，请重试。',
       rateHead: '合作体验',
       rateStar: function (n) { return '5 星中的 ' + n + ' 星'; },
       rateThanks: '感谢您的评分。',
@@ -222,9 +240,10 @@
     $('app').hidden = false;
     var cr = feed.creator || {};
     $('whoName').textContent = cr.name || '';
-    $('whoLine').textContent = '';
+    paintHead();
     if (window.ADspaceChrome) window.ADspaceChrome.preparedFor(t().preparedFor, cr.name || '');
     $('signOutBtn').querySelector('span').textContent = t().signOut;
+    $('signOutBtn').setAttribute('aria-label', t().signOut);
     $('signOutBtn').hidden = false;
 
     var rows = feed.bookings || [];
@@ -235,6 +254,122 @@
     $('noWorkText').textContent = t().noneText;
 
     paintQueue(rows);
+  }
+
+  /* ---- Who they are, and their profile links ----------------------------
+     The head reads like the console's record of them: the name, since when
+     and how many bookings, then the profile links a client opens on the
+     selection page. The creator keeps those up to date here, straight into
+     the one table the team edits too; the database reads every link and
+     files every change, so there is no approval round and nothing to drift.
+     Never the fee: the rate on a booking is the client's price. */
+  var PLAT_ORDER = ['xhs', 'instagram', 'tiktok', 'facebook'];
+  var PLACEHOLDER = {
+    xhs: 'https://www.xiaohongshu.com/user/profile/…',
+    instagram: 'https://www.instagram.com/yourname',
+    tiktok: 'https://www.tiktok.com/@yourname',
+    facebook: 'https://www.facebook.com/yourname'
+  };
+  var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+
+  function monthYear(ts) {
+    var x = new Date(ts);
+    if (!ts || isNaN(x)) return '';
+    if (lang === 'zh') return x.getFullYear() + '年' + (x.getMonth() + 1) + '月';
+    return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sept','Oct','Nov','Dec'][x.getMonth()] + ' ' + x.getFullYear();
+  }
+  function profiles() {
+    var list = ((feed && feed.creator) || {}).profiles || [];
+    return list.slice().sort(function (a, b) {
+      return PLAT_ORDER.indexOf(a.platform) - PLAT_ORDER.indexOf(b.platform);
+    });
+  }
+  /* A handle is shown where it reads as a name; rednote keeps a profile id in
+     that field, which says nothing to anybody. */
+  function linkWord(p) {
+    var name = PLAT[lang][p.platform] || p.platform;
+    var h = p.handle && p.handle.length <= 18 && p.platform !== 'xhs' ? (p.platform === 'tiktok' ? '@' : '') + p.handle : '';
+    return name + (h ? ' ' + h : '');
+  }
+
+  function paintHead() {
+    var cr = (feed && feed.creator) || {};
+    var live = (feed.bookings || []).filter(liveBooking).length;
+    var meta = [];
+    if (cr.since) meta.push(fill(t().since, { d: monthYear(cr.since) }));
+    if (live) meta.push(t().bookingsN(live));
+    $('whoLine').textContent = meta.join(' · ');
+    $('whoLine').hidden = !meta.length;
+    var list = profiles();
+    $('crLinks').innerHTML = list.length
+      ? list.map(function (p) {
+          return '<a class="plink" href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(linkWord(p)) + OUT + '</a>';
+        }).join('')
+      : '<p class="crlinks-none">' + esc(t().linksNone) + '</p>';
+    $('linksEditWord').textContent = list.length ? t().linksEdit : t().linksAdd;
+  }
+
+  function linksFields() {
+    var list = profiles();
+    var html = PLAT_ORDER.map(function (pl) {
+      var mine = list.filter(function (p) { return p.platform === pl; });
+      if (!mine.length) mine = [{ url: '' }];
+      return mine.map(function (p, i) {
+        var id = 'lk_' + pl + '_' + i;
+        return '<div class="row"><div><label class="field-label" for="' + id + '">' + esc(PLAT[lang][pl]) + '</label>' +
+          '<input class="input" id="' + id + '" data-plat="' + pl + '" type="url" inputmode="url" autocapitalize="off" ' +
+          'autocomplete="off" spellcheck="false" maxlength="300" placeholder="' + esc(PLACEHOLDER[pl]) + '" value="' + esc(p.url || '') + '"></div></div>';
+      }).join('');
+    }).join('');
+    $('linksFields').innerHTML = html;
+  }
+
+  function linksMsg(text, tone) {
+    $('linksMsg').textContent = text || '';
+    $('linksMsg').className = 'msg' + (tone ? ' ' + tone : '');
+  }
+
+  function openLinks() {
+    $('linksTitle').textContent = t().linksTitle;
+    $('linksSave').textContent = t().save;
+    $('linksCancel').textContent = t().cancel;
+    $('linksClose').setAttribute('aria-label', t().close);
+    linksFields();
+    linksMsg('');
+    $('crLinksMsg').textContent = '';
+    $('crLinksMsg').className = 'msg';
+    window.ADspaceSheet.show($('linksSheet'), { opener: $('linksEdit') });
+  }
+
+  function saveLinks() {
+    var inputs = Array.prototype.slice.call($('linksFields').querySelectorAll('input'));
+    inputs.forEach(function (i) { i.removeAttribute('aria-invalid'); });
+    var urls = inputs.map(function (i) { return i.value.trim(); }).filter(Boolean);
+    if (!urls.length) { linksMsg(t().linkNone, 'err'); return; }
+    var btn = $('linksSave');
+    btn.disabled = true;
+    db.rpc('creator_set_profiles', { p_code: code, p_profiles: urls }).then(function (r) {
+      btn.disabled = false;
+      var d = r.data || {};
+      if (r.error || !d || (d.error && d.error !== 'unrecognised' && d.error !== 'taken' && d.error !== 'none')) {
+        linksMsg(t().linkFail, 'err');
+        return;
+      }
+      if (d.error) {
+        var bad = d.url && inputs.filter(function (i) { return i.value.trim() === d.url; })[0];
+        if (d.error === 'unrecognised') linksMsg(fill(t().linkBad, { url: d.url || '' }), 'err');
+        else if (d.error === 'taken') linksMsg(t().linkTaken, 'err');
+        else linksMsg(t().linkNone, 'err');
+        if (bad) { bad.setAttribute('aria-invalid', 'true'); bad.focus(); }
+        return;
+      }
+      feed.creator.profiles = d.profiles || [];
+      window.ADspaceSheet.clean();
+      window.ADspaceSheet.close();
+      paintHead();
+      $('crLinksMsg').textContent = d.changed === false ? t().noChange : t().saved;
+      $('crLinksMsg').className = 'msg ok';
+    }).catch(function () { btn.disabled = false; linksMsg(t().linkFail, 'err'); });
   }
 
   /* ---- The work queue ---------------------------------------------------
@@ -814,6 +949,7 @@
        booking painted, so the sign-in cover carried an icon-only button with
        no name, offering to sign out of a session nobody had yet. */
     forgetBtn.querySelector('span').textContent = t().signOut;
+    forgetBtn.setAttribute('aria-label', t().signOut);
     forgetBtn.hidden = true;
     /* First in the row, so it sits left of the language toggle exactly as the
        client portal's does. Appended, it landed on the far right and the two
@@ -821,6 +957,13 @@
     chromeActions.insertBefore(forgetBtn, chromeActions.firstChild);
   }
   $('signOutBtn').addEventListener('click', function () { forget(); askCode(); });
+  $('linksEdit').addEventListener('click', openLinks);
+  $('linksSave').addEventListener('click', saveLinks);
+  $('linksCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('linksClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('linksFields').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); saveLinks(); }
+  });
 
   $('codeGo').addEventListener('click', function () {
     var c = tidy($('codeInput').value);

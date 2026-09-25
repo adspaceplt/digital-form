@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- White to the edge of the browser's own bar, as the front door is. -->
+<meta name="theme-color" content="#ffffff">
+<meta name="color-scheme" content="light">
 <!-- Nothing on this host is for a search engine, and a 404 least of all. -->
 <meta name="robots" content="noindex, nofollow">
 <title>Page not found</title>
@@ -11,7 +14,7 @@
 <link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
 <!-- The one brand face, fetched alongside the stylesheet rather than after it. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260923a">
+<link rel="stylesheet" href="/css/portal.css?v=20260925c">
 <style>
   /* The host's own 404, drawn from css/portal.css so a wrong address reads as
      this portal rather than as a page from somewhere else. It is the cover
@@ -19,11 +22,12 @@
      what happened, the line says what to do about it, and the line never
      restates the title.
 
-     Both languages, printed rather than switched, because every other cover in
-     this portal carries both and this page has no script to choose with. It is
-     the same composition as index.html — the mark on a bar of the portal's own
-     height, the panel on the optical centre of what is left — so the two root
-     pages of this host agree with each other.
+     English only (the user, 2026-09-24): a wrong address on this host is
+     almost always the team's own, and the client covers inside the portal keep
+     both languages. It is the same composition as index.html — the mark on a
+     bar of the portal's own height, the panel on the optical centre of what is
+     left, a white ground to the browser's edge — so the two root pages of this
+     host agree with each other.
 
      What went with the old page: a `noscript` redirect to adspacestudios.com,
      which was there because that page could not draw itself without script.
@@ -34,7 +38,7 @@
   html, body { height: 100%; }
   body {
     margin: 0; display: flex; flex-direction: column;
-    background: var(--page); color: var(--ink);
+    background: var(--card); color: var(--ink);
   }
   .doorbar {
     height: var(--head-h); flex: 0 0 auto;
@@ -52,22 +56,17 @@
        bottom and the panel sits on the optical centre of what is left. */
     padding: 24px 24px calc(24px + var(--head-h) / 2);
   }
-  .door-panel { max-width: 440px; width: 100%; text-align: center; }
+  /* Small and quiet, as the front door is: the title at the panel title
+     size, the line at the console's body size, the two actions small. */
+  .door-panel { max-width: 400px; width: 100%; text-align: center; }
   .door-panel h1 {
-    margin: 0 0 10px; font-family: var(--font-head); font-weight: 600;
-    font-size: 24px; letter-spacing: -.02em; line-height: 1.25;
+    margin: 0 0 6px; font-weight: 600;
+    font-size: 17px; letter-spacing: -.01em; line-height: 1.3;
   }
-  .door-panel p { margin: 0; color: var(--ink-soft); font-size: 15px; line-height: 1.65; }
-  /* The second language is the same line in another voice, not a second
-     message, so it sits under the first at one step and in the same ink. */
-  .door-zh { margin-top: 16px; }
-  .door-zh h2 {
-    margin: 0 0 8px; font-weight: 600; font-size: 17px; letter-spacing: -.01em;
-    line-height: 1.3; color: var(--ink);
-  }
+  .door-panel p { margin: 0; color: var(--ink-soft); font-size: 14px; line-height: 1.6; }
   /* The way out, and the way to ask. Equal halves on a phone, as every other
      pair of actions in this portal is. */
-  .door-acts { margin-top: 24px; display: flex; gap: 8px; justify-content: center; }
+  .door-acts { margin-top: 20px; display: flex; gap: 8px; justify-content: center; }
   /* `.btn` carries `flex: 1` for the rows it usually sits in, which here made
      Contact support a 316px slab beside a 116px one. At a desk each takes its
      own width off the 116px floor; on a phone they are equal halves. */
@@ -90,13 +89,9 @@
   <div class="door-panel">
     <h1>Page not found</h1>
     <p>Please check the link or contact your ADspace account manager.</p>
-    <div class="door-zh" lang="zh">
-      <h2>找不到页面</h2>
-      <p>请检查链接，或联系您的 ADspace 客户经理。</p>
-    </div>
     <div class="door-acts">
-      <a class="btn btn-primary" href="https://adspacestudios.com" rel="nofollow">Visit website</a>
-      <a class="btn" href="mailto:advertise@adspacestudios.com?subject=Digital%20Portal%20assistance">Contact support</a>
+      <a class="btn btn-sm btn-primary" href="https://adspacestudios.com" rel="nofollow">Visit website</a>
+      <a class="btn btn-sm" href="mailto:advertise@adspacestudios.com?subject=Digital%20Portal%20assistance">Contact support</a>
     </div>
   </div>
 </main>

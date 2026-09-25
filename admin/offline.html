@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#ffffff">
+<title>No connection</title>
+<script>try{var t=localStorage.getItem('adspace-theme');if(t==='dark'||(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
+<style>
+  /* Served by /admin/sw.js when the console cannot reach the network, so it
+     carries everything it needs: css/portal.css is not stored by the worker
+     (a stored stylesheet is how a stale console gets served), and this page
+     restates only the few tokens it draws with, at their portal values. It is
+     the cover the rest of the portal uses: the title says what happened, the
+     line says what to do, the one action does it. */
+  :root {
+    --ink: #1b1a17; --ink-soft: #524e47; --card: #ffffff;
+    --fill: #1b1a17; --on-fill: #ffffff; --action-ring: #8ab4f8;
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    --ink: #f2efec; --ink-soft: #cdc8c3; --card: #1f1f1f;
+    --fill: #f2efec; --on-fill: #1c1a19;
+    color-scheme: dark;
+  }
+  html, body { height: 100%; }
+  body {
+    margin: 0; display: flex; flex-direction: column;
+    background: var(--card); color: var(--ink); font: 14px/1.55 var(--font);
+  }
+  .bar { height: 64px; display: flex; align-items: center; padding: 0 24px; flex: 0 0 auto; }
+  .bar img { height: 26px; width: auto; display: block; }
+  /* One flat colour on transparent, so it is inverted rather than shipped twice. */
+  :root[data-theme="dark"] .bar img { filter: invert(1) brightness(1.15); }
+  .door { flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
+    padding: 24px 24px calc(24px + 32px); }
+  .panel { max-width: 400px; width: 100%; text-align: center; }
+  h1 { margin: 0 0 6px; font-size: 17px; font-weight: 600; letter-spacing: -.01em; line-height: 1.3; }
+  p { margin: 0; color: var(--ink-soft); line-height: 1.6; }
+  button {
+    margin-top: 20px; min-width: 116px; min-height: 38px; padding: 0 16px;
+    border: 0; border-radius: 10px; background: var(--fill); color: var(--on-fill);
+    font: 600 13px var(--font); cursor: pointer;
+  }
+  button:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action-ring); }
+  @media (pointer: coarse) { button { min-height: 44px; } }
+  @media (max-width: 640px) {
+    .bar { height: 56px; padding: 0 16px; }
+    .door { padding: 20px 16px 48px; }
+    button { width: 100%; }
+  }
+</style>
+</head>
+<body>
+  <div class="bar"><img src="/admin/icons/wordmark.png" alt="ADspace"></div>
+  <main class="door">
+    <div class="panel">
+      <h1>No connection</h1>
+      <p>Check the connection, then try again.</p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </div>
+  </main>
+</body>
+</html>

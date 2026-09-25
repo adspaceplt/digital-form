@@ -13,6 +13,16 @@
      The console rail is this page's, so it asks the chrome to wire that one
      the same way rather than repeating the fallback here. */
   if (window.ADspaceChrome) window.ADspaceChrome.mark('sideLogo', 'sideWordmark');
+  /* Installable, and a lost connection answered with a page that says so.
+     The worker caches nothing else (see /admin/sw.js), so a release still
+     reaches everybody on their next load. */
+  try {
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/admin/sw.js', { scope: '/admin/' }).catch(function () {});
+      });
+    }
+  } catch (e) {}
   if (!API.configured || !db) { $('notConfigured').hidden = false; return; }
 
   /* One dropdown in plain language beats two dropdowns of jargon. */
@@ -205,8 +215,17 @@
     if (e.key === 'Escape' && !$('acctMenu').hidden) { shutAcct(); $('acctBtn').focus(); }
   });
 
+  /* My performance is the person's own record, so it opens from who they
+     are rather than from the rail everybody shares. */
+  $('myPerf').addEventListener('click', function () {
+    shutAcct();
+    showSection('mine');
+  });
+  /* Signing out ends a performance unlock at once rather than leaving it to
+     run out on a machine somebody else may sit at next. */
   $('signOut').addEventListener('click', function () {
-    db.auth.signOut().then(function () { location.reload(); });
+    var out = function () { db.auth.signOut().then(function () { location.reload(); }); };
+    if (window.ADspacePerf && window.ADspacePerf.lock) window.ADspacePerf.lock(out); else out();
   });
   $('noTeamOut').addEventListener('click', function () {
     db.auth.signOut().then(function () { location.reload(); });
@@ -343,9 +362,14 @@
        falling back for them, exactly as `ops_granted()` does in the
        database. A group given `{"ops":"work"}` reads its own work and
        nothing else, today and after somebody adds a group next year. */
-    ops:       ['all', 'reports', 'workflows', 'time']
+    ops:       ['all', 'reports', 'workflows', 'time'],
+    /* Everybody's monthly performance review. Granted and never inherited
+       like the four above, and for the same reason: administering the team
+       is not reading everybody's scores. The database asks for the master
+       code on top of this, every time. */
+    team:      ['performance']
   };
-  var OPS_GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1 };
+  var OPS_GRANTED = { 'ops.all': 1, 'ops.reports': 1, 'ops.workflows': 1, 'ops.time': 1, 'team.performance': 1 };
   var RANK = { none: 0, view: 1, work: 2, manage: 3 };
   function level(key) {
     /* No key is no access, never an exception. A permission check that throws
@@ -383,6 +407,11 @@
       });
     }
     if (name === 'work') return may('ops', 'view');
+    /* Team is two jobs gated apart: members and groups, and the monthly
+       reviews. Either opens the route; the tab strip shows what is held. */
+    if (name === 'team') return may('team', 'view') || may('team.performance', 'view');
+    /* Everybody on the team has a record of their own to read. */
+    if (name === 'mine') return Boolean(me && me.id);
     return may(name, 'view');
   }
 
@@ -462,7 +491,8 @@
     links: 'Short Links',
     register: 'Documents',
     services: 'Services',
-    team: 'Team'
+    team: 'Team',
+    mine: 'My performance'
   };
   /* WHAT EACH SECTION IS FOR, in one line, while the team is new to it.
      This portal carries no explanatory copy, and the user asked for exactly
@@ -485,7 +515,8 @@
     links:     'Short links for slides, print and QR codes, served from ' + ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '.',
     register:  'Every document issued through the portal, and its reference.',
     services:  'The rate card every quotation is priced from.',
-    team:      'Team members, user groups and what each group may open.'
+    team:      'Team members, user groups and what each group may open.',
+    mine:      'Your monthly performance reviews, once each is released at your 1-1.'
   };
   var INTRO_SHOWS = 3;
   function introSeen(name) {
@@ -563,6 +594,7 @@
     $('sectionRegister').hidden  = name !== 'register';
     $('sectionServices').hidden  = name !== 'services';
     $('sectionTeam').hidden      = name !== 'team';
+    $('sectionMine').hidden      = name !== 'mine';
     $('sectionTitle').querySelector('.console-title-word').textContent = SECTION_TITLE[name];
     $('sectionTitle').setAttribute('aria-label', SECTION_TITLE[name] + ', about this section');
     paintIntro(name);
@@ -587,8 +619,14 @@
       return;
     }
     if (name === 'team') {
-      if (!window.ADspaceTeam) { enterLater = 'team'; return; }
-      window.ADspaceTeam.enter();
+      if (!window.ADspaceTeam || !window.ADspacePerf) { enterLater = 'team'; return; }
+      window.ADspacePerf.enterTeam();
+      setUrl();
+      return;
+    }
+    if (name === 'mine') {
+      if (!window.ADspacePerf) { enterLater = 'mine'; return; }
+      window.ADspacePerf.enterMine();
       setUrl();
       return;
     }
@@ -708,6 +746,9 @@
     } else if (section === 'work' && window.ADspaceOps) {
       var w = window.ADspaceOps.urlState();
       Object.keys(w).forEach(function (k) { if (w[k]) q.push(k + '=' + encodeURIComponent(w[k])); });
+    } else if (section === 'team' && window.ADspacePerf) {
+      var pf = window.ADspacePerf.urlState();
+      Object.keys(pf).forEach(function (k) { if (pf[k]) q.push(k + '=' + encodeURIComponent(pf[k])); });
     }
     return q;
   }
@@ -888,39 +929,42 @@
     /* A deleted task takes its own events with it, so the only record of the
        deletion is here. Filed under My Work, which is the section it is about. */
     'ops.deleted':           ['Task deleted', 'is-danger', 'ops'],
+    'ops.month_deleted':     ['Month deleted', 'is-danger', 'ops'],
+    /* An admin setting the next task number. */
+    'ops.numbering':         ['Numbering changed', '', 'ops'],
     'client.added':          ['Client added', 'is-ok', 'clients'],
     'team.added':            ['Team member added', 'is-ok', 'team'],
     'team.changed':          ['Access changed', 'is-warn', 'team'],
     'team.edited':           ['Team member edited', '', 'team'],
-    'team.invited':          ['Sign-in invitation sent', '', 'team'],
+    'team.invited':          ['Invitation sent', '', 'team'],
     'team.group_added':      ['User group added', 'is-ok', 'team'],
     'team.group_changed':    ['User group changed', 'is-warn', 'team'],
     'team.group_removed':    ['User group removed', 'is-danger', 'team'],
     'client.removed':        ['Client removed', 'is-danger', 'review'],
-    'review.removed':        ['Removed from Content Review', 'is-danger', 'review'],
+    'review.removed':        ['Removed from review', 'is-danger', 'review'],
     'client.edited':         ['Client edited', '', 'clients'],
-    'client.stage':          ['Stage moved', '', 'clients'],
-    'client.billing':        ['Billing details saved', '', 'clients'],
-    'client.brand':          ['Brand profile saved', '', 'clients'],
-    'client.service':        ['Service line added', 'is-ok', 'clients'],
-    'client.service_changed': ['Service line changed', '', 'clients'],
-    'client.service_removed': ['Service line removed', 'is-danger', 'clients'],
+    'client.stage':          ['Stage changed', '', 'clients'],
+    'client.billing':        ['Billing updated', '', 'clients'],
+    'client.brand':          ['Brand updated', '', 'clients'],
+    'client.service':        ['Service added', 'is-ok', 'clients'],
+    'client.service_changed': ['Service changed', '', 'clients'],
+    'client.service_removed': ['Service removed', 'is-danger', 'clients'],
     'document.issued':       ['Document issued', 'is-ok', 'register'],
     'document.voided':       ['Document voided', 'is-danger', 'register'],
     'document.restored':     ['Document restored', 'is-ok', 'register'],
     'document.deleted':      ['Document deleted', 'is-danger', 'register'],
     'document.reissued':     ['Document reissued', '', 'register'],
-    'register.added':        ['Document reference added', 'is-ok', 'register'],
-    'register.edited':       ['Document reference edited', '', 'register'],
-    'service.added':         ['Rate card line added', 'is-ok', 'services'],
-    'service.changed':       ['Rate card line changed', '', 'services'],
-    'service.off':           ['Rate card line set inactive', 'is-warn', 'services'],
-    'service.on':            ['Rate card line set active', 'is-ok', 'services'],
-    'service.deleted':       ['Rate card line deleted', 'is-danger', 'services'],
-    'client.touch':          ['Call or visit logged', '', 'clients'],
-    'client.review_on':      ['Added to Content Review', 'is-ok', 'clients'],
-    'contact.portal_on':     ['Portal access granted', 'is-ok', 'clients'],
-    'contact.portal_off':    ['Portal access revoked', 'is-warn', 'clients'],
+    'register.added':        ['Reference added', 'is-ok', 'register'],
+    'register.edited':       ['Reference edited', '', 'register'],
+    'service.added':         ['Rate line added', 'is-ok', 'services'],
+    'service.changed':       ['Rate line changed', '', 'services'],
+    'service.off':           ['Rate line inactive', 'is-warn', 'services'],
+    'service.on':            ['Rate line active', 'is-ok', 'services'],
+    'service.deleted':       ['Rate line deleted', 'is-danger', 'services'],
+    'client.touch':          ['Call/visit logged', '', 'clients'],
+    'client.review_on':      ['Added to review', 'is-ok', 'clients'],
+    'contact.portal_on':     ['Portal enabled', 'is-ok', 'clients'],
+    'contact.portal_off':    ['Portal revoked', 'is-warn', 'clients'],
     'contact.portal_invite': ['Invitation sent', '', 'clients'],
     'contact.deleted':       ['Contact deleted', 'is-danger', 'clients'],
     'request.raised':        ['Request raised', 'is-warn', 'clients'],
@@ -928,86 +972,90 @@
     'request.replied':       ['Request replied', '', 'clients'],
     'contact.added':         ['Contact added', 'is-ok', 'clients'],
     'contact.edited':        ['Contact edited', '', 'clients'],
-    'contact.restored':      ['Contact put back', 'is-ok', 'clients'],
-    'client.touch_edited':   ['Log entry edited', '', 'clients'],
-    'client.touch_removed':  ['Log entry removed', 'is-warn', 'clients'],
-    'client.touch_restored': ['Log entry put back', 'is-ok', 'clients'],
-    'client.action_done':    ['Next action done', 'is-ok', 'clients'],
-    'client.action_reopened':['Next action reopened', 'is-warn', 'clients'],
-    'contact.primary':       ['Main contact changed', '', 'clients'],
+    'contact.restored':      ['Contact restored', 'is-ok', 'clients'],
+    'client.touch_edited':   ['Call/visit edited', '', 'clients'],
+    'client.touch_removed':  ['Call/visit removed', 'is-warn', 'clients'],
+    'client.touch_restored': ['Call/visit restored', 'is-ok', 'clients'],
+    'client.action_done':    ['Action done', 'is-ok', 'clients'],
+    'client.action_reopened':['Action reopened', 'is-warn', 'clients'],
+    'contact.primary':       ['Main contact set', '', 'clients'],
     'contact.removed':       ['Contact removed', 'is-danger', 'clients'],
     'set.deleted':           ['Content set deleted', 'is-danger', 'review'],
     'post.deleted':          ['Post deleted', 'is-danger', 'review'],
-    'set.published':         ['Published to client', 'is-ok', 'review'],
-    'set.withdrawn':         ['Withdrawn from client', 'is-warn', 'review'],
+    'set.published':         ['Published', 'is-ok', 'review'],
+    'set.withdrawn':         ['Unpublished', 'is-warn', 'review'],
     'link.reset':            ['Access link reset', 'is-warn', 'review'],
-    'reapproval.requested':  ['Re-approval requested', 'is-warn', 'review'],
+    'reapproval.requested':  ['Resent for approval', 'is-warn', 'review'],
     /* What a client and a creator did, not only what we did. The record is
        what answers a dispute, and it held one side of every conversation:
        a client approved a post and the portal kept the verdict in `reviews`
        alone, which no screen reads as a history. These carry the name the
        person typed as the actor, so the row says who, what and when. */
-    'review.approved':       ['Approved by client', 'is-ok', 'review'],
-    'review.changes':        ['Changes requested by client', 'is-warn', 'review'],
-    'request.withdrawn':     ['Request withdrawn by client', 'is-warn', 'clients'],
-    'request.reinstated':    ['Request reinstated by client', '', 'clients'],
+    'review.approved':       ['Client approved', 'is-ok', 'review'],
+    'review.changes':        ['Changes requested', 'is-warn', 'review'],
+    'request.withdrawn':     ['Request withdrawn', 'is-warn', 'clients'],
+    'request.reinstated':    ['Request reinstated', '', 'clients'],
     // Short links. Named apart from link.reset above, which is the client's
     // access link and a different thing entirely.
-    'shortlink.created':     ['Short link created', 'is-ok', 'links'],
-    'shortlink.updated':     ['Short link changed', 'is-warn', 'links'],
-    'shortlink.deleted':     ['Short link deleted', 'is-danger', 'links'],
-    'shortlink.imported':    ['Short links imported', 'is-ok', 'links'],
+    'shortlink.created':     ['Link created', 'is-ok', 'links'],
+    'shortlink.updated':     ['Link changed', 'is-warn', 'links'],
+    'shortlink.deleted':     ['Link deleted', 'is-danger', 'links'],
+    'shortlink.imported':    ['Links imported', 'is-ok', 'links'],
     // Creator campaigns and the creators list behind them.
     'campaign.created':      ['Campaign created', 'is-ok', 'campaigns'],
     'campaign.edited':       ['Campaign edited', '', 'campaigns'],
-    'campaign.opened':       ['Sent to client', 'is-ok', 'campaigns'],
-    'campaign.closed':       ['Withdrawn from client', 'is-warn', 'campaigns'],
+    'campaign.opened':       ['Published', 'is-ok', 'campaigns'],
+    'campaign.closed':       ['Unpublished', 'is-warn', 'campaigns'],
     'campaign.deleted':      ['Campaign deleted', 'is-danger', 'campaigns'],
     'campaign.locked':       ['Selection accepted', 'is-ok', 'campaigns'],
-    'campaign.keyed':        ['Chosen for the client', '', 'campaigns'],
+    'campaign.keyed':        ['Picked for client', '', 'campaigns'],
     'campaign.unkeyed':      ['Selection undone', 'is-warn', 'campaigns'],
     'campaign.rate':         ['Rate changed', 'is-warn', 'campaigns'],
-    'campaign.stage':        ['Stage moved', '', 'campaigns'],
-    'campaign.unbooked':     ['Returned to options', 'is-warn', 'campaigns'],
-    'campaign.withdrawn':    ['Creator withdrew', 'is-danger', 'campaigns'],
-    'campaign.confirmed':    ['Selection confirmed by client', 'is-ok', 'campaigns'],
-    'campaign.submitted':    ['Draft handed in by creator', '', 'campaigns'],
-    'campaign.rated':        ['Creator rated the booking', '', 'campaigns'],
+    'campaign.stage':        ['Stage changed', '', 'campaigns'],
+    'campaign.unbooked':     ['Back to options', 'is-warn', 'campaigns'],
+    'campaign.withdrawn':    ['Creator withdrawn', 'is-danger', 'campaigns'],
+    'campaign.confirmed':    ['Selection confirmed', 'is-ok', 'campaigns'],
+    'campaign.submitted':    ['Draft submitted', '', 'campaigns'],
+    'campaign.rated':        ['Booking rated', '', 'campaigns'],
     'campaign.replaced':     ['Creator replaced', 'is-danger', 'campaigns'],
-    'campaign.reinstated':   ['Put back in production', 'is-ok', 'campaigns'],
-    'campaign.invoice':      ['Invoice number set', '', 'campaigns'],
+    'campaign.reinstated':   ['Creator reinstated', 'is-ok', 'campaigns'],
+    'campaign.invoice':      ['Invoice no. set', '', 'campaigns'],
     'campaign.invoice_file': ['Invoice uploaded', 'is-ok', 'campaigns'],
-    'campaign.invoice_removed': ['Invoice PDF removed', 'is-warn', 'campaigns'],
-    'campaign.bulk':         ['Shoot dates applied', '', 'campaigns'],
+    'campaign.invoice_removed': ['Invoice removed', 'is-warn', 'campaigns'],
+    'campaign.bulk':         ['Dates applied', '', 'campaigns'],
     'creator.added':         ['Creator added', 'is-ok', 'campaigns'],
     'creator.updated':       ['Creator edited', '', 'campaigns'],
     'creator.removed':       ['Creator removed', 'is-danger', 'campaigns'],
-    'creator.off':           ['Creator set inactive', 'is-warn', 'campaigns'],
-    'creator.on':            ['Creator set active', 'is-ok', 'campaigns'],
+    'creator.off':           ['Creator inactive', 'is-warn', 'campaigns'],
+    'creator.on':            ['Creator active', 'is-ok', 'campaigns'],
+    'creator.links':         ['Links updated', '', 'campaigns'],
+    'creator.links_self':    ['Creator updated links', 'is-warn', 'campaigns'],
+    'creator.links_restored': ['Links restored', 'is-ok', 'campaigns'],
+    'creator.code':          ['Portal link reset', 'is-warn', 'campaigns'],
     /* Written for months and never named here, so each row landed in the
        record with no label and no section: a tag a function writes is
        always one this map names. */
     'qr.created':            ['QR code created', 'is-ok', 'links'],
     'qr.revoked':            ['QR code revoked', 'is-warn', 'links'],
     'qr.restored':           ['QR code restored', 'is-ok', 'links'],
-    'document.signed':       ['Letter marked signed', 'is-ok', 'register'],
-    'document.unsigned':     ['Letter signature cleared', 'is-warn', 'register'],
+    'document.signed':       ['Letter signed', 'is-ok', 'register'],
+    'document.unsigned':     ['Signature cleared', 'is-warn', 'register'],
     'document.verified':     ['Letter verified', 'is-ok', 'register'],
     'document.superseded':   ['Letter superseded', 'is-warn', 'register'],
-    'campaign.review':       ['Draft decided by client', '', 'campaigns'],
-    'service.override':      ['Service line price overridden', 'is-warn', 'clients'],
+    'campaign.review':       ['Draft reviewed', '', 'campaigns'],
+    'service.override':      ['Price overridden', 'is-warn', 'clients'],
     /* Content Review wrote nothing for the everyday acts on a set. */
-    'set.created':           ['Content set created', 'is-ok', 'review'],
-    'set.renamed':           ['Content set renamed', '', 'review'],
+    'set.created':           ['Set created', 'is-ok', 'review'],
+    'set.renamed':           ['Set renamed', '', 'review'],
     'post.added':            ['Posts added', 'is-ok', 'review'],
     'post.edited':           ['Post edited', '', 'review'],
-    'client.handles':        ['Client handles saved', '', 'review'],
-    'client.profile':        ['Client logo or access code saved', '', 'review'],
+    'client.handles':        ['Handles updated', '', 'review'],
+    'client.profile':        ['Settings updated', '', 'review'],
     'client.drive':          ['Drive folder set', '', 'review'],
-    'drive.imported':        ['Drive assets imported', 'is-ok', 'review'],
+    'drive.imported':        ['Drive imported', 'is-ok', 'review'],
     /* A file the team handed in for a creator, from the console. */
-    'campaign.file_added':   ['Draft file uploaded by team', '', 'campaigns'],
-    'campaign.qc':           ['Quality checked before release', '', 'campaigns']
+    'campaign.file_added':   ['Draft uploaded', '', 'campaigns'],
+    'campaign.qc':           ['Quality checked', '', 'campaigns']
   };
   /* The same order as the rail, because they are the same eight sections and
      a person who has learned one sequence should not have to learn a second.
@@ -2685,9 +2733,15 @@
       window.ADspaceCRM.enter();
     },
     teamReady: function () {
-      if (enterLater !== 'team' || section !== 'team') return;
+      if (enterLater !== 'team' || section !== 'team' || !window.ADspacePerf) return;
       enterLater = '';
-      window.ADspaceTeam.enter();
+      window.ADspacePerf.enterTeam();
+    },
+    perfReady: function () {
+      if (enterLater === 'mine' && section === 'mine') { enterLater = ''; window.ADspacePerf.enterMine(); return; }
+      if (enterLater !== 'team' || section !== 'team' || !window.ADspaceTeam) return;
+      enterLater = '';
+      window.ADspacePerf.enterTeam();
     },
     opsReady: function () {
       if (enterLater !== 'work' || section !== 'work') return;
