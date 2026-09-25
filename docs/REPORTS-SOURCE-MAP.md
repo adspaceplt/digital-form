@@ -80,3 +80,31 @@ typed twice.
 - Totals derived from the transcription: Facebook and Instagram 17 posts,
   30,036 views, 185 interactions; TikTok 15 posts, 6,208 views, 56
   engagements. The calculation tests assert these against the fixture.
+
+## The page template (2026-09-25)
+
+The report wears the ADspace Rate Card & Packages paper, measured off the
+v2.0.5 file the user sent. They sent the first design back because the cover
+led with the best-performing post and the pages did not follow that template.
+
+| Element | Rate card | Report |
+|---|---|---|
+| Margin | 54pt | 54pt |
+| Head, left | `ADspace`, Optima 16.08pt, baseline 781.7 | Same, every page, cover included |
+| Head label | `FOR INTERNAL USE`, Slate Medium 7.92pt caps at x 264.5 | The client's name in the same face and place |
+| Cover | Title only, Slate Medium 25.92pt at x 126, baseline 497 | Same title position; client (Slate Regular 14pt) and month (Slate Book 11pt) under it; nothing else |
+| Page title | Slate Regular 18pt, baseline 753.8 | Same |
+| Sub heading | Slate Regular 11pt | Same |
+| Foot, left | `PRIVATE & CONFIDENTIAL` Slate Medium 7.92pt, then `v.2.0.5 exp. 20261231` in Slate Book Italic | Same caption, then the title, the month and the version or draft line |
+| Foot, right | `Page n of N`, Slate Book 7.92pt | Same, on the right margin |
+| Ink | #404040 | #404040 |
+
+The best-performing post and the figures now open the executive summary on
+page 2, not the cover. Slate Book Italic is not among the portal's font
+files, so the reference line is Slate Book slanted; adding
+`css/SlateBookItalic.TTF` would make it the real italic.
+
+Three layout faults the SKS render showed were fixed at the same time:
+- the executive summary's lists ran into the foot;
+- appendix thumbnails ran into the foot;
+- a platform page's last two notes spilled onto a page of their own. They now sit side by side where they fit.

@@ -26,12 +26,21 @@
   var CFG = window.ADSPACE_CONFIG || {};
 
   // ---- Page geometry ----------------------------------------------------------
+  /* Every measurement below is the ADspace Rate Card & Packages template's
+     own (v2.0.5, read off the file the user sent on 2026-09-23): a 54pt
+     margin, the Optima wordmark and a small capitals label on one line at the
+     head, PRIVATE & CONFIDENTIAL over an italic reference line and the page
+     count at the foot, the page title in Slate Regular 18pt, all text in the
+     one ink #404040. The report is an ADspace document, so it wears the same
+     paper as the rate card and the packages. */
   var W = 595.28, H = 841.89;
-  var M = 56.7;                 // 20mm
-  var R = W - M, CW = R - M;    // the text column: 481.9pt
+  var M = 54;                   // 0.75in, the rate card's margin
+  var R = W - M, CW = R - M;    // the text column: 487.3pt
   var PHI = 0.618;
-  var TOP = H - 74;             // first baseline under the running header
-  var FLOOR = 68;               // nothing draws below this; the foot is under it
+  var HEAD_Y = 781.7;           // the wordmark's baseline
+  var LABEL_X = 264.5;          // the head label, where the rate card sets FOR INTERNAL USE
+  var TOP = H - 88.1;           // the page title's baseline, as the rate card's Ala Carté
+  var FLOOR = 74;               // nothing draws below this; the foot is under it
   var GUT = 20;
 
   // ---- Words ------------------------------------------------------------------
@@ -207,7 +216,8 @@
   function listWords(items) {
     if (!items.length) return '';
     if (items.length === 1) return items[0];
-    return items.slice(0, -1).join(', ') + ' and ' + items[items.length - 1];
+    var own = items.some(function (s) { return / and /.test(s); });
+    return items.slice(0, -1).join(', ') + (own ? ', and ' : ' and ') + items[items.length - 1];
   }
 
   // ---- Assets -----------------------------------------------------------------
@@ -532,7 +542,7 @@
   function draw(PDF, pdf, fonts, logo, clientLogo, sh, mdl, thumbs, warn, opts) {
     var rep = mdl.rep;
     var book = fonts.font, reg = fonts.bold, med = fonts.med || reg, mark = fonts.mark || med;
-    var INK = PDF.rgb(0.106, 0.102, 0.090), SOFT = PDF.rgb(0.32, 0.31, 0.28), MUTE = PDF.rgb(0.42, 0.40, 0.38);
+    var INK = PDF.rgb(0.251, 0.251, 0.251), SOFT = PDF.rgb(0.32, 0.31, 0.28), MUTE = PDF.rgb(0.42, 0.40, 0.38);
     var LINE = PDF.rgb(0.85, 0.84, 0.82), HAIR = PDF.rgb(0.90, 0.89, 0.87), PAPER = PDF.rgb(1, 1, 1);
     var ACCENT = hexRgb(PDF, rep.accent, PDF.rgb(0.043, 0.341, 0.816));
     var ACCENT_SOFT = mix(PDF, ACCENT, 0.86);
@@ -599,17 +609,16 @@
         para(p, x, w, size, lh, f, color, true);
       });
     };
-    var sectionLabel = function (s, x, yy, color) { text(String(s || '').toUpperCase(), x, yy, 7.5, reg, color || MUTE); };
+    var sectionLabel = function (s, x, yy, color) { tline(String(s || ''), x, yy, 8.5, reg, color || MUTE, R - x); };
     var pageTitle = function (s, sub) {
-      tline(s, M, y - 4, 22, med, INK, CW); y -= 30;
+      tline(s, M, y, 18, reg, INK, CW); y -= 20;
       if (sub) { tline(sub, M, y, 9.5, book, MUTE, CW); y -= 16; }
-      y -= 6;
+      y -= 10;
     };
     var subTitle = function (s) {
       need(34);
-      rule(y + 6, M, R, LINE, 0.6);
-      y -= 14;
-      tline(s, M, y, 12, med, INK, CW); y -= 18;
+      y -= 8;
+      tline(s, M, y, 11.04, reg, INK, CW); y -= 16;
     };
     var fitImage = function (img, boxW, boxH) {
       var s = Math.min(boxW / img.width, boxH / img.height);
@@ -637,54 +646,20 @@
 
     // ---------------------------------------------------------------- Cover
     (function cover() {
+      /* The rate card's cover, and nothing else on it: the head and the foot
+         every page carries, and the title set in Slate Medium on the page's
+         golden axis, indented one step from the margin. Under it, whose report
+         and which month. What the month achieved is the executive summary's
+         to say, on the next page. */
       newPage('cover');
-      var leftW = CW * PHI, fieldX = M + leftW + GUT, fieldW = R - fieldX;
-      /* The field: the right 38.2% of the usable width, top margin to bottom
-         margin, in ink. The featured post sits at its golden point. */
-      rect(fieldX, M, fieldW, H - 2 * M, FIELD);
-      var best = mdl.best;
-      var fimg = best && thumbs[best.id];
-      if (best) {
-        var innerW = fieldW - 28;
-        var fy = M + (H - 2 * M) * (1 - PHI) + 60;   // the golden point from the foot
-        var d = fimg ? fitImage(fimg, innerW, 210) : null;
-        if (fimg) {
-          pg.page.drawImage(fimg, { x: fieldX + 14, y: fy, width: d.w, height: d.h });
-        }
-        var cy = fy - 16;
-        sectionLabel('Best-performing post', fieldX + 14, cy, PDF.rgb(0.72, 0.71, 0.68)); cy -= 15;
-        var tl = sh.linesOf(best.title || 'Untitled post', innerW, 10, med).slice(0, 3);
-        tl.forEach(function (ln) { sh.draw(pg.page, ln, fieldX + 14, cy, 10, PAPER); cy -= 13.5; });
-        var g = best._group;
-        var mline = g && g.volume ? fmt(best[g.volume]) + ' ' + METRIC_WORD[g.volume].toLowerCase() : '';
-        var eline = engOf(best) !== null ? fmt(engOf(best)) + ' ' + (g && g.engKey ? METRIC_WORD[g.engKey].toLowerCase() : 'engagements') : '';
-        cy -= 2;
-        tline([mline, eline].filter(Boolean).join('  ·  '), fieldX + 14, cy, 8.5, book, PDF.rgb(0.78, 0.77, 0.74), innerW);
-      }
-      // The mark, top left, on the page's own margin.
-      var ty = H - M - 10;
-      if (logo) { var mh = 22, mw = logo.width * (mh / logo.height); pg.page.drawImage(logo, { x: M, y: ty - mh + 4, width: mw, height: mh }); text('ADspace', M + mw + 8, ty - 12, 15, mark); }
-      else text('ADspace', M, ty - 12, 15, mark);
-      /* The title block on the upper golden axis: its top edge at 38.2% of the
-         page height from the top. */
-      var by = H - H * (1 - PHI);
-      sectionLabel('Performance report', M, by, MUTE); by -= 34;
-      var titleWords = String(rep.title || 'Social Media Accounts Report').toUpperCase();
-      var tlines = sh.linesOf(titleWords, leftW, 30, med);
-      tlines.forEach(function (ln) { sh.draw(pg.page, ln, M, by, 30, INK); by -= 36; });
-      by -= 6;
-      var clines = sh.linesOf(rep.client_name || '', leftW, 19, med);
-      clines.forEach(function (ln) { sh.draw(pg.page, ln, M, by, 19, INK); by -= 24; });
-      text(periodW, M, by, 14, book, SOFT); by -= 22;
-      rule(by + 6, M, M + 44, ACCENT, 1.2); by -= 18;
-      var vline = isDraft
-        ? 'Draft for internal review  ·  Generated ' + (stampWord(rep.generated_at) || longDate(new Date().toISOString().slice(0, 10)))
-        : 'Version ' + (rep.version_no || 1) + '  ·  Issued ' + stampWord(rep.generated_at);
-      text(vline, M, by, 9, book, MUTE); by -= 14;
-      if (rep.prepared_by_name) text('Prepared by ' + rep.prepared_by_name + ', ' + (CFG.agencyName || 'ADspace'), M, by, 9, book, MUTE);
-      // Confidentiality, bottom left.
-      text('Private and confidential. Prepared for ' + (rep.client_name || 'the client') + ' by ' + (ORG.name || 'ADSPACE PLT') + '.', M, M + 14, 8, book, MUTE);
-      text('Not for distribution beyond the client and the agency.', M, M + 2, 8, book, MUTE);
+      var cx = M + 72, cw = R - cx;
+      var cy = 497;
+      var tlines = sh.linesOf(String(rep.title || 'Social Media Accounts Report'), cw, 25.92, med);
+      cy += (tlines.length - 1) * 31;
+      tlines.forEach(function (ln) { sh.draw(pg.page, ln, cx, cy, 25.92, INK); cy -= 31; });
+      cy -= 2;
+      sh.linesOf(String(rep.client_name || ''), cw, 14, reg).forEach(function (ln) { sh.draw(pg.page, ln, cx, cy, 14, INK); cy -= 19; });
+      tline(periodW, cx, cy, 11.04, book, INK, cw);
     })();
 
     // ------------------------------------------------------- Executive summary
@@ -717,8 +692,8 @@
       y -= 8;
       // One chart: the month, post by post.
       subTitle(t.volumeWords.length === 1 ? t.volumeWords[0] + ' per post through the month' : 'Views, reach and impressions per post through the month');
-      chartByDate(M, y, CW, 150, mdl.posts.filter(function (p) { return p._group; }), mdl.groups);
-      y -= 150 + 26;
+      chartByDate(M, y, CW, 104, mdl.posts.filter(function (p) { return p._group; }), mdl.groups);
+      y -= 104 + 26;
       // The featured post and the two lists, side by side where there is room.
       need(150);
       var best = mdl.best;
@@ -744,7 +719,45 @@
       var obs = points(rep.insights && (rep.insights.performed_well || rep.insights.executive_summary)).slice(0, 3);
       var acts = points(rep.insights && rep.insights.next_actions).slice(0, 3);
       var ly = yTop;
-      var list = function (title, items, x, w) {
+      /* The two lists stand beside the featured post only where they fit on
+         the page; otherwise they follow it across the full column, breaking
+         over the page like any paragraph. They ran into the foot before. */
+      var listH = function (items, w) {
+        return 15 + (items.length ? items.reduce(function (t, it) { return t + sh.linesOf(it, w - 16, 9.5, book).length * 13 + 4; }, 0) : 14);
+      };
+      var halfW = (CW - GUT) / 2;
+      if (yTop - listH(obs, colR) - 6 - listH(acts, colR) < FLOOR &&
+          y - 14 - Math.max(listH(obs, halfW), listH(acts, halfW)) >= FLOOR) {
+        /* Under the featured post, the two lists side by side. */
+        y -= 14;
+        var yCols = y, low = y;
+        [[obs, 'Three observations', M], [acts, 'Three next actions', M + halfW + GUT]].forEach(function (c) {
+          ly = yCols;
+          list(c[1], c[0], c[2], halfW);
+          low = Math.min(low, ly);
+        });
+        y = low - 6;
+        return;
+      }
+      if (yTop - listH(obs, colR) - 6 - listH(acts, colR) < FLOOR) {
+        var flow = function (title, items) {
+          var first = items.length ? sh.linesOf(items[0], CW - 16, 9.5, book).length : 1;
+          need(29 + (first <= 4 ? first : 2) * 13); y -= 14;
+          sectionLabel(title, M, y); y -= 15;
+          if (!items.length) { text('None recorded.', M, y, 9.5, book, MUTE); y -= 14; return; }
+          items.forEach(function (it, i) {
+            var lines = sh.linesOf(it, CW - 16, 9.5, book);
+            need((lines.length <= 4 ? lines.length : 2) * 13);   // a short item is never split
+            text(String(i + 1), M, y, 9.5, med, ACCENT);
+            lines.forEach(function (ln) { need(13); sh.draw(pg.page, ln, M + 16, y, 9.5, INK); y -= 13; });
+            y -= 4;
+          });
+        };
+        flow('Three observations', obs);
+        flow('Three next actions', acts);
+        return;
+      }
+      function list(title, items, x, w) {
         sectionLabel(title, x, ly); ly -= 15;
         if (!items.length) { text('None recorded.', x, ly, 9.5, book, MUTE); ly -= 14; return; }
         items.forEach(function (it, i) {
@@ -753,7 +766,7 @@
           lines.forEach(function (ln) { sh.draw(pg.page, ln, x + 16, ly, 9.5, INK); ly -= 13; });
           ly -= 4;
         });
-      };
+      }
       list('Three observations', obs, xr, colR);
       ly -= 6;
       list('Three next actions', acts, xr, colR);
@@ -806,8 +819,8 @@
         y -= 120 + 26;
       }
       if (g.engKey && g.posts.some(function (p) { return engOf(p) !== null; })) {
-        subTitle(METRIC_WORD[g.engKey] + ' by post');
-        var rows = g.posts.filter(function (p) { return engOf(p) !== null; }).sort(function (a, b) { return engOf(b) - engOf(a); }).slice(0, 8);
+        subTitle(METRIC_WORD[g.engKey] + ', the five highest posts');
+        var rows = g.posts.filter(function (p) { return engOf(p) !== null; }).sort(function (a, b) { return engOf(b) - engOf(a); }).slice(0, 5);
         hbars(rows.map(function (p) { return { label: p.title || 'Untitled post', value: engOf(p), sub: dayWord(p.posted_on) }; }));
         y -= 8;
       }
@@ -839,9 +852,30 @@
         ps.forEach(function (p) { para(p, M, CW, 10.5, 15.5, book, INK, true); y -= 4; });
         y -= 4;
       };
-      block('What worked', g.worked);
-      block('What should improve', g.improve);
-      block('Recommended next actions', g.actions);
+      /* The notes a platform page ends on are short, so they stand side by
+         side in columns where they fit on the page, rather than one or two
+         lines spilling onto a page of their own; long ones stack. */
+      var notes = [['What worked', g.worked], ['What should improve', g.improve], ['Recommended next actions', g.actions]]
+        .filter(function (b) { return words(b[1]).trim(); });
+      if (notes.length > 1) {
+        var nw = (CW - GUT * (notes.length - 1)) / notes.length;
+        var laid = notes.map(function (b) {
+          var ls = []; points(b[1]).forEach(function (pt) { ls = ls.concat(sh.linesOf(pt, nw, 10, book)); ls.push(null); });
+          return { title: b[0], lines: ls };
+        });
+        var tallest = laid.reduce(function (m, b) { return Math.max(m, 24 + b.lines.length * 14); }, 0);
+        if (y - 8 - tallest >= FLOOR) {
+          y -= 8;
+          laid.forEach(function (b, k) {
+            var x = M + k * (nw + GUT), yy = y;
+            tline(b.title, x, yy, 11.04, reg, INK, nw); yy -= 16;
+            b.lines.forEach(function (ln) { if (ln === null) { yy -= 4; return; } sh.draw(pg.page, ln, x, yy, 10, INK); yy -= 14; });
+          });
+          y -= tallest;
+          return;
+        }
+      }
+      notes.forEach(function (b) { need(52); block(b[0], b[1]); });
     });
 
     // ------------------------------------------------------- Top posts
@@ -950,7 +984,7 @@
           var LH = 14.5;
           /* The heading stays with at least the first two caption lines, and a
              thumbnail never stands at the foot of a page on its own. */
-          var firstBlock = headH + Math.min(2, capLines.length) * LH + (capLines.length ? 0 : bandH);
+          var firstBlock = Math.max(headH + Math.min(2, capLines.length) * LH + (capLines.length ? 0 : bandH), d.h + 4);
           if (current !== g.key) {
             need(firstBlock + 30);
             rule(y + 4, M, R, LINE, 0.6); y -= 16;
@@ -1030,16 +1064,27 @@
     })();
 
     // ------------------------------------------------------- Heads and feet
+    /* The rate card's furniture on every page, the cover included. The head
+       label names whose report this is, where the rate card names its
+       audience; the italic line under PRIVATE & CONFIDENTIAL is the report's
+       reference, where the rate card prints its version. Slate Book Italic is
+       not among the portal's fonts, so the line is Slate Book slanted. */
     var n = pages.length;
+    var label = String(rep.client_name || '').toUpperCase();
+    var refLine = [rep.title || 'Social Media Accounts Report', periodW,
+      isDraft ? 'Draft for internal review, generated ' + (stampWord(rep.generated_at) || longDate(new Date().toISOString().slice(0, 10)))
+              : 'Version ' + (rep.version_no || 1) + ', issued ' + stampWord(rep.generated_at)].filter(Boolean).join('  ·  ');
+    var slant = function (s, x, yy, size, f) { pg.page.drawText(String(s), { x: x, y: yy, size: size, font: f, color: INK, ySkew: PDF.degrees(12) }); };
     pages.forEach(function (p, i) {
       pg = p;
-      if (p.section === 'cover') return;
-      text(runHead, M, H - 42, 8, book, MUTE);
-      right(p.section, R, H - 42, 8, book, MUTE);
-      rule(H - 50, M, R, HAIR, 0.5);
-      rule(52, M, R, HAIR, 0.5);
-      text('Private and confidential' + (isDraft ? '  ·  Draft for internal review' : '') + '  ·  Prepared by ' + (ORG.name || 'ADSPACE PLT'), M, 40, 8, book, MUTE);
-      right('Page ' + (i + 1) + ' of ' + n, R, 40, 8, book, MUTE);
+      text('ADspace', M, HEAD_Y, 16.08, mark, INK);
+      if (label) tline(clip(label, R - LABEL_X, 7.92, med), LABEL_X, 782.6, 7.92, med, INK);
+      text('PRIVATE & CONFIDENTIAL', M, 49, 7.92, med, INK);
+      /* A title typed in Chinese goes through the shaper upright; Latin is
+         slanted, as the rate card's reference line is set. */
+      if (/^[\u0000-\u024f\u2000-\u206f]*$/.test(refLine)) slant(refLine, M, 30.7, 7.92, book);
+      else tline(refLine, M, 30.7, 7.92, book, INK, CW);
+      right('Page ' + (i + 1) + ' of ' + n, R, 47, 7.92, book, INK);
     });
     return Promise.resolve(n);
 
@@ -1056,12 +1101,12 @@
         var size = v.length > 9 ? 16 : (v.length > 7 ? 19 : 22);
         var na = v === 'Not available';
         text(na ? 'Not available' : v, x, y, na ? 11 : size, na ? book : med, na ? MUTE : INK);
-        var ll = sh.linesOf(String(c.label || '').toUpperCase(), cw - 10, 7.5, reg).slice(0, 2);
+        var ll = sh.linesOf(String(c.label || ''), cw - 10, 8.5, reg).slice(0, 2);
         var ly = y - 15;
-        ll.forEach(function (ln) { sh.draw(pg.page, ln, x, ly, 7.5, MUTE); ly -= 10; });
-        if (c.note) tline(c.note, x, ly, 7.5, book, MUTE, cw - 10);
+        ll.forEach(function (ln) { sh.draw(pg.page, ln, x, ly, 8.5, MUTE); ly -= 11; });
+        if (c.note) sh.linesOf(c.note, cw - 10, 8, book).slice(0, 2).forEach(function (ln) { sh.draw(pg.page, ln, x, ly, 8, MUTE); ly -= 10; });
       });
-      y -= 40;
+      y -= 48;
       rule(y + 6, M, R, LINE, 0.6);
       y -= 10;
     }
