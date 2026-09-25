@@ -436,7 +436,7 @@
         '<div class="rp-accs"></div></div>' + foot;
       paintAccounts();
     } else if (k === 'posts') {
-      box.innerHTML = '<div class="rp-sec">' + head('Posts', ed && st.platforms.length ? '<button class="btn btn-sm" type="button" data-a="paste">Paste rows</button>' +
+      box.innerHTML = '<div class="rp-sec">' + head('Posts', ed && st.platforms.length ? '<button class="btn btn-sm" type="button" data-a="paste">Import from spreadsheet</button>' +
           '<button class="btn btn-sm" type="button" data-a="addpost">' + ICON.plus + 'Add post</button>' : '') +
         (ed && st.platforms.length ? '<div class="rp-rank"><label class="field-label" for="rpRank">Top posts ranked by</label><select class="select select-sm" id="rpRank">' +
           ['views', 'reach', 'impressions', 'engagements', 'interactions'].map(function (m0) { return '<option value="' + m0 + '">' + esc(METRIC_WORD[m0]) + '</option>'; }).join('') +
@@ -457,7 +457,7 @@
       box.innerHTML = '<div class="rp-sec">' + head('Account figures') + '<div class="rp-totals"></div></div>' + foot;
       paintTotals();
     } else if (k === 'ads') {
-      box.innerHTML = '<div class="rp-sec">' + head('Ads', ed ? '<button class="btn btn-sm" type="button" data-a="pasteads">Paste rows</button>' +
+      box.innerHTML = '<div class="rp-sec">' + head('Ads', ed ? '<button class="btn btn-sm" type="button" data-a="pasteads">Import from Ads Manager</button>' +
           '<button class="btn btn-sm" type="button" data-a="addad">' + ICON.plus + 'Add ad</button>' : '') +
         '<div class="rp-ads"></div></div>' + foot;
       paintAds();
@@ -1042,9 +1042,9 @@
   }
 
   function pasteSheet(opener) {
-    var box = sheetShell('rpPasteSheet', 'Paste rows',
+    var box = sheetShell('rpPasteSheet', 'Import from spreadsheet',
       '<section class="fsec"><div class="row"><div><label class="field-label" for="rpPasteAcc">Account</label><select class="select" id="rpPasteAcc"></select></div></div>' +
-      '<div class="row"><div><label class="field-label" for="rpPasteText">Rows from a spreadsheet, header row first</label>' +
+      '<div class="row"><div><label class="field-label" for="rpPasteText">Copy the rows from your spreadsheet, with the header row, and paste them here</label>' +
         '<textarea class="input rp-paste" id="rpPasteText" rows="8" placeholder="Date&#9;Title&#9;Views&#9;Interactions"></textarea></div></div>' +
       '<p class="rp-paste-sum" id="rpPasteSum"></p></section>', FOOT('Add posts'));
     var acc = $('rpPasteAcc');
@@ -1536,10 +1536,10 @@
   }
 
   function pasteAdsSheet(opener) {
-    var box = sheetShell('rpPasteAdsSheet', 'Paste rows',
+    var box = sheetShell('rpPasteAdsSheet', 'Import from Ads Manager',
       '<section class="fsec"><div class="row"><div><label class="field-label" for="rpPAObj">Objective if the rows do not say</label><select class="select" id="rpPAObj">' +
         OBJECTIVES.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('') + '</select></div></div>' +
-      '<div class="row"><div><label class="field-label" for="rpPAText">Rows from Ads Manager, header row first</label>' +
+      '<div class="row"><div><label class="field-label" for="rpPAText">Export from Ads Manager, copy the rows with the header row, and paste them here</label>' +
         '<textarea class="input rp-paste" id="rpPAText" rows="8" placeholder="Ad name&#9;Results&#9;Amount spent"></textarea></div></div>' +
       '<p class="rp-paste-sum" id="rpPASum"></p></section>', FOOT('Add ads'));
     $('rpPAText').value = '';
