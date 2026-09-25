@@ -175,3 +175,24 @@ client portal reads only that version. Revise makes the next version a draft
 while the client keeps reading the published one; Unpublish takes it off the
 portal with a reason. The rules are in
 `supabase/migrations/2026-09-25-social-media-reports.sql`.
+
+## The advertising report (2026-09-25)
+
+Built from the team's two templates, *Social Media Ads Report* (First) and
+the later-month one, and the Waringin report of August 2026 made from them.
+The template's content is kept; the layout is the social report's scale,
+grid and furniture, and the page does what the template left to the reader.
+
+| Template | The report now |
+|---|---|
+| "How to Read This" boxes on the Ad Performance page, in both templates' first month | The **first month** (`sm_reports.first_month`, set when the report is made) carries two reading notes, one on cost per result, reach and frequency, one on the video figures, each where it is first needed. A later month carries only the glossary line. |
+| Current Period and Previous Period columns, empty in a first month | A first month shows the four account figures; a later month shows **this period, the previous period and the change** in one table, the previous period carried forward from the last advertising report. |
+| Group by objectives: Reach, Engagements, Messaging/Leads, each with its spend | **Results by objective**: the result, the spend, the cost per result (and the previous month's beside it) and the share of spend as a bar. |
+| The tax footnote naming both markets | The note names the client's market only: WHT and SST in Malaysia, DCC and GST in Singapore. |
+| One card per ad in the order they were typed, the objective as a coloured cell | Ads are **grouped by objective**, because the template's own guidance is to compare cost per result only between ads of the same goal; each group opens on a table ranking its ads by cost per result, the cheapest in weight where the results are of one kind. |
+| Six age cells under each ad | The age split is a **chart**, the largest band in ink. |
+| Hook rate, hold rate, average playtime, and an empty "Audience Retention Curve" | The three figures, and **the retention curve drawn** from the plays at 25, 50, 75, 95 and 100 per cent where they are known. |
+| What Worked, What to Fix, Recommended Focus, numbered with lettered sub-points | The same three tables; a line starting with a dash is a lettered sub-point. |
+
+Cost per result is Ads Manager's own figure where it is typed or pasted; a
+reach result is priced per 1,000 people, as Ads Manager prices it.

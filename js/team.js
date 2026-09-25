@@ -65,6 +65,11 @@
        panel granting "Register" while the rail read Documents made somebody
        check twice which one they had. */
     ['register',  'Documents',         ['none', 'view', 'work', 'manage']],
+    /* Client reports are prepared here and published to the client portal.
+       Their own section (2026-09-25), so a colleague can prepare reports
+       without reading client records; Clients View still reads a client's
+       finished reports on the record. */
+    ['reports',   'Reports',           ['none', 'view', 'work', 'manage']],
     ['links',     'Short Links',       ['none', 'view', 'work', 'manage']],
     ['services',  'Services',          ['none', 'view', 'work', 'manage']],
     ['team',      'Team',              ['none', 'manage']],
@@ -80,8 +85,7 @@
      until 2026-09-22; it is a part now, with the same four levels. */
   var PARTS = {
     clients:   [['contacts', 'Contacts'], ['billing', 'Billing'], ['services', 'Services'],
-                ['documents', 'Documents'], ['requests', 'Requests'], ['calls', 'Calls and visits'],
-                ['reports', 'Social media reports']],
+                ['documents', 'Documents'], ['requests', 'Requests'], ['calls', 'Calls and visits']],
     review:    [['sets', 'Content sets'], ['settings', 'Client settings']],
     campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance']],
     register:  [['documents', 'Client documents'], ['hr', 'HR letters']],
@@ -527,13 +531,15 @@
     ops: { none: 'My Work is hidden.', view: 'See and update your own tasks.',
            work: 'Also create tasks and bulk add a month.', manage: 'Also assign task owners and delete tasks.' },
     clients: { none: 'Clients is hidden.', view: 'Read client records.',
-               work: 'Add leads, edit records, log calls, issue letters and prepare reports.', manage: 'Also delete clients, void letters, and confirm and publish reports.' },
+               work: 'Add leads, edit records, log calls and issue letters.', manage: 'Also delete clients and void letters.' },
     review: { none: 'Content Review is hidden.', view: 'Read content sets and posts.',
               work: 'Add sets and posts, import from Drive and publish.', manage: 'Also delete content sets.' },
     campaigns: { none: 'Creator Campaigns is hidden.', view: 'Read campaigns and the Creators List.',
                  work: 'Run campaigns, book creators and release drafts.', manage: 'Also delete campaigns and remove creators.' },
     register: { none: 'Documents is hidden.', view: 'Read and download documents.',
                 work: 'Issue, reissue and add documents.', manage: 'Also void and delete documents.' },
+    reports: { none: 'Reports is hidden.', view: 'Read reports and preview their PDFs.',
+               work: 'Start reports, enter figures and submit them for review.', manage: 'Also confirm, publish, unpublish and delete reports.' },
     links: { none: 'Short Links is hidden.', view: 'Read short links.',
              work: 'Add, edit and pause short links.', manage: 'Also delete short links.' },
     services: { none: 'Services is hidden.', view: 'Read the rate card.',
@@ -547,13 +553,13 @@
      letters, performance reviews, Team) are never in a preset below Admin:
      they are opened deliberately, in Fine-tune. */
   var PRESETS = {
-    manager: { ops: 'manage', clients: 'manage', review: 'manage', campaigns: 'manage', register: 'manage',
+    manager: { ops: 'manage', clients: 'manage', review: 'manage', campaigns: 'manage', register: 'manage', reports: 'manage',
                links: 'manage', services: 'manage', team: 'none', activity: 'view',
                'ops.all': 'view', 'ops.reports': 'view', 'ops.workflows': 'work', 'ops.time': 'manage',
                'register.hr': 'none' },
-    staff:   { ops: 'work', clients: 'work', review: 'work', campaigns: 'work', register: 'view',
+    staff:   { ops: 'work', clients: 'work', review: 'work', campaigns: 'work', register: 'view', reports: 'work',
                links: 'work', services: 'view', team: 'none', activity: 'none', 'register.hr': 'none' },
-    viewer:  { ops: 'view', clients: 'view', review: 'view', campaigns: 'view', register: 'view',
+    viewer:  { ops: 'view', clients: 'view', review: 'view', campaigns: 'view', register: 'view', reports: 'view',
                links: 'view', services: 'view', team: 'none', activity: 'view', 'register.hr': 'none' }
   };
 

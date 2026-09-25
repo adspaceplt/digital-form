@@ -4961,9 +4961,9 @@ body.no-view-clients-requests [data-need="clients.requests:view"],
 body.no-manage-clients-calls [data-need="clients.calls:manage"],
 body.no-work-clients-calls [data-need="clients.calls:work"],
 body.no-view-clients-calls [data-need="clients.calls:view"],
-body.no-manage-clients-reports [data-need="clients.reports:manage"],
-body.no-work-clients-reports [data-need="clients.reports:work"],
-body.no-view-clients-reports [data-need="clients.reports:view"],
+body.no-manage-reports [data-need="reports:manage"],
+body.no-work-reports [data-need="reports:work"],
+body.no-view-reports [data-need="reports:view"],
 body.no-manage-review-sets [data-need="review.sets:manage"],
 body.no-work-review-sets [data-need="review.sets:work"],
 body.no-view-review-sets [data-need="review.sets:view"],
@@ -7809,11 +7809,10 @@ body.is-canvas { overflow: hidden; }
    the first. */
 .rp-viewhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; }
 .rp-viewhead h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
-.rp-row, .rp-acc-row, .rp-post-row { display: grid; align-items: center; gap: 0 12px; }
-.rp-row { grid-template-columns: minmax(0, 1fr) 64px 190px var(--state-w) 20px; }
+.rp-acc-row, .rp-post-row { display: grid; align-items: center; gap: 0 12px; }
 .rp-acc-row { grid-template-columns: minmax(0, 1fr) 150px 84px minmax(0, 1fr) var(--ctl-h); }
 .rp-post-row { grid-template-columns: 34px minmax(0, 1fr) 104px 84px 84px var(--ctl-h); }
-.rp-row.crm-head, .rp-acc-row.crm-head, .rp-post-row.crm-head { padding: 12px 15px 8px; }
+.rp-acc-row.crm-head, .rp-post-row.crm-head { padding: 12px 15px 8px; }
 .rp-acc-row.crm-row, .rp-post-row.crm-row { padding: 10px 15px; min-height: 52px; }
 .rp-name { display: flex; flex-direction: column; min-width: 0; }
 .rp-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -7851,18 +7850,11 @@ body.is-canvas { overflow: hidden; }
 .rp-group { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); }
 .rp-group .mute { font-weight: 400; color: var(--ink-mute); margin-left: 4px; }
 .rp-ticks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 12px; margin-bottom: 16px; }
-.rp-textfoot { display: flex; align-items: center; gap: 12px; }
 .rp-paste { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
 .rp-paste-sum { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .rp-facts dd { white-space: normal; }
 /* A narrow pane: two lines a row. */
-.is-narrow .rp-row.crm-head, .is-narrow .rp-acc-row.crm-head, .is-narrow .rp-post-row.crm-head { display: none; }
-.is-narrow .rp-row { grid-template-columns: minmax(0, 1fr) var(--state-w); grid-template-areas: "name state" "live ver"; gap: 4px 12px; }
-.is-narrow .rp-row > .rp-name { grid-area: name; }
-.is-narrow .rp-row > .rp-state { grid-area: state; justify-self: stretch; text-align: right; }
-.is-narrow .rp-row > .rp-live { grid-area: live; }
-.is-narrow .rp-row > .rp-ver { grid-area: ver; text-align: right; }
-.is-narrow .rp-row > .rp-go { display: none; }
+.is-narrow .rp-acc-row.crm-head, .is-narrow .rp-post-row.crm-head { display: none; }
 .is-narrow .rp-acc-row { grid-template-columns: minmax(0, 1fr) 84px auto; grid-template-areas: "name grow act" "fol fol act" "figs figs act"; gap: 4px 12px; }
 .is-narrow .rp-acc-row > .rp-name { grid-area: name; }
 .is-narrow .rp-acc-row > .rp-num:nth-child(2) { grid-area: fol; text-align: left; font-size: 12.5px; color: var(--ink-mute); }
@@ -7877,6 +7869,85 @@ body.is-canvas { overflow: hidden; }
 .is-narrow .rp-post-row > .rp-num:nth-child(5) { grid-area: n2; font-size: 12.5px; color: var(--ink-mute); }
 .is-narrow .rp-post-row > :last-child { grid-area: act; }
 .is-tight .rp-ticks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* The ads of an advertising report, grouped by objective. */
+.rp-ad-row { display: grid; align-items: center; gap: 0 12px; grid-template-columns: 34px minmax(0, 1fr) 104px 72px 104px var(--ctl-h); }
+.rp-ad-row.crm-head { padding: 12px 15px 8px; }
+.rp-ad-row.crm-row { padding: 10px 15px; min-height: 52px; }
+.rp-ad-row.crm-head > :nth-child(n+3):nth-child(-n+5) { text-align: right; }
+.rp-ads { display: grid; gap: 16px; }
+.is-narrow .rp-ad-row.crm-head { display: none; }
+.is-narrow .rp-ad-row { grid-template-columns: 34px minmax(0, 1fr) 96px auto; grid-template-areas: "th name spend act" "th res cpr act"; gap: 2px 12px; }
+.is-narrow .rp-ad-row > .rp-thumb { grid-area: th; }
+.is-narrow .rp-ad-row > .rp-name { grid-area: name; }
+.is-narrow .rp-ad-row > .rp-num:nth-child(3) { grid-area: spend; }
+.is-narrow .rp-ad-row > .rp-num:nth-child(4) { grid-area: res; text-align: left; font-size: 12.5px; color: var(--ink-mute); }
+.is-narrow .rp-ad-row > .rp-num:nth-child(5) { grid-area: cpr; font-size: 12.5px; color: var(--ink-mute); }
+.is-narrow .rp-ad-row > :last-child { grid-area: act; }
+/* A report is entered in four steps. The strip is the report's own tab row:
+   each step names what it holds, and a step that holds something carries a
+   tick, so where the report stands reads before anything is opened. */
+.rp-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 6px; background: var(--card); border-radius: var(--radius); }
+.rp-step { display: flex; align-items: center; gap: 10px; min-height: var(--ctl-h); padding: 8px 10px; border: 0; border-radius: var(--radius-sm);
+  background: transparent; text-align: left; font: inherit; color: var(--ink); cursor: pointer; transition: background var(--t-fast); min-width: 0; }
+@media (hover: hover) { .rp-step:hover { background: var(--sunk); } }
+.rp-step.is-on { background: var(--line-soft); }
+.rp-step-n { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%;
+  background: var(--sunk); color: var(--ink-soft); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rp-step.is-on .rp-step-n { background: var(--fill); color: var(--on-fill); }
+.rp-step.is-done .rp-step-n { background: var(--ok-solid); color: var(--on-ok); }
+.rp-step-n svg { width: 13px; height: 13px; }
+.rp-step-t { display: flex; flex-direction: column; min-width: 0; }
+.rp-step-t b { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rp-step-t small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.is-narrow .rp-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* A form inside a step steps its fields 16px apart, as a sheet does. */
+.rp-form :where(.row) { margin-top: 16px; row-gap: 16px; }
+.rp-form :where(.row .row) { margin-top: 0; }
+.rp-form > .rp-hint + .row, .rp-form > .tickline + .fsec, .rp-form > .fsec:first-child { margin-top: 12px; padding-top: 0; border-top: 0; }
+.rp-form > .fsec:first-child { margin-top: 0; }
+.rp-form > .tickline + .fsec { margin-top: 20px; }
+.rp-hint { margin: 0; font-size: 12.5px; color: var(--ink-mute); }
+.rp-stepfoot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 16px; }
+.rp-form .rp-stepfoot { margin-top: 24px; }
+.rp-stepfoot .msg { margin: 0; }
+.rp-stepfoot > .btn { flex: 0 0 auto; }
+.rp-head .msg:empty, .rp-stepfoot .msg:empty, .rp-sec > .msg:empty { display: none; }
+/* On a narrow pane the head is two rows: who the report is for, then its
+   state and its controls on the card's own margin, so the name is never
+   squeezed beside them. */
+.is-narrow .rp-head-top { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.is-narrow .rp-head-top .rp-ctl { justify-content: flex-start; flex-wrap: wrap; }
+.is-narrow .rp-head-top .rp-ctl .team-act { margin-left: auto; }
+.rp-rank { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.rp-rank .field-label { margin: 0; }
+.rp-rank .select { width: auto; min-width: 160px; }
+.rp-ctl .btn svg { width: 14px; height: 14px; }
+/* Check and submit: what the report holds, one line a step. */
+.rp-checks { padding: 0; }
+.rp-check { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 16px; }
+.rp-check + .rp-check { border-top: 1px solid var(--line-soft); }
+.rp-check-mark { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%;
+  box-shadow: inset 0 0 0 1.5px var(--line-ctl); color: var(--on-ok); }
+.rp-check.is-done .rp-check-mark { background: var(--ok-solid); box-shadow: none; }
+.rp-check.is-missing .rp-check-mark { box-shadow: inset 0 0 0 1.5px var(--warn); }
+.rp-check-mark svg { width: 13px; height: 13px; }
+.rp-check-t { display: flex; flex-direction: column; min-width: 0; }
+.rp-check-t b { font-size: 14px; font-weight: 600; }
+.rp-check-t small { font-size: 12.5px; color: var(--ink-mute); }
+.rp-check.is-missing .rp-check-t small { color: var(--warn); }
+.rp-check .btn { margin-block: calc((22px - var(--ctl-h)) / 2); }
+/* The client record's Reports tab: the finished reports only. */
+.rp-out-row { display: grid; align-items: center; gap: 0 12px; grid-template-columns: minmax(0, 1fr) var(--state-w) 210px auto; }
+.rp-out-row.crm-head { padding: 12px 15px 8px; }
+.rp-out-row.crm-row { padding: 10px 15px; min-height: 52px; }
+.rp-out-act { display: flex; justify-content: flex-end; }
+.rp-out-act .btn svg { width: 14px; height: 14px; }
+.is-narrow .rp-out-row.crm-head { display: none; }
+.is-narrow .rp-out-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "ver state"; gap: 4px 12px; }
+.is-narrow .rp-out-row > .rp-name { grid-area: name; }
+.is-narrow .rp-out-row > .rp-state { grid-area: state; justify-self: stretch; text-align: right; }
+.is-narrow .rp-out-row > .rp-ver { grid-area: ver; font-size: 12px; color: var(--ink-mute); }
+.is-narrow .rp-out-row > .rp-out-act { grid-area: act; }
 /* The Reports route: one row a report across every client. */
 .rh-row { display: grid; align-items: center; gap: 0 12px; grid-template-columns: minmax(0, 1fr) 150px 64px 110px 20px; }
 .rh-row.crm-head { padding: 12px 15px 8px; }

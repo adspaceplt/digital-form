@@ -228,10 +228,100 @@
       totals.er = d ? e / d : null; totals.basis = bases[0];
     }
     return { rep: rep, accounts: accs, posts: posts, groups: groups, totals: totals, rank: rank, rankOf: rankOf,
+             ads: (snap.ads || []).slice(), adsm: adsModel(snap),
              best: ranked[0] || null, top: ranked.slice(0, 5),
              mostEngaged: posts.filter(function (p) { return engOf(p) !== null; }).sort(function (a, b) { return engOf(b) - engOf(a); })[0] || null };
   }
   function uniq(a) { var o = []; a.forEach(function (x) { if (o.indexOf(x) < 0) o.push(x); }); return o; }
+
+  /* ---- The advertising report ------------------------------------------------
+     One row an ad and objective. What a row cannot say is the account's own:
+     reach counts a person once across every ad they saw, so the period's
+     reach is typed and never added up; impressions and spend add up and are
+     summed where nobody typed them. The objectives read in the order a
+     client values them, results first and reach last. */
+  var OBJECTIVES = {
+    leads: { name: 'Leads', result: 'Leads', order: 1 },
+    messaging: { name: 'Messaging', result: 'Conversations', order: 2 },
+    sales: { name: 'Sales', result: 'Purchases', order: 3 },
+    traffic: { name: 'Traffic', result: 'Link clicks', order: 4 },
+    engagement: { name: 'Engagement', result: 'Engagements', order: 5 },
+    awareness: { name: 'Awareness', result: 'Reach', order: 6 },
+    app: { name: 'App promotion', result: 'Installs', order: 7 }
+  };
+  var AGE_BANDS = ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
+  var RETENTION = [['p25', '25%'], ['p50', '50%'], ['p75', '75%'], ['p95', '95%'], ['p100', '100%']];
+  function adsModel(snap) {
+    var rep = snap.report || {};
+    var T0 = rep.ads_totals || {};
+    var ads = (snap.ads || []).slice().sort(function (a, b) {
+      var oa = (OBJECTIVES[a.objective] || { order: 9 }).order, ob = (OBJECTIVES[b.objective] || { order: 9 }).order;
+      return oa - ob || (Number(a.position) || 0) - (Number(b.position) || 0);
+    });
+    ads.forEach(function (a) {
+      var sp = num(a.spend), rs = num(a.results), rc = num(a.reach), im = num(a.impressions);
+      /* The cost per result as Ads Manager prints it, where it was typed;
+         worked out otherwise. A reach result is priced per 1,000 people, as
+         Ads Manager prices it, or every awareness ad reads RM 0.00. */
+      a._per1000 = a.cpr_basis === 'thousand' || (a.cpr_basis !== 'result' && /reach/i.test(words(a.result_label)));
+      a._cpr = num(a.cpr) !== null ? num(a.cpr)
+        : a._per1000 ? (sp !== null && (/reach/i.test(words(a.result_label)) ? rs : rc) ? sp / (/reach/i.test(words(a.result_label)) ? rs : rc) * 1000 : null)
+        : (sp !== null && rs ? sp / rs : null);
+      a._freq = rc && im !== null ? im / rc : null;
+      a._label = words(a.result_label).trim() || (OBJECTIVES[a.objective] || {}).result || 'Results';
+      var ret = a.retention || {};
+      a._video = [a.hook_rate, a.hold_rate, a.avg_play].some(function (v) { return num(v) !== null; }) ||
+        RETENTION.some(function (r) { return num(ret[r[0]]) !== null; });
+      var age = a.age || {};
+      a._age = AGE_BANDS.some(function (b) { return num(age[b]) !== null; });
+    });
+    var spendAll = sumOf(ads, function (a) { return num(a.spend); });
+    var groups = [];
+    Object.keys(OBJECTIVES).sort(function (x, y) { return OBJECTIVES[x].order - OBJECTIVES[y].order; }).forEach(function (k) {
+      var list = ads.filter(function (a) { return a.objective === k; });
+      if (!list.length) return;
+      var over = (T0.groups || {})[k] || {};
+      var labels = uniq(list.map(function (a) { return a._label; }));
+      var g = { key: k, name: OBJECTIVES[k].name, ads: list, adLabel: labels.length === 1 ? labels[0] : 'Results',
+        label: words(over.label).trim() || (labels.length === 1 ? labels[0] : 'Results'),
+        spend: sumOf(list, function (a) { return num(a.spend); }),
+        results: num(over.results) !== null ? num(over.results) : sumOf(list, function (a) { return num(a.results); }) };
+      g.per1000 = /reach/i.test(g.label);
+      g.cpr = g.spend !== null && g.results ? g.spend / g.results * (g.per1000 ? 1000 : 1) : null;
+      g.share = spendAll ? (g.spend || 0) / spendAll : null;
+      var pg = (T0.prev_groups || {})[k];
+      if (pg) {
+        g.prevSpend = num(pg.spend); g.prevResults = num(pg.results);
+        g.prevCpr = g.prevSpend !== null && g.prevResults ? g.prevSpend / g.prevResults * (g.per1000 ? 1000 : 1) : null;
+      }
+      groups.push(g);
+    });
+    var t = {
+      reach: num(T0.reach),
+      impressions: num(T0.impressions) !== null ? num(T0.impressions) : sumOf(ads, function (a) { return num(a.impressions); }),
+      spend: num(T0.spend) !== null ? num(T0.spend) : spendAll,
+      prevStart: T0.prev_start || null, prevEnd: T0.prev_end || null,
+      prevReach: num(T0.prev_reach), prevImpressions: num(T0.prev_impressions), prevSpend: num(T0.prev_spend)
+    };
+    t.freq = t.reach && t.impressions !== null ? t.impressions / t.reach : null;
+    t.prevFreq = t.prevReach && t.prevImpressions !== null ? t.prevImpressions / t.prevReach : null;
+    t.hasPrev = !rep.first_month && [t.prevReach, t.prevImpressions, t.prevSpend].some(function (v) { return v !== null; });
+    return { ads: ads, groups: groups, totals: t, first: !!rep.first_month };
+  }
+  /* A point a line; a line indented, or opening with a dash or a letter and
+     a stop, belongs to the point above it, so the team's own lettered
+     sub-points come out as sub-points. */
+  function pointTree(s) {
+    var out = [];
+    words(s).split('\n').forEach(function (raw) {
+      if (!raw.trim()) return;
+      var sub = /^\s+\S/.test(raw) || /^\s*[-–•]\s+/.test(raw) || /^\s*[a-z][.)]\s+/.test(raw);
+      var txt = raw.trim().replace(/^[-–•]\s+/, '').replace(/^[a-z][.)]\s+/, '').replace(/^\d+[.)]\s+/, '');
+      if (sub && out.length) out[out.length - 1].sub.push(txt);
+      else out.push({ t: txt, sub: [] });
+    });
+    return out;
+  }
   function listWords(items) {
     if (!items.length) return '';
     if (items.length === 1) return items[0];
@@ -429,7 +519,7 @@
         /* Inside a long token a break is allowed after a slash, a hyphen and
            the marks a web address is built from, so a link wraps at a
            sensible place rather than being cut mid word. */
-        if (/[\/\-?&=_.,;:!]/.test(ch(cp)) && i + 1 < list.length && list[i + 1] !== 0x20 &&
+        if (/[\/\-?&=.,;:!]/.test(ch(cp)) && i + 1 < list.length && list[i + 1] !== 0x20 &&
             !(/[.,]/.test(ch(cp)) && list[i + 1] >= 0x30 && list[i + 1] <= 0x39)) {   // never inside 4,381 or 0.62
           cur.brk = true; flush();
         }
@@ -521,7 +611,8 @@
     var everyText = [rep.title, rep.intro, rep.headline, rep.client_name].concat(
       Object.keys(rep.insights || {}).map(function (k) { return rep.insights[k]; }),
       mdl.accounts.map(function (a) { return [a.account_name, a.summary, a.worked, a.improve, a.actions, a.metric_notes].join(' '); }),
-      mdl.posts.map(function (p) { return [p.title, p.caption, p.observation, p.notable, p.theme].join(' '); })).join(' ');
+      mdl.posts.map(function (p) { return [p.title, p.caption, p.observation, p.notable, p.theme].join(' '); }),
+      mdl.ads.map(function (a) { return [a.name, a.result_label, a.audience, a.remark].join(' '); })).join(' ');
     var needsCjk = /[⺀-鿿가-힯豈-﫿＀-￯]/.test(everyText);
     var pdf, fonts, logo, sh;
     return PDF.PDFDocument.create().then(function (p) {
@@ -534,7 +625,7 @@
       }
       sh = Shaper(PDF, pdf, fonts, warn);
       var thumbJobs = {};
-      mdl.posts.forEach(function (p) {
+      mdl.posts.concat(mdl.ads).forEach(function (p) {
         var u = p.thumb_url || p.thumb_signed_url || null;
         if (u) thumbJobs[p.id] = embedImage(pdf, u, warn);
       });
@@ -546,9 +637,9 @@
       var clientLogo = got[1];
       return draw(PDF, pdf, fonts, logo, clientLogo, sh, mdl, thumbs, warn, opts).then(function (pages) {
         return sh.ready().then(function () {
-          pdf.setTitle(String(rep.client_name || '') + ' ' + String(rep.title || 'Social Media Report') + ' ' + periodWord(rep.period_start, rep.period_end));
+          pdf.setTitle(String(rep.client_name || '') + ' ' + titleOf(rep) + ' ' + periodWord(rep.period_start, rep.period_end));
           pdf.setAuthor(CFG.agencyName || 'ADspace');
-          pdf.setSubject('Social media report');
+          pdf.setSubject(rep.kind === 'ads' ? 'Social media advertising report' : 'Social media report');
           pdf.setCreator('ADspace Digital Portal');
           pdf.setProducer('ADspace Digital Portal');
           return pdf.save({ useObjectStreams: true }).then(function (bytes) {
@@ -702,8 +793,15 @@
         /* A numbered list inside a cell: the number in Slate Medium, the item
            hanging S(1) in, the row's own padding between items. */
         c.items.forEach(function (it, i) {
-          var ls = sh.linesOf(it, w - T.padX * 2 - S(1), size, f);
+          var t0 = typeof it === 'string' ? it : it.t;
+          var ls = sh.linesOf(t0, w - T.padX * 2 - S(1), size, f);
           ls.forEach(function (ln, k) { out.push({ ln: ln, f: f, size: size, num: k === 0 ? String(i + 1) : null, indent: S(1) }); });
+          ((typeof it === 'object' && it && it.sub) || []).forEach(function (sb, j) {
+            out.push({ gap: T.padY / 2 });
+            sh.linesOf(sb, w - T.padX * 2 - S(1) * 2, size, f).forEach(function (ln, k) {
+              out.push({ ln: ln, f: f, size: size, num: k === 0 ? String.fromCharCode(97 + j) : null, numIndent: S(1), indent: S(1) * 2 });
+            });
+          });
           if (i < c.items.length - 1) out.push({ gap: T.padY });
         });
       }
@@ -723,7 +821,7 @@
         var lx = x + T.padX + (l.indent || 0);
         if (align === 'center') lx = x + (w - lw) / 2;
         else if (align === 'right') lx = x + w - T.padX - lw;
-        if (l.num) text(l.num, x + T.padX, yy, l.size, med, INK);
+        if (l.num) text(l.num, x + T.padX + (l.numIndent || 0), yy, l.size, med, INK);
         sh.draw(pg.page, l.ln, lx, yy, l.size, (c && c.color) || INK);
         yy -= T.lh;
       });
@@ -957,7 +1055,7 @@
       newPage('cover');
       var cx = M + S(9), cw = R - cx;
       var cy = H / PHI;
-      var tlines = sh.linesOf(String(rep.title || 'Social Media Report'), cw, TY.cover, med);
+      var tlines = sh.linesOf(titleOf(rep), cw, TY.cover, med);
       cy += (tlines.length - 1) * S(6);
       tlines.forEach(function (ln, i) { sh.draw(pg.page, ln, cx, cy, TY.cover, INK); if (i < tlines.length - 1) cy -= S(6); });
       cy -= S(6);
@@ -966,6 +1064,9 @@
     })();
 
     var ins = rep.insights || {};
+    if (rep.kind === 'ads') adsReport(); else socialReport();
+
+    function socialReport() {
 
     // ------------------------------------------------------- Executive summary
     /* Each section below starts a page of its own and never shrinks to fit
@@ -1015,7 +1116,7 @@
       var acts = points(ins.next_actions);
       var more = [
         ['Performance drivers', ins.why_well],
-        ['Underperformance', ins.underperformed],
+        ['Areas to improve', ins.underperformed],
         ['Opportunities', ins.opportunities],
         ['Improvements', ins.improvements]
       ].filter(function (r) { return words(r[1]).trim(); });
@@ -1215,6 +1316,329 @@
         table(cols, head, rows);
       });
     })();
+    }
+
+    // ======================================================= Advertising report
+    /* The team's advertising template, first month and later months, drawn
+       on the same scale, grid and furniture as the social report. What the
+       template left to the reader is done on the page: the ads are grouped
+       by objective, so a cost per result is only ever beside another of the
+       same goal; each group opens on a table that ranks its ads; the age
+       split is a chart and not twelve cells; and a later month states the
+       change against the month before in the same table as the figure. The
+       reading guidance is the first month's, where a client meets these
+       terms for the first time. */
+    function adsReport() {
+      var am = mdl.adsm, at = am.totals, first = am.first;
+      var mk = String(rep.market || '').toUpperCase();
+      var CUR = mk === 'SG' ? 'S$' : 'RM';
+      var money = function (v) {
+        v = num(v);
+        return v === null ? 'Not available' : CUR + ' ' + v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      };
+      var pctv = function (v) { v = num(v); return v === null ? 'Not available' : (Math.round(v * 100) / 100).toFixed(2) + '%'; };
+      var pctShort = function (v) { v = num(v); return v === null ? 'Not available' : String(Math.round(v * 100) / 100) + '%'; };
+      var cprLabel = function (per1000) { return per1000 ? 'Cost per 1,000 reached' : 'Cost per result'; };
+      var ratio = function (v) { return v === null || v === undefined || isNaN(v) ? 'Not available' : (Math.round(v * 100) / 100).toFixed(2); };
+      var playW = function (v) {
+        v = num(v); if (v === null) return 'Not available';
+        var s = Math.round(v); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+      };
+      var change = function (cur, prev) {
+        cur = num(cur); prev = num(prev);
+        if (cur === null || prev === null || !prev) return 'Not available';
+        var d = (cur - prev) / prev * 100;
+        return (d > 0.05 ? '+' : d < -0.05 ? '−' : '') + Math.abs(d).toFixed(1) + '%';
+      };
+      var shortD = function (s) { var d = dateOf(s); return d ? d.getDate() + ' ' + MON3[d.getMonth()] : ''; };
+      var range = function (a, b) {
+        var da = dateOf(a), db2 = dateOf(b);
+        if (!da && !db2) return '';
+        if (!da || !db2) return dayWord(a || b);
+        if (da.getFullYear() !== db2.getFullYear()) return dayWord(a) + ' to ' + dayWord(b);
+        return shortD(a) + ' to ' + dayWord(b);
+      };
+      var TAX = mk === 'SG'
+        ? 'Amount spent is the full amount spent on ads. It excludes the 5% DCC and 9% GST, charged separately.'
+        : mk === 'MY'
+          ? 'Amount spent is the full amount spent on ads. It excludes the 10% WHT and 8% SST, charged separately.'
+          : 'Amount spent is the full amount spent on ads. It excludes the 10% WHT and 8% SST on a Malaysian ad account, and the 5% DCC and 9% GST on a Singapore one, charged separately.';
+
+      /* A line under a page title, in the second ink: what the page is for,
+         said once, in the first month only. */
+      var leadLine = function (s) {
+        var ls = sh.linesOf(s, CW, TY.body, book);
+        ls.forEach(function (ln, i) { y -= i ? S(2) : TY.body * 0.72; sh.draw(pg.page, ln, M, y, TY.body, SOFT); });
+        y -= TY.body * 0.28 + SP.under;
+      };
+      /* A reading note: a grey panel, its title in Slate Regular and its
+         paragraphs in the body size, kept whole on one page. */
+      var panel = function (title, paras) {
+        var PADP = S(2), LH = S(1), GAPP = S(-1);
+        var lines = paras.map(function (s) { return sh.linesOf(s, CW - PADP * 2, TY.body, book); });
+        var h = PADP * 2 + TY.body + S(-1) + lines.reduce(function (t, ls) { return t + ls.length * LH; }, 0) + GAPP * (lines.length - 1);
+        need(h);
+        rect(M, y - h, CW, h, FILL);
+        var yy = y - PADP - TY.body * 0.8;
+        tline(title, M + PADP, yy, TY.body, reg, INK, CW - PADP * 2);
+        yy -= TY.body * 0.2 + S(-1) + LH * 0.8;
+        lines.forEach(function (ls, i) {
+          if (i) yy -= GAPP;
+          ls.forEach(function (ln) { sh.draw(pg.page, ln, M + PADP, yy, TY.body, INK); yy -= LH; });
+        });
+        y -= h + BLOCK;
+      };
+      var GLOSSARY = 'Every ad term is explained at go.adspace.me/fb-ad-terms.';
+
+      // ------------------------------------------------ Executive summary
+      (function summary() {
+        newPage('Executive summary');
+        pageTitle('Executive summary');
+        if (first) leadLine('The headline figures for the period, before the detail.');
+        var head = words(rep.headline).trim();
+        if (head) proseBlock(sh.linesOf(head, CW, TY.lead, med).slice(0, 3).map(function (ln) { return { ln: ln, size: TY.lead }; }));
+        if (at.hasPrev) {
+          var thisW = 'This period\n' + range(rep.period_start, rep.period_end);
+          var prevW = 'Previous period' + (at.prevStart ? '\n' + range(at.prevStart, at.prevEnd) : '');
+          table([{ w: 0.3, align: 'left' }, { w: 0.25 }, { w: 0.25 }, { w: 0.2 }],
+            [{ t: 'Account', align: 'left' }, thisW, prevW, 'Change'],
+            [
+              { cells: [{ t: 'Total reach', f: reg }, { t: fmt(at.reach), f: med }, fmt(at.prevReach), change(at.reach, at.prevReach)] },
+              { cells: [{ t: 'Total impressions', f: reg }, { t: fmt(at.impressions), f: med }, fmt(at.prevImpressions), change(at.impressions, at.prevImpressions)] },
+              { cells: [{ t: 'Frequency', f: reg }, { t: ratio(at.freq), f: med }, ratio(at.prevFreq), change(at.freq, at.prevFreq)] },
+              { cells: [{ t: 'Amount spent *', f: reg }, { t: money(at.spend), f: med }, money(at.prevSpend), change(at.spend, at.prevSpend)] }
+            ], { labelCol: true });
+        } else {
+          figures([
+            { label: 'Total reach', value: fmt(at.reach) },
+            { label: 'Total impressions', value: fmt(at.impressions) },
+            { label: 'Frequency', value: ratio(at.freq) },
+            { label: 'Amount spent *', value: money(at.spend) }
+          ]);
+        }
+        gap(BLOCK);
+        if (am.groups.length) {
+          var withPrev = am.groups.some(function (g) { return g.prevCpr !== undefined && g.prevCpr !== null; }) && at.hasPrev;
+          blockTitle('Results by objective', T.minH * (am.groups.length + 1));
+          table([{ w: 0.19, align: 'left' }, { w: 0.23 }, { w: 0.17 }, { w: 0.18 }, { w: 0.23 }],
+            [{ t: 'Objective', align: 'left' }, 'Result', 'Amount spent *', 'Cost per result', 'Share of spend'],
+            am.groups.map(function (g) {
+              return { minH: withPrev ? S(4) + S(1) : T.minH, cells: [
+                { t: g.name, f: reg },
+                { t: fmt(g.results) + ' ' + g.label.toLowerCase(), f: med },
+                money(g.spend),
+                { t: money(g.cpr) + (g.per1000 ? ' per 1,000' : '') + (withPrev && g.prevCpr !== null && g.prevCpr !== undefined ? '\nPrevious ' + money(g.prevCpr) : '') },
+                { fn: function (x, top, w, h) {
+                  var tw = S(6), bx = x + T.padX, bw = w - T.padX * 2 - tw - S(-2);
+                  rect(bx, top - h / 2 - 3, bw, S(-2), FILL);
+                  if (g.share) rect(bx, top - h / 2 - 3, Math.max(0.8, bw * g.share), S(-2), INK);
+                  right(g.share === null ? '' : (g.share * 100).toFixed(1) + '%', x + w - T.padX, top - h / 2 - 3.2, TY.body, book, INK);
+                }, h: T.minH }
+              ] };
+            }), { labelCol: true });
+        }
+        // The note the asterisks point at, under the tables it qualifies.
+        y -= TY.small * 0.72 + S(-1);
+        sh.linesOf('* ' + TAX, CW, TY.small, book).forEach(function (ln, i) {
+          if (i) y -= S(0);
+          sh.draw(pg.page, ln, M, y, TY.small, MUTE);
+        });
+        y -= TY.small * 0.28 + BLOCK;
+        var paras = paragraphsOf(rep.intro).filter(function (s) { return s.trim(); });
+        if (paras.length) {
+          blockTitle('Summary', S(1) * 3);
+          var prose = [];
+          paras.forEach(function (s, i) {
+            if (i) prose.push({ gap: SP.tight });
+            sh.linesOf(s, CW, TY.body, book).forEach(function (ln) { prose.push({ ln: ln, size: TY.body }); });
+          });
+          proseBlock(prose);
+        }
+      })();
+
+      // ------------------------------------------------ Ad performance
+      var PAD = S(-2), HEADH = S(4), CELLH = S(5) + S(-2);
+      var LW = CW / (PHI * PHI * PHI);            // the image column: the column over φ³
+      var TWd = LW - PAD * 2, THt = TWd * 1.25;   // 4:5, the portrait ad
+      var RX = M + LW, RW = CW - LW;
+      var AGEH = S(7) + S(1);
+      var VIDH = CELLH, CURVEH = S(7) + S(2);
+      var hasRet = function (a) { var r = a.retention || {}; return RETENTION.filter(function (k) { return num(r[k[0]]) !== null; }).length >= 2; };
+      var remarkLines = function (a) { return words(a.remark).trim() ? sh.linesOf(a.remark, CW - PAD * 2 - S(6), TY.small, book) : []; };
+      var cardH = function (a) {
+        var body = Math.max(THt + PAD * 2, CELLH * 2 + (a._age ? AGEH : 0));
+        var vid = a._video ? (hasRet(a) ? Math.max(VIDH, CURVEH) : VIDH) : 0;
+        var rl = remarkLines(a);
+        return HEADH + body + vid + (rl.length ? PAD * 2 + rl.length * S(0) : 0);
+      };
+      var cell = function (x, top, w, label, value, h) {
+        var off = h ? (h - CELLH) / 2 : 0;
+        tline(clip(label, w - PAD * 2, TY.small, book), x + PAD, top - off - PAD - TY.small * 0.8, TY.small, book, SOFT, w - PAD * 2);
+        var na = value === 'Not available';
+        var size = na ? TY.small : (String(value).length > 11 ? S(1) : S(2));
+        tline(value, x + PAD, top - off - CELLH + PAD + 3, size, na ? book : med, na ? MUTE : INK, w - PAD * 2);
+      };
+      function adCard(a) {
+        var h = cardH(a);
+        need(h);
+        var top = y;
+        // The head: the ad's name, then who it ran to and when.
+        rect(M, top - HEADH, CW, HEADH, FILL);
+        var meta = [words(a.audience).trim() ? words(a.audience).trim() + ' audience' : '', range(a.starts_on, a.ends_on)].filter(Boolean).join('  ·  ');
+        var mw = meta ? width(meta, TY.small, book) : 0;
+        tline(clip(a.name, CW - PAD * 3 - mw, TY.body, med), M + PAD, top - HEADH / 2 - TY.body * 0.34, TY.body, med, INK);
+        if (meta) right(meta, R - PAD, top - HEADH / 2 - TY.small * 0.34, TY.small, book, SOFT);
+        var bodyTop = top - HEADH;
+        var body = Math.max(THt + PAD * 2, CELLH * 2 + (a._age ? AGEH : 0));
+        // The creative, in its own column, the frame there whether or not there is a picture.
+        thumbIn(a, M + PAD, bodyTop - PAD, TWd, THt);
+        if (!thumbs[a.id]) center('No image', M + PAD + TWd / 2, bodyTop - PAD - THt / 2 - 3, TY.small, book, MUTE);
+        hline(bodyTop, M, R);
+        pg.page.drawLine({ start: { x: RX, y: bodyTop }, end: { x: RX, y: bodyTop - body }, thickness: 0.48, color: EDGE });
+        // Six figures, three to a row: what it cost and what it bought, then how far it went.
+        var cw3 = RW / 3;
+        [['Amount spent', money(a.spend)], [a._label, fmt(a.results)], ['Cost per result', money(a._cpr)],
+         ['Reach', fmt(a.reach)], ['Impressions', fmt(a.impressions)], ['Click-through rate', pctv(a.ctr)]].map(function (c, i) {
+          return i === 2 ? [cprLabel(a._per1000), c[1]] : c;
+        }).forEach(function (c, i) {
+          var cx = RX + (i % 3) * cw3, cy = bodyTop - Math.floor(i / 3) * CELLH;
+          cell(cx, cy, cw3, c[0], c[1]);
+          if (i % 3) pg.page.drawLine({ start: { x: cx, y: cy }, end: { x: cx, y: cy - CELLH }, thickness: 0.48, color: EDGE });
+        });
+        hline(bodyTop - CELLH, RX, R);
+        hline(bodyTop - CELLH * 2, RX, R);
+        // Who responded, by age: one column a band, the largest in ink.
+        if (a._age) {
+          var ay = bodyTop - CELLH * 2;
+          tline('Results by age', RX + PAD, ay - PAD - TY.small * 0.8, TY.small, book, SOFT);
+          var ages = AGE_BANDS.map(function (b) { return num((a.age || {})[b]); });
+          var maxA = ages.reduce(function (m, v) { return Math.max(m, v || 0); }, 0) || 1;
+          var slot = (RW - PAD * 2) / AGE_BANDS.length, bw = Math.min(S(4), slot * 0.46);
+          var base = ay - AGEH + PAD + S(0), barH = AGEH - PAD * 2 - S(0) - S(1) - S(2);
+          hline(base, RX + PAD, R - PAD, FILL2, 0.6);
+          AGE_BANDS.forEach(function (b, i) {
+            var v = ages[i], cx = RX + PAD + slot * i + slot / 2;
+            var bh = v ? Math.max(0.8, barH * v / maxA) : 0;
+            if (bh) rect(cx - bw / 2, base, bw, bh, v === maxA ? INK : DATA2);
+            center(v === null ? '' : v.toFixed(1) + '%', cx, base + bh + 3, TY.small, v === maxA ? med : book, INK);
+            center(b, cx, base - S(0) + 1, TY.small, book, MUTE);
+          });
+        }
+        var yb = bodyTop - body;
+        // The video: how the opening held, how the rest held, and the curve where it is known.
+        if (a._video) {
+          var vh = hasRet(a) ? Math.max(VIDH, CURVEH) : VIDH;
+          hline(yb, M, R);
+          var vw = hasRet(a) ? CW / PHI : CW;
+          var v3 = vw / 3;
+          [['Hook rate', pctShort(a.hook_rate)], ['Hold rate', pctShort(a.hold_rate)], ['Average play time', playW(a.avg_play)]].forEach(function (c, i) {
+            cell(M + v3 * i, yb, v3, c[0], c[1], vh);
+            if (i) pg.page.drawLine({ start: { x: M + v3 * i, y: yb }, end: { x: M + v3 * i, y: yb - vh }, thickness: 0.48, color: EDGE });
+          });
+          if (hasRet(a)) {
+            var cxs = M + vw;
+            pg.page.drawLine({ start: { x: cxs, y: yb }, end: { x: cxs, y: yb - vh }, thickness: 0.48, color: EDGE });
+            tline('Audience retention', cxs + PAD, yb - PAD - TY.small * 0.8, TY.small, book, SOFT);
+            var ret = a.retention || {};
+            var pts = RETENTION.map(function (k) { return { k: k, v: num(ret[k[0]]) }; }).filter(function (p) { return p.v !== null; });
+            var px = cxs + PAD * 2, pw = R - PAD * 2 - px;
+            var pb = yb - vh + PAD + S(0), ph = vh - PAD * 2 - S(0) - S(1) - S(1);
+            var maxR = Math.max(100, pts.reduce(function (m, p) { return Math.max(m, p.v); }, 0));
+            hline(pb, px, px + pw, FILL2, 0.6);
+            var xy = pts.map(function (p, i) {
+              return { x: px + (RETENTION.map(function (r) { return r[0]; }).indexOf(p.k[0])) * (pw / (RETENTION.length - 1)), y: pb + ph * p.v / maxR, p: p };
+            });
+            xy.forEach(function (q, i) {
+              if (i) pg.page.drawLine({ start: { x: xy[i - 1].x, y: xy[i - 1].y }, end: { x: q.x, y: q.y }, thickness: 1.2, color: INK });
+            });
+            xy.forEach(function (q) {
+              pg.page.drawCircle({ x: q.x, y: q.y, size: 1.8, color: INK });
+              center(q.p.v.toFixed(0) + '%', q.x, q.y + 4, TY.small, book, INK);
+              center(q.p.k[1], q.x, pb - S(0) + 1, TY.small, book, MUTE);
+            });
+          }
+          yb -= vh;
+        }
+        var rl = remarkLines(a);
+        if (rl.length) {
+          hline(yb, M, R);
+          var ry = yb - PAD - TY.small * 0.8;
+          tline('Remarks', M + PAD, ry, TY.small, reg, INK);
+          rl.forEach(function (ln) { sh.draw(pg.page, ln, M + PAD + S(6), ry, TY.small, INK); ry -= S(0); });
+        }
+        frame(M, top - h, CW, h);
+        y = top - h - S(3);
+      }
+
+      (function performance() {
+        if (!am.ads.length) return;
+        newPage('Ad performance');
+        pageTitle('Ad performance');
+        if (first) {
+          leadLine('The ads that ran this period, grouped by objective.');
+          panel('How to read this', [
+            'Cost per result is what it cost to get one lead, click or action. Compare it only between ads with the same objective, which is why the ads are grouped by objective.',
+            'Reach is how many people saw an ad; impressions is how many times it was shown. Frequency is impressions divided by reach.',
+            'An ad that appears under two objectives is the same creative tested for two goals. Compare both to see which one to lean into.'
+          ]);
+        } else {
+          leadLine(GLOSSARY);
+        }
+        var videoRead = false;
+        am.groups.forEach(function (g) {
+          var many = g.ads.length > 1;
+          var firstH = cardH(g.ads[0]);
+          blockTitle(g.name + '  ·  ' + g.ads.length + ' ad' + (g.ads.length === 1 ? '' : 's') + '  ·  ' + money(g.spend),
+            many ? T.minH * (g.ads.length + 1) : firstH);
+          if (many) {
+            // The group ranked by what a result cost, the cheapest first and in weight.
+            var ranked = g.ads.slice().sort(function (p, q) {
+              if (p._cpr === null) return 1; if (q._cpr === null) return -1; return p._cpr - q._cpr;
+            });
+            /* The cheapest is marked only where the results are the same
+               kind: a lead and an ad recall lift are not bought at one price. */
+            var oneKind = uniq(g.ads.map(function (a) { return a._label + '|' + a._per1000; })).length === 1;
+            var best = oneKind && ranked[0] && ranked[0]._cpr !== null ? ranked[0] : null;
+            var perK = g.ads.every(function (a) { return a._per1000; });
+            table([{ w: 0.26, align: 'left' }, { w: 0.23 }, { w: 0.14 }, { w: 0.12 }, { w: 0.15 }, { w: 0.1 }],
+              [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', g.adLabel.length <= 12 ? g.adLabel : 'Results', perK ? 'Per 1,000 reached' : 'Cost per result', 'CTR'],
+              ranked.map(function (a) {
+                var f = a === best ? med : book;
+                return { cells: [{ t: a.name + (words(a.audience).trim() ? '\n' + words(a.audience).trim() + ' audience' : ''), f: f },
+                  { t: range(a.starts_on, a.ends_on), f: f }, { t: money(a.spend), f: f }, { t: fmt(a.results), f: f },
+                  { t: money(a._cpr) + (!perK && a._per1000 ? ' per 1,000' : ''), f: f }, { t: pctv(a.ctr), f: f }] };
+              }), { labelCol: false });
+            gap(S(3));
+          }
+          g.ads.forEach(function (a) {
+            adCard(a);
+            if (first && a._video && !videoRead) {
+              videoRead = true;
+              panel('How to read the video figures', [
+                'Hook rate is the share of people who kept watching once the ad appeared. The first seconds decide whether somebody stops or scrolls past, so a strong hook rate means the opening is doing its job, and a low one shows where to sharpen the next creative.',
+                'Hold rate is the share who kept watching after the opening had caught them: whether the message holds all the way through. A strong hold rate means the content is doing its job; a low one shows where people start to drop off.',
+                GLOSSARY
+              ]);
+            }
+          });
+          y -= BLOCK - S(3);
+        });
+      })();
+
+      // ------------------------------------------------ Insights and recommendations
+      (function insights() {
+        var blocks = [['What worked', ins.worked], ['What to fix', ins.fix], ['Recommended focus for the following month', ins.focus]]
+          .filter(function (b) { return words(b[1]).trim(); });
+        if (!blocks.length) return;
+        newPage('Insights and recommendations');
+        pageTitle('Insights and recommendations');
+        if (first) leadLine('What the period’s figures mean, and what happens next.');
+        blocks.forEach(function (b, i) {
+          if (i) gap(BLOCK);
+          table([{ w: 1, align: 'left' }], [{ t: b[0], align: 'left' }], [{ cells: [{ items: pointTree(b[1]) }], split: true }]);
+        });
+      })();
+    }
 
     // ------------------------------------------------------- Heads and feet
     /* The rate card's furniture on every page, the cover included, on the
@@ -1245,12 +1669,24 @@
     return Promise.resolve(n);
   }
 
-  function fileName(snap, versionNo) {
+  /* The report's name as the cover and the file print it. The first kind was
+     stored as `Social Media Report` and is named Social Media Accounts Report
+     since the builder took a second kind (2026-09-25), so the stored default
+     reads as the new name; a title the team typed is kept. */
+  function titleOf(rep) {
+    var t = String((rep && rep.title) || '').trim();
+    if (rep && rep.kind === 'ads') return t || 'Social Media Advertising Report';
+    return !t || t === 'Social Media Report' ? 'Social Media Accounts Report' : t;
+  }
+
+  /* A file named the way the team would name it by hand: the client, the
+     report and the period, and nothing a reader has to decode. The version
+     and the draft mark are on the page itself. */
+  function fileName(snap) {
     var rep = (snap && snap.report) || {};
-    var slug = function (s) { return String(s || '').normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-'); };
-    var d = dateOf(rep.period_start);
-    var when = d ? MON3[d.getMonth()].slice(0, 3) + '-' + d.getFullYear() : '';
-    return [slug(rep.client_name), 'Social-Media-Report', when, 'v' + (versionNo || rep.version_no || 1)].filter(Boolean).join('-') + '.pdf';
+    var name = [rep.client_name, titleOf(rep),
+                periodWord(rep.period_start, rep.period_end)].filter(Boolean).join(' ');
+    return name.replace(/[\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim() + '.pdf';
   }
 
   window.ADspaceSmReport = {
