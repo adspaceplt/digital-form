@@ -1165,10 +1165,17 @@
     if (!on) return;
     $('mineList').innerHTML = '';
     $('mineLockTitle').textContent = 'Your reviews are locked';
-    $('mineLockLine').textContent = why || ('We will email a code to ' + guard.email + '.');
+    /* A passkey (Face ID, Touch ID, the device password) unlocks them in one
+       touch where this browser can use one; the emailed code stays beside it
+       for a new device (the user, 2026-09-26). The server reads either proof
+       in the signed session, within 15 minutes. */
+    var pk = Boolean(window.ADspacePasskey && window.ADspacePasskey.on);
+    $('minePasskey').hidden = !pk;
+    $('mineLockLine').textContent = why || (pk ? 'Use a passkey, or an emailed code sent to ' + guard.email + '.'
+                                              : 'An emailed code is sent to ' + guard.email + '.');
     $('mineCode').hidden = true; $('mineVerify').hidden = true;
-    $('mineSend').hidden = false; $('mineSend').textContent = 'Send code';
-    $('mineSend').className = 'btn btn-primary';
+    $('mineSend').hidden = false; $('mineSend').textContent = pk ? 'Email a code' : 'Send code';
+    $('mineSend').className = pk ? 'btn' : 'btn btn-primary';
     msg('mineLockMsg', '');
   }
   function sendCode() {
@@ -1181,6 +1188,7 @@
       if (r && r.error) { msg('mineLockMsg', 'Not sent. Please try again in a minute.', 'err'); return; }
       $('mineCode').hidden = false; $('mineVerify').hidden = false;
       b.textContent = 'Send again'; b.className = 'btn btn-quiet';
+      $('minePasskey').hidden = true;
       $('mineLockTitle').textContent = 'Enter your email code';
       $('mineCode').value = '';
       $('mineCode').focus();
@@ -1202,6 +1210,25 @@
       enterMine();
     }, function () { b.disabled = false; msg('mineLockMsg', 'Not verified. Please try again.', 'err'); });
   }
+  function unlockPasskey() {
+    var b = $('minePasskey');
+    b.disabled = true;
+    msg('mineLockMsg', '');
+    var go = window.ADspaceCaptcha ? window.ADspaceCaptcha.options(b, {}) : Promise.resolve({});
+    go.then(function (o) {
+      return db.auth.signInWithPasskey({ options: o.captchaToken ? { captchaToken: o.captchaToken } : {} });
+    }).then(function (r) {
+      b.disabled = false;
+      if (r && r.error) {
+        if (!/not allowed|timed out|cancel|abort/i.test(String(r.error.message || '') + ' ' + String(r.error.name || '')))
+          msg('mineLockMsg', 'Not unlocked. Use an emailed code.', 'err');
+        return;
+      }
+      showMineLock(false);
+      enterMine();
+    }, function () { b.disabled = false; msg('mineLockMsg', 'Not unlocked. Use an emailed code.', 'err'); });
+  }
+  $('minePasskey').addEventListener('click', unlockPasskey);
   $('mineSend').addEventListener('click', sendCode);
   $('mineVerify').addEventListener('click', verifyCode);
   $('mineCode').addEventListener('keydown', function (e) {

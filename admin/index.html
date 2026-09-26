@@ -3589,6 +3589,9 @@
           <input class="input lockcard-code" id="mineCode" type="text" inputmode="numeric" autocomplete="one-time-code"
                  maxlength="10" placeholder="Code" aria-label="Email code" hidden>
           <button class="btn btn-primary" id="mineVerify" type="button" hidden>Verify</button>
+          <!-- Face ID, Touch ID or the device password, where this browser holds
+               a passkey (js/perf.js); the emailed code stays beside it. -->
+          <button class="btn btn-primary" id="minePasskey" type="button" hidden>Unlock with a passkey</button>
           <button class="btn btn-primary" id="mineSend" type="button">Send code</button>
         </div>
         <div class="msg" id="mineLockMsg"></div>
