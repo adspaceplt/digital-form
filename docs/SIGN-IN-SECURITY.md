@@ -13,7 +13,8 @@ The code side is already done:
 - `portal-login` gives the same answer for every address. **Redeploy it**:
   `supabase functions deploy portal-login` (Verify JWT stays off).
 - No page can create an account (`shouldCreateUser: false` everywhere).
-- A captcha is wired to every sign-in email and is switched off until step 3.
+- A captcha is wired to every sign-in email. The site key is set, so every
+  sign-in carries a Turnstile token; Supabase checks it only once step 3 is done.
 
 Supabase's own sign-in endpoint can still reveal whether an address exists
 to somebody who calls it directly. Nothing on our side can stop that. The
@@ -48,9 +49,9 @@ Supabase may rename these settings. If one is missing, look for it under
 4. Widget mode: **Managed**.
 5. Copy the **Site key** and the **Secret key**.
 
-Send me the **site key** only. It is public by design, and I will put it in
-`js/config.js` (`turnstileSiteKey`) in its own push. **Never send the secret
-key in chat.** It goes only into Supabase, in step 3.
+**Done 2026-09-26**: the site key is in `js/config.js` (`turnstileSiteKey`).
+It is public by design. **Never send the secret key in chat.** It goes only
+into Supabase, in step 3.
 
 ## 3. Supabase: switch the captcha on, after the site key is live
 

@@ -30,6 +30,10 @@
       s.async = true; s.defer = true;
       s.onload = function () { ok(); };
       s.onerror = function () { loading = null; bad(new Error('captcha-unavailable')); };
+      /* A script that neither loads nor fails (a network that swallows the
+         request) must not hold the sign-in button: after eight seconds the
+         email goes without a token, as it does when the script fails. */
+      setTimeout(function () { if (!window.turnstile) { loading = null; bad(new Error('captcha-slow')); } }, 8000);
       document.head.appendChild(s);
     });
     return loading;
