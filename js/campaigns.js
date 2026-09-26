@@ -1609,6 +1609,15 @@
            every deliverable in the database, so once the archive passes a
            thousand files the newest campaign is the one that comes back
            empty. */
+        /* When the client confirmed, for the timing under Key dates. A read
+           that fails costs the block one row and nothing else. */
+        state.confirms = [];
+        db.from('campaign_confirmations').select('created_at, kind')
+          .eq('campaign_id', state.campaign.id).order('created_at')
+          .then(function (q) {
+            state.confirms = (q && q.data) || [];
+            if (state.campaign) paintCampTiming(state.campaign);
+          }, function () {});
         var ids = state.options.map(function (o) { return o.id; });
         state.files = {};
         if (!ids.length) { paintOptions(); return; }
@@ -2324,11 +2333,84 @@
       }).join('');
     }
 
+    paintCampTiming(c);
+
     /* The rule under the last block, set in the paint. */
-    var blocks = ['campFactBlock', 'campPickBlock', 'campDateBlock'].map($).filter(Boolean);
+    var blocks = ['campFactBlock', 'campPickBlock', 'campDateBlock', 'campTimeBlock'].map($).filter(Boolean);
     blocks.forEach(function (b) { b.classList.remove('is-last'); });
     var shown = blocks.filter(function (b) { return !b.hidden; });
     if (shown.length) shown[shown.length - 1].classList.add('is-last');
+  }
+
+  /* ---- Timing (internal) ------------------------------------------------
+     How long the campaign sat in each stage, asked for by the user on
+     2026-09-26: created until published, the client's selection until they
+     confirmed, confirmed until production began, production until the last
+     booking was completed. Read off what the database stamped (the
+     campaign's state_log, the client's confirmation, each booking's
+     confirmed_at and completed_at) and never stored. A stage whose start the
+     record does not hold is left out rather than guessed: campaigns made
+     before the clock have no log of their earlier moves. */
+  function hoursWord(ms) {
+    var h = ms / 3600000;
+    if (h < 1) return 'Under 1 h';
+    if (h < 48) return Math.round(h) + ' h';
+    var d = Math.floor(h / 24), r = Math.round(h - d * 24);
+    if (r === 24) { d += 1; r = 0; }
+    return d + ' days' + (r ? ' ' + r + ' h' : '');
+  }
+  function campMilestones(c) {
+    var log = Array.isArray(c.state_log) ? c.state_log : [];
+    function first(st) {
+      var hit = log.filter(function (e) { return e && e.state === st && e.at; })
+        .map(function (e) { return e.at; }).sort()[0];
+      return hit || null;
+    }
+    var opts = state.options || [];
+    var confirmedAts = opts.map(function (o) { return o.confirmed_at; }).filter(Boolean).sort();
+    var done = opts.filter(function (o) { return CHARGED.indexOf(o.state) > -1; });
+    var complete = done.length && done.every(function (o) { return o.state === 'completed' && o.completed_at; })
+      ? done.map(function (o) { return o.completed_at; }).sort().pop() : null;
+    var client = (state.confirms || []).map(function (k) { return k.created_at; }).filter(Boolean).sort()[0] || null;
+    var prod = first('production') || confirmedAts[0] || null;
+    return {
+      created: c.created_at || null,
+      published: first('open'),
+      confirmed: client,
+      production: prod,
+      completed: complete
+    };
+  }
+  function paintCampTiming(c) {
+    var block = $('campTimeBlock'), box = $('campTimeRail');
+    if (!block || !box) return;
+    var m = campMilestones(c), now = new Date().toISOString();
+    var steps = [
+      ['Setting up', m.created, m.published],
+      ['Client selection', m.published, m.confirmed],
+      ['Confirming creators', m.confirmed, m.production],
+      ['In production', m.production, m.completed]
+    ];
+    var rows = [];
+    steps.forEach(function (s, i) {
+      if (!s[1]) return;
+      var later = steps.slice(i + 1).some(function (n) { return n[1]; });
+      var end = s[2] || (later ? null : now);
+      if (!end) return;
+      var running = !s[2];
+      rows.push('<div class="tl-row tl-stage' + (running ? ' is-now' : '') + '">' +
+        '<span class="tl-lead"><span class="tl-what">' + esc(s[0]) + '</span>' +
+          '<span class="tl-when">' + esc(niceDate(String(s[1]).slice(0, 10))) + '</span></span>' +
+        '<span class="tl-span">' + esc(hoursWord(new Date(end) - new Date(s[1])) + (running ? ' so far' : '')) + '</span></div>');
+    });
+    if (m.created && rows.length) {
+      var endAll = m.completed || now;
+      rows.push('<div class="tl-rule"></div><div class="tl-row tl-date">' +
+        '<span class="tl-lead"><span class="tl-what">' + (m.completed ? 'Total' : 'Total so far') + '</span></span>' +
+        '<span class="tl-span">' + esc(hoursWord(new Date(endAll) - new Date(m.created))) + '</span></div>');
+    }
+    block.hidden = !rows.length;
+    box.innerHTML = rows.join('');
   }
 
   function railMoney(label, value, cls) {

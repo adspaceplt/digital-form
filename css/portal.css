@@ -4720,7 +4720,7 @@ body > .shell { width: 100%; }
    Every table states its own tracks now, on both the header and the row. */
 .crm-head.client-row, .crm-row.client-row {
   grid-template-columns:
-    minmax(0, 1.9fr) 128px minmax(0, .9fr) 104px minmax(0, 1fr) 104px 18px;
+    minmax(0, 1.9fr) 128px minmax(0, .9fr) minmax(0, 1fr) 104px 18px;
 }
 .crm-c-seen { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
 /* The mark that says the row goes somewhere, in the column the header leaves
@@ -4883,7 +4883,7 @@ body > .shell { width: 100%; }
 .perm input:disabled { opacity: .45; }
 .perm:has(input:disabled) { cursor: default; color: var(--ink-mute); }
 /* One block per section (the revamp of 2026-09-25): the name and the
-   Fine-tune fold on the head line, the four levels as a segment the panel's
+   Advanced fold on the head line, the four levels as a segment the panel's
    width, and one line saying what the chosen level allows. */
 .permsec { display: flex; flex-direction: column; gap: 8px; padding: 14px 0; border-top: 1px solid var(--line-soft); }
 .permsec:first-child { padding-top: 4px; border-top: 0; }

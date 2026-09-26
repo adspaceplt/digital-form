@@ -1894,6 +1894,11 @@ contacts now reach us by a WhatsApp username with no number behind it, and
 already printed in front of it, so nobody types it twice, and the one
 `whatsapp` value holds `@name` or the number, read by one builder.
 
+**No date before the company existed.** ADSPACE PLT was registered on
+14 Aug 2023, so every date field starts there and ends in 2099; a slip like
+year 0003 is cleared when the field is left, with one line saying why,
+rather than saved and found later on a timeline.
+
 **A document is drawn on one letterhead, whichever kind it is.** The Letter of
 Offer held the only copy of the pen: the page size, the margins, the wordmark,
 the address block, the monogram top right, the page count.
@@ -1964,7 +1969,7 @@ of, never from a verb: there is no `clients.billing.delete`.
 
 **A screen already read a section at a time is a screen whose access is a section at a time.** The Activity record's tab strip has named its sections for months — Clients, My Work, Team, Content Review, Creator Campaigns, Short Links, Documents, Services — while its access was one switch over all of them, so a manager who wanted the team to see how campaigns were progressing had to hand them every client's billing change and every letter as well. The parts model was already the right shape: a part answers with its own level where one is set and its section's where none is, so the ordinary group is untouched and the exception is one select. What it needed was the thing a policy cannot guess — which section a row belongs to. That map lives in the console, about a third of it does not follow the tag's prefix, and a map restated in two places drifts, so the two copies are compared and the suite fails on any difference. A tag nothing has named yet answers a section that has no part, which falls back: a row written by next year's feature is read by whoever can read the record, rather than hidden from everybody by a map that has not caught up.
 
-**A panel that grants access says what it grants.** The group panel was nine selects of No access / View / Work / Manage and forty part selects under them, so what a group could actually do was a question answered by reading every one. It now opens on the answer: one sentence reading the panel back, a starting shape (Admin, Manager, Staff, View only) so the ordinary group is one press, each section a segment with a line under it naming what the chosen level allows in that section, and the parts folded under Fine-tune with a count of the ones that differ. The sentence and the counts are derived from the controls on every change, and the shape a group matches is worked out, never stored, so nothing can say Staff while the panel says otherwise. The sensitive parts (Team, HR letters, performance reviews) are in no preset below Admin, because a shape somebody picks in one press should never open what is opened deliberately.
+**A panel that grants access says what it grants.** The group panel was nine selects of No access / View / Work / Manage and forty part selects under them, so what a group could actually do was a question answered by reading every one. It now opens on the answer: one sentence reading the panel back, a starting shape (Admin, Manager, Staff, View only) so the ordinary group is one press, each section a segment with a line under it naming what the chosen level allows in that section, and the parts folded under Advanced with a count of the ones that differ; Admin is a starting shape and not a second tick, because a tick below the sections said what Start from had already said. The sentence and the counts are derived from the controls on every change, and the shape a group matches is worked out, never stored, so nothing can say Staff while the panel says otherwise. The sensitive parts (Team, HR letters, performance reviews) are in no preset below Admin, because a shape somebody picks in one press should never open what is opened deliberately.
 
 **A switch beside the ladder goes the day a level can say it.** Billing was one
 (`can_billing`), kept because a pane inside a record is not a section. It hid

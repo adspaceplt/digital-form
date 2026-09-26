@@ -95,11 +95,37 @@
        place. The card is what takes focus, so Escape still closes, the trap
        still holds and a screen reader still announces the dialog.
        `o.focus` survives for a sheet whose whole purpose is one value. */
+    /* **A sheet opens at its top, every time.** The same sheet serves Add
+       and Edit and is only hidden between uses, so its body kept the scroll
+       it was left at: a lead added after a record was edited opened part way
+       down, on Source and Industry, with the brand name above the fold
+       (reported 2026-09-26 on Add lead and on Billing's Edit). And focus is
+       placed without scrolling: the card is still lifting into place when it
+       takes focus, and a browser that scrolls to reveal it moves the body
+       under the reader's eye. */
+    box.scrollTop = 0;
+    Array.prototype.forEach.call(box.querySelectorAll('.sheet-body'), function (b) { b.scrollTop = 0; });
     var f = o.focus && box.querySelector(o.focus);
-    if (f) { f.focus(); return; }
+    if (f) { f.focus({ preventScroll: true }); return; }
     var card = box.querySelector('.sheet-card') || box;
     if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '-1');
-    card.focus();
+    card.focus({ preventScroll: true });
+  }
+
+  /* Every sheet in the portal, including those a section opens by
+     unhiding it directly rather than through show(), starts at its top when
+     it appears: reused between Add and Edit, a hidden sheet otherwise kept
+     the scroll it was left at. */
+  if (window.MutationObserver) {
+    new MutationObserver(function (list) {
+      list.forEach(function (m) {
+        var el = m.target;
+        if (!el.classList || !el.classList.contains('sheet') || el.hidden) return;
+        if (m.oldValue === null) return;
+        el.scrollTop = 0;
+        Array.prototype.forEach.call(el.querySelectorAll('.sheet-body'), function (b) { b.scrollTop = 0; });
+      });
+    }).observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['hidden'], attributeOldValue: true });
   }
 
   window.ADspaceSheet = {
