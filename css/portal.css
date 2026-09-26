@@ -7610,7 +7610,7 @@ body.is-canvas { overflow: hidden; }
 .qhead-end .chip { align-self: center; }
 /* The task's stage in its head: the list's own select, at the list's width. */
 .stagepick { display: inline-flex; align-self: center; }
-.stagepick .state-select { width: var(--state-w); }
+.stagepick .state-select { width: auto; min-width: var(--state-w); max-width: 220px; }
 .thead-ctl .stagepick { flex: 0 0 auto; }
 .qhead-title { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em; line-height: 25px; overflow-wrap: anywhere; }
 .qhead-ctx { margin: 4px 0 0; font-size: 13px; color: var(--ink-soft); }

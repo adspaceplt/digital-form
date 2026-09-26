@@ -2264,7 +2264,7 @@
     ck.className = 'tcheck' + (p === 'done' ? ' is-done' : '');
     ck.setAttribute('aria-pressed', String(p === 'done'));
     ck.setAttribute('aria-label', p === 'done' ? 'Reopen' : 'Mark complete');
-    paintHeadStage($('dwStatus'), t, n, $('dwNext'), true);
+    paintHeadStage($('dwStatus'), t, n, $('dwActs'), true);
     $('dwTitle').textContent = t.title || 'Untitled task';
     /* One line that places it, and the way to where the rest of it lives:
        the month or the client is its own record, not this sheet's. */
@@ -3360,12 +3360,12 @@
       metaFormat(t),
       TASK_TYPE_WORD[t.task_type] || ''
     ].filter(Boolean).join(' · ');
-    paintHeadStage($('taskStage'), t, n, $('taskNextStep'), false);
+    paintHeadStage($('taskStage'), t, n, $('taskNextActs'), false);
     paintRun(t);
   }
   /* The head's stage is the same select as the row's, where the reader may
-     move it; a chip where they may not. A refusal or a Why? is asked under
-     the next step, which is where the move is read. */
+     move it; a chip where they may not. A refusal or a Why? is drawn inside
+     the next step's card, under its button, which is where the move is read. */
   function paintHeadStage(box, t, n, under, drawer) {
     if (!box) return;
     var html = stageCell(t);
