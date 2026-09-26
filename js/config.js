@@ -104,7 +104,7 @@ window.ADSPACE_CONFIG = {
      Public by design, like the anon key; the SECRET key lives only in the
      Supabase dashboard (Authentication, Attack Protection). Leave blank until
      both are set together: see docs/SIGN-IN-SECURITY.md. */
-  turnstileSiteKey: ''
+  turnstileSiteKey: '0x4AAAAAAFEI21WUxApWeD2V'
 
   /* No secret belongs in this file. It is served to the browser on a public
      site, so anything here can be read by anyone who opens the page. The
