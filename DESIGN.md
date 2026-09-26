@@ -807,12 +807,16 @@ question on save, so the list on the sheet is a courtesy and not the gate.
 **A month is a record, and the pieces made in it hang off it.** The
 engagement is one client's work for one month: who manages it, how many
 pieces were planned, where the files live, the content meeting, and the
-two ticks that say whether the month is ready. It lives on the client
-record, because that is where the month is planned, and the task rail names
-it because that is where the month is worked. Production waits on two facts
-about it (planning complete, the meeting held or marked not applicable), and
-both are the database's to check: a status a page could set is a status a
-page could set wrongly.
+two ticks that say whether the month is ready. It lives in My Work,
+Clients, beside the tasks made in it, and the task rail names it because
+that is where the month is worked; the client record keeps what the client
+is given, and the client reads only when the meetings are (2026-09-25).
+**A client's deliverable goes only into a month that is planned**: one that
+exists, is open, and has its meeting set or marked not applicable, whichever
+door the task came in by. Production waits on two facts about it (planning
+complete, the meeting held or marked not applicable), and both are the
+database's to check: a status a page could set is a status a page could set
+wrongly.
 
 **A meeting is booked where it is planned, and the message about it is
 written for the team (2026-09-24).** The content meeting books itself on the

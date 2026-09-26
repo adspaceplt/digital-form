@@ -4077,7 +4077,7 @@ body > .shell { width: 100%; }
    engagement's facts at its head and the month's tasks under them. */
 .workfilters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 12px; }
 .workfilters .cmdbar-find { flex: 1 1 190px; max-width: 420px; }
-.workfilters .select-sm { flex: 0 1 auto; }
+.workfilters .select-sm { flex: 0 1 180px; width: auto; min-width: 0; }
 .workfilters .cmdbar-count { margin-left: auto; }
 /* The pane is 591px at a 1280 window, which is narrow by its own measure:
    the search takes a line and the three selects share the next, with the
@@ -7103,7 +7103,7 @@ body.is-canvas { overflow: hidden; }
   .cmdbar-search { display: inline-grid; }
   /* It leaves by collapsing, never by `display: none`: a control that drops
      out of a flex row in one frame makes the field jump into the gap. */
-  .cmdbar-find {
+  .cmdbar .cmdbar-find {
     flex: 0 0 0; max-width: 0; min-width: 0; opacity: 0; overflow: hidden;
     transition: max-width var(--t-slow) var(--ease), opacity var(--t) var(--ease-out),
                 flex-basis var(--t-slow) var(--ease);
@@ -8003,3 +8003,11 @@ body.is-canvas { overflow: hidden; }
 .is-narrow .rh-row > :nth-child(3) { grid-area: ver; text-align: right; }
 .is-narrow .rh-row > :nth-child(4) { grid-area: upd; text-align: right; }
 .is-narrow .rh-row > .rp-go { display: none; }
+
+/* My Work, Clients: one client's content months, meetings and tasks, picked
+   from the select above them. The select is as wide as a client's name reads
+   and no wider; on a phone it takes the row. The step to the months under
+   it is the block step. */
+.wclient-row { margin: 0 0 12px; }
+.wclient-row > .field { flex: 0 1 360px; max-width: 360px; }
+@media (max-width: 640px) { .wclient-row > .field { flex-basis: 100%; max-width: none; } }

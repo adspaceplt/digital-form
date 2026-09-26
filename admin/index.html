@@ -26,7 +26,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260925k">
+<link rel="stylesheet" href="/css/portal.css?v=20260925l">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -41,26 +41,26 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260925k"></script>
-<script src="/js/words.js?v=20260925k"></script>
-<script src="/js/copy.js?v=20260925k"></script>
-<script src="/js/ask.js?v=20260925k"></script>
-<script src="/js/confirm.js?v=20260925k"></script>
-<script src="/js/sheet.js?v=20260925k"></script>
-<script src="/js/form.js?v=20260925k"></script>
-<script src="/js/state.js?v=20260925k"></script>
-<script src="/js/group.js?v=20260925k"></script>
-<script src="/js/menu.js?v=20260925k"></script>
-<script src="/js/cmdbar.js?v=20260925k"></script>
-<script src="/js/api.js?v=20260925k"></script>
-<script src="/js/money.js?v=20260925k"></script>
-<script src="/js/mockups.js?v=20260925k"></script>
+<script src="/js/config.js?v=20260925l"></script>
+<script src="/js/words.js?v=20260925l"></script>
+<script src="/js/copy.js?v=20260925l"></script>
+<script src="/js/ask.js?v=20260925l"></script>
+<script src="/js/confirm.js?v=20260925l"></script>
+<script src="/js/sheet.js?v=20260925l"></script>
+<script src="/js/form.js?v=20260925l"></script>
+<script src="/js/state.js?v=20260925l"></script>
+<script src="/js/group.js?v=20260925l"></script>
+<script src="/js/menu.js?v=20260925l"></script>
+<script src="/js/cmdbar.js?v=20260925l"></script>
+<script src="/js/api.js?v=20260925l"></script>
+<script src="/js/money.js?v=20260925l"></script>
+<script src="/js/mockups.js?v=20260925l"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260925k" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260925l" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -471,10 +471,6 @@
             <!-- The client's monthly social media reports: prepared here, checked
                  by a second person, then published to the client's portal. -->
             <button class="tab" data-pane="reports" type="button" role="tab" aria-selected="false">Reports</button>
-            <!-- The client's own work: its tasks by month, and the
-                 engagement record each month hangs off. Drawn where My Work
-                 is readable, by the same script that draws My Work. -->
-            <button class="tab" data-pane="work" data-part="ops" type="button" role="tab" aria-selected="false">Work</button>
             <button class="tab" data-pane="activity" data-needs-activity type="button" role="tab" aria-selected="false">Activity</button>
           </nav>
 
@@ -921,10 +917,6 @@
             <div class="msg" id="pickMsg"></div>
           </div>
         </div>
-
-          <div class="rec-pane" data-pane="work" hidden>
-            <div id="crmWorkPane"></div>
-          </div>
 
           <div class="rec-pane" data-pane="reports" hidden>
             <div id="crmReportsPane"></div>
@@ -1816,6 +1808,10 @@
             <button class="acttab btn-sm is-on" data-view="list" type="button" aria-pressed="true">List</button>
             <button class="acttab btn-sm" data-view="board" type="button" aria-pressed="false">Board</button>
             <button class="acttab btn-sm" data-view="calendar" type="button" aria-pressed="false">Calendar</button>
+            <!-- A client's months, meetings and tasks, one client at a time:
+                 moved here from the client record, which keeps what the
+                 client is sold and sent. -->
+            <button class="acttab btn-sm" data-view="clients" type="button" aria-pressed="false">Clients</button>
             <!-- The same work, asked an aggregate question rather than a row
                  one. Drawn only where `ops.reports` is granted, which is a
                  part the ladder has carried since phase 1 and which is never
@@ -1909,6 +1905,7 @@
                 </button>
                 <div class="kmenu" id="workMore" hidden role="menu">
                   <button class="kmenu-item" data-a="bulk" type="button" role="menuitem">Bulk add</button>
+                  <button class="kmenu-item" data-a="recur" type="button" role="menuitem">Run repeating tasks</button>
                   <button class="kmenu-item" data-a="template" type="button" role="menuitem">From template</button>
                   <button class="kmenu-item" data-a="select" type="button" role="menuitem" data-need="ops:manage">Select tasks</button>
                   <button class="kmenu-item" data-a="numbering" type="button" role="menuitem" hidden>Task numbering</button>
@@ -1942,6 +1939,7 @@
              every task there has ever been and not about the page. -->
         <div id="workReport" hidden></div>
         <div id="workLoad" hidden></div>
+        <div id="workClients" hidden></div>
       </div>
 
       <!-- One task, on the same workspace shape a client and a campaign use:
@@ -2268,16 +2266,15 @@
             </button>
           </div>
           <div class="sheet-body">
-            <!-- What the run is, first: one choice of two, so a segment. -->
-            <div class="row">
-              <div class="field">
-                <label class="field-label" for="genWhat">Bulk add type</label>
-                <select class="select" id="genWhat" data-seg>
-                  <option value="month">First month</option>
-                  <option value="recur">Recurring month</option>
-                </select>
-              </div>
-            </div>
+            <!-- One flow: the client, then one of the client's confirmed
+                 months; the line under them says whether it is the first
+                 month or a recurring one. Running the repeat rules is its
+                 own item in My Work's ⋯, and this select is how the sheet
+                 knows which job it was opened for. -->
+            <select id="genWhat" hidden aria-hidden="true" tabindex="-1">
+              <option value="month">Month</option>
+              <option value="recur">Repeats</option>
+            </select>
             <section class="fsec">
               <h4 class="fsec-h">Client and month</h4>
               <div class="row fgrid">
@@ -2394,7 +2391,7 @@
               </details>
             </div>
             <div id="genRecurBox" hidden>
-              <p class="hint">Every active repeat rule is run once for the month. A task already made for a date is not made again.</p>
+              <p class="hint">Every active repeat rule is run once for the month. A task already made for a date is not made again, and a client’s repeats wait until that client’s month has its meeting confirmed.</p>
             </div>
           </div>
           <div class="sheet-foot">
@@ -2571,6 +2568,7 @@
                   </select>
                 </div>
               </div>
+              <p class="hint genplan" id="ntMonthHint" hidden></p>
               <div class="row fgrid-3">
                 <div class="field">
                   <label class="field-label" for="ntPublish">Scheduled publish</label>
@@ -4121,16 +4119,16 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260925k"></script>
-<script src="/js/documents.js?v=20260925k"></script>
-<script src="/js/letters.js?v=20260925k"></script>
-<script src="/js/smreport.js?v=20260925k"></script>
-<script src="/js/reports.js?v=20260925k"></script>
-<script src="/js/register.js?v=20260925k"></script>
-<script src="/js/crm.js?v=20260925k"></script>
-<script src="/js/team.js?v=20260925k"></script>
-<script src="/js/campaigns.js?v=20260925k"></script>
-<script src="/js/ops.js?v=20260925k"></script>
-<script src="/js/perf.js?v=20260925k"></script>
+<script src="/js/admin.js?v=20260925l"></script>
+<script src="/js/documents.js?v=20260925l"></script>
+<script src="/js/letters.js?v=20260925l"></script>
+<script src="/js/smreport.js?v=20260925l"></script>
+<script src="/js/reports.js?v=20260925l"></script>
+<script src="/js/register.js?v=20260925l"></script>
+<script src="/js/crm.js?v=20260925l"></script>
+<script src="/js/team.js?v=20260925l"></script>
+<script src="/js/campaigns.js?v=20260925l"></script>
+<script src="/js/ops.js?v=20260925l"></script>
+<script src="/js/perf.js?v=20260925l"></script>
 </body>
 </html>
