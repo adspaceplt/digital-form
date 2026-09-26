@@ -62,6 +62,9 @@
       reply: 'Reply', more: 'More actions',
       document: 'Document', total: 'Total', issued: 'Issued', download: 'Download', noLetters: 'No letters.', offer: 'Letter of Offer',
       reports: 'Social media reports', report: 'Report', published: 'Published', version: 'Version',
+      meetings: 'Content meetings', meeting: 'Meeting', when: 'Date and time', upcoming: 'Upcoming', held: 'Held',
+      join: 'Join meeting', discussion: 'Content Discussion',
+      channel: { onsite: 'On site', google_meet: 'Google Meet', zoom: 'Zoom', other: 'Online' },
       review: 'Content Review', open: 'Open', campaign: 'Creator campaign',
       bank: 'Bank', reference: 'Payment reference', person: 'Person', email: 'Email',
       signInEmail: 'Sign-in email', noAccessRows: 'No entries.',
@@ -91,6 +94,9 @@
       reply: '回复', more: '更多操作',
       document: '文件', total: '总额', issued: '已签发', download: '下载', noLetters: '暂无函件。', offer: '报价函',
       reports: '社交媒体报告', report: '报告', published: '已发布', version: '版本',
+      meetings: '内容会议', meeting: '会议', when: '日期与时间', upcoming: '即将举行', held: '已举行',
+      join: '加入会议', discussion: '内容讨论',
+      channel: { onsite: '现场', google_meet: 'Google Meet', zoom: 'Zoom', other: '线上' },
       review: '内容审阅', open: '打开', campaign: '博主推广',
       bank: '银行', reference: '付款备注', person: '姓名', email: '电子邮箱',
       signInEmail: '登录邮箱', noAccessRows: '暂无记录。',
@@ -339,6 +345,58 @@
       box.innerHTML = ''; box.appendChild(tb);
     });
   }
+  // ---- Content meetings -----------------------------------------------------
+  /* When we meet about each month's content: the date, the time, how it is
+     held, and the link while the meeting is still ahead. Read from
+     `portal_meetings`, which sends nothing else about the month; the section
+     is not drawn until there is a meeting. */
+  function clock(d) {
+    var h = d.getHours(), m = d.getMinutes();
+    return ((h % 12) || 12) + ':' + String(m).padStart(2, '0') + (h < 12 ? 'am' : 'pm');
+  }
+  function meetWhen(v) {
+    var a = new Date(v.at), b = new Date(a.getTime() + (Number(v.minutes) || 30) * 60000);
+    var day = lang === 'zh'
+      ? a.getFullYear() + '年' + (a.getMonth() + 1) + '月' + a.getDate() + '日'
+      : a.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(',', '');
+    return day + ', ' + clock(a) + ' – ' + clock(b);
+  }
+  function meetAgenda(w, per) {
+    var m = /^(\d{4})-(\d{2})$/.exec(per || '');
+    if (!m) return w.discussion;
+    if (lang === 'zh') return m[1] + '年' + Number(m[2]) + '月' + w.discussion;
+    return new Date(Number(m[1]), Number(m[2]) - 1, 1).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) + ' ' + w.discussion;
+  }
+  function paintMeetings(w, c) {
+    var wrap = $('meetWrap'), box = $('meetBox');
+    if (!wrap || !box || !c.id) return;
+    db.rpc('portal_meetings', { p_client: c.id }).then(function (r) {
+      var list = (!r.error && r.data && r.data.meetings) || [];
+      wrap.hidden = !list.length;
+      if (!list.length) { box.innerHTML = ''; return; }
+      var tb = table('<div class="crm-head svc-row doc-row"><span>' + esc(w.meeting) + '</span><span class="svc-rate">' + esc(w.when) +
+        '</span><span>' + esc(w.state) + '</span><span></span></div>');
+      var now = Date.now();
+      list.forEach(function (v) {
+        var ahead = new Date(v.at).getTime() + (Number(v.minutes) || 30) * 60000 > now;
+        var row = document.createElement('div');
+        row.className = 'svc-row doc-row';
+        var items = ahead && v.link ? [['join', w.join]] : [];
+        row.innerHTML =
+          '<span class="svc-name"><b>' + esc(meetAgenda(w, v.period)) + '</b><small>' + esc((w.channel[v.channel] || w.channel.other)) + '</small></span>' +
+          '<span class="svc-rate svc-amt">' + esc(meetWhen(v)) + '</span>' +
+          '<span class="svc-state">' + (ahead ? chip(w.upcoming, 'is-warn') : chip(w.held)) + '</span>' +
+          menuCell(items);
+        wireMenu(row);
+        if (items.length) row.querySelector('[data-a="join"]').addEventListener('click', function () {
+          window.open(v.link, '_blank', 'noopener');
+        });
+        tb.appendChild(row);
+      });
+      box.innerHTML = ''; box.appendChild(tb);
+    });
+  }
+
   function downloadReport(v) {
     msg('repMsg', '', '');
     db.rpc('portal_report', { p_version: v.id }).then(function (r) {
@@ -370,7 +428,7 @@
     if (window.ADspaceChrome) window.ADspaceChrome.preparedFor('', '');
 
     ['ovHead:overview', 'ctHead:contacts', 'svcHead:services', 'rqHead:requests',
-     'docHead:letters', 'repHead:reports', 'engHead:engagements',
+     'docHead:letters', 'meetHead:meetings', 'repHead:reports', 'engHead:engagements',
      'payHead:payment', 'accHead:account'].forEach(function (p) {
       var a = p.split(':'); $(a[0]).textContent = w[a[1]];
     });
@@ -548,6 +606,7 @@
       dbox.innerHTML = ''; dbox.appendChild(dtb);
     }
 
+    paintMeetings(w, c);
     paintReports(w, c);
 
     // Engagements: the two client pages, opened with their own links.

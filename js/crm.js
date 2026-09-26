@@ -822,15 +822,23 @@
      services it quotes and Billing was a scroll away from the contact it
      names. The pane is in the address, so a refresh, a pasted link, Back and
      Forward all land on the section somebody was working in. */
-  var PANES = ['overview', 'contacts', 'billing', 'brand', 'services', 'documents', 'reports', 'work', 'activity'];
+  var PANES = ['overview', 'contacts', 'billing', 'brand', 'services', 'documents', 'reports', 'activity'];
   var pane = 'overview';
 
   function paneFromUrl() {
     var t = new URLSearchParams(location.search).get('tab') || '';
-    return PANES.indexOf(t) >= 0 ? t : 'overview';
+    return PANES.indexOf(t) >= 0 || t === 'work' ? t : 'overview';
   }
 
   function showPane(key) {
+    /* A client's months, meetings and tasks moved to My Work's Clients view
+       (2026-09-25), so an older link to this record's Work pane lands there. */
+    if (key === 'work' && state.client && bridge.show) {
+      history.replaceState(null, '', '/admin/?s=work&view=clients&wc=' +
+        encodeURIComponent(state.client.slug || state.client.id));
+      bridge.show('work');
+      return;
+    }
     if (PANES.indexOf(key) < 0) key = 'overview';
     if (key === 'activity' && !maySeeActivity()) key = 'overview';
     var tabOf = document.querySelector('#crmTabs .tab[data-pane="' + key + '"]');
@@ -846,11 +854,6 @@
     });
     if (key === 'activity' && !(state.log || []).length) loadClientLog();
     if (key === 'overview') paintSummary();
-    /* The client's work is My Work's to draw: the words, the gates and the
-       sheets are that script's, and a second copy here would drift. */
-    if (key === 'work' && window.ADspaceOps && window.ADspaceOps.clientWork) {
-      window.ADspaceOps.clientWork($('crmWorkPane'), state.client);
-    }
     /* The client's finished reports, drawn by the report script: the reports
        are prepared in the Reports section, and this tab lists what came out
        of it, the way Documents lists the letters. */
