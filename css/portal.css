@@ -4272,7 +4272,7 @@ body > .shell { width: 100%; }
 .railother .field-label { display: block; margin-bottom: 4px; }
 .railother .select { width: 100%; }
 .raildate { display: flex; align-items: baseline; gap: 10px; }
-.raildate dt { font-size: 13px; color: var(--ink-soft); min-width: 0; }
+.raildate dt { font-size: 13px; color: var(--ink-mute); min-width: 0; }
 .raildate dd { margin: 0 0 0 auto; font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
 .raildate dd.is-over { color: var(--warn); font-weight: 600; }
 /* A commitment that moved keeps where it moved from under the date it is now,
@@ -5885,7 +5885,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .crhead { margin-top: 24px; }
 .rec-id.rec-id-solo { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who ctl"; }
 .rec-name h1 {
-  margin: 0; font-family: var(--font-head); font-size: 21px; font-weight: 600; letter-spacing: -.02em;
+  margin: 0; font-family: var(--font-head); font-size: 19px; font-weight: 600; letter-spacing: -.02em;
   line-height: 1.3; min-width: 0; overflow-wrap: anywhere;
 }
 .crlinks {
@@ -5896,7 +5896,6 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .crhead > .msg { margin-top: 10px; }
 .input[aria-invalid="true"] { border-color: var(--err); }
 @media (max-width: 640px) {
-  .rec-name h1 { font-size: 19px; }
   /* The chrome's "Forget this device" gives up its word on a phone, the way
      the command bar's primary does, so the name beside the mark is not cut
      to "S..". The word stays as the button's name. */
@@ -5928,7 +5927,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    they head the same kind of thing: a block of the record. As 11px eyebrows
    the rail read as a footnote to the pane rather than as its other half. */
 .railtitle {
-  margin: 0 0 10px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
+  margin: 0 0 8px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
 }
 /* One glyph per row, so a list of dates or events can be scanned by shape
    before it is read: a calendar is a date, a file is a letter, a person is a
@@ -5990,9 +5989,9 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 /* The campaign rail's own blocks. Money is right aligned on one grid so the
    total sits directly under the figures it is the sum of, which is the whole
    point of putting it there rather than in a card of its own. */
-.railmoney { display: grid; gap: 7px; margin: 0; }
+.railmoney { display: grid; gap: 8px; margin: 0; }
 .railmoney > div { display: flex; align-items: baseline; gap: 12px; }
-.railmoney dt { font-size: 13px; color: var(--ink-soft); }
+.railmoney dt { font-size: 13px; color: var(--ink-mute); }
 .railmoney dd {
   margin: 0 0 0 auto; font-size: 13px; color: var(--ink);
   font-variant-numeric: tabular-nums; white-space: nowrap;
@@ -6015,9 +6014,9 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 
 /* The campaign and task rails still list plain dates. Glyph, label, then the
    date on the right, tabular so a column of them lines up on the day. */
-.raildates { display: grid; gap: 10px; margin: 0; }
+.raildates { display: grid; gap: 8px; margin: 0; }
 .raildates > div { display: flex; align-items: center; gap: 10px; }
-.raildates dt { font-size: 13px; color: var(--ink-soft); min-width: 0; }
+.raildates dt { font-size: 13px; color: var(--ink-mute); min-width: 0; }
 .raildates dd {
   margin: 0 0 0 auto; font-size: 13px; color: var(--ink);
   font-variant-numeric: tabular-nums; white-space: nowrap;
@@ -6598,9 +6597,9 @@ body.is-canvas { overflow: hidden; }
    small cards; a list of rows reads as one record. The label track is the
    row's smaller share: 150px against a pane of roughly 590 is close to the
    short side of a golden cut, which is what keeps the labels quiet. */
-.ovfacts { display: grid; gap: 9px; margin: 0; }
+.ovfacts { display: grid; gap: 8px; margin: 0; }
 .ovfacts > div { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 0 16px; align-items: baseline; }
-.ovfacts dt { font-size: 13.5px; color: var(--ink-mute); min-width: 0; }
+.ovfacts dt { font-size: 13px; color: var(--ink-mute); min-width: 0; }
 .ovfacts dd { margin: 0; font-size: 13.5px; color: var(--ink); min-width: 0; overflow-wrap: anywhere; }
 .ovfacts dd b { font-weight: 600; }
 .ovmeta { color: var(--ink-mute); font-size: 12.5px; margin-left: 7px; }
@@ -6670,7 +6669,7 @@ body.is-canvas { overflow: hidden; }
 .readgroups { display: grid; gap: 0; margin-top: 4px; }
 .readgroup { padding: 16px 0; border-top: 1px solid var(--line-soft); }
 .readgroup:first-child { border-top: 0; padding-top: 4px; }
-.readgroup .fsec-h { margin-bottom: 10px; }
+.readgroup .fsec-h { margin-bottom: 12px; }
 /* The labels are longer than a contact's, so the track is too; on a phone
    the label sits over its value. */
 .readgroups .ovfacts > div { grid-template-columns: 190px minmax(0, 1fr); }
@@ -7311,7 +7310,7 @@ body.is-canvas { overflow: hidden; }
 .tsteps-bar li.is-now { background: var(--action); }
 .tsteps-word { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .tsteps-word b { color: var(--ink); font-weight: 600; }
-.tnext-title { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; line-height: 1.35; }
+.tnext-title { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; line-height: 1.35; }
 /* A blocker is the warn colour and says so in words; the list under it is
    each thing that is missing, and the button is the first of them. */
 .tnext.is-blocked .tnext-title { color: var(--warn); }
@@ -7353,7 +7352,7 @@ body.is-canvas { overflow: hidden; }
 /* The rail's facts: a label beside its value, one a line, because a rail is
    read down. The value can carry its own control (Change beside the owner,
    the pen on a date) and its own small print under it. */
-.tfacts { display: grid; gap: 6px; margin: 0; }
+.tfacts { display: grid; gap: 8px; margin: 0; }
 .tfacts:empty { display: none; }
 .tfacts > div { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; align-items: baseline; }
 .tfacts dt { font-size: 13px; color: var(--ink-mute); }
@@ -7765,7 +7764,7 @@ body.is-canvas { overflow: hidden; }
   border-radius: 50%; background: var(--line-soft); color: var(--ink-soft);
 }
 .lockcard-mark svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.lockcard-title { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; text-wrap: balance; }
+.lockcard-title { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; text-wrap: balance; }
 .lockcard-line { margin: 6px 0 0; font-size: 13.5px; color: var(--ink-soft); overflow-wrap: anywhere; }
 .lockcard-form { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 20px; text-align: left; }
 .lockcard-form[hidden] { display: none; }
@@ -7789,6 +7788,8 @@ body.is-canvas { overflow: hidden; }
 .perf-row { grid-template-columns: minmax(0, 1fr) var(--state-w) 56px 172px 96px var(--ctl-h); }
 .mine-row { grid-template-columns: minmax(0, 1fr) var(--state-w) 56px 172px 96px 16px; cursor: pointer; }
 .perf-row { padding-top: 10px; padding-bottom: 10px; }
+/* A header row keeps every table's header pad, whatever its row's own. */
+.crm-head.perf-row, .crm-head.link-row { padding: 12px 15px 8px; }
 .perf-open, .mine-month {
   display: flex; flex-direction: column; justify-content: center; gap: 2px;
   min-width: 0; text-align: left;
