@@ -3900,19 +3900,23 @@ raya-2026        https://example.com/raya"></textarea>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
     </div>
-    <div class="rectabs" id="activityTabs" role="tablist" aria-label="Section">
-      <!-- The rail's own order, because these are the rail's own sections and
-           one sequence is easier to hold than two. -->
-      <button class="tab is-on" data-af="all" type="button">Everything</button>
-      <button class="tab" data-af="ops" data-need="activity.ops:view" type="button">My Work</button>
-      <button class="tab" data-af="clients" data-need="activity.clients:view" type="button">Clients</button>
-      <button class="tab" data-af="review" data-need="activity.review:view" type="button">Content Review</button>
-      <button class="tab" data-af="campaigns" data-need="activity.campaigns:view" type="button">Creator Campaigns</button>
-      <button class="tab" data-af="register" data-need="activity.register:view" type="button">Documents</button>
-      <button class="tab" data-af="links" data-need="activity.links:view" type="button">Short Links</button>
-      <button class="tab" data-af="services" data-need="activity.services:view" type="button">Services</button>
-      <button class="tab" data-af="team" data-need="activity.team:view" type="button">Team</button>
-    </div>
+    <!-- The rail's own order, because these are the rail's own sections and
+         one sequence is easier to hold than two. The strip is My Work's view
+         strip: one raised surface slides to the chosen section, and it
+         scrolls sideways where it is wider than the sheet. Performance
+         follows Team, as it does on the Team page. -->
+    <div class="actstrip"><span class="cmdbar-views actviews" id="activityTabs" role="group" aria-label="Section">
+      <button class="acttab btn-sm is-on" data-af="all" type="button" aria-pressed="true">Everything</button>
+      <button class="acttab btn-sm" data-af="ops" data-need="activity.ops:view" type="button" aria-pressed="false">My Work</button>
+      <button class="acttab btn-sm" data-af="clients" data-need="activity.clients:view" type="button" aria-pressed="false">Clients</button>
+      <button class="acttab btn-sm" data-af="review" data-need="activity.review:view" type="button" aria-pressed="false">Content Review</button>
+      <button class="acttab btn-sm" data-af="campaigns" data-need="activity.campaigns:view" type="button" aria-pressed="false">Creator Campaigns</button>
+      <button class="acttab btn-sm" data-af="register" data-need="activity.register:view" type="button" aria-pressed="false">Documents</button>
+      <button class="acttab btn-sm" data-af="links" data-need="activity.links:view" type="button" aria-pressed="false">Short Links</button>
+      <button class="acttab btn-sm" data-af="services" data-need="activity.services:view" type="button" aria-pressed="false">Services</button>
+      <button class="acttab btn-sm" data-af="team" data-need="activity.team:view" type="button" aria-pressed="false">Team</button>
+      <button class="acttab btn-sm" data-af="performance" data-need="team.performance:view" type="button" aria-pressed="false">Performance</button>
+    </span></div>
     <div class="sheet-body" id="activityList"></div>
   </div>
 </div>
