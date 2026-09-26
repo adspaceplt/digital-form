@@ -1247,8 +1247,10 @@
   }
 
   // ---- The printed record --------------------------------------------------------------
-  /* The outcome sheet the team signs at the 1-1, drawn on the letterhead the
-     letters use and redrawn from the record every time: no file is stored. */
+  /* The record of the month, for keeping and for reading at the 1-1, drawn
+     on the letterhead the letters use. No signature lines and no version
+     (the user, 2026-09-26): a member acknowledges in the portal, never on
+     paper. Redrawn from the record every time: no file is stored. */
   function printOne(r, btn) {
     if (!r || !r.id) return;
     draw([r], fileOf(r), btn);
@@ -1322,7 +1324,7 @@
       /* Every page names the record it belongs to, so a page lifted out still
          says whose month it was. */
       p.text((r.serial ? 'Ref ' + r.serial + ' · ' : '') + r.month, M, 42, 7.5, f.font, p.mute);
-      p.text('Confidential, internal use · Version ' + (r.version || 1), M, 32, 7.5, f.font, p.mute);
+      p.text('Confidential, internal use', M, 32, 7.5, f.font, p.mute);
     };
     var need = function (h) { if (y - h < 78) page(false); };
     /* A heading never ends a page: it takes its first lines with it. */
@@ -1456,18 +1458,6 @@
       }
       y -= 3;
     });
-
-    heading('7 · Acknowledgement');
-    para(r.acknowledged_at ? 'Acknowledged in the portal on ' + timeWord(r.acknowledged_at) + '.' : 'Not acknowledged in the portal.', 9.5);
-    need(84);
-    y -= 38;
-    var half = (W - 24) / 2;
-    p.rule(y, M, M + half, true);
-    p.rule(y, M + half + 24, R, true);
-    p.text('Reviewer signature and date', M, y - 12, 8.5, f.font, p.mute);
-    p.text('Team member signature and date', M + half + 24, y - 12, 8.5, f.font, p.mute);
-    y -= 28;
-    para('Signing confirms this review was discussed and the result was shown. It records acknowledgement, not necessarily agreement with the rating.', 8.5, f.font, p.mute);
   }
 
   window.ADspacePerf = {

@@ -1094,7 +1094,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `team_members`. Performance reads them; `perf_profile_set` sets only its two
   ticks.
 - Months start from June 2026. The padlock sits beside the Performance tab.
-- The print is drawn in the browser and never stored; printing is filed.
+- The print is drawn in the browser on the letterhead and never stored;
+  printing is filed. It carries no version and no acknowledgement or
+  signature lines: a member acknowledges in the portal.
 - Both locks (the master code and the email code) are one centred `.lockcard`.
 - Notifications never carry a score.
 
