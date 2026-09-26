@@ -2365,14 +2365,14 @@
       platformBoxes(current) +
       '<span class="slugfield"><span class="slugfield-pre">RM</span>' +
       '<input class="input" type="number" inputmode="decimal" min="0" step="10" value="' + esc(o.rate) + '"></span>' +
-      '<button class="btn btn-sm btn-primary" type="button">Save</button>' +
-      '<button class="btn btn-sm btn-quiet" type="button">Cancel</button>';
+      '<button class="btn btn-sm btn-quiet" type="button">Cancel</button>' +
+      '<button class="btn btn-sm btn-primary" type="button">Save</button>';
     body.appendChild(ed);
     // The platform boxes are inputs too and come first; this is the number.
     var input = ed.querySelector('input[type="number"]');
     input.focus(); input.select();
-    ed.querySelectorAll('button')[1].addEventListener('click', function () { ed.remove(); });
-    ed.querySelectorAll('button')[0].addEventListener('click', function () {
+    ed.querySelectorAll('button')[0].addEventListener('click', function () { ed.remove(); });
+    ed.querySelectorAll('button')[1].addEventListener('click', function () {
       var rate = Number(input.value || 0);
       var plats = readBoxes(ed);
       if (!rate || rate <= 0) { msg('campWorkMsg', 'Enter a rate above zero.', 'err'); input.focus(); return; }

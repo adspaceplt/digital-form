@@ -26,7 +26,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260926a">
+<link rel="stylesheet" href="/css/portal.css?v=20260926b">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -41,28 +41,28 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260926a"></script>
-<script src="/js/captcha.js?v=20260926a"></script>
-<script src="/js/words.js?v=20260926a"></script>
-<script src="/js/copy.js?v=20260926a"></script>
-<script src="/js/ask.js?v=20260926a"></script>
-<script src="/js/confirm.js?v=20260926a"></script>
-<script src="/js/sheet.js?v=20260926a"></script>
-<script src="/js/refresh.js?v=20260926a"></script>
-<script src="/js/form.js?v=20260926a"></script>
-<script src="/js/state.js?v=20260926a"></script>
-<script src="/js/group.js?v=20260926a"></script>
-<script src="/js/menu.js?v=20260926a"></script>
-<script src="/js/cmdbar.js?v=20260926a"></script>
-<script src="/js/api.js?v=20260926a"></script>
-<script src="/js/money.js?v=20260926a"></script>
-<script src="/js/mockups.js?v=20260926a"></script>
+<script src="/js/config.js?v=20260926b"></script>
+<script src="/js/captcha.js?v=20260926b"></script>
+<script src="/js/words.js?v=20260926b"></script>
+<script src="/js/copy.js?v=20260926b"></script>
+<script src="/js/ask.js?v=20260926b"></script>
+<script src="/js/confirm.js?v=20260926b"></script>
+<script src="/js/sheet.js?v=20260926b"></script>
+<script src="/js/refresh.js?v=20260926b"></script>
+<script src="/js/form.js?v=20260926b"></script>
+<script src="/js/state.js?v=20260926b"></script>
+<script src="/js/group.js?v=20260926b"></script>
+<script src="/js/menu.js?v=20260926b"></script>
+<script src="/js/cmdbar.js?v=20260926b"></script>
+<script src="/js/api.js?v=20260926b"></script>
+<script src="/js/money.js?v=20260926b"></script>
+<script src="/js/mockups.js?v=20260926b"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260926a" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260926b" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -345,7 +345,7 @@
             <h4 class="fsec-h">Client</h4>
             <div class="row fgrid">
               <div class="span-all"><label class="field-label" for="crmName">Client name</label>
-                <input class="input" id="crmName" placeholder="Company name"></div>
+                <input class="input" id="crmName" aria-required="true" placeholder="Company name"></div>
               <div><label class="field-label" for="crmSource">Source</label>
                 <select class="select" id="crmSource"></select></div>
               <div><label class="field-label" for="crmIndustry">Industry</label>
@@ -358,7 +358,7 @@
             <h4 class="fsec-h">Contact</h4>
             <div class="row fgrid-3">
               <div><label class="field-label" for="crmContactName">Contact person</label>
-                <input class="input" id="crmContactName" placeholder="John Doe"></div>
+                <input class="input" id="crmContactName" aria-required="true" placeholder="John Doe"></div>
               <div><label class="field-label" for="crmContactPhone">Phone / WhatsApp</label>
                 <input class="input" id="crmContactPhone" type="tel" placeholder="01x-xxx xxxx"></div>
               <div><label class="field-label" for="crmContactEmail">Email</label>
@@ -520,7 +520,7 @@
             <h4 class="fsec-h">Person</h4>
             <div class="row fgrid">
               <div><label class="field-label" for="ctName">Name</label>
-                <input class="input" id="ctName" placeholder="John Doe"></div>
+                <input class="input" id="ctName" aria-required="true" placeholder="John Doe"></div>
               <div><label class="field-label" for="ctRole">Role</label>
                 <input class="input" id="ctRole" placeholder="Marketing"></div>
             </div>
@@ -583,14 +583,14 @@
                 <h4 class="fsec-h">Company</h4>
                 <div class="row">
                   <div><label class="field-label" for="crmLegalName">Company name, as registered (capitals)</label>
-                    <input class="input crm-caps" id="crmLegalName" placeholder="COMPANY NAME SDN BHD" autocapitalize="characters"></div>
+                    <input class="input crm-caps" id="crmLegalName" aria-required="true" placeholder="COMPANY NAME SDN BHD" autocapitalize="characters"></div>
                 </div>
               </section>
               <section class="fsec">
                 <h4 class="fsec-h">Registration and tax</h4>
                 <div class="row fgrid">
                   <div><label class="field-label" for="crmCompanyNo">Business registration no.</label>
-                    <input class="input" id="crmCompanyNo" placeholder="202201012345"></div>
+                    <input class="input" id="crmCompanyNo" aria-required="true" placeholder="202201012345"></div>
                   <div><label class="field-label" for="crmCompanyNoOld">Old registration no.</label>
                     <input class="input" id="crmCompanyNoOld" placeholder="1234567-A"></div>
                   <div><label class="field-label" for="crmTin">TIN</label>
@@ -606,11 +606,11 @@
                 <h4 class="fsec-h">Billing contact and address</h4>
                 <div class="row fgrid">
                   <div><label class="field-label" for="crmBillContact">Billing contact</label>
-                    <select class="select" id="crmBillContact"></select></div>
+                    <select class="select" id="crmBillContact" aria-required="true"></select></div>
                   <div><label class="field-label" for="crmFinanceEmail">Finance department email</label>
                     <input class="input" id="crmFinanceEmail" type="email" placeholder="accounts@company.com"></div>
                   <div class="span-all"><label class="field-label" for="crmBillAddr">Company billing address</label>
-                    <textarea class="input textarea" id="crmBillAddr" rows="3"></textarea></div>
+                    <textarea class="input textarea" id="crmBillAddr" aria-required="true" rows="3"></textarea></div>
                 </div>
               </section>
               <div class="msg" id="crmBillMsg"></div>
@@ -717,7 +717,7 @@
             </div>
             <div class="row" id="svLabelRow" hidden>
               <div><label class="field-label" for="svLabel">Name</label>
-                <input class="input" id="svLabel" placeholder="Service name"></div>
+                <input class="input" id="svLabel" aria-required="true" placeholder="Service name"></div>
             </div>
             <div class="row">
               <div><label class="field-label" for="svState">State</label>
@@ -842,7 +842,7 @@
             <div class="sheet-body">
               <p class="hint" id="voidWhat"></p>
               <label class="field-label" for="voidReason">Reason</label>
-              <textarea class="input" id="voidReason" rows="3" placeholder="Reason"></textarea>
+              <textarea class="input" id="voidReason" aria-required="true" rows="3" placeholder="Reason"></textarea>
             </div>
             <div class="sheet-foot">
               <button class="btn btn-warn" id="voidGo" type="button">Void letter</button>
@@ -867,7 +867,7 @@
               <label class="field-label" for="delConfirm">Type the reference to confirm</label>
               <input class="input" id="delConfirm" autocomplete="off" spellcheck="false" placeholder="Reference">
               <label class="field-label" for="delReason" style="margin-top:12px">Reason</label>
-              <textarea class="input" id="delReason" rows="3" placeholder="Reason"></textarea>
+              <textarea class="input" id="delReason" aria-required="true" rows="3" placeholder="Reason"></textarea>
             </div>
             <div class="sheet-foot">
               <button class="btn btn-danger" id="delGo" type="button">Delete</button>
@@ -965,7 +965,7 @@
             </div>
             <div class="row">
               <div><label class="field-label" for="tcSummary">Summary</label>
-                <textarea class="input textarea" id="tcSummary" rows="3" placeholder="Summary"></textarea></div>
+                <textarea class="input textarea" id="tcSummary" aria-required="true" rows="3" placeholder="Summary"></textarea></div>
             </div>
           </section>
           <section class="fsec">
@@ -1316,12 +1316,12 @@
             <div class="row fgrid">
               <div><label class="field-label" for="campClient">Client</label>
                 <!-- Only active clients can be proposed to. The list is the CRM's. -->
-                <select class="select" id="campClient"></select>
+                <select class="select" id="campClient" aria-required="true"></select>
                 <p class="hint" id="campClientNone" hidden style="margin-top:6px">No active clients.</p></div>
               <div><label class="field-label" for="campOwner">Person in charge</label>
                 <select class="select" id="campOwner"></select></div>
               <div><label class="field-label" for="campTitle">Campaign name</label>
-                <input class="input" id="campTitle" placeholder="Campaign name"></div>
+                <input class="input" id="campTitle" aria-required="true" placeholder="Campaign name"></div>
               <div><label class="field-label" for="campPurpose">Campaign purpose</label>
                 <input class="input" id="campPurpose" placeholder="Purpose"></div>
             </div>
@@ -1344,14 +1344,14 @@
                   <option value="graphic">Graphic</option>
                 </select></div>
               <div><label class="field-label" for="campSlots">Creators</label>
-                <input inputmode="numeric" class="input" id="campSlots" type="number" min="1" value="10"></div>
+                <input inputmode="numeric" class="input" id="campSlots" aria-required="true" type="number" min="1" value="10"></div>
               <div><label class="field-label" for="campDeadline">Campaign due</label>
                 <input class="input" id="campDeadline" type="date"></div>
             </div>
             <label class="tickline"><input type="checkbox" id="campBackups">
               <span>Enable backup selection</span></label>
           </section>
-          <div class="row" style="margin-top:16px">
+          <div class="row acts" style="margin-top:16px">
             <button class="btn btn-primary" id="addCamp" type="button">Create</button>
             <button class="btn btn-quiet" id="cancelAddCamp" type="button">Cancel</button>
           </div>
@@ -1500,7 +1500,7 @@
             <div style="flex:0 0 130px"><label class="field-label" for="bulkTime">Time</label>
               <input class="input" id="bulkTime" type="time" aria-describedby="bulkTimeHint"><span class="field-hint" id="bulkTimeHint">Optional</span></div>
           </div>
-          <div class="row" style="margin-top:14px">
+          <div class="row acts" style="margin-top:14px">
             <button class="btn btn-primary" id="bulkApply" type="button">Apply</button>
             <button class="btn" id="bulkApplyAll" type="button" style="flex:0 0 auto">Apply all</button>
             <button class="btn btn-quiet" id="bulkCancel" type="button" style="flex:0 0 auto">Cancel</button>
@@ -1536,7 +1536,7 @@
             <div id="ncBox" hidden style="margin-top:12px">
               <div class="row">
                 <div><label class="field-label" for="ncName">Name</label>
-                  <input class="input" id="ncName" placeholder="Creator name"></div>
+                  <input class="input" id="ncName" aria-required="true" placeholder="Creator name"></div>
                 <div style="flex:0 0 200px"><label class="field-label" for="ncRate">Rate for this campaign (RM)</label>
                   <input inputmode="decimal" class="input" id="ncRate" type="number" min="0" step="10" placeholder="360"></div>
               </div>
@@ -1546,7 +1546,7 @@
               <label class="field-label" style="margin-top:12px">Posts on</label>
               <div id="ncPlatforms"></div>
               <div class="msg" id="ncDupe"></div>
-              <div class="row" style="margin-top:12px">
+              <div class="row acts" style="margin-top:12px">
                 <button class="btn btn-primary" id="ncSave" type="button">Add to campaign</button>
                 <button class="btn btn-quiet" id="ncClose" type="button" style="flex:0 0 auto">Cancel</button>
               </div>
@@ -1622,7 +1622,7 @@
             <!-- What is attached now belongs with the field that changes it,
                  above the actions, not stranded under them. -->
             <div class="invcurrent" id="invCurrent"></div>
-            <div class="row" style="margin-top:12px">
+            <div class="row acts" style="margin-top:12px">
               <button class="btn btn-primary" id="invSave" data-need="campaigns.finance:work" type="button">Save</button>
               <button class="btn btn-quiet" id="invCancel" type="button" style="flex:0 0 auto">Cancel</button>
             </div>
@@ -1707,7 +1707,7 @@
             <h4 class="fsec-h">Creator</h4>
             <div class="row fgrid">
               <div><label class="field-label" for="crName">Name</label>
-                <input class="input" id="crName" placeholder="Creator name"></div>
+                <input class="input" id="crName" aria-required="true" placeholder="Creator name"></div>
               <div><label class="field-label" for="crRate">Usual rate (RM), optional</label>
                 <input inputmode="decimal" class="input" id="crRate" type="number" min="0" step="10" placeholder="360"></div>
             </div>
@@ -2066,10 +2066,10 @@
                 <div class="row">
                   <div class="field">
                     <label class="field-label" for="taskLinkUrl">Address</label>
-                    <input class="input" id="taskLinkUrl" type="url" placeholder="https://" autocomplete="off" spellcheck="false">
+                    <input class="input" id="taskLinkUrl" aria-required="true" type="url" placeholder="https://" autocomplete="off" spellcheck="false">
                   </div>
                 </div>
-                <div class="row">
+                <div class="row acts">
                   <button class="btn btn-primary" id="taskLinkSave" type="button">Save</button>
                   <button class="btn btn-quiet" id="taskLinkCancel" type="button">Cancel</button>
                 </div>
@@ -2137,7 +2137,7 @@
           <div class="sheet-body">
             <p class="hint" id="dueWhat"></p>
             <label class="field-label" for="dueDate">New date</label>
-            <input class="input" id="dueDate" type="date">
+            <input class="input" id="dueDate" aria-required="true" type="date">
             <!-- The team's own categories, given by the user on 2026-09-22.
                  They are what a report groups replanning by, so they are
                  nouns and not sentences. -->
@@ -2287,7 +2287,7 @@
               <div class="row fgrid">
                 <div class="field" id="genClientField">
                   <label class="field-label" for="genClient">Client</label>
-                  <select class="select" id="genClient"></select>
+                  <select class="select" id="genClient" aria-required="true"></select>
                   <label class="tickline"><input type="checkbox" id="genPaused"> <span>Include past clients</span></label>
                 </div>
                 <div class="field">
@@ -2518,7 +2518,7 @@
                 </div>
                 <div class="field" id="ntClientField">
                   <label class="field-label" for="ntClient" id="ntClientLabel">Client</label>
-                  <select class="select" id="ntClient"></select>
+                  <select class="select" id="ntClient" aria-required="true"></select>
                 </div>
                 <div class="field">
                   <label class="field-label" for="ntFormat">Deliverable format</label>
@@ -2549,7 +2549,7 @@
                      description after it. The line under it shows the name. -->
                 <div class="field">
                   <label class="field-label" for="ntDesc">Content description</label>
-                  <input class="input" id="ntDesc" placeholder="Content Post" autocomplete="off">
+                  <input class="input" id="ntDesc" aria-required="true" placeholder="Content Post" autocomplete="off">
                   <p class="hint" id="ntCodeHint" hidden></p>
                 </div>
               </div>
@@ -2803,7 +2803,7 @@
               </div>
               <div class="field">
                 <label class="field-label" for="qkDue">Due</label>
-                <input class="input" id="qkDue" type="date">
+                <input class="input" id="qkDue" aria-required="true" type="date">
               </div>
             </div>
             <!-- Who the task is for is asked every time: a client, one of
@@ -3101,7 +3101,7 @@
             <div class="row">
               <div class="field">
                 <label class="field-label" for="tplLink">Client or engagement</label>
-                <select class="select" id="tplLink"></select>
+                <select class="select" id="tplLink" aria-required="true"></select>
               </div>
               <div class="field">
                 <label class="field-label" for="tplBase">Made for</label>
@@ -3142,7 +3142,7 @@
               <div class="row fgrid">
                 <div class="field">
                   <label class="field-label" for="teName">Name</label>
-                  <input class="input" id="teName" placeholder="Monthly social media report" maxlength="120">
+                  <input class="input" id="teName" aria-required="true" placeholder="Monthly social media report" maxlength="120">
                 </div>
                 <div class="field">
                   <label class="field-label" for="teTitle">Task title</label>
@@ -3366,11 +3366,11 @@
               <h4 class="fsec-h">Sign-in</h4>
               <div class="row fgrid-3">
                 <div><label class="field-label" for="tmName">Name</label>
-                  <input class="input" id="tmName" placeholder="John Doe"></div>
+                  <input class="input" id="tmName" aria-required="true" placeholder="John Doe"></div>
                 <div><label class="field-label" for="tmEmail">Sign-in email</label>
-                  <input class="input" id="tmEmail" type="email" placeholder="john@adspacestudios.com"></div>
+                  <input class="input" id="tmEmail" aria-required="true" type="email" placeholder="john@adspacestudios.com"></div>
                 <div><label class="field-label" for="tmRole">Group</label>
-                  <select class="select" id="tmRole"></select></div>
+                  <select class="select" id="tmRole" aria-required="true"></select></div>
               </div>
             </section>
             <!-- The HR serial is built from the Employee ID and the designation is
@@ -3419,7 +3419,7 @@
           <div class="sheet-body">
             <div class="row">
               <div><label class="field-label" for="grName">Name</label>
-                <input class="input" id="grName" placeholder="Group name"></div>
+                <input class="input" id="grName" aria-required="true" placeholder="Group name"></div>
             </div>
             <div class="row">
               <div><span class="field-label">Access</span>
@@ -3628,7 +3628,7 @@
             <div><label class="field-label" for="svcCat">Category</label>
               <select class="select" id="svcCat"></select></div>
             <div class="span-2"><label class="field-label" for="svcName">Name</label>
-              <input class="input" id="svcName" placeholder="Service name"></div>
+              <input class="input" id="svcName" aria-required="true" placeholder="Service name"></div>
           </div>
         </section>
         <section class="fsec">
@@ -3709,7 +3709,7 @@
             <label class="field-label" for="newSlug">Short link</label>
             <div class="slugfield">
               <span class="slugfield-pre" id="slugPrefix"></span>
-              <input class="input" id="newSlug" placeholder="spring-launch" autocapitalize="off"
+              <input class="input" id="newSlug" aria-required="true" placeholder="spring-launch" autocapitalize="off"
                      autocorrect="off" spellcheck="false">
             </div>
           </div>
@@ -3721,7 +3721,7 @@
         <div class="row">
           <div>
             <label class="field-label" for="newTarget">Destination</label>
-            <input class="input" id="newTarget" placeholder="https://…">
+            <input class="input" id="newTarget" aria-required="true" placeholder="https://…">
           </div>
         </div>
         
@@ -3740,7 +3740,7 @@
         <textarea class="input textarea" id="importText" rows="8" spellcheck="false"
           placeholder="spring-launch    https://example.com/spring    Spring campaign
 raya-2026        https://example.com/raya"></textarea>
-        <div class="row" style="margin-top:14px">
+        <div class="row acts" style="margin-top:14px">
           <button class="btn btn-primary" id="runImport" type="button">Import</button>
           <button class="btn btn-quiet" id="cancelImport" type="button">Cancel</button>
         </div>
@@ -3799,7 +3799,7 @@ raya-2026        https://example.com/raya"></textarea>
         <option value="email">Email</option>
         <option value="call">Call or meeting</option>
       </select>
-      <div class="row" style="margin-top:16px;margin-bottom:14px">
+      <div class="row acts" style="margin-top:16px;margin-bottom:14px">
         <button class="btn btn-primary" id="lockGo" type="button">Confirm</button>
         <button class="btn btn-quiet" id="lockCancel" type="button">Cancel</button>
       </div>
@@ -3823,7 +3823,7 @@ raya-2026        https://example.com/raya"></textarea>
       <label class="tickline" style="margin-top:14px">
         <input type="checkbox" id="portalInvite" checked> <span>Send invitation email</span>
       </label>
-      <div class="row" style="margin-top:16px;margin-bottom:14px">
+      <div class="row acts" style="margin-top:16px;margin-bottom:14px">
         <button class="btn btn-primary" id="portalGo" type="button">Enable</button>
         <button class="btn btn-quiet" id="portalCancel" type="button">Cancel</button>
       </div>
@@ -3939,11 +3939,11 @@ raya-2026        https://example.com/raya"></textarea>
       <h4 class="fsec-h">Document</h4>
       <div class="row fgrid">
         <div><label class="field-label" for="docKind">Document</label>
-          <select class="select" id="docKind"></select></div>
+          <select class="select" id="docKind" aria-required="true"></select></div>
         <div id="docClientWrap"><label class="field-label" for="docClient">Client</label>
-          <select class="select" id="docClient"></select></div>
+          <select class="select" id="docClient" aria-required="true"></select></div>
         <div id="docMemberWrap" hidden><label class="field-label" for="docMember">Colleague</label>
-          <select class="select" id="docMember"></select></div>
+          <select class="select" id="docMember" aria-required="true"></select></div>
       </div>
       <!-- The fields run in the order the letter prints them: reference and
            date, To and address, Attn and designation (a colleague's position
@@ -3994,7 +3994,7 @@ raya-2026        https://example.com/raya"></textarea>
       </div>
       <div class="row">
         <div><label class="field-label" for="docBodyEn">Body</label>
-          <textarea class="input" id="docBodyEn" rows="9" placeholder="Body"></textarea></div>
+          <textarea class="input" id="docBodyEn" aria-required="true" rows="9" placeholder="Body"></textarea></div>
       </div>
       <div class="row" id="docBodyZhWrap" hidden>
         <div><label class="field-label" for="docBodyZh">Body, Chinese</label>
@@ -4009,7 +4009,7 @@ raya-2026        https://example.com/raya"></textarea>
       <h4 class="fsec-h">Signature</h4>
       <div class="row fgrid">
         <div><label class="field-label" for="docSigName">Signed by</label>
-          <input class="input" id="docSigName" placeholder="John Doe"></div>
+          <input class="input" id="docSigName" aria-required="true" placeholder="John Doe"></div>
         <div><label class="field-label" for="docSigRole">Designation</label>
           <input class="input" id="docSigRole" placeholder="Designation"></div>
       </div>
@@ -4048,7 +4048,7 @@ raya-2026        https://example.com/raya"></textarea>
         </div>
         <div class="row fgrid-3">
           <div><label class="field-label" for="regAddSerial">Reference</label>
-            <input class="input" id="regAddSerial" placeholder="AQT2607003" autocapitalize="characters" spellcheck="false"></div>
+            <input class="input" id="regAddSerial" aria-required="true" placeholder="AQT2607003" autocapitalize="characters" spellcheck="false"></div>
           <div><label class="field-label" for="regAddKind">Document</label>
             <input class="input" id="regAddKind" placeholder="Quotation"></div>
           <div><label class="field-label" for="regAddDate">Date</label>
@@ -4093,7 +4093,7 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-body">
       <p class="hint" id="rvoidWhat"></p>
       <label class="field-label" for="rvoidReason">Reason</label>
-      <textarea class="input" id="rvoidReason" rows="3" placeholder="Reason"></textarea>
+      <textarea class="input" id="rvoidReason" aria-required="true" rows="3" placeholder="Reason"></textarea>
     </div>
     <div class="sheet-foot">
       <button class="btn btn-warn" id="rvoidGo" type="button">Void document</button>
@@ -4116,7 +4116,7 @@ raya-2026        https://example.com/raya"></textarea>
       <label class="field-label" for="rdelConfirm">Type the reference to confirm</label>
       <input class="input" id="rdelConfirm" autocomplete="off" spellcheck="false" placeholder="Reference">
       <label class="field-label" for="rdelReason" style="margin-top:12px">Reason</label>
-      <textarea class="input" id="rdelReason" rows="3" placeholder="Reason"></textarea>
+      <textarea class="input" id="rdelReason" aria-required="true" rows="3" placeholder="Reason"></textarea>
     </div>
     <div class="sheet-foot">
       <button class="btn btn-danger" id="rdelGo" type="button">Delete</button>
@@ -4126,16 +4126,16 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260926a"></script>
-<script src="/js/documents.js?v=20260926a"></script>
-<script src="/js/letters.js?v=20260926a"></script>
-<script src="/js/smreport.js?v=20260926a"></script>
-<script src="/js/reports.js?v=20260926a"></script>
-<script src="/js/register.js?v=20260926a"></script>
-<script src="/js/crm.js?v=20260926a"></script>
-<script src="/js/team.js?v=20260926a"></script>
-<script src="/js/campaigns.js?v=20260926a"></script>
-<script src="/js/ops.js?v=20260926a"></script>
-<script src="/js/perf.js?v=20260926a"></script>
+<script src="/js/admin.js?v=20260926b"></script>
+<script src="/js/documents.js?v=20260926b"></script>
+<script src="/js/letters.js?v=20260926b"></script>
+<script src="/js/smreport.js?v=20260926b"></script>
+<script src="/js/reports.js?v=20260926b"></script>
+<script src="/js/register.js?v=20260926b"></script>
+<script src="/js/crm.js?v=20260926b"></script>
+<script src="/js/team.js?v=20260926b"></script>
+<script src="/js/campaigns.js?v=20260926b"></script>
+<script src="/js/ops.js?v=20260926b"></script>
+<script src="/js/perf.js?v=20260926b"></script>
 </body>
 </html>

@@ -475,7 +475,7 @@ measures the table whenever its header is not on screen (`padding`).
 | A rare change to a row | The row states the value; the ⋯ opens the panel that edits it, and the same panel adds a new one. A control drawn on every row for something changed once a quarter is Hick's law failing twice: it repeats on every line what one heading or one word could say, and it fills the row with the thing nobody came for. A group's seven switches, a member's group, a service's rate: all read on the row, all changed in a panel |
 | Status | One shape everywhere, including the review page: a chip with the word in it. `.status` on `/review/`, the Drive import rows and the saved posts drew a **coloured disc beside a word of the same colour**, which said nothing the word did not and is the one shape this system rules out for a status. `select.state-select` (tinted) for a state that **moves as part of the work** — a campaign step, a client stage, a request — where changing it is why somebody opened the page. A **lifecycle flag flipped once** (Active / Inactive on a rate card line, a colleague, a creator) is a chip on the row and a `Set inactive` / `Set active` item in the ⋯: a 124px tinted select on every line, for a decision taken once in the life of the row, was taller than the price it sat beside and painted the whole list one colour. `.tone` / `.chip-state` with a word for a value that is only read |
 | The chosen one of several options | A filled shape, one language per component and never a shadow: the sidebar `.navitem.is-on` takes the `--line-soft` fill and weight 600, a `.tab.is-on` an ink underline and weight 600, an `.acttab.is-on` the ink fill with white text, a `.crow.is-on` the `--line-soft` fill, a `.bigcard.is-on` an ink border. Hover is always one step lighter than selected (`--sunk` where selected is `--line-soft`), never equal to it, and lives inside `@media (hover: hover)` so a phone cannot leave it stuck on the last thing tapped. `uxaudit` hovers an unselected option and fails when it renders the selected one's background (`hover`) |
-| Form to add or edit | `.panel` > `.panelhead h3` + `.row` fields + Save / secondary / Cancel + `.msg`; one Save covers everything in the form, a file included, so a number and its PDF are never two saves, and Cancel repaints from what is stored. What is attached now sits with the field that changes it, above the actions, never stranded under them |
+| Form to add or edit | `.panel` > `.panelhead h3` + `.row` fields + a `.row.acts` of Cancel / secondary / Save (drawn from the right edge) + `.msg`; one Save covers everything in the form, a file included, so a number and its PDF are never two saves, and Cancel repaints from what is stored. What is attached now sits with the field that changes it, above the actions, never stranded under them |
 | Optional detail | `.panel.panel-collapse` > `.disclosure` (title, summary right) + `.disclosure-body` |
 | Full-page state | `.cover` > `.cover-inner` > `.cover-panel`, centred, title then one line, `body.is-plain`, footer on the floor. **The line never restates the title**: the title says what happened, the line says what to do about it ("Selection closed" / "Please contact your ADspace account manager for any changes.", not "Selection is closed. Please contact…"). Both languages, every cover |
 | Modal | `.sheet` > `.sheet-card`, from the bottom on a phone, fixed height when it filters |
@@ -495,7 +495,7 @@ measures the table whenever its header is not on screen (`padding`).
 | The fields a person usually leaves as they are | **More details** (`details.fmore`): one line with the fields folded under it, and the line says what they hold (`Engagement · Normal · Standard`), from `data-none`, `data-some` and `data-on` on the fields, so nothing is hidden and nothing is asked twice. `ADspaceForm.reveal(el)` opens the fold before a refusal focuses a field inside it |
 | A record pane of facts | **Read first** (Billing, Brand): the pane states the values in groups (`readGroup`, the `.ovfacts` label beside value), a missing required value named in warn, and **Edit** opens the same groups in a sheet. Nine boxes to type in are not how a registration number is read |
 | The main action from the keyboard | Cmd + Enter (Ctrl + Enter) presses the nearest action (the small form, else the sheet's foot, else the pane form), never a red one, never on a record sheet with no foot (`js/sheet.js`) |
-| A form that adds or edits one record | A **sheet** over the list (`js/sheet.js`, `.sheet-card.formsheet`): head with a close mark, a scrolling `.sheet-body`, a foot with Cancel quiet and the primary, equal halves below 560. The scrim closes it only while nothing has been typed; Escape and the close mark always do. One shape for a creator, a colleague and a user group |
+| A form that adds or edits one record | A **sheet** over the list (`js/sheet.js`, `.sheet-card.formsheet`): head with a close mark, a scrolling `.sheet-body`, a foot with Cancel quiet on the left and the primary at the right edge, equal halves below 560 (Cancel the left half). The scrim closes it only while nothing has been typed; Escape and the close mark always do. One shape for a creator, a colleague and a user group |
 | The command bar on a phone | Below 640 the bar is **one row**: a **search** mark and a **Filters** mark on the left (`.cmdbar-search`, `.cmdbar-filters`, the second carrying a badge that counts the filters off their default), then the count and the primary action as a filled `+` on the right, with the view segment as a second row where a route has one. Search **grows into the field** on the `.namebox` move and shuts again when it is left empty. The selects come up in a **sheet from the floor** (`#cmdSheet`) under labels, with Done and Clear; a second action is behind a **⋯** beside the primary. `js/cmdbar.js` is the one copy. The desk bar is untouched |
 | What a section is for | The route's name in the console head (`.console-title`, a button with a 14px info glyph) opens the one line that says what the section is for. Not a `?` in the command bar: the line is about the section, and the section's name is where a reader looks for it |
 | A directory of records | `ADspaceGroup.section` (`js/group.js`): `.crm-group` > `.crm-group-head` (the 15px heading, the count, the marks, the name as the fold) + `.crm-group-body` > `.crm-table.softpanel` with its own `.crm-head`; `ADspaceGroup.more` for the rows past thirty. One card per group on every console directory, folds remembered per browser, a filter opening every card, the card opening and shutting in place. **The card carries no outline**, and it is one token for every bounded card (`--card-line`, transparent in both themes, on `.panel` (the record head and every form), `.crm-table`, `.softpanel`, `.team-table`, `.ovcard` and `.bookreg`; nothing nests a card in a card, so a transparent edge never loses a surface): the user chose the Team card's look on 2026-09-22 and asked why one card could differ from the rest at all. It could because Team carried a local `border: 0` written when that page was rebuilt, and the first fix added a second local rule for the directories; both are gone, and a card that needs a different edge is a card that needs a different token. The card's own ground against the page is the edge, white on `--page` in light and a step lighter than the ground in dark. The 1px stays transparent so nothing is re-measured |
@@ -1177,6 +1177,17 @@ screen's.
 **A verb does not repeat the noun the context has already given.** Delete client, Delete campaign, Delete link, Delete permanently: four labels for one act, each naming what the menu it sits in has already named. The item is **Delete**, and the consequence is stated where it belongs — in the sheet that asks, which says what goes and that there is no restore. Asked for by the user on 2026-09-22, and it is the rule this file already carried ("no object the context gives"); the examples that contradicted it are corrected.
 
 **Two actions in a row are two halves, not a slab and a remnant.** A sheet's foot let its buttons flex from their own label widths on a phone, so Save came out a black bar across most of the row with Cancel squeezed beside it — two actions of the same standing at two sizes, which the phone checklist has ruled out since it was written. Equal halves.
+
+**Superseded on 2026-09-26: the way out is now on the left and the action ends
+the row, at the right edge.** The user pressed Cancel while creating something,
+because the hand leaving the last field travels right and Cancel stood to the
+right of Create; the convention the team knows from Google, Apple, Notion and
+Stripe puts the action on the corner the hand finishes on, and on a phone
+under a right thumb. What the two paragraphs below say about there being *one*
+order and *one* anchor still stands, and is still measured by x (`uxaudit`'s
+`order`, `tests/geom.js`); only which side each goes on has changed. The
+markup keeps the primary first, so Tab and Cmd + Enter reach it first, and the
+row draws itself from the right (`flex-direction: row-reverse`).
 
 **The way out is last in its row, in every row, and it is measured.** This file
 has said "Order in a row: Save / secondary / Cancel" since it was written, and
@@ -2024,8 +2035,11 @@ the screen, so a form was a wall of identical boxes and nothing said which
 ones could be pressed. Fields keep the ring; buttons lose it. The same fill
 carries the command bar's search and Filters marks, the ⋯ beside the primary,
 the reach links and the view segment's track. Order in a
-row: Save / secondary / Cancel, and the row starts at its container's own
-left margin, never anchored right. Same width and height for every control
+row, read left to right: Cancel / secondary / Save, the row anchored to its
+container's **right** edge (2026-09-26; the markup keeps the primary first
+and the row reverses itself, `.sheet-foot`, `.row.acts` and kin). A required
+field carries a red asterisk on its label, drawn from the field's own
+`aria-required` (`.field-label.is-req`, `js/form.js`). Same width and height for every control
 in a row; `.row` aligns to the top and `.row > .btn` to the bottom. A sheet
 Cancel is `.btn-quiet`, never a bare `.btn`, which carries `flex: 1` from the
 base rule and grows to fill the row.
@@ -2422,7 +2436,7 @@ still sits on top of the shared one.
   and goes when the last one is reverted. What the client may not see is
   withheld by the security definer function, never only by the page.
 - **Consistency**: same width and height for controls in a row; same order
-  Save / secondary / Cancel; same glyph for the same action; same status
+  Cancel / secondary / Save, the action at the right edge; same glyph for the same action; same status
   words and colours on both sides.
 - **Aesthetic usability**: flat, quiet, aligned; alignment errors, orphan
   cells, wrapped values and uneven gaps read as bugs.

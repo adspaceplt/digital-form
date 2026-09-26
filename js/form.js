@@ -340,7 +340,19 @@
     el.__hintRead();
   }
 
+  /* ---- 4. A required field's label carries the mark ---------------------
+     The field says it is required (`aria-required`, which a screen reader
+     announces) and its label draws the red asterisk from that, so the mark
+     and the rule the save checks are one fact written once (2026-09-26, the
+     user: a red star on required items). */
+  function req(el) {
+    if (!el.id) return;
+    var lab = document.querySelector('label[for="' + el.id + '"]');
+    if (lab) lab.classList.add('is-req');
+  }
+
   function scan(root) {
+    Array.prototype.forEach.call((root || document).querySelectorAll('[aria-required="true"]'), req);
     Array.prototype.forEach.call((root || document).querySelectorAll('input[data-hint]'), hint);
     Array.prototype.forEach.call((root || document).querySelectorAll('select[data-seg]'), upgrade);
     Array.prototype.forEach.call((root || document).querySelectorAll('details.fmore'), fold);
