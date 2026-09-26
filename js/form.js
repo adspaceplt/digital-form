@@ -194,8 +194,10 @@
     if (!k) k = 1;
     var set = function (b) {
       var r = b.getBoundingClientRect();
-      track.style.setProperty('--thumb-x', ((r.left - tr.left) / k - track.clientLeft + 2) + 'px');
-      track.style.setProperty('--thumb-y', ((r.top - tr.top) / k - track.clientTop + 2) + 'px');
+      /* A track that scrolls (the view strip on a phone) carries the surface
+         in its own scrolled content, so the scroll offset is added back. */
+      track.style.setProperty('--thumb-x', ((r.left - tr.left) / k - track.clientLeft + track.scrollLeft + 2) + 'px');
+      track.style.setProperty('--thumb-y', ((r.top - tr.top) / k - track.clientTop + track.scrollTop + 2) + 'px');
       track.style.setProperty('--thumb-w', Math.max(0, r.width / k - 4) + 'px');
       track.style.setProperty('--thumb-h', Math.max(0, r.height / k - 4) + 'px');
       track.style.setProperty('--thumb-o', '1');
@@ -212,6 +214,32 @@
       set(on);
     }
     track.classList.add('has-thumb');
+    reach(track, on, snap);
+  }
+
+  /* ---- 1c. A strip wider than its row scrolls ---------------------------
+     On a phone My Work's views are wider than the screen, so the strip
+     scrolls sideways (the brief of 2026-09-26): the edge that has more
+     beyond it fades (`is-more-start`, `is-more-end`), and a choice, or the
+     page opening on one, brings the chosen view into sight. A track that
+     fits carries neither class and never scrolls. */
+  function edges(track) {
+    var max = track.scrollWidth - track.clientWidth;
+    track.classList.toggle('is-more-start', max > 1 && track.scrollLeft > 1);
+    track.classList.toggle('is-more-end', max > 1 && track.scrollLeft < max - 1);
+  }
+  function reach(track, on, snap) {
+    if (!on || track.scrollWidth <= track.clientWidth + 1) { edges(track); return; }
+    var l = on.offsetLeft, r = l + on.offsetWidth, pad = 24;
+    var to = track.scrollLeft;
+    if (l - pad < to) to = Math.max(0, l - pad);
+    else if (r + pad > to + track.clientWidth) to = r + pad - track.clientWidth;
+    if (to !== track.scrollLeft) {
+      var still = snap || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+      if (track.scrollTo) track.scrollTo({ left: to, behavior: still ? 'auto' : 'smooth' });
+      else track.scrollLeft = to;
+    }
+    edges(track);
   }
 
   function thumb(track) {
@@ -242,6 +270,7 @@
       }).observe(track, { attributes: true, attributeFilter: ['class', 'hidden'], subtree: true, childList: true });
     }
     if (window.ResizeObserver) new ResizeObserver(later).observe(track);
+    track.addEventListener('scroll', function () { edges(track); }, { passive: true });
   }
 
   /* ---- 2. More details -------------------------------------------------- */
@@ -290,7 +319,29 @@
     det.__paint = paintSum;
   }
 
+  /* ---- 3. An empty date field says what it wants ---------------------- */
+  function hint(el) {
+    if (!el) return;
+    var box = el.__hintBox;
+    if (!box) {
+      if (!el.parentNode) return;
+      box = document.createElement('span');
+      box.className = 'datefield';
+      box.setAttribute('data-hint', el.getAttribute('data-hint') || 'Select date');
+      el.parentNode.insertBefore(box, el);
+      box.appendChild(el);
+      el.__hintBox = box;
+      var read = function () { box.classList.toggle('is-empty', !el.value); };
+      el.addEventListener('input', read);
+      el.addEventListener('change', read);
+      el.addEventListener('blur', read);
+      el.__hintRead = read;
+    }
+    el.__hintRead();
+  }
+
   function scan(root) {
+    Array.prototype.forEach.call((root || document).querySelectorAll('input[data-hint]'), hint);
     Array.prototype.forEach.call((root || document).querySelectorAll('select[data-seg]'), upgrade);
     Array.prototype.forEach.call((root || document).querySelectorAll('details.fmore'), fold);
     Array.prototype.forEach.call((root || document).querySelectorAll('.cmdbar-views'), thumb);
@@ -313,7 +364,10 @@
     fold: fold,
     refresh: function (det) { if (det && det.__paint) det.__paint(); },
     scan: scan,
-    thumb: thumb
+    thumb: thumb,
+    /* A value set from a script fires nothing, so a page that sets one reads
+       the field again through this. */
+    hint: hint
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { scan(); });
   else scan();

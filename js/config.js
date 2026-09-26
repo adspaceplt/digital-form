@@ -98,7 +98,13 @@ window.ADSPACE_CONFIG = {
      encodes the whole address, so those codes keep working as long as that
      host keeps redirecting. This value decides what the next link is built
      with, nothing more. */
-  linkHost: 'hi.adspace.me'
+  linkHost: 'hi.adspace.me',
+
+  /* Cloudflare Turnstile SITE key for the sign-in captcha (js/captcha.js).
+     Public by design, like the anon key; the SECRET key lives only in the
+     Supabase dashboard (Authentication, Attack Protection). Leave blank until
+     both are set together: see docs/SIGN-IN-SECURITY.md. */
+  turnstileSiteKey: ''
 
   /* No secret belongs in this file. It is served to the browser on a public
      site, so anything here can be read by anyone who opens the page. The
