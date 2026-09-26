@@ -3681,13 +3681,6 @@ body.is-plain .topbar { background: var(--chrome); }
   .acttab:hover { background: var(--line-soft); color: var(--ink); }
 }
 .acttab.is-on { background: var(--fill); border-color: var(--fill); color: var(--on-fill); }
-.act-day {
-  position: sticky; top: 0; z-index: 2;
-  margin: 16px 0 6px; padding: 6px 0 5px; background: var(--card);
-  font-size: 12px; font-weight: 600; letter-spacing: 0;
-  color: var(--ink-mute); border-bottom: 1px solid var(--line-soft);
-}
-.act-day:first-child { margin-top: 4px; }
 @media (max-width: 560px) {
   .acttabs { gap: 3px; }
   .acttab { padding: 8px 10px; font-size: 12px; }
@@ -4107,7 +4100,6 @@ body > .shell { width: 100%; }
 .ovsec-title { font-size: 15px; font-weight: 600; letter-spacing: -.01em; margin: 0 0 8px; }
 .ovsec-title + .crm-table { margin-bottom: 0; }
 .crm-table + .ovsec-title, .empty + .ovsec-title, .repempty + .ovsec-title { margin-top: 24px; }
-.tact-row { grid-template-columns: 170px minmax(0, 1fr) 150px; }
 .tact-when { font-size: 13px; color: var(--ink-mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tact-who { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -4303,9 +4295,6 @@ body > .shell { width: 100%; }
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .ovlinks a { color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
-/* A rail excerpt with no section glyph: a task's events are all the task's. */
-.raillog-plain li { grid-template-columns: minmax(0, 1fr); }
-.raillog-plain li > span { grid-column: 1; }
 .timer-run { font-size: 17px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 
 .ovnote { margin: 0 0 8px; font-size: 13.5px; color: var(--ink); overflow-wrap: anywhere; }
@@ -4634,9 +4623,6 @@ body > .shell { width: 100%; }
 .is-narrow .tsess-row > .tsess-mins { grid-area: mins; align-self: center; }
 /* What happened owns the first line; when and who share the second, which is
    the shape the client record's own activity rows take. */
-.is-narrow .tact-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name name" "when who"; }
-.is-narrow .tact-row > .tact-when { grid-area: when; }
-.is-narrow .tact-row > .tact-who { grid-area: who; justify-self: stretch; text-align: right; }
 .is-narrow .ct-row { grid-template-areas: "name act" "reach reach"; }
 .is-narrow .svc-row > .svc-name { grid-area: name; }
 .is-narrow .svc-row > .team-act { grid-area: act; align-self: start; }
@@ -6118,18 +6104,6 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   min-height: var(--ctl-h-sm); padding: 2px 8px;
 }
 
-.raillog { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
-/* The glyph names the section the event belongs to; the three lines beside
-   it are what happened, to what, and when. */
-.raillog li { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 1px 10px; font-size: 13px; min-width: 0; }
-.raillog li > .railico { grid-row: 1 / -1; margin-top: 2px; }
-.raillog li > span { grid-column: 2; min-width: 0; }
-.raillog-what { font-weight: 600; }
-.raillog-detail {
-  color: var(--ink-soft); font-size: 12.5px; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.raillog-when { color: var(--ink-mute); font-size: 12px; }
 .rec {
   display: grid; align-items: start; gap: 0 24px;
   grid-template-columns: minmax(0, 1.618fr) minmax(280px, 1fr);
@@ -6261,76 +6235,6 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   .rec-rail .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-/* Activity is an audit trail, not four unrelated values pushed to opposite
-   sides of a row. The event and its detail stay together; the date and actor
-   are stable, quiet columns. This selector deliberately includes the table:
-   `.is-narrow .svc-row` is the generic phone layout and must never claim this
-   component's named cells again. */
-.activity-list { overflow: hidden; }
-.activity-list .log-row {
-  grid-template-columns: 170px minmax(0, 1fr) minmax(150px, .52fr);
-  gap: 0 20px; align-items: center;
-}
-.activity-list .svc-row.log-row { min-height: 68px; padding: 13px 16px; }
-.activity-list .crm-head.log-row { min-height: 0; padding-block: 11px 9px; }
-.log-when {
-  font-size: 12.5px; line-height: 1.4; color: var(--ink-mute);
-  font-variant-numeric: tabular-nums; white-space: nowrap;
-}
-.log-event { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.log-what { font-weight: 600; font-size: 13.5px; line-height: 1.35; color: var(--ink); }
-.log-detail {
-  font-size: 13px; line-height: 1.4; color: var(--ink-mute);
-  min-width: 0; overflow-wrap: anywhere;
-}
-/* The actor is a name, and a name is what the column is read for. It carried
-   a 28px disc of one initial beside it, which is a placeholder for a picture
-   this portal does not hold and never will: nobody on this team has a profile
-   image, so every row of every log drew the same grey circle, and where the
-   initial did differ it told a reader nothing the name beside it did not
-   already say. A mark earns its place by holding real artwork — `.rec-mark`
-   carries the client's own `logo_url` — or by making rows findable by eye,
-   which one letter in one column cannot do. */
-.log-who { display: flex; align-items: center; min-width: 0; }
-.log-person {
-  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  font-size: 13px; color: var(--ink-soft);
-}
-/* The By track is stated, not `auto`. Every row is its own grid, so an `auto`
-   track is sized by that row alone: the three seeded rows measured 189, 134
-   and 110px, and the column of actors therefore started 79px apart with the
-   cell correctly stretched inside each one. 150px is measured against
-   `Nurul Ain binti Abdullah` (134px at 13px) with room over it; a longer
-   value ellipsises, which `.log-person` has always done, and the full one is
-   in the Activity record's own three-column table. */
-.is-narrow .activity-list .log-row {
-  grid-template-columns: minmax(0, 1fr) 150px;
-  grid-template-areas: "event event" "when who";
-  gap: 9px 14px; align-items: center;
-}
-.is-narrow .activity-list .crm-head.log-row { display: none; }
-.is-narrow .activity-list .svc-row.log-row { min-height: 0; padding: 14px 15px; }
-.is-narrow .activity-list .log-event { grid-area: event; }
-.is-narrow .activity-list .log-when { grid-area: when; white-space: normal; }
-/* The cell fills its track and its contents end at the row's own padding.
-   `justify-self: end` makes a cell only as wide as its content, so the By
-   column *started* wherever each actor's name happened to start: 136px apart
-   across three rows once the initials disc in front of the name was gone, and
-   it was the disc's fixed 28px that had been hiding it. `.log-who` is a flex
-   box, so what aligns its child is `justify-content`, never `text-align`. */
-.is-narrow .activity-list .log-who {
-  grid-area: who; justify-self: stretch; justify-content: flex-end; max-width: 100%;
-}
-@media (max-width: 640px) {
-  .activity-list .log-row {
-    grid-template-columns: minmax(0, 1fr) 150px;
-    grid-template-areas: "event event" "when who"; gap: 9px 14px;
-  }
-  .activity-list .crm-head.log-row { display: none; }
-  .activity-list .log-event { grid-area: event; }
-  .activity-list .log-when { grid-area: when; white-space: normal; }
-  .activity-list .log-who { grid-area: who; justify-self: stretch; justify-content: flex-end; }
-}
 
 /* ---------- The campaign command centre ----------
    One campaign is a booking desk, a schedule, a set of deliverables, a
@@ -8253,3 +8157,27 @@ body.is-canvas { overflow: hidden; }
    field's own `aria-required`, which is what a screen reader announces; the
    mark itself is decoration and is given no spoken text). */
 .field-label.is-req::after { content: "*"; content: "*" / ""; margin-left: 3px; color: var(--err); font-weight: 600; }
+
+/* ---------- Records (js/records.js) ----------
+   One line an entry: the time and who in the quiet ink, then what happened,
+   on what, and what changed, under a heading a day. 12.5px, close set: a
+   history is read down a column, not scanned card by card. */
+.recpanel { padding: 14px 18px; }
+.reclist { display: grid; gap: 4px; min-width: 0; }
+.recday { margin: 8px 0 2px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.reclist > .recday:first-child { margin-top: 0; }
+.reclines { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.recline {
+  display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 0 10px;
+  font-size: 12.5px; line-height: 1.5; min-width: 0;
+}
+.rl-time { color: var(--ink-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rl-body { margin: 0; min-width: 0; overflow-wrap: anywhere; color: var(--ink); }
+.rl-who { color: var(--ink-mute); margin-right: 2px; }
+.rl-what { font-weight: 600; }
+.rl-what.is-danger { color: var(--err); }
+.rl-detail { color: var(--ink-soft); }
+.rl-n { color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+
+/* In the Activity record the day stays in view while its lines scroll. */
+#activityList .recday { position: sticky; top: 0; z-index: 2; background: var(--card); padding: 4px 0; margin-bottom: 0; }

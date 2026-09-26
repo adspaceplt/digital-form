@@ -1265,8 +1265,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   sideways with faded edges at every width.
 - The panes key on the subject the row was written with, so a rename leaves
   older rows behind.
-- `SECTION_ICON` and `logIcon` in `js/crm.js` cover every section. The document
-  test is `/^document\.|^register\./`.
+- Every history (the Activity record, a client's and a campaign's Activity and
+  rail, a task's log and recent activity) is drawn by `js/records.js`
+  (`ADspaceRecords.paint`): one 12.5px line an entry (time and who in mute
+  ink, then what, on what, the detail), a heading a day, and a run of the same
+  act by one person on one thing within ten minutes folded into one line
+  (`×n`). Sticky entries never fold: Performance, HR, voids, deletes,
+  removals, billing, rates, invoices, access and groups (`stickyOf`).
+  `ADspaceAdmin.record(row)` is the one reading of an `activity_log` row.
 - `document.*` and `register.*` rows file under Documents.
 
 ### Sign-in, security, secrets
