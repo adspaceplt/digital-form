@@ -8085,3 +8085,31 @@ body.is-canvas { overflow: hidden; }
    a box pressed; when it does, it sits under the button that asked. */
 .cfbox { margin-top: 8px; }
 .cfbox:empty { display: none; }
+
+/* =========================================================================
+   THE WAY OUT ON THE LEFT, THE ACTION AT THE RIGHT EDGE (2026-09-26)
+   =========================================================================
+   Supersedes "primary first, anchored left" (2026-09-20/21). The user pressed
+   Cancel while creating something, because the hand leaving the last field
+   moves right and Cancel stood to the right of Create. The convention the
+   team already knows from Google, Apple, Notion and Stripe is the reverse:
+   the way out on the left, the action at the end of the row, on the corner
+   the hand finishes on; on a phone the action is the right half, under a
+   right thumb. One rule does it for every action row: the markup keeps the
+   primary first, so Tab and Cmd + Enter still reach it first, and the row
+   draws itself from the right edge. A count that explains the action
+   (`.lpicksum`) follows the pair to the left. `uxaudit`'s `order` rule and
+   `tests/geom.js` measure it by x. */
+.sheet-foot, .changebox-actions, .zone-actions, .qform-acts, .row.acts {
+  flex-direction: row-reverse; justify-content: flex-start;
+}
+.filearm-acts { flex-direction: row-reverse; }
+@media (max-width: 560px) {
+  /* On a phone the count reads above the pair it explains. */
+  .sheet-foot > .lpicksum, .qcfoot > .lpicksum { order: -1; }
+}
+
+/* A required field's label carries a red asterisk (js/form.js reads the
+   field's own `aria-required`, which is what a screen reader announces; the
+   mark itself is decoration and is given no spoken text). */
+.field-label.is-req::after { content: "*"; content: "*" / ""; margin-left: 3px; color: var(--err); font-weight: 600; }

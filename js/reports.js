@@ -245,11 +245,11 @@
           '<select class="select" id="rpNewKind" data-seg>' + TYPES.map(function (t) {
             return '<option value="' + t.key + '">' + esc(t.name.replace(/ report$/, '')) + '</option>';
           }).join('') + '</select></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpNewClient">Client</label><select class="select" id="rpNewClient"></select></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpNewMonth">Month</label><input class="input" id="rpNewMonth" type="month"></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpNewClient">Client</label><select class="select" id="rpNewClient" aria-required="true"></select></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpNewMonth">Month</label><input class="input" id="rpNewMonth" aria-required="true" type="month"></div></div>' +
       '<details class="fmore" data-none="Whole month" data-some="Custom period"><summary>Custom period</summary>' +
-        '<div class="row fgrid"><div><label class="field-label" for="rpNewStart">Start</label><input class="input" id="rpNewStart" type="date" data-hint="Select date"></div>' +
-        '<div><label class="field-label" for="rpNewEnd">End</label><input class="input" id="rpNewEnd" type="date" data-hint="Select date"></div></div></details>' +
+        '<div class="row fgrid"><div><label class="field-label" for="rpNewStart">Start</label><input class="input" id="rpNewStart" aria-required="true" type="date" data-hint="Select date"></div>' +
+        '<div><label class="field-label" for="rpNewEnd">End</label><input class="input" id="rpNewEnd" aria-required="true" type="date" data-hint="Select date"></div></div></details>' +
       '</section>', FOOT('Create'));
     $('rpNewClient').innerHTML = '<option value="">Choose a client</option>' + hub.clients.map(function (c) {
       return '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>';
@@ -921,7 +921,7 @@
     var box = sheetShell('rpPostSheet', 'Post',
       '<section class="fsec"><h4 class="fsec-h">Post</h4>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpPostAcc">Account</label><select class="select" id="rpPostAcc"></select></div>' +
-        '<div><label class="field-label" for="rpPostDate">Date</label><input class="input" id="rpPostDate" type="date"></div></div>' +
+        '<div><label class="field-label" for="rpPostDate">Date</label><input class="input" id="rpPostDate" aria-required="true" type="date"></div></div>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpPostTitle">Title</label><input class="input" id="rpPostTitle" type="text" placeholder="Optional"></div>' +
         '<div><label class="field-label" for="rpPostFormat">Format</label><select class="select" id="rpPostFormat">' +
           FORMATS.map(function (f) { return '<option value="' + f[0] + '">' + esc(f[1]) + '</option>'; }).join('') + '</select></div></div>' +
@@ -1376,7 +1376,7 @@
   function adSheet(a, opener, copy) {
     var box = sheetShell('rpAdSheet', 'Ad',
       '<section class="fsec"><h4 class="fsec-h">Ad</h4>' +
-        '<div class="row"><div><label class="field-label" for="rpAdName">Ad name</label><input class="input" id="rpAdName" type="text" placeholder="As in Ads Manager"></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpAdName">Ad name</label><input class="input" id="rpAdName" aria-required="true" type="text" placeholder="As in Ads Manager"></div></div>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpAdObj">Objective</label><select class="select" id="rpAdObj">' +
           OBJECTIVES.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('') + '</select></div>' +
         '<div><label class="field-label" for="rpAdResult">Result type</label><input class="input" id="rpAdResult" type="text" list="rpAdResultTypes"></div></div>' +
