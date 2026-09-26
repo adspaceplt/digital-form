@@ -1637,12 +1637,23 @@ create table if not exists public.team_roles (
   created_at    timestamptz not null default now()
 );
 alter table public.team_roles enable row level security;
+/* The groups are seeded once, into a database that has none. A group deleted
+   on the Team page is a decision, and `on conflict do nothing` does not keep
+   a deleted row deleted: a row that is gone raises no conflict, so every
+   re-run of this file put Sales back after it had been removed (the rate
+   card's lesson). Admin alone is ensured on every run, because the console
+   cannot be administered without it and its guard refuses its deletion. */
+insert into public.team_roles
+  (slug, name, is_admin, can_clients, can_review, can_campaigns, can_links, can_activity, can_billing, can_remove, can_doc_void, position)
+select * from (values
+  ('account', 'Marketing', false, true, true,  true,  true,  false, true, false, false, 1),
+  ('sales',   'Sales',   false, true, false, false, false, false, true, false, false, 2)
+) as seed
+where not exists (select 1 from public.team_roles);
 insert into public.team_roles
   (slug, name, is_admin, can_clients, can_review, can_campaigns, can_links, can_activity, can_billing, can_remove, can_doc_void, position)
 values
-  ('admin',   'Admin',   true,  true, true,  true,  true,  true,  true, true,  true,  0),
-  ('account', 'Marketing', false, true, true,  true,  true,  false, true, false, false, 1),
-  ('sales',   'Sales',   false, true, false, false, false, false, true, false, false, 2)
+  ('admin',   'Admin',   true,  true, true,  true,  true,  true,  true, true,  true,  0)
 on conflict (slug) do nothing;
 
 -- `is_admin` and `can_doc_void` are declared in the ACCESS block above now,

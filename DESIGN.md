@@ -1422,6 +1422,14 @@ making rows **findable by eye**, which one letter in one column cannot do. A
 disc that does neither is decoration in the position information should be in,
 and the name is the fact.
 
+**A part of the page that arrives late reserves its place or arrives whole.**
+The mark comes from the CDN after the first paint, and an image with no file has
+no width, so the label beside it jumped 208px when it landed; the footer came at
+the end of parsing and lifted the centred sign-in card 26px. Nothing on a page
+moves after it has been seen: the mark's box is drawn at the size it had last
+time, and where nothing is known the brand waits and appears once, in place; the
+footer is drawn with the header and placed last by the body's flex order.
+
 **An image sized by one axis inside a box that can clamp the other is a squash
 waiting to happen.** `.brand-logo` was `height: 26px; width: auto`, and the
 global `img { max-width: 100% }` then clamped the width in any box too narrow

@@ -314,6 +314,15 @@ a { color: inherit; }
    own margin rather than centred in the leftover width. The box still
    measures 24px, so nothing under it moves. */
 .brand-logo { height: 26px; width: auto; object-fit: contain; object-position: left center; }
+/* In the top bar the mark is the brand's only fixed part, and `.brand` is
+   sized by its content: Safari resolves the global `max-width: 100%` against
+   that content while measuring it, gets nothing, and on a phone, where the
+   label beside the mark is hidden, drew the mark 0px wide. A cap in `vw`
+   needs no container to resolve against, and the mark never shrinks. */
+.topbar .brand-logo { flex: 0 0 auto; max-width: 60vw; }
+/* A first visit holds the brand back until the mark has loaded or failed
+   (js/chrome.js), so it arrives in place rather than pushing the label. */
+.brand.is-waiting { visibility: hidden; }
 .brand-wordmark { font-size: 16px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
 .brand-divider { width: 1px; height: 26px; background: var(--line); flex: 0 0 auto; }
 .brand-meta { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
@@ -2052,8 +2061,16 @@ a { color: inherit; }
 body.is-plain { background: var(--card); }
 /* The console draws its own chrome; the shared footer belongs to the plain
    pages around it (sign in, access not assigned). */
-.console:not([hidden]) ~ .portalfoot { display: none; }
+.console:not([hidden]) ~ .portalfoot,
+body:has(> .console:not([hidden])) > .portalfoot { display: none; }
 body.is-plain .topbar { background: var(--chrome); }
+/* The console's first paint, before the session is read (admin/index.html's
+   head script). Signed out: the sign-in page's white from the start rather
+   than a grey page turning white. Signed in: no sign-in bar and no footer
+   drawn for a frame over the console that is about to open. */
+:root[data-boot="out"] body { background: var(--card); }
+:root[data-boot="in"] body > .topbar,
+:root[data-boot="in"] body > .portalfoot { visibility: hidden; }
 
 /* The logo, as a circle, beside the field that sets it. A profile picture is
    square on every platform, so the shape of what gets pasted here decides
@@ -3817,6 +3834,7 @@ body.is-plain .topbar { background: var(--chrome); }
    nothing in the middle competing with them. */
 .portalfoot {
   flex: 0 0 auto; margin-top: auto;          /* see the sticky-footer note below */
+  order: 1;   /* drawn with the header, and last on the screen from the first paint */
   border-top: 1px solid var(--line); background: var(--card);
 }
 .portalfoot-in {

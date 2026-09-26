@@ -578,8 +578,16 @@
         go: 'Delete',
         tone: 'danger'
       }, function () {
-        db.from('team_roles').delete().eq('slug', r.slug).then(function (q) {
+        /* PostgREST answers a delete a policy refused with no error and no
+           row gone, so ask for the row back: an empty answer is a refusal,
+           not a success, and the group stays in the list saying so. */
+        db.from('team_roles').delete().eq('slug', r.slug).select('slug').then(function (q) {
           if (q.error) { msg('groupMsg', q.error.message, 'err'); return; }
+          if (!q.data || !q.data.length) {
+            msg('groupMsg', 'Not deleted. The database refused the request.', 'err');
+            load();
+            return;
+          }
           log('team.group_removed', r.name, '');
           msg('groupMsg', r.name + ' deleted.', 'ok');
           load();
