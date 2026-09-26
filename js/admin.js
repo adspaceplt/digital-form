@@ -1149,7 +1149,12 @@
                       ops: 'My Work', clients: 'Clients',
                       review: 'Content Review', campaigns: 'Creator Campaigns',
                       register: 'Documents', links: 'Short Links',
-                      services: 'Services', team: 'Team' };
+                      services: 'Services', team: 'Team', performance: 'Performance' };
+  /* The steps of a review, read through perf_activity(): when, the step,
+     whose month, who. Never a score, a grade or a dispute's words. */
+  var PERF_STEP = { released: 'Review released', disputed: 'Review disputed', decided: 'Dispute answered',
+                    acknowledged: 'Review acknowledged', finalised: 'Review finalised', reopened: 'Review reopened',
+                    returned: 'Returned to draft', printed: 'Record downloaded' };
 
   /* The section only appears for people on the viewer list. The database
      enforces this too, so hiding it here is convenience rather than the
@@ -1160,7 +1165,7 @@
     /* The record has parts now, so a group may hold none of the section and
        one of its tabs: the link is drawn where any tab is readable, and the
        tabs themselves draw where their own part is. */
-    maySeeActivity = may('activity', 'view') || PARTS.activity.some(function (k) {
+    maySeeActivity = may('activity', 'view') || may('team.performance', 'view') || PARTS.activity.some(function (k) {
       return may('activity.' + k, 'view');
     });
     showActivityLink();
@@ -1217,6 +1222,11 @@
   }
 
   function sectionOf(action) { return (ACTION_LABEL[action] || [])[2] || 'other'; }
+  function sectionOfRow(a) { return a._section || sectionOf(a.action); }
+  function monthLong(p) {
+    var d = new Date(String(p).slice(0, 7) + '-01T00:00:00');
+    return isNaN(d) ? String(p) : d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  }
 
   function clockOf(iso) {
     var d = new Date(iso);
@@ -1227,10 +1237,12 @@
   function paintActivity() {
     var box = $('activityList');
     var rows = actRows.filter(function (a) {
-      return actFilter === 'all' || sectionOf(a.action) === actFilter;
+      return actFilter === 'all' || sectionOfRow(a) === actFilter;
     });
     Array.prototype.forEach.call($('activityTabs').children, function (b) {
-      b.classList.toggle('is-on', b.getAttribute('data-af') === actFilter);
+      var on = b.getAttribute('data-af') === actFilter;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-pressed', String(on));
     });
     if (!rows.length) {
       box.innerHTML = '<div class="empty">Nothing recorded' +
@@ -1253,7 +1265,7 @@
           .map(function (c) { return '<span>' + c + '</span>'; }).join('');
         box.appendChild(th);
       }
-      var meta = ACTION_LABEL[a.action] || [a.action, ''];
+      var meta = a._section === 'performance' ? [PERF_STEP[a.kind] || a.kind, ''] : (ACTION_LABEL[a.action] || [a.action, '']);
       var row = document.createElement('div');
       row.className = 'act';
       // Four columns, so the eye reads down a column instead of hunting
@@ -1263,7 +1275,7 @@
         '<span class="act-tagcell"><span class="act-tag ' + meta[1] + '">' + esc(meta[0]) + '</span></span>' +
         '<span class="act-subject">' + esc(a.subject || '') + '</span>' +
         '<span class="act-detail">' + esc(a.detail || '') + '</span>' +
-        '<span class="act-who">' + esc(whoName(a.actor)) + '</span>';
+        '<span class="act-who">' + esc(a._who || whoName(a.actor)) + '</span>';
       box.appendChild(row);
     });
   }
@@ -1281,14 +1293,28 @@
     // Opening it from a section starts on that section, since that is almost
     // always what the question was about.
     actFilter = ACT_SECTION[section] ? section : 'all';
-    db.from('activity_log').select('*')
-      .order('created_at', { ascending: false }).limit(200)
-      .then(function (r) {
-        if (r.error) {
+    /* Performance's steps come from their own function, read only where the
+       part is held, and join the rest by time. A refused or missing read of
+       them leaves the other sections as they are. */
+    var perf = may('team.performance', 'view')
+      ? db.rpc('perf_activity', { p_limit: 200 }).then(function (r) {
+          var d = (r && r.data) || {};
+          return (r && r.error) || d.error ? [] : (d.rows || []).map(function (x) {
+            return { created_at: x.at, kind: x.kind, _section: 'performance', _who: x.actor_name || x.actor || '',
+                     subject: [x.member, x.period ? monthLong(x.period) : ''].filter(Boolean).join(' · '), detail: '' };
+          });
+        }, function () { return []; })
+      : Promise.resolve([]);
+    Promise.all([db.from('activity_log').select('*').order('created_at', { ascending: false }).limit(200), perf])
+      .then(function (both) {
+        var r = both[0], pr = both[1] || [];
+        if (r.error && !pr.length) {
           box.innerHTML = '<div class="empty">Access denied.</div>';
           return;
         }
-        actRows = r.data || [];
+        actRows = ((r.error ? [] : r.data) || []).concat(pr).sort(function (x, y) {
+          return String(y.created_at).localeCompare(String(x.created_at));
+        });
         paintActivity();
       });
   }

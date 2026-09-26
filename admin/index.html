@@ -30,7 +30,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260926r">
+<link rel="stylesheet" href="/css/portal.css?v=20260927a">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -54,28 +54,28 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260926r"></script>
-<script src="/js/captcha.js?v=20260926r"></script>
-<script src="/js/words.js?v=20260926r"></script>
-<script src="/js/copy.js?v=20260926r"></script>
-<script src="/js/ask.js?v=20260926r"></script>
-<script src="/js/confirm.js?v=20260926r"></script>
-<script src="/js/sheet.js?v=20260926r"></script>
-<script src="/js/refresh.js?v=20260926r"></script>
-<script src="/js/form.js?v=20260926r"></script>
-<script src="/js/state.js?v=20260926r"></script>
-<script src="/js/group.js?v=20260926r"></script>
-<script src="/js/menu.js?v=20260926r"></script>
-<script src="/js/cmdbar.js?v=20260926r"></script>
-<script src="/js/api.js?v=20260926r"></script>
-<script src="/js/money.js?v=20260926r"></script>
-<script src="/js/mockups.js?v=20260926r"></script>
+<script src="/js/config.js?v=20260927a"></script>
+<script src="/js/captcha.js?v=20260927a"></script>
+<script src="/js/words.js?v=20260927a"></script>
+<script src="/js/copy.js?v=20260927a"></script>
+<script src="/js/ask.js?v=20260927a"></script>
+<script src="/js/confirm.js?v=20260927a"></script>
+<script src="/js/sheet.js?v=20260927a"></script>
+<script src="/js/refresh.js?v=20260927a"></script>
+<script src="/js/form.js?v=20260927a"></script>
+<script src="/js/state.js?v=20260927a"></script>
+<script src="/js/group.js?v=20260927a"></script>
+<script src="/js/menu.js?v=20260927a"></script>
+<script src="/js/cmdbar.js?v=20260927a"></script>
+<script src="/js/api.js?v=20260927a"></script>
+<script src="/js/money.js?v=20260927a"></script>
+<script src="/js/mockups.js?v=20260927a"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260926r" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260927a" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -2612,16 +2612,16 @@
               <p class="hint genplan" id="ntMonthHint" hidden></p>
               <div class="row fgrid-3">
                 <div class="field">
-                  <label class="field-label" for="ntPublish">Scheduled publish</label>
-                  <input class="input" id="ntPublish" type="date">
-                </div>
-                <div class="field">
                   <label class="field-label" for="ntDraft">First draft</label>
                   <input class="input" id="ntDraft" type="date">
                 </div>
                 <div class="field">
                   <label class="field-label" for="ntFinal">Final due</label>
                   <input class="input" id="ntFinal" type="date">
+                </div>
+                <div class="field">
+                  <label class="field-label" for="ntPublish">Scheduled publish</label>
+                  <input class="input" id="ntPublish" type="date">
                 </div>
               </div>
             </section>
@@ -2875,11 +2875,10 @@
               </div>
             </details>
             <button type="submit" hidden></button>
-            <ul class="qkmade" id="qkMade" aria-live="polite"></ul>
           </form>
           <div class="sheet-foot">
             <button class="btn btn-primary" id="qkGo" type="button">Add task</button>
-            <button class="btn btn-quiet" id="qkDone" type="button">Done</button>
+            <button class="btn btn-quiet" id="qkDone" type="button">Cancel</button>
           </div>
           <div class="msg" id="qkMsg"></div>
         </div>
@@ -3535,6 +3534,7 @@
             <span class="cmdbar-end">
               <span class="cmdbar-quiet"><span class="cmdbar-count" id="perfCount"></span></span>
               <span class="cmdbar-acts">
+                <button class="btn btn-sm" id="perfRosterBtn" type="button" data-need="team.performance:work">Review list</button>
                 <button class="btn btn-sm" id="perfPrintMonth" type="button">Print month</button>
               </span>
             </span>
@@ -3545,6 +3545,26 @@
       </div>
 
       <!-- Who is reviewed, and against which standard. -->
+      <!-- Who is reviewed each month, chosen by management (the user,
+           2026-09-26): a tick per colleague, Employee ID first, A to Z. -->
+      <div class="sheet" id="perfRosterSheet" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="prTitle">
+          <div class="sheet-head">
+            <h3 id="prTitle">Review list</h3>
+            <button class="iconbtn" id="prClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <div class="prlist" id="prList"></div>
+            <div class="msg" id="prMsg"></div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="prSave" type="button">Save</button>
+            <button class="btn btn-quiet" id="prCancel" type="button">Cancel</button>
+          </div>
+        </div>
+      </div>
       <div class="sheet" id="perfProfileSheet" hidden>
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="ppTitle">
           <div class="sheet-head">
@@ -3590,6 +3610,9 @@
           <input class="input lockcard-code" id="mineCode" type="text" inputmode="numeric" autocomplete="one-time-code"
                  maxlength="10" placeholder="Code" aria-label="Email code" hidden>
           <button class="btn btn-primary" id="mineVerify" type="button" hidden>Verify</button>
+          <!-- Face ID, Touch ID or the device password, where this browser holds
+               a passkey (js/perf.js); the emailed code stays beside it. -->
+          <button class="btn btn-primary" id="minePasskey" type="button" hidden>Unlock with a passkey</button>
           <button class="btn btn-primary" id="mineSend" type="button">Send code</button>
         </div>
         <div class="msg" id="mineLockMsg"></div>
@@ -3901,19 +3924,23 @@ raya-2026        https://example.com/raya"></textarea>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
       </button>
     </div>
-    <div class="rectabs" id="activityTabs" role="tablist" aria-label="Section">
-      <!-- The rail's own order, because these are the rail's own sections and
-           one sequence is easier to hold than two. -->
-      <button class="tab is-on" data-af="all" type="button">Everything</button>
-      <button class="tab" data-af="ops" data-need="activity.ops:view" type="button">My Work</button>
-      <button class="tab" data-af="clients" data-need="activity.clients:view" type="button">Clients</button>
-      <button class="tab" data-af="review" data-need="activity.review:view" type="button">Content Review</button>
-      <button class="tab" data-af="campaigns" data-need="activity.campaigns:view" type="button">Creator Campaigns</button>
-      <button class="tab" data-af="register" data-need="activity.register:view" type="button">Documents</button>
-      <button class="tab" data-af="links" data-need="activity.links:view" type="button">Short Links</button>
-      <button class="tab" data-af="services" data-need="activity.services:view" type="button">Services</button>
-      <button class="tab" data-af="team" data-need="activity.team:view" type="button">Team</button>
-    </div>
+    <!-- The rail's own order, because these are the rail's own sections and
+         one sequence is easier to hold than two. The strip is My Work's view
+         strip: one raised surface slides to the chosen section, and it
+         scrolls sideways where it is wider than the sheet. Performance
+         follows Team, as it does on the Team page. -->
+    <div class="actstrip"><span class="cmdbar-views actviews" id="activityTabs" role="group" aria-label="Section">
+      <button class="acttab btn-sm is-on" data-af="all" type="button" aria-pressed="true">Everything</button>
+      <button class="acttab btn-sm" data-af="ops" data-need="activity.ops:view" type="button" aria-pressed="false">My Work</button>
+      <button class="acttab btn-sm" data-af="clients" data-need="activity.clients:view" type="button" aria-pressed="false">Clients</button>
+      <button class="acttab btn-sm" data-af="review" data-need="activity.review:view" type="button" aria-pressed="false">Content Review</button>
+      <button class="acttab btn-sm" data-af="campaigns" data-need="activity.campaigns:view" type="button" aria-pressed="false">Creator Campaigns</button>
+      <button class="acttab btn-sm" data-af="register" data-need="activity.register:view" type="button" aria-pressed="false">Documents</button>
+      <button class="acttab btn-sm" data-af="links" data-need="activity.links:view" type="button" aria-pressed="false">Short Links</button>
+      <button class="acttab btn-sm" data-af="services" data-need="activity.services:view" type="button" aria-pressed="false">Services</button>
+      <button class="acttab btn-sm" data-af="team" data-need="activity.team:view" type="button" aria-pressed="false">Team</button>
+      <button class="acttab btn-sm" data-af="performance" data-need="team.performance:view" type="button" aria-pressed="false">Performance</button>
+    </span></div>
     <div class="sheet-body" id="activityList"></div>
   </div>
 </div>
@@ -4193,17 +4220,17 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
-<script src="/js/passkey.js?v=20260926r"></script>
-<script src="/js/admin.js?v=20260926r"></script>
-<script src="/js/documents.js?v=20260926r"></script>
-<script src="/js/letters.js?v=20260926r"></script>
-<script src="/js/smreport.js?v=20260926r"></script>
-<script src="/js/reports.js?v=20260926r"></script>
-<script src="/js/register.js?v=20260926r"></script>
-<script src="/js/crm.js?v=20260926r"></script>
-<script src="/js/team.js?v=20260926r"></script>
-<script src="/js/campaigns.js?v=20260926r"></script>
-<script src="/js/ops.js?v=20260926r"></script>
-<script src="/js/perf.js?v=20260926r"></script>
+<script src="/js/passkey.js?v=20260927a"></script>
+<script src="/js/admin.js?v=20260927a"></script>
+<script src="/js/documents.js?v=20260927a"></script>
+<script src="/js/letters.js?v=20260927a"></script>
+<script src="/js/smreport.js?v=20260927a"></script>
+<script src="/js/reports.js?v=20260927a"></script>
+<script src="/js/register.js?v=20260927a"></script>
+<script src="/js/crm.js?v=20260927a"></script>
+<script src="/js/team.js?v=20260927a"></script>
+<script src="/js/campaigns.js?v=20260927a"></script>
+<script src="/js/ops.js?v=20260927a"></script>
+<script src="/js/perf.js?v=20260927a"></script>
 </body>
 </html>

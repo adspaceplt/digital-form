@@ -372,12 +372,18 @@
       if (st.filter && stateOf(p) !== st.filter) return false;
       return true;
     });
-    var reviewed = shown.filter(function (p) { return p.reviewed; });
-    var others = shown.filter(function (p) { return !p.reviewed; });
-    var all = people.filter(function (p) { return p.reviewed; }).length;
+    /* The month is the people management put on the review list, and anybody
+       whose review of this month has begun whatever the list now says. */
+    var onList = function (p) { return p.reviewed || Boolean(p.review); };
+    var reviewed = shown.filter(onList);
+    var others = [];
+    var all = people.filter(onList).length;
     $('perfCount').textContent = (st.find || st.filter)
       ? reviewed.length + ' of ' + all : all + (all === 1 ? ' person' : ' people');
-    if (!people.length) { UI.emptyLine(box, 'No team members.'); return; }
+    if (!all) {
+      UI.emptyLine(box, 'Nobody on the review list.', may('team.performance', 'work') ? 'Review list' : '', openRoster);
+      return;
+    }
     if (!shown.length) {
       UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
         st.find = ''; st.filter = '';
@@ -459,6 +465,47 @@
   if (window.ADspaceMenu) window.ADspaceMenu.onScroll(shutRowMenus);
   document.addEventListener('click', function (e) {
     if (!e.target.closest || !e.target.closest('#perfList .team-act')) shutRowMenus();
+  });
+
+  // ---- The review list -----------------------------------------------------------------
+  /* A tick per colleague, Employee ID first and A to Z. A tick added puts
+     them on from this month; one taken off takes them off from the next,
+     because a review already begun this month stays where it is. */
+  function openRoster() {
+    if (!st.month) return;
+    var F = window.ADspaceForm;
+    var people = (st.month.people || []).slice().sort(F.byStaff);
+    $('prList').innerHTML = people.map(function (p) {
+      return '<label class="tickline"><input type="checkbox" data-id="' + esc(p.team_member_id) + '"' +
+        (p.reviewed ? ' checked' : '') + '> <span>' + esc(F.named(p.staff_code, p.name)) + '</span></label>';
+    }).join('');
+    msg('prMsg', '');
+    window.ADspaceSheet.show($('perfRosterSheet'), { opener: $('perfRosterBtn') });
+  }
+  $('perfRosterBtn').addEventListener('click', openRoster);
+  $('prClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('prCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('prSave').addEventListener('click', function () {
+    var btn = this;
+    var was = {};
+    (st.month.people || []).forEach(function (p) { was[p.team_member_id] = Boolean(p.reviewed); });
+    var changes = Array.prototype.filter.call($('prList').querySelectorAll('input[data-id]'), function (c) {
+      return c.checked !== was[c.getAttribute('data-id')];
+    });
+    if (!changes.length) { window.ADspaceSheet.close(); return; }
+    btn.disabled = true;
+    var left = changes.length, failed = null;
+    changes.forEach(function (c) {
+      call('perf_profile_set', { p_token: token, p_member: c.getAttribute('data-id'), p_payload: { reviewed: c.checked } }, function (d) {
+        if (d.error) failed = failed || d;
+        if (--left) return;
+        btn.disabled = false;
+        if (failed) { msg('prMsg', said(failed), 'err'); return; }
+        window.ADspaceSheet.clean();
+        window.ADspaceSheet.close();
+        loadMonth();
+      });
+    });
   });
 
   // ---- The review profile ---------------------------------------------------------------
@@ -734,7 +781,7 @@
         '<span class="perf-grade-big ' + (GRADE_TONE[res.grade] || '') + '">' + esc(res.grade) + '</span>' +
         '<span class="perf-grade-words"><b>' + esc(res.grade_word) + '</b><small>' + esc(num(res.final)) + ' of 100 · ' + esc(rewardWord(res)) + '</small></span>' +
       '</div>' +
-      '<dl class="tfacts perf-sums">' +
+      '<dl class="tfacts perf-facts perf-sums">' +
         '<div><dt>Base score</dt><dd>' + esc(num(res.base)) + '</dd></div>' +
         '<div><dt>Breaches</dt><dd>' + esc(res.deduction ? num(res.deduction) : '0') + (res.deduction_raw < res.deduction ? '<small>Capped at 35 from ' + esc(num(-res.deduction_raw)) + '</small>' : '') + '</dd></div>' +
         '<div><dt>Final score</dt><dd>' + esc(num(res.final)) + '</dd></div>' +
@@ -796,7 +843,7 @@
       var v = (r.rates || {})[x[0]];
       return '<div><dt>' + esc(x[1]) + '</dt><dd>' + (v == null ? '—' : esc(num(v)) + '%') + '</dd></div>';
     }).join('');
-    return card('Rates behind the scores', '<dl class="tfacts">' + rows + '</dl>');
+    return card('Rates behind the scores', '<dl class="tfacts perf-facts">' + rows + '</dl>');
   }
 
   function breachCard(r, draft) {
@@ -850,7 +897,7 @@
       if (!r.improvement && !r.review_by && !r.reward_step) {
         return manage() || r.status === 'final' ? card('Improvement and review', '<p class="perf-quiet">None set.</p>') : '';
       }
-      return card('Improvement and review', '<dl class="tfacts">' +
+      return card('Improvement and review', '<dl class="tfacts perf-facts">' +
         (r.improvement ? '<div><dt>Improvement</dt><dd>' + esc(r.improvement) + '</dd></div>' : '') +
         (r.review_by ? '<div><dt>Review by</dt><dd>' + esc(dateWord(r.review_by)) + '</dd></div>' : '') +
         (r.reward_step ? '<div><dt>Step or reward</dt><dd>' + esc(r.reward_step) + '</dd></div>' : '') + '</dl>');
@@ -924,12 +971,28 @@
 
   var EVENT_WORD = { started: 'Started', scored: 'Scores saved', released: 'Released', returned: 'Returned to draft',
     disputed: 'Disputed', decided: 'Dispute answered', acknowledged: 'Acknowledged', finalised: 'Finalised',
-    reopened: 'Reopened', breach_logged: 'Breach logged', breach_voided: 'Breach voided', printed: 'Printed', profile: 'Profile changed' };
+    reopened: 'Reopened', breach_logged: 'Breach logged', breach_voided: 'Breach voided', printed: 'Downloaded', profile: 'Profile changed' };
+  /* What a save changed, named (the user, 2026-09-26: "scores saved should
+     show which score"): each scorecard and rate from and to, then the notes
+     or the plan. An older save named nothing and still reads Scores saved. */
+  var RATE_WORD = {};
+  RATES.forEach(function (x) { RATE_WORD[x[0]] = x[1]; });
+  function savedWord(d) {
+    var ch = d && d.changed;
+    if (!ch || !ch.length) return '';
+    return ': ' + ch.map(function (c) {
+      if (c.key === 'notes') return 'notes';
+      if (c.key === 'plan') return 'improvement and review';
+      var rate = RATE_WORD[c.key], name = CAT_WORD[c.key] || rate || c.key;
+      var v = function (x) { return x == null ? 'not set' : num(x) + (rate ? '%' : ''); };
+      return name + ' ' + v(c.from) + ' to ' + v(c.to);
+    }).join(', ');
+  }
   function historyCard(r) {
     var ev = r.events || [];
     if (!ev.length) return '';
     return card('History', '<ul class="perf-history">' + ev.slice(0, 20).map(function (e) {
-      var why = e.detail && e.detail.reason ? ': ' + e.detail.reason : '';
+      var why = e.kind === 'scored' ? savedWord(e.detail) : e.detail && e.detail.reason ? ': ' + e.detail.reason : '';
       return '<li><b>' + esc((EVENT_WORD[e.kind] || e.kind) + why) + '</b><small>' + esc([e.by, timeWord(e.at)].filter(Boolean).join(', ')) + '</small></li>';
     }).join('') + '</ul>');
   }
@@ -1149,10 +1212,17 @@
     if (!on) return;
     $('mineList').innerHTML = '';
     $('mineLockTitle').textContent = 'Your reviews are locked';
-    $('mineLockLine').textContent = why || ('We will email a code to ' + guard.email + '.');
+    /* A passkey (Face ID, Touch ID, the device password) unlocks them in one
+       touch where this browser can use one; the emailed code stays beside it
+       for a new device (the user, 2026-09-26). The server reads either proof
+       in the signed session, within 15 minutes. */
+    var pk = Boolean(window.ADspacePasskey && window.ADspacePasskey.on);
+    $('minePasskey').hidden = !pk;
+    $('mineLockLine').textContent = why || (pk ? 'Use a passkey, or an emailed code sent to ' + guard.email + '.'
+                                              : 'An emailed code is sent to ' + guard.email + '.');
     $('mineCode').hidden = true; $('mineVerify').hidden = true;
-    $('mineSend').hidden = false; $('mineSend').textContent = 'Send code';
-    $('mineSend').className = 'btn btn-primary';
+    $('mineSend').hidden = false; $('mineSend').textContent = pk ? 'Email a code' : 'Send code';
+    $('mineSend').className = pk ? 'btn' : 'btn btn-primary';
     msg('mineLockMsg', '');
   }
   function sendCode() {
@@ -1165,6 +1235,7 @@
       if (r && r.error) { msg('mineLockMsg', 'Not sent. Please try again in a minute.', 'err'); return; }
       $('mineCode').hidden = false; $('mineVerify').hidden = false;
       b.textContent = 'Send again'; b.className = 'btn btn-quiet';
+      $('minePasskey').hidden = true;
       $('mineLockTitle').textContent = 'Enter your email code';
       $('mineCode').value = '';
       $('mineCode').focus();
@@ -1186,6 +1257,25 @@
       enterMine();
     }, function () { b.disabled = false; msg('mineLockMsg', 'Not verified. Please try again.', 'err'); });
   }
+  function unlockPasskey() {
+    var b = $('minePasskey');
+    b.disabled = true;
+    msg('mineLockMsg', '');
+    var go = window.ADspaceCaptcha ? window.ADspaceCaptcha.options(b, {}) : Promise.resolve({});
+    go.then(function (o) {
+      return db.auth.signInWithPasskey({ options: o.captchaToken ? { captchaToken: o.captchaToken } : {} });
+    }).then(function (r) {
+      b.disabled = false;
+      if (r && r.error) {
+        if (!/not allowed|timed out|cancel|abort/i.test(String(r.error.message || '') + ' ' + String(r.error.name || '')))
+          msg('mineLockMsg', 'Not unlocked. Use an emailed code.', 'err');
+        return;
+      }
+      showMineLock(false);
+      enterMine();
+    }, function () { b.disabled = false; msg('mineLockMsg', 'Not unlocked. Use an emailed code.', 'err'); });
+  }
+  $('minePasskey').addEventListener('click', unlockPasskey);
   $('mineSend').addEventListener('click', sendCode);
   $('mineVerify').addEventListener('click', verifyCode);
   $('mineCode').addEventListener('keydown', function (e) {
@@ -1253,7 +1343,11 @@
      paper. Redrawn from the record every time: no file is stored. */
   function printOne(r, btn) {
     if (!r || !r.id) return;
-    draw([r], fileOf(r), btn);
+    /* The sheet is read again once the file is made, so its History shows
+       the download it has just filed. */
+    draw([r], fileOf(r), btn, function (ok) {
+      if (ok && st.rec && st.rec.id === r.id) reread(function () { msg('pvMsg', 'Downloaded.', 'ok'); });
+    });
   }
   $('perfPrintMonth').addEventListener('click', function () {
     var btn = this;
@@ -1287,6 +1381,27 @@
     };
     if (!PDF || !D) { fail(new Error('PDF library not loaded')); return; }
     if (btn) btn.disabled = true;
+    /* The download is filed before anything is drawn, and the file prints
+       the filing: the server's time and who took it, so a copy found later
+       says whose it was. A filing refused is a file never made (the user,
+       2026-09-26: a legitimate timestamp, as a legal document carries). */
+    var left = recs.length, refused = null;
+    recs.forEach(function (r) {
+      call('perf_printed', { p_review: r.id, p_token: token }, function (d) {
+        /* An older database files the download and answers ok with no
+           stamp: the file is made, without the stamp it could not print. */
+        if (d.error || (!d.at && !d.ok)) refused = refused || d;
+        else if (d.at) r.__stamp = d;
+        if (--left) return;
+        if (refused) {
+          if (btn) btn.disabled = false;
+          fail(new Error('the download could not be recorded, so no file was made'));
+          return;
+        }
+        make();
+      });
+    });
+    function make() {
     var pdf;
     try {
       PDF.PDFDocument.create().then(function (doc) {
@@ -1307,11 +1422,21 @@
         a.click();
         setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
         if (btn) btn.disabled = false;
-        recs.forEach(function (r) { call('perf_printed', { p_review: r.id, p_token: token }, function () {}); });
         if (btn && document.getElementById('pvMsg')) msg('pvMsg', 'Downloaded.', 'ok');
         if (then) then(true);
       }).catch(function (e) { if (btn) btn.disabled = false; fail(e); });
     } catch (e) { if (btn) btn.disabled = false; fail(e); }
+    }
+  }
+  /* A stamp's time, as a record states it: the day, the time to the second
+     and the zone, in Malaysia's time whatever the reader's clock says. */
+  function stampTime(s) {
+    var d = new Date(s);
+    if (isNaN(d)) return '';
+    var o = { timeZone: 'Asia/Kuala_Lumpur' };
+    var day = d.toLocaleDateString('en-GB', { timeZone: o.timeZone, day: 'numeric', month: 'short', year: 'numeric' });
+    var at = d.toLocaleTimeString('en-GB', { timeZone: o.timeZone, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    return day + ', ' + at + ' MYT';
   }
 
   function drawRecord(pdf, p, r) {
@@ -1324,7 +1449,9 @@
       /* Every page names the record it belongs to, so a page lifted out still
          says whose month it was. */
       p.text((r.serial ? 'Ref ' + r.serial + ' · ' : '') + r.month, M, 42, 7.5, f.font, p.mute);
-      p.text('Confidential, internal use', M, 32, 7.5, f.font, p.mute);
+      var st0 = r.__stamp;
+      p.text('Confidential, internal use' + (st0 ? ' · Downloaded by ' + (st0.by || st0.email) + ', ' + stampTime(st0.at) : ''),
+        M, 32, 7.5, f.font, p.mute);
     };
     var need = function (h) { if (y - h < 78) page(false); };
     /* A heading never ends a page: it takes its first lines with it. */
@@ -1458,6 +1585,35 @@
       }
       y -= 3;
     });
+
+    /* The record of this copy: every step the portal's server stamped, by
+       name, address and time, the download included. Acknowledgement is
+       given in the portal and stated here, never signed on paper. */
+    var stamp = r.__stamp;
+    if (!stamp) return;
+    heading('7 · Record of this document');
+    var STEP = { released: 'Released', acknowledged: 'Acknowledged', finalised: 'Finalised' };
+    var rows = (stamp.trail || []).filter(function (t) { return STEP[t.kind]; }).map(function (t) {
+      return [STEP[t.kind], t.by || '', t.email || '', stampTime(t.at)];
+    });
+    rows.push(['Downloaded', stamp.by || '', stamp.email || '', stampTime(stamp.at)]);
+    var cols = [M, M + 84, M + 84 + 118, M + 84 + 118 + 168];
+    var head = ['Step', 'Name', 'Email', 'Date and time'];
+    need(22 + rows.length * 16);
+    head.forEach(function (h, i) { p.text(h, cols[i], y, 8.5, f.bold, p.mute); });
+    y -= 6; p.rule(y); y -= 12;
+    rows.forEach(function (row) {
+      need(16);
+      row.forEach(function (c, i) {
+        var max = (i < 3 ? cols[i + 1] : R) - cols[i] - 8;
+        var txt = p.wrap(c, max, 8.5, i === 0 ? f.bold : f.font)[0] || '';
+        p.text(txt, cols[i], y, 8.5, i === 0 ? f.bold : f.font);
+      });
+      y -= 16;
+    });
+    y -= 2;
+    para('Document ID ' + stamp.id + '. Times are the portal server\'s, in Malaysia time (UTC+8). ' +
+      (r.serial ? 'Verify the reference ' + r.serial + ' at go.adspace.me/verify.' : ''), 8, f.font, p.mute);
   }
 
   window.ADspacePerf = {

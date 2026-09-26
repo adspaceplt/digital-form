@@ -692,7 +692,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `/verify/` answers the standing version as Valid and never says reissued.
 - `/verify/` (`verify_serial()`, granted to anon) answers an exact reference
   with the kind, the date and Valid / Void (Replaced for a superseded Letter of
-  Offer), in English and Chinese, with `?s=` prefilled.
+  Offer), in English and Chinese, with `?s=` prefilled. A reference typed with
+  dashes for slashes (the file name's form) is the same reference; an exact
+  match is answered first.
   - It never shows the recipient.
   - HR is shown as "HR letter".
 - The Chinese face (`ADSPACE_ORG.fontCjk`):
@@ -761,6 +763,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   route.
   - Nine required checks in three groups, kept per booking (`qcKept`) until
     release. The list scrolls in `.sheet-body`, with `.qcfoot` fixed.
+  - Tick all (`#qcAll`) above them ticks or clears the nine and reads mixed
+    while only some are ticked.
   - A second reviewer is optional and never assigned: anybody but the asker
     completes it (unique `(option_id, team_member_id, round)`).
   - The ask is outstanding only while `qc_second_wanted && checks < 2`. The
@@ -969,6 +973,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Add task asks for a client or Internal every time.
 - Add task and the content form open on one segment, Task / Content
   deliverable (`.kindseg`). Switching swaps the sheet in place.
+- Add task is one act: it saves, the sheet shuts, the list is read again and
+  the new row says Added. (`state.rowSaid`).
+- Kept report figures are drawn through `paint()` (which hides the other
+  views), never straight to `paintReport()`.
 - Every task has an owner from creation (the creator by default); the sheets
   offer no Nobody.
 - **Only the owner or an admin moves a task** (`ops_owner_may_move()`;
@@ -1087,17 +1095,34 @@ Each line is a rule that broke once. Its reason is in the archive.
   - An unlock lasts 15 minutes from last use.
   - Five wrong tries lock the person out for 15 minutes.
   - Nobody acts on their own review.
-- A member's page always asks for the emailed code (`perf_guarded()` true;
-  `perf_code_fresh()` reads an `otp`/`magiclink` in the token's `amr` within
-  15 minutes). The field takes 6 to 10 digits. The Magic Link template prints
-  `{{ .Token }}`.
+- A member's page always asks for a fresh proof (`perf_guarded()` true;
+  `perf_code_fresh()` reads `otp`, `magiclink`, `webauthn` or `passkey` in the
+  token's `amr` within 15 minutes): Unlock with a passkey first where the
+  browser can use one, Email a code beside it. The code field takes 6 to 10
+  digits. The Magic Link template prints `{{ .Token }}`.
+- The review list is chosen (`perf_people.reviewed`, off by default; admins
+  off unless added). The month lists the people on it plus anyone whose
+  review of that month has begun; the Review list sheet ticks colleagues code
+  first, A to Z (`perf_profile_set`, Work).
 - Department (Creative, Marketing) and role standard (`role_family`) live on
   `team_members`. Performance reads them; `perf_profile_set` sets only its two
   ticks.
 - Months start from June 2026. The padlock sits beside the Performance tab.
-- The print is drawn in the browser on the letterhead and never stored;
-  printing is filed. It carries no version and no acknowledgement or
-  signature lines: a member acknowledges in the portal.
+- The print is drawn in the browser on the letterhead and never stored. It
+  carries no version and no signature lines: a member acknowledges in the
+  portal.
+  - The download is filed first (`perf_printed` answers the server's time,
+    who, their address and the released / acknowledged / finalised steps); a
+    refused filing makes no file.
+  - The file prints Record of this document (step, name, email, time in MYT,
+    Document ID, the verify line) and every foot names who downloaded it.
+  - A downloaded record is listed under HR Letters (`perf_register`, both
+    `register.hr` and `team.performance` at View, own left out; its only act
+    is Open review) and `/verify/` answers it as HR Letter, Valid (Replaced
+    while reopened).
+- History reads Downloaded for a print, and a save names each scorecard and
+  rate it changed, from and to (`perf_save` files `changed`; a save that
+  changed nothing files nothing).
 - Both locks (the master code and the email code) are one centred `.lockcard`.
 - Notifications never carry a score.
 
@@ -1211,6 +1236,11 @@ Each line is a rule that broke once. Its reason is in the archive.
 - One part per tab (`activity.clients`, `.ops`, `.team`, `.review`,
   `.campaigns`, `.links`, `.register`, `.services`). The link draws where any
   tab is readable.
+- Performance follows Team (`team.performance` View, no master code), read
+  through `perf_activity()`: when, the step, whose month, who; never a score,
+  a grade, a breach or a dispute's words, and never the caller's own review.
+- The tabs are My Work's view strip (`.cmdbar-views.actviews`), scrolling
+  sideways with faded edges at every width.
 - The panes key on the subject the row was written with, so a rename leaves
   older rows behind.
 - `SECTION_ICON` and `logIcon` in `js/crm.js` cover every section. The document

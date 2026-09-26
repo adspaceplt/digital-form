@@ -1350,7 +1350,10 @@
      moved. */
   function loadReport(again) {
     var want = state.period || 'month';
-    if (!again && state.report && state.reportFor === want) { paintReport(); return; }
+    /* Kept figures are drawn through `paint` too: straight to `paintReport`
+       they left the view last shown (Workload) on the screen under the
+       Report tab (the user, 2026-09-26). */
+    if (!again && state.report && state.reportFor === want) { paint(); return; }
     state.reportBusy = true;
     state.reportFor = want;
     /* Through `paint` and never straight to `paintReport`: `viewBox` is what
@@ -2960,7 +2963,6 @@
       linkOptions($('qkLink'), pre && pre.link || '');
       $('qkMore').open = false;
       $('qkTitle').value = ''; $('qkDesc').value = ''; $('qkCheck').value = ''; $('qkPri').value = '3';
-      $('qkMade').innerHTML = '';
       qkMade = 0; qkKey = '';
       msg('qkMsg', '');
       /* Switched to from the content form, which stayed on the screen while
@@ -2993,18 +2995,18 @@
     if (!qkKey) qkKey = 'qk-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
     var btn = $('qkGo');
     btn.disabled = true;
+    /* Add task is one act, like every other form: it saves, the sheet shuts,
+       the list behind is read again and the new row says Added. It used to
+       stay open, empty, for the next task and refresh the list only through
+       Done, so the list read as if nothing had been made (the user,
+       2026-09-26). */
     call('ops_create_task', { p_payload: payload, p_idem: qkKey }, 'qkMsg', function (t) {
       btn.disabled = false;
       qkKey = '';
-      qkMade++;
-      var li = document.createElement('li');
-      li.innerHTML = '<span>Added</span> <b></b> <span class="mute"></span>';
-      li.querySelector('b').textContent = t.title;
-      li.querySelector('.mute').textContent = '· ' + nameOf(payload.owner_id) + ' · ' + shortDate(payload.final_due_at);
-      $('qkMade').insertBefore(li, $('qkMade').firstChild);
-      $('qkTitle').value = ''; $('qkDesc').value = ''; $('qkCheck').value = '';
-      msg('qkMsg', '');
-      $('qkTitle').focus();
+      qkMade = 0;
+      sheet('quickSheet', false);
+      state.rowSaid = { id: t.id, word: 'Added.' };
+      load();
     }, function () { btn.disabled = false; });
   }
   function closeQuick() {
