@@ -54,6 +54,7 @@ palette can never be bought with legibility.
 | `--err` / `--err-bg` / `--err-line` / `--err-hi` | `#b3261e` / `#fdeceb` / `#e9b9b5` / `#8c1d18` | `#e8837a` / `#2e1d1b` / `#6a3a35` / `#f2a9a2` | `.msg.err`, danger menu items, the one danger button; `--err-hi` is the pressed step, never a second red |
 | `--focus` | `rgba(31,122,77,.18)` | `rgba(74,168,118,.30)` | The focus ring, on every control, never removed |
 | `--chrome` | `rgba(255,255,255,.88)` | `rgba(23,23,23,.88)` | The translucent sticky bars (top bar, console head, confirm bar) |
+| `--chrome-solid` | `#ffffff` | `#171717` | The same bars under a finger, opaque, because Safari on an iPhone takes the status bar's colour from an opaque bar and fell through a translucent one to the grey page; also the `theme-color` value, following the console's own theme |
 | `--scrim` | `rgba(0,0,0,.42)` | `rgba(0,0,0,.62)` | Behind a sheet |
 | `--shadow` | `0 1px 2px rgba(19,24,26,.05)` | `0 1px 2px rgba(0,0,0,.5)` | Panels only |
 | `--shadow-lift` | menus only | menus only | Nothing else casts a shadow |
@@ -2090,8 +2091,10 @@ base rule and grows to fill the row.
   always text in Optima. Fonts: `ADSPACE_ORG.font` /
   `.fontBold`, else Helvetica. Assets drawn into a PDF are fetched, so
   they must be same-origin or served with CORS.
-- Client pages, one set of words: "Link not recognised / Please check the
-  link or contact your ADspace account manager."; "Access code / Enter
+- Client pages, one set of words: "Link not recognised / Please contact
+  your ADspace account manager." (2026-09-26, the user: the reader cannot
+  check a link they were sent, so the line names the one thing they can
+  do); "Access code / Enter
   the access code provided."; "Unable to load / Please refresh…"; the
   Chinese set mirrors it.
 - **Granting access is all the team should have to do.** Sign-ups are closed on

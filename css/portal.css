@@ -88,6 +88,7 @@
   --focus:      rgba(11,87,208,.22);
   --scrim:      rgba(0,0,0,.42);
   --chrome:     rgba(255,255,255,.88);   /* the translucent sticky bar */
+  --chrome-solid: #ffffff;               /* the same bar, opaque, where a phone's status bar takes its colour */
   /* Soft Precision. Two corners and nothing between them: 10px on anything a
      finger operates, 14px on a bounded section, 18px on a sheet. A table at
      10px sitting between two panels at 14 is the mismatch nobody can name and
@@ -216,6 +217,7 @@
     --focus:      rgba(138,180,248,.34);
     --scrim:      rgba(0,0,0,.62);
     --chrome:     rgba(23,23,23,.88);
+    --chrome-solid: #171717;
     --shadow:     0 1px 2px rgba(0,0,0,.5);
     --shadow-lift: 0 1px 2px rgba(0,0,0,.5), 0 12px 32px rgba(0,0,0,.55);
   color-scheme: dark;
@@ -1699,6 +1701,32 @@ a { color: inherit; }
 .signin .msg { margin-top: 14px; }
 .signin-card .signin-sent { margin-bottom: 16px; }
 .signin-alt { width: 100%; margin-top: 8px; }
+/* The passkey is the second way in, so it is the tonal button under the
+   primary, at the primary's own height. */
+.signin-pk { padding: 12px; font-size: 14px; }
+
+/* A question asked about something on a sheet sits above that sheet: every
+   sheet is moved to the end of the page on open, so without its own layer
+   the question could open underneath the sheet it was about. */
+#askSheet { z-index: 95; }
+
+/* The Passkeys sheet: a short list, one row a passkey, the ⋯ at the end. */
+.sheet-card.pk-card { width: min(520px, 100%); }
+.pk-list { display: flex; flex-direction: column; }
+.pk-row {
+  display: grid; grid-template-columns: 16px minmax(0, 1fr) auto;
+  gap: 12px; align-items: center; padding: 10px 0;
+}
+.pk-row + .pk-row { border-top: 1px solid var(--line-soft); }
+.pk-ico { width: 16px; height: 16px; color: var(--ink-mute); }
+.pk-who { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.pk-who b {
+  font-size: 14px; font-weight: 600; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.pk-who small { font-size: 12px; color: var(--ink-mute); }
+.pk-empty { margin: 0; font-size: 13.5px; color: var(--ink-mute); }
+.pk-list + .msg:not(:empty) { margin-top: 12px; }
 .rp-agesum { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 .rp-agesum.is-warn { color: var(--warn); }
 
@@ -2216,6 +2244,20 @@ body.is-plain .topbar { background: var(--chrome); }
   border-bottom: 1px solid var(--line);
   background: var(--chrome); backdrop-filter: saturate(180%) blur(14px);
   position: sticky; top: 0; z-index: 30;
+}
+/* Safari on an iPhone takes the colour behind the status bar from the sticky
+   bar at the top of the page, and it passes over a translucent one: the
+   console's head at 88% white fell through to the grey page behind it, so
+   the status bar read as a grey band above a white bar (reported with a
+   screenshot on 2026-09-26). Under a finger the bar is opaque, in exactly
+   the colour the translucent one already shows over the page, so nothing
+   changes on the screen but the band. The theme-color meta tag says the same
+   colour for the Safari versions and the installed app that read it. */
+@media (pointer: coarse) {
+  .topbar, .console-head {
+    background: var(--chrome-solid);
+    -webkit-backdrop-filter: none; backdrop-filter: none;
+  }
 }
 /* The page label is what gives way when the bar runs out of room, never the
    controls: it clips to an ellipsis rather than pushing a target under 44px. */
@@ -4731,7 +4773,16 @@ body > .shell { width: 100%; }
   grid-template-columns:
     minmax(0, 1.9fr) 128px minmax(0, .9fr) minmax(0, 1fr) 104px 18px;
 }
-.crm-c-seen { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+/* The date over what it was, the way the stage cell carries its clock: one
+   cell, two lines, the second in the same small mute face as `.crm-age`. */
+.crm-c-seen {
+  display: flex; flex-direction: column; gap: 3px;
+  font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums;
+}
+.crm-seen-kind {
+  font-size: 12px; color: var(--ink-mute);
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 /* The mark that says the row goes somewhere, in the column the header leaves
    empty — the same chevron an engagement row on the record already uses. */
 .crm-c-go { width: 15px; height: 15px; color: var(--ink-mute); justify-self: end; }
@@ -4747,6 +4798,9 @@ body > .shell { width: 100%; }
    and the row it heads leaves with it. */
 @media (max-width: 760px) {
   .crm-head.client-row, .crm-row.client-row { grid-template-columns: minmax(0, 1fr) 120px; }
+  /* Restated, because the two-line rule above is later in the file than the
+     phone rule that hides the cell: the date rides the meta line here. */
+  .crm-c-seen { display: none; }
   /* A compact record row, not a stacked card: who they are over what we know,
      the state over how long it has stood there. The chevron leaves with the
      columns — the whole row is the target at this width. */

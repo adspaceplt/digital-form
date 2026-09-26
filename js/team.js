@@ -396,14 +396,34 @@
       /* Setting somebody active again asks nothing: it is the way back from
          this, and the way back never asks. */
       if (!m.active) { saveMember(m, { active: true }); return; }
-      window.ADspaceConfirm.ask({
-        title: 'Set inactive',
-        body: m.name + ' loses access to every section until they are set active '
-            + 'again here. Their record, their name on past work and everything '
-            + 'they signed stay as they are.',
-        go: 'Set inactive',
-        tone: 'warn'
-      }, function () { saveMember(m, { active: false }); });
+      /* Somebody who is stood down may still be the person in charge of
+         clients and open campaigns, and a client whose person in charge
+         cannot sign in is a client nobody is looking after. So the same sheet
+         asks who takes them over, in the same breath, with Keep as the first
+         answer because a stand-down can be for a week (the user,
+         2026-09-26). A completed campaign keeps who ran it: that is history. */
+      ownedBy(m.name, false, function (own) {
+        var n = ownWord(own);
+        var others = state.rows.filter(function (x) { return x.active && x.id !== m.id && x.name; });
+        window.ADspaceConfirm.ask({
+          title: 'Set inactive',
+          body: m.name + ' loses access to every section until they are set active '
+              + 'again here. Their record, their name on past work and everything '
+              + 'they signed stay as they are.'
+              + (n ? ' They are person in charge of ' + n + '.' : ''),
+          go: 'Set inactive',
+          tone: 'warn',
+          field: n && others.length ? {
+            label: 'Person in charge from now on',
+            required: false,
+            choices: [['', 'Keep with ' + m.name]].concat(byName(others).map(function (x) { return [x.name, x.name]; }))
+          } : null
+        }, function (to) {
+          saveMember(m, { active: false }, function () {
+            if (typeof to === 'string' && to) handOver(m.name, to, own);
+          });
+        });
+      });
     });
     var ed = el.querySelector('[data-a="edit"]');
     if (ed) ed.addEventListener('click', function () { openMemberBox(m, this); });
@@ -412,7 +432,7 @@
     return el;
   }
 
-  function saveMember(m, patch) {
+  function saveMember(m, patch, then) {
     db.from('team_members').update(patch).eq('id', m.id).then(function (r) {
       if (r.error) { msg('teamMsg', r.error.message, 'err'); load(); return; }
       log('team.changed', m.name, Object.keys(patch).map(function (k) {
@@ -420,7 +440,67 @@
       }).join(', '));
       msg('teamMsg', 'Saved.', 'ok');
       load();
+      if (then) then();
     });
+  }
+
+  /* ---- Person in charge ----------------------------------------------------
+     `clients.owner` and `campaigns.owner` hold the person's name as text, not
+     an id, so the team page is where a stand-down or a rename has to follow
+     through to the records that name them. Matched on the trimmed name in any
+     case, because the field was typed by hand before it was a select. */
+  function ownedBy(name, all, then) {
+    var key = String(name || '').trim().toLowerCase();
+    var none = { clients: [], campaigns: [] };
+    if (!key) { then(none); return; }
+    function mine(r) {
+      return (r && !r.error ? r.data || [] : []).filter(function (x) {
+        return String(x.owner || '').trim().toLowerCase() === key;
+      });
+    }
+    Promise.all([
+      db.from('clients').select('id, name, owner'),
+      db.from('campaigns').select('id, title, owner, state')
+    ]).then(function (res) {
+      then({
+        clients: mine(res[0]),
+        campaigns: mine(res[1]).filter(function (c) { return all || c.state !== 'completed'; })
+      });
+    }, function () { then(none); });
+  }
+  function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
+  function ownWord(own) {
+    return [own.clients.length ? plural(own.clients.length, 'client', 'clients') : '',
+            own.campaigns.length ? plural(own.campaigns.length, 'open campaign', 'open campaigns') : '']
+      .filter(Boolean).join(' and ');
+  }
+  /* Each record is written with `.select('id')`, because a refused update is
+     answered with no error and no row, and each move is filed under the client
+     or the campaign it changed, so it reads on that record's own Activity. */
+  function handOver(from, to, own, word) {
+    var jobs = [];
+    if (own.clients.length) jobs.push(db.from('clients').update({ owner: to })
+      .in('id', own.clients.map(function (c) { return c.id; })).select('id'));
+    if (own.campaigns.length) jobs.push(db.from('campaigns').update({ owner: to })
+      .in('id', own.campaigns.map(function (c) { return c.id; })).select('id'));
+    if (!jobs.length) return;
+    Promise.all(jobs).then(function (res) {
+      var moved = 0, bad = null;
+      res.forEach(function (r) {
+        if (r.error) bad = r.error.message;
+        else moved += (r.data || []).length;
+      });
+      var want = own.clients.length + own.campaigns.length;
+      if (bad || moved < want) {
+        msg('teamMsg', 'Saved. The person in charge could not be moved on ' + (want - moved) +
+          ' of ' + want + (bad ? ': ' + bad : '. The database refused the request.'), 'err');
+        return;
+      }
+      own.clients.forEach(function (c) { log('client.edited', c.name, 'Person in charge: ' + from + ' to ' + to); });
+      own.campaigns.forEach(function (c) { log('campaign.edited', c.title, 'Person in charge: ' + from + ' to ' + to); });
+      msg('teamMsg', 'Saved. ' + (word || ownWord(own).replace(/^./, function (x) { return x.toUpperCase(); })) +
+        ' now read ' + to + '.', 'ok');
+    }, function () { msg('teamMsg', 'Saved. The person in charge could not be moved.', 'err'); });
   }
 
   // ---- Groups -------------------------------------------------------------
@@ -876,6 +956,19 @@
           log('team.edited', name, email + ' · ' + roleName(role));
           msg('teamMsg', 'Saved.', 'ok');
           load();
+          /* A rename is the same person, so the clients and campaigns that
+             name them follow the new name without being asked, completed
+             campaigns included: they would otherwise name somebody the team
+             list no longer has. */
+          if (name !== String(m.name || '').trim()) {
+            ownedBy(m.name, true, function (own) {
+              var n = own.clients.length + own.campaigns.length;
+              if (n) handOver(m.name, name, own, [
+                own.clients.length ? plural(own.clients.length, 'client', 'clients') : '',
+                own.campaigns.length ? plural(own.campaigns.length, 'campaign', 'campaigns') : ''
+              ].filter(Boolean).join(' and ').replace(/^./, function (x) { return x.toUpperCase(); }));
+            });
+          }
         });
       }
       if (email === String(m.email || '').toLowerCase()) { write(); return; }

@@ -16,8 +16,12 @@
      files, so an install never depends on the CDN answering. -->
 <link rel="manifest" href="/admin/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/admin/icons/apple-touch-icon.png">
+<!-- The colour Safari and the installed app paint behind the status bar: the
+     console bar's own, so the two read as one surface. The head script below
+     sets it from the console's resolved theme, which can differ from the
+     device's once somebody has chosen. -->
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1f1f1f" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#171717" media="(prefers-color-scheme: dark)">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="ADspace">
@@ -26,43 +30,46 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260926i">
+<link rel="stylesheet" href="/css/portal.css?v=20260926j">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
      which is what a tool the team sits in all day should do. The client pages
      are untouched and have no dark at all: nobody decides on a proposal in a
      register they did not choose, which is what that rule was always about. -->
-<script>try{var t=localStorage.getItem('adspace-theme');if(t==='dark'||(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.setAttribute('data-theme','dark');}catch(e){}</script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>try{var t=localStorage.getItem('adspace-theme'),d=t==='dark'||(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.setAttribute('data-theme','dark');var m=document.querySelectorAll('meta[name="theme-color"]');for(var i=0;i<m.length;i++){m[i].removeAttribute('media');m[i].setAttribute('content',d?'#171717':'#ffffff');}}catch(e){}</script>
+<!-- 2.117 is the first line of the library that signs in with a passkey. The
+     console alone takes it; the client pages stay on the version they were
+     built and tested against until they need something it adds. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"></script>
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260926i"></script>
-<script src="/js/captcha.js?v=20260926i"></script>
-<script src="/js/words.js?v=20260926i"></script>
-<script src="/js/copy.js?v=20260926i"></script>
-<script src="/js/ask.js?v=20260926i"></script>
-<script src="/js/confirm.js?v=20260926i"></script>
-<script src="/js/sheet.js?v=20260926i"></script>
-<script src="/js/refresh.js?v=20260926i"></script>
-<script src="/js/form.js?v=20260926i"></script>
-<script src="/js/state.js?v=20260926i"></script>
-<script src="/js/group.js?v=20260926i"></script>
-<script src="/js/menu.js?v=20260926i"></script>
-<script src="/js/cmdbar.js?v=20260926i"></script>
-<script src="/js/api.js?v=20260926i"></script>
-<script src="/js/money.js?v=20260926i"></script>
-<script src="/js/mockups.js?v=20260926i"></script>
+<script src="/js/config.js?v=20260926j"></script>
+<script src="/js/captcha.js?v=20260926j"></script>
+<script src="/js/words.js?v=20260926j"></script>
+<script src="/js/copy.js?v=20260926j"></script>
+<script src="/js/ask.js?v=20260926j"></script>
+<script src="/js/confirm.js?v=20260926j"></script>
+<script src="/js/sheet.js?v=20260926j"></script>
+<script src="/js/refresh.js?v=20260926j"></script>
+<script src="/js/form.js?v=20260926j"></script>
+<script src="/js/state.js?v=20260926j"></script>
+<script src="/js/group.js?v=20260926j"></script>
+<script src="/js/menu.js?v=20260926j"></script>
+<script src="/js/cmdbar.js?v=20260926j"></script>
+<script src="/js/api.js?v=20260926j"></script>
+<script src="/js/money.js?v=20260926j"></script>
+<script src="/js/mockups.js?v=20260926j"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260926i" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260926j" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -79,6 +86,11 @@
         <input class="input" id="authEmail" type="email" placeholder="john@adspacestudios.com"
                autocomplete="email">
         <button class="btn btn-primary signin-btn" id="authSend" type="button">Sign in</button>
+        <!-- Touch ID, Face ID or the device password instead of the email.
+             Drawn by js/passkey.js only where this browser can use one. -->
+        <button class="btn signin-alt signin-pk" id="authPasskey" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/></svg>Sign in with a passkey
+        </button>
       </div>
       <!-- The email carries a link and a code. The code is what works where a
            link cannot be opened into this window, such as the installed app. -->
@@ -271,6 +283,11 @@
                who you are rather than among the sections everybody shares. -->
           <button class="kmenu-item" id="myPerf" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16"/><path d="m8 14 3-3 3 3 5-6"/></svg>My performance
+          </button>
+          <!-- A person's own way in, so it sits with who they are. Hidden
+               where this browser cannot use a passkey. -->
+          <button class="kmenu-item" id="acctPasskeys" type="button" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/></svg>Passkeys
           </button>
           <!-- The installed app has no reload button. This one also takes an
                old copy off the phone (js/refresh.js) and keeps the sign-in. -->
@@ -4137,16 +4154,37 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260926i"></script>
-<script src="/js/documents.js?v=20260926i"></script>
-<script src="/js/letters.js?v=20260926i"></script>
-<script src="/js/smreport.js?v=20260926i"></script>
-<script src="/js/reports.js?v=20260926i"></script>
-<script src="/js/register.js?v=20260926i"></script>
-<script src="/js/crm.js?v=20260926i"></script>
-<script src="/js/team.js?v=20260926i"></script>
-<script src="/js/campaigns.js?v=20260926i"></script>
-<script src="/js/ops.js?v=20260926i"></script>
-<script src="/js/perf.js?v=20260926i"></script>
+<!-- A person's passkeys: a list, Add a passkey, and Rename and Remove in each
+     row's ⋯. The passkeys themselves are Supabase's; nothing is stored here. -->
+<div class="sheet" id="pkSheet" hidden>
+  <div class="sheet-card formsheet pk-card" role="dialog" aria-modal="true" aria-labelledby="pkTitle">
+    <div class="sheet-head">
+      <h3 id="pkTitle">Passkeys</h3>
+      <button class="iconbtn" id="pkShut" type="button" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-body">
+      <div class="pk-list" id="pkList"></div>
+      <div class="msg" id="pkMsg" role="status"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="pkAdd" type="button">Add a passkey</button>
+      <button class="btn btn-quiet" id="pkClose" type="button">Close</button>
+    </div>
+  </div>
+</div>
+<script src="/js/passkey.js?v=20260926j"></script>
+<script src="/js/admin.js?v=20260926j"></script>
+<script src="/js/documents.js?v=20260926j"></script>
+<script src="/js/letters.js?v=20260926j"></script>
+<script src="/js/smreport.js?v=20260926j"></script>
+<script src="/js/reports.js?v=20260926j"></script>
+<script src="/js/register.js?v=20260926j"></script>
+<script src="/js/crm.js?v=20260926j"></script>
+<script src="/js/team.js?v=20260926j"></script>
+<script src="/js/campaigns.js?v=20260926j"></script>
+<script src="/js/ops.js?v=20260926j"></script>
+<script src="/js/perf.js?v=20260926j"></script>
 </body>
 </html>
