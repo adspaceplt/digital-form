@@ -1350,7 +1350,10 @@
      moved. */
   function loadReport(again) {
     var want = state.period || 'month';
-    if (!again && state.report && state.reportFor === want) { paintReport(); return; }
+    /* Kept figures are drawn through `paint` too: straight to `paintReport`
+       they left the view last shown (Workload) on the screen under the
+       Report tab (the user, 2026-09-26). */
+    if (!again && state.report && state.reportFor === want) { paint(); return; }
     state.reportBusy = true;
     state.reportFor = want;
     /* Through `paint` and never straight to `paintReport`: `viewBox` is what
