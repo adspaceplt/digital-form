@@ -1388,8 +1388,10 @@
     var left = recs.length, refused = null;
     recs.forEach(function (r) {
       call('perf_printed', { p_review: r.id, p_token: token }, function (d) {
-        if (d.error || !d.at) refused = refused || d;
-        else r.__stamp = d;
+        /* An older database files the download and answers ok with no
+           stamp: the file is made, without the stamp it could not print. */
+        if (d.error || (!d.at && !d.ok)) refused = refused || d;
+        else if (d.at) r.__stamp = d;
         if (--left) return;
         if (refused) {
           if (btn) btn.disabled = false;
