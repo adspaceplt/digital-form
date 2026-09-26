@@ -2612,16 +2612,16 @@
               <p class="hint genplan" id="ntMonthHint" hidden></p>
               <div class="row fgrid-3">
                 <div class="field">
-                  <label class="field-label" for="ntPublish">Scheduled publish</label>
-                  <input class="input" id="ntPublish" type="date">
-                </div>
-                <div class="field">
                   <label class="field-label" for="ntDraft">First draft</label>
                   <input class="input" id="ntDraft" type="date">
                 </div>
                 <div class="field">
                   <label class="field-label" for="ntFinal">Final due</label>
                   <input class="input" id="ntFinal" type="date">
+                </div>
+                <div class="field">
+                  <label class="field-label" for="ntPublish">Scheduled publish</label>
+                  <input class="input" id="ntPublish" type="date">
                 </div>
               </div>
             </section>
@@ -2875,11 +2875,10 @@
               </div>
             </details>
             <button type="submit" hidden></button>
-            <ul class="qkmade" id="qkMade" aria-live="polite"></ul>
           </form>
           <div class="sheet-foot">
             <button class="btn btn-primary" id="qkGo" type="button">Add task</button>
-            <button class="btn btn-quiet" id="qkDone" type="button">Done</button>
+            <button class="btn btn-quiet" id="qkDone" type="button">Cancel</button>
           </div>
           <div class="msg" id="qkMsg"></div>
         </div>

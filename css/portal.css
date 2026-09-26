@@ -7425,6 +7425,13 @@ body.is-canvas { overflow: hidden; }
 .tfacts:empty { display: none; }
 .tfacts > div { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; align-items: baseline; }
 .tfacts dt { font-size: 13px; color: var(--ink-mute); }
+/* A review's facts sit in a wide card, so the label track is measured
+   against the longest label a review prints ("Budget pacing variance") and
+   never wraps it; 112px folded three of them onto two lines (the user,
+   2026-09-26). A narrow card keeps the rail's own track. */
+.perf-facts > div { grid-template-columns: 176px minmax(0, 1fr); gap: 16px; }
+.perf-facts dt { white-space: nowrap; }
+.is-tight .perf-facts > div, .sheet-side .perf-facts > div { grid-template-columns: 152px minmax(0, 1fr); gap: 12px; }
 .tfacts dd {
   margin: 0; min-width: 0; font-size: 13.5px; color: var(--ink); overflow-wrap: anywhere;
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px;
@@ -7782,9 +7789,6 @@ body.is-canvas { overflow: hidden; }
 .kindseg { display: flex; margin: 0 0 16px; }
 .kindseg .acttab { flex: 1 1 0; text-align: center; min-height: var(--ctl-h); font-size: var(--ctl-text); }
 #qkForm .hint { margin: 10px 0 8px; }
-.qkmade { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
-.qkmade:empty { display: none; }
-.qkmade li > span:first-child { color: var(--ok); font-weight: 600; }
 /* From template: a tick per template, what it makes under its name. */
 .tpl-head { display: flex; align-items: center; justify-content: space-between; margin: 12px 0 4px; }
 .tpllist { display: grid; border-top: 1px solid var(--line-soft); }

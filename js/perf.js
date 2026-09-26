@@ -734,7 +734,7 @@
         '<span class="perf-grade-big ' + (GRADE_TONE[res.grade] || '') + '">' + esc(res.grade) + '</span>' +
         '<span class="perf-grade-words"><b>' + esc(res.grade_word) + '</b><small>' + esc(num(res.final)) + ' of 100 · ' + esc(rewardWord(res)) + '</small></span>' +
       '</div>' +
-      '<dl class="tfacts perf-sums">' +
+      '<dl class="tfacts perf-facts perf-sums">' +
         '<div><dt>Base score</dt><dd>' + esc(num(res.base)) + '</dd></div>' +
         '<div><dt>Breaches</dt><dd>' + esc(res.deduction ? num(res.deduction) : '0') + (res.deduction_raw < res.deduction ? '<small>Capped at 35 from ' + esc(num(-res.deduction_raw)) + '</small>' : '') + '</dd></div>' +
         '<div><dt>Final score</dt><dd>' + esc(num(res.final)) + '</dd></div>' +
@@ -796,7 +796,7 @@
       var v = (r.rates || {})[x[0]];
       return '<div><dt>' + esc(x[1]) + '</dt><dd>' + (v == null ? '—' : esc(num(v)) + '%') + '</dd></div>';
     }).join('');
-    return card('Rates behind the scores', '<dl class="tfacts">' + rows + '</dl>');
+    return card('Rates behind the scores', '<dl class="tfacts perf-facts">' + rows + '</dl>');
   }
 
   function breachCard(r, draft) {
@@ -850,7 +850,7 @@
       if (!r.improvement && !r.review_by && !r.reward_step) {
         return manage() || r.status === 'final' ? card('Improvement and review', '<p class="perf-quiet">None set.</p>') : '';
       }
-      return card('Improvement and review', '<dl class="tfacts">' +
+      return card('Improvement and review', '<dl class="tfacts perf-facts">' +
         (r.improvement ? '<div><dt>Improvement</dt><dd>' + esc(r.improvement) + '</dd></div>' : '') +
         (r.review_by ? '<div><dt>Review by</dt><dd>' + esc(dateWord(r.review_by)) + '</dd></div>' : '') +
         (r.reward_step ? '<div><dt>Step or reward</dt><dd>' + esc(r.reward_step) + '</dd></div>' : '') + '</dl>');
@@ -924,12 +924,28 @@
 
   var EVENT_WORD = { started: 'Started', scored: 'Scores saved', released: 'Released', returned: 'Returned to draft',
     disputed: 'Disputed', decided: 'Dispute answered', acknowledged: 'Acknowledged', finalised: 'Finalised',
-    reopened: 'Reopened', breach_logged: 'Breach logged', breach_voided: 'Breach voided', printed: 'Printed', profile: 'Profile changed' };
+    reopened: 'Reopened', breach_logged: 'Breach logged', breach_voided: 'Breach voided', printed: 'Downloaded', profile: 'Profile changed' };
+  /* What a save changed, named (the user, 2026-09-26: "scores saved should
+     show which score"): each scorecard and rate from and to, then the notes
+     or the plan. An older save named nothing and still reads Scores saved. */
+  var RATE_WORD = {};
+  RATES.forEach(function (x) { RATE_WORD[x[0]] = x[1]; });
+  function savedWord(d) {
+    var ch = d && d.changed;
+    if (!ch || !ch.length) return '';
+    return ': ' + ch.map(function (c) {
+      if (c.key === 'notes') return 'notes';
+      if (c.key === 'plan') return 'improvement and review';
+      var rate = RATE_WORD[c.key], name = CAT_WORD[c.key] || rate || c.key;
+      var v = function (x) { return x == null ? 'not set' : num(x) + (rate ? '%' : ''); };
+      return name + ' ' + v(c.from) + ' to ' + v(c.to);
+    }).join(', ');
+  }
   function historyCard(r) {
     var ev = r.events || [];
     if (!ev.length) return '';
     return card('History', '<ul class="perf-history">' + ev.slice(0, 20).map(function (e) {
-      var why = e.detail && e.detail.reason ? ': ' + e.detail.reason : '';
+      var why = e.kind === 'scored' ? savedWord(e.detail) : e.detail && e.detail.reason ? ': ' + e.detail.reason : '';
       return '<li><b>' + esc((EVENT_WORD[e.kind] || e.kind) + why) + '</b><small>' + esc([e.by, timeWord(e.at)].filter(Boolean).join(', ')) + '</small></li>';
     }).join('') + '</ul>');
   }
@@ -1287,6 +1303,25 @@
     };
     if (!PDF || !D) { fail(new Error('PDF library not loaded')); return; }
     if (btn) btn.disabled = true;
+    /* The download is filed before anything is drawn, and the file prints
+       the filing: the server's time and who took it, so a copy found later
+       says whose it was. A filing refused is a file never made (the user,
+       2026-09-26: a legitimate timestamp, as a legal document carries). */
+    var left = recs.length, refused = null;
+    recs.forEach(function (r) {
+      call('perf_printed', { p_review: r.id, p_token: token }, function (d) {
+        if (d.error || !d.at) refused = refused || d;
+        else r.__stamp = d;
+        if (--left) return;
+        if (refused) {
+          if (btn) btn.disabled = false;
+          fail(new Error('the download could not be recorded, so no file was made'));
+          return;
+        }
+        make();
+      });
+    });
+    function make() {
     var pdf;
     try {
       PDF.PDFDocument.create().then(function (doc) {
@@ -1307,11 +1342,21 @@
         a.click();
         setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
         if (btn) btn.disabled = false;
-        recs.forEach(function (r) { call('perf_printed', { p_review: r.id, p_token: token }, function () {}); });
         if (btn && document.getElementById('pvMsg')) msg('pvMsg', 'Downloaded.', 'ok');
         if (then) then(true);
       }).catch(function (e) { if (btn) btn.disabled = false; fail(e); });
     } catch (e) { if (btn) btn.disabled = false; fail(e); }
+    }
+  }
+  /* A stamp's time, as a record states it: the day, the time to the second
+     and the zone, in Malaysia's time whatever the reader's clock says. */
+  function stampTime(s) {
+    var d = new Date(s);
+    if (isNaN(d)) return '';
+    var o = { timeZone: 'Asia/Kuala_Lumpur' };
+    var day = d.toLocaleDateString('en-GB', { timeZone: o.timeZone, day: 'numeric', month: 'short', year: 'numeric' });
+    var at = d.toLocaleTimeString('en-GB', { timeZone: o.timeZone, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    return day + ', ' + at + ' MYT';
   }
 
   function drawRecord(pdf, p, r) {
@@ -1324,7 +1369,9 @@
       /* Every page names the record it belongs to, so a page lifted out still
          says whose month it was. */
       p.text((r.serial ? 'Ref ' + r.serial + ' · ' : '') + r.month, M, 42, 7.5, f.font, p.mute);
-      p.text('Confidential, internal use', M, 32, 7.5, f.font, p.mute);
+      var st0 = r.__stamp;
+      p.text('Confidential, internal use' + (st0 ? ' · Downloaded by ' + (st0.by || st0.email) + ', ' + stampTime(st0.at) : ''),
+        M, 32, 7.5, f.font, p.mute);
     };
     var need = function (h) { if (y - h < 78) page(false); };
     /* A heading never ends a page: it takes its first lines with it. */
@@ -1458,6 +1505,35 @@
       }
       y -= 3;
     });
+
+    /* The record of this copy: every step the portal's server stamped, by
+       name, address and time, the download included. Acknowledgement is
+       given in the portal and stated here, never signed on paper. */
+    var stamp = r.__stamp;
+    if (!stamp) return;
+    heading('7 · Record of this document');
+    var STEP = { released: 'Released', acknowledged: 'Acknowledged', finalised: 'Finalised' };
+    var rows = (stamp.trail || []).filter(function (t) { return STEP[t.kind]; }).map(function (t) {
+      return [STEP[t.kind], t.by || '', t.email || '', stampTime(t.at)];
+    });
+    rows.push(['Downloaded', stamp.by || '', stamp.email || '', stampTime(stamp.at)]);
+    var cols = [M, M + 84, M + 84 + 118, M + 84 + 118 + 168];
+    var head = ['Step', 'Name', 'Email', 'Date and time'];
+    need(22 + rows.length * 16);
+    head.forEach(function (h, i) { p.text(h, cols[i], y, 8.5, f.bold, p.mute); });
+    y -= 6; p.rule(y); y -= 12;
+    rows.forEach(function (row) {
+      need(16);
+      row.forEach(function (c, i) {
+        var max = (i < 3 ? cols[i + 1] : R) - cols[i] - 8;
+        var txt = p.wrap(c, max, 8.5, i === 0 ? f.bold : f.font)[0] || '';
+        p.text(txt, cols[i], y, 8.5, i === 0 ? f.bold : f.font);
+      });
+      y -= 16;
+    });
+    y -= 2;
+    para('Document ID ' + stamp.id + '. Times are the portal server\'s, in Malaysia time (UTC+8). ' +
+      (r.serial ? 'Verify the reference ' + r.serial + ' at go.adspace.me/verify.' : ''), 8, f.font, p.mute);
   }
 
   window.ADspacePerf = {
