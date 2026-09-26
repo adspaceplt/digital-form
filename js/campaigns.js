@@ -77,6 +77,8 @@
   }
 
   var $ = function (id) { return document.getElementById(id); };
+  /* Clients and colleagues in a picker lead with their code (js/form.js). */
+  var F = window.ADspaceForm;
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
@@ -918,15 +920,15 @@
   function peopleSelect(el, team, current) {
     if (!el) return;
     var keep = current != null ? current : el.value;
-    var names = team.map(function (m) { return m.name; });
-    if (keep && names.indexOf(keep) < 0) names.push(keep);
+    var list = team.slice().sort(F.byStaff);
+    if (keep && !list.some(function (m) { return m.name === keep; })) list.push({ name: keep });
     el.innerHTML = '<option value="">Unassigned</option>' +
-      names.map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
+      list.map(function (m) { return '<option value="' + esc(m.name) + '">' + esc(F.named(m.staff_code, m.name)) + '</option>'; }).join('');
     el.value = keep || '';
   }
 
   function loadTeam(then) {
-    db.from('team_members').select('name').eq('active', true).order('name').then(function (r) {
+    db.from('team_members').select('name, staff_code').eq('active', true).order('name').then(function (r) {
       state.team = (r.data) || [];
       if (then) then();
     }, function () { if (then) then(); });
@@ -937,14 +939,14 @@
     // rather than leaving four call sites to remember the second one.
     var inner = then;
     then = function () { loadTeam(inner); };
-    db.from('clients').select('id, name, market').eq('stage', 'active').order('name')
+    db.from('clients').select('id, name, market, client_code').eq('stage', 'active').order('name')
       .then(function (r) {
-        state.clients = (r.data) || [];
+        state.clients = ((r.data) || []).sort(F.byClient);
         var sel = $('campClient');
         var keep = sel.value;
         sel.innerHTML = '<option value="">Choose a client…</option>' +
           state.clients.map(function (c) {
-            return '<option value="' + esc(c.id) + '">' + esc(c.name) +
+            return '<option value="' + esc(c.id) + '">' + esc(F.named(c.client_code, c.name)) +
               (c.market === 'SG' ? ' · S$' : '') + '</option>';
           }).join('');
         if (keep) sel.value = keep;

@@ -305,6 +305,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `reveal(el)` opens a fold before a refusal focuses into it.
   - The required asterisk comes from `aria-required` (`.is-req`).
   - `ADspaceForm.title` sets formal names in title case.
+  - `ADspaceForm.named` / `sequence`: every client or colleague offered in a
+    console select reads code first (`AC190 · Brand`, `AD014 · Xue Yi`), A to
+    Z by code with digits as numbers, the unnumbered after by name
+    (`byClient`, `byStaff`). The Clients list itself stays newest first.
   - The `data-hint` date hint.
   - The date floor (below).
 - `js/words.js` holds every word two pages share (covers, statuses, actions) in
@@ -326,6 +330,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A value out of range is cleared on blur and refused on Enter, with
     `.date-note`. `ADspaceAsk.rename` refuses it too.
   - `data-any-date` opts a field out. This is page-side only.
+  - Room for the calendar (§6): at a desk, a date field too near the window's
+    foot is lifted before its calendar opens (its scroller scrolls, else a
+    `.pick-room` spacer until the field is left), and a press that lifted it
+    opens the calendar with `showPicker`. A coarse pointer is left alone.
 
 ### Writes, refusals, reversibility
 - **A write that changed nothing is not a success.** PostgREST answers a refused
@@ -673,8 +681,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     with `__new` to type one, saved through `ADspaceForm.title`;
   - the date may be blank;
   - Edit applies to manual rows only.
-- The client picker offers every record in the directory's bands and order, ID
-  first (`AC190 · Name`). A pick fills the recipient with the registered name,
+- The client picker offers every record in the directory's bands, each A to Z
+  by Client ID (`ADspaceForm.named`). A pick fills the recipient with the registered name,
   editable, and never replaces a typed one.
 - Reissue (Work level, `document_reissue`):
   - voids the earlier version as Reissued and keeps it;
