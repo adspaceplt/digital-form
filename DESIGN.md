@@ -99,8 +99,8 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
 | Level | Size / weight / tracking | Where |
 |---|---|---|
 | Display | 24/600/-.02em (21 phone); 26 review hero; 20 batch title | `.cover-panel h2`, `.camphead h1`, `.batch-title` |
-| Section heading | 19/600/-.02em | `.viewhead h2`, record name |
-| Sub-heading | 16/600/-.01em | `.viewhead h3` |
+| Section heading | 19/600/-.02em | `.viewhead h2`, record name (the creator portal's `h1` too) |
+| Sub-heading | 16/600/-.01em | `.viewhead h3`, a card's own title (`.tnext-title`, `.qnext-title`, `.lockcard-title`) |
 | Panel and group title | 15/600/-.01em | `.panel h3`, `.crm-group-head h3`, `.kcard-name`, `.ovsec-head h3`, `.railtitle` |
 | Body | 14px console; **16px client pages** (`:root[data-face="client"]`); line-height 1.55 | Only what inherits moves |
 | Money in a row | 13.5px tabular | `.svc-rate` |
@@ -137,10 +137,12 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Sections in a list `.crm-group` | 24 |
 | Panel padding | 18px 20px (14 phone) |
 | Fold head `.disclosure` | 16px 22px (12px 14px phone) |
-| Table row | 10px 15px (12px 15px phone); header row `0 15px 8px`, its pad on the header itself |
+| Table row | 10px 15px (12px 15px phone); header row `12px 15px 8px` on the header itself, whatever its row's own pad |
 | Field row gap `.row` | 12 across; **16 down between fields in a sheet** (`.sheet-body :where(.row)`), never a per-row style |
 | Side-sheet cards | 16 apart, padded 18/20 |
 | `.facts` / `.tally` gap | 14px 24px / 14px |
+| Label beside value (`.ovfacts`, `.tfacts`, `.raildates`, `.railmoney`) | 8 between rows; the label 13px `--ink-mute` |
+| A title over its block (`.railtitle`, `.qcard-title`) | 8 below; a read group's `.fsec-h` 12, as in the sheet |
 | `.cards` / `.kcard` gap | 14 / 10 |
 | `.svc-cat` | 14px 15px 6px |
 | Tab strip to pane | 12, owned by the strip |
