@@ -1274,8 +1274,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The URL pushes history only for a record's pane; everything else replaces.
 
 ### Infrastructure (established; never re-ask)
-- Hosting is GitHub Pages. Cloudflare Pages (`adspace-form`) only builds PR
-  previews; the move to it was abandoned.
+- Hosting is GitHub Pages (`digital.adspace.me` CNAME → `adspaceplt.github.io`).
+  There are no PR preview builds: the Cloudflare Pages project `adspace-form`
+  was deleted on 2026-09-26 at the user's choice. The only Cloudflare compute
+  is the `adspace-links` Worker.
 - Supabase project `hwwuigvdfubuymchsvyx`.
 - S3:
   - bucket `myadspace`, region `ap-southeast-5`, prefix `content`;
