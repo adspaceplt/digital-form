@@ -645,6 +645,9 @@
     $('sectionTitle').querySelector('.console-title-word').textContent = SECTION_TITLE[name];
     $('sectionTitle').setAttribute('aria-label', SECTION_TITLE[name] + ', about this section');
     paintIntro(name);
+    /* Content Review's list was read once; a client's name, handles or logo
+       changed on the record since then are read again on the way in. */
+    if (name === 'review' && meLoaded && !state.client && state.reviewClients) loadClients();
     // The tab said Content Review Internal whichever section you were in.
     document.title = SECTION_TITLE[name] + ' · ADspace Digital Portal';
     navItems().forEach(function (b) {
@@ -1290,19 +1293,40 @@
     $('clientLink').value = url;
     $('openLink').href = url;
     openDrawer(false);
-    $('eIg').value  = c.handle_ig || '';
-    $('eFb').value  = c.handle_fb || '';
-    $('eTt').value  = c.handle_tiktok || '';
-    $('eXhs').value = c.handle_xhs || '';
-    $('eLogo').value = c.logo_url || '';
-    paintLogo();
-    $('ePass').value = c.passcode || '';
-    paintLock();
+    fillProfile(c);
+    /* The handles and the logo are the client record's too (Brand profile
+       edits the same columns), and the row in this list was read when the
+       list was, so a logo changed on the record since then would show here
+       stale and a save would write the old one back (reported 2026-09-26:
+       "why do i have to update both sides"). The row is read again on open,
+       and a field somebody has already changed is left as they typed it. */
+    var before = { ig: c.handle_ig, fb: c.handle_fb, tt: c.handle_tiktok, xhs: c.handle_xhs, logo: c.logo_url, pass: c.passcode };
+    db.from('clients').select('*').eq('id', c.id).single().then(function (r) {
+      if (!r || r.error || !r.data || state.client !== c) return;
+      Object.assign(c, r.data);
+      fillProfile(c, before);
+    }, function () {});
     msg('handleMsg', '');
     msg('profileMsg', '');
     setUrl();
     loadBatches();
     if (!pendingScroll) window.scrollTo(0, 0);
+  }
+
+  /* The profile fields from the row. With `was`, a field is only refilled
+     while it still holds what it was filled with, so a fresh read never
+     throws away what somebody has typed. */
+  function fillProfile(c, was) {
+    var map = [['eIg', 'handle_ig', 'ig'], ['eFb', 'handle_fb', 'fb'], ['eTt', 'handle_tiktok', 'tt'],
+               ['eXhs', 'handle_xhs', 'xhs'], ['eLogo', 'logo_url', 'logo'], ['ePass', 'passcode', 'pass']];
+    map.forEach(function (m) {
+      var el = $(m[0]);
+      if (!el) return;
+      if (was && el.value !== (was[m[2]] || '')) return;
+      el.value = c[m[1]] || '';
+    });
+    paintLogo();
+    paintLock();
   }
 
   $('backToClients').addEventListener('click', showClients);

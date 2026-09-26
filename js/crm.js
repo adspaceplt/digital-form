@@ -390,8 +390,21 @@
     });
   }
 
+  /* The newest client first, by the Client ID the accounting system issues
+     in sequence (AC012 above AC011): the number is how the team counts its
+     clients, so the largest is the latest (the user, 2026-09-26). The digits
+     are compared as numbers, so AC100 sits above AC99. A record with no ID
+     yet is a lead that has not been numbered, and follows, newest first. */
+  function byCode(a, b) {
+    var ca = String(a.client_code || ''), cb = String(b.client_code || '');
+    if (ca && !cb) return -1;
+    if (!ca && cb) return 1;
+    if (ca && cb) return cb.localeCompare(ca, 'en', { numeric: true, sensitivity: 'base' });
+    return String(b.created_at || '').localeCompare(String(a.created_at || ''));
+  }
+
   function paintList() {
-    var rows = visible();
+    var rows = visible().sort(byCode);
     /* The same count everywhere: how many there are, or how many of them a
        filter has left. It used to read "1 client" whether that was the whole
        list or one of forty. */
@@ -432,7 +445,7 @@
         shut: !filtered && bandShut(g[0], mine.length === rows.length),
         table: function () {
           var table = GRP.table('client-row',
-            ['Client', 'Stage', 'Industry', 'Value', 'Person in charge', 'Last activity', ''], 'crm-register');
+            ['Client', 'Stage', 'Industry', 'Person in charge', 'Last activity', ''], 'crm-register');
           /* A card draws its first thirty and offers the rest, so a book of a
              hundred and eighty opens as a page somebody can read rather than
              as a mile of rows. A filter narrows what reaches this point, so
@@ -448,16 +461,11 @@
      run over, and what the group is worth. Absent where none has gone over,
      so a healthy stage stays quiet. */
   function bandMarks(mine) {
-    var worth = {};
-    mine.forEach(function (c) {
-      if (!c.deal_value) return;
-      var k = c.market || 'MY';
-      worth[k] = (worth[k] || 0) + Number(c.deal_value);
-    });
-    var worthText = Object.keys(worth).map(function (k) { return MON.money(worth[k], k); }).join(' + ');
+    /* No value on the heading or the rows (the user, 2026-09-26): what a
+       client is worth is read on the record's Services, against the lines
+       it is made of, not as a figure on a list. */
     var late = mine.filter(isStale).length;
-    return (late ? '<span class="tone is-warn crm-band-late">' + late + ' overdue</span>' : '') +
-      (worthText ? '<span class="crm-band-worth">' + esc(worthText) + '</span>' : '');
+    return late ? '<span class="tone is-warn crm-band-late">' + late + ' overdue</span>' : '';
   }
 
   /* A column per fact, because that is what every CRM anyone here has used
@@ -483,7 +491,6 @@
         (ageWord(c) ? '<small class="crm-age' + (isStale(c) ? ' is-late' : '') + '">' +
           esc(ageWord(c) + (isStale(c) ? ' · Overdue' : '')) + '</small>' : '') + '</span>' +
       '<span class="crm-c crm-c-ind">' + esc(c.industry || '—') + '</span>' +
-      '<span class="crm-c crm-c-mkt">' + (c.deal_value ? esc(MON.money(c.deal_value, c.market)) : '<span class="muted">' + esc(MON.market(c.market).sign) + '</span>') + '</span>' +
       '<span class="crm-c crm-c-own">' + esc(c.owner || 'Unassigned') + '</span>' +
       /* When somebody last spoke to them. Where nobody has, the cell takes the
          same mute mark the Industry cell beside it already uses for a value
@@ -500,8 +507,7 @@
          away for its sign. What is not known is left out rather than stood in
          for, so the line is two or three facts, never a row of placeholders. */
       '<span class="crm-c crm-c-meta">' +
-        [c.industry, c.deal_value ? MON.money(c.deal_value, c.market) : '', c.owner,
-         lastSeenWord(c)].filter(Boolean).map(esc).join(' · ') +
+        [c.industry, c.owner, lastSeenWord(c)].filter(Boolean).map(esc).join(' · ') +
       '</span>' +
       /* The mark that says the row goes somewhere, in the column the header
          leaves empty. The row is one button, so the whole of it opens the
@@ -678,7 +684,7 @@
 
   $('crmSave').addEventListener('click', function () {
     var name = val('crmName');
-    if (!name) { msg('crmMsg', 'A client needs a name.', 'err'); $('crmName').focus(); return; }
+    if (!name) { msg('crmMsg', 'A brand name is required.', 'err'); $('crmName').focus(); return; }
     var patch = { market: $('crmMarket').value };
     FORM.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
     patch.name = name;
@@ -741,6 +747,20 @@
     var same = Boolean(state.client && state.client.id === c.id);
     if (!same) { state.contacts = []; state.log = []; }
     state.client = c;
+    /* The list was read once; Content Review's settings edit the same
+       handles and logo, so a record opened from the list is read again and
+       repainted where the row has moved on (2026-09-26). */
+    if (!same) {
+      db.from('clients').select('*').eq('id', c.id).single().then(function (r) {
+        if (!r || r.error || !r.data || state.client !== c) return;
+        var moved = Object.keys(r.data).some(function (k) {
+          return JSON.stringify(r.data[k]) !== JSON.stringify(c[k]);
+        });
+        if (!moved) return;
+        Object.assign(c, r.data);
+        openClient(c, true);
+      }, function () {});
+    }
     Array.prototype.forEach.call(document.querySelectorAll('#crmTabs [data-needs-activity]'), function (b) {
       b.hidden = !maySeeActivity();
     });

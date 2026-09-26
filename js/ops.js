@@ -1713,7 +1713,10 @@
            them. Kept between views, so Board and back does not go to the
            database for numbers that have not moved. */
         if (state.view === 'report') loadReport(false);
-        else if (state.view === 'clients') paintClients(true);
+        /* viewBox() is what shows the months and hides the list, so the
+           client's months go through it like every other view: drawn
+           straight into a hidden box, they appeared only after a reload. */
+        else if (state.view === 'clients') { viewBox(); paintClients(true); }
         else paint();
       }, 0);
     });
@@ -6247,6 +6250,7 @@
     /* Error prevention: a meeting first put in the diary is today or later. */
     if (!e.meeting_at) $('meetDate').setAttribute('min', monthKey(new Date()) + '-' + String(new Date().getDate()).padStart(2, '0'));
     else $('meetDate').removeAttribute('min');
+    if (window.ADspaceForm) ADspaceForm.floor($('meetDate'));
     $('meetChannel').value = e.meeting_channel || 'google_meet';
     $('meetMinutes').value = String(e.meeting_minutes || 30);
     if (!$('meetMinutes').value) $('meetMinutes').value = '30';

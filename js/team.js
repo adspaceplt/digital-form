@@ -551,7 +551,7 @@
   /* A group starts from one of four shapes and is adjusted from there; a
      change that matches none of them reads as Custom. Sensitive parts (HR
      letters, performance reviews, Team) are never in a preset below Admin:
-     they are opened deliberately, in Fine-tune. */
+     they are opened deliberately, in Advanced. */
   var PRESETS = {
     manager: { ops: 'manage', clients: 'manage', review: 'manage', campaigns: 'manage', register: 'manage', reports: 'manage',
                links: 'manage', services: 'manage', team: 'none', activity: 'view',
@@ -563,9 +563,9 @@
                links: 'view', services: 'view', team: 'none', activity: 'view', 'register.hr': 'none' }
   };
 
-  /* One block per section: its name and the Fine-tune fold on the head line,
+  /* One block per section: its name and the Advanced fold on the head line,
      the four levels as a segment, and one line saying what the chosen level
-     allows. The parts sit folded under Fine-tune, each a select that starts
+     allows. The parts sit folded under Advanced, each a select that starts
      at Same as section, and the fold counts only the parts that differ. A part
      is read where its section is, never in a second list (2026-09-22). */
   $('grFlags').innerHTML =
@@ -575,7 +575,7 @@
         '<div class="permsec-head"><span class="permsec-name">' + esc(sec[1]) + '</span>' +
           (parts.length
             ? '<button class="permsec-toggle" type="button" aria-expanded="false" aria-controls="grParts-' + sec[0] + '">' +
-                '<span>Fine-tune</span><span class="permsec-n" data-n="' + sec[0] + '"></span>' +
+                '<span>Advanced</span><span class="permsec-n" data-n="' + sec[0] + '"></span>' +
                 '<span class="disclosure-caret" aria-hidden="true">&#9656;</span></button>'
             : '') + '</div>' +
         '<select class="select" data-seg data-sec="' + sec[0] + '" aria-label="' + esc(sec[1]) + ' access">' +
@@ -601,9 +601,13 @@
         }).join('') + '</div>' : '') +
       '</div>';
     }).join('') +
-    CAPS.concat([['is_admin', 'Admin: every section and every part']]).map(function (f) {
+    /* Admin is chosen from Start from, which already names it (2026-09-26):
+       a second tick below the sections said the same thing twice. The box
+       stays, unseen, because it is what the save reads. */
+    CAPS.map(function (f) {
       return '<label class="perm"><input type="checkbox" data-f="' + f[0] + '"><span>' + esc(f[1]) + '</span></label>';
-    }).join('');
+    }).join('') +
+    '<input type="checkbox" data-f="is_admin" hidden tabindex="-1" aria-hidden="true">';
   function flagBoxes() { return Array.prototype.slice.call($('grFlags').querySelectorAll('input')); }
   function levelPicks() { return Array.prototype.slice.call($('grFlags').querySelectorAll('select[data-sec]')); }
   function partPicks() { return Array.prototype.slice.call($('grFlags').querySelectorAll('select[data-part]')); }
@@ -672,7 +676,7 @@
       return lv + ' ' + listWords(by[lv]);
     });
     var line = said.length ? 'This group can ' + listWords(said, ', and ') + '.' : 'This group has no access.';
-    if (tuned) line += ' ' + tuned + (tuned === 1 ? ' page is' : ' pages are') + ' fine-tuned.';
+    if (tuned) line += ' ' + tuned + (tuned === 1 ? ' page is' : ' pages are') + ' set in Advanced.';
     return line;
   }
   /* Everything that follows a change: each section's line and count, the

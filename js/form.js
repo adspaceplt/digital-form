@@ -351,7 +351,88 @@
     if (lab) lab.classList.add('is-req');
   }
 
+  /* ---- 5. No date before the company existed --------------------------
+     ADSPACE PLT was registered on 14 Aug 2023, so nothing this portal
+     records happened before it, and a year keyed as 0003 or 20266 is a slip
+     (the user, 2026-09-26). Every date, month and date-time field takes
+     14 Aug 2023 as its floor and 31 Dec 2099 as its ceiling: the picker
+     greys out what is outside them, and a value typed outside them is
+     cleared when the field is left, or refused on Enter, with one line
+     under the field saying why. A field that genuinely reaches further
+     back (a date of birth) carries `data-any-date` and is left alone. A
+     field whose own `min` is later (a meeting from today, an end after its
+     start) keeps it; the floor only raises a lower one. */
+  var FLOOR = '2023-08-14', CEIL = '2099-12-31';
+  var FLOOR_WORD = 'Choose a date from 14 Aug 2023.';
+  function isDate(el) {
+    return !!el && el.tagName === 'INPUT' && /^(date|month|datetime-local)$/.test(el.type) &&
+      !el.hasAttribute('data-any-date');
+  }
+  function bounds(type) {
+    if (type === 'month') return [FLOOR.slice(0, 7), CEIL.slice(0, 7)];
+    if (type === 'datetime-local') return [FLOOR + 'T00:00', CEIL + 'T23:59'];
+    return [FLOOR, CEIL];
+  }
+  function floor(el) {
+    if (!isDate(el)) return;
+    var b = bounds(el.type);
+    if (!el.min || el.min < b[0]) el.min = b[0];
+    if (!el.max || el.max > b[1]) el.max = b[1];
+  }
+  /* Four digit years compare as strings, and a year of any other length is
+     refused outright rather than compared. */
+  function dateOk(v, type) {
+    if (!v) return true;
+    v = String(v);
+    if (type === 'month') return /^\d{4}-\d{2}$/.test(v) && v >= FLOOR.slice(0, 7) && v <= CEIL.slice(0, 7);
+    if (!/^\d{4}-\d{2}-\d{2}/.test(v)) return false;
+    var d = v.slice(0, 10);
+    return d >= FLOOR && d <= CEIL;
+  }
+  function noteHost(el) { return (el.closest && el.closest('.datefield, .sched-field, .tl-row')) || el; }
+  function dateNote(el, bad) {
+    var host = noteHost(el);
+    var note = host.nextElementSibling && host.nextElementSibling.classList &&
+      host.nextElementSibling.classList.contains('date-note') ? host.nextElementSibling : null;
+    if (!bad) {
+      if (note) note.remove();
+      el.removeAttribute('aria-invalid');
+      return;
+    }
+    el.setAttribute('aria-invalid', 'true');
+    if (!note) {
+      note = document.createElement('p');
+      note.className = 'msg err date-note';
+      note.setAttribute('role', 'alert');
+      host.parentNode.insertBefore(note, host.nextSibling);
+    }
+    note.textContent = FLOOR_WORD;
+  }
+  function checkDate(el, clear) {
+    if (!isDate(el)) return true;
+    var ok = dateOk(el.value, el.type);
+    if (!ok && clear) {
+      el.value = '';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    dateNote(el, !ok);
+    return ok;
+  }
+  /* Dynamic fields (a timeline date edited where it sits, a row's own
+     picker) get the floor the moment they are reached. */
+  document.addEventListener('focusin', function (e) { floor(e.target); }, true);
+  document.addEventListener('focusout', function (e) { checkDate(e.target, true); }, true);
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || !isDate(e.target)) return;
+    if (!checkDate(e.target, false)) { e.preventDefault(); e.stopImmediatePropagation(); }
+  }, true);
+  document.addEventListener('change', function (e) {
+    if (isDate(e.target) && dateOk(e.target.value, e.target.type)) dateNote(e.target, false);
+  }, true);
+
   function scan(root) {
+    Array.prototype.forEach.call((root || document).querySelectorAll('input[type="date"], input[type="month"], input[type="datetime-local"]'), floor);
     Array.prototype.forEach.call((root || document).querySelectorAll('[aria-required="true"]'), req);
     Array.prototype.forEach.call((root || document).querySelectorAll('input[data-hint]'), hint);
     Array.prototype.forEach.call((root || document).querySelectorAll('select[data-seg]'), upgrade);
@@ -379,7 +460,12 @@
     thumb: thumb,
     /* A value set from a script fires nothing, so a page that sets one reads
        the field again through this. */
-    hint: hint
+    hint: hint,
+    /* The date floor: set it on a field a script made or whose `min` a
+       script cleared, and ask whether a value is inside it. */
+    floor: floor,
+    dateOk: dateOk,
+    FLOOR: FLOOR
   };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { scan(); });
   else scan();

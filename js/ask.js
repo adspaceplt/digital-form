@@ -52,6 +52,7 @@
     field.className = 'input askfield';
     field.value = was;
     field.setAttribute('aria-label', opts.label || 'Name');
+    if (window.ADspaceForm && window.ADspaceForm.floor) window.ADspaceForm.floor(field);
     if (opts.max) field.maxLength = opts.max;
 
     var wasLabel = btn.getAttribute('aria-label');
@@ -70,6 +71,11 @@
 
     function save() {
       var v = field.value.trim();
+      /* A date outside the portal's range is not saved; js/form.js names
+         why under the row. */
+      if (field.type !== 'text' && window.ADspaceForm && !window.ADspaceForm.dateOk(v, field.type)) {
+        field.focus(); return;
+      }
       /* A name cannot be blank; a description under a code can, because the
          code is then the name. The caller says which. */
       if (!v && !opts.allowEmpty) { field.focus(); return; }

@@ -260,7 +260,7 @@
     var last = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     $('rpNewMonth').value = last.getFullYear() + '-' + String(last.getMonth() + 1).padStart(2, '0');
     $('rpNewStart').value = ''; $('rpNewEnd').value = '';
-    $('rpNewEnd').min = '';
+    $('rpNewEnd').min = ''; if (window.ADspaceForm) ADspaceForm.floor($('rpNewEnd'));
     /* A month or a custom period, never both: opening Custom period sets the
        Month aside, and shutting it clears the two dates and gives the Month
        back, so what is created is always what is on the screen. The end can
@@ -269,13 +269,13 @@
     fold.open = false;
     var period = function () {
       $('rpNewMonth').disabled = fold.open;
-      if (!fold.open) { $('rpNewStart').value = ''; $('rpNewEnd').value = ''; $('rpNewEnd').min = ''; }
+      if (!fold.open) { $('rpNewStart').value = ''; $('rpNewEnd').value = ''; $('rpNewEnd').min = ''; if (window.ADspaceForm) ADspaceForm.floor($('rpNewEnd')); }
       if (window.ADspaceForm) { window.ADspaceForm.hint($('rpNewStart')); window.ADspaceForm.hint($('rpNewEnd')); }
     };
     fold.ontoggle = period;
     $('rpNewStart').onchange = function () {
       var a = $('rpNewStart').value;
-      $('rpNewEnd').min = a || '';
+      $('rpNewEnd').min = a || ''; if (window.ADspaceForm) ADspaceForm.floor($('rpNewEnd'));
       if (a && $('rpNewEnd').value && $('rpNewEnd').value < a) {
         $('rpNewEnd').value = '';
         if (window.ADspaceForm) window.ADspaceForm.hint($('rpNewEnd'));
