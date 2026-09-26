@@ -1929,6 +1929,14 @@ contacts now reach us by a WhatsApp username with no number behind it, and
 already printed in front of it, so nobody types it twice, and the one
 `whatsapp` value holds `@name` or the number, read by one builder.
 
+**Something inserted by a script sits under the row, never in it.** The
+Cloudflare check was placed right after the button that asked for it, and
+on the client sign-in that button shares a row with the email field, so the
+box became a third item and squeezed the email to a sliver. Where two
+buttons in one card ask, the card holds one box as its last item. And a
+third party's widget takes the page's register, not the device's: a client
+page is always light, so its box is too.
+
 **No date before the company existed.** ADSPACE PLT was registered on
 14 Aug 2023, so every date field starts there and ends in 2099; a slip like
 year 0003 is cleared when the field is left, with one line saying why,

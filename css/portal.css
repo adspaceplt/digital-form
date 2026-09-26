@@ -471,6 +471,16 @@ a { color: inherit; }
 .input:focus, .select:focus, .textarea:focus {
   outline: none; border-color: var(--action); box-shadow: 0 0 0 3px var(--focus);
 }
+/* A field the browser filled keeps our ground. Safari paints an autofilled
+   field pale yellow and Chrome pale blue whatever the page, so on the dark
+   console sign-in the email was a highlighter stripe (reported with a photo,
+   2026-09-26). An inset shadow covers the platform's fill and the focus ring
+   rides on top of it. */
+.input:-webkit-autofill, .input:-webkit-autofill:hover {
+  -webkit-text-fill-color: var(--ink); caret-color: var(--ink);
+  box-shadow: 0 0 0 100px var(--card) inset;
+}
+.input:-webkit-autofill:focus { box-shadow: 0 0 0 100px var(--card) inset, 0 0 0 3px var(--focus); }
 /* One ring, ours, on everything a keyboard can reach. It used to be the
    browser's own on every button, which meant the console's focus colour was
    whatever the platform happened to draw and changed between two machines
