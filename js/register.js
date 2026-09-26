@@ -176,10 +176,29 @@
     loadPeople(function () {
       LET.listAll(function (rows, err) {
         if (err) { state.err = err; UI.failLine(box, 'the register', err.message || String(err), load); return; }
-        state.docs = rows || [];
-        paint();
+        perfRows(function (pr) {
+          state.docs = (rows || []).concat(pr);
+          paint();
+        });
       });
     });
+  }
+
+  /* A monthly performance record, once downloaded, is a document ADspace has
+     issued, so it is listed under HR Letters with its reference, colleague
+     and month and nothing of its content (the user, 2026-09-26). It is read
+     only where both HR Letters and Performance are held, and made and opened
+     in Performance, behind its own code. A refused read lists none. */
+  function perfRows(then) {
+    if (!(may('register.hr', 'view') && may('team.performance', 'view'))) { then([]); return; }
+    db.rpc('perf_register').then(function (r) {
+      var rows = (!r.error && r.data && r.data.rows) || [];
+      then(rows.map(function (x) {
+        return { id: 'perf-' + x.id, serial: x.serial, family: 'hr', kind: 'Monthly Performance Record',
+                 source: 'perf', member_id: x.member_id, issued_at: x.released_at || x.downloaded_at,
+                 recipient: { name: x.name }, period: x.period, created_at: x.downloaded_at };
+      }));
+    }, function () { then([]); });
   }
 
   function matches(d) {
@@ -261,6 +280,7 @@
        it can answer for — the file and the record — and the rest is one press
        away, where the consequence can be counted. */
     var offer = d.family === 'offer';
+    var perf = d.source === 'perf';
     var el = document.createElement('div');
     /* `own` is the client record's pane, where every row is that client's,
        so the brand would say the same thing on every line. */
@@ -290,7 +310,8 @@
           (d.source === 'portal' ? menuItem('download', 'Download') : '') +
           (d.file_url ? menuItem('open', 'Open file') : '') +
           (offer ? menuItem('record', 'Open client record') : '') +
-          (offer ? '' :
+          (perf ? menuItem('review', 'Open review') : '') +
+          (offer || perf ? '' :
             (d.source === 'manual' ? menuItem('edit', 'Edit', '', need + ':work') : '') +
             /* A portal document is corrected by reissuing it: the same serial,
                the earlier version kept and voided as Reissued. */
@@ -326,6 +347,12 @@
       if (!key) return;
       history.replaceState(null, '', '/admin/?client=' + encodeURIComponent(key) + '&tab=documents');
       if (bridge.show) bridge.show('clients');
+    });
+    /* The record is made, corrected and downloaded in Performance, which
+       asks for its own code; the row carries the way there. */
+    on('review', function () {
+      history.replaceState(null, '', '/admin/?s=team&tab=performance&m=' + String(d.period || '').slice(0, 7));
+      if (bridge.show) bridge.show('team');
     });
     on('edit', function () { openAdd(d, onChange); });
     on('reissue', function () { openIssue({ reissue: d, onDone: onChange, msg: sayTo }); });
