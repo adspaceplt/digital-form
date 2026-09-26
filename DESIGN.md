@@ -1020,8 +1020,12 @@ page the bar and the foot were capped at the content's 1240px and centred,
 so on a wide screen the mark and the actions stopped short of the edges with
 nothing beside them. A bar has no reading width, so it takes the screen's
 and its contents sit on the page gutter at every width; the content keeps its
-cap, because a column of text has a width it reads at. The console is
-untouched: its bar was never the page's.
+cap, because a column of text has a width it reads at. **Every page, not
+only a client's** (2026-09-26): the console's sign-in page kept the centred
+box and the user reported its header sliding across as the window widened;
+its mark now sits at x=24, the same point the rail's mark takes once the
+console opens, so signing in moves nothing on the left of the screen. The
+signed-in console's bar is its own and was never the page's.
 
 **The control that explains a thing comes from that control, and never opens by itself.** The line saying what a section is for was a block under the command bar, so it could only be reached from that route's directory: open a client, a campaign or a task and the bar is off the screen, and the one control that explains the section did nothing at all. It is a panel hung off the section's name now, which works in every state of every route. What it must not do is open on arrival: a surface over the page lands on the command bar, which is the row somebody came to use, and on a phone it intercepts the press. While a route is new the title's glyph carries the action colour instead, so the invitation is on the control and the screen stays the reader's; after three visits even that retires. And the line is **one sentence**: the first pass ran to two and named the panes inside a record, which explains the product rather than the section.
 
@@ -1296,6 +1300,18 @@ long directory**: a tab hides the count and costs a click per group, a folded
 card costs one line and still says how many it holds. A card that holds
 everything on the page never shuts by default, or a route with every link
 paused is a heading over nothing.
+
+**A hover is the next step of the ground it sits on, never the ink.** Show
+more sits on `--sunk` and took `--fill` for its hover, which is the solid
+ink surface, under ink text: a black bar with its words gone (the user,
+2026-09-26). `--fill` is only ever painted with `--on-fill` over it; a hover
+takes `--line-soft`.
+
+**A column is named for what it holds in that card.** The Documents
+register heads Brand over its client families and **Team** over HR letters,
+where the second column is the colleague as the Team directory names them,
+matched by the letter's own colleague or by the Employee ID its reference
+carries; the recipient stays the name the letter was addressed to.
 
 **The card opens from its heading and leaves into it.** A fold is a move
 somebody made, and the eye follows a surface that arrives; a directory that

@@ -488,7 +488,10 @@ a { color: inherit; }
   color: var(--ink-soft); font: inherit; font-size: 13px; font-weight: 600;
   text-align: center;
 }
-@media (hover: hover) { .crm-group-more:hover { color: var(--ink); background: var(--fill); } }
+/* `--fill` is the solid ink surface, so under ink text it drew a black bar
+   with the words gone (the user, 2026-09-26). The row sits on `--sunk`, so
+   its hover is the next step, the fill a hovered row takes everywhere. */
+@media (hover: hover) { .crm-group-more:hover { color: var(--ink); background: var(--line-soft); } }
 
 /* ---------- Batch ---------- */
 .batch { margin-bottom: 56px; }
@@ -3842,13 +3845,15 @@ body.is-plain .topbar { background: var(--chrome); }
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   font-size: 12.5px; color: var(--ink-mute);
 }
-/* On a client's page the bar and the foot run to the screen's edges: their
-   contents sit on the page gutter at every width, so the mark is at the
+/* The bar and the foot run to the screen's edges on every page: their
+   contents sit on the 24px gutter at every width, so the mark is at the
    left edge and the actions at the right on a wide screen rather than both
-   stopping 1240px apart in the middle of it. The console keeps its own bar
-   and the content stays centred, because a page of text has a width it
-   reads at and a bar does not. */
-:root[data-face="client"] .topbar-inner, :root[data-face="client"] .portalfoot-in { max-width: none; }
+   stopping 1240px apart in the middle of it and sliding as the window
+   widens. The console's sign-in page was the last to keep the centred box
+   (the user, 2026-09-26); its mark now lands at x=24, where the rail's mark
+   sits once the console opens. The content stays centred, because a page
+   of text has a width it reads at and a bar does not. */
+.topbar-inner, .portalfoot-in { max-width: none; }
 .portalfoot-copy { min-width: 0; }
 .portalfoot-link { flex: 0 0 auto; color: var(--ink-mute); text-decoration: none; }
 .portalfoot-link:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
@@ -6725,6 +6730,9 @@ body.is-canvas { overflow: hidden; }
 .is-tight .readgroups .ovfacts > div, .readgroups.is-tight .ovfacts > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
 .ovfacts dd.is-missing { color: var(--err); font-weight: 600; }
 .ovfacts dd.is-empty { color: var(--ink-mute); }
+/* The review profile reads its department and role off the Members tab; the
+   way there sits under the facts it changes, on their margin. */
+#perfProfileSheet .pp-edit { margin-top: 8px; min-width: 0; padding-inline: 0; }
 .ovfacts dd.is-pre { white-space: pre-line; }
 .readlink { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-ctl); text-underline-offset: 2px; }
 @media (hover: hover) { .readlink:hover { text-decoration-color: var(--ink); } }
