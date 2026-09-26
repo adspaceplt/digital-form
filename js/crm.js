@@ -1204,9 +1204,13 @@
     railLog();
     wireGo($('crmNextBlock'));
     wireGo($('crmDoneBlock'));
-    /* The rule under a block belongs to the last block actually drawn.
-       `:last-child` counts a hidden sibling, and every block here leaves when
-       the data behind it is not there. */
+    lastRule();
+  }
+  /* The rule under a block belongs to the last block actually drawn.
+     `:last-child` counts a hidden sibling, and every block here leaves when
+     the data behind it is not there. Recent activity arrives after the rest,
+     so it sets the rule again when it does. */
+  function lastRule() {
     var rail = document.querySelector('.rec-rail');
     if (!rail) return;
     var shown = Array.prototype.filter.call(rail.querySelectorAll('.railblock'),
@@ -1447,9 +1451,10 @@
   function railLog() {
     var block = $('crmRailLogBlock'), box = $('crmRailLog');
     if (!block || !box) return;
-    if (!(state.log || []).length) { block.hidden = true; box.innerHTML = ''; return; }
+    if (!(state.log || []).length) { block.hidden = true; box.innerHTML = ''; lastRule(); return; }
     window.ADspaceRecords.paint(box, (state.log || []).map(recordOf), { limit: 3 });
     block.hidden = false;
+    lastRule();
   }
 
   /* A handle is what is stored; the address is each platform's own shape. A
