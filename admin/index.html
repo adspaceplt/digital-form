@@ -30,7 +30,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260927a">
+<link rel="stylesheet" href="/css/portal.css?v=20260927b">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -54,28 +54,28 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260927a"></script>
-<script src="/js/captcha.js?v=20260927a"></script>
-<script src="/js/words.js?v=20260927a"></script>
-<script src="/js/copy.js?v=20260927a"></script>
-<script src="/js/ask.js?v=20260927a"></script>
-<script src="/js/confirm.js?v=20260927a"></script>
-<script src="/js/sheet.js?v=20260927a"></script>
-<script src="/js/refresh.js?v=20260927a"></script>
-<script src="/js/form.js?v=20260927a"></script>
-<script src="/js/state.js?v=20260927a"></script>
-<script src="/js/group.js?v=20260927a"></script>
-<script src="/js/menu.js?v=20260927a"></script>
-<script src="/js/cmdbar.js?v=20260927a"></script>
-<script src="/js/api.js?v=20260927a"></script>
-<script src="/js/money.js?v=20260927a"></script>
-<script src="/js/mockups.js?v=20260927a"></script>
+<script src="/js/config.js?v=20260927b"></script>
+<script src="/js/captcha.js?v=20260927b"></script>
+<script src="/js/words.js?v=20260927b"></script>
+<script src="/js/copy.js?v=20260927b"></script>
+<script src="/js/ask.js?v=20260927b"></script>
+<script src="/js/confirm.js?v=20260927b"></script>
+<script src="/js/sheet.js?v=20260927b"></script>
+<script src="/js/refresh.js?v=20260927b"></script>
+<script src="/js/form.js?v=20260927b"></script>
+<script src="/js/state.js?v=20260927b"></script>
+<script src="/js/group.js?v=20260927b"></script>
+<script src="/js/menu.js?v=20260927b"></script>
+<script src="/js/cmdbar.js?v=20260927b"></script>
+<script src="/js/api.js?v=20260927b"></script>
+<script src="/js/money.js?v=20260927b"></script>
+<script src="/js/mockups.js?v=20260927b"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260927a" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260927b" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -1859,8 +1859,6 @@
                  inherited: a group given `ops: work` does not quietly gain
                  the team's numbers. -->
             <button class="acttab btn-sm" data-view="report" id="workViewReport" type="button" aria-pressed="false" hidden>Report</button>
-            <!-- Who is carrying what, for whoever may see the team's queue. -->
-            <button class="acttab btn-sm" data-view="load" id="workViewLoad" type="button" aria-pressed="false" hidden>Workload</button>
           </span>
           <span class="cmdbar-find">
             <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -1979,7 +1977,6 @@
              rows, because "how long does Editing take" is a question about
              every task there has ever been and not about the page. -->
         <div id="workReport" hidden></div>
-        <div id="workLoad" hidden></div>
         <div id="workClients" hidden></div>
       </div>
 
@@ -2001,24 +1998,13 @@
                 <button class="kmenu-btn" id="taskMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                 </button>
-                <!-- Everything that is not the next step: the way back, the
-                     moves off the ordinary path, the hand-over, and the acts
-                     that end or remove the task. Each is asked again by the
-                     database when it is pressed. -->
+                <!-- The rare acts, Delete last. Every stage move, going back
+                     and cancelling included, is the stage select. -->
                 <div class="kmenu" id="taskMenu" hidden role="menu">
-                  <button class="kmenu-item" data-a="revert" type="button" role="menuitem" hidden>Revert</button>
-                  <button class="kmenu-item" data-a="move" type="button" role="menuitem">Move to another stage</button>
-                  <button class="kmenu-item" data-a="handover" type="button" role="menuitem" data-need="ops:manage">Hand over task</button>
-                  <button class="kmenu-item" data-a="block" type="button" role="menuitem">Mark blocked</button>
-                  <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Duplicate</button>
-                  <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat</button>
-                  <!-- Stage time is recorded by every move, so a timer is
-                       never the way work is tracked; it stays here for the
-                       person who wants their own hours on a task. -->
-                  <button class="kmenu-item" data-a="timer" type="button" role="menuitem" hidden>Start timer</button>
-                  <button class="kmenu-item" data-a="reopen" type="button" role="menuitem" hidden>Reopen</button>
-                  <button class="kmenu-item" data-a="cancel" type="button" role="menuitem" hidden>Cancel task</button>
-                  <button class="kmenu-item" data-a="archive" type="button" role="menuitem" data-need="ops:manage">Archive</button>
+                  <button class="kmenu-item" data-a="handover" type="button" role="menuitem" data-need="ops:manage">Change Task Owner</button>
+                  <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Make a copy</button>
+                  <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat on a schedule</button>
+                  <button class="kmenu-item" data-a="archive" type="button" role="menuitem" data-need="ops:manage" hidden>Restore</button>
                   <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem" data-need="ops:manage">Delete</button>
                 </div>
               </div>
@@ -2220,44 +2206,12 @@
         </div>
       </div>
 
-
-      <!-- Blocked names what it is waiting on. "Blocked" on its own is a
-           state nobody can act on. -->
-      <div class="sheet" id="blockSheet" hidden>
-        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="blockTitle">
-          <div class="sheet-head">
-            <h3 id="blockTitle">Mark blocked</h3>
-            <button class="iconbtn" id="blockClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-            </button>
-          </div>
-          <div class="sheet-body">
-            <label class="field-label" for="blockCat">What it is waiting on</label>
-            <select class="select" id="blockCat">
-              <option value="client">The client</option>
-              <option value="brief">A brief or content</option>
-              <option value="asset">An asset or footage</option>
-              <option value="approval">An internal approval</option>
-              <option value="third_party">Somebody outside</option>
-              <option value="other">Something else</option>
-            </select>
-            <label class="field-label" for="blockNote" style="margin-top:12px">Note</label>
-            <textarea class="input" id="blockNote" rows="3" placeholder="Optional"></textarea>
-          </div>
-          <div class="sheet-foot">
-            <button class="btn btn-warn" id="blockGo" type="button">Mark blocked</button>
-            <button class="btn btn-quiet" id="blockCancel" type="button">Cancel</button>
-          </div>
-          <div class="msg" id="blockMsg"></div>
-        </div>
-      </div>
-
       <!-- A copy: the planning fields travel, the history does not, and what
            else travels is the person's to say. -->
       <div class="sheet" id="dupSheet" hidden>
         <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="dupTitle">
           <div class="sheet-head">
-            <h3 id="dupTitle">Duplicate task</h3>
+            <h3 id="dupTitle">Make a copy</h3>
             <button class="iconbtn" id="dupClose" type="button" aria-label="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
@@ -2288,7 +2242,7 @@
             <div class="msg" id="dupMsg"></div>
           </div>
           <div class="sheet-foot">
-            <button class="btn btn-primary" id="dupGo" type="button">Duplicate</button>
+            <button class="btn btn-primary" id="dupGo" type="button">Make a copy</button>
             <button class="btn btn-quiet" id="dupCancel" type="button">Cancel</button>
           </div>
         </div>
@@ -2448,7 +2402,7 @@
       <div class="sheet" id="recSheet" hidden>
         <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="recTitle">
           <div class="sheet-head">
-            <h3 id="recTitle">Repeat</h3>
+            <h3 id="recTitle">Repeat on a schedule</h3>
             <button class="iconbtn" id="recClose" type="button" aria-label="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
@@ -2904,19 +2858,13 @@
                   <button class="kmenu-btn" id="dwMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
                     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                   </button>
-                  <!-- What is not the next step: a move off the ordinary
-                       path, a change of hands with no move, the copies, and
-                       the acts that end or remove the task. -->
+                  <!-- The full record first, the rare acts, Delete last. Every
+                       stage move is the stage select beside this. -->
                   <div class="kmenu" id="dwMenu" hidden role="menu">
-                    <button class="kmenu-item" data-a="revert" type="button" role="menuitem" hidden>Revert</button>
                     <button class="kmenu-item" data-a="full" type="button" role="menuitem">Open full record</button>
-                    <button class="kmenu-item" data-a="move" type="button" role="menuitem">Move to another stage</button>
-                    <button class="kmenu-item" data-a="handover" type="button" role="menuitem" data-need="ops:manage">Hand over with a note</button>
-                    <button class="kmenu-item" data-a="block" type="button" role="menuitem">Mark blocked</button>
-                    <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat</button>
-                    <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Duplicate</button>
-                    <button class="kmenu-item" data-a="reopen" type="button" role="menuitem" hidden>Reopen</button>
-                    <button class="kmenu-item" data-a="cancel" type="button" role="menuitem">Cancel task</button>
+                    <button class="kmenu-item" data-a="handover" type="button" role="menuitem" data-need="ops:manage">Change Task Owner</button>
+                    <button class="kmenu-item" data-a="duplicate" type="button" role="menuitem">Make a copy</button>
+                    <button class="kmenu-item" data-a="repeat" type="button" role="menuitem">Repeat on a schedule</button>
                     <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem" data-need="ops:manage">Delete</button>
                   </div>
                 </span>
@@ -3042,11 +2990,8 @@
             </section>
             <section class="qcard" id="dwTimeSec">
               <h3 class="qcard-title">Time records</h3>
-              <dl class="tfacts" id="dwTime"></dl>
-              <details class="tmore" id="dwTimeMore">
-                <summary>Time in each stage</summary>
-                <div id="dwTimeList"></div>
-              </details>
+              <div id="dwTimeList"></div>
+              <dl class="tfacts" id="dwTime" hidden></dl>
             </section>
             <section class="qcard" id="dwLogSec">
               <h3 class="qcard-title">Recent activity</h3>
@@ -3232,46 +3177,6 @@
            the next person on the same move if the work changes hands. A move
            backwards takes a reason; passing over a step is an override the
            database keeps for ops Manage, and takes a reason too. -->
-      <div class="sheet" id="handSheet" hidden>
-        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="handTitle">
-          <div class="sheet-head">
-            <h3 id="handTitle">Move to another stage</h3>
-            <button class="iconbtn" id="handClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-            </button>
-          </div>
-          <div class="sheet-body">
-            <p class="hint" id="handWhat"></p>
-            <div class="row">
-              <div class="field">
-                <label class="field-label" for="handStage">Stage</label>
-                <select class="select" id="handStage"></select>
-              </div>
-              <div class="field">
-                <label class="field-label" for="handTo">Task Owner</label>
-                <select class="select" id="handTo"></select>
-              </div>
-            </div>
-            <div class="row" id="handSkipRow" hidden>
-              <div class="field">
-                <label class="field-label" for="handSkip" id="handSkipLabel">Reason</label>
-                <input class="input" id="handSkip" autocomplete="off" placeholder="Required">
-              </div>
-            </div>
-            <div class="row">
-              <div class="field">
-                <label class="field-label" for="handNote">Note</label>
-                <textarea class="input" id="handNote" rows="2" placeholder="Optional"></textarea>
-              </div>
-            </div>
-          </div>
-          <div class="sheet-foot">
-            <button class="btn btn-primary" id="handGo" type="button">Move</button>
-            <button class="btn btn-quiet" id="handCancel" type="button">Cancel</button>
-          </div>
-          <div class="msg" id="handMsg"></div>
-        </div>
-      </div>
 
       <!-- Changing responsibility without changing the stage. The sheet says
            what the next person is taking on (what is left on the checklist and
@@ -3280,7 +3185,7 @@
       <div class="sheet" id="giveSheet" hidden>
         <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="giveTitle">
           <div class="sheet-head">
-            <h3 id="giveTitle">Hand over task</h3>
+            <h3 id="giveTitle">Change Task Owner</h3>
             <button class="iconbtn" id="giveClose" type="button" aria-label="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
@@ -3301,7 +3206,7 @@
             <dl class="tfacts givefacts" id="giveFacts"></dl>
           </div>
           <div class="sheet-foot">
-            <button class="btn btn-primary" id="giveGo" type="button">Hand over</button>
+            <button class="btn btn-primary" id="giveGo" type="button">Change</button>
             <button class="btn btn-quiet" id="giveCancel" type="button">Cancel</button>
           </div>
           <div class="msg" id="giveMsg"></div>
@@ -4220,17 +4125,17 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
-<script src="/js/passkey.js?v=20260927a"></script>
-<script src="/js/admin.js?v=20260927a"></script>
-<script src="/js/documents.js?v=20260927a"></script>
-<script src="/js/letters.js?v=20260927a"></script>
-<script src="/js/smreport.js?v=20260927a"></script>
-<script src="/js/reports.js?v=20260927a"></script>
-<script src="/js/register.js?v=20260927a"></script>
-<script src="/js/crm.js?v=20260927a"></script>
-<script src="/js/team.js?v=20260927a"></script>
-<script src="/js/campaigns.js?v=20260927a"></script>
-<script src="/js/ops.js?v=20260927a"></script>
-<script src="/js/perf.js?v=20260927a"></script>
+<script src="/js/passkey.js?v=20260927b"></script>
+<script src="/js/admin.js?v=20260927b"></script>
+<script src="/js/documents.js?v=20260927b"></script>
+<script src="/js/letters.js?v=20260927b"></script>
+<script src="/js/smreport.js?v=20260927b"></script>
+<script src="/js/reports.js?v=20260927b"></script>
+<script src="/js/register.js?v=20260927b"></script>
+<script src="/js/crm.js?v=20260927b"></script>
+<script src="/js/team.js?v=20260927b"></script>
+<script src="/js/campaigns.js?v=20260927b"></script>
+<script src="/js/ops.js?v=20260927b"></script>
+<script src="/js/perf.js?v=20260927b"></script>
 </body>
 </html>

@@ -97,7 +97,7 @@
     sheet.id = 'cmdSheet';
     sheet.hidden = true;
     sheet.innerHTML =
-      '<div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="cmdSheetTitle">' +
+      '<div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="cmdSheetTitle" tabindex="-1">' +
         '<div class="sheet-head"><h3 id="cmdSheetTitle">Filters</h3>' +
           '<span class="cmdsheet-quiet" id="cmdSheetQuiet"></span>' +
           '<button class="iconbtn" id="cmdSheetClose" type="button" aria-label="Close">' +
@@ -147,8 +147,10 @@
     });
     sheet.hidden = false;
     rec.btn.setAttribute('aria-expanded', 'true');
-    var first = body.querySelector('select:not([hidden])');
-    if (first) first.focus(); else doneBtn.focus();
+    /* The card takes focus, never a field: a select focused for the reader
+       wears the blue ring, and iOS will not open a select that already has
+       focus, so the first tap on it did nothing (the user, 2026-09-26). */
+    try { card.focus({ preventScroll: true }); } catch (e) { card.focus(); }
   }
   function shut() {
     if (!open) return;

@@ -262,7 +262,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     saves, Escape restores, an empty value keeps the field open, and blur
     neither saves nor discards. `type`/`value` are available for a date.
   - `inline(btn)` grows the field out of the control.
-  - `note(after)` is a textarea.
+  - `note(after)` is a textarea; `once` removes it with its answer, and the
+    handle carries `box`.
   - There is no sheet in it.
 - `js/decide.js` records a client decision.
   - The name grows out of Approve (`.namebox`), key `adspace_reviewer`.
@@ -294,6 +295,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     `data-nofilter` marks a select that is not a filter (`#workWf`,
     `#workScope`).
   - A second action goes behind `.cmd-more`.
+  - The Filters sheet focuses its card, never a select (a focused select wears
+    the ring, and iOS does not open a select that already has focus).
   - A Filters button over only hidden selects is not drawn.
   - At a desk every bar's search is a 32px mark that grows into a 280px field
     and shuts on Escape or when left empty.
@@ -869,6 +872,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### My Work (`js/ops.js`, `?s=work`, permission key `ops`, mapped once in `sectionAllowed()`)
 - Views (`view=`):
   - list (default, out of the address), board, calendar, clients, report.
+  - Report opens on Open work by person (`ops.all`), then the figures
+    (`ops.reports`); either part opens it. `view=load` lands there.
   - Each draws through `paint()` and `viewBox()`, never straight into a hidden
     box (`setView` draws a frame after the press).
   - A view without its permission falls back to the list.
@@ -892,9 +897,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A tick (everyday task) or a progress ring (content task).
   - The name cell opens the task; the row is not one button.
   - The stage select moves the task (`moveTo()` is the one path for the row,
-    the card and a drop).
+    the card, a drop and the task's head).
+  - One select for every task (`stageCell`): the whole workflow in position
+    order, the current stage chosen, an unreachable stage greyed (never left
+    out), a retired stage and Blocked listed only for a task on them.
+  - Going back, skipping ahead, Cancelled and leaving a finished content task
+    ask Why? under the control (`askWhy`, `ADspaceAsk.note` once); the reason
+    rides the move (`p_note`, or `p_skip_reason` for a skip).
   - The outcome or refusal is named under the row (`.task-note`).
-  - Blocked is never offered there.
   - The stage track is 160px. A narrow row ends with the stage at a stated
     width; `is-tight` gives it its own line.
 - Stage tone by `stage_group`:
@@ -941,8 +951,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `forwardOf()` reads the forward move off the workflow: the nearest stage
   ahead by `position`, skipping side lanes by `stage_group`. Never a
   hand-written list.
-- Revert's target is read off the last `stage_changed` event, offered only
-  where the workflow allows it.
+- A move back along the line is allowed with a reason
+  (`back-reason-required`, filed `back: true`); never into a revision or a
+  retired stage (`retired-stage`). A skip never files a revision or a
+  retired stage as skipped.
 - Reason categories are stored keys, named by `reasonWord()`: Client request,
   Scope change, Internal capacity, Pending assets, Pending confirmation,
   Incorrect date listed.
@@ -987,20 +999,30 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `ops_transition_task` takes `p_assignee` and `p_skip_reason`.
 - Skipping a step is ops Work with a reason, and never into a revision. Owner
   change and hand-over (`ops_hand_over_task`) are Manage.
-- Revert names where it goes and asks why.
 - Reopen works on every cancelled task, back to the stage it was cancelled
   from, else the workflow's exit. Leaving Cancelled clears `cancelled_at`.
 - `derive(t)` is the one source for the head status, the next step and the
   stepper.
   - Blue only for a hand-off; the ink fill for your own progress.
-  - Everything uncommon sits in the ⋯.
+  - One next-step button, named for where it goes (`verbFor`: "Move to
+    Client review"); no stage move beside it.
+  - The ⋯ (row, sheet, record) is Open full record (not on the record),
+    Change Task Owner, Make a copy, Repeat on a schedule, Delete. No timer,
+    Revert, Move to another stage, Mark blocked or Cancel.
   - `factHere()`: a step's fact buttons act on the sheet's row while the sheet
     is open.
-- The SOP workflow: Planning, Ready to start, In progress, AQC review
-  (↔ Revision (Internal)), Client review (↔ Revision (Client)), Approved,
+- The SOP workflow, numbered in this order: Ready to start, In progress, AQC
+  review, Revision (Internal), Client review, Revision (Client), Approved,
   Scheduled, Live (`ops_mark_live`; a reason where the date differs),
-  Performance review (+3 days, back to the creator), Completed / Taken down,
-  rated 1–5 (`ops_rate_task`). General and Video are retired for new tasks.
+  Performance review (+3 days, back to the creator), Completed, then On hold,
+  Blocked, Cancelled, Taken down; rated 1–5 (`ops_rate_task`). Planning,
+  Content meeting scheduled, Changes requested and Published are retired
+  (`ops_workflow_stages.retired`): the month holds planning and the meeting.
+  On hold and Cancelled are reachable from every open stage on the line.
+  General and Video are retired for new tasks.
+- The everyday workflow: To do, In progress, Waiting, Review, Done, Cancelled.
+- Time records: one stage table in workflow order (Stage, Visits, Time, a
+  Total row); the sheet shows it open, with Recorded only where there is any.
 - A draft link is optional. Without one the step reads Sent on WhatsApp, and
   the database accepts the link or a note.
 - The quick sheet (`#taskDrawer`, `.sheet-side`, `open=`):

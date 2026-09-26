@@ -4071,6 +4071,11 @@ body > .shell { width: 100%; }
 .tsess-who { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tsess-mins { font-size: 13.5px; font-weight: 600; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .tsess-row.is-total { border-top: 1px solid var(--line); }
+/* Time in each stage: the stage, how often the work came back to it, and the
+   time, both figures on the right edge. */
+.tstage-row { grid-template-columns: minmax(0, 1fr) 72px 110px; }
+.tstage-n { font-size: 13px; color: var(--ink-soft); text-align: right; font-variant-numeric: tabular-nums; }
+.tstage-row.is-total { border-top: 1px solid var(--line); }
 /* The Time pane holds two measures that are never summed — how long the work
    sat in each stage, and the sessions somebody started — so each is named at
    the pane's own section size, and the second is one block step under the
@@ -4623,6 +4628,7 @@ body > .shell { width: 100%; }
 .is-narrow .rep-row > .rep-mid { grid-area: mid; }
 .is-narrow .rep-row > .rep-num { grid-area: num; align-self: center; }
 .is-narrow .rep-lab { display: inline; }
+.is-narrow .tstage-row { grid-template-columns: minmax(0, 1fr) 56px 96px; }
 .is-narrow .tsess-row { grid-template-columns: minmax(0, 1fr) 110px; grid-template-areas: "name mins" "who mins"; }
 .is-narrow .tsess-row > .tsess-who { grid-area: who; }
 .is-narrow .tsess-row > .tsess-mins { grid-area: mins; align-self: center; }
@@ -7602,6 +7608,10 @@ body.is-canvas { overflow: hidden; }
 .qhead-top .rec-token { margin-left: -6px; }
 .qhead-end { display: flex; align-items: center; gap: 6px; margin-left: auto; }
 .qhead-end .chip { align-self: center; }
+/* The task's stage in its head: the list's own select, at the list's width. */
+.stagepick { display: inline-flex; align-self: center; }
+.stagepick .state-select { width: var(--state-w); }
+.thead-ctl .stagepick { flex: 0 0 auto; }
 .qhead-title { margin: 0; font-size: 19px; font-weight: 600; letter-spacing: -.02em; line-height: 25px; overflow-wrap: anywhere; }
 .qhead-ctx { margin: 4px 0 0; font-size: 13px; color: var(--ink-soft); }
 .qhead-ctx[hidden] { display: none; }
