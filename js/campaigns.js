@@ -2364,7 +2364,7 @@
     ed.innerHTML =
       platformBoxes(current) +
       '<span class="slugfield"><span class="slugfield-pre">RM</span>' +
-      '<input class="input" type="number" min="0" step="10" value="' + esc(o.rate) + '"></span>' +
+      '<input class="input" type="number" inputmode="decimal" min="0" step="10" value="' + esc(o.rate) + '"></span>' +
       '<button class="btn btn-sm btn-primary" type="button">Save</button>' +
       '<button class="btn btn-sm btn-quiet" type="button">Cancel</button>';
     body.appendChild(ed);
@@ -2491,7 +2491,7 @@
         (inCamp ? '<span class="muted">Already offered</span>'
                 : '<span class="pickadd">' + platformBoxes(uniq, true) +
                   '<span class="slugfield"><span class="slugfield-pre">RM</span>' +
-                  '<input class="input pickrate" type="number" min="0" step="10" ' +
+                  '<input class="input pickrate" type="number" inputmode="decimal" min="0" step="10" ' +
                   'aria-label="Rate for ' + esc(c.name) + ' on this campaign" value="' +
                   (c.client_rate || '') + '" placeholder="rate"></span>' +
                   /* Neutral, not the filled action: this is one button per
@@ -3640,15 +3640,15 @@
             '<div style="flex:0 0 150px"><label class="field-label">Published</label>' +
               '<input class="input" data-p="published_at" type="date" value="' + esc(p.published_at || '') + '"></div>' +
             '<div style="flex:0 0 110px"><label class="field-label">Window (days)</label>' +
-              '<input class="input" data-p="window_days" type="number" min="1" value="' + (p.window_days || 7) + '"></div>' +
+              '<input class="input" data-p="window_days" type="number" inputmode="numeric" min="1" value="' + (p.window_days || 7) + '"></div>' +
           '</div>' +
           '<div class="row" style="margin-top:10px">' +
             '<div><label class="field-label">Impressions</label>' +
-              '<input class="input" data-p="impressions" type="number" min="0" value="' + (p.impressions == null ? '' : p.impressions) + '"></div>' +
+              '<input class="input" data-p="impressions" type="number" inputmode="numeric" min="0" value="' + (p.impressions == null ? '' : p.impressions) + '"></div>' +
             '<div><label class="field-label">Engagements</label>' +
-              '<input class="input" data-p="engagements" type="number" min="0" value="' + (p.engagements == null ? '' : p.engagements) + '"></div>' +
+              '<input class="input" data-p="engagements" type="number" inputmode="numeric" min="0" value="' + (p.engagements == null ? '' : p.engagements) + '"></div>' +
             '<div><label class="field-label">Views</label>' +
-              '<input class="input" data-p="views" type="number" min="0" value="' + (p.views == null ? '' : p.views) + '"></div>' +
+              '<input class="input" data-p="views" type="number" inputmode="numeric" min="0" value="' + (p.views == null ? '' : p.views) + '"></div>' +
             '<button class="btn btn-sm btn-primary" data-p-save type="button">Save</button>' +
           '</div>' +
           (p.measured_at ? '<div class="muted postrow-measured">Measured ' + esc(niceDate(p.measured_at)) + '</div>' : '') +

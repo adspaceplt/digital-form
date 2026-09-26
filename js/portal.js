@@ -42,9 +42,8 @@
     en: {
       kicker: 'Client Portal', lang: '中文', signOut: 'Sign out',
       signTitle: 'Client sign-in', signText: 'Enter the email address on file with ADspace.', sendLink: 'Send link',
-      sentTitle: 'Check your email', sentText: function (e) { return 'A sign-in link has been sent to ' + e + '.'; },
+      sentTitle: 'Check your email', sentText: function (e) { return 'If ' + e + ' is registered, a sign-in link has been sent to it.'; },
       emailNeeded: 'An email is required.',
-      signNoUser: 'Sign-in is not available for this address. Please contact your ADspace account manager.',
       signFail: 'The link could not be sent. Please try again, or contact your ADspace account manager.',
       overview: 'Overview', requestChange: 'Request change', services: 'Services', requests: 'Requests', letters: 'Letters',
       engagements: 'Engagements', payment: 'Payment', account: 'Portal access',
@@ -74,9 +73,8 @@
     zh: {
       kicker: '客户平台', lang: 'EN', signOut: '退出',
       signTitle: '客户登录', signText: '请输入在 ADspace 登记的电子邮箱。', sendLink: '发送链接',
-      sentTitle: '请查收邮件', sentText: function (e) { return '登录链接已发送至 ' + e + '。'; },
+      sentTitle: '请查收邮件', sentText: function (e) { return '如 ' + e + ' 已登记，登录链接已发送至该邮箱。'; },
       emailNeeded: '请输入电子邮箱。',
-      signNoUser: '该邮箱暂时无法登录，请联系您的 ADspace 客户经理。',
       signFail: '链接发送失败，请重试，或联系您的 ADspace 客户经理。',
       overview: '公司概览', requestChange: '申请修改', services: '服务', requests: '申请', letters: '函件',
       engagements: '进行中的项目', payment: '付款', account: '平台访问权限',
@@ -223,25 +221,28 @@
   }
 
   // ---- Sign in ---------------------------------------------------------------
-  /* No account for this address, whichever way Supabase phrases it, reads as
-     one line; anything else (a rate limit, a network fault) is worth trying
-     again, so it says so rather than sending the client to a person. */
-  function signWord(err) {
+  /* The page never says whether an address has an account (the brief of
+     2026-09-26): an address with no access and one with access read the same,
+     "if it is registered, a link has been sent", so the page cannot be used
+     to learn who the clients are. Only a fault that is worth trying again (a
+     rate limit, the network) says so. */
+  function noUser(err) {
     var m = String((err && err.message) || err || '');
-    return /signup|sign up|not allowed|not found|no user|invalid/i.test(m) ? t().signNoUser : t().signFail;
+    return /signup|sign up|not allowed|not found|no user|invalid/i.test(m);
   }
 
   function otp(email) {
     /* Sign-ups are closed on the project and this page never makes an account
        of its own, so the link is only ever sent to a login that exists. The
        one before it is what puts it there. */
-    db.auth.signInWithOtp({ email: email, options: {
-      shouldCreateUser: false, emailRedirectTo: location.origin + '/client/' } })
+    var opts = { shouldCreateUser: false, emailRedirectTo: location.origin + '/client/' };
+    var go = window.ADspaceCaptcha ? window.ADspaceCaptcha.options($('signGo'), opts) : Promise.resolve(opts);
+    go.then(function (o) { return db.auth.signInWithOtp({ email: email, options: o }); })
       .then(function (r) {
         $('signGo').disabled = false;
-        if (r.error) { msg('stateMsg', signWord(r.error), 'err'); return; }
+        if (r.error && !noUser(r.error)) { msg('stateMsg', t().signFail, 'err'); return; }
         showState('sent', email);
-      }, function (e) { $('signGo').disabled = false; msg('stateMsg', signWord(e), 'err'); });
+      }, function () { $('signGo').disabled = false; msg('stateMsg', t().signFail, 'err'); });
   }
 
   function sendLink() {
@@ -260,9 +261,11 @@
        better to let the sign-in speak for itself than to lock everybody out
        over a call that was only ever a convenience. */
     API.invokeFn('portal-login', { email: email }).then(function (res) {
+      /* An older portal-login still answers `ok: false` for an address it
+         refuses; that address is sent nothing and reads like every other. */
       if (res && res.data && res.data.ok === false) {
         $('signGo').disabled = false;
-        msg('stateMsg', t().signNoUser, 'err');
+        showState('sent', email);
         return;
       }
       otp(email);

@@ -248,8 +248,8 @@
         '<div class="row"><div><label class="field-label" for="rpNewClient">Client</label><select class="select" id="rpNewClient"></select></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpNewMonth">Month</label><input class="input" id="rpNewMonth" type="month"></div></div>' +
       '<details class="fmore" data-none="Whole month" data-some="Custom period"><summary>Custom period</summary>' +
-        '<div class="row fgrid"><div><label class="field-label" for="rpNewStart">Start</label><input class="input" id="rpNewStart" type="date"></div>' +
-        '<div><label class="field-label" for="rpNewEnd">End</label><input class="input" id="rpNewEnd" type="date"></div></div></details>' +
+        '<div class="row fgrid"><div><label class="field-label" for="rpNewStart">Start</label><input class="input" id="rpNewStart" type="date" data-hint="Select date"></div>' +
+        '<div><label class="field-label" for="rpNewEnd">End</label><input class="input" id="rpNewEnd" type="date" data-hint="Select date"></div></div></details>' +
       '</section>', FOOT('Create'));
     $('rpNewClient').innerHTML = '<option value="">Choose a client</option>' + hub.clients.map(function (c) {
       return '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>';
@@ -260,6 +260,28 @@
     var last = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     $('rpNewMonth').value = last.getFullYear() + '-' + String(last.getMonth() + 1).padStart(2, '0');
     $('rpNewStart').value = ''; $('rpNewEnd').value = '';
+    $('rpNewEnd').min = '';
+    /* A month or a custom period, never both: opening Custom period sets the
+       Month aside, and shutting it clears the two dates and gives the Month
+       back, so what is created is always what is on the screen. The end can
+       never fall before the start. */
+    var fold = box.querySelector('details.fmore');
+    fold.open = false;
+    var period = function () {
+      $('rpNewMonth').disabled = fold.open;
+      if (!fold.open) { $('rpNewStart').value = ''; $('rpNewEnd').value = ''; $('rpNewEnd').min = ''; }
+      if (window.ADspaceForm) { window.ADspaceForm.hint($('rpNewStart')); window.ADspaceForm.hint($('rpNewEnd')); }
+    };
+    fold.ontoggle = period;
+    $('rpNewStart').onchange = function () {
+      var a = $('rpNewStart').value;
+      $('rpNewEnd').min = a || '';
+      if (a && $('rpNewEnd').value && $('rpNewEnd').value < a) {
+        $('rpNewEnd').value = '';
+        if (window.ADspaceForm) window.ADspaceForm.hint($('rpNewEnd'));
+      }
+    };
+    period();
     var sm = box.querySelector('[data-m="sheet"]');
     say(sm, '');
     var go = box.querySelector('[data-a="go"]');
@@ -267,7 +289,11 @@
       var m = $('rpNewMonth').value, a = $('rpNewStart').value, b = $('rpNewEnd').value;
       var client = $('rpNewClient').value;
       if (!client) { say(sm, 'Choose a client.', 'err'); $('rpNewClient').focus(); return; }
-      if (!a || !b) {
+      if (fold.open) {
+        if (!a) { say(sm, 'Choose a start date.', 'err'); $('rpNewStart').focus(); return; }
+        if (!b) { say(sm, 'Choose an end date.', 'err'); $('rpNewEnd').focus(); return; }
+        if (b < a) { say(sm, 'The end date is before the start date.', 'err'); $('rpNewEnd').focus(); return; }
+      } else {
         if (!/^\d{4}-\d{2}$/.test(m)) { say(sm, 'Choose a month.', 'err'); return; }
         var y = Number(m.slice(0, 4)), mo = Number(m.slice(5, 7));
         a = ymd(new Date(y, mo - 1, 1)); b = ymd(new Date(y, mo, 0));

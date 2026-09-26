@@ -134,14 +134,20 @@
     b.disabled = true;
     // A fixed URL, not location.href, so it matches the Supabase allow list exactly.
     // Supabase silently falls back to its Site URL for anything not on that list.
-    db.auth.signInWithOtp({
-      email: email,
-      options: { emailRedirectTo: location.origin + '/admin/' }
-    }).then(function (r) {
+    /* The console never makes an account (a colleague is added on the Team
+       page), and it never says whether an address has one (the brief of
+       2026-09-26): an unknown address moves to the code step like any other,
+       so the page cannot be used to learn who is on the team. Only a fault
+       worth trying again says so, in our words. */
+    var opts = { shouldCreateUser: false, emailRedirectTo: location.origin + '/admin/' };
+    var go = window.ADspaceCaptcha ? window.ADspaceCaptcha.options(b, opts) : Promise.resolve(opts);
+    go.then(function (o) { return db.auth.signInWithOtp({ email: email, options: o }); }).then(function (r) {
       b.disabled = false;
-      if (r.error) { msg('authMsg', r.error.message, 'err'); return; }
+      var m = String((r.error && r.error.message) || '');
+      if (r.error && /seconds|rate limit|too many/i.test(m)) { msg('authMsg', 'Please wait a minute before asking for another code.', 'err'); return; }
+      if (r.error && !/signup|sign up|not allowed|not found|no user|invalid/i.test(m)) { msg('authMsg', 'Not sent. Please try again.', 'err'); return; }
       authEmailSent = email;
-      $('authSent').textContent = 'Sent to ' + email + '. Enter the code, or open the link in the email.';
+      $('authSent').textContent = 'If ' + email + ' is registered, a code and a sign-in link have been sent to it. Enter the code, or open the link.';
       msg('authMsg', '');
       authStep(true);
     }, function () { b.disabled = false; msg('authMsg', 'Not sent. Please try again.', 'err'); });
@@ -156,6 +162,8 @@
     b.disabled = true;
     db.auth.verifyOtp({ email: authEmailSent, token: code, type: 'email' }).then(function (r) {
       b.disabled = false;
+      var m = String((r && r.error && r.error.message) || '');
+      if (r && r.error && /rate limit|too many/i.test(m)) { msg('authMsg', 'Too many tries. Please wait a few minutes, then send a new code.', 'err'); return; }
       if (r && r.error) { msg('authMsg', 'That code is wrong or has expired. Send a new one.', 'err'); return; }
       msg('authMsg', '');
     }, function () { b.disabled = false; msg('authMsg', 'Not signed in. Please try again.', 'err'); });
@@ -252,6 +260,10 @@
   $('myPerf').addEventListener('click', function () {
     shutAcct();
     showSection('mine');
+  });
+  $('refreshApp').addEventListener('click', function () {
+    shutAcct();
+    if (window.ADspaceRefresh) window.ADspaceRefresh.hard(); else location.reload();
   });
   /* Signing out ends a performance unlock at once rather than leaving it to
      run out on a machine somebody else may sit at next. */

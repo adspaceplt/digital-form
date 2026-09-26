@@ -81,6 +81,11 @@
     rec.badge.textContent = n ? String(n) : '';
     rec.badge.hidden = !n;
     rec.btn.setAttribute('aria-label', n ? 'Filters, ' + n + ' set' : 'Filters');
+    /* A view that hides every select (My Work's Clients, Report) has nothing
+       to filter, and a Filters button over an empty sheet is a dead control. */
+    if (!(open && open.rec === rec)) {
+      rec.btn.hidden = !rec.selects().some(function (sel) { return !sel.hidden; });
+    }
   }
   function refresh() { bars.forEach(function (r) { paintBadge(r); mark(r); }); }
 

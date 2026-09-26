@@ -1693,6 +1693,7 @@
        a second add in the bar above it would be the same act twice. */
     if ($('workNew')) $('workNew').hidden = !may('ops', 'work') || state.view === 'clients';
     showPeriod();
+    if (window.ADspaceCmdbar) window.ADspaceCmdbar.refresh();
     if (state.view === 'board') loadCapacity();
   }
   /* The segment answers the press first and the view is drawn a frame
@@ -5982,17 +5983,15 @@
     var owners = {};
     cw.tasks.forEach(function (t) { if (cw.ownerIds[t.id]) owners[cw.ownerIds[t.id]] = cw.owners[t.id]; });
 
+    /* The client's months take the console's own command bar, the shape
+       every list has (the user, 2026-09-26: the old row of full-width
+       search and selects read as the pre-revamp bar): a search mark, Filters,
+       the count and the actions, with New month behind the ⋯ on a phone. */
     box.innerHTML =
-      '<div class="viewhead"><span class="headmark"><h2>Content months</h2></span>' +
-        (canWork
-          ? '<button class="btn" id="cwEng" type="button">New month</button>' +
-            '<button class="btn btn-primary" id="cwNew" type="button">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New task</button>'
-          : '') +
-      '</div>' +
-      '<div class="workfilters">' +
-        '<label class="cmdbar-find"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>' +
-          '<input class="input input-sm" id="cwFind" type="search" placeholder="Search tasks" aria-label="Search tasks" autocomplete="off"></label>' +
+      '<div class="viewhead"><span class="headmark"><h2>Content months</h2></span></div>' +
+      '<div class="cmdbar cwbar">' +
+        '<span class="cmdbar-find"><svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>' +
+          '<input class="input input-sm" id="cwFind" type="search" placeholder="Search tasks" aria-label="Search tasks" autocomplete="off"></span>' +
         '<select class="select select-sm" id="cwStatus" aria-label="Filter by status">' +
           '<option value="open">Open work</option><option value="active">In progress</option>' +
           '<option value="internal_review">AQC review</option><option value="client_review">Client review</option>' +
@@ -6004,11 +6003,19 @@
         '<select class="select select-sm" id="cwWho" aria-label="Filter by owner"><option value="">Anybody</option>' +
           Object.keys(owners).map(function (id) { return '<option value="' + esc(id) + '">' + esc(owners[id]) + '</option>'; }).join('') +
         '</select>' +
-        '<span class="cmdbar-count" id="cwCount"></span>' +
+        '<span class="cmdbar-end"><span class="cmdbar-quiet"><span class="cmdbar-count" id="cwCount"></span></span>' +
+          '<span class="cmdbar-acts">' +
+          (canWork
+            ? '<button class="btn btn-sm" id="cwEng" type="button">New month</button>' +
+              '<button class="btn btn-sm btn-primary" id="cwNew" type="button">' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New task</button>'
+            : '') +
+          '</span></span>' +
       '</div>' +
       '<div class="msg" id="cwMsg"></div>' +
       '<div id="cwList" data-narrow="860"></div>';
     if (UI.fit) UI.fit('#cwList');
+    if (window.ADspaceCmdbar) window.ADspaceCmdbar.wire();
     $('cwFind').value = cw.find; $('cwStatus').value = cw.status;
     $('cwPeriod').value = cw.period; $('cwWho').value = cw.who;
     $('cwFind').addEventListener('input', function () {

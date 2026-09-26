@@ -363,10 +363,13 @@ a { color: inherit; }
    `display: block` for some time after the rule had stopped using it, which
    is how `tests/sch.js` came to assert a sentence rather than the mechanism:
    a comment can go stale and a measurement cannot. */
-.input[type="date"], .input[type="time"] {
+.input[type="date"], .input[type="time"], .input[type="month"] {
   line-height: 1.5; min-height: var(--ctl-h);
   appearance: none; -webkit-appearance: none; text-align: left;
   display: flex; align-items: center;
+  /* iOS gives a date field an intrinsic width wider than a half-width cell
+     on a phone, so it ran past its column; it takes the cell's width. */
+  min-width: 0; max-width: 100%;
 }
 /* iOS lays the value out as a block at the top of the field, so with the
    pill gone it floated against the top edge while the glyph sat on the
@@ -374,20 +377,22 @@ a { color: inherit; }
    text is centred in it; the flex centring above covers the same case on
    any engine that honours it on an input. */
 .input[type="date"]::-webkit-date-and-time-value,
-.input[type="time"]::-webkit-date-and-time-value {
+.input[type="time"]::-webkit-date-and-time-value,
+.input[type="month"]::-webkit-date-and-time-value {
   text-align: left; min-height: calc(var(--ctl-h) - 2px); line-height: calc(var(--ctl-h) - 2px);
 }
 /* Chrome's own picker mark, quietened to the mute ink rather than removed:
    it is the pointer's route into the picker at a desk. */
 .input[type="date"]::-webkit-calendar-picker-indicator,
-.input[type="time"]::-webkit-calendar-picker-indicator { opacity: .55; cursor: pointer; }
+.input[type="time"]::-webkit-calendar-picker-indicator,
+.input[type="month"]::-webkit-calendar-picker-indicator { opacity: .55; cursor: pointer; }
 /* Under a finger there is no picker mark at all, on iOS or on Android, so
    the field names itself with a glyph on the left: a calendar for a date and
    a clock for a time, the same weight as every other glyph in the console.
    At a desk Chrome's own mark already says it, and two calendars in one box
    is noise. */
 @media (pointer: coarse) {
-  .input[type="date"], .input[type="time"] {
+  .input[type="date"], .input[type="time"], .input[type="month"] {
     padding-left: 38px; background-repeat: no-repeat;
     background-position: left 12px center; background-size: 16px;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6760' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
@@ -398,8 +403,9 @@ a { color: inherit; }
   /* A finger opens the picker by tapping the field, so a second mark on the
      right is not a route in, and in a 122px time track it clipped the value. */
   .input[type="date"]::-webkit-calendar-picker-indicator,
-  .input[type="time"]::-webkit-calendar-picker-indicator { display: none; }
-  :root[data-theme="dark"] .input[type="date"] {
+  .input[type="time"]::-webkit-calendar-picker-indicator,
+  .input[type="month"]::-webkit-calendar-picker-indicator { display: none; }
+  :root[data-theme="dark"] .input[type="date"], :root[data-theme="dark"] .input[type="month"] {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a6a89e' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
   }
   :root[data-theme="dark"] .input[type="time"] {
@@ -4072,20 +4078,13 @@ body > .shell { width: 100%; }
 .pctsign { position: absolute; right: 10px; font-size: 13px; color: var(--ink-mute); pointer-events: none; }
 .tickstack .tickline { display: flex; }
 
-/* THE CLIENT RECORD'S WORK PANE. A filter row in the pane's own margin
-   (not a command bar: that is a route's), then a card per month with the
-   engagement's facts at its head and the month's tasks under them. */
-.workfilters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 12px; }
-.workfilters .cmdbar-find { flex: 1 1 190px; max-width: 420px; }
-.workfilters .select-sm { flex: 0 1 180px; width: auto; min-width: 0; }
-.workfilters .cmdbar-count { margin-left: auto; }
-/* The pane is 591px at a 1280 window, which is narrow by its own measure:
-   the search takes a line and the three selects share the next, with the
-   count ending it. Below the tight width the selects go two to a line. */
-.is-narrow .workfilters .cmdbar-find { flex-basis: 100%; max-width: none; }
-.is-narrow .workfilters .select-sm { flex: 1 1 calc(33.333% - 8px); min-width: 0; }
-.is-narrow .workfilters .cmdbar-count { flex-basis: 100%; margin-left: 0; }
-.is-tight .workfilters .select-sm { flex: 1 1 calc(50% - 6px); }
+/* MY WORK, CLIENTS: a client's months under the console's own command bar
+   (`.cwbar`), the shape every list has, so there is one search and one
+   Filters on the screen and never a second row of full-width selects (the
+   user, 2026-09-26). Then a card per month, the engagement's facts at its
+   head and the month's tasks under them. The heading over the bar carries
+   no actions: they are in the bar. */
+.cwbar { margin-bottom: 12px; }
 /* The engagement is the month's own record, so it sits in the month's card
    above the tasks as a bounded block with the same edge the tables carry. */
 .engcard { border: 1px solid var(--card-line); border-radius: var(--radius); background: var(--card); padding: 14px 15px; margin: 0 0 12px; }
@@ -6762,14 +6761,24 @@ body.is-canvas { overflow: hidden; }
    Shrunk to fit inside a 32px box the segments were 26px, which the audit's
    target rule is there to catch. */
 .cmdbar-views .acttab { min-height: var(--ctl-h-sm); min-width: 0; padding: 0 11px; font-size: 12.5px; }
+/* On a phone the strip scrolls sideways rather than squeezing six views
+   into 358px (the brief of 2026-09-26): every view keeps the same padding
+   and its whole word, a view grows to fill the strip only where the strip
+   has room to spare, and the edge with more beyond it fades
+   (`is-more-start` / `is-more-end`, set by js/form.js, which also scrolls the
+   chosen view into sight). The fade is a mask on the track, so the thumb and
+   the words under it fade together and nothing is drawn over the options. */
 @media (max-width: 640px) {
-  .cmdbar-views { flex: 1 1 calc(50% - 5px); justify-content: stretch; min-width: 0; }
-  .cmdbar-views .acttab { flex: 1 1 0; text-align: center; }
-}
-/* Five views at 320: the segments give up their side padding before the
-   bar gives up the page's edge. */
-@media (max-width: 400px) {
-  .cmdbar-views .acttab { padding: 0 4px; font-size: 12px; }
+  .cmdbar-views {
+    flex: 1 1 calc(50% - 5px); justify-content: flex-start; min-width: 0;
+    overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+    scrollbar-width: none; -webkit-overflow-scrolling: touch;
+  }
+  .cmdbar-views::-webkit-scrollbar { display: none; }
+  .cmdbar-views .acttab { flex: 1 0 auto; padding: 0 14px; text-align: center; white-space: nowrap; }
+  .cmdbar-views.is-more-end { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
+  .cmdbar-views.is-more-start { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); }
+  .cmdbar-views.is-more-start.is-more-end { -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
 }
 
 /* THE BOARD. One column per stage of one workflow, in the workflow's own
@@ -8011,3 +8020,68 @@ body.is-canvas { overflow: hidden; }
 .wclient-row { margin: 0 0 12px; }
 .wclient-row > .field { flex: 0 1 360px; max-width: 360px; }
 @media (max-width: 640px) { .wclient-row > .field { flex-basis: 100%; max-width: none; } }
+
+/* =========================================================================
+   THE PHONE'S OWN EDGES (2026-09-26)
+   =========================================================================
+   Every page carries `viewport-fit=cover`, so on an iPhone the page runs
+   under the home indicator and `env(safe-area-inset-*)` reports it. Without
+   it every inset read 0, and the padding the sheets already asked for did
+   nothing: a sheet's Save sat on the home bar. Each surface that meets an
+   edge of the screen pads by that edge's inset, and nothing else moves: on a
+   screen with no inset the values are 0 and the desk is unchanged. */
+.portalfoot-in { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+.confirmbar-in { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+.sidebar { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 860px) {
+  .console-body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+  .console-head { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .sidebar { padding-left: max(14px, env(safe-area-inset-left, 0px)); }
+}
+@media (max-width: 640px) {
+  .topbar-inner { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+
+/* An empty date field says what it wants. iOS draws nothing at all in an
+   empty `input[type=date]` and Chrome draws `mm/dd/yyyy`, so a field marked
+   `data-hint` is wrapped by js/form.js (`.datefield`) and the hint replaces
+   the browser's own text, starting where the value would (after the glyph
+   under a finger) at the value's size. It leaves the moment the field is
+   focused, because from then on the browser's editor is what is typed into.
+   The same device as the Schedule's `.sched-field`. */
+.datefield { position: relative; display: flex; min-width: 0; }
+.datefield > .input { width: 100%; }
+.datefield.is-empty::after {
+  content: attr(data-hint);
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  font-size: var(--field-text); color: var(--ink-mute); pointer-events: none;
+}
+@media (pointer: coarse) { .datefield.is-empty::after { left: 38px; } }
+.datefield.is-empty > .input::-webkit-datetime-edit { opacity: 0; }
+.datefield.is-empty:focus-within > .input::-webkit-datetime-edit { opacity: 1; }
+.datefield.is-empty:focus-within::after { content: none; }
+/* A field standing aside for another (Month while a custom period is open)
+   reads as set aside rather than broken. */
+.input[type="month"]:disabled, .input[type="date"]:disabled { opacity: .55; cursor: not-allowed; }
+
+/* Pull to refresh in the installed console (js/refresh.js): one glyph that
+   comes down with the finger, turns as it travels, takes the ink once a
+   release would reload, and turns on its own while the page is fetched. */
+.pullmark {
+  position: fixed; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 6px); z-index: 70;
+  width: 36px; height: 36px; margin-top: -36px; border-radius: 50%;
+  display: grid; place-items: center; pointer-events: none;
+  background: var(--card); color: var(--ink-mute); box-shadow: var(--shadow-lift);
+  opacity: 0; transform: translate(-50%, 0);
+  transition: opacity var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
+}
+.pullmark svg { width: 18px; height: 18px; }
+.pullmark.is-armed, .pullmark.is-busy { color: var(--ink); }
+.pullmark.is-busy svg { animation: pullturn .8s linear infinite; }
+@keyframes pullturn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .pullmark.is-busy svg { animation: none; } }
+
+/* The Turnstile widget (js/captcha.js) draws nothing unless Cloudflare wants
+   a box pressed; when it does, it sits under the button that asked. */
+.cfbox { margin-top: 8px; }
+.cfbox:empty { display: none; }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="robots" content="noindex, nofollow">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>ADspace Digital Portal</title>
 <meta name="description" content="ADspace internal portal.">
 <meta property="og:title" content="ADspace Digital Portal">
@@ -26,7 +26,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260925l">
+<link rel="stylesheet" href="/css/portal.css?v=20260926a">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -41,26 +41,28 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260925l"></script>
-<script src="/js/words.js?v=20260925l"></script>
-<script src="/js/copy.js?v=20260925l"></script>
-<script src="/js/ask.js?v=20260925l"></script>
-<script src="/js/confirm.js?v=20260925l"></script>
-<script src="/js/sheet.js?v=20260925l"></script>
-<script src="/js/form.js?v=20260925l"></script>
-<script src="/js/state.js?v=20260925l"></script>
-<script src="/js/group.js?v=20260925l"></script>
-<script src="/js/menu.js?v=20260925l"></script>
-<script src="/js/cmdbar.js?v=20260925l"></script>
-<script src="/js/api.js?v=20260925l"></script>
-<script src="/js/money.js?v=20260925l"></script>
-<script src="/js/mockups.js?v=20260925l"></script>
+<script src="/js/config.js?v=20260926a"></script>
+<script src="/js/captcha.js?v=20260926a"></script>
+<script src="/js/words.js?v=20260926a"></script>
+<script src="/js/copy.js?v=20260926a"></script>
+<script src="/js/ask.js?v=20260926a"></script>
+<script src="/js/confirm.js?v=20260926a"></script>
+<script src="/js/sheet.js?v=20260926a"></script>
+<script src="/js/refresh.js?v=20260926a"></script>
+<script src="/js/form.js?v=20260926a"></script>
+<script src="/js/state.js?v=20260926a"></script>
+<script src="/js/group.js?v=20260926a"></script>
+<script src="/js/menu.js?v=20260926a"></script>
+<script src="/js/cmdbar.js?v=20260926a"></script>
+<script src="/js/api.js?v=20260926a"></script>
+<script src="/js/money.js?v=20260926a"></script>
+<script src="/js/mockups.js?v=20260926a"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260925l" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260926a" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -269,6 +271,11 @@
                who you are rather than among the sections everybody shares. -->
           <button class="kmenu-item" id="myPerf" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16"/><path d="m8 14 3-3 3 3 5-6"/></svg>My performance
+          </button>
+          <!-- The installed app has no reload button. This one also takes an
+               old copy off the phone (js/refresh.js) and keeps the sign-in. -->
+          <button class="kmenu-item" id="refreshApp" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>Refresh app
           </button>
           <button class="kmenu-item" id="signOut" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 20H6.5A1.5 1.5 0 0 1 5 18.5v-13A1.5 1.5 0 0 1 6.5 4H12"/></svg>Sign out
@@ -725,11 +732,11 @@
             <h4 class="fsec-h">Price and term</h4>
             <div class="row fgrid-3">
               <div><label class="field-label" for="svQty">Qty</label>
-                <input class="input" id="svQty" type="number" min="0" step="1" value="1"></div>
+                <input inputmode="numeric" class="input" id="svQty" type="number" min="0" step="1" value="1"></div>
               <div><label class="field-label" for="svRate">Rate</label>
-                <input class="input" id="svRate" type="number" min="0" step="10" placeholder="0"></div>
+                <input inputmode="decimal" class="input" id="svRate" type="number" min="0" step="10" placeholder="0"></div>
               <div><label class="field-label" for="svTenure">Months</label>
-                <input class="input" id="svTenure" type="number" min="1" step="1" value="1"></div>
+                <input inputmode="numeric" class="input" id="svTenure" type="number" min="1" step="1" value="1"></div>
             </div>
             <div class="row fgrid-3">
               <div><label class="field-label" for="svStart">Start</label>
@@ -787,7 +794,7 @@
           <div class="sheet-body">
           <div class="row">
             <div style="flex:0 0 200px"><label class="field-label" for="rqFee">Fee</label>
-              <input class="input" id="rqFee" type="number" min="0" step="0.01" placeholder="0.00"></div>
+              <input inputmode="decimal" class="input" id="rqFee" type="number" min="0" step="0.01" placeholder="0.00"></div>
             <div><label class="field-label" for="rqReply">Reply</label>
               <input class="input" id="rqReply" placeholder="Reply"></div>
           </div>
@@ -1337,7 +1344,7 @@
                   <option value="graphic">Graphic</option>
                 </select></div>
               <div><label class="field-label" for="campSlots">Creators</label>
-                <input class="input" id="campSlots" type="number" min="1" value="10"></div>
+                <input inputmode="numeric" class="input" id="campSlots" type="number" min="1" value="10"></div>
               <div><label class="field-label" for="campDeadline">Campaign due</label>
                 <input class="input" id="campDeadline" type="date"></div>
             </div>
@@ -1531,7 +1538,7 @@
                 <div><label class="field-label" for="ncName">Name</label>
                   <input class="input" id="ncName" placeholder="Creator name"></div>
                 <div style="flex:0 0 200px"><label class="field-label" for="ncRate">Rate for this campaign (RM)</label>
-                  <input class="input" id="ncRate" type="number" min="0" step="10" placeholder="360"></div>
+                  <input inputmode="decimal" class="input" id="ncRate" type="number" min="0" step="10" placeholder="360"></div>
               </div>
               <label class="field-label" style="margin-top:12px">Profile links</label>
               <div id="ncProfRows"></div>
@@ -1702,7 +1709,7 @@
               <div><label class="field-label" for="crName">Name</label>
                 <input class="input" id="crName" placeholder="Creator name"></div>
               <div><label class="field-label" for="crRate">Usual rate (RM), optional</label>
-                <input class="input" id="crRate" type="number" min="0" step="10" placeholder="360"></div>
+                <input inputmode="decimal" class="input" id="crRate" type="number" min="0" step="10" placeholder="360"></div>
             </div>
             <div class="msg" id="dupeWarn"></div>
           </section>
@@ -3378,7 +3385,7 @@
                 <!-- A planning figure, in the unit people plan in. Stored in minutes
                      because the sessions it is read against are. -->
                 <div><label class="field-label" for="tmCap">Weekly capacity, hours</label>
-                  <input class="input" id="tmCap" type="number" min="0" max="80" step="0.5" placeholder="40"></div>
+                  <input inputmode="decimal" class="input" id="tmCap" type="number" min="0" max="80" step="0.5" placeholder="40"></div>
               </div>
             </section>
             <div class="msg" id="tmMsg"></div>
@@ -3628,11 +3635,11 @@
           <h4 class="fsec-h">Price</h4>
           <div class="row fgrid-3">
             <div><label class="field-label" for="svcRate">Rate</label>
-              <input class="input" id="svcRate" type="number" min="0" step="10" placeholder="0"></div>
+              <input inputmode="decimal" class="input" id="svcRate" type="number" min="0" step="10" placeholder="0"></div>
             <div><label class="field-label" for="svcUnit">Unit</label>
               <input class="input" id="svcUnit" placeholder="Per post"></div>
             <div><label class="field-label" for="svcMin">Minimum months</label>
-              <input class="input" id="svcMin" type="number" min="1" step="1" value="1"></div>
+              <input inputmode="numeric" class="input" id="svcMin" type="number" min="1" step="1" value="1"></div>
           </div>
         </section>
         <section class="fsec">
@@ -4119,16 +4126,16 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260925l"></script>
-<script src="/js/documents.js?v=20260925l"></script>
-<script src="/js/letters.js?v=20260925l"></script>
-<script src="/js/smreport.js?v=20260925l"></script>
-<script src="/js/reports.js?v=20260925l"></script>
-<script src="/js/register.js?v=20260925l"></script>
-<script src="/js/crm.js?v=20260925l"></script>
-<script src="/js/team.js?v=20260925l"></script>
-<script src="/js/campaigns.js?v=20260925l"></script>
-<script src="/js/ops.js?v=20260925l"></script>
-<script src="/js/perf.js?v=20260925l"></script>
+<script src="/js/admin.js?v=20260926a"></script>
+<script src="/js/documents.js?v=20260926a"></script>
+<script src="/js/letters.js?v=20260926a"></script>
+<script src="/js/smreport.js?v=20260926a"></script>
+<script src="/js/reports.js?v=20260926a"></script>
+<script src="/js/register.js?v=20260926a"></script>
+<script src="/js/crm.js?v=20260926a"></script>
+<script src="/js/team.js?v=20260926a"></script>
+<script src="/js/campaigns.js?v=20260926a"></script>
+<script src="/js/ops.js?v=20260926a"></script>
+<script src="/js/perf.js?v=20260926a"></script>
 </body>
 </html>

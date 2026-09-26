@@ -21,6 +21,11 @@
  *
  * Turn OFF "Verify JWT" for this function in the dashboard: it is called by
  * somebody who is not signed in yet, which is the whole point.
+ *
+ * It answers `{ ok: true }` to every well-formed request, whether or not it
+ * made a login (2026-09-26). Anybody can call it, so an answer that differed
+ * for a known and an unknown address would tell a stranger which addresses
+ * are clients. What happened is written to the function's own log instead.
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.4';
 
@@ -53,7 +58,7 @@ Deno.serve(async (req) => {
   let body: { email?: string } = {};
   try { body = await req.json(); } catch { /* handled below */ }
   const email = String(body.email ?? '').trim().toLowerCase();
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ ok: false }, 200, origin);
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ ok: true }, 200, origin);
 
   const admin = createClient(
     Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -65,7 +70,7 @@ Deno.serve(async (req) => {
   const { data: contact } = await admin.from('client_contacts')
     .select('id, name').ilike('email', email)
     .eq('portal_access', true).is('archived_at', null).limit(1).maybeSingle();
-  if (!contact) return json({ ok: false }, 200, origin);
+  if (!contact) return json({ ok: true }, 200, origin);
 
   /* Confirmed on creation, because the team confirmed them: the address came
      off the client record, not off a form somebody filled in. An address that
@@ -75,7 +80,7 @@ Deno.serve(async (req) => {
     email, email_confirm: true, user_metadata: { name: contact.name ?? '' }
   });
   if (error && !/already|exists|registered/i.test(error.message)) {
-    return json({ ok: false, detail: error.message }, 200, origin);
+    console.error('portal-login: createUser failed', error.message);
   }
   return json({ ok: true }, 200, origin);
 });

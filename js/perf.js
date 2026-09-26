@@ -1146,7 +1146,9 @@
   function sendCode() {
     var b = $('mineSend');
     b.disabled = true;
-    db.auth.signInWithOtp({ email: guard.email, options: { shouldCreateUser: false } }).then(function (r) {
+    var opts = { shouldCreateUser: false };
+    var go = window.ADspaceCaptcha ? window.ADspaceCaptcha.options(b, opts) : Promise.resolve(opts);
+    go.then(function (o) { return db.auth.signInWithOtp({ email: guard.email, options: o }); }).then(function (r) {
       b.disabled = false;
       if (r && r.error) { msg('mineLockMsg', 'Not sent. Please try again in a minute.', 'err'); return; }
       $('mineCode').hidden = false; $('mineVerify').hidden = false;
