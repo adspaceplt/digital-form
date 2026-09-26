@@ -52,15 +52,14 @@
     ['pacing',       'Budget pacing variance', 10, 'client'],
     ['sla',          'Response within SLA',    90, 'comms']
   ];
-  var ROLE_WORD = { visual: 'Visual / Designer', video: 'Video Production Specialist',
-                    planner: 'PM / Content Planner / Copywriter', account: 'Account Media / Ads / Account Manager' };
+  var ROLE_WORD = window.ADspaceWords.roleStd;
   var ROLE_STD = {
     visual: 'Visual hierarchy, brand consistency, detail accuracy, clean handover. Choices reduce client revision risk.',
     video: 'Shot quality, editing flow, hook strength, retention, export accuracy. Improves watchability and performance.',
     planner: 'Campaign direction, content angles, brief clarity. Identifies weak accounts and proposes improvement.',
     account: 'Client servicing, posting accuracy, budget pacing, escalation. Proactively manages every account.'
   };
-  var DEPT_WORD = { creative: 'Creative', marketing: 'Marketing' };
+  var DEPT_WORD = window.ADspaceWords.dept;
   var BREACH_CAT = { client: 'Client and account risk', delivery: 'Delivery and execution risk',
                      compliance: 'Compliance and platform risk', asset: 'Asset and financial risk' };
   var SEV_WORD = { 1: 'Level 1 · Minor', 2: 'Level 2 · Moderate', 3: 'Level 3 · Major', 4: 'Level 4 · Critical' };
@@ -467,8 +466,13 @@
   function openProfile(p, opener) {
     profileFor = p;
     $('ppTitle').textContent = p.name;
-    $('ppDept').value = p.department || '';
-    $('ppRole').value = p.role_family || '';
+    /* Department and role standard are set on the Members tab and only read
+       here; Edit on Members opens that person's own sheet there. */
+    $('ppFacts').innerHTML = [['Department', DEPT_WORD[p.department]], ['Role standard', ROLE_WORD[p.role_family]]]
+      .map(function (f) {
+        return '<div><dt>' + f[0] + '</dt><dd' + (f[1] ? '' : ' class="is-empty"') + '>' + esc(f[1] || 'Not set') + '</dd></div>';
+      }).join('');
+    $('ppEditTeam').hidden = !(may('team', 'manage') && window.ADspaceTeam && window.ADspaceTeam.edit);
     $('ppAds').checked = Boolean(p.runs_ads);
     $('ppReviewed').checked = Boolean(p.reviewed);
     msg('ppMsg', '');
@@ -476,11 +480,19 @@
   }
   $('ppClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
   $('ppCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('ppEditTeam').addEventListener('click', function () {
+    if (!profileFor) return;
+    var id = profileFor.team_member_id;
+    window.ADspaceSheet.close();
+    st.tab = 'members';
+    enterTeam();
+    if (bridge.setUrl) bridge.setUrl();
+    window.ADspaceTeam.edit(id);
+  });
   $('ppSave').addEventListener('click', function () {
     if (!profileFor) return;
     var btn = this; btn.disabled = true;
     call('perf_profile_set', { p_token: token, p_member: profileFor.team_member_id, p_payload: {
-      department: $('ppDept').value, role_family: $('ppRole').value,
       runs_ads: $('ppAds').checked, reviewed: $('ppReviewed').checked } }, function (d) {
       btn.disabled = false;
       if (d.error) { msg('ppMsg', said(d), 'err'); return; }

@@ -14,7 +14,7 @@
  *   ADspacePasskey.on      whether this browser and this library can use one
  *   ADspacePasskey.open()  the Passkeys sheet, from the account menu
  *   ADspacePasskey.offer() once per browser, after an email sign-in on a
- *                          device that has Touch ID or a device password
+ *                          device that has Touch ID, Face ID or a device password
  */
 (function () {
   'use strict';
@@ -256,7 +256,7 @@
         if ((r.data || []).length) return;
         window.ADspaceConfirm.ask({
           title: 'Sign in with a passkey',
-          body: 'Add a passkey and sign in on this device with Touch ID or your device password, '
+          body: 'Add a passkey and sign in on this device with Touch ID, Face ID or your device password, '
               + 'without waiting for an email.',
           go: 'Add passkey',
           cancel: 'Not now'

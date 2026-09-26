@@ -121,31 +121,69 @@
   }
 
   /* The mark, with the wordmark behind it. One copy of the fallback rather
-     than the same four lines in every page script. */
-  function paintLogo() {
-    var logo = document.getElementById('agencyLogo');
-    if (!logo) return;
+     than the same four lines in every page script.
+     The mark comes from the CDN and lands after the first paint, and an image
+     with no file yet has no width: the page label beside it stood at the
+     mark's left edge and jumped 208px right when the file arrived. So the
+     mark's proportions are kept from the last visit and the box is drawn at
+     that size from the first paint (`aspect-ratio: auto R`, which the file's
+     own ratio replaces once it loads). On a first visit, with nothing kept,
+     `holder` is held back until the mark has loaded or failed, so the brand
+     arrives once, in place, instead of moving. */
+  var RATIO_KEY = 'adspace-logo-ratio';
+  function wireMark(logo, wordmarkId, holder) {
+    var ratio = 0;
+    try { ratio = parseFloat(localStorage.getItem(RATIO_KEY)) || 0; } catch (e) {}
+    if (ratio > 0) logo.style.aspectRatio = 'auto ' + ratio;
+    else if (holder) holder.classList.add('is-waiting');
+    var settle = function () { if (holder) holder.classList.remove('is-waiting'); };
+    var timer = setTimeout(settle, 2500);
+    logo.onload = function () {
+      clearTimeout(timer);
+      if (logo.naturalWidth && logo.naturalHeight) {
+        var r = Math.round(logo.naturalWidth / logo.naturalHeight * 1000) / 1000;
+        logo.style.aspectRatio = 'auto ' + r;
+        try { localStorage.setItem(RATIO_KEY, String(r)); } catch (e) {}
+      }
+      settle();
+    };
     logo.onerror = function () {
+      clearTimeout(timer);
       logo.hidden = true;
-      var w = document.getElementById('agencyWordmark');
+      var w = document.getElementById(wordmarkId);
       if (w) w.hidden = false;
+      settle();
     };
     logo.src = cfg.brandLogo || '';
+  }
+
+  function paintLogo() {
+    var logo = document.getElementById('agencyLogo');
+    if (logo) wireMark(logo, 'agencyWordmark', logo.parentNode);
   }
 
   head();
   tag.insertAdjacentHTML('afterend', headerHtml());
   paintLogo();
 
-  if (wantFooter) {
-    var addFoot = function () {
-      if (document.querySelector('.portalfoot')) return;
-      document.body.insertAdjacentHTML('beforeend', footerHtml());
+  /* The footer is drawn with the header, not when the page has finished
+     parsing. Added at the end, it arrived after the page had already shown
+     what was under the bar, and on the sign-in page the card, centred in the
+     space between the bar and the floor, moved 26px up when the floor
+     rose. The body is a flex column, so `.portalfoot` (order 1) sits last on
+     the screen wherever it is in the markup; once the page is parsed it is
+     moved to the end of the body as well, so a keyboard and a screen reader
+     reach it last too. */
+  if (wantFooter && !document.querySelector('.portalfoot')) {
+    document.getElementById('topbar').insertAdjacentHTML('afterend', footerHtml());
+    var sinkFoot = function () {
+      var f = document.querySelector('.portalfoot');
+      if (f && f !== document.body.lastElementChild) document.body.appendChild(f);
     };
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', addFoot, { once: true });
+      document.addEventListener('DOMContentLoaded', sinkFoot, { once: true });
     } else {
-      addFoot();
+      sinkFoot();
     }
   }
 
@@ -165,13 +203,7 @@
     // Any mark on the page, wired to the same fallback.
     mark: function (logoId, wordmarkId) {
       var logo = document.getElementById(logoId);
-      if (!logo) return;
-      logo.onerror = function () {
-        logo.hidden = true;
-        var w = document.getElementById(wordmarkId);
-        if (w) w.hidden = false;
-      };
-      logo.src = cfg.brandLogo || '';
+      if (logo) wireMark(logo, wordmarkId, null);
     },
     actions: function () { return document.getElementById('chromeActions'); }
   };

@@ -15,6 +15,13 @@
   var bridge = window.ADspaceAdmin || {};
   var log = bridge.log || function () {};
   var me = bridge.me || function () { return null; };
+  /* Department and role standard are said once, in js/words.js; the sheet's
+     two selects are filled from there before the segment is drawn. */
+  var DEPT = window.ADspaceWords.dept, ROLE_STD = window.ADspaceWords.roleStd;
+  [['tmDept', DEPT], ['tmRoleStd', ROLE_STD]].forEach(function (f) {
+    var sel = document.getElementById(f[0]);
+    if (sel) Object.keys(f[1]).forEach(function (k) { sel.add(new Option(f[1][k], k)); });
+  });
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -226,12 +233,20 @@
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutMenus(); });
 
+  var pendingEdit = null;
+  function openPending() {
+    var id = pendingEdit; pendingEdit = null;
+    var m = id && (state.rows || []).filter(function (x) { return x.id === id; })[0];
+    if (m) openMemberBox(m, null);
+  }
   function load() {
+    state.loading = true;
     $('teamList').innerHTML = '<div class="softpanel"><div class="skel">' +
       '<div class="skel-row"></div><div class="skel-row"></div><div class="skel-row"></div>' +
       '<div class="skel-row"></div></div></div>';
     db.from('team_roles').select('*').order('position').order('name').then(function (r) {
       if (r.error) {
+        state.loading = false;
         $('groupList').innerHTML = '<div class="softpanel"><div class="errline">' +
           '<b>Could not load the groups.</b><span>' + esc(r.error.message) + '</span></div></div>';
         return;
@@ -243,13 +258,16 @@
       db.from('team_members').select('*').order('active', { ascending: false })
         .order('role').order('name').then(function (q) {
           if (q.error) {
+            state.loading = false;
             $('teamList').innerHTML = '<div class="softpanel"><div class="errline">' +
               '<b>Could not load the team.</b><span>' + esc(q.error.message) + '</span></div></div>';
             return;
           }
           state.rows = q.data || [];
+          state.loading = false;
           paintMembers();
           paintGroups();   // member counts and Delete depend on the rows
+          if (pendingEdit) openPending();
         });
     });
   }
@@ -287,7 +305,7 @@
   function teamMatch(m) {
     if (teamGroup && m.role !== teamGroup) return false;
     if (!teamFind) return true;
-    return (String(m.name || '') + ' ' + String(m.email || '') + ' ' + String(m.staff_code || ''))
+    return (String(m.name || '') + ' ' + String(m.email || '') + ' ' + whoLine(m))
       .toLowerCase().indexOf(teamFind) > -1;
   }
 
@@ -362,6 +380,10 @@
       return String(x.name || '').localeCompare(String(y.name || ''));
     });
   }
+  function whoLine(m) {
+    var post = [DEPT[m.department], m.designation].filter(Boolean).join(', ');
+    return [m.staff_code, post].filter(Boolean).join(' · ');
+  }
   function memberRow(m) {
     var self = me() && me().id === m.id;
     var el = document.createElement('div');
@@ -374,10 +396,11 @@
       /* You is a designation, not a live state, so it is the neutral chip the
          rate card gives Inactive and not a word in the accent green. */
       '<span class="team-who"><b>' + esc(m.name) + (self ? ' <span class="tone">You</span>' : '') + '</b>' +
-        /* The Employee ID and the designation are read off the row because
-           the HR serial and the signature on a letter are built from them. */
-        (m.staff_code || m.designation
-          ? '<small>' + esc([m.staff_code, m.designation].filter(Boolean).join(' · ')) + '</small>' : '') +
+        /* The Employee ID, then where they sit: "AD026 · Creative, Production
+           Executive". The HR serial and the signature on a letter are built
+           from these, and the department is chosen from a list, so the line
+           reads the same on every row whoever typed it. */
+        (whoLine(m) ? '<small>' + esc(whoLine(m)) + '</small>' : '') +
       '</span>' +
       '<span class="team-mail">' + esc(m.email || '') + '</span>' +
       '<span class="team-state">' + (m.active ? '' : '<span class="tone">Inactive</span>') + '</span>' +
@@ -578,8 +601,16 @@
         go: 'Delete',
         tone: 'danger'
       }, function () {
-        db.from('team_roles').delete().eq('slug', r.slug).then(function (q) {
+        /* PostgREST answers a delete a policy refused with no error and no
+           row gone, so ask for the row back: an empty answer is a refusal,
+           not a success, and the group stays in the list saying so. */
+        db.from('team_roles').delete().eq('slug', r.slug).select('slug').then(function (q) {
           if (q.error) { msg('groupMsg', q.error.message, 'err'); return; }
+          if (!q.data || !q.data.length) {
+            msg('groupMsg', 'Not deleted. The database refused the request.', 'err');
+            load();
+            return;
+          }
           log('team.group_removed', r.name, '');
           msg('groupMsg', r.name + ' deleted.', 'ok');
           load();
@@ -913,6 +944,8 @@
     $('tmEmail').value = m ? (m.email || '') : '';
     $('tmStaff').value = m ? (m.staff_code || '') : '';
     $('tmDesig').value = m ? (m.designation || '') : '';
+    $('tmDept').value = m ? (m.department || '') : '';
+    $('tmRoleStd').value = m ? (m.role_family || '') : '';
     $('tmCap').value = m && m.capacity_minutes_week ? String(Math.round(m.capacity_minutes_week / 30) / 2) : '';
     fillRolePick(); $('tmRole').value = m ? m.role : 'account';
     msg('tmMsg', '');
@@ -938,6 +971,7 @@
     if (staff && !/^[A-Z0-9]{3,8}$/.test(staff)) { msg('tmMsg', 'An Employee ID is 3 to 8 letters or digits.', 'err'); $('tmStaff').focus(); return; }
     if ($('tmCap').value && !(capH >= 0 && capH <= 80)) { msg('tmMsg', 'Weekly capacity is 0 to 80 hours.', 'err'); $('tmCap').focus(); return; }
     var fields = { name: name, email: email, role: role, staff_code: staff || null, designation: desig || null,
+                   department: $('tmDept').value || null, role_family: $('tmRoleStd').value || null,
                    capacity_minutes_week: capH >= 0 && $('tmCap').value ? Math.round(capH * 60) : null };
     if (editingMember) {
       var m = editingMember;
@@ -1039,7 +1073,10 @@
 
   window.ADspaceTeam = {
     urlState: function () { return {}; },
-    enter: function () { load(); }
+    enter: function () { load(); },
+    /* Opens one colleague's sheet, for the review profile's Edit on Members:
+       from the rows already read, or once the list has been. */
+    edit: function (id) { pendingEdit = id; if (!state.loading) openPending(); }
   };
   if (bridge.teamReady) bridge.teamReady();
 })();

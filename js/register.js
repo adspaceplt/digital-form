@@ -110,15 +110,30 @@
   /* A row names the brand the team knows the client by and the entity the
      letter was addressed to, because the two differ (ADspace and ADSPACE
      PLT) and a register read by one alone is a register somebody has to
-     open to search (the user, 2026-09-26). An HR letter has no brand. */
+     open to search (the user, 2026-09-26). An HR letter has no brand: its
+     second column is the colleague as the Team directory names them, and
+     the recipient is the name the letter was addressed to. */
   function brandOf(d) {
-    if (d.family === 'hr') return '';
+    if (d.family === 'hr') { var m = teamOf(d); return (m && m.name) || ''; }
     var c = clientOf(d.client_id);
     return (c && c.name) || '';
   }
+  /* The colleague a letter concerns: the one it was issued to, else the one
+     whose Employee ID the reference carries (ADHR/AD014/E2601,
+     AD004-P2405001), which is how the letters imported from the old list
+     find their person. A candidate's offer (ADHR/EMP…) carries no ID and
+     names nobody. */
+  function teamOf(d) {
+    var m = d.member_id && memberOf(d.member_id);
+    if (m) return m;
+    var parts = String(d.serial || '').toUpperCase().split(/[\/\-]/);
+    return state.members.filter(function (x) {
+      return x.staff_code && parts.indexOf(String(x.staff_code).toUpperCase()) > -1;
+    })[0] || null;
+  }
   function recipientOf(d) {
     var rc = d.recipient || {};
-    if (d.family === 'hr') { var m = memberOf(d.member_id); return (m && m.name) || rc.name || ''; }
+    if (d.family === 'hr') { var m = teamOf(d); return rc.name || (m && m.name) || ''; }
     var c = clientOf(d.client_id);
     return rc.name || (c && (c.legal_name || c.name)) || '';
   }
@@ -213,7 +228,7 @@
            fold is remembered for anybody who shuts one. */
         shut: !filtered && GRP.shut('register', f, false),
         table: function () {
-          var table = GRP.table('svc-row reg-row', ['Document', 'Brand', 'Recipient', 'Issued', '']);
+          var table = GRP.table('svc-row reg-row', ['Document', f === 'hr' ? 'Team' : 'Brand', 'Recipient', 'Issued', '']);
           GRP.more(table, mine, 30, 'documents', function (d) { return row(d, needOf(f)); });
           return table;
         }

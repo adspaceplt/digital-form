@@ -309,6 +309,7 @@
        client-facing pages use, and a refresh read for a second or two as
        somebody else's portal. */
     document.body.classList.toggle('is-plain', !inApp);
+    document.documentElement.removeAttribute('data-boot');
     $('topbar').hidden = inApp;
     $('publicShell').hidden = inApp;
     $('console').classList.toggle('is-booting', inApp && !meLoaded);

@@ -112,6 +112,14 @@
     }
   };
 
+  /* A colleague's department and role standard: set on the Team page, read on
+     the member's row and by Performance, so the words are said once. The
+     keys are what the database stores (`team_members.department`,
+     `team_members.role_family`). Console only, so English only. */
+  W.dept = { creative: 'Creative', marketing: 'Marketing' };
+  W.roleStd = { visual: 'Visual / Designer', video: 'Video Production Specialist',
+                planner: 'PM / Content Planner / Copywriter', account: 'Account Media / Ads / Account Manager' };
+
   /* The colour half of a state. One map, no language: a word and its tone
      travel together, so the console and the client page cannot show the same
      state in two colours. */

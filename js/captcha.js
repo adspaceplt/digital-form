@@ -53,6 +53,10 @@
             execution: 'execute',
             appearance: 'interaction-only',
             size: 'flexible',
+            /* The page's own register, never the device's: Turnstile's
+               default follows the device, so a phone in dark mode drew a
+               black box on a client page that is always light. */
+            theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
             callback: function (t) { if (host.__cfGive) host.__cfGive(t); },
             'error-callback': function () { if (host.__cfGive) host.__cfGive(null); },
             'expired-callback': function () { try { ts.reset(host.__cfWidget); } catch (e) {} }
@@ -68,15 +72,32 @@
     }, function () { return null; });
   }
 
-  /* The widget's place: just after the button that asked for it, so a box
-     Cloudflare wants pressed appears where the person is looking. */
+  /* The widget's place: under the button that asked for it, so a box
+     Cloudflare wants pressed appears where the person is looking. Under,
+     not beside: where the button shares a row with its field (the client
+     sign-in is the email and Send link side by side), the box goes after
+     the row, or it becomes a third item in it and squeezes the field to a
+     sliver (reported with a phone photo, 2026-09-26). */
+  /* One box per card, too: where two buttons in one card both send (the
+     console's Sign in and Sign in with a passkey), the card carries
+     `data-cf` and the box is its last item, shared by both, so pressing
+     each did not stack two boxes between them. */
   function hostFor(btn) {
     if (!KEY || !btn) return null;
-    if (btn.__cfHost) return btn.__cfHost;
+    var card = btn.closest('[data-cf]');
+    var owner = card || btn;
+    if (owner.__cfHost) return owner.__cfHost;
     var h = document.createElement('div');
     h.className = 'cfbox';
-    btn.insertAdjacentElement('afterend', h);
-    btn.__cfHost = h;
+    if (card) {
+      card.appendChild(h);
+    } else {
+      var row = btn.parentElement, cs = row && window.getComputedStyle(row);
+      var inRow = cs && (/grid/.test(cs.display) ||
+        (/flex/.test(cs.display) && !/column/.test(cs.flexDirection)));
+      (inRow ? row : btn).insertAdjacentElement('afterend', h);
+    }
+    owner.__cfHost = h;
     return h;
   }
 

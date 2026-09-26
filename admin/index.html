@@ -30,7 +30,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260926j">
+<link rel="stylesheet" href="/css/portal.css?v=20260926m">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -38,6 +38,12 @@
      are untouched and have no dark at all: nobody decides on a proposal in a
      register they did not choose, which is what that rule was always about. -->
 <script>try{var t=localStorage.getItem('adspace-theme'),d=t==='dark'||(!t&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.setAttribute('data-theme','dark');var m=document.querySelectorAll('meta[name="theme-color"]');for(var i=0;i<m.length;i++){m[i].removeAttribute('media');m[i].setAttribute('content',d?'#171717':'#ffffff');}}catch(e){}</script>
+<!-- Signed in or not is known for certain only once the library has read its
+     session, a moment after the first paint. Whether a session is kept in
+     this browser is known now, so the first paint is already the right page:
+     white under the sign-in card, and no sign-in bar over a console that is
+     about to open. js/admin.js takes the attribute off once it knows. -->
+<script>try{var s=false;for(var k=0;k<localStorage.length;k++){if(/^sb-.*-auth-token$/.test(localStorage.key(k))){s=true;break;}}document.documentElement.setAttribute('data-boot',s?'in':'out');setTimeout(function(){document.documentElement.removeAttribute('data-boot');},4000);}catch(e){}</script>
 <!-- 2.117 is the first line of the library that signs in with a passkey. The
      console alone takes it; the client pages stay on the version they were
      built and tested against until they need something it adds. -->
@@ -48,28 +54,28 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260926j"></script>
-<script src="/js/captcha.js?v=20260926j"></script>
-<script src="/js/words.js?v=20260926j"></script>
-<script src="/js/copy.js?v=20260926j"></script>
-<script src="/js/ask.js?v=20260926j"></script>
-<script src="/js/confirm.js?v=20260926j"></script>
-<script src="/js/sheet.js?v=20260926j"></script>
-<script src="/js/refresh.js?v=20260926j"></script>
-<script src="/js/form.js?v=20260926j"></script>
-<script src="/js/state.js?v=20260926j"></script>
-<script src="/js/group.js?v=20260926j"></script>
-<script src="/js/menu.js?v=20260926j"></script>
-<script src="/js/cmdbar.js?v=20260926j"></script>
-<script src="/js/api.js?v=20260926j"></script>
-<script src="/js/money.js?v=20260926j"></script>
-<script src="/js/mockups.js?v=20260926j"></script>
+<script src="/js/config.js?v=20260926m"></script>
+<script src="/js/captcha.js?v=20260926m"></script>
+<script src="/js/words.js?v=20260926m"></script>
+<script src="/js/copy.js?v=20260926m"></script>
+<script src="/js/ask.js?v=20260926m"></script>
+<script src="/js/confirm.js?v=20260926m"></script>
+<script src="/js/sheet.js?v=20260926m"></script>
+<script src="/js/refresh.js?v=20260926m"></script>
+<script src="/js/form.js?v=20260926m"></script>
+<script src="/js/state.js?v=20260926m"></script>
+<script src="/js/group.js?v=20260926m"></script>
+<script src="/js/menu.js?v=20260926m"></script>
+<script src="/js/cmdbar.js?v=20260926m"></script>
+<script src="/js/api.js?v=20260926m"></script>
+<script src="/js/money.js?v=20260926m"></script>
+<script src="/js/mockups.js?v=20260926m"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260926j" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260926m" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -81,7 +87,7 @@
   <section class="signin" id="authPanel" hidden>
     <div class="signin-card">
       <h2>Sign in</h2>
-      <div id="authEmailStep">
+      <div id="authEmailStep" data-cf>
         <label class="field-label" for="authEmail">Company email</label>
         <input class="input" id="authEmail" type="email" placeholder="john@adspacestudios.com"
                autocomplete="email">
@@ -3401,17 +3407,32 @@
                   <select class="select" id="tmRole" aria-required="true"></select></div>
               </div>
             </section>
-            <!-- The HR serial is built from the Employee ID and the designation is
-                 printed under a signature, so both are kept here with the person. -->
+            <!-- Who the person is to the company, kept once, here: the HR serial is
+                 built from the Employee ID, the position is printed under a
+                 signature, and Performance reads the department and the role
+                 standard from this row rather than keeping its own copy. -->
             <section class="fsec">
               <h4 class="fsec-h">Employment</h4>
-              <div class="row fgrid-3">
+              <div class="row fgrid">
+                <div><label class="field-label" for="tmDept">Department</label>
+                  <!-- The options are ADspaceWords.dept, filled by js/team.js. -->
+                  <select class="select" id="tmDept" data-seg>
+                    <option value="">Not set</option>
+                  </select></div>
+                <div><label class="field-label" for="tmDesig">Position</label>
+                  <input class="input" id="tmDesig" placeholder="Production Executive"></div>
+              </div>
+              <div class="row fgrid">
+                <div class="span-all"><label class="field-label" for="tmRoleStd">Role standard</label>
+                  <select class="select" id="tmRoleStd">
+                    <option value="">Not set</option>
+                  </select></div>
+              </div>
+              <!-- The capacity is a planning figure, in the unit people plan in.
+                   Stored in minutes because the sessions it is read against are. -->
+              <div class="row fgrid">
                 <div><label class="field-label" for="tmStaff">Employee ID</label>
                   <input class="input" id="tmStaff" placeholder="AD005" autocapitalize="characters" spellcheck="false"></div>
-                <div><label class="field-label" for="tmDesig">Designation</label>
-                  <input class="input" id="tmDesig" placeholder="Marketing Executive"></div>
-                <!-- A planning figure, in the unit people plan in. Stored in minutes
-                     because the sessions it is read against are. -->
                 <div><label class="field-label" for="tmCap">Weekly capacity, hours</label>
                   <input inputmode="decimal" class="input" id="tmCap" type="number" min="0" max="80" step="0.5" placeholder="40"></div>
               </div>
@@ -3533,24 +3554,12 @@
             </button>
           </div>
           <div class="sheet-body">
-            <div class="row">
-              <div><label class="field-label" for="ppDept">Department</label>
-                <select class="select" id="ppDept" data-seg>
-                  <option value="">Not set</option>
-                  <option value="creative">Creative</option>
-                  <option value="marketing">Marketing</option>
-                </select></div>
-            </div>
-            <div class="row">
-              <div><label class="field-label" for="ppRole">Role standard</label>
-                <select class="select" id="ppRole">
-                  <option value="">Not set</option>
-                  <option value="visual">Visual / Designer</option>
-                  <option value="video">Video Production Specialist</option>
-                  <option value="planner">PM / Content Planner / Copywriter</option>
-                  <option value="account">Account Media / Ads / Account Manager</option>
-                </select></div>
-            </div>
+            <!-- Department and role standard are the Team page's, read here so the
+                 standard a person is reviewed against is on the sheet that sets
+                 how they are reviewed. -->
+            <dl class="ovfacts" id="ppFacts"></dl>
+            <button class="btn btn-quiet btn-sm pp-edit" id="ppEditTeam" type="button" hidden>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>Edit on Members</button>
             <div class="row">
               <div>
                 <label class="tickline"><input type="checkbox" id="ppAds"> <span>Runs client ads (budget pacing counts)</span></label>
@@ -4174,17 +4183,17 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
-<script src="/js/passkey.js?v=20260926j"></script>
-<script src="/js/admin.js?v=20260926j"></script>
-<script src="/js/documents.js?v=20260926j"></script>
-<script src="/js/letters.js?v=20260926j"></script>
-<script src="/js/smreport.js?v=20260926j"></script>
-<script src="/js/reports.js?v=20260926j"></script>
-<script src="/js/register.js?v=20260926j"></script>
-<script src="/js/crm.js?v=20260926j"></script>
-<script src="/js/team.js?v=20260926j"></script>
-<script src="/js/campaigns.js?v=20260926j"></script>
-<script src="/js/ops.js?v=20260926j"></script>
-<script src="/js/perf.js?v=20260926j"></script>
+<script src="/js/passkey.js?v=20260926m"></script>
+<script src="/js/admin.js?v=20260926m"></script>
+<script src="/js/documents.js?v=20260926m"></script>
+<script src="/js/letters.js?v=20260926m"></script>
+<script src="/js/smreport.js?v=20260926m"></script>
+<script src="/js/reports.js?v=20260926m"></script>
+<script src="/js/register.js?v=20260926m"></script>
+<script src="/js/crm.js?v=20260926m"></script>
+<script src="/js/team.js?v=20260926m"></script>
+<script src="/js/campaigns.js?v=20260926m"></script>
+<script src="/js/ops.js?v=20260926m"></script>
+<script src="/js/perf.js?v=20260926m"></script>
 </body>
 </html>
