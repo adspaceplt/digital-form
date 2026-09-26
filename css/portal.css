@@ -3911,8 +3911,12 @@ body > .shell { width: 100%; }
 /* A Register row: the reference and what it is, who it went to, when. Valid
    is the ordinary case, so there is no state column; Void is named beside
    the reference and the row fades, as an inactive service does. */
-.reg-row { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 110px var(--ctl-h); }
-.reg-who { font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reg-row { grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr) minmax(0, 1fr) 110px var(--ctl-h); }
+/* The client record's pane has no Brand column: every row there is that
+   client's. */
+.reg-row.is-own { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 110px var(--ctl-h); }
+.reg-brand, .reg-who { font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reg-who { color: var(--ink-soft); }
 .reg-date { font-size: 13px; color: var(--ink-mute); white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* ---- My Work -------------------------------------------------------------
@@ -4462,7 +4466,12 @@ body > .shell { width: 100%; }
 /* The right track is fixed, measured against `30 Sept 2026`, because an
    `auto` track is sized by its own row: a row with no date drew it at the
    width of the ⋯ and the dates of the rows around it started elsewhere. */
-.is-narrow .reg-row { grid-template-columns: minmax(0, 1fr) 100px; grid-template-areas: "name act" "who date"; }
+/* On a phone the brand shares its line with the date and the registered
+   name takes a line of its own, because side by side at 110px each the
+   longer of the two was cut to its first word. */
+.is-narrow .reg-row { grid-template-columns: minmax(0, 1fr) 100px; grid-template-areas: "name act" "brand date" "who who"; }
+.is-narrow .reg-row.is-own { grid-template-columns: minmax(0, 1fr) 100px; grid-template-areas: "name act" "who date"; }
+.is-narrow .reg-row > .reg-brand { grid-area: brand; }
 .is-narrow .reg-row > .svc-name { grid-area: name; }
 .is-narrow .reg-row > .team-act { grid-area: act; justify-self: end; }
 .is-narrow .reg-row > .reg-who { grid-area: who; }

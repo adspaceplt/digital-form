@@ -3596,6 +3596,11 @@
     },
     byKey: clientByKey,
     keyOf: keyOf,
+    /* The directory's own order and bands, for every other place a client
+       is picked from, so a picker reads the way the Clients list does. */
+    byCode: byCode,
+    bands: GROUPS,
+    bandOf: function (stage) { return stageWord(stage || 'lead')[3]; },
     enter: function () {
       var params = new URLSearchParams(location.search);
       var key = params.get('client');

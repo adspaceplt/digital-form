@@ -26,7 +26,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260926h">
+<link rel="stylesheet" href="/css/portal.css?v=20260926i">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -41,28 +41,28 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260926h"></script>
-<script src="/js/captcha.js?v=20260926h"></script>
-<script src="/js/words.js?v=20260926h"></script>
-<script src="/js/copy.js?v=20260926h"></script>
-<script src="/js/ask.js?v=20260926h"></script>
-<script src="/js/confirm.js?v=20260926h"></script>
-<script src="/js/sheet.js?v=20260926h"></script>
-<script src="/js/refresh.js?v=20260926h"></script>
-<script src="/js/form.js?v=20260926h"></script>
-<script src="/js/state.js?v=20260926h"></script>
-<script src="/js/group.js?v=20260926h"></script>
-<script src="/js/menu.js?v=20260926h"></script>
-<script src="/js/cmdbar.js?v=20260926h"></script>
-<script src="/js/api.js?v=20260926h"></script>
-<script src="/js/money.js?v=20260926h"></script>
-<script src="/js/mockups.js?v=20260926h"></script>
+<script src="/js/config.js?v=20260926i"></script>
+<script src="/js/captcha.js?v=20260926i"></script>
+<script src="/js/words.js?v=20260926i"></script>
+<script src="/js/copy.js?v=20260926i"></script>
+<script src="/js/ask.js?v=20260926i"></script>
+<script src="/js/confirm.js?v=20260926i"></script>
+<script src="/js/sheet.js?v=20260926i"></script>
+<script src="/js/refresh.js?v=20260926i"></script>
+<script src="/js/form.js?v=20260926i"></script>
+<script src="/js/state.js?v=20260926i"></script>
+<script src="/js/group.js?v=20260926i"></script>
+<script src="/js/menu.js?v=20260926i"></script>
+<script src="/js/cmdbar.js?v=20260926i"></script>
+<script src="/js/api.js?v=20260926i"></script>
+<script src="/js/money.js?v=20260926i"></script>
+<script src="/js/mockups.js?v=20260926i"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260926h" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260926i" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -3299,10 +3299,10 @@
         </span>
         <select class="select select-sm" id="regFam" aria-label="Filter by kind">
           <option value="">Every kind</option>
-          <option value="quote_cover">Quotation covers</option>
+          <option value="quote_cover">Quotation Covers</option>
           <option value="offer">Letters of Offer</option>
-          <option value="client">Client letters</option>
-          <option value="hr">HR letters</option>
+          <option value="client">Client Letters</option>
+          <option value="hr">HR Letters</option>
           <option value="other">Other documents</option>
         </select>
         <select class="select select-sm" id="regSort" aria-label="Sort">
@@ -4051,9 +4051,9 @@ raya-2026        https://example.com/raya"></textarea>
         <div class="row">
           <div><label class="field-label" for="regAddFam">Kind</label>
             <select class="select" id="regAddFam" data-seg>
-              <option value="quote_cover">Quotation cover</option>
-              <option value="client">Client letter</option>
-              <option value="hr">HR letter</option>
+              <option value="quote_cover">Quotation Cover</option>
+              <option value="client">Client Letter</option>
+              <option value="hr">HR Letter</option>
               <option value="other">Other</option>
             </select></div>
         </div>
@@ -4061,7 +4061,7 @@ raya-2026        https://example.com/raya"></textarea>
           <div><label class="field-label" for="regAddSerial">Reference</label>
             <input class="input" id="regAddSerial" aria-required="true" placeholder="AQT2607003" autocapitalize="characters" spellcheck="false"></div>
           <div><label class="field-label" for="regAddKind">Document</label>
-            <input class="input" id="regAddKind" placeholder="Quotation"></div>
+            <input class="input" id="regAddKind" placeholder="Service Agreement"></div>
           <div><label class="field-label" for="regAddDate">Date</label>
             <input class="input" id="regAddDate" type="date"></div>
         </div>
@@ -4072,7 +4072,7 @@ raya-2026        https://example.com/raya"></textarea>
           <div><label class="field-label" for="regAddClient">Client</label>
             <select class="select" id="regAddClient"></select></div>
           <div><label class="field-label" for="regAddWho">Recipient</label>
-            <input class="input" id="regAddWho" placeholder="John Doe"></div>
+            <input class="input" id="regAddWho" placeholder="COMPANY NAME SDN BHD"></div>
         </div>
       </section>
       <details class="fmore" id="regAddMore">
@@ -4137,16 +4137,16 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260926h"></script>
-<script src="/js/documents.js?v=20260926h"></script>
-<script src="/js/letters.js?v=20260926h"></script>
-<script src="/js/smreport.js?v=20260926h"></script>
-<script src="/js/reports.js?v=20260926h"></script>
-<script src="/js/register.js?v=20260926h"></script>
-<script src="/js/crm.js?v=20260926h"></script>
-<script src="/js/team.js?v=20260926h"></script>
-<script src="/js/campaigns.js?v=20260926h"></script>
-<script src="/js/ops.js?v=20260926h"></script>
-<script src="/js/perf.js?v=20260926h"></script>
+<script src="/js/admin.js?v=20260926i"></script>
+<script src="/js/documents.js?v=20260926i"></script>
+<script src="/js/letters.js?v=20260926i"></script>
+<script src="/js/smreport.js?v=20260926i"></script>
+<script src="/js/reports.js?v=20260926i"></script>
+<script src="/js/register.js?v=20260926i"></script>
+<script src="/js/crm.js?v=20260926i"></script>
+<script src="/js/team.js?v=20260926i"></script>
+<script src="/js/campaigns.js?v=20260926i"></script>
+<script src="/js/ops.js?v=20260926i"></script>
+<script src="/js/perf.js?v=20260926i"></script>
 </body>
 </html>

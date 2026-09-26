@@ -50,7 +50,7 @@
   /* The kinds of report the builder makes. Each is one engine of steps —
      draft, review, confirmed, published — with its own entry and its own
      PDF; the type is chosen when a report is started. */
-  var TYPES = [{ key: 'social', name: 'Social media accounts report' }, { key: 'ads', name: 'Social media advertising report' }];
+  var TYPES = [{ key: 'social', name: 'Social Media Accounts Report' }, { key: 'ads', name: 'Social Media Advertising Report' }];
   var TYPE_WORD = {};
   TYPES.forEach(function (t) { TYPE_WORD[t.key] = t.name; });
   var PLATFORMS = [['facebook', 'Facebook'], ['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['rednote', 'rednote'],

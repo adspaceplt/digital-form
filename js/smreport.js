@@ -639,7 +639,7 @@
         return sh.ready().then(function () {
           pdf.setTitle(String(rep.client_name || '') + ' ' + titleOf(rep) + ' ' + periodWord(rep.period_start, rep.period_end));
           pdf.setAuthor(CFG.agencyName || 'ADspace');
-          pdf.setSubject(rep.kind === 'ads' ? 'Social media advertising report' : 'Social media report');
+          pdf.setSubject(rep.kind === 'ads' ? 'Social Media Advertising Report' : 'Social Media Accounts Report');
           pdf.setCreator('ADspace Digital Portal');
           pdf.setProducer('ADspace Digital Portal');
           return pdf.save({ useObjectStreams: true }).then(function (bytes) {

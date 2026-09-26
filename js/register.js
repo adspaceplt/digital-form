@@ -35,6 +35,9 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   };
+  /* A document's kind is its formal name, so it reads in title case however
+     it was typed (js/form.js). */
+  function nameOf(k) { return window.ADspaceForm && window.ADspaceForm.title ? window.ADspaceForm.title(k) : String(k || ''); }
   function msg(id, text, kind) {
     var el = $(id); if (!el) return;
     el.textContent = text || '';
@@ -98,22 +101,31 @@
   var state = { docs: null, clients: [], members: [], types: [], me: null, find: '', fam: '', sort: 'newest', err: null };
   var FAMILIES = ['quote_cover', 'offer', 'client', 'hr', 'other'];
   var BAND = {
-    quote_cover: 'Quotation covers', offer: 'Letters of Offer',
-    client: 'Client letters', hr: 'HR letters', other: 'Other documents'
+    quote_cover: 'Quotation Covers', offer: 'Letters of Offer',
+    client: 'Client Letters', hr: 'HR Letters', other: 'Other documents'
   };
 
   function clientOf(id) { return state.clients.filter(function (c) { return c.id === id; })[0]; }
   function memberOf(id) { return state.members.filter(function (m) { return m.id === id; })[0]; }
-  function whoOf(d) {
+  /* A row names the brand the team knows the client by and the entity the
+     letter was addressed to, because the two differ (ADspace and ADSPACE
+     PLT) and a register read by one alone is a register somebody has to
+     open to search (the user, 2026-09-26). An HR letter has no brand. */
+  function brandOf(d) {
+    if (d.family === 'hr') return '';
+    var c = clientOf(d.client_id);
+    return (c && c.name) || '';
+  }
+  function recipientOf(d) {
     var rc = d.recipient || {};
     if (d.family === 'hr') { var m = memberOf(d.member_id); return (m && m.name) || rc.name || ''; }
     var c = clientOf(d.client_id);
-    return (c && c.name) || rc.name || '';
+    return rc.name || (c && (c.legal_name || c.name)) || '';
   }
 
   function loadPeople(then) {
     Promise.all([
-      db.from('clients').select('id, name, legal_name, client_code, billing_address, market, stage').order('name'),
+      db.from('clients').select('id, name, legal_name, client_code, billing_address, market, stage, created_at').order('name'),
       db.from('team_members').select('id, name, email, staff_code, designation, active').order('name'),
       LET.types ? new Promise(function (res) { LET.types(function (rows) { res(rows); }); }) : Promise.resolve([])
     ]).then(function (r) {
@@ -156,7 +168,7 @@
   function matches(d) {
     if (state.fam && d.family !== state.fam) return false;
     if (!state.find) return true;
-    var hay = [d.serial, d.kind, whoOf(d), (d.recipient || {}).name, d.issued_by].join(' ').toLowerCase();
+    var hay = [d.serial, d.kind, brandOf(d), recipientOf(d), (d.recipient || {}).name, d.issued_by].join(' ').toLowerCase();
     return hay.indexOf(state.find) > -1;
   }
 
@@ -201,7 +213,7 @@
            fold is remembered for anybody who shuts one. */
         shut: !filtered && GRP.shut('register', f, false),
         table: function () {
-          var table = GRP.table('svc-row reg-row', ['Document', 'Recipient', 'Issued', '']);
+          var table = GRP.table('svc-row reg-row', ['Document', 'Brand', 'Recipient', 'Issued', '']);
           GRP.more(table, mine, 30, 'documents', function (d) { return row(d, needOf(f)); });
           return table;
         }
@@ -221,7 +233,7 @@
   /* One row shape on the Register and on the client record: the reference
      and what it is, who it went to, when. Valid is the ordinary case, so the
      row says nothing while it holds and names Void beside the reference. */
-  function row(d, need, onChange) {
+  function row(d, need, onChange, own) {
     /* `need` is the part the row answers to (`register.documents`,
        `register.hr`, or `clients.documents` on the record); the level is
        the act's own: reissue is work, void and delete are manage. */
@@ -233,11 +245,13 @@
        away, where the consequence can be counted. */
     var offer = d.family === 'offer';
     var el = document.createElement('div');
-    el.className = 'svc-row reg-row' + (d.voided_at || d.superseded_by ? ' is-off' : '');
+    /* `own` is the client record's pane, where every row is that client's,
+       so the brand would say the same thing on every line. */
+    el.className = 'svc-row reg-row' + (own ? ' is-own' : '') + (d.voided_at || d.superseded_by ? ' is-off' : '');
     /* The kind, and who issued it where the portal did. A row added by hand
        says nothing about how it arrived and names nobody: an import is not a
        person, and the fact is in the ⋯ (Edit is offered on it). */
-    var sub = [d.kind, d.source === 'portal' ? d.issued_by : ''].filter(Boolean).join(' · ');
+    var sub = [nameOf(d.kind), d.source === 'portal' ? d.issued_by : ''].filter(Boolean).join(' · ');
     el.innerHTML =
       /* The reference is what somebody came to copy, so the reference is
          the control: one press, and it says Copied the way every other copy
@@ -250,7 +264,8 @@
           ? ' <span class="tone">' + esc(d.voided_at ? (d.void_reason === 'Reissued' ? 'Reissued' : 'Void') : 'Superseded') + '</span>'
           : '') + '</b>' +
         '<small>' + esc(sub) + '</small></span>' +
-      '<span class="reg-who">' + esc(whoOf(d)) + '</span>' +
+      (own ? '' : '<span class="reg-brand">' + (brandOf(d) ? esc(brandOf(d)) : '<span class="muted">—</span>') + '</span>') +
+      '<span class="reg-who">' + esc(recipientOf(d)) + '</span>' +
       '<span class="reg-date">' + esc(niceDate(d.issued_at)) + '</span>' +
       '<span class="team-act">' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
@@ -314,9 +329,9 @@
         if (err || !rows.length) { if (then) then(rows || [], err); return; }
         var table = document.createElement('div');
         table.className = 'crm-table reg-table';
-        table.innerHTML = '<div class="crm-head svc-row reg-row"><span>Document</span><span>Recipient</span><span>Issued</span><span></span></div>';
+        table.innerHTML = '<div class="crm-head svc-row reg-row is-own"><span>Document</span><span>Recipient</span><span>Issued</span><span></span></div>';
         rows.forEach(function (d) {
-          table.appendChild(row(d, 'clients.documents', function () { paintFor(clientId, box, then); }));
+          table.appendChild(row(d, 'clients.documents', function () { paintFor(clientId, box, then); }, true));
         });
         var old = box.querySelector('.reg-table');
         if (old) old.remove();
@@ -360,10 +375,22 @@
     }
     return allowed;
   }
+  /* Every record in Clients, in the directory's own bands and order (Leads,
+     Clients, Past clients; newest Client ID first), with the ID leading the
+     line so the numbers stand in one column however long the names are
+     (the user, 2026-09-26). */
   function fillClients() {
     var sel = $('docClient');
-    sel.innerHTML = '<option value="">Choose a client</option>' + state.clients.map(function (c) {
-      return '<option value="' + esc(c.id) + '">' + esc(c.name + (c.client_code ? ' · ' + c.client_code : '')) + '</option>';
+    var CRM = window.ADspaceCRM || {};
+    var order = CRM.byCode || function (a, b) { return String(a.name || '').localeCompare(String(b.name || '')); };
+    var bands = CRM.bands || [['all', 'Clients']];
+    var bandOf = CRM.bandOf || function () { return 'all'; };
+    sel.innerHTML = '<option value="">Choose a client</option>' + bands.map(function (b) {
+      var mine = state.clients.filter(function (c) { return bandOf(c.stage) === b[0]; }).sort(order);
+      if (!mine.length) return '';
+      return '<optgroup label="' + esc(b[1]) + '">' + mine.map(function (c) {
+        return '<option value="' + esc(c.id) + '">' + esc((c.client_code ? c.client_code + ' · ' : '') + (c.name || '')) + '</option>';
+      }).join('') + '</optgroup>';
     }).join('');
   }
   function fillMembers() {
@@ -373,6 +400,15 @@
     }).join('');
   }
 
+  /* A form sheet opens on its card, never on a field: a field taking focus
+     raises the iPhone keyboard and zooms the page past what the sheet was
+     opened to read (DESIGN.md, 2026-09-20). */
+  function cardFocus(id) {
+    var card = $(id) && $(id).querySelector('.sheet-card');
+    if (!card) return;
+    if (!card.hasAttribute('tabindex')) card.setAttribute('tabindex', '-1');
+    card.focus({ preventScroll: true });
+  }
   function firstName(s) { return String(s || '').trim().split(/\s+/)[0] || ''; }
 
   /* What the kind decides: which fields draw, what they start with. A person
@@ -380,13 +416,17 @@
      colleague afterwards reseeds the recipient and, where the words have not
      been touched since they were seeded, the salutation and the body: a body
      somebody has already edited is never overwritten by a select. */
-  var seeded = { sal: null, body: null };
+  var seeded = { sal: null, body: null, to: null, addr: null };
   function seed(e) {
     var t = typeById($('docKind').value);
     if (!t) return;
     var reseed = !(e && e.target && e.target.id !== 'docKind');
     var keepSal = !reseed && $('docSal').value !== seeded.sal;
     var keepBody = !reseed && $('docBodyEn').value !== seeded.body;
+    /* The registered name and address follow the client chosen, and are the
+       person's to change for a letter to another entity: a new client puts
+       them back, a new kind keeps what was typed over them. */
+    var moved = !e || (e.target && e.target.id === 'docClient');
     var hr = t.family === 'hr', quote = t.family === 'quote_cover';
     $('docClientWrap').hidden = hr || Boolean(issuing.client);
     $('docMemberWrap').hidden = !hr;
@@ -401,8 +441,12 @@
     var m = memberOf($('docMember').value);
     var vars = {};
     if (!hr && c) {
-      $('docTo').value = c.legal_name || c.name || '';
-      $('docAddr').value = c.billing_address || '';
+      if (moved || !$('docTo').value.trim() || $('docTo').value === seeded.to) {
+        $('docTo').value = c.legal_name || c.name || ''; seeded.to = $('docTo').value;
+      }
+      if (moved || !$('docAddr').value.trim() || $('docAddr').value === seeded.addr) {
+        $('docAddr').value = c.billing_address || ''; seeded.addr = $('docAddr').value;
+      }
       var main = issuing.contact || {};
       $('docAttn').value = main.name || '';
       $('docAttnRole').value = main.role || '';
@@ -455,9 +499,12 @@
          it is and its reference are not up for change. */
       $('docKind').disabled = Boolean(re); $('docClient').disabled = Boolean(re); $('docMember').disabled = Boolean(re);
       $('docSerial').readOnly = Boolean(re);
+      /* A new document starts empty: the last sheet's recipient is not this
+         one's. */
+      if (!re) ['docTo', 'docAddr', 'docAttn', 'docAttnRole', 'docRole', 'docIc'].forEach(function (id) { if ($(id)) $(id).value = ''; });
       if (re) prefill(re); else seed();
       $('docSheet').hidden = false;
-      (re ? $('docTitleIn') : $('docKind')).focus();
+      cardFocus('docSheet');
     };
     if (state.types.length) go(); else loadPeople(go);
   }
@@ -485,7 +532,7 @@
     $('docLangZh').checked = langs.indexOf('zh') > -1; $('docLangMs').checked = langs.indexOf('ms') > -1;
     langBodies();
     $('docSigName').value = sg.name || ''; $('docSigRole').value = sg.designation || '';
-    seeded.sal = null; seeded.body = null;
+    seeded.sal = null; seeded.body = null; seeded.to = null; seeded.addr = null;
   }
   function shutIssue() {
     $('docSheet').hidden = true; issuing = null;
@@ -543,6 +590,9 @@
      serial is read only, because a wrong serial is deleted and added again
      so the deletions remember it. */
   var editing = null;   // { d, then }
+  /* The recipient a client pick last wrote, so a name somebody typed over
+     it is never replaced by the next pick. */
+  var addSeed = null;
   function openAdd(d, onChange) {
     if (!(may('register.documents', 'work') || mayFamily('client', 'work'))) return;
     if (!(d && d.id)) d = null;
@@ -565,14 +615,17 @@
       $('regAddDate').value = d ? String(d.issued_at || '').slice(0, 10) : today();
       $('regAddFam').value = d ? d.family : (may('register.documents', 'work') ? 'other' : 'client');
       sel.value = d ? (d.client_id || '') : '';
+      var was = d && clientOf(d.client_id);
+      addSeed = was && rc.name === (was.legal_name || was.name) ? rc.name : null;
       $('regAddSheet').hidden = false;
-      (d ? $('regAddKind') : $('regAddSerial')).focus();
+      cardFocus('regAddSheet');
     };
     if (state.clients.length) go(); else loadPeople(go);
   }
   function shutAdd() { $('regAddSheet').hidden = true; editing = null; }
   function sendAdd() {
-    var serial = $('regAddSerial').value.trim(), kind = $('regAddKind').value.trim();
+    var serial = $('regAddSerial').value.trim(), kind = nameOf($('regAddKind').value);
+    $('regAddKind').value = kind;
     if (!serial) { msg('regAddMsg', 'A reference is required.', 'err'); $('regAddSerial').focus(); return; }
     if (!kind) { msg('regAddMsg', 'Say what kind of document it is.', 'err'); $('regAddKind').focus(); return; }
     var go = $('regAddGo');
@@ -629,6 +682,12 @@
     if ($('docKind')) $('docKind').addEventListener('change', seed);
     if ($('docClient')) $('docClient').addEventListener('change', seed);
     if ($('docMember')) $('docMember').addEventListener('change', seed);
+    if ($('regAddKind')) $('regAddKind').addEventListener('change', function () { this.value = nameOf(this.value); });
+    if ($('regAddClient')) $('regAddClient').addEventListener('change', function () {
+      var c = clientOf(this.value), who = $('regAddWho');
+      if (!c) return;
+      if (!who.value.trim() || who.value === addSeed) { who.value = c.legal_name || c.name || ''; addSeed = who.value; }
+    });
     ['docLangZh', 'docLangMs'].forEach(function (id) { if ($(id)) $(id).addEventListener('change', langBodies); });
     on('rvoidGo', function () {
       if (!voiding) return;

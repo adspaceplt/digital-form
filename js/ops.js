@@ -5690,7 +5690,7 @@
      database seeds them. A key is stored; a word is read. */
   /* Two ticks (2026-09-24): the detailed checklists are the team's own
      forms, and the month records that each is done and who ticked it. */
-  var CHECK_WORD = { onboarding: 'Onboarding checklist', pre_ads: 'Pre-advertising checklist' };
+  var CHECK_WORD = { onboarding: 'Onboarding Checklist', pre_ads: 'Pre-advertising Checklist' };
   var CHECK_ORDER = ['onboarding', 'pre_ads'];
   var CHECK_STATE = [
     ['not_started', 'Not started', 'is-off'], ['waiting_client', 'Waiting on client', 'is-warn'],
