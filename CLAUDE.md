@@ -332,8 +332,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `data-any-date` opts a field out. This is page-side only.
   - Room for the calendar (§6): at a desk, a date field too near the window's
     foot is lifted before its calendar opens (its scroller scrolls, else a
-    `.pick-room` spacer until the field is left), and a press that lifted it
-    opens the calendar with `showPicker`. A coarse pointer is left alone.
+    `.pick-room` spacer), and a press that lifted it opens the calendar with
+    `showPicker`. The spacer goes only as it leaves the view, never moving
+    the screen under a press. A coarse pointer is left alone.
 
 ### Writes, refusals, reversibility
 - **A write that changed nothing is not a success.** PostgREST answers a refused

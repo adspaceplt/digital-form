@@ -477,13 +477,31 @@
         box.appendChild(room);
       }
       room.style.height = (need - rest + (parseFloat(room.style.height) || 0)) + 'px';
+      room.__for = el;
       el.__room = room;
+      if (rooms.indexOf(room) < 0) rooms.push(room);
     }
     box.scrollTop += need;
     return true;
   }
+  /* The room goes without moving anything on the screen: only the part of it
+     below what is in view is taken away, so a press already on its way to a
+     button lands on it. What is still in view goes as the person scrolls
+     back up, or when anything else is reached. */
+  var rooms = [];
+  function trim() {
+    rooms = rooms.filter(function (room) {
+      var box = room.parentNode;
+      if (!box || room.__for === document.activeElement) return !!box;
+      var h = parseFloat(room.style.height) || 0;
+      var keep = Math.max(0, Math.ceil(box.scrollTop + box.clientHeight - (box.scrollHeight - h)));
+      if (keep <= 0) { room.remove(); return false; }
+      if (keep < h) room.style.height = keep + 'px';
+      return true;
+    });
+  }
   function unroom(el) {
-    if (el && el.__room) { el.__room.remove(); el.__room = null; }
+    if (el && el.__room) { el.__room = null; trim(); }
   }
   var pressed = false;
   document.addEventListener('pointerdown', function (e) {
@@ -502,6 +520,8 @@
   document.addEventListener('focusout', function (e) {
     if (isPick(e.target)) unroom(e.target);
   }, true);
+  document.addEventListener('scroll', function () { if (rooms.length) trim(); }, true);
+  document.addEventListener('focusin', function () { if (rooms.length) setTimeout(trim, 0); }, true);
 
   function scan(root) {
     Array.prototype.forEach.call((root || document).querySelectorAll('input[type="date"], input[type="month"], input[type="datetime-local"]'), floor);
