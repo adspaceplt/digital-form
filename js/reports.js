@@ -28,6 +28,8 @@
   if (!API || !API.configured || !db) return;
 
   var $ = function (id) { return document.getElementById(id); };
+  /* Clients and colleagues in a picker lead with their code (js/form.js). */
+  var F = window.ADspaceForm;
   var bridge = window.ADspaceAdmin || {};
   var UI = window.ADspaceState;
   var SM = function () { return window.ADspaceSmReport; };
@@ -252,7 +254,7 @@
         '<div><label class="field-label" for="rpNewEnd">End</label><input class="input" id="rpNewEnd" aria-required="true" type="date" data-hint="Select date"></div></div></details>' +
       '</section>', FOOT('Create'));
     $('rpNewClient').innerHTML = '<option value="">Choose a client</option>' + hub.clients.map(function (c) {
-      return '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>';
+      return '<option value="' + esc(c.id) + '">' + esc(F.named(c.client_code, c.name)) + '</option>';
     }).join('');
     $('rpNewKind').value = ($('rhKind') && $('rhKind').value) || 'social';
     if (window.ADspaceForm) window.ADspaceForm.paint($('rpNewKind'));
@@ -1685,12 +1687,12 @@
   }
   var clientsReady = Promise.resolve();
   function loadClients() {
-    clientsReady = db.from('clients').select('id, name, slug, stage').order('name', { ascending: true }).then(function (c) {
+    clientsReady = db.from('clients').select('id, name, slug, stage, client_code').order('name', { ascending: true }).then(function (c) {
       var all = c.data || [];
       hub.byClient = {};
       all.forEach(function (x) { hub.byClient[x.id] = x; });
       /* A report is started for a client engaged now: Active only. */
-      hub.clients = all.filter(function (x) { return x.stage === 'active'; });
+      hub.clients = all.filter(function (x) { return x.stage === 'active'; }).sort(F.byClient);
     });
   }
   function paintHub() {

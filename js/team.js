@@ -439,7 +439,7 @@
           field: n && others.length ? {
             label: 'Person in charge from now on',
             required: false,
-            choices: [['', 'Keep with ' + m.name]].concat(byName(others).map(function (x) { return [x.name, x.name]; }))
+            choices: [['', 'Keep with ' + m.name]].concat(others.slice().sort(window.ADspaceForm.byStaff).map(function (x) { return [x.name, window.ADspaceForm.named(x.staff_code, x.name)]; }))
           } : null
         }, function (to) {
           saveMember(m, { active: false }, function () {

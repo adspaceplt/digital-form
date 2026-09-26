@@ -431,6 +431,98 @@
     if (isDate(e.target) && dateOk(e.target.value, e.target.type)) dateNote(e.target, false);
   }, true);
 
+  /* §6 ROOM FOR THE CALENDAR. A date field at the foot of the window opened
+     its calendar past the window's edge, under the Dock, out of reach (the
+     user, 2026-09-26: Review by, the last field of a performance review).
+     Before the calendar opens, the field is lifted until a calendar fits
+     under it: its own scroller scrolls, and where the scroller has nothing
+     left to give, a spacer at its end makes the room until the field is
+     left. Never lifted past the scroller's top. A pointer press that has to
+     lift opens the calendar itself (`showPicker`), because the field has
+     moved out from under the pointer. A phone's picker is the system's own
+     and is left alone. */
+  var PICK_H = 340;
+  function isPick(el) {
+    return !!el && el.tagName === 'INPUT' && /^(date|month|week|time|datetime-local)$/.test(el.type) &&
+      !el.disabled && !el.readOnly;
+  }
+  function scrollerOf(el) {
+    for (var n = el.parentElement; n && n !== document.body && n !== document.documentElement; n = n.parentElement) {
+      var o = getComputedStyle(n).overflowY;
+      if ((o === 'auto' || o === 'scroll') && n.clientHeight > 0) return n;
+    }
+    return null;
+  }
+  function coarse() { return !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches); }
+  function lift(el) {
+    if (!isPick(el) || coarse()) return false;
+    var r = el.getBoundingClientRect();
+    var need = Math.ceil(r.bottom + PICK_H - window.innerHeight);
+    if (need <= 0) return false;
+    var box = scrollerOf(el);
+    var top = box ? box.getBoundingClientRect().top : 0;
+    need = Math.min(need, Math.floor(r.top - top - 8));
+    if (need <= 0) return false;
+    if (!box) {
+      window.scrollBy(0, need);
+      return el.getBoundingClientRect().top < r.top;
+    }
+    var rest = box.scrollHeight - box.clientHeight - box.scrollTop;
+    if (rest < need) {
+      var room = box.querySelector(':scope > .pick-room');
+      if (!room) {
+        room = document.createElement('div');
+        room.className = 'pick-room';
+        room.setAttribute('aria-hidden', 'true');
+        box.appendChild(room);
+      }
+      room.style.height = (need - rest + (parseFloat(room.style.height) || 0)) + 'px';
+      room.__for = el;
+      el.__room = room;
+      if (rooms.indexOf(room) < 0) rooms.push(room);
+    }
+    box.scrollTop += need;
+    return true;
+  }
+  /* The room goes without moving anything on the screen: only the part of it
+     below what is in view is taken away, so a press already on its way to a
+     button lands on it. What is still in view goes as the person scrolls
+     back up, or when anything else is reached. */
+  var rooms = [];
+  function trim() {
+    rooms = rooms.filter(function (room) {
+      var box = room.parentNode;
+      if (!box || room.__for === document.activeElement) return !!box;
+      var h = parseFloat(room.style.height) || 0;
+      var keep = Math.max(0, Math.ceil(box.scrollTop + box.clientHeight - (box.scrollHeight - h)));
+      if (keep <= 0) { room.remove(); return false; }
+      if (keep < h) room.style.height = keep + 'px';
+      return true;
+    });
+  }
+  function unroom(el) {
+    if (el && el.__room) { el.__room = null; trim(); }
+  }
+  var pressed = false;
+  document.addEventListener('pointerdown', function (e) {
+    pressed = true;
+    var el = e.target;
+    if (e.pointerType !== 'mouse' || e.button !== 0 || !isPick(el) || typeof el.showPicker !== 'function') return;
+    if (!lift(el)) return;
+    e.preventDefault();
+    el.focus({ preventScroll: true });
+    try { el.showPicker(); } catch (x) {}
+  }, true);
+  document.addEventListener('pointerup', function () { pressed = false; }, true);
+  document.addEventListener('focusin', function (e) {
+    if (!pressed) lift(e.target);
+  }, true);
+  document.addEventListener('focusout', function (e) {
+    if (isPick(e.target)) unroom(e.target);
+  }, true);
+  document.addEventListener('scroll', function () { if (rooms.length) trim(); }, true);
+  document.addEventListener('focusin', function () { if (rooms.length) setTimeout(trim, 0); }, true);
+
   function scan(root) {
     Array.prototype.forEach.call((root || document).querySelectorAll('input[type="date"], input[type="month"], input[type="datetime-local"]'), floor);
     Array.prototype.forEach.call((root || document).querySelectorAll('[aria-required="true"]'), req);
@@ -469,8 +561,35 @@
     }).join(' ');
   }
 
+  /* A client or a colleague offered in a select is named code first
+     (`AC190 · Brand`, `AD014 · Xue Yi`), so the codes stand in one column and
+     typing a code finds the line (the user, 2026-09-26). Without a code the
+     name stands alone. */
+  function named(code, name) {
+    code = String(code == null ? '' : code).trim();
+    name = String(name == null ? '' : name);
+    return code ? code + ' · ' + name : name;
+  }
+  /* A picker runs in code order, A to Z, digits as numbers (AC99 before
+     AC100), so a code is found where it is expected (the user, 2026-09-26);
+     anyone without a code follows, by name. `sequence('client_code')`,
+     `sequence('staff_code')`. The Clients list itself stays newest first. */
+  function sequence(key) {
+    return function (a, b) {
+      var ca = String((a && a[key]) || ''), cb = String((b && b[key]) || '');
+      if (ca && !cb) return -1;
+      if (!ca && cb) return 1;
+      return (ca && cb ? ca.localeCompare(cb, 'en', { numeric: true, sensitivity: 'base' }) : 0) ||
+        String((a && a.name) || '').localeCompare(String((b && b.name) || ''), 'en', { sensitivity: 'base' });
+    };
+  }
+
   window.ADspaceForm = {
     title: title,
+    named: named,
+    sequence: sequence,
+    byStaff: sequence('staff_code'),
+    byClient: sequence('client_code'),
     reveal: reveal,
     segment: upgrade,
     paint: paint,

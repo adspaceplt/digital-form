@@ -14,6 +14,8 @@
   if (!API || !API.configured || !db) return;
 
   var $ = function (id) { return document.getElementById(id); };
+  /* Clients and colleagues in a picker lead with their code (js/form.js). */
+  var F = window.ADspaceForm;
 
   /* Every form on this route is the portal's one form sheet, so it opens and
      shuts through the one file that knows how (`js/sheet.js`): the scrim that
@@ -304,10 +306,10 @@
   function peopleSelect(el, team, current) {
     if (!el) return;
     var keep = current != null ? current : el.value;
-    var names = team.map(function (m) { return m.name; });
-    if (keep && names.indexOf(keep) < 0) names.push(keep);
+    var list = team.slice().sort(F.byStaff);
+    if (keep && !list.some(function (m) { return m.name === keep; })) list.push({ name: keep });
     el.innerHTML = '<option value="">Unassigned</option>' +
-      names.map(function (n) { return '<option value="' + esc(n) + '">' + esc(n) + '</option>'; }).join('');
+      list.map(function (m) { return '<option value="' + esc(m.name) + '">' + esc(F.named(m.staff_code, m.name)) + '</option>'; }).join('');
     el.value = keep || '';
   }
 
@@ -325,7 +327,7 @@
     db.from('team_members').select('*').eq('active', true).order('name').then(function (r) {
       state.team = (r.data) || [];
       peopleSelect($('crmOwnerPick'), state.team);
-      fillSelect($('crmOwner'), state.team.map(function (m) { return [m.name, m.name]; }), 'Everyone');
+      fillSelect($('crmOwner'), state.team.slice().sort(F.byStaff).map(function (m) { return [m.name, F.named(m.staff_code, m.name)]; }), 'Everyone');
       if (then) then();
     }, function () { if (then) then(); });
   }

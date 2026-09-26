@@ -27,6 +27,11 @@
   if (!API || !API.configured || !db || !UI || !GRP) return;
 
   function $(id) { return document.getElementById(id); }
+  /* Clients and colleagues in a picker lead with their code (js/form.js). */
+  var F = window.ADspaceForm;
+  function person(m) { return F.named(m.staff_code, m.name); }
+  function clientName(c) { return F.named(c.client_code, c.name); }
+  var byClient = F.byClient;
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -407,10 +412,10 @@
       db.from('ops_workflows').select('id, key, name, active').order('key'),
       db.from('ops_workflow_stages').select('*').order('position'),
       db.from('ops_task_templates').select('*').eq('active', true).order('name'),
-      db.from('team_members').select('id, name, email, active, capacity_minutes_week').eq('active', true).order('name'),
+      db.from('team_members').select('id, name, email, active, capacity_minutes_week, staff_code').eq('active', true).order('name'),
       /* The stage decides which list a client is offered on: Client is the
          clients engaged now, Lead the records not yet one. */
-      db.from('clients').select('id, name, stage, slug').order('name')
+      db.from('clients').select('id, name, stage, slug, client_code').order('name')
     ]).then(function (r) {
       state.workflows = (r[0] && r[0].data) || [];
       state.stages = {};
@@ -418,7 +423,7 @@
         state.stages[s.workflow_id + '|' + s.key] = s;
       });
       state.templates = (r[2] && r[2].data) || [];
-      state.members = (r[3] && r[3].data) || [];
+      state.members = ((r[3] && r[3].data) || []).sort(F.byStaff);
       state.clients = (r[4] && r[4].data) || [];
       then();
     }, function () { then(); });
@@ -952,7 +957,7 @@
       title: 'Assign task owner',
       body: 'The ' + (ids.length === 1 ? 'task goes' : ids.length + ' tasks go') + ' to one person, with the change on each task\'s record.',
       go: 'Assign',
-      field: { label: 'Task Owner', choices: [['', 'Choose a person']].concat(state.members.map(function (m) { return [m.id, m.name]; })),
+      field: { label: 'Task Owner', choices: [['', 'Choose a person']].concat(state.members.map(function (m) { return [m.id, person(m)]; })),
                need: 'Choose a person.' }
     }, function (who) {
       var done = 0, bad = null, i = 0;
@@ -1980,7 +1985,7 @@
     sel.className = 'select select-sm tinline-pick';
     sel.setAttribute('aria-label', 'Task Owner of ' + (t.title || 'task'));
     sel.innerHTML = (was ? '' : '<option value="">Choose a person</option>') + state.members.map(function (m) {
-      return '<option value="' + esc(m.id) + '"' + (m.id === was ? ' selected' : '') + '>' + esc(m.name) + '</option>';
+      return '<option value="' + esc(m.id) + '"' + (m.id === was ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
     btn.hidden = true;
     btn.parentNode.appendChild(sel);
@@ -2681,7 +2686,7 @@
     b.to.innerHTML = '<option value="">Choose a person</option>' + state.members.filter(function (m) {
       return perf || m.id !== cur;
     }).map(function (m) {
-      return '<option value="' + esc(m.id) + '">' + esc(m.name) + (m.id === t.created_by ? ' (created it)' : '') + '</option>';
+      return '<option value="' + esc(m.id) + '">' + esc(person(m)) + (m.id === t.created_by ? ' (created it)' : '') + '</option>';
     }).join('');
     var def = perf ? t.created_by : (mv === 'internal_review' && t.created_by !== cur ? t.created_by : '');
     b.to.value = def && b.to.querySelector('option[value="' + def + '"]') ? def : '';
@@ -2812,7 +2817,7 @@
     $('stepHandTo').innerHTML = '<option value="">Choose a person</option>' + state.members.filter(function (m) {
       return perf || m.id !== cur;
     }).map(function (m) {
-      return '<option value="' + esc(m.id) + '">' + esc(m.name) + (m.id === t.created_by ? ' (created it)' : '') + '</option>';
+      return '<option value="' + esc(m.id) + '">' + esc(person(m)) + (m.id === t.created_by ? ' (created it)' : '') + '</option>';
     }).join('');
     $('stepHandTo').value = o.assignee || (perf ? t.created_by || '' : '');
     $('stepHand').hidden = !may('ops', 'work');
@@ -2918,20 +2923,21 @@
   var qkKey = '', qkMade = 0;
   function linkOptions(sel, chosen) {
     var engs = (state.engList || []).slice().sort(function (a, b) {
-      return String((a.clients && a.clients.name) || '').localeCompare(String((b.clients && b.clients.name) || '')) ||
+      return byClient(a.clients || {}, b.clients || {}) ||
+        String((a.clients && a.clients.name) || '').localeCompare(String((b.clients && b.clients.name) || '')) ||
         String(b.period).localeCompare(String(a.period));
     });
-    var clients = state.clients.filter(function (c) { return c.stage === 'active' || c.stage === 'paused'; });
+    var clients = state.clients.filter(function (c) { return c.stage === 'active' || c.stage === 'paused'; }).sort(byClient);
     sel.innerHTML = '<option value="">Choose a client</option>' +
       '<option value="i:"' + (chosen === 'i:' ? ' selected' : '') + '>Internal (no client)</option>' +
       (engs.length ? '<optgroup label="Engagements">' + engs.map(function (e) {
         var v = 'e:' + e.id;
         return '<option value="' + v + '"' + (v === chosen ? ' selected' : '') + '>' +
-          esc(((e.clients && e.clients.name) || 'Client') + ' · ' + monthWord(e.period)) + '</option>';
+          esc((e.clients ? clientName(e.clients) : 'Client') + ' · ' + monthWord(e.period)) + '</option>';
       }).join('') + '</optgroup>' : '') +
       (clients.length ? '<optgroup label="Clients">' + clients.map(function (c) {
         var v = 'c:' + c.id;
-        return '<option value="' + v + '"' + (v === chosen ? ' selected' : '') + '>' + esc(c.name) + '</option>';
+        return '<option value="' + v + '"' + (v === chosen ? ' selected' : '') + '>' + esc(clientName(c)) + '</option>';
       }).join('') + '</optgroup>' : '');
   }
   /* The engagements a task is most often made for: this month's, last
@@ -2940,7 +2946,7 @@
     if (state.engList) { then(); return; }
     var d = new Date();
     var ks = [-1, 0, 1].map(function (k) { return monthKey(new Date(d.getFullYear(), d.getMonth() + k, 1)); });
-    db.from('ops_engagements').select('id, client_id, period, status, clients(name, slug)').in('period', ks)
+    db.from('ops_engagements').select('id, client_id, period, status, clients(name, slug, client_code)').in('period', ks)
       .then(function (r) { state.engList = (!r.error && r.data) || []; then(); }, function () { state.engList = []; then(); });
   }
   function openQuick(pre, from) {
@@ -2948,7 +2954,7 @@
     loadEngs(function () {
       var me = bridge.me && bridge.me();
       $('qkOwner').innerHTML = state.members.map(function (m) {
-        return '<option value="' + esc(m.id) + '"' + (me && me.id === m.id ? ' selected' : '') + '>' + esc(m.name) + '</option>';
+        return '<option value="' + esc(m.id) + '"' + (me && me.id === m.id ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
       }).join('');
       $('qkDue').value = dateValue(new Date());
       linkOptions($('qkLink'), pre && pre.link || '');
@@ -3091,7 +3097,7 @@
     $('teName').value = x.name || '';
     $('teTitle').value = x.default_title || '';
     $('teOwner').innerHTML = '<option value="">Whoever makes it</option>' + state.members.map(function (m) {
-      return '<option value="' + esc(m.id) + '"' + (m.id === x.default_owner_id ? ' selected' : '') + '>' + esc(m.name) + '</option>';
+      return '<option value="' + esc(m.id) + '"' + (m.id === x.default_owner_id ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
     $('teDue').value = x.due_offset_days == null ? '' : String(x.due_offset_days);
     $('teEst').value = x.default_estimate_minutes == null ? '' : String(x.default_estimate_minutes);
@@ -4445,7 +4451,7 @@
     if (!sel) return;
     var was = ownerId(t);
     sel.innerHTML = (was ? '' : '<option value="">Choose a person</option>') + state.members.map(function (m) {
-      return '<option value="' + esc(m.id) + '"' + (was === m.id ? ' selected' : '') + '>' + esc(m.name) + '</option>';
+      return '<option value="' + esc(m.id) + '"' + (was === m.id ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
     name.hidden = true; if (ch) ch.hidden = true;
     sel.hidden = false;
@@ -5010,7 +5016,7 @@
     return state.clients.filter(function (c) {
       if (scope === 'lead') return LEAD_STAGES[c.stage];
       return CLIENT_STAGES[c.stage] || (past && PAST_STAGES[c.stage]);
-    });
+    }).sort(byClient);
   }
   function monthKey(d) {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
@@ -5045,7 +5051,7 @@
     var ow = $('ntOwner');
     var me = bridge.me && bridge.me();
     ow.innerHTML = state.members.map(function (m) {
-      return '<option value="' + esc(m.id) + '"' + (me && me.id === m.id ? ' selected' : '') + '>' + esc(m.name) + '</option>';
+      return '<option value="' + esc(m.id) + '"' + (me && me.id === m.id ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
     /* The content month: this one and the six after it, and the one before
        for work being keyed in late. */
@@ -5092,7 +5098,7 @@
     var list = clientsFor(scope, $('ntPaused').checked);
     $('ntClient').innerHTML = '<option value="">' + (scope === 'lead' ? 'Choose a lead' : 'Choose a client') + '</option>' +
       list.map(function (c) {
-        return '<option value="' + esc(c.id) + '"' + (c.id === was ? ' selected' : '') + '>' + esc(c.name) +
+        return '<option value="' + esc(c.id) + '"' + (c.id === was ? ' selected' : '') + '>' + esc(clientName(c)) +
           (c.stage === 'paused' ? ' (paused)' : c.stage === 'past' ? ' (past)' : '') + '</option>';
       }).join('');
     /* An internal task carries no code, so the month and the week that build
@@ -5286,13 +5292,13 @@
   function fillOwners(sel, me) {
     me = me || (bridge.me && bridge.me());
     sel.innerHTML = state.members.map(function (m) {
-      return '<option value="' + esc(m.id) + '"' + (me && me.id === m.id ? ' selected' : '') + '>' + esc(m.name) + '</option>';
+      return '<option value="' + esc(m.id) + '"' + (me && me.id === m.id ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
   }
   function fillClients(sel, past, was) {
     var list = clientsFor('client', past);
     sel.innerHTML = '<option value="">Choose a client</option>' + list.map(function (c) {
-      return '<option value="' + esc(c.id) + '"' + (c.id === was ? ' selected' : '') + '>' + esc(c.name) +
+      return '<option value="' + esc(c.id) + '"' + (c.id === was ? ' selected' : '') + '>' + esc(clientName(c)) +
         (c.stage === 'paused' ? ' (paused)' : c.stage === 'past' ? ' (past)' : '') + '</option>';
     }).join('');
   }
@@ -5904,7 +5910,7 @@
       '<div class="row wclient-row"><div class="field">' +
         '<label class="field-label" for="workClient">Client</label>' +
         '<select class="select" id="workClient">' + list.map(function (c) {
-          return '<option value="' + esc(c.id) + '"' + (c.id === pick.id ? ' selected' : '') + '>' + esc(c.name) +
+          return '<option value="' + esc(c.id) + '"' + (c.id === pick.id ? ' selected' : '') + '>' + esc(clientName(c)) +
             (c.stage === 'paused' ? ' (paused)' : '') + '</option>';
         }).join('') + '</select></div></div>' +
       '<div id="workClientPane"></div>';
@@ -5985,6 +5991,10 @@
     var months = Object.keys(periods).filter(function (k) { return k !== 'none'; }).sort().reverse();
     var owners = {};
     cw.tasks.forEach(function (t) { if (cw.ownerIds[t.id]) owners[cw.ownerIds[t.id]] = cw.owners[t.id]; });
+    var ownerList = Object.keys(owners).map(function (id) {
+      var m = state.members.filter(function (x) { return x.id === id; })[0];
+      return { id: id, name: owners[id], staff_code: m && m.staff_code };
+    }).sort(F.byStaff);
 
     /* The client's months take the console's own command bar, the shape
        every list has (the user, 2026-09-26: the old row of full-width
@@ -6004,7 +6014,7 @@
           months.map(function (k) { return '<option value="' + k + '">' + esc(monthWord(k)) + '</option>'; }).join('') +
         '</select>' +
         '<select class="select select-sm" id="cwWho" aria-label="Filter by owner"><option value="">Anybody</option>' +
-          Object.keys(owners).map(function (id) { return '<option value="' + esc(id) + '">' + esc(owners[id]) + '</option>'; }).join('') +
+          ownerList.map(function (m) { return '<option value="' + esc(m.id) + '">' + esc(person(m)) + '</option>'; }).join('') +
         '</select>' +
         '<span class="cmdbar-end"><span class="cmdbar-quiet"><span class="cmdbar-count" id="cwCount"></span></span>' +
           '<span class="cmdbar-acts">' +
@@ -6212,7 +6222,7 @@
     var me = bridge.me && bridge.me();
     $('engManager').innerHTML = state.members.map(function (m) {
       var pick = e ? m.id === e.manager_id : (me && me.id === m.id);
-      return '<option value="' + esc(m.id) + '"' + (pick ? ' selected' : '') + '>' + esc(m.name) + '</option>';
+      return '<option value="' + esc(m.id) + '"' + (pick ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
     $('engPlanned').value = e ? (e.planned_count || '') : '';
     $('engDrive').value = (e && e.drive_url) || '';
@@ -6259,7 +6269,7 @@
     var me = bridge.me && bridge.me();
     $('meetOwner').innerHTML = state.members.map(function (m) {
       var pick = e.meeting_owner_id ? m.id === e.meeting_owner_id : (me && me.id === m.id);
-      return '<option value="' + esc(m.id) + '"' + (pick ? ' selected' : '') + '>' + esc(m.name) + '</option>';
+      return '<option value="' + esc(m.id) + '"' + (pick ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
     $('meetNote').value = e.meeting_note || '';
     $('meetNa').checked = Boolean(e.meeting_na);
@@ -6411,7 +6421,7 @@
     $('handTo').innerHTML = '<option value="">Keep ' + esc(ownerName(t) || 'the owner') + '</option>' + state.members.filter(function (m) {
       return m.id !== owner;
     }).map(function (m) {
-      return '<option value="' + esc(m.id) + '">' + esc(m.name) + '</option>';
+      return '<option value="' + esc(m.id) + '">' + esc(person(m)) + '</option>';
     }).join('');
     $('handWhat').textContent = 'Now at ' + stageLabel(t) + '.';
     $('handSkip').value = '';
@@ -6468,7 +6478,7 @@
     $('giveTo').innerHTML = '<option value="">Choose a person</option>' + state.members.filter(function (m) {
       return m.id !== owner;
     }).map(function (m) {
-      return '<option value="' + esc(m.id) + '">' + esc(m.name) + '</option>';
+      return '<option value="' + esc(m.id) + '">' + esc(person(m)) + '</option>';
     }).join('');
     $('giveNote').value = '';
     var open = state.detail.checklist.filter(function (c) { return !c.completed_at; });

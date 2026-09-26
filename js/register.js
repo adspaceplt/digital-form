@@ -38,6 +38,8 @@
   /* A document's kind is its formal name, so it reads in title case however
      it was typed (js/form.js). */
   function nameOf(k) { return window.ADspaceForm && window.ADspaceForm.title ? window.ADspaceForm.title(k) : String(k || ''); }
+  /* Clients and colleagues in a picker lead with their code (js/form.js). */
+  var F = window.ADspaceForm;
   function msg(id, text, kind) {
     var el = $(id); if (!el) return;
     el.textContent = text || '';
@@ -390,28 +392,28 @@
     }
     return allowed;
   }
-  /* Every record in Clients, in the directory's own bands and order (Leads,
-     Clients, Past clients; newest Client ID first), with the ID leading the
-     line so the numbers stand in one column however long the names are
-     (the user, 2026-09-26). */
+  /* Every record in Clients, in the directory's own bands (Leads, Clients,
+     Past clients), each in code order A to Z with the ID leading the line,
+     so the numbers stand in one column and are found where expected (the
+     user, 2026-09-26). */
   function fillClients() {
     var sel = $('docClient');
     var CRM = window.ADspaceCRM || {};
-    var order = CRM.byCode || function (a, b) { return String(a.name || '').localeCompare(String(b.name || '')); };
+    var order = F.byClient;
     var bands = CRM.bands || [['all', 'Clients']];
     var bandOf = CRM.bandOf || function () { return 'all'; };
     sel.innerHTML = '<option value="">Choose a client</option>' + bands.map(function (b) {
       var mine = state.clients.filter(function (c) { return bandOf(c.stage) === b[0]; }).sort(order);
       if (!mine.length) return '';
       return '<optgroup label="' + esc(b[1]) + '">' + mine.map(function (c) {
-        return '<option value="' + esc(c.id) + '">' + esc((c.client_code ? c.client_code + ' · ' : '') + (c.name || '')) + '</option>';
+        return '<option value="' + esc(c.id) + '">' + esc(F.named(c.client_code, c.name)) + '</option>';
       }).join('') + '</optgroup>';
     }).join('');
   }
   function fillMembers() {
     var sel = $('docMember');
-    sel.innerHTML = '<option value="">Choose a colleague</option>' + state.members.filter(function (m) { return m.active !== false; }).map(function (m) {
-      return '<option value="' + esc(m.id) + '">' + esc(m.name + (m.staff_code ? ' · ' + m.staff_code : '')) + '</option>';
+    sel.innerHTML = '<option value="">Choose a colleague</option>' + state.members.filter(function (m) { return m.active !== false; }).sort(F.byStaff).map(function (m) {
+      return '<option value="' + esc(m.id) + '">' + esc(F.named(m.staff_code, m.name)) + '</option>';
     }).join('');
   }
 
@@ -623,7 +625,7 @@
       var ms = $('regAddMember'), tm = d && d.family === 'hr' ? teamOf(d) : null;
       ms.innerHTML = $('docMember').innerHTML;
       if (tm && !ms.querySelector('option[value="' + tm.id + '"]')) {
-        ms.add(new Option(tm.name + (tm.staff_code ? ' · ' + tm.staff_code : ''), tm.id));
+        ms.add(new Option(F.named(tm.staff_code, tm.name), tm.id));
       }
       ms.value = tm ? tm.id : '';
       var rc = (d && d.recipient) || {};
