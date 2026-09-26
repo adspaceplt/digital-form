@@ -3511,6 +3511,13 @@
     /* Fourteen checks read as fourteen only when they are one run. In three
        groups — what it says, what the brief asked for, how the file plays —
        it is three things to hold, which is what a person can. */
+    /* One tick above the nine that ticks or clears them all, reading mixed
+       while only some are ticked (the user, 2026-09-26). Each check still
+       stands on its own below it, and a release still names who checked. */
+    var all = document.createElement('label');
+    all.className = 'qcrow qcall';
+    all.innerHTML = '<input type="checkbox" id="qcAll"><span>Tick all</span>';
+    box.appendChild(all);
     var n = 0;
     QC_CHECKS.forEach(function (group) {
       var head = document.createElement('p');
@@ -3526,12 +3533,27 @@
         n++;
       });
     });
-    Array.prototype.forEach.call(box.querySelectorAll('input'), function (el) {
+    var checks = box.querySelectorAll('input[data-qc]');
+    var master = $('qcAll');
+    var syncAll = function () {
+      var on = Array.prototype.filter.call(checks, function (c) { return c.checked; }).length;
+      master.checked = on === checks.length;
+      master.indeterminate = on > 0 && on < checks.length;
+    };
+    Array.prototype.forEach.call(checks, function (el) {
       el.addEventListener('change', function () {
         qc.done[this.getAttribute('data-qc')] = this.checked;
+        syncAll();
         qcCount();
       });
     });
+    master.addEventListener('change', function () {
+      var on = master.checked;
+      Array.prototype.forEach.call(checks, function (c) { c.checked = on; qc.done[c.getAttribute('data-qc')] = on; });
+      master.indeterminate = false;
+      qcCount();
+    });
+    syncAll();
     /* What has already happened to this file, and what it is waiting for.
        Nothing is said on a first check, because one person checking and
        releasing is the ordinary case and a line about it is furniture. */

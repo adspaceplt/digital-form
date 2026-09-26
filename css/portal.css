@@ -2561,6 +2561,8 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 .qcrow:last-child { border-bottom: 0; }
 .qcrow + .qcgroup { border-top: 1px solid var(--line-soft); }
+.qcall { border-bottom: 1px solid var(--line); }
+.qcall span { font-weight: 600; }
 .qcrow input { width: 18px; height: 18px; accent-color: var(--accent); }
 .qcrow span { font-size: 14px; }
 @media (hover: hover) { .qcrow:hover { background: var(--sunk); } }
