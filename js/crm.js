@@ -628,7 +628,7 @@
     $('crmMarket').value = c ? (c.market || 'MY') : 'MY';
     // The person who asked, and what for. Only a new lead needs this here.
     $('crmLeadOnly').hidden = Boolean(c);
-    ['crmContactName', 'crmContactPhone', 'crmContactEmail'].forEach(function (id) { $(id).value = ''; });
+    ['crmContactName', 'crmContactPhone', 'crmContactWa', 'crmContactEmail'].forEach(function (id) { $(id).value = ''; });
     // What they asked for is a fact about the client, so editing shows it.
     $('crmEnquiry').value = c ? (c.deal_note || '') : '';
     msg('crmMsg', '');
@@ -694,6 +694,10 @@
     // record's head, not here.
     var contactName = state.editing ? '' : val('crmContactName');
     if (!state.editing && !contactName) { msg('crmMsg', 'A contact person is required.', 'err'); $('crmContactName').focus(); return; }
+    if (!state.editing && waUser(val('crmContactWa')) && !waUserOk(waUser(val('crmContactWa')))) {
+      msg('crmMsg', 'A WhatsApp username uses letters, numbers, full stops and underscores.', 'err');
+      $('crmContactWa').focus(); return;
+    }
     patch.deal_note = val('crmEnquiry') || null;
     if (!state.editing) patch.stage = 'lead';
 
@@ -719,9 +723,10 @@
       if (r.error) { msg('crmMsg', r.error.message, 'err'); return; }
       log('client.added', name, sourceWord(patch.source) + (contactName ? ' · ' + contactName : ''));
       var open = function () { shutForm(); loadClients(function () { openClient(r.data); }); };
-      var phone = val('crmContactPhone');
+      var phone = val('crmContactPhone'), waU = waUser(val('crmContactWa'));
       db.from('client_contacts').insert({
-        client_id: r.data.id, name: contactName, phone: phone || null, whatsapp: phone || null,
+        client_id: r.data.id, name: contactName, phone: phone || null,
+        whatsapp: waU ? '@' + waU : (phone || null),
         email: val('crmContactEmail') || null, lang: 'en', is_primary: true
       }).then(open, open);
     });
@@ -1087,12 +1092,17 @@
     var m = list.filter(function (x) { return x.is_primary; })[0] || list[0];
     var rows = [['Main contact', '<b>' + esc(m.name || '') + '</b>' +
       (m.role ? '<span class="ovmeta">' + esc(m.role) + '</span>' : '')]];
+    var mUser = waHandle(m.whatsapp);
     if (m.phone) {
       /* A button, not a word run against the number with nothing between them:
          it is a thing to press and it is the same `.plink` the contact row
          and the client's own page already draw. */
       rows.push(['Phone', '<span class="ovreach">' + esc(m.phone) +
-        waLink(m.whatsapp || m.phone, (state.client || {}).market) + '</span>']);
+        (mUser ? '' : waLink(m.whatsapp || m.phone, (state.client || {}).market)) + '</span>']);
+    }
+    if (mUser) {
+      rows.push(['WhatsApp', '<span class="ovreach">@' + esc(mUser) +
+        waLink(m.whatsapp, (state.client || {}).market) + '</span>']);
     }
     if (m.email) rows.push(['Email', '<a class="ovlink" href="mailto:' + esc(m.email) + '">' + esc(m.email) + '</a>']);
     if (m.lang && LANG_WORD[m.lang]) rows.push(['Language', 'Prefers ' + esc(LANG_WORD[m.lang])]);
@@ -1856,8 +1866,27 @@
     if (d.charAt(0) === '0') return '6' + d;
     return (market === 'SG' ? '65' : '60') + d;
   }
+  /* WhatsApp lets a person hide their number behind a username, and some
+     contacts now reach us that way only: `wa.me/@name` opens the chat where
+     `wa.me/60…` opens it for a number. The contact's `whatsapp` column holds
+     `@name` for a username and the number otherwise, so one column says how
+     to reach them and every link reads it the same way. What was typed is
+     taken whole or pasted as a link (`https://wa.me/@name`), with the @
+     already printed in front of the field. */
+  function waUser(raw) {
+    var s = String(raw || '').trim()
+      .replace(/^https?:\/\//i, '').replace(/^(?:www\.)?wa\.me\//i, '')
+      .replace(/^@+/, '').replace(/\/+$/, '');
+    return s;
+  }
+  function waUserOk(u) { return /^[A-Za-z0-9._]{1,35}$/.test(u); }
+  function waHandle(raw) {
+    var s = String(raw || '').trim();
+    return s.charAt(0) === '@' ? s.slice(1) : '';
+  }
   function waLink(raw, market, label) {
-    var n = waNumber(raw, market);
+    var u = waHandle(raw);
+    var n = u ? '@' + encodeURIComponent(u) : waNumber(raw, market);
     if (!n) return '';
     return '<a class="plink" href="https://wa.me/' + esc(n) +
       '" target="_blank" rel="noopener">' + esc(label || 'WhatsApp') + '</a>';
@@ -2040,6 +2069,7 @@
     $('ctName').value = ct ? (ct.name || '') : '';
     $('ctRole').value = ct ? (ct.role || '') : '';
     $('ctPhone').value = ct ? (ct.phone || '') : '';
+    $('ctWa').value = ct ? waHandle(ct.whatsapp) : '';
     $('ctEmail').value = ct ? (ct.email || '') : '';
     $('ctLang').value = ct ? (ct.lang || 'en') : 'en';
     $('ctPrimary').checked = ct ? Boolean(ct.is_primary) : !state.contacts.length;
@@ -2055,9 +2085,14 @@
   $('ctSave').addEventListener('click', function () {
     var name = val('ctName');
     if (!name) { msg('ctMsg', 'A contact needs a name.', 'err'); $('ctName').focus(); return; }
-    var phone = val('ctPhone');
+    var phone = val('ctPhone'), waU = waUser(val('ctWa'));
+    if (waU && !waUserOk(waU)) {
+      msg('ctMsg', 'A WhatsApp username uses letters, numbers, full stops and underscores.', 'err');
+      $('ctWa').focus(); return;
+    }
     var row = {
-      name: name, role: val('ctRole') || null, phone: phone || null, whatsapp: phone || null,
+      name: name, role: val('ctRole') || null, phone: phone || null,
+      whatsapp: waU ? '@' + waU : (phone || null),
       email: val('ctEmail') || null, lang: $('ctLang').value,
       is_primary: $('ctPrimary').checked
     };

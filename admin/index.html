@@ -26,7 +26,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260926b">
+<link rel="stylesheet" href="/css/portal.css?v=20260926c">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -41,28 +41,28 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260926b"></script>
-<script src="/js/captcha.js?v=20260926b"></script>
-<script src="/js/words.js?v=20260926b"></script>
-<script src="/js/copy.js?v=20260926b"></script>
-<script src="/js/ask.js?v=20260926b"></script>
-<script src="/js/confirm.js?v=20260926b"></script>
-<script src="/js/sheet.js?v=20260926b"></script>
-<script src="/js/refresh.js?v=20260926b"></script>
-<script src="/js/form.js?v=20260926b"></script>
-<script src="/js/state.js?v=20260926b"></script>
-<script src="/js/group.js?v=20260926b"></script>
-<script src="/js/menu.js?v=20260926b"></script>
-<script src="/js/cmdbar.js?v=20260926b"></script>
-<script src="/js/api.js?v=20260926b"></script>
-<script src="/js/money.js?v=20260926b"></script>
-<script src="/js/mockups.js?v=20260926b"></script>
+<script src="/js/config.js?v=20260926c"></script>
+<script src="/js/captcha.js?v=20260926c"></script>
+<script src="/js/words.js?v=20260926c"></script>
+<script src="/js/copy.js?v=20260926c"></script>
+<script src="/js/ask.js?v=20260926c"></script>
+<script src="/js/confirm.js?v=20260926c"></script>
+<script src="/js/sheet.js?v=20260926c"></script>
+<script src="/js/refresh.js?v=20260926c"></script>
+<script src="/js/form.js?v=20260926c"></script>
+<script src="/js/state.js?v=20260926c"></script>
+<script src="/js/group.js?v=20260926c"></script>
+<script src="/js/menu.js?v=20260926c"></script>
+<script src="/js/cmdbar.js?v=20260926c"></script>
+<script src="/js/api.js?v=20260926c"></script>
+<script src="/js/money.js?v=20260926c"></script>
+<script src="/js/mockups.js?v=20260926c"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260926b" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260926c" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -356,13 +356,16 @@
                a row in Contacts, where a person is stored once. -->
           <section class="fsec" id="crmLeadOnly">
             <h4 class="fsec-h">Contact</h4>
-            <div class="row fgrid-3">
+            <div class="row fgrid">
               <div><label class="field-label" for="crmContactName">Contact person</label>
                 <input class="input" id="crmContactName" aria-required="true" placeholder="John Doe"></div>
-              <div><label class="field-label" for="crmContactPhone">Phone / WhatsApp</label>
-                <input class="input" id="crmContactPhone" type="tel" placeholder="01x-xxx xxxx"></div>
               <div><label class="field-label" for="crmContactEmail">Email</label>
                 <input class="input" id="crmContactEmail" type="email" placeholder="john@company.com"></div>
+              <div><label class="field-label" for="crmContactPhone">Phone</label>
+                <input class="input" id="crmContactPhone" type="tel" inputmode="tel" placeholder="01x-xxx xxxx"></div>
+              <div><label class="field-label" for="crmContactWa">WhatsApp username</label>
+                <div class="slugfield"><span class="slugfield-pre" aria-hidden="true">@</span>
+                <input class="input" id="crmContactWa" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="username"></div></div>
             </div>
           </section>
           <section class="fsec">
@@ -531,9 +534,12 @@
           <section class="fsec">
             <h4 class="fsec-h">Contact details</h4>
             <div class="row fgrid">
-              <div><label class="field-label" for="ctPhone">Phone / WhatsApp</label>
-                <input class="input" id="ctPhone" type="tel" placeholder="01x-xxx xxxx"></div>
-              <div><label class="field-label" for="ctEmail">Email</label>
+              <div><label class="field-label" for="ctPhone">Phone</label>
+                <input class="input" id="ctPhone" type="tel" inputmode="tel" placeholder="01x-xxx xxxx"></div>
+              <div><label class="field-label" for="ctWa">WhatsApp username</label>
+                <div class="slugfield"><span class="slugfield-pre" aria-hidden="true">@</span>
+                <input class="input" id="ctWa" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="username"></div></div>
+              <div class="span-all"><label class="field-label" for="ctEmail">Email</label>
                 <input class="input" id="ctEmail" type="email" placeholder="name@company.com"></div>
             </div>
             <div class="row">
@@ -4126,16 +4132,16 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<script src="/js/admin.js?v=20260926b"></script>
-<script src="/js/documents.js?v=20260926b"></script>
-<script src="/js/letters.js?v=20260926b"></script>
-<script src="/js/smreport.js?v=20260926b"></script>
-<script src="/js/reports.js?v=20260926b"></script>
-<script src="/js/register.js?v=20260926b"></script>
-<script src="/js/crm.js?v=20260926b"></script>
-<script src="/js/team.js?v=20260926b"></script>
-<script src="/js/campaigns.js?v=20260926b"></script>
-<script src="/js/ops.js?v=20260926b"></script>
-<script src="/js/perf.js?v=20260926b"></script>
+<script src="/js/admin.js?v=20260926c"></script>
+<script src="/js/documents.js?v=20260926c"></script>
+<script src="/js/letters.js?v=20260926c"></script>
+<script src="/js/smreport.js?v=20260926c"></script>
+<script src="/js/reports.js?v=20260926c"></script>
+<script src="/js/register.js?v=20260926c"></script>
+<script src="/js/crm.js?v=20260926c"></script>
+<script src="/js/team.js?v=20260926c"></script>
+<script src="/js/campaigns.js?v=20260926c"></script>
+<script src="/js/ops.js?v=20260926c"></script>
+<script src="/js/perf.js?v=20260926c"></script>
 </body>
 </html>

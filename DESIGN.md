@@ -1888,6 +1888,12 @@ left alone, and one with no leading zero takes its client's market, because a
 Singapore mobile has eight digits and no prefix to replace. One builder, so the
 contact row and the Overview cannot disagree.
 
+**A WhatsApp username is a second way in, not a second column.** Some
+contacts now reach us by a WhatsApp username with no number behind it, and
+`wa.me/@name` opens that chat. The field sits beside Phone with the `@`
+already printed in front of it, so nobody types it twice, and the one
+`whatsapp` value holds `@name` or the number, read by one builder.
+
 **A document is drawn on one letterhead, whichever kind it is.** The Letter of
 Offer held the only copy of the pen: the page size, the margins, the wordmark,
 the address block, the monogram top right, the page count.
