@@ -3865,6 +3865,9 @@ grant execute on function public.issue_document(text, uuid, uuid, text, date, te
 
 -- 5. A serial added by hand: a document made elsewhere (the accounting
 --    portal, an older Word letter) that the verify page should still answer.
+--    An HR row names its colleague (p_member) and no client; every other row
+--    its client and no colleague (2026-09-26, the nine-argument shape).
+drop function if exists public.register_add(text, text, text, date, text, uuid, text, text);
 create or replace function public.register_add(
   p_serial    text,
   p_family    text,
@@ -3873,7 +3876,8 @@ create or replace function public.register_add(
   p_recipient text,
   p_client    uuid,
   p_note      text,
-  p_file_url  text
+  p_file_url  text,
+  p_member    uuid default null
 )
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -3884,6 +3888,7 @@ declare
   v_fam text := coalesce(nullif(btrim(p_family), ''), 'other');
   v_id  uuid;
   cl    public.clients%rowtype;
+  tm    public.team_members%rowtype;
 begin
   if v_fam not in ('quote_cover', 'client', 'hr', 'other') then return jsonb_build_object('error', 'bad-family'); end if;
   if not public.register_may(v_fam, 'work') then return jsonb_build_object('error', 'not-allowed'); end if;
@@ -3891,13 +3896,17 @@ begin
   if v_serial !~ '^[A-Za-z0-9/._-]{3,40}$' then return jsonb_build_object('error', 'serial-shape'); end if;
   if public.serial_taken(v_serial) then return jsonb_build_object('error', 'serial-taken'); end if;
   if coalesce(btrim(p_kind), '') = '' then return jsonb_build_object('error', 'kind-required'); end if;
-  if p_client is not null then select * into cl from public.clients where id = p_client; end if;
+  if v_fam = 'hr' then
+    if p_member is not null then select * into tm from public.team_members where id = p_member; end if;
+  elsif p_client is not null then
+    select * into cl from public.clients where id = p_client;
+  end if;
   select * into me from public.team_members where lower(email) = who and active limit 1;
 
   insert into public.documents
-    (family, kind, serial, client_id, issued_at, recipient, signed, source, file_url, note, issued_by)
+    (family, kind, serial, client_id, member_id, issued_at, recipient, signed, source, file_url, note, issued_by)
   values
-    (v_fam, btrim(p_kind), v_serial, cl.id, coalesce(p_issued_at, current_date),
+    (v_fam, btrim(p_kind), v_serial, cl.id, tm.id, coalesce(p_issued_at, current_date),
      jsonb_build_object('name', coalesce(btrim(p_recipient), '')), false, 'manual',
      nullif(btrim(p_file_url), ''), nullif(btrim(p_note), ''), coalesce(me.name, who))
   returning id into v_id;
@@ -3910,7 +3919,7 @@ begin
 exception
   when unique_violation then return jsonb_build_object('error', 'serial-taken');
 end $$;
-grant execute on function public.register_add(text, text, text, date, text, uuid, text, text) to authenticated;
+grant execute on function public.register_add(text, text, text, date, text, uuid, text, text, uuid) to authenticated;
 -- A serial imported or added by hand is known before its details are, so
 -- the date may be blank and the row is edited afterwards; a portal row is a
 -- snapshot and is never edited.
@@ -3919,6 +3928,7 @@ alter table public.documents alter column issued_at drop not null;
 -- 5a. Editing a hand-added row: the kind, the family, the date, the recipient,
 --     the client, the note and the file link. The serial never changes; a
 --     wrong serial is deleted and added again, so the deletions remember it.
+drop function if exists public.register_update(uuid, text, text, date, text, uuid, text, text);
 create or replace function public.register_update(
   p_doc       uuid,
   p_kind      text,
@@ -3927,7 +3937,8 @@ create or replace function public.register_update(
   p_recipient text,
   p_client    uuid,
   p_note      text,
-  p_file_url  text
+  p_file_url  text,
+  p_member    uuid default null
 )
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -3936,6 +3947,7 @@ declare
   d     public.documents%rowtype;
   v_fam text := coalesce(nullif(btrim(p_family), ''), 'other');
   cl    public.clients%rowtype;
+  tm    public.team_members%rowtype;
 begin
   select * into d from public.documents where id = p_doc;
   if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
@@ -3945,11 +3957,16 @@ begin
     return jsonb_build_object('error', 'not-allowed');
   end if;
   if coalesce(btrim(p_kind), '') = '' then return jsonb_build_object('error', 'kind-required'); end if;
-  if p_client is not null then select * into cl from public.clients where id = p_client; end if;
+  if v_fam = 'hr' then
+    if p_member is not null then select * into tm from public.team_members where id = p_member; end if;
+  elsif p_client is not null then
+    select * into cl from public.clients where id = p_client;
+  end if;
   update public.documents set
     kind = btrim(p_kind), family = v_fam, issued_at = p_issued_at,
     recipient = jsonb_build_object('name', coalesce(btrim(p_recipient), '')),
-    client_id = cl.id, note = nullif(btrim(p_note), ''), file_url = nullif(btrim(p_file_url), '')
+    client_id = cl.id, member_id = tm.id,
+    note = nullif(btrim(p_note), ''), file_url = nullif(btrim(p_file_url), '')
   where id = p_doc;
   insert into public.activity_log (actor, action, subject, detail)
   values (who, 'register.edited',
@@ -3957,7 +3974,7 @@ begin
           case when v_fam = 'hr' then btrim(p_kind) else d.serial || ' · ' || btrim(p_kind) end);
   return jsonb_build_object('ok', true, 'serial', d.serial);
 end $$;
-grant execute on function public.register_update(uuid, text, text, date, text, uuid, text, text) to authenticated;
+grant execute on function public.register_update(uuid, text, text, date, text, uuid, text, text, uuid) to authenticated;
 
 -- 5b. Reissue: a portal document corrected after it went out. The earlier
 --     version is voided with the reason `Reissued` and kept, the new version
