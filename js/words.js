@@ -24,7 +24,7 @@
   W.en = {
     // Covers: what a page says when it has nothing to show.
     notFound: 'Link not recognised',
-    notFoundText: 'Please check the link or contact your ADspace account manager.',
+    notFoundText: 'Please contact your ADspace account manager.',
     passTitle: 'Access code',
     passText: 'Enter the access code provided.',
     passWrong: 'Incorrect access code.',
@@ -71,7 +71,7 @@
 
   W.zh = {
     notFound: '链接无效',
-    notFoundText: '请检查链接，或联系您的 ADspace 客户经理。',
+    notFoundText: '请联系您的 ADspace 客户经理。',
     passTitle: '访问码',
     passText: '请输入访问码。',
     passWrong: '访问码不正确。',

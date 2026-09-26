@@ -41,6 +41,33 @@ Dashboard → project `hwwuigvdfubuymchsvyx` → **Authentication**.
 Supabase may rename these settings. If one is missing, look for it under
 **Attack Protection** or **Rate Limits**.
 
+## 1a. Passkeys (the console only)
+
+The console offers **Sign in with a passkey** under the email's Sign in, and
+the account menu carries **Passkeys** (add, rename, remove). A passkey is
+Touch ID, Face ID or the device password; on a Mac it is kept in iCloud
+Keychain, so it also works on the same person's iPhone. The email stays the
+way in for a new colleague and a new device. The client portal is unchanged.
+
+Dashboard → **Authentication** → the passkey (WebAuthn) settings:
+
+| Setting | Value |
+|---|---|
+| Passkeys | **On** |
+| Relying party ID (RP ID) | `digital.adspace.me` |
+| Relying party name | `ADspace Digital Portal` |
+| Allowed origins | `https://digital.adspace.me` |
+
+The RP ID must be exactly the host: a passkey made for one host is never
+offered on another, which is what makes it useless to a phishing page.
+
+To add one: sign in with the email once, then account menu → **Passkeys** →
+**Add a passkey**. A Mac that can hold one is asked once after an email
+sign-in; **Not now** is remembered on that browser.
+
+If the captcha (step 3) is on, the passkey sign-in sends a Turnstile token
+too, the same way the email does.
+
 ## 2. Cloudflare Turnstile: create the widget
 
 1. Cloudflare dashboard → ADspace account → **Turnstile** → **Add widget**.

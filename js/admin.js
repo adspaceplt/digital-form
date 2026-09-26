@@ -197,6 +197,11 @@
   function wearTheme(dark) {
     if (dark) document.documentElement.setAttribute('data-theme', 'dark');
     else document.documentElement.removeAttribute('data-theme');
+    /* The status bar follows the console's register, not the device's. */
+    Array.prototype.forEach.call(document.querySelectorAll('meta[name="theme-color"]'), function (m) {
+      m.removeAttribute('media');
+      m.setAttribute('content', dark ? '#171717' : '#ffffff');
+    });
     paintTheme();
   }
   $('themeToggle').addEventListener('click', function () {
@@ -261,6 +266,15 @@
     shutAcct();
     showSection('mine');
   });
+  /* Passkeys are the person's own way in, drawn only where this browser can
+     use one (js/passkey.js decides). */
+  if (window.ADspacePasskey && window.ADspacePasskey.on && $('acctPasskeys')) {
+    $('acctPasskeys').hidden = false;
+    $('acctPasskeys').addEventListener('click', function () {
+      shutAcct();
+      window.ADspacePasskey.open($('acctBtn'));
+    });
+  }
   $('refreshApp').addEventListener('click', function () {
     shutAcct();
     if (window.ADspaceRefresh) window.ADspaceRefresh.hard(); else location.reload();
@@ -357,6 +371,9 @@
       } else {
         restoreView();
       }
+      /* Once per browser, on a device that can hold one, a colleague with no
+         passkey is asked whether to add one. */
+      if (window.ADspacePasskey) setTimeout(window.ADspacePasskey.offer, 1200);
     });
   }
 

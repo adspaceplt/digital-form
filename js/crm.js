@@ -352,26 +352,46 @@
     });
   }
 
-  /* When somebody last spoke to each client. It is a column on the register
-     because "who has gone quiet" is the second question anybody asks of this
-     list, after "who is overdue". It reads `client_touches`, which the team
-     already reads on every record, and adds no field, function or permission
-     of its own; the list paints without it and fills the column in when it
-     arrives, so a slow or refused read costs the list nothing. */
+  /* The last thing that happened with each client. It is a column on the
+     register because "who has gone quiet" is the second question anybody asks
+     of this list, after "who is overdue". It is the newest of three facts the
+     team already records (the user chose this on 2026-09-26): a call or visit
+     logged, the stage moving, and a document issued, the Letter of Offer or
+     one from Documents. Each read is one the record already makes, and a read
+     that is refused or slow is left out rather than failing the column, so
+     somebody without Documents still sees their calls and stage moves. The
+     word under the date says which of the three it was. */
   function loadLastSeen() {
-    db.from('client_touches').select('client_id, happened_at')
-      .is('archived_at', null)
-      .order('happened_at', { ascending: false })
-      .then(function (r) {
-        if (r.error || !r.data) return;
-        var seen = {};
-        r.data.forEach(function (t) {
-          if (!t.client_id || !t.happened_at) return;
-          if (!seen[t.client_id] || t.happened_at > seen[t.client_id]) seen[t.client_id] = t.happened_at;
-        });
-        state.lastSeen = seen;
-        if (!$('crmListView').hidden) paintList();
-      }, function () {});
+    var seen = {};
+    function take(id, at, word) {
+      if (!id || !at) return;
+      var t = Date.parse(at);
+      /* A date ahead of now is a plan, not something that happened. */
+      if (isNaN(t) || t > Date.now() + 60000) return;
+      if (!seen[id] || t > seen[id].t) seen[id] = { t: t, word: word };
+    }
+    state.clients.forEach(function (c) {
+      if (!c.stage_since) return;
+      /* A record that has never moved stage started its clock when it was
+         keyed in, so its first fact is that it was added. */
+      var added = !c.created_at || Math.abs(Date.parse(c.stage_since) - Date.parse(c.created_at)) < 60000;
+      take(c.id, c.stage_since, added ? 'Added' : 'Stage moved');
+    });
+    function rows(q) {
+      return q.then(function (r) { return r.error ? [] : (r.data || []); }, function () { return []; });
+    }
+    var title = (window.ADspaceForm && window.ADspaceForm.title) || function (s) { return s; };
+    Promise.all([
+      rows(db.from('client_touches').select('client_id, happened_at, kind').is('archived_at', null)),
+      rows(db.from('client_documents').select('client_id, created_at')),
+      rows(db.from('documents').select('client_id, kind, created_at').not('client_id', 'is', null))
+    ]).then(function (all) {
+      all[0].forEach(function (t) { take(t.client_id, t.happened_at, KIND_WORD[t.kind] || 'Call'); });
+      all[1].forEach(function (d) { take(d.client_id, d.created_at, 'Letter of Offer'); });
+      all[2].forEach(function (d) { take(d.client_id, d.created_at, d.kind ? title(d.kind) : 'Document'); });
+      state.lastSeen = seen;
+      if (!$('crmListView').hidden) paintList();
+    });
   }
 
   function visible() {
@@ -492,14 +512,14 @@
           esc(ageWord(c) + (isStale(c) ? ' · Overdue' : '')) + '</small>' : '') + '</span>' +
       '<span class="crm-c crm-c-ind">' + esc(c.industry || '—') + '</span>' +
       '<span class="crm-c crm-c-own">' + esc(c.owner || 'Unassigned') + '</span>' +
-      /* When somebody last spoke to them. Where nobody has, the cell takes the
-         same mute mark the Industry cell beside it already uses for a value
-         nobody has filled in: "No calls yet" written out on every row of a
-         list where almost nobody has been called yet is a sentence repeated
-         seven times where one character says it, and the column heading has
-         already said what the cell is. */
+      /* The last thing that happened, and under it what it was, the way the
+         stage cell beside it carries its clock. Where nothing is recorded the
+         cell takes the same mute mark the Industry cell uses for a value
+         nobody has filled in, because the column heading has already said
+         what the cell is. */
       '<span class="crm-c crm-c-seen">' + (lastSeenWord(c)
-        ? esc(lastSeenWord(c)) : '<span class="muted">—</span>') + '</span>' +
+        ? esc(lastSeenWord(c)) + '<small class="crm-seen-kind">' + esc(state.lastSeen[c.id].word) + '</small>'
+        : '<span class="muted">—</span>') + '</span>' +
       /* The one line the phone gets, so it carries the value rather than the
          currency it would be in. A bare RM with no amount is a fragment that
          reads like a broken field, and it was shown even where the client had
@@ -523,9 +543,9 @@
   /* "12 Sept", or "Sept 2026" once the exact day has stopped mattering — the
      same units the stage clock already talks in. */
   function lastSeenWord(c) {
-    var iso = (state.lastSeen || {})[c.id];
-    if (!iso) return '';
-    var d = new Date(iso);
+    var seen = (state.lastSeen || {})[c.id];
+    if (!seen) return '';
+    var d = new Date(seen.t);
     if (isNaN(d.getTime())) return '';
     var days = Math.floor((Date.now() - d.getTime()) / 86400000);
     return d.toLocaleDateString('en-GB', days < 300
