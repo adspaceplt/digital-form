@@ -30,7 +30,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260926r">
+<link rel="stylesheet" href="/css/portal.css?v=20260927a">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -54,28 +54,28 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260926r"></script>
-<script src="/js/captcha.js?v=20260926r"></script>
-<script src="/js/words.js?v=20260926r"></script>
-<script src="/js/copy.js?v=20260926r"></script>
-<script src="/js/ask.js?v=20260926r"></script>
-<script src="/js/confirm.js?v=20260926r"></script>
-<script src="/js/sheet.js?v=20260926r"></script>
-<script src="/js/refresh.js?v=20260926r"></script>
-<script src="/js/form.js?v=20260926r"></script>
-<script src="/js/state.js?v=20260926r"></script>
-<script src="/js/group.js?v=20260926r"></script>
-<script src="/js/menu.js?v=20260926r"></script>
-<script src="/js/cmdbar.js?v=20260926r"></script>
-<script src="/js/api.js?v=20260926r"></script>
-<script src="/js/money.js?v=20260926r"></script>
-<script src="/js/mockups.js?v=20260926r"></script>
+<script src="/js/config.js?v=20260927a"></script>
+<script src="/js/captcha.js?v=20260927a"></script>
+<script src="/js/words.js?v=20260927a"></script>
+<script src="/js/copy.js?v=20260927a"></script>
+<script src="/js/ask.js?v=20260927a"></script>
+<script src="/js/confirm.js?v=20260927a"></script>
+<script src="/js/sheet.js?v=20260927a"></script>
+<script src="/js/refresh.js?v=20260927a"></script>
+<script src="/js/form.js?v=20260927a"></script>
+<script src="/js/state.js?v=20260927a"></script>
+<script src="/js/group.js?v=20260927a"></script>
+<script src="/js/menu.js?v=20260927a"></script>
+<script src="/js/cmdbar.js?v=20260927a"></script>
+<script src="/js/api.js?v=20260927a"></script>
+<script src="/js/money.js?v=20260927a"></script>
+<script src="/js/mockups.js?v=20260927a"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260926r" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260927a" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -3534,6 +3534,7 @@
             <span class="cmdbar-end">
               <span class="cmdbar-quiet"><span class="cmdbar-count" id="perfCount"></span></span>
               <span class="cmdbar-acts">
+                <button class="btn btn-sm" id="perfRosterBtn" type="button" data-need="team.performance:work">Review list</button>
                 <button class="btn btn-sm" id="perfPrintMonth" type="button">Print month</button>
               </span>
             </span>
@@ -3544,6 +3545,26 @@
       </div>
 
       <!-- Who is reviewed, and against which standard. -->
+      <!-- Who is reviewed each month, chosen by management (the user,
+           2026-09-26): a tick per colleague, Employee ID first, A to Z. -->
+      <div class="sheet" id="perfRosterSheet" hidden>
+        <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="prTitle">
+          <div class="sheet-head">
+            <h3 id="prTitle">Review list</h3>
+            <button class="iconbtn" id="prClose" type="button" aria-label="Close">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+          <div class="sheet-body">
+            <div class="prlist" id="prList"></div>
+            <div class="msg" id="prMsg"></div>
+          </div>
+          <div class="sheet-foot">
+            <button class="btn btn-primary" id="prSave" type="button">Save</button>
+            <button class="btn btn-quiet" id="prCancel" type="button">Cancel</button>
+          </div>
+        </div>
+      </div>
       <div class="sheet" id="perfProfileSheet" hidden>
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="ppTitle">
           <div class="sheet-head">
@@ -4199,17 +4220,17 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
-<script src="/js/passkey.js?v=20260926r"></script>
-<script src="/js/admin.js?v=20260926r"></script>
-<script src="/js/documents.js?v=20260926r"></script>
-<script src="/js/letters.js?v=20260926r"></script>
-<script src="/js/smreport.js?v=20260926r"></script>
-<script src="/js/reports.js?v=20260926r"></script>
-<script src="/js/register.js?v=20260926r"></script>
-<script src="/js/crm.js?v=20260926r"></script>
-<script src="/js/team.js?v=20260926r"></script>
-<script src="/js/campaigns.js?v=20260926r"></script>
-<script src="/js/ops.js?v=20260926r"></script>
-<script src="/js/perf.js?v=20260926r"></script>
+<script src="/js/passkey.js?v=20260927a"></script>
+<script src="/js/admin.js?v=20260927a"></script>
+<script src="/js/documents.js?v=20260927a"></script>
+<script src="/js/letters.js?v=20260927a"></script>
+<script src="/js/smreport.js?v=20260927a"></script>
+<script src="/js/reports.js?v=20260927a"></script>
+<script src="/js/register.js?v=20260927a"></script>
+<script src="/js/crm.js?v=20260927a"></script>
+<script src="/js/team.js?v=20260927a"></script>
+<script src="/js/campaigns.js?v=20260927a"></script>
+<script src="/js/ops.js?v=20260927a"></script>
+<script src="/js/perf.js?v=20260927a"></script>
 </body>
 </html>

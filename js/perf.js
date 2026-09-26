@@ -372,12 +372,18 @@
       if (st.filter && stateOf(p) !== st.filter) return false;
       return true;
     });
-    var reviewed = shown.filter(function (p) { return p.reviewed; });
-    var others = shown.filter(function (p) { return !p.reviewed; });
-    var all = people.filter(function (p) { return p.reviewed; }).length;
+    /* The month is the people management put on the review list, and anybody
+       whose review of this month has begun whatever the list now says. */
+    var onList = function (p) { return p.reviewed || Boolean(p.review); };
+    var reviewed = shown.filter(onList);
+    var others = [];
+    var all = people.filter(onList).length;
     $('perfCount').textContent = (st.find || st.filter)
       ? reviewed.length + ' of ' + all : all + (all === 1 ? ' person' : ' people');
-    if (!people.length) { UI.emptyLine(box, 'No team members.'); return; }
+    if (!all) {
+      UI.emptyLine(box, 'Nobody on the review list.', may('team.performance', 'work') ? 'Review list' : '', openRoster);
+      return;
+    }
     if (!shown.length) {
       UI.emptyLine(box, 'No matches.', 'Clear the filters', function () {
         st.find = ''; st.filter = '';
@@ -459,6 +465,47 @@
   if (window.ADspaceMenu) window.ADspaceMenu.onScroll(shutRowMenus);
   document.addEventListener('click', function (e) {
     if (!e.target.closest || !e.target.closest('#perfList .team-act')) shutRowMenus();
+  });
+
+  // ---- The review list -----------------------------------------------------------------
+  /* A tick per colleague, Employee ID first and A to Z. A tick added puts
+     them on from this month; one taken off takes them off from the next,
+     because a review already begun this month stays where it is. */
+  function openRoster() {
+    if (!st.month) return;
+    var F = window.ADspaceForm;
+    var people = (st.month.people || []).slice().sort(F.byStaff);
+    $('prList').innerHTML = people.map(function (p) {
+      return '<label class="tickline"><input type="checkbox" data-id="' + esc(p.team_member_id) + '"' +
+        (p.reviewed ? ' checked' : '') + '> <span>' + esc(F.named(p.staff_code, p.name)) + '</span></label>';
+    }).join('');
+    msg('prMsg', '');
+    window.ADspaceSheet.show($('perfRosterSheet'), { opener: $('perfRosterBtn') });
+  }
+  $('perfRosterBtn').addEventListener('click', openRoster);
+  $('prClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('prCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('prSave').addEventListener('click', function () {
+    var btn = this;
+    var was = {};
+    (st.month.people || []).forEach(function (p) { was[p.team_member_id] = Boolean(p.reviewed); });
+    var changes = Array.prototype.filter.call($('prList').querySelectorAll('input[data-id]'), function (c) {
+      return c.checked !== was[c.getAttribute('data-id')];
+    });
+    if (!changes.length) { window.ADspaceSheet.close(); return; }
+    btn.disabled = true;
+    var left = changes.length, failed = null;
+    changes.forEach(function (c) {
+      call('perf_profile_set', { p_token: token, p_member: c.getAttribute('data-id'), p_payload: { reviewed: c.checked } }, function (d) {
+        if (d.error) failed = failed || d;
+        if (--left) return;
+        btn.disabled = false;
+        if (failed) { msg('prMsg', said(failed), 'err'); return; }
+        window.ADspaceSheet.clean();
+        window.ADspaceSheet.close();
+        loadMonth();
+      });
+    });
   });
 
   // ---- The review profile ---------------------------------------------------------------

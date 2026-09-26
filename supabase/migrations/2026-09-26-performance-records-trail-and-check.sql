@@ -29,14 +29,17 @@
 --     typed with dashes for slashes, the way a file name carries it.
 --  6. My performance accepts a fresh passkey (Face ID, Touch ID) as well as a
 --     fresh emailed code: perf_code_fresh reads either in the signed token.
+--  7. The review list is chosen: a colleague with no setting is off it. The
+--     people the old default reviewed are written onto it by name, once.
 --
 -- ROLLBACK
 --   drop function if exists public.perf_activity(integer), public.perf_register();
 --   and re-run perf_save and perf_printed from
 --   2026-09-24-performance-reviews.sql, perf_code_fresh from
 --   2026-09-24-performance-email-code.sql, and verify_serial from
---   supabase/schema.sql's Documents Register section. A stamped event keeps
---   its detail; nothing is lost by the rollback.
+--   supabase/schema.sql's Documents Register section, and perf_reviewed from
+--   2026-09-24-performance-reviews.sql. A stamped event keeps its detail and a
+--   written review setting stays; nothing is lost by the rollback.
 -- ===========================================================================
 
 /* 1. The download, filed first. */
@@ -307,6 +310,36 @@ language sql stable set search_path = public as $$
                                      then auth.jwt() -> 'amr' else '[]'::jsonb end) a), false)
 $$;
 revoke all on function public.perf_code_fresh() from public, anon, authenticated;
+
+/* 7. The review list is chosen (the user, 2026-09-26: "there could be users
+   who don't need performance review"). A colleague with no setting was on
+   the list unless an admin; now they are off it until management adds them.
+   Everybody the old default put on the list is written onto it by name once,
+   while the old default still stands, so nothing changes for them; a second
+   run finds the new default and writes nothing. */
+do $$
+begin
+  if exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+              where n.nspname = 'public' and p.proname = 'perf_reviewed'
+                and p.prosrc like '%not (m.is_admin or m.role = ''admin'')%') then
+    insert into public.perf_people (team_member_id, reviewed)
+    select tm.id, true from public.team_members tm
+     where tm.active and not (tm.is_admin or tm.role = 'admin')
+       and not exists (select 1 from public.perf_people pp where pp.team_member_id = tm.id);
+    update public.perf_people pp set reviewed = true
+      from public.team_members tm
+     where tm.id = pp.team_member_id and pp.reviewed is null
+       and tm.active and not (tm.is_admin or tm.role = 'admin');
+  end if;
+end $$;
+
+/* Is this colleague on the monthly review? Only where management put them. */
+create or replace function public.perf_reviewed(p_member uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select coalesce((select pp.reviewed from public.perf_people pp where pp.team_member_id = m.id), false)
+    from public.team_members m where m.id = p_member
+$$;
+revoke all on function public.perf_reviewed(uuid) from public, anon, authenticated;
 
 revoke all on function public.perf_activity(integer) from public, anon, authenticated;
 revoke all on function public.perf_register() from public, anon, authenticated;

@@ -2562,6 +2562,10 @@ body.is-plain .topbar { background: var(--chrome); }
 .qcrow:last-child { border-bottom: 0; }
 .qcrow + .qcgroup { border-top: 1px solid var(--line-soft); }
 .qcall { border-bottom: 1px solid var(--line); }
+/* The review list: one tick per colleague, a hairline between. */
+.prlist { display: flex; flex-direction: column; }
+.prlist .tickline { padding: 10px 0; border-bottom: 1px solid var(--line-soft); margin: 0; }
+.prlist .tickline:last-child { border-bottom: 0; }
 .qcall span { font-weight: 600; }
 .qcrow input { width: 18px; height: 18px; accent-color: var(--accent); }
 .qcrow span { font-size: 14px; }
@@ -5119,6 +5123,7 @@ body.no-view-activity-links [data-need="activity.links:view"],
 body.no-view-activity-register [data-need="activity.register:view"],
 body.no-view-activity-services [data-need="activity.services:view"],
 body.no-view-team-performance [data-need="team.performance:view"],
+body.no-work-team-performance [data-need="team.performance:work"],
 /* Operations. The route is called My Work on the screen and `?s=work` in the
    address; the ladder's key is `ops`, which is the word the database uses, so
    the two are mapped once in `sectionAllowed()` and never spelled twice. */
