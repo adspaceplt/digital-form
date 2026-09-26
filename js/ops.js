@@ -1689,6 +1689,9 @@
     if (findMark && findMark.classList.contains('cmdbar-search')) findMark.hidden = whole;
     if (stg) stg.hidden = whole;
     if (cnt && (state.view === 'report' || state.view === 'clients')) cnt.textContent = '';
+    /* The client's months carry their own New task, which knows the client;
+       a second add in the bar above it would be the same act twice. */
+    if ($('workNew')) $('workNew').hidden = !may('ops', 'work') || state.view === 'clients';
     showPeriod();
     if (state.view === 'board') loadCapacity();
   }
