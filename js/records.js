@@ -15,6 +15,7 @@
  *
  *   ADspaceRecords.paint(host, items, { empty, limit, offset, days })
  *   ADspaceRecords.fold(items)
+ *   ADspaceRecords.changes(before, after, [[key, label, fmt]], { names })
  *
  * An item is { at, who, what, on, detail, tone, sticky }, newest first.
  */
@@ -101,5 +102,32 @@
     host.innerHTML = '<div class="reclist">' + html + '</ul></div>';
   }
 
-  window.ADspaceRecords = { paint: paint, fold: fold, day: day, time: time };
+  /* What a save changed, as one detail: "Label: old → new" for each field
+     whose value moved, in the order given, an empty value read as "not
+     set". `o.names` names the fields and withholds the values, for a part
+     somebody reading the record may not be allowed to read (billing, HR).
+     A save that changed nothing returns ''. */
+  function norm(v) {
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+    return String(v).replace(/\s+/g, ' ').trim();
+  }
+  function clip(v) { return v.length > 60 ? v.slice(0, 57) + '…' : v; }
+  function changes(before, after, fields, o) {
+    o = o || {};
+    before = before || {};
+    var out = [];
+    (fields || []).forEach(function (f) {
+      var key = f[0], label = f[1], fmt = f[2];
+      if (!Object.prototype.hasOwnProperty.call(after, key)) return;
+      var a = norm(before[key]), b = norm(after[key]);
+      if (a === b) return;
+      if (o.names) { out.push(label + (a ? (b ? ' changed' : ' cleared') : ' set')); return; }
+      var show = function (v) { return v ? clip(fmt ? norm(fmt(v)) : v) : 'not set'; };
+      out.push(label + ': ' + show(a) + ' → ' + show(b));
+    });
+    return out.join('; ');
+  }
+
+  window.ADspaceRecords = { paint: paint, fold: fold, day: day, time: time, changes: changes };
 })();

@@ -42,6 +42,10 @@
   }
   var bridge = window.ADspaceAdmin || {};
   var log = bridge.log || function () {};
+  /* What a save changed, field by field (js/records.js). */
+  function changed(before, after, fields, o) {
+    return window.ADspaceRecords ? window.ADspaceRecords.changes(before, after, fields, o) : '';
+  }
   var actor = bridge.actor || function () { return ''; };
   var actorName = bridge.actorName || actor;
   /* A logged address read as a person, through the console's one map. */
@@ -733,7 +737,11 @@
       var id = state.editing.id;
       db.from('clients').update(patch).eq('id', id).then(function (r) {
         if (r.error) { msg('crmMsg', saveWord(r.error.message), 'err'); return; }
-        log('client.edited', name, '');
+        var moved = changed(state.editing, patch, [
+          ['name', 'Brand name'], ['client_code', 'Client ID'], ['industry', 'Industry'], ['market', 'Market'],
+          ['owner', 'Person in charge'], ['source', 'Source'], ['commence', 'Urgency to commence', commenceWord],
+          ['deal_note', 'Enquiry']]);
+        if (moved) log('client.edited', name, moved);
         shutForm();
         loadClients(function () {
           var found = state.clients.filter(function (x) { return x.id === id; })[0];
@@ -1761,6 +1769,9 @@
   });
 
   $('crmBillSave').addEventListener('click', function () {
+    var was = Object.assign({}, state.client);
+    /* No setting is SST applying, as `money.js` reads it. */
+    was.sst_applies = state.client.sst_applies !== false;
     var patch = { sst_applies: $('crmSstApplies').checked };
     BILLING.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
     if (patch.legal_name) patch.legal_name = patch.legal_name.toUpperCase();
@@ -1768,7 +1779,12 @@
       if (r.error) { msg('crmBillMsg', r.error.message, 'err'); return; }
       Object.keys(patch).forEach(function (k) { state.client[k] = patch[k]; });
       var still = billingMissing(state.client);
-      log('client.billing', state.client.name, still.length ? still.length + ' fields still needed' : 'complete');
+      /* Billing is its own part, so the record names what changed and never
+         the values: somebody reading Clients activity may not read Billing. */
+      var what = changed(was, patch, BILLING.map(function (f) { return [f[1], f[2]]; })
+        .concat([['sst_applies', 'SST applies']]), { names: true });
+      log('client.billing', state.client.name, [what, still.length ? still.length + ' fields still needed' : 'complete']
+        .filter(Boolean).join(' · '));
       if (window.ADspaceSheet) window.ADspaceSheet.clean();
       shutSheet('crmBillSheet');
       openClient(state.client);
@@ -1796,13 +1812,16 @@
   }
 
   $('crmBrandSave').addEventListener('click', function () {
+    var was = Object.assign({}, state.client);
     var patch = { brand_notes: val('crmNotes') || null };
     BRAND.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
     db.from('clients').update(patch).eq('id', state.client.id)
       .then(function (r) {
         if (r.error) { msg('crmBrandMsg', r.error.message, 'err'); return; }
         Object.keys(patch).forEach(function (k) { state.client[k] = patch[k]; });
-        log('client.brand', state.client.name, '');
+        log('client.brand', state.client.name, changed(was, patch, [
+          ['website', 'Website'], ['phone', 'Phone'], ['handle_ig', 'Instagram'], ['handle_fb', 'Facebook'],
+          ['handle_tiktok', 'TikTok'], ['handle_xhs', 'rednote'], ['logo_url', 'Logo'], ['brand_notes', 'Brand notes']]));
         if (window.ADspaceSheet) window.ADspaceSheet.clean();
         shutSheet('crmBrandSheet');
         openClient(state.client);
@@ -2102,7 +2121,9 @@
     };
     var after = function (r) {
       if (r.error) { msg('ctMsg', r.error.message, 'err'); return; }
-      log(editingContact ? 'contact.edited' : 'contact.added', state.client.name + ' · ' + name, row.role || '');
+      log(editingContact ? 'contact.edited' : 'contact.added', state.client.name + ' · ' + name,
+        editingContact ? changed(editingContact, row, [['name', 'Name'], ['role', 'Role'], ['phone', 'Phone'],
+          ['whatsapp', 'WhatsApp'], ['email', 'Email'], ['lang', 'Language'], ['is_primary', 'Main contact']]) : (row.role || ''));
       shutContact();
       loadContacts();
     };
@@ -3546,7 +3567,10 @@
                 min_months: Math.max(1, Number(val('svcMin') || 1)), detail: val('svcDetail') || null };
     var after = function (r) {
       if (r.error) { msg('svcMsg', r.error.message, 'err'); return; }
-      log(editingSvc ? 'service.changed' : 'service.added', name, row.category);
+      log(editingSvc ? 'service.changed' : 'service.added', name, editingSvc
+        ? changed(editingSvc, row, [['category', 'Category'], ['name', 'Name'], ['rate', 'Rate'], ['unit', 'Unit'],
+            ['min_months', 'Minimum months'], ['detail', 'Inclusions']])
+        : row.category);
       shutSheet('svcBox'); editingSvc = null;
       enterServices();
     };

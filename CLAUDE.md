@@ -1273,6 +1273,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`×n`). Sticky entries never fold: Performance, HR, voids, deletes,
   removals, billing, rates, invoices, access and groups (`stickyOf`).
   `ADspaceAdmin.record(row)` is the one reading of an `activity_log` row.
+- Every save files what it changed, from and to (`ADspaceRecords.changes`:
+  "Label: old → new", empty reads "not set"); a save that changed nothing
+  files nothing. Client details, brand, contacts, rate lines, team members,
+  groups and access (`accessMoves`) name values. Billing names the fields
+  only (`{ names: true }`), never their values. A Documents edit is filed by
+  `register_update` itself (the serial, then each move; `register_day` writes
+  `12 Sept 2026`); an HR row is filed under `HR` with its type, date, note
+  and file only.
 - `document.*` and `register.*` rows file under Documents.
 
 ### Sign-in, security, secrets

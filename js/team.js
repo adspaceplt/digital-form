@@ -459,8 +459,10 @@
     db.from('team_members').update(patch).eq('id', m.id).then(function (r) {
       if (r.error) { msg('teamMsg', r.error.message, 'err'); load(); return; }
       log('team.changed', m.name, Object.keys(patch).map(function (k) {
-        return k + '=' + (k === 'role' ? roleName(patch[k]) : patch[k]);
-      }).join(', '));
+        if (k === 'active') return 'Active: ' + (m.active ? 'Yes' : 'No') + ' → ' + (patch.active ? 'Yes' : 'No');
+        if (k === 'role') return 'User group: ' + roleName(m.role) + ' → ' + roleName(patch.role);
+        return k + ': ' + (m[k] == null ? 'not set' : m[k]) + ' → ' + (patch[k] == null ? 'not set' : patch[k]);
+      }).join('; '));
       msg('teamMsg', 'Saved.', 'ok');
       load();
       if (then) then();
@@ -547,6 +549,23 @@
      reads first. An admin group opens everything, and listing every section it
      can reach is a longer way of saying so. A column per switch was tried and
      removed: it is a table that grows every time the product does. */
+  /* What an access save changed, section by section and part by part:
+     "Clients: View → Work; Clients · Billing: Same as section → No access".
+     Keys neither side holds are left out, so a save names only its moves. */
+  function accessMoves(before, after) {
+    before = before || {}; after = after || {};
+    var name = function (k) {
+      var bits = k.split('.');
+      var sec = SECTIONS.filter(function (x) { return x[0] === bits[0]; })[0];
+      var part = bits[1] && (PARTS[bits[0]] || []).filter(function (x) { return x[0] === bits[1]; })[0];
+      return (sec ? sec[1] : bits[0]) + (bits[1] ? ' · ' + (part ? part[1] : bits[1]) : '');
+    };
+    var word = function (k, v) { return v ? (LEVEL_WORD[v] || 'No access') : (k.indexOf('.') > -1 ? 'Same as section' : 'No access'); };
+    var keys = Object.keys(before).concat(Object.keys(after)).filter(function (k, i, a) { return a.indexOf(k) === i; });
+    return keys.filter(function (k) { return (before[k] || '') !== (after[k] || ''); }).map(function (k) {
+      return name(k) + ': ' + word(k, before[k]) + ' → ' + word(k, after[k]);
+    }).join('; ');
+  }
   function grantWord(r) {
     if (r.is_admin) return 'Everything';
     var acc = accessOf(r), parts = [];
@@ -621,13 +640,16 @@
   }
 
   function saveGroup(r, patch) {
+    var was = Object.assign({}, r, { access: Object.assign({}, r.access || {}) });
     db.from('team_roles').update(patch).eq('slug', r.slug).then(function (q) {
       if (q.error) { msg('groupMsg', q.error.message, 'err'); load(); return; }
       Object.keys(patch).forEach(function (k) { r[k] = patch[k]; });
       log('team.group_changed', r.name, Object.keys(patch).map(function (k) {
-        if (k === 'access') return grantWord({ access: patch.access });
-        return k.replace('can_', '') + '=' + patch[k];
-      }).join(', '));
+        if (k === 'access') return accessMoves(was.access, patch.access);
+        if (k === 'is_admin') return 'Admin: ' + (was.is_admin ? 'Yes' : 'No') + ' → ' + (patch.is_admin ? 'Yes' : 'No');
+        if (k === 'name') return 'Name: ' + (was.name || 'not set') + ' → ' + patch.name;
+        return k.replace('can_', '') + ': ' + was[k] + ' → ' + patch[k];
+      }).filter(Boolean).join('; '));
       msg('groupMsg', 'Saved.', 'ok');
       // Members carry their group's switches; the console reads them at sign-in.
       load();
@@ -987,7 +1009,13 @@
               ? 'That email is already on the list.' : r.error.message, 'err');
             return;
           }
-          log('team.edited', name, email + ' · ' + roleName(role));
+          /* A save that changed nothing files nothing. */
+          var moved = window.ADspaceRecords.changes(m, fields, [
+            ['name', 'Name'], ['email', 'Email'], ['role', 'User group', roleName], ['staff_code', 'Employee ID'],
+            ['designation', 'Position'], ['department', 'Department', function (v) { return DEPT[v] || v; }],
+            ['role_family', 'Role standard', function (v) { return ROLE_STD[v] || v; }],
+            ['capacity_minutes_week', 'Weekly capacity', function (v) { return Math.round(Number(v) / 60) + 'h'; }]]);
+          if (moved) log('team.edited', name, moved);
           msg('teamMsg', 'Saved.', 'ok');
           load();
           /* A rename is the same person, so the clients and campaigns that
