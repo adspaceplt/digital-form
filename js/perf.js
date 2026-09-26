@@ -1269,7 +1269,11 @@
      paper. Redrawn from the record every time: no file is stored. */
   function printOne(r, btn) {
     if (!r || !r.id) return;
-    draw([r], fileOf(r), btn);
+    /* The sheet is read again once the file is made, so its History shows
+       the download it has just filed. */
+    draw([r], fileOf(r), btn, function (ok) {
+      if (ok && st.rec && st.rec.id === r.id) reread(function () { msg('pvMsg', 'Downloaded.', 'ok'); });
+    });
   }
   $('perfPrintMonth').addEventListener('click', function () {
     var btn = this;
