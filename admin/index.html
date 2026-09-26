@@ -30,7 +30,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260926m">
+<link rel="stylesheet" href="/css/portal.css?v=20260926n">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -54,28 +54,28 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260926m"></script>
-<script src="/js/captcha.js?v=20260926m"></script>
-<script src="/js/words.js?v=20260926m"></script>
-<script src="/js/copy.js?v=20260926m"></script>
-<script src="/js/ask.js?v=20260926m"></script>
-<script src="/js/confirm.js?v=20260926m"></script>
-<script src="/js/sheet.js?v=20260926m"></script>
-<script src="/js/refresh.js?v=20260926m"></script>
-<script src="/js/form.js?v=20260926m"></script>
-<script src="/js/state.js?v=20260926m"></script>
-<script src="/js/group.js?v=20260926m"></script>
-<script src="/js/menu.js?v=20260926m"></script>
-<script src="/js/cmdbar.js?v=20260926m"></script>
-<script src="/js/api.js?v=20260926m"></script>
-<script src="/js/money.js?v=20260926m"></script>
-<script src="/js/mockups.js?v=20260926m"></script>
+<script src="/js/config.js?v=20260926n"></script>
+<script src="/js/captcha.js?v=20260926n"></script>
+<script src="/js/words.js?v=20260926n"></script>
+<script src="/js/copy.js?v=20260926n"></script>
+<script src="/js/ask.js?v=20260926n"></script>
+<script src="/js/confirm.js?v=20260926n"></script>
+<script src="/js/sheet.js?v=20260926n"></script>
+<script src="/js/refresh.js?v=20260926n"></script>
+<script src="/js/form.js?v=20260926n"></script>
+<script src="/js/state.js?v=20260926n"></script>
+<script src="/js/group.js?v=20260926n"></script>
+<script src="/js/menu.js?v=20260926n"></script>
+<script src="/js/cmdbar.js?v=20260926n"></script>
+<script src="/js/api.js?v=20260926n"></script>
+<script src="/js/money.js?v=20260926n"></script>
+<script src="/js/mockups.js?v=20260926n"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260926m" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260926n" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -4086,17 +4086,27 @@ raya-2026        https://example.com/raya"></textarea>
         <div class="row fgrid-3">
           <div><label class="field-label" for="regAddSerial">Reference</label>
             <input class="input" id="regAddSerial" aria-required="true" placeholder="AQT2607003" autocapitalize="characters" spellcheck="false"></div>
-          <div><label class="field-label" for="regAddKind">Document</label>
-            <input class="input" id="regAddKind" placeholder="Service Agreement"></div>
+          <!-- Chosen from the names this kind already carries; a new one is
+               typed under Other and joins the list once saved (2026-09-26). -->
+          <div><label class="field-label" for="regAddKindPick">Document</label>
+            <select class="select" id="regAddKindPick" aria-required="true"></select></div>
           <div><label class="field-label" for="regAddDate">Date</label>
             <input class="input" id="regAddDate" type="date"></div>
+        </div>
+        <div class="row fgrid" id="regAddKindNewRow" hidden>
+          <div class="span-all"><label class="field-label" for="regAddKind">New document type</label>
+            <input class="input" id="regAddKind" placeholder="Service Agreement"></div>
         </div>
       </section>
       <section class="fsec">
         <h4 class="fsec-h">Addressed to</h4>
+        <!-- A client for a client document, a colleague for an HR letter:
+             the kind decides which one is drawn (js/register.js regAddFit). -->
         <div class="row fgrid">
-          <div><label class="field-label" for="regAddClient">Client</label>
+          <div id="regAddClientWrap"><label class="field-label" for="regAddClient">Client</label>
             <select class="select" id="regAddClient"></select></div>
+          <div id="regAddMemberWrap" hidden><label class="field-label" for="regAddMember">Team member</label>
+            <select class="select" id="regAddMember"></select></div>
           <div><label class="field-label" for="regAddWho">Recipient</label>
             <input class="input" id="regAddWho" placeholder="COMPANY NAME SDN BHD"></div>
         </div>
@@ -4183,17 +4193,17 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
-<script src="/js/passkey.js?v=20260926m"></script>
-<script src="/js/admin.js?v=20260926m"></script>
-<script src="/js/documents.js?v=20260926m"></script>
-<script src="/js/letters.js?v=20260926m"></script>
-<script src="/js/smreport.js?v=20260926m"></script>
-<script src="/js/reports.js?v=20260926m"></script>
-<script src="/js/register.js?v=20260926m"></script>
-<script src="/js/crm.js?v=20260926m"></script>
-<script src="/js/team.js?v=20260926m"></script>
-<script src="/js/campaigns.js?v=20260926m"></script>
-<script src="/js/ops.js?v=20260926m"></script>
-<script src="/js/perf.js?v=20260926m"></script>
+<script src="/js/passkey.js?v=20260926n"></script>
+<script src="/js/admin.js?v=20260926n"></script>
+<script src="/js/documents.js?v=20260926n"></script>
+<script src="/js/letters.js?v=20260926n"></script>
+<script src="/js/smreport.js?v=20260926n"></script>
+<script src="/js/reports.js?v=20260926n"></script>
+<script src="/js/register.js?v=20260926n"></script>
+<script src="/js/crm.js?v=20260926n"></script>
+<script src="/js/team.js?v=20260926n"></script>
+<script src="/js/campaigns.js?v=20260926n"></script>
+<script src="/js/ops.js?v=20260926n"></script>
+<script src="/js/perf.js?v=20260926n"></script>
 </body>
 </html>

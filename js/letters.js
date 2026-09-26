@@ -173,7 +173,8 @@
     call('register_add', {
       p_serial: a.serial, p_family: a.family || 'other', p_kind: a.kind,
       p_issued_at: a.issued_at || null, p_recipient: a.recipient || '',
-      p_client: a.client || null, p_note: a.note || null, p_file_url: a.file_url || null
+      p_client: a.client || null, p_note: a.note || null, p_file_url: a.file_url || null,
+      p_member: a.member || null
     }, then);
   }
   /* A hand-added row is corrected in place; the serial never changes. */
@@ -181,7 +182,8 @@
     call('register_update', {
       p_doc: doc.id, p_kind: a.kind, p_family: a.family || 'other',
       p_issued_at: a.issued_at || null, p_recipient: a.recipient || '',
-      p_client: a.client || null, p_note: a.note || null, p_file_url: a.file_url || null
+      p_client: a.client || null, p_note: a.note || null, p_file_url: a.file_url || null,
+      p_member: a.member || null
     }, then);
   }
   function setVoid(doc, reason, then) { call('document_set_void', { p_doc: doc.id, p_reason: reason }, then); }

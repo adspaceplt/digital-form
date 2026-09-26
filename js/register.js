@@ -615,15 +615,22 @@
     if (!d) sayTo = 'regMsg';
     msg('regAddMsg', '');
     var go = function () {
-      fillClients();
+      fillClients(); fillMembers();
       var sel = $('regAddClient');
       sel.innerHTML = $('docClient').innerHTML;
+      /* The colleague an HR row concerns, read the way the register's Team
+         column reads it, kept on the list even once they have left. */
+      var ms = $('regAddMember'), tm = d && d.family === 'hr' ? teamOf(d) : null;
+      ms.innerHTML = $('docMember').innerHTML;
+      if (tm && !ms.querySelector('option[value="' + tm.id + '"]')) {
+        ms.add(new Option(tm.name + (tm.staff_code ? ' · ' + tm.staff_code : ''), tm.id));
+      }
+      ms.value = tm ? tm.id : '';
       var rc = (d && d.recipient) || {};
       $('regAddTitle').textContent = d ? 'Edit ' + d.serial : 'Add entry';
       $('regAddGo').textContent = d ? 'Save' : 'Add';
       $('regAddSerial').value = d ? d.serial : '';
       $('regAddSerial').readOnly = Boolean(d);
-      $('regAddKind').value = d ? (d.kind || '') : '';
       $('regAddWho').value = d ? (rc.name || '') : '';
       $('regAddNote').value = d ? (d.note || '') : '';
       $('regAddUrl').value = d ? (d.file_url || '') : '';
@@ -631,23 +638,71 @@
       $('regAddFam').value = d ? d.family : (may('register.documents', 'work') ? 'other' : 'client');
       sel.value = d ? (d.client_id || '') : '';
       var was = d && clientOf(d.client_id);
-      addSeed = was && rc.name === (was.legal_name || was.name) ? rc.name : null;
+      addSeed = was && rc.name === (was.legal_name || was.name) ? rc.name
+        : (tm && rc.name === tm.name ? rc.name : null);
+      fillKindPick(d ? d.kind : '');
+      regAddFit();
       $('regAddSheet').hidden = false;
       cardFocus('regAddSheet');
     };
     if (state.clients.length) go(); else loadPeople(go);
   }
+  /* The document types a kind already carries: the seeded types and every
+     name its documents were saved under, title-cased and said once, so a
+     type is chosen and only a new one is typed (the user, 2026-09-26). */
+  function kindsFor(fam) {
+    var seen = {}, out = [];
+    var add = function (k) {
+      k = nameOf(String(k || '').trim());
+      if (!k || seen[k.toLowerCase()]) return;
+      seen[k.toLowerCase()] = true; out.push(k);
+    };
+    state.types.forEach(function (t) { if (t.family === fam) add(t.name); });
+    (state.docs || []).forEach(function (x) { if (x.family === fam) add(x.kind); });
+    return out.sort(function (a, b) { return a.localeCompare(b); });
+  }
+  function kindNow() {
+    var v = $('regAddKindPick').value;
+    return v === '__new' ? $('regAddKind').value.trim() : v;
+  }
+  function fillKindPick(keep) {
+    var sel = $('regAddKindPick'), list = kindsFor($('regAddFam').value);
+    sel.innerHTML = '<option value="">Choose a type</option>' + list.map(function (k) {
+      return '<option value="' + esc(k) + '">' + esc(k) + '</option>';
+    }).join('') + '<option value="__new">Other (new type)</option>';
+    keep = String(keep || '').trim();
+    var hit = keep && list.filter(function (k) { return k.toLowerCase() === keep.toLowerCase(); })[0];
+    if (hit) { sel.value = hit; $('regAddKind').value = ''; }
+    else if (keep) { sel.value = '__new'; $('regAddKind').value = keep; }
+    else { sel.value = ''; $('regAddKind').value = ''; }
+    $('regAddKindNewRow').hidden = sel.value !== '__new';
+  }
+  /* An HR letter is addressed to a colleague, never to a client (the user,
+     2026-09-26): the kind decides which picker the sheet draws. */
+  function regAddFit() {
+    var hr = $('regAddFam').value === 'hr';
+    $('regAddClientWrap').hidden = hr;
+    $('regAddMemberWrap').hidden = !hr;
+    $('regAddWho').placeholder = hr ? 'Full name' : 'COMPANY NAME SDN BHD';
+  }
   function shutAdd() { $('regAddSheet').hidden = true; editing = null; }
   function sendAdd() {
-    var serial = $('regAddSerial').value.trim(), kind = nameOf($('regAddKind').value);
-    $('regAddKind').value = kind;
+    var serial = $('regAddSerial').value.trim(), typed = $('regAddKindPick').value === '__new';
+    var kind = nameOf(kindNow());
+    if (typed) $('regAddKind').value = kind;
     if (!serial) { msg('regAddMsg', 'A reference is required.', 'err'); $('regAddSerial').focus(); return; }
-    if (!kind) { msg('regAddMsg', 'Say what kind of document it is.', 'err'); $('regAddKind').focus(); return; }
+    if (!kind) {
+      msg('regAddMsg', typed ? 'Type the new document type.' : 'Choose a document type.', 'err');
+      $(typed ? 'regAddKind' : 'regAddKindPick').focus(); return;
+    }
     var go = $('regAddGo');
     go.disabled = true;
+    var hr = $('regAddFam').value === 'hr';
     var fields = {
       serial: serial, family: $('regAddFam').value, kind: kind, issued_at: $('regAddDate').value || null,
-      recipient: $('regAddWho').value.trim(), client: $('regAddClient').value || null,
+      recipient: $('regAddWho').value.trim(),
+      client: hr ? null : ($('regAddClient').value || null),
+      member: hr ? ($('regAddMember').value || null) : null,
       note: $('regAddNote').value.trim(), file_url: $('regAddUrl').value.trim()
     };
     var was = editing;
@@ -702,6 +757,22 @@
       var c = clientOf(this.value), who = $('regAddWho');
       if (!c) return;
       if (!who.value.trim() || who.value === addSeed) { who.value = c.legal_name || c.name || ''; addSeed = who.value; }
+    });
+    /* A colleague's name fills the recipient the way a client's does, and
+       never replaces a name somebody typed. */
+    if ($('regAddMember')) $('regAddMember').addEventListener('change', function () {
+      var m = memberOf(this.value), who = $('regAddWho');
+      if (!m) return;
+      if (!who.value.trim() || who.value === addSeed) { who.value = m.name || ''; addSeed = who.value; }
+    });
+    if ($('regAddFam')) $('regAddFam').addEventListener('change', function () {
+      fillKindPick(kindNow());
+      regAddFit();
+    });
+    if ($('regAddKindPick')) $('regAddKindPick').addEventListener('change', function () {
+      var n = this.value === '__new';
+      $('regAddKindNewRow').hidden = !n;
+      if (n) $('regAddKind').focus();
     });
     ['docLangZh', 'docLangMs'].forEach(function (id) { if ($(id)) $(id).addEventListener('change', langBodies); });
     on('rvoidGo', function () {
