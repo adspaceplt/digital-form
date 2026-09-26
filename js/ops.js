@@ -2427,16 +2427,11 @@
 
     // Recent activity, and the whole of it on request.
     /* The talk is the Comments card's; what happened to the task is here. */
-    var rest = state.detail.events.filter(function (e) { return !/^comment/.test(e.event_type); });
-    var line = function (e) {
-      var dt = eventDetail(e);
-      return '<li><span class="raillog-what">' + esc(EVENT_WORD[e.event_type] || e.event_type.replace(/_/g, ' ')) + '</span>' +
-        (dt ? '<span class="raillog-detail">' + esc(dt) + '</span>' : '') +
-        '<span class="raillog-when">' + esc(niceTime(e.created_at)) + (whoName(e) ? ' · ' + esc(whoName(e)) : '') + '</span></li>';
-    };
-    $('dwLog').innerHTML = rest.length ? '<ul class="raillog raillog-plain">' + rest.slice(0, 3).map(line).join('') + '</ul>' : '';
-    $('dwLogMore').hidden = rest.length <= 3;
-    $('dwLogAll').innerHTML = rest.length > 3 ? '<ul class="raillog raillog-plain">' + rest.slice(3).map(line).join('') + '</ul>' : '';
+    var rest = taskItems(state.detail.events.filter(function (e) { return !/^comment/.test(e.event_type); }));
+    var lines = window.ADspaceRecords.fold(rest).length;
+    window.ADspaceRecords.paint($('dwLog'), rest, { limit: 3, empty: false });
+    $('dwLogMore').hidden = lines <= 3;
+    window.ADspaceRecords.paint($('dwLogAll'), rest, { offset: 3, empty: false });
     $('dwLogSec').hidden = !rest.length;
 
     $('dwFull').href = '/admin/?s=work&task=' + encodeURIComponent(t.id);
@@ -4275,8 +4270,8 @@
 
   // ---- Activity ------------------------------------------------------------
   var EVENT_WORD = {
-    task_created: 'Created', stage_changed: 'Stage moved', due_changed: 'Date moved',
-    assignment_changed: 'Owner changed', handover: 'Handed on', contributor_changed: 'Contributors changed',
+    task_created: 'Created', stage_changed: 'Moved', due_changed: 'Date changed',
+    assignment_changed: 'Task Owner changed', handover: 'Handed on', contributor_changed: 'Contributors changed',
     reviewer_changed: 'Reviewer changed', blocked: 'Blocked', unblocked: 'Unblocked',
     work_started: 'Work started', work_stopped: 'Work stopped', work_corrected: 'Hours corrected',
     revision_requested: 'Revision requested', revision_completed: 'Revision done',
@@ -4389,21 +4384,37 @@
   function paintLog() {
     var box = $('taskLog');
     if (!box) return;
-    var rows = state.detail.events;
+    var rows = taskItems(state.detail.events);
     if (!rows.length) { UI.emptyLine(box, 'No activity.'); return; }
-    box.innerHTML = '';
-    var table = GRP.table('svc-row tact-row', ['Date and time', 'Event', 'Team member']);
-    rows.forEach(function (e) {
-      var row = document.createElement('div');
-      row.className = 'svc-row tact-row';
-      row.innerHTML =
-        '<span class="tact-when">' + esc(niceTime(e.created_at)) + '</span>' +
-        '<span class="svc-name"><b>' + esc(EVENT_WORD[e.event_type] || e.event_type.replace(/_/g, ' ')) + '</b>' +
-          '<small>' + esc(eventDetail(e)) + '</small></span>' +
-        '<span class="tact-who">' + esc(whoName(e)) + '</span>';
-      table.appendChild(row);
+    box.innerHTML = '<div class="softpanel recpanel"></div>';
+    window.ADspaceRecords.paint(box.firstChild, rows);
+  }
+  /* A task's events as record lines (js/records.js). Created carries the
+     first Task Owner, and a finish or a cancel is the one line of its move,
+     not a second line a second later saying the same thing. */
+  function taskItems(events) {
+    var ev = events || [];
+    var near = function (a, b) {
+      return a.actor_id === b.actor_id && Math.abs(new Date(a.created_at) - new Date(b.created_at)) <= 5000;
+    };
+    var made = ev.filter(function (e) { return e.event_type === 'task_created'; })[0];
+    var first = made && ev.filter(function (e) {
+      return e.event_type === 'assignment_changed' && !(e.from_value && e.from_value.owner_id) && near(e, made);
+    })[0];
+    return ev.filter(function (e) {
+      if (e === first) return false;
+      if ((e.event_type === 'completed' || e.event_type === 'cancelled' || e.event_type === 'delivered') &&
+          ev.some(function (x) { return x.event_type === 'stage_changed' && near(x, e); })) return false;
+      return true;
+    }).map(function (e) {
+      var detail = eventDetail(e);
+      if (e === made && first) {
+        var owner = nameOf(first.to_value && first.to_value.owner_id);
+        if (owner) detail = (detail ? detail + '; ' : '') + 'Task Owner ' + owner;
+      }
+      return { at: e.created_at, who: whoName(e) || 'System',
+               what: EVENT_WORD[e.event_type] || sentence(e.event_type), detail: detail };
     });
-    box.appendChild(table);
   }
   function whoName(e) {
     var m = state.members.filter(function (x) { return x.id === e.actor_id; })[0];

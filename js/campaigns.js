@@ -2003,39 +2003,17 @@
       .then(function (r) {
         if (r.error) { UI.failLine(box, 'The activity record', r.error.message, loadCampLog); return; }
         var rows = r.data || [];
-        if (!rows.length) { box.innerHTML = '<div class="empty">No entries.</div>'; return; }
-        var A = (window.ADspaceAdmin && window.ADspaceAdmin.actionLabel) || {};
-        var t = document.createElement('div');
-        t.className = 'crm-table softpanel';
-        t.className += ' activity-list';
-        t.innerHTML = '<div class="crm-head svc-row log-row"><span>When</span><span>Activity</span>' +
-          '<span>By</span></div>';
-        rows.forEach(function (x) {
-          var el = document.createElement('div');
-          el.className = 'svc-row log-row';
-          var actor = x.actor || '';
-          /* Preserve main's email-to-name resolver through conflict merges;
-             fall back to the stored actor on older deployments. */
-          var actorLabel = typeof whoName === 'function' ? whoName(actor) : actor;
-          el.innerHTML =
-            '<time class="log-when" datetime="' + esc(x.created_at || '') + '">' + esc(logDate(x.created_at)) + '</time>' +
-            '<span class="log-event"><b class="log-what">' +
-              esc((A[x.action] || [])[0] || String(x.action || '').replace(/[._]/g, ' ')) + '</b>' +
-              (x.detail ? '<span class="log-detail">' + esc(x.detail) + '</span>' : '') + '</span>' +
-            '<span class="log-who"><span class="log-person">' +
-              esc(actorLabel || 'System') + '</span></span>';
-          t.appendChild(el);
-        });
-        box.innerHTML = '';
-        box.appendChild(t);
+        /* One line an entry; the campaign is named by the record itself. */
+        var A = window.ADspaceAdmin;
+        box.innerHTML = '<div class="softpanel recpanel"></div>';
+        window.ADspaceRecords.paint(box.firstChild, rows.map(function (x) {
+          var r = A && A.record ? A.record(x) : { at: x.created_at, who: x.actor || 'System', what: x.action, detail: x.detail || '' };
+          r.on = '';
+          return r;
+        }));
       });
   }
-  function logDate(iso) {
-    var d = new Date(iso);
-    return isNaN(d.getTime()) ? '' :
-      d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
-      ' · ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  }
+
 
   /* ---- What this campaign is waiting on us for --------------------------
      Derived from the bookings on every repaint, never stored: a state written

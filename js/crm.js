@@ -943,31 +943,16 @@
            record has already paid for this one. */
         state.log = rows;
         railLog();
-        if (!rows.length) { box.innerHTML = '<div class="empty">No entries.</div>'; return; }
-        var t = document.createElement('div');
-        t.className = 'crm-table softpanel';
-        t.className += ' activity-list';
-        t.innerHTML = '<div class="crm-head svc-row log-row"><span>When</span><span>Activity</span>' +
-          '<span>By</span></div>';
-        rows.forEach(function (x) {
-          var el = document.createElement('div');
-          el.className = 'svc-row log-row';
-          var actor = x.actor || '';
-          /* Main resolves stored emails to team display names with whoName().
-             Keep that resolution when present, while older deployments still
-             have a safe actor/System fallback. */
-          var actorLabel = typeof whoName === 'function' ? whoName(actor) : actor;
-          el.innerHTML =
-            '<time class="log-when" datetime="' + esc(x.created_at || '') + '">' + esc(activityStamp(x.created_at)) + '</time>' +
-            '<span class="log-event"><b class="log-what">' + esc(logWord(x.action)) + '</b>' +
-              (x.detail ? '<span class="log-detail">' + esc(x.detail) + '</span>' : '') + '</span>' +
-            '<span class="log-who"><span class="log-person">' +
-              esc(actorLabel || 'System') + '</span></span>';
-          t.appendChild(el);
-        });
-        box.innerHTML = '';
-        box.appendChild(t);
+        /* One line an entry, the client named once by the record itself. */
+        box.innerHTML = '<div class="softpanel recpanel"></div>';
+        window.ADspaceRecords.paint(box.firstChild, rows.map(recordOf));
       });
+  }
+  function recordOf(x) {
+    var A = window.ADspaceAdmin;
+    var r = A && A.record ? A.record(x) : { at: x.created_at, who: x.actor || 'System', what: logWord(x.action), detail: x.detail || '' };
+    r.on = '';
+    return r;
   }
 
   /* The console already names every action in one place; this reads it rather
@@ -977,11 +962,7 @@
     var hit = A && A[action];
     return (hit && hit[0]) || String(action || '').replace(/[._]/g, ' ');
   }
-  function activityStamp(iso) {
-    var d = new Date(iso);
-    return isNaN(d.getTime()) ? '' : niceDate(iso) + ' · ' +
-      d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-  }
+
 
   /* ---- Identity ---------------------------------------------------------
      The record opens on something that says which company this is. The mark
@@ -1090,22 +1071,8 @@
     return '<svg class="' + (cls || 'railico') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
       'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (RICON[name] || RICON.dot) + '</svg>';
   }
-  /* A call's glyph is its kind; a recorded event's is the section it belongs
-     to, which is what the activity record already files it under. */
+  /* A call's glyph is its kind. */
   var KIND_ICON = { call: 'phone', visit: 'pin', meeting: 'person', whatsapp: 'chat', email: 'mail', note: 'chat' };
-  /* Every section the Activity record files a row under, or the row falls to
-     the bare dot: `register` (Documents) and `ops` (My Work) were missing, so
-     a letter issued against this client drew a hollow circle in the rail. */
-  var SECTION_ICON = { clients: 'person', team: 'person', review: 'image', campaigns: 'speaker',
-                       links: 'link', services: 'tag', register: 'file', ops: 'calendar' };
-  function logIcon(action) {
-    /* The tags are `document.*` and `register.*`; `/^doc\./` matched neither,
-       so the one family with an obvious glyph never got it. */
-    if (/^document\.|^register\./.test(action || '')) return 'file';
-    var A = window.ADspaceAdmin && window.ADspaceAdmin.actionLabel;
-    var hit = A && A[action];
-    return SECTION_ICON[hit && hit[2]] || 'dot';
-  }
 
   /* A section is a heading and the one control that opens what it summarises,
      which is this portal's section head drawn flat rather than as a card. An
@@ -1472,13 +1439,8 @@
   function railLog() {
     var block = $('crmRailLogBlock'), box = $('crmRailLog');
     if (!block || !box) return;
-    var rows = (state.log || []).slice(0, 3);
-    if (!rows.length) { block.hidden = true; box.innerHTML = ''; return; }
-    box.innerHTML = '<ul class="raillog">' + rows.map(function (x) {
-      return '<li>' + ico(logIcon(x.action)) + '<span class="raillog-what">' + esc(logWord(x.action)) + '</span>' +
-        (x.detail ? '<span class="raillog-detail">' + esc(x.detail) + '</span>' : '') +
-        '<span class="raillog-when">' + esc(niceDate(x.created_at)) + '</span></li>';
-    }).join('') + '</ul>';
+    if (!(state.log || []).length) { block.hidden = true; box.innerHTML = ''; return; }
+    window.ADspaceRecords.paint(box, (state.log || []).map(recordOf), { limit: 3 });
     block.hidden = false;
   }
 

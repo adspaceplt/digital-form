@@ -1207,31 +1207,11 @@
   var actFilter = 'all';
   var actRows = [];
 
-  function dayLabel(iso) {
-    var d = new Date(iso);
-    // A row with no usable timestamp gets its own group rather than a heading
-    // reading "Invalid Date".
-    if (!iso || isNaN(d.getTime())) return 'Undated';
-    var today = new Date();
-    var same = function (a, b) { return a.toDateString() === b.toDateString(); };
-    var yest = new Date(today.getTime() - 864e5);
-    if (same(d, today)) return 'Today';
-    if (same(d, yest)) return 'Yesterday';
-    return d.toLocaleDateString('en-GB',
-      { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-  }
-
   function sectionOf(action) { return (ACTION_LABEL[action] || [])[2] || 'other'; }
   function sectionOfRow(a) { return a._section || sectionOf(a.action); }
   function monthLong(p) {
     var d = new Date(String(p).slice(0, 7) + '-01T00:00:00');
     return isNaN(d) ? String(p) : d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
-  }
-
-  function clockOf(iso) {
-    var d = new Date(iso);
-    if (!iso || isNaN(d.getTime())) return '';
-    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   }
 
   function paintActivity() {
@@ -1249,35 +1229,20 @@
         (actFilter === 'all' ? '' : ' in ' + ACT_SECTION[actFilter]) + '.</div>';
       return;
     }
-    box.innerHTML = '';
-    var day = '';
-    rows.forEach(function (a) {
-      var label = dayLabel(a.created_at);
-      if (label !== day) {
-        day = label;
-        var h = document.createElement('div');
-        h.className = 'act-day';
-        h.textContent = day;
-        box.appendChild(h);
-        var th = document.createElement('div');
-        th.className = 'act act-head';
-        th.innerHTML = ['Time', 'Action', 'On', 'Detail', 'By']
-          .map(function (c) { return '<span>' + c + '</span>'; }).join('');
-        box.appendChild(th);
-      }
-      var meta = a._section === 'performance' ? [PERF_STEP[a.kind] || a.kind, ''] : (ACTION_LABEL[a.action] || [a.action, '']);
-      var row = document.createElement('div');
-      row.className = 'act';
-      // Four columns, so the eye reads down a column instead of hunting
-      // across each line for where the detail happens to have landed.
-      row.innerHTML =
-        '<span class="act-when">' + esc(clockOf(a.created_at)) + '</span>' +
-        '<span class="act-tagcell"><span class="act-tag ' + meta[1] + '">' + esc(meta[0]) + '</span></span>' +
-        '<span class="act-subject">' + esc(a.subject || '') + '</span>' +
-        '<span class="act-detail">' + esc(a.detail || '') + '</span>' +
-        '<span class="act-who">' + esc(a._who || whoName(a.actor)) + '</span>';
-      box.appendChild(row);
-    });
+    /* One line an entry, a heading a day, runs folded (js/records.js). */
+    window.ADspaceRecords.paint(box, rows.map(recordOf));
+  }
+  /* A tag that is read on its own is never folded into the entry beside it:
+     Performance, an HR document, a void or a delete, billing, money and
+     access. */
+  var STICKY = /deleted|voided|removed|billing|\.rate$|invoice|team\.changed|group_|numbering|withdrawn|replaced/;
+  function stickyOf(a) {
+    return a._section === 'performance' || a.subject === 'HR' || STICKY.test(a.action || '');
+  }
+  function recordOf(a) {
+    var meta = a._section === 'performance' ? [PERF_STEP[a.kind] || a.kind, ''] : (ACTION_LABEL[a.action] || [String(a.action || '').replace(/[._]/g, ' '), '']);
+    return { at: a.created_at, who: a._who || whoName(a.actor) || 'System', what: meta[0], on: a.subject || '',
+             detail: a.detail || '', tone: meta[1] === 'is-danger' ? 'is-danger' : '', sticky: stickyOf(a) };
   }
 
   Array.prototype.forEach.call($('activityTabs').children, function (b) {
@@ -2834,6 +2799,8 @@
        Activity pane reads it rather than keeping a second copy that would
        drift from the activity record's own. */
     actionLabel: ACTION_LABEL,
+    /* One activity row as one record line, the same words everywhere. */
+    record: recordOf,
     log: logAction,
     actor: function () { return actor; },
     actorName: function () { return (me && me.name) || actor; },
