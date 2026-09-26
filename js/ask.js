@@ -190,7 +190,12 @@
     box.querySelector('[data-a="send"]').textContent = opts.send || 'Send';
     after.parentNode.insertBefore(box, after.nextSibling);
 
-    function shut() { box.classList.remove('is-open'); ta.value = ''; }
+    /* `once`: an ask for one act leaves with its answer, rather than
+       waiting under the control for a second. */
+    function shut() {
+      box.classList.remove('is-open'); ta.value = '';
+      if (opts.once && box.parentNode) box.parentNode.removeChild(box);
+    }
     box.querySelector('[data-a="cancel"]').addEventListener('click', shut);
     box.querySelector('[data-a="send"]').addEventListener('click', function () {
       var v = ta.value.trim();
@@ -203,6 +208,7 @@
     });
 
     return {
+      box: box,
       open: function () { box.classList.add('is-open'); ta.focus(); },
       close: shut,
       open_: function () { return box.classList.contains('is-open'); }

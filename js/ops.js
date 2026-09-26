@@ -173,6 +173,8 @@
     'bad-period': 'Invalid content month.',
     'bad-week': 'Week must be 1 to 5.',
     'skip-reason-required': 'Skipping a step needs a reason.',
+    'back-reason-required': 'Going back needs a reason.',
+    'retired-stage': 'That stage is no longer used.',
     'planning-incomplete': 'Planning not complete for this month.',
     'meeting-required': 'Content meeting not held or marked N/A.',
     'needs-final-or-reason': 'Add a final link or a note.',
@@ -778,8 +780,7 @@
      (who has room this week) is the question being asked. */
   function viewBox() {
     var list = $('workQueue'), board = $('workBoard'), cal = $('workCal'), cap = $('workCap');
-    var rep = $('workReport'), wl = $('workLoad'), wc = $('workClients');
-    if (wl) wl.hidden = state.view !== 'load';
+    var rep = $('workReport'), wc = $('workClients');
     if (wc) wc.hidden = state.view !== 'clients';
     if (list) list.hidden = state.view !== 'list';
     if (board) board.hidden = state.view !== 'board';
@@ -787,7 +788,6 @@
     if (cap) cap.hidden = state.view !== 'board';
     if (rep) rep.hidden = state.view !== 'report';
     return state.view === 'board' ? board
-         : state.view === 'load' ? wl
          : state.view === 'clients' ? wc
          : state.view === 'calendar' ? cal
          : state.view === 'report' ? rep : list;
@@ -803,7 +803,6 @@
     if (state.view === 'report') { paintReport(); return; }
     if (state.view === 'clients') { paintClients(false); return; }
     if (!state.tasks) return;
-    if (state.view === 'load') { paintLoad(); return; }
     /* The count is read against the view somebody chose, not against every
        row the database sent: "Open work, mine" is where this route opens, so
        counting it as `5 of 6` would print a fraction on a screen nobody has
@@ -1323,12 +1322,7 @@
       '</div>';
     /* A card opens the task beside the board, as a row does beside the list. */
     el.querySelector('.bcard-title').addEventListener('click', function () { openDrawer(t.id); });
-    var sel = el.querySelector('.state-select');
-    if (sel) sel.addEventListener('change', function () {
-      var want = sel.value;
-      sel.value = '';
-      if (want) stepFromRow(t, el, want);
-    });
+    wireStage(el.querySelector('.state-select'), t, el);
     /* Wherever the move is allowed at all, under a finger as under a pointer.
        A keyboard still has no drag, so the select on every card stays and is
        the path both share: this is an addition, never a replacement. */
@@ -1350,6 +1344,7 @@
      moved. */
   function loadReport(again) {
     var want = state.period || 'month';
+    if (!may('ops.reports', 'view')) { paint(); return; }
     /* Kept figures are drawn through `paint` too: straight to `paintReport`
        they left the view last shown (Workload) on the screen under the
        Report tab (the user, 2026-09-26). */
@@ -1429,14 +1424,18 @@
   function paintReport() {
     var box = $('workReport');
     if (!box) return;
-    if (state.reportBusy && !state.report) { UI.skeleton(box, 4); return; }
+    var figures = may('ops.reports', 'view');
+    if (figures && state.reportBusy && !state.report) { UI.skeleton(box, 4); return; }
+    box.innerHTML = '';
+    if (may('ops.all', 'view') && state.tasks) paintLoadInto(box);
+    if (!figures) return;
+    var sub = function () { var d = document.createElement('div'); d.className = 'repempty'; box.appendChild(d); return d; };
     if (state.reportErr) {
-      UI.failLine(box, 'the report', state.reportErr, function () { loadReport(true); });
+      UI.failLine(sub(), 'the report', state.reportErr, function () { loadReport(true); });
       return;
     }
     var r = state.report;
-    if (!r) { UI.emptyLine(box, 'No report figures are available for this period.'); return; }
-    box.innerHTML = '';
+    if (!r) { UI.emptyLine(sub(), 'No report figures are available for this period.'); return; }
 
     /* Every figure below but the first is taken over a window, and on a phone
        the select that sets it is inside the filters sheet — so the window is
@@ -1445,7 +1444,8 @@
     var win = document.createElement('p');
     win.className = 'routenote repwin';
     win.textContent = 'Reporting period: ' + niceDate(r.from) + ' to ' + niceDate(r.to);
-    box.appendChild(win);
+    /* The period heads the report, above open work by person. */
+    box.insertBefore(win, box.firstChild);
 
     /* 1. What is running. The first question a manager asks, answered in the
           words on the stage itself, so "what is on shooting" reads as a row
@@ -1662,20 +1662,19 @@
     /* The report is refused to anybody the part is not granted to, even from
        the address: `view=report` in a link somebody was sent must not open a
        view the database would only deny. */
-    if (v === 'report' && !may('ops.reports', 'view')) v = '';
-    if (v === 'load' && !may('ops.all', 'view')) v = '';
+    /* Workload is the Report's first section now; an old link lands there. */
+    if (v === 'load') v = 'report';
+    if (v === 'report' && !mayReport()) v = '';
     if (v === 'clients' && !may('ops', 'view')) v = '';
     /* List, Board and Calendar follow My Work unless the user group shuts
        one (2026-09-24). A view the group may not open falls to the first it
        may, and the list stays when every one of them is shut, because a
        route with no view at all is a blank page. */
     if ((v === 'list' || v === 'board' || v === 'calendar') && !may('ops.' + v, 'view')) v = '';
-    if (!v || ['list', 'board', 'calendar', 'clients', 'report', 'load'].indexOf(v) < 0) {
+    if (!v || ['list', 'board', 'calendar', 'clients', 'report'].indexOf(v) < 0) {
       v = ['list', 'board', 'calendar'].filter(function (k) { return may('ops.' + k, 'view'); })[0] || 'list';
     }
     state.view = v;
-    /* The workload is the team's, so it reads the team's queue. */
-    if (state.view === 'load' && state.scope !== 'all' && $('workScope')) { state.scope = 'all'; $('workScope').value = 'all'; }
     var seg = $('workViews');
     if (seg) Array.prototype.forEach.call(seg.querySelectorAll('.acttab'), function (b) {
       var on = b.getAttribute('data-view') === state.view;
@@ -1685,7 +1684,7 @@
     if ($('workGroup')) $('workGroup').hidden = state.view !== 'list';
     /* The report and the client's months are not filtered lists, so the
        list's own controls say nothing about them. */
-    var whole = state.view === 'report' || state.view === 'load' || state.view === 'clients';
+    var whole = state.view === 'report' || state.view === 'clients';
     if ($('workScope')) $('workScope').hidden = whole;
     if ($('workWf')) $('workWf').hidden = state.view !== 'board';
     /* The report is not a filtered list, so the list's own controls say
@@ -1831,54 +1830,71 @@
     if (ow) ow.addEventListener('click', function () { inlineOwner(t, el, ow, ownerIds[t.id], done); });
     var du = el.querySelector('[data-a="due"]');
     if (du) du.addEventListener('click', function () { inlineDue(t, el, du, done); });
-    var sel = el.querySelector('.state-select');
-    if (sel) sel.addEventListener('change', function () {
-      var want = sel.value;
-      sel.value = '';
-      if (!want) return;
-      stepFromRow(t, el, want, done);
-    });
+    wireStage(el.querySelector('.state-select'), t, el, done);
     wireRowMenu(el, t, done);
     return el;
   }
 
-  /* An everyday task's status is a select of five words. A content
-     deliverable shows its own stage — the step it is actually at, named as
-     its workflow names it — with the steps it may move to, which is how My
-     Work was published: five words over thirteen stages hid where the work
-     was, and that is the one thing the column is for. */
-  function statusCell(t) {
-    if (!isEveryday(t)) return stageCell(t);
-    var p = plainOf(t);
-    if (!mayMove(t) || p === 'cancelled') {
-      return '<span class="tone ' + PLAIN[p].tone + '">' + esc(PLAIN[p].word) + '</span>';
-    }
-    return '<select class="select select-sm state-select ' + PLAIN[p].tone + '" aria-label="Status of ' + esc(t.title) + '">' +
-      '<option value="">' + esc(PLAIN[p].word) + '</option>' +
-      ['todo', 'doing', 'waiting', 'review', 'done'].filter(function (k) { return k !== p; }).map(function (k) {
-        return '<option value="' + PLAIN_KEY[k] + '">' + esc(PLAIN[k].word) + '</option>';
+  /* THE STAGE, IN ONE ORDER. Every task's stage is one select listing its
+     whole workflow in the order the work runs, the same on a row, a board
+     card and the task's head, with the stage it is at chosen. A stage it
+     cannot move to from here is drawn and greyed, so the list never changes
+     shape between tasks (the user, 2026-09-26: "your stage listing keeps
+     jumping around"). A retired stage and Blocked are listed only for a task
+     standing on them. Going back, skipping ahead, cancelling and reopening
+     ask why, under the control, before the move is made. */
+  function stageChoices(t) {
+    var here = stageOf(t);
+    var nexts = (here && here.next_stage_keys) || [];
+    return stagesOf(t.workflow_id).filter(function (s) {
+      return s.key === t.stage_key || (!s.retired && s.key !== 'blocked');
+    }).map(function (s) { return { s: s, how: howTo(here, s, nexts) }; });
+  }
+  /* How a stage is reached from where the task stands: `here`, a `step` the
+     workflow offers, a `skip` forward along the line, a move `back` along
+     it, or not at all (''). A revision is entered only from its review and
+     a take-down only from Live, so neither is skipped or gone back into. */
+  function howTo(here, s, nexts) {
+    if (!here) return '';
+    if (s.key === here.key) return 'here';
+    if (nexts.indexOf(s.key) > -1) return 'step';
+    if (SIDE[here.stage_group] || SIDE[s.stage_group] || s.stage_group === 'revision' ||
+        s.stage_group === 'taken_down' || s.retired) return '';
+    return s.position > here.position ? 'skip' : s.position < here.position ? 'back' : '';
+  }
+  function howOf(t, key) {
+    var here = stageOf(t), s = state.stages[t.workflow_id + '|' + key];
+    return s ? howTo(here, s, (here && here.next_stage_keys) || []) : '';
+  }
+  function stageWordOf(t, s) {
+    if (isEveryday(t)) return (PLAIN[plainOfKey(s.key)] || {}).word || s.label;
+    return stepWord(s, t.engagement_id) || s.label;
+  }
+  function statusCell(t) { return stageCell(t); }
+  function stageCell(t) {
+    var every = isEveryday(t);
+    var here = stageOf(t);
+    var tone = every ? PLAIN[plainOf(t)].tone : stageTone(t);
+    var hereWord = here ? stageWordOf(t, here) : labelOfStage(t, t.stage_key);
+    var chip = '<span class="tone ' + tone + '">' + esc(hereWord) + '</span>';
+    if (!mayMove(t) || !here) return chip;
+    var opts = stageChoices(t);
+    if (!opts.some(function (o) { return o.how && o.how !== 'here'; })) return chip;
+    return '<select class="select select-sm state-select ' + tone + '" aria-label="Stage of ' + esc(t.title) + '">' +
+      opts.map(function (o) {
+        return '<option value="' + esc(o.s.key) + '"' + (o.how === 'here' ? ' selected' : '') +
+          (o.how ? '' : ' disabled') + '>' + esc(stageWordOf(t, o.s)) + '</option>';
       }).join('') + '</select>';
   }
-  /* The stage and the steps it may move to: a select where the person may
-     work the task and the stage can still move, the read-only chip
-     everywhere else. Blocked needs a category first, so it is asked for on
-     the task. A step that needs something said (a note, a date, a link) asks
-     for it in the step sheet; the rest move on the pick. */
-  function stageCell(t) {
-    var s = stageOf(t);
-    var nexts = ((s && s.next_stage_keys) || []).filter(function (k) { return k !== 'blocked'; });
-    var word = function (k) {
-      return stepWord(state.stages[t.workflow_id + '|' + k], t.engagement_id) || labelOfStage(t, k);
-    };
-    if (!mayMove(t) || isFinished(t) || !nexts.length) {
-      return '<span class="tone ' + stageTone(t) + '">' + esc(word(t.stage_key)) + '</span>';
-    }
-    return '<select class="select select-sm state-select ' + stageTone(t) + '" ' +
-      'aria-label="Stage of ' + esc(t.title) + '">' +
-      '<option value="">' + esc(word(t.stage_key)) + '</option>' +
-      nexts.map(function (k) {
-        return '<option value="' + esc(k) + '">' + esc(word(k)) + '</option>';
-      }).join('') + '</select>';
+  /* The select puts itself back at once: the move is the database's to make,
+     and the repaint draws the stage it answered with. */
+  function wireStage(sel, t, el, after) {
+    if (!sel) return;
+    sel.addEventListener('change', function () {
+      var want = sel.value;
+      sel.value = t.stage_key;
+      if (want && want !== t.stage_key) stepFromRow(t, el, want, after);
+    });
   }
   /* The meeting stage is named for the meeting, not for a claim about it:
      whether it is in the diary is the month's to say, and the head says it.
@@ -1889,17 +1905,21 @@
     return s.key === 'meeting_scheduled' && inMonth ? 'Content meeting' : s.label;
   }
 
+  /* The row's ⋯ is the task's: the full record first, the rare acts after
+     it, Delete last. Everything that moves the stage is the stage select. */
   function rowMenu(t) {
-    var fin = isFinished(t);
-    var s = stageOf(t);
-    var canCancel = !fin && mayMove(t) && s && (s.next_stage_keys || []).indexOf('cancelled') > -1;
+    var item = function (a, word, cls) {
+      return '<button class="kmenu-item' + (cls ? ' ' + cls : '') + '" data-m="' + a + '" type="button" role="menuitem">' + word + '</button>';
+    };
     return '<span class="kmenu-wrap">' +
       '<button class="kmenu-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(t.title) + '">' +
         '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>' +
       '<span class="kmenu" hidden role="menu">' +
-        '<button class="kmenu-item" data-m="open" type="button" role="menuitem">Open</button>' +
-        '<button class="kmenu-item" data-m="full" type="button" role="menuitem">Open full record</button>' +
-        (canCancel ? '<button class="kmenu-item" data-m="cancel" type="button" role="menuitem">Cancel task</button>' : '') +
+        item('full', 'Open full record') +
+        (may('ops', 'manage') && !isFinished(t) ? item('owner', 'Change Task Owner') : '') +
+        item('copy', 'Make a copy') +
+        item('repeat', 'Repeat on a schedule') +
+        (may('ops', 'manage') ? item('delete', 'Delete', 'is-danger') : '') +
       '</span></span>';
   }
   function wireRowMenu(el, t, done) {
@@ -1921,23 +1941,12 @@
       menu.hidden = true;
       btn.setAttribute('aria-expanded', 'false');
       var a = it.getAttribute('data-m');
-      var from = el.closest('#cwList') ? { from: 'client' } : null;
-      if (a === 'open') openDrawer(t.id, from);
-      if (a === 'full') openFull(t.id);
-      if (a === 'cancel') {
-        ADspaceConfirm.ask({
-          title: 'Cancel task', body: 'Removes it from open work. It can be reopened.',
-          go: 'Cancel task', tone: 'danger', cancel: 'Keep task',
-          field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
-        }, function (why) {
-          db.rpc('ops_transition_task', { p_task: t.id, p_next: 'cancelled', p_version: t.version, p_note: why })
-            .then(function (r) {
-              var d = r.data;
-              if (r.error || (d && d.error)) { rowNote(el, r.error ? r.error.message : said(d.error, t)); return; }
-              done();
-            });
-        });
-      }
+      var from = el.closest('#cwList') ? { from: 'client' } : {};
+      if (a === 'full') { openFull(t.id); return; }
+      /* The rest act on the task as the sheet does, so the sheet opens and
+         the act follows once the task is read. */
+      from.then = a === 'owner' ? openGive : a === 'copy' ? openDup : a === 'repeat' ? openRec : openDelete;
+      openDrawer(t.id, from);
     });
   }
   document.addEventListener('click', function (e) {
@@ -2075,20 +2084,49 @@
      for it; every other move is made on the pick. */
   function stepFromRow(t, el, next, after) {
     if (!next) return;
+    var how = howOf(t, next);
+    if (how === 'back' || how === 'skip' || next === 'cancelled' || (isFinished(t) && !isEveryday(t))) {
+      askWhy(t, el, next, how, after);
+      return;
+    }
     if (needsSay(t, next)) { openStep(t, next, { el: el, after: after }); return; }
     moveTo(t, el, next, null, after);
+  }
+  /* WHY, ASKED WHERE THE PICK WAS MADE: one line under the row, the card or
+     the task's next step, sent as the move. The reason goes on the record
+     with it; a skip files it against every stage passed over. */
+  function askWhy(t, el, next, how, after) {
+    if (!window.ADspaceAsk || !el || !el.parentNode) return;
+    var old = el.parentNode.querySelector(':scope > .asknote.is-why');
+    if (old) old.remove();
+    var to = labelOfStage(t, next);
+    var q = window.ADspaceAsk.note(el, {
+      label: how === 'back' ? 'Why it goes back to ' + to
+        : how === 'skip' ? 'Why the steps before ' + to + ' are skipped'
+        : next === 'cancelled' ? 'Why it is cancelled'
+        : 'Why it is reopened',
+      send: 'Move to ' + to, once: true,
+      save: function (why) {
+        moveTo(t, el, next, null, after, how === 'skip' ? { skip: why } : { note: why });
+      }
+    });
+    q.box.classList.add('is-why');
+    q.box.querySelector('textarea').placeholder = q.box.querySelector('textarea').getAttribute('aria-label');
+    q.open();
   }
   /* One path for every way a stage is moved on this page — the select on a
      list row, the select on a board card, and a card dragged into a column.
      All three go through `ops_transition_task` and therefore through the same
      gates, and all three name the refusal on the thing that was moved rather
      than in a bar a screen away. */
-  function moveTo(t, el, next, back, after) {
+  function moveTo(t, el, next, back, after, why) {
     if (!next) return;
     back = back || function () {};
+    why = why || {};
     rowNote(el, '');
-    db.rpc('ops_transition_task',
-      { p_task: t.id, p_next: next, p_version: t.version, p_note: null })
+    var args = { p_task: t.id, p_next: next, p_version: t.version, p_note: why.note || null };
+    if (why.skip) args.p_skip_reason = why.skip;
+    db.rpc('ops_transition_task', args)
       .then(function (r) {
         if (r.error) { back(); rowNote(el, dbWord(r.error.message)); return; }
         var d = r.data;
@@ -2146,7 +2184,7 @@
     var d = $('taskDrawer');
     if (!d || !id) return;
     o = o || {};
-    if (!d.hidden && state.drawer === id) return;
+    if (!d.hidden && state.drawer === id) { if (o.then) o.then(); return; }
     state.drawer = id;
     state.drawerFrom = o.from || 'work';
     /* Each task opens with its extras folded. */
@@ -2167,7 +2205,7 @@
     $('dwHand').removeAttribute('data-key');
     $('dwRate').hidden = true;
     CARD_FORMS.forEach(closeCardForm);
-    ['dwTimeMore', 'dwLogMore'].forEach(function (x) { if ($(x)) $(x).open = false; });
+    ['dwLogMore'].forEach(function (x) { if ($(x)) $(x).open = false; });
     UI.skeleton($('dwChecks'), 2);
     msg('dwMsg', '');
     d.hidden = false;
@@ -2176,7 +2214,7 @@
     var body = $('dwBody');
     if (body) body.scrollTop = 0;
     if (state.drawerFrom === 'work' && bridge.setUrl) bridge.setUrl();
-    readTask(id);
+    readTask(id, o.then);
   }
   function closeDrawer(noReload) {
     var d = $('taskDrawer');
@@ -2226,9 +2264,7 @@
     ck.className = 'tcheck' + (p === 'done' ? ' is-done' : '');
     ck.setAttribute('aria-pressed', String(p === 'done'));
     ck.setAttribute('aria-label', p === 'done' ? 'Reopen' : 'Mark complete');
-    var chip = $('dwStatus');
-    chip.className = 'chip ' + n.tone;
-    chip.textContent = n.status;
+    paintHeadStage($('dwStatus'), t, n, $('dwActs'), true);
     $('dwTitle').textContent = t.title || 'Untitled task';
     /* One line that places it, and the way to where the rest of it lives:
        the month or the client is its own record, not this sheet's. */
@@ -2405,23 +2441,11 @@
 
     $('dwFull').href = '/admin/?s=work&task=' + encodeURIComponent(t.id);
 
-    // The ⋯
+    // The ⋯: the full record, the rare acts, Delete last. Every stage move
+    // is the stage select.
     var menu = $('dwMenu');
-    var s = stageOf(t);
-    var nexts = (s && s.next_stage_keys) || [];
-    /* The way back is the move a person makes most after a mistake, so it
-       leads the ⋯ wherever the workflow still allows it. */
-    var back = cameFrom(t);
-    var rv = menu.querySelector('[data-a="revert"]');
-    var canBack = work && back && nexts.indexOf(back) > -1 && !fin && t.stage_key !== 'blocked';
-    rv.hidden = !canBack;
-    if (canBack) rv.textContent = 'Revert to ' + labelForKey(back);
-    menu.querySelector('[data-a="move"]').hidden = !work || fin || !nexts.length;
-    menu.querySelector('[data-a="block"]').hidden = !work || fin || t.stage_key === 'blocked' || every;
     menu.querySelector('[data-a="repeat"]').hidden = !work;
     menu.querySelector('[data-a="duplicate"]').hidden = !work;
-    menu.querySelector('[data-a="reopen"]').hidden = !work || !canReopen(t);
-    menu.querySelector('[data-a="cancel"]').hidden = !work || fin || nexts.indexOf('cancelled') < 0;
     menu.querySelector('[data-a="handover"]').hidden = fin;
   }
   // ---- Changing and taking back what was added --------------------------------
@@ -2605,24 +2629,18 @@
   /* The words a stored link kind is read by. */
   var LINK_WORD = { draft: 'Draft', review: 'Review', final: 'Final', brief: 'Brief', asset: 'File', other: 'Link' };
 
-  /* TIME, SAID ONCE AND BRIEFLY: how long it has been at this stage, how
-     long since it was made, and the hours somebody recorded where there are
-     any. The stage by stage table is the detail, opened on request. */
+  /* TIME: the stage table, said once, and the hours somebody recorded
+     where there are any. The table is the figure; a fact restating its
+     current row or its total said the same thing twice. */
   function paintDrawerTime(t) {
     var spans = stageSpans();
-    var here = spans.filter(function (x) { return x.running; })[0];
-    var since = spans.reduce(function (a, x) { return a + x.mins; }, 0);
     var rec = (state.detail.sessions || []).reduce(function (a, x) { return a + (Number(x.minutes) || 0); }, 0);
-    var rows = '';
-    if (here && !isFinished(t)) rows += frow('In this stage', esc(spanWord(here.mins)));
-    if (spans.length) rows += frow(isFinished(t) ? 'Start to finish' : 'Since created', esc(spanWord(since)));
-    if (rec) rows += frow('Recorded', esc(minutesWord(rec)));
-    $('dwTime').innerHTML = rows;
+    $('dwTime').innerHTML = rec ? frow('Recorded', esc(minutesWord(rec))) : '';
+    $('dwTime').hidden = !rec;
     var box = $('dwTimeList');
     box.innerHTML = '';
     if (spans.length) box.appendChild(stageTable(spans));
-    $('dwTimeMore').hidden = spans.length < 2;
-    $('dwTimeSec').hidden = !rows;
+    $('dwTimeSec').hidden = !spans.length && !rec;
   }
 
   /* THE NEXT STEP, IN THE SHEET AND ON THE FULL RECORD ALIKE. One derived
@@ -3138,14 +3156,16 @@
     }, function () { btn.disabled = false; });
   }
 
-  // ---- Workload -------------------------------------------------------------
+  // ---- Open work by person ------------------------------------------------
   /* Who is carrying what: one row a person, the counts a manager reads on a
-     Monday. It is the team's queue, so it reads whatever the team's queue
-     reads, and it adds nothing to any task's own row. */
-  function paintLoad() {
-    var box = $('workLoad');
-    if (!box) return;
-    box.innerHTML = '';
+     Monday. The first section of the Report, for whoever may see the team's
+     queue (it was a Workload view of its own until 2026-09-26, and the two
+     read as the same screen). It counts the queue already read. */
+  function paintLoadInto(host) {
+    var h = document.createElement('h3');
+    h.className = 'ovsec-title';
+    h.textContent = 'Open work by person';
+    host.appendChild(h);
     var ws = weekStart().getTime();
     var by = {}, order = [];
     (state.tasks || []).forEach(function (t) {
@@ -3164,7 +3184,13 @@
       if (p === 'review') r.review++;
     });
     order.sort(function (a, b) { return a ? (b ? by[a].name.localeCompare(by[b].name) : -1) : 1; });
-    if (!order.length) { UI.emptyLine(box, 'No tasks.'); return; }
+    if (!order.length) {
+      var none = document.createElement('div');
+      none.className = 'repempty';
+      host.appendChild(none);
+      UI.emptyLine(none, 'No open tasks.');
+      return;
+    }
     var table = GRP.table('svc-row load-row', ['Task Owner', 'Overdue', 'Due today', 'In progress', 'Waiting', 'Review', 'Done this week']);
     order.forEach(function (id) {
       var r = by[id];
@@ -3178,8 +3204,12 @@
         cell(r.waiting, 'Waiting') + cell(r.review, 'Review') + cell(r.done, 'Done this week');
       table.appendChild(row);
     });
-    box.appendChild(table);
+    host.appendChild(table);
   }
+  /* The Report is the team's numbers (`ops.reports`) and who carries the
+     open work (`ops.all`); either one opens it, each section drawn only
+     where it is granted. */
+  function mayReport() { return may('ops.reports', 'view') || may('ops.all', 'view'); }
 
   // ---- One task ------------------------------------------------------------
   function showList() {
@@ -3330,10 +3360,28 @@
       metaFormat(t),
       TASK_TYPE_WORD[t.task_type] || ''
     ].filter(Boolean).join(' · ');
-    var chip = $('taskStage');
-    chip.className = 'chip ' + n.tone;
-    chip.textContent = n.status;
+    paintHeadStage($('taskStage'), t, n, $('taskNextActs'), false);
     paintRun(t);
+  }
+  /* The head's stage is the same select as the row's, where the reader may
+     move it; a chip where they may not. A refusal or a Why? is drawn inside
+     the next step's card, under its button, which is where the move is read. */
+  function paintHeadStage(box, t, n, under, drawer) {
+    if (!box) return;
+    var html = stageCell(t);
+    if (html.indexOf('<select') === 0) {
+      box.className = 'stagepick';
+      box.innerHTML = html;
+      wireStage(box.querySelector('select'), t, under || box, function () {
+        if (drawer) state.drawerDirty = true;
+        var m = state.moved;
+        state.moved = null;
+        readTask(t.id, function () { if (m) msg(msgHere(), 'Moved to ' + m.word + '.', 'ok'); });
+      });
+      return;
+    }
+    box.className = 'chip ' + n.tone;
+    box.textContent = n.status;
   }
 
   /* The timer is read beside the title while it runs, in minutes, because a
@@ -3388,34 +3436,13 @@
     else if (mt === 'set') out.push('meeting-held');
     return out;
   }
-  /* The verb a move is named by: what the person is doing, not the stage it
-     lands on. "Move to Ready for production" names a destination; "Mark
-     ready" names the act. */
+  /* A move is named for where it goes: "Move to Client review". One name
+     for every step, on the button, the step sheet and the Why? under the
+     select (the user, 2026-09-26). */
   function verbFor(key, t) {
     var s = state.stages[t.workflow_id + '|' + key];
-    var g = s && s.stage_group;
-    if (key === 'ready') return 'Mark ready';
-    if (key === 'published') return 'Mark published';
-    if (key === 'approved') return 'Mark approved';
-    /* Both reviews send work back with the same two words; the step sheet
-       names which loop it enters. A longer label wrapped in the half-width
-       button a phone gives the card. */
-    if (key === 'changes_requested' || g === 'revision') return 'Request changes';
-    if (key === 'internal_review') return 'Send to AQC review';
-    if (key === 'client_review' || g === 'client_review') return 'Send to client';
-    if (key === 'scheduled') return 'Schedule';
-    if (key === 'live') return 'Mark live';
-    if (key === 'performance_review') return 'Review performance';
-    if (key === 'taken_down') return 'Take down';
-    if (key === 'completed') return 'Complete';
-    if (g === 'internal_review') return 'Send for review';
-    if (isWork(g)) return 'Mark in progress';
-    if (g === 'ready') return 'Mark ready';
-    if (g === 'delivered') return 'Mark delivered';
-    if (g === 'done') return 'Complete task';
-    if (g === 'waiting') return 'Put on hold';
-    if (g === 'cancelled') return 'Cancel task';
-    return (s && s.label) || sentence(key);
+    if (isEveryday(t)) return 'Move to ' + ((PLAIN[plainOfKey(key)] || {}).word || (s && s.label) || sentence(key));
+    return 'Move to ' + ((s && (stepWord(s, t.engagement_id) || s.label)) || sentence(key));
   }
   /* The stage the ordinary path goes to next. The workflow says which moves
      exist; this picks the one a person means. From planning that is Ready
@@ -3455,6 +3482,7 @@
     return all.filter(function (s) {
       if (SIDE[s.stage_group] || s.stage_group === 'revision') return false;
       if (s.key === t.stage_key) return true;
+      if (s.retired) return false;
       if (s.stage_group === 'taken_down') return false;
       if (s.key === 'published' && hasCompleted) return false;
       return true;
@@ -3488,7 +3516,7 @@
   function linked() { return hasLink('draft') || hasLink('review'); }
   function waAct(t) {
     return {
-      label: 'Sent on WhatsApp', move: 'client_review', tone: 'go',
+      label: verbFor('client_review', t), move: 'client_review', tone: 'go',
       run: function (hand) { move('client_review', WA_NOTE, { assignee: hand && hand.who || null }); }
     };
   }
@@ -3532,7 +3560,6 @@
       if (down) {
         var why = lastNote('stage_changed', t.stage_key);
         if (why) n.line += ' ' + why;
-        if (work && hasNext(t, 'live')) n.alt = stepAct(t, 'live', 'Put it back live');
       }
       n.rate = true;
       return n;
@@ -3546,14 +3573,14 @@
       n.line = 'Waiting on ' + (reasonWord(t.blocked_category) || 'a blocking issue') +
         (t.blocked_note ? ': ' + t.blocked_note : '') + '.';
       var back = resumeTo(t);
-      if (work && back) n.go = { label: 'Unblock', run: function () { move(back); } };
+      if (work && back) n.go = { label: verbFor(back, t), run: function () { move(back); } };
       return n;
     }
     if (g === 'waiting') {
       n.title = 'On hold';
       n.line = 'On hold. Resume the task when the work can continue.';
       var res = resumeTo(t);
-      if (work && res) n.go = { label: 'Resume', run: function () { move(res); } };
+      if (work && res) n.go = { label: verbFor(res, t), run: function () { move(res); } };
       return n;
     }
 
@@ -3640,10 +3667,8 @@
       n.line = linked() || target !== 'client_review'
         ? 'Pass it to the client, or send it back with what to change.'
         : 'Pass it to the client on WhatsApp, or send it back with what to change.';
-      if (work && target === 'client_review') n.go = linked() ? stepAct(t, target, 'Pass to client') : waAct(t);
+      if (work && target === 'client_review') n.go = linked() ? stepAct(t, target) : waAct(t);
       else if (work && target) n.go = stepAct(t, target);
-      if (work && hasNext(t, 'revision_internal')) n.alt = stepAct(t, 'revision_internal');
-      else if (work && hasNext(t, 'changes_requested')) n.alt = { label: 'Request changes', run: function () { askChanges(); } };
       return n;
     }
     if (g === 'revision') {
@@ -3653,34 +3678,30 @@
         n.line = asked ? 'Requested: ' + asked : 'Make the changes, then send it back.';
         if (work && target === 'client_review' && !linked()) n.go = waAct(t);
         else if (work && target) n.go = stepAct(t, target);
-        if (work && t.stage_key === 'revision_client' && hasNext(t, 'internal_review')) n.alt = stepAct(t, 'internal_review');
         return n;
       }
       n.title = 'Changes requested';
       n.line = asked ? 'Requested: ' + asked : 'Make the changes, then resend for review.';
-      if (work && target) n.go = stepAct(t, target, 'Resume work');
+      if (work && target) n.go = stepAct(t, target);
       return n;
     }
     if (tg === 'client_review' || (tstage && tstage.key === 'client_review')) {
       n.title = 'Send to the client';
       n.line = linked() ? 'Send once it passes review.' : 'Send it on WhatsApp, or add the draft link below.';
       if (work) n.go = linked() ? stepAct(t, target) : waAct(t);
-      if (work && hasNext(t, 'changes_requested')) n.alt = { label: 'Request changes', run: function () { askChanges(); } };
       return n;
     }
     if (isWork(g)) {
       var toWork = isWork(tg);
       n.title = toWork ? 'Next: ' + labelForKey(target) : 'Finish the draft';
       n.line = toWork ? 'Complete this step to move the task to the next stage.' : 'Send the draft for review when it is ready.';
-      if (work && target) n.go = stepAct(t, target, toWork ? 'Start ' + labelForKey(target).toLowerCase() : null);
+      if (work && target) n.go = stepAct(t, target);
       return n;
     }
     if (g === 'client_review') {
       n.title = 'Client review' + roundWord;
       n.line = 'Record the client\'s decision.';
       if (work && target) n.go = stepAct(t, target);
-      if (work && hasNext(t, 'revision_client')) n.alt = stepAct(t, 'revision_client');
-      else if (work && hasNext(t, 'changes_requested')) n.alt = { label: 'Request changes', run: function () { askChanges(); } };
       return n;
     }
     /* After the client said yes: a date to go out on, then the day it went
@@ -3689,7 +3710,6 @@
       n.title = 'Approved';
       n.line = t.publish_at ? 'Scheduled publish date ' + niceDate(t.publish_at) + '.' : 'Set the publish date to schedule it.';
       if (work) n.go = stepAct(t, 'scheduled');
-      if (work && hasNext(t, 'live')) n.alt = stepAct(t, 'live');
       return n;
     }
     if (g === 'scheduled') {
@@ -3712,7 +3732,6 @@
             : 'Its performance is due for review.')
         : 'Live.';
       if (work && hasNext(t, 'performance_review')) n.go = stepAct(t, 'performance_review');
-      if (work && hasNext(t, 'taken_down')) n.alt = stepAct(t, 'taken_down');
       return n;
     }
     if (g === 'performance') {
@@ -3722,7 +3741,6 @@
       n.line = open ? open + ' of ' + req.length + ' checks to go. Keep it live, or take it down if it is not working.'
         : 'Checks done. Complete it, or take it down.';
       if (work && !open && hasNext(t, 'completed')) n.go = stepAct(t, 'completed');
-      if (work && hasNext(t, 'taken_down')) n.alt = stepAct(t, 'taken_down');
       return n;
     }
     if (target === 'published' || tg === 'delivered') {
@@ -3781,18 +3799,10 @@
       n.line = may('ops', 'manage') ? 'Assign a task owner to continue.' : 'Ask a manager to assign a task owner.';
     }
     if (!work) return n;
-    if (p === 'todo') { n.title = n.title || 'To do'; n.go = go('Mark in progress', 'doing'); n.alt = go('Mark complete', 'complete'); }
-    else if (p === 'doing') { n.title = n.title || 'In progress'; n.go = go('Mark complete', 'complete'); n.alt = go('Send for review', 'review'); }
-    else if (p === 'waiting') { n.title = n.title || 'Waiting'; n.line = n.line || 'Resume the task when the work can continue.'; n.go = go('Resume', 'doing'); n.alt = go('Mark complete', 'complete'); }
-    else if (p === 'review') {
-      n.title = n.title || 'Ready for review';
-      n.go = go('Approve', 'complete');
-      n.alt = { label: 'Request changes', run: function () {
-        ADspaceConfirm.ask({ title: 'Request changes', body: 'Returns it to In progress and notifies the task owner.',
-          go: 'Request changes', field: { label: 'What needs to change', rows: 3, need: 'Say what needs to change.' }
-        }, function (why) { move('doing', why); });
-      } };
-    }
+    if (p === 'todo') { n.title = n.title || 'To do'; n.go = go('Move to In progress', 'doing'); }
+    else if (p === 'doing') { n.title = n.title || 'In progress'; n.go = go('Move to Done', 'complete'); }
+    else if (p === 'waiting') { n.title = n.title || 'Waiting'; n.line = n.line || 'Resume the task when the work can continue.'; n.go = go('Move to In progress', 'doing'); }
+    else if (p === 'review') { n.title = n.title || 'Ready for review'; n.go = go('Move to Done', 'complete'); }
     return n;
   }
   /* A step that changes a fact uses the control the reader is looking at:
@@ -3852,19 +3862,6 @@
       return;
     }
     openLinkForm(kind);
-  }
-  /* A timer is kept for the person who wants their own hours on a task, from
-     the full record's ⋯. Stage time is what tracks the work. */
-  function timerAct(t) {
-    var s = state.session;
-    if (s && s.task_id === t.id) {
-      return { label: 'Stop timer', run: function () {
-        call('ops_stop_work', { p_session: s.id, p_note: null }, msgHere('taskMsg'), function () {
-          stopTick(); readTask(t.id);
-        });
-      } };
-    }
-    return { label: 'Start timer', run: function () { startWork(t); } };
   }
   /* One open session a person across every task: starting here stops the one
      running elsewhere. */
@@ -4199,28 +4196,36 @@
     return order.map(function (k) { return by[k]; });
   }
 
-  /* One row a stage, with how many times the work came back to it: three
-     visits to a revision is the finding, and the figure is the total. */
+  /* One row a stage, in the workflow's own order, with how many times the
+     work came back to it (three visits to a revision is the finding) and the
+     time, and one Total under them. */
   function stageTable(spans) {
-    var st = GRP.table('svc-row tsess-row', ['Stage', 'Visits', 'Time']);
+    var t = state.task;
+    var pos = function (k) {
+      var x = t && state.stages[t.workflow_id + '|' + k];
+      return x ? x.position : 999;
+    };
+    spans = spans.slice().sort(function (a, b) { return pos(a.key) - pos(b.key); });
+    var st = GRP.table('svc-row tstage-row', ['Stage', { text: 'Visits', cls: 'is-end' }, { text: 'Time', cls: 'is-end' }]);
     spans.forEach(function (s) {
       var row = document.createElement('div');
-      row.className = 'svc-row tsess-row';
+      row.className = 'svc-row tstage-row';
       row.innerHTML =
         '<span class="svc-name"><b>' + esc(labelForKey(s.key)) + '</b>' +
-          (s.running ? '<small>still here</small>' : '') + '</span>' +
-        '<span class="tsess-who">' + (s.visits > 1 ? esc(String(s.visits)) : '') + '</span>' +
+          (s.running ? '<small>Current stage</small>' : '') + '</span>' +
+        '<span class="tstage-n">' + esc(String(s.visits)) + '</span>' +
         '<span class="tsess-mins">' + esc(minutesWord(s.mins)) + '</span>';
       st.appendChild(row);
     });
     var since = spans.reduce(function (a, s) { return a + s.mins; }, 0);
     var cyc = document.createElement('div');
-    cyc.className = 'svc-row tsess-row is-total';
-    cyc.innerHTML = '<span class="svc-name"><b>Since it was created</b></span>' +
-      '<span class="tsess-who"></span><span class="tsess-mins">' + esc(minutesWord(since)) + '</span>';
+    cyc.className = 'svc-row tstage-row is-total';
+    cyc.innerHTML = '<span class="svc-name"><b>Total</b></span>' +
+      '<span class="tstage-n"></span><span class="tsess-mins">' + esc(minutesWord(since)) + '</span>';
     st.appendChild(cyc);
     return st;
   }
+
   function paintTime() {
     var box = $('taskTime');
     if (!box) return;
@@ -4693,28 +4698,12 @@
     var menu = $('taskMenu');
     if (!menu) return;
     var work = may('ops', 'work');
-    var fin = isFinished(t);
-    var back = cameFrom(t);
-    var here = stageOf(t);
-    var nexts = (here && here.next_stage_keys) || [];
-    var rv = menu.querySelector('[data-a="revert"]');
-    var canBack = work && back && nexts.indexOf(back) > -1 && !fin && t.stage_key !== 'blocked';
-    rv.hidden = !canBack;
-    if (canBack) rv.textContent = 'Revert to ' + labelForKey(back);
-    menu.querySelector('[data-a="move"]').hidden = !work || fin || !nexts.length;
-    menu.querySelector('[data-a="block"]').hidden = !work || t.stage_key === 'blocked' || fin;
     menu.querySelector('[data-a="duplicate"]').hidden = !work;
     menu.querySelector('[data-a="repeat"]').hidden = !work;
-    menu.querySelector('[data-a="reopen"]').hidden = !work || !canReopen(t);
-    menu.querySelector('[data-a="cancel"]').hidden = !work || fin || nexts.indexOf('cancelled') < 0;
-    menu.querySelector('[data-a="handover"]').hidden = fin;
-    var tm = menu.querySelector('[data-a="timer"]');
-    if (tm) {
-      tm.hidden = !work || fin;
-      tm.textContent = state.session && state.session.task_id === t.id ? 'Stop timer' : 'Start timer';
-    }
-    var arch = menu.querySelector('[data-a="archive"]');
-    arch.textContent = t.archived_at ? 'Restore' : 'Archive';
+    menu.querySelector('[data-a="handover"]').hidden = isFinished(t);
+    /* Archiving is no longer offered; a task archived before keeps its way
+       back. */
+    menu.querySelector('[data-a="archive"]').hidden = !t.archived_at;
   }
 
   /* A move. `note` goes on the record with it; `o.assignee` hands the task
@@ -4724,7 +4713,6 @@
     var t = state.task;
     if (!t) return;
     o = o || {};
-    if (next === 'blocked') { openBlock(); return; }
     var fn = t.stage_key === 'blocked' ? 'ops_clear_blocked' : 'ops_transition_task';
     var args = t.stage_key === 'blocked'
       ? { p_task: t.id, p_next: next, p_version: t.version }
@@ -4739,24 +4727,6 @@
       });
     }, function () { if (go) go.disabled = false; });
   }
-  /* A move backwards, or out of the line, takes a reason, asked on the page
-     with the consequence stated first; the reason goes on the record. */
-  function askBack(key) {
-    ADspaceConfirm.ask({
-      title: 'Revert to ' + labelForKey(key),
-      body: 'The task goes back to ' + labelForKey(key) + '. The reason is kept in its Activity.',
-      go: 'Revert', tone: 'warn',
-      field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
-    }, function (why) { move(key, why); });
-  }
-  function askChanges() {
-    ADspaceConfirm.ask({
-      title: 'Request changes',
-      body: 'Moves it to Changes requested and notifies the owner.',
-      go: 'Request changes',
-      field: { label: 'What needs to change', rows: 3, need: 'Say what needs to change.' }
-    }, function (why) { move('changes_requested', why); });
-  }
   function askComplete(key) {
     ADspaceConfirm.ask({
       title: 'Complete task',
@@ -4765,15 +4735,6 @@
       field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
     }, function (why) { move(key, why); });
   }
-  function askCancel() {
-    ADspaceConfirm.ask({
-      title: 'Cancel task',
-      body: 'Removes it from open work. It can be reopened.',
-      go: 'Cancel task', tone: 'danger', cancel: 'Keep task',
-      field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
-    }, function (why) { move('cancelled', why); });
-  }
-
   function markMonthReady(t) {
     var e = state.eng;
     if (!e) return;
@@ -4853,24 +4814,6 @@
       field: { label: 'Why it is being reopened', rows: 2, need: 'A reason is required.' }
     }, function (why) { move(to, why); });
   }
-  /* Reopening needs a reason somebody else will read, asked on the page
-     with the consequence stated first, from the sheet and the record alike. */
-  function askReopen() {
-    var t = state.task;
-    if (!t) return;
-    if (!(t.completed_at && reopens(t))) { askReopenTo(t); return; }
-    ADspaceConfirm.ask({
-      title: 'Reopen task',
-      body: 'It goes back into open work at the stage it finished from.',
-      go: 'Reopen',
-      field: { label: 'Why it is being reopened', rows: 2, need: 'A reason is required.' }
-    }, function (why) {
-      call('ops_reopen_task', { p_task: t.id, p_reason: why, p_version: t.version }, msgHere('taskMsg'), function () {
-        readTask(t.id);
-      });
-    });
-  }
-
   // ---- The way back, drawn where the act happened --------------------------
   function undoBar(text, undo, host) {
     if (!host || !host.parentNode) return;
@@ -4986,11 +4929,6 @@
     $('dueNote').value = '';
     msg('dueMsg', '');
     sheet('dueSheet', true);
-  }
-  function openBlock() {
-    $('blockNote').value = '';
-    msg('blockMsg', '');
-    sheet('blockSheet', true);
   }
   /* `swap` is the Task / Content deliverable switch: the other form takes
      the place of this one without arriving again, so the scrim does not fade
@@ -6395,81 +6333,6 @@
     }, function () { btn.disabled = false; });
   }
 
-  /* MOVE TO ANOTHER STAGE. Every move the workflow allows from here, with
-     the next person on the same move where the work changes hands. Passing
-     over a step is an override: it is offered to ops Manage only, and the
-     database refuses it to anybody else whatever the page sends. A move back
-     takes a reason. */
-  function openMove() {
-    var t = state.task;
-    if (!t || !may('ops', 'work')) return;
-    var here = stageOf(t);
-    var nexts = (here && here.next_stage_keys) || [];
-    var manage = may('ops', 'manage');
-    var opts = stagesOf(t.workflow_id).filter(function (s) {
-      if (s.key === t.stage_key || s.key === 'blocked') return false;
-      if (nexts.indexOf(s.key) > -1) return true;
-      return manage && here && s.position > here.position && !SIDE[s.stage_group] && !SIDE[here.stage_group];
-    });
-    $('handStage').innerHTML = opts.map(function (s) {
-      var skip = nexts.indexOf(s.key) < 0;
-      var backw = !skip && here && s.position < here.position && !SIDE[s.stage_group];
-      return '<option value="' + esc(s.key) + '" data-skip="' + (skip ? '1' : '') + '" data-back="' + (backw ? '1' : '') + '">' +
-        esc(s.label) + (skip ? ' (skips a step)' : '') + '</option>';
-    }).join('');
-    var first = nextOf(t);
-    if (first && opts.some(function (s) { return s.key === first; })) $('handStage').value = first;
-    var owner = ownerId(t);
-    $('handTo').innerHTML = '<option value="">Keep ' + esc(ownerName(t) || 'the owner') + '</option>' + state.members.filter(function (m) {
-      return m.id !== owner;
-    }).map(function (m) {
-      return '<option value="' + esc(m.id) + '">' + esc(person(m)) + '</option>';
-    }).join('');
-    $('handWhat').textContent = 'Now at ' + stageLabel(t) + '.';
-    $('handSkip').value = '';
-    $('handNote').value = '';
-    handStageChanged();
-    msg('handMsg', '');
-    sheet('handSheet', true);
-  }
-  function handStageChanged() {
-    var sel = $('handStage');
-    var o = sel.options[sel.selectedIndex];
-    var skip = Boolean(o && o.getAttribute('data-skip'));
-    var back = Boolean(o && o.getAttribute('data-back'));
-    $('handSkipRow').hidden = !(skip || back);
-    $('handSkipLabel').textContent = skip ? 'Why the steps between are skipped' : 'Why it goes back';
-  }
-  function doHand() {
-    var t = state.task;
-    if (!t) return;
-    var sel = $('handStage');
-    var o = sel.options[sel.selectedIndex];
-    if (!o) return;
-    var skipping = Boolean(o.getAttribute('data-skip'));
-    var backw = Boolean(o.getAttribute('data-back'));
-    var reason = String($('handSkip').value || '').trim();
-    if ((skipping || backw) && !reason) { msg('handMsg', said('reason-required'), 'err'); $('handSkip').focus(); return; }
-    var note = String($('handNote').value || '').trim();
-    if (sel.value === 'blocked') { sheet('handSheet', false); openBlock(); return; }
-    var btn = $('handGo');
-    btn.disabled = true;
-    var to = $('handTo').value || null;
-    call('ops_transition_task', {
-      p_task: t.id, p_next: sel.value, p_version: t.version,
-      p_note: (backw ? reason + (note ? ' · ' + note : '') : note) || null,
-      p_assignee: to,
-      p_skip_reason: skipping ? reason : null
-    }, 'handMsg', function (d) {
-      btn.disabled = false;
-      sheet('handSheet', false);
-      /* The queue behind the record agrees without a second read. */
-      if (to) { state.owners[t.id] = nameOf(to); state.ownerIds[t.id] = to; }
-      applyTask(d);
-      readTask(t.id);
-    }, function () { btn.disabled = false; });
-  }
-
   /* HAND OVER TASK. Responsibility changes and the stage stays where it is.
      The sheet shows what the next person is taking on before it is made:
      what is left on the checklist and when it is owed. */
@@ -6799,15 +6662,10 @@
         dmb.setAttribute('aria-expanded', 'false');
         var a = it.getAttribute('data-a'), t = state.task;
         if (!t) return;
-        if (a === 'revert') { var back = cameFrom(t); if (back) askBack(back); }
         if (a === 'full') openFull(t.id);
         if (a === 'handover') openGive();
-        if (a === 'move') openMove();
-        if (a === 'block') openBlock();
         if (a === 'repeat') openRec();
         if (a === 'duplicate') openDup();
-        if (a === 'reopen') askReopen();
-        if (a === 'cancel') askCancel();
         if (a === 'delete') openDelete();
       });
     }
@@ -6869,20 +6727,14 @@
         mb.setAttribute('aria-expanded', 'false');
         var a = it.getAttribute('data-a'), t = state.task;
         if (!t) return;
-        if (a === 'revert') { var back = cameFrom(t); if (back) askBack(back); }
-        if (a === 'move') openMove();
         if (a === 'handover') openGive();
-        if (a === 'cancel') askCancel();
-        if (a === 'block') openBlock();
         if (a === 'duplicate') openDup();
         if (a === 'repeat') openRec();
-        if (a === 'timer') { var tl = timerAct(t); if (tl) tl.run(); }
         if (a === 'archive') {
           call('ops_archive_task', { p_task: t.id, p_on: !t.archived_at }, 'taskMsg', function () {
             showList();
           });
         }
-        if (a === 'reopen') askReopen();
         if (a === 'delete') openDelete();
       });
     }
@@ -6973,20 +6825,6 @@
           : '';
         readTask(t.id);
       });
-    });
-
-    ['blockClose', 'blockCancel'].forEach(function (id) {
-      var b = $(id); if (b) b.addEventListener('click', function () { sheet('blockSheet', false); });
-    });
-    var bg = $('blockGo');
-    if (bg) bg.addEventListener('click', function () {
-      var t = state.task;
-      if (!t) return;
-      call('ops_set_blocked', {
-        p_task: t.id, p_category: $('blockCat').value,
-        p_note: String($('blockNote').value || '').trim() || null,
-        p_version: t.version
-      }, 'blockMsg', function () { sheet('blockSheet', false); readTask(t.id); });
     });
 
     ['taskSheetClose', 'ntCancel'].forEach(function (id) {
@@ -7082,13 +6920,6 @@
     ['meetChannel', 'meetLink'].forEach(function (id) {
       var el = $(id); if (el) el.addEventListener(id === 'meetLink' ? 'input' : 'change', meetBookShown);
     });
-    ['handClose', 'handCancel'].forEach(function (id) {
-      var b = $(id); if (b) b.addEventListener('click', function () { sheet('handSheet', false); });
-    });
-    var handStageSel = $('handStage');
-    if (handStageSel) handStageSel.addEventListener('change', handStageChanged);
-    var handGoBtn = $('handGo');
-    if (handGoBtn) handGoBtn.addEventListener('click', doHand);
     ['giveClose', 'giveCancel'].forEach(function (id) {
       var b = $(id); if (b) b.addEventListener('click', function () { sheet('giveSheet', false); });
     });
@@ -7118,8 +6949,8 @@
         e.stopPropagation();
         return;
       }
-      var open = ['dueSheet', 'blockSheet', 'taskSheet', 'dupSheet', 'genSheet', 'recSheet',
-       'engSheet', 'meetSheet', 'handSheet', 'giveSheet', 'tplSheet', 'tplEditSheet', 'stepSheet', 'tdelSheet'].filter(function (id) {
+      var open = ['dueSheet', 'taskSheet', 'dupSheet', 'genSheet', 'recSheet',
+       'engSheet', 'meetSheet', 'giveSheet', 'tplSheet', 'tplEditSheet', 'stepSheet', 'tdelSheet'].filter(function (id) {
         return $(id) && !$(id).hidden;
       });
       open.forEach(function (id) { sheet(id, false); });
@@ -7205,8 +7036,6 @@
     var num = $('workMore') && $('workMore').querySelector('[data-a="numbering"]');
     if (num) num.hidden = !isAdmin();
     if (state.selecting && !may('ops', 'manage')) state.selecting = false;
-    var vl = $('workViewLoad');
-    if (vl) vl.hidden = !may('ops.all', 'view');
     ['list', 'board', 'calendar'].forEach(function (k) {
       var b = document.querySelector('#workViews [data-view="' + k + '"]');
       if (b) b.hidden = !may('ops.' + k, 'view');
@@ -7227,7 +7056,7 @@
        person — but offering a view that can only come back denied is a
        control somebody has to try before they learn it is not theirs. */
     var rv = $('workViewReport');
-    if (rv) rv.hidden = !may('ops.reports', 'view');
+    if (rv) rv.hidden = !mayReport();
     if (rv && rv.hidden && state.view === 'report') state.view = 'list';
     showPeriod();
 
