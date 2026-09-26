@@ -603,6 +603,16 @@ on the field the person is actually filling in first — this one was reached
 only after a profile link had been typed, so the commonest way to key somebody
 in twice, their name and nothing else yet, was the one path that said nothing.
 
+**A code leads its line, and a picker reads the way its directory does.** A
+client select printed `Brew Garten · AC104`, so the IDs started wherever each
+name happened to end and somebody looking for one read every line from the
+left. A fixed-width code first (`AC104 · Brew Garten`) stands in one column,
+which is the only way a list of IDs can be scanned. The same select listed
+every record alphabetically in one run; it now takes the Clients directory's
+own bands and order (Leads, Clients, Past clients, newest ID first), because a
+person who has learned where a client sits in one list should find it in the
+same place in the next (the user, 2026-09-26).
+
 **A cell in a list is read by its shape, so it holds what differs and not what
 is longest.** The creators list named each creator's latest campaign for a
 week. A campaign title is longer than the column, so it arrived truncated on
@@ -2176,6 +2186,18 @@ still sits on top of the shared one.
   sign-in page is a title, a field and a button; a section head is a
   heading and its one action; a hint under a destructive control states
   the consequence in one sentence.
+- **A formal name is a proper noun and takes title case** (the user,
+  2026-09-26): the name of a document, an agreement, a form, a checklist or a
+  report is written the way the paper is titled, so Service Agreement,
+  Letter of Offer, Quotation Cover, HR Letter, Onboarding Checklist, Social
+  Media Accounts Report, never Service agreement. Articles and short
+  prepositions stay lower after the first word, an acronym keeps its
+  capitals, and a hyphenated prefix capitalises its first part only
+  (Pre-advertising Checklist). A kind the team types is saved and shown
+  that way (`ADspaceForm.title`). Everything that is not a name (buttons,
+  labels, headings, messages) stays in sentence case, so a band that names
+  a family of documents reads Client Letters and a section heading still
+  reads Addressed to.
 - Buttons: one to three words, sentence case, verb first, no article, no
   object the context gives ("Add", "Save", "Confirm", "Delete campaign").
   Menu items are the action's name only. Never "Add a person", "Client

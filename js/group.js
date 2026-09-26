@@ -92,7 +92,7 @@
     body.className = 'crm-group-body';
     var inner = document.createElement('div');
     inner.className = 'crm-group-inner';
-    if (!o.shut && o.table) inner.appendChild(o.table());
+    if (!o.shut && o.table) inner.appendChild(drawn(o));
     body.appendChild(inner);
     sec.appendChild(body);
     var btn = head.querySelector('.crm-group-fold');
@@ -104,7 +104,7 @@
     btn.addEventListener('click', function () {
       shutNow = !shutNow;
       keep(o.route, o.memo || o.key, shutNow);
-      if (!shutNow && !inner.firstChild && o.table) inner.appendChild(o.table());
+      if (!shutNow && !inner.firstChild && o.table) inner.appendChild(drawn(o));
       sec.classList.toggle('is-shut', shutNow);
       head.classList.toggle('is-shut', shutNow);
       btn.setAttribute('aria-expanded', String(!shutNow));
@@ -115,14 +115,28 @@
 
   /* A card draws its first `limit` rows and offers the rest under one
      control, so a group of a hundred and eighty opens as a page somebody can
-     read rather than as a mile of rows. */
+     read rather than as a mile of rows. Once somebody has asked for the
+     rest, the card keeps them for as long as the page is open: a save
+     repaints the directory, and a repaint that put the rows back behind
+     Show more took away the row the person was working down (the user,
+     2026-09-26, on Documents). The card is known by the section drawing it,
+     so no caller has to say which card it is. */
+  var opened = {}, drawing = null;
+  function drawn(o) {
+    var was = drawing;
+    drawing = o.route + ':' + (o.memo || o.key);
+    try { return o.table(); } finally { drawing = was; }
+  }
   function more(table, items, limit, word, rowOf) {
+    var card = drawing;
+    if (card && opened[card]) limit = items.length;
     items.slice(0, limit).forEach(function (it) { table.appendChild(rowOf(it)); });
     if (items.length <= limit) return;
     var btn = document.createElement('button');
     btn.type = 'button'; btn.className = 'crm-group-more';
     btn.textContent = 'Show ' + (items.length - limit) + ' more' + (word ? ' ' + word : '');
     btn.addEventListener('click', function () {
+      if (card) opened[card] = true;
       items.slice(limit).forEach(function (it) { table.insertBefore(rowOf(it), btn); });
       btn.remove();
     });

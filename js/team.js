@@ -88,7 +88,7 @@
                 ['documents', 'Documents'], ['requests', 'Requests'], ['calls', 'Calls and visits']],
     review:    [['sets', 'Content sets'], ['settings', 'Client settings']],
     campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance']],
-    register:  [['documents', 'Client documents'], ['hr', 'HR letters']],
+    register:  [['documents', 'Client documents'], ['hr', 'HR Letters']],
     /* The record is already read a section at a time — the tab strip is its
        own — and its access was one switch over all of them, so opening the
        campaigns log to the team opened every client's billing change and

@@ -450,7 +450,27 @@
     if (el && el.focus) el.focus();
   }
 
+  /* A formal name is a proper noun, so it takes title case: Service
+     Agreement, Letter of Offer, Pre-advertising Checklist (the user,
+     2026-09-26). Articles, short prepositions and conjunctions stay lower
+     after the first word; a word already carrying a capital past its first
+     letter (HR, NRIC, AP01, iPhone) is left as typed; a hyphenated word
+     capitalises its first part only, so a prefix does not shout. Labels,
+     buttons and messages stay in sentence case: this is for names. */
+  var SMALL = { a: 1, an: 1, and: 1, as: 1, at: 1, but: 1, by: 1, for: 1, in: 1, nor: 1,
+                of: 1, on: 1, or: 1, per: 1, the: 1, to: 1, via: 1, with: 1 };
+  function title(text) {
+    return String(text == null ? '' : text).replace(/\s+/g, ' ').trim().split(' ').map(function (w, i) {
+      if (!w) return w;
+      if (/[A-Z]/.test(w.slice(1)) || /\d/.test(w)) return w;
+      var low = w.toLowerCase();
+      if (i > 0 && SMALL[low]) return low;
+      return low.charAt(0).toUpperCase() + low.slice(1);
+    }).join(' ');
+  }
+
   window.ADspaceForm = {
+    title: title,
     reveal: reveal,
     segment: upgrade,
     paint: paint,
