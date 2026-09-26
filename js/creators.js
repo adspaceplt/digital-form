@@ -630,7 +630,7 @@
     if (!r || !r.decision) return '';
     var when = r.at ? new Date(r.at) : null;
     var stamp = when ? when.toLocaleString(lang === 'zh' ? 'zh-CN' : 'en-GB',
-      { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+      { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).replace(/\bSep\b/, 'Sept') : '';
     var word = r.decision === 'approved' ? t().approvedBy : t().changesBy;
     return '<p class="approve-state booking-decided">' +
       esc(word(r.reviewer || t().theClient, stamp)) + '</p>' +
@@ -757,7 +757,7 @@
   function fmtDate(d) {
     var dt = new Date(d + 'T00:00:00');
     return dt.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-GB',
-      { day: 'numeric', month: 'short', year: 'numeric' });
+      { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
   }
 
   var BACKUPS_WANTED = 2;

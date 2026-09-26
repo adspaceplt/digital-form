@@ -68,21 +68,24 @@
     if (!d) return null;
     return Math.round((d - todayStart()) / 86400000);
   }
+  /* The month's short word from one list, never the browser's: Safari on an
+     iPhone prints "Sep" where the portal writes "Sept". */
+  var MON_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   function niceDate(v) {
     var d = dayOf(v);
     if (!d) return '';
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    return d.getDate() + ' ' + MON_SHORT[d.getMonth()] + ' ' + d.getFullYear();
   }
   function shortDate(v) {
     var d = dayOf(v);
     if (!d) return '';
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    return d.getDate() + ' ' + MON_SHORT[d.getMonth()];
   }
   function niceTime(v) {
     if (!v) return '';
     var d = new Date(v);
     if (isNaN(d.getTime())) return '';
-    return d.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+    return d.getDate() + ' ' + MON_SHORT[d.getMonth()] + ', ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
   }
   function dateValue(v) {
     var d = dayOf(v);
@@ -1553,7 +1556,7 @@
     var title = m.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
     /* The short month draws under 360px, where "September 2026" with its two
        arrows and Today ran past the gutter; the day labels already say Sept. */
-    var short = m.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }).replace(/^Sep /, 'Sept ');
+    var short = m.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept').replace(/^Sep /, 'Sept ');
     var chev = function (path) {
       return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="' + path + '"/></svg>';
     };
@@ -1586,7 +1589,7 @@
       }).join('') + (list.length > 3 ? '<span class="cal-more">+' + (list.length - 3) + ' more</span>' : '');
       cells += '<div class="' + cls + '" data-day="' + esc(d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2)) + '">' +
         '<span class="cal-num"><small>' + esc(d.toLocaleDateString('en-GB', { weekday: 'short' })) + '</small>' +
-          '<b>' + d.getDate() + '</b><small>' + esc(d.toLocaleDateString('en-GB', { month: 'short' })) + '</small></span>' +
+          '<b>' + d.getDate() + '</b><small>' + esc(d.toLocaleDateString('en-GB', { month: 'short' }).replace(/\bSep\b/, 'Sept')) + '</small></span>' +
         chips + '</div>';
     }
     box.innerHTML = html + '<div class="cal">' + cells + '</div>';
@@ -4976,7 +4979,7 @@
     var m = /^(\d{4})-(\d{2})$/.exec(key || '');
     if (!m) return key || '';
     var d = new Date(Number(m[1]), Number(m[2]) - 1, 1);
-    return d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+    return d.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
   }
   /* The week the code names is the planned publishing week of the content
      month: days 1 to 7 are week 1 and so on, week 5 for the tail. */
@@ -5772,26 +5775,32 @@
   function meetHtml(e, can) {
     var set = e.meeting_at && !e.meeting_na;
     var bookable = can && set && e.meeting_channel === 'google_meet' && !e.meeting_link;
-    return '<div class="eng-meet"><span class="eng-lab">Content meeting</span>' +
-        '<span class="eng-meetword' + (meetingHeld(e) ? ' is-held' : '') + '">' + esc(meetingWord(e)) + '</span>' +
+    /* One grid of rows, each a label, its value and the row's own controls
+       at the right edge. On a narrow card the label and the controls share
+       the first line and the value takes the full width under them, so no
+       button is ever left alone on a line of its own. */
+    return '<div class="eng-facts">' +
+      '<div class="eng-row eng-meet"><span class="eng-lab">Content meeting</span>' +
+        '<span class="eng-val eng-meetword' + (meetingHeld(e) ? ' is-held' : '') + '">' + esc(meetingWord(e)) + '</span>' +
         (can ? '<span class="eng-meetacts">' +
           (bookable ? '<button class="btn btn-sm" data-a="book" type="button">Create Google Meet</button>' : '') +
           '<button class="btn btn-sm" data-a="meet" type="button">' + (e.meeting_at || e.meeting_na ? 'Change' : 'Set meeting') + '</button>' +
         '</span>' : '') +
       '</div>' +
       (set && e.meeting_link
-        ? '<div class="eng-meetlink"><span class="eng-lab">Link</span>' +
-            '<a class="ovlink" href="' + esc(e.meeting_link) + '" target="_blank" rel="noopener">' +
-              esc(e.meeting_link.replace(/^https:\/\//, '')) + '</a></div>'
+        ? '<div class="eng-row eng-meetlink"><span class="eng-lab">Link</span>' +
+            '<span class="eng-val"><a class="ovlink" href="' + esc(e.meeting_link) + '" target="_blank" rel="noopener">' +
+              esc(e.meeting_link.replace(/^https:\/\//, '')) + '</a></span></div>'
         : '') +
       (set
-        ? '<div class="eng-meetmsg"><div class="eng-meetmsg-head"><span class="eng-lab">Message to client</span>' +
+        ? '<div class="eng-meetmsg"><div class="eng-row eng-meetmsg-head"><span class="eng-lab">Message to client</span>' +
             '<span class="eng-meetacts">' +
               '<button class="btn btn-sm" data-a="msgshow" type="button" aria-expanded="false">Show</button>' +
               '<button class="btn btn-sm" data-a="msgcopy" type="button"><span>Copy</span></button>' +
             '</span></div>' +
             '<pre class="eng-meetmsg-text" hidden>' + esc(clientMessage(e)) + '</pre></div>'
         : '') +
+      '</div>' +
       (meetWarn && meetWarn.id === e.id ? '<div class="msg warn eng-meetwarn">' + esc(meetWarn.text) + '</div>' : '');
   }
   function wireMeet(root, e, sayIn, open, after) {
@@ -6038,7 +6047,7 @@
       var card = GRP.section({
         route: 'cwork', key: k, name: k === 'none' ? 'No month' : monthWord(k),
         count: trs.length,
-        marks: (eng ? '<span class="tone ' + toneOf(ENG_STATE, eng.status) + '">' + esc(wordOf(ENG_STATE, eng.status)) + '</span>' : '') +
+        marks: (eng ? '<span class="tone eng-mark ' + toneOf(ENG_STATE, eng.status) + '">' + esc(wordOf(ENG_STATE, eng.status)) + '</span>' : '') +
                (late ? '<span class="tone is-warn">' + late + ' late</span>' : ''),
         /* Open: this month, a month still being worked, a month still being
            planned (no tasks yet is exactly when its meeting is set), and a
@@ -6084,8 +6093,10 @@
     if (monthOpen(e)) items.unshift(['bulk', 'Bulk add tasks']);
     if (may('ops', 'manage')) items.push(['delete', 'Delete', true]);
     el.innerHTML =
+      /* The month is named once, by the card's own heading above; the head
+         here is its facts and the controls that change it. */
       '<div class="eng-head">' +
-        '<div class="eng-who"><h3>' + esc(monthWord(e.period)) + '</h3>' +
+        '<div class="eng-who">' +
           '<p class="eng-meta">' + facts.map(function (p) { return '<span><span class="eng-lab">' + esc(p[0]) + '</span> ' + p[1] + '</span>'; }).join('') + '</p></div>' +
         '<div class="eng-ctl">' +
           (can

@@ -40,7 +40,7 @@
     var same = function (a, b) { return a.toDateString() === b.toDateString(); };
     if (same(d, now)) return 'Today';
     if (same(d, new Date(now.getTime() - 864e5))) return 'Yesterday';
-    return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
   }
 
   /* Newest first in, newest first out. An entry joins the one above it when

@@ -2793,7 +2793,7 @@
     if (!d) return '';
     var dt = new Date(d + 'T00:00:00');
     if (isNaN(dt.getTime())) return String(d);
-    return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
   }
 
   var TICK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 13 4 4L19 7"/></svg>';
@@ -3584,7 +3584,7 @@
   function shortWhen(iso) {
     var d = iso ? new Date(iso) : null;
     if (!d || isNaN(d.getTime())) return 'an earlier date';
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }).replace(/\bSep\b/, 'Sept');
   }
 
   function qcCount() {

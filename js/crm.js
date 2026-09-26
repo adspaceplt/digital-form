@@ -127,7 +127,7 @@
     if (!d) return '';
     var dt = new Date(String(d).slice(0, 10) + 'T00:00:00');
     if (isNaN(dt.getTime())) return String(d);
-    return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
   }
   function today() { return new Date().toISOString().slice(0, 10); }
 
@@ -556,7 +556,7 @@
     var days = Math.floor((Date.now() - d.getTime()) / 86400000);
     return d.toLocaleDateString('en-GB', days < 300
       ? { day: 'numeric', month: 'short' }
-      : { month: 'short', year: 'numeric' });
+      : { month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
   }
 
   /* A filter repaints the register when the filter has actually changed, and
