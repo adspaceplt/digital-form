@@ -1,0 +1,7 @@
+# digital.adspace.me lists one page: the front door. Every other page carries
+# <meta name="robots" content="noindex, nofollow">, which a search engine can
+# only read if it may fetch the page, so nothing is disallowed here.
+User-agent: *
+Allow: /
+
+Sitemap: https://digital.adspace.me/sitemap.xml

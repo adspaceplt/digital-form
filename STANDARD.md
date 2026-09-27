@@ -552,7 +552,8 @@ section holds only what is true of the project as a whole.
 
 ### Departures from this standard
 - **Spacing** stops at 32 (4, 8, 12, 16, 24, 32). 40, 64 and 104 are editorial
-  rhythms; in a dense console they read as a missing section.
+  rhythms; in a dense console they read as a missing section. The front door
+  alone is editorial and takes its own steps (`DESIGN.md`).
 - **Body text** is 14px in the console, which is an operational tool read all
   day (§9 allows it). The four client-facing pages take 16px
   (`:root[data-face="client"]`).

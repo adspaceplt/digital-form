@@ -8765,3 +8765,97 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   content: ""; position: absolute; left: -4px; top: calc(50% - 4px);
   width: 8px; height: 8px; background: var(--sunk); border-radius: 1px; transform: rotate(45deg);
 }
+
+/* =========================================================================
+   THE FRONT DOOR (index.html, body.lp)
+   A visitor card in the manner of Apple's visitor centre page (the user,
+   2026-09-28): the name and what ADspace is, one photograph, the
+   website's ways in as a ticked band, the week's hours, the address and
+   WhatsApp. An editorial page, so it takes the larger steps (40, 56) the
+   console never uses. The name is ADspace alone, set in Optima as the
+   wordmark is.
+   ========================================================================= */
+@font-face {
+  font-family: 'ADspace Optima';
+  src: local('Optima'), local('Optima-Regular'), url('/css/OPTIMA.TTF') format('truetype');
+  font-display: swap;
+}
+body.lp { background: var(--card); }
+.lp-head { padding: 48px 16px 32px; text-align: center; }
+.lp-title {
+  margin: 0; font-family: 'ADspace Optima', Optima, Candara, 'Segoe UI', sans-serif;
+  font-size: 44px; font-weight: 400; letter-spacing: -.01em; line-height: 1.1; color: var(--ink);
+}
+.lp-tag { margin: 8px 0 0; font-size: 16px; line-height: 1.4; color: var(--ink-soft); }
+/* One photograph, edge to edge. Until it arrives, a quiet field with the
+   wordmark, a step darker than the band under it so the two never merge. */
+.lp-hero {
+  margin: 0; height: clamp(200px, 40vw, 520px); overflow: hidden;
+  display: grid; place-items: center; background: var(--line-soft);
+}
+.lp-hero > img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.lp-hero > img.lp-hero-mark { width: auto; height: 28px; object-fit: contain; opacity: .35; }
+.lp-band { background: var(--page); padding: 32px 16px; }
+.lp-ways {
+  list-style: none; margin: 0 auto; padding: 0; max-width: 980px;
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 24px;
+}
+.lp-way { display: grid; gap: 10px; align-content: start; }
+.lp-tick { width: 24px; height: 24px; }
+.lp-tick circle { fill: var(--ok-solid); }
+.lp-tick path { fill: none; stroke: var(--on-ok); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.lp-way-name { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.35; color: var(--ink); }
+/* A link at the control floor, giving its height back so the text keeps its
+   line. */
+.lp-go {
+  display: inline-flex; align-items: center; gap: 4px; min-height: var(--ctl-h);
+  margin-block: calc((20px - var(--ctl-h)) / 2); font-size: 14px; color: var(--action); text-decoration: none;
+}
+@media (hover: hover) { .lp-go:hover { text-decoration: underline; text-underline-offset: 3px; } }
+/* The hours on the left; the address and WhatsApp on the right, on the
+   band's 980px column. */
+.lp-duo {
+  max-width: calc(980px + 32px); margin: 0 auto; padding: 48px 16px 56px;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px 64px; align-items: start;
+}
+.lp-side { display: grid; gap: 40px; }
+.lp-h2 {
+  margin: 0 0 12px; font-family: var(--font-head); font-size: 22px; font-weight: 600;
+  letter-spacing: -.015em; line-height: 1.25; color: var(--ink);
+}
+.lp-hours { width: 100%; border-collapse: collapse; font-size: 14px; }
+.lp-hours th, .lp-hours td { padding: 10px 0; border-top: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
+.lp-hours tr:last-child th, .lp-hours tr:last-child td { border-bottom: 1px solid var(--line-soft); }
+.lp-hours th { font-weight: 600; color: var(--ink); width: 34%; }
+.lp-hours td { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.lp-hours td:last-child { text-align: right; white-space: nowrap; }
+.lp-hours .is-shut td:last-child { color: var(--ink-mute); }
+.lp-note { margin: 12px 0 0; font-size: 13px; color: var(--ink-mute); }
+.lp-address { margin: 0 0 4px; font-style: normal; font-size: 15px; line-height: 1.55; color: var(--ink-soft); }
+.lp-lead { margin: 0 0 16px; max-width: 60ch; font-size: 15px; line-height: 1.55; color: var(--ink-soft); }
+.lp-acts { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+.lp-cta { gap: 8px; }
+.lp-cta svg { width: 16px; height: 16px; }
+/* The ways in read down the band once five across no longer fit, the tick
+   beside its words. */
+@media (max-width: 900px) {
+  .lp-ways { grid-template-columns: minmax(0, 1fr); gap: 16px; max-width: 560px; }
+  .lp-way { grid-template-columns: 20px minmax(0, 1fr); gap: 12px; }
+  .lp-duo { grid-template-columns: minmax(0, 1fr); max-width: calc(560px + 32px); }
+}
+@media (max-width: 640px) {
+  /* Apple's side margin on a phone: text 24px in, the photograph edge to
+     edge. The portal's working pages keep 16. */
+  .lp-head { padding: 32px 24px 24px; }
+  .lp-title { font-size: 32px; }
+  .lp-tag { font-size: 14px; }
+  .lp-band { padding: 24px; }
+  .lp-tick { width: 20px; height: 20px; }
+  .lp-duo { padding: 32px 24px 48px; gap: 32px; }
+  body.lp .topbar-inner, body.lp .portalfoot-in { padding-left: 24px; padding-right: 24px; }
+  .lp-side { gap: 32px; }
+  .lp-h2 { font-size: 19px; }
+  /* The header keeps its name on a phone: nothing else stands in the bar. */
+  body.lp .brand-kicker { display: block; }
+  body.lp .brand .brand-divider { display: block; }
+}

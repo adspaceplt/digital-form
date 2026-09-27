@@ -188,15 +188,30 @@ Each line is a rule that broke once. Its reason is in the archive.
   contents hidden and a skeleton (`#consoleBoot`) until `me()` answers.
   `applyAccess()` removes it. A refused team row goes to Access denied. Never
   draw the client pages' bar in its place.
-- `/` is a scriptless cover:
-  - the mark and `Digital Portal` at 15px/500 `--ink-soft`;
-  - white to the edge (`--card`, `theme-color #ffffff`, `color-scheme: light`);
-  - no sign-in and no list of rooms.
+- `/` is the front door and the host's one listed page, a visitor card after
+  Apple's visitor centre page (`body.lp`):
+  - the chrome header (the wordmark and Digital Portal, the kicker kept on a
+    phone) and footer; no menu, no sign-in, no list of rooms;
+  - ADspace in Optima (`.lp-title`), never "ADspace Studio", over Creative
+    Advertising Agency;
+  - one photograph full width (until its link arrives, a placeholder carrying
+    the wordmark);
+  - the website's ways in as ticked rows (Home, About us, Our services, Our
+    works to adspacestudios.com; Contact us to `#help`);
+  - Opening hours: a dated week from today in Malaysia time, Monday to Friday
+    10:00 to 18:00, redrawn every minute and on return to the tab;
+  - Visit: the address and Get directions (the Google Maps listing);
+  - How can we help?: Chat on WhatsApp opens `wa.me/adspace`; the number is
+    never on the page or in its business details;
+  - white to the edge (`--card`, `theme-color #ffffff`, `color-scheme: light`).
+- Only `/` may be listed: every other page carries noindex, `robots.txt`
+  disallows nothing (a blocked page's noindex cannot be read), and
+  `sitemap.xml` names `/` alone (`tests/seo.js`).
 - `404.html` is the portal's cover:
   - English only, white, title 17px, line 14px;
   - Visit website and Contact support as `.btn-sm`;
   - no `noscript` redirect.
-  - Both covers are in the uxaudit walk.
+  - The front door and the 404 are in the uxaudit walk.
 - One `.cover` for every full-page state (no link, bad link, access code,
   closed, confirmed, nothing to review, access denied), with the same words on
   every client page (`js/words.js`).
