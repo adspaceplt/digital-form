@@ -150,10 +150,12 @@
       sendRequest: 'Send request',
       theClient: 'the client',
       approvedBy: function (who, when) { return 'Approved by ' + who + (when ? ' on ' + when : '') + '.'; },
+      proceededBy: function (who, when) { return 'Proceeded by ' + who + (when ? ' on ' + when : '') + '.'; },
       changesBy: function (who, when) { return 'Changes requested by ' + who + (when ? ' on ' + when : '') + '.'; },
       reviewThanks: 'Received. The team will follow up.',
       needNote: 'Please describe the changes required.',
       saveFailed: 'Unable to save. Please try again.',
+      selectionClosed: 'Selection is closed. Please contact your ADspace account manager.',
       unavailable: 'Unavailable. Please select a replacement below.',
       results: 'Results',
       resultsHead: 'Campaign results',
@@ -240,10 +242,12 @@
       sendRequest: '提交修改',
       theClient: '客户',
       approvedBy: function (who, when) { return who + '已通过' + (when ? '（' + when + '）' : '') + '。'; },
+      proceededBy: function (who, when) { return '已由' + who + '确认推进' + (when ? '（' + when + '）' : '') + '。'; },
       changesBy: function (who, when) { return who + '提出修改' + (when ? '（' + when + '）' : '') + '。'; },
       reviewThanks: '已收到，团队将跟进处理。',
       needNote: '请说明需要修改的内容。',
       saveFailed: '保存失败，请重试。',
+      selectionClosed: '选择已截止，请联系您的 ADspace 客户经理。',
       unavailable: '暂不可用，请在下方选择替补。',
       results: '数据',
       resultsHead: '合作成效',
@@ -655,7 +659,9 @@
     var when = r.at ? new Date(r.at) : null;
     var stamp = when ? when.toLocaleString(lang === 'zh' ? 'zh-CN' : 'en-GB',
       { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).replace(/\bSep\b/, 'Sept') : '';
-    var word = r.decision === 'approved' ? t().approvedBy : t().changesBy;
+    /* An approval the team gave on the client's behalf names the colleague
+       who proceeded, never as if the client had approved it. */
+    var word = r.decision !== 'approved' ? t().changesBy : r.by_team ? t().proceededBy : t().approvedBy;
     return '<p class="approve-state booking-decided">' +
       esc(word(r.reviewer || t().theClient, stamp)) + '</p>' +
       (r.decision !== 'approved' && r.note
@@ -828,6 +834,11 @@
     var live = (feed.options || []).filter(function (o) {
       return ['option', 'shortlisted', 'backup'].indexOf(o.state) > -1;
     });
+    /* Closed by the database the moment the slots filled, and open again
+       only when the team reopens it (the user, 2026-09-27): a slot freed by a
+       withdrawal waits for the team. Backups stay namable where the team
+       opened them and every slot is taken. */
+    if ((feed.campaign || {}).selection_closed) return slotsLeft() <= 0 && backupsOpen() ? live : [];
     if (slotsLeft() > 0) return live;
     return backupsOpen() ? live : [];
   }
@@ -1080,7 +1091,10 @@
       .then(function (r) {
         var d = (r && r.data) || {};
         if ((r && r.error) || d.error) {
-          msg('confirmMsg', (r.error && r.error.message) || d.error, 'err');
+          /* In the client's words, never the database's. Selection closed
+             under them: the page is read again, so the list goes too. */
+          msg('confirmMsg', d.error === 'closed' ? t().selectionClosed : t().saveFailed, 'err');
+          if (d.error === 'closed') load();
           return;
         }
         shutConfirm();
