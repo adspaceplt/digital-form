@@ -196,13 +196,16 @@ Each line is a rule that broke once. Its reason is in the archive.
     phone); no menu, no sign-in, no list of rooms;
   - no visible title: the `h1` (`.lp-name`) is for search engines and screen
     readers. ADspace alone, never "ADspace Studio";
+  - the website's ways in as ticked rows: Home, About us (`/about`), Our
+    services (`/services`), Our works (`/project`), Contact us (`/contact`)
+    on adspacestudios.com; the ticks in the brand's monochrome (`--fill`
+    with an `--on-fill` tick);
   - one photograph, whole at 16:9 and full width up to 1920
     (`img/front-door-{800,1200,2000,2560}`, WebP with a JPEG fallback), which
     is also the og:image;
-  - the ticks in the brand's monochrome (`--fill` with an `--on-fill` tick);
-  - the website's ways in as ticked rows: Home, About us (`/about`), Our
-    services (`/services`), Our works (`/project`), Contact us (`/contact`)
-    on adspacestudios.com;
+  - above 900 the ways in come first under the header, then the photograph;
+    at 900 and under (the ways in as a list) the photograph leads
+    (`.lp-hero { order: -1 }`), the markup keeping the desk's order;
   - Opening hours: a dated week from today in Malaysia time, Monday to Friday
     10:00 to 18:00, redrawn every minute and on return to the tab;
   - Visit: the address and Get directions (the Google Maps listing);
