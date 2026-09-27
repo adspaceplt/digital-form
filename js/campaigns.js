@@ -1629,9 +1629,52 @@
             (d.data || []).forEach(function (f) {
               (state.files[f.option_id] || (state.files[f.option_id] = [])).push(f);
             });
-            loadQc(ids, paintOptions);
+            loadQc(ids, function () { loadReviews(ids, paintOptions); });
           }, paintOptions);
       });
+  }
+
+  /* Every decision on the drafts, the client's and the team's own send-back,
+     so a request for changes is read on the card that answers it
+     (2026-09-27). A refused read leaves the requests unshown and costs the
+     card nothing else. */
+  function loadReviews(ids, then) {
+    state.reviews = {};
+    db.from('option_reviews').select('*').in('option_id', ids).order('created_at')
+      .then(function (r) {
+        (r.data || []).forEach(function (x) {
+          (state.reviews[x.option_id] || (state.reviews[x.option_id] = [])).push(x);
+        });
+      }).catch(function () {}).then(then);
+  }
+  /* The newest request for changes not taken back. */
+  function lastRequest(o) {
+    var rs = ((state.reviews || {})[o.id] || []).filter(function (r) {
+      return r.decision === 'changes' && !r.undone_at;
+    });
+    return rs[rs.length - 1] || null;
+  }
+  /* THE REQUEST ON THE CARD: what was asked, by whom and when. Open while the
+     booking is back with the creator, and kept once they hand in again, so
+     the check reads the new draft against it. A team round sent back before
+     the record held it is read from `drop_reason`. */
+  function requestHtml(o) {
+    if (o.state !== 'changes' && o.state !== 'submitted') return '';
+    var r = lastRequest(o);
+    var team = (o.changes_by || 'client') === 'team';
+    if (o.state === 'changes' && (!r || (r.source || 'client') !== (team ? 'team' : 'client'))) {
+      r = team && o.drop_reason ? { source: 'team', note: o.drop_reason } : null;
+    }
+    if (!r) return '';
+    if (o.state === 'submitted' && !(Number(o.revision_round || 0) > Number(r.round || 0))) return '';
+    var byTeam = (r.source || 'client') === 'team';
+    var who = (byTeam ? 'Sent back' : 'Requested') +
+      (r.reviewer ? ' by ' + r.reviewer : byTeam ? '' : ' by the client') +
+      (r.created_at ? ' · ' + niceStamp(r.created_at) : '');
+    return '<div class="kask' + (o.state === 'changes' ? ' is-open' : '') + '">' +
+      '<div class="kask-head"><b>' + (o.state === 'changes' ? 'Changes requested' : 'Asked for') + '</b>' +
+        '<span>' + esc(who) + '</span></div>' +
+      '<p class="kask-note">' + (r.note ? esc(r.note) : '<span class="kask-none">No note.</span>') + '</p></div>';
   }
 
   /* Who has checked each booking, for the round it is on. The gate itself is
@@ -1776,11 +1819,13 @@
               'aria-label="Remove submitted file">×</button></span>';
           }).join('') + '</div>'
         : '') +
-      (o.draft_caption
-        ? '<label class="kfield kfield-wide"><span>Their caption</span>' +
-          '<textarea class="input textarea" rows="3" data-f="draft_caption">' +
-          esc(o.draft_caption) + '</textarea></label>'
-        : '') +
+      /* The caption is part of what the client approves, so its absence is
+         said rather than drawn as nothing (2026-09-27: a draft went to the
+         client with no caption, past a check that asks about the caption). */
+      '<label class="kfield kfield-wide"><span>Their caption</span>' +
+        '<textarea class="input textarea" rows="3" data-f="draft_caption">' +
+        esc(o.draft_caption || '') + '</textarea></label>' +
+      (o.draft_caption ? '' : '<p class="msg warn kcap-none">No caption.</p>') +
       '</div>';
   }
 
@@ -2938,7 +2983,12 @@
         '<div class="kfields">' +
           field('Date', 'visit_date', o.visit_date, 'date') +
           field('Time', 'visit_time', o.visit_time, 'text', '') +
-          (isDelivery() ? field('Tracking no.', 'tracking_no', o.tracking_no, 'text', '') : '') +
+          /* Where to go and whom to meet: the creator's page shows both once
+             they are set, and nothing here set them (2026-09-27). */
+          (isDelivery() ? field('Tracking no.', 'tracking_no', o.tracking_no, 'text', '')
+            : field('Location', 'visit_location', o.visit_location, 'text', '') +
+              field('Contact', 'visit_pic', o.visit_pic, 'text', '') +
+              field('Contact phone', 'visit_pic_phone', o.visit_pic_phone, 'tel', '')) +
           field('Draft due', 'submission_due', o.submission_due, 'date', '', 'kfield-pub') +
           field('Publish date', 'planned_publish', o.planned_publish, 'date', '', 'kfield-pub') +
           '<label class="kfield kfield-wide"><span>Notes</span>' +
@@ -2949,6 +2999,7 @@
       '<div class="kstep kstep-work">' +
         '<div class="kstep-title">Draft</div>' +
         draftGuide(o) +
+        requestHtml(o) +
         handedIn(o) +
         '<div class="kfields">' +
           /* The team can hand a file in for the creator, at the same steps
@@ -3369,21 +3420,55 @@
   function stepBack(o, to) {
     var name = (o.creators || {}).name || 'this creator';
     if (!to) return;
+    /* Taking back a request for changes goes through the database, which
+       puts the round back to the one that was checked and marks the request
+       taken back. A plain move into Client review was refused by the release
+       gate, because the request had moved the round on (2026-09-27). */
+    var undo = o.state === 'changes';
     window.ADspaceConfirm.ask({
       title: 'Revert to ' + wordFor(to),
-      body: name + ' goes back a step. Dates, notes and files are kept.',
+      body: undo
+        ? name + ' goes back to ' + wordFor(to) + '. The request stays on the record, taken back.'
+        : name + ' goes back a step. Dates, notes and files are kept.',
       go: 'Revert',
       tone: 'warn'
     }, function () {
-      var patch = { state: to };
-      if (o.state === 'changes') patch.changes_by = null;   // the round is over
-      db.from('campaign_options').update(patch).eq('id', o.id).then(function (r) {
-        if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+      var done = function () {
         log('campaign.stage', logSubject(), name + ' · back to ' + wordFor(to));
         msg('campWorkMsg', name + ': ' + wordFor(to) + '.', 'ok');
         loadOptions();
+      };
+      if (undo) {
+        db.rpc('campaign_revert_changes', { p_option: o.id }).then(function (r) {
+          var d = (r && r.data) || {};
+          if (r.error || d.error) { msg('campWorkMsg', reviewSaid(r.error ? r.error.message : d.error), 'err'); return; }
+          done();
+        }).catch(function (e) { msg('campWorkMsg', reviewSaid((e && e.message) || String(e)), 'err'); });
+        return;
+      }
+      db.from('campaign_options').update({ state: to }).eq('id', o.id).then(function (r) {
+        if (r.error) { msg('campWorkMsg', reviewSaid(r.error.message), 'err'); return; }
+        done();
       });
     });
+  }
+
+  /* A refusal about a round, in the team's words. */
+  var SAID_REVIEW = {
+    denied: 'Not allowed for this group.',
+    'no-booking': 'That booking is no longer there.',
+    'not-submitted': 'Only a submitted draft can be sent back.',
+    'not-changes': 'There is no request to take back.',
+    'note-required': 'Say what needs changing.',
+    'new-files': 'The creator has handed in new files. Check them and release them instead.',
+    'qc-required': 'Release to client needs the quality check completed.'
+  };
+  function reviewSaid(code) {
+    var c = String(code || '');
+    if (SAID_REVIEW[c]) return SAID_REVIEW[c];
+    if (/qc-required/.test(c)) return SAID_REVIEW['qc-required'];
+    if (/Could not find the function|PGRST202|schema cache/i.test(c)) return 'This needs a database update.';
+    return c;
   }
 
   /* The booking was made and the client has changed their mind before anything
@@ -3449,17 +3534,17 @@
 
   function sendBackNow(o, card, why) {
     var m = card.querySelector('[data-msg]');
-    db.from('campaign_options').update({
-      state: 'changes', changes_by: 'team', drop_reason: why,
-      revision_round: Math.max(o.revision_round || 0, 1) + 1
-    }).eq('id', o.id).then(function (r) {
-      if (r.error) { m.textContent = r.error.message; m.className = 'msg err'; return; }
+    /* One call files the request beside the client's decisions and moves the
+       round on, so the creator's page, this card and the record read the
+       same words (2026-09-27). The round has moved, so the checks above it no
+       longer count, and whether a second pair of eyes is wanted is asked
+       again rather than carried over. */
+    db.rpc('campaign_send_back', { p_option: o.id, p_note: why }).then(function (r) {
+      var d = (r && r.data) || {};
+      if (r.error || d.error) { m.textContent = reviewSaid(r.error ? r.error.message : d.error); m.className = 'msg err'; return; }
       log('campaign.stage', logSubject(), ((o.creators || {}).name || 'A creator') + ' · changes requested');
-      /* The round has moved, so the checks above it no longer count. Whether
-         a second pair of eyes is wanted is a judgement about the file that
-         just changed, so it is asked again rather than carried over. */
-      db.rpc('campaign_qc_reset', { p_option: o.id }).then(loadOptions, loadOptions);
-    });
+      loadOptions();
+    }).catch(function (e) { m.textContent = reviewSaid((e && e.message) || String(e)); m.className = 'msg err'; });
   }
 
   /* ---- The quality check ------------------------------------------------
@@ -3484,6 +3569,17 @@
     var name = (o.creators || {}).name || 'this creator';
     $('qcWho').textContent = name + ' · ' +
       (files.length ? files.length + (files.length === 1 ? ' file' : ' files') : 'pasted link');
+    /* What the check reads the file against: the request it answers, and the
+       caption, said even when there is none (2026-09-27). */
+    var ask = lastRequest(o), cap = $('qcCap');
+    if (cap) {
+      cap.innerHTML =
+        (ask && Number(o.revision_round || 0) > Number(ask.round || 0)
+          ? '<p class="qc-cap-lab">Asked for</p><p class="qc-cap-text">' + esc(ask.note || 'No note.') + '</p>' : '') +
+        '<p class="qc-cap-lab">Caption</p>' +
+        (o.draft_caption ? '<p class="qc-cap-text">' + esc(o.draft_caption) + '</p>'
+                         : '<p class="msg warn">No caption.</p>');
+    }
     msg('qcMsg', '');
     var box = $('qcList');
     box.innerHTML = '';

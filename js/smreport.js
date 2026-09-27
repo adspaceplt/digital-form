@@ -1690,7 +1690,7 @@
   }
 
   window.ADspaceSmReport = {
-    render: render, model: model, fileName: fileName, periodWord: periodWord,
+    render: render, model: model, fileName: fileName, periodWord: periodWord, titleOf: titleOf,
     engOf: engOf, growthOf: growthOf, fmt: fmt, PLATFORM_WORD: PLATFORM_WORD, TYPE_WORD: TYPE_WORD, METRIC_WORD: METRIC_WORD, METRICS: METRICS
   };
 })();

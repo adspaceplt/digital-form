@@ -784,6 +784,25 @@ Each line is a rule that broke once. Its reason is in the archive.
     asker is the earliest check.
   - A send-back is checked from the top (`revision_round`).
   - `.qc-hold` names who checked. No notification.
+  - The sheet reads the request the file answers and its caption first
+    (`#qcCap`; `No caption.` in warn when there is none).
+- Every decision on a draft is a row in `option_reviews`, told apart by
+  `source` (client, team) and never removed (`undone_at`, `undone_by` when
+  taken back): the client's through `review_draft`, the team's send-back
+  through `campaign_send_back` (a note required; the round moves on).
+  - The card shows the open request (Changes requested, who, when, the note)
+    and, once the creator hands in again, what it answered (Asked for;
+    `requestHtml`). A team round from before the record is `drop_reason`.
+  - Revert out of Changes requested is `campaign_revert_changes`: the
+    client's back to Reviewing on the round last checked (refused
+    `new-files` once the next round is handed in), the team's back to
+    Submitted. A plain write into Reviewing is refused by the release gate.
+  - `get_campaign` counts the client's own rounds only and never shows a
+    request taken back.
+- A handed-in draft always shows its caption field, with `No caption.` in
+  warn when it is empty.
+- A visit's Location and Contact (name, phone) are set in the card's Shoot
+  step; the creator's page shows them.
 - Exactly one blue step on a card: Release to client.
 - `submitted` opens by itself and carries `.is-waiting`.
 - A video plays (`.filecard-video`, 9:16, black ground). Media are 9:16 cards;
@@ -848,9 +867,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `get_creator` sends the creator's own booking only.
     - Never the client's stage, commercial state, amount, other creators or
       the team's notes on the row.
-    - It sends the open request's note (`change_note`): the client's newest
-      request (`option_reviews`) where the round is theirs, the team's
-      `drop_reason` where the team sent it back.
+    - It sends the open request's note (`change_note`) from the record,
+      either side's and never one taken back (a team round from before the
+      record reads `drop_reason`). "As noted below" is said only where a
+      note is below.
     - Never `rate` or `currency`: the rate is the client's price with markup.
   - Uploads: `creator_can_deliver` at pending draft / changes / submitted;
     `creator_can_retract` shuts at submitted.
@@ -864,7 +884,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `creator_rate` takes 1 to 5 at completed and is never shown to the client.
   - The countdown is amber, then red once passed.
   - The page is a queue ordered by what is owed, with one booking open in
-    `location.hash`.
+    `location.hash`. A lone booking has no queue and runs the page's width.
   - The Draft step's `?` hint opens by itself three times, then retires
     (`hint()`, `bumpHint()`).
   - Sign out is named, and hidden until there is a session.
@@ -946,7 +966,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   publish date (`--pub`), with a Due / Publish key. A task whose next date is
   its publish date shows once.
 - Clients view (`view=clients&wc=`): a client select, then that client's
-  months, meetings and tasks (`clientWork()`), remembered per browser.
+  months, meetings and tasks (`clientWork()`), remembered per browser. A
+  month whose tasks the filter hides says No matches (Show all), never No
+  tasks this month.
 - The report (`ops_report(p_from, p_to)`, `ops.reports`, no new schema):
   - Median with the 90th percentile and a count.
   - Replanning counted beside on-time, never inside it.
@@ -1202,7 +1224,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The client record's tab shows finished reports only (`sm_client_reports`,
   `sm_report_file`).
 - The client portal reads only the newest version that has not been withdrawn
-  (`portal_reports`, `portal_report`).
+  (`portal_reports`, `portal_report`), and names it as its cover does
+  (`ADspaceSmReport.titleOf`).
 - Accounts carry forward.
 - Posts paste from a spreadsheet by header name. Thumbnails are 320px JPEG data
   URLs.
