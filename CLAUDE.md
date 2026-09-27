@@ -1329,10 +1329,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   ink, then what, on what, the detail), a heading a day, and a run of the same
   act by one person on one thing within ten minutes folded into one line
   (`×n`). Sticky entries never fold: Performance, HR, voids, deletes,
-  removals, billing, rates, invoices, access and groups (`stickyOf`).
+  removals, billing, rates, invoices, access and groups, a client's decision
+  on a draft and a creator's hand-in (`stickyOf`).
   `ADspaceAdmin.record(row)` is the one reading of an `activity_log` row.
   A run folds only on the same thing: its `key` (a document's subject and
-  reference; the record a pane belongs to) else its subject; with neither,
+  reference; a booking's campaign and the creator its detail names first,
+  written once on the folded line; the record a pane belongs to) else its
+  subject; with neither,
   only identical lines fold. A field changed twice reads as its path
   (`Admin → Team → Admin`), a run reads `· 3 times`, and a line longer than
   three lines opens on a press (`is-long`, a button with `aria-expanded`).

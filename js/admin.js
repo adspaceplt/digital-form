@@ -1267,17 +1267,30 @@
      Performance, an HR document, a void or a delete, billing, money and
      access. */
   var STICKY = /deleted|voided|removed|billing|\.rate$|invoice|team\.changed|group_|numbering|withdrawn|replaced/;
+  /* A client's decision on a draft and a creator's hand-in are each read on
+     their own: three change requests sent in one minute were one line with
+     three notes joined (the user, 2026-09-27: "combined is hard to read"). */
+  var OWN_LINE = /^campaign\.(review|submitted)$/;
   function stickyOf(a) {
-    return a._section === 'performance' || a.subject === 'HR' || STICKY.test(a.action || '');
+    return a._section === 'performance' || a.subject === 'HR' || STICKY.test(a.action || '') ||
+      OWN_LINE.test(a.action || '');
   }
   /* What a line is about, for the fold: its subject, and for a document its
      reference as well, because one client holds many documents and the
      subject alone folded three references into one line (2026-09-27). */
   function keyOf(a) {
-    if (!/^(register|document)\./.test(a.action || '')) return null;
+    var act = a.action || '';
+    if (BOOKING.test(act)) {
+      /* A booking's line names its creator first ("恩比 · back to …"), and
+         one campaign holds many creators: the fold keys on both. */
+      var who = String(a.detail || '').split(' \u00b7 ')[0].trim();
+      return (a.subject || '') + '|' + who;
+    }
+    if (!/^(register|document)\./.test(act)) return null;
     var ref = String(a.detail || '').split(/ \u00b7 |: /)[0].trim();
     return (a.subject || '') + '|' + ref;
   }
+  var BOOKING = /^campaign\.(stage|file_added|qc|dates|unbooked|reinstated|keyed|unkeyed|review)$/;
   function recordOf(a) {
     var meta = a._section === 'performance' ? [PERF_STEP[a.kind] || a.kind, ''] : (ACTION_LABEL[a.action] || [String(a.action || '').replace(/[._]/g, ' '), '']);
     return { at: a.created_at, who: a._who || whoName(a.actor) || 'System', what: meta[0], on: a.subject || '',

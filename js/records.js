@@ -83,7 +83,14 @@
      other ("Admin → Team; Team → Admin"). A detail that is not a list of
      "Label: old → new" is kept whole, once. */
   var MOVE = /^(.+?): (.*) \u2192 (.*)$/;
+  /* A run keyed on one creator names them once: "恩比 · back to Submitted;
+     back to Pending draft", not the name before every step. */
+  var LEAD = /^(.+?) \u00b7 (.+)$/;
   function merged(list) {
+    var lead = list.length > 1 && LEAD.exec(String(list[0])) ? LEAD.exec(String(list[0]))[1] : null;
+    if (lead && list.every(function (d) { var m = LEAD.exec(String(d)); return m && m[1] === lead; })) {
+      return lead + ' \u00b7 ' + merged(list.map(function (d) { return LEAD.exec(String(d))[2]; }));
+    }
     var seen = {}, order = [];
     list.forEach(function (d) {
       var parts = String(d).split('; ');
