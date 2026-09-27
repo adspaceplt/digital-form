@@ -51,6 +51,7 @@
       briefHead: 'The brief',
       deliverHead: 'Submission',
       changesHead: 'Changes requested',
+      changesBare: 'Please revise and submit again.',
       addFiles: 'Files', captionLabel: 'Caption',
       captionHint: 'Caption to publish with this post.',
       submit: 'Submit', submitting: 'Submitting…', update: 'Update submission',
@@ -111,6 +112,7 @@
       briefHead: '合作简介',
       deliverHead: '作品提交',
       changesHead: '需要修改',
+      changesBare: '请修改后重新提交。',
       addFiles: '文件', captionLabel: '文案',
       captionHint: '将随作品一同发布的文案。',
       submit: '提交', submitting: '提交中…', update: '更新提交',
@@ -472,6 +474,12 @@
       esc(t().step[state] || state) + '</span>';
   }
 
+  /* "As noted below" only where a note is below (2026-09-27). */
+  function nextLine(b) {
+    if (b.state === 'changes' && !b.change_note) return t().changesBare;
+    return t().nextUp[b.state];
+  }
+
   function bookingCard(b) {
     var card = document.createElement('section');
     var dead = b.state === 'withdrawn' || b.state === 'replaced';
@@ -503,7 +511,7 @@
         (facts.length ? '<dl class="booking-facts">' + facts.map(function (f) {
           return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
         }).join('') + '</dl>' : '') +
-        (t().nextUp[b.state] ? '<p class="booking-next">' + esc(t().nextUp[b.state]) + '</p>' : '') +
+        (nextLine(b) ? '<p class="booking-next">' + esc(nextLine(b)) + '</p>' : '') +
         (b.submission_due && ['pending_draft', 'changes'].indexOf(b.state) > -1
           ? '<p class="due-countdown' + (b.submission_due < new Date().toISOString().slice(0, 10) ? ' is-late' : '') + '">' +
             esc(dueWord(b.submission_due)) + '</p>' : '') +

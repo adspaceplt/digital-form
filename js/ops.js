@@ -6121,9 +6121,18 @@
             GRP.more(table, trs, 30, 'tasks', function (t) { return rowOf(t, true); });
             wrap.appendChild(table);
           } else if (eng) {
+            /* The filter hid them, which is not the month having none: a
+               month whose tasks are all finished read "No tasks this month"
+               under the Open filter. */
             var line = document.createElement('div');
-            UI.emptyLine(line, 'No tasks this month.', may('ops', 'work') ? 'Add a task' : '',
-              function () { openNew({ client: c, period: k, engagement: eng }); });
+            var held = cw.tasks.filter(function (t) { return cwPeriodOf(t) === k; }).length;
+            if (held) {
+              UI.emptyLine(line, 'No matches.', 'Show all',
+                function () { cw.find = ''; cw.status = ''; cw.who = ''; paintClientWork(); });
+            } else {
+              UI.emptyLine(line, 'No tasks this month.', may('ops', 'work') ? 'Add a task' : '',
+                function () { openNew({ client: c, period: k, engagement: eng }); });
+            }
             wrap.appendChild(line);
           }
           return wrap;

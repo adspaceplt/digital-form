@@ -337,7 +337,10 @@
         row.className = 'svc-row doc-row';
         var items = SMR ? [['download', w.download]] : [];
         row.innerHTML =
-          '<span class="svc-name"><b>' + esc(monthOf(v.period_start, v.period_end)) + '</b><small>' + esc(v.title + ' · ' + niceDate(v.published_at)) + '</small></span>' +
+          /* The report's own name, as its cover and file print it: the first
+             kind was stored as Social Media Report (2026-09-27). */
+          '<span class="svc-name"><b>' + esc(monthOf(v.period_start, v.period_end)) + '</b><small>' +
+            esc((SMR && SMR.titleOf ? SMR.titleOf(v) : v.title) + ' · ' + niceDate(v.published_at)) + '</small></span>' +
           '<span class="svc-rate svc-amt">' + esc('v' + v.version_no) + '</span>' +
           '<span class="svc-state">' + chip(w.published, 'is-ok') + '</span>' +
           menuCell(items);
