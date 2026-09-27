@@ -596,8 +596,8 @@ section holds only what is true of the project as a whole.
 - Access: "Own clients only" (a row scope for Sales).
 - Console search (`js/search.js`, built 2026-09-28) reads names, codes and
   references only: not briefs, notes, comments or a document's body.
-- Performance phase 2: quarterly and company rewards (revenue gate RM
-  500,000) and growth commission.
+- Performance rewards are worked out and confirmed in the portal; the
+  payment itself is made outside it.
 - A flat, edge-to-edge register without a bounded panel would be a
   portal-wide decision. It has not been made.
 - Not started without the user:

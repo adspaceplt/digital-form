@@ -8607,3 +8607,71 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   .console-head > .navtoggle { margin-left: -12px; }
 }
 /* ===== end console search ===== */
+
+/* ---- Performance rewards (2026-09-28): the quarter, flexible hours, the
+   bonus pool and trip, growth commission, and the member's own. Every
+   table states its own tracks, each measured against its widest value
+   ("E · Performance Review" 172px, "RM 12,345.67" at 13.5px). ---- */
+.perf-views { padding: 0 0 12px; }
+.perf-views > .cmdbar-views.actviews { display: inline-flex; vertical-align: top; }
+.rw-row { padding-top: 10px; padding-bottom: 10px; }
+.crm-head.rw-row { padding: 12px 15px 8px; }
+.rwq-row  { grid-template-columns: minmax(0, 1fr) 56px 64px 172px 150px 104px; }
+.rwd-row  { grid-template-columns: minmax(0, 1fr) 64px 172px 96px 104px 104px; }
+.rwf-row  { grid-template-columns: minmax(0, 1fr) 56px 172px 120px; }
+.rwp-row  { grid-template-columns: minmax(0, 1fr) 88px 64px 172px 48px 104px 104px; }
+.rwc-row  { grid-template-columns: minmax(0, 1fr) 80px 116px 56px 104px var(--state-w) var(--ctl-h); }
+.rwmq-row { grid-template-columns: minmax(0, 1fr) 64px 172px 132px 132px; }
+.rwmp-row { grid-template-columns: minmax(0, 1fr) 88px 48px 104px 104px; }
+.rwmf-row { grid-template-columns: minmax(0, 1fr) 120px 120px; }
+.rwmc-row { grid-template-columns: minmax(0, 1fr) 116px 56px 104px var(--state-w); }
+.rw-who { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; text-align: left; }
+.rw-who b { font-size: 14px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rw-who small { font-size: 12px; color: var(--ink-mute); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rw-open {
+  align-self: stretch; margin: -10px 0; padding: 10px 0; min-height: var(--ctl-h);
+  border: 0; background: none; font: inherit; color: inherit; cursor: pointer;
+}
+@media (hover: hover) { .rw-open:hover b { text-decoration: underline; text-underline-offset: 2px; } }
+.rw-c { min-width: 0; font-size: 13.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rw-c small { color: var(--ink-mute); font-size: 12px; }
+.rw-c .rw-why { display: block; margin-top: 2px; }
+.rw-row .rw-c:has(.rw-why) { white-space: normal; }
+.rw-sum { display: none; }
+.rw-row > .team-act { align-self: center; }
+.rw-row.is-own .rw-who b { color: var(--ink-soft); }
+.rw-note { margin: 0 0 12px; }
+.rw-facts { padding: 18px 20px; }
+.rw-dl { margin: 0; }
+.rw-facts-acts { display: flex; justify-content: flex-end; margin-top: 12px; }
+.rw-history { padding: 18px 20px; }
+.crm-group-head > .chip { align-self: center; }
+.rw-figs > .crm-group-head h3 { min-height: var(--ctl-h); display: flex; align-items: center; margin-block: calc((22px - var(--ctl-h)) / 2); }
+.rw-total { margin: 16px 0 0; font-size: 13.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.rw-total:empty { display: none; }
+.rw-hint { display: block; margin-top: 4px; font-size: 12px; color: var(--ink-mute); }
+.rw-hint:empty { display: none; }
+#rwDFields { margin-top: 16px; }
+#rwDeptSheet .tickline { margin-top: 16px; }
+
+/* A narrow list reads each row as two lines: who, and the one figure the
+   table is for at the right edge; then the rest as one line of meta. */
+.is-narrow .rw-row {
+  grid-template-columns: minmax(0, 1fr) 120px;
+  grid-template-areas: "who key" "sum sum";
+  gap: 4px 10px;
+}
+.is-narrow .rw-row.has-act {
+  grid-template-columns: minmax(0, 1fr) 120px var(--ctl-h);
+  grid-template-areas: "who key act" "sum sum act";
+}
+.is-narrow .rw-row > .rw-who { grid-area: who; }
+.is-narrow .rw-row > .rw-key { grid-area: key; justify-self: stretch; display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.is-narrow .rw-row > .rw-key .chip { align-self: flex-end; }
+.is-narrow .rw-row > .rw-c:not(.rw-key) { display: none; }
+.is-narrow .rw-row > .rw-sum { grid-area: sum; display: block; font-size: 12.5px; color: var(--ink-mute); min-height: 16px; overflow-wrap: anywhere; }
+.is-narrow .rw-row > .rw-sum:empty { display: none; }
+.is-narrow .rw-row:not(.has-act) > .team-act { display: none; }
+.is-narrow .rw-row > .team-act { grid-area: act; margin-block: calc((20px - var(--ctl-h)) / 2); }
+.is-narrow .crm-head.rw-row { display: none; }
+/* ---- End of performance rewards ---- */

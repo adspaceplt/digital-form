@@ -84,6 +84,19 @@ whole project. If codes stop arriving, set up your own SMTP under
 **Authentication → Emails → SMTP Settings** (the same place the client portal's
 sign-in emails come from).
 
+## 7. Rewards: the quarter, bonus pool, trip and commission
+
+Run `supabase/migrations/2026-09-28-performance-rewards.sql` the same way, after
+the performance migrations above. It is safe to run twice.
+
+Under Team, Performance, four views: **Months** (with flexible hours for the
+next month under the list), **Quarters** (the ranking, the individual and
+department prizes, Confirm quarter), **Bonus and trip** (two quarters at a time;
+an admin enters revenue, profit, the pool and the trip budget) and
+**Commission** (Add entry). Every figure is worked out from finalised months.
+Confirm keeps the outcome and tells the team; Reopen takes it back. A member
+reads their own under My performance once it is confirmed.
+
 ## The monthly round
 
 1. Management scores the month and logs any breach (Team → Performance).
