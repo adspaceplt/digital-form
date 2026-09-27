@@ -3453,7 +3453,6 @@ body.is-plain .topbar { background: var(--chrome); }
 .amountfold-link:hover { color: var(--ink); text-decoration: underline; }
 .amountfold .totals { margin: 6px 0 8px; max-width: none; }
 
-.booking-posts { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
 .booking-results {
   display: flex; flex-direction: column; gap: 3px;
   margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--line-soft);
@@ -8196,17 +8195,28 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-form > .fsec:first-child { margin-top: 0; }
 .rp-form > .tickline + .fsec { margin-top: 20px; }
 .rp-hint { margin: 0; font-size: 12.5px; color: var(--ink-mute); }
-.rp-stepfoot { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 16px; }
+/* An action row like every other: the primary at the right edge, nearest
+   the thumb, the secondary to its left, the outcome under them. */
+.rp-stepfoot { display: flex; flex-direction: row-reverse; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 16px; }
+.rp-stepfoot .msg { flex: 1 0 100%; text-align: right; }
 .rp-form .rp-stepfoot { margin-top: 24px; }
 .rp-stepfoot .msg { margin: 0; }
 .rp-stepfoot > .btn { flex: 0 0 auto; }
 .rp-head .msg:empty, .rp-stepfoot .msg:empty, .rp-sec > .msg:empty { display: none; }
-/* On a narrow pane the head is two rows: who the report is for, then its
-   state and its controls on the card's own margin, so the name is never
-   squeezed beside them. */
-.is-narrow .rp-head-top { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-.is-narrow .rp-head-top .rp-ctl { justify-content: flex-start; flex-wrap: wrap; }
-.is-narrow .rp-head-top .rp-ctl .team-act { margin-left: auto; }
+/* On a narrow pane the head keeps the record head's shape: the name and
+   the controls centred on one line (the state, PDF and the ⋯ at the card's
+   right edge), then the meta across the card. The verb leaves the PDF
+   button, so the three sit together rather than strung across a row of
+   their own (the user, 2026-09-28). */
+.is-narrow .rp-head-top { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name ctl" "meta meta"; gap: 4px 12px; }
+.is-narrow .rp-who { display: contents; }
+.is-narrow .rp-who h3 { grid-area: name; align-self: center; overflow-wrap: anywhere; }
+.is-narrow .rp-meta { grid-area: meta; margin: 0; }
+.is-narrow .rp-ctl { grid-area: ctl; }
+.rp-pdf-short { display: none; }
+.is-narrow .rp-pdf-long { display: none; }
+.is-narrow .rp-pdf-short { display: inline; }
+.is-narrow .rp-pdf { min-width: 0; }
 .rp-rank { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
 .rp-rank .field-label { margin: 0; }
 .rp-rank .select { width: auto; min-width: 160px; }
@@ -8607,3 +8617,151 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   .console-head > .navtoggle { margin-left: -12px; }
 }
 /* ===== end console search ===== */
+
+/* ---- Performance rewards (2026-09-28): the quarter, flexible hours, the
+   bonus pool and trip, growth commission, and the member's own. Every
+   table states its own tracks, each measured against its widest value
+   ("E · Performance Review" 172px, "RM 12,345.67" at 13.5px). ---- */
+.perf-views { padding: 0 0 12px; }
+.perf-views > .cmdbar-views.actviews { display: inline-flex; vertical-align: top; }
+.rw-row { padding-top: 10px; padding-bottom: 10px; }
+.crm-head.rw-row { padding: 12px 15px 8px; }
+.rwq-row  { grid-template-columns: minmax(0, 1fr) 56px 64px 172px 150px 104px; }
+.rwd-row  { grid-template-columns: minmax(0, 1fr) 64px 172px 96px 104px 104px; }
+.rwf-row  { grid-template-columns: minmax(0, 1fr) 56px 172px 120px; }
+.rwp-row  { grid-template-columns: minmax(0, 1fr) 88px 64px 172px 48px 104px 104px; }
+.rwc-row  { grid-template-columns: minmax(0, 1fr) 80px 116px 56px 104px var(--state-w) var(--ctl-h); }
+.rwmq-row { grid-template-columns: minmax(0, 1fr) 64px 172px 132px 132px; }
+.rwmp-row { grid-template-columns: minmax(0, 1fr) 88px 48px 104px 104px; }
+.rwmf-row { grid-template-columns: minmax(0, 1fr) 120px 120px; }
+.rwmc-row { grid-template-columns: minmax(0, 1fr) 116px 56px 104px var(--state-w); }
+.rw-who { display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0; text-align: left; }
+.rw-who b { font-size: 14px; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rw-who small { font-size: 12px; color: var(--ink-mute); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rw-open {
+  align-self: stretch; margin: -10px 0; padding: 10px 0; min-height: var(--ctl-h);
+  border: 0; background: none; font: inherit; color: inherit; cursor: pointer;
+}
+@media (hover: hover) { .rw-open:hover b { text-decoration: underline; text-underline-offset: 2px; } }
+.rw-c { min-width: 0; font-size: 13.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rw-c small { color: var(--ink-mute); font-size: 12px; }
+.rw-c .rw-why { display: block; margin-top: 2px; }
+.rw-row .rw-c:has(.rw-why) { white-space: normal; }
+.rw-sum { display: none; }
+.rw-row > .team-act { align-self: center; }
+.rw-row.is-own .rw-who b { color: var(--ink-soft); }
+.rw-note { margin: 0 0 12px; }
+.rw-facts { padding: 18px 20px; }
+.rw-dl { margin: 0; }
+.rw-facts-acts { display: flex; justify-content: flex-end; margin-top: 12px; }
+.rw-history { padding: 18px 20px; }
+.crm-group-head > .chip { align-self: center; }
+.rw-figs > .crm-group-head h3 { min-height: var(--ctl-h); display: flex; align-items: center; margin-block: calc((22px - var(--ctl-h)) / 2); }
+.rw-total { margin: 16px 0 0; font-size: 13.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.rw-total:empty { display: none; }
+.rw-hint { display: block; margin-top: 4px; font-size: 12px; color: var(--ink-mute); }
+.rw-hint:empty { display: none; }
+#rwDFields { margin-top: 16px; }
+#rwDeptSheet .tickline { margin-top: 16px; }
+
+/* A narrow list reads each row as two lines: who, and the one figure the
+   table is for at the right edge; then the rest as one line of meta. */
+.is-narrow .rw-row {
+  grid-template-columns: minmax(0, 1fr) 120px;
+  grid-template-areas: "who key" "sum sum";
+  gap: 4px 10px;
+}
+.is-narrow .rw-row.has-act {
+  grid-template-columns: minmax(0, 1fr) 120px var(--ctl-h);
+  grid-template-areas: "who key act" "sum sum act";
+}
+.is-narrow .rw-row > .rw-who { grid-area: who; }
+.is-narrow .rw-row > .rw-key { grid-area: key; justify-self: stretch; display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.is-narrow .rw-row > .rw-key .chip { align-self: flex-end; }
+.is-narrow .rw-row > .rw-c:not(.rw-key) { display: none; }
+.is-narrow .rw-row > .rw-sum { grid-area: sum; display: block; font-size: 12.5px; color: var(--ink-mute); min-height: 16px; overflow-wrap: anywhere; }
+.is-narrow .rw-row > .rw-sum:empty { display: none; }
+.is-narrow .rw-row:not(.has-act) > .team-act { display: none; }
+.is-narrow .rw-row > .team-act { grid-area: act; margin-block: calc((20px - var(--ctl-h)) / 2); }
+.is-narrow .crm-head.rw-row { display: none; }
+/* ---- End of performance rewards ---- */
+/* The Notify tick sits between the step's line and its actions. */
+.qnext .perf-notify { margin-top: 12px; }
+
+/* =========================================================================
+   THE CLIENT PAGES' BAR
+   The bell, sign out and the language toggle are one family, read left to
+   right bell, sign out, 中文 (the user, 2026-09-28): the same height, the
+   same corner, the same tonal ground. A circle, a bare glyph and a bordered
+   box side by side read as three kinds of thing.
+   On a phone the name the page is for takes two lines, its label over it,
+   because one line left it "Signed in as k…".
+   ========================================================================= */
+.topbar .chrome-actions { gap: 8px; }
+.topbar .chrome-actions > .pill,
+.topbar .chrome-actions > .langtoggle,
+.topbar .chrome-actions > .pushbtn {
+  height: var(--ctl-h); min-height: var(--ctl-h); min-width: var(--ctl-h);
+  border: 0; border-radius: var(--radius-sm); padding: 0 12px;
+  background: var(--tonal); color: var(--ink-soft);
+  font-size: 13px; font-weight: 500;
+}
+.topbar .chrome-actions > .pushbtn { width: var(--ctl-h); padding: 0; }
+.topbar .chrome-actions > .pushbtn.is-on { color: var(--ink); }
+@media (hover: hover) {
+  .topbar .chrome-actions > .pill:hover,
+  .topbar .chrome-actions > .langtoggle:hover,
+  .topbar .chrome-actions > .pushbtn:hover { background: var(--tonal-hover); color: var(--ink); }
+}
+@media (max-width: 640px) {
+  .topbar #signOutBtn { width: var(--ctl-h); padding: 0; justify-content: center; }
+  .topbar .brand-for { display: grid; line-height: 1.25; }
+  .topbar .brand-for b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+/* =========================================================================
+   A POPOVER CARD (js/menu.js `pop`)
+   The bell's card on the client pages and the section's purpose in the
+   console. At a desk it hangs from its control with a caret pointing at it;
+   on a phone it docks at the foot of the screen, inside the gutters and
+   above the home bar, and rises from the floor like a sheet, because a card
+   hanging from a bar control at the top read as dropped somewhere (the
+   user, 2026-09-28).
+   ========================================================================= */
+.popcard { border-radius: var(--radius); box-shadow: var(--shadow-lift); }
+.popcard::before {
+  content: ""; position: absolute; top: -7px; left: calc(var(--caret, 50%) - 6px);
+  width: 12px; height: 12px; background: var(--card);
+  border: 1px solid var(--line); border-right: 0; border-bottom: 0;
+  border-top-left-radius: 3px; transform: rotate(45deg);
+}
+.popcard.is-up::before { top: auto; bottom: -7px; transform: rotate(225deg); }
+.popcard.is-up { transform-origin: bottom center; }
+.popcard.is-dock {
+  position: fixed; top: auto; right: 16px; left: 16px;
+  bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  width: auto; padding: 20px; border-radius: var(--radius-lg);
+  transform-origin: bottom center; animation: popcard-up var(--t-slow) var(--ease);
+}
+.popcard.is-dock::before { display: none; }
+@keyframes popcard-up { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+.popcard-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+/* The close mark gives its padding back so the title keeps the card's top. */
+.popcard-x { margin: calc((20px - var(--ctl-h)) / 2) calc((16px - var(--ctl-h)) / 2) calc((20px - var(--ctl-h)) / 2) 0; }
+.kmenu.pushpop { gap: 8px; padding: 16px; }
+.popcard.is-dock .pushpop-acts .btn { min-height: var(--ctl-h); }
+.aboutpop.popcard { padding: 16px 16px 10px; }
+.aboutpop.is-dock { padding: 20px 20px 12px; }
+.aboutpop.is-dock .aboutpop-text { font-size: 14px; }
+
+/* The instruction beside its `?` reads as a small callout pointing at the
+   mark, rather than loose mute text on the card. */
+.hintline { align-items: center; }
+.hinttext {
+  position: relative; padding: 8px 12px; border-radius: var(--radius-sm);
+  background: var(--sunk); color: var(--ink-soft); font-size: 13px;
+}
+.hinttext::before {
+  content: ""; position: absolute; left: -4px; top: calc(50% - 4px);
+  width: 8px; height: 8px; background: var(--sunk); border-radius: 1px; transform: rotate(45deg);
+}

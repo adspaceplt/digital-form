@@ -30,7 +30,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260927w">
+<link rel="stylesheet" href="/css/portal.css?v=20260927y">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -54,32 +54,32 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260927w"></script>
-<script src="/js/captcha.js?v=20260927w"></script>
-<script src="/js/words.js?v=20260927w"></script>
-<script src="/js/copy.js?v=20260927w"></script>
-<script src="/js/ask.js?v=20260927w"></script>
-<script src="/js/confirm.js?v=20260927w"></script>
-<script src="/js/sheet.js?v=20260927w"></script>
-<script src="/js/refresh.js?v=20260927w"></script>
-<script src="/js/form.js?v=20260927w"></script>
-<script src="/js/state.js?v=20260927w"></script>
-<script src="/js/group.js?v=20260927w"></script>
-<script src="/js/menu.js?v=20260927w"></script>
-<script src="/js/cmdbar.js?v=20260927w"></script>
-<script src="/js/records.js?v=20260927w"></script>
-<script src="/js/chart.js?v=20260927w"></script>
-<script src="/js/swipe.js?v=20260927w"></script>
-<script src="/js/api.js?v=20260927w"></script>
-<script src="/js/push.js?v=20260927w"></script>
-<script src="/js/money.js?v=20260927w"></script>
-<script src="/js/mockups.js?v=20260927w"></script>
+<script src="/js/config.js?v=20260927y"></script>
+<script src="/js/captcha.js?v=20260927y"></script>
+<script src="/js/words.js?v=20260927y"></script>
+<script src="/js/copy.js?v=20260927y"></script>
+<script src="/js/ask.js?v=20260927y"></script>
+<script src="/js/confirm.js?v=20260927y"></script>
+<script src="/js/sheet.js?v=20260927y"></script>
+<script src="/js/refresh.js?v=20260927y"></script>
+<script src="/js/form.js?v=20260927y"></script>
+<script src="/js/state.js?v=20260927y"></script>
+<script src="/js/group.js?v=20260927y"></script>
+<script src="/js/menu.js?v=20260927y"></script>
+<script src="/js/cmdbar.js?v=20260927y"></script>
+<script src="/js/records.js?v=20260927y"></script>
+<script src="/js/chart.js?v=20260927y"></script>
+<script src="/js/swipe.js?v=20260927y"></script>
+<script src="/js/api.js?v=20260927y"></script>
+<script src="/js/push.js?v=20260927y"></script>
+<script src="/js/money.js?v=20260927y"></script>
+<script src="/js/mockups.js?v=20260927y"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260927w" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260927y" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -3481,7 +3481,18 @@
           </form>
           <div class="msg" id="perfLockMsg"></div>
         </div>
-        <div id="perfOpen" hidden>
+        <div id="perfOpen" data-swipe="perfViews" hidden>
+          <!-- ---- Performance rewards (2026-09-28): the month, the quarter and
+               its two prizes, the bonus pool and trip over two quarters, and
+               growth commission, one view each. Every figure is worked out by
+               the database from finalised months (js/perf.js). ---- -->
+          <div class="actstrip perf-views"><span class="cmdbar-views actviews" id="perfViews" role="group" aria-label="View">
+            <button class="acttab btn-sm is-on" data-pv="months" type="button" aria-pressed="true">Months</button>
+            <button class="acttab btn-sm" data-pv="quarters" type="button" aria-pressed="false">Quarters</button>
+            <button class="acttab btn-sm" data-pv="company" type="button" aria-pressed="false">Bonus and trip</button>
+            <button class="acttab btn-sm" data-pv="commission" type="button" aria-pressed="false">Commission</button>
+          </span></div>
+          <div id="perfMonths">
           <div class="cmdbar">
             <span class="cmdbar-find">
               <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -3508,6 +3519,51 @@
           </div>
           <div class="msg" id="perfMsg"></div>
           <div id="perfList" data-narrow="780"></div>
+          </div>
+          <div id="perfQuarters" hidden>
+            <div class="cmdbar">
+              <select class="select select-sm" id="perfQuarter" aria-label="Quarter" data-nofilter></select>
+              <span class="cmdbar-end">
+                <span class="cmdbar-quiet"><span class="cmdbar-count" id="rwQCount"></span></span>
+                <span class="cmdbar-acts">
+                  <button class="btn btn-sm" id="rwQReopen" type="button" data-need="team.performance:manage" hidden>Reopen</button>
+                  <button class="btn btn-sm btn-primary" id="rwQConfirm" type="button" data-need="team.performance:work" hidden>Confirm quarter</button>
+                </span>
+              </span>
+            </div>
+            <div class="msg" id="rwQMsg"></div>
+            <div id="rwQList" data-narrow="780"></div>
+          </div>
+          <div id="perfCompany" hidden>
+            <div class="cmdbar">
+              <select class="select select-sm" id="perfPeriod" aria-label="Period" data-nofilter></select>
+              <span class="cmdbar-end">
+                <span class="cmdbar-quiet"><span class="cmdbar-count" id="rwPCount"></span></span>
+                <span class="cmdbar-acts">
+                  <button class="btn btn-sm" id="rwPReopen" type="button" data-need="team.performance:manage" hidden>Reopen</button>
+                  <button class="btn btn-sm btn-primary" id="rwPConfirm" type="button" data-need="team.performance:work" hidden>Confirm period</button>
+                </span>
+              </span>
+            </div>
+            <div class="msg" id="rwPMsg"></div>
+            <div id="rwPList" data-narrow="780"></div>
+          </div>
+          <div id="perfCommission" hidden>
+            <div class="cmdbar">
+              <span class="cmdbar-find">
+                <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+                <input class="input input-sm" id="rwCFind" type="search" placeholder="Search name or client" aria-label="Search commission">
+              </span>
+              <span class="cmdbar-end">
+                <span class="cmdbar-quiet"><span class="cmdbar-count" id="rwCCount"></span></span>
+                <span class="cmdbar-acts">
+                  <button class="btn btn-sm btn-primary" id="rwCAdd" type="button" data-need="team.performance:work">Add entry</button>
+                </span>
+              </span>
+            </div>
+            <div class="msg" id="rwCMsg"></div>
+            <div id="rwCList" data-narrow="780"></div>
+          </div>
         </div>
       </div>
 
@@ -3563,6 +3619,97 @@
       </div>
     </div>
 
+    <!-- ---- Performance rewards: the three sheets management fills. ---- -->
+    <!-- A department's quarter: the framework's five criteria, each out of its
+         own maximum, and the tick for an unresolved critical issue. -->
+    <div class="sheet" id="rwDeptSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="rwDTitle">
+        <div class="sheet-head">
+          <h3 id="rwDTitle">Department scores</h3>
+          <button class="iconbtn" id="rwDClose" type="button" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <div class="row">
+            <div>
+              <label class="field-label" for="rwDDept">Department</label>
+              <select class="select" id="rwDDept" data-seg>
+                <option value="creative">Creative</option>
+                <option value="marketing">Marketing</option>
+              </select>
+            </div>
+          </div>
+          <div id="rwDFields"></div>
+          <label class="tickline"><input type="checkbox" id="rwDCrit"> <span>Unresolved critical issue</span></label>
+          <p class="rw-total" id="rwDTotal"></p>
+          <div class="msg" id="rwDMsg"></div>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="rwDSave" type="button">Save</button>
+          <button class="btn btn-quiet" id="rwDCancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <!-- Revenue and profit for two quarters, an admin's alone, and the two
+         amounts they open. -->
+    <div class="sheet" id="rwCoSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="rwFTitle">
+        <div class="sheet-head">
+          <h3 id="rwFTitle">Company figures</h3>
+          <button class="iconbtn" id="rwFClose" type="button" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <div class="row fgrid">
+            <div><label class="field-label" for="rwFRev">Revenue (RM)</label><input class="input" id="rwFRev" type="text" inputmode="decimal" autocomplete="off" aria-required="true"></div>
+            <div><label class="field-label" for="rwFPro">Profit (RM)</label><input class="input" id="rwFPro" type="text" inputmode="decimal" autocomplete="off" aria-required="true"></div>
+          </div>
+          <div class="row fgrid">
+            <div><label class="field-label" for="rwFPool">Bonus pool (RM)</label><input class="input" id="rwFPool" type="text" inputmode="decimal" autocomplete="off"><small class="rw-hint" id="rwFMax"></small></div>
+            <div><label class="field-label" for="rwFTrip">Trip budget (RM)</label><input class="input" id="rwFTrip" type="text" inputmode="decimal" autocomplete="off"></div>
+          </div>
+          <div class="msg" id="rwFMsg"></div>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="rwFSave" type="button">Save</button>
+          <button class="btn btn-quiet" id="rwFCancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <!-- One growth commission deal. -->
+    <div class="sheet" id="rwComSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="rwMTitle">
+        <div class="sheet-head">
+          <h3 id="rwMTitle">Add entry</h3>
+          <button class="iconbtn" id="rwMClose" type="button" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <div class="row fgrid">
+            <div><label class="field-label" for="rwMWho">Team member</label><select class="select" id="rwMWho" aria-required="true"></select></div>
+            <div><label class="field-label" for="rwMClient">Client</label><select class="select" id="rwMClient"></select></div>
+          </div>
+          <div class="row">
+            <div><label class="field-label" for="rwMDesc">Description</label><input class="input" id="rwMDesc" maxlength="300" autocomplete="off" aria-required="true"></div>
+          </div>
+          <div class="row fgrid-3">
+            <div><label class="field-label" for="rwMMonth">Month invoiced</label><input class="input" id="rwMMonth" type="month" min="2026-06" aria-required="true"></div>
+            <div><label class="field-label" for="rwMNet">Net profit (RM)</label><input class="input" id="rwMNet" type="text" inputmode="decimal" autocomplete="off" aria-required="true"></div>
+            <div><label class="field-label" for="rwMPct">Commission (%)</label><input class="input" id="rwMPct" type="text" inputmode="decimal" autocomplete="off" aria-required="true"></div>
+          </div>
+          <p class="rw-total" id="rwMAmount"></p>
+          <div class="msg" id="rwMMsg"></div>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="rwMSave" type="button">Save</button>
+          <button class="btn btn-quiet" id="rwMCancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ---- My performance: the signed-in person's own released months.
          Reached from the account menu. No master code: the database answers
          this read for the person's own record and nobody else's. ---- -->
@@ -3586,6 +3733,9 @@
       </section>
       <div class="msg" id="mineMsg"></div>
       <div id="mineList" data-narrow="780"></div>
+      <!-- The member's own rewards: confirmed quarters and periods, flexible
+           hours and commissions, drawn only where there is something. -->
+      <div id="mineRewards" data-narrow="780"></div>
     </div>
 
     <!-- One month's review, beside the list: the result, the six scores,
@@ -3607,6 +3757,7 @@
                   <button class="kmenu-item" data-a="print" type="button" role="menuitem">Download PDF</button>
                   <button class="kmenu-item" data-a="return" type="button" role="menuitem">Return to draft</button>
                   <button class="kmenu-item" data-a="reopen" type="button" role="menuitem">Reopen</button>
+                  <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem">Delete</button>
                 </div>
               </span>
               <button class="iconbtn" id="pvClose" type="button" aria-label="Close">
@@ -4190,18 +4341,18 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
-<script src="/js/passkey.js?v=20260927w"></script>
-<script src="/js/admin.js?v=20260927w"></script>
-<script src="/js/documents.js?v=20260927w"></script>
-<script src="/js/letters.js?v=20260927w"></script>
-<script src="/js/smreport.js?v=20260927w"></script>
-<script src="/js/reports.js?v=20260927w"></script>
-<script src="/js/register.js?v=20260927w"></script>
-<script src="/js/crm.js?v=20260927w"></script>
-<script src="/js/team.js?v=20260927w"></script>
-<script src="/js/campaigns.js?v=20260927w"></script>
-<script src="/js/ops.js?v=20260927w"></script>
-<script src="/js/perf.js?v=20260927w"></script>
-<script src="/js/search.js?v=20260927w"></script>
+<script src="/js/passkey.js?v=20260927y"></script>
+<script src="/js/admin.js?v=20260927y"></script>
+<script src="/js/documents.js?v=20260927y"></script>
+<script src="/js/letters.js?v=20260927y"></script>
+<script src="/js/smreport.js?v=20260927y"></script>
+<script src="/js/reports.js?v=20260927y"></script>
+<script src="/js/register.js?v=20260927y"></script>
+<script src="/js/crm.js?v=20260927y"></script>
+<script src="/js/team.js?v=20260927y"></script>
+<script src="/js/campaigns.js?v=20260927y"></script>
+<script src="/js/ops.js?v=20260927y"></script>
+<script src="/js/perf.js?v=20260927y"></script>
+<script src="/js/search.js?v=20260927y"></script>
 </body>
 </html>

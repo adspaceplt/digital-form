@@ -79,7 +79,8 @@
       creator: 'Receive a notification when a booking is confirmed, changes are requested or a draft is approved.',
       install: 'On iPhone, add this page to the Home Screen, then turn notifications on from there.',
       blocked: 'Notifications are blocked for this site in the browser settings.',
-      failed: 'Notifications could not be turned on. Please try again.'
+      failed: 'Notifications could not be turned on. Please try again.',
+      close: 'Close'
     }
   };
 
@@ -133,7 +134,8 @@
       creator: '合作确认、需要修改或初稿通过时，在此设备上接收通知。',
       install: '在 iPhone 上，请先将此页面添加到主屏幕，再从主屏幕开启通知。',
       blocked: '浏览器设置已阻止此网站的通知。',
-      failed: '未能开启通知，请重试。'
+      failed: '未能开启通知，请重试。',
+      close: '关闭'
     }
   };
 

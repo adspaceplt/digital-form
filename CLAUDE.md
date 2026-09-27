@@ -168,6 +168,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The footer is drawn with the header and sits last from the first paint
     (`.portalfoot { order: 1 }`). It moves to the end of body once the page is
     parsed. It is hidden while it precedes an open console.
+  - A client page's bar reads left to right bell, sign out, 中文 (the page's
+    own controls go in just before `#langToggle`), all one tonal family of
+    one height and corner. On a phone the name the page is for takes two
+    lines, its label over it (`.brand-for-label`).
 - Nothing moves after first paint.
   - The mark's ratio is kept in `localStorage` `adspace-logo-ratio` and drawn at
     that ratio (`aspect-ratio: auto R`).
@@ -228,7 +232,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - SST 8% unless `sst_applies` is false.
   - Two decimals on every total.
   - `TERMS` holds the older factor table (used when `term_pct` is null).
-- `js/menu.js` (`place`, `onScroll`) is the only copy of where a ⋯ opens.
+- `js/menu.js` (`place`, `pop`, `onScroll`) is the only copy of where a ⋯ or
+  a popover card opens.
+  - `pop(btn, card, align)` lays a popover card (`.popcard`: the bell's
+    `#pushPop`, the section's `#sectionAbout`). It moves the card to body; at
+    a desk it hangs from its control with a caret (`--caret`, `is-up`); under
+    640 it docks at the foot of the screen inside the gutters and above the
+    home bar (`is-dock`), rising from the floor.
   - Placed on the viewport; opens upward where the room is above.
   - Ignores the scroll that reveals its focused button (2px rule).
   - Follows its button on resize, and closes when the button leaves the page.
@@ -500,7 +510,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   tabs and `ACT_SECTION`, `PARTS.activity`, and the Team panel's blocks. One
   sequence everywhere.
 - The route's purpose line opens from the route name (`.console-title` button,
-  14px glyph, `aria-expanded`; `.aboutpop` placed by `ADspaceMenu.place(btn, pop, 'left')`).
+  14px glyph, `aria-expanded`; `.aboutpop` laid by `ADspaceMenu.pop(btn, pop, 'left')`).
   - One sentence per route, from `INTRO`.
   - Never opens by itself. While a route is new, the glyph carries `--action`.
   - Below 400px the glyph gives way and the name never does.
@@ -937,15 +947,17 @@ Each line is a rule that broke once. Its reason is in the archive.
     from the verified option.
   - The row is written before the file is uploaded. Every failure is named
     after the repaint.
-  - AP01 is named on approval, at scheduled and posted, not at completed.
+  - Payment details (AP01) are asked for once posted (`payDue`: posted only),
+    never on the draft's approval, and the line never says Approved.
   - `creator_rate` takes 1 to 5 at completed and is never shown to the client.
   - Post and results (Scheduled, Posted; read-only at Completed): per
     placement, the post link (the platform's own host, `post_link_ok()`),
     its date, and views, engagements and impressions over the count period.
     `creator_post_save` writes them (`entered_by` creator, filed
     `campaign.results`); numbers are refused (`period`) until the team sets
-    `measure_from`/`measure_to`, which only the console writes. The first
-    link at Scheduled moves the booking to Posted.
+    `measure_from`/`measure_to`, which only the console writes; until then
+    the page says nothing about the period. The first link at Scheduled
+    moves the booking to Posted.
   - The countdown is amber, then red once passed.
   - The page is a queue ordered by what is owed, with one booking open in
     `location.hash`. A lone booking has no queue and runs the page's width.
@@ -1297,6 +1309,40 @@ Each line is a rule that broke once. Its reason is in the archive.
   changed nothing files nothing).
 - Both locks (the master code and the email code) are one centred `.lockcard`.
 - Notifications never carry a score.
+- Release carries Notify {name}, ticked by default on every month
+  (`perf_release(p_token, p_review, p_rev, p_notify default true)`, filed
+  `notified`); unticked, the member is not told and the sheet says so.
+- An admin deletes a member's month in any state (`perf_delete`: the
+  performance part at Manage, a live unlock and admin; never their own), from
+  the row's ⋯ and the review's ⋯, with the name and month typed back
+  (`{name} {Month YYYY}`) and a reason. The review, its disputes and scores
+  go; its history rows stay (the link set null, which `perf_events_frozen`
+  lets through below another write), one `deleted` row says who and why
+  (Record deleted), and `perf_deleted` keeps a printed reference so
+  `/verify/` answers it Void. There is no restore.
+<!-- Performance rewards (2026-09-28) -->
+- Rewards (`2026-09-28-performance-rewards.sql`) are Performance's views
+  Months, Quarters, Bonus and trip, Commission (`view=`, `q=` the quarter or
+  the period's first quarter).
+  - Worked out on every read from finalised months only (`perf_quarter_calc`,
+    `perf_flex_calc`, `perf_period_calc`, `perf_commission_json`). Confirm
+    (Work) keeps a snapshot in `perf_rewards`; Reopen (Manage) removes it,
+    files it and never asks. Quarters begin with Q3 2026.
+  - Tied departments are joint winners and one that does not qualify drops
+    out; a winning share is split among the department's active members on
+    the review list.
+  - Flexible hours: a month decides the next only once every active member on
+    the review list has a final review of it.
+  - A bonus period is two quarters named by its first. Revenue and profit are
+    read and written only by `perf_is_admin()` and filed by name only; the
+    rest of management sees the amounts.
+  - Every share is rounded down to the cent and the remainder stated.
+  - Commission is pending until its month is final; the member sees it once
+    decided. Nobody enters their own.
+  - The caller's own row arrives with its name alone (`perf_hide_own`); the
+    member reads theirs through `perf_rewards_mine()` behind the fresh code.
+  - `perf_today()` is the one clock the rules ask; `tests/perf.js` replaces
+    it, and the stand-in reads `window.__perfToday`.
 
 ### Reports (`js/reports.js`, `js/smreport.js`, `?s=reports`)
 - Reports is its own section (`reports` View / Work / Manage), not a part of
@@ -1310,9 +1356,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Publishing freezes `sm_report_versions.snapshot`.
   - A report a client has seen is never deleted.
 - The list groups reports by stage (Drafts, In review, Confirmed, Published
-  shut). New report opens on the type as a segment. Only Active clients.
+  shut). New report opens on the type as a segment (Accounts Report /
+  Advertising Report). Only Active clients.
 - Four steps, a strip with each step's summary, Next: {step}, and Check and
   submit.
+  - The head is the record head: the name, then the state, PDF and the ⋯ at
+    the right edge; the meta under them. On a narrow pane the button reads
+    PDF (`.rp-pdf-short`).
+  - The step foot is an action row, the primary at the right edge.
+  - An empty step's line does not repeat the head's Add.
   - The commentary is four fields, with no title or headline.
 - The client record's tab shows finished reports only (`sm_client_reports`,
   `sm_report_file`).

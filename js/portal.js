@@ -30,7 +30,7 @@
   (function () {
     var slot = window.ADspaceChrome && window.ADspaceChrome.actions();
     var extra = $('chromeExtra');
-    if (slot && extra) slot.insertBefore(extra.content.cloneNode(true), slot.firstChild);
+    if (slot && extra) slot.insertBefore(extra.content.cloneNode(true), document.getElementById('langToggle'));
   })();
 
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';

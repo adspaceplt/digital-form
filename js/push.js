@@ -205,6 +205,7 @@
     ui.btn.classList.toggle('is-on', isOn);
     ui.btn.setAttribute('aria-label', w.label + (isOn ? ' · ' + w.onWord : ''));
     ui.title.textContent = w.label;
+    ui.x.setAttribute('aria-label', w.close || 'Close');
     ui.line.textContent = reason === 'install' ? w.install : reason === 'blocked' ? w.blocked :
       (isOn ? w.isOn : w[cfg.audience]);
     ui.go.hidden = reason === 'install' || reason === 'blocked';
@@ -222,7 +223,10 @@
     paintBell();
     ui.pop.hidden = false;
     ui.btn.setAttribute('aria-expanded', 'true');
-    (ui.go.hidden ? ui.pop : ui.go).focus();
+    /* Hung from the bell with a caret at a desk, docked at the foot of the
+       screen on a phone (js/menu.js). */
+    if (window.ADspaceMenu && window.ADspaceMenu.pop) window.ADspaceMenu.pop(ui.btn, ui.pop, 'right');
+    (ui.go.hidden ? ui.pop : ui.go).focus({ preventScroll: true });
   }
 
   /* Draw the bell once the page knows what it follows. `words` answers the
@@ -239,13 +243,16 @@
       pop.tabIndex = -1;
       pop.setAttribute('role', 'dialog');
       pop.setAttribute('aria-labelledby', 'pushPopTitle');
-      pop.innerHTML = '<p class="pushpop-title" id="pushPopTitle"></p>' +
+      pop.innerHTML = '<div class="popcard-head"><p class="pushpop-title" id="pushPopTitle"></p>' +
+        '<button class="iconbtn popcard-x" id="pushX" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>' +
         '<p class="pushpop-line" id="pushPopLine"></p>' +
         '<div class="pushpop-acts"><button class="btn btn-sm" id="pushGo" type="button"></button></div>' +
         '<p class="msg err" id="pushMsg" role="status" hidden></p>';
       host.appendChild(pop);
       ui = { btn: btn, pop: pop, title: pop.querySelector('#pushPopTitle'), line: pop.querySelector('#pushPopLine'),
-             go: pop.querySelector('#pushGo'), msg: pop.querySelector('#pushMsg'), words: words };
+             go: pop.querySelector('#pushGo'), msg: pop.querySelector('#pushMsg'), x: pop.querySelector('#pushX'), words: words };
+      ui.x.addEventListener('click', function (e) { e.stopPropagation(); shut(true); });
+      if (window.ADspaceMenu) window.ADspaceMenu.onScroll(function () { shut(false); });
       btn.setAttribute('aria-haspopup', 'dialog');
       btn.setAttribute('aria-expanded', 'false');
       btn.setAttribute('aria-controls', 'pushPop');

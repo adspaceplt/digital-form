@@ -101,7 +101,7 @@
         '<span class="brand-divider"></span>' +
         '<span class="brand-meta">' +
           '<span class="brand-kicker" id="kicker">' + esc(kicker) + '</span>' +
-          (forClient ? '<span class="brand-for" id="clientFor">Prepared for ' +
+          (forClient ? '<span class="brand-for" id="clientFor"><span class="brand-for-label">Prepared for</span> ' +
             '<b id="clientName">…</b></span>' : '') +
         '</span>' +
       '</div>' +
@@ -202,7 +202,7 @@
       var el = document.getElementById('clientFor');
       if (!el) return;
       el.hidden = !name;
-      if (name) el.innerHTML = esc(label) + ' <b id="clientName">' + esc(name) + '</b>';
+      if (name) el.innerHTML = '<span class="brand-for-label">' + esc(label) + '</span> <b id="clientName">' + esc(name) + '</b>';
     },
     // Any mark on the page, wired to the same fallback.
     mark: function (logoId, wordmarkId) {

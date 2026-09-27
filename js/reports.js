@@ -52,7 +52,10 @@
   /* The kinds of report the builder makes. Each is one engine of steps —
      draft, review, confirmed, published — with its own entry and its own
      PDF; the type is chosen when a report is started. */
-  var TYPES = [{ key: 'social', name: 'Social Media Accounts Report' }, { key: 'ads', name: 'Social Media Advertising Report' }];
+  /* `seg` is the segment's word: the whole name did not fit a phone's
+     segment ("just cut short", the user, 2026-09-28). */
+  var TYPES = [{ key: 'social', name: 'Social Media Accounts Report', seg: 'Accounts Report' },
+               { key: 'ads', name: 'Social Media Advertising Report', seg: 'Advertising Report' }];
   var TYPE_WORD = {};
   TYPES.forEach(function (t) { TYPE_WORD[t.key] = t.name; });
   var PLATFORMS = [['facebook', 'Facebook'], ['instagram', 'Instagram'], ['tiktok', 'TikTok'], ['rednote', 'rednote'],
@@ -245,7 +248,7 @@
       '<section class="fsec">' +
         '<div class="row"><div><label class="field-label" for="rpNewKind">Report type</label>' +
           '<select class="select" id="rpNewKind" data-seg>' + TYPES.map(function (t) {
-            return '<option value="' + t.key + '">' + esc(t.name.replace(/ report$/, '')) + '</option>';
+            return '<option value="' + t.key + '">' + esc(t.seg) + '</option>';
           }).join('') + '</select></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpNewClient">Client</label><select class="select" id="rpNewClient" aria-required="true"></select></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpNewMonth">Month</label><input class="input" id="rpNewMonth" aria-required="true" type="month"></div></div>' +
@@ -409,7 +412,10 @@
       '<p class="rp-meta">' + esc(TYPE_WORD[r.kind] || '') + ' · ' + esc(periodWord(r.period_start, r.period_end)) + ' · Version ' + r.version_no +
         (live ? ' · Version ' + live.version_no + ' on the client portal' : '') + '</p></div>' +
       '<div class="rp-ctl">' + chip(r.status) +
-        '<button class="btn btn-sm" type="button" data-a="pdf">' + ICON.file + (r.status === 'published' ? 'Download PDF' : 'Preview PDF') + '</button>' +
+        /* On a narrow pane the verb gives way and the button reads PDF, so
+           the state, the file and the ⋯ sit beside the name on one line. */
+        '<button class="btn btn-sm rp-pdf" type="button" data-a="pdf" aria-label="' + (r.status === 'published' ? 'Download PDF' : 'Preview PDF') + '">' + ICON.file +
+          '<span class="rp-pdf-long">' + (r.status === 'published' ? 'Download PDF' : 'Preview PDF') + '</span><span class="rp-pdf-short">PDF</span></button>' +
         moreMenu(r, live) + '</div></div>' +
       (r.status === 'draft' && r.return_note ? '<p class="rp-note is-warn"><b>Returned:</b> ' + esc(r.return_note) + '</p>' : '') +
       '<div class="msg" data-m="head"></div></section>' +
@@ -665,7 +671,8 @@
     if (!box) return;
     var ed = editable();
     if (!st.platforms.length) {
-      UI.emptyLine(box, 'No accounts.', ed ? 'Add an account' : null, ed ? function () { accountSheet(null, box); } : null);
+      /* The section head carries Add account; the empty line does not say it twice. */
+      UI.emptyLine(box, 'No accounts.');
       return;
     }
     box.innerHTML = '<div class="crm-table softpanel rp-acc-table">' +
@@ -849,7 +856,7 @@
     var ed = editable();
     if (!st.platforms.length) { UI.emptyLine(box, 'Add an account first.'); return; }
     if (!st.posts.length) {
-      UI.emptyLine(box, 'No posts.', ed ? 'Add a post' : null, ed ? function () { postSheet(null, box); } : null);
+      UI.emptyLine(box, 'No posts.');
       return;
     }
     box.innerHTML = st.platforms.map(function (a) {
@@ -1331,7 +1338,7 @@
     if (!box) return;
     var ed = editable();
     if (!st.ads.length) {
-      UI.emptyLine(box, 'No ads.', ed ? 'Add an ad' : null, ed ? function () { adSheet(null, box); } : null);
+      UI.emptyLine(box, 'No ads.');
       return;
     }
     box.innerHTML = OBJECTIVES.map(function (o) {
