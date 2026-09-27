@@ -1163,6 +1163,7 @@
     'document.verified':     ['Letter verified', 'is-ok', 'register'],
     'document.superseded':   ['Letter superseded', 'is-warn', 'register'],
     'campaign.review':       ['Draft reviewed', '', 'campaigns'],
+    'campaign.results':      ['Results entered', '', 'campaigns'],
     'service.override':      ['Price overridden', 'is-warn', 'clients'],
     /* Content Review wrote nothing for the everyday acts on a set. */
     'set.created':           ['Set created', 'is-ok', 'review'],

@@ -75,6 +75,11 @@
       linkFail: 'Not saved. Please try again.',
       payHead: 'Payment details', payLine: 'Approved. Please complete your payment details.',
       payGo: 'Fill in the form',
+      postsHead: 'Post and results', postLink: 'Post link', postedOn: 'Published on',
+      countPeriod: 'Count from {a} to {b}', periodWait: 'ADspace will set the count period.',
+      linkFirst: 'Add the link once the post is live.',
+      views: 'Views', engagements: 'Engagements', impressions: 'Impressions',
+      linkWrong: 'This is not a {p} post link.', numWrong: 'Enter whole numbers.',
       rateHead: 'Your experience',
       rateStar: function (n) { return n + ' out of 5'; },
       rateThanks: 'Thank you.',
@@ -134,6 +139,11 @@
       linkTaken: '此主页已登记在另一位创作者名下，请联系您的 ADspace 客户经理。',
       linkNone: '请至少保留一个主页链接。',
       linkFail: '未能保存，请重试。',
+      postsHead: '发布链接与数据', postLink: '帖子链接', postedOn: '发布日期',
+      countPeriod: '统计期间：{a} 至 {b}', periodWait: 'ADspace 将设定数据统计期间。',
+      linkFirst: '帖子发布后，请填写链接。',
+      views: '浏览量', engagements: '互动量', impressions: '曝光量',
+      linkWrong: '这不是{p}的帖子链接。', numWrong: '请输入整数。',
       rateHead: '合作体验',
       rateStar: function (n) { return '5 星中的 ' + n + ' 星'; },
       rateThanks: '感谢您的评分。',
@@ -524,15 +534,128 @@
         (b.caption && !b.can_deliver ? '<div class="booking-caption"><div class="kstep-title">' +
           esc(t().captionLabel) + '</div><p>' + esc(b.caption).replace(/\n/g, '<br>') + '</p></div>' : '') +
         (b.can_deliver ? deliverHtml(b) : '') +
+        (postsDue(b.state) ? postsHtml(b) : '') +
         (payDue(b.state) ? payHtml() : '') +
         (b.state === 'completed' ? rateHtml(b) : ''));
 
     if (b.can_deliver) wireDeliver(card, b);
+    if (postsDue(b.state)) wirePosts(card, b);
     if (payDue(b.state)) {
       card.querySelector('[data-a="pay"]').setAttribute('href', (window.ADSPACE_ORG && window.ADSPACE_ORG.ap01) || '/ap01.html');
     }
     if (b.state === 'completed') wireRate(card, b);
     return card;
+  }
+
+  /* ---- Post and results ----------------------------------------------------
+     Once the draft is approved the creator fills in each placement's link and,
+     over the period the team sets, the platform's numbers: no more sending
+     them on WhatsApp for somebody to type in again (the user, 2026-09-27).
+     The first link moves the booking to Posted. The period is the team's;
+     until it is set, the numbers wait. Numbers only, no screenshots. */
+  function postsDue(s) { return ['scheduled', 'posted', 'completed'].indexOf(s) > -1; }
+  var HOSTS = { xhs: ['xiaohongshu.com', 'xhslink.com'], instagram: ['instagram.com'],
+                tiktok: ['tiktok.com'], facebook: ['facebook.com', 'fb.watch', 'fb.com'] };
+  function platKeyOf(p) {
+    var k = { rednote: 'xhs', xiaohongshu: 'xhs', xhs: 'xhs', instagram: 'instagram', tiktok: 'tiktok', facebook: 'facebook' };
+    return k[String(p || '').trim().toLowerCase()] || String(p || '').trim().toLowerCase();
+  }
+  function postLinkOk(plat, url) {
+    var m = /^https:\/\/([^\/?#]+)/i.exec(url || '');
+    if (!m || /\s/.test(url) || /[@:]/.test(m[1])) return false;
+    var host = m[1].toLowerCase().replace(/^(www|m|vm|vt)\./, '');
+    var ok = HOSTS[platKeyOf(plat)];
+    return !ok || ok.indexOf(host) > -1;
+  }
+  function placementsOf(b) {
+    return String(b.platforms || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+  }
+  function postOf(b, plat) {
+    return (b.posts || []).filter(function (p) { return platKeyOf(p.platform) === platKeyOf(plat); })[0] || {};
+  }
+  function numVal(v) { return v == null || v === '' ? '' : String(v); }
+  function postsHtml(b) {
+    var open = b.state !== 'completed';
+    var rows = placementsOf(b).map(function (plat) {
+      var p = postOf(b, plat);
+      var word = platsOf(plat)[0] || plat;
+      var id = esc(b.id) + '-' + esc(platKeyOf(plat));
+      var period = p.measure_from && p.measure_to;
+      var nums = [['views', p.views], ['engagements', p.engagements], ['impressions', p.impressions]];
+      if (!open) {
+        return '<div class="post-entry"><div class="post-entry-head"><b>' + esc(word) + '</b></div>' +
+          (p.post_url ? '<p class="post-entry-link"><a href="' + esc(p.post_url) + '" target="_blank" rel="noopener">' + esc(p.post_url) + '</a></p>' : '') +
+          (period ? '<p class="post-entry-period">' + esc(fill(t().countPeriod, { a: fmtDate(p.measure_from), b: fmtDate(p.measure_to) })) + '</p>' : '') +
+          '<dl class="post-nums">' + nums.map(function (n) {
+            return '<div><dt>' + esc(t()[n[0]]) + '</dt><dd>' + esc(n[1] == null ? '—' : Number(n[1]).toLocaleString('en-US')) + '</dd></div>';
+          }).join('') + '</dl></div>';
+      }
+      return '<div class="post-entry" data-plat="' + esc(plat) + '">' +
+        '<div class="post-entry-head"><b>' + esc(word) + '</b></div>' +
+        '<label class="field-label" for="pl-' + id + '">' + esc(t().postLink) + '</label>' +
+        '<input class="input" id="pl-' + id + '" type="url" inputmode="url" data-k="url" placeholder="https://" value="' + esc(p.post_url || '') + '">' +
+        '<label class="field-label" for="pd-' + id + '">' + esc(t().postedOn) + '</label>' +
+        '<input class="input" id="pd-' + id + '" type="date" data-k="published" value="' + esc(p.published_at || '') + '">' +
+        (period
+          ? '<p class="post-entry-period">' + esc(fill(t().countPeriod, { a: fmtDate(p.measure_from), b: fmtDate(p.measure_to) })) + '</p>' +
+            '<div class="post-nums-in">' + nums.map(function (n) {
+              return '<div><label class="field-label" for="pn-' + n[0] + '-' + id + '">' + esc(t()[n[0]]) + '</label>' +
+                '<input class="input" id="pn-' + n[0] + '-' + id + '" type="text" inputmode="numeric" pattern="[0-9]*" data-k="' + n[0] + '" value="' + esc(numVal(n[1])) + '"></div>';
+            }).join('') + '</div>'
+          : '<p class="post-entry-period">' + esc(p.post_url ? t().periodWait : t().linkFirst) + '</p>') +
+        '<div class="kactions"><button class="btn btn-primary" type="button" data-a="postsave">' + esc(t().save) + '</button></div>' +
+        '<div class="msg" data-postmsg></div></div>';
+    }).join('');
+    return '<div class="booking-deliver booking-posts"><div class="kstep-title">' + esc(t().postsHead) + '</div>' + rows + '</div>';
+  }
+  function wirePosts(card, b) {
+    Array.prototype.forEach.call(card.querySelectorAll('.post-entry[data-plat]'), function (box) {
+      var plat = box.getAttribute('data-plat');
+      var btn = box.querySelector('[data-a="postsave"]');
+      var note = box.querySelector('[data-postmsg]');
+      var say = function (text, cls) { note.textContent = text || ''; note.className = 'msg' + (cls ? ' ' + cls : ''); };
+      var get = function (k) { var el = box.querySelector('[data-k="' + k + '"]'); return el ? el.value.trim() : null; };
+      btn.addEventListener('click', function () {
+        var url = get('url') || '';
+        if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+        url = url.replace(/^http:\/\//i, 'https://');
+        if (url && !postLinkOk(plat, url)) { say(fill(t().linkWrong, { p: platsOf(plat)[0] || plat }), 'err'); return; }
+        var nums = {}, bad = false, any = false;
+        ['views', 'engagements', 'impressions'].forEach(function (k) {
+          var v = get(k);
+          if (v == null) return;
+          v = v.replace(/[,\s]/g, '');
+          if (v === '') { nums[k] = null; return; }
+          if (!/^\d+$/.test(v)) { bad = true; return; }
+          nums[k] = Number(v); any = true;
+        });
+        if (bad) { say(t().numWrong, 'err'); return; }
+        btn.disabled = true;
+        db.rpc('creator_post_save', {
+          p_code: code, p_option: b.id, p_platform: plat, p_url: url || null,
+          p_published: get('published') || null,
+          p_impressions: any ? nums.impressions : null,
+          p_engagements: any ? nums.engagements : null,
+          p_views: any ? nums.views : null
+        }).then(function (r) {
+          btn.disabled = false;
+          var d = (r && r.data) || {};
+          if ((r && r.error) || d.error) {
+            say(d.error === 'link' ? fill(t().linkWrong, { p: platsOf(plat)[0] || plat })
+              : d.error === 'number' ? t().numWrong
+              : d.error === 'period' ? t().periodWait : t().failText, 'err');
+            return;
+          }
+          /* Read again, so the step, the chip and the period are the
+             database's; the outcome is said after the repaint. */
+          load(code);
+          setTimeout(function () {
+            var again = document.querySelector('.booking[data-id="' + b.id + '"] .post-entry[data-plat="' + plat + '"] [data-postmsg]');
+            if (again) { again.textContent = t().saved; again.className = 'msg ok'; }
+          }, 400);
+        }).catch(function () { btn.disabled = false; say(t().failText, 'err'); });
+      });
+    });
   }
 
   /* The payment form is named once the work is approved, not the moment it is

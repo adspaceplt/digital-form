@@ -4031,16 +4031,26 @@
           return '<label class="kfield"><span>' + label + '</span><input class="input" data-p="' + key +
             '" type="number" inputmode="numeric" min="0" value="' + (p[key] == null ? '' : p[key]) + '"></label>';
         };
+        /* The count period is the team's alone: the creator fills in the
+           link and the numbers on their own page, and cannot enter numbers
+           until it is set (2026-09-27). Prefilled from the publish date, a
+           week, until somebody saves it. */
+        var from = p.measure_from || p.published_at || '';
+        var to = p.measure_to || (p.published_at ? addDays(p.published_at, Math.max(Number(p.window_days || 7), 1) - 1) : '');
+        var byWho = p.entered_by === 'creator' ? 'Entered by the creator' : p.entered_by === 'team' ? 'Entered by the team' : '';
+        var stamp = p.entered_at ? niceStamp(p.entered_at) : (p.measured_at ? niceDate(p.measured_at) : '');
         w.innerHTML =
           '<div class="postrow-head"><b>' + esc(p.platform) + '</b>' +
-            (p.measured_at ? '<span>Measured ' + esc(niceDate(p.measured_at)) + '</span>' : '') + '</div>' +
+            ((byWho || stamp) ? '<span>' + esc([byWho, stamp].filter(Boolean).join(' · ')) + '</span>' : '') + '</div>' +
           '<div class="kfields">' +
             '<label class="kfield kfield-wide"><span>Post link</span>' +
               '<input class="input" data-p="post_url" value="' + esc(p.post_url || '') + '" placeholder="https://"></label>' +
             '<label class="kfield"><span>Published</span>' +
               '<input class="input" data-p="published_at" type="date" value="' + esc(p.published_at || '') + '"></label>' +
-            '<label class="kfield"><span>Window (days)</span>' +
-              '<input class="input" data-p="window_days" type="number" inputmode="numeric" min="1" value="' + (p.window_days || 7) + '"></label>' +
+            '<label class="kfield"><span>Count from</span>' +
+              '<input class="input" data-p="measure_from" type="date" value="' + esc(from) + '"></label>' +
+            '<label class="kfield"><span>Count to</span>' +
+              '<input class="input" data-p="measure_to" type="date" value="' + esc(to) + '"></label>' +
             num('Impressions', 'impressions') + num('Engagements', 'engagements') + num('Views', 'views') +
           '</div>' +
           '<div class="kactions"><button class="btn btn-sm btn-primary" data-p-save type="button">Save</button></div>' +
@@ -4053,10 +4063,22 @@
             if (k === 'post_url') v = absUrl(v);
             patch[k] = v === '' ? null : (i.type === 'number' ? Number(v) : v);
           });
-          patch.measured_at = new Date().toISOString().slice(0, 10);
-          db.from('option_posts').update(patch).eq('id', p.id).then(function (res) {
-            var m = w.querySelector('[data-p-msg]');
+          var m = w.querySelector('[data-p-msg]');
+          if (patch.measure_from && patch.measure_to && patch.measure_to < patch.measure_from) {
+            m.textContent = 'Count to comes after Count from.'; m.className = 'msg err'; return;
+          }
+          var moved = function (k) { return (patch[k] == null ? '' : String(patch[k])) !== (p[k] == null ? '' : String(p[k])); };
+          var figures = ['impressions', 'engagements', 'views'].some(moved);
+          if (figures) patch.measured_at = new Date().toISOString().slice(0, 10);
+          /* Who entered the post and its numbers; setting the period alone
+             leaves the creator's entry theirs. */
+          if (figures || moved('post_url') || moved('published_at')) {
+            patch.entered_by = 'team';
+            patch.entered_at = new Date().toISOString();
+          }
+          db.from('option_posts').update(patch).eq('id', p.id).select('id').then(function (res) {
             if (res.error) { m.textContent = res.error.message; m.className = 'msg err'; return; }
+            if (!(res.data || []).length) { m.textContent = 'Not saved. The database refused the request.'; m.className = 'msg err'; return; }
             m.textContent = 'Saved.'; m.className = 'msg ok';
             loadOptions();
           });

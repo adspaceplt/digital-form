@@ -5395,6 +5395,18 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .booking-deliver .field-label { display: block; margin: 12px 0 5px; }
 .booking-deliver .input { width: 100%; }
 .booking-deliver .kactions { margin-top: 12px; }
+/* Post and results: one block a placement, a hairline between two; the
+   three figures side by side under the period they are counted over. */
+.post-entry + .post-entry { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line-soft); }
+.post-entry-head { margin-top: 8px; }
+.post-entry-head b { font-size: 14px; font-weight: 600; color: var(--ink); }
+.post-entry-period { font-size: 13px; color: var(--ink-soft); margin: 12px 0 0; }
+.post-entry-link { font-size: 13px; margin: 6px 0 0; overflow-wrap: anywhere; }
+.post-nums-in { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 12px; }
+.post-nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 12px; margin: 10px 0 0; }
+.post-nums dt { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.post-nums dd { margin: 2px 0 0; font-size: 14px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.booking-posts .msg:empty { display: none; }
 /* What the team released, in the sheet the client decides in: the creator's
    own files and the caption that goes out with them. The caption is read, not
    typed, so it is text on the sunk ground and not a field. */

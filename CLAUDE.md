@@ -102,7 +102,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink |
 | `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop |
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas |
-| `creator.js` | creator, cprofile |
+| `creator.js` | creator, cprofile, results |
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel |
 | `portal.js` | portal |
 | `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter |
@@ -904,6 +904,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     after the repaint.
   - AP01 is named on approval, at scheduled and posted, not at completed.
   - `creator_rate` takes 1 to 5 at completed and is never shown to the client.
+  - Post and results (Scheduled, Posted; read-only at Completed): per
+    placement, the post link (the platform's own host, `post_link_ok()`),
+    its date, and views, engagements and impressions over the count period.
+    `creator_post_save` writes them (`entered_by` creator, filed
+    `campaign.results`); numbers are refused (`period`) until the team sets
+    `measure_from`/`measure_to`, which only the console writes. The first
+    link at Scheduled moves the booking to Posted.
   - The countdown is amber, then red once passed.
   - The page is a queue ordered by what is owed, with one booking open in
     `location.hash`. A lone booking has no queue and runs the page's width.
