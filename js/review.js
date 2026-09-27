@@ -145,7 +145,7 @@
   function fmtDate(iso) {
     if (!iso) return '';
     return new Date(iso).toLocaleDateString('en-GB',
-      { day: 'numeric', month: 'short', year: 'numeric' });
+      { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
   }
 
   /* A hidden element reports zero height, so a card inside a folded set or one
@@ -502,7 +502,7 @@
 
     var who  = review.reviewer ? ' by <b>' + escapeHtml(review.reviewer) + '</b>' : '';
     var when = new Date(review.created_at).toLocaleString('en-GB',
-      { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).replace(/\bSep\b/, 'Sept');
 
     if (review.decision === 'approved') {
       badgeWord.textContent = 'Approved';

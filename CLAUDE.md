@@ -327,6 +327,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     flex), else after the button.
   - The site key is `ADSPACE_CONFIG.turnstileSiteKey`. A token rides every
     emailed sign-in; where Cloudflare is unreachable the email still goes.
+- A short month is `Sept`, never the browser's `Sep` (Safari): every English
+  short-month format ends `.replace(/\bSep\b/, 'Sept')`, and My Work builds
+  its dates from `MON_SHORT`.
 - Dates (§5 of `js/form.js`): every date, month and date-time field is bounded
   to 14 Aug 2023 (ADSPACE PLT's registration) through 31 Dec 2099.
   - A lower `min` is raised.
@@ -1065,6 +1068,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Ready and In production are the database's to grant.
   - The meeting is `meeting_minutes` (15–240) plus a link (Meet, Zoom or Teams
     only).
+  - The card (`engCard`) never repeats its heading: the month is named by the
+    card above it, whose state chip (`.eng-mark`) shows only while shut. The
+    meeting, link and message are `.eng-row`s (label, value, controls at the
+    right edge); under `is-tight` the label and controls share the first line
+    and the value runs full width beneath.
 - Every client deliverable goes into a confirmed month: one that exists, is
   open, and has its meeting set or marked not applicable (`no-month`,
   `month-closed`, `month-not-confirmed`). This holds for New task, templates,

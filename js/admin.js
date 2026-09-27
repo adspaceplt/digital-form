@@ -3465,7 +3465,7 @@
     if (!value) return '';
     var d = new Date(value);
     if (isNaN(d.getTime())) return '';
-    return prefix + d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    return prefix + d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
   }
 
   function paintQrs() {

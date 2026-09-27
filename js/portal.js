@@ -131,7 +131,7 @@
     if (!d) return '';
     var dt = new Date(String(d).slice(0, 10) + 'T00:00:00');
     if (isNaN(dt.getTime())) return String(d);
-    return dt.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    return dt.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
   }
   /* The billed rate, term adjustment included, from the same one definition
      the console and the letter read. A client must never be shown a different
@@ -361,14 +361,14 @@
     var a = new Date(v.at), b = new Date(a.getTime() + (Number(v.minutes) || 30) * 60000);
     var day = lang === 'zh'
       ? a.getFullYear() + '年' + (a.getMonth() + 1) + '月' + a.getDate() + '日'
-      : a.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(',', '');
+      : a.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept').replace(',', '');
     return day + ', ' + clock(a) + ' – ' + clock(b);
   }
   function meetAgenda(w, per) {
     var m = /^(\d{4})-(\d{2})$/.exec(per || '');
     if (!m) return w.discussion;
     if (lang === 'zh') return m[1] + '年' + Number(m[2]) + '月' + w.discussion;
-    return new Date(Number(m[1]), Number(m[2]) - 1, 1).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) + ' ' + w.discussion;
+    return new Date(Number(m[1]), Number(m[2]) - 1, 1).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept') + ' ' + w.discussion;
   }
   function paintMeetings(w, c) {
     var wrap = $('meetWrap'), box = $('meetBox');

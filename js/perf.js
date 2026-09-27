@@ -87,7 +87,7 @@
     if (!s) return '';
     var d = new Date(String(s).length === 10 ? s + 'T00:00:00' : s);
     if (isNaN(d)) return String(s);
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
   }
   function timeWord(s) {
     var d = new Date(s);
@@ -1434,7 +1434,7 @@
     var d = new Date(s);
     if (isNaN(d)) return '';
     var o = { timeZone: 'Asia/Kuala_Lumpur' };
-    var day = d.toLocaleDateString('en-GB', { timeZone: o.timeZone, day: 'numeric', month: 'short', year: 'numeric' });
+    var day = d.toLocaleDateString('en-GB', { timeZone: o.timeZone, day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
     var at = d.toLocaleTimeString('en-GB', { timeZone: o.timeZone, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
     return day + ', ' + at + ' MYT';
   }

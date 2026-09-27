@@ -49,7 +49,7 @@
     if (!d) return '';
     var dt = new Date(String(d).slice(0, 10) + 'T00:00:00');
     if (isNaN(dt.getTime())) return String(d);
-    return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    return dt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).replace(/\bSep\b/, 'Sept');
   }
   function today() { return new Date().toISOString().slice(0, 10); }
   function may(section, level) { return Boolean(bridge.may && bridge.may(section, level)); }
