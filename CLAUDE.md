@@ -901,6 +901,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Backups only with `campaigns.backups_open` (`save_selection` refuses
     otherwise).
   - A placement line on each row (`platsOf()`).
+  - A live booking reads View post on {platform} (`.postlink`, one button a
+    platform; 查看小红书笔记 in Chinese). The results table appears only with
+    figures, and dates each post only where they went out on different
+    days (then the card's own Posted leaves). The approval line leaves once
+    the post is out.
   - A draft is decided on the card (`draftPreview`).
   - `review_draft` logs under the typed name. `get_campaign` sends the last
     review.
@@ -1214,7 +1219,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Department (Creative, Marketing) and role standard (`role_family`) live on
   `team_members`. Performance reads them; `perf_profile_set` sets only its two
   ticks.
-- Months start from June 2026. The padlock sits beside the Performance tab.
+- Months start from June 2026. The padlock sits at the right end of the tab
+  row, outside the strip (`.tabline`), never inside it as a third tab.
 - The print is drawn in the browser on the letterhead and never stored. It
   carries no version and no signature lines: a member acknowledges in the
   portal.
