@@ -401,6 +401,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `on conflict do nothing` does not protect a deleted row.
 - Every `ops_`/`perf_` write goes through a security-definer function. The
   tables carry a select policy only, or no policy at all (`perf_`).
+- Supabase grants EXECUTE on every new function to `anon` and
+  `authenticated`. A helper no page calls (only other functions do) revokes
+  itself from `public, anon, authenticated` in the file that creates it;
+  one used by a policy, a view, a default or an invoker function keeps
+  `authenticated`.
 - A catalogue change (for example a rate card revision) ships as a migration
   guarded line by line on the seed's value. It comes with a `-preview.sql` that
   reads and writes nothing and reports per line `will change`, `already`, or
