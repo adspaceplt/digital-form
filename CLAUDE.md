@@ -90,7 +90,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | Any `js/*.js` | `node --check` on each changed file, then the suites that cover it (map below) |
 | CSS, markup, or anything visual | The above, plus `geom` and `ui` (uxaudit and matrix), plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against `DESIGN.md`'s phone checklist. `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
 | A shared file: `css/portal.css`, `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `tests/stub2.js` | `all` |
-| `supabase/schema.sql` or a migration | `sql`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
+| `supabase/schema.sql` or a migration | `sql`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
 | A PDF (`documents.js`, `letters.js`, `smreport.js`, a perf print) | The area's suite, plus `pdfreal` and `pdfcases` (need `npm i pdfjs-dist@3.11.174 --prefix tests/pdfx`) |
 | Before merging any batch that changed behaviour | `all` |
 
@@ -115,6 +115,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `refresh.js`, `admin/sw.js`, the manifest | pwa, phone |
 | `money.js` | crm, letter, sgd |
 | `workers/links/` | links |
+| `supabase/functions/s3-sweep/`, the S3 SWEEP section | s3sweep, s3sql |
 | the Short Links route | qr, run |
 
 **What the two walks measure:**
@@ -1514,8 +1515,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The Turnstile secret, the Google refresh token and the performance master
     code live only in Supabase.
   - The delete code lives in the database.
-- The S3 key should only write under `content/`. The portal never deletes from
-  S3 (see `STANDARD.md` for what is not built).
+- S3 (`docs/S3-STORAGE.md`): the upload key only writes under `content/`. No
+  page deletes from S3; only `s3-sweep` does, and only a key that
+  `s3_keys_in_use()` (service role only) does not name: no row anywhere in
+  `public` holds it, a soft-removed draft counting for 30 days. It judges only
+  objects over 7 days old, is a dry run unless `S3_SWEEP_DELETE` is `on`, is
+  held on an implausible answer, and files every run in `s3_sweeps`.
 
 ## 3. Workflow and constraints
 
@@ -1536,7 +1541,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - a migration;
   - `schema.sql`;
   - an edge function to deploy (`sign-upload`, `invite-member`, `portal-login`,
-    `meet-create`, `push-send`; Verify JWT off);
+    `meet-create`, `push-send`, `s3-sweep`; Verify JWT off);
   - a dashboard setting.
 - Never ask for a URL, key or asset the repo or config already holds. Check
   `js/config.js` and `css/` first.

@@ -580,16 +580,16 @@ section holds only what is true of the project as a whole.
   counted from the moves into that stage.
 
 ### Not built, or waiting on the user
-- S3 (`docs/S3-STORAGE.md`):
-  - Apply the lifecycle rule's housekeeping half now (abort incomplete uploads
-    at 7 days; noncurrent versions at 30).
-  - Hold its storage-class half until storage is worth reducing (roughly
-    100 GB, or when the Free Tier ends).
-  - Never add an expiration action.
-  - Not built: delete-on-remove (the predicate must read inside `posts.media`
-    and count soft-removed deliverables as in use).
-  - Not built: the IAM split (the portal's key limited to `s3:PutObject` on
-    `content/*`).
+- S3 (`docs/S3-STORAGE.md`), built 2026-09-28, waiting on the user's hand
+  steps in that file's order:
+  - the IAM split (upload key `s3:PutObject` on `content/*` only; a sweeper
+    key to list and delete `content/*`) and the old key rotated out;
+  - the lifecycle rule's housekeeping half (abort incomplete uploads at 7
+    days; noncurrent versions at 30); never an expiration action;
+  - `s3-sweep` deployed, scheduled, and left on dry runs until a dry run has
+    been read; then `S3_SWEEP_DELETE` = `on`.
+  - Held: the storage-class half, until storage nears 100 GB or the Free Tier
+    ends.
 - Documents:
   - S3 storage with expiring public links.
   - The ALP checklists as forms.
