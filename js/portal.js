@@ -41,10 +41,13 @@
   var T = window.ADspaceWords.of({
     en: {
       kicker: 'Client Portal', lang: '中文', signOut: 'Sign out',
-      signTitle: 'Client sign-in', signText: 'Enter the email address on file with ADspace.', sendLink: 'Send link',
-      sentTitle: 'Check your email', sentText: function (e) { return 'If ' + e + ' is registered, a sign-in link has been sent to it.'; },
+      signTitle: 'Client sign-in', signText: 'Enter the email address on file with ADspace.', sendLink: 'Send code',
+      sentTitle: 'Check your email', sentText: function (e) { return 'If ' + e + ' is registered, a sign-in code and link have been sent to it. Enter the code, or open the link.'; },
+      code: 'Code from the email', codePh: 'Code', signIn: 'Sign in', otherEmail: 'Use another email',
+      codeNeeded: 'Enter the code from the email.', codeWrong: 'That code is wrong or has expired. Send a new one.',
+      codeWait: 'Too many tries. Please wait a few minutes, then send a new code.', codeFail: 'Not signed in. Please try again.',
       emailNeeded: 'An email is required.',
-      signFail: 'The link could not be sent. Please try again, or contact your ADspace account manager.',
+      signFail: 'The email could not be sent. Please try again in a minute, or contact your ADspace account manager.',
       overview: 'Overview', requestChange: 'Request change', services: 'Services', requests: 'Requests', letters: 'Letters',
       engagements: 'Engagements', payment: 'Payment', account: 'Portal access',
       legalName: 'Registered name', regNo: 'Registration no.', address: 'Billing address', market: 'Market',
@@ -72,10 +75,13 @@
     },
     zh: {
       kicker: '客户平台', lang: 'EN', signOut: '退出',
-      signTitle: '客户登录', signText: '请输入在 ADspace 登记的电子邮箱。', sendLink: '发送链接',
-      sentTitle: '请查收邮件', sentText: function (e) { return '如 ' + e + ' 已登记，登录链接已发送至该邮箱。'; },
+      signTitle: '客户登录', signText: '请输入在 ADspace 登记的电子邮箱。', sendLink: '发送验证码',
+      sentTitle: '请查收邮件', sentText: function (e) { return '如 ' + e + ' 已登记，登录验证码和链接已发送至该邮箱。请输入验证码，或打开链接。'; },
+      code: '邮件中的验证码', codePh: '验证码', signIn: '登录', otherEmail: '使用其他邮箱',
+      codeNeeded: '请输入邮件中的验证码。', codeWrong: '验证码错误或已过期，请重新发送。',
+      codeWait: '尝试次数过多，请稍候几分钟后重新发送验证码。', codeFail: '登录失败，请重试。',
       emailNeeded: '请输入电子邮箱。',
-      signFail: '链接发送失败，请重试，或联系您的 ADspace 客户经理。',
+      signFail: '邮件发送失败，请稍后重试，或联系您的 ADspace 客户经理。',
       overview: '公司概览', requestChange: '申请修改', services: '服务', requests: '申请', letters: '函件',
       engagements: '进行中的项目', payment: '付款', account: '平台访问权限',
       legalName: '注册名称', regNo: '注册号码', address: '账单地址', market: '市场',
@@ -116,6 +122,10 @@
     $('portalOutWord').textContent = t().signOut;
     $('signGo').textContent = t().sendLink;
     $('signEmail').setAttribute('aria-label', t().email);
+    $('signCode').setAttribute('aria-label', t().code);
+    $('signCode').placeholder = t().codePh;
+    $('codeGo').textContent = t().signIn;
+    $('codeBack').textContent = t().otherEmail;
     if (feed) build(); else if (shownState) showState.apply(null, shownState);
   }
   if ($('langToggle')) $('langToggle').addEventListener('click', function () { setLang(lang === 'en' ? 'zh' : 'en'); });
@@ -209,6 +219,8 @@
     $('app').hidden = true;
     $('stateBox').hidden = false;
     $('signForm').hidden = kind !== 'sign';
+    $('codeForm').hidden = kind !== 'sent';
+    $('codeBack').hidden = kind !== 'sent';
     $('portalOut').hidden = kind === 'sign' || kind === 'sent';
     document.body.classList.add('is-plain');
     var w = t();
@@ -218,6 +230,8 @@
     $('stateText').textContent = text;
     msg('stateMsg', kind === 'fail' && extra ? extra : '');
     if (kind === 'sign') $('signEmail').focus();
+    /* A new address clears the code; a repaint (the language) keeps it. */
+    if (kind === 'sent') { if (sentTo !== (extra || '')) $('signCode').value = ''; sentTo = extra || ''; $('signCode').focus(); }
   }
 
   // ---- Sign in ---------------------------------------------------------------
@@ -273,6 +287,29 @@
   }
   $('signGo').addEventListener('click', sendLink);
   $('signForm').addEventListener('submit', sendLink);
+
+  /* The code from the same email signs in here (the user, 2026-09-28: "the
+     link is not working very well"). A wrong code for an address with no
+     access reads exactly like a wrong code for one that has it. */
+  var sentTo = '';
+  function signWithCode() {
+    var code = String($('signCode').value || '').replace(/\D/g, '');
+    if (code.length < 6) { msg('stateMsg', t().codeNeeded, 'err'); $('signCode').focus(); return; }
+    var b = $('codeGo');
+    b.disabled = true;
+    db.auth.verifyOtp({ email: sentTo, token: code, type: 'email' }).then(function (r) {
+      b.disabled = false;
+      var m = String((r && r.error && r.error.message) || '');
+      if (r && r.error && /rate limit|too many/i.test(m)) { msg('stateMsg', t().codeWait, 'err'); return; }
+      if (r && r.error) { msg('stateMsg', t().codeWrong, 'err'); $('signCode').focus(); return; }
+      msg('stateMsg', '');
+    }).catch(function () { b.disabled = false; msg('stateMsg', t().codeFail, 'err'); });
+  }
+  $('codeGo').addEventListener('click', signWithCode);
+  $('signCode').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.isComposing) { e.preventDefault(); signWithCode(); }
+  });
+  $('codeBack').addEventListener('click', function () { msg('stateMsg', ''); showState('sign'); });
   $('portalOut').addEventListener('click', function () {
     db.auth.signOut().then(function () { location.reload(); });
   });
