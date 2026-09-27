@@ -1572,6 +1572,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Asks `portal-login` first. It makes a login only for a live contact with
     `portal_access`, and answers `{ok: true}` to every address.
   - `signInWithOtp` with `shouldCreateUser: false`.
+  - The email's code signs in on the page as well as its link (`#signCode`,
+    6 to 10 digits, `verifyOtp` type `email`), with Use another email; a wrong
+    code reads the same for every address.
   - Reads only through `get_portal`, `portal_request` and `portal_withdraw`.
   - A company select appears where one address holds access at several
     clients.

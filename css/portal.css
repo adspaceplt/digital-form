@@ -1804,6 +1804,9 @@ a { color: inherit; }
 :root[data-face="client"] .cover-panel p { font-size: 16px; }
 .cover-panel form { margin-top: 18px; display: flex; gap: 8px; }
 .cover-panel form .input { flex: 1; min-width: 0; }
+/* The way back under a cover's form: quiet, at its own width, centred with
+   the cover's text. */
+.cover-panel .cover-alt { margin-top: 8px; min-width: 0; }
 /* The verify page's one answer: the reference, what it is and when, and
    whether it stands, in the chip every other state on this portal wears. */
 .verify-out { margin-top: 20px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
