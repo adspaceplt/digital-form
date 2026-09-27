@@ -276,6 +276,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   sideways, with a ⋯ menu or the rail drawer open, over selected text, in a
   sheet without its own region, and unless plainly sideways (across 1.5 times
   the down), at least 56px or a fifth of the width, within 0.8s.
+- `js/chart.js` (`ADspaceChart.draw(host, spec)`) is the only chart, in the
+  page's tokens: bars (label and figure over the bar, a mark for a limit),
+  columns, a line, and a ring only for two to five parts of a whole (else
+  bars). The figures fold under every chart as a table; a column, a point
+  and a slice give their figure on hover or a tap. No chart library.
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
   an off-screen textarea.
 - `js/state.js` owns loading, empty and failed (`skeleton`, `emptyLine`,
@@ -970,6 +975,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   month whose tasks the filter hides says No matches (Show all), never No
   tasks this month.
 - The report (`ops_report(p_from, p_to)`, `ops.reports`, no new schema):
+  - It reads its figures on arrival, from its address too.
+  - Open work by person is bars, most open first, the overdue count beside
+    the name in warn; the Monday counts fold under them.
+  - Stage duration is bars: the median, with the slowest 10% as the mark.
+  - On-time delivery by month is a line over the last six months, one
+    `ops_report` call a month (`loadTrend`), under the period's own figures.
   - Median with the 90th percentile and a count.
   - Replanning counted beside on-time, never inside it.
   - By person, with no score and no ranking.
@@ -1325,10 +1336,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   older rows behind.
 - Every history (the Activity record, a client's and a campaign's Activity and
   rail, a task's log and recent activity) is drawn by `js/records.js`
-  (`ADspaceRecords.paint`): one 12.5px line an entry (time and who in mute
-  ink, then what, on what, the detail), a heading a day, and a run of the same
-  act by one person on one thing within ten minutes folded into one line
-  (`×n`). Sticky entries never fold: Performance, HR, voids, deletes,
+  (`ADspaceRecords.paint`): two 12.5px rows an entry (time, who in mute
+  ink, what and on what on the first; the detail on the second in the soft
+  ink, cut at three lines), a heading a day, and a run of the same act by one
+  person on one thing within ten minutes folded into one entry (`×n`). On a
+  campaign's own page a booking's entry is about its creator (`lead`, the
+  detail's first part), and `detailOf()` drops words the first row says
+  (`quality checked by …`, `schedule updated`). Sticky entries never fold: Performance, HR, voids, deletes,
   removals, billing, rates, invoices, access and groups, a client's decision
   on a draft and a creator's hand-in (`stickyOf`).
   `ADspaceAdmin.record(row)` is the one reading of an `activity_log` row.

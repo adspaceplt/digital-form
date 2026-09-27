@@ -193,6 +193,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Loading, empty, failed | `ADspaceState` skeleton / `emptyLine` (a line inside its panel, with the way out) / `failLine` (what failed, why, Try again) |
 | A queue and one open record | `.queue` > `.qrow`, ordered by what is owed |
 | Deciding on one item in a gallery | `.canvas`: the item on a stage, the decision in a rail |
+| A figure over time or across things | `ADspaceChart.draw` → `.chartcard`: ink marks, a colour only where the word is a state; the figures folded under it. Only where it answers faster than the table it sits over |
 | Reaching a person | `.plink` chips (phone, WhatsApp, email), equal widths on a phone unless alone |
 | A value only read | `.readfield` (the field's height, no box) |
 | An instruction | `.hintline` `?`, open three times, then retired; a button, never a `title` |

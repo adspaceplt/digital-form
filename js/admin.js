@@ -1049,6 +1049,7 @@
     'team.group_changed':    ['User group changed', 'is-warn', 'team'],
     'team.group_removed':    ['User group removed', 'is-danger', 'team'],
     'client.removed':        ['Client removed', 'is-danger', 'review'],
+    'client.deleted':        ['Client deleted', 'is-danger', 'clients'],
     'review.removed':        ['Removed from review', 'is-danger', 'review'],
     'client.edited':         ['Client edited', '', 'clients'],
     'client.stage':          ['Stage changed', '', 'clients'],
@@ -1139,6 +1140,7 @@
     'campaign.invoice_file': ['Invoice uploaded', 'is-ok', 'campaigns'],
     'campaign.invoice_removed': ['Invoice removed', 'is-warn', 'campaigns'],
     'campaign.bulk':         ['Dates applied', '', 'campaigns'],
+    'campaign.dates':        ['Schedule updated', '', 'campaigns'],
     'creator.added':         ['Creator added', 'is-ok', 'campaigns'],
     'creator.updated':       ['Creator edited', '', 'campaigns'],
     'creator.removed':       ['Creator removed', 'is-danger', 'campaigns'],
@@ -1291,10 +1293,29 @@
     return (a.subject || '') + '|' + ref;
   }
   var BOOKING = /^campaign\.(stage|file_added|qc|dates|unbooked|reinstated|keyed|unkeyed|review)$/;
+  /* Words the first row already says are not said again on the second:
+     "quality checked by Qiao Rou" under Qiao Rou's Quality checked, and
+     "schedule updated" under Schedule updated. Read off rows written before
+     the words were dropped as well. */
+  function detailOf(a) {
+    var d = String(a.detail || '');
+    if (a.action === 'campaign.qc') d = d.replace(/ \u00b7 quality checked by [^\u00b7]*?(?= \u00b7 |$)/, '');
+    if (a.action === 'campaign.dates') d = d.replace(/ \u00b7 schedule updated$/, '');
+    return d;
+  }
   function recordOf(a) {
     var meta = a._section === 'performance' ? [PERF_STEP[a.kind] || a.kind, ''] : (ACTION_LABEL[a.action] || [String(a.action || '').replace(/[._]/g, ' '), '']);
+    var detail = detailOf(a), lead = '', rest = detail;
+    /* A booking's entry names its creator first; where the page is the
+       campaign's own, the creator is what the entry is about (`lead`), and
+       the rest is what changed. */
+    if (BOOKING.test(a.action || '')) {
+      var parts = detail.split(' \u00b7 ');
+      lead = parts[0]; rest = parts.slice(1).join(' \u00b7 ');
+    }
     return { at: a.created_at, who: a._who || whoName(a.actor) || 'System', what: meta[0], on: a.subject || '',
-             key: keyOf(a), detail: a.detail || '', tone: meta[1] === 'is-danger' ? 'is-danger' : '', sticky: stickyOf(a) };
+             key: keyOf(a), detail: detail, lead: lead, rest: rest,
+             tone: meta[1] === 'is-danger' ? 'is-danger' : '', sticky: stickyOf(a) };
   }
 
   Array.prototype.forEach.call($('activityTabs').children, function (b) {
