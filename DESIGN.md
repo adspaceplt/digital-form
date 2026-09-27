@@ -232,6 +232,11 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   class of its own (`.railrow`, never `.navitem`).
 - A group that must stay together is one element in the markup, never a hope
   about where a wrap falls.
+- Text a person typed (a caption, a brief, a note, a place) breaks anywhere
+  (`overflow-wrap: anywhere`), and a grid holding it states
+  `minmax(0, 1fr)`, never an `auto` track: one unbroken link otherwise widens
+  the card and the page. The walk seeds a 120-character link on both client
+  pages.
 - An overlay is positioned against the box it explains (`.sched-field`), never
   its container.
 - An image sized by one axis in a box that can clamp the other is squashed. The

@@ -3353,8 +3353,12 @@ body.is-plain .topbar { background: var(--chrome); }
   color: var(--ink-mute);
 }
 .booking-facts dd { margin: 2px 0 0; font-size: 13.5px; color: var(--ink); }
-@media (max-width: 420px) {
+/* Two across below the phone line, and an odd count's last fact takes the
+   row, as `dl.facts` does: "Next" and "Draft due" sat alone under a pair.
+   The line was 420, which left a 430px phone on `auto-fit`. */
+@media (max-width: 640px) {
   .booking-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 14px; }
+  .booking-facts > :last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 
 /* The amount, folded until asked for. */
@@ -5539,7 +5543,21 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 
 .booking-caption { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
 .booking-caption p, .client-draft-preview .draft-caption p { margin: 4px 0 0; line-height: 1.55; white-space: normal; }
-.client-draft-preview { display: grid; gap: 12px; margin-top: 12px; }
+/* Quoted matter, as the brief above it is: the caption was body size under
+   a 13.5px brief on the same card. */
+.booking-caption p { font-size: 13.5px; color: var(--ink-soft); }
+.client-draft-preview { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 12px; }
+/* Text a person typed (a caption, a brief, a note, a place) may hold a link
+   or a run of tags with no space in it. It breaks where it has to, inside its
+   own box: on 27 Sept 2026 a creator's caption carrying a 120-character form
+   link widened the draft, the card and the page on both client pages, so the
+   bar and foot stopped short of the screen's edge and the player ran off the
+   card. `anywhere`, not `break-word`: only `anywhere` lowers the width a grid
+   track is sized to, which is what pushed the card out. */
+.booking-caption p, .booking-brief p, .booking-facts dd, .draft-caption,
+.approve-note, .booking-decided, .camphead-purpose, #campBrief {
+  overflow-wrap: anywhere;
+}
 .client-draft-media {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 360px));
   gap: 10px; align-items: start;
@@ -6414,7 +6432,10 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    Four bookings used to be four full cards stacked down the page, each with
    its own upload box, and the one that needed them today was wherever it
    happened to fall. */
-.cwork { display: grid; align-items: start; gap: 16px; }
+/* One column at its own width, never its widest word's: an `auto` track
+   grows to the longest unbroken run inside it, and a caption holding a form
+   link made the open booking 105px wider than a phone. */
+.cwork { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 16px; }
 @media (min-width: 900px) {
   .cwork { grid-template-columns: minmax(240px, 1fr) minmax(0, 1.618fr); gap: 0 24px; }
 }
