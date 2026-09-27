@@ -85,7 +85,9 @@
     if (!v) return '';
     var d = new Date(v);
     if (isNaN(d.getTime())) return '';
-    return d.getDate() + ' ' + MON_SHORT[d.getMonth()] + ', ' + d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+    /* The clock the message to a client uses (11:30am), so the card and the
+       message it copies never write one time two ways. */
+    return d.getDate() + ' ' + MON_SHORT[d.getMonth()] + ', ' + clock(d);
   }
   function dateValue(v) {
     var d = dayOf(v);
@@ -5780,7 +5782,9 @@
        the first line and the value takes the full width under them, so no
        button is ever left alone on a line of its own. */
     return '<div class="eng-facts">' +
-      '<div class="eng-row eng-meet"><span class="eng-lab">Content meeting</span>' +
+      /* "Meeting": the card is the content month already, and the longer
+         label wrapped to two lines beside two buttons on a phone. */
+      '<div class="eng-row eng-meet"><span class="eng-lab">Meeting</span>' +
         '<span class="eng-val eng-meetword' + (meetingHeld(e) ? ' is-held' : '') + '">' + esc(meetingWord(e)) + '</span>' +
         (can ? '<span class="eng-meetacts">' +
           (bookable ? '<button class="btn btn-sm" data-a="book" type="button">Create Google Meet</button>' : '') +
