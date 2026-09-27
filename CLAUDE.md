@@ -375,8 +375,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   name or serial typed back, and states what goes and that there is no restore.
   The label is **Delete**, never `Delete {noun}`.
 - A state derived from data is derived on every load, never written by the
-  action that caused it (`syncCampState`, `derive(t)`, `isLate()`, Last
-  activity). The exceptions are decisions a person owns (voiding a letter never
+  action that caused it (`syncCampState`, `derive(t)`, `isLate()`,
+  `engPhase()`, Last activity). The exceptions are decisions a person owns (voiding a letter never
   moves the client's stage; approving a request never edits a line).
 - A value that depends on a change is stamped by a trigger, never by a page. A
   trigger never forces a column back to its old value.
@@ -1076,7 +1076,20 @@ Each line is a rule that broke once. Its reason is in the archive.
     a client's first month and handed on when that month is deleted
     (`ops_engagements_hand_on_checks`).
   - `ops_engagement_set_check` stamps who ticked it.
-  - Ready and In production are the database's to grant.
+  - Its stage is worked out on every load (`engPhase()`), never picked:
+    Planning until the ticks are answered and the meeting set (or not
+    needed); Ready until the meeting has passed and the month holds a task;
+    In production while any task is open; Ready to close (warn) once every
+    task is finished and one done, where the card asks Add task or Complete
+    month. A tick repaints the chip in place. The counts are
+    `ops_engagement_counts` (the whole month, whoever asks; a refusal falls
+    back on the tasks the page holds).
+  - Only Completed (refused while a task is open, `tasks-open` with the
+    count), Cancelled (the ⋯, asks, `Keep month`) and Reopen (back to
+    Planning, never asks) are stored. `ops_engagement_set_status` refuses
+    Ready and In production (`derived-state`); a stored one from before reads
+    as open. A task moves into production on the ticks and the meeting, never
+    on the stored word.
   - The meeting is `meeting_minutes` (15–240) plus a link (Meet, Zoom or Teams
     only).
   - The card (`engCard`) never repeats its heading: the month is named by the
