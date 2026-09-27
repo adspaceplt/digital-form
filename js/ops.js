@@ -24,6 +24,9 @@
   var UI  = window.ADspaceState;
   var GRP = window.ADspaceGroup;
   var bridge = window.ADspaceAdmin || {};
+  /* The chevron a way somewhere ends on (the console Overview's own mark). */
+  var CHEV_S = '<svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>';
   if (!API || !API.configured || !db || !UI || !GRP) return;
 
   function $(id) { return document.getElementById(id); }
@@ -2392,7 +2395,7 @@
     var cl = !ml && t.clients && t.clients.slug
       ? { label: t.scope === 'lead' ? 'View lead' : 'View client', href: '/admin/?s=clients&client=' + encodeURIComponent(t.clients.slug) } : null;
     var link = ml ? { label: 'View engagement', href: ml.href } : cl;
-    $('dwCtx').innerHTML = esc(ctx) + (link ? (ctx ? ' · ' : '') + '<a class="tlink" href="' + esc(link.href) + '">' + esc(link.label) + '</a>' : '');
+    $('dwCtx').innerHTML = esc(ctx) + (link ? (ctx ? ' · ' : '') + '<a class="linkbtn tlink" href="' + esc(link.href) + '">' + esc(link.label) + CHEV_S + '</a>' : '');
     $('dwCtx').hidden = !ctx && !link;
 
     paintNext(NEXT_DW(), t, n);
@@ -4762,7 +4765,7 @@
     if (client) {
       var slug = t.clients.slug;
       rows += frow(t.scope === 'lead' ? 'Lead' : 'Client',
-        slug ? '<a class="tlink" href="/admin/?s=clients&client=' + encodeURIComponent(slug) + '">' + esc(client) + '</a>' : esc(client));
+        slug ? '<a class="linkbtn tlink" href="/admin/?s=clients&client=' + encodeURIComponent(slug) + '">' + esc(client) + CHEV_S + '</a>' : esc(client));
     }
     var rev = people.filter(function (a) { return a.responsibility === 'reviewer'; }).map(function (a) { return a.name; }).join(', ');
     var con = people.filter(function (a) { return a.responsibility === 'contributor'; }).map(function (a) { return a.name; }).join(', ');
@@ -4927,7 +4930,7 @@
     if (e) {
       more += frow('Engagement', esc(monthWord(e.period)) + ' · ' +
         esc(wordOf(ENG_STATE, engPhase(e, checksOf(e, state.engChecks), countFor(e, state.engCounts, [t])))) +
-        (ml ? ' <a class="tlink" href="' + esc(ml.href) + '">Open the month</a>' : ''));
+        (ml ? ' <a class="linkbtn tlink" href="' + esc(ml.href) + '">Open the month' + CHEV_S + '</a>' : ''));
       more += frow('Content meeting', esc(meetingWord(e)));
     }
     $('taskMore').innerHTML = more;

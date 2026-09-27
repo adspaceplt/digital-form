@@ -3214,13 +3214,12 @@
   /* Both hosts open, because the fastest way to know a redirector is alive is
      to follow it, and the bare host answers rather than refusing: the Worker
      sends it to the website, since somebody who types it has half a URL. Drawn
-     the way the Register's routenote draws /verify — an underlined link in a
-     new tab, no external mark, because the quiet line is a fact and not a row
-     of controls. */
+     the way the Register's routenote draws /verify: the outlined chip inline
+     in its sentence, in a new tab (no underlined words, 2026-09-28). */
   if ($('linkNote')) $('linkNote').innerHTML = 'Short links redirect from ' +
     hostLink(LINK_HOST) + '. Codes printed with ' + hostLink('go.adspace.me') + ' keep working.';
   function hostLink(h) {
-    return '<a href="https://' + esc(h) + '" target="_blank" rel="noopener">' + esc(h) + '</a>';
+    return '<a class="plink" href="https://' + esc(h) + '" target="_blank" rel="noopener">' + esc(h) + '</a>';
   }
   var links = [];
   var editingSlug = null;

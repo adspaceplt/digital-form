@@ -1338,13 +1338,20 @@ a { color: inherit; }
 }
 .backlink svg { width: 15px; height: 15px; }
 .backlink:hover { color: var(--ink); background: var(--line-soft); border-color: var(--line); }
+/* A small act beside what it changes (Change, Remove, Add Chinese caption, a
+   suggested figure): a quiet button at the control floor that gives its
+   height back to the line, never an underlined word (the user, 2026-09-28:
+   no text links in the portal). */
 .linkbtn {
-  border: 0; background: none; padding: 0; color: var(--ink-mute);
-  font-size: 12.5px; text-decoration: underline; text-underline-offset: 2px;
+  display: inline-flex; align-items: center; gap: 4px;
+  min-height: var(--ctl-h); margin-block: calc((20px - var(--ctl-h)) / 2); padding: 0 8px;
+  border: 0; border-radius: var(--radius-sm); background: none; cursor: pointer;
+  color: var(--ink-soft); font: inherit; font-size: 12.5px; font-weight: 500; text-decoration: none;
 }
-.linkbtn:hover { color: var(--ink); }
+@media (hover: hover) { .linkbtn:hover { background: var(--line-soft); color: var(--ink); } }
 .linkbtn.is-danger { color: var(--err); }
-.linkbtn.is-danger:hover { color: var(--err-hi); }
+@media (hover: hover) { .linkbtn.is-danger:hover { background: var(--err-bg); color: var(--err-hi); } }
+.linkbtn .ovgo-chev { width: 14px; height: 14px; flex: 0 0 auto; }
 .dangerrow { margin-top: 14px; }
 
 /* Client and content set cards */
@@ -7554,7 +7561,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 }
 .tfacts .linkbtn[hidden], .towner[hidden], .towner-pick[hidden] { display: none; }
 .towner-pick { max-width: 100%; }
-.tlink { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+.tlink { margin-left: 2px; }
 /* A date is the row's own control: the value and a pen, at the control
    floor, with a negative block margin so a 38px target does not set the
    height of a 20px line. */
@@ -7815,10 +7822,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 @media (hover: hover) { .qstar:hover { background: var(--line-soft); } }
 .qstar:active { transform: scale(.94); }
 .qrate-note { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-mute); }
-.qfull {
-  align-self: flex-start; display: inline-flex; align-items: center; min-height: var(--ctl-h);
-  font-size: 13px; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 2px;
-}
+.qfull { align-self: flex-start; margin-block: 0; margin-left: -8px; font-size: 13px; }
 .stephand { margin-top: 12px; }
 .stephand[hidden] { display: none; }
 .stephand .tickline { margin: 0; }
@@ -8908,3 +8912,9 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .kmenu > .kmenu-item, .kmenu .kmenu-item { border-radius: calc(var(--radius) - 6px); }
 /* The bell's list is padded 8. */
 .kmenu.notif-menu .notif-item { border-radius: calc(var(--radius) - 9px); }
+/* The command bar's controls are 32px, so they take the small corner. */
+.cmdbar .btn, .cmdbar .select, .cmdbar-find .input, .cmdbar-views, .cmdbar-views .acttab { border-radius: var(--radius-ctl-sm); }
+.cmdbar-views.has-thumb::before { border-radius: calc(var(--radius-ctl-sm) - 2px); }
+/* A standing fact's link (the verify page, the redirect hosts) is the
+   outlined chip, inline in its sentence. */
+.routenote .plink { margin-block: -4px; vertical-align: baseline; font-size: 12.5px; padding: 3px 9px; }
