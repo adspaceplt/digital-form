@@ -2009,6 +2009,7 @@
         window.ADspaceRecords.paint(box.firstChild, rows.map(function (x) {
           var r = A && A.record ? A.record(x) : { at: x.created_at, who: x.actor || 'System', what: x.action, detail: x.detail || '' };
           r.on = '';
+          if (r.key == null) r.key = 'campaign';
           return r;
         }));
       });

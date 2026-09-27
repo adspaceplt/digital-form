@@ -584,12 +584,23 @@
 
   // ---- The queue -----------------------------------------------------------
   /* How far back finished work is read. Never applied to open work. */
+  /* The periods the user named on 2026-09-27: This week, This month, Last
+     month, Last 7 days, Last 3 months, Last 6 months, This year. Every one
+     runs to now except Last month, which ends where this month begins. */
   function periodStart() {
     var d = new Date();
     if (state.period === 'week') return weekStart();
+    if (state.period === 'lastmonth') return new Date(d.getFullYear(), d.getMonth() - 1, 1);
+    if (state.period === 'd7') { var s = todayStart(); s.setDate(s.getDate() - 6); return s; }
     if (state.period === 'q') return new Date(d.getFullYear(), d.getMonth() - 2, 1);
+    if (state.period === 'h') return new Date(d.getFullYear(), d.getMonth() - 5, 1);
     if (state.period === 'year') return new Date(d.getFullYear(), 0, 1);
     return new Date(d.getFullYear(), d.getMonth(), 1);
+  }
+  function periodEnd() {
+    var d = new Date();
+    if (state.period === 'lastmonth') return new Date(d.getFullYear(), d.getMonth(), 1);
+    return d;
   }
 
   /* THE DAY, IN THE ORDER IT IS WORKED. What is overdue, what is due today,
@@ -1360,7 +1371,7 @@
        hides the queue, the board and the calendar, so a report drawn without
        it left the list on the screen underneath. */
     paint();
-    db.rpc('ops_report', { p_from: periodStart().toISOString(), p_to: new Date().toISOString() })
+    db.rpc('ops_report', { p_from: periodStart().toISOString(), p_to: periodEnd().toISOString() })
       .then(function (r) {
         state.reportBusy = false;
         if (r.error) { state.report = null; state.reportErr = r.error.message || 'denied'; }
@@ -1448,7 +1459,11 @@
        on the screen. */
     var win = document.createElement('p');
     win.className = 'routenote repwin';
-    win.textContent = 'Reporting period: ' + niceDate(r.from) + ' to ' + niceDate(r.to);
+    /* A period that ends at midnight ends on the day before it (Last month
+       reads 1 Aug 2026 to 31 Aug 2026, not to 1 Sept). */
+    var endAt = new Date(r.to);
+    if (!isNaN(endAt.getTime()) && !endAt.getHours() && !endAt.getMinutes() && !endAt.getSeconds()) endAt = new Date(endAt.getTime() - 1);
+    win.textContent = 'Reporting period: ' + niceDate(r.from) + ' to ' + niceDate(endAt);
     /* The period heads the report, above open work by person. */
     box.insertBefore(win, box.firstChild);
 
@@ -4417,7 +4432,7 @@
         var owner = nameOf(first.to_value && first.to_value.owner_id);
         if (owner) detail = (detail ? detail + '; ' : '') + 'Task Owner ' + owner;
       }
-      return { at: e.created_at, who: whoName(e) || 'System',
+      return { at: e.created_at, who: whoName(e) || 'System', key: 'task',
                what: EVENT_WORD[e.event_type] || sentence(e.event_type), detail: detail };
     });
   }

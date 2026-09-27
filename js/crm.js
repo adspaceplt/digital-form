@@ -960,6 +960,9 @@
     var A = window.ADspaceAdmin;
     var r = A && A.record ? A.record(x) : { at: x.created_at, who: x.actor || 'System', what: logWord(x.action), detail: x.detail || '' };
     r.on = '';
+    /* Every line here is about this client; a document keeps its own
+       reference as the thing it is about, so two documents never fold. */
+    if (r.key == null) r.key = 'client';
     return r;
   }
 
