@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-face="client">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -7,72 +7,169 @@
      and Chrome's tab strip on a phone are one surface. -->
 <meta name="theme-color" content="#ffffff">
 <meta name="color-scheme" content="light">
-<!-- The front door of an internal tool. Nothing here is for a search engine. -->
-<meta name="robots" content="noindex, nofollow">
-<title>Digital Portal</title>
-<meta name="description" content="ADspace Digital Portal">
-<link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
-<link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
-<!-- The one brand face, fetched alongside the stylesheet rather than after it. -->
+<!-- The one page of this host a search engine lists (the user, 2026-09-28).
+     Every other page carries noindex, and tests/seo.js fails if one loses it. -->
+<title>ADspace · Creative Advertising Agency, Johor Bahru</title>
+<meta name="description" content="ADspace is a creative advertising agency in Johor Bahru serving Malaysia and Singapore. Visits by appointment, Monday to Friday, 10:00 to 18:00. Enquire on WhatsApp.">
+<link rel="canonical" href="https://digital.adspace.me/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://digital.adspace.me/">
+<meta property="og:title" content="ADspace">
+<meta property="og:description" content="Creative advertising agency in Johor Bahru. Visits by appointment, Monday to Friday, 10:00 to 18:00.">
+<meta property="og:image" content="https://mycdn.adspace.me/adspace-brandname.png">
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260927y">
-<style>
-  /* A cover and nothing else: the mark at the top, the name in the middle.
-     There is no sign in here and no list of the rooms inside, because every
-     door into this portal is a link somebody was sent — the console behind
-     Supabase Auth, the three client pages behind their own tokens. A menu of
-     them on a public page would be an index of what exists and a set of
-     dead ends for anybody without a link.
-
-     Built from css/portal.css so this page and the portal it fronts share one
-     set of tokens: the same ground, the same ink, the same display face. It
-     needs no script, so it still reads with JavaScript off. */
-  html, body { height: 100%; }
-  /* White, not the portal's off-white ground: a cover with nothing on it but
-     the mark and a name has no cards to lift off a ground, so the ground is
-     the page (the user, 2026-09-24). */
-  body {
-    margin: 0; display: flex; flex-direction: column;
-    background: var(--card); color: var(--ink);
-  }
-  .doorbar {
-    height: var(--head-h); flex: 0 0 auto;
-    display: flex; align-items: center;
-    padding: 0 24px;
-  }
-  /* `contain` for the reason `.brand-logo` takes it: height plus an auto
-     width plus a max-width clamp squashes the mark in a box too narrow for
-     it, and a squashed wordmark is not the wordmark. */
-  .doorbar img { height: 26px; width: auto; display: block;
-    object-fit: contain; object-position: left center; }
-  .door {
-    flex: 1 1 auto; display: flex; align-items: center; justify-content: center;
-    /* The bar has already taken its height off the top, so the title sits on
-       the optical centre of what is left rather than below it. */
-    padding: 0 24px calc(var(--head-h) / 2);
-  }
-  /* A name, not a headline: the room is named at the size a label is read
-     at, in the ink the portal's secondary text takes, so the mark leads and
-     the page reads as quiet rather than announced (the user, 2026-09-24:
-     "smaller words, to be more minimalist and modern"). It was the display
-     face at 22 to 30px. */
-  .door h1 {
-    margin: 0; font-weight: 500; font-size: 15px; letter-spacing: -.005em;
-    line-height: 1.4; text-align: center; color: var(--ink-soft);
-  }
-  @media (max-width: 640px) { .doorbar { padding: 0 16px; } }
-</style>
+<link rel="preload" as="font" type="font/ttf" href="/css/OPTIMA.TTF" crossorigin>
+<link rel="stylesheet" href="/css/portal.css?v=20260927z">
+<script src="/js/config.js?v=20260927z"></script>
+<!-- What a search engine reads about ADspace. -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ProfessionalService",
+  "name": "ADspace",
+  "legalName": "ADSPACE PLT",
+  "url": "https://digital.adspace.me/",
+  "sameAs": ["https://adspacestudios.com"],
+  "logo": "https://mycdn.adspace.me/adspace-brandname.png",
+  "image": "https://mycdn.adspace.me/adspace-brandname.png",
+  "email": "advertise@adspacestudios.com",
+  "areaServed": ["MY", "SG"],
+  "hasMap": "https://maps.app.goo.gl/1CmY1KvMXZ87punW7",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "61-02 Jalan Mutiara Emas 2A, Taman Mount Austin",
+    "postalCode": "81100",
+    "addressLocality": "Johor Bahru",
+    "addressRegion": "Johor",
+    "addressCountry": "MY"
+  },
+  "openingHoursSpecification": [{
+    "@type": "OpeningHoursSpecification",
+    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+    "opens": "10:00", "closes": "18:00"
+  }]
+}
+</script>
 </head>
-<body>
+<body class="lp">
 
-<header class="doorbar">
-  <img src="https://mycdn.adspace.me/adspace-brandname.png" alt="ADspace"
-       onerror="this.replaceWith(Object.assign(document.createElement('b'),{textContent:'ADspace'}))">
-</header>
+<script src="/js/chrome.js?v=20260927z" data-kicker="Digital Portal"></script>
 
-<main class="door">
-  <h1>Digital Portal</h1>
+<main class="lp-main">
+
+  <!-- The name, set in Optima as the wordmark is, and what ADspace is. -->
+  <header class="lp-head">
+    <h1 class="lp-title">ADspace</h1>
+    <p class="lp-tag">Creative Advertising Agency</p>
+  </header>
+
+  <!-- One photograph. A placeholder carrying the wordmark until the user
+       sends its link; then this holds an <img> with object-fit: cover. -->
+  <figure class="lp-hero" role="img" aria-label="ADspace">
+    <img class="lp-hero-mark" src="https://mycdn.adspace.me/adspace-brandname.png" alt="" onerror="this.remove()">
+  </figure>
+
+  <!-- The website's ways in, one tick each, in its own order. About us, Our
+       services and Our works open the website's home until their own pages'
+       addresses arrive. -->
+  <section class="lp-band" aria-label="ADspace">
+    <ul class="lp-ways">
+      <li class="lp-way">
+        <svg class="lp-tick" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="14"/><path d="M8.5 14.5l3.8 3.8 7.2-8"/></svg>
+        <div><p class="lp-way-name">Home</p>
+          <a class="lp-go" href="https://adspacestudios.com" target="_blank" rel="noopener">Visit website<span aria-hidden="true">›</span></a></div>
+      </li>
+      <li class="lp-way">
+        <svg class="lp-tick" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="14"/><path d="M8.5 14.5l3.8 3.8 7.2-8"/></svg>
+        <div><p class="lp-way-name">About us</p>
+          <a class="lp-go" href="https://adspacestudios.com" target="_blank" rel="noopener">Learn more<span aria-hidden="true">›</span></a></div>
+      </li>
+      <li class="lp-way">
+        <svg class="lp-tick" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="14"/><path d="M8.5 14.5l3.8 3.8 7.2-8"/></svg>
+        <div><p class="lp-way-name">Our services</p>
+          <a class="lp-go" href="https://adspacestudios.com" target="_blank" rel="noopener">See services<span aria-hidden="true">›</span></a></div>
+      </li>
+      <li class="lp-way">
+        <svg class="lp-tick" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="14"/><path d="M8.5 14.5l3.8 3.8 7.2-8"/></svg>
+        <div><p class="lp-way-name">Our works</p>
+          <a class="lp-go" href="https://adspacestudios.com" target="_blank" rel="noopener">View works<span aria-hidden="true">›</span></a></div>
+      </li>
+      <li class="lp-way">
+        <svg class="lp-tick" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="14"/><path d="M8.5 14.5l3.8 3.8 7.2-8"/></svg>
+        <div><p class="lp-way-name">Contact us</p>
+          <a class="lp-go" href="#help">Get in touch<span aria-hidden="true">›</span></a></div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- The hours on one side; where to find us and how to reach us on the
+       other. One under the other on a phone. -->
+  <div class="lp-duo">
+    <section class="lp-block" aria-labelledby="lpHoursH">
+      <h2 class="lp-h2" id="lpHoursH">Opening hours</h2>
+      <!-- A plain week without a script; the script dates it from today in
+           Malaysia time and keeps it current while the page stays open. -->
+      <table class="lp-hours" id="lpHours">
+        <tbody>
+          <tr><th scope="row">Monday to Friday</th><td></td><td>10:00 to 18:00</td></tr>
+          <tr class="is-shut"><th scope="row">Saturday and Sunday</th><td></td><td>Closed</td></tr>
+        </tbody>
+      </table>
+      <p class="lp-note">By appointment only. Closed on public holidays.</p>
+    </section>
+
+    <div class="lp-side">
+      <section class="lp-block" aria-labelledby="lpVisitH">
+        <h2 class="lp-h2" id="lpVisitH">Visit</h2>
+        <address class="lp-address">61-02 Jalan Mutiara Emas 2A<br>Taman Mount Austin<br>81100 Johor Bahru<br>Johor, Malaysia</address>
+        <a class="lp-go" href="https://maps.app.goo.gl/1CmY1KvMXZ87punW7" target="_blank" rel="noopener">Get directions<span aria-hidden="true">›</span></a>
+      </section>
+
+      <!-- The one action on the page: WhatsApp, answered by the assistant,
+           which takes the business requirements and the enquiry's details
+           and arranges a meeting with the team. -->
+      <section class="lp-block lp-help" id="help" aria-labelledby="lpHelpH">
+        <h2 class="lp-h2" id="lpHelpH">How can we help?</h2>
+        <p class="lp-lead">Tell our WhatsApp assistant about your business and what you need. It takes your requirements and enquiry details, any time, and arranges a meeting with our team.</p>
+        <div class="lp-acts">
+          <a class="btn btn-go lp-cta" href="https://wa.me/adspace" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.8 7L4 20l1.1-4A8 8 0 1 1 20 12z"/></svg>
+            Chat on WhatsApp</a>
+        </div>
+      </section>
+    </div>
+  </div>
+
 </main>
+
+<script>
+/* The week from today, in Malaysia time whatever the visitor's own clock
+   says: Monday to Friday, 10:00 to 18:00. Drawn on arrival and again every
+   minute and on return to the tab, so a page left open rolls to the next
+   day on time. */
+(function () {
+  var DAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+  var work = function (x) { return x >= 1 && x <= 5; };
+  function draw() {
+    // Malaysia keeps UTC+8 all year.
+    var now = new Date(Date.now() + 8 * 3600e3);
+    var body = document.querySelector('#lpHours tbody');
+    if (!body) return;
+    var rows = '';
+    for (var i = 0; i < 7; i++) {
+      var t = new Date(now.getTime() + i * 864e5), wd = t.getUTCDay();
+      rows += '<tr' + (work(wd) ? '' : ' class="is-shut"') + '><th scope="row">' +
+        (i === 0 ? 'Today' : DAY[wd].slice(0, 3)) + '</th><td>' + t.getUTCDate() + ' ' + MON[t.getUTCMonth()] +
+        '</td><td>' + (work(wd) ? '10:00 to 18:00' : 'Closed') + '</td></tr>';
+    }
+    if (body.innerHTML !== rows) body.innerHTML = rows;
+  }
+  draw();
+  setInterval(draw, 60e3);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) draw(); });
+})();
+</script>
 
 </body>
 </html>
