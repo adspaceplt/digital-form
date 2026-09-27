@@ -6128,8 +6128,8 @@
       '</div>' +
       (set && e.meeting_link
         ? '<div class="eng-row eng-meetlink"><span class="eng-lab">Link</span>' +
-            '<span class="eng-val"><a class="ovlink" href="' + esc(e.meeting_link) + '" target="_blank" rel="noopener">' +
-              esc(e.meeting_link.replace(/^https:\/\//, '')) + '</a></span></div>'
+            '<span class="eng-val"><a class="plink" href="' + esc(e.meeting_link) + '" target="_blank" rel="noopener">' +
+              '<span class="plink-text">' + esc(e.meeting_link.replace(/^https:\/\//, '')) + '</span></a></span></div>'
         : '') +
       (set
         ? '<div class="eng-meetmsg"><div class="eng-row eng-meetmsg-head"><span class="eng-lab">Message to client</span>' +
@@ -6440,7 +6440,7 @@
     var facts = [
       ['Manager', nameOf(e.manager_id)],
       ['Planned', e.planned_count ? e.planned_count + (e.planned_count === 1 ? ' piece' : ' pieces') : ''],
-      ['Files', e.drive_url ? '<a class="ovlink" href="' + esc(e.drive_url) + '" target="_blank" rel="noopener">Drive folder</a>' : '']
+      ['Files', e.drive_url ? '<a class="plink" href="' + esc(e.drive_url) + '" target="_blank" rel="noopener">Drive folder</a>' : '']
     ].filter(function (p) { return p[1]; });
     var n = countFor(e, cw.counts, cw.tasks);
     var phase = engPhase(e, checks, n);

@@ -8,62 +8,125 @@
 <meta name="theme-color" content="#ffffff">
 <meta name="color-scheme" content="light">
 <!-- The one page of this host a search engine lists (the user, 2026-09-28).
-     Every other page carries noindex, and tests/seo.js fails if one loses it. -->
-<title>ADspace · Creative Advertising Agency, Johor Bahru</title>
-<meta name="description" content="ADspace is a creative advertising agency in Johor Bahru serving Malaysia and Singapore. Visits by appointment, Monday to Friday, 10:00 to 18:00. Enquire on WhatsApp.">
+     Every other page carries noindex, and tests/seo.js fails if one loses it.
+     Named as adspacestudios.com names ADspace, so the two read as one
+     business in results. -->
+<title>ADspace | Digital Marketing Agency in Johor Bahru &amp; Singapore</title>
+<meta name="description" content="Digital marketing agency in Johor Bahru and Singapore, trusted by 80+ leading and listed brands for advertising, marketing and branding. Visits by appointment.">
+<meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://digital.adspace.me/">
+<!-- The ADspace wordmark in Optima on white, as on the console's app icon
+     (never the monogram). The ICO answers the browsers and crawlers that ask
+     for /favicon.ico unprompted; the PNGs are at multiples of 48, the sizes
+     Google Search reads. -->
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="icon" type="image/png" sizes="48x48" href="/img/favicon-48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/img/favicon-96.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/img/favicon-192.png">
+<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+<!-- How the page reads when it is shared: the studio photograph under the
+     name. -->
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="ADspace">
+<meta property="og:locale" content="en_MY">
 <meta property="og:url" content="https://digital.adspace.me/">
-<meta property="og:title" content="ADspace">
-<meta property="og:description" content="Creative advertising agency in Johor Bahru. Visits by appointment, Monday to Friday, 10:00 to 18:00.">
+<meta property="og:title" content="ADspace | Digital Marketing Agency in Johor Bahru &amp; Singapore">
+<meta property="og:description" content="Advertising, marketing and branding for 80+ leading and listed brands across Malaysia and Singapore. Visits to our Johor Bahru office by appointment.">
 <meta property="og:image" content="https://digital.adspace.me/img/front-door-1200.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="675">
+<meta property="og:image:alt" content="A photo shoot set up at ADspace">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ADspace | Digital Marketing Agency in Johor Bahru &amp; Singapore">
+<meta name="twitter:description" content="Advertising, marketing and branding for 80+ leading and listed brands across Malaysia and Singapore.">
+<meta name="twitter:image" content="https://digital.adspace.me/img/front-door-1200.jpg">
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260928c">
-<script src="/js/config.js?v=20260928c"></script>
-<!-- What a search engine reads about ADspace. -->
+<link rel="preload" as="font" type="font/ttf" href="/css/OPTIMA.TTF" crossorigin>
+<link rel="stylesheet" href="/css/portal.css?v=20260928d">
+<script src="/js/config.js?v=20260928d"></script>
+<!-- What a search engine reads about ADspace: the business, its office and
+     the site. The WhatsApp line is the wa.me address, never the number. -->
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "ProfessionalService",
-  "name": "ADspace",
-  "legalName": "ADSPACE PLT",
-  "url": "https://digital.adspace.me/",
-  "sameAs": ["https://adspacestudios.com"],
-  "logo": "https://mycdn.adspace.me/adspace-brandname.png",
-  "image": "https://digital.adspace.me/img/front-door-1200.jpg",
-  "email": "advertise@adspacestudios.com",
-  "areaServed": ["MY", "SG"],
-  "hasMap": "https://maps.app.goo.gl/1CmY1KvMXZ87punW7",
-  "address": {
-    "@type": "PostalAddress",
-    "streetAddress": "61-02 Jalan Mutiara Emas 2A, Taman Mount Austin",
-    "postalCode": "81100",
-    "addressLocality": "Johor Bahru",
-    "addressRegion": "Johor",
-    "addressCountry": "MY"
-  },
-  "openingHoursSpecification": [{
-    "@type": "OpeningHoursSpecification",
-    "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-    "opens": "10:00", "closes": "18:00"
-  }]
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://adspacestudios.com/#organization",
+      "name": "ADspace",
+      "legalName": "ADSPACE PLT",
+      "url": "https://adspacestudios.com/",
+      "logo": "https://mycdn.adspace.me/adspace-brandname.png",
+      "slogan": "advertising | marketing | branding",
+      "description": "Digital marketing agency in Johor Bahru and Singapore, trusted by 80+ leading and listed brands for advertising, marketing and branding.",
+      "email": "advertise@adspacestudios.com",
+      "areaServed": [{ "@type": "Country", "name": "Malaysia" }, { "@type": "Country", "name": "Singapore" }],
+      "knowsAbout": ["Social media management", "Short-form video production", "Meta advertising", "Google Ads", "TikTok advertising",
+        "rednote marketing", "Search engine optimisation", "Search engine marketing", "Graphic design", "Branding", "Website design"],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "contactType": "customer service",
+        "email": "advertise@adspacestudios.com",
+        "url": "https://wa.me/adspace",
+        "areaServed": ["MY", "SG"],
+        "availableLanguage": ["English", "Chinese"]
+      },
+      "sameAs": ["https://adspacestudios.com/"]
+    },
+    {
+      "@type": "ProfessionalService",
+      "@id": "https://digital.adspace.me/#office",
+      "name": "ADspace",
+      "parentOrganization": { "@id": "https://adspacestudios.com/#organization" },
+      "url": "https://digital.adspace.me/",
+      "image": "https://digital.adspace.me/img/front-door-1200.jpg",
+      "logo": "https://mycdn.adspace.me/adspace-brandname.png",
+      "email": "advertise@adspacestudios.com",
+      "areaServed": ["MY", "SG"],
+      "hasMap": "https://maps.app.goo.gl/1CmY1KvMXZ87punW7",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "61-02 Jalan Mutiara Emas 2A, Taman Mount Austin",
+        "postalCode": "81100",
+        "addressLocality": "Johor Bahru",
+        "addressRegion": "Johor",
+        "addressCountry": "MY"
+      },
+      "openingHoursSpecification": [{
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        "opens": "10:00", "closes": "18:00"
+      }]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://digital.adspace.me/#website",
+      "url": "https://digital.adspace.me/",
+      "name": "ADspace",
+      "publisher": { "@id": "https://adspacestudios.com/#organization" },
+      "inLanguage": "en"
+    }
+  ]
 }
 </script>
 </head>
 <body class="lp">
 
-<script src="/js/chrome.js?v=20260928c" data-kicker="Creative Advertising Agency"></script>
+<script src="/js/chrome.js?v=20260928d" data-kicker="Creative Advertising Agency"></script>
 
 <main class="lp-main">
 
-  <!-- The header already says who and what (the wordmark, and Creative
-       Advertising Agency as its label); the page opens on the ways in.
-       The heading is for search engines and screen readers alone. -->
-  <h1 class="lp-name">ADspace, Creative Advertising Agency</h1>
+  <!-- Who, in the brand's own face, and what we do, centred over the ways
+       in, as Apple names its visitor centre over its services (the user,
+       2026-09-28). A studio, not a shop: the tagline, never an opening
+       status. -->
+  <div class="lp-intro">
+    <h1 class="lp-title">ADspace</h1>
+    <p class="lp-tagline"><span>advertising</span> <span class="lp-sep" aria-hidden="true">|</span> <span>marketing</span> <span class="lp-sep" aria-hidden="true">|</span> <span>branding</span></p>
+  </div>
 
   <!-- The website's ways in, one tick each, in its own order, each to its
-       own page. First under the header, as on Apple's page (the user,
-       2026-09-28). -->
+       own page, on the page's one centred column. -->
   <section class="lp-band" aria-label="ADspace">
     <ul class="lp-ways">
       <li class="lp-way">
@@ -111,7 +174,7 @@
        other. One under the other on a phone. -->
   <div class="lp-duo">
     <section class="lp-block" aria-labelledby="lpHoursH">
-      <h2 class="lp-h2" id="lpHoursH">Opening hours</h2>
+      <h2 class="lp-h2" id="lpHoursH">Service hours</h2>
       <!-- A plain week without a script; the script dates it from today in
            Malaysia time and keeps it current while the page stays open. -->
       <table class="lp-hours" id="lpHours">
@@ -135,7 +198,7 @@
            and arranges a meeting with the team. -->
       <section class="lp-block lp-help" id="help" aria-labelledby="lpHelpH">
         <h2 class="lp-h2" id="lpHelpH">How can we help?</h2>
-        <p class="lp-lead">Tell our WhatsApp assistant about your business and what you need. It takes your requirements and enquiry details, any time, and arranges a meeting with our team.</p>
+        <p class="lp-lead">Share your business requirements with our WhatsApp assistant at any time to arrange a meeting with our team.</p>
         <div class="lp-acts">
           <a class="btn btn-go lp-cta" href="https://wa.me/adspace" target="_blank" rel="noopener">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 0 1-11.8 7L4 20l1.1-4A8 8 0 1 1 20 12z"/></svg>

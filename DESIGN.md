@@ -42,7 +42,8 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--err` / `-bg` / `-line` / `-hi` | `#b3261e` / `#fdeceb` / `#e9b9b5` / `#8c1d18` | `#e8837a` / `#2e1d1b` / `#6a3a35` / `#f2a9a2` | **Red: destroys or refuses** (danger items, the billing gate, blocked) |
 | `--pub` / `--pub-bg` | `#6a3fb5` / `#f2edfa` | `#c4a8f4` / `#251d33` | The publish date on the My Work calendar, nowhere else |
 | `--focus` | `rgba(31,122,77,.18)` | `rgba(74,168,118,.30)` | Legacy focus halo |
-| `--chrome` / `--chrome-solid` | `rgba(255,255,255,.88)` / `#fff` | `rgba(23,23,23,.88)` / `#171717` | Sticky bars / the same, opaque under a finger and as `theme-color` |
+| `--chrome` / `--chrome-solid` | `rgba(255,255,255,.72)` / `#fff` | `rgba(23,23,23,.72)` / `#171717` | Sticky bars, Apple's glass over `saturate(180%) blur(20px)` / the same, opaque under a finger and as `theme-color` |
+| `--veil` | `rgba(255,255,255,.88)` | `rgba(23,23,23,.88)` | A label or a question laid over a thumbnail (`.filecard-name`, `.filearm`), kept legible over any picture |
 | `--scrim` | `rgba(0,0,0,.42)` | `rgba(0,0,0,.62)` | Behind a sheet |
 | `--shadow` / `--shadow-lift` | panels / menus | | Nothing else casts a shadow |
 
@@ -69,7 +70,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 
 | Token | Value | Use |
 |---|---|---|
-| `--radius` / `--radius-sm` / `--radius-lg` | 14 / 10 / 18px | Bounded section / anything a finger operates / a sheet. Aliases `--radius-panel`, `--radius-ctl`. No third value. A nested corner is concentric (inner = outer − inset, written as the subtraction) |
+| `--radius-lg` / `--radius` / `--radius-sm` / `--radius-ctl-sm` / chip | 18 / 14 / 10 / 8 / 5px | The corner follows the size, about a quarter of a control's height: a sheet / a card or bounded section / a 38 or 44px control / a 32px control (10 under a finger, where it is 38) / a chip. Aliases `--radius-panel`, `--radius-ctl`. A nested corner is concentric: inner = outer − inset, written as the subtraction (a ⋯ menu's rows `calc(var(--radius) - 6px)`, a sliding thumb the track's less 2) |
 | `--head-h` | 64px (56 phone) | The top bar on every page; never wraps; the kicker hides below 640 before anything clips |
 | `--ctl-h` | 38px (44 coarse) | Every button, field, select, icon button, menu row |
 | `--ctl-h-sm` | 32px (38 coarse) | `.btn-sm`, `.input-sm`, `.select-sm`, status selects, segments, bar marks |
@@ -113,7 +114,9 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
 
 - Slate Regular (`/css/SlateRg.woff2`, preloaded, `font-display: optional`)
   through `--font-head` on the display and section headings, and on the front
-  door's names (`.lp-way-name`, the days). Optima stays on the letterhead.
+  door's names (`.lp-way-name`, the days) and tagline (`.lp-tagline`,
+  19/400, 16 phone). Optima sets the front door's name (`.lp-title`, 48/400,
+  36 phone) and otherwise stays on the letterhead.
 - The front door's hierarchy: headings in the body face 17/600 (16 phone); the
   names under them in Slate Regular 400, 15 (14 phone); links 13.5 (13);
   address and lead 14.
@@ -137,7 +140,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 |---|---|
 | Section head `.viewhead` | 24 above, 12 below (22/12 phone) |
 | Blocks stacked in a section | 12 between every pair, whatever the block (`uxaudit` `stack`) |
-| The front door (`body.lp`) | Editorial: content 24px from the edge on a phone (the header and foot keep the portal's 16), the photograph edge to edge; a 980px column at a desk; section steps 32 to 56 |
+| The front door (`body.lp`) | Editorial: one centred column (`--lp-col` 980, 560 at 900 and under; `--lp-gut` 24) for the header's content, the name, the ticks, the hours and the foot alike; the photograph edge to edge; section steps 32 to 56 |
 | Sections in a list `.crm-group` | 24 |
 | Panel padding | 18px 20px (14 phone) |
 | Fold head `.disclosure` | 16px 22px (12px 14px phone) |
@@ -199,7 +202,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A queue and one open record | `.queue` > `.qrow`, ordered by what is owed |
 | Deciding on one item in a gallery | `.canvas`: the item on a stage, the decision in a rail |
 | A figure over time or across things | `ADspaceChart.draw` → `.chartcard`: ink marks, a colour only where the word is a state; the figures folded under it. Only where it answers faster than the table it sits over |
-| Reaching a person | `.plink` chips (phone, WhatsApp, email), equal widths on a phone unless alone |
+| Reaching a person | `.plink`, the outlined contact chip (1px `--line-ctl`, no fill, `--sunk` on hover): phone, WhatsApp, email, a meeting or Drive link, a creator's profile, on every page; never an underlined word; equal widths on a phone unless alone |
 | A value only read | `.readfield` (the field's height, no box) |
 | An instruction | `.hintline` `?` with its line as a `--sunk` callout pointing at the mark, open three times, then retired; a button, never a `title` |
 | Notifications on a client page | The bar's bell (`.pushbtn`, a second glyph with rays while on) opening `.kmenu.pushpop`, a `.popcard`: title with a close mark, one line, one `.btn-sm` |
@@ -293,7 +296,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - Every add or edit form is a sheet over the list, never a panel unfolding at
   the top, never a form replacing the record's head.
 - Buttons:
-  - `.btn` is tonal (shaded, never outlined; fields keep the ring).
+  - `.btn` is tonal (shaded, never outlined; fields keep the ring). The one
+    outlined control is the contact chip `.plink`.
+  - No bare text links in the portal: a way somewhere is a button, a chip
+    or a `.btn-quiet` with a chevron (`.ovgo`), never an underlined word.
   - `.btn-primary` is ink.
   - `.btn-go` is blue.
   - `.btn-warn` is warn on its tint (reversible caution).

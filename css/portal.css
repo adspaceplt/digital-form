@@ -87,7 +87,10 @@
   --seg-on:       #ffffff;   /* the chosen option of a segment, raised on its track */
   --focus:      rgba(11,87,208,.22);
   --scrim:      rgba(0,0,0,.42);
-  --chrome:     rgba(255,255,255,.88);   /* the translucent sticky bar */
+  /* The sticky bars are glass as Apple's are (the user, 2026-09-28: "could go
+     more transparent, similar as apple"): 72% over a 20px blur. */
+  --chrome:     rgba(255,255,255,.72);   /* the translucent sticky bar */
+  --veil:       rgba(255,255,255,.88);   /* a label or a question laid over a thumbnail, kept legible */
   --chrome-solid: #ffffff;               /* the same bar, opaque, where a phone's status bar takes its colour */
   /* Soft Precision. Two corners and nothing between them: 10px on anything a
      finger operates, 14px on a bounded section, 18px on a sheet. A table at
@@ -99,6 +102,9 @@
   --radius-ctl:   var(--radius-sm);
   --radius-panel: var(--radius);
   --radius-lg:    18px;
+  /* A control 32px tall takes 8, so its corner is the same share of its
+     height as a 38px control's 10 (see THE CORNER FOLLOWS THE SIZE). */
+  --radius-ctl-sm: 8px;
   /* Two steps above the existing 4/8/12/16/24/32, for separating whole
      sections of a migrated route. Nothing below 40 changes. */
   --sp-40: 40px;
@@ -216,7 +222,8 @@
     --seg-on:       #3a3938;
     --focus:      rgba(138,180,248,.34);
     --scrim:      rgba(0,0,0,.62);
-    --chrome:     rgba(23,23,23,.88);
+    --chrome:     rgba(23,23,23,.72);
+    --veil:       rgba(23,23,23,.88);
     --chrome-solid: #171717;
     --shadow:     0 1px 2px rgba(0,0,0,.5);
     --shadow-lift: 0 1px 2px rgba(0,0,0,.5), 0 12px 32px rgba(0,0,0,.55);
@@ -228,7 +235,7 @@
 :root[data-theme="dark"] img.brand-logo { filter: invert(1) brightness(1.08); }
 
 @media (pointer: coarse) {
-  :root { --ctl-h: 44px; --ctl-h-sm: 38px; --ctl-text: 14px; --field-text: 15px; }
+  :root { --ctl-h: 44px; --ctl-h-sm: 38px; --ctl-text: 14px; --field-text: 15px; --radius-ctl-sm: 10px; }
 }
 
 /* The one brand face on screen. Slate is already in the repo for the letter,
@@ -287,7 +294,7 @@ a { color: inherit; }
 .topbar {
   position: sticky; top: 0; z-index: 40;
   background: var(--chrome);
-  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
   border-bottom: 1px solid var(--line);
 }
 .topbar-inner {
@@ -2275,7 +2282,7 @@ body.is-plain .topbar { background: var(--chrome); }
   display: flex; align-items: center; gap: 12px;
   padding: 0 28px; height: var(--head-h); flex: 0 0 auto;
   border-bottom: 1px solid var(--line);
-  background: var(--chrome); backdrop-filter: saturate(180%) blur(14px);
+  background: var(--chrome); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
   position: sticky; top: 0; z-index: 30;
 }
 /* Safari on an iPhone takes the colour behind the status bar from the sticky
@@ -2966,15 +2973,18 @@ body.is-plain .topbar { background: var(--chrome); }
 
 /* The thing they came to click, so it looks like something to click. */
 .crow-links { grid-area: links; display: flex; gap: 6px; flex-wrap: wrap; min-width: 0; justify-content: flex-start; }
-/* The thing they came to click, named in full and marked as leaving the page. */
+/* The way to reach a person or open their profile: the one outlined chip in
+   the portal, on every page (the user, 2026-09-28: "outlined chip is contact
+   button and applies sitewide"). Outlined, so it never reads as a state chip
+   (tonal) or a plain text link. */
 .plink {
   display: inline-flex; align-items: center; gap: 6px;
-  border: 1px solid transparent; border-radius: var(--radius-sm); padding: 5px 10px;
+  border: 1px solid var(--line-ctl); border-radius: var(--radius-sm); padding: 5px 10px;
   font-size: 12px; font-weight: 500; color: var(--ink);
-  text-decoration: none; background: var(--tonal); white-space: nowrap;
+  text-decoration: none; background: transparent; white-space: nowrap;
 }
 .plink svg { width: 12px; height: 12px; opacity: .65; flex: 0 0 auto; }
-@media (hover: hover) { .plink:hover { background: var(--tonal-hover); color: var(--ink); } }
+@media (hover: hover) { .plink:hover { background: var(--sunk); color: var(--ink); } }
 
 .crow-rate {
   grid-area: rate; font-size: 14px; font-weight: 600; letter-spacing: -.01em;
@@ -3017,7 +3027,7 @@ body.is-plain .topbar { background: var(--chrome); }
    phone, where the gutter is 16. */
 .confirmbar {
   position: sticky; bottom: 0; z-index: 40; margin: 18px -24px 0;
-  background: var(--chrome); backdrop-filter: saturate(180%) blur(14px);
+  background: var(--chrome); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
   border-top: 1px solid var(--line);
 }
 .confirmbar-in {
@@ -4290,7 +4300,9 @@ body > .shell { width: 100%; }
 .eng-row > .eng-meetacts { grid-area: act; justify-self: end; }
 .eng-meetword.is-held { color: var(--ok); }
 .eng-meetacts { display: flex; gap: 8px; }
-.eng-meetlink .ovlink { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The meeting's link is the contact chip, cut to the cell with an ellipsis. */
+.eng-meetlink .plink { max-width: 100%; }
+.plink-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .is-narrow .eng-row { grid-template-columns: 104px minmax(0, 1fr) auto; gap: 4px 12px; }
 /* A narrow card puts the label and the controls on the first line and the
    value under them at the full width, so a button never stands alone. */
@@ -4470,13 +4482,8 @@ body > .shell { width: 100%; }
 @media (hover: hover) { .crcamp:hover { background: var(--sunk); } }
 .cr-who > b { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
-/* The same outbound link, without the chip: on a row that carries two or three
-   of them a bordered pill each turns the cell into a row of buttons. The word
-   and the mark that says it leaves the page are the whole control. */
-.plink-bare {
-  border: 0; background: none; padding: 5px 0; gap: 5px; color: var(--ink-soft);
-}
-.plink-bare:hover { color: var(--ink); text-decoration: underline; }
+/* The Creators List's profile links are the same outlined chip (they were
+   bare text until 2026-09-28: no text links); the handle rides in weight. */
 .plink-bare b { font-weight: 600; }
 .ct-row  { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) var(--ctl-h); }
 .ct-row .crm-reach { justify-content: flex-start; }
@@ -4625,15 +4632,9 @@ body > .shell { width: 100%; }
    to the middle of a links cell that had wrapped to two rows, so the date sat
    halfway down the card with nothing beside it. */
 .is-narrow .cr-row > .cr-links { grid-area: links; align-self: start; }
-/* The profile links are the row's last line, and a `.plink-bare` carries 5px
-   of its own padding above and below its word. Added to the row's 12px that
-   made the foot 20px against a 14px head: the card read bottom heavy, which is
-   the "uneven spacing" reported on 2026-09-21. The cell takes the padding back
-   as a negative block margin, so the row's own padding is the only space and
-   each link keeps its full target. Same device as the ⋯ and the selection
-   tick, for the same reason. The top half is left alone: the row gap above
-   this line is only 4px, so pulling both ends would close it to nothing. */
-.is-narrow .cr-row > .cr-links { margin-bottom: -5px; }
+/* The profile links are the row's last line. As bare text their 5px of
+   padding read as extra space and the cell took it back (2026-09-21); as
+   outlined chips the edge is the ink, so the row's own padding stands. */
 .is-narrow .cr-row > .cr-rec {
   grid-area: rec; align-self: start;
   /* A flex box is not moved by `text-align`; this is what actually ends the
@@ -5348,7 +5349,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 }
 .filecard-name {
   position: relative; z-index: 2; align-self: stretch; margin-top: auto; font-size: 11px;
-  color: var(--ink-soft); background: var(--chrome); border-radius: 4px; padding: 2px 4px;
+  color: var(--ink-soft); background: var(--veil); border-radius: 4px; padding: 2px 4px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 /* Anything a person can attach, a person can remove. `--ctl-h`, not the small
@@ -5376,7 +5377,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   position: absolute; inset: 0; z-index: 3;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 10px; padding: 12px; text-align: center;
-  background: var(--chrome); backdrop-filter: saturate(180%) blur(6px);
+  background: var(--veil); backdrop-filter: saturate(180%) blur(6px);
   border-radius: inherit;
   animation: armin var(--t) var(--ease-out);
 }
@@ -6343,7 +6344,6 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
   .rec:not(.cportal) > .rec-rail > .railblock.is-last:not(.rail-after) {
     border-bottom: 1px solid var(--line); padding-bottom: 16px; margin-bottom: 16px;
   }
-  .cportal > .rec-rail { margin-bottom: 12px; }
   .rec-rail .facts { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 }
 /* The tab strip scrolls sideways rather than wrapping to three rows: seven
@@ -6656,70 +6656,67 @@ body.is-canvas { overflow: hidden; }
   .canvas, .canvas-card { animation: none; }
 }
 
-/* The client's own page takes the same workspace shape as the console's
-   records: what is true of the account beside the work, not above it. It has
-   no tab strip, because a client reads the page once and should not have to
-   go looking for the section they were told about. */
-.rec.cportal { grid-template-areas: "pane rail"; }
-/* On the spacing scale, which stops at 4, 8, 12, 16, 24, 32: the head stood
-   20px off the record and each section 28px off the one above it, so two of
-   the three steps on this page were values the scale does not have. */
-#cpHead { margin-top: 24px; margin-bottom: 24px; }
-.rec.cportal { gap: 0 32px; }
-.cportal > .rec-pane { min-width: 0; }
-.cportal > .rec-pane > .viewhead { margin-top: 24px; }
-.cportal > .rec-pane > .viewhead:first-child,
-.cportal > .rec-rail > .viewhead:first-child { margin-top: 0; }
-/* The company select is a page level control on the identity line, so it keeps
-   its own width rather than stretching. */
+/* The client's own page: the company card, one tab strip, and a pane at a
+   time, every section a card with its title inside it (the user, 2026-09-28:
+   "the client portal is a whole mess, everything scattered", choosing tabs
+   like the console's records). It had no tab strip, on the reading that a
+   client reads the page once; seven sections down one column, some cards
+   and some loose on the ground, read as scattered, and the rail fell above
+   the work below 1100. */
+#cpHead { margin-top: 24px; margin-bottom: 16px; }
 #cpHead .rec-ctl .select { flex: 0 0 auto; width: auto; min-width: 150px; }
 #cpHead .rec-ctl .btn { flex: 0 0 auto; }
-/* ONE HEADING SIZE ON THE PAGE. The rail's blocks head at the pane's own 15px
-   section size and the pane's sections headed at 16px, side by side, two
-   inches apart: the difference nobody can name and everybody sees. The pane's
-   sections take the same size and weight as the rail's, so a client reads one
-   page with one kind of heading on it rather than two columns that disagree.
-   Below 1100 the two columns become one, where it matters more still. */
-.cportal > .rec-pane > .viewhead h3,
-.cportal > .rec-rail .railtitle {
-  font-size: 15px; font-weight: 600; letter-spacing: -.01em;
-}
-/* A section with nothing in it is a line inside the surface it would have
-   filled, never a bounded card of its own, so a client with no services, no
-   letters and no requests does not read three empty slabs down the page. */
-.cportal > .rec-pane .softpanel { margin: 0; }
-/* A sign-in address is read, not written to. */
+.cp-tabs { margin-bottom: 16px; }
+.cp-pane { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.cp-pane[hidden] { display: none; }
+/* Overview: the summary on the left, who to reach and the company on the
+   right, on the record's own proportion; one column once the pane is narrow. */
+.cp-overview { grid-template-columns: minmax(0, 1.618fr) minmax(280px, 1fr); gap: 12px 16px; }
+.cp-col { display: grid; gap: 12px; align-content: start; min-width: 0; }
+@media (max-width: 900px) { .cp-overview { grid-template-columns: minmax(0, 1fr); } }
+
+/* One card: the title and its one action on the first line, the content
+   under it. A table inside a card is the card's rows, never a card of its
+   own (a border inside a border groups nothing). */
+.cp-card { margin: 0; min-width: 0; }
+.cp-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 12px; min-height: 24px; }
+.cp-card-head h3 { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.cp-card .crm-table { background: none; border: 0; border-radius: 0; box-shadow: none; margin: 0; }
+.cp-card .crm-head, .cp-card .svc-row { padding-inline: 0; }
+.cp-card .svc-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.cp-card .csv-total { padding-inline: 0; padding-bottom: 0; }
+.cp-card > .ui-empty, .cp-card .ui-empty { margin: 0; padding: 0; background: none; border: 0; }
+
+/* The overview's lines: a label beside its figure. */
+.cp-lines { display: grid; gap: 8px; margin: 0; }
+.cp-lines > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 16px; align-items: baseline; }
+.cp-lines dt { font-size: 13px; color: var(--ink-mute); }
+.cp-lines dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.cp-lines .is-total dd { font-weight: 600; }
+.cp-line { margin: 0; line-height: 1.5; }
+.cp-line + .cp-line { margin-top: 4px; }
+.cp-sub { margin: 0; font-size: 13px; color: var(--ink-mute); }
+.cp-card-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+/* The account manager: the name, then the two ways to reach them. */
+.cp-person { margin: 0 0 8px; font-size: 16px; font-weight: 600; }
+.cp-reach { display: flex; flex-wrap: wrap; gap: 8px; }
+.cp-reach .plink { flex: 0 0 auto; }
+/* On a phone the chips share the card's width equally, as every reach row
+   does (DESIGN.md: `.plink`). */
+@media (max-width: 640px) { .cp-reach .plink { flex: 1 1 0; justify-content: center; } }
+/* Company facts sit label over value, one to a row, in the narrow column. */
+.cp-card .facts { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.cp-card .facts dd { white-space: pre-line; }
 .acc-email { font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; }
-/* The rail's blocks are flat under their eyebrow titles, so the contacts read
-   as the block's rows rather than as a card sitting inside one. A bounded
-   surface inside a bounded surface is the nested card this system rules out,
-   and it was the one thing in the rail wearing a border. */
-.cportal .rec-rail .railblock .crm-table {
-  background: none; border: 0; border-radius: 0; margin: 0;
-}
-.cportal .rec-rail .railblock .crm-head { padding-inline: 0; }
-.cportal .rec-rail .railblock .svc-row { padding-inline: 0; }
-.cportal .rec-rail .railblock .svc-row:last-child { border-bottom: 0; padding-bottom: 0; }
-/* Reach is a short list of ways to contact one person, not a row of states.
-   Four bordered pills per contact, sixteen down the block, spent the shape
-   this portal gives a status on an address and a phone number. */
-.cportal .rec-rail .crm-reach { gap: 4px 14px; }
-.cportal .rec-rail .crm-reach .plink {
-  min-height: 0; padding: 0; border: 0; background: none; border-radius: 0;
-  color: var(--ink-soft); text-decoration: underline; text-underline-offset: 2px;
-  font-size: 13px; justify-content: flex-start;
-}
-@media (hover: hover) { .cportal .rec-rail .crm-reach .plink:hover { color: var(--ink); background: none; } }
-/* A finger still gets a target: the link keeps the row's own line height and
-   the rows are 14px apart, which is the gap this portal gives stacked links. */
-@media (pointer: coarse) { .cportal .rec-rail .crm-reach .plink { min-height: 30px; align-items: center; } }
-@media (max-width: 1100px) {
-  .rec.cportal { grid-template-areas: "rail" "pane"; }
-  .rec.cportal { gap: 0; }
-}
+/* A contact's marks sit on a line of their own under the name. */
+.cp-tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px; }
+/* One of the client's own pages: its name, and Open at the right edge. */
+.cp-eng-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.cp-open { flex: 0 0 auto; gap: 6px; }
+.cp-open svg { width: 14px; height: 14px; }
 @media (max-width: 640px) {
-  #cpHead { margin-top: 16px; margin-bottom: 16px; }
-  .cportal > .rec-pane > .viewhead { margin-top: 24px; }
+  #cpHead { margin-top: 16px; margin-bottom: 12px; }
+  .cp-tabs { margin-bottom: 12px; }
 }
 
 /* ---------- The client record's Overview ----------
@@ -6761,8 +6758,6 @@ body.is-canvas { overflow: hidden; }
    WhatsApp link used to be an underlined word printed hard against the last
    digit, so the row read as one long string. */
 .ovreach { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
-.ovlink { color: var(--ink-soft); text-decoration: underline; text-underline-offset: 2px; }
-.ovlink:hover { color: var(--ink); }
 .ovnone { margin: 0; font-size: 13.5px; color: var(--ink-mute); }
 .ovmore { margin: 8px 0 0; font-size: 12.5px; color: var(--ink-mute); }
 
@@ -8772,37 +8767,59 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 /* =========================================================================
    THE FRONT DOOR (index.html, body.lp)
    A visitor card in the manner of Apple's visitor centre page (the user,
-   2026-09-28): the header says who and what, then one photograph edge to
-   edge, the website's ways in as a ticked band, the week's hours, the
-   address and WhatsApp. An editorial page, so its content takes the larger
-   steps (32 to 56) and a wider side margin on a phone than the console;
-   the header and the foot keep the portal's own, so the wordmark stands
-   where it does on every page.
+   2026-09-28): the name and the tagline centred, the website's ways in as a
+   ticked band, one photograph edge to edge, the week's hours, the address
+   and WhatsApp. Everything that is not the photograph sits on one centred
+   column, the header's wordmark and the foot included, so the page has one
+   left edge and one right edge at every width ("very uneven spacing": the
+   bar kept the portal's gutter while the content took its own). An
+   editorial page, so its content takes the larger steps (32 to 56).
    ========================================================================= */
-body.lp { background: var(--card); }
+@font-face {
+  font-family: 'ADspace Optima';
+  src: local('Optima'), local('Optima-Regular'), url('/css/OPTIMA.TTF') format('truetype');
+  font-display: swap;
+}
+body.lp { --lp-col: 980px; --lp-gut: 24px; background: var(--card); }
+body.lp .topbar-inner, body.lp .portalfoot-in {
+  max-width: calc(var(--lp-col) + 2 * var(--lp-gut)); margin: 0 auto;
+  padding-left: max(var(--lp-gut), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--lp-gut), env(safe-area-inset-right, 0px));
+}
 /* The header's label says what ADspace is, in the body face at the weight
    of a line of text rather than a section's name, on this page alone. */
 body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; color: var(--ink-soft); }
-/* The page's heading, read by search engines and screen readers only. */
-.lp-name {
-  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; border: 0;
-  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+/* The name in the brand's face, and what we do under it in Slate Regular
+   (the user, 2026-09-28), centred on the page. */
+/* Even to the ink, not the boxes: the name's leading sits above its capitals
+   and the tagline's descenders below it, so equal padding left 62px of air
+   over the name and 52 under the tagline (the user saw it). These pads put
+   56 of air on both sides at a desk and 41 on a phone. */
+.lp-intro { padding: 50px var(--lp-gut) 52px; text-align: center; }
+.lp-title {
+  margin: 0; font-family: 'ADspace Optima', Optima, Candara, 'Segoe UI', sans-serif;
+  font-size: 48px; font-weight: 400; letter-spacing: -.01em; line-height: 1.1; color: var(--ink);
 }
+.lp-tagline { margin: 12px 0 0; font-family: var(--font-head); font-size: 19px; font-weight: 400; line-height: 1.4; color: var(--ink-soft); }
+.lp-sep { margin: 0 .3em; color: var(--ink-mute); }
 /* One photograph, edge to edge and whole, at the 16:9 it was cut to (the
    user, 2026-09-28). Past 1920 it stops growing and stands centred. */
 .lp-hero { margin: 0 auto; max-width: 1920px; aspect-ratio: 16 / 9; overflow: hidden; background: var(--line-soft); }
 .lp-hero picture, .lp-hero img { display: block; width: 100%; height: 100%; }
 .lp-hero img { max-width: none; object-fit: cover; }
-/* At a desk the ways in come first, as on Apple's page; once they read down
-   as a list, the photograph leads and the list follows it (the user,
-   2026-09-28). The markup keeps the desk's order, and the photograph holds
-   nothing that takes focus. */
+/* At a desk the ways in come under the name, as on Apple's page; once they
+   read down as a list, the photograph comes under the name and the list
+   follows it (the user, 2026-09-28). The markup keeps the desk's order, and
+   the photograph holds nothing that takes focus. */
 .lp-main { display: flex; flex-direction: column; }
 .lp-hero, .lp-duo { width: 100%; }
-.lp-band { background: var(--page); padding: 32px 16px; }
+.lp-band { background: var(--page); padding: 48px var(--lp-gut); }
+/* Five ways in across the column: the first starts at its left edge, the
+   last ends at its right, and the gaps between them are equal, so the band
+   is even on both sides whatever each name's length. */
 .lp-ways {
-  list-style: none; margin: 0 auto; padding: 0; max-width: 980px;
-  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 24px;
+  list-style: none; margin: 0 auto; padding: 0; max-width: var(--lp-col);
+  display: grid; grid-template-columns: repeat(5, max-content); justify-content: space-between; gap: 24px;
 }
 .lp-way { display: grid; gap: 8px; align-content: start; }
 .lp-tick { width: 20px; height: 20px; }
@@ -8822,9 +8839,9 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 }
 @media (hover: hover) { .lp-go:hover { text-decoration: underline; text-underline-offset: 3px; } }
 /* The hours on the left; the address and WhatsApp on the right, on the
-   band's 980px column. */
+   same column. */
 .lp-duo {
-  max-width: calc(980px + 32px); margin: 0 auto; padding: 48px 16px 56px;
+  max-width: calc(var(--lp-col) + 2 * var(--lp-gut)); margin: 0 auto; padding: 56px var(--lp-gut);
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px 64px; align-items: start;
 }
 .lp-side { display: grid; gap: 40px; }
@@ -8843,25 +8860,51 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .lp-cta { gap: 8px; }
 .lp-cta svg { width: 16px; height: 16px; }
 /* The ways in read down the band once five across no longer fit, the tick
-   beside its words. */
+   beside its words, on a narrower column the hours and the address share. */
 @media (max-width: 900px) {
-  .lp-ways { grid-template-columns: minmax(0, 1fr); gap: 16px; max-width: 560px; }
+  body.lp { --lp-col: 560px; }
+  .lp-ways { grid-template-columns: minmax(0, 1fr); justify-content: stretch; gap: 16px; }
   .lp-way { grid-template-columns: 18px minmax(0, 1fr); gap: 12px; }
-  .lp-duo { grid-template-columns: minmax(0, 1fr); max-width: calc(560px + 32px); }
-  .lp-hero { order: -1; }
+  .lp-duo { grid-template-columns: minmax(0, 1fr); }
+  .lp-band, .lp-duo { order: 1; }
+  .lp-band { padding-block: 32px; }
 }
 @media (max-width: 640px) {
-  /* Apple's side margin on a phone for the content: text 24px in, the
-     photograph edge to edge. The header and the foot keep the portal's 16. */
-  .lp-band { padding: 24px; }
+  /* Apple's side margin on a phone, the bar and the foot on it too: one
+     left edge from the wordmark down. The photograph runs edge to edge. */
+  .lp-intro { padding: 36px var(--lp-gut) 38px; }
+  .lp-title { font-size: 36px; }
+  .lp-tagline { margin-top: 8px; font-size: 16px; }
+  .lp-band { padding-block: 24px; }
   .lp-tick { width: 18px; height: 18px; margin-top: 1px; }
   .lp-way-name { font-size: 14px; }
   .lp-go { font-size: 13px; }
   .lp-hours { font-size: 13.5px; }
-  .lp-duo { padding: 32px 24px 48px; gap: 32px; }
+  .lp-duo { padding-block: 32px 48px; gap: 32px; }
   .lp-side { gap: 32px; }
   .lp-h2 { font-size: 16px; }
   /* The header keeps its label on a phone: nothing else stands in the bar. */
   body.lp .brand-kicker { display: block; font-size: 14px; }
   body.lp .brand .brand-divider { display: block; }
 }
+
+/* =========================================================================
+   THE CORNER FOLLOWS THE SIZE AND THE NESTING (the user, 2026-09-28: "rather
+   than making all buttons all cards same radius do you considered its
+   paddings and the radii curvature"). Measured before: a 38px control's 10px
+   corner is 26% of its height, but the 32px controls and the contact chip
+   kept the same 10 (31 to 32%, visibly rounder), the bar's icon buttons had
+   8 (21%), the rail's rows 9, and a ⋯ menu's rows kept 10 inside a 14px
+   menu padded 6, where the rule gives 14 - 6 = 8. The scale by role:
+   sheet 18, card 14, control 10 (38 and 44px), small control 8 (32px; 10
+   under a finger, where it is 38), chip 5, and a corner inside a padded
+   surface is the surface's corner less the inset.
+   ========================================================================= */
+.btn-sm, .input-sm, .select-sm, .state-select, .select.state-select, .select-sm.state-select, .plink {
+  border-radius: var(--radius-ctl-sm);
+}
+.headlink, .backlink, .console-title, .notif-btn, .navitem, .railrow { border-radius: var(--radius-sm); }
+/* Inside a menu: 14 less its 5px padding and 1px border. */
+.kmenu > .kmenu-item, .kmenu .kmenu-item { border-radius: calc(var(--radius) - 6px); }
+/* The bell's list is padded 8. */
+.kmenu.notif-menu .notif-item { border-radius: calc(var(--radius) - 9px); }

@@ -190,28 +190,47 @@ Each line is a rule that broke once. Its reason is in the archive.
   draw the client pages' bar in its place.
 - `/` is the front door and the host's one listed page, a visitor card after
   Apple's visitor centre page (`body.lp`):
-  - the chrome header and footer at the portal's own 16px gutter, so the
-    wordmark stands where it does on every page; the kicker reads Creative
-    Advertising Agency on `/` alone (16px/400, 14 on a phone, kept on a
-    phone); no menu, no sign-in, no list of rooms;
-  - no visible title: the `h1` (`.lp-name`) is for search engines and screen
-    readers. ADspace alone, never "ADspace Studio";
-  - the website's ways in as ticked rows: Home, About us (`/about`), Our
-    services (`/services`), Our works (`/project`), Contact us (`/contact`)
-    on adspacestudios.com; the ticks in the brand's monochrome (`--fill`
-    with an `--on-fill` tick);
+  - one centred column (`--lp-col` 980px, 560 at 900 and under; `--lp-gut`
+    24px) holds everything but the photograph: the header's wordmark, the
+    ticks, the hours and address, and the foot, so the page has one left and
+    one right edge at every width (`tests/seo.js` asserts the markup; the
+    edges are measured by hand at 390, 768, 1045, 1280, 1440);
+  - the chrome header and footer, the kicker reading Creative Advertising
+    Agency on `/` alone (16px/400, 14 on a phone, kept on a phone); no menu,
+    no sign-in, no list of rooms;
+  - the name centred: `h1.lp-title` ADspace in Optima (`ADspace Optima`,
+    `css/OPTIMA.TTF` after `local('Optima')`, preloaded), over the tagline
+    `advertising | marketing | branding` in Slate Regular (`.lp-tagline`);
+    never an opening status (a studio, not a shop). ADspace alone, never
+    "ADspace Studio";
+  - the website's ways in as ticks: Home, About us (`/about`), Our services
+    (`/services`), Our works (`/project`), Contact us (`/contact`) on
+    adspacestudios.com, five across the column with the first at its left
+    edge, the last at its right and equal gaps (`max-content` tracks,
+    `space-between`); the ticks in the brand's monochrome (`--fill` with an
+    `--on-fill` tick);
   - one photograph, whole at 16:9 and full width up to 1920
     (`img/front-door-{800,1200,2000,2560}`, WebP with a JPEG fallback), which
     is also the og:image;
-  - above 900 the ways in come first under the header, then the photograph;
-    at 900 and under (the ways in as a list) the photograph leads
-    (`.lp-hero { order: -1 }`), the markup keeping the desk's order;
-  - Opening hours: a dated week from today in Malaysia time, Monday to Friday
-    10:00 to 18:00, redrawn every minute and on return to the tab;
+  - above 900: the name, the ticks, the photograph; at 900 and under (the
+    ticks as a list): the name, the photograph, the list
+    (`.lp-band, .lp-duo { order: 1 }`), the markup keeping the desk's order;
+  - Service hours: a dated week from today in Malaysia time, Monday to
+    Friday 10:00 to 18:00, redrawn every minute and on return to the tab;
   - Visit: the address and Get directions (the Google Maps listing);
-  - How can we help?: Chat on WhatsApp opens `wa.me/adspace`; the number is
-    never on the page or in its business details;
+  - How can we help?: one sentence, then Chat on WhatsApp opening
+    `wa.me/adspace`; the number is never on the page or in its business
+    details;
+  - the head: the title and descriptions name ADspace as adspacestudios.com
+    does (Digital Marketing Agency in Johor Bahru & Singapore), Open Graph
+    and a large-image card, and one JSON-LD graph (the Organization, the
+    ProfessionalService office with its hours and address, the WebSite);
   - white to the edge (`--card`, `theme-color #ffffff`, `color-scheme: light`).
+- The favicon on every portal page is the ADspace wordmark in Optima on white
+  (never the monogram): `/favicon.ico` (16, 32, 48), `img/favicon-{48,96,192}.png`,
+  `img/apple-touch-icon.png`, and `img/icon-512.png` as the share image of
+  the token pages. `js/chrome.js` adds it where a page names none. No icon
+  hangs on the CDN.
 - Only `/` may be listed: every other page carries noindex, `robots.txt`
   disallows nothing (a blocked page's noindex cannot be read), and
   `sitemap.xml` names `/` alone (`tests/seo.js`).
@@ -1434,18 +1453,29 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### Client portal (`client/`, `js/portal.js`)
 - It is one client at a time (a company select where one login holds access at
   several). The head is the console record's (`.rec-mark`, `.rec-who`,
-  `.rec-ctl`).
-- Section order:
-  - Overview: facts, contacts read-only, and Request change.
+  `.rec-ctl`): the mark, the name over the registered name, the state and
+  Request change.
+- Under it one tab strip (`#cpTabs`, the view strip, `role="tablist"`, the
+  arrows and Home/End move along it) and one pane at a time
+  (`.cp-panes`, `data-swipe="cpTabs"`, `data-narrow="640"`). The pane rides in
+  `?tab=` (Overview left out) and pushes history; a refresh lands on it. Every
+  section is a white card (`.panel.cp-card`) with its title inside
+  (`.cp-card-head`); a table inside a card is the card's rows.
+  - Overview: the summary on the left on the record's proportion (one column
+    at 900): Services (Confirmed and To quote as lines, open requests),
+    Next content meeting (the soonest ahead, Join), Latest report (Download),
+    Engagements (the token links, Open at the right edge); each summary card's
+    View all opens its tab. On the right: Your account manager (the person in
+    charge, WhatsApp and Email) and Company (the facts).
   - Services: confirmed and To quote lines (enquired never shown), with
-    Upgrade / Downgrade / Cancel in a confirmed line's ⋯.
-  - Requests: once one exists; Withdraw with Undo while Requested.
+    Upgrade / Downgrade / Cancel in a confirmed line's ⋯; then Requests once
+    one exists (Withdraw with Undo while Requested). A request sent opens
+    this tab.
   - Letters: Download redraws the snapshot.
-  - Engagements: the token links; hidden when empty.
-  - Reports.
-  - Content meetings.
-  - Payment: only once `ADSPACE_ORG.bank` is set.
-  - Portal access: Person · Sign-in email.
+  - Reports and Meetings: tabs drawn only once there is one; an address
+    naming one before it is drawn opens it when it is.
+  - Account: Contacts read-only, Portal access (Person · Sign-in email),
+    Payment only once `ADSPACE_ORG.bank` is set.
 - The portal never writes a record. A request is a row the team applies.
 - A sign-in address is text, never a mailto pill.
 - Covers: Client sign-in, Check your email, Access denied, Unable to load.
@@ -1658,8 +1688,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - video goes to S3 (Supabase storage is capped at 50 MB).
 - Brand assets:
   - header mark https://mycdn.adspace.me/adspace-brandname.png (`brandLogo`);
-  - favicon and og:image https://mycdn.adspace.me/adspace-favicon.png;
-  - in the repo: `css/adspace-mark.png`, `css/SlateBook.TTF`,
+  - favicon: the wordmark set in the repo (`/favicon.ico`, `img/favicon-*`,
+    `img/apple-touch-icon.png`, `img/icon-512.png`), never the monogram;
+  - in the repo: `css/adspace-mark.png` (the monogram, the letterhead's
+    alone), `css/SlateBook.TTF`,
     `css/SlateRg.TTF` (and `.woff2`), `css/SlateMedium.TTF`, `css/OPTIMA.TTF`.
   - `ADspace.png` and the website favicon were rejected.
 - The issuer (`ADSPACE_ORG`): ADSPACE PLT, 202304002162, SST

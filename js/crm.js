@@ -1117,14 +1117,16 @@
       /* A button, not a word run against the number with nothing between them:
          it is a thing to press and it is the same `.plink` the contact row
          and the client's own page already draw. */
-      rows.push(['Phone', '<span class="ovreach">' + esc(m.phone) +
+      rows.push(['Phone', '<span class="ovreach"><a class="plink" href="tel:' + esc(m.phone) + '">' + esc(m.phone) + '</a>' +
         (mUser ? '' : waLink(m.whatsapp || m.phone, (state.client || {}).market)) + '</span>']);
     }
     if (mUser) {
       rows.push(['WhatsApp', '<span class="ovreach">@' + esc(mUser) +
         waLink(m.whatsapp, (state.client || {}).market) + '</span>']);
     }
-    if (m.email) rows.push(['Email', '<a class="ovlink" href="mailto:' + esc(m.email) + '">' + esc(m.email) + '</a>']);
+    /* Every way to reach the person is the outlined contact chip, never an
+       underlined word (the user, 2026-09-28). */
+    if (m.email) rows.push(['Email', '<span class="ovreach"><a class="plink" href="mailto:' + esc(m.email) + '">' + esc(m.email) + '</a></span>']);
     if (m.lang && LANG_WORD[m.lang]) rows.push(['Language', 'Prefers ' + esc(LANG_WORD[m.lang])]);
     /* Person in charge is on the identity line above and is not repeated
        here; a record that states a fact twice is a record nobody reads. */

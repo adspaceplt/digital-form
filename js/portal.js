@@ -19,6 +19,7 @@
      records draw their mark from, so one reading serves all three pages. */
   var UI  = window.ADspaceState;
   var ORG = window.ADSPACE_ORG || {};
+  var CFG = window.ADSPACE_CONFIG || {};
   var DOCS = window.ADspaceDocs;
   var $   = function (id) { return document.getElementById(id); };
 
@@ -71,7 +72,10 @@
       bank: 'Bank', reference: 'Payment reference', person: 'Person', email: 'Email',
       signInEmail: 'Sign-in email', noAccessRows: 'No entries.',
       reqTitle: function (k) { return T.en[k]; }, line: 'Service', note: 'Note', noteFor: { upgrade: 'What to change to', downgrade: 'What to change to', cancel: 'Reason (optional)', details: 'What to change' },
-      send: 'Send request', close: 'Cancel', sent: 'Sent.', noteNeeded: 'A note is required.', company: 'Company'
+      send: 'Send request', close: 'Cancel', sent: 'Sent.', noteNeeded: 'A note is required.', company: 'Company',
+      tabs: { overview: 'Overview', services: 'Services', letters: 'Letters', reports: 'Reports', meetings: 'Meetings', account: 'Account' },
+      viewAll: 'View all', nextMeeting: 'Next content meeting', latestReport: 'Latest report', yourManager: 'Your account manager',
+      lines: function (n) { return n === 1 ? '1 line' : n + ' lines'; }, openRequests: 'Open requests', whatsapp: 'WhatsApp'
     },
     zh: {
       kicker: '客户平台', lang: 'EN', signOut: '退出',
@@ -105,7 +109,10 @@
       bank: '银行', reference: '付款备注', person: '姓名', email: '电子邮箱',
       signInEmail: '登录邮箱', noAccessRows: '暂无记录。',
       reqTitle: function (k) { return T.zh[k]; }, line: '服务', note: '备注', noteFor: { upgrade: '希望更改为', downgrade: '希望更改为', cancel: '原因（可选）', details: '需要修改的内容' },
-      send: '提交申请', close: '取消', sent: '已提交。', noteNeeded: '请填写备注。', company: '公司'
+      send: '提交申请', close: '取消', sent: '已提交。', noteNeeded: '请填写备注。', company: '公司',
+      tabs: { overview: '概览', services: '服务', letters: '函件', reports: '报告', meetings: '会议', account: '账户' },
+      viewAll: '查看全部', nextMeeting: '下次内容会议', latestReport: '最新报告', yourManager: '您的客户经理',
+      lines: function (n) { return n + ' 项服务'; }, openRequests: '处理中的申请', whatsapp: 'WhatsApp'
     }
   });
   var lang = 'en';
@@ -211,6 +218,73 @@
     clearTimeout(undoTimer);
     undoTimer = setTimeout(function () { bar.hidden = true; }, 8000);
   }
+
+  // ---- The tabs ---------------------------------------------------------------
+  /* One pane at a time, the way the console's records open theirs (the user,
+     2026-09-28, choosing tabs over one long page). The pane rides in the
+     address (`?tab=`, Overview left out) and pushes history, so Back steps
+     through the tabs and a refresh lands on the one that was open. Reports and
+     Meetings draw once there is one; an address naming a tab not drawn yet
+     opens it as soon as it is. */
+  var PANES = ['overview', 'services', 'letters', 'reports', 'meetings', 'account'];
+  var pane = 'overview';
+  var wantPane = null;
+  function paneFromUrl() {
+    var p = new URLSearchParams(location.search).get('tab');
+    return PANES.indexOf(p) >= 0 ? p : 'overview';
+  }
+  function tabOf(name) { return document.querySelector('#cpTabs .tab[data-pane="' + name + '"]'); }
+  function showPane(name, push) {
+    var tab = tabOf(name);
+    if (!tab || tab.hidden) { wantPane = name; name = 'overview'; tab = tabOf(name); }
+    else if (wantPane === name) wantPane = null;
+    pane = name;
+    Array.prototype.forEach.call(document.querySelectorAll('#cpTabs .tab'), function (b) {
+      var on = b === tab;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-selected', String(on));
+      b.tabIndex = on ? 0 : -1;
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.cp-pane'), function (p) {
+      p.hidden = p.getAttribute('data-pane') !== name;
+    });
+    var url = new URL(location.href);
+    if (name === 'overview') url.searchParams.delete('tab'); else url.searchParams.set('tab', name);
+    if (url.href === location.href) return;
+    if (push) history.pushState({ tab: name }, '', url.href); else history.replaceState(history.state, '', url.href);
+  }
+  /* A tab drawn late (Reports, Meetings) opens if the address asked for it. */
+  function tabShown(name, on) {
+    var tab = tabOf(name);
+    if (!tab) return;
+    tab.hidden = !on;
+    if (on && wantPane === name) showPane(name, false);
+    if (!on && pane === name) showPane('overview', false);
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#cpTabs .tab'), function (b) {
+    b.addEventListener('click', function () { showPane(b.getAttribute('data-pane'), true); });
+  });
+  /* The strip is a tab list: the arrows move along it, Home and End to its ends. */
+  $('cpTabs').addEventListener('keydown', function (e) {
+    var tabs = Array.prototype.filter.call(this.querySelectorAll('.tab'), function (b) { return !b.hidden; });
+    var i = tabs.indexOf(document.activeElement);
+    if (i < 0) return;
+    var to = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
+    if (to === null) return;
+    e.preventDefault();
+    to = (to + tabs.length) % tabs.length;
+    tabs[to].focus();
+    tabs[to].click();
+  });
+  /* An Overview card's View all opens its tab at the top of the strip. */
+  document.addEventListener('click', function (e) {
+    var go = e.target.closest && e.target.closest('[data-go]');
+    if (!go) return;
+    showPane(go.getAttribute('data-go'), true);
+    var strip = $('cpTabs');
+    if (strip && strip.getBoundingClientRect().top < 0) strip.scrollIntoView({ block: 'start' });
+  });
+  window.addEventListener('popstate', function () { if (feed) showPane(paneFromUrl(), false); });
 
   // ---- Whole-page states ---------------------------------------------------
   var shownState = null;
@@ -365,7 +439,8 @@
     if (!wrap || !box || !c.id) return;
     db.rpc('portal_reports', { p_client: c.id }).then(function (r) {
       var list = (!r.error && r.data && r.data.reports) || [];
-      wrap.hidden = !list.length;
+      tabShown('reports', list.length > 0);
+      paintLatestReport(w, list[0]);
       if (!list.length) { box.innerHTML = ''; return; }
       var tb = table('<div class="crm-head svc-row doc-row"><span>' + esc(w.report) + '</span><span class="svc-rate">' + esc(w.version) +
         '</span><span>' + esc(w.state) + '</span><span></span></div>');
@@ -388,6 +463,20 @@
       box.innerHTML = ''; box.appendChild(tb);
     });
   }
+  /* The Overview's latest report: the month, the report's name and date, and
+     Download. The card leaves while there is none. */
+  function paintLatestReport(w, v) {
+    var card = $('ovRep'), box = $('ovRepBox');
+    if (!card || !box) return;
+    card.hidden = !v;
+    if (!v) { box.innerHTML = ''; return; }
+    box.innerHTML = '<p class="cp-line"><b>' + esc(monthOf(v.period_start, v.period_end)) + '</b></p>' +
+      '<p class="cp-sub">' + esc((SMR && SMR.titleOf ? SMR.titleOf(v) : v.title) + ' · ' + w.published + ' ' + niceDate(v.published_at)) + '</p>' +
+      (SMR ? '<div class="cp-card-acts"><button class="btn btn-sm" type="button" data-a="dl">' + esc(w.download) + '</button></div>' : '');
+    var dl = box.querySelector('[data-a="dl"]');
+    if (dl) dl.addEventListener('click', function () { downloadReport(v, 'ovRepMsg'); });
+  }
+
   // ---- Content meetings -----------------------------------------------------
   /* When we meet about each month's content: the date, the time, how it is
      held, and the link while the meeting is still ahead. Read from
@@ -415,7 +504,8 @@
     if (!wrap || !box || !c.id) return;
     db.rpc('portal_meetings', { p_client: c.id }).then(function (r) {
       var list = (!r.error && r.data && r.data.meetings) || [];
-      wrap.hidden = !list.length;
+      tabShown('meetings', list.length > 0);
+      paintNextMeeting(w, list);
       if (!list.length) { box.innerHTML = ''; return; }
       var tb = table('<div class="crm-head svc-row doc-row"><span>' + esc(w.meeting) + '</span><span class="svc-rate">' + esc(w.when) +
         '</span><span>' + esc(w.state) + '</span><span></span></div>');
@@ -440,8 +530,27 @@
     });
   }
 
-  function downloadReport(v) {
-    msg('repMsg', '', '');
+  /* The Overview's next meeting: the soonest one still ahead, with Join where
+     it has a link. The card leaves while none is ahead. */
+  function paintNextMeeting(w, list) {
+    var card = $('ovMeet'), box = $('ovMeetBox');
+    if (!card || !box) return;
+    var now = Date.now();
+    var ahead = (list || []).filter(function (v) { return new Date(v.at).getTime() + (Number(v.minutes) || 30) * 60000 > now; })
+      .sort(function (a, b) { return new Date(a.at) - new Date(b.at); });
+    var v = ahead[0];
+    card.hidden = !v;
+    if (!v) { box.innerHTML = ''; return; }
+    box.innerHTML = '<p class="cp-line"><b>' + esc(meetWhen(v)) + '</b></p>' +
+      '<p class="cp-sub">' + esc(meetAgenda(w, v.period) + ' · ' + (w.channel[v.channel] || w.channel.other)) + '</p>' +
+      (v.link ? '<div class="cp-card-acts"><a class="btn btn-sm" href="' + esc(v.link) + '" target="_blank" rel="noopener">' + esc(w.join) + '</a></div>' : '');
+  }
+
+  /* The failure is said under whichever control asked: the Reports tab's
+     table, or the Overview's latest report. */
+  function downloadReport(v, where) {
+    where = where || 'repMsg';
+    msg(where, '', '');
     db.rpc('portal_report', { p_version: v.id }).then(function (r) {
       var snap = r.data && r.data.snapshot;
       if (r.error || !snap) throw new Error((r.error && r.error.message) || 'not-found');
@@ -454,7 +563,7 @@
         setTimeout(function () { URL.revokeObjectURL(a.href); }, 30000);
       });
     }).catch(function () {
-      msg('repMsg', lang === 'zh' ? '无法下载报告，请刷新页面后重试。' : 'The report could not be downloaded. Refresh the page and try again.', 'err');
+      msg(where, lang === 'zh' ? '无法下载报告，请刷新页面后重试。' : 'The report could not be downloaded. Refresh the page and try again.', 'err');
     });
   }
 
@@ -470,11 +579,16 @@
     if ($('langToggle')) $('langToggle').textContent = w.lang;
     if (window.ADspaceChrome) window.ADspaceChrome.preparedFor('', '');
 
-    ['ovHead:overview', 'ctHead:contacts', 'svcHead:services', 'rqHead:requests',
+    ['ovHead:company', 'ctHead:contacts', 'svcHead:services', 'ovSvcHead:services', 'rqHead:requests',
      'docHead:letters', 'meetHead:meetings', 'repHead:reports', 'engHead:engagements',
-     'payHead:payment', 'accHead:account'].forEach(function (p) {
+     'payHead:payment', 'accHead:account', 'ovMeetHead:nextMeeting', 'ovRepHead:latestReport',
+     'ovMgrHead:yourManager'].forEach(function (p) {
       var a = p.split(':'); $(a[0]).textContent = w[a[1]];
     });
+    /* An Overview card's way to its tab: the console Overview's own control. */
+    Array.prototype.forEach.call(document.querySelectorAll('.cp-card .ovgo-word'), function (x) { x.textContent = w.viewAll; });
+    PANES.forEach(function (k) { var b = tabOf(k); if (b) b.textContent = w.tabs[k]; });
+    if (!feed.__shown) { feed.__shown = true; showPane(paneFromUrl(), false); }
     $('ovRequestWord').textContent = w.requestChange;
 
     // Several companies on one email: a select on the head; otherwise nothing.
@@ -519,9 +633,17 @@
          names them, so nothing is printed twice. */
       var bits = [];
       if (c.legal_name && c.legal_name !== c.name) bits.push(esc(c.legal_name));
-      if (c.owner) bits.push(esc(w.manager) + ': ' + esc(c.owner));
       $('cpMeta').innerHTML = bits.join(' &middot; ');
       $('cpMeta').hidden = !bits.length;
+    }
+    /* Who looks after them, and the two ways to reach the team: the account
+       managers' shared address and the company's WhatsApp. */
+    var mgr = $('ovMgr');
+    if (mgr) {
+      mgr.hidden = !c.owner;
+      $('ovMgrBox').innerHTML = c.owner ? '<p class="cp-person">' + esc(c.owner) + '</p><div class="cp-reach">' +
+        (ORG.phone ? '<a class="plink" href="https://wa.me/' + esc(String(ORG.phone).replace(/[^0-9]/g, '')) + '" target="_blank" rel="noopener">' + esc(w.whatsapp) + '</a>' : '') +
+        (CFG.accountEmail ? '<a class="plink" href="mailto:' + esc(CFG.accountEmail) + '">' + esc(w.email) + '</a>' : '') + '</div>' : '';
     }
     /* The registered name, the account manager and the status are on the
        identity line above, so the rail carries what is left rather than
@@ -543,14 +665,16 @@
         row.className = 'svc-row ct-row';
         var wa = String(k.phone || '').replace(/[^0-9]/g, '');
         row.innerHTML =
-          '<span class="svc-name"><b>' + esc(k.name) +
+          '<span class="svc-name"><b>' + esc(k.name) + '</b>' +
+            ((k.is_primary || k.portal_access) ? '<span class="cp-tags">' : '') +
             /* Green is the live state and it is spent once per row: a sign-in
                is live, a main contact is a designation. The console already
                reads it that way; this page had the two the wrong way round, so
                the same two facts about the same person carried opposite
                colours on the two screens that show them. */
-            (k.is_primary ? ' <span class="tone">' + esc(w.mainContact) + '</span>' : '') +
-            (k.portal_access ? ' <span class="tone is-ok">' + esc(w.portal) + '</span>' : '') + '</b>' +
+            (k.is_primary ? '<span class="tone">' + esc(w.mainContact) + '</span>' : '') +
+            (k.portal_access ? '<span class="tone is-ok">' + esc(w.portal) + '</span>' : '') +
+            ((k.is_primary || k.portal_access) ? '</span>' : '') +
             (k.role ? '<small>' + esc(k.role) + '</small>' : '') + '</span>' +
           '<span class="crm-reach">' +
             (k.phone ? '<a class="plink" href="tel:' + esc(k.phone) + '">' + esc(k.phone) + '</a>' : '') +
@@ -594,6 +718,20 @@
         '<span class="is-total">' + esc(w.confirmedTotal) + '<b>' + esc(money2(confirmed)) + '</b></span>';
       stb.appendChild(tot);
       sbox.innerHTML = ''; sbox.appendChild(stb);
+    }
+    /* The Overview's services: what is confirmed, what is still to quote, and
+       any request the team has not closed. */
+    var obox = $('ovSvcBox');
+    if (!lines.length) empty(obox, w.noServices);
+    else {
+      var tally = function (s) { return lines.filter(function (l) { return l.state === s; }); };
+      var q = tally('quoted'), cf = tally('confirmed');
+      var money = function (list) { return money2(list.reduce(function (a, l) { return a + amountOf(l); }, 0)); };
+      var open = (feed.requests || []).filter(function (r) { return !r.withdrawn_at && (r.state === 'requested' || r.state === 'reviewing'); }).length;
+      obox.innerHTML = '<dl class="cp-lines">' +
+        '<div class="is-total"><dt>' + esc(w.confirmedTotal + ' · ' + w.lines(cf.length)) + '</dt><dd>' + esc(money(cf)) + '</dd></div>' +
+        (q.length ? '<div><dt>' + esc(w.quotedTotal + ' · ' + w.lines(q.length)) + '</dt><dd>' + esc(money(q)) + '</dd></div>' : '') +
+        (open ? '<div><dt>' + esc(w.openRequests) + '</dt><dd>' + open + '</dd></div>' : '') + '</dl>';
     }
 
     // Requests, once there is one.
@@ -668,10 +806,9 @@
       var etb = table('');
       eng.forEach(function (e) {
         var row = document.createElement('div');
-        row.className = 'svc-row ct-row';
+        row.className = 'svc-row cp-eng-row';
         row.innerHTML = '<span class="svc-name"><b>' + esc(e.name) + '</b>' + (e.sub ? '<small>' + esc(e.sub) + '</small>' : '') + '</span>' +
-          '<span class="crm-reach"><a class="plink" href="' + esc(e.url) + '" target="_blank" rel="noopener">' + esc(w.open) + ' ' + EXT + '</a></span>' +
-          '<span class="team-act"></span>';
+          '<a class="btn btn-sm cp-open" href="' + esc(e.url) + '" target="_blank" rel="noopener">' + esc(w.open) + ' ' + EXT + '</a>';
         etb.appendChild(row);
       });
       ebox.innerHTML = ''; ebox.appendChild(etb);
@@ -744,6 +881,7 @@
         var d = r.data || {};
         if (r.error || d.error) { msg('reqMsg', r.error ? r.error.message : (d.error === 'note-required' ? t().noteNeeded : d.error), 'err'); return; }
         shutRequest();
+        showPane('services', true);
         msg('rqMsg', t().sent, 'ok');
         load();
       }, function (e) { $('reqGo').disabled = false; msg('reqMsg', (e && e.message) || String(e), 'err'); });
