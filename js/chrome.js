@@ -21,7 +21,8 @@
  *                 "Prepared for <b id="clientName">…</b>" under the kicker.
  *   data-actions  a space separated list of built-in controls to put on the
  *                 right: "lang" for the language toggle, "qr" for view on
- *                 phone. A page needing something of its own puts it in
+ *                 phone, "push" for the notifications bell (js/push.js).
+ *                 A page needing something of its own puts it in
  *                 #chromeActions afterwards.
  *   data-footer   "off" to leave the footer out (the console draws its own).
  *
@@ -86,7 +87,10 @@
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">' +
         '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>' +
         '<rect x="3" y="14" width="7" height="7" rx="1"/>' +
-        '<path d="M14 14h3v3h-3zM19 14h2M14 19h3M19 19h2"/></svg>View on phone</button>'
+        '<path d="M14 14h3v3h-3zM19 14h2M14 19h3M19 19h2"/></svg>View on phone</button>',
+    /* Notifications on this device. Hidden until js/push.js knows the page
+       follows something and the browser can deliver; it names itself then. */
+    push: '<button class="iconbtn pushbtn" id="pushBtn" type="button" hidden></button>'
   };
 
   function headerHtml() {

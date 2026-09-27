@@ -2246,7 +2246,7 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 .acct-menu .kmenu-item {
   flex-direction: row; align-items: center; justify-content: flex-start;
-  gap: 10px; text-align: left; min-height: 42px; padding: 8px 12px;
+  gap: 10px; text-align: left; min-height: max(42px, var(--ctl-h)); padding: 8px 12px;
 }
 /* The label and its second line read as one row, not as two stacked items. */
 .acct-menu .kmenu-item b { font-weight: 600; }
@@ -8520,3 +8520,90 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .chart-tbl tbody tr:last-child > * { border-bottom: 0; }
 #workReport .chartcard + .ovsec-title { margin-top: 32px; }
 #workReport .chartcard + .repempty { margin-top: 12px; }
+
+/* =========================================================================
+   NOTIFICATIONS ON THIS DEVICE (js/push.js)
+   The client pages' bell in the bar opens a small named dialog, a menu's
+   card (`.kmenu`) set under the bell's own right edge; the console's is an
+   item in the account menu, answered on a line under it.
+   ========================================================================= */
+.chrome-actions { position: relative; }
+.pushbtn.is-on { color: var(--ink); }
+.kmenu.pushpop {
+  top: calc(100% + 8px); right: 0; padding: 16px;
+  width: min(320px, calc(100vw - 32px));
+  display: grid; gap: 8px;
+}
+.pushpop:focus { outline: none; }
+.pushpop-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+.pushpop-line { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-soft); }
+.pushpop-acts { display: flex; justify-content: flex-end; }
+.pushpop .msg { margin: 0; }
+.acct-msg { margin: 0; padding: 4px 12px 8px; font-size: 12.5px; line-height: 1.45; }
+/* The item's label is a span only so the page can rename it; it reads as
+   every other item's label, not as the menu's small second line. */
+.acct-menu .kmenu-item .acct-push-word { margin-left: 0; text-align: left; font-size: inherit; line-height: inherit; color: inherit; }
+
+/* =========================================================================
+   CONSOLE SEARCH (js/search.js)
+   One search across the sections a person may read. The control sits with
+   the theme switch, the bell and the account; the panel is a sheet (the one
+   copy in js/sheet.js) that drops from the head at a desk and comes up from
+   the floor, full height, on a phone.
+   ========================================================================= */
+.headsearch { text-decoration: none; }
+.headsearch svg { width: 16px; height: 16px; }
+/* At a desk the panel hangs under the head, where the eye already is, and
+   grows with its answers rather than opening as a tall empty card. */
+.sheet.searchsheet { align-items: flex-start; padding-top: max(64px, 10vh); }
+.sheet-card.searchcard { width: min(640px, 100%); max-height: min(72vh, 600px); }
+.searchfield { position: relative; margin: 8px 0 12px; }
+.searchfield .input { width: 100%; padding-left: 36px; }
+.searchfield svg {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  width: 15px; height: 15px; stroke: var(--ink-mute); stroke-width: 1.8; fill: none; pointer-events: none;
+}
+.searchbody { padding-bottom: 12px; }
+.searchbody #searchSay .softpanel { background: none; }
+/* A section's answers under its rail name: the label face, never a card. */
+.sgroup + .sgroup { margin-top: 12px; }
+.sgroup-h { margin: 0 0 4px; padding: 0 12px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+/* A plain row: the name, its code in the token face, one mute line. */
+.srow {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; row-gap: 2px;
+  align-items: baseline; width: 100%; min-height: var(--ctl-h); padding: 8px 12px;
+  border: 0; border-radius: var(--radius-sm); background: none; color: var(--ink);
+  font: inherit; text-align: left; cursor: pointer;
+  transition: background var(--t-fast) var(--ease-out);
+}
+.srow-name { font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+.srow-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+  color: var(--ink-mute); white-space: nowrap;
+}
+.srow-meta { grid-column: 1 / -1; font-size: 12.5px; line-height: 1.4; color: var(--ink-mute); overflow-wrap: anywhere; }
+/* The match is marked by weight, never by colour. */
+.srow b { font-weight: 600; color: inherit; }
+.srow.is-active { background: var(--line-soft); }
+@media (hover: hover) {
+  .srow:hover { background: var(--sunk); }
+  .srow.is-active:hover { background: var(--line-soft); }
+}
+@media (max-width: 640px) {
+  .sheet.searchsheet { padding-top: 0; align-items: flex-end; }
+  .sheet-card.searchcard { height: 92vh; max-height: 92vh; }
+  @supports (height: 92dvh) { .sheet-card.searchcard { height: 92dvh; max-height: 92dvh; } }
+  .searchbody { flex: 1 1 auto; }
+  /* The search mark made the phone head five 44px controls, and the route's
+     name gave way first ("Creator Ca…" at 390, where it fitted before). The
+     four marks at the right now touch: each keeps its whole 44px target and
+     the glyphs still stand 28px apart. The spacer claims no gap of its own,
+     and the menu glyph sits on the page's 16px gutter, as the content under
+     it does. The name has the room it had with four. */
+  .console-head > .console-spacer { margin: 0 -8px; }
+  .console-head > .headsearch ~ .headlink,
+  .console-head > .headsearch ~ .notif,
+  .console-head > .headsearch ~ .acct { margin-left: -8px; }
+  .console-head > .navtoggle { margin-left: -12px; }
+}
+/* ===== end console search ===== */

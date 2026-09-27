@@ -30,7 +30,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260927v">
+<link rel="stylesheet" href="/css/portal.css?v=20260927w">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -54,31 +54,32 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260927v"></script>
-<script src="/js/captcha.js?v=20260927v"></script>
-<script src="/js/words.js?v=20260927v"></script>
-<script src="/js/copy.js?v=20260927v"></script>
-<script src="/js/ask.js?v=20260927v"></script>
-<script src="/js/confirm.js?v=20260927v"></script>
-<script src="/js/sheet.js?v=20260927v"></script>
-<script src="/js/refresh.js?v=20260927v"></script>
-<script src="/js/form.js?v=20260927v"></script>
-<script src="/js/state.js?v=20260927v"></script>
-<script src="/js/group.js?v=20260927v"></script>
-<script src="/js/menu.js?v=20260927v"></script>
-<script src="/js/cmdbar.js?v=20260927v"></script>
-<script src="/js/records.js?v=20260927v"></script>
-<script src="/js/chart.js?v=20260927v"></script>
-<script src="/js/swipe.js?v=20260927v"></script>
-<script src="/js/api.js?v=20260927v"></script>
-<script src="/js/money.js?v=20260927v"></script>
-<script src="/js/mockups.js?v=20260927v"></script>
+<script src="/js/config.js?v=20260927w"></script>
+<script src="/js/captcha.js?v=20260927w"></script>
+<script src="/js/words.js?v=20260927w"></script>
+<script src="/js/copy.js?v=20260927w"></script>
+<script src="/js/ask.js?v=20260927w"></script>
+<script src="/js/confirm.js?v=20260927w"></script>
+<script src="/js/sheet.js?v=20260927w"></script>
+<script src="/js/refresh.js?v=20260927w"></script>
+<script src="/js/form.js?v=20260927w"></script>
+<script src="/js/state.js?v=20260927w"></script>
+<script src="/js/group.js?v=20260927w"></script>
+<script src="/js/menu.js?v=20260927w"></script>
+<script src="/js/cmdbar.js?v=20260927w"></script>
+<script src="/js/records.js?v=20260927w"></script>
+<script src="/js/chart.js?v=20260927w"></script>
+<script src="/js/swipe.js?v=20260927w"></script>
+<script src="/js/api.js?v=20260927w"></script>
+<script src="/js/push.js?v=20260927w"></script>
+<script src="/js/money.js?v=20260927w"></script>
+<script src="/js/mockups.js?v=20260927w"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260927v" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260927w" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -251,6 +252,13 @@
            the moon. The glyph is the whole control, as it is on the bell
            beside it; the word is on `aria-label`, which is where the bar
            already keeps a name it has no room to print. -->
+      <!-- ===== Console search (js/search.js) =====
+           One search across the sections this person may read. Cmd / Ctrl + K
+           and "/" open it too. Drawn once the team row has answered. -->
+      <button class="headlink headsearch" id="searchOpen" type="button" hidden aria-haspopup="dialog" aria-expanded="false" aria-keyshortcuts="Meta+K Control+K /" aria-label="Search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg><span class="headlink-word">Search</span>
+      </button>
+      <!-- ===== end console search ===== -->
       <button class="headlink themeswitch" id="themeToggle" type="button" aria-pressed="false" aria-label="Switch to dark">
         <svg class="themeswitch-to-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.8 6.8 0 0 0 9.8 9.8z"/></svg>
         <svg class="themeswitch-to-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></svg>
@@ -298,6 +306,13 @@
           <button class="kmenu-item" id="acctPasskeys" type="button" hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/></svg>Passkeys
           </button>
+          <!-- Notifications on this device: the bell's own notifications, on the
+               phone (js/push.js). Named for what the press will do; hidden where
+               this browser has no push. The answer is said under it. -->
+          <button class="kmenu-item" id="acctPush" type="button" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="acct-push-word" id="acctPushWord">Turn on notifications</span>
+          </button>
+          <p class="msg acct-msg" id="acctPushMsg" role="status" hidden></p>
           <!-- The installed app has no reload button. This one also takes an
                old copy off the phone (js/refresh.js) and keeps the sign-in. -->
           <button class="kmenu-item" id="refreshApp" type="button">
@@ -309,6 +324,28 @@
         </div>
       </div>
     </header>
+
+    <!-- ===== Console search panel (js/search.js) =====
+         A dialog over the console at a desk, and the sheet from the floor on a
+         phone. The field keeps the caret while the arrow keys move through
+         the results (a combobox), so typing never stops. -->
+    <div class="sheet searchsheet" id="searchSheet" hidden>
+      <div class="sheet-card searchcard" role="dialog" aria-modal="true" aria-labelledby="searchTitle">
+        <div class="sheet-head">
+          <h3 id="searchTitle">Search</h3>
+          <button class="iconbtn" id="searchClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="searchfield">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg>
+          <input class="input" id="searchQ" type="text" inputmode="search" enterkeyhint="go" autocomplete="off" autocapitalize="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="searchList" aria-labelledby="searchTitle">
+        </div>
+        <div class="sheet-body searchbody">
+          <div id="searchSay" role="status" hidden></div>
+          <div class="searchlist" id="searchList" role="listbox" aria-labelledby="searchTitle" hidden></div>
+        </div>
+      </div>
+    </div>
+    <!-- ===== end console search panel ===== -->
 
     <!-- WHILE THE TEAM ROW IS BEING READ. The console is not drawn until
          me() has answered, because its rail names every section of the tool
@@ -4153,17 +4190,18 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
-<script src="/js/passkey.js?v=20260927v"></script>
-<script src="/js/admin.js?v=20260927v"></script>
-<script src="/js/documents.js?v=20260927v"></script>
-<script src="/js/letters.js?v=20260927v"></script>
-<script src="/js/smreport.js?v=20260927v"></script>
-<script src="/js/reports.js?v=20260927v"></script>
-<script src="/js/register.js?v=20260927v"></script>
-<script src="/js/crm.js?v=20260927v"></script>
-<script src="/js/team.js?v=20260927v"></script>
-<script src="/js/campaigns.js?v=20260927v"></script>
-<script src="/js/ops.js?v=20260927v"></script>
-<script src="/js/perf.js?v=20260927v"></script>
+<script src="/js/passkey.js?v=20260927w"></script>
+<script src="/js/admin.js?v=20260927w"></script>
+<script src="/js/documents.js?v=20260927w"></script>
+<script src="/js/letters.js?v=20260927w"></script>
+<script src="/js/smreport.js?v=20260927w"></script>
+<script src="/js/reports.js?v=20260927w"></script>
+<script src="/js/register.js?v=20260927w"></script>
+<script src="/js/crm.js?v=20260927w"></script>
+<script src="/js/team.js?v=20260927w"></script>
+<script src="/js/campaigns.js?v=20260927w"></script>
+<script src="/js/ops.js?v=20260927w"></script>
+<script src="/js/perf.js?v=20260927w"></script>
+<script src="/js/search.js?v=20260927w"></script>
 </body>
 </html>

@@ -275,6 +275,51 @@
       window.ADspacePasskey.open($('acctBtn'));
     });
   }
+  /* Notifications on this device, for the signed-in colleague's bell. The
+     item is named for what the press will do and stays open while it works,
+     so its new name is the answer. Where the device cannot, it says why. */
+  var PUSH_WHY = {
+    install: 'On iPhone, add the console to the Home Screen, then turn notifications on from there.',
+    blocked: 'Notifications are blocked for this site in the browser settings.',
+    failed: 'Notifications could not be turned on. Try again.'
+  };
+  var pushOn = false;
+  function paintPush(s) {
+    var P = window.ADspacePush;
+    if (!P || !$('acctPush')) return;
+    pushOn = !!(s && s.on);
+    $('acctPush').hidden = !s || s.why === 'none' || s.why === 'nokey';
+    $('acctPushWord').textContent = pushOn ? 'Turn off notifications' : 'Turn on notifications';
+  }
+  function pushSay(text) {
+    $('acctPushMsg').textContent = text || '';
+    $('acctPushMsg').className = 'msg acct-msg' + (text ? ' warn' : '');
+    $('acctPushMsg').hidden = !text;
+  }
+  function followBell() {
+    var P = window.ADspacePush;
+    if (!P || !me || me.legacy) return;
+    P.setup({ audience: 'team', sw: '/admin/sw.js', scope: '/admin/' }).then(function () {
+      return P.state();
+    }).then(paintPush).catch(function () {});
+  }
+  if ($('acctPush')) $('acctPush').addEventListener('click', function (e) {
+    e.stopPropagation();
+    var P = window.ADspacePush;
+    if (!P) return;
+    var why = P.why();
+    if (why === 'install' || why === 'blocked') { pushSay(PUSH_WHY[why]); return; }
+    var btn = $('acctPush');
+    btn.disabled = true;
+    pushSay('');
+    (pushOn ? P.off(false) : P.on(false)).then(function (r) {
+      btn.disabled = false;
+      if (r && r.ok) { paintPush({ on: !pushOn, why: '' }); btn.focus(); return; }
+      var err = r && r.error;
+      if (err === 'dismissed') return;
+      pushSay(PUSH_WHY[err] || PUSH_WHY.failed);
+    });
+  });
   $('refreshApp').addEventListener('click', function () {
     shutAcct();
     if (window.ADspaceRefresh) window.ADspaceRefresh.hard(); else location.reload();
@@ -282,7 +327,18 @@
   /* Signing out ends a performance unlock at once rather than leaving it to
      run out on a machine somebody else may sit at next. */
   $('signOut').addEventListener('click', function () {
-    var out = function () { db.auth.signOut().then(function () { location.reload(); }); };
+    /* This device stops hearing about this colleague's work before the
+       session goes: whoever signs in next is not told about it. Waited on
+       for at most a second and a half, so a slow network never holds the
+       way out. */
+    var quiet = function (then) {
+      var P = window.ADspacePush;
+      if (!P || !pushOn) { then(); return; }
+      var done = false, once = function () { if (!done) { done = true; then(); } };
+      P.off(true).then(once, once);
+      setTimeout(once, 1500);
+    };
+    var out = function () { quiet(function () { db.auth.signOut().then(function () { location.reload(); }); }); };
     if (window.ADspacePerf && window.ADspacePerf.lock) window.ADspacePerf.lock(out); else out();
   });
   $('noTeamOut').addEventListener('click', function () {
@@ -403,6 +459,7 @@
       } else {
         restoreView();
       }
+      followBell();
       /* Once per browser, on a device that can hold one, a colleague with no
          passkey is asked whether to add one. */
       if (window.ADspacePasskey) setTimeout(window.ADspacePasskey.offer, 1200);
@@ -537,6 +594,8 @@
       document.body.classList.toggle('no-work-' + cls, !may(k, 'work'));
       document.body.classList.toggle('no-view-' + cls, !may(k, 'view'));
     });
+    /* ===== Console search (js/search.js): drawn once the ladder is known. */
+    if (window.ADspaceSearch) window.ADspaceSearch.access();
   }
 
   /* On a phone the rail is a drawer. It closes on a pick, on the scrim, and on
@@ -2952,6 +3011,11 @@
     /* Open a section from outside the rail: the bell opens the task a row
        names, after writing the address the section reads on entry. */
     show: function (name) { showSection(name); },
+    /* ===== Console search (js/search.js) =====
+       Land where the address says, the way a reload does: a content set is
+       reached through its client, which only this file opens. */
+    restore: function () { restoreView(); },
+    /* ===== end console search ===== */
     may: may,
     parts: PARTS
   };

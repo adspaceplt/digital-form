@@ -9,7 +9,9 @@
    only a page load that cannot reach the network is answered from here, with
    the one page this file keeps. Scope is /admin/: the client pages and the
    root site are never touched. */
-var VERSION = 'adspace-console-20260925c';
+var VERSION = 'adspace-console-20260927w';
+// A colleague's notifications, shown and opened (the one copy for every page).
+importScripts('/js/push-sw.js');
 var OFFLINE = '/admin/offline.html';
 var KEEP = [OFFLINE, '/admin/icons/wordmark.png'];
 
