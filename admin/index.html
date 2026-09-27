@@ -1133,7 +1133,7 @@
         <span class="headmark"><h2 id="wsClientName"></h2><span class="chip" id="wsLock" hidden>Access code</span></span>
       </div>
       <div class="linkbox">
-        <input class="input readfield" id="clientLink" readonly>
+        <input class="input readfield" id="clientLink" aria-label="Review link" readonly>
         <button class="btn btn-icon" id="copyLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
         <a class="btn btn-icon" id="openLink" target="_blank" rel="noopener">Preview
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -1267,7 +1267,7 @@
         <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
 
         <div class="linkrow">
-          <input class="input" id="mediaUrl"
+          <input class="input" id="mediaUrl" aria-label="Asset link"
                  placeholder="Google Drive folder, Drive file, or direct asset link">
           <button class="btn btn-primary" id="addMediaUrl" type="button">Add asset</button>
         </div>

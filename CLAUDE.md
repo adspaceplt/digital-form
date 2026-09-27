@@ -227,8 +227,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Placed on the viewport; opens upward where the room is above.
   - Ignores the scroll that reveals its focused button (2px rule).
   - Follows its button on resize, and closes when the button leaves the page.
-  - Inside a phone sheet it takes off the card's offset (the transformed card is
-    the containing block).
+  - It is placed from where a fixed box beside it actually lands (a probe at
+    0,0 in its own container), which covers a transformed sheet card and an
+    iPhone after the date picker alike.
   - Stacking: `.kmenu` z-index 50, over the select bar (20) and the confirm bar
     (40), under sheets (55+).
   - An open ⋯ answers Escape before the sheet under it does, and hands focus
