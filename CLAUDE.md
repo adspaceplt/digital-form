@@ -510,7 +510,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   tabs and `ACT_SECTION`, `PARTS.activity`, and the Team panel's blocks. One
   sequence everywhere.
 - The route's purpose line opens from the route name (`.console-title` button,
-  14px glyph, `aria-expanded`; `.aboutpop` placed by `ADspaceMenu.place(btn, pop, 'left')`).
+  14px glyph, `aria-expanded`; `.aboutpop` laid by `ADspaceMenu.pop(btn, pop, 'left')`).
   - One sentence per route, from `INTRO`.
   - Never opens by itself. While a route is new, the glyph carries `--action`.
   - Below 400px the glyph gives way and the name never does.
