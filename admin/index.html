@@ -252,6 +252,13 @@
            the moon. The glyph is the whole control, as it is on the bell
            beside it; the word is on `aria-label`, which is where the bar
            already keeps a name it has no room to print. -->
+      <!-- ===== Console search (js/search.js) =====
+           One search across the sections this person may read. Cmd / Ctrl + K
+           and "/" open it too. Drawn once the team row has answered. -->
+      <button class="headlink headsearch" id="searchOpen" type="button" hidden aria-haspopup="dialog" aria-expanded="false" aria-keyshortcuts="Meta+K Control+K /" aria-label="Search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg><span class="headlink-word">Search</span>
+      </button>
+      <!-- ===== end console search ===== -->
       <button class="headlink themeswitch" id="themeToggle" type="button" aria-pressed="false" aria-label="Switch to dark">
         <svg class="themeswitch-to-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.8 6.8 0 0 0 9.8 9.8z"/></svg>
         <svg class="themeswitch-to-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"/></svg>
@@ -317,6 +324,28 @@
         </div>
       </div>
     </header>
+
+    <!-- ===== Console search panel (js/search.js) =====
+         A dialog over the console at a desk, and the sheet from the floor on a
+         phone. The field keeps the caret while the arrow keys move through
+         the results (a combobox), so typing never stops. -->
+    <div class="sheet searchsheet" id="searchSheet" hidden>
+      <div class="sheet-card searchcard" role="dialog" aria-modal="true" aria-labelledby="searchTitle">
+        <div class="sheet-head">
+          <h3 id="searchTitle">Search</h3>
+          <button class="iconbtn" id="searchClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="searchfield">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg>
+          <input class="input" id="searchQ" type="text" inputmode="search" enterkeyhint="go" autocomplete="off" autocapitalize="off" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="searchList" aria-labelledby="searchTitle">
+        </div>
+        <div class="sheet-body searchbody">
+          <div id="searchSay" role="status" hidden></div>
+          <div class="searchlist" id="searchList" role="listbox" aria-labelledby="searchTitle" hidden></div>
+        </div>
+      </div>
+    </div>
+    <!-- ===== end console search panel ===== -->
 
     <!-- WHILE THE TEAM ROW IS BEING READ. The console is not drawn until
          me() has answered, because its rail names every section of the tool
@@ -4173,5 +4202,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/campaigns.js?v=20260927w"></script>
 <script src="/js/ops.js?v=20260927w"></script>
 <script src="/js/perf.js?v=20260927w"></script>
+<script src="/js/search.js?v=20260927w"></script>
 </body>
 </html>

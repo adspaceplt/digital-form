@@ -4455,6 +4455,9 @@
     enter: function () {
       var params = new URLSearchParams(location.search);
       var id = params.get('campaign');
+      /* An address that names the Creators List and no campaign (a search
+         result) opens the list, even with a campaign open before. */
+      if (!id && params.get('tab') === 'roster' && state.campaign) { state.campaign = null; $('campWork').hidden = true; }
       if (id && !(state.campaign && state.campaign.id === id)) {
         db.from('campaigns').select('*, clients(name, market, sst_applies, logo_url)').eq('id', id).single().then(function (r) {
           if (r.error || !r.data) { state.campaign = null; showTab('campaigns'); return; }
