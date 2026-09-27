@@ -238,6 +238,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   brand mark is `object-fit: contain; object-position: left center`.
 - The bar and the foot run to the screen's edges on every page. Content keeps
   its reading width.
+- The foot stands on the page's own ground (no band of its own), a `--line`
+  rule above it; its bottom pad is the larger of 16px and the home bar's
+  inset, never the two added.
 - The last "not centred" is usually two type sizes. Measure the ink, the
   borders and the type before calling it even.
 

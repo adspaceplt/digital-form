@@ -3858,10 +3858,14 @@ body.is-plain .topbar { background: var(--chrome); }
    Drawn by js/chrome.js, so every page that includes the chrome gets it and a
    new page does not have to remember it. Two things, one at each end, and
    nothing in the middle competing with them. */
+/* The foot stands on the page's own ground (2026-09-27, the user: "footer
+   not optimized, spacings and color"): as a white band it was a stripe
+   between a grey page and the grey a phone shows under the last pixel. The
+   rule above it is the boundary; the ground is the page's, white or grey. */
 .portalfoot {
   flex: 0 0 auto; margin-top: auto;          /* see the sticky-footer note below */
   order: 1;   /* drawn with the header, and last on the screen from the first paint */
-  border-top: 1px solid var(--line); background: var(--card);
+  border-top: 1px solid var(--line); background: transparent;
 }
 .portalfoot-in {
   max-width: 1240px; margin: 0 auto; padding: 16px 24px;
@@ -3903,7 +3907,7 @@ body > .shell { width: 100%; }
 }
 
 @media (max-width: 560px) {
-  .portalfoot-in { padding: 14px 16px; gap: 10px; font-size: 12px; }
+  .portalfoot-in { padding-inline: 16px; gap: 10px; font-size: 12px; }
   #crmSearch { flex: 1 1 100%; }
   .filterbar .select { flex: 1 1 calc(50% - 5px); min-width: 0; }
 }
@@ -8095,7 +8099,10 @@ body.is-canvas { overflow: hidden; }
    nothing: a sheet's Save sat on the home bar. Each surface that meets an
    edge of the screen pads by that edge's inset, and nothing else moves: on a
    screen with no inset the values are 0 and the desk is unchanged. */
-.portalfoot-in { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+/* The home bar's inset already holds the clearance it needs, so the foot
+   takes whichever is larger, 16px or the inset, rather than both: added
+   together they set the two words high in the band on an iPhone. */
+.portalfoot-in { padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
 .confirmbar-in { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
 .sidebar { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 @media (max-width: 860px) {
