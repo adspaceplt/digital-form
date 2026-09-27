@@ -25,6 +25,8 @@
   var UI = window.ADspaceState;
   function may(k, l) { return bridge.may ? bridge.may(k, l) : false; }
   function me() { return bridge.me ? bridge.me() : null; }
+  /* Deleting a month is an admin's alone (2026-09-27); the database asks again. */
+  function isAdmin() { var u = me(); return Boolean(u && (u.is_admin || u.role === 'admin')); }
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -145,6 +147,8 @@
     'nothing-disputed': 'Tick at least one item.',
     'bad-item': 'That item cannot be disputed.',
     'not-final': 'Only a final record can be reopened.',
+    'confirm-mismatch': 'The name and month typed do not match.',
+    'admin-only': 'Only an admin can delete a record.',
     'not-found': 'Not found.'
   };
   function said(d) {
@@ -450,7 +454,8 @@
       '<span class="team-act">' +
         '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
           '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>' +
-        '<div class="kmenu" data-menu hidden><button class="kmenu-item" data-a="profile" type="button"><b>Review profile</b></button></div>' +
+        '<div class="kmenu" data-menu hidden><button class="kmenu-item" data-a="profile" type="button"><b>Review profile</b></button>' +
+          (r && r.id && isAdmin() ? '<button class="kmenu-item is-danger" data-a="delete" type="button">Delete</button>' : '') + '</div>' +
       '</span>';
     el.querySelector('.perf-open').addEventListener('click', function () { openReview(p.team_member_id, this); });
     var btn = el.querySelector('[data-a="menu"]'), menu = el.querySelector('[data-menu]');
@@ -466,7 +471,44 @@
       shutRowMenus();
       openProfile(p, btn);
     });
+    var delBtn = el.querySelector('[data-a="delete"]');
+    if (delBtn) delBtn.addEventListener('click', function () {
+      shutRowMenus();
+      askDelete({ id: r.id, status: r.status, name: p.name, month: st.month && st.month.month }, btn);
+    });
     return el;
+  }
+  /* Delete a member's month (an admin, any state). The name and the month
+     are typed back and a reason given; the sheet says what the member has
+     already seen, and that a downloaded copy then reads Void on the verify
+     page. There is no restore. */
+  var SEEN = { released: 'released to them', disputed: 'disputed by them', resolved: 'answered',
+               acknowledged: 'acknowledged by them', 'final': 'final' };
+  function askDelete(rec, opener) {
+    if (!rec.id || !window.ADspaceConfirm) return;
+    var typed = (rec.name + ' ' + (rec.month || '')).trim();
+    var seen = rec.status && rec.status !== 'draft'
+      ? 'This month has been ' + (SEEN[rec.status] || 'released') + '. A downloaded copy will read Void on the verify page. '
+      : '';
+    /* The ⋯ has shut, so its button holds the focus the sheet hands back. */
+    if (opener && opener.focus) opener.focus();
+    window.ADspaceConfirm.ask({
+      title: 'Delete ' + rec.name + '\u2019s ' + (rec.month || 'month'),
+      body: seen + 'The review, its scores and any dispute go, and there is no restore. The history keeps who deleted it and why.',
+      go: 'Delete', tone: 'danger',
+      fields: [
+        { name: 'who', label: 'Type ' + typed + ' to confirm', match: typed, mismatch: 'Type ' + typed + ' to confirm.' },
+        { name: 'why', label: 'Reason', need: 'A reason is required.' }
+      ]
+    }, function (v) {
+      call('perf_delete', { p_token: token, p_review: rec.id, p_confirm: v.who, p_reason: v.why }, function (d) {
+        var where = rec.sheet ? 'pvMsg' : 'perfMsg';
+        if (d.error) { msg(where, said(d), 'err'); return; }
+        if (rec.sheet && window.ADspaceSheet) window.ADspaceSheet.close();
+        msg('perfMsg', rec.name + '\u2019s ' + (d.month || rec.month || 'month') + ' deleted.', 'ok');
+        loadMonth();
+      });
+    });
   }
   function shutRowMenus() {
     Array.prototype.forEach.call(document.querySelectorAll('#perfList .kmenu'), function (m) { m.hidden = true; });
@@ -640,6 +682,11 @@
       shutPvMenu();
       var a = b.getAttribute('data-a');
       if (a === 'print') { printOne(st.rec, $('pvMenuBtn')); return; }
+      if (a === 'delete') {
+        var rr = st.rec || {};
+        askDelete({ id: rr.id, status: rr.status, name: (rr.member && rr.member.name) || '', month: rr.month, sheet: true }, $('pvMenuBtn'));
+        return;
+      }
       st.editing = a;
       paintSheet();
       var f = $('pvReason'); if (f) f.focus();
@@ -669,7 +716,8 @@
     var items = {
       print: Boolean(r.id) && r.status !== 'draft',
       'return': canWork() && r.status === 'released' && !(r.disputes || []).length,
-      reopen: manage() && may('team.performance', 'manage') && r.status === 'final'
+      reopen: manage() && may('team.performance', 'manage') && r.status === 'final',
+      'delete': manage() && isAdmin() && Boolean(r.id)
     };
     var any = false;
     Array.prototype.forEach.call($('pvMenu').querySelectorAll('.kmenu-item'), function (b) {
@@ -696,7 +744,7 @@
 
   /* One next step, derived from the record, and the action that takes it. */
   function nextCard(r, res) {
-    var title = '', line = '', acts = '';
+    var title = '', line = '', acts = '', tick = '';
     var dUntil = r.dispute_until ? timeWord(r.dispute_until) : '';
     var open = r.dispute_open;
     if (st.editing === 'return' || st.editing === 'reopen') {
@@ -719,6 +767,9 @@
         title = r.id ? 'Draft' : 'Not started';
         line = name + ' sees nothing of this month, breaches included, until it is released.';
         if (canWork()) {
+          /* Whether the release tells them: ticked unless management says
+             otherwise, on every month (2026-09-27). */
+          tick = '<label class="tickline perf-notify"><input type="checkbox" id="pvNotify" checked> <span>Notify ' + esc(name) + '</span></label>';
           acts = '<button class="btn btn-sm btn-primary" id="pvSave" type="button">Save</button>' +
                  '<button class="btn btn-sm btn-go" id="pvRelease" type="button">Release to ' + esc(name) + '</button>';
         }
@@ -772,7 +823,7 @@
     var ackNote = !manage() && acts.indexOf('pvAck') > -1
       ? '<p class="perf-note">Acknowledging records that the review was discussed and the result was shown. It is not necessarily agreement with the rating.</p>' : '';
     return '<section class="qcard qnext"><h3 class="qnext-title">' + esc(title) + '</h3>' +
-      '<p class="qnext-line">' + esc(line) + '</p>' + ackNote +
+      '<p class="qnext-line">' + esc(line) + '</p>' + ackNote + tick +
       (acts ? '<div class="qnext-acts">' + acts + '</div>' : '') +
       '<div class="msg" id="pvMsg"></div></section>';
   }
@@ -1061,11 +1112,13 @@
     var on = function (id, fn) { var el = $(id); if (el) el.addEventListener('click', function () { fn(el); }); };
     on('pvSave', function (b) { busy(b, true); save(); });
     on('pvRelease', function (b) {
+      var tell = !$('pvNotify') || $('pvNotify').checked;   // read before the save repaints anything
       busy(b, true);
       save(function (d) {
         if (!d.result || !d.result.complete) { paintSheet(); msg('pvMsg', said({ error: 'incomplete' }), 'err'); return; }
-        call('perf_release', { p_token: token, p_review: d.id, p_rev: d.rev }, function (x) {
-          if (after(x, 'Released. ' + ((x.member && x.member.name) || 'They') + ' has been told.')) sheetDirty = true;
+        call('perf_release', { p_token: token, p_review: d.id, p_rev: d.rev, p_notify: tell }, function (x) {
+          var who = (x.member && x.member.name) || 'They';
+          if (after(x, tell ? 'Released. ' + who + ' has been told.' : 'Released. ' + who + ' was not notified.')) sheetDirty = true;
         });
       });
     });

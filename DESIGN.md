@@ -168,6 +168,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Section head and its one action | `.viewhead` > `.headmark h2` + one `.btn` |
 | Search, filters, count, action | `.cmdbar` > `.cmdbar-find` (a mark that grows to 280px) + selects + `.cmdbar-end` > `.cmdbar-quiet` (count) + `.cmdbar-acts`. Count reads `7 services` whole, `3 of 41` filtered, and is not drawn when empty. Extra acts sit behind one ⋯ |
 | What a section is for | `.console-title` button with a 14px info glyph opening `.aboutpop` |
+| A small card a control opens (the bell, a section's purpose) | `.popcard` laid by `ADspaceMenu.pop`: from its control with a caret at a desk; docked at the screen's foot on a phone, the action nearest the thumb, a close mark in its head |
 | A directory | `ADspaceGroup.section`: `.crm-group` > `.crm-group-head` (15px heading, count, marks, the name as the fold) + `.crm-group-body` > `.crm-table.softpanel` with its own `.crm-head` |
 | Rows | `.crm-row` / `.svc-row` and row classes; the header carries the row's classes; state column `var(--state-w)` second last; `.team-act` ⋯ last; each table states its own tracks, hung off its own row class |
 | Facts | `dl.facts`, label over value, columns = cells; `.ovfacts` label beside value (150px, 104 narrow) |
@@ -196,7 +197,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A figure over time or across things | `ADspaceChart.draw` → `.chartcard`: ink marks, a colour only where the word is a state; the figures folded under it. Only where it answers faster than the table it sits over |
 | Reaching a person | `.plink` chips (phone, WhatsApp, email), equal widths on a phone unless alone |
 | A value only read | `.readfield` (the field's height, no box) |
-| An instruction | `.hintline` `?`, open three times, then retired; a button, never a `title` |
+| An instruction | `.hintline` `?` with its line as a `--sunk` callout pointing at the mark, open three times, then retired; a button, never a `title` |
 | Notifications on a client page | The bar's bell (`.iconbtn.pushbtn`, a second glyph with rays while on) opening `.kmenu.pushpop`: title, one line, one `.btn-sm` |
 | Finding a record in any section | `#searchSheet` (`js/search.js`): a sheet under the head (the floor, full height, on a phone), the field a combobox, answers as `.sgroup` (the rail name in the label face) > `.srow` (name, `.srow-code` in the token face, one mute `.srow-meta`; the match in weight) |
 

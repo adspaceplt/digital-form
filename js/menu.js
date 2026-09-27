@@ -48,9 +48,17 @@
         for (var i = 0; i < closers.length; i++) closers[i]();
         return;
       }
-      window.ADspaceMenu.place(held.btn, held.menu, held.align);
+      if (held.pop) window.ADspaceMenu.pop(held.btn, held.menu, held.align);
+      else window.ADspaceMenu.place(held.btn, held.menu, held.align);
     });
   });
+
+  /* A popover card (the bell's, the section's purpose): on a phone it docks
+     at the foot of the screen, where the thumb is, and never hangs from a
+     control near the top (the user, 2026-09-28: "it looks dropping down
+     somewhere"); at a desk it hangs from its control with a caret pointing
+     at it. */
+  var phone = window.matchMedia ? window.matchMedia('(max-width: 640px)') : null;
 
   window.ADspaceMenu = {
     /* Placed on the viewport rather than in the row, so the table's own
@@ -95,6 +103,31 @@
         menu.style.top = (parseFloat(menu.style.top) - o.top) + 'px';
       }
       held = { btn: btn, top: r.top, menu: menu, align: align };
+    },
+    /* Call it with the card already visible, as `place`. The card carries
+       `.popcard`; `is-dock` and `is-up` say how it was laid, and `--caret`
+       where its caret points along its top or bottom edge. */
+    pop: function (btn, card, align) {
+      card.classList.add('popcard');
+      /* Laid from the page itself: a fixed card inside the bar took the bar
+         as its box, and "the foot of the screen" became the bar's foot. */
+      if (card.parentNode !== document.body) document.body.appendChild(card);
+      if (phone && phone.matches) {
+        card.classList.add('is-dock');
+        card.classList.remove('is-up');
+        card.style.position = card.style.left = card.style.top = card.style.right = '';
+        held = { btn: btn, top: btn.getBoundingClientRect().top, menu: card, align: align, pop: true };
+        return;
+      }
+      card.classList.remove('is-dock');
+      this.place(btn, card, align);
+      held.pop = true;
+      var r = btn.getBoundingClientRect(), c = card.getBoundingClientRect(), up = c.top < r.top;
+      card.classList.toggle('is-up', up);
+      // Room for the caret between the control and the card.
+      card.style.top = (parseFloat(card.style.top) + (up ? -6 : 6)) + 'px';
+      var x = r.left + r.width / 2 - c.left;
+      card.style.setProperty('--caret', Math.max(18, Math.min(c.width - 18, x)) + 'px');
     },
     // How this page shuts its own menus, for a scroll that has really moved.
     onScroll: function (shut) { closers.push(shut); }

@@ -688,7 +688,7 @@
     if (!pop || !btn) return;
     pop.hidden = !on;
     btn.setAttribute('aria-expanded', String(on));
-    if (on) ADspaceMenu.place(btn, pop, 'left');
+    if (on) ADspaceMenu.pop(btn, pop, 'left');
   }
   function aboutIsOpen() { var p = $('sectionAbout'); return p && !p.hidden; }
   /* IT OPENS WHEN IT IS ASKED FOR, AND NEVER BY ITSELF. As a line in the flow
@@ -1251,7 +1251,7 @@
      whose month, who. Never a score, a grade or a dispute's words. */
   var PERF_STEP = { released: 'Review released', disputed: 'Review disputed', decided: 'Dispute answered',
                     acknowledged: 'Review acknowledged', finalised: 'Review finalised', reopened: 'Review reopened',
-                    returned: 'Returned to draft', printed: 'Record downloaded' };
+                    returned: 'Returned to draft', printed: 'Record downloaded', deleted: 'Record deleted' };
 
   /* The section only appears for people on the viewer list. The database
      enforces this too, so hiding it here is convenience rather than the

@@ -73,11 +73,10 @@
       linkTaken: 'This profile is registered to another creator. Please contact your ADspace account manager.',
       linkNone: 'Keep at least one profile link.',
       linkFail: 'Not saved. Please try again.',
-      payHead: 'Payment details', payLine: 'Approved. Please complete your payment details.',
+      payHead: 'Payment details', payLine: 'Please complete your payment details.',
       payGo: 'Fill in the form',
       postsHead: 'Post and results', postLink: 'Post link', postedOn: 'Published on',
-      countPeriod: 'Count from {a} to {b}', periodWait: 'ADspace will set the count period.',
-      linkFirst: 'Add the link once the post is live.',
+      countPeriod: 'Count from {a} to {b}', periodWait: 'The count period is not set yet.',
       views: 'Views', engagements: 'Engagements', impressions: 'Impressions',
       linkWrong: 'This is not a {p} post link.', numWrong: 'Enter whole numbers.',
       rateHead: 'Your experience',
@@ -140,14 +139,13 @@
       linkNone: '请至少保留一个主页链接。',
       linkFail: '未能保存，请重试。',
       postsHead: '发布链接与数据', postLink: '帖子链接', postedOn: '发布日期',
-      countPeriod: '统计期间：{a} 至 {b}', periodWait: 'ADspace 将设定数据统计期间。',
-      linkFirst: '帖子发布后，请填写链接。',
+      countPeriod: '统计期间：{a} 至 {b}', periodWait: '统计期间尚未设定。',
       views: '浏览量', engagements: '互动量', impressions: '曝光量',
       linkWrong: '这不是{p}的帖子链接。', numWrong: '请输入整数。',
       rateHead: '合作体验',
       rateStar: function (n) { return '5 星中的 ' + n + ' 星'; },
       rateThanks: '感谢您的评分。',
-      payHead: '付款资料', payLine: '已通过。请填写您的付款资料。',
+      payHead: '付款资料', payLine: '请填写您的付款资料。',
       payGo: '填写表单',
       ended: '此合作已结束。',
       nextUp: {
@@ -623,7 +621,7 @@
               return '<div><label class="field-label" for="pn-' + n[0] + '-' + id + '">' + esc(t()[n[0]]) + '</label>' +
                 '<input class="input" id="pn-' + n[0] + '-' + id + '" type="text" inputmode="numeric" pattern="[0-9]*" data-k="' + n[0] + '" value="' + esc(numVal(n[1])) + '"></div>';
             }).join('') + '</div>'
-          : '<p class="post-entry-period">' + esc(p.post_url ? t().periodWait : t().linkFirst) + '</p>') +
+          : '') +
         '<div class="kactions"><button class="btn btn-primary" type="button" data-a="postsave">' + esc(t().save) + '</button></div>' +
         '<div class="msg" data-postmsg></div></div>';
     }).join('');
@@ -685,7 +683,10 @@
      ledger. It leaves again at `completed`, because by then the form has been
      filled and the booking is closed: a standing call to action on a finished
      job reads as something still owed. */
-  function payDue(s) { return ['scheduled', 'posted'].indexOf(s) > -1; }
+  /* Payment is asked for once the post is out, never on the draft's
+     approval alone: "Approved" beside a payment form read as the payment
+     being approved (the user, 2026-09-28). */
+  function payDue(s) { return s === 'posted'; }
 
   /* What the last block on a finished booking asks. The job is over and the
      payment form has gone, so the one thing still worth a creator's tap is
@@ -1104,10 +1105,9 @@
     forgetBtn.querySelector('span').textContent = t().signOut;
     forgetBtn.setAttribute('aria-label', t().signOut);
     forgetBtn.hidden = true;
-    /* First in the row, so it sits left of the language toggle exactly as the
-       client portal's does. Appended, it landed on the far right and the two
-       client-facing pages put the same two controls in opposite orders. */
-    chromeActions.insertBefore(forgetBtn, chromeActions.firstChild);
+    /* Just left of the language toggle, which keeps the far right on every
+       client page: the bell, then sign out, then 中文 (the user, 2026-09-28). */
+    chromeActions.insertBefore(forgetBtn, $('langToggle') || null);
   }
   $('signOutBtn').addEventListener('click', function () { forget(); askCode(); });
   $('linksEdit').addEventListener('click', openLinks);
