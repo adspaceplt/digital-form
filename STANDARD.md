@@ -595,8 +595,8 @@ section holds only what is true of the project as a whole.
   - The ALP checklists as forms.
 - Access: "Own clients only" (a row scope for Sales).
 - A global console search is deferred until the lists are in the hundreds.
-- Performance phase 2: quarterly and company rewards (revenue gate RM
-  500,000) and growth commission.
+- Performance rewards are worked out and confirmed in the portal; the
+  payment itself is made outside it.
 - A flat, edge-to-edge register without a bounded panel would be a
   portal-wide decision. It has not been made.
 - Not started without the user:

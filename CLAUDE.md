@@ -1267,6 +1267,29 @@ Each line is a rule that broke once. Its reason is in the archive.
   changed nothing files nothing).
 - Both locks (the master code and the email code) are one centred `.lockcard`.
 - Notifications never carry a score.
+<!-- Performance rewards (2026-09-28) -->
+- Rewards (`2026-09-28-performance-rewards.sql`) are Performance's views
+  Months, Quarters, Bonus and trip, Commission (`view=`, `q=` the quarter or
+  the period's first quarter).
+  - Worked out on every read from finalised months only (`perf_quarter_calc`,
+    `perf_flex_calc`, `perf_period_calc`, `perf_commission_json`). Confirm
+    (Work) keeps a snapshot in `perf_rewards`; Reopen (Manage) removes it,
+    files it and never asks. Quarters begin with Q3 2026.
+  - Tied departments are joint winners and one that does not qualify drops
+    out; a winning share is split among the department's active members on
+    the review list.
+  - Flexible hours: a month decides the next only once every active member on
+    the review list has a final review of it.
+  - A bonus period is two quarters named by its first. Revenue and profit are
+    read and written only by `perf_is_admin()` and filed by name only; the
+    rest of management sees the amounts.
+  - Every share is rounded down to the cent and the remainder stated.
+  - Commission is pending until its month is final; the member sees it once
+    decided. Nobody enters their own.
+  - The caller's own row arrives with its name alone (`perf_hide_own`); the
+    member reads theirs through `perf_rewards_mine()` behind the fresh code.
+  - `perf_today()` is the one clock the rules ask; `tests/perf.js` replaces
+    it, and the stand-in reads `window.__perfToday`.
 
 ### Reports (`js/reports.js`, `js/smreport.js`, `?s=reports`)
 - Reports is its own section (`reports` View / Work / Manage), not a part of

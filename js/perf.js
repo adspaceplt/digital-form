@@ -218,6 +218,13 @@
       var q = new URLSearchParams(location.search);
       if (q.get('tab') === 'performance') st.tab = 'performance';
       if (/^\d{4}-\d{2}$/.test(q.get('m') || '')) st.period = q.get('m') + '-01';
+      /* The rewards views (2026-09-28) and the quarter or period they show. */
+      var pv = q.get('view'), qq = q.get('q');
+      if (pv === 'quarters' || pv === 'company' || pv === 'commission') st.pv = pv;
+      if (/^\d{4}-(01|04|07|10)$/.test(qq || '') && qq + '-01' >= FIRST_QUARTER) {
+        if (st.pv === 'quarters') st.q = qq + '-01';
+        if (st.pv === 'company') st.pf = qq + '-01';
+      }
     }
     var canMembers = may('team', 'view'), canPerf = may('team.performance', 'view');
     if (!canPerf) st.tab = 'members';
@@ -251,7 +258,7 @@
       if (!g.code_set) { showLock({ error: 'no-code' }); return; }
       if (g.locked_until) { showLock({ error: 'locked', until: g.locked_until }); return; }
       if (!token) { showLock(null); return; }
-      loadMonth();
+      loadView();
     });
   }
 
@@ -280,7 +287,7 @@
     if (window.ADspaceSheet && window.ADspaceSheet.isOpen($('perfSheet')) && st.mode === 'manage') {
       window.ADspaceSheet.close();
     }
-    st.month = null;
+    st.month = null; st.flex = null; st.quarter = null; st.periodData = null; st.com = null;
     if (!$('teamPerfPane').hidden) showLock(d);
   }
 
@@ -295,7 +302,7 @@
       if (d.error) { msg('perfLockMsg', said(d), 'err'); return; }
       keepToken(d.token);
       msg('perfLockMsg', '');
-      loadMonth();
+      loadView();
     });
   });
 
@@ -306,7 +313,7 @@
   function lock(then) {
     var t = token || readToken();
     keepToken(null);
-    st.month = null;
+    st.month = null; st.flex = null; st.quarter = null; st.periodData = null; st.com = null;
     if (!t) { if (then) then(); return; }
     call('perf_lock', { p_token: t }, function () { if (then) then(); });
   }
@@ -344,11 +351,12 @@
       }
       st.month = d;
       paintMonth();
+      loadFlex();
     });
   }
   $('perfMonth').addEventListener('change', function () {
     st.period = this.value;
-    st.month = null;
+    st.month = null; st.flex = null;
     loadMonth();
     if (bridge.setUrl) bridge.setUrl();
   });
@@ -365,7 +373,7 @@
   function stateOf(p) { return p.review ? p.review.status : 'none'; }
   function paintMonth() {
     var box = $('perfList');
-    if (!st.month) return;
+    if (!st.month || st.pv !== 'months') return;
     var people = st.month.people || [];
     var shown = people.filter(function (p) {
       if (st.find && String(p.name || '').toLowerCase().indexOf(st.find) < 0) return false;
@@ -409,6 +417,8 @@
         table: function () { return perfTable(others); }
       }));
     }
+    var fx = flexSection();
+    if (fx) box.appendChild(fx);
   }
   function perfTable(list) {
     var t = window.ADspaceGroup.table('perf-row', ['Person', 'Status', 'Score', 'Grade', 'Reward', '']);
@@ -1211,6 +1221,7 @@
     $('sectionMine').classList.toggle('is-locked', Boolean(on));
     if (!on) return;
     $('mineList').innerHTML = '';
+    $('mineRewards').innerHTML = '';
     $('mineLockTitle').textContent = 'Your reviews are locked';
     /* A passkey (Face ID, Touch ID, the device password) unlocks them in one
        touch where this browser can use one; the emailed code stays beside it
@@ -1301,6 +1312,7 @@
         if (d.error) { UI.failLine($('mineList'), 'Your reviews', said(d), enterMine); return; }
         st.mine = d.reviews || [];
         paintMine();
+        loadMineRewards();
       });
     });
   }
@@ -1626,13 +1638,820 @@
       (r.serial ? 'Verify the reference ' + r.serial + ' at go.adspace.me/verify.' : ''), 8, f.font, p.mute);
   }
 
+  // ---- Performance rewards (2026-09-28) ------------------------------------------------
+  /* The quarter and its two prizes, flexible hours, the bonus pool and the
+     trip over two quarters, and growth commission. Every figure is worked out
+     by the database from finalised months (perf_quarter_calc, perf_flex_calc,
+     perf_period_calc, perf_commission_json) and drawn here as it arrived:
+     nothing is worked out again, so the ranking, the member's page and a
+     confirmed snapshot cannot disagree. Revenue and profit arrive only for an
+     admin; the caller's own row arrives with its name alone. */
+  var MONEY = window.ADspaceMoney;
+  function rm(n) { return MONEY ? MONEY.money2(n, 'MY') : 'RM ' + Number(n || 0).toFixed(2); }
+  var FIRST_QUARTER = '2026-07-01';
+  var DEPT_CRIT = {
+    creative: [['On-time creative delivery', 25], ['Creative quality and revision', 25], ['Client performance support', 20],
+               ['Asset organisation', 15], ['Cross-functional responsiveness', 15]],
+    marketing: [['Client account health', 25], ['Campaign planning and execution', 25], ['Posting and servicing accuracy', 20],
+                ['Reporting and proactive improvement', 15], ['Brief and handover quality', 15]]
+  };
+  var WHY = { 'no-final-month': 'No final month', 'below-c': 'Average under 70', 'e-month': 'An E month',
+    'critical-breach': 'Level 4 breach', inactive: 'Inactive', 'not-reviewed': 'Not on the review list',
+    'few-b-months': 'Under 3 months at B' };
+  var NOPAY = { 'nobody-eligible': 'Nobody eligible', 'scores-needed': 'Scores needed', 'below-b': 'Under 80',
+    'critical-issue': 'Critical issue', 'figures-needed': 'Figures needed', 'below-gate': 'Revenue under the gate',
+    'no-pool': 'No pool set', 'no-budget': 'No budget set' };
+  var COM_STATE = { payable: ['Payable', 'is-ok'], 'not-payable': ['Not payable', ''], pending: ['Pending', 'is-warn'] };
+  var COM_WHY = { 'month-not-final': 'Month not final', 'below-c': 'Month under 70', breach: 'Level 3 or 4 breach' };
+  var RW_SAID = {
+    'before-first': 'Quarters begin with Q3 2026.',
+    'quarter-open': 'The quarter has not ended.',
+    'period-open': 'The period has not ended.',
+    'dept-scores-needed': 'Enter both departments’ scores first.',
+    'confirmed': 'Confirmed. Reopen it to change it.',
+    'not-confirmed': 'Not confirmed.',
+    'admin-only': 'Revenue and profit are for an admin only.',
+    'pool-closed': 'The bonus pool opens at RM 500,000 revenue.',
+    'trip-closed': 'The trip opens at RM 1,000,000 revenue.',
+    'bad-amount': 'Enter each amount in RM, to the cent.',
+    'bad-pct': 'The rate is above 0 and at most 100, to two decimals.',
+    'bad-month': 'Pick a month from June 2026 to this month.',
+    'bad-member': 'Pick a team member.',
+    'bad-client': 'Pick a client.',
+    'description-needed': 'Describe the deal.',
+    'bad-department': 'Pick a department.',
+    'figures-needed': 'Enter the company figures first.'
+  };
+  function rwSaid(d) {
+    if (d && d.error === 'pool-over') return 'The pool is at most ' + rm(d.max) + ', 10% of profit.';
+    if (d && RW_SAID[d.error]) return RW_SAID[d.error];
+    return said(d);
+  }
+  function addMonths(p, n) {
+    var y = Number(p.slice(0, 4)), mo = Number(p.slice(5, 7)) - 1 + n;
+    y += Math.floor(mo / 12); mo = ((mo % 12) + 12) % 12;
+    return y + '-' + String(mo + 1).padStart(2, '0') + '-01';
+  }
+  function quarterOf(p) {
+    var mo = Number(String(p).slice(5, 7));
+    return String(p).slice(0, 4) + '-' + String(Math.floor((mo - 1) / 3) * 3 + 1).padStart(2, '0') + '-01';
+  }
+  function thisMonth() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-01'; }
+  function qWord(q) { return 'Q' + Math.ceil(Number(q.slice(5, 7)) / 3) + ' ' + q.slice(0, 4); }
+  function pWord(f) {
+    var s = addMonths(f, 3);
+    return f.slice(0, 4) === s.slice(0, 4)
+      ? 'Q' + Math.ceil(Number(f.slice(5, 7)) / 3) + ' and Q' + Math.ceil(Number(s.slice(5, 7)) / 3) + ' ' + f.slice(0, 4)
+      : qWord(f) + ' and ' + qWord(s);
+  }
+  /* The quarters and periods offered: from Q3 2026 to the one running now,
+     newest first, and the page opens on the newest that has ended. */
+  function quarterList() {
+    var out = [], q = FIRST_QUARTER, now = quarterOf(thisMonth());
+    while (q <= now) { out.unshift(q); q = addMonths(q, 3); }
+    return out;
+  }
+  function defaultQuarter() {
+    var list = quarterList(), done = list.filter(function (q) { return addMonths(q, 3) <= thisMonth(); });
+    return done[0] || list[0];
+  }
+  function defaultPeriod2() {
+    var list = quarterList(), done = list.filter(function (f) { return addMonths(f, 6) <= thisMonth(); });
+    return done[0] || list[0];
+  }
+  st.pv = 'months'; st.q = defaultQuarter(); st.pf = defaultPeriod2();
+  st.quarter = null; st.periodData = null; st.com = null; st.flex = null; st.cfind = '';
+
+  function fillSelect(sel, list, cur, word) {
+    if (list.indexOf(cur) < 0) list = [cur].concat(list);
+    sel.innerHTML = list.map(function (k) { return '<option value="' + k + '">' + esc(word(k)) + '</option>'; }).join('');
+    sel.value = cur;
+  }
+  function chip(text, tone) { return '<span class="chip' + (tone ? ' ' + tone : '') + '">' + esc(text) + '</span>'; }
+  function gradeWord(g) { var x = GRADES.filter(function (k) { return k[0] === g; })[0]; return x ? g + ' · ' + x[2] : ''; }
+  function gradeCell(g) { return g ? chip(gradeWord(g), GRADE_TONE[g] || '') : '<span class="perf-dash">—</span>'; }
+  function dash() { return '<span class="perf-dash">—</span>'; }
+  function whoCell(p, sub) {
+    return '<span class="rw-who"><b>' + esc(p.name || '') + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>';
+  }
+  function youRow(cls, p, cells) {
+    var el = document.createElement('div');
+    el.className = 'crm-row rw-row ' + cls + ' is-own';
+    el.innerHTML = whoCell(p, 'Your own is in My performance') +
+      Array(cells).join('x').split('x').map(function () { return '<span class="rw-c">' + dash() + '</span>'; }).join('') +
+      '<span class="rw-sum"></span>';
+    var cs = el.querySelectorAll('.rw-c'), last = cs[cs.length - 1];
+    last.classList.add('rw-key');
+    last.innerHTML = chip('You');
+    return el;
+  }
+  function row(cls, cells, sum) {
+    var el = document.createElement('div');
+    el.className = 'crm-row rw-row ' + cls;
+    el.innerHTML = cells.join('') + '<span class="rw-sum">' + esc((sum || []).filter(Boolean).join(' · ')) + '</span>';
+    return el;
+  }
+  function cell(html, key) { return '<span class="rw-c' + (key ? ' rw-key' : '') + '">' + html + '</span>'; }
+  function money0(n) { return Number(n) > 0 ? esc(rm(n)) : dash(); }
+
+  /* The history of a quarter, a period or the commissions. */
+  var RW_EVENT = { dept_scored: 'Department scores saved', quarter_confirmed: 'Confirmed', quarter_reopened: 'Reopened',
+    company_set: 'Company figures saved', period_confirmed: 'Confirmed', period_reopened: 'Reopened',
+    commission_added: 'Commission added', commission_removed: 'Commission removed', commission_restored: 'Commission restored' };
+  function eventWord(e) {
+    var d = e.detail || {}, w = RW_EVENT[e.kind] || e.kind;
+    if (e.kind === 'dept_scored') {
+      var crit = DEPT_CRIT[d.department] || [];
+      return w + ': ' + (DEPT_WORD[d.department] || '') + ', ' + (d.changed || []).map(function (c) {
+        if (c.key === 'critical') return 'critical issue ' + (c.to ? 'ticked' : 'cleared');
+        var i = Number(String(c.key).slice(1)) - 1;
+        return ((crit[i] || [c.key])[0]).toLowerCase() + ' ' + (c.from == null ? 'not set' : num(c.from)) + ' to ' + num(c.to);
+      }).join(', ');
+    }
+    if (e.kind === 'company_set') {
+      var NAME = { revenue: 'revenue', profit: 'profit', pool: 'bonus pool', trip_budget: 'trip budget' };
+      return w + ': ' + (d.changed || []).map(function (c) {
+        return NAME[c.key] + (c.key === 'pool' || c.key === 'trip_budget' ? ' ' + (c.from == null ? 'not set' : rm(c.from)) + ' to ' + rm(c.to) : '');
+      }).join(', ');
+    }
+    return w;
+  }
+  function historySection(route, events) {
+    if (!events || !events.length) return null;
+    var G = window.ADspaceGroup;
+    return G.section({
+      route: route, key: 'history', name: 'History', count: events.length,
+      shut: G.shut(route, 'history', true),
+      table: function () {
+        var t = document.createElement('div');
+        t.className = 'crm-table softpanel rw-history';
+        t.innerHTML = '<ul class="perf-history">' + events.map(function (e) {
+          return '<li><b>' + esc(eventWord(e)) + '</b><small>' + esc([e.by, timeWord(e.at)].filter(Boolean).join(', ')) + '</small></li>';
+        }).join('') + '</ul>';
+        return t;
+      }
+    });
+  }
+
+  // The views -------------------------------------------------------------------------
+  var PANE = { months: 'perfMonths', quarters: 'perfQuarters', company: 'perfCompany', commission: 'perfCommission' };
+  function setPv(v, quiet) {
+    if (!PANE[v]) v = 'months';
+    st.pv = v;
+    Array.prototype.forEach.call(document.querySelectorAll('#perfViews .acttab'), function (b) {
+      var on = b.getAttribute('data-pv') === v;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    Object.keys(PANE).forEach(function (k) { $(PANE[k]).hidden = k !== v; });
+    if (window.ADspaceCmdbar) window.ADspaceCmdbar.refresh();
+    if (!quiet && bridge.setUrl) bridge.setUrl();
+  }
+  $('perfViews').addEventListener('click', function (e) {
+    var b = e.target.closest('.acttab');
+    if (!b || b.getAttribute('data-pv') === st.pv) return;
+    setPv(b.getAttribute('data-pv'));
+    loadView();
+  });
+  function opened() {
+    padlock(true);
+    $('perfLock').hidden = true;
+    $('perfOpen').hidden = false;
+  }
+  function loadView() {
+    setPv(st.pv, true);
+    if (st.pv === 'quarters') loadQuarter();
+    else if (st.pv === 'company') loadPeriod();
+    else if (st.pv === 'commission') loadCommission();
+    else loadMonth();
+  }
+
+  // Flexible hours, under the month -----------------------------------------------------
+  function loadFlex() {
+    var asked = st.period;
+    call('perf_flex', { p_token: token, p_period: st.period }, function (d) {
+      if (asked !== st.period) return;
+      if (d.error === 'code-needed' || d.error === 'no-code') return;
+      st.flex = d;
+      paintMonth();
+    });
+  }
+  function flexSection() {
+    var f = st.flex, G = window.ADspaceGroup;
+    if (!f) return null;
+    if (f.error) {
+      var fail = document.createElement('div');
+      UI.failLine(fail, 'Flexible hours', said(f), loadFlex);
+      return fail;
+    }
+    var marks = !f.members ? '' : f.decided
+      ? chip(f.unlocked ? 'Unlocked' : 'Not unlocked', f.unlocked ? 'is-ok' : '')
+      : chip((f.members - f.finals) + ' not final', 'is-warn');
+    return G.section({
+      route: 'team-perf', key: 'flex', name: 'Flexible hours in ' + f.next_month, count: f.members, marks: marks,
+      shut: G.shut('team-perf', 'flex', true),
+      table: function () {
+        var t = G.table('rw-row rwf-row', ['Person', 'Score', 'Grade', 'Flexible hours']);
+        if (!f.people.length) { var e = document.createElement('div'); e.className = 'emptyline'; e.innerHTML = '<b>Nobody.</b>'; t.appendChild(e); return t; }
+        G.more(t, f.people, 30, '', function (p) {
+          if (p.own) return youRow('rwf-row', p, 3);
+          var has = p.final != null;
+          var el = row('rwf-row', [
+            whoCell(p, p.breach ? 'Level 3 or 4 breach' : ''),
+            cell(has ? esc(num(p.final)) : dash()),
+            cell(gradeCell(p.grade)),
+            cell(has ? chip(p.eligible ? 'Eligible' : 'Not eligible', p.eligible ? 'is-ok' : '') : dash(), true)
+          ], [has ? num(p.final) : 'Not final', p.grade ? gradeWord(p.grade) : '']);
+          return el;
+        });
+        return t;
+      }
+    });
+  }
+
+  // The quarter --------------------------------------------------------------------------
+  function loadQuarter() {
+    opened();
+    fillSelect($('perfQuarter'), quarterList(), st.q, qWord);
+    if (!st.quarter || st.quarter.quarter !== st.q) UI.skeleton($('rwQList'), 4);
+    var asked = st.q;
+    call('perf_quarter', { p_token: token, p_quarter: st.q }, function (d) {
+      if (asked !== st.q) return;
+      if (d.error) {
+        if (d.error === 'code-needed' || d.error === 'no-code') return;
+        UI.failLine($('rwQList'), 'The quarter', rwSaid(d), loadQuarter);
+        return;
+      }
+      st.quarter = d;
+      paintQuarter();
+    });
+  }
+  $('perfQuarter').addEventListener('change', function () {
+    if (this.value === st.q) return;
+    st.q = this.value; st.quarter = null; msg('rwQMsg', '');
+    loadQuarter();
+    if (bridge.setUrl) bridge.setUrl();
+  });
+  function confirmedChip(d) {
+    return d.confirmed ? chip('Confirmed', 'is-ok') : d.ended ? chip('Not confirmed', 'is-warn') : chip('Running');
+  }
+  function paintQuarter() {
+    var d = st.quarter, box = $('rwQList'), G = window.ADspaceGroup;
+    if (!d || st.pv !== 'quarters') return;
+    var ppl = d.people || [], ind = d.individual || {}, dp = d.department_prize || {};
+    $('rwQCount').textContent = ppl.length + (ppl.length === 1 ? ' person' : ' people');
+    $('rwQConfirm').hidden = !(may('team.performance', 'work') && !d.confirmed && d.ended);
+    $('rwQReopen').hidden = !(may('team.performance', 'manage') && d.confirmed);
+    box.innerHTML = '';
+    if (d.confirmed) {
+      var line = document.createElement('p');
+      line.className = 'routenote rw-note';
+      line.textContent = 'Confirmed ' + timeWord(d.confirmed_at) + (d.confirmed_by ? ' by ' + d.confirmed_by : '') + '.';
+      box.appendChild(line);
+    }
+    var won = ind.winners
+      ? (ind.winners === 1 ? rm(ind.each) : ind.winners + ' ways · ' + rm(ind.each) + ' each') +
+        (Number(ind.remainder) > 0 ? ' · ' + rm(ind.remainder) + ' left' : '')
+      : 'No payout · ' + (NOPAY[ind.reason] || '');
+    box.appendChild(G.section({
+      route: 'team-rw', key: 'individual', name: 'Individual prize', count: ppl.length,
+      marks: confirmedChip(d) + chip(won, ind.winners ? '' : ''),
+      shut: false,
+      table: function () {
+        var t = G.table('rw-row rwq-row', ['Person', 'Months', 'Average', 'Grade', 'Eligibility', 'Prize']);
+        if (!ppl.length) { UI.emptyLine(t, 'Nobody on the review list.'); return t; }
+        G.more(t, ppl, 30, '', function (p) {
+          if (p.own) return youRow('rwq-row', p, 5);
+          var elig = p.eligible ? 'Eligible' : WHY[(p.reasons || [])[0]] || 'Not eligible';
+          return row('rwq-row', [
+            whoCell(p, DEPT_WORD[p.department] || ''),
+            cell(esc(String(p.months || 0))),
+            cell(p.average == null ? dash() : esc(num(p.average))),
+            cell(gradeCell(p.grade)),
+            cell(esc(elig)),
+            cell(money0(p.prize), true)
+          ], [p.average == null ? '' : num(p.average), p.grade ? gradeWord(p.grade) : '', elig]);
+        });
+        return t;
+      }
+    }));
+    var dwon = (d.departments || []).filter(function (x) { return x.won; });
+    var dmark = dwon.length
+      ? dwon.map(function (x) { return DEPT_WORD[x.department]; }).join(' and ') + ' · ' + rm(dwon[0].share) + (dwon.length > 1 ? ' each' : '')
+      : 'No payout · ' + (NOPAY[dp.reason] || '');
+    var edit = may('team.performance', 'work') && !d.confirmed;
+    box.appendChild(G.section({
+      route: 'team-rw', key: 'department', name: 'Department prize', count: (d.departments || []).length,
+      marks: chip(dmark), shut: false,
+      table: function () {
+        var t = G.table('rw-row rwd-row', ['Department', 'Total', 'Grade', 'Critical issue', 'Share', 'Each person']);
+        (d.departments || []).forEach(function (x) {
+          var n = (x.members || []).length;
+          var sub = x.entered ? n + (n === 1 ? ' member' : ' members') : 'Not entered';
+          var name = edit
+            ? '<button class="rw-who rw-open" type="button" data-dept="' + x.department + '"><b>' + esc(DEPT_WORD[x.department]) + '</b><small>' + esc(sub) + '</small></button>'
+            : whoCell({ name: DEPT_WORD[x.department] }, sub);
+          var el = row('rwd-row', [
+            name,
+            cell(x.entered ? esc(num(x.total)) : dash()),
+            cell(gradeCell(x.grade)),
+            cell(x.entered ? esc(x.critical ? 'Yes' : 'No') : dash()),
+            cell(money0(x.share), true),
+            cell(x.each != null ? esc(rm(x.each)) : dash())
+          ], [x.entered ? num(x.total) + ' of 100' : '', x.critical ? 'Critical issue' : '', x.each != null ? rm(x.each) + ' each' : '']);
+          var ob = el.querySelector('.rw-open');
+          if (ob) ob.addEventListener('click', function () { openDept(x.department, ob); });
+          t.appendChild(el);
+        });
+        return t;
+      }
+    }));
+    var h = historySection('team-rw-q', d.events);
+    if (h) box.appendChild(h);
+  }
+  $('rwQConfirm').addEventListener('click', function () {
+    var b = this; b.disabled = true;
+    call('perf_quarter_confirm', { p_token: token, p_quarter: st.q }, function (d) {
+      b.disabled = false;
+      if (d.error) { msg('rwQMsg', rwSaid(d), 'err'); return; }
+      st.quarter = d; paintQuarter(); msg('rwQMsg', 'Confirmed. The team has been told.', 'ok');
+    });
+  });
+  /* The way back never asks. */
+  $('rwQReopen').addEventListener('click', function () {
+    var b = this; b.disabled = true;
+    call('perf_quarter_reopen', { p_token: token, p_quarter: st.q }, function (d) {
+      b.disabled = false;
+      if (d.error) { msg('rwQMsg', rwSaid(d), 'err'); return; }
+      st.quarter = d; paintQuarter(); msg('rwQMsg', 'Reopened.', 'ok');
+    });
+  });
+
+  // The department sheet -----------------------------------------------------------------
+  function deptFields(dep, vals) {
+    $('rwDFields').innerHTML = '<div class="row fgrid">' + DEPT_CRIT[dep].map(function (c, i) {
+      var v = vals ? vals[i] : null;
+      return '<div' + (i === 4 ? ' class="span-all"' : '') + '><label class="field-label is-req" for="rwDC' + i + '">' + esc(c[0]) + ', out of ' + c[1] + '</label>' +
+        '<input class="input rw-crit" id="rwDC' + i + '" type="number" inputmode="decimal" min="0" max="' + c[1] + '" step="0.5" aria-required="true" value="' + (v == null ? '' : esc(v)) + '"></div>';
+    }).join('') + '</div>';
+    deptTotal();
+  }
+  function deptTotal() {
+    var dep = $('rwDDept').value, sum = 0, all = true;
+    DEPT_CRIT[dep].forEach(function (c, i) { var v = $('rwDC' + i).value; if (v === '') all = false; else sum += Number(v); });
+    sum = Math.round(sum * 10) / 10;
+    $('rwDTotal').textContent = all ? 'Total ' + num(sum) + ' of 100 · ' + gradeWord(sum >= 90 ? 'A' : sum >= 80 ? 'B' : sum >= 70 ? 'C' : sum >= 60 ? 'D' : 'E') : 'Total ' + num(sum) + ' of 100 so far';
+  }
+  function deptOf(dep) { return ((st.quarter && st.quarter.departments) || []).filter(function (x) { return x.department === dep; })[0] || {}; }
+  function openDept(dep, opener) {
+    var x = deptOf(dep);
+    $('rwDDept').value = dep;
+    if (window.ADspaceForm && window.ADspaceForm.thumb) $('rwDDept').dispatchEvent(new Event('change'));
+    deptFields(dep, x.criteria);
+    $('rwDCrit').checked = Boolean(x.critical);
+    $('rwDTitle').textContent = 'Department scores · ' + qWord(st.q);
+    msg('rwDMsg', '');
+    window.ADspaceSheet.show($('rwDeptSheet'), { opener: opener });
+  }
+  $('rwDDept').addEventListener('change', function () {
+    var x = deptOf(this.value);
+    deptFields(this.value, x.criteria);
+    $('rwDCrit').checked = Boolean(x.critical);
+  });
+  $('rwDFields').addEventListener('input', deptTotal);
+  $('rwDClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('rwDCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('rwDSave').addEventListener('click', function () {
+    var dep = $('rwDDept').value, vals = [], bad = null;
+    DEPT_CRIT[dep].forEach(function (c, i) {
+      var el = $('rwDC' + i), v = el.value;
+      if (v === '' || isNaN(Number(v)) || Number(v) < 0 || Number(v) > c[1]) { bad = bad || el; return; }
+      vals.push(Number(v));
+    });
+    if (bad) { msg('rwDMsg', 'Each criterion is 0 to its maximum.', 'err'); bad.focus(); return; }
+    var b = this; b.disabled = true;
+    call('perf_dept_save', { p_token: token, p_quarter: st.q, p_department: dep,
+                             p_payload: { criteria: vals, critical: $('rwDCrit').checked } }, function (d) {
+      b.disabled = false;
+      if (d.error) {
+        msg('rwDMsg', rwSaid(d), 'err');
+        if (d.error === 'bad-score' && d.index && $('rwDC' + (d.index - 1))) $('rwDC' + (d.index - 1)).focus();
+        return;
+      }
+      st.quarter = d;
+      window.ADspaceSheet.clean();
+      window.ADspaceSheet.close();
+      paintQuarter();
+      msg('rwQMsg', 'Saved.', 'ok');
+    });
+  });
+
+  // The bonus pool and the trip ------------------------------------------------------------
+  function loadPeriod() {
+    opened();
+    fillSelect($('perfPeriod'), quarterList(), st.pf, pWord);
+    if (!st.periodData || st.periodData.period !== st.pf) UI.skeleton($('rwPList'), 4);
+    var asked = st.pf;
+    call('perf_period', { p_token: token, p_from: st.pf }, function (d) {
+      if (asked !== st.pf) return;
+      if (d.error) {
+        if (d.error === 'code-needed' || d.error === 'no-code') return;
+        UI.failLine($('rwPList'), 'The period', rwSaid(d), loadPeriod);
+        return;
+      }
+      st.periodData = d;
+      paintPeriod();
+    });
+  }
+  $('perfPeriod').addEventListener('change', function () {
+    if (this.value === st.pf) return;
+    st.pf = this.value; st.periodData = null; msg('rwPMsg', '');
+    loadPeriod();
+    if (bridge.setUrl) bridge.setUrl();
+  });
+  function paintPeriod() {
+    var d = st.periodData, box = $('rwPList'), G = window.ADspaceGroup;
+    if (!d || st.pv !== 'company') return;
+    var ppl = d.people || [], bo = d.bonus || {}, tr = d.trip || {}, co = d.company;
+    $('rwPCount').textContent = ppl.length + (ppl.length === 1 ? ' person' : ' people');
+    $('rwPConfirm').hidden = !(may('team.performance', 'work') && !d.confirmed && d.ended && d.figures);
+    $('rwPReopen').hidden = !(may('team.performance', 'manage') && d.confirmed);
+    box.innerHTML = '';
+    if (d.confirmed) {
+      var line = document.createElement('p');
+      line.className = 'routenote rw-note';
+      line.textContent = 'Confirmed ' + timeWord(d.confirmed_at) + (d.confirmed_by ? ' by ' + d.confirmed_by : '') + '.';
+      box.appendChild(line);
+    }
+    /* The figures: revenue and profit for an admin, and for everybody who
+       reads the period the two amounts, what they pay out and what the
+       rounding leaves. One block, never folded: it is what the table under
+       it divides. */
+    var fig = document.createElement('section');
+    fig.className = 'crm-group rw-figs';
+    fig.innerHTML = '<div class="crm-group-head"><h3>Company figures</h3>' + confirmedChip(d) + '</div>';
+    var t = document.createElement('div');
+    t.className = 'crm-table softpanel rw-facts';
+    var outcome = function (x, amount, open) {
+      if (!open) return 'Not open';
+      if (x.reason) return rm(amount) + ' · No payout, ' + (NOPAY[x.reason] || '').toLowerCase();
+      return rm(amount) + (Number(x.remainder) > 0 ? ' · ' + rm(x.remainder) + ' left' : '');
+    };
+    if (!d.figures) {
+      UI.emptyLine(t, 'No figures.', d.admin && !d.confirmed ? 'Enter figures' : '', function () { openFigures(); });
+    } else {
+      var facts = co ? [['Revenue', rm(co.revenue)], ['Profit', rm(co.profit)], ['Bonus pool ceiling', rm(co.max_pool)]] : [];
+      facts.push(['Bonus pool', outcome(bo, bo.pool, bo.open)]);
+      facts.push(['Trip budget', outcome(tr, tr.budget, tr.open)]);
+      t.innerHTML = '<dl class="facts rw-dl">' + facts.map(function (f) {
+        return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
+      }).join('') + '</dl>' +
+        (d.admin && !d.confirmed ? '<div class="rw-facts-acts"><button class="btn btn-sm" id="rwFEdit" type="button">Edit</button></div>' : '');
+      var eb = t.querySelector('#rwFEdit');
+      if (eb) eb.addEventListener('click', function () { openFigures(eb); });
+    }
+    fig.appendChild(t);
+    box.appendChild(fig);
+    box.appendChild(G.section({
+      route: 'team-rw', key: 'units', name: 'Bonus pool and trip', count: ppl.length,
+      shut: false,
+      table: function () {
+        var t = G.table('rw-row rwp-row', ['Person', 'Months at B', 'Average', 'Grade', 'Units', 'Bonus', 'Trip']);
+        if (!ppl.length) { UI.emptyLine(t, 'Nobody on the review list.'); return t; }
+        G.more(t, ppl, 30, '', function (p) {
+          if (p.own) return youRow('rwp-row', p, 6);
+          var elig = p.eligible ? '' : WHY[(p.reasons || [])[0]] || 'Not eligible';
+          return row('rwp-row', [
+            whoCell(p, elig),
+            cell(esc(String(p.months_b || 0)) + '<small> of ' + esc(String(p.months || 0)) + '</small>'),
+            cell(p.average == null ? dash() : esc(num(p.average))),
+            cell(gradeCell(p.grade)),
+            cell(p.units ? esc(num(p.units)) : dash()),
+            cell(money0(p.bonus), true),
+            cell(money0(p.trip))
+          ], [p.average == null ? '' : num(p.average), p.grade ? gradeWord(p.grade) : '', p.units ? num(p.units) + ' units' : '', Number(p.trip) > 0 ? 'Trip ' + rm(p.trip) : '']);
+        });
+        return t;
+      }
+    }));
+    var h = historySection('team-rw-p', d.events);
+    if (h) box.appendChild(h);
+  }
+  $('rwPConfirm').addEventListener('click', function () {
+    var b = this; b.disabled = true;
+    call('perf_period_confirm', { p_token: token, p_from: st.pf }, function (d) {
+      b.disabled = false;
+      if (d.error) { msg('rwPMsg', rwSaid(d), 'err'); return; }
+      st.periodData = d; paintPeriod(); msg('rwPMsg', 'Confirmed. The team has been told.', 'ok');
+    });
+  });
+  $('rwPReopen').addEventListener('click', function () {
+    var b = this; b.disabled = true;
+    call('perf_period_reopen', { p_token: token, p_from: st.pf }, function (d) {
+      b.disabled = false;
+      if (d.error) { msg('rwPMsg', rwSaid(d), 'err'); return; }
+      st.periodData = d; paintPeriod(); msg('rwPMsg', 'Reopened.', 'ok');
+    });
+  });
+
+  /* Amounts are typed as RM with or without separators, and read back to
+     the cent; anything else is not a number. */
+  function amountIn(el) {
+    var v = String(el.value || '').replace(/[,\s]/g, '').replace(/^RM/i, '');
+    if (v === '') return null;
+    return /^-?\d+(\.\d{1,2})?$/.test(v) ? Number(v) : NaN;
+  }
+  function figuresMax() {
+    var p = amountIn($('rwFPro'));
+    $('rwFMax').textContent = p != null && !isNaN(p) ? 'At most ' + rm(Math.max(0, Math.floor(p * 10 + 1e-7) / 100)) : '';
+  }
+  function openFigures(opener) {
+    var co = (st.periodData && st.periodData.company) || {};
+    var put = function (id, v) { $(id).value = v == null ? '' : Number(v).toFixed(2); };
+    put('rwFRev', co.revenue); put('rwFPro', co.profit); put('rwFPool', co.pool); put('rwFTrip', co.trip_budget);
+    $('rwFTitle').textContent = 'Company figures · ' + pWord(st.pf);
+    figuresMax();
+    msg('rwFMsg', '');
+    window.ADspaceSheet.show($('rwCoSheet'), { opener: opener });
+  }
+  $('rwFPro').addEventListener('input', figuresMax);
+  $('rwFClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('rwFCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('rwFSave').addEventListener('click', function () {
+    var ids = ['rwFRev', 'rwFPro', 'rwFPool', 'rwFTrip'], v = ids.map(function (id) { return amountIn($(id)); });
+    var bad = ids.filter(function (id, i) { return (i < 2 && v[i] == null) || (v[i] != null && isNaN(v[i])); })[0];
+    if (bad) { msg('rwFMsg', i18nNeed(bad), 'err'); $(bad).focus(); return; }
+    var b = this; b.disabled = true;
+    call('perf_company_set', { p_token: token, p_from: st.pf, p_payload: {
+      revenue: v[0], profit: v[1], pool: v[2] || 0, trip_budget: v[3] || 0 } }, function (d) {
+      b.disabled = false;
+      if (d.error) {
+        msg('rwFMsg', rwSaid(d), 'err');
+        var at = { 'pool-over': 'rwFPool', 'pool-closed': 'rwFPool', 'trip-closed': 'rwFTrip' }[d.error];
+        if (at) $(at).focus();
+        return;
+      }
+      st.periodData = d;
+      window.ADspaceSheet.clean();
+      window.ADspaceSheet.close();
+      paintPeriod();
+      msg('rwPMsg', 'Saved.', 'ok');
+    });
+  });
+  function i18nNeed(id) {
+    return { rwFRev: 'Enter the revenue in RM.', rwFPro: 'Enter the profit in RM.', rwFPool: 'Enter the bonus pool in RM.',
+             rwFTrip: 'Enter the trip budget in RM.', rwMNet: 'Enter the net profit in RM.' }[id] || RW_SAID['bad-amount'];
+  }
+
+  // Growth commission ------------------------------------------------------------------------
+  function loadCommission() {
+    opened();
+    if (!st.com) UI.skeleton($('rwCList'), 4);
+    call('perf_commissions', { p_token: token }, function (d) {
+      if (d.error) {
+        if (d.error === 'code-needed' || d.error === 'no-code') return;
+        UI.failLine($('rwCList'), 'Commission', rwSaid(d), loadCommission);
+        return;
+      }
+      st.com = d;
+      paintCommission();
+    });
+  }
+  $('rwCFind').addEventListener('input', function () {
+    var v = this.value.trim().toLowerCase();
+    if (v === st.cfind) return;
+    st.cfind = v; paintCommission();
+  });
+  function paintCommission() {
+    var d = st.com, box = $('rwCList'), G = window.ADspaceGroup;
+    if (!d || st.pv !== 'commission') return;
+    var all = d.rows || [];
+    var shown = all.filter(function (c) {
+      return !st.cfind || [c.name, c.client, c.client_code, c.description].join(' ').toLowerCase().indexOf(st.cfind) > -1;
+    });
+    $('rwCCount').textContent = st.cfind ? shown.length + ' of ' + all.length : all.length + (all.length === 1 ? ' entry' : ' entries');
+    $('rwCAdd').hidden = !may('team.performance', 'work');
+    box.innerHTML = '';
+    if (!all.length) {
+      UI.emptyLine(box, 'No entries.', may('team.performance', 'work') ? 'Add entry' : '', function () { openCommission($('rwCAdd')); });
+    } else if (!shown.length) {
+      UI.emptyLine(box, 'No matches.', 'Clear the search', function () { st.cfind = ''; $('rwCFind').value = ''; paintCommission(); });
+    } else {
+      var payable = shown.filter(function (c) { return c.state === 'payable'; }).reduce(function (a, c) { return a + Number(c.amount); }, 0);
+      box.appendChild(G.section({
+        route: 'team-rw', key: 'commission', name: 'Growth commission', count: shown.length,
+        marks: chip('Payable ' + rm(Math.round(payable * 100) / 100)), shut: false,
+        table: function () {
+          var t = G.table('rw-row rwc-row', ['Deal', 'Month', 'Net profit', 'Rate', 'Commission', 'State', '']);
+          G.more(t, shown, 30, '', comRow);
+          return t;
+        }
+      }));
+    }
+    var h = historySection('team-rw-c', d.events);
+    if (h) box.appendChild(h);
+  }
+  function comRow(c) {
+    var s = COM_STATE[c.state] || COM_STATE.pending;
+    var sub = [c.description, c.client_code ? c.client_code + ' · ' + c.client : c.client].filter(Boolean).join(' · ');
+    var el = row('rwc-row has-act', [
+      whoCell(c, sub),
+      cell(esc(dateWord(c.month).replace(/^\d+ /, ''))),
+      cell(esc(rm(c.net_profit))),
+      cell(esc(num(c.pct)) + '%'),
+      cell(esc(rm(c.amount))),
+      cell(chip(s[0], s[1]) + (c.reason ? '<small class="rw-why">' + esc(COM_WHY[c.reason] || '') + '</small>' : ''), true)
+    ], [dateWord(c.month).replace(/^\d+ /, ''), rm(c.amount)]);
+    if (may('team.performance', 'work')) {
+      el.insertAdjacentHTML('beforeend', '<span class="team-act">' +
+        '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' +
+        '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>' +
+        '<div class="kmenu" data-menu hidden><button class="kmenu-item is-danger" data-a="remove" type="button">Remove</button></div></span>');
+      var btn = el.querySelector('[data-a="menu"]'), menu = el.querySelector('[data-menu]');
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = menu.hidden;
+        shutComMenus();
+        menu.hidden = !open;
+        btn.setAttribute('aria-expanded', String(open));
+        if (open) window.ADspaceMenu.place(btn, menu);
+      });
+      el.querySelector('[data-a="remove"]').addEventListener('click', function () {
+        shutComMenus();
+        call('perf_commission_remove', { p_token: token, p_id: c.id }, function (d) {
+          if (d.error) { msg('rwCMsg', rwSaid(d), 'err'); return; }
+          st.com.rows = st.com.rows.filter(function (x) { return x.id !== c.id; });
+          paintCommission();
+          comUndo(c);
+        });
+      });
+    } else {
+      el.insertAdjacentHTML('beforeend', '<span class="team-act"></span>');
+    }
+    return el;
+  }
+  function shutComMenus() {
+    Array.prototype.forEach.call(document.querySelectorAll('#rwCList .kmenu'), function (m) { m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll('#rwCList .kmenu-btn'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+  }
+  if (window.ADspaceMenu) window.ADspaceMenu.onScroll(shutComMenus);
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('#rwCList .team-act')) shutComMenus();
+  });
+  /* The way back, drawn where the entry was, for 8 seconds. */
+  var comUndoTimer = null;
+  function comUndo(c) {
+    var host = $('rwCList'), bar = host.parentNode.querySelector(':scope > .undobar-here');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'undobar undobar-here';
+      host.parentNode.insertBefore(bar, host);
+    }
+    bar.hidden = false;
+    bar.innerHTML = '<span>' + esc((c.name ? c.name + ': ' : '') + c.description + ' removed.') + '</span><button class="btn btn-sm" type="button">Undo</button>';
+    var shut = function () { if (bar.parentNode) bar.parentNode.removeChild(bar); };
+    bar.querySelector('button').addEventListener('click', function () {
+      shut();
+      call('perf_commission_restore', { p_token: token, p_id: c.id }, function (d) {
+        if (d.error) { msg('rwCMsg', rwSaid(d), 'err'); return; }
+        loadCommission();
+      });
+    });
+    clearTimeout(comUndoTimer);
+    comUndoTimer = setTimeout(shut, 8000);
+  }
+  function openCommission(opener) {
+    var d = st.com || {}, F = window.ADspaceForm;
+    var members = (d.members || []).slice().sort(F.byStaff);
+    $('rwMWho').innerHTML = '<option value="">Choose</option>' + members.map(function (m) {
+      return '<option value="' + esc(m.id) + '">' + esc(F.named(m.staff_code, m.name)) + '</option>';
+    }).join('');
+    var clients = (d.clients || []).slice().sort(F.byClient);
+    $('rwMClient').innerHTML = '<option value="">No client</option>' + clients.map(function (c) {
+      return '<option value="' + esc(c.id) + '">' + esc(F.named(c.client_code, c.name)) + '</option>';
+    }).join('');
+    $('rwMDesc').value = ''; $('rwMNet').value = ''; $('rwMPct').value = '';
+    var last = addMonths(thisMonth(), -1);
+    $('rwMMonth').value = (last < '2026-06-01' ? thisMonth() : last).slice(0, 7);
+    $('rwMMonth').max = thisMonth().slice(0, 7);
+    comAmount();
+    msg('rwMMsg', '');
+    window.ADspaceSheet.show($('rwComSheet'), { opener: opener });
+  }
+  function comAmount() {
+    var n = amountIn($('rwMNet')), p = Number(String($('rwMPct').value).replace(/[%\s]/g, ''));
+    $('rwMAmount').textContent = n != null && !isNaN(n) && p > 0 ? 'Commission ' + rm(Math.round(n * p) / 100) : '';
+  }
+  $('rwMNet').addEventListener('input', comAmount);
+  $('rwMPct').addEventListener('input', comAmount);
+  $('rwCAdd').addEventListener('click', function () {
+    var b = this;
+    if (st.com) { openCommission(b); return; }
+    call('perf_commissions', { p_token: token }, function (d) { if (!d.error) { st.com = d; openCommission(b); } });
+  });
+  $('rwMClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('rwMCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('rwMSave').addEventListener('click', function () {
+    var need = function (id, text) { msg('rwMMsg', text, 'err'); $(id).focus(); };
+    if (!$('rwMWho').value) { need('rwMWho', RW_SAID['bad-member']); return; }
+    if (!$('rwMDesc').value.trim()) { need('rwMDesc', RW_SAID['description-needed']); return; }
+    if (!/^\d{4}-\d{2}$/.test($('rwMMonth').value)) { need('rwMMonth', RW_SAID['bad-month']); return; }
+    var net = amountIn($('rwMNet'));
+    if (net == null || isNaN(net) || net < 0) { need('rwMNet', i18nNeed('rwMNet')); return; }
+    var pct = String($('rwMPct').value).replace(/[%\s]/g, '');
+    if (!/^\d+(\.\d{1,2})?$/.test(pct) || Number(pct) <= 0 || Number(pct) > 100) { need('rwMPct', RW_SAID['bad-pct']); return; }
+    var b = this; b.disabled = true;
+    call('perf_commission_add', { p_token: token, p_payload: { team_member_id: $('rwMWho').value,
+      client_id: $('rwMClient').value || null, description: $('rwMDesc').value.trim(),
+      month: $('rwMMonth').value + '-01', net_profit: net, pct: Number(pct) } }, function (d) {
+      b.disabled = false;
+      if (d.error) {
+        msg('rwMMsg', rwSaid(d), 'err');
+        var at = { 'bad-month': 'rwMMonth', 'bad-amount': 'rwMNet', 'bad-pct': 'rwMPct', 'bad-member': 'rwMWho', 'own-review': 'rwMWho' }[d.error];
+        if (at) $(at).focus();
+        return;
+      }
+      window.ADspaceSheet.clean();
+      window.ADspaceSheet.close();
+      msg('rwCMsg', 'Added.', 'ok');
+      loadCommission();
+    });
+  });
+
+  // My performance: the member's own rewards -------------------------------------------------
+  function loadMineRewards() {
+    call('perf_rewards_mine', {}, function (d) {
+      if (d.error === 'code-needed') { $('mineRewards').innerHTML = ''; return; }
+      if (d.error) { UI.failLine($('mineRewards'), 'Your rewards', rwSaid(d), loadMineRewards); return; }
+      st.mineRw = d;
+      paintMineRewards();
+    });
+  }
+  function paintMineRewards() {
+    var d = st.mineRw, box = $('mineRewards'), G = window.ADspaceGroup;
+    if (!d || !box) return;
+    box.innerHTML = '';
+    var add = function (key, name, list, heads, cls, rowOf) {
+      if (!list || !list.length) return;
+      box.appendChild(G.section({
+        route: 'mine', key: key, name: name, count: list.length, shut: false,
+        table: function () { var t = G.table('rw-row ' + cls, heads); G.more(t, list, 30, '', rowOf); return t; }
+      }));
+    };
+    add('quarters', 'Quarters', d.quarters, ['Quarter', 'Average', 'Grade', 'Individual prize', 'Department prize'], 'rwmq-row', function (x) {
+      var me = x.me || {}, dp = x.department;
+      var ind = Number(me.prize) > 0 ? rm(me.prize) : me.eligible ? 'Not the highest' : WHY[(me.reasons || [])[0]] || 'Not eligible';
+      var dep = dp ? (dp.won && dp.each != null ? rm(dp.each) : (DEPT_WORD[dp.department] || '') + ' did not win') : '—';
+      return row('rwmq-row', [
+        whoCell({ name: x.word }, me.months ? me.months + (me.months === 1 ? ' final month' : ' final months') : ''),
+        cell(me.average == null ? dash() : esc(num(me.average))),
+        cell(gradeCell(me.grade)),
+        cell(esc(ind), true),
+        cell(esc(dep))
+      ], [me.average == null ? '' : num(me.average), me.grade ? gradeWord(me.grade) : '', dp && dp.won && dp.each != null ? 'Department ' + rm(dp.each) : '']);
+    });
+    add('periods', 'Bonus and trip', d.periods, ['Period', 'Months at B', 'Units', 'Bonus', 'Trip'], 'rwmp-row', function (x) {
+      var me = x.me || {};
+      var elig = me.eligible ? '' : WHY[(me.reasons || [])[0]] || 'Not eligible';
+      return row('rwmp-row', [
+        whoCell({ name: x.word }, elig),
+        cell(esc(String(me.months_b || 0)) + '<small> of ' + esc(String(me.months || 0)) + '</small>'),
+        cell(me.units ? esc(num(me.units)) : dash()),
+        cell(money0(me.bonus), true),
+        cell(x.trip_open ? money0(me.trip) : esc('Not open'))
+      ], [me.units ? num(me.units) + ' units' : '', x.trip_open && Number(me.trip) > 0 ? 'Trip ' + rm(me.trip) : '']);
+    });
+    add('flex', 'Flexible hours', d.flex, ['Month', 'Team', 'You'], 'rwmf-row', function (x) {
+      return row('rwmf-row', [
+        whoCell({ name: x.next_month }, 'From ' + x.month),
+        cell(chip(x.unlocked ? 'Unlocked' : 'Not unlocked', x.unlocked ? 'is-ok' : '')),
+        cell(x.unlocked ? chip(x.eligible ? 'Eligible' : 'Not eligible', x.eligible ? 'is-ok' : '') : dash(), true)
+      ], [x.unlocked ? 'Unlocked' : 'Not unlocked']);
+    });
+    add('commission', 'Growth commission', d.commissions, ['Deal', 'Net profit', 'Rate', 'Commission', 'State'], 'rwmc-row', function (c) {
+      var s = COM_STATE[c.state] || COM_STATE.pending;
+      var sub = [dateWord(c.month).replace(/^\d+ /, ''), c.client].filter(Boolean).join(' · ');
+      return row('rwmc-row', [
+        whoCell({ name: c.description }, sub),
+        cell(esc(rm(c.net_profit))),
+        cell(esc(num(c.pct)) + '%'),
+        cell(esc(rm(c.amount))),
+        cell(chip(s[0], s[1]) + (c.reason ? '<small class="rw-why">' + esc(COM_WHY[c.reason] || '') + '</small>' : ''), true)
+      ], [rm(c.amount)]);
+    });
+  }
+  // ---- End of performance rewards ------------------------------------------------------
+
   window.ADspacePerf = {
     enterTeam: enterTeam,
     enterMine: enterMine,
     lock: function (then) { lock(then); },
     urlState: function () {
-      return st.tab === 'performance'
-        ? { tab: 'performance', m: st.period.slice(0, 7) } : {};
+      if (st.tab !== 'performance') return {};
+      if (st.pv === 'quarters') return { tab: 'performance', view: 'quarters', q: st.q.slice(0, 7) };
+      if (st.pv === 'company') return { tab: 'performance', view: 'company', q: st.pf.slice(0, 7) };
+      if (st.pv === 'commission') return { tab: 'performance', view: 'commission' };
+      return { tab: 'performance', m: st.period.slice(0, 7) };
     },
     /* The bell: a dispute opens Team > Performance on its month. */
     openTeam: function () { st.tab = 'performance'; if (bridge.show) bridge.show('team'); }
