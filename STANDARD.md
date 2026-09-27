@@ -594,7 +594,8 @@ section holds only what is true of the project as a whole.
   - S3 storage with expiring public links.
   - The ALP checklists as forms.
 - Access: "Own clients only" (a row scope for Sales).
-- A global console search is deferred until the lists are in the hundreds.
+- Console search (`js/search.js`, built 2026-09-28) reads names, codes and
+  references only: not briefs, notes, comments or a document's body.
 - Performance phase 2: quarterly and company rewards (revenue gate RM
   500,000) and growth commission.
 - A flat, edge-to-edge register without a bounded panel would be a

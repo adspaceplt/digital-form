@@ -537,6 +537,8 @@
       document.body.classList.toggle('no-work-' + cls, !may(k, 'work'));
       document.body.classList.toggle('no-view-' + cls, !may(k, 'view'));
     });
+    /* ===== Console search (js/search.js): drawn once the ladder is known. */
+    if (window.ADspaceSearch) window.ADspaceSearch.access();
   }
 
   /* On a phone the rail is a drawer. It closes on a pick, on the scrim, and on
@@ -2952,6 +2954,11 @@
     /* Open a section from outside the rail: the bell opens the task a row
        names, after writing the address the section reads on entry. */
     show: function (name) { showSection(name); },
+    /* ===== Console search (js/search.js) =====
+       Land where the address says, the way a reload does: a content set is
+       reached through its client, which only this file opens. */
+    restore: function () { restoreView(); },
+    /* ===== end console search ===== */
     may: may,
     parts: PARTS
   };

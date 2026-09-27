@@ -108,6 +108,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter |
 | `team.js` | team, perms, levels |
 | `perf.js` | perfui, perfguard, perf |
+| `search.js` | search, then `ui` |
 | `reports.js`, `smreport.js` | reports, adsreport, smsql |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
 | `refresh.js`, `admin/sw.js`, the manifest | pwa, phone |
@@ -502,6 +503,31 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A standing fact about a route is a `.routenote` under the register:
   - the verify page as a link;
   - the redirect hosts `hi.adspace.me` and `go.adspace.me` as links.
+
+### Console search (`js/search.js`)
+- One control in the console head (`#searchOpen`, beside the theme switch);
+  Cmd/Ctrl + K opens it anywhere, `/` only when no field has the caret.
+  Neither takes over another open sheet or the confirm bar.
+- The panel is a sheet through `js/sheet.js` (`#searchSheet`): under the head
+  at a desk, from the floor and full height on a phone. The field is a
+  combobox: the arrows move `aria-activedescendant`, Enter opens, Escape
+  closes and focus returns to what opened it. Typing marks the sheet clean.
+- It asks only the sections `may()` grants, each its own table through
+  `js/api.js` under RLS; no schema. `ilike` inside `or()` with the value
+  double quoted; `"`, `\`, `%` and `*` are dropped from what is typed.
+- Five rows a section, 200ms after the last key, two characters at least; a
+  sequence number throws away a late answer to an older query.
+- A refused read drops its section only. Every read refused is `failLine`
+  with Try again, never No matches.
+- Groups run in the rail's order (Creators List after Creator Campaigns).
+  A row is the name, its code in the token face, one mute line; the match
+  in weight, never colour. No recent searches, no explanatory copy.
+- A result writes the record's address first, then `show()` (a content set
+  through `ADspaceAdmin.restore()`). Letters of Offer open the client's
+  Documents tab. The Creators List, Documents, Short Links, Services and
+  Team open filtered by their own search field, its bar opened.
+- A task number is read from `#WT01008`, `WT1008` or `1008` (`task_no.eq`),
+  since `ilike` cannot compare a number.
 
 ### Clients (`js/crm.js`)
 - Three bands:

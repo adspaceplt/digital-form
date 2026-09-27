@@ -197,6 +197,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Reaching a person | `.plink` chips (phone, WhatsApp, email), equal widths on a phone unless alone |
 | A value only read | `.readfield` (the field's height, no box) |
 | An instruction | `.hintline` `?`, open three times, then retired; a button, never a `title` |
+| Finding a record in any section | `#searchSheet` (`js/search.js`): a sheet under the head (the floor, full height, on a phone), the field a combobox, answers as `.sgroup` (the rail name in the label face) > `.srow` (name, `.srow-code` in the token face, one mute `.srow-meta`; the match in weight) |
 
 ## 5. Laws (each broke once; the reasons are in the archive)
 
