@@ -151,6 +151,9 @@
     'not-team': 'Team record not found. Contact an admin.',
     'denied': 'You do not have access to do that.',
     'not-found': 'That task is no longer there.',
+    'other-client': 'That record belongs to another client.',
+    'record-not-found': 'That record is no longer there.',
+    'record-link': 'A record link is removed and linked again, not edited.',
     'stale': 'Updated by someone else. Reloaded.',
     'not-yours': 'Not yours to decide.',
     'decided': 'Already decided.',
@@ -2504,10 +2507,10 @@
     // Files and links
     var live = state.detail.links.filter(function (l) { return !l.archived_at; });
     $('dwLinks').innerHTML = live.length ? '<ul class="qlinks">' + live.map(function (l) {
-      var href = safeUrl(l.url);
-      var menu = work && !fin ? itemMenu(l.label || l.url, [['edit', 'Edit'], ['remove', 'Remove', true]]) : '';
-      return '<li class="qitem" data-link="' + esc(l.id) + '"><span class="qlink-main"><span class="tone">' + esc(LINK_WORD[l.kind] || sentence(l.kind)) + '</span>' +
-        (href ? '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + esc(l.label || l.url) + '</a>' : '<span class="qlink-name">' + esc(l.label) + '</span>') +
+      var href = l.ref_type ? refHref(l) : safeUrl(l.url);
+      var menu = work && !fin ? itemMenu(l.label || l.url, linkMenu(l)) : '';
+      return '<li class="qitem" data-link="' + esc(l.id) + '"><span class="qlink-main"><span class="tone">' + esc(linkWord(l)) + '</span>' +
+        (href ? '<a href="' + esc(href) + '"' + (l.ref_type ? '' : ' target="_blank" rel="noopener"') + '>' + esc(l.label || l.url) + '</a>' : '<span class="qlink-name">' + esc(l.label) + '</span>') +
         '</span>' + menu + '</li>';
     }).join('') + '</ul>' : '<p class="qempty">No files or links.</p>';
     Array.prototype.forEach.call($('dwLinks').querySelectorAll('.qitem'), function (row) {
@@ -2641,6 +2644,7 @@
     openCardForm('dwLinkForm');
     $('dwLinkUrl').value = l.url || '';
     $('dwLinkKind').value = l.kind || 'other';
+    refMode(DW_REF);
     $('dwLinkLabel').value = l.label || '';
     $('dwLinkSave').textContent = 'Save';
     $('dwLinkUrl').focus();
@@ -2715,7 +2719,7 @@
     if (!form) return;
     form.hidden = true;
     Array.prototype.forEach.call(form.querySelectorAll('input, textarea'), function (x) { x.value = ''; });
-    if (id === 'dwLinkForm') { linkEditing = null; $('dwLinkKind').value = 'other'; $('dwLinkSave').textContent = 'Add'; }
+    if (id === 'dwLinkForm') { linkEditing = null; $('dwLinkKind').value = 'other'; $('dwLinkSave').textContent = 'Add'; refMode(DW_REF); }
     var opener = { dwDescForm: 'dwDescEdit', dwCheckForm: 'dwCheckOpen', dwLinkForm: 'dwLinkOpen', dwCommentForm: 'dwCommentOpen' }[id];
     if ($(opener)) $(opener).setAttribute('aria-expanded', 'false');
   }
@@ -2739,6 +2743,178 @@
 
   /* The words a stored link kind is read by. */
   var LINK_WORD = { draft: 'Draft', review: 'Review', final: 'Final', brief: 'Brief', asset: 'File', other: 'Link' };
+
+  /* RECORD LINKS. A task names the Creator Campaign or content set it is
+     for, and that record lists the tasks back (the user, 2026-09-27: "link
+     to which creator campaigns or content reviews etc. it works like a
+     backlinks kind"). The link is a row like any other, taken off with the
+     same Remove and Undo; it opens the record in the console, in this tab,
+     and only for somebody who may read that record's section. */
+  var REF_WORD = { campaign: 'Campaign', set: 'Content set' };
+  var REF_PART = { campaign: 'campaigns', set: 'review' };
+  var REF_NONE = { campaign: 'Untitled campaign', set: 'Content set' };
+  function linkWord(l) {
+    if (l.ref_type) return l.gone ? 'Deleted' : (REF_WORD[l.ref_type] || 'Record');
+    return LINK_WORD[l.kind] || sentence(l.kind);
+  }
+  function refHref(l) {
+    if (!l.ref_type || l.gone || !may(REF_PART[l.ref_type], 'view')) return '';
+    return /^\/admin\/\?/.test(String(l.url || '')) ? String(l.url) : '';
+  }
+  function linkMenu(l) {
+    return l.ref_type ? [['remove', 'Remove', true]] : [['edit', 'Edit'], ['remove', 'Remove', true]];
+  }
+  function mayLinkRecord(t) {
+    return Boolean(t && t.client_id) && (may('campaigns', 'view') || may('review', 'view'));
+  }
+  /* The title a record has now, read with the task: the link keeps the one
+     it had when it was made. A record since deleted reads Deleted; one the
+     reader may not see keeps the stored title. */
+  function freshRefs(links, then) {
+    var ids = { campaign: [], set: [] };
+    links.forEach(function (l) {
+      if (l.ref_type && ids[l.ref_type] && !l.archived_at && may(REF_PART[l.ref_type], 'view')) ids[l.ref_type].push(l.ref_id);
+    });
+    var reads = [];
+    if (ids.campaign.length) reads.push(['campaign', db.from('campaigns').select('id, title').in('id', ids.campaign)]);
+    if (ids.set.length) reads.push(['set', db.from('batches').select('id, title').in('id', ids.set)]);
+    if (!reads.length) { then(); return; }
+    Promise.all(reads.map(function (x) { return x[1]; })).then(function (res) {
+      res.forEach(function (r, i) {
+        if (!r || r.error) return;
+        var type = reads[i][0], by = {};
+        (r.data || []).forEach(function (row) { by[row.id] = row; });
+        links.forEach(function (l) {
+          if (l.ref_type !== type || l.archived_at) return;
+          var row = by[l.ref_id];
+          if (!row) { l.gone = true; return; }
+          l.label = String(row.title || '').trim() || REF_NONE[type];
+        });
+      });
+      then();
+    }).catch(function () { then(); });
+  }
+  /* The Kind select offers Record only on a client's task, to somebody who
+     may read a campaign or a content set. Added and taken away rather than
+     hidden: Safari draws a hidden option. */
+  function refOption(sel, t) {
+    if (!sel) return;
+    var has = sel.querySelector('option[value="record"]');
+    if (mayLinkRecord(t)) {
+      if (!has) {
+        var o = document.createElement('option');
+        o.value = 'record';
+        o.textContent = 'Record';
+        sel.appendChild(o);
+      }
+    } else if (has) {
+      if (sel.value === 'record') sel.value = sel.options[0].value;
+      has.remove();
+    }
+  }
+  /* The client's campaigns and content sets, newest first, less those the
+     task already names. A failed read says so and is never drawn as none. */
+  function loadRefs(t, sel) {
+    var live = {};
+    (state.detail.links || []).forEach(function (l) {
+      if (l.ref_type && !l.archived_at) live[l.ref_type + ':' + l.ref_id] = true;
+    });
+    var reads = [];
+    if (may('campaigns', 'view')) {
+      reads.push(['campaign', 'Creator Campaigns', db.from('campaigns').select('id, title, created_at')
+        .eq('client_id', t.client_id).order('created_at', { ascending: false })]);
+    }
+    if (may('review', 'view')) {
+      reads.push(['set', 'Content Review', db.from('batches').select('id, title, created_at')
+        .eq('client_id', t.client_id).order('created_at', { ascending: false })]);
+    }
+    sel.innerHTML = '<option value="">Loading</option>';
+    sel.disabled = true;
+    Promise.all(reads.map(function (x) { return x[2]; })).then(function (res) {
+      var html = '', n = 0, failed = false;
+      res.forEach(function (r, i) {
+        if (!r || r.error) { failed = true; return; }
+        var type = reads[i][0];
+        var rows = (r.data || []).filter(function (row) { return !live[type + ':' + row.id]; });
+        if (!rows.length) return;
+        html += '<optgroup label="' + esc(reads[i][1]) + '">' + rows.map(function (row) {
+          n++;
+          return '<option value="' + esc(type + ':' + row.id) + '">' +
+            esc(String(row.title || '').trim() || REF_NONE[type]) + '</option>';
+        }).join('') + '</optgroup>';
+      });
+      sel.innerHTML = n ? '<option value="">Select record</option>' + html
+        : '<option value="">' + (failed ? 'Unable to load records' : 'No records to link') + '</option>';
+      sel.disabled = false;
+    }).catch(function () {
+      sel.innerHTML = '<option value="">Unable to load records</option>';
+      sel.disabled = false;
+    });
+  }
+  /* Kind Record swaps the address for the record picker, in the address's
+     place, so the row keeps its shape. */
+  function refMode(f) {
+    var on = $(f.kind).value === 'record';
+    $(f.refField).hidden = !on;
+    f.hide.forEach(function (id) { if ($(id)) $(id).hidden = on; });
+    if (on && state.task) loadRefs(state.task, $(f.ref));
+  }
+  var DW_REF = { kind: 'dwLinkKind', ref: 'dwLinkRef', refField: 'dwLinkRefField',
+                 hide: ['dwLinkUrlField', 'dwLinkLabelLab', 'dwLinkLabel'] };
+  var REC_REF = { kind: 'taskLinkKind', ref: 'taskLinkRef', refField: 'taskLinkRefField',
+                  hide: ['taskLinkLabelField', 'taskLinkUrlRow'] };
+  function linkRecord(t, pick, where, then) {
+    var m = /^(campaign|set):(.+)$/.exec(String(pick || ''));
+    if (!m) { msg(where, 'Select a record.', 'err'); return; }
+    call('ops_link_record', { p_task: t.id, p_type: m[1], p_ref: m[2], p_version: t.version }, where, then);
+  }
+  /* A draft sent through Content Review is the client's review link. Where
+     the task names a content set and carries no draft yet, the address is
+     written in for the person to keep or change (prefilled, not fixed). */
+  function prefillDraft(urlEl, labelEl) {
+    var t = state.task;
+    var set = (state.detail.links || []).filter(function (l) {
+      return l.ref_type === 'set' && !l.archived_at && !l.gone;
+    })[0];
+    if (!t || !t.client_id || !set || !urlEl || String(urlEl.value || '').trim()) return;
+    db.from('clients').select('access_token').eq('id', t.client_id).then(function (r) {
+      var tok = r && !r.error && r.data && r.data[0] && r.data[0].access_token;
+      if (!tok || String(urlEl.value || '').trim()) return;
+      urlEl.value = location.origin + '/review/?k=' + encodeURIComponent(tok);
+      if (labelEl && !String(labelEl.value || '').trim()) labelEl.value = set.label;
+    }).catch(function () {});
+  }
+  /* Opening Files and links on a task still owing its draft, with a content
+     set named, starts on Draft with the review link in. */
+  function draftDue(t) {
+    var s = stageOf(t), g = s ? s.stage_group : '';
+    return !linked() && (state.detail.links || []).some(function (l) {
+      return l.ref_type === 'set' && !l.archived_at && !l.gone;
+    }) && (isWork(g) || g === 'internal_review' || g === 'revision');
+  }
+
+  /* THE TASKS A RECORD NAMES, for the campaign's Overview and the content
+     set's panel: `ops_record_tasks` answers only the tasks the reader may
+     see, and nothing to somebody who may not read the record. */
+  function recordTasks(type, id, then) {
+    if (!may('ops', 'view')) { then([]); return; }
+    db.rpc('ops_record_tasks', { p_type: type, p_ref: id }).then(function (r) {
+      then(r.error || !Array.isArray(r.data) ? null : r.data);
+    }).catch(function () { then(null); });
+  }
+  function recordTaskRows(rows) {
+    return '<div class="ovtable"><div class="ovhead ovrow-task"><span>Task</span><span>Task Owner</span>' +
+      '<span>Stage</span><span class="ovamt">Final due</span></div>' +
+      rows.map(function (x) {
+        var tone = STAGE_TONE[x.stage_group] || '';
+        var done = x.completed_at || x.cancelled_at;
+        return '<a class="ovrow ovrow-task' + (done ? ' is-off' : '') + '" href="/admin/?s=work&amp;open=' + encodeURIComponent(x.id) + '">' +
+          '<span class="ovname">' + esc(x.title || x.serial) + '<small class="ovtok">' + esc(x.serial) + '</small></span>' +
+          '<span class="ovdim">' + (x.owner ? esc(x.owner) : '<span class="muted">—</span>') + '</span>' +
+          '<span><span class="tone ' + esc(tone || 'tone-plain') + '">' + esc(x.cancelled_at ? 'Cancelled' : x.stage) + '</span></span>' +
+          '<span class="ovamt">' + (x.final_due_at ? esc(niceDate(x.final_due_at)) : '<span class="muted">—</span>') + '</span></a>';
+      }).join('') + '</div>';
+  }
 
   /* TIME: the stage table, said once, and the hours somebody recorded
      where there are any. The table is the figure; a fact restating its
@@ -3410,7 +3586,9 @@
       /* The month's engagement, where the task has one: production waits on
          it, so the rail says where it stands. Read after the task, because
          the task is what names it; a refused read leaves no block. */
-      var go = function () { loadSession(function () { paintTask(); if (after) after(); }); };
+      var go = function () {
+        freshRefs(state.detail.links, function () { loadSession(function () { paintTask(); if (after) after(); }); });
+      };
       if (!t.engagement_id) { state.eng = null; state.engChecks = []; state.engCounts = null; go(); return; }
       Promise.all([
         db.from('ops_engagements').select('*').eq('id', t.engagement_id),
@@ -4201,16 +4379,16 @@
     var table = GRP.table('svc-row tlink-row', ['Link', 'Kind', '']);
     live.forEach(function (l) {
       var row = document.createElement('div');
-      var href = safeUrl(l.url);
+      var href = l.ref_type ? refHref(l) : safeUrl(l.url);
       row.className = 'svc-row tlink-row';
       row.innerHTML =
-        '<span class="svc-name"><b>' + esc(l.label) + '</b><small>' + esc(l.url) + '</small></span>' +
-        '<span class="tlink-kind"><span class="tone">' + esc(l.kind) + '</span></span>' +
+        '<span class="svc-name"><b>' + esc(l.label) + '</b>' + (l.ref_type ? '' : '<small>' + esc(l.url) + '</small>') + '</span>' +
+        '<span class="tlink-kind"><span class="tone">' + esc(linkWord(l)) + '</span></span>' +
         '<span class="team-act">' +
-          (href ? '<a class="btn btn-sm" href="' + esc(href) + '" target="_blank" rel="noopener">Open</a>' : '') +
+          (href ? '<a class="btn btn-sm" href="' + esc(href) + '"' + (l.ref_type ? '' : ' target="_blank" rel="noopener"') + '>Open</a>' : '') +
           /* Correcting and taking off are the row's ⋯, as they are in the
              sheet: one way to change a link wherever it is drawn. */
-          (can ? itemMenu(l.label || l.url, [['edit', 'Edit'], ['remove', 'Remove', true]]) : '') +
+          (can ? itemMenu(l.label || l.url, linkMenu(l)) : '') +
         '</span>';
       /* The ⋯ acts on this link. */
       wireItemMenu(row, function (a) {
@@ -4254,10 +4432,14 @@
     recLinkEditing = null;
     $('taskLinkSave').textContent = 'Save';
     $('taskLinkForm').hidden = false;
+    refOption($('taskLinkKind'), state.task);
     if (typeof kind === 'string') $('taskLinkKind').value = kind;
+    else if (state.task && draftDue(state.task)) $('taskLinkKind').value = 'draft';
     $('taskLinkUrl').value = '';
     $('taskLinkLabel').value = '';
+    refMode(REC_REF);
     msg('taskLinkMsg', '');
+    if ($('taskLinkKind').value === 'draft') prefillDraft($('taskLinkUrl'), $('taskLinkLabel'));
     $('taskLinkUrl').focus();
   }
 
@@ -6807,6 +6989,14 @@
       if (b) b.addEventListener('click', function () {
         if (!$(x[1]).hidden) { closeCardForm(x[1]); return; }
         openCardForm(x[1]);
+        if (x[1] === 'dwLinkForm') {
+          refOption($('dwLinkKind'), state.task);
+          if (state.task && draftDue(state.task)) {
+            $('dwLinkKind').value = 'draft';
+            prefillDraft($('dwLinkUrl'), $('dwLinkLabel'));
+          }
+          refMode(DW_REF);
+        }
         $(x[2]).focus();
       });
     });
@@ -6855,6 +7045,13 @@
       e.preventDefault();
       var t = state.task, url = String($('dwLinkUrl').value || '').trim();
       if (!t) return;
+      if ($('dwLinkKind').value === 'record' && !linkEditing) {
+        linkRecord(t, $('dwLinkRef').value, 'dwMsg', function () {
+          closeCardForm('dwLinkForm');
+          readTask(t.id, function () { msg('dwMsg', 'Linked.', 'ok'); });
+        });
+        return;
+      }
       if (!/^https?:\/\//i.test(url)) { msg('dwMsg', 'A link starts with https://', 'err'); $('dwLinkUrl').focus(); return; }
       var label = String($('dwLinkLabel').value || '').trim() || url.replace(/^https?:\/\//i, '').split(/[\/?#]/)[0];
       var editing = linkEditing;
@@ -7003,10 +7200,27 @@
     if (la) la.addEventListener('click', openLinkForm);
     var lc = $('taskLinkCancel');
     if (lc) lc.addEventListener('click', function () { $('taskLinkForm').hidden = true; });
+    var lk = $('taskLinkKind');
+    if (lk) lk.addEventListener('change', function () {
+      refMode(REC_REF);
+      if (lk.value === 'draft' || lk.value === 'review') prefillDraft($('taskLinkUrl'), $('taskLinkLabel'));
+    });
+    var dk = $('dwLinkKind');
+    if (dk) dk.addEventListener('change', function () {
+      refMode(DW_REF);
+      if (dk.value === 'draft' || dk.value === 'review') prefillDraft($('dwLinkUrl'), $('dwLinkLabel'));
+    });
     var ls = $('taskLinkSave');
     if (ls) ls.addEventListener('click', function () {
       var t = state.task;
       if (!t) return;
+      if ($('taskLinkKind').value === 'record' && !recLinkEditing) {
+        linkRecord(t, $('taskLinkRef').value, 'taskLinkMsg', function () {
+          $('taskLinkForm').hidden = true;
+          readTask(t.id);
+        });
+        return;
+      }
       var url = String($('taskLinkUrl').value || '').trim();
       if (!url) { msg('taskLinkMsg', 'An address is required.', 'err'); $('taskLinkUrl').focus(); return; }
       var editing = recLinkEditing;
@@ -7433,7 +7647,10 @@
     openId: function () { return (state.task && state.task.id) || null; },
     reload: function () { if (state.task) readTask(state.task.id); },
     /* The client record's Work pane: drawn by this script into that pane. */
-    clientWork: clientWork
+    clientWork: clientWork,
+    /* The tasks a campaign or content set is named by, and their rows. */
+    recordTasks: recordTasks,
+    recordTaskRows: recordTaskRows
   };
   if (bridge.opsReady) bridge.opsReady();
   if (bridge.me && bridge.me()) signedIn();

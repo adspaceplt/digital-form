@@ -1129,6 +1129,8 @@
     'campaign.unkeyed':      ['Selection undone', 'is-warn', 'campaigns'],
     'campaign.rate':         ['Rate changed', 'is-warn', 'campaigns'],
     'campaign.stage':        ['Stage changed', '', 'campaigns'],
+    'campaign.task_linked':  ['Task linked', '', 'campaigns'],
+    'campaign.task_unlinked': ['Task unlinked', '', 'campaigns'],
     'campaign.unbooked':     ['Back to options', 'is-warn', 'campaigns'],
     'campaign.withdrawn':    ['Creator withdrawn', 'is-danger', 'campaigns'],
     'campaign.confirmed':    ['Selection confirmed', 'is-ok', 'campaigns'],
@@ -1165,6 +1167,8 @@
     /* Content Review wrote nothing for the everyday acts on a set. */
     'set.created':           ['Set created', 'is-ok', 'review'],
     'set.renamed':           ['Set renamed', '', 'review'],
+    'set.task_linked':       ['Task linked', '', 'review'],
+    'set.task_unlinked':     ['Task unlinked', '', 'review'],
     'post.added':            ['Posts added', 'is-ok', 'review'],
     'post.edited':           ['Post edited', '', 'review'],
     'client.handles':        ['Handles updated', '', 'review'],
@@ -1659,6 +1663,7 @@
     $('drivePicker').hidden = true;
     msg('driveMsg', '');
     paintSetHeader();
+    loadSetTasks(b);
     renderDrafts();
     loadBatches();
     loadPosts();
@@ -1669,6 +1674,21 @@
         ' still waiting to be added to this set.', 'ok');
     }
     if (!quiet) $('setPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /* The tasks in My Work that name this set (the user, 2026-09-27: "it
+     works like a backlinks kind"). The panel is drawn only where one does;
+     a failed read leaves it out rather than saying none. */
+  function loadSetTasks(b) {
+    var box = $('setTasks'), O = window.ADspaceOps;
+    if (!box) return;
+    box.hidden = true;
+    if (!O || !O.recordTasks) return;
+    O.recordTasks('set', b.id, function (rows) {
+      if (!state.batch || state.batch.id !== b.id || !rows || !rows.length) return;
+      $('setTaskList').innerHTML = O.recordTaskRows(rows);
+      box.hidden = false;
+    });
   }
 
   function paintSetHeader() {

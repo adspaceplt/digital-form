@@ -6711,6 +6711,17 @@ body.is-canvas { overflow: hidden; }
    with a half hour in it. */
 .ovrow-date { grid-template-columns: minmax(0, 1.3fr) 176px 112px; }
 .ovname { font-weight: 600; min-width: 0; overflow-wrap: anywhere; }
+/* The tasks a campaign or content set is named by: the task over its
+   number, whose it is, where it stands (the task stage track, 160), and when
+   it is owed. The row is one link into My Work, nothing nested. */
+.ovrow-task { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) 160px 104px; color: inherit; text-decoration: none; }
+.ovtok { display: block; margin-top: 2px; font: 400 12.5px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink-mute); }
+a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -2px; border-radius: 0; }
+@media (hover: hover) {
+  a.ovrow:hover .ovname { text-decoration: underline; text-decoration-color: var(--line-ctl); text-underline-offset: 2px; }
+}
+.ovrow-task.is-off > * { opacity: .55; }
+#setTaskList .ovrow:last-child { padding-bottom: 0; }
 .ovdim { color: var(--ink-mute); font-size: 12.5px; min-width: 0; }
 .ovamt { font-variant-numeric: tabular-nums; }
 
@@ -6788,6 +6799,16 @@ body.is-canvas { overflow: hidden; }
 .is-narrow .ovrow-book > :nth-child(2) { grid-area: dim; }
 .is-narrow .ovrow-book > :nth-child(3) { grid-area: state; justify-self: end; }
 .is-narrow .ovrow-book > :nth-child(4) { grid-area: amt; justify-self: end; }
+/* A task: its name and stage on the first line, whose and when on the
+   second, the last column the right edge. */
+.is-narrow .ovrow-task {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name state" "dim amt"; gap: 3px 12px;
+}
+.is-narrow .ovrow-task > :nth-child(1) { grid-area: name; }
+.is-narrow .ovrow-task > :nth-child(2) { grid-area: dim; }
+.is-narrow .ovrow-task > :nth-child(3) { grid-area: state; justify-self: end; }
+.is-narrow .ovrow-task > :nth-child(4) { grid-area: amt; justify-self: end; font-size: 12.5px; color: var(--ink-mute); }
 /* The schedule keeps both dates, each under the caption the hidden header
    would otherwise have given it. */
 .is-narrow .ovrow-date {
