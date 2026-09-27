@@ -2246,7 +2246,7 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 .acct-menu .kmenu-item {
   flex-direction: row; align-items: center; justify-content: flex-start;
-  gap: 10px; text-align: left; min-height: 42px; padding: 8px 12px;
+  gap: 10px; text-align: left; min-height: max(42px, var(--ctl-h)); padding: 8px 12px;
 }
 /* The label and its second line read as one row, not as two stacked items. */
 .acct-menu .kmenu-item b { font-weight: 600; }
@@ -8540,4 +8540,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .pushpop-acts { display: flex; justify-content: flex-end; }
 .pushpop .msg { margin: 0; }
 .acct-msg { margin: 0; padding: 4px 12px 8px; font-size: 12.5px; line-height: 1.45; }
-.acct-menu .kmenu-item .acct-push-word { margin-left: 0; text-align: left; }
+/* The item's label is a span only so the page can rename it; it reads as
+   every other item's label, not as the menu's small second line. */
+.acct-menu .kmenu-item .acct-push-word { margin-left: 0; text-align: left; font-size: inherit; line-height: inherit; color: inherit; }
