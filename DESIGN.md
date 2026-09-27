@@ -112,9 +112,11 @@ Helvetica, Arial). Chinese adds PingFang SC and Microsoft YaHei under
 | Mono | `ui-monospace, SFMono-Regular, Menlo` 12.5px | Slugs, tokens, codes only |
 
 - Slate Regular (`/css/SlateRg.woff2`, preloaded, `font-display: optional`)
-  through `--font-head` on the display and section headings only. Optima sets
-  the front door's name (`.lp-title`, `css/OPTIMA.TTF` after `local('Optima')`)
-  and otherwise stays on the letterhead.
+  through `--font-head` on the display and section headings, and on the front
+  door's names (`.lp-way-name`, the days). Optima stays on the letterhead.
+- The front door's hierarchy: headings in the body face 17/600 (16 phone); the
+  names under them in Slate Regular 400, 15 (14 phone); links 13.5 (13);
+  address and lead 14.
 - Print (the letterhead):
   - wordmark in Optima 14pt (`fontMark`);
   - body in Slate Book 11/14.5pt, 14pt between paragraphs (`font`);
@@ -135,7 +137,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 |---|---|
 | Section head `.viewhead` | 24 above, 12 below (22/12 phone) |
 | Blocks stacked in a section | 12 between every pair, whatever the block (`uxaudit` `stack`) |
-| The front door (`body.lp`) | Editorial: text 24px from the edge on a phone, the photograph edge to edge; a 980px column at a desk; section steps 32 to 56 |
+| The front door (`body.lp`) | Editorial: content 24px from the edge on a phone (the header and foot keep the portal's 16), the photograph edge to edge; a 980px column at a desk; section steps 32 to 56 |
 | Sections in a list `.crm-group` | 24 |
 | Panel padding | 18px 20px (14 phone) |
 | Fold head `.disclosure` | 16px 22px (12px 14px phone) |
