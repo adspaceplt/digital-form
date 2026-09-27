@@ -15,6 +15,9 @@
  *   ADspacePasskey.open()  the Passkeys sheet, from the account menu
  *   ADspacePasskey.offer() once per browser, after an email sign-in on a
  *                          device that has Touch ID, Face ID or a device password
+ *   ADspacePasskey.mine(n) how many passkeys the signed-in person holds
+ *   ADspacePasskey.prove() a passkey that proves the signed-in person, and
+ *                          never signs anybody else in
  */
 (function () {
   'use strict';
@@ -91,6 +94,75 @@
         b.disabled = false;
         if (!e || !cancelled(e)) say('authMsg', 'Not signed in. Please try again.');
       });
+    });
+  }
+
+  // ---- Proving it is you --------------------------------------------------
+  /* A fresh proof for the person already signed in, for a page that asks
+     for one (My performance). Supabase has one passkey ceremony, the
+     sign-in: the browser offers every passkey this device holds for the
+     portal, whichever account it belongs to, and the session is replaced by
+     that account's before the call returns. On 2026-09-27 a test account
+     pressed Unlock, Touch ID offered the work account's passkey, and the
+     console carried on as the work account over the test account's menus.
+     So a proof is three rules:
+       - it is offered only to a person with a passkey of their own (`mine`);
+       - the console holds its auth events while it runs (`ADspaceAdmin.hold`);
+       - an answer for anybody else is revoked on this device at once, the
+         person's own session is put back, and the refusal is named. Where it
+         cannot be put back, the console signs out rather than carry on as
+         somebody else.
+     The server's lock is unchanged: it reads the proof in the session's own
+     token, so a proof only ever opens the reviews of whoever made it. */
+  function mine(then) {
+    if (!on) { then(0); return; }
+    db.auth.passkey.list().then(function (r) {
+      then(r && !r.error && Array.isArray(r.data) ? r.data.length : 0);
+    }).catch(function () { then(0); });
+  }
+  function whoOf(s) {
+    var u = s && s.user;
+    return u ? String(u.id || u.email || '').toLowerCase() : '';
+  }
+  var ELSE = 'That passkey belongs to another account. Use your own passkey or an emailed code.';
+  function prove(o) {
+    var hold = window.ADspaceAdmin && window.ADspaceAdmin.hold;
+    var before = null, holding = false;
+    var release = function () { if (holding && hold) { holding = false; hold(false); } };
+    db.auth.getSession().then(function (r) {
+      before = r && r.data && r.data.session;
+      if (!before) return { error: { message: 'Auth session missing!' } };
+      var go = window.ADspaceCaptcha ? window.ADspaceCaptcha.options(o.button, {}) : Promise.resolve({});
+      return go.then(function (c) {
+        if (hold) { holding = true; hold(true); }
+        return db.auth.signInWithPasskey({ options: c && c.captchaToken ? { captchaToken: c.captchaToken } : {} });
+      });
+    }).then(function (r) {
+      if (r && r.error) { release(); o.failed(r.error, cancelled(r.error)); return; }
+      var after = r && r.data && r.data.session;
+      if (after && whoOf(after) === whoOf(before)) { release(); o.done(); return; }
+      /* Somebody else's passkey: that session ends on this device only (the
+         person it belongs to stays signed in everywhere else), and the one
+         that was here comes back. */
+      return db.auth.signOut({ scope: 'local' }).catch(function () {}).then(function () {
+        return db.auth.setSession({ access_token: before.access_token, refresh_token: before.refresh_token });
+      }).then(function (s) {
+        var back = s && !s.error && s.data && s.data.session && whoOf(s.data.session) === whoOf(before);
+        if (!back) {
+          return db.auth.signOut({ scope: 'local' }).catch(function () {}).then(function () {
+            say('authMsg', 'That passkey belongs to another account. Sign in again.');
+            release();
+          });
+        }
+        release();
+        o.refused(ELSE);
+      }).catch(function () {
+        release();
+        o.refused(ELSE);
+      });
+    }).catch(function (e) {
+      release();
+      o.failed(e || {}, Boolean(e && cancelled(e)));
     });
   }
 
@@ -265,5 +337,7 @@
     }, function () {});
   }
 
-  window.ADspacePasskey = { on: on, open: open, offer: offer };
+  window.ADspacePasskey = {
+    mine: mine,
+    prove: prove, on: on, open: open, offer: offer };
 })();
