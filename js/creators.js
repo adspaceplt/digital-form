@@ -118,7 +118,6 @@
          to compare: below the phone line the header leaves with them. */
       colCreator: 'Creator', colProfiles: 'Profiles', colFee: 'Fee',
       stageLabel: 'Stage',
-      revisionLabel: 'Revision',
       nextLabel: 'Next',
       /* Next names the client only where the client is the one who acts. At
          pending_draft nothing has arrived yet, so a line reading "for your
@@ -149,7 +148,6 @@
       theClient: 'the client',
       approvedBy: function (who, when) { return 'Approved by ' + who + (when ? ' on ' + when : '') + '.'; },
       changesBy: function (who, when) { return 'Changes requested by ' + who + (when ? ' on ' + when : '') + '.'; },
-      roundOf: function (n) { return 'Revision round ' + n + ' of 2'; },
       reviewThanks: 'Received. The team will follow up.',
       needNote: 'Please describe the changes required.',
       saveFailed: 'Unable to save. Please try again.',
@@ -214,7 +212,6 @@
       platformsLabel: '发布平台',
       colCreator: '博主', colProfiles: '主页', colFee: '费用',
       stageLabel: '当前进度',
-      revisionLabel: '修改',
       nextLabel: '下一步',
       nextUp: {
         confirmed: '安排拍摄日期', pending_visit: '拍摄',
@@ -240,7 +237,6 @@
       theClient: '客户',
       approvedBy: function (who, when) { return who + '已通过' + (when ? '（' + when + '）' : '') + '。'; },
       changesBy: function (who, when) { return who + '提出修改' + (when ? '（' + when + '）' : '') + '。'; },
-      roundOf: function (n) { return '第 ' + n + ' 次修改（共 2 次）'; },
       reviewThanks: '已收到，团队将跟进处理。',
       needNote: '请说明需要修改的内容。',
       saveFailed: '保存失败，请重试。',
@@ -514,9 +510,6 @@
       var plats = platsOf(o);
       if (plats.length) facts.push([t().platformsLabel, plats.join(' · ')]);
       if (o.planned_publish && !live) facts.push([t().goLive, fmtDate(o.planned_publish)]);
-      if ((o.state === 'changes' || o.state === 'reviewing') && o.revision_round > 1) {
-        facts.push([t().revisionLabel, o.revision_round + ' / 2']);
-      }
       // The one thing a chip cannot say: what happens after this.
       var next = t().nextUp[o.state];
       if (next) facts.push([t().nextLabel, next]);

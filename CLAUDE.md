@@ -798,7 +798,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     `new-files` once the next round is handed in), the team's back to
     Submitted. A plain write into Reviewing is refused by the release gate.
   - `get_campaign` counts the client's own rounds only and never shows a
-    request taken back.
+    request taken back. The client's page shows no round count.
 - A handed-in draft always shows its caption field, with `No caption.` in
   warn when it is empty.
 - A visit's Location and Contact (name, phone) are set in the card's Shoot
