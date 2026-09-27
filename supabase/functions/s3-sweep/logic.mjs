@@ -1,61 +1,18 @@
 /*
- * s3-sweep/logic.mjs — everything the sweep decides, with no network.
+ * s3-sweep/logic.mjs — everything the storage report works out, with no
+ * network.
  *
  * Plain JavaScript so the same file runs in the Deno edge function and in
  * the Node suite (tests/s3sweep.js), which checks the signer against AWS's
- * published Signature Version 4 examples and the decisions against every
- * case the brief names. Nothing here fetches, reads a secret or deletes.
+ * published Signature Version 4 examples and the sorting against every case
+ * the brief names. Nothing here fetches, reads a secret or deletes, and
+ * since 2026-09-28 there is no delete anywhere in the sweep: every uploaded
+ * file is kept (the user: "all these couldnt be deleted or removed").
  */
 
 const enc = new TextEncoder();
 const toBytes = (x) => (typeof x === 'string' ? enc.encode(x) : x || new Uint8Array(0));
 const hex = (buf) => Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');
-
-/* ---- MD5, for DeleteObjects' required Content-MD5 -------------------------
-   Web Crypto has no MD5, and the header is mandatory on a multi-object
-   delete, so it is written out here (RFC 1321) and checked in the suite
-   against Node's own. */
-const S = [7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
-  5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
-  4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
-  6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21];
-const K = Array.from({ length: 64 }, (_, i) => Math.floor(Math.abs(Math.sin(i + 1)) * 2 ** 32) >>> 0);
-
-export function md5(input) {
-  const msg = toBytes(input);
-  const len = msg.length;
-  const padded = new Uint8Array(((len + 8) >> 6) * 64 + 64);
-  padded.set(msg);
-  padded[len] = 0x80;
-  const dv = new DataView(padded.buffer);
-  dv.setUint32(padded.length - 8, (len * 8) >>> 0, true);
-  dv.setUint32(padded.length - 4, Math.floor(len / 0x20000000), true);
-  let a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
-  for (let off = 0; off < padded.length; off += 64) {
-    let A = a0, B = b0, C = c0, D = d0;
-    for (let i = 0; i < 64; i++) {
-      let F, g;
-      if (i < 16) { F = (B & C) | (~B & D); g = i; }
-      else if (i < 32) { F = (D & B) | (~D & C); g = (5 * i + 1) % 16; }
-      else if (i < 48) { F = B ^ C ^ D; g = (3 * i + 5) % 16; }
-      else { F = C ^ (B | ~D); g = (7 * i) % 16; }
-      F = (F + A + K[i] + dv.getUint32(off + g * 4, true)) >>> 0;
-      A = D; D = C; C = B;
-      B = (B + ((F << S[i]) | (F >>> (32 - S[i])))) >>> 0;
-    }
-    a0 = (a0 + A) >>> 0; b0 = (b0 + B) >>> 0; c0 = (c0 + C) >>> 0; d0 = (d0 + D) >>> 0;
-  }
-  const out = new Uint8Array(16);
-  const ov = new DataView(out.buffer);
-  [a0, b0, c0, d0].forEach((w, i) => ov.setUint32(i * 4, w, true));
-  return out;
-}
-
-export function base64(bytes) {
-  let s = '';
-  for (const b of bytes) s += String.fromCharCode(b);
-  return btoa(s);
-}
 
 /* ---- Signature Version 4 ------------------------------------------------ */
 async function sha256(data) { return new Uint8Array(await crypto.subtle.digest('SHA-256', toBytes(data))); }
@@ -116,8 +73,6 @@ export const amzDateOf = (d) => d.toISOString().replace(/[-:]/g, '').replace(/\.
 const unxml = (s) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
   .replace(/&apos;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
   .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16))).replace(/&amp;/g, '&');
-const xmlEsc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 const tag = (block, name) => {
   const m = block.match(new RegExp('<' + name + '>([\\s\\S]*?)</' + name + '>'));
   return m ? unxml(m[1]) : null;
@@ -132,26 +87,11 @@ export function parseList(xml) {
   return { objects, truncated: tag(xml, 'IsTruncated') === 'true', next: tag(xml, 'NextContinuationToken') };
 }
 
-/* The body of one DeleteObjects call. Quiet: S3 answers only the failures. */
-export function deleteBody(keys) {
-  return '<?xml version="1.0" encoding="UTF-8"?><Delete xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Quiet>true</Quiet>' +
-    keys.map((k) => '<Object><Key>' + xmlEsc(k) + '</Key></Object>').join('') + '</Delete>';
-}
-
-export function parseDeleteResult(xml) {
-  const errors = [];
-  for (const m of xml.matchAll(/<Error>([\s\S]*?)<\/Error>/g)) {
-    errors.push({ key: tag(m[1], 'Key'), code: tag(m[1], 'Code'), message: tag(m[1], 'Message') });
-  }
-  return { errors };
-}
-
 /* ---- The decisions ------------------------------------------------------ */
 export const MIN_AGE_DAYS = 7;
-export const DEFAULT_MAX = 500;
 
 /**
- * Sorts what was listed. Only a key inside `prefix/` is ever a candidate; a
+ * Sorts what was listed. Only a key inside `prefix/` is ever judged; a
  * folder marker is skipped; an object younger than seven days (an upload in
  * flight, or one whose row is still being written) is never judged.
  * `inUse` is the set the database answered. Answers four lists.
@@ -174,28 +114,22 @@ export const judged = (objects, now, prefix, minAgeDays = MIN_AGE_DAYS) =>
   plan({ objects, inUse: new Set(), now, prefix, minAgeDays }).orphans.map((o) => o.key);
 
 /**
- * Whether this run deletes. A dry run unless S3_SWEEP_DELETE is exactly
- * "on" and the caller did not ask for a dry run. Held, deleting nothing,
- * when the answer looks wrong: more than `max` to go at once, or nothing in
- * use at all while old files exist (a database answering nothing is far
- * likelier than a bucket nobody uses).
+ * What kind of report this run files. Every run is a report (`dry`): the
+ * sweep has no way to delete. It reads `held` when the answer looks wrong,
+ * old files present and the database naming none of them in use (a database
+ * answering nothing is far likelier than a bucket nobody uses), so the count
+ * of unused files is not trusted that day.
  */
-export function decide({ kept, orphans, deleteFlag, forceDry = false, max = DEFAULT_MAX }) {
-  const on = String(deleteFlag || '').trim() === 'on';
-  if (!orphans.length) return { mode: on && !forceDry ? 'delete' : 'dry', reason: 'nothing to delete' };
-  if (!kept.length) return { mode: 'held', reason: 'the database named no file in use; nothing deleted' };
-  if (orphans.length > max) return { mode: 'held', reason: `${orphans.length} to delete is over the limit of ${max}; nothing deleted` };
-  if (!on) return { mode: 'dry', reason: 'dry run (S3_SWEEP_DELETE is not "on")' };
-  if (forceDry) return { mode: 'dry', reason: 'dry run asked for' };
-  return { mode: 'delete', reason: null };
+export function decide({ kept, orphans }) {
+  if (orphans.length && !kept.length) return { mode: 'held', reason: 'the database named no file in use; the count of unused files is not trusted' };
+  return { mode: 'dry', reason: 'report only; the sweep never deletes' };
 }
 
 const sum = (list) => list.reduce((n, o) => n + (Number(o.size) || 0), 0);
 
-/* The report row, from the plan, the decision and what the deletes did. */
-export function report({ prefix, sorted, decision, deletedKeys = [], failures = [], note = null }) {
-  const gone = new Set(deletedKeys);
-  const deleted = sorted.orphans.filter((o) => gone.has(o.key));
+/* The report row, from the plan and the decision. `would_delete` counts the
+   files no row names; nothing is ever deleted, so `deleted` stays 0. */
+export function report({ prefix, sorted, decision }) {
   const listed = [...sorted.young, ...sorted.kept, ...sorted.orphans];
   return {
     mode: decision.mode,
@@ -204,10 +138,9 @@ export function report({ prefix, sorted, decision, deletedKeys = [], failures = 
     young: sorted.young.length, young_bytes: sum(sorted.young),
     kept: sorted.kept.length, kept_bytes: sum(sorted.kept),
     would_delete: sorted.orphans.length, would_delete_bytes: sum(sorted.orphans),
-    deleted: deleted.length, deleted_bytes: sum(deleted),
-    failed: failures.length,
-    note: [decision.reason, note, failures.length ? failures.slice(0, 5).map((f) => f.key + ' ' + f.code).join('; ') : null]
-      .filter(Boolean).join(' · ') || null,
+    deleted: 0, deleted_bytes: 0,
+    failed: 0,
+    note: decision.reason || null,
     sample: sorted.orphans.slice(0, 20).map((o) => o.key)
   };
 }

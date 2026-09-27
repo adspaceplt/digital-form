@@ -1,4 +1,4 @@
-# Storage: the bucket, the sweep, the keys and the lifecycle rule
+# Storage: the bucket, the keys, the lifecycle rule and the daily report
 
 | | |
 | --- | --- |
@@ -7,19 +7,21 @@
 | Prefix | `content` |
 | Public read | CloudFront at `https://mycdn.adspace.me` |
 | Writes | `sign-upload` edge function, signed PUT, key chosen by the function |
-| Deletes | `s3-sweep` edge function only, daily, never while a row points at the file |
+| Deletes | None. Every uploaded file is kept (the user, 2026-09-28) |
+| Report | `s3-sweep` edge function, daily: what the bucket holds and what no row names |
 
-Do the four parts in this order. Parts 1 and 2 are the AWS console, part 3 is
-Supabase, part 4 turns the deletes on after a dry run has been read.
+Do the three parts in this order. Parts 1 and 2 are the AWS console, part 3 is
+Supabase. Part 4 records that nothing is deleted.
 
 1. [The IAM split](#1-the-iam-split): the portal's key can only upload; a
-   second key can only list and delete.
+   second key can only list.
 2. [The lifecycle rule](#2-the-lifecycle-rule): abandoned uploads and old
    versions are cleaned by AWS.
-3. [The sweep](#3-the-sweep): deploy, schedule, read the first dry run.
-4. [Turning the deletes on](#4-turning-the-deletes-on).
+3. [The daily report](#3-the-daily-report): deploy, schedule, read the first
+   run.
+4. [Deletes: none](#4-deletes-none).
 
-## How a file gets in, and how it leaves
+## How a file gets in, and why it stays
 
 The browser asks `sign-upload` for permission; the function checks who is
 asking and **chooses the path itself**:
@@ -30,7 +32,11 @@ content/creator/{optionId}/{uuid}.{ext}  handed in by a creator
 ```
 
 The link is then written to a row. When the row goes (a set deleted, a client
-deleted, a draft removed), the file used to stay in the bucket for ever. Now:
+deleted, a draft removed), the file stays in the bucket. That is deliberate:
+every uploaded file is kept, Content Review files and creator drafts included
+(the user, 2026-09-28: "all these couldnt be deleted or removed"). Nothing in
+the portal deletes from S3, and `s3-sweep` has no delete in it. What the daily
+report tells you:
 
 - **`s3_keys_in_use(keys)`** (database, service role only) answers which keys
   are still referenced. A key is in use while **any row anywhere** in the
@@ -38,30 +44,30 @@ deleted, a draft removed), the file used to stay in the bucket for ever. Now:
   whole, including `posts.media`, Drive imports and their posters, campaign
   invoices, client logos, document file links and history rows. A column
   added later is covered the day it is added.
-- A **soft-removed draft** (`campaign_deliverables.removed_at`) stays in use
-  for **30 days**, because Undo puts the row back.
+- A **soft-removed draft** (`campaign_deliverables.removed_at`) counts as in
+  use for **30 days**, because Undo puts the row back; after that it is
+  counted as named by no row, and kept like everything else.
 - **`s3-sweep`** lists `content/`, skips anything **younger than 7 days** (an
   upload in flight, a row still being written), asks the database about the
-  rest, and deletes what nothing references.
-- It is a **dry run** unless the secret `S3_SWEEP_DELETE` is exactly `on`.
-- Even when on, a run is **held** (deletes nothing) if the database names no
-  file in use at all, or if more than 500 files (`S3_SWEEP_MAX`) would go at
-  once.
-- Every run files one row in `s3_sweeps`.
-- **Never keep a file under `content/` by hand.** Anything there that no row
-  names is removed. The brand mark and favicon live at the bucket root,
-  outside the sweep.
+  rest, and files one row in `s3_sweeps`: files and bytes in use, too young
+  to judge, and named by no row. The only request it sends S3 is a list.
+- A run reads **held** when the database names no file in use at all: that
+  day's count of files named by no row is not trusted.
+- A file put under `content/` by hand is kept like any other; the report
+  counts it as named by no row. The brand mark and favicon live at the bucket
+  root, outside the report.
 
 ---
 
 ## 1. The IAM split
 
-Two users, each able to do one thing, owned by no person:
+Two users, each able to do one thing, owned by no person. Neither can
+delete:
 
 | User | Can | Used by | Supabase secrets |
 | --- | --- | --- | --- |
 | `adspace-portal-upload` | `s3:PutObject` on `content/*` | `sign-upload` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` |
-| `adspace-s3-sweeper` | list `content/`, `s3:DeleteObject` on `content/*` | `s3-sweep` | `S3_SWEEP_KEY_ID`, `S3_SWEEP_SECRET` |
+| `adspace-s3-sweeper` | list `content/` | `s3-sweep` | `S3_SWEEP_KEY_ID`, `S3_SWEEP_SECRET` |
 
 Supabase secrets are shared by every function in the project, which is why
 the sweeper's key has names of its own: `sign-upload` never reads them.
@@ -100,18 +106,17 @@ Sign in to the AWS console as yourself (with MFA), not with a service key.
          "Action": "s3:ListBucket",
          "Resource": "arn:aws:s3:::myadspace",
          "Condition": { "StringLike": { "s3:prefix": ["content/*"] } }
-       },
-       {
-         "Sid": "SweepDeletesContentOnly",
-         "Effect": "Allow",
-         "Action": "s3:DeleteObject",
-         "Resource": "arn:aws:s3:::myadspace/content/*"
        }
      ]
    }
    ```
 
 5. **Next** → Policy name `adspace-s3-sweeper` → **Create policy**.
+
+A sweeper policy made before 2026-09-28 also carried a
+`SweepDeletesContentOnly` statement (`s3:DeleteObject`). Take it out: IAM →
+**Policies** → `adspace-s3-sweeper` → **Edit** → delete that block, and the
+comma before it → **Next** → **Save changes**. The report needs only the list.
 
 ### 1b. The two users and their keys
 
@@ -161,12 +166,13 @@ Never delete the old key first.
 
 S3 → **Buckets** → `myadspace` → **Properties** → **Bucket Versioning**.
 
-- **Enabled**: keep it. A file the sweep deletes becomes a noncurrent version
-  and can be restored for 30 days (see 4c).
-- **Disabled** or **Suspended**: recommended to enable before part 4, for the
-  same reason. **Edit** → **Enable** → **Save changes**. It cannot be turned
-  back to Disabled later, only Suspended; the rule below keeps its cost to 30
-  days of deleted files.
+- **Enabled**: keep it. A file overwritten, or removed by hand in the AWS
+  console, becomes a noncurrent version and can be restored for 30 days (see
+  4).
+- **Disabled** or **Suspended**: recommended to enable, for the same reason.
+  **Edit** → **Enable** → **Save changes**. It cannot be turned back to
+  Disabled later, only Suspended; the rule below keeps its cost to 30 days of
+  replaced files.
 
 ### 2b. Create the rule
 
@@ -230,7 +236,7 @@ size**: cheaper, never lost.
 
 ---
 
-## 3. The sweep
+## 3. The daily report
 
 ### 3a. Secrets
 
@@ -239,8 +245,6 @@ Supabase → **Edge Functions** → **Secrets**. Besides the two keys from 1c:
 | Secret | Value |
 | --- | --- |
 | `S3_SWEEP_TOKEN` | A long random string, e.g. the output of `openssl rand -hex 32`. The schedule sends it; nothing else holds it. |
-| `S3_SWEEP_DELETE` | **Leave unset** until part 4. |
-| `S3_SWEEP_MAX` | Optional. The most one run may delete; default 500. |
 | `S3_BUCKET`, `S3_REGION`, `S3_PREFIX` | Already set for `sign-upload` (`myadspace`, `ap-southeast-5`, `content`). |
 
 ### 3b. The database
@@ -287,25 +291,23 @@ curl -X POST https://hwwuigvdfubuymchsvyx.supabase.co/functions/v1/s3-sweep \
   -H "Authorization: Bearer $S3_SWEEP_TOKEN" -H "Content-Type: application/json" -d '{}'
 ```
 
-`-d '{"dryRun": true}'` forces a dry run even once deletes are on. Every run,
-scheduled or by hand, files a row:
+Every run, scheduled or by hand, files a row:
 
 ```sql
-select ran_at, mode, listed, young, kept, would_delete,
-       pg_size_pretty(would_delete_bytes) as would_free,
-       deleted, pg_size_pretty(deleted_bytes) as freed, failed, note, sample
+select ran_at, mode, pg_size_pretty(listed_bytes) as total, listed, young, kept,
+       would_delete as unused, pg_size_pretty(would_delete_bytes) as unused_size, note, sample
   from public.s3_sweeps order by ran_at desc limit 10;
 ```
 
 | Column | Means |
 | --- | --- |
-| `mode` | `dry` (nothing deleted), `delete`, `held` (the answer looked wrong; nothing deleted), `failed` (S3 or the database did not answer; nothing deleted) |
+| `mode` | `dry` (a report), `held` (the database named no file in use; the unused count is not trusted), `failed` (S3 or the database did not answer). Nothing is deleted in any of them |
 | `listed` | Every file under `content/` |
 | `young` | Under 7 days old, not judged |
-| `kept` | Still referenced |
-| `would_delete` | Nothing references them |
-| `deleted` / `failed` | What went, and what S3 refused (named in `note`) |
-| `sample` | Up to 20 of the keys it would remove, or removed |
+| `kept` | Still named by a row |
+| `would_delete` | Named by no row (the column keeps its first name); kept all the same |
+| `deleted` | Always 0 |
+| `sample` | Up to 20 of the files named by no row |
 
 The schedule's own trail, if a row is missing:
 `select * from cron.job_run_details order by start_time desc limit 5;` and
@@ -313,17 +315,15 @@ The schedule's own trail, if a row is missing:
 
 ---
 
-## 4. Turning the deletes on
+## 4. Deletes: none
 
-1. Read at least one `dry` row. Open two or three `sample` keys as
-   `https://mycdn.adspace.me/<key>`: each should be a file nobody needs (a
-   removed draft, a deleted set's media).
-2. Confirm versioning (2a) if you want the 30-day way back.
-3. Supabase → Edge Functions → Secrets → add `S3_SWEEP_DELETE` = `on`.
-4. The next run's row reads `delete`. To go back to dry runs, delete the
-   secret or set it to anything else.
+Withdrawn on 2026-09-28, before it was ever turned on: the first run named 18
+files (189 MB) no row points at, among them Content Review files the user
+keeps, and the user decided every uploaded file stays. The sweep's delete was
+taken out of its code; `S3_SWEEP_DELETE` and `S3_SWEEP_MAX` are no longer
+read, and setting them changes nothing.
 
-### 4c. Bringing a deleted file back (versioning on, within 30 days)
+### Bringing back a file removed by hand (versioning on, within 30 days)
 
 S3 → `myadspace` → **Objects** → turn on **Show versions** → find the key →
 select its **Delete marker** → **Delete** → confirm. The file is current

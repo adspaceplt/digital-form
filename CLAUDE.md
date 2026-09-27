@@ -1593,12 +1593,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The Turnstile secret, the Google refresh token and the performance master
     code live only in Supabase.
   - The delete code lives in the database.
-- S3 (`docs/S3-STORAGE.md`): the upload key only writes under `content/`. No
-  page deletes from S3; only `s3-sweep` does, and only a key that
-  `s3_keys_in_use()` (service role only) does not name: no row anywhere in
-  `public` holds it, a soft-removed draft counting for 30 days. It judges only
-  objects over 7 days old, is a dry run unless `S3_SWEEP_DELETE` is `on`, is
-  held on an implausible answer, and files every run in `s3_sweeps`.
+- S3 (`docs/S3-STORAGE.md`): the upload key only writes under `content/`.
+  Nothing deletes from S3: every uploaded file is kept, Content Review files
+  and creator drafts included. `s3-sweep` is a daily report only (pg_cron,
+  03:17 MYT, `s3-sweep-daily`): with a list-only key it lists `content/`,
+  asks `s3_keys_in_use()` (service role only) which files a row still names,
+  judges only objects over 7 days old, and files the counts in `s3_sweeps`.
+  Its code has no delete request, and `tests/s3sweep.js` holds that.
 
 ## 3. Workflow and constraints
 

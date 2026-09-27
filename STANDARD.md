@@ -581,14 +581,15 @@ section holds only what is true of the project as a whole.
   counted from the moves into that stage.
 
 ### Not built, or waiting on the user
-- S3 (`docs/S3-STORAGE.md`), built 2026-09-28, waiting on the user's hand
-  steps in that file's order:
-  - the IAM split (upload key `s3:PutObject` on `content/*` only; a sweeper
-    key to list and delete `content/*`) and the old key rotated out;
+- S3 (`docs/S3-STORAGE.md`), built 2026-09-28. The daily report
+  (`s3-sweep`, 03:17 MYT) is deployed and scheduled, and nothing is ever
+  deleted (the user, 2026-09-28). Still with the user:
+  - the sweeper's IAM policy loses `s3:DeleteObject` (it needs the list
+    only), and the old upload key is rotated out once uploads run on
+    `adspace-portal-upload`;
   - the lifecycle rule's housekeeping half (abort incomplete uploads at 7
-    days; noncurrent versions at 30); never an expiration action;
-  - `s3-sweep` deployed, scheduled, and left on dry runs until a dry run has
-    been read; then `S3_SWEEP_DELETE` = `on`.
+    days; noncurrent versions at 30), if not yet made; never an expiration
+    action;
   - Held: the storage-class half, until storage nears 100 GB or the Free Tier
     ends.
 - Documents:
