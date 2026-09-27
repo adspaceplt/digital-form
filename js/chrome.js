@@ -64,8 +64,9 @@
      deliberately NOT one of them: it has to be in the markup or the page
      flashes unstyled. */
   function head() {
-    var icon = cfg.brandIcon || 'https://mycdn.adspace.me/adspace-favicon.png';
-    [['icon', icon], ['apple-touch-icon', icon]].forEach(function (pair) {
+    /* The ADspace wordmark on white, from the site itself (2026-09-28: the
+       wordmark, never the monogram, and no page's icon hangs on the CDN). */
+    [['icon', cfg.brandIcon || '/img/favicon-192.png'], ['apple-touch-icon', cfg.brandIcon || '/img/apple-touch-icon.png']].forEach(function (pair) {
       if (document.querySelector('link[rel="' + pair[0] + '"]')) return;
       var l = document.createElement('link');
       l.rel = pair[0];

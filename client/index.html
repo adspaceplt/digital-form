@@ -10,32 +10,34 @@
 <meta property="og:site_name" content="ADspace">
 <meta property="og:title" content="Client Portal by ADspace">
 <meta property="og:description" content="Your company, services, letters and requests with ADspace.">
-<meta property="og:image" content="https://mycdn.adspace.me/adspace-favicon.png">
+<meta property="og:image" content="https://digital.adspace.me/img/icon-512.png">
 <meta name="twitter:card" content="summary">
-<link rel="icon" type="image/png" href="https://mycdn.adspace.me/adspace-favicon.png">
-<link rel="apple-touch-icon" href="https://mycdn.adspace.me/adspace-favicon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/img/favicon-192.png">
+<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
 <!-- The one brand face, fetched alongside the stylesheet rather than after
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260928c">
+<link rel="stylesheet" href="/css/portal.css?v=20260928d">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260928c"></script>
-<script src="/js/captcha.js?v=20260928c"></script>
-<script src="/js/words.js?v=20260928c"></script>
-<script src="/js/copy.js?v=20260928c"></script>
-<script src="/js/state.js?v=20260928c"></script>
-<script src="/js/menu.js?v=20260928c"></script>
-<script src="/js/api.js?v=20260928c"></script>
-<script src="/js/money.js?v=20260928c"></script>
-<script src="/js/documents.js?v=20260928c"></script>
-<script src="/js/smreport.js?v=20260928c"></script>
+<script src="/js/config.js?v=20260928d"></script>
+<script src="/js/captcha.js?v=20260928d"></script>
+<script src="/js/words.js?v=20260928d"></script>
+<script src="/js/copy.js?v=20260928d"></script>
+<script src="/js/state.js?v=20260928d"></script>
+<script src="/js/form.js?v=20260928d"></script>
+<script src="/js/swipe.js?v=20260928d"></script>
+<script src="/js/menu.js?v=20260928d"></script>
+<script src="/js/api.js?v=20260928d"></script>
+<script src="/js/money.js?v=20260928d"></script>
+<script src="/js/documents.js?v=20260928d"></script>
+<script src="/js/smreport.js?v=20260928d"></script>
 </head>
 <body>
 
-<script src="/js/chrome.js?v=20260928c" data-kicker="Client Portal" data-actions="lang"></script>
+<script src="/js/chrome.js?v=20260928d" data-kicker="Client Portal" data-actions="lang"></script>
 
 <template id="chromeExtra">
   <button class="pill" id="portalOut" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/><path d="M12 4h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6"/></svg><span id="portalOutWord">Sign out</span></button>
@@ -68,22 +70,10 @@
 
   <div id="app" hidden>
 
-    <!-- Who they are and who to reach stay beside the work on a screen wide
-         enough to hold both: seven sections in one column meant the account
-         manager's name was a scroll away from the letter that names them.
-         Below the workspace width it is one column again, in the same order,
-         because a rail on a phone is a second column of nothing. -->
-    <!-- The page opens on who it is for. It used to start straight in on
-         Services: a client signed in and the first thing they read was a table
-         of their own line items, with their company name nowhere on the page
-         and the one action they have buried at the top of the second column.
-         The same identity area both console records open on. -->
-    <!-- The console record's own head, cell for cell: the mark, then who this
-         is (the name with the meta under it), then the one control area on the
-         right. It was `.crm-title` with the meta as a sibling, so the meta
-         landed in the grid's third column — the registered name and the
-         account manager printed to the right of a filled button instead of
-         under the name they belong to, on every width. -->
+    <!-- The page opens on who it is for: the console record's own head, the
+         mark, the name with its registered name under it, and the one action
+         on the right. Then one tab strip, and one pane at a time (the user,
+         2026-09-28, choosing tabs like the console's records). -->
     <section class="panel rec-head" id="cpHead">
       <div class="rec-id">
         <span class="rec-mark" id="cpMark" aria-hidden="true"></span>
@@ -99,65 +89,107 @@
       </div>
     </section>
 
-    <div class="rec cportal">
-      <!-- One block per question, the way both console records carry theirs. -->
-      <aside class="rec-rail" aria-label="Your account">
-        <div class="railblock">
-          <h3 class="railtitle" id="ovHead">Overview</h3>
-          <dl class="facts" id="ovFacts"></dl>
+    <nav class="rectabs cp-tabs" id="cpTabs" role="tablist" aria-label="Your account">
+      <button class="tab is-on" data-pane="overview" type="button" role="tab" aria-selected="true" id="tabOverview">Overview</button>
+      <button class="tab" data-pane="services" type="button" role="tab" aria-selected="false" id="tabServices">Services</button>
+      <button class="tab" data-pane="letters" type="button" role="tab" aria-selected="false" id="tabLetters">Letters</button>
+      <button class="tab" data-pane="reports" type="button" role="tab" aria-selected="false" id="tabReports" hidden>Reports</button>
+      <button class="tab" data-pane="meetings" type="button" role="tab" aria-selected="false" id="tabMeetings" hidden>Meetings</button>
+      <button class="tab" data-pane="account" type="button" role="tab" aria-selected="false" id="tabAccount">Account</button>
+    </nav>
+
+    <div class="cp-panes" data-swipe="cpTabs" data-narrow="640">
+
+      <!-- Overview: what a client comes to check, each card opening its tab;
+           who to reach and the company beside it. -->
+      <div class="cp-pane cp-overview" data-pane="overview" role="tabpanel" aria-labelledby="tabOverview">
+        <div class="cp-col">
+          <section class="panel cp-card" id="ovSvc">
+            <div class="cp-card-head"><h3 id="ovSvcHead">Services</h3><button class="btn btn-quiet btn-sm ovgo" type="button" data-go="services" id="ovSvcGo"><span class="ovgo-word">View all</span><svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button></div>
+            <div id="ovSvcBox"></div>
+          </section>
+          <section class="panel cp-card" id="ovMeet" hidden>
+            <div class="cp-card-head"><h3 id="ovMeetHead">Next content meeting</h3><button class="btn btn-quiet btn-sm ovgo" type="button" data-go="meetings" id="ovMeetGo"><span class="ovgo-word">View all</span><svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button></div>
+            <div id="ovMeetBox"></div>
+          </section>
+          <section class="panel cp-card" id="ovRep" hidden>
+            <div class="cp-card-head"><h3 id="ovRepHead">Latest report</h3><button class="btn btn-quiet btn-sm ovgo" type="button" data-go="reports" id="ovRepGo"><span class="ovgo-word">View all</span><svg class="ovgo-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg></button></div>
+            <div id="ovRepBox"></div>
+            <div class="msg" id="ovRepMsg"></div>
+          </section>
+          <!-- The client's own pages: Content Review and each creator campaign. -->
+          <section class="panel cp-card" id="engWrap" hidden>
+            <div class="cp-card-head"><h3 id="engHead">Engagements</h3></div>
+            <div id="engBox"></div>
+          </section>
         </div>
-        <div class="railblock is-last">
-          <h3 class="railtitle" id="ctHead">Contacts</h3>
-          <div id="ovContacts"></div>
-        </div>
-      </aside>
-      <div class="rec-pane" data-pane="all">
-
-    <div class="viewhead"><span class="headmark"><h3 id="svcHead">Services</h3></span></div>
-    <div id="svcBox"></div>
-
-    <div id="rqWrap" hidden>
-      <div class="viewhead"><span class="headmark"><h3 id="rqHead">Requests</h3></span></div>
-      <div class="undobar" id="rqUndo" hidden></div>
-      <div class="msg" id="rqMsg"></div>
-      <div id="rqBox"></div>
-    </div>
-
-    <div class="viewhead"><span class="headmark"><h3 id="docHead">Letters</h3></span></div>
-    <div class="msg" id="docMsg"></div>
-    <div id="docBox"></div>
-
-    <!-- When we meet about each month's content. Never the month's tasks. -->
-    <div id="meetWrap" hidden>
-      <div class="viewhead"><span class="headmark"><h3 id="meetHead">Content meetings</h3></span></div>
-      <div id="meetBox"></div>
-    </div>
-
-    <!-- The monthly social media reports the team has confirmed and
-         published. A draft never reaches this page: the database sends only
-         the published version. -->
-    <div id="repWrap" hidden>
-      <div class="viewhead"><span class="headmark"><h3 id="repHead">Social media reports</h3></span></div>
-      <div class="msg" id="repMsg"></div>
-      <div id="repBox"></div>
-    </div>
-
-    <div id="engWrap" hidden>
-      <div class="viewhead"><span class="headmark"><h3 id="engHead">Engagements</h3></span></div>
-      <div id="engBox"></div>
-    </div>
-
-    <div id="payWrap" hidden>
-      <div class="viewhead"><span class="headmark"><h3 id="payHead">Payment</h3></span></div>
-      <section class="panel">
-        <dl class="facts" id="payFacts"></dl>
-      </section>
-    </div>
-
-    <div class="viewhead"><span class="headmark"><h3 id="accHead">Portal access</h3></span></div>
-    <div id="accBox"></div>
-
+        <aside class="cp-col" aria-label="Your account">
+          <section class="panel cp-card" id="ovMgr" hidden>
+            <div class="cp-card-head"><h3 id="ovMgrHead">Your account manager</h3></div>
+            <div id="ovMgrBox"></div>
+          </section>
+          <section class="panel cp-card">
+            <div class="cp-card-head"><h3 id="ovHead">Company</h3></div>
+            <dl class="facts" id="ovFacts"></dl>
+          </section>
+        </aside>
       </div>
+
+      <div class="cp-pane" data-pane="services" role="tabpanel" aria-labelledby="tabServices" hidden>
+        <section class="panel cp-card">
+          <div class="cp-card-head"><h3 id="svcHead">Services</h3></div>
+          <div id="svcBox"></div>
+        </section>
+        <section class="panel cp-card" id="rqWrap" hidden>
+          <div class="cp-card-head"><h3 id="rqHead">Requests</h3></div>
+          <div class="undobar" id="rqUndo" hidden></div>
+          <div class="msg" id="rqMsg"></div>
+          <div id="rqBox"></div>
+        </section>
+      </div>
+
+      <div class="cp-pane" data-pane="letters" role="tabpanel" aria-labelledby="tabLetters" hidden>
+        <section class="panel cp-card">
+          <div class="cp-card-head"><h3 id="docHead">Letters</h3></div>
+          <div class="msg" id="docMsg"></div>
+          <div id="docBox"></div>
+        </section>
+      </div>
+
+      <!-- The monthly reports the team has confirmed and published. A draft
+           never reaches this page: the database sends only the published
+           version. The tab is drawn once there is one. -->
+      <div class="cp-pane" data-pane="reports" role="tabpanel" aria-labelledby="tabReports" hidden>
+        <section class="panel cp-card" id="repWrap">
+          <div class="cp-card-head"><h3 id="repHead">Social media reports</h3></div>
+          <div class="msg" id="repMsg"></div>
+          <div id="repBox"></div>
+        </section>
+      </div>
+
+      <!-- When we meet about each month's content. Never the month's tasks. -->
+      <div class="cp-pane" data-pane="meetings" role="tabpanel" aria-labelledby="tabMeetings" hidden>
+        <section class="panel cp-card" id="meetWrap">
+          <div class="cp-card-head"><h3 id="meetHead">Content meetings</h3></div>
+          <div id="meetBox"></div>
+        </section>
+      </div>
+
+      <div class="cp-pane" data-pane="account" role="tabpanel" aria-labelledby="tabAccount" hidden>
+        <section class="panel cp-card">
+          <div class="cp-card-head"><h3 id="ctHead">Contacts</h3></div>
+          <div id="ovContacts"></div>
+        </section>
+        <section class="panel cp-card">
+          <div class="cp-card-head"><h3 id="accHead">Portal access</h3></div>
+          <div id="accBox"></div>
+        </section>
+        <section class="panel cp-card" id="payWrap" hidden>
+          <div class="cp-card-head"><h3 id="payHead">Payment</h3></div>
+          <dl class="facts" id="payFacts"></dl>
+        </section>
+      </div>
+
     </div>
   </div>
 </main>
@@ -178,6 +210,6 @@
   </div>
 </div>
 
-<script src="/js/portal.js?v=20260928c"></script>
+<script src="/js/portal.js?v=20260928d"></script>
 </body>
 </html>
