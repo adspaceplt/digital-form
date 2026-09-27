@@ -562,19 +562,11 @@ section holds only what is true of the project as a whole.
   dialog.
 
 ### Open security findings
-- **HIGH, not fixed.** RLS on the CRM and campaign tables still reads `to
-  authenticated using (true) with check (true)`:
-  - `clients`, `batches`, `posts`, `reviews`, `drive_assets`,
-    `client_contacts`, `client_touches`;
-  - `links`, `link_qrs`;
-  - `creators`, `creator_profiles`, `campaigns`, `campaign_options`,
-    `campaign_confirmations`, `option_posts`, `option_reviews`.
-  - Clients hold real logins, so a signed-in client can reach PostgREST
-    directly.
-  - The fix is `using (public.is_team()) with check (public.is_team())`. Every
-    client path already goes through security-definer functions.
-  - It ships as its own change with a live check, because a wrong `is_team()`
-    would lock the whole team out at once.
+- None open. Checked live on 2026-09-27: every public table has row level
+  security on, no policy reads `true`, and every policy asks `allowed()`,
+  which answers false for anybody who is not an active colleague. The
+  internal helpers the API could still reach are closed
+  (`2026-09-27-internal-helpers-stay-internal.sql`).
 
 ### Accepted known issues
 - The letterhead is drawn on page 1 and on pages the services table spills
