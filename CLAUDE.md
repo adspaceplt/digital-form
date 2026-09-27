@@ -269,6 +269,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The name grows out of Approve (`.namebox`), key `adspace_reviewer`.
   - Request changes steps aside while it asks (`.approve-row.is-asking`).
   - An open note box carries `.changebox-who`.
+- `js/swipe.js` is the only swipe: on touch, a sideways swipe inside a
+  `data-swipe` region presses the tab beside its strip's chosen one (nearest
+  region wins). It is left alone within 24px of an edge, on a field, select,
+  editable text, drag grip or `data-noswipe`, inside anything that scrolls
+  sideways, with a ⋯ menu or the rail drawer open, over selected text, in a
+  sheet without its own region, and unless plainly sideways (across 1.5 times
+  the down), at least 56px or a fifth of the width, within 0.8s.
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
   an off-screen textarea.
 - `js/state.js` owns loading, empty and failed (`skeleton`, `emptyLine`,
@@ -884,6 +891,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - My day by default, banded Overdue, Due today, In progress, Ready for
     review, Upcoming, No due date, Waiting, Completed today (shut).
   - Views by `stage_group`, never by one workflow's key.
+  - The period select (`#workPeriod`): This week, This month, Last month,
+    Last 7 days, Last 3 months, Last 6 months, This year. Every one runs to
+    now but Last month, which ends where this month begins (`periodEnd()`,
+    and the report states its last day).
   - Group by day / stage / status / Task Owner / client / engagement; every
     card is shut off the day axis, and the heading carries its overdue count
     (`marksOf()`).
@@ -1281,6 +1292,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`×n`). Sticky entries never fold: Performance, HR, voids, deletes,
   removals, billing, rates, invoices, access and groups (`stickyOf`).
   `ADspaceAdmin.record(row)` is the one reading of an `activity_log` row.
+  A run folds only on the same thing: its `key` (a document's subject and
+  reference; the record a pane belongs to) else its subject; with neither,
+  only identical lines fold. A field changed twice reads as its path
+  (`Admin → Team → Admin`), a run reads `· 3 times`, and a line longer than
+  three lines opens on a press (`is-long`, a button with `aria-expanded`).
+  `register.added` / `register.edited` read Document added / edited.
 - Every save files what it changed, from and to (`ADspaceRecords.changes`:
   "Label: old → new", empty reads "not set"); a save that changed nothing
   files nothing. Client details, brand, contacts, rate lines, team members,

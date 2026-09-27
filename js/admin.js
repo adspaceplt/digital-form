@@ -1070,8 +1070,8 @@
     'document.restored':     ['Document restored', 'is-ok', 'register'],
     'document.deleted':      ['Document deleted', 'is-danger', 'register'],
     'document.reissued':     ['Document reissued', '', 'register'],
-    'register.added':        ['Reference added', 'is-ok', 'register'],
-    'register.edited':       ['Reference edited', '', 'register'],
+    'register.added':        ['Document added', 'is-ok', 'register'],
+    'register.edited':       ['Document edited', '', 'register'],
     'service.added':         ['Rate line added', 'is-ok', 'services'],
     'service.changed':       ['Rate line changed', '', 'services'],
     'service.off':           ['Rate line inactive', 'is-warn', 'services'],
@@ -1270,10 +1270,18 @@
   function stickyOf(a) {
     return a._section === 'performance' || a.subject === 'HR' || STICKY.test(a.action || '');
   }
+  /* What a line is about, for the fold: its subject, and for a document its
+     reference as well, because one client holds many documents and the
+     subject alone folded three references into one line (2026-09-27). */
+  function keyOf(a) {
+    if (!/^(register|document)\./.test(a.action || '')) return null;
+    var ref = String(a.detail || '').split(/ \u00b7 |: /)[0].trim();
+    return (a.subject || '') + '|' + ref;
+  }
   function recordOf(a) {
     var meta = a._section === 'performance' ? [PERF_STEP[a.kind] || a.kind, ''] : (ACTION_LABEL[a.action] || [String(a.action || '').replace(/[._]/g, ' '), '']);
     return { at: a.created_at, who: a._who || whoName(a.actor) || 'System', what: meta[0], on: a.subject || '',
-             detail: a.detail || '', tone: meta[1] === 'is-danger' ? 'is-danger' : '', sticky: stickyOf(a) };
+             key: keyOf(a), detail: a.detail || '', tone: meta[1] === 'is-danger' ? 'is-danger' : '', sticky: stickyOf(a) };
   }
 
   Array.prototype.forEach.call($('activityTabs').children, function (b) {

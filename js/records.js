@@ -17,7 +17,15 @@
  *   ADspaceRecords.fold(items)
  *   ADspaceRecords.changes(before, after, [[key, label, fmt]], { names })
  *
- * An item is { at, who, what, on, detail, tone, sticky }, newest first.
+ * An item is { at, who, what, on, key, detail, tone, sticky }, newest first.
+ * `key` is what the line is about where the subject does not say it (a
+ * document's reference, or the record a pane belongs to); without either,
+ * only identical lines fold, because a line about nothing named cannot be
+ * said to be about the same thing as another (2026-09-27).
+ *
+ * A field changed twice in one run reads as its path (User group: Admin →
+ * Team → Admin), and a run reads "· 3 times". A long line shows three lines
+ * and opens on a press or Enter.
  */
 (function () {
   'use strict';
@@ -52,21 +60,52 @@
     (items || []).forEach(function (x) {
       var top = out[out.length - 1];
       var t = new Date(x.at).getTime(), tt = top ? new Date(top.last).getTime() : NaN;
+      var thing = thingOf(x);
       if (top && !top.sticky && !x.sticky && top.who === x.who && top.what === x.what &&
-          (top.on || '') === (x.on || '') && !isNaN(t) && !isNaN(tt) && tt - t <= RUN_MS && tt - t >= 0) {
+          top.thing === thing && (thing !== '' || (x.detail || '') === top.first) &&
+          !isNaN(t) && !isNaN(tt) && tt - t <= RUN_MS && tt - t >= 0) {
         top.n += 1;
         top.last = x.at;
         if (x.detail && top.details.indexOf(x.detail) < 0) top.details.unshift(x.detail);
         return;
       }
-      out.push({ at: x.at, last: x.at, who: x.who, what: x.what, on: x.on, tone: x.tone,
-                 sticky: x.sticky, n: 1, details: x.detail ? [x.detail] : [] });
+      out.push({ at: x.at, last: x.at, who: x.who, what: x.what, on: x.on, tone: x.tone, thing: thing,
+                 first: x.detail || '', sticky: x.sticky, n: 1, details: x.detail ? [x.detail] : [] });
     });
     return out;
   }
 
+  function thingOf(x) {
+    return String(x.key != null ? x.key : (x.on || ''));
+  }
+  /* A run's details, oldest first, as one: a field changed more than once
+     reads as its path, never as two changes that seem to contradict each
+     other ("Admin → Team; Team → Admin"). A detail that is not a list of
+     "Label: old → new" is kept whole, once. */
+  var MOVE = /^(.+?): (.*) \u2192 (.*)$/;
+  function merged(list) {
+    var seen = {}, order = [];
+    list.forEach(function (d) {
+      var parts = String(d).split('; ');
+      if (!parts.every(function (s) { return MOVE.test(s); })) {
+        if (!seen['t:' + d]) { seen['t:' + d] = { text: d }; order.push('t:' + d); }
+        return;
+      }
+      parts.forEach(function (s) {
+        var m = MOVE.exec(s), k = 'f:' + m[1], hit = seen[k];
+        if (!hit) { seen[k] = { label: m[1], path: [m[2], m[3]] }; order.push(k); return; }
+        if (hit.path[hit.path.length - 1] !== m[2]) hit.path.push(m[2]);
+        hit.path.push(m[3]);
+      });
+    });
+    return order.map(function (k) {
+      var x = seen[k];
+      return x.text != null ? x.text : x.label + ': ' + x.path.join(' \u2192 ');
+    }).join('; ');
+  }
+
   function line(x) {
-    var detail = x.details.join('; ');
+    var detail = merged(x.details);
     return '<li class="recline">' +
       '<time class="rl-time" datetime="' + esc(x.at || '') + '">' + esc(time(x.at)) + '</time>' +
       '<p class="rl-body">' +
@@ -74,7 +113,7 @@
         '<b class="rl-what' + (x.tone ? ' ' + esc(x.tone) : '') + '">' + esc(x.what) + '</b>' +
         (x.on ? ' <span class="rl-on">' + esc(x.on) + '</span>' : '') +
         (detail ? '<span class="rl-detail">' + (x.on ? ': ' : ' ') + esc(detail) + '</span>' : '') +
-        (x.n > 1 ? ' <span class="rl-n">×' + x.n + '</span>' : '') +
+        (x.n > 1 ? ' <span class="rl-n">\u00b7 ' + x.n + ' times</span>' : '') +
       '</p></li>';
   }
 
@@ -100,6 +139,57 @@
       html += line(x);
     });
     host.innerHTML = '<div class="reclist">' + html + '</ul></div>';
+    clampWatch(host);
+  }
+
+  /* A line longer than three lines is cut at three and opens on a press.
+     Which lines are long is only known once they are drawn at a width, and
+     a list painted while its pane is hidden has none, so each list is
+     measured again whenever its size changes. */
+  var RO = window.ResizeObserver ? new ResizeObserver(function (es) {
+    es.forEach(function (e) { measure(e.target); });
+  }) : null;
+  function measure(host) {
+    Array.prototype.forEach.call(host.querySelectorAll('.recline'), function (li) {
+      if (li.classList.contains('is-open')) return;
+      var body = li.querySelector('.rl-body');
+      if (!body || !body.clientHeight) return;
+      var long = body.scrollHeight > body.clientHeight + 1;
+      li.classList.toggle('is-long', long);
+      if (long) {
+        li.tabIndex = 0;
+        li.setAttribute('role', 'button');
+        li.setAttribute('aria-expanded', 'false');
+      } else {
+        li.removeAttribute('tabindex');
+        li.removeAttribute('role');
+        li.removeAttribute('aria-expanded');
+      }
+    });
+  }
+  function flip(li) {
+    if (!li || !li.classList.contains('is-long')) return;
+    var open = !li.classList.contains('is-open');
+    li.classList.toggle('is-open', open);
+    li.setAttribute('aria-expanded', String(open));
+  }
+  function clampWatch(host) {
+    if (!host.__recWired) {
+      host.__recWired = true;
+      host.addEventListener('click', function (e) {
+        if (e.target.closest('a, button, input, select, textarea')) return;
+        if (window.getSelection && String(window.getSelection())) return;
+        flip(e.target.closest('.recline'));
+      });
+      host.addEventListener('keydown', function (e) {
+        if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('recline')) {
+          e.preventDefault();
+          flip(e.target);
+        }
+      });
+      if (RO) RO.observe(host);
+    }
+    measure(host);
   }
 
   /* What a save changed, as one detail: "Label: old → new" for each field

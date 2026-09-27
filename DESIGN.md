@@ -222,9 +222,12 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   client portal).
 - Every table states its own tracks. A template hung off `:not(...)` claims the
   wrong header.
-- A strip's rule sits on the page's margins; `.rectabs` never bleeds. A tab
-  strip never wraps and scrolls instead; each tab is `flex: 0 0 auto`, and so
-  is `.rectabs` itself.
+- Every tab strip is the view strip: the tonal track at its own width, never
+  a band or a rule across the column, never bleeding past the page's
+  margins. It never wraps; it scrolls sideways with the edge that has more
+  beyond it faded, and each tab is `flex: 0 0 auto`.
+- On a phone a sideways swipe presses the tab beside the chosen one
+  (`js/swipe.js`, a region's `data-swipe` naming its strip).
 - A component borrowed for its shape carries its old flex and behaviour. Use a
   class of its own (`.railrow`, never `.navitem`).
 - A group that must stay together is one element in the markup, never a hope
@@ -235,6 +238,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   brand mark is `object-fit: contain; object-position: left center`.
 - The bar and the foot run to the screen's edges on every page. Content keeps
   its reading width.
+- The foot stands on the page's own ground (no band of its own), a `--line`
+  rule above it; its bottom pad is the larger of 16px and the home bar's
+  inset, never the two added.
 - The last "not centred" is usually two type sizes. Measure the ink, the
   borders and the type before calling it even.
 
@@ -328,9 +334,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   next step of its ground, never `--fill`.
 - The chosen one of several is a fill, never a shadow:
   - a nav item: `--line-soft` plus 600;
-  - a tab: an ink underline plus 600;
-  - an `.acttab`: the ink fill;
-  - a segment: one raised thumb that slides.
+  - a tab, a view and a segment alike: one raised thumb that slides on the
+    tonal track (`.rectabs`, `.tabrow`, `.cmdbar-views`, `.seg`);
+  - an `.acttab` outside a strip: the ink fill.
 - A ticked row's fill must not cost a control its edge (an untinted select on
   a ticked row takes the mute ink edge).
 - The iOS tap highlight is off (`-webkit-tap-highlight-color: transparent`).

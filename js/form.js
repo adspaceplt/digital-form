@@ -177,7 +177,7 @@
       /* Coming into view: snap, except where one sheet has just swapped for
          the other (Task / Content deliverable), where the surface starts on
          the option that was chosen a moment ago and slides to this one. */
-      var opts = track.querySelectorAll(':scope > .acttab, :scope > .seg-opt');
+      var opts = track.querySelectorAll(':scope > .acttab, :scope > .seg-opt, :scope > .tab');
       if (!track.__thumbW && opts.length === 2 && track.closest('.sheet.is-swap')) {
         from = opts[0] === on ? opts[1] : opts[0];
       }
@@ -529,7 +529,9 @@
     Array.prototype.forEach.call((root || document).querySelectorAll('input[data-hint]'), hint);
     Array.prototype.forEach.call((root || document).querySelectorAll('select[data-seg]'), upgrade);
     Array.prototype.forEach.call((root || document).querySelectorAll('details.fmore'), fold);
-    Array.prototype.forEach.call((root || document).querySelectorAll('.cmdbar-views'), thumb);
+    /* Every strip slides: the view strips, a record's panes and a route's
+       tabs are one control (2026-09-27). */
+    Array.prototype.forEach.call((root || document).querySelectorAll('.cmdbar-views, .rectabs, .tabrow'), thumb);
   }
 
   /* A refusal that focuses a field under a shut More details has to open it

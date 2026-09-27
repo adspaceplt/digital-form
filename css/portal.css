@@ -3858,10 +3858,14 @@ body.is-plain .topbar { background: var(--chrome); }
    Drawn by js/chrome.js, so every page that includes the chrome gets it and a
    new page does not have to remember it. Two things, one at each end, and
    nothing in the middle competing with them. */
+/* The foot stands on the page's own ground (2026-09-27, the user: "footer
+   not optimized, spacings and color"): as a white band it was a stripe
+   between a grey page and the grey a phone shows under the last pixel. The
+   rule above it is the boundary; the ground is the page's, white or grey. */
 .portalfoot {
   flex: 0 0 auto; margin-top: auto;          /* see the sticky-footer note below */
   order: 1;   /* drawn with the header, and last on the screen from the first paint */
-  border-top: 1px solid var(--line); background: var(--card);
+  border-top: 1px solid var(--line); background: transparent;
 }
 .portalfoot-in {
   max-width: 1240px; margin: 0 auto; padding: 16px 24px;
@@ -3903,7 +3907,7 @@ body > .shell { width: 100%; }
 }
 
 @media (max-width: 560px) {
-  .portalfoot-in { padding: 14px 16px; gap: 10px; font-size: 12px; }
+  .portalfoot-in { padding-inline: 16px; gap: 10px; font-size: 12px; }
   #crmSearch { flex: 1 1 100%; }
   .filterbar .select { flex: 1 1 calc(50% - 5px); min-width: 0; }
 }
@@ -4091,7 +4095,10 @@ body > .shell { width: 100%; }
 .rep-lab { display: none; }
 /* The window every figure but the first is taken over. Stated on the report,
    because on a phone the select that sets it is inside the filters sheet. */
-.repwin { margin: 0 0 24px; }
+/* `.routenote` states its own 12px top margin later in the file, which took
+   the 24 under the line away and set it hard on the first heading
+   (2026-09-27, "too compacted like squeezing in the row"). */
+.routenote.repwin { margin: 0 0 24px; }
 /* The report reads as sections, not a list: a heading 12px over its table and
    32px between one section and the next (2026-09-25, the user: "the spacing
    so packed"). */
@@ -6225,6 +6232,12 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
      down to the strip; the first block after the pane takes the same step
      up from it, because the pane's last section draws no rule of its own. */
   .rec:not(.cportal) > .rec-pane:not([hidden]) { margin-bottom: 24px; }
+  /* ...even when it is the last block of all: a campaign's rail has nothing
+     after the pane, so Timing gave up its rule and the strip sat hard under
+     "Total so far" on a phone (2026-09-27). */
+  .rec:not(.cportal) > .rec-rail > .railblock.is-last:not(.rail-after) {
+    border-bottom: 1px solid var(--line); padding-bottom: 16px; margin-bottom: 16px;
+  }
   .cportal > .rec-rail { margin-bottom: 12px; }
   .rec-rail .facts { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 }
@@ -6780,8 +6793,8 @@ body.is-canvas { overflow: hidden; }
    the page repaints the view behind it) with the size following on the same
    curve; the first placement and a resize snap (`.is-snap`), so only a
    choice moves. Reduced motion zeroes it with every other transition. */
-.cmdbar-views.has-thumb, .seg.has-thumb { position: relative; isolation: isolate; }
-.cmdbar-views.has-thumb::before, .seg.has-thumb::before {
+.cmdbar-views.has-thumb, .seg.has-thumb, .rectabs.has-thumb, .tabrow.has-thumb { position: relative; isolation: isolate; }
+.cmdbar-views.has-thumb::before, .seg.has-thumb::before, .rectabs.has-thumb::before, .tabrow.has-thumb::before {
   content: ""; position: absolute; left: 0; top: 0; z-index: 0; pointer-events: none;
   width: var(--thumb-w, 0); height: var(--thumb-h, 0);
   transform: translate3d(var(--thumb-x, 0), var(--thumb-y, 0), 0);
@@ -6793,9 +6806,12 @@ body.is-canvas { overflow: hidden; }
   will-change: transform;
 }
 .seg.has-thumb::before { border-radius: calc(var(--radius-sm) - 2px); }
-.cmdbar-views.has-thumb.is-snap::before, .seg.has-thumb.is-snap::before { transition: none; }
-.cmdbar-views.has-thumb > .acttab, .seg.has-thumb > .seg-opt { position: relative; z-index: 1; }
-.cmdbar-views.has-thumb > .acttab.is-on, .seg.has-thumb > .seg-opt.is-on { background-color: transparent; box-shadow: none; }
+.cmdbar-views.has-thumb.is-snap::before, .seg.has-thumb.is-snap::before,
+.rectabs.has-thumb.is-snap::before, .tabrow.has-thumb.is-snap::before { transition: none; }
+.cmdbar-views.has-thumb > .acttab, .seg.has-thumb > .seg-opt,
+.rectabs.has-thumb > .tab, .tabrow.has-thumb > .tab { position: relative; z-index: 1; }
+.cmdbar-views.has-thumb > .acttab.is-on, .seg.has-thumb > .seg-opt.is-on,
+.rectabs.has-thumb > .tab.is-on, .tabrow.has-thumb > .tab.is-on { background-color: transparent; box-shadow: none; }
 /* The word follows the thumb on the short curve, so the chosen word darkens
    as the surface arrives under it. */
 .cmdbar-views .acttab { transition: color var(--t-fast) var(--ease-out), background-color var(--t-fast) var(--ease-out); }
@@ -8083,7 +8099,10 @@ body.is-canvas { overflow: hidden; }
    nothing: a sheet's Save sat on the home bar. Each surface that meets an
    edge of the screen pads by that edge's inset, and nothing else moves: on a
    screen with no inset the values are 0 and the desk is unchanged. */
-.portalfoot-in { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+/* The home bar's inset already holds the clearance it needs, so the foot
+   takes whichever is larger, 16px or the inset, rather than both: added
+   together they set the two words high in the band on an iPhone. */
+.portalfoot-in { padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
 .confirmbar-in { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
 .sidebar { padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 @media (max-width: 860px) {
@@ -8189,4 +8208,44 @@ body.is-canvas { overflow: hidden; }
 .rl-n { color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 
 /* In the Activity record the day stays in view while its lines scroll. */
-#activityList .recday { position: sticky; top: 0; z-index: 2; background: var(--card); padding: 4px 0; margin-bottom: 0; }
+#activityList .recday { position: sticky; top: 0; z-index: 2; background: var(--card); padding: 6px 0 8px; margin-bottom: 0; }
+/* A long entry reads three lines and opens on a press; the whole line is the
+   control, so it takes the focus ring and says it opens. */
+.rl-body { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+.recline.is-open .rl-body { display: block; -webkit-line-clamp: unset; line-clamp: unset; overflow: visible; }
+.recline.is-long { cursor: pointer; border-radius: 4px; }
+.recline.is-long:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; }
+@media (hover: hover) { .recline.is-long:hover .rl-body { color: var(--ink); } }
+
+/* ---------- One strip (2026-09-27) ----------
+   A record's panes and a route's tabs take the view strip's look, asked for
+   by the user ("make the slider all secondary accent style like in activity
+   record"): the tonal track at the strip's own width, the chosen tab raised
+   in white on the thumb that slides (js/form.js), every word whole, and
+   sideways scrolling with the edge that has more beyond it fading. It was an
+   underline on a rule across the column: two looks for one control. */
+.rectabs, .tabrow {
+  display: flex; width: max-content; max-width: 100%; gap: 0; padding: 0; border: 0;
+  background: var(--tonal); border-radius: var(--radius-ctl); box-shadow: none;
+  overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: none;
+}
+.rectabs { justify-self: start; }
+.tabrow::-webkit-scrollbar { display: none; }
+/* A record's tabs are its navigation, so they keep the full control's height
+   (44px under a finger) where the view strip's options are small controls. */
+.rectabs .tab, .tabrow .tab {
+  flex: 0 0 auto; margin: 0; min-height: var(--ctl-h); padding: 0 12px;
+  border: 2px solid transparent; background-color: transparent; background-clip: padding-box;
+  border-radius: var(--radius-ctl); font-size: 12.5px; font-weight: 500; color: var(--ink-soft);
+  white-space: nowrap; transition: color var(--t-fast) var(--ease-out), background-color var(--t-fast) var(--ease-out);
+}
+.rectabs .tab.is-on, .tabrow .tab.is-on {
+  background-color: var(--seg-on); border-color: transparent; color: var(--ink); font-weight: 600;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+@media (hover: hover) {
+  .rectabs .tab:not(.is-on):hover, .tabrow .tab:not(.is-on):hover { background-color: var(--tonal); color: var(--ink); }
+}
+.rectabs.is-more-end, .tabrow.is-more-end { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
+.rectabs.is-more-start, .tabrow.is-more-start { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); }
+.rectabs.is-more-start.is-more-end, .tabrow.is-more-start.is-more-end { -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
