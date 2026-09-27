@@ -8520,3 +8520,24 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .chart-tbl tbody tr:last-child > * { border-bottom: 0; }
 #workReport .chartcard + .ovsec-title { margin-top: 32px; }
 #workReport .chartcard + .repempty { margin-top: 12px; }
+
+/* =========================================================================
+   NOTIFICATIONS ON THIS DEVICE (js/push.js)
+   The client pages' bell in the bar opens a small named dialog, a menu's
+   card (`.kmenu`) set under the bell's own right edge; the console's is an
+   item in the account menu, answered on a line under it.
+   ========================================================================= */
+.chrome-actions { position: relative; }
+.pushbtn.is-on { color: var(--ink); }
+.kmenu.pushpop {
+  top: calc(100% + 8px); right: 0; padding: 16px;
+  width: min(320px, calc(100vw - 32px));
+  display: grid; gap: 8px;
+}
+.pushpop:focus { outline: none; }
+.pushpop-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+.pushpop-line { margin: 0; font-size: 14px; line-height: 1.5; color: var(--ink-soft); }
+.pushpop-acts { display: flex; justify-content: flex-end; }
+.pushpop .msg { margin: 0; }
+.acct-msg { margin: 0; padding: 4px 12px 8px; font-size: 12.5px; line-height: 1.45; }
+.acct-menu .kmenu-item .acct-push-word { margin-left: 0; text-align: left; }

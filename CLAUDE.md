@@ -102,7 +102,8 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink |
 | `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop |
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas |
-| `creator.js` | creator, cprofile, results |
+| `creator.js` | creator, cprofile, results, push |
+| `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel |
 | `portal.js` | portal |
 | `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter |
@@ -159,7 +160,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### Pages, chrome, boot
 - `js/chrome.js` is the only header and footer.
   - The mark comes from `brandLogo`, the kicker from `data-kicker`, the actions
-    from `data-actions` (`lang`, `qr`).
+    from `data-actions` (`lang`, `qr`, `push`).
   - Footer: left `© {year} ADSPACE PLT. All Rights Reserved.`; right `Terms of
     Service` → https://adspacestudios.com/legal/policies.
   - The footer is drawn with the header and sits last from the first paint
@@ -211,7 +212,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   would serve yesterday's console). A failed registration is silent.
 - Refresh app (account menu):
   - it unregisters the worker and empties Cache Storage;
-  - it never touches localStorage, IndexedDB or the sign-in.
+  - it never touches localStorage, IndexedDB or the sign-in;
+  - notifications survive it: the next load subscribes again without asking
+    (`ADspacePush.heal`, off the `adspace-push:{scope}` flag).
 - Pull to refresh works only in the installed app, and only on a list with no
   record, sheet or menu open.
 
@@ -1416,6 +1419,45 @@ Each line is a rule that broke once. Its reason is in the archive.
   and file only.
 - `document.*` and `register.*` rows file under Documents.
 
+### Push notifications (`js/push.js`, `js/push-sw.js`, `push-send`)
+- A device follows what the page it turned on from proves: the console the
+  signed-in colleague (`team`), the selection page a campaign by its token
+  (`client`), the creator's page the creator by their code (`creator`).
+  - One colleague and one creator a device; a client's device any number of
+    campaigns (`push_subscriptions`, unique `(endpoint, target)`).
+  - Only a push service's address is stored (`push_endpoint_ok`: Google,
+    Apple, Mozilla, Microsoft), and `push-send` checks it again: the sender
+    never posts anywhere else.
+- What is sent (`push_outbox`, queued by trigger only where a device
+  follows):
+  - a colleague: every `ops_notifications` row, opening the task;
+  - the client: a draft released (Submitted → Reviewing) and a post live
+    (Scheduled → Posted);
+  - the creator: booked (from option, shortlisted or backup), changes
+    requested, and cleared to post (Scheduled from Submitted, Reviewing or
+    Changes requested).
+  - Only a forward move is told; a Revert tells nobody. Words are the
+    device's language (`title_zh` for a Chinese device).
+  - A notification never fails the write that caused it (the triggers
+    swallow their own errors).
+- `pg_net` wakes `push-send` after the commit (`push_kick`). It claims 50 at
+  a time for five minutes (`push_claim`, skip locked), sends a day's TTL, drops
+  a device the service answers 404/410 for (`push_done`) and keeps a month.
+- The VAPID pair is made by `push-send`'s first run and kept in `app_secrets`;
+  only `push_public_key()` leaves the database. No key, no control.
+- Each page registers its own worker (`/admin/sw.js`, `/creators/sw.js`,
+  `/creator/sw.js`), all importing `js/push-sw.js`. The client pages carry a
+  manifest with no `start_url`, so a Home Screen copy opens its own link.
+- Controls:
+  - the console: Turn on / Turn off notifications in the account menu, which
+    stays open and answers under the item (`#acctPushMsg`);
+  - the client pages: the bar's bell (`#pushBtn`) opens `#pushPop`, a named
+    dialog with one line and one action, its words in `W.push`.
+  - An iPhone not on the Home Screen is told to add it; a blocked site is
+    named; neither shows a button that cannot work.
+- Signing out of the console, and Forget this device on the creator's page,
+  stop the device's notifications first.
+
 ### Sign-in, security, secrets
 - `/admin/` signs in with the emailed link or the code (`#authCode`, 6 to 10
   digits, `verifyOtp` type `email`), or with a passkey (supabase-js 2.117.2 on
@@ -1468,7 +1510,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - a migration;
   - `schema.sql`;
   - an edge function to deploy (`sign-upload`, `invite-member`, `portal-login`,
-    `meet-create`; Verify JWT off);
+    `meet-create`, `push-send`; Verify JWT off);
   - a dashboard setting.
 - Never ask for a URL, key or asset the repo or config already holds. Check
   `js/config.js` and `css/` first.

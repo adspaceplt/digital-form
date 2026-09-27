@@ -67,6 +67,20 @@
       save: 'Save', cancel: 'Cancel', back: 'Back', undo: 'Undo',
       signOut: 'Sign out', open: 'Open', download: 'Download', more: 'More actions'
     }
+,
+
+    /* Notifications on this device (js/push.js), on both client-facing pages
+       that offer them. `client` and `creator` say what each page's device
+       will hear about. */
+    push: {
+      label: 'Notifications', onWord: 'on', on: 'Turn on', off: 'Turn off',
+      isOn: 'Notifications are on for this device.',
+      client: 'Receive a notification when a draft is ready for review or a post is live.',
+      creator: 'Receive a notification when a booking is confirmed, changes are requested or a draft is approved.',
+      install: 'On iPhone, add this page to the Home Screen, then turn notifications on from there.',
+      blocked: 'Notifications are blocked for this site in the browser settings.',
+      failed: 'Notifications could not be turned on. Please try again.'
+    }
   };
 
   W.zh = {
@@ -109,6 +123,17 @@
     act: {
       save: '保存', cancel: '取消', back: '返回', undo: '撤销',
       signOut: '退出', open: '打开', download: '下载', more: '更多操作'
+    }
+,
+
+    push: {
+      label: '通知', onWord: '已开启', on: '开启', off: '关闭',
+      isOn: '此设备已开启通知。',
+      client: '初稿待审阅或帖子发布时，在此设备上接收通知。',
+      creator: '合作确认、需要修改或初稿通过时，在此设备上接收通知。',
+      install: '在 iPhone 上，请先将此页面添加到主屏幕，再从主屏幕开启通知。',
+      blocked: '浏览器设置已阻止此网站的通知。',
+      failed: '未能开启通知，请重试。'
     }
   };
 

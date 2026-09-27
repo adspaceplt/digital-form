@@ -239,10 +239,31 @@
       try { localStorage.setItem(KEY, c); } catch (e) { /* private window */ }
       feed = d;
       paint();
+      follow();
     }, function () { cover(t().failTitle, t().failText); });
   }
 
-  function forget() { try { localStorage.removeItem(KEY); } catch (e) {} code = ''; feed = null; }
+  /* Forgetting the device stops its notifications too: whoever uses it next
+     is not told about this creator's bookings. */
+  function forget() {
+    if (following && window.ADspacePush) window.ADspacePush.off(true);
+    following = false;
+    var b = $('pushBtn'); if (b) b.hidden = true;
+    if (window.ADspacePush) window.ADspacePush.shut();
+    try { localStorage.removeItem(KEY); } catch (e) {} code = ''; feed = null;
+  }
+
+  /* Notifications on this device for this creator (js/push.js), offered once
+     the code has proved who they are. */
+  var following = false;
+  function follow() {
+    var P = window.ADspacePush;
+    if (!P || following) return;
+    following = true;
+    P.setup({ audience: 'creator', ref: function () { return code; }, lang: function () { return lang; },
+              sw: '/creator/sw.js', scope: '/creator/' });
+    P.control(function () { return t().push; });
+  }
 
   // ---- Paint ----------------------------------------------------------------
 
@@ -1062,6 +1083,7 @@
     document.documentElement.setAttribute('lang', lang === 'zh' ? 'zh' : 'en');
     if ($('langToggle')) $('langToggle').textContent = t().lang;
     $('codeInput').setAttribute('aria-label', t().codeTitle);
+    if (following && window.ADspacePush) window.ADspacePush.relabel();
     if (feed) paint(); else if (!$('stateBox').hidden) {
       if (!$('codeRow').hidden) askCode();
     }

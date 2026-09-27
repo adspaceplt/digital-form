@@ -197,6 +197,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Reaching a person | `.plink` chips (phone, WhatsApp, email), equal widths on a phone unless alone |
 | A value only read | `.readfield` (the field's height, no box) |
 | An instruction | `.hintline` `?`, open three times, then retired; a button, never a `title` |
+| Notifications on a client page | The bar's bell (`.iconbtn.pushbtn`, a second glyph with rays while on) opening `.kmenu.pushpop`: title, one line, one `.btn-sm` |
 
 ## 5. Laws (each broke once; the reasons are in the archive)
 

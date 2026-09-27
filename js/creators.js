@@ -298,6 +298,7 @@
     paintPreparedFor();
     document.documentElement.lang = lang === 'zh' ? 'zh' : 'en';
     if (feed) build();
+    if (following && window.ADspacePush) window.ADspacePush.relabel();
   }
 
   $('langToggle').addEventListener('click', function () { setLang(lang === 'en' ? 'zh' : 'en'); });
@@ -322,7 +323,20 @@
       $('stateBox').hidden = true;
       document.body.classList.remove('is-plain');
       build();
+      follow();
     });
+  }
+
+  /* Notifications on this device for this campaign (js/push.js): offered
+     once the link has proved which campaign it is. */
+  var following = false;
+  function follow() {
+    var P = window.ADspacePush;
+    if (!P || following) return;
+    following = true;
+    P.setup({ audience: 'client', ref: function () { return TOKEN; }, lang: function () { return lang; },
+              sw: '/creators/sw.js', scope: '/creators/' });
+    P.control(function () { return t().push; });
   }
 
   $('passGo').addEventListener('click', function () {
