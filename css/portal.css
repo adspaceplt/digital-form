@@ -3309,9 +3309,18 @@ body.is-plain .topbar { background: var(--chrome); }
 .results tr:last-child td { border-bottom: 0; }
 .results th:last-child, .results td:last-child { padding-right: 0; }
 .results .num { text-align: right; font-variant-numeric: tabular-nums; }
-.results-link { display: inline-flex; align-items: center; gap: 5px; font-weight: 600; color: var(--ink); text-decoration: none; }
-.results-link svg { width: 13px; height: 13px; color: var(--ink-mute); }
-.results-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+.results-plat { font-weight: 600; color: var(--ink); }
+/* The live post, one button a platform, named for where it opens (the user,
+   2026-09-27: the platform's name alone in a table was "too not obvious").
+   Each keeps its own width and they wrap; the mark says it leaves the page. */
+.postlinks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.postlink { gap: 7px; }
+.postlink svg { width: 13px; height: 13px; flex: 0 0 auto; opacity: .7; }
+/* On a phone two or more share one width, each on its line; a lone one
+   keeps its own. */
+@media (max-width: 640px) {
+  .postlinks:has(> .postlink + .postlink) > .postlink { flex: 1 1 100%; justify-content: center; }
+}
 /* On a phone the table becomes one block per platform: the link on top, the
    figures two abreast under their labels. Nothing scrolls sideways. */
 @media (max-width: 640px) {
@@ -7196,11 +7205,18 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .cmdbar-find-clear svg { width: 15px; height: 15px; stroke-width: 1.8; }
 /* The padlock beside Performance: shut and mute while the code is needed,
    open and ink while the reviews are unlocked. */
-.tabrow .perf-lockicon { align-self: center; margin-left: 2px; color: var(--ink-mute); background: none; border-color: transparent; }
-.tabrow .perf-lockicon.is-open { color: var(--ink); }
-.tabrow .perf-lockicon[hidden] { display: none; }
+/* A tab strip and a control of the pane beside it: the strip at its own
+   width, the control at the row's right end, outside the track, so it never
+   reads as another tab (the user, 2026-09-27, of the Performance padlock).
+   The row owns the strip's step to the pane, and leaves when both are gone. */
+.tabline { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; min-width: 0; }
+.tabline > .tabrow { margin: 0; min-width: 0; flex: 0 1 auto; }
+.tabline:not(:has(> :not([hidden]))) { display: none; }
+.perf-lockicon { flex: 0 0 auto; margin-left: auto; color: var(--ink-mute); background: none; border-color: transparent; }
+.perf-lockicon.is-open { color: var(--ink); }
+.perf-lockicon[hidden] { display: none; }
 .perf-lockicon svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-@media (hover: hover) { .tabrow .perf-lockicon.is-open:hover { background: var(--tonal); } }
+@media (hover: hover) { .perf-lockicon.is-open:hover { background: var(--tonal); } }
 /* THE VIEW SEGMENT STANDS STILL (2026-09-24). My Work's segment sat after a
    420px search box that the report and workload views take away, so the
    segment jumped left and right as the view changed under it (reported by

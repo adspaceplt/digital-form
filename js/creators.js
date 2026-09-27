@@ -139,6 +139,9 @@
       pic: 'Contact',
       goLive: 'Going live',
       viewPost: 'View post',
+      /* The post itself, named for where it lives (the user, 2026-09-27: the
+         platform's name alone was "too not obvious"). */
+      viewPostOn: function (platform) { return 'View post on ' + platform; },
       captionLabel: 'Caption',
       openDraft: 'Open the draft ↗',
       noteLabel: 'Changes required',
@@ -228,6 +231,7 @@
       pic: '联系人',
       goLive: '发布日期',
       viewPost: '查看帖子',
+      viewPostOn: function (platform, key) { return key === 'xhs' ? '查看小红书笔记' : '查看' + platform + '帖子'; },
       captionLabel: '文案',
       openDraft: '打开初稿 ↗',
       noteLabel: '需要修改的内容',
@@ -495,13 +499,18 @@
        client hunt for the date. The same facts as a labelled grid fill the
        card and read at a glance. */
     var live = o.state === 'posted' || o.state === 'completed';
+    var posts = (o.posts || []).filter(function (p) { return p.post_url; });
     var facts = [];
     if (o.state !== 'withdrawn') {
       // Once it is out, when it went out is the date that matters. Before
-      // that, the shoot is the date everyone is planning around.
+      // that, the shoot is the date everyone is planning around. Where the
+      // platforms went out on different days and the figures are in, the
+      // results table dates each post, so the card does not say one again.
       var wentOut = live && (o.posts || []).map(function (p) { return p.published_at; })
         .filter(Boolean).sort()[0];
-      if (wentOut) {
+      if (wentOut && figuresIn(posts) && byDay(posts)) {
+        /* said by the table */
+      } else if (wentOut) {
         facts.push([t().postedOn, fmtDate(wentOut)]);
       } else if (!live) {
         facts.push([seeding ? t().deliveryOn : t().shootOn,
@@ -518,8 +527,6 @@
       return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
     }).join('') + '</dl>' : '';
 
-    var posts = (o.posts || []).filter(function (p) { return p.post_url; });
-
     row.innerHTML =
       '<div class="booking-head">' +
         (no ? '<span class="rowno">' + no + '</span>' : '') +
@@ -529,22 +536,47 @@
       '</div>' +
       factsHtml +
       (o.state === 'withdrawn' ? '<div class="booking-meta">' + esc(t().unavailable) + '</div>' : '') +
+      postLinks(posts) +
       (resultsOf(posts) || '') +
-      decidedLine(o) +
+      /* Once the post is out, who approved it is history the console keeps;
+         the card leads with the post (the user, 2026-09-27: "Is it necessary
+         to keep the approved there"). */
+      (live ? '' : decidedLine(o)) +
       (mine && hasDraft(o) ? draftPreview(o) + decisionBlock(o) : '');
 
     if (mine && hasDraft(o)) wireDecision(row, o);
     return row;
   }
 
-  /* One row per platform: the post, when it went out, when the numbers were
-     taken, and the numbers. The measured date is what makes a figure read a
-     year later still make sense. */
-  function resultsOf(posts) {
+  /* The post itself, one button a platform, named for where it opens: the
+     thing a client comes back to the card for once it is live. */
+  function postLinks(posts) {
     if (!posts.length) return '';
-    var hasNums = posts.some(function (p) {
+    return '<div class="postlinks">' + posts.map(function (p) {
+      return '<a class="btn btn-sm postlink" href="' + esc(absUrl(p.post_url)) + '" target="_blank" rel="noopener">' +
+        esc(t().viewPostOn(platWord(p.platform), platKey(p.platform))) + EXT_ICON + '</a>';
+    }).join('') + '</div>';
+  }
+
+  /* One row per platform once there are figures: when the numbers were taken,
+     and the numbers. The measured date is what makes a figure read a year
+     later still make sense. Before the figures there is no table: the post
+     is the button above it and the date is the card's own Posted, and a table
+     of the two said both again. The date a post went out is a column only
+     where the platforms went out on different days. */
+  function figuresIn(posts) {
+    return posts.some(function (p) {
       return p.impressions != null || p.engagements != null || p.views != null;
     });
+  }
+  function byDay(posts) {
+    var days = {};
+    posts.forEach(function (p) { days[p.published_at || ''] = true; });
+    return Object.keys(days).length > 1;
+  }
+  function resultsOf(posts) {
+    if (!posts.length || !figuresIn(posts)) return '';
+    var dated = byDay(posts);
     var num = function (v) { return v == null ? '<span class="muted">–</span>' : Number(v).toLocaleString(); };
     var measured = function (p) {
       if (p.measured_at) return fmtDate(p.measured_at);
@@ -558,21 +590,20 @@
     return '<div class="results-wrap"><table class="results">' +
       '<thead><tr>' +
         '<th>' + esc(t().platformCol) + '</th>' +
-        '<th>' + esc(t().postedOn) + '</th>' +
-        (hasNums ? '<th>' + esc(t().measuredOn) + '</th>' +
-          '<th class="num">' + esc(t().impressions) + '</th>' +
-          '<th class="num">' + esc(t().engagements) + '</th>' +
-          '<th class="num">' + esc(t().views) + '</th>' : '') +
+        (dated ? '<th>' + esc(t().postedOn) + '</th>' : '') +
+        '<th>' + esc(t().measuredOn) + '</th>' +
+        '<th class="num">' + esc(t().impressions) + '</th>' +
+        '<th class="num">' + esc(t().engagements) + '</th>' +
+        '<th class="num">' + esc(t().views) + '</th>' +
       '</tr></thead><tbody>' +
       posts.map(function (p) {
         return '<tr>' +
-          '<td data-l="' + esc(t().platformCol) + '"><a class="results-link" href="' + esc(absUrl(p.post_url)) + '" target="_blank" rel="noopener">' +
-            esc(platLabel(p.platform)) + EXT_ICON + '</a></td>' +
-          '<td data-l="' + esc(t().postedOn) + '">' + (p.published_at ? esc(fmtDate(p.published_at)) : '<span class="muted">–</span>') + '</td>' +
-          (hasNums ? '<td data-l="' + esc(t().measuredOn) + '">' + esc(measured(p)) + '</td>' +
-            '<td class="num" data-l="' + esc(t().impressions) + '">' + num(p.impressions) + '</td>' +
-            '<td class="num" data-l="' + esc(t().engagements) + '">' + num(p.engagements) + '</td>' +
-            '<td class="num" data-l="' + esc(t().views) + '">' + num(p.views) + '</td>' : '') +
+          '<td data-l="' + esc(t().platformCol) + '"><b class="results-plat">' + esc(platWord(p.platform)) + '</b></td>' +
+          (dated ? '<td data-l="' + esc(t().postedOn) + '">' + (p.published_at ? esc(fmtDate(p.published_at)) : '<span class="muted">–</span>') + '</td>' : '') +
+          '<td data-l="' + esc(t().measuredOn) + '">' + esc(measured(p)) + '</td>' +
+          '<td class="num" data-l="' + esc(t().impressions) + '">' + num(p.impressions) + '</td>' +
+          '<td class="num" data-l="' + esc(t().engagements) + '">' + num(p.engagements) + '</td>' +
+          '<td class="num" data-l="' + esc(t().views) + '">' + num(p.views) + '</td>' +
         '</tr>';
       }).join('') +
       '</tbody></table></div>';
@@ -925,6 +956,13 @@
   function platLabel(p) {
     return { xhs: 'rednote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' }[p] || p;
   }
+  /* A placement is stored by its printed name ("rednote", "Instagram") and
+     older rows by the key; both read as the key, so both find their word. */
+  function platKey(p) {
+    var k = { rednote: 'xhs', xiaohongshu: 'xhs', instagram: 'instagram', tiktok: 'tiktok', facebook: 'facebook', xhs: 'xhs' };
+    return k[String(p || '').trim().toLowerCase()] || p;
+  }
+  function platWord(p) { var k = platKey(p); return t().platform[k] || platLabel(k); }
 
   /* What the creator is booked to post on, which is not the same list as the
      profiles they can be looked up on: one fee covers the platforms agreed for
