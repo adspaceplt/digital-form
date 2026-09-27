@@ -99,8 +99,8 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | File | Suites |
 |---|---|
 | `crm.js` | crm, register, six, datefloor, phone, letter |
-| `ops.js` | work, keys, slide, cmdbar, phone, ops |
-| `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race |
+| `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink |
+| `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink |
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas |
 | `creator.js` | creator, cprofile |
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel |
@@ -227,8 +227,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Placed on the viewport; opens upward where the room is above.
   - Ignores the scroll that reveals its focused button (2px rule).
   - Follows its button on resize, and closes when the button leaves the page.
-  - Inside a phone sheet it takes off the card's offset (the transformed card is
-    the containing block).
+  - It is placed from where a fixed box beside it actually lands (a probe at
+    0,0 in its own container), which covers a transformed sheet card and an
+    iPhone after the date picker alike.
   - Stacking: `.kmenu` z-index 50, over the select bar (20) and the confirm bar
     (40), under sheets (55+).
   - An open ⋯ answers Escape before the sheet under it does, and hands focus
@@ -1085,6 +1086,22 @@ Each line is a rule that broke once. Its reason is in the archive.
   - the brief and the priority (`ops_update_task`).
   - A required check has no ⋯.
   - A checklist tick repaints its own row only.
+- A link may name a record (`ops_link_record`; kind `record`, `ref_type`
+  campaign or set):
+  - only the task's own client's, and once while the link stands;
+  - Record in the Kind select (a client's task only) swaps the address for a
+    picker of the client's campaigns and sets, less those already named;
+  - it opens the console route in the same tab, reads the record's title as
+    it is now (Deleted once gone), and has Remove and no Edit
+    (`record-link`);
+  - it is filed on both sides (`campaign.task_linked` / `set.task_linked`,
+    `_unlinked` on Remove);
+  - the campaign's Overview (`#campOvTasks`) and the set's panel
+    (`#setTasks`) list the tasks naming them (`ops_record_tasks`: only tasks
+    the reader may see, nothing without the record's section), drawn only
+    where one does;
+  - a task still owing its draft, with a set named, opens the link form on
+    Draft with the client's review link written in.
 - Dates:
   - The first draft is the team's own (`ops_due_decider` null) and must fall
     before the final date by calendar day (`ops_due_order_ok`, checked inside

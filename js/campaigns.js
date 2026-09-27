@@ -1431,6 +1431,8 @@
     // arriving at a campaign starts with them folded.
     var same = !!(state.campaign && state.campaign.id === c.id);
     state.campaign = c;
+    /* The tasks naming it are read again on arriving, not on every repaint. */
+    if (!same) state.campTasks = null;
     Array.prototype.forEach.call(document.querySelectorAll('#campTabs [data-needs-activity]'), function (b) {
       b.hidden = !maySeeActivity();
     });
@@ -2212,9 +2214,33 @@
     var box = $('campOv');
     if (!box) return;
     box.innerHTML = '<div class="ovcard">' +
-      ovBookings(live) + ovDates(live) + ovHandins(live) + '</div>';
+      ovBookings(live) + ovDates(live) + ovHandins(live) + ovTasks(c) + '</div>';
     Array.prototype.forEach.call(box.querySelectorAll('[data-go]'), function (b) {
       b.addEventListener('click', function () { showCampPane(b.getAttribute('data-go')); pushUrl(); });
+    });
+    loadCampTasks(c);
+  }
+
+  /* The tasks in My Work that name this campaign (the user, 2026-09-27:
+     "it works like a backlinks kind"). Read once on arriving and kept, so a
+     repaint draws them at once; the section is drawn only where a task names
+     the campaign, and a failed read leaves it out rather than saying none. */
+  function ovTasks(c) {
+    var k = state.campTasks;
+    if (!k || k.id !== c.id || !k.rows || !k.rows.length || !window.ADspaceOps) return '';
+    return '<section class="ovsec" id="campOvTasks"><div class="ovsec-head"><h3>Tasks</h3></div>' +
+      window.ADspaceOps.recordTaskRows(k.rows) + '</section>';
+  }
+  function loadCampTasks(c) {
+    var O = window.ADspaceOps;
+    if (!O || !O.recordTasks || (state.campTasks && state.campTasks.id === c.id)) return;
+    state.campTasks = { id: c.id, rows: null };
+    O.recordTasks('campaign', c.id, function (rows) {
+      if (!state.campTasks || state.campTasks.id !== c.id) return;
+      state.campTasks.rows = rows;
+      if (!rows || !rows.length || !state.campaign || state.campaign.id !== c.id) return;
+      var card = document.querySelector('#campOv .ovcard');
+      if (card && !$('campOvTasks')) card.insertAdjacentHTML('beforeend', ovTasks(c));
     });
   }
 

@@ -74,21 +74,25 @@
         ? (r.bottom + 4) + 'px'
         : (r.top - 4 - h) + 'px';
       /* `position: fixed` is measured from the viewport only while no
-         ancestor is transformed. A sheet on a phone is (`will-change:
-         transform`, so it lifts in one piece), which makes the card the box a
-         fixed menu is placed in: a ⋯ inside a sheet opened as far below its
-         button as the card is from the top of the screen, and off the bottom
-         for a row low in the list. The card's own offset is taken off. Read
-         from the card and never from the menu, because the menu is itself
-         mid-way through its opening move when it is placed. */
-      var card = menu.closest && menu.closest('.sheet-card');
-      if (card) {
-        var cs = getComputedStyle(card);
-        if ((cs.transform && cs.transform !== 'none') || /transform/.test(cs.willChange || '')) {
-          var cr = card.getBoundingClientRect();
-          menu.style.left = (parseFloat(menu.style.left) - cr.left - card.clientLeft) + 'px';
-          menu.style.top = (parseFloat(menu.style.top) - cr.top - card.clientTop) + 'px';
-        }
+         ancestor is transformed, and on an iPhone not always then: a sheet
+         on a phone is (`will-change: transform`, so it lifts in one piece),
+         and after the date picker has closed Safari can hold fixed boxes
+         some way from the viewport the button is measured in. A creator
+         card's ⋯ opened 175px under its button that way (reported by the
+         user on 2026-09-27, iPhone, installed app). So the menu is placed
+         from where a fixed box beside it actually lands: a probe at 0,0 in
+         the menu's own container reads that origin, whatever made it, and
+         it is taken off. Read from the probe and never from the menu, which
+         is itself mid-way through its opening move when it is placed. */
+      var probe = document.createElement('i');
+      probe.setAttribute('aria-hidden', 'true');
+      probe.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;visibility:hidden;pointer-events:none';
+      (menu.parentNode || document.body).insertBefore(probe, menu);
+      var o = probe.getBoundingClientRect();
+      probe.parentNode.removeChild(probe);
+      if (o.left || o.top) {
+        menu.style.left = (parseFloat(menu.style.left) - o.left) + 'px';
+        menu.style.top = (parseFloat(menu.style.top) - o.top) + 'px';
       }
       held = { btn: btn, top: r.top, menu: menu, align: align };
     },
