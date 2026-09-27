@@ -16,11 +16,10 @@
 <meta property="og:url" content="https://digital.adspace.me/">
 <meta property="og:title" content="ADspace">
 <meta property="og:description" content="Creative advertising agency in Johor Bahru. Visits by appointment, Monday to Friday, 10:00 to 18:00.">
-<meta property="og:image" content="https://mycdn.adspace.me/adspace-brandname.png">
+<meta property="og:image" content="https://digital.adspace.me/img/front-door-1200.jpg">
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="preload" as="font" type="font/ttf" href="/css/OPTIMA.TTF" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260928a">
-<script src="/js/config.js?v=20260928a"></script>
+<link rel="stylesheet" href="/css/portal.css?v=20260928b">
+<script src="/js/config.js?v=20260928b"></script>
 <!-- What a search engine reads about ADspace. -->
 <script type="application/ld+json">
 {
@@ -31,7 +30,7 @@
   "url": "https://digital.adspace.me/",
   "sameAs": ["https://adspacestudios.com"],
   "logo": "https://mycdn.adspace.me/adspace-brandname.png",
-  "image": "https://mycdn.adspace.me/adspace-brandname.png",
+  "image": "https://digital.adspace.me/img/front-door-1200.jpg",
   "email": "advertise@adspacestudios.com",
   "areaServed": ["MY", "SG"],
   "hasMap": "https://maps.app.goo.gl/1CmY1KvMXZ87punW7",
@@ -53,25 +52,30 @@
 </head>
 <body class="lp">
 
-<script src="/js/chrome.js?v=20260928a" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260928b" data-kicker="Creative Advertising Agency"></script>
 
 <main class="lp-main">
 
-  <!-- The name, set in Optima as the wordmark is, and what ADspace is. -->
-  <header class="lp-head">
-    <h1 class="lp-title">ADspace</h1>
-    <p class="lp-tag">Creative Advertising Agency</p>
-  </header>
+  <!-- The header already says who and what (the wordmark, and Creative
+       Advertising Agency as its label); the page opens on the photograph.
+       The heading is for search engines and screen readers alone. -->
+  <h1 class="lp-name">ADspace, Creative Advertising Agency</h1>
 
-  <!-- One photograph. A placeholder carrying the wordmark until the user
-       sends its link; then this holds an <img> with object-fit: cover. -->
-  <figure class="lp-hero" role="img" aria-label="ADspace">
-    <img class="lp-hero-mark" src="https://mycdn.adspace.me/adspace-brandname.png" alt="" onerror="this.remove()">
+  <!-- One photograph, edge to edge: a shoot set up at ADspace (the user,
+       2026-09-28), whole at the 16:9 it was cut to. Four widths, WebP where
+       the browser reads it. -->
+  <figure class="lp-hero">
+    <picture>
+      <source type="image/webp" sizes="100vw"
+              srcset="/img/front-door-800.webp 800w, /img/front-door-1200.webp 1200w, /img/front-door-2000.webp 2000w, /img/front-door-2560.webp 2560w">
+      <img src="/img/front-door-1200.jpg" sizes="100vw"
+           srcset="/img/front-door-800.jpg 800w, /img/front-door-1200.jpg 1200w, /img/front-door-2000.jpg 2000w, /img/front-door-2560.jpg 2560w"
+           width="2560" height="1439" alt="A photo shoot set up at ADspace" fetchpriority="high">
+    </picture>
   </figure>
 
-  <!-- The website's ways in, one tick each, in its own order. About us, Our
-       services and Our works open the website's home until their own pages'
-       addresses arrive. -->
+  <!-- The website's ways in, one tick each, in its own order, each to its
+       own page. -->
   <section class="lp-band" aria-label="ADspace">
     <ul class="lp-ways">
       <li class="lp-way">
@@ -82,22 +86,22 @@
       <li class="lp-way">
         <svg class="lp-tick" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="14"/><path d="M8.5 14.5l3.8 3.8 7.2-8"/></svg>
         <div><p class="lp-way-name">About us</p>
-          <a class="lp-go" href="https://adspacestudios.com" target="_blank" rel="noopener">Learn more<span aria-hidden="true">›</span></a></div>
+          <a class="lp-go" href="https://adspacestudios.com/about" target="_blank" rel="noopener">Learn more<span aria-hidden="true">›</span></a></div>
       </li>
       <li class="lp-way">
         <svg class="lp-tick" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="14"/><path d="M8.5 14.5l3.8 3.8 7.2-8"/></svg>
         <div><p class="lp-way-name">Our services</p>
-          <a class="lp-go" href="https://adspacestudios.com" target="_blank" rel="noopener">See services<span aria-hidden="true">›</span></a></div>
+          <a class="lp-go" href="https://adspacestudios.com/services" target="_blank" rel="noopener">See services<span aria-hidden="true">›</span></a></div>
       </li>
       <li class="lp-way">
         <svg class="lp-tick" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="14"/><path d="M8.5 14.5l3.8 3.8 7.2-8"/></svg>
         <div><p class="lp-way-name">Our works</p>
-          <a class="lp-go" href="https://adspacestudios.com" target="_blank" rel="noopener">View works<span aria-hidden="true">›</span></a></div>
+          <a class="lp-go" href="https://adspacestudios.com/project" target="_blank" rel="noopener">View works<span aria-hidden="true">›</span></a></div>
       </li>
       <li class="lp-way">
         <svg class="lp-tick" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="14"/><path d="M8.5 14.5l3.8 3.8 7.2-8"/></svg>
         <div><p class="lp-way-name">Contact us</p>
-          <a class="lp-go" href="#help">Get in touch<span aria-hidden="true">›</span></a></div>
+          <a class="lp-go" href="https://adspacestudios.com/contact" target="_blank" rel="noopener">Get in touch<span aria-hidden="true">›</span></a></div>
       </li>
     </ul>
   </section>

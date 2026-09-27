@@ -190,14 +190,19 @@ Each line is a rule that broke once. Its reason is in the archive.
   draw the client pages' bar in its place.
 - `/` is the front door and the host's one listed page, a visitor card after
   Apple's visitor centre page (`body.lp`):
-  - the chrome header (the wordmark and Digital Portal, the kicker kept on a
-    phone) and footer; no menu, no sign-in, no list of rooms;
-  - ADspace in Optima (`.lp-title`), never "ADspace Studio", over Creative
-    Advertising Agency;
-  - one photograph full width (until its link arrives, a placeholder carrying
-    the wordmark);
-  - the website's ways in as ticked rows (Home, About us, Our services, Our
-    works to adspacestudios.com; Contact us to `#help`);
+  - the chrome header and footer at the portal's own 16px gutter, so the
+    wordmark stands where it does on every page; the kicker reads Creative
+    Advertising Agency on `/` alone (16px/400, 14 on a phone, kept on a
+    phone); no menu, no sign-in, no list of rooms;
+  - no visible title: the `h1` (`.lp-name`) is for search engines and screen
+    readers. ADspace alone, never "ADspace Studio";
+  - one photograph, whole at 16:9 and full width up to 1920
+    (`img/front-door-{800,1200,2000,2560}`, WebP with a JPEG fallback), which
+    is also the og:image;
+  - the ticks in the brand's monochrome (`--fill` with an `--on-fill` tick);
+  - the website's ways in as ticked rows: Home, About us (`/about`), Our
+    services (`/services`), Our works (`/project`), Contact us (`/contact`)
+    on adspacestudios.com;
   - Opening hours: a dated week from today in Malaysia time, Monday to Friday
     10:00 to 18:00, redrawn every minute and on return to the tab;
   - Visit: the address and Get directions (the Google Maps listing);
