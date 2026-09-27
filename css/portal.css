@@ -3343,10 +3343,12 @@ body.is-plain .topbar { background: var(--chrome); }
 .postlinks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .postlink { gap: 7px; }
 .postlink svg { width: 13px; height: 13px; flex: 0 0 auto; opacity: .7; }
-/* On a phone two or more share one width, each on its line; a lone one
-   keeps its own. */
+/* On a phone every post button runs the card's width, each on its line, one
+   or several: a lone one kept its own width and read as a different button
+   from the card beside it (the user, 2026-09-27: "Why are the buttons
+   different"). */
 @media (max-width: 640px) {
-  .postlinks:has(> .postlink + .postlink) > .postlink { flex: 1 1 100%; justify-content: center; }
+  .postlinks > .postlink { flex: 1 1 100%; justify-content: center; }
 }
 /* On a phone the table becomes one block per platform: the link on top, the
    figures two abreast under their labels. Nothing scrolls sideways. */

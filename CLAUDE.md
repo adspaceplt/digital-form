@@ -925,7 +925,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     otherwise).
   - A placement line on each row (`platsOf()`).
   - A live booking reads View post on {platform} (`.postlink`, one button a
-    platform; 查看小红书笔记 in Chinese). The results table appears only with
+    platform; 查看小红书笔记 in Chinese), each the card's full width on a
+    phone, one or several. The results table appears only with
     figures, and dates each post only where they went out on different
     days (then the card's own Posted leaves). The approval line leaves once
     the post is out.
