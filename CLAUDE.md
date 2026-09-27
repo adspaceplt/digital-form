@@ -847,7 +847,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     record.
   - `get_creator` sends the creator's own booking only.
     - Never the client's stage, commercial state, amount, other creators or
-      notes.
+      the team's notes on the row.
+    - It sends the open request's note (`change_note`): the client's newest
+      request (`option_reviews`) where the round is theirs, the team's
+      `drop_reason` where the team sent it back.
     - Never `rate` or `currency`: the rate is the client's price with markup.
   - Uploads: `creator_can_deliver` at pending draft / changes / submitted;
     `creator_can_retract` shuts at submitted.
