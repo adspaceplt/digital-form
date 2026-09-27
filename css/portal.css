@@ -3353,9 +3353,21 @@ body.is-plain .topbar { background: var(--chrome); }
   color: var(--ink-mute);
 }
 .booking-facts dd { margin: 2px 0 0; font-size: 13.5px; color: var(--ink); }
-/* Two across below the phone line, and an odd count's last fact takes the
-   row, as `dl.facts` does: "Next" and "Draft due" sat alone under a pair.
-   The line was 420, which left a 430px phone on `auto-fit`. */
+/* The columns follow the count, so no fact sits alone under a full row
+   ("Next" and "Draft due" did, on `auto-fit`). At a desk, up to three facts
+   are one row and four are two pairs (four abreast wrapped a date in the
+   creator's pane at 900); five or more are three across, and a short last
+   row is filled by its last fact. Below the phone line they are two across,
+   and an odd count's last fact takes the row, as `dl.facts` does. */
+@media (min-width: 641px) {
+  .booking-facts:not(:has(> :nth-child(4))) {
+    grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+  }
+  .booking-facts:has(> :nth-child(4):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .booking-facts:has(> :nth-child(5)) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .booking-facts:has(> :nth-child(5)) > :last-child:nth-child(3n+1) { grid-column: 1 / -1; }
+  .booking-facts:has(> :nth-child(5)) > :last-child:nth-child(3n+2) { grid-column: span 2; }
+}
 @media (max-width: 640px) {
   .booking-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px 14px; }
   .booking-facts > :last-child:nth-child(odd) { grid-column: 1 / -1; }
