@@ -1,6 +1,7 @@
 -- ===========================================================================
--- THE TEAM APPROVES FOR THE CLIENT — a draft the client agreed to by word of
--- mouth is approved from the console, and the client's page says who did.
+-- THE TEAM DECIDES APPROVAL AND SELECTION — a draft the client agreed to by
+-- word of mouth is approved from the console, and the client's selection
+-- closes when the slots are full until the team reopens it.
 -- 2026-09-27. Safe to run twice. Rollback at the foot. Mirrored byte for byte
 -- in supabase/schema.sql under the same banner; tests/sql.js compares the two.
 --
@@ -8,7 +9,9 @@
 -- the creator draft (even after revisions) so sometimes if clients never
 -- response but once we got their verbal comms or confirmation, we could
 -- proceeded to approve internally. Client-facing side will show Proceed by
--- {internal user} {timestamp}"):
+-- {internal user} {timestamp}"; and on selection: "Only when slots opens up
+-- (not 100% filled, either replaced / withdrawn / added more slots cases)
+-- and clicking of reopen selection only then the not selected ones show up"):
 --  1. `campaign_proceed` approves a draft at Client review on the client's
 --     behalf: one row in `option_reviews` (`source` team, decision approved,
 --     the colleague's name), and the booking moves to Scheduled. Campaigns
@@ -16,15 +19,78 @@
 --  2. `campaign_revert_approval` takes an approval back, the client's or the
 --     team's: the booking goes back to Client review and the approval stays
 --     on the record, taken back (`undone_at`, `undone_by`).
---  3. `get_campaign` sends the team's approval as the last decision
---     (`by_team`), so the client's page reads "Proceeded by {name}". A team
---     send-back is still withheld, and a team row never carries its note.
+--  3. `campaigns.selection_closed_at` is stamped by trigger the moment the
+--     bookings fill the slots (a booking moving, or the slots lowered), and
+--     only the team clears it (Reopen selection). While it is set the client
+--     chooses nothing: `save_selection` and `confirm_selection` refuse
+--     (`closed`), except for backups where the team opened them and every
+--     slot is taken. A campaign already full is closed once, by this file.
+--  4. `get_campaign` sends the team's approval as the last decision
+--     (`by_team`), so the client's page reads "Proceeded by {name}", and
+--     whether selection is closed. A team send-back is still withheld, and a
+--     team row never carries its note.
 --
 -- ROLLBACK
+--   drop trigger if exists campaign_options_selection_close on public.campaign_options;
+--   drop trigger if exists campaigns_selection_slots on public.campaigns;
+--   drop function if exists public.campaign_selection_close();
+--   drop function if exists public.campaigns_selection_slots();
+--   drop function if exists public.campaign_booked(uuid);
 --   drop function if exists public.campaign_proceed(uuid);
 --   drop function if exists public.campaign_revert_approval(uuid);
---   Re-run get_campaign from THE REVIEW LOOP REACHES EVERYONE.
+--   Re-run get_campaign from THE REVIEW LOOP REACHES EVERYONE, and
+--   save_selection and confirm_selection from their canonical sections.
+--   alter table public.campaigns drop column if exists selection_closed_at;
 -- ===========================================================================
+
+alter table public.campaigns add column if not exists selection_closed_at timestamptz;
+
+/* The bookings holding a slot: every step from Confirmed on. */
+create or replace function public.campaign_booked(p_campaign uuid)
+returns integer
+language sql stable security definer set search_path = public as $$
+  select count(*)::int from public.campaign_options o
+   where o.campaign_id = p_campaign
+     and o.state in ('confirmed', 'pending_visit', 'pending_draft', 'submitted',
+                     'reviewing', 'changes', 'scheduled', 'posted', 'completed')
+$$;
+revoke all on function public.campaign_booked(uuid) from public, anon;
+grant execute on function public.campaign_booked(uuid) to authenticated;
+
+/* The last slot filled closes the selection. A slot freed later does not open
+   it again: that is the team's call (Reopen selection). */
+create or replace function public.campaign_selection_close()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  update public.campaigns c set selection_closed_at = now()
+   where c.id = new.campaign_id and c.selection_closed_at is null
+     and coalesce(c.slots, 0) > 0 and public.campaign_booked(c.id) >= c.slots;
+  return null;
+end $$;
+drop trigger if exists campaign_options_selection_close on public.campaign_options;
+create trigger campaign_options_selection_close
+  after insert or update of state on public.campaign_options
+  for each row execute function public.campaign_selection_close();
+
+create or replace function public.campaigns_selection_slots()
+returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if new.selection_closed_at is null and coalesce(new.slots, 0) > 0
+     and public.campaign_booked(new.id) >= new.slots then
+    new.selection_closed_at := now();
+  end if;
+  return new;
+end $$;
+drop trigger if exists campaigns_selection_slots on public.campaigns;
+create trigger campaigns_selection_slots
+  before update of slots on public.campaigns
+  for each row execute function public.campaigns_selection_slots();
+
+update public.campaigns set selection_closed_at = now()
+ where selection_closed_at is null and coalesce(slots, 0) > 0
+   and public.campaign_booked(id) >= slots;
 
 create or replace function public.get_campaign(p_token text, p_passcode text default null)
 returns jsonb
@@ -64,6 +130,7 @@ begin
       'title', c.title, 'title_zh', c.title_zh,
       'purpose', c.purpose, 'purpose_zh', c.purpose_zh, 'slots', c.slots,
       'backups_open', coalesce(c.backups_open, false),
+      'selection_closed', c.selection_closed_at is not null,
       'deadline', c.deadline, 'state', c.state, 'deliverable', c.deliverable,
       'push_format', c.push_format, 'brief', c.brief, 'brief_zh', c.brief_zh,
       'invoice_no', case when billable then c.invoice_no end,
@@ -157,6 +224,96 @@ end $$;
 revoke all on function public.get_campaign(text, text) from public;
 grant execute on function public.get_campaign(text, text) to anon, authenticated;
 
+create or replace function public.save_selection(
+  p_token text, p_selected uuid[], p_backup uuid[], p_passcode text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c campaigns%rowtype;
+  n integer;
+begin
+  select * into c from campaigns where access_token = p_token;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  if c.passcode is not null and c.passcode <> ''
+     and (p_passcode is null or p_passcode <> c.passcode) then
+    return jsonb_build_object('error', 'passcode');
+  end if;
+
+  n := coalesce(array_length(p_selected, 1), 0);
+  /* Closed once the slots were full, until the team reopens it; backups
+     alone may still be named where the team opened them. */
+  if c.selection_closed_at is not null and not (coalesce(c.backups_open, false) and n = 0) then
+    return jsonb_build_object('error', 'closed');
+  end if;
+  if n > c.slots then
+    return jsonb_build_object('error', 'over-slots', 'slots', c.slots);
+  end if;
+
+  -- Anything already confirmed or further along is the team's to change.
+  update campaign_options set state = 'option'
+   where campaign_id = c.id and state in ('shortlisted', 'backup');
+
+  if n > 0 then
+    update campaign_options set state = 'shortlisted'
+     where campaign_id = c.id and id = any(p_selected) and state = 'option';
+  end if;
+  -- Only where the team opened them: the page hides the control, and this is
+  -- what makes that a fact rather than a courtesy.
+  if coalesce(c.backups_open, false) and coalesce(array_length(p_backup, 1), 0) > 0 then
+    update campaign_options set state = 'backup'
+     where campaign_id = c.id and id = any(p_backup) and state = 'option';
+  end if;
+
+  return jsonb_build_object('ok', true, 'selected', n);
+end $$;
+
+
+create or replace function public.confirm_selection(
+  p_token text, p_person text, p_passcode text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  c campaigns%rowtype;
+begin
+  select * into c from campaigns where access_token = p_token;
+  if not found then return jsonb_build_object('error', 'not-found'); end if;
+  if c.passcode is not null and c.passcode <> ''
+     and (p_passcode is null or p_passcode <> c.passcode) then
+    return jsonb_build_object('error', 'passcode');
+  end if;
+  if coalesce(trim(p_person), '') = '' then
+    return jsonb_build_object('error', 'name-required');
+  end if;
+  if c.selection_closed_at is not null and not coalesce(c.backups_open, false) then
+    return jsonb_build_object('error', 'closed');
+  end if;
+
+  insert into campaign_confirmations (campaign_id, kind, person, source)
+  values (c.id, 'client', trim(p_person), 'portal');
+
+  /* Logged here and not in `save_selection`: that one fires on every tick as
+     an autosave, and a record full of half-made selections is a record nobody
+     can read. This is the commitment, and it is the one that carries a name. */
+  insert into public.activity_log (actor, action, subject, detail)
+  values (trim(p_person), 'campaign.confirmed', c.title,
+          (select count(*)::text || ' creator' || case when count(*) = 1 then '' else 's' end
+             from campaign_options
+            where campaign_id = c.id and state = 'shortlisted') || ' confirmed');
+
+  return jsonb_build_object('ok', true);
+end $$;
+
+revoke all on function public.save_selection(text, uuid[], uuid[], text) from public;
+revoke all on function public.confirm_selection(text, text, text) from public;
+grant execute on function public.save_selection(text, uuid[], uuid[], text) to anon, authenticated;
+grant execute on function public.confirm_selection(text, text, text) to anon, authenticated;
+
 create or replace function public.campaign_proceed(p_option uuid)
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -211,4 +368,4 @@ end $$;
 revoke all on function public.campaign_revert_approval(uuid) from public, anon;
 grant execute on function public.campaign_revert_approval(uuid) to authenticated;
 
--- END OF THE TEAM APPROVES FOR THE CLIENT ----------------------------------
+-- END OF THE TEAM DECIDES APPROVAL AND SELECTION ---------------------------

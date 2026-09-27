@@ -155,6 +155,7 @@
       reviewThanks: 'Received. The team will follow up.',
       needNote: 'Please describe the changes required.',
       saveFailed: 'Unable to save. Please try again.',
+      selectionClosed: 'Selection is closed. Please contact your ADspace account manager.',
       unavailable: 'Unavailable. Please select a replacement below.',
       results: 'Results',
       resultsHead: 'Campaign results',
@@ -246,6 +247,7 @@
       reviewThanks: '已收到，团队将跟进处理。',
       needNote: '请说明需要修改的内容。',
       saveFailed: '保存失败，请重试。',
+      selectionClosed: '选择已截止，请联系您的 ADspace 客户经理。',
       unavailable: '暂不可用，请在下方选择替补。',
       results: '数据',
       resultsHead: '合作成效',
@@ -832,6 +834,11 @@
     var live = (feed.options || []).filter(function (o) {
       return ['option', 'shortlisted', 'backup'].indexOf(o.state) > -1;
     });
+    /* Closed by the database the moment the slots filled, and open again
+       only when the team reopens it (the user, 2026-09-27): a slot freed by a
+       withdrawal waits for the team. Backups stay namable where the team
+       opened them and every slot is taken. */
+    if ((feed.campaign || {}).selection_closed) return slotsLeft() <= 0 && backupsOpen() ? live : [];
     if (slotsLeft() > 0) return live;
     return backupsOpen() ? live : [];
   }
@@ -1084,7 +1091,10 @@
       .then(function (r) {
         var d = (r && r.data) || {};
         if ((r && r.error) || d.error) {
-          msg('confirmMsg', (r.error && r.error.message) || d.error, 'err');
+          /* In the client's words, never the database's. Selection closed
+             under them: the page is read again, so the list goes too. */
+          msg('confirmMsg', d.error === 'closed' ? t().selectionClosed : t().saveFailed, 'err');
+          if (d.error === 'closed') load();
           return;
         }
         shutConfirm();

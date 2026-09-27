@@ -1514,8 +1514,29 @@
     $('campState').textContent = STATE_WORD[c.state] || c.state;
     $('campState').classList.toggle('is-live', c.state !== 'draft');
     var move = publishMove(c.state);
+    $('campPublish').hidden = !move;
+    if (!move) return;
     $('campPublish').innerHTML = move.icon + esc(move.label);
     $('campPublish').className = 'btn ' + move.cls;
+  }
+
+  /* THE CLIENT'S SELECTION, OPEN OR CLOSED. The database closes it the moment
+     the bookings fill the slots (`selection_closed_at`, by trigger) and only
+     the team opens it again, so a slot freed by a withdrawal waits for Reopen
+     selection (the user, 2026-09-27). Read here the way the trigger decides
+     it, so a lock that has just filled the slots reads closed before the
+     campaign row is read again. */
+  var BOOKED = ['confirmed', 'pending_visit', 'pending_draft', 'submitted',
+                'reviewing', 'changes', 'scheduled', 'posted', 'completed'];
+  function bookedCount() {
+    return (state.options || []).filter(function (o) { return BOOKED.indexOf(o.state) > -1; }).length;
+  }
+  function selectionClosed(c) {
+    var slots = Number((c || {}).slots || 0);
+    return !!(c && c.selection_closed_at) || (slots > 0 && bookedCount() >= slots);
+  }
+  function freeSlots(c) {
+    return Math.max(0, Number((c || {}).slots || 0) - bookedCount());
   }
 
   $('campBack').addEventListener('click', function () {
@@ -1553,9 +1574,17 @@
     if (s === 'open')        return { to: 'draft', label: 'Unpublish', cls: 'btn-warn', icon: STATE_ICON.eyeOff,
       ask: { title: 'Unpublish', go: 'Unpublish', tone: 'warn',
         body: 'The client link stops working until this is published again. Selections are kept.' } };
-    if (s === 'production')  return { to: 'open',  label: 'Reopen selection', cls: 'btn-warn', icon: STATE_ICON.reopen,
-      ask: { title: 'Reopen selection', go: 'Reopen', tone: 'warn',
-        body: 'The client can choose again. Bookings already in production are kept.' } };
+    /* In production the client keeps choosing while a slot is free; once the
+       slots have filled, a slot freed later is offered again only here. */
+    if (s === 'production') {
+      var c = state.campaign;
+      if (!selectionClosed(c) || !freeSlots(c)) return null;
+      var n = freeSlots(c);
+      return { to: 'open', reopen: true, label: 'Reopen selection', cls: 'btn-warn', icon: STATE_ICON.reopen,
+        ask: { title: 'Reopen selection', go: 'Reopen', tone: 'warn',
+          body: 'The client can choose for ' + n + (n === 1 ? ' free slot' : ' free slots') +
+            '. Bookings already in production are kept.' } };
+    }
     return { to: 'production', label: 'Resume campaign', cls: '', icon: STATE_ICON.play,
       ask: { title: 'Resume the campaign', go: 'Resume',
         body: 'Selection closes and the bookings go back into production.' } };
@@ -1564,10 +1593,15 @@
   $('campPublish').addEventListener('click', function () {
     var c = state.campaign;
     var move = publishMove(c.state);
+    if (!move) return;
     function save() {
-      db.from('campaigns').update({ state: move.to }).eq('id', c.id).then(function (r) {
+      var patch = { state: move.to };
+      if (move.reopen) patch.selection_closed_at = null;
+      db.from('campaigns').update(patch).eq('id', c.id).select('id').then(function (r) {
         if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+        if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
         c.state = move.to;
+        if (move.reopen) c.selection_closed_at = null;
         log(move.to === 'open' ? 'campaign.opened' : 'campaign.closed', c.title, move.to);
         openCampaign(c);
       });
@@ -2182,6 +2216,7 @@
       });
       $('campNext').appendChild(go);
     }
+    paintCampState(c);
     paintSchedule(live);
     paintDeliverables(live);
     paintPicks(live);
@@ -2216,12 +2251,12 @@
       var sorted = state.options.slice().sort(function (a, b) {
         return (cardRank(a) - cardRank(b)) || (Number(a.position || 0) - Number(b.position || 0));
       });
-      /* Once the team has confirmed creators, the list is the booked ones:
-         the options the client did not take fold under one line, which
-         opens them again for another round of selection (the user,
-         2026-09-27). Before anybody is confirmed every option is the list. */
-      var booked = sorted.some(function (o) { return isLive(o) || o.state === 'withdrawn' || o.state === 'replaced'; });
-      var unpicked = booked ? sorted.filter(function (o) { return o.state === 'option' || o.state === 'backup'; }) : [];
+      /* Once the slots are full the list is the booked ones: the options
+         the client did not take fold under one line, which the team can
+         open to look at (the user, 2026-09-27). While a slot is free, or
+         after Reopen selection, every option is the list. */
+      var unpicked = selectionClosed(state.campaign)
+        ? sorted.filter(function (o) { return o.state === 'option' || o.state === 'backup'; }) : [];
       var no = 0;
       sorted.forEach(function (o) {
         if (unpicked.indexOf(o) < 0) box.appendChild(creatorCard(o, ++no));

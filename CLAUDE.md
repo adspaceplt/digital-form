@@ -100,7 +100,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 |---|---|
 | `crm.js` | crm, register, six, datefloor, phone, letter |
 | `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink |
-| `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink |
+| `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop |
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas |
 | `creator.js` | creator, cprofile |
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel |
@@ -795,7 +795,14 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Every decision on a draft is a row in `option_reviews`, told apart by
   `source` (client, team) and never removed (`undone_at`, `undone_by` when
   taken back): the client's through `review_draft`, the team's send-back
-  through `campaign_send_back` (a note required; the round moves on).
+  through `campaign_send_back` (a note required; the round moves on), and
+  the team's approval for the client through `campaign_proceed`.
+  - At Reviewing the card offers Confirm internally (asked first) in place
+    of the plain step forward: a `source` team approval under the
+    colleague's name. `get_campaign` sends it as `by_team`, and the client's
+    page reads Proceeded by {name}. Revert out of Scheduled is
+    `campaign_revert_approval` (the approval kept, undone). The card names
+    who approved (`.kapproved`).
   - The card shows the open request (Changes requested, who, when, the note)
     and, once the creator hands in again, what it answered (Asked for;
     `requestHtml`). A team round from before the record is `drop_reason`.
@@ -807,8 +814,17 @@ Each line is a rule that broke once. Its reason is in the archive.
     request taken back. The client's page shows no round count.
 - A handed-in draft always shows its caption field, with `No caption.` in
   warn when it is empty.
-- A visit's Location and Contact (name, phone) are set in the card's Shoot
-  step; the creator's page shows them.
+- A booking's plan (date, a time picker, location, contact, phone, or the
+  tracking no.; draft due; publish date) is written only on the Schedule,
+  saved on change and filed with what changed. The card reads it
+  (`planFacts`, Edit in Schedule) and keeps only the notes. The creator's
+  page shows location and contact.
+- The client's selection closes by trigger the moment the bookings fill the
+  slots (`campaigns.selection_closed_at`); only Reopen selection clears it,
+  offered only while closed with a free slot. While closed, `save_selection`
+  and `confirm_selection` refuse (`closed`), except backups where opened and
+  every slot is taken. The Creators tab folds options and backups under Not
+  selected (`#campUnpicked`) while closed.
 - Exactly one blue step on a card: Release to client.
 - `submitted` opens by itself and carries `.is-waiting`.
 - A video plays (`.filecard-video`, 9:16, black ground). Media are 9:16 cards;
@@ -823,8 +839,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The campaign record:
   - Its panes (`pane=`) are Overview, Creators, Schedule, Deliverables, Client
     selection, Finance, Activity.
-  - Schedule, Deliverables and Client selection are views over the bookings.
-    They never write.
+  - Deliverables and Client selection are views over the bookings. They
+    never write.
   - `.camp-next` is derived on every repaint.
 - Next shoot means the earliest date from today; if none, the row reads Last
   shoot.
