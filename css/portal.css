@@ -3113,6 +3113,23 @@ body.is-plain .topbar { background: var(--chrome); }
    the row's own left rule rather than a card border. */
 .bookreg .kcard.is-waiting { border-left: 3px solid var(--warn); }
 .bookreg .kcard > *:last-child { border-radius: 0; }
+/* The options the client did not take, folded under the bookings once the
+   team has confirmed creators: one register row naming them and their count,
+   on the same first column as the rows it opens. */
+.bookreg-fold {
+  display: flex; align-items: center; gap: 12px; width: 100%;
+  min-height: calc(var(--ctl-h) + 22px); padding: 11px 14px 11px 16px;
+  border: 0; background: none; text-align: left; color: var(--ink-soft);
+}
+.bookreg-fold .kcard-lead { flex: 0 0 44px; }
+.bookreg-fold .kfold { color: var(--ink-mute); }
+.bookreg-fold[aria-expanded="true"] .kfold svg { transform: rotate(90deg); }
+.bookreg-fold[aria-expanded="true"] { border-bottom: 1px solid var(--line-soft); }
+.bookreg-fold-name { font-size: 13.5px; font-weight: 600; }
+.bookreg-fold-count { font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+@media (hover: hover) { .bookreg-fold:hover { background: var(--sunk); } }
+.is-tight .bookreg-fold { padding: 10px 14px; gap: 10px; }
+.is-tight .bookreg-fold .kcard-lead { flex-basis: auto; }
 .kcard-lead { display: flex; align-items: center; gap: 4px; min-width: 0; }
 .kcard-tags { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; min-width: 0; }
 .kcard-act { display: flex; align-items: center; justify-content: flex-end; gap: 2px; }
@@ -3237,7 +3254,17 @@ body.is-plain .topbar { background: var(--chrome); }
 .kstep-work .msg:empty { display: none; }
 .kstep-ended { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .kstep-ended .hint { margin: 0; flex: 1 1 220px; }
-.kstep-results .postrow { background: var(--card); }
+/* The plan as the Schedule holds it: its title with the way there beside
+   it, the set facts label beside value, then the notes. */
+.kstep-titlerow {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: -6px 0 6px;
+}
+.kstep-titlerow .kstep-title { margin-bottom: 0; }
+.kplan { margin-bottom: 12px; }
+.kplan > div { grid-template-columns: 104px minmax(0, 1fr); gap: 0 12px; }
+.kapproved { margin: 0 0 12px; font-size: 13px; color: var(--ink-soft); }
+.kplan-none { margin: 0 0 12px; font-size: 13px; color: var(--ink-mute); }
 @media (max-width: 520px) {
   .kfields { grid-template-columns: 1fr 1fr; }
   .kstep-terms .btn, .kstep-note { margin-left: 0; }
@@ -3341,7 +3368,12 @@ body.is-plain .topbar { background: var(--chrome); }
   .results td:first-child::before { display: none; }
   .results .num { text-align: left; }
 }
-.postrow-measured { font-size: 12px; margin-top: 6px; }
+/* One placement's results on the Results step, a hairline between two. */
+.postrow + .postrow { border-top: 1px solid var(--line-soft); margin-top: 12px; padding-top: 12px; }
+.postrow-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.postrow-head b { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.postrow-head span { font-size: 12px; color: var(--ink-mute); }
+.postrow .msg:empty { display: none; }
 
 /* The engagement, above everything: how many creators, when it is due, the
    invoice and the money. "Your campaign" below is then only the creators. */
@@ -6341,6 +6373,23 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .sched-edit .input { min-width: 0; padding-inline-end: 8px; }
 .sched-edit input[type="date"] { flex: 1 1 132px; }
 .sched-edit input[type="time"] { flex: 0 1 92px; }
+/* The rest of the plan (where, whom to meet, or the tracking number) is
+   one cell on the row's second line, laid on the columns above it, so the
+   header's count and every column hold. Each field carries its own label,
+   because the heading above the column names the date. */
+.sched-row { row-gap: 8px; }
+.crm-head.sched-row { row-gap: 0; }
+.sched-log {
+  grid-column: 2 / -1; display: grid; grid-template-columns: subgrid;
+  align-items: start; min-width: 0;
+}
+.sched-log.is-delivery > .sched-f { grid-column: 1 / 2; }
+.sched-f { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 0; }
+.sched-f::before {
+  content: attr(data-label);
+  font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--ink-mute);
+}
+.sched-f > .input { width: 100%; }
 .sched-plat, .pick-plat { font-size: 13px; color: var(--ink-mute); min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pick-state { min-width: 0; }
@@ -6356,9 +6405,13 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    everywhere else it is above, so the field can have the width. */
 .is-narrow .sched-row {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas: "who who" "when when" "due pub";
+  grid-template-areas: "who who" "when when" "due pub" "log log";
   gap: 10px;
 }
+.is-narrow .sched-row > .sched-log {
+  grid-area: log; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px;
+}
+.is-narrow .sched-log > .sched-f:first-child { grid-column: 1 / -1; }
 .is-narrow .sched-edit {
   display: flex; flex-direction: column; align-items: stretch; gap: 4px;
 }

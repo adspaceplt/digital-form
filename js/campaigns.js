@@ -1679,6 +1679,21 @@
       '<p class="kask-note">' + (r.note ? esc(r.note) : '<span class="kask-none">No note.</span>') + '</p></div>';
   }
 
+  /* Who approved the draft and when, once it is past Client review: the
+     client, or a colleague on their behalf. */
+  function approvalHtml(o) {
+    if (['scheduled', 'posted', 'completed'].indexOf(o.state) < 0) return '';
+    var rs = ((state.reviews || {})[o.id] || []).filter(function (r) {
+      return r.decision === 'approved' && !r.undone_at;
+    });
+    var r = rs[rs.length - 1];
+    if (!r) return '';
+    var team = (r.source || 'client') === 'team';
+    return '<p class="kapproved">' + esc((team ? 'Approved internally by ' : 'Approved by ') +
+      (r.reviewer || (team ? 'the team' : 'the client')) +
+      (r.created_at ? ' \u00b7 ' + niceStamp(r.created_at) : '')) + '</p>';
+  }
+
   /* Who has checked each booking, for the round it is on. The gate itself is
      the database's — a trigger refuses the move into Client review whatever
      the browser sends — so this read is only what the screen needs to say
@@ -1867,7 +1882,13 @@
     t.className = 'crm-table softpanel';
     t.innerHTML = '<div class="crm-head svc-row sched-row"><span>Creator</span><span>' +
       (isDelivery() ? 'Delivery' : 'Shoot') + '</span><span>Draft due</span>' +
-      '<span>Publish</span></div>';
+      '<span>Publish</span><span class="sched-log"></span></div>';
+    function logField(label, key, value, type) {
+      return '<label class="sched-f sched-edit" data-label="' + esc(label) + '">' +
+        '<input class="input input-sm" data-schedule="' + key + '" type="' + type + '" value="' +
+        esc(value || '') + '" aria-label="' + esc(label) + '"' +
+        (type === 'tel' ? ' inputmode="tel"' : '') + '></label>';
+    }
     var now = today();
     var upcoming = rows.filter(function (o) { return !o.visit_date || o.visit_date >= now; });
     var passed = rows.filter(function (o) { return o.visit_date && o.visit_date < now; });
@@ -1900,7 +1921,18 @@
           'type="date" value="' + esc(o.submission_due || '') + '" aria-label="Draft due date"></span></span>' +
         '<span class="sched-when sched-edit sched-one" data-label="Publish"><span class="sched-field">' +
           '<input class="input input-sm" data-schedule="planned_publish" ' +
-          'type="date" value="' + esc(o.planned_publish || '') + '" aria-label="Publish date"></span></span>';
+          'type="date" value="' + esc(o.planned_publish || '') + '" aria-label="Publish date"></span></span>' +
+        /* Where, and whom to meet: the rest of the logistics, on the same row
+           as the dates, so the Schedule is the one place a booking's plan is
+           written (the user, 2026-09-27: "use the schedule of date n time all
+           under Schedule"). One cell, laid on the columns above it. */
+        '<span class="sched-log' + (isDelivery() ? ' is-delivery' : '') + '">' +
+          (isDelivery()
+            ? logField('Tracking no.', 'tracking_no', o.tracking_no, 'text')
+            : logField('Location', 'visit_location', o.visit_location, 'text') +
+              logField('Contact', 'visit_pic', o.visit_pic, 'text') +
+              logField('Contact phone', 'visit_pic_phone', o.visit_pic_phone, 'tel')) +
+        '</span>';
       /* An empty `input[type=date]` draws nothing at all on iOS — no
          mm/dd/yyyy, no caret, just an empty pill — so a Publish date nobody
          has set yet reads as a box with no explanation. The hint hangs off
@@ -1916,16 +1948,26 @@
       Array.prototype.forEach.call(el.querySelectorAll('[data-schedule]'), function (input) {
         input.addEventListener('change', function () {
           markEmpty(this);
-          var patch = {}; patch[this.getAttribute('data-schedule')] = this.value || null;
+          var key = this.getAttribute('data-schedule');
+          var val = this.type === 'date' || this.type === 'time' ? this.value : this.value.trim();
+          if ((o[key] || '') === val) return;
+          var patch = {}; patch[key] = val || null;
           /* A visit creates a real production deadline. No-visit campaigns
              leave the visit blank and use the adjacent Draft due field. */
           if (this.getAttribute('data-schedule') === 'visit_date') {
             patch.submission_due = this.value ? addDays(this.value, 7) : o.submission_due || null;
           }
-          db.from('campaign_options').update(patch).eq('id', o.id).then(function (r) {
+          var was = {};
+          Object.keys(patch).forEach(function (k) { was[k] = o[k] == null ? null : o[k]; });
+          db.from('campaign_options').update(patch).eq('id', o.id).select('id').then(function (r) {
             if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+            if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
             Object.keys(patch).forEach(function (k) { o[k] = patch[k]; });
-            log('campaign.dates', logSubject(), (o.creators || {}).name || 'A creator');
+            var R = window.ADspaceRecords;
+            var said = R && R.changes ? R.changes(was, patch, Object.keys(patch).map(function (k) {
+              return [k, SCHED_WORD[k] || k, /_date$|_due$|_publish$/.test(k) ? niceDate : null];
+            })) : '';
+            log('campaign.dates', logSubject(), ((o.creators || {}).name || 'A creator') + (said ? ' · ' + said : ''));
             paintOptions();
           });
         });
@@ -1938,6 +1980,13 @@
     box.innerHTML = '';
     box.appendChild(t);
   }
+
+  /* How a schedule change is named on the record. */
+  var SCHED_WORD = {
+    visit_date: 'Date', visit_time: 'Time', submission_due: 'Draft due',
+    planned_publish: 'Publish date', visit_location: 'Location', visit_pic: 'Contact',
+    visit_pic_phone: 'Contact phone', tracking_no: 'Tracking no.'
+  };
 
   /* Older rows stored friendly strings such as "2pm". Native time inputs
      need 24-hour values; blank remains the explicit no-time option. */
@@ -2164,9 +2213,45 @@
       box.className = 'bookreg';
       box.innerHTML = '<div class="bookreg-head"><span></span><span>Creator</span>' +
         '<span>Booking</span><span>Step</span><span></span></div>';
-      state.options.slice().sort(function (a, b) {
+      var sorted = state.options.slice().sort(function (a, b) {
         return (cardRank(a) - cardRank(b)) || (Number(a.position || 0) - Number(b.position || 0));
-      }).forEach(function (o, i) { box.appendChild(creatorCard(o, i + 1)); });
+      });
+      /* Once the team has confirmed creators, the list is the booked ones:
+         the options the client did not take fold under one line, which
+         opens them again for another round of selection (the user,
+         2026-09-27). Before anybody is confirmed every option is the list. */
+      var booked = sorted.some(function (o) { return isLive(o) || o.state === 'withdrawn' || o.state === 'replaced'; });
+      var unpicked = booked ? sorted.filter(function (o) { return o.state === 'option' || o.state === 'backup'; }) : [];
+      var no = 0;
+      sorted.forEach(function (o) {
+        if (unpicked.indexOf(o) < 0) box.appendChild(creatorCard(o, ++no));
+      });
+      if (unpicked.length) {
+        var c = state.campaign || {};
+        var shown = !!(unpickedOpen[c.id]);
+        var fold = document.createElement('button');
+        fold.type = 'button';
+        fold.className = 'bookreg-fold';
+        fold.id = 'campUnpicked';
+        fold.setAttribute('aria-expanded', String(shown));
+        fold.innerHTML = '<span class="kcard-lead"><span class="kfold" aria-hidden="true">' + CHEV + '</span></span>' +
+          '<span class="bookreg-fold-name">Not selected</span>' +
+          '<span class="bookreg-fold-count">' + unpicked.length + '</span>';
+        box.appendChild(fold);
+        var rest = unpicked.map(function (o) {
+          var el = creatorCard(o, ++no);
+          el.hidden = !shown;
+          el.classList.add('is-unpicked');
+          box.appendChild(el);
+          return el;
+        });
+        fold.addEventListener('click', function () {
+          var open = fold.getAttribute('aria-expanded') !== 'true';
+          unpickedOpen[c.id] = open;
+          fold.setAttribute('aria-expanded', String(open));
+          rest.forEach(function (el) { el.hidden = !open; });
+        });
+      }
     }
 
     // Accepting is offered exactly when the client has chosen something.
@@ -2280,7 +2365,7 @@
       return '<div class="ovrow ovrow-date">' +
         '<span class="ovname">' + esc((o.creators || {}).name || '') + '</span>' +
         '<span class="ovamt"><span class="ovcap">' + esc(shootWord) + '</span>' + (o.visit_date
-          ? esc(niceDate(o.visit_date) + (o.visit_time ? ', ' + o.visit_time : ''))
+          ? esc(niceDate(o.visit_date) + (o.visit_time ? ', ' + clockWord(o.visit_time) : ''))
           : '<span class="muted">—</span>') + '</span>' +
         '<span class="ovamt"><span class="ovcap">Publish</span>' + (o.planned_publish
           ? esc(niceDate(o.planned_publish)) : '<span class="muted">—</span>') + '</span></div>';
@@ -2693,6 +2778,9 @@
         return;
       }
       msg('optionMsg', c.name + ' added at ' + money(rate) + '.', 'ok');
+      /* An option added after the bookings joins the options folded under
+         them, so that list opens to show it. */
+      unpickedOpen[state.campaign.id] = true;
       /* A link typed here belongs to the creator, not to this campaign: the
          next campaign asks nobody for it again. */
       /* readProfile is what already turns a URL into a platform and an identity
@@ -2911,6 +2999,38 @@
   /* Which production cards are open. Ten creators in production is ten
      cards; folded, each is one line, and the one being worked on is open. */
   var openCards = {};
+  /* Whether the options nobody took are shown, per campaign, while the page
+     is open. */
+  var unpickedOpen = {};
+
+  /* The booking's plan as it stands on the Schedule: what is set, each on
+     its own line; nothing set reads as one line. */
+  function planFacts(o) {
+    var rows = [];
+    var when = o.visit_date ? niceDate(o.visit_date) + (o.visit_time ? ', ' + clockWord(o.visit_time) : '') : '';
+    if (when) rows.push(['Date', when]);
+    if (isDelivery()) {
+      if (o.tracking_no) rows.push(['Tracking no.', o.tracking_no]);
+    } else {
+      if (o.visit_location) rows.push(['Location', o.visit_location]);
+      var pic = [o.visit_pic, o.visit_pic_phone].filter(Boolean).join(' · ');
+      if (pic) rows.push(['Contact', pic]);
+    }
+    if (o.submission_due) rows.push(['Draft due', niceDate(o.submission_due)]);
+    if (o.planned_publish) rows.push(['Publish date', niceDate(o.planned_publish)]);
+    if (!rows.length) return '<p class="kplan-none">Not scheduled.</p>';
+    return '<dl class="ovfacts kplan">' + rows.map(function (r) {
+      return '<div><dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd></div>';
+    }).join('') + '</dl>';
+  }
+  /* A stored time as it is read: 14:00 as 2pm, 09:30 as 9.30am; an older
+     friendly string as it was typed. */
+  function clockWord(v) {
+    var c = clockValue(v);
+    if (!c) return String(v || '');
+    var h = Number(c.slice(0, 2)), m = c.slice(3);
+    return (h % 12 || 12) + (m === '00' ? '' : '.' + m) + (h < 12 ? 'am' : 'pm');
+  }
 
   /* One creator, one card. What is inside depends only on where they have got
      to: terms while they are an option, terms plus production once accepted,
@@ -2957,7 +3077,7 @@
     var sum = live ? [
       waiting && waitFiles.length
         ? waitFiles.length + ' file' + (waitFiles.length === 1 ? '' : 's') : '',
-      o.visit_date ? niceDate(o.visit_date) + (o.visit_time ? ', ' + o.visit_time : '')
+      o.visit_date ? niceDate(o.visit_date) + (o.visit_time ? ', ' + clockWord(o.visit_time) : '')
                    : visitWord() + ' TBC'
     ].filter(Boolean).join(' · ') : '';
 
@@ -3007,19 +3127,15 @@
       '</div>' +
 
       (live ?
-      '<div class="kstep kstep-work">' +
-        '<div class="kstep-title">' + (isDelivery() ? 'Delivery' : 'Shoot') + '</div>' +
+      /* The plan is read here and written on the Schedule, the one place a
+         booking's dates and whereabouts are kept (the user, 2026-09-27: the
+         card and the Schedule held the same fields twice, and the card's
+         time was a text box). The card keeps the notes and the work. */
+      '<div class="kstep kstep-work kstep-plan">' +
+        '<div class="kstep-titlerow"><span class="kstep-title">' + (isDelivery() ? 'Delivery' : 'Shoot') + '</span>' +
+          '<button class="btn btn-sm btn-quiet" data-a="schedule" type="button">Edit in Schedule</button></div>' +
+        planFacts(o) +
         '<div class="kfields">' +
-          field('Date', 'visit_date', o.visit_date, 'date') +
-          field('Time', 'visit_time', o.visit_time, 'text', '') +
-          /* Where to go and whom to meet: the creator's page shows both once
-             they are set, and nothing here set them (2026-09-27). */
-          (isDelivery() ? field('Tracking no.', 'tracking_no', o.tracking_no, 'text', '')
-            : field('Location', 'visit_location', o.visit_location, 'text', '') +
-              field('Contact', 'visit_pic', o.visit_pic, 'text', '') +
-              field('Contact phone', 'visit_pic_phone', o.visit_pic_phone, 'tel', '')) +
-          field('Draft due', 'submission_due', o.submission_due, 'date', '', 'kfield-pub') +
-          field('Publish date', 'planned_publish', o.planned_publish, 'date', '', 'kfield-pub') +
           '<label class="kfield kfield-wide"><span>Notes</span>' +
             '<input class="input" data-f="notes" value="' + esc(o.notes || '') + '"></label>' +
         '</div>' +
@@ -3029,6 +3145,7 @@
         '<div class="kstep-title">Draft</div>' +
         draftGuide(o) +
         requestHtml(o) +
+        approvalHtml(o) +
         handedIn(o) +
         '<div class="kfields">' +
           /* The team can hand a file in for the creator, at the same steps
@@ -3075,7 +3192,12 @@
              audit: one prominent blue action per view, two at most. The rest
              are the ordinary outline action, and what differentiates them is
              the word on them, not the paint. */
-          (advance ? '<button class="btn btn-sm' + (advance === 'reviewing' ? ' btn-go' : '') +
+          /* At Client review the step forward is the client's. Where they
+             agreed by word of mouth, the team approves on their behalf, on
+             the record under the colleague's name (the user, 2026-09-27). */
+          (o.state === 'reviewing'
+            ? '<button class="btn btn-sm" data-a="proceed" type="button">Confirm internally</button>' : '') +
+          (advance && o.state !== 'reviewing' ? '<button class="btn btn-sm' + (advance === 'reviewing' ? ' btn-go' : '') +
             '" data-a="advance" type="button">' +
             esc(ADVANCE_WORD[advance] || wordFor(advance)) + CHEV + '</button>' : '') +
           /* Back to the creator without the client ever seeing the round.
@@ -3336,11 +3458,6 @@
     // The header is the fold target; its buttons keep their own jobs.
     var body = card.querySelector('[data-body]');
     var foldBtn = card.querySelector('[data-a="fold"]');
-    var visitInput = card.querySelector('[data-f="visit_date"]');
-    var dueInput = card.querySelector('[data-f="submission_due"]');
-    if (visitInput && dueInput) visitInput.addEventListener('change', function () {
-      if (this.value) dueInput.value = addDays(this.value, 7);
-    });
     if (foldBtn) card.querySelector('.kcard-head').addEventListener('click', function (e) {
       if (e.target.closest('button') && e.target.closest('button') !== foldBtn) return;
       var show = body.hidden;
@@ -3350,6 +3467,7 @@
       foldBtn.setAttribute('aria-expanded', String(show));
     });
 
+    on('schedule',  function () { showCampPane('schedule'); pushUrl(); });
     on('rate',      function () { editRate(card, o); });
     on('pick',      function () { keyIn(o, 'shortlisted'); });
     on('unpick',    function () { keyIn(o, 'option'); });
@@ -3364,11 +3482,10 @@
     on('advance', function () {
       var to = nextState(o.state);
       var patch = readCard(card);
-      patch.id = o.id;                      // so the gate can see what was handed in
-      var why = blockAdvance(to, patch);
+      /* The gate reads what was handed in and the plan the Schedule holds. */
+      var why = blockAdvance(to, Object.assign({ id: o.id, planned_publish: o.planned_publish }, patch));
       var m = card.querySelector('[data-msg]');
       if (why) { m.textContent = why; m.className = 'msg err'; return; }
-      delete patch.id;
       /* Every other step is the team recording its own progress and moves on
          the press. This one hands the work to the client, so it is checked
          first and the sheet is what releases it. */
@@ -3376,6 +3493,7 @@
       advanceOption(o, to, patch);
     });
     on('back',      function () { stepBack(o, prevState(o.state, o)); });
+    on('proceed',   function () { proceed(o); });
     on('sendback',  function () { sendBack(o, card); });
 
     on('save', function () {
@@ -3407,9 +3525,9 @@
     if ((to === 'submitted' || to === 'reviewing') && !p.draft_url && !files.length) {
       return 'Draft link or files required.';
     }
-    if (to === 'scheduled' && !p.planned_publish) return 'Publish date required.';
+    if (to === 'scheduled' && !p.planned_publish) return 'Publish date required. Set it on the Schedule.';
     if (to === 'posted') {
-      if (!p.planned_publish) return 'Publish date required.';
+      if (!p.planned_publish) return 'Publish date required. Set it on the Schedule.';
       if (p.planned_publish > today()) return 'Publish date is ' + niceDate(p.planned_publish) + '.';
     }
     return '';
@@ -3454,10 +3572,15 @@
        taken back. A plain move into Client review was refused by the release
        gate, because the request had moved the round on (2026-09-27). */
     var undo = o.state === 'changes';
+    /* Out of Scheduled is taking an approval back, the client's or the
+       team's: through the database, which keeps it on the record, undone. */
+    var unapprove = o.state === 'scheduled';
     window.ADspaceConfirm.ask({
       title: 'Revert to ' + wordFor(to),
       body: undo
         ? name + ' goes back to ' + wordFor(to) + '. The request stays on the record, taken back.'
+        : unapprove
+        ? name + ' goes back to ' + wordFor(to) + '. The approval stays on the record, taken back.'
         : name + ' goes back a step. Dates, notes and files are kept.',
       go: 'Revert',
       tone: 'warn'
@@ -3467,8 +3590,8 @@
         msg('campWorkMsg', name + ': ' + wordFor(to) + '.', 'ok');
         loadOptions();
       };
-      if (undo) {
-        db.rpc('campaign_revert_changes', { p_option: o.id }).then(function (r) {
+      if (undo || unapprove) {
+        db.rpc(undo ? 'campaign_revert_changes' : 'campaign_revert_approval', { p_option: o.id }).then(function (r) {
           var d = (r && r.data) || {};
           if (r.error || d.error) { msg('campWorkMsg', reviewSaid(r.error ? r.error.message : d.error), 'err'); return; }
           done();
@@ -3482,12 +3605,34 @@
     });
   }
 
+  /* The client said yes by word of mouth: the team approves the draft on
+     their behalf. It asks first, because the client's page will name who. */
+  function proceed(o) {
+    var name = (o.creators || {}).name || 'this creator';
+    window.ADspaceConfirm.ask({
+      title: 'Confirm internally',
+      body: name + '\u2019s draft moves to Scheduled. The client\u2019s page reads Proceeded by ' +
+        ((bridge.actorName && bridge.actorName()) || 'you') + '.',
+      go: 'Confirm'
+    }, function () {
+      db.rpc('campaign_proceed', { p_option: o.id }).then(function (r) {
+        var d = (r && r.data) || {};
+        if (r.error || d.error) { msg('campWorkMsg', reviewSaid(r.error ? r.error.message : d.error), 'err'); return; }
+        log('campaign.review', logSubject(), name + ' \u00b7 Approved internally');
+        msg('campWorkMsg', name + ': ' + wordFor('scheduled') + '.', 'ok');
+        loadOptions();
+      }).catch(function (e) { msg('campWorkMsg', reviewSaid((e && e.message) || String(e)), 'err'); });
+    });
+  }
+
   /* A refusal about a round, in the team's words. */
   var SAID_REVIEW = {
     denied: 'Not allowed for this group.',
     'no-booking': 'That booking is no longer there.',
     'not-submitted': 'Only a submitted draft can be sent back.',
     'not-changes': 'There is no request to take back.',
+    'not-reviewing': 'Only a draft at Client review can be confirmed.',
+    'not-scheduled': 'There is no approval to take back.',
     'note-required': 'Say what needs changing.',
     'new-files': 'The creator has handed in new files. Check them and release them instead.',
     'qc-required': 'Release to client needs the quality check completed.'
@@ -3843,27 +3988,27 @@
       rows.forEach(function (p) {
         var w = document.createElement('div');
         w.className = 'postrow';
+        /* The step's own ground and field grid, like every other step on the
+           card: the rows were a white band of inline-sized boxes across the
+           recessed step (reported 2026-09-27). The platform is read, not a
+           field. */
+        var num = function (label, key) {
+          return '<label class="kfield"><span>' + label + '</span><input class="input" data-p="' + key +
+            '" type="number" inputmode="numeric" min="0" value="' + (p[key] == null ? '' : p[key]) + '"></label>';
+        };
         w.innerHTML =
-          '<div class="row">' +
-            '<div style="flex:0 0 110px"><label class="field-label">Platform</label>' +
-              '<input class="input" value="' + esc(p.platform) + '" readonly></div>' +
-            '<div style="flex:1 1 280px"><label class="field-label">Post link</label>' +
-              '<input class="input" data-p="post_url" value="' + esc(p.post_url || '') + '"></div>' +
-            '<div style="flex:0 0 150px"><label class="field-label">Published</label>' +
-              '<input class="input" data-p="published_at" type="date" value="' + esc(p.published_at || '') + '"></div>' +
-            '<div style="flex:0 0 110px"><label class="field-label">Window (days)</label>' +
-              '<input class="input" data-p="window_days" type="number" inputmode="numeric" min="1" value="' + (p.window_days || 7) + '"></div>' +
+          '<div class="postrow-head"><b>' + esc(p.platform) + '</b>' +
+            (p.measured_at ? '<span>Measured ' + esc(niceDate(p.measured_at)) + '</span>' : '') + '</div>' +
+          '<div class="kfields">' +
+            '<label class="kfield kfield-wide"><span>Post link</span>' +
+              '<input class="input" data-p="post_url" value="' + esc(p.post_url || '') + '" placeholder="https://"></label>' +
+            '<label class="kfield"><span>Published</span>' +
+              '<input class="input" data-p="published_at" type="date" value="' + esc(p.published_at || '') + '"></label>' +
+            '<label class="kfield"><span>Window (days)</span>' +
+              '<input class="input" data-p="window_days" type="number" inputmode="numeric" min="1" value="' + (p.window_days || 7) + '"></label>' +
+            num('Impressions', 'impressions') + num('Engagements', 'engagements') + num('Views', 'views') +
           '</div>' +
-          '<div class="row" style="margin-top:10px">' +
-            '<div><label class="field-label">Impressions</label>' +
-              '<input class="input" data-p="impressions" type="number" inputmode="numeric" min="0" value="' + (p.impressions == null ? '' : p.impressions) + '"></div>' +
-            '<div><label class="field-label">Engagements</label>' +
-              '<input class="input" data-p="engagements" type="number" inputmode="numeric" min="0" value="' + (p.engagements == null ? '' : p.engagements) + '"></div>' +
-            '<div><label class="field-label">Views</label>' +
-              '<input class="input" data-p="views" type="number" inputmode="numeric" min="0" value="' + (p.views == null ? '' : p.views) + '"></div>' +
-            '<button class="btn btn-sm btn-primary" data-p-save type="button">Save</button>' +
-          '</div>' +
-          (p.measured_at ? '<div class="muted postrow-measured">Measured ' + esc(niceDate(p.measured_at)) + '</div>' : '') +
+          '<div class="kactions"><button class="btn btn-sm btn-primary" data-p-save type="button">Save</button></div>' +
           '<div class="msg" data-p-msg></div>';
         w.querySelector('[data-p-save]').addEventListener('click', function () {
           var patch = {};

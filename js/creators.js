@@ -150,6 +150,7 @@
       sendRequest: 'Send request',
       theClient: 'the client',
       approvedBy: function (who, when) { return 'Approved by ' + who + (when ? ' on ' + when : '') + '.'; },
+      proceededBy: function (who, when) { return 'Proceeded by ' + who + (when ? ' on ' + when : '') + '.'; },
       changesBy: function (who, when) { return 'Changes requested by ' + who + (when ? ' on ' + when : '') + '.'; },
       reviewThanks: 'Received. The team will follow up.',
       needNote: 'Please describe the changes required.',
@@ -240,6 +241,7 @@
       sendRequest: '提交修改',
       theClient: '客户',
       approvedBy: function (who, when) { return who + '已通过' + (when ? '（' + when + '）' : '') + '。'; },
+      proceededBy: function (who, when) { return '已由' + who + '确认推进' + (when ? '（' + when + '）' : '') + '。'; },
       changesBy: function (who, when) { return who + '提出修改' + (when ? '（' + when + '）' : '') + '。'; },
       reviewThanks: '已收到，团队将跟进处理。',
       needNote: '请说明需要修改的内容。',
@@ -655,7 +657,9 @@
     var when = r.at ? new Date(r.at) : null;
     var stamp = when ? when.toLocaleString(lang === 'zh' ? 'zh-CN' : 'en-GB',
       { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).replace(/\bSep\b/, 'Sept') : '';
-    var word = r.decision === 'approved' ? t().approvedBy : t().changesBy;
+    /* An approval the team gave on the client's behalf names the colleague
+       who proceeded, never as if the client had approved it. */
+    var word = r.decision !== 'approved' ? t().changesBy : r.by_team ? t().proceededBy : t().approvedBy;
     return '<p class="approve-state booking-decided">' +
       esc(word(r.reviewer || t().theClient, stamp)) + '</p>' +
       (r.decision !== 'approved' && r.note
