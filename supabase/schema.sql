@@ -5959,7 +5959,7 @@ returns text
 language sql immutable parallel safe as $$
   select case
     when action in ('campaign.bulk', 'campaign.closed', 'campaign.confirmed',
-                    'campaign.created', 'campaign.deleted', 'campaign.edited',
+                    'campaign.created', 'campaign.dates', 'campaign.deleted', 'campaign.edited',
                     'campaign.file_added', 'campaign.qc',
                     'campaign.invoice', 'campaign.invoice_file',
                     'campaign.invoice_removed', 'campaign.keyed', 'campaign.locked',
@@ -5971,7 +5971,7 @@ language sql immutable parallel safe as $$
                     'creator.links_self', 'creator.off', 'creator.on', 'creator.removed',
                     'creator.updated') then 'campaigns'
     when action in ('client.action_done', 'client.action_reopened', 'client.added',
-                    'client.billing', 'client.brand', 'client.edited',
+                    'client.billing', 'client.brand', 'client.deleted', 'client.edited',
                     'client.review_on', 'client.service', 'client.service_changed',
                     'client.service_removed', 'client.stage', 'client.touch',
                     'client.touch_edited', 'client.touch_removed',

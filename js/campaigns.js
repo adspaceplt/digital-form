@@ -1923,7 +1923,7 @@
           db.from('campaign_options').update(patch).eq('id', o.id).then(function (r) {
             if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
             Object.keys(patch).forEach(function (k) { o[k] = patch[k]; });
-            log('campaign.dates', logSubject(), ((o.creators || {}).name || 'A creator') + ' · schedule updated');
+            log('campaign.dates', logSubject(), (o.creators || {}).name || 'A creator');
             paintOptions();
           });
         });
@@ -2053,7 +2053,10 @@
         box.innerHTML = '<div class="softpanel recpanel"></div>';
         window.ADspaceRecords.paint(box.firstChild, rows.map(function (x) {
           var r = A && A.record ? A.record(x) : { at: x.created_at, who: x.actor || 'System', what: x.action, detail: x.detail || '' };
-          r.on = '';
+          /* The campaign is this page; a booking's entry is about its
+             creator, named on the first row, with what changed under it. */
+          r.on = r.lead || '';
+          if (r.lead) r.detail = r.rest || '';
           if (r.key == null) r.key = 'campaign';
           return r;
         }));
@@ -3747,8 +3750,10 @@
       /* Who checked and when. Every check is required, so the row is the
          evidence that all nine were made; nine booleans a person would be
          nine times the data for the same fact. */
+      /* Who checked is the entry's own `actor`; the detail names only the
+         creator and what is still owed. */
       log('campaign.qc', logSubject(),
-        ((o.creators || {}).name || 'A creator') + ' · quality checked by ' + who +
+        ((o.creators || {}).name || 'A creator') +
         (out.state === 'waiting' ? ' · second reviewer asked for' : ''));
       /* The run is spent. A booking sent back for changes is checked again
          from the top, because it is a different file. */

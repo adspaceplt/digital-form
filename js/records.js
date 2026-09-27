@@ -2,8 +2,8 @@
  *
  * Every history in the console (the Activity record, a client's and a
  * campaign's Activity, a task's log and its recent activity) is drawn here:
- * one line per entry, the time and who in the quiet ink, then what happened,
- * on what, and what changed, under a heading per day. The user, 2026-09-26:
+ * one entry each, the time and who in the quiet ink, then what happened and
+ * on what, with what changed on a second row, under a heading per day. The user, 2026-09-26:
  * the records were "too brief", "too airy", and "all terms used are
  * different".
  *
@@ -111,17 +111,23 @@
     }).join('; ');
   }
 
+  /* Two rows (the user, 2026-09-27: "split two rows would be better"): who
+     did what, and to what, on the first, which reads down the column in one
+     line; what changed on the second, in the quieter ink, only where there
+     is anything to say. A wrap no longer breaks "Pending draft" across the
+     time column's edge. */
   function line(x) {
     var detail = merged(x.details);
     return '<li class="recline">' +
       '<time class="rl-time" datetime="' + esc(x.at || '') + '">' + esc(time(x.at)) + '</time>' +
-      '<p class="rl-body">' +
+      '<div class="rl-body"><div class="rl-head">' +
         (x.who ? '<span class="rl-who">' + esc(x.who) + '</span> ' : '') +
         '<b class="rl-what' + (x.tone ? ' ' + esc(x.tone) : '') + '">' + esc(x.what) + '</b>' +
         (x.on ? ' <span class="rl-on">' + esc(x.on) + '</span>' : '') +
-        (detail ? '<span class="rl-detail">' + (x.on ? ': ' : ' ') + esc(detail) + '</span>' : '') +
         (x.n > 1 ? ' <span class="rl-n">\u00b7 ' + x.n + ' times</span>' : '') +
-      '</p></li>';
+      '</div>' +
+      (detail ? '<div class="rl-detail">' + esc(detail) + '</div>' : '') +
+      '</div></li>';
   }
 
   function paint(host, items, o) {
@@ -149,7 +155,7 @@
     clampWatch(host);
   }
 
-  /* A line longer than three lines is cut at three and opens on a press.
+  /* A detail longer than three lines is cut at three and opens on a press.
      Which lines are long is only known once they are drawn at a width, and
      a list painted while its pane is hidden has none, so each list is
      measured again whenever its size changes. */
@@ -159,8 +165,8 @@
   function measure(host) {
     Array.prototype.forEach.call(host.querySelectorAll('.recline'), function (li) {
       if (li.classList.contains('is-open')) return;
-      var body = li.querySelector('.rl-body');
-      if (!body || !body.clientHeight) return;
+      var body = li.querySelector('.rl-detail');
+      if (!body || !body.clientHeight) { li.classList.remove('is-long'); return; }
       var long = body.scrollHeight > body.clientHeight + 1;
       li.classList.toggle('is-long', long);
       if (long) {

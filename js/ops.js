@@ -1442,6 +1442,83 @@
     host.appendChild(t);
   }
 
+  /* A report section drawn as a chart: the heading the tables carry, then
+     the card; an empty section reads as the tables' empty line. */
+  function repChart(host, title, spec, note) {
+    var h = document.createElement('h3');
+    h.className = 'ovsec-title';
+    h.textContent = title;
+    host.appendChild(h);
+    var live = (spec.rows || spec.cats || []).length;
+    if (!live) {
+      var sub = document.createElement('div');
+      sub.className = 'repempty';
+      host.appendChild(sub);
+      UI.emptyLine(sub, note || 'Nothing yet.');
+      return null;
+    }
+    return window.ADspaceChart.draw(host, spec);
+  }
+
+  /* The last six months of on-time delivery, read once a visit. */
+  function loadTrend() {
+    if (state.trendBusy || state.trend) return;
+    state.trendBusy = true;
+    var ms = window.ADspaceChart.months(6);
+    Promise.all(ms.map(function (m) {
+      return db.rpc('ops_report', { p_from: m.start.toISOString(), p_to: m.end.toISOString() })
+        .then(function (x) { return x && !x.error && x.data && !x.data.error ? x.data.on_time || {} : null; })
+        .catch(function () { return null; });
+    })).then(function (all) {
+      state.trendBusy = false;
+      state.trend = all.some(function (x) { return x === null; }) ? { failed: true }
+        : { months: ms, figures: all };
+      if (state.view === 'report') paint();
+    });
+  }
+  function paintTrend(host) {
+    var t = state.trend;
+    if (!t) {
+      var h = document.createElement('h3');
+      h.className = 'ovsec-title';
+      h.textContent = 'On-time delivery by month';
+      host.appendChild(h);
+      var wait = document.createElement('div');
+      wait.className = 'repempty';
+      host.appendChild(wait);
+      UI.skeleton(wait, 2);
+      loadTrend();
+      return;
+    }
+    if (t.failed) {
+      var hf = document.createElement('h3');
+      hf.className = 'ovsec-title';
+      hf.textContent = 'On-time delivery by month';
+      host.appendChild(hf);
+      var bad = document.createElement('div');
+      bad.className = 'repempty';
+      host.appendChild(bad);
+      UI.failLine(bad, 'the monthly figures', 'The report could not be read.', function () { state.trend = null; paint(); });
+      return;
+    }
+    var cats = t.months.map(function (m, i) {
+      var f = t.figures[i] || {}, n = Number(f.reached || 0);
+      return { label: m.label, long: m.long, values: [n ? Math.round(Number(f.met || 0) / n * 100) : null], n: n, met: Number(f.met || 0) };
+    });
+    repChart(host, 'On-time delivery by month', {
+      kind: 'line', name: 'On-time delivery by month', max: 100, none: 'None reached client review',
+      cats: cats.some(function (c) { return c.values[0] != null; }) ? cats : [],
+      series: [{ label: 'On time' }],
+      fmt: function (v) { return Math.round(Number(v) || 0) + '%'; },
+      table: {
+        heads: ['Month', 'Reached client review', 'On time', 'Rate'],
+        rows: cats.map(function (c) {
+          return [c.long, String(c.n), String(c.met), c.values[0] == null ? '—' : c.values[0] + '%'];
+        })
+      }
+    }, 'No tasks reached client review in the last six months.');
+  }
+
   function paintReport() {
     var box = $('workReport');
     if (!box) return;
@@ -1456,6 +1533,9 @@
       return;
     }
     var r = state.report;
+    /* Landing on the Report from its address (a refresh, a link) had never
+       asked for the figures, and said there were none. */
+    if (!r && state.reportFor !== (state.period || 'month')) { loadReport(true); return; }
     if (!r) { UI.emptyLine(sub(), 'No report figures are available for this period.'); return; }
 
     /* Every figure below but the first is taken over a window, and on a phone
@@ -1505,14 +1585,20 @@
           count it was taken over, never a bare figure: a median over two
           tasks is not a measurement, and the tail is what a person is
           actually trying to find. */
-    repTable(box, 'Stage duration', ['Stage', 'Slowest 10%', 'Median'], 'svc-row rep-row',
-      (r.stage_time || []).map(function (s) {
-        return { html: '<span class="svc-name"><b>' + esc(s.label) + '</b>' +
-                         '<small>' + esc(s.n + (s.n === 1 ? ' time' : ' times')) + '</small></span>' +
-                       '<span class="rep-mid">' + repLab('Slowest 10%') +
-                         esc(spanWord(s.p90_minutes)) + '</span>' +
-                       '<span class="rep-num">' + esc(spanWord(s.median_minutes)) + '</span>' };
-      }), 'No stage changes in this period.');
+    repChart(box, 'Stage duration', {
+      kind: 'bars', name: 'Stage duration', markLabel: 'Slowest 10%',
+      rows: (r.stage_time || []).map(function (s) {
+        return { label: s.label, note: s.n + (s.n === 1 ? ' time' : ' times'),
+                 value: Number(s.median_minutes) || 0, mark: Number(s.p90_minutes) || 0 };
+      }),
+      fmt: function (v) { return spanWord(v); },
+      table: {
+        heads: ['Stage', 'Times', 'Median', 'Slowest 10%'],
+        rows: (r.stage_time || []).map(function (s) {
+          return [s.label, String(s.n), spanWord(s.median_minutes), spanWord(s.p90_minutes)];
+        })
+      }
+    }, 'No stage changes in this period.');
 
     /* 4. Was it there on time. Replanning sits beside the rate and never
           inside it: an extension would otherwise erase the miss it was
@@ -1532,6 +1618,11 @@
                 '<span class="rep-mid"></span><span class="rep-num">' +
                 esc(String(ot.replanned || 0)) + '</span>' }
       ], 'No tasks reached client review in this period.');
+
+    /* 4b. Whether it is getting better: the same rate over the last six
+          months, one call per month to the same function, so the line and
+          the figures above can never disagree. */
+    paintTrend(box);
 
     /* 5. By person. The foundation of a KPI and not a KPI: what somebody
           finished, how much of it was on time, and how long their work took
@@ -3190,20 +3281,26 @@
     var by = {}, order = [];
     (state.tasks || []).forEach(function (t) {
       var id = state.ownerIds[t.id] || '';
-      if (!by[id]) { by[id] = { name: state.owners[t.id] || 'No task owner', overdue: 0, today: 0, doing: 0, waiting: 0, review: 0, done: 0 }; order.push(id); }
+      if (!by[id]) { by[id] = { name: state.owners[t.id] || 'No task owner', open: 0, overdue: 0, today: 0, doing: 0, waiting: 0, review: 0, done: 0 }; order.push(id); }
       var r = by[id], n = daysAway(dueOf(t)), p = plainOf(t);
       if (isFinished(t)) {
         var at = new Date(t.completed_at || t.cancelled_at).getTime();
         if (t.completed_at && at >= ws) r.done++;
         return;
       }
+      r.open++;
       if (n !== null && n < 0) r.overdue++;
       if (n === 0) r.today++;
       if (p === 'doing') r.doing++;
       if (p === 'waiting') r.waiting++;
       if (p === 'review') r.review++;
     });
-    order.sort(function (a, b) { return a ? (b ? by[a].name.localeCompare(by[b].name) : -1) : 1; });
+    /* The most open work first, so the bars read as who is carrying most;
+       nobody with nothing open is drawn as an empty bar. */
+    order = order.filter(function (id) { return by[id].open; });
+    order.sort(function (a, b) {
+      return (by[b].open - by[a].open) || (a ? (b ? by[a].name.localeCompare(by[b].name) : -1) : 1);
+    });
     if (!order.length) {
       var none = document.createElement('div');
       none.className = 'repempty';
@@ -3211,20 +3308,27 @@
       UI.emptyLine(none, 'No open tasks.');
       return;
     }
-    var table = GRP.table('svc-row load-row', ['Task Owner', 'Overdue', 'Due today', 'In progress', 'Waiting', 'Review', 'Done this week']);
-    order.forEach(function (id) {
-      var r = by[id];
-      var row = document.createElement('div');
-      row.className = 'svc-row load-row';
-      var cell = function (v, label, warn) {
-        return '<span class="load-n' + (warn && v ? ' is-over' : '') + '"><span class="load-lab">' + label + '</span>' + (v || '<span class="mute">0</span>') + '</span>';
-      };
-      row.innerHTML = '<span class="svc-name"><b>' + esc(r.name) + '</b></span>' +
-        cell(r.overdue, 'Overdue', true) + cell(r.today, 'Due today') + cell(r.doing, 'In progress') +
-        cell(r.waiting, 'Waiting') + cell(r.review, 'Review') + cell(r.done, 'Done this week');
-      table.appendChild(row);
+    /* Who is carrying the most, as bars a person reads down (the user,
+       2026-09-26: charts where a table answers more slowly). The overdue
+       count rides beside the name in warn; every count a manager reads on a
+       Monday is in the figures folded under the bars. */
+    window.ADspaceChart.draw(host, {
+      kind: 'bars', name: 'Open work by person', cls: 'load-chart',
+      rows: order.map(function (id) {
+        var r = by[id];
+        return { label: r.name, value: r.open,
+                 note: r.overdue ? r.overdue + ' overdue' : '', noteTone: r.overdue ? 'warn' : '' };
+      }),
+      fmt: function (v) { return v + (Number(v) === 1 ? ' open task' : ' open tasks'); },
+      empty: 'No open tasks.',
+      table: {
+        heads: ['Task Owner', 'Open', 'Overdue', 'Due today', 'In progress', 'Waiting', 'Review', 'Done this week'],
+        rows: order.map(function (id) {
+          var r = by[id];
+          return [r.name, r.open, r.overdue, r.today, r.doing, r.waiting, r.review, r.done].map(String);
+        })
+      }
     });
-    host.appendChild(table);
   }
   /* The Report is the team's numbers (`ops.reports`) and who carries the
      open work (`ops.all`); either one opens it, each section drawn only

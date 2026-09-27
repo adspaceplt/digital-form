@@ -8242,35 +8242,37 @@ body.is-canvas { overflow: hidden; }
 .field-label.is-req::after { content: "*"; content: "*" / ""; margin-left: 3px; color: var(--err); font-weight: 600; }
 
 /* ---------- Records (js/records.js) ----------
-   One line an entry: the time and who in the quiet ink, then what happened,
-   on what, and what changed, under a heading a day. 12.5px, close set: a
-   history is read down a column, not scanned card by card. */
+   One entry: the time and who in the quiet ink, then what happened and on
+   what, with what changed on a second row in the soft ink, under a heading a
+   day. 12.5px: a history is read down a column, not scanned card by card,
+   and the entries stand 8px apart so each pair of rows reads as one. */
 .recpanel { padding: 14px 18px; }
 .reclist { display: grid; gap: 4px; min-width: 0; }
 .recday { margin: 8px 0 2px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
 .reclist > .recday:first-child { margin-top: 0; }
-.reclines { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.reclines { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .recline {
   display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 0 10px;
   font-size: 12.5px; line-height: 1.5; min-width: 0;
 }
 .rl-time { color: var(--ink-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .rl-body { margin: 0; min-width: 0; overflow-wrap: anywhere; color: var(--ink); }
+.rl-head { min-width: 0; }
 .rl-who { color: var(--ink-mute); margin-right: 2px; }
 .rl-what { font-weight: 600; }
 .rl-what.is-danger { color: var(--err); }
-.rl-detail { color: var(--ink-soft); }
+.rl-detail { margin-top: 1px; color: var(--ink-soft); }
 .rl-n { color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 
 /* In the Activity record the day stays in view while its lines scroll. */
 #activityList .recday { position: sticky; top: 0; z-index: 2; background: var(--card); padding: 6px 0 8px; margin-bottom: 0; }
-/* A long entry reads three lines and opens on a press; the whole line is the
-   control, so it takes the focus ring and says it opens. */
-.rl-body { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
-.recline.is-open .rl-body { display: block; -webkit-line-clamp: unset; line-clamp: unset; overflow: visible; }
+/* A long detail reads three lines and opens on a press; the whole entry is
+   the control, so it takes the focus ring and says it opens. */
+.rl-detail { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+.recline.is-open .rl-detail { display: block; -webkit-line-clamp: unset; line-clamp: unset; overflow: visible; }
 .recline.is-long { cursor: pointer; border-radius: 4px; }
 .recline.is-long:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; }
-@media (hover: hover) { .recline.is-long:hover .rl-body { color: var(--ink); } }
+@media (hover: hover) { .recline.is-long:hover .rl-detail { color: var(--ink); } }
 
 /* ---------- One strip (2026-09-27) ----------
    A record's panes and a route's tabs take the view strip's look, asked for
@@ -8304,3 +8306,106 @@ body.is-canvas { overflow: hidden; }
 .rectabs.is-more-end, .tabrow.is-more-end { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
 .rectabs.is-more-start, .tabrow.is-more-start { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); }
 .rectabs.is-more-start.is-more-end, .tabrow.is-more-start.is-more-end { -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
+
+/* ---- Charts (`js/chart.js`) ------------------------------------------------
+   One card per figure, in the page's own tokens so it follows the theme. The
+   marks are ink, and a colour only where the word beside it is a state: green
+   for a milestone reached, warn for late or over, red for the grade that
+   refuses. The figures fold under every chart as a table. */
+.chartcard {
+  position: relative; background: var(--card); border: 1px solid var(--card-line);
+  border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 20px 14px; min-width: 0;
+}
+.is-narrow .chartcard, .is-tight .chartcard { padding: 14px 14px 10px; }
+.chart-title { margin: 0 0 12px; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+.chart-empty { margin: 0; font-size: 13px; color: var(--ink-mute); }
+.chart-plot { min-width: 0; }
+.chartgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.is-narrow .chartgrid, .is-tight .chartgrid { grid-template-columns: minmax(0, 1fr); }
+.chartgrid > .chartcard:only-child { grid-column: 1 / -1; }
+
+/* Bars: the label and its figure on one line, the bar under them. */
+.chart-bars { display: grid; gap: 12px; }
+.cb-head { display: flex; align-items: baseline; gap: 12px; font-size: 13px; }
+.cb-label { min-width: 0; color: var(--ink); overflow-wrap: anywhere; }
+.cb-label small { margin-left: 4px; font-size: 12px; color: var(--ink-mute); }
+.cb-label small.is-warn { color: var(--warn); font-weight: 600; }
+.cb-value { margin-left: auto; flex: 0 0 auto; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cb-value.is-warn { color: var(--warn); }
+.cb-value.is-err { color: var(--err); }
+.cb-track { position: relative; height: 8px; margin-top: 6px; border-radius: 4px; background: var(--sunk); }
+.cb-fill { display: block; height: 100%; min-width: 2px; border-radius: 4px; background: var(--ink-soft); }
+.cb-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--ink); }
+
+/* The tones every mark shares. */
+.cb-fill.is-ok, .cc-bar.is-ok, .cc-seg.is-ok, .chart-key .is-ok { background: var(--ok); }
+.cb-fill.is-warn, .cc-bar.is-warn, .cc-seg.is-warn, .chart-key .is-warn { background: var(--warn); }
+.cb-fill.is-err, .cc-bar.is-err, .cc-seg.is-err, .chart-key .is-err { background: var(--err); }
+.cb-fill.is-mute, .cc-bar.is-mute, .cc-seg.is-mute, .chart-key .is-mute { background: var(--line-ctl); }
+
+/* Columns and line: a scale on the left, a gridline at the top, the middle
+   and zero, and each month's label under its column. */
+.chart-cols { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 10px; padding-top: 8px; }
+.cc-axis { position: relative; align-self: start; height: 140px; min-width: 24px; font-size: 11.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.cc-axis span { position: absolute; right: 0; transform: translateY(50%); white-space: nowrap; line-height: 1; }
+.cc-body { position: relative; display: flex; align-items: stretch; min-width: 0; }
+.cc-grid { position: absolute; inset: 0 0 auto 0; height: 140px; pointer-events: none; }
+.cc-grid i { position: absolute; left: 0; right: 0; height: 1px; background: var(--line-soft); }
+.cc-grid i:nth-child(1) { top: 0; }
+.cc-grid i:nth-child(2) { top: 50%; }
+.cc-grid i:nth-child(3) { top: 100%; background: var(--line); }
+.cc-col { position: relative; flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; cursor: default; }
+.cc-plot { position: relative; height: 140px; width: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 3px; }
+.cc-bar, .cc-stack { width: min(28px, 36%); }
+.cc-bar { display: block; min-height: 0; border-radius: 3px 3px 0 0; background: var(--ink-soft); }
+.cc-stack { height: 100%; display: flex; flex-direction: column-reverse; }
+.cc-seg { display: block; width: 100%; background: var(--ink-soft); }
+.cc-stack .cc-seg:last-child { border-radius: 3px 3px 0 0; }
+.cc-label { margin-top: 8px; font-size: 12px; color: var(--ink-mute); white-space: nowrap; }
+@media (hover: hover) {
+  .cc-col:hover .cc-plot { background: var(--sunk); border-radius: 4px 4px 0 0; }
+}
+.cc-col.is-tipped .cc-plot { background: var(--sunk); border-radius: 4px 4px 0 0; }
+.cl-plot { position: absolute; inset: 0 0 auto 0; height: 140px; pointer-events: none; }
+.cl-plot svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.cl-line { fill: none; stroke: var(--ink-soft); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.cl-line.is-ok { stroke: var(--ok); }
+.cl-dot { position: absolute; width: 8px; height: 8px; margin: 0 0 -4px -4px; border-radius: 50%; background: var(--card); border: 2px solid var(--ink-soft); }
+.cl-dot.is-ok { border-color: var(--ok); }
+.cl-hit .cc-plot { background: transparent; }
+
+/* Pie: the ring beside its legend; the legend carries every word. */
+.chart-pie { display: flex; align-items: center; gap: 24px; }
+.cp-ring { flex: 0 0 auto; width: 120px; height: 120px; }
+.cp-seg { fill: none; stroke: var(--ink); stroke-width: 7; }
+.cp-keys { flex: 1 1 auto; min-width: 0; display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.cp-key { display: flex; align-items: baseline; gap: 10px; font-size: 13px; }
+.cp-key > i { flex: 0 0 auto; width: 10px; height: 10px; border-radius: 3px; background: var(--ink); transform: translateY(1px); }
+.cp-label { min-width: 0; color: var(--ink); overflow-wrap: anywhere; }
+.cp-value { margin-left: auto; flex: 0 0 auto; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cp-value small { margin-left: 8px; font-weight: 400; color: var(--ink-mute); font-size: 12px; }
+.is-tight .chart-pie { flex-direction: column; align-items: stretch; }
+.is-tight .cp-ring { align-self: center; }
+
+.chart-key { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 12px 0 0; padding: 0; list-style: none; font-size: 12px; color: var(--ink-mute); }
+.chart-key li { display: inline-flex; align-items: center; gap: 6px; }
+.chart-key i { width: 10px; height: 10px; border-radius: 3px; background: var(--ink-soft); }
+.chart-key i.is-mark { width: 2px; height: 12px; border-radius: 1px; background: var(--ink); }
+
+.chart-tip {
+  position: absolute; z-index: 5; pointer-events: none; max-width: 260px;
+  padding: 6px 10px; border-radius: var(--radius-sm); background: var(--fill); color: var(--on-fill);
+  font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; box-shadow: var(--shadow-lift);
+}
+
+/* The figures, folded: a plain table, the first column the name. */
+.chart-data { margin-top: 12px; }
+.chart-data > summary { padding-top: 6px; min-height: var(--ctl-h-sm); }
+.chart-tblwrap { overflow-x: auto; margin-top: 8px; }
+.chart-tbl { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.chart-tbl th, .chart-tbl td { padding: 6px 0; border-bottom: 1px solid var(--line-soft); text-align: left; font-weight: 400; color: var(--ink); }
+.chart-tbl thead th { font-size: 12px; font-weight: 600; color: var(--ink-mute); padding-top: 0; }
+.chart-tbl .is-end { text-align: right; padding-left: 16px; white-space: nowrap; }
+.chart-tbl tbody tr:last-child > * { border-bottom: 0; }
+#workReport .chartcard + .ovsec-title { margin-top: 32px; }
+#workReport .chartcard + .repempty { margin-top: 12px; }
