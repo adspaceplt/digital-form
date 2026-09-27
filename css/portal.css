@@ -4197,7 +4197,6 @@ body > .shell { width: 100%; }
 .eng-meta { margin: 0; font-size: 13px; color: var(--ink); display: flex; flex-wrap: wrap; gap: 4px 16px; min-width: 0; }
 .eng-lab { color: var(--ink-mute); }
 .eng-ctl { display: flex; align-items: center; gap: 8px; }
-.eng-ctl .state-select { width: var(--state-w); }
 .eng-ctl .iconbtn { margin-block: calc((var(--ctl-h-sm) - var(--ctl-h)) / 2); }
 /* The meeting as label-beside-value rows on the card's one grid: the label
    track, the value, and the row's own controls against the right edge.
@@ -4221,8 +4220,9 @@ body > .shell { width: 100%; }
 .eng-meetwarn { margin: 8px 0 0; }
 .eng-meetmsg-text { margin: 8px 0 0; padding: 12px 14px; background: var(--sunk); border-radius: var(--radius-sm); font: inherit; font-size: 13px; line-height: 1.55; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
 .engcard .eng-checks { margin-top: 12px; }
-/* The month's state is a chip on its heading while the card is shut, and
-   the card's own select once it is open: said once either way. */
+/* The month's stage is a chip on its heading while the card is shut, and
+   the card's own chip once it is open: said once either way. It is worked
+   out from the month's facts, so it is never a select (2026-09-27). */
 .crm-group:not(.is-shut) > .crm-group-head .eng-mark { display: none; }
 .eng-checks { border-top: 1px solid var(--line-soft); padding-bottom: 4px; }
 /* Readiness is two ticks (2026-09-24): the heading and its count on one line,

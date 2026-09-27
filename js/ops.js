@@ -180,7 +180,7 @@
     'skip-reason-required': 'Skipping a step needs a reason.',
     'back-reason-required': 'Going back needs a reason.',
     'retired-stage': 'That stage is no longer used.',
-    'planning-incomplete': 'Planning not complete for this month.',
+    'planning-incomplete': 'Readiness checklists not done for this month.',
     'meeting-required': 'Content meeting not held or marked N/A.',
     'needs-final-or-reason': 'Add a final link or a note.',
     'no-such-person': 'Not a team member.',
@@ -190,6 +190,8 @@
     'not-owner': 'Only the Task Owner can change the status.',
     'no-month': 'This client has no content month for that month. Add it in My Work, Clients first.',
     'month-closed': 'That content month is completed or cancelled.',
+    'tasks-open': 'Tasks in this month are still open.',
+    'derived-state': 'Set by the month\u2019s readiness, meeting and tasks.',
     'month-not-confirmed': 'Confirm the content meeting for that month first.',
     'already-generated': 'Already generated from this sheet.',
     'bad-frequency': 'Choose weekly, monthly or every N days.',
@@ -223,7 +225,10 @@
   /* The database refuses Ready with one key for two causes, so the words
      are built from the task it refused: naming an owner beside the owner
      the rail shows is how the page contradicted itself. */
-  function said(err, t) {
+  function said(err, t, d) {
+    if (err === 'tasks-open' && d && d.open) {
+      return d.open === 1 ? '1 task in this month is still open.' : d.open + ' tasks in this month are still open.';
+    }
     if (err === 'ready-needs-owner-and-due' && t) {
       var need = [];
       /* A queue row carries no assignees; the queue's own read of the owner
@@ -3302,15 +3307,17 @@
          it, so the rail says where it stands. Read after the task, because
          the task is what names it; a refused read leaves no block. */
       var go = function () { loadSession(function () { paintTask(); if (after) after(); }); };
-      if (!t.engagement_id) { state.eng = null; state.engChecks = []; go(); return; }
+      if (!t.engagement_id) { state.eng = null; state.engChecks = []; state.engCounts = null; go(); return; }
       Promise.all([
         db.from('ops_engagements').select('*').eq('id', t.engagement_id),
-        db.from('ops_engagement_checks').select('*').eq('engagement_id', t.engagement_id)
+        db.from('ops_engagement_checks').select('*').eq('engagement_id', t.engagement_id),
+        db.rpc('ops_engagement_counts', { p_engagements: [t.engagement_id] })
       ]).then(function (q) {
         state.eng = (q[0] && !q[0].error && q[0].data && q[0].data[0]) || null;
         state.engChecks = (q[1] && !q[1].error && q[1].data) || [];
+        state.engCounts = countsOf(q[2]);
         go();
-      }, function () { state.eng = null; state.engChecks = []; go(); });
+      }, function () { state.eng = null; state.engChecks = []; state.engCounts = null; go(); });
     }, function (e) {
       msg(msgHere('taskMsg'), (e && e.message) || String(e), 'err');
     });
@@ -3445,7 +3452,8 @@
   function productionNeeds(t) {
     var e = state.eng, out = [];
     if (!t.engagement_id || !e) return out;
-    if (e.status === 'planning') out.push('planning');
+    var ck = checksOf(e, state.engChecks);
+    if (ck.length - checksDone(ck)) out.push('planning');
     var mt = engMeeting(e);
     if (mt === 'none') out.push('meeting');
     else if (mt === 'set') out.push('meeting-held');
@@ -3640,9 +3648,9 @@
     if (isWork(tg) && !isWork(g) && g !== 'revision') {
       var pn = productionNeeds(t);
       if (pn.length) {
-        /* The month is run from here: its two ticks, its meeting and
-           Mark planning complete, so nobody leaves the task for the client
-           record to open the work. */
+        /* The month is run from here: its two ticks and its meeting, so
+           nobody leaves the task for the client record to open the work.
+           The month is ready once both are done; nobody marks it. */
         var eng = state.eng;
         var ck = checksOf(eng, state.engChecks);
         var open = ck.length - checksDone(ck);
@@ -3653,9 +3661,6 @@
           : mt === 'none' ? 'Schedule the content meeting.'
           : mt === 'set' ? 'The work opens once the content meeting on ' + niceDate(eng.meeting_at) + ' is held.'
           : 'Readiness done and the meeting held.';
-        if (work && !open && (mt === 'held' || mt === 'na') && eng.status === 'planning') {
-          n.go = { label: 'Mark planning complete', run: function () { markMonthReady(t); } };
-        }
         return n;
       }
       n.title = 'Start the work';
@@ -4634,7 +4639,8 @@
       ['Added', niceDate(t.created_at)]
     ].filter(function (p) { return p[1]; }).map(function (p) { return frow(p[0], esc(p[1])); }).join('');
     if (e) {
-      more += frow('Engagement', esc(monthWord(e.period)) + ' · ' + esc(wordOf(ENG_STATE, e.status)) +
+      more += frow('Engagement', esc(monthWord(e.period)) + ' · ' +
+        esc(wordOf(ENG_STATE, engPhase(e, checksOf(e, state.engChecks), countFor(e, state.engCounts, [t])))) +
         (ml ? ' <a class="tlink" href="' + esc(ml.href) + '">Open the month</a>' : ''));
       more += frow('Content meeting', esc(meetingWord(e)));
     }
@@ -4765,12 +4771,6 @@
       go: 'Complete task',
       field: { label: 'Reason', rows: 2, need: 'A reason is required.' }
     }, function (why) { move(key, why); });
-  }
-  function markMonthReady(t) {
-    var e = state.eng;
-    if (!e) return;
-    call('ops_engagement_set_status', { p_engagement: e.id, p_status: 'ready', p_version: e.version }, msgHere(),
-      function () { readTask(t.id, function () { msg(msgHere(), monthWord(e.period) + ' is ready.', 'ok'); }); });
   }
   /* The month inside a task's next step: the two ticks and the meeting,
      each acting on the month and repainting the task after. */
@@ -5397,14 +5397,14 @@
         genFirst = ((r.data || [])[0] || {}).period || '';
         var list = (r.data || []).filter(monthOpen);
         if (!list.length) { genEngs = []; genFillMonths(null); return; }
-        db.from('ops_tasks').select('id, engagement_id, cancelled_at')
-          .in('engagement_id', list.map(function (e) { return e.id; })).then(function (tr) {
-            if ($('genClient').value !== cid) return;
-            var held = {};
-            ((tr && tr.data) || []).forEach(function (t) { if (!t.cancelled_at) held[t.engagement_id] = (held[t.engagement_id] || 0) + 1; });
-            genEngs = list.map(function (e) { return Object.assign({}, e, { held: held[e.id] || 0 }); });
-            genFillMonths(want);
-          });
+        /* What a month already holds is counted over the whole month, not
+           only the tasks this person can read. */
+        db.rpc('ops_engagement_counts', { p_engagements: list.map(function (e) { return e.id; }) }).then(function (cr) {
+          if ($('genClient').value !== cid) return;
+          var held = countsOf(cr) || {};
+          genEngs = list.map(function (e) { return Object.assign({}, e, { held: (held[e.id] || {}).live || 0 }); });
+          genFillMonths(want);
+        });
       });
   }
   function genFillMonths(want) {
@@ -5675,8 +5675,42 @@
   ];
   var ENG_STATE = [
     ['planning', 'Planning', 'is-off'], ['ready', 'Ready', 'is-ok'],
-    ['in_production', 'In production', ''], ['completed', 'Completed', 'is-ok'], ['cancelled', 'Cancelled', 'is-off']
+    ['in_production', 'In production', ''], ['closing', 'Ready to close', 'is-warn'],
+    ['completed', 'Completed', 'is-ok'], ['cancelled', 'Cancelled', 'is-off']
   ];
+  /* THE MONTH'S STAGE, worked out on every load from what is true of it,
+     never set by hand (the user, 2026-09-27): Planning until its readiness
+     is ticked and its meeting set (or not needed); Ready until the meeting
+     has passed and the month holds a task; In production while any task is
+     open; Ready to close once every task is finished and one is done.
+     Completed and Cancelled are the team's decisions and are stored; a
+     stored Ready or In production from before reads as open. */
+  function engPhase(e, checks, n) {
+    if (!e) return '';
+    if (e.status === 'completed' || e.status === 'cancelled') return e.status;
+    var mt = engMeeting(e);
+    if (checks.length - checksDone(checks) || mt === 'none') return 'planning';
+    if (mt === 'set' || !n || !n.live) return 'ready';
+    return n.open ? 'in_production' : 'closing';
+  }
+  /* The month's tasks as the database counts them, over the whole month
+     whoever is looking (`ops_engagement_counts`); a read it refuses falls
+     back on the tasks this page holds. */
+  function countsOf(r) {
+    if (!r || r.error || !Array.isArray(r.data)) return null;
+    var out = {};
+    r.data.forEach(function (x) { out[x.engagement_id] = { live: Number(x.live) || 0, open: Number(x.open) || 0, done: Number(x.done) || 0 }; });
+    return out;
+  }
+  function countFor(e, counts, tasks) {
+    if (counts && counts[e.id]) return counts[e.id];
+    var mine = (tasks || []).filter(function (t) { return t.engagement_id === e.id && !t.cancelled_at; });
+    return {
+      live: mine.length,
+      open: mine.filter(function (t) { return !t.completed_at; }).length,
+      done: mine.filter(function (t) { return t.completed_at; }).length
+    };
+  }
   var CHANNEL_WORD = { onsite: 'On site', google_meet: 'Google Meet', zoom: 'Zoom', other: 'Other' };
   function wordOf(list, key) {
     var hit = list.filter(function (x) { return x[0] === key; })[0];
@@ -5856,7 +5890,7 @@
      under its engagement record, drawn by this script because the words, the
      gates and the sheets are My Work's. Reads its own rows: a client record
      is opened for one client, and the queue's read is for a person. */
-  var cw = { box: null, client: null, tasks: [], engs: [], checks: [], owners: {}, ownerIds: {},
+  var cw = { box: null, client: null, tasks: [], engs: [], checks: [], counts: null, owners: {}, ownerIds: {},
              find: '', status: 'open', period: '', who: '' };
   /* BY CLIENT. A client's months, their meetings and their tasks live in
      My Work, where the work is done; the client record keeps what the client
@@ -5930,11 +5964,15 @@
         cw.ownerIds[a.task_id] = a.team_member_id;
       });
       var ids = cw.engs.map(function (e) { return e.id; });
-      if (!ids.length) { cw.checks = []; paintClientWork(); return; }
-      db.from('ops_engagement_checks').select('*').in('engagement_id', ids).then(function (q) {
-        cw.checks = (q && !q.error && q.data) || [];
+      if (!ids.length) { cw.checks = []; cw.counts = {}; paintClientWork(); return; }
+      Promise.all([
+        db.from('ops_engagement_checks').select('*').in('engagement_id', ids),
+        db.rpc('ops_engagement_counts', { p_engagements: ids })
+      ]).then(function (q) {
+        cw.checks = (q[0] && !q[0].error && q[0].data) || [];
+        cw.counts = countsOf(q[1]);
         paintClientWork();
-      }, function () { cw.checks = []; paintClientWork(); });
+      }, function () { cw.checks = []; cw.counts = null; paintClientWork(); });
     }, function (e) {
       UI.failLine(box, 'This client\'s work', (e && e.message) || String(e), readClientWork);
     });
@@ -6063,16 +6101,18 @@
       var trs = (by[k] || []).slice().sort(byPriority);
       var late = trs.filter(isLate).length;
       var open = trs.filter(function (t) { return !isFinished(t); }).length;
+      var ph = eng ? engPhase(eng, checksOf(eng, cw.checks), countFor(eng, cw.counts, cw.tasks)) : '';
       var card = GRP.section({
         route: 'cwork', key: k, name: k === 'none' ? 'No month' : monthWord(k),
         count: trs.length,
-        marks: (eng ? '<span class="tone eng-mark ' + toneOf(ENG_STATE, eng.status) + '">' + esc(wordOf(ENG_STATE, eng.status)) + '</span>' : '') +
+        marks: (eng ? '<span class="tone eng-mark ' + toneOf(ENG_STATE, ph) + '">' + esc(wordOf(ENG_STATE, ph)) + '</span>' : '') +
                (late ? '<span class="tone is-warn">' + late + ' late</span>' : ''),
         /* Open: this month, a month still being worked, a month still being
-           planned (no tasks yet is exactly when its meeting is set), and a
-           month somebody filtered to, which is the only card on the page. */
+           planned (no tasks yet is exactly when its meeting is set), a month
+           asking to be closed, and a month somebody filtered to, which is the
+           only card on the page. */
         shut: cw.period === k ? false
-          : GRP.shut('cwork', k, k !== thisMonth && !(eng && eng.status !== 'completed' && (open || !trs.length)), false),
+          : GRP.shut('cwork', k, k !== thisMonth && !(eng && eng.status !== 'completed' && (open || !trs.length || ph === 'closing')), false),
         table: function () {
           var wrap = document.createElement('div');
           if (eng) wrap.appendChild(engCard(eng));
@@ -6107,9 +6147,16 @@
       ['Planned', e.planned_count ? e.planned_count + (e.planned_count === 1 ? ' piece' : ' pieces') : ''],
       ['Files', e.drive_url ? '<a class="ovlink" href="' + esc(e.drive_url) + '" target="_blank" rel="noopener">Drive folder</a>' : '']
     ].filter(function (p) { return p[1]; });
+    var n = countFor(e, cw.counts, cw.tasks);
+    var phase = engPhase(e, checks, n);
+    var shut = e.status === 'completed' || e.status === 'cancelled';
     var items = [['edit', 'Edit']];
     /* A month with its meeting confirmed takes tasks, so it offers them. */
     if (monthOpen(e)) items.unshift(['bulk', 'Bulk add tasks']);
+    /* Completed and Cancelled are decisions: an open month can be
+       cancelled, and a closed one reopened. Completing is asked for on the
+       card once every task is finished. */
+    items.push(shut ? ['reopen', 'Reopen'] : ['cancel', 'Cancel month']);
     if (may('ops', 'manage')) items.push(['delete', 'Delete', true]);
     el.innerHTML =
       /* The month is named once, by the card's own heading above; the head
@@ -6118,41 +6165,77 @@
         '<div class="eng-who">' +
           '<p class="eng-meta">' + facts.map(function (p) { return '<span><span class="eng-lab">' + esc(p[0]) + '</span> ' + p[1] + '</span>'; }).join('') + '</p></div>' +
         '<div class="eng-ctl">' +
-          (can
-            ? '<select class="select select-sm state-select ' + toneOf(ENG_STATE, e.status) + '" data-a="status" aria-label="Status of ' + esc(monthWord(e.period)) + '">' +
-                ENG_STATE.map(function (s) { return '<option value="' + s[0] + '"' + (s[0] === e.status ? ' selected' : '') + '>' + esc(s[1]) + '</option>'; }).join('') +
-              '</select>' + itemMenu(monthWord(e.period), items)
-            : '<span class="tone ' + toneOf(ENG_STATE, e.status) + '">' + esc(wordOf(ENG_STATE, e.status)) + '</span>') +
+          '<span class="tone eng-phase ' + toneOf(ENG_STATE, phase) + '">' + esc(wordOf(ENG_STATE, phase)) + '</span>' +
+          (can ? itemMenu(monthWord(e.period), items) : '') +
         '</div>' +
       '</div>' +
       '<div class="msg" data-a="msg"></div>' +
       meetHtml(e, can) +
       '<div data-a="checks">' + checksHtml(e, checks, can) + '</div>';
-    var st = el.querySelector('[data-a="status"]');
-    if (st) st.addEventListener('change', function () {
-      var want = st.value;
-      call2('ops_engagement_set_status', { p_engagement: e.id, p_status: want, p_version: e.version }, el, function () {
-        readClientWork();
-      }, function () { st.value = e.status; });
-    });
+    /* Every task finished: the month asks to be closed, or for more work. */
+    if (phase === 'closing' && can) {
+      el.querySelector('.eng-facts').insertAdjacentHTML('afterbegin',
+        '<div class="eng-row eng-close"><span class="eng-lab">Tasks</span>' +
+          '<span class="eng-val">' + (n.done === 1 ? 'The task is done.' : 'All ' + n.done + ' done.') + '</span>' +
+          '<span class="eng-meetacts">' +
+            '<button class="btn btn-sm" data-a="addtask" type="button">Add task</button>' +
+            '<button class="btn btn-sm btn-primary" data-a="complete" type="button">Complete month</button>' +
+          '</span></div>');
+      el.querySelector('[data-a="addtask"]').addEventListener('click', function () {
+        openNew({ client: cw.client, period: e.period, engagement: e });
+      });
+      var done = el.querySelector('[data-a="complete"]');
+      done.addEventListener('click', function () {
+        done.disabled = true;
+        setStatus(e, 'completed', el, function () { done.disabled = false; });
+      });
+    }
     var ctl = el.querySelector('.eng-ctl');
     if (ctl && ctl.querySelector('.kmenu-btn')) wireItemMenu(ctl, function (k) {
       if (k === 'bulk') openGen({ client_id: cw.client.id, period: e.period, after: readClientWork });
       if (k === 'edit') openEng(e, cw.client);
+      /* The way back never asks. */
+      if (k === 'reopen') setStatus(e, 'planning', el);
+      if (k === 'cancel') {
+        window.ADspaceConfirm.ask({
+          title: 'Cancel ' + monthWord(e.period),
+          body: 'The month takes no new tasks. Its tasks stay.',
+          go: 'Cancel month', tone: 'warn', cancel: 'Keep month'
+        }, function () { setStatus(e, 'cancelled', el); });
+      }
       if (k === 'delete') askDeleteMonth(e, cw.client, readClientWork);
     });
     wireMeet(el, e, el, function () { openMeet(e); }, readClientWork);
-    /* The two ticks repaint themselves from the answer, never the list. */
+    /* The two ticks repaint themselves from the answer, never the list, and
+       the stage they decide is said again where it shows: the card's chip,
+       and the heading's for when the card is shut. */
     var box = el.querySelector('[data-a="checks"]');
+    var paintPhase = function () {
+      var now = engPhase(e, checksOf(e, cw.checks), countFor(e, cw.counts, cw.tasks));
+      var grp = el.closest('.crm-group');
+      [[el.querySelector('.eng-phase'), 'eng-phase'], [grp && grp.querySelector('.crm-group-head .eng-mark'), 'eng-mark']]
+        .forEach(function (c) {
+          if (!c[0]) return;
+          c[0].className = 'tone ' + c[1] + ' ' + toneOf(ENG_STATE, now);
+          c[0].textContent = wordOf(ENG_STATE, now);
+        });
+    };
     var paintChecks = function () {
       box.innerHTML = checksHtml(e, checksOf(e, cw.checks), can);
       wireChecks(box, e, el, function (fresh) {
         cw.checks = cw.checks.filter(function (x) { return x.engagement_id !== e.id; }).concat(fresh);
         paintChecks();
+        paintPhase();
       });
     };
     paintChecks();
     return el;
+  }
+  /* Completed, Cancelled and a reopen (back to Planning) are the only
+     stages a person sets; the rest follow the month's facts. */
+  function setStatus(e, want, el, onFail) {
+    call2('ops_engagement_set_status', { p_engagement: e.id, p_status: want, p_version: e.version }, el,
+      function () { readClientWork(); }, onFail);
   }
   /* Deleting a month: ops Manage, a reason, and the tasks it held stay. */
   function askDeleteMonth(e, client, after) {
@@ -6186,7 +6269,7 @@
     db.rpc(fn, args).then(function (r) {
       if (r.error) { say(dbWord(r.error.message)); if (onFail) onFail(); return; }
       var d = r.data;
-      if (d && d.error) { say(said(d.error)); if (onFail) onFail(); return; }
+      if (d && d.error) { say(said(d.error, null, d)); if (onFail) onFail(); return; }
       if (then) then(d);
     }, function (e) { say((e && e.message) || String(e)); if (onFail) onFail(); });
   }
