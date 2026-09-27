@@ -7673,6 +7673,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .qform[hidden] { display: none; }
 .qform > .input, .qform > textarea.input, .qform .field > .input, .qform .field > .select { width: 100%; }
 .qform .row { margin-top: 0; }
+/* The field after a row stands as far from it as the row's own fields
+   stand apart (12), not the 6 between a label and its box. */
+.qform > .row + .field-label { margin-top: 6px; }
 .qform-kind { flex: 0 0 132px; }
 .qform-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
 .qform-acts .btn { flex: 0 0 auto; }
@@ -7771,8 +7774,12 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   .qcard { padding: 16px 16px; }
   .qnext-acts .btn { flex: 1 1 0; min-width: 0; }
   .qform-acts .btn { flex: 1 1 0; min-width: 0; }
-  .qform .row { flex-direction: column; }
-  .qform-kind { flex: 1 1 auto; }
+  /* One field over the other. A column row keeps each field at its own
+     height: `.row > div`'s 180px basis is a height in a column, and it drew
+     the label a field's height above its box and let the row wrap sideways,
+     Kind past the card's edge (the user's iPhone, 2026-09-27). */
+  .qform .row { flex-direction: column; flex-wrap: nowrap; }
+  .qform .row > div, .qform-kind { flex: 0 0 auto; width: 100%; }
   .qhand .select { max-width: none; }
 }
 
