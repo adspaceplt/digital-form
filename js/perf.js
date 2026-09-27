@@ -1216,14 +1216,26 @@
        touch where this browser can use one; the emailed code stays beside it
        for a new device (the user, 2026-09-26). The server reads either proof
        in the signed session, within 15 minutes. */
-    var pk = Boolean(window.ADspacePasskey && window.ADspacePasskey.on);
+    /* Offered only to a person who holds a passkey of their own: the
+       browser offers every passkey on the device, whoever it belongs to, so
+       an account with none would only ever be offered somebody else's
+       (2026-09-27). The emailed code is drawn at once; the passkey joins it
+       once the list has answered, and only while the lock is still asking. */
+    lockCopy(false, why);
+    $('mineCode').hidden = true; $('mineVerify').hidden = true;
+    $('mineSend').hidden = false;
+    msg('mineLockMsg', '');
+    var PK = window.ADspacePasskey;
+    if (PK && PK.on && PK.mine) PK.mine(function (n) {
+      if (n > 0 && !$('mineLock').hidden && $('mineCode').hidden) lockCopy(true, why);
+    });
+  }
+  function lockCopy(pk, why) {
     $('minePasskey').hidden = !pk;
     $('mineLockLine').textContent = why || (pk ? 'Use a passkey, or an emailed code sent to ' + guard.email + '.'
                                               : 'An emailed code is sent to ' + guard.email + '.');
-    $('mineCode').hidden = true; $('mineVerify').hidden = true;
-    $('mineSend').hidden = false; $('mineSend').textContent = pk ? 'Email a code' : 'Send code';
+    $('mineSend').textContent = pk ? 'Email a code' : 'Send code';
     $('mineSend').className = pk ? 'btn' : 'btn btn-primary';
-    msg('mineLockMsg', '');
   }
   function sendCode() {
     var b = $('mineSend');
@@ -1257,23 +1269,21 @@
       enterMine();
     }, function () { b.disabled = false; msg('mineLockMsg', 'Not verified. Please try again.', 'err'); });
   }
+  /* The proof is the passkey module's: it proves the person signed in and
+     never signs anybody else in (2026-09-27). */
   function unlockPasskey() {
     var b = $('minePasskey');
     b.disabled = true;
     msg('mineLockMsg', '');
-    var go = window.ADspaceCaptcha ? window.ADspaceCaptcha.options(b, {}) : Promise.resolve({});
-    go.then(function (o) {
-      return db.auth.signInWithPasskey({ options: o.captchaToken ? { captchaToken: o.captchaToken } : {} });
-    }).then(function (r) {
-      b.disabled = false;
-      if (r && r.error) {
-        if (!/not allowed|timed out|cancel|abort/i.test(String(r.error.message || '') + ' ' + String(r.error.name || '')))
-          msg('mineLockMsg', 'Not unlocked. Use an emailed code.', 'err');
-        return;
+    window.ADspacePasskey.prove({
+      button: b,
+      done: function () { b.disabled = false; showMineLock(false); enterMine(); },
+      refused: function (text) { b.disabled = false; msg('mineLockMsg', text, 'err'); },
+      failed: function (err, quiet) {
+        b.disabled = false;
+        if (!quiet) msg('mineLockMsg', 'Not unlocked. Use an emailed code.', 'err');
       }
-      showMineLock(false);
-      enterMine();
-    }, function () { b.disabled = false; msg('mineLockMsg', 'Not unlocked. Use an emailed code.', 'err'); });
+    });
   }
   $('minePasskey').addEventListener('click', unlockPasskey);
   $('mineSend').addEventListener('click', sendCode);

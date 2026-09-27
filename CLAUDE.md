@@ -1128,7 +1128,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - A member's page always asks for a fresh proof (`perf_guarded()` true;
   `perf_code_fresh()` reads `otp`, `magiclink`, `webauthn` or `passkey` in the
   token's `amr` within 15 minutes): Unlock with a passkey first where the
-  browser can use one, Email a code beside it. The code field takes 6 to 10
+  person holds one of their own, Email a code beside it. The code field takes 6 to 10
   digits. The Magic Link template prints `{{ .Token }}`.
 - The review list is chosen (`perf_people.reviewed`, off by default; admins
   off unless added). The month lists the people on it plus anyone whose
@@ -1297,6 +1297,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   `/admin/` only).
   - Passkeys are managed in the account menu.
   - The passkey offer shows once per browser (`adspace-passkey-offer`).
+  - A passkey that proves the person already signed in goes through
+    `ADspacePasskey.prove()`, never a bare `signInWithPasskey` (which signs
+    in whichever account's passkey the browser offers). It is offered only
+    to a person with a passkey of their own (`mine()`); the console holds its
+    auth events meanwhile (`ADspaceAdmin.hold`); another account's answer is
+    revoked on this device (`signOut({ scope: 'local' })`) and the person's
+    own session put back (`setSession`), else the console signs out.
+- One person per console: a session that turns into somebody else's (another
+  tab, any sign-in over this one) restarts the console from the top
+  (`gate()`, after 1.5s unless the session has come back).
 - `/client/`:
   - Asks `portal-login` first. It makes a login only for a live contact with
     `portal_access`, and answers `{ok: true}` to every address.

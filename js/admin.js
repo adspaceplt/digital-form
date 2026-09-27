@@ -289,15 +289,44 @@
     db.auth.signOut().then(function () { location.reload(); });
   });
   db.auth.getSession().then(function (r) { gate(r.data.session); });
-  db.auth.onAuthStateChange(function (_e, session) { gate(session); });
+  /* A proof of who you are (a passkey on My performance) runs a sign-in, and
+     the library announces the session it makes before the page can check
+     whose it is. While one runs the console holds its auth events, and it
+     reads the session again once the proof has finished (`hold`). */
+  var held = false;
+  db.auth.onAuthStateChange(function (_e, session) { if (!held) gate(session); });
+  function hold(on) {
+    held = Boolean(on);
+    if (!held) db.auth.getSession().then(function (r) { gate(r.data.session); });
+  }
 
   /* Supabase refreshes the token when you come back to the tab, which fires an
      auth event. Only the first one should decide what is on screen, otherwise
      switching tabs throws away whatever you were in the middle of. */
   var entered = false;
 
+  function whoOf(session) {
+    var u = session && session.user;
+    return u ? String(u.id || u.email || '').toLowerCase() : '';
+  }
+  /* ONE PERSON PER CONSOLE. The access map, the lists and every section's
+     cache were read for the person who entered; a session that turns into
+     somebody else's (a sign-in in another tab, or any sign-in over this one)
+     must never keep them. The console starts again from the top as that
+     person, after a moment in which a proof that is putting the right
+     session back can finish (2026-09-27: a passkey unlock left the menus of
+     one account over the data of another). */
+  var enteredAs = '';
   function gate(session) {
     var inApp = Boolean(session);
+    if (inApp && enteredAs && whoOf(session) !== enteredAs) {
+      setTimeout(function () {
+        db.auth.getSession().then(function (r) {
+          if (whoOf(r.data.session) !== enteredAs) location.reload();
+        });
+      }, 1500);
+      return;
+    }
     // Signed out is a plain page, white to the edges. Signed in is the console,
     // which brings its own chrome and does not want the page header as well.
     /* SIGNED IN IS NOT THE SAME AS ALLOWED IN, and the in-between is still
@@ -328,6 +357,7 @@
 
     if (!inApp) {
       entered = false;
+      enteredAs = '';
       meLoaded = false;
       $('noTeamShell').hidden = true;
       $('clientsView').hidden = true;
@@ -338,6 +368,7 @@
     if (meLoaded) { $('console').hidden = Boolean(!me); return; }
     if (entered) return;
     entered = true;
+    enteredAs = whoOf(session);
     /* Who this person is on the team decides what the console draws. The
        database enforces the same row on every query; this only keeps the
        screen honest about it. Fetched once, before anything is shown. */
@@ -2794,6 +2825,7 @@
      is signed in, so those are lent rather than written twice. */
   window.ADspaceAdmin = {
     ICON: ICON,
+    hold: hold,
     iconBtn: iconBtn,
     /* The one list of what each logged action is called. The client record's
        Activity pane reads it rather than keeping a second copy that would
