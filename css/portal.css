@@ -8793,6 +8793,12 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .lp-hero { margin: 0 auto; max-width: 1920px; aspect-ratio: 16 / 9; overflow: hidden; background: var(--line-soft); }
 .lp-hero picture, .lp-hero img { display: block; width: 100%; height: 100%; }
 .lp-hero img { max-width: none; object-fit: cover; }
+/* At a desk the ways in come first, as on Apple's page; once they read down
+   as a list, the photograph leads and the list follows it (the user,
+   2026-09-28). The markup keeps the desk's order, and the photograph holds
+   nothing that takes focus. */
+.lp-main { display: flex; flex-direction: column; }
+.lp-hero, .lp-duo { width: 100%; }
 .lp-band { background: var(--page); padding: 32px 16px; }
 .lp-ways {
   list-style: none; margin: 0 auto; padding: 0; max-width: 980px;
@@ -8842,6 +8848,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
   .lp-ways { grid-template-columns: minmax(0, 1fr); gap: 16px; max-width: 560px; }
   .lp-way { grid-template-columns: 18px minmax(0, 1fr); gap: 12px; }
   .lp-duo { grid-template-columns: minmax(0, 1fr); max-width: calc(560px + 32px); }
+  .lp-hero { order: -1; }
 }
 @media (max-width: 640px) {
   /* Apple's side margin on a phone for the content: text 24px in, the
