@@ -22,13 +22,23 @@
  *     or too slow (over 0.8s).
  *
  *   <div data-swipe="crmTabs"> … <nav id="crmTabs"> <button class="tab"> …
+ *
+ * A region may name a pair of buttons instead of a strip, and the swipe
+ * presses one of them: the Review Canvas steps through a set this way
+ * (the user, 2026-09-28). The finger moving left presses Next, as a strip's
+ * next tab and every photo viewer do; a disabled button is left alone.
+ * `data-swipe-media` lets a swipe start on a post's video, except over its
+ * own controls along the foot.
+ *
+ *   <div data-swipe-prev="canvasPrev" data-swipe-next="canvasNext" data-swipe-media>
  */
 (function () {
   'use strict';
 
   var EDGE = 24, LOCK = 10, MIN = 56, SLOW = 800;
-  var SKIP = 'input, textarea, select, [contenteditable=""], [contenteditable="true"], ' +
-             '.bcard-grip, video, audio, canvas, [data-noswipe]';
+  var FIELDS = 'input, textarea, select, [contenteditable=""], [contenteditable="true"], ' +
+               '.bcard-grip, canvas, [data-noswipe]';
+  var CONTROLS = 56;
   var start = null;
 
   function tabsOf(strip) {
@@ -37,8 +47,16 @@
         !b.hidden && !b.disabled && b.getClientRects().length > 0;
     });
   }
+  function shown(b) { return b && !b.hidden && b.getClientRects().length > 0; }
   function regionOf(el) {
     for (var n = el; n && n.nodeType === 1; n = n.parentElement) {
+      var nx = n.getAttribute('data-swipe-next');
+      if (nx) {
+        var prev = document.getElementById(n.getAttribute('data-swipe-prev') || ''),
+            next = document.getElementById(nx);
+        if (shown(prev) || shown(next)) return { el: n, prev: prev, next: next };
+        continue;
+      }
       var id = n.getAttribute('data-swipe');
       if (!id) continue;
       var strip = document.getElementById(id);
@@ -64,11 +82,18 @@
     var t = e.touches[0], tg = e.target;
     if (!tg || !tg.closest) return;
     if (t.clientX < EDGE || t.clientX > window.innerWidth - EDGE) return;
-    if (tg.closest(SKIP)) return;
+    if (tg.closest(FIELDS)) return;
     if (document.querySelector('.kmenu:not([hidden]), .sidebar.is-open')) return;
     if (window.getSelection && String(window.getSelection())) return;
     var r = regionOf(tg);
     if (!r) return;
+    var media = tg.closest('video, audio');
+    if (media) {
+      /* A post's video takes the swipe where its region says so, but never
+         over its own controls along the foot. */
+      if (!r.el.hasAttribute('data-swipe-media')) return;
+      if (t.clientY > media.getBoundingClientRect().bottom - CONTROLS) return;
+    }
     var sheet = tg.closest('.sheet');
     if (sheet && !sheet.contains(r.el)) return;
     if (scrollsAcross(tg, r.el)) return;
@@ -90,6 +115,11 @@
     var t = e.changedTouches[0], dx = t.clientX - s.x, dy = t.clientY - s.y;
     if (Date.now() - s.at > SLOW) return;
     if (Math.abs(dx) < Math.max(MIN, window.innerWidth / 5) || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (!s.r.strip) {
+      var b = dx < 0 ? s.r.next : s.r.prev;
+      if (shown(b) && !b.disabled) b.click();
+      return;
+    }
     var tabs = tabsOf(s.r.strip), i = -1;
     for (var k = 0; k < tabs.length; k++) if (tabs[k].classList.contains('is-on')) i = k;
     var j = dx < 0 ? i + 1 : i - 1;

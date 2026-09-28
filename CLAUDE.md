@@ -344,7 +344,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   editable text, drag grip or `data-noswipe`, inside anything that scrolls
   sideways, with a ⋯ menu or the rail drawer open, over selected text, in a
   sheet without its own region, and unless plainly sideways (across 1.5 times
-  the down), at least 56px or a fifth of the width, within 0.8s.
+  the down), at least 56px or a fifth of the width, within 0.8s. A region may
+  name a pair of buttons instead (`data-swipe-prev` / `data-swipe-next`, the
+  Review Canvas): the finger moving left presses Next, a disabled one is left
+  alone, and `data-swipe-media` lets a swipe start on a video above its
+  controls.
 - `js/chart.js` (`ADspaceChart.draw(host, spec)`) is the only chart, in the
   page's tokens: bars (label and figure over the bar, a mark for a limit),
   columns, a line, and a ring only for two to five parts of a whole (else
@@ -866,9 +870,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - og:title `{client name} Content Review Portal by ADspace`, on `review/`
     only.
 - The Review Canvas moves the card's own blocks and puts them back; there is
-  one decision control. Prev/next, the arrow keys and Escape work. Below 860
-  it is one scroll: the post whole, then its copy and the decision; each post
-  opens at its top.
+  one decision control. Prev/next, the arrow keys, Escape and a sideways
+  swipe on a phone work. The head is the name (its size under it on a
+  phone), then Previous, `n of N` and Next as one group, then Close at the
+  right edge, the three filled tonal buttons. Below 860 it is one scroll: the
+  post whole, then its copy and the decision; each post opens at its top.
 - Console:
   - The client is a record: the mark, name and handles, and one ⋯ (Client
     settings as a sheet with one Save, Reset access link, Remove from Content
@@ -1149,6 +1155,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The drag uses pointer events from `.bcard-grip` (`touch-action: none`),
     with a clone following the hand. Allowed columns are marked. The select
     stays on every card.
+  - Every column runs the board's full height and takes a drop anywhere in
+    it; in a gap the nearest column does. A card held at the board's edge
+    scrolls it. A card never starts the browser's own drag, and a press on
+    it selects no text (a stray selection cancelled the next drag).
   - The capacity strip counts this week's sessions against
     `capacity_minutes_week`.
 - The calendar shows every task on its due date (the stage tone) and its
