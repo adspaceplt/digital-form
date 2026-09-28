@@ -3654,6 +3654,8 @@
         .then(function (r) { then(r.data || []); }, function () { then([]); });
     },
     billingMissing: billingMissing,
+    // How long a stage may run before it reads Overdue (the Overview asks).
+    staleH: STALE_H,
     // The rate card lives in this module because it is what a client's lines
     // are made of.
     enterServices: enterServices

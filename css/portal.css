@@ -8935,3 +8935,43 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 #setTitle, .saved-top > b { color: var(--ink); }
 .zone-out .zone-head { display: flex; align-items: center; gap: 12px; }
 .zone-out .zone-head > #addAssets { margin-left: auto; }
+
+/* ---- The Overview (`js/overview.js`) ----------------------------------------
+   Each section's heading over its cards, two across on a desk and one on a
+   phone (`.chartgrid`). A list card is a chart card's shape: its title with a
+   count and View all on one line, then five rows that each open a record,
+   name over meta on the left and the figure over its age at the right edge. */
+.ovw > .ovw-head:first-child { margin-top: 0; }
+.ovw-cardhead { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; }
+.ovw-cardhead h3 { margin: 0; min-width: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.ovw-cardhead .tone { flex: 0 0 auto; }
+/* View all gives its padding back, so the title sits where a chart's does
+   and the chevron ends at the card's edge. */
+.ovw-cardhead .ovgo { margin: -8px -6px -8px auto; flex: 0 0 auto; }
+/* A card left alone on the last row takes the row, never half of it. */
+.ovw-grid > .ovw-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.ovw-rows { display: grid; }
+.ovw-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; align-items: start;
+  width: calc(100% + 16px); margin: 0 -8px; padding: 10px 8px; border: 0; border-top: 1px solid var(--line-soft);
+  border-radius: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.ovw-row:first-child { border-top: 0; }
+.ovw-row:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action-ring); border-radius: var(--radius-ctl-sm); }
+@media (hover: hover) { .ovw-row:hover { background: var(--sunk); } }
+.ovw-who, .ovw-fig { display: grid; gap: 2px; min-width: 0; }
+.ovw-who b { font-weight: 600; overflow-wrap: anywhere; }
+.ovw-who small, .ovw-fig small { font-size: 12.5px; color: var(--ink-mute); }
+.ovw-who small { overflow-wrap: anywhere; }
+.ovw-fig { justify-items: end; text-align: right; }
+.ovw-fig b, .ovw-fig small { white-space: nowrap; }
+.ovw-fig b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.ovw-fig b.is-warn { color: var(--warn); }
+.ovw-more { margin: 8px 0 0; font-size: 13px; color: var(--ink-mute); }
+/* The empty and failed lines sit in the card as its content, not as a second
+   card inside it. */
+.ovw-card .softpanel { background: none; border: 0; border-radius: 0; }
+.ovw-card .emptyline { padding: 0; }
+.ovw-card .emptyline b { font-weight: 400; color: var(--ink-mute); }
+.ovw-card .errline { border-bottom: 0; border-radius: var(--radius-sm); }

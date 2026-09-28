@@ -115,6 +115,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `team.js` | team, perms, levels |
 | `perf.js` | perfui, perfguard, perf |
 | `search.js` | search, then `ui` |
+| `overview.js` | overview, then `ui` |
 | `reports.js`, `smreport.js` | reports, adsreport, smsql |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
 | `refresh.js`, `admin/sw.js`, the manifest | pwa, phone |
@@ -1055,6 +1056,31 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Client-side decisions write an activity row under the typed name:
   `submit_review`, `confirm_selection`, `creator_submit`, `creator_rate`,
   `portal_withdraw`. `save_selection` does not (it autosaves).
+
+### Overview (`js/overview.js`, `?s=overview`)
+- The start page of an admin or a group holding Manage on any section or
+  part (`managesAny()`): `firstAllowed()` lists it first, so `/admin/` with
+  no `?s=` lands there. It has no key of its own; anyone else is never
+  offered the row and its address falls back.
+- Each card asks its own `may()` before any read; a card not readable is not
+  drawn, and a section with no cards takes its heading. Sections in the
+  rail's order: My Work (Late tasks, `ops.reports`; Open work by person,
+  `ops.all` from `ops_report.open_by_person`; On-time delivery), Clients
+  (Leads going cold by `STALE_H`; New leads and new clients; Unanswered
+  requests, `clients.requests`), Content Review (Sets waiting on the client,
+  by `batches.published_at`; Active clients with no set this month),
+  Creator Campaigns (Bookings past their date; Waiting for the quality
+  check), Documents (Letters of Offer not yet signed, `clients.documents`),
+  Reports (Waiting for confirmation; No report for last month), Team (last
+  month's reviews through `perf_overview`: names and steps only).
+- No money anywhere on it: no value, revenue or fee.
+- A list card: the title, the count (warn only where late), View all to the
+  section; five rows, name over meta, the figure over its age at the right
+  edge; a row writes the record's address and opens it as search does. A
+  refused read is `failLine` with Try again. Read again on every visit,
+  never polled.
+- `batches.published_at` is stamped by `batches_published_at` on the move to
+  published and cleared on Unpublish.
 
 ### My Work (`js/ops.js`, `?s=work`, permission key `ops`, mapped once in `sectionAllowed()`)
 - Views (`view=`):

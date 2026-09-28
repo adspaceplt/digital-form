@@ -167,6 +167,14 @@
       something happens.
     -->
     <nav class="sidebar-nav" aria-label="Sections">
+      <!-- The start page of a group that manages a section: what each section
+           has waiting. On its own above the two chunks, because it is a
+           summary of them rather than one of them. -->
+      <div class="navgroup">
+        <button class="navitem" data-section="overview" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="9" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.6"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.6"/><rect x="3" y="15.5" width="7.5" height="5.5" rx="1.6"/></svg><span>Overview</span>
+        </button>
+      </div>
       <div class="navgroup">
         <span class="sidebar-label">Work</span>
         <button class="navitem" data-section="work" type="button" hidden>
@@ -366,6 +374,10 @@
     </div>
 
     <!-- ---- CRM: the client record everything else points at ---- -->
+    <div class="console-body" id="sectionOverview" hidden>
+      <div class="ovw" id="ovwBody"></div>
+    </div>
+
     <div class="console-body" id="sectionClients" hidden>
 
       <section id="crmListView">
@@ -4404,5 +4416,6 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/ops.js?v=20260928k"></script>
 <script src="/js/perf.js?v=20260928k"></script>
 <script src="/js/search.js?v=20260928k"></script>
+<script src="/js/overview.js?v=20260928k"></script>
 </body>
 </html>

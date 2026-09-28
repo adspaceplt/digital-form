@@ -464,6 +464,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   - "Unable to load / Please refresh…".
 
 ## 7. Architecture
+- The Overview sits alone above the two chunks, with no label, drawn only for
+  a group that manages a section (`CLAUDE.md`).
 - The rail runs in two chunks, ordered by frequency, with the same sequence
   everywhere:
   - **Work**: My Work, Clients, Content Review, Creator Campaigns.

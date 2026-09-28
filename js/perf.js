@@ -2496,6 +2496,8 @@
   // ---- End of performance rewards ------------------------------------------------------
 
   window.ADspacePerf = {
+    /* A step's word and tone, for the Overview's review card. */
+    status: STATUS,
     enterTeam: enterTeam,
     enterMine: enterMine,
     lock: function (then) { lock(then); },
