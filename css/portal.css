@@ -22,6 +22,9 @@
   --ink-soft:   #524e47;
   --ink-mute:   #6b6760;
   --line-ctl:   #8e8a80;   /* control boundaries: 3:1 on every page background */
+  /* The contact chip's outline, lighter than a field's (the user,
+     2026-09-28): its words identify it, so its edge need not hold 3:1. */
+  --line-chip:  #a1a1a1;
   --line:       #e2dfd8;
   /* The outline of a bounded card (a directory table, a record's head and
      Overview, a form panel, the booking register, the Team card): one
@@ -177,6 +180,7 @@
     --ink-soft:   #cdc8c3;
     --ink-mute:   #ada8a3;
     --line-ctl:   #898480;
+    --line-chip:  #5f5f5f;
     --line:       #3e3b38;
     --card-line:  transparent;
     --line-soft:  #2e2e2e;
@@ -529,6 +533,12 @@ a { color: inherit; }
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   align-items: start;
 }
+/* The review page is a gallery, so it takes a wider column and a card as
+   narrow as 300px: four posts across on a desk from about 1400px, three on
+   a 1280 laptop, each card no narrower than the old minimum (the user,
+   2026-09-28). */
+.shell.shell-review { max-width: 1480px; }
+.shell-review .grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
 .card {
   background: var(--card); border: 1px solid var(--card-line);
   border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
@@ -2923,7 +2933,7 @@ body.is-plain .topbar { background: var(--chrome); }
    (tonal) or a plain text link. */
 .plink {
   display: inline-flex; align-items: center; gap: 6px;
-  border: 1px solid var(--line-ctl); border-radius: var(--radius-sm); padding: 5px 10px;
+  border: 1px solid var(--line-chip); border-radius: var(--radius-sm); padding: 5px 10px;
   font-size: 12px; font-weight: 500; color: var(--ink);
   text-decoration: none; background: transparent; white-space: nowrap;
 }
@@ -4091,7 +4101,11 @@ body > .shell { width: 100%; }
 /* Priority is a chip at the right end of the title line, only where it is
    the exception. */
 .task-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.task-top > b { flex: 1 1 auto; }
+/* At a desk the priority chip follows the name, never the far edge of a
+   wide cell, where it read as the Task Owner's (the user, 2026-09-28); on a
+   narrow row it ends the title line beside the ⋯, as a card's chip does. */
+.task-top > b { flex: 0 1 auto; }
+.is-narrow .task-top > b { flex: 1 1 auto; }
 .task-top > .task-pri { flex: 0 0 auto; }
 .is-narrow .task-row > .task-due > small { display: none; }
 .task-go { display: inline-flex; align-items: center; justify-content: flex-end; color: var(--ink-mute); }
@@ -8440,9 +8454,15 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    spare, as the view strip's already do; a strip that does not fit scrolls
    as before, and a desk keeps the strip at its own width. The Performance
    padlock stays at the row's right end, after the strip. */
+/* A record's strip sits on the card under it, so it runs that card's width
+   at a desk too (the user, 2026-09-28: "since you have the full card below,
+   why not just fit full width"); a section's two-tab switch keeps its own
+   width at a desk, where two tabs across the page would be two slabs. */
+.rectabs { width: 100%; }
+.rectabs .tab { flex: 1 0 auto; text-align: center; }
 @media (max-width: 640px) {
-  .rectabs, .tabrow { width: 100%; }
-  .rectabs .tab, .tabrow .tab { flex: 1 0 auto; text-align: center; }
+  .tabrow { width: 100%; }
+  .tabrow .tab { flex: 1 0 auto; text-align: center; }
   .tabline > .tabrow { flex: 1 1 auto; }
 }
 
