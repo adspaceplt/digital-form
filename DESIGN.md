@@ -259,7 +259,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   (`overflow-wrap: anywhere`), and a grid holding it states
   `minmax(0, 1fr)`, never an `auto` track: one unbroken link otherwise widens
   the card and the page. The walk seeds a 120-character link on both client
-  pages.
+  pages. An address that is a row's meta line under its name is one line
+  ending in an ellipsis (`.tlink-row`); the whole address is one press away.
 - An overlay is positioned against the box it explains (`.sched-field`), never
   its container.
 - An image sized by one axis in a box that can clamp the other is squashed. The
@@ -349,8 +350,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - A value only read is not a field.
 - A destructive item is red on the item itself.
 - A button that acts carries its action's glyph wherever it is drawn: a plus
-  to add, a pen to edit, the copy mark, the leaving mark after anything that
-  opens elsewhere (Preview, Open). A form's own commit (Save, Cancel, a
+  to add, a pen to edit, the copy mark, the file mark to download, the leaving
+  mark after anything that opens in a new tab (Preview, Open), the chevron
+  after a way to another console page. A form's own commit (Save, Cancel, a
   submit, a sheet's foot, a confirm) is words. `uxaudit` `glyph` fails a
   label drawn both ways.
 - A border inside a border groups nothing, so the inner one is shaded.
