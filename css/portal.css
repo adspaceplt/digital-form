@@ -1922,7 +1922,7 @@ a { color: inherit; }
 .zone-sub { font-size: 12.5px; font-weight: 600; }
 
 /* Where things come in reads as an input surface */
-.zone-in { background: var(--sunk); border-color: var(--line); }
+.zone-in { background: var(--card); border-color: var(--card-line); }
 .zone-in .drop { background: var(--card); border-color: var(--line); }
 .zone-in .drop:hover, .zone-in .drop.is-over { border-color: var(--ink); }
 
@@ -5429,7 +5429,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 #draftCaptionWrap .field-label { margin-bottom: 5px; }
 .draft-caption {
   margin: 0; white-space: pre-wrap; font-size: 14px; line-height: 1.55;
-  color: var(--ink); background: var(--sunk); border: 1px solid var(--line);
+  color: var(--ink); background: var(--sunk); border: 0;
   border-radius: var(--radius-sm); padding: 10px 12px;
 }
 #draftOpen { margin-top: 14px; }
