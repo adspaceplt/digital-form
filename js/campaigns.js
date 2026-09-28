@@ -2108,7 +2108,7 @@
       el.className = 'svc-row pick-row';
       el.innerHTML =
         '<span class="pick-who"><b>' + esc((o.creators || {}).name || '') + '</b></span>' +
-        '<span class="pick-plat">' + esc(o.platforms || '') + '</span>' +
+        '<span class="pick-plat">' + esc(platformsOf(o).map(platWord).join(' · ')) + '</span>' +
         '<span class="svc-rate">' + esc(money(o.rate)) + '</span>' +
         '<span class="pick-state"><span class="tone ' + esc(w[1] || '') + '">' + esc(w[0]) + '</span></span>';
       t.appendChild(el);
@@ -2375,7 +2375,7 @@
       var w = OPTION_WORD[o.state] || [o.state, ''];
       return '<div class="ovrow ovrow-book">' +
         '<span class="ovname">' + esc((o.creators || {}).name || '') + '</span>' +
-        '<span class="ovdim">' + esc(platformsOf(o).join(' · ') || '—') + '</span>' +
+        '<span class="ovdim">' + esc(platformsOf(o).map(platWord).join(' · ') || '—') + '</span>' +
         '<span><span class="tone ' + esc(w[1] || 'tone-plain') + '">' + esc(w[0]) + '</span></span>' +
         '<span class="ovamt">' + esc(money(o.rate)) + '</span></div>';
     }).join('');
@@ -3077,7 +3077,7 @@
     var dead = o.state === 'withdrawn' || o.state === 'replaced';
     var agreed = live || o.state === 'shortlisted';
     var canEdit = ['option', 'backup', 'shortlisted'].indexOf(o.state) > -1;
-    var plats = platformsOf(o).join(' · ');
+    var plats = platformsOf(o).map(platWord).join(' · ');
     var advance = live ? nextState(o.state) : null;
     var back = live ? prevState(o.state, o) : null;
 
@@ -3992,6 +3992,12 @@
     });
   }
 
+  /* A placement as the page names it. Older rows hold what somebody typed
+     ("RedNote", "xhs"); the stored value is left alone and only the word
+     shown is the portal's own. */
+  var PLAT_WORD = { rednote: 'rednote', xhs: 'rednote', xiaohongshu: 'rednote', '小红书': 'rednote',
+    instagram: 'Instagram', ig: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook', fb: 'Facebook' };
+  function platWord(p) { return PLAT_WORD[String(p || '').toLowerCase()] || p; }
   function platformsOf(o) {
     return String(o.platforms || '').split(',').map(function (s) { return s.trim(); })
       .filter(Boolean);

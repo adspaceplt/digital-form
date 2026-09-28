@@ -1924,8 +1924,10 @@
     var dueHtml = '<span class="due-long">' + esc(dc.long) + '</span><span class="due-short">' + esc(dc.short) + '</span>';
     el.innerHTML =
       '<span class="trow-check">' + check + '</span>' +
-      '<button class="task-open" type="button"><b>' + esc(t.title) + '</b>' +
-        '<small>' + (priorityChip(t) ? priorityChip(t) + ' ' : '') +
+      /* The priority is the row's exception, so it sits on the title line
+         at its right end, where every card in the portal puts its chip. */
+      '<button class="task-open" type="button"><span class="task-top"><b>' + esc(t.title) + '</b>' + priorityChip(t) + '</span>' +
+        '<small>' +
           (mine ? '<span class="trun" aria-label="Your timer is running">Timing</span> ' : '') +
           esc(ctx) + '</small></button>' +
       '<span class="trow-meta">' +

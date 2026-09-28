@@ -4151,8 +4151,11 @@ body > .shell { width: 100%; }
 /* Overdue carries the word as well as the colour, so the mark survives
    greyscale and a reader who cannot tell warn from mute. */
 .task-due.is-over > b { color: var(--warn); font-weight: 600; }
-/* Priority rides the meta line as a chip, only where it is the exception. */
-.task-open small .task-pri { vertical-align: 1px; margin-left: 2px; }
+/* Priority is a chip at the right end of the title line, only where it is
+   the exception. */
+.task-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.task-top > b { flex: 1 1 auto; }
+.task-top > .task-pri { flex: 0 0 auto; }
 .is-narrow .task-row > .task-due > small { display: none; }
 .task-go { display: inline-flex; align-items: center; justify-content: flex-end; color: var(--ink-mute); }
 .task-go .crm-chev { width: 16px; height: 16px; }
@@ -4346,8 +4349,10 @@ body > .shell { width: 100%; }
 .tnext-month { margin-top: 12px; }
 /* The head keeps its control on the right wherever the name has 200px
    beside it, which the narrow pane does; only the tight one stacks. */
-.is-tight .eng-head { grid-template-columns: minmax(0, 1fr); }
-.is-tight .eng-ctl { justify-content: flex-start; }
+/* The state and its ⋯ keep the head's right edge on a phone too; the facts
+   wrap in the column beside them. */
+.is-tight .eng-head { align-items: start; }
+.is-tight .eng-ctl { justify-content: flex-end; }
 .eng-open { display: inline-block; margin-top: 8px; font-size: 13px; }
 
 /* A checklist item is a statement that something was done, so the row is the
@@ -4582,22 +4587,20 @@ body > .shell { width: 100%; }
    it has got to, and what the booking is. The state keeps a line it can be
    read down rather than sharing one with a summary that would squeeze it. */
 .is-tight .bookreg-head { display: none; }
-/* Two lines, not three. The state and the summary share the second line — the
-   chip keeps its own width and the summary takes what is left — so a collapsed
-   booking on a phone is about 70px rather than 119, and six of them can be
-   read without scrolling past three. */
+/* Two lines, not three: the name with its state and ⋯ at the right edge, as
+   every card head in the portal reads, then the summary under the name. */
 .is-tight .bookreg .kcard-head {
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-areas: "lead name act" "lead tags sum";
-  gap: 4px 10px; align-items: center; padding: 10px 14px;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "lead name tags act" "lead sum sum sum";
+  gap: 2px 8px; align-items: center; padding: 10px 8px 10px 14px;
 }
 .is-tight .bookreg .kcard-lead { grid-area: lead; }
 .is-tight .bookreg .kcard-name { grid-area: name; }
 .is-tight .bookreg .kcard-act { grid-area: act; justify-self: end; }
-.is-tight .bookreg .kcard-tags { grid-area: tags; justify-self: start; }
+.is-tight .bookreg .kcard-tags { grid-area: tags; justify-self: end; flex-wrap: nowrap; }
 .is-tight .bookreg .kcard-sum {
   grid-area: sum; white-space: nowrap; overflow: hidden;
-  text-overflow: ellipsis; text-align: right;
+  text-overflow: ellipsis; text-align: left; color: var(--ink-mute);
 }
 /* On a phone these are named areas, so an empty one is a blank line held
    open by the gap and can safely leave. */
@@ -6865,11 +6868,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .is-narrow .ovrow-svc > :nth-child(2), .is-narrow .ovrow-doc > :nth-child(2) { grid-area: dim; }
 .is-narrow .ovrow-svc > :nth-child(3), .is-narrow .ovrow-doc > :nth-child(3) { grid-area: amt; justify-self: end; }
 .is-narrow .ovrow-svc > :nth-child(4), .is-narrow .ovrow-doc > :nth-child(4) { grid-area: state; justify-self: end; }
-/* Bookings: name and fee on the first line, where they post and where the
-   work has got to on the second. */
+/* Bookings: name and where the work has got to on the first line, where
+   they post and the fee on the second, as the Selection pane reads. */
 .is-narrow .ovrow-book {
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "name amt" "dim state"; gap: 3px 12px;
+  grid-template-areas: "name state" "dim amt"; gap: 3px 12px;
 }
 .is-narrow .ovrow-book > :nth-child(1) { grid-area: name; }
 .is-narrow .ovrow-book > :nth-child(2) { grid-area: dim; }
@@ -8809,6 +8812,8 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .lp-hero { margin: 0 auto; max-width: 1920px; aspect-ratio: 16 / 9; overflow: hidden; background: var(--line-soft); }
 .lp-hero picture, .lp-hero img { display: block; width: 100%; height: 100%; }
 .lp-hero img { max-width: none; object-fit: cover; }
+/* No drag, no selection and no iPhone Save to Photos over the photograph. */
+.lp-hero, .lp-hero img { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
 /* At a desk the ways in come under the name, as on Apple's page; once they
    read down as a list, the photograph comes under the name and the list
    follows it (the user, 2026-09-28). The markup keeps the desk's order, and

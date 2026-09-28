@@ -188,13 +188,14 @@
     return fill(n < 0 ? t().overdue : t().dueIn, { n: span });
   }
 
-  // The console stores the placement by its printed name; older rows carry the key.
-  var PLAT_KEY = { rednote: 'xhs', Instagram: 'instagram', TikTok: 'tiktok', Facebook: 'facebook' };
+  // The console stores the placement by its printed name; older rows carry the key
+  // or what was typed ("RedNote"), so the name is matched without case.
+  var PLAT_KEY = { rednote: 'xhs', xhs: 'xhs', xiaohongshu: 'xhs', instagram: 'instagram', tiktok: 'tiktok', facebook: 'facebook' };
   var PLAT = { en: { xhs: 'rednote', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' },
                zh: { xhs: '小红书', instagram: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook' } };
   function platsOf(s) {
     return String(s || '').split(',').map(function (x) { return x.trim(); })
-      .filter(Boolean).map(function (p) { return PLAT[lang][PLAT_KEY[p] || p] || p; });
+      .filter(Boolean).map(function (p) { var k = PLAT_KEY[p.toLowerCase()] || p; return PLAT[lang][k] || p; });
   }
 
   // ---- Covers ---------------------------------------------------------------
