@@ -4320,7 +4320,7 @@
     var canBrief = may('ops', 'work') && !isFinished(t);
     box.innerHTML =
       (brief || canBrief ? '<section class="tsec"><div class="tsec-head"><h3 class="tsec-title">Brief</h3>' +
-        (canBrief ? '<button class="btn btn-quiet btn-sm" data-a="brief" type="button">' + (t.description ? 'Edit' : 'Add') + '</button>' : '') +
+        (canBrief ? '<button class="btn btn-quiet btn-sm" data-a="brief" type="button">' + (t.description ? PEN_MARK + 'Edit' : PLUS_MARK + 'Add') + '</button>' : '') +
         '</div>' + (brief || '<p class="qempty">No brief.</p>') + '</section>' : '') +
       (v ? '<section class="tsec"><div class="tsec-head"><h3 class="tsec-title">Video</h3>' +
         (may('ops', 'work')
@@ -4419,7 +4419,10 @@
         '<span class="svc-name"><b>' + esc(l.label) + '</b>' + (l.ref_type ? '' : '<small>' + esc(l.url) + '</small>') + '</span>' +
         '<span class="tlink-kind"><span class="tone">' + esc(linkWord(l)) + '</span></span>' +
         '<span class="team-act">' +
-          (href ? '<a class="btn btn-sm" href="' + esc(href) + '"' + (l.ref_type ? '' : ' target="_blank" rel="noopener"') + '>Open</a>' : '') +
+          /* Open ends on where it goes: the leaving mark for an address that
+             opens in a new tab, the chevron for a console record. */
+          (href ? '<a class="btn btn-sm" href="' + esc(href) + '"' + (l.ref_type ? '' : ' target="_blank" rel="noopener"') + '>Open ' +
+            (l.ref_type ? CHEV_S : OUT_MARK) + '</a>' : '') +
           /* Correcting and taking off are the row's ⋯, as they are in the
              sheet: one way to change a link wherever it is drawn. */
           (can ? itemMenu(l.label || l.url, linkMenu(l)) : '') +
@@ -5526,6 +5529,7 @@
      month's Add task). */
   var PLUS_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
   var PEN_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  var OUT_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
   function ntRows() { return Array.prototype.slice.call($('ntPieces').querySelectorAll('.piece')); }
   function ntRowVals(row) {
     return {

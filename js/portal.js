@@ -37,6 +37,9 @@
   var DOTS = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg>';
   var EXT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+  /* Download carries the console's own mark (Reports' Download). */
+  var FILE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>';
 
   // ---- Words, in both languages ------------------------------------------
   var T = window.ADspaceWords.of({
@@ -472,7 +475,7 @@
     if (!v) { box.innerHTML = ''; return; }
     box.innerHTML = '<p class="cp-line"><b>' + esc(monthOf(v.period_start, v.period_end)) + '</b></p>' +
       '<p class="cp-sub">' + esc((SMR && SMR.titleOf ? SMR.titleOf(v) : v.title) + ' · ' + w.published + ' ' + niceDate(v.published_at)) + '</p>' +
-      (SMR ? '<div class="cp-card-acts"><button class="btn btn-sm" type="button" data-a="dl">' + esc(w.download) + '</button></div>' : '');
+      (SMR ? '<div class="cp-card-acts"><button class="btn btn-sm" type="button" data-a="dl">' + FILE + esc(w.download) + '</button></div>' : '');
     var dl = box.querySelector('[data-a="dl"]');
     if (dl) dl.addEventListener('click', function () { downloadReport(v, 'ovRepMsg'); });
   }
