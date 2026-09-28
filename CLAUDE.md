@@ -995,8 +995,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   `campaign_confirmations.created_at`, `confirmed_at` and `completed_at` (all
   stamped by triggers). A stage it cannot date is left out.
 - The Creators List:
-  - Creator · Profiles · Campaigns · Fee · ⋯, with no monogram.
-  - Fee bands: Up to RM 300, RM 301 to 500, RM 501 to 800, Above RM 800, On
+  - Creator · Profiles · Campaigns · Client rate · ⋯, with no monogram. The
+    figure is the client's price with markup, never the creator's payout, so
+    it is never headed Fee.
+  - Rate bands: Up to RM 300, RM 301 to 500, RM 501 to 800, Above RM 800, On
     quote. Inactive in its own band.
   - A platform filter.
   - The record cell counts and dates (`DONE_STATES` from `confirmed`,
