@@ -30,7 +30,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260928l">
+<link rel="stylesheet" href="/css/portal.css?v=20260928m">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -54,32 +54,32 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260928l"></script>
-<script src="/js/captcha.js?v=20260928l"></script>
-<script src="/js/words.js?v=20260928l"></script>
-<script src="/js/copy.js?v=20260928l"></script>
-<script src="/js/ask.js?v=20260928l"></script>
-<script src="/js/confirm.js?v=20260928l"></script>
-<script src="/js/sheet.js?v=20260928l"></script>
-<script src="/js/refresh.js?v=20260928l"></script>
-<script src="/js/form.js?v=20260928l"></script>
-<script src="/js/state.js?v=20260928l"></script>
-<script src="/js/group.js?v=20260928l"></script>
-<script src="/js/menu.js?v=20260928l"></script>
-<script src="/js/cmdbar.js?v=20260928l"></script>
-<script src="/js/records.js?v=20260928l"></script>
-<script src="/js/chart.js?v=20260928l"></script>
-<script src="/js/swipe.js?v=20260928l"></script>
-<script src="/js/api.js?v=20260928l"></script>
-<script src="/js/push.js?v=20260928l"></script>
-<script src="/js/money.js?v=20260928l"></script>
-<script src="/js/mockups.js?v=20260928l"></script>
+<script src="/js/config.js?v=20260928m"></script>
+<script src="/js/captcha.js?v=20260928m"></script>
+<script src="/js/words.js?v=20260928m"></script>
+<script src="/js/copy.js?v=20260928m"></script>
+<script src="/js/ask.js?v=20260928m"></script>
+<script src="/js/confirm.js?v=20260928m"></script>
+<script src="/js/sheet.js?v=20260928m"></script>
+<script src="/js/refresh.js?v=20260928m"></script>
+<script src="/js/form.js?v=20260928m"></script>
+<script src="/js/state.js?v=20260928m"></script>
+<script src="/js/group.js?v=20260928m"></script>
+<script src="/js/menu.js?v=20260928m"></script>
+<script src="/js/cmdbar.js?v=20260928m"></script>
+<script src="/js/records.js?v=20260928m"></script>
+<script src="/js/chart.js?v=20260928m"></script>
+<script src="/js/swipe.js?v=20260928m"></script>
+<script src="/js/api.js?v=20260928m"></script>
+<script src="/js/push.js?v=20260928m"></script>
+<script src="/js/money.js?v=20260928m"></script>
+<script src="/js/mockups.js?v=20260928m"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260928l" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260928m" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -897,7 +897,7 @@
         <!-- The Letter of Offer: the quoted lines for the client to sign, kept as issued. -->
         <div class="viewhead">
           <span class="headmark"><h2>Documents</h2></span>
-          <button class="btn" id="crmIssueDoc" type="button" data-need="clients.documents:work">Issue document</button>
+          <button class="btn" id="crmIssueDoc" type="button" data-need="clients.documents:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
           <button class="btn btn-primary" id="crmCover" data-need="clients.documents:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></svg>Issue letter</button>
         </div>
         <div class="msg" id="crmDocMsg"></div>
@@ -1219,13 +1219,28 @@
     <div id="setPanel" hidden>
 
       <section class="panel rec-head setbar">
-        <div class="setbar-main">
-          <h3 id="setTitle"></h3>
-          <button class="btn btn-icononly" id="renameSet" type="button"
-                  title="Rename set" aria-label="Rename set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg></button>
-          <span class="chip" id="setState"></span>
+        <!-- The record head every record has (2026-09-28): the name, renamed
+             in place by the quiet pen, over the line that says who can see
+             it; the state and the ⋯ at the title row's right edge. Publish is
+             the set's one action, at its own width under them. -->
+        <div class="rec-id rec-id-set">
+          <div class="rec-who">
+            <div class="rec-name">
+              <h2 id="setTitle"></h2>
+              <button class="rec-pen" id="renameSet" type="button" aria-label="Rename set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+            </div>
+            <p class="rec-id-meta" id="setNote"></p>
+          </div>
+          <div class="rec-ctl">
+            <span class="chip" id="setState"></span>
+              <div class="kmenu-wrap">
+                <button class="kmenu-btn" id="setMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+                <div class="kmenu" id="setMenu" hidden role="menu">
+                  <button class="kmenu-item is-danger" id="deleteSet" data-need="review.sets:manage" type="button" role="menuitem">Delete</button>
+                </div>
+              </div>
+          </div>
         </div>
-        <p class="setbar-note" id="setNote"></p>
         <div class="setbar-actions">
           <button class="btn btn-go btn-icon" id="publishSet" data-need="review.sets:work" type="button">
             <svg id="publishIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1233,12 +1248,6 @@
                  aria-hidden="true"></svg>
             <span id="publishLabel">Publish</span>
           </button>
-          <div class="kmenu-wrap">
-            <button class="kmenu-btn" id="setMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
-            <div class="kmenu" id="setMenu" hidden role="menu">
-              <button class="kmenu-item is-danger" id="deleteSet" data-need="review.sets:manage" type="button" role="menuitem">Delete</button>
-            </div>
-          </div>
         </div>
         <div class="msg" id="setMsg"></div>
       </section>
@@ -1281,8 +1290,8 @@
           <input class="input readfield" id="clientLink" aria-label="Review link" readonly>
         </div>
         <div class="row acts cr-linkacts">
-          <a class="btn" id="openLink" target="_blank" rel="noopener">Preview</a>
-          <button class="btn" id="copyLink" type="button">Copy link</button>
+          <a class="btn btn-icon" id="openLink" target="_blank" rel="noopener">Preview <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
+          <button class="btn btn-icon" id="copyLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
         </div>
       </div>
     </aside>
@@ -1881,7 +1890,7 @@
                 <input class="input readfield is-code" id="crCode" readonly></div>
             </div>
             <div class="row">
-              <button class="btn btn-sm" id="crCodeCopy" type="button">Copy link</button>
+              <button class="btn btn-sm btn-icon" id="crCodeCopy" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
               <button class="btn btn-sm btn-warn" id="crCodeReset" type="button">Reset code</button>
             </div>
             <div class="msg" id="crCodeMsg"></div>
@@ -1959,8 +1968,9 @@
             <button class="acttab btn-sm" data-view="calendar" type="button" aria-pressed="false">Calendar</button>
             <!-- A client's months, meetings and tasks, one client at a time:
                  moved here from the client record, which keeps what the
-                 client is sold and sent. -->
-            <button class="acttab btn-sm" data-view="clients" type="button" aria-pressed="false">Clients</button>
+                 client is sold and sent. Named Months, so no tab in My Work
+                 reads as the Clients section (2026-09-28). -->
+            <button class="acttab btn-sm" data-view="months" type="button" aria-pressed="false">Months</button>
             <!-- The same work, asked an aggregate question rather than a row
                  one. Drawn only where `ops.reports` is granted, which is a
                  part the ladder has carried since phase 1 and which is never
@@ -2044,18 +2054,15 @@
               <span class="cmdbar-count" id="workCount"></span>
             </span>
             <span class="cmdbar-acts">
-              <!-- Everything the bar does besides adding one task, behind one
-                   ⋯ at every width: adding many at once, making them from a
-                   template, choosing several to act on, and, for an admin,
-                   the next task number. Four outline buttons beside the
-                   primary were a wrapped second row at a desk. -->
+              <!-- Everything the bar does besides adding work, behind one ⋯ at
+                   every width: the templates, choosing several tasks to act
+                   on, and, for an admin, the next task number. Many pieces
+                   and their repeat are made in the New sheet itself. -->
               <span class="kmenu-wrap work-more" id="workMoreWrap" hidden>
                 <button class="kmenu-btn btn-sm work-more-btn" id="workMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                 </button>
                 <div class="kmenu" id="workMore" hidden role="menu">
-                  <button class="kmenu-item" data-a="bulk" type="button" role="menuitem">Bulk add</button>
-                  <button class="kmenu-item" data-a="recur" type="button" role="menuitem">Run repeating tasks</button>
                   <button class="kmenu-item" data-a="template" type="button" role="menuitem" data-need="ops.workflows:work">Templates</button>
                   <button class="kmenu-item" data-a="select" type="button" role="menuitem" data-need="ops:manage">Select tasks</button>
                   <button class="kmenu-item" data-a="numbering" type="button" role="menuitem" hidden>Task numbering</button>
@@ -2171,7 +2178,7 @@
             <section class="tsec" id="taskLinkSec">
               <div class="tsec-head">
                 <h3 class="tsec-title">Files and links</h3>
-                <button class="btn btn-quiet btn-sm" id="taskLinkAdd" type="button" data-need="ops:work">Add link</button>
+                <button class="btn btn-quiet btn-sm" id="taskLinkAdd" type="button" data-need="ops:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
               </div>
               <!-- The evidence a stage gate asks for. A draft link is what opens
                    Client review and a final link is what opens publishing, so
@@ -2365,155 +2372,6 @@
         </div>
       </div>
 
-      <!-- A month of tasks for one client, or this month's recurring tasks.
-           The count is typed, never read off a contract: a quantity nobody
-           confirmed is a quantity nobody planned. Preview shows the codes
-           that would be made and writes nothing. -->
-      <div class="sheet" id="genSheet" hidden>
-        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="genTitle">
-          <div class="sheet-head">
-            <h3 id="genTitle">Bulk add tasks</h3>
-            <button class="iconbtn" id="genClose" type="button" aria-label="Close">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
-            </button>
-          </div>
-          <div class="sheet-body">
-            <!-- One flow: the client, then one of the client's confirmed
-                 months; the line under them says whether it is the first
-                 month or a recurring one. Running the repeat rules is its
-                 own item in My Work's ⋯, and this select is how the sheet
-                 knows which job it was opened for. -->
-            <select id="genWhat" hidden aria-hidden="true" tabindex="-1">
-              <option value="month">Month</option>
-              <option value="recur">Repeats</option>
-            </select>
-            <section class="fsec">
-              <h4 class="fsec-h">Client and month</h4>
-              <div class="row fgrid">
-                <div class="field" id="genClientField">
-                  <label class="field-label" for="genClient">Client</label>
-                  <select class="select" id="genClient" aria-required="true"></select>
-                  <label class="tickline"><input type="checkbox" id="genPaused"> <span>Include past clients</span></label>
-                </div>
-                <div class="field">
-                  <label class="field-label" for="genPeriod">Content month</label>
-                  <select class="select" id="genPeriod"></select>
-                </div>
-              </div>
-              <p class="hint genplan" id="genPlan" hidden></p>
-            </section>
-            <div id="genMonthBox">
-              <section class="fsec">
-                <h4 class="fsec-h">Task quantity</h4>
-                <div class="row fgrid">
-                  <div class="field">
-                    <label class="field-label" for="genCount">Number of tasks</label>
-                    <input class="input" id="genCount" type="number" min="1" max="60" step="1" inputmode="numeric" value="8">
-                  </div>
-                  <div class="field">
-                    <label class="field-label" for="genSpread">Weeks</label>
-                    <select class="select" id="genSpread" data-seg>
-                      <option value="even">Even over 4 weeks</option>
-                      <option value="set">Set each week</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="row genweeks" id="genWeeksRow" hidden>
-                  <div class="field"><label class="field-label" for="genW1">Week 1</label><input class="input" id="genW1" type="number" min="0" max="60" inputmode="numeric" value="0"></div>
-                  <div class="field"><label class="field-label" for="genW2">Week 2</label><input class="input" id="genW2" type="number" min="0" max="60" inputmode="numeric" value="0"></div>
-                  <div class="field"><label class="field-label" for="genW3">Week 3</label><input class="input" id="genW3" type="number" min="0" max="60" inputmode="numeric" value="0"></div>
-                  <div class="field"><label class="field-label" for="genW4">Week 4</label><input class="input" id="genW4" type="number" min="0" max="60" inputmode="numeric" value="0"></div>
-                  <div class="field"><label class="field-label" for="genW5">Week 5</label><input class="input" id="genW5" type="number" min="0" max="60" inputmode="numeric" value="0"></div>
-                </div>
-                <!-- The codes that would be made, from the database's own next
-                     number, so the preview and the run cannot disagree. -->
-                <button class="btn btn-sm" id="genPreview" type="button">Preview the codes</button>
-                <p class="hint genout" id="genOut" hidden></p>
-              </section>
-              <!-- A month is usually mixed (three Reels, five graphics), so the
-                   format is set once for every task or task by task, the way
-                   the weeks above are spread evenly or set each week. -->
-              <section class="fsec">
-                <h4 class="fsec-h">Deliverable format</h4>
-                <div class="row">
-                  <div class="field">
-                    <label class="field-label" for="genFormat">Format</label>
-                    <select class="select" id="genFormat">
-                      <option value="">Not set</option>
-                      <option value="ad_campaign">Ad Campaign</option>
-                      <option value="static">Graphic: Static</option>
-                      <option value="gif">Graphic: GIF</option>
-                      <option value="carousel">Graphic: Carousel</option>
-                      <option value="reels_30">Reels: up to 30s</option>
-                      <option value="reels_60">Reels: up to 60s</option>
-                      <option value="reels_120">Reels: up to 120s</option>
-                      <option value="report">Report</option>
-                      <option value="account_mgmt">Account Management</option>
-                      <option value="koc">KOC</option>
-                      <option value="kol">KOL</option>
-                      <option value="other">Other</option>
-                      <option value="each">Set each task</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="row fgrid genfmts" id="genFmtList" hidden></div>
-                <p class="hint" id="genFmtSum" hidden></p>
-              </section>
-              <section class="fsec">
-                <h4 class="fsec-h">Assignment</h4>
-                <div class="row">
-                  <div class="field">
-                    <label class="field-label" for="genOwner">Task Owner</label>
-                    <select class="select" id="genOwner"></select>
-                  </div>
-                </div>
-              </section>
-              <details class="fmore" id="genMore">
-                <summary>More details <span class="fmore-sum"></span></summary>
-                <div class="row">
-                  <div class="field">
-                    <label class="field-label" for="genType">Task type</label>
-                    <select class="select" id="genType" data-seg>
-                      <option value="engagement">Engagement</option>
-                      <option value="adhoc">Ad hoc</option>
-                      <option value="goodwill">Goodwill</option>
-                      <option value="special">Special</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="row fgrid">
-                  <div class="field">
-                    <label class="field-label" for="genPriority">Priority</label>
-                    <select class="select" id="genPriority" data-seg>
-                      <option value="1">Urgent</option>
-                      <option value="2">High</option>
-                      <option value="3" selected>Normal</option>
-                      <option value="4">Low</option>
-                    </select>
-                  </div>
-                  <div class="field">
-                    <label class="field-label" for="genComplex">Complexity</label>
-                    <select class="select" id="genComplex" data-seg>
-                      <option value="simple">Light</option>
-                      <option value="standard" selected>Standard</option>
-                      <option value="complex">Complex</option>
-                    </select>
-                  </div>
-                </div>
-              </details>
-            </div>
-            <div id="genRecurBox" hidden>
-              <p class="hint">Every active repeat rule is run once for the month. A task already made for a date is not made again, and a client’s repeats wait until that client’s month has its meeting confirmed.</p>
-            </div>
-          </div>
-          <div class="sheet-foot">
-            <button class="btn btn-primary" id="genGo" type="button">Add tasks</button>
-            <button class="btn btn-quiet" id="genCancel" type="button">Cancel</button>
-          </div>
-          <div class="msg" id="genMsg"></div>
-        </div>
-      </div>
-
       <!-- The rule that makes a copy of this task on each date. One live rule
            a task; saving again edits it, and Stop ends it. -->
       <div class="sheet" id="recSheet" hidden>
@@ -2537,7 +2395,7 @@
                   <select class="select" id="recFreq" data-seg>
                     <option value="weekly">Weekly</option>
                     <option value="monthly" selected>Monthly</option>
-                    <option value="custom">Every so many days</option>
+                    <option value="custom">Every N days</option>
                   </select>
                 </div>
               </div>
@@ -2593,7 +2451,7 @@
       <!-- What a task needs to exist: whose it is, what it is, and when it is
            owed. Everything else the template seeds and the record edits. -->
       <div class="sheet" id="taskSheet" hidden>
-        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="taskSheetTitle">
+        <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="taskSheetTitle" data-narrow="520">
           <div class="sheet-head">
             <h3 id="taskSheetTitle">New task</h3>
             <button class="iconbtn" id="taskSheetClose" type="button" aria-label="Close">
@@ -2605,11 +2463,13 @@
               <button class="acttab" id="ntQuick" type="button" aria-pressed="false">Task</button>
               <button class="acttab is-on" type="button" aria-pressed="true">Content deliverable</button>
             </div>
-            <!-- In the order the decision is made: what it is, when it is
-                 owed, who does it; the rest folds under More details with its
-                 values on the line (the form audit of 2026-09-24). Whose the
-                 task is (Client, Lead, Internal) is checked once at creation
-                 and never again. -->
+            <!-- In the order the decision is made: whose it is and for which
+                 month, then the pieces (a line each: what, which format,
+                 which week), then when and how often; the rest folds under
+                 More details with its values on the line. One sheet makes one
+                 piece or a month of them (2026-09-28: Bulk add folded in).
+                 Whose the task is (Client, Lead, Internal) is checked once at
+                 creation and never again. -->
             <section class="fsec">
               <h4 class="fsec-h">Task details</h4>
               <div class="row fgrid">
@@ -2625,9 +2485,32 @@
                   <label class="field-label" for="ntClient" id="ntClientLabel">Client</label>
                   <select class="select" id="ntClient" aria-required="true"></select>
                 </div>
-                <div class="field">
-                  <label class="field-label" for="ntFormat">Deliverable format</label>
-                  <select class="select" id="ntFormat">
+                <div class="field" id="ntCodeRow">
+                  <label class="field-label" for="ntPeriod">Content month</label>
+                  <select class="select" id="ntPeriod"></select>
+                </div>
+              </div>
+              <!-- A paused client is offered on request, never by default. Its
+                   own line under the pair, so the client and the month keep
+                   one height and the step under them stays 16px. -->
+              <label class="tickline" id="ntPausedWrap"><input type="checkbox" id="ntPaused">
+                <span>Include past clients</span></label>
+              <p class="hint genplan" id="ntMonthHint" hidden></p>
+            </section>
+            <!-- A line a piece. The first is the form's own; Add piece draws
+                 the next under it, its format and the week after carried
+                 over. The code is the database's, given on save. -->
+            <section class="fsec">
+              <h4 class="fsec-h">Pieces</h4>
+              <div class="pieces" id="ntPieces">
+                <div class="piece">
+                  <div class="field piece-desc">
+                    <label class="field-label" for="ntDesc">Content description</label>
+                    <input class="input" id="ntDesc" aria-required="true" placeholder="Content Post" autocomplete="off">
+                  </div>
+                  <div class="field piece-fmt">
+                    <label class="field-label" for="ntFormat">Deliverable format</label>
+                    <select class="select" id="ntFormat">
                     <option value="">Not set</option>
                     <option value="ad_campaign">Ad Campaign</option>
                     <option value="static">Graphic: Static</option>
@@ -2642,45 +2525,33 @@
                     <option value="kol">KOL</option>
                     <option value="other">Other</option>
                   </select>
-                </div>
-              </div>
-              <!-- A paused client is offered on request, never by default. Its
-                   own line under the pair, so the client and the format keep
-                   one height and the step under them stays 16px. -->
-              <label class="tickline" id="ntPausedWrap"><input type="checkbox" id="ntPaused">
-                <span>Include past clients</span></label>
-              <div class="row">
-                <!-- The code is the database's, given on save; this is the
-                     description after it. The line under it shows the name. -->
-                <div class="field">
-                  <label class="field-label" for="ntDesc">Content description</label>
-                  <input class="input" id="ntDesc" aria-required="true" placeholder="Content Post" autocomplete="off">
-                  <p class="hint" id="ntCodeHint" hidden></p>
-                </div>
-              </div>
-            </section>
-            <!-- The month and week the code is built from, then the three
-                 dates: publish is tentative until the content meeting, the
-                 first draft is the team's own, the final date is the promise. -->
-            <section class="fsec">
-              <h4 class="fsec-h">Schedule</h4>
-              <div class="row fgrid" id="ntCodeRow">
-                <div class="field">
-                  <label class="field-label" for="ntPeriod">Content month</label>
-                  <select class="select" id="ntPeriod"></select>
-                </div>
-                <div class="field">
-                  <label class="field-label" for="ntWeek">Week</label>
-                  <select class="select" id="ntWeek">
+                  </div>
+                  <div class="field piece-week">
+                    <label class="field-label" for="ntWeek">Week</label>
+                    <select class="select" id="ntWeek">
                     <option value="1">Week 1</option>
                     <option value="2">Week 2</option>
                     <option value="3">Week 3</option>
                     <option value="4">Week 4</option>
                     <option value="5">Week 5</option>
                   </select>
+                  </div>
+                  <button class="iconbtn piece-x" type="button" aria-label="Remove piece 1">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                  </button>
                 </div>
               </div>
-              <p class="hint genplan" id="ntMonthHint" hidden></p>
+              <div class="pieces-foot">
+                <button class="btn btn-sm" id="ntAddPiece" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add piece</button>
+              </div>
+              <p class="hint" id="ntCodeHint" hidden></p>
+            </section>
+            <!-- A lone piece's own dates: publish is tentative until the
+                 content meeting, the first draft is the team's own, the final
+                 date is the promise. Several pieces take a day inside their
+                 week from the database instead, and set their dates later. -->
+            <section class="fsec" id="ntDates">
+              <h4 class="fsec-h">Schedule</h4>
               <div class="row fgrid-3">
                 <div class="field">
                   <label class="field-label" for="ntDraft">First draft</label>
@@ -2693,6 +2564,40 @@
                 <div class="field">
                   <label class="field-label" for="ntPublish">Scheduled publish</label>
                   <input class="input" id="ntPublish" type="date">
+                </div>
+              </div>
+            </section>
+            <!-- The same rule on every piece, made by the database each
+                 morning and when a client's month is confirmed. -->
+            <section class="fsec">
+              <h4 class="fsec-h">Repeat</h4>
+              <label class="tickline"><input type="checkbox" id="ntRepeat"> <span>Repeat on a schedule</span></label>
+              <div class="ntrepeat" id="ntRepeatBox" hidden>
+                <div class="row">
+                  <div class="field">
+                    <label class="field-label" for="ntFreq">Repeats</label>
+                    <select class="select" id="ntFreq" data-seg>
+                      <option value="weekly">Weekly</option>
+                      <option value="monthly" selected>Monthly</option>
+                      <option value="custom">Every N days</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="row" id="ntIntervalField" hidden>
+                  <div class="field">
+                    <label class="field-label" for="ntInterval">Every</label>
+                    <input class="input" id="ntInterval" type="number" min="1" max="365" inputmode="numeric" placeholder="Days">
+                  </div>
+                </div>
+                <div class="row fgrid">
+                  <div class="field">
+                    <label class="field-label" for="ntEnds">End date</label>
+                    <input class="input" id="ntEnds" type="date">
+                  </div>
+                  <div class="field">
+                    <label class="field-label" for="ntMax">Or after this number of tasks</label>
+                    <input class="input" id="ntMax" type="number" min="1" max="500" inputmode="numeric" placeholder="No limit">
+                  </div>
                 </div>
               </div>
             </section>
@@ -2738,7 +2643,7 @@
                   </select>
                 </div>
               </div>
-              <div class="row">
+              <div class="row" id="ntBriefRow">
                 <div class="field">
                   <label class="field-label" for="ntBrief">Brief</label>
                   <textarea class="input" id="ntBrief" rows="2" placeholder="Optional" data-none="No brief" data-some="Brief"></textarea>
@@ -3357,7 +3262,7 @@
             <span class="cmdbar-count" id="regCount"></span>
           </span>
           <span class="cmdbar-acts">
-            <button class="btn btn-sm" id="regAdd" type="button" hidden>Add entry</button>
+            <button class="btn btn-sm" id="regAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add entry</button>
             <button class="btn btn-sm btn-primary" id="regIssue" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Issue document</button>
           </span>
         </span>
@@ -4397,19 +4302,19 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
-<script src="/js/passkey.js?v=20260928l"></script>
-<script src="/js/admin.js?v=20260928l"></script>
-<script src="/js/documents.js?v=20260928l"></script>
-<script src="/js/letters.js?v=20260928l"></script>
-<script src="/js/smreport.js?v=20260928l"></script>
-<script src="/js/reports.js?v=20260928l"></script>
-<script src="/js/register.js?v=20260928l"></script>
-<script src="/js/crm.js?v=20260928l"></script>
-<script src="/js/team.js?v=20260928l"></script>
-<script src="/js/campaigns.js?v=20260928l"></script>
-<script src="/js/ops.js?v=20260928l"></script>
-<script src="/js/perf.js?v=20260928l"></script>
-<script src="/js/search.js?v=20260928l"></script>
-<script src="/js/overview.js?v=20260928l"></script>
+<script src="/js/passkey.js?v=20260928m"></script>
+<script src="/js/admin.js?v=20260928m"></script>
+<script src="/js/documents.js?v=20260928m"></script>
+<script src="/js/letters.js?v=20260928m"></script>
+<script src="/js/smreport.js?v=20260928m"></script>
+<script src="/js/reports.js?v=20260928m"></script>
+<script src="/js/register.js?v=20260928m"></script>
+<script src="/js/crm.js?v=20260928m"></script>
+<script src="/js/team.js?v=20260928m"></script>
+<script src="/js/campaigns.js?v=20260928m"></script>
+<script src="/js/ops.js?v=20260928m"></script>
+<script src="/js/perf.js?v=20260928m"></script>
+<script src="/js/search.js?v=20260928m"></script>
+<script src="/js/overview.js?v=20260928m"></script>
 </body>
 </html>

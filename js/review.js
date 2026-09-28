@@ -326,6 +326,10 @@
 
     $('canvas').hidden = false;
     document.body.classList.add('is-canvas');
+    /* Every post opens at its top: on a phone the canvas is one scroll, and
+       the next post must not open where the last one's decision was. */
+    stage.scrollTop = 0; rail.scrollTop = 0;
+    if (stage.parentNode) stage.parentNode.scrollTop = 0;
     $('canvasClose').focus();
   }
 

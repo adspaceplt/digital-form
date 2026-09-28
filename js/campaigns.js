@@ -283,8 +283,8 @@
   function recordCell(c) {
     var rec = state.record && state.record[c.id];
     if (!rec || !rec.on.length) return '<span class="muted">—</span>';
-    return '<span class="cr-rec-name">' + rec.on.length + '</span>' +
-      '<span class="cr-rec-tail">' + (rec.last ? ' · ' + esc(monthOf(rec.last)) : '') + '</span>';
+    return '<span class="cr-record-n">' + rec.on.length + '</span>' +
+      '<span class="cr-record-when">' + (rec.last ? ' · ' + esc(monthOf(rec.last)) : '') + '</span>';
   }
   function monthOf(d) {
     var t = new Date(d + 'T00:00:00');
@@ -412,7 +412,7 @@
         '<span class="svc-name cr-who"><b>' + esc(c.name) +
           (off ? ' <span class="tone">Inactive</span>' : '') + '</b></span>' +
         '<span class="cr-links">' + (links || '<span class="muted">No links</span>') + '</span>' +
-        '<span class="cr-rec">' + recordCell(c) + '</span>' +
+        '<span class="cr-record">' + recordCell(c) + '</span>' +
         '<span class="svc-rate">' + (c.client_rate ? esc(money(c.client_rate))
                                                    : '<span class="muted">RM</span>') + '</span>' +
         '<span class="team-act">' +
@@ -1063,10 +1063,14 @@
         (c.state === 'draft' ? '' : 'is-ok') + '">' +
         esc(STATE_WORD[c.state] || c.state) + '</span></span>' +
       /* The one line the phone gets: the client, how many creators, and what
-         it is worth where that is known. */
+         it is worth where that is known. It may wrap between its parts, never
+         inside one: `RM` on one line and `8,640.00` on the next is a value cut
+         in half (2026-09-28), so each part holds its own spaces. */
       '<span class="crm-c crm-c-meta">' +
-        [cl.name, c.slots + (Number(c.slots) === 1 ? ' creator' : ' creators'), amount]
-          .filter(Boolean).map(esc).join(' \u00b7 ') + '</span>' +
+        [cl.name ? esc(cl.name) : '',
+         esc(c.slots + (Number(c.slots) === 1 ? ' creator' : ' creators')).replace(/ /g, '\u00a0'),
+         amount ? esc(amount).replace(/ /g, '\u00a0') : '']
+          .filter(Boolean).join('\u00a0\u00b7 ') + '</span>' +
       '<span class="crm-c crm-c-go" aria-hidden="true">' + CHEV_R + '</span>';
     row.addEventListener('click', function () { openCampaign(c); });
     return row;

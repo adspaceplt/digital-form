@@ -724,17 +724,6 @@ a { color: inherit; }
   font-size: 19px; font-weight: 600; letter-spacing: -.02em;
   min-width: 0; flex: 1 1 260px; max-width: 100%;
 }
-/* The pen has become the tick that saves. It keeps the icon button's box and
-   takes the **ink** fill, not blue: blue moves work to somebody else and
-   Publish is already doing that two controls along, so a blue tick beside a
-   blue Publish is two equally loud actions in one bar. Saving a name is an
-   ordinary operation, which is what the ink primary is for. */
-.btn-icononly.is-saving {
-  color: var(--on-fill); background: var(--fill); border-color: var(--fill);
-}
-@media (hover: hover) {
-  .btn-icononly.is-saving:hover { filter: brightness(1.25); }
-}
 /* A note the console opens under the control that sends it. `.changebox`
    carries the shape; this only says where it sits, because on a card the
    control is in a row of its own and the note belongs under the whole row. */
@@ -1834,19 +1823,23 @@ a { color: inherit; }
    Input, work in progress and output are three different things, so they
    stop looking like one undifferentiated wall of card.
    ========================================================================= */
-/* The open set is a section heading, not a second card. The selected card
-   above already carries the name, so a white panel repeating it read as a
-   stray dropdown glued to the card row. */
-.setbar {
-  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-  margin: 26px 0 18px; padding: 0 2px 14px;
-  border-bottom: 1px solid var(--line);
+/* A set's head is the record head (2026-09-28): the name with its quiet
+   rename pen over who can see it, the state and the ⋯ at the title row's
+   right edge, then Publish at its own width. It was a toolbar: a filled
+   pen square beside the name, the chip hung off the pen, and the ⋯ beside
+   Unpublish on a row of its own. */
+.setbar { display: grid; gap: 12px; }
+.setbar-actions { display: flex; gap: 8px; align-items: center; }
+.setbar-actions > .btn { flex: 0 0 auto; }
+.setbar .msg { margin: 0; }
+.setbar .msg:empty { display: none; }
+.rec-id.rec-id-set { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who ctl"; }
+.is-narrow .rec-id.rec-id-set {
+  grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name ctl" "meta meta"; gap: 4px 12px;
 }
-.setbar-main { display: flex; align-items: baseline; gap: 10px; min-width: 0; flex-wrap: wrap; }
-.setbar-main h3 { font-size: 17px; font-weight: 600; letter-spacing: -.02em; }
-.setbar-note { color: var(--ink-mute); font-size: 13px; }
-.setbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-.setbar .msg { flex: 1 1 100%; margin-top: 10px; }
+.is-narrow .rec-id-set > .rec-who { display: contents; }
+.is-narrow .rec-id-set .rec-name { grid-area: name; }
+.is-narrow .rec-id-set .rec-id-meta { grid-area: meta; }
 
 /* ONE CHIP, ONE SHAPE, ONE SET OF TONES. There were three selectors for the
    same component — `.chip`, `.tone` and `.chip-state` — each restating the
@@ -1914,7 +1907,6 @@ a { color: inherit; }
 }
 
 @media (max-width: 640px) {
-  .setbar-actions { margin-left: 0; width: 100%; }
   .zone-actions { flex-wrap: wrap; }
 }
 
@@ -2027,18 +2019,6 @@ a { color: inherit; }
 }
 .subsection > .hint { margin-bottom: 12px; }
 
-/* The set toolbar: publish carries the weight, rename and delete are marked
-   actions rather than two words sitting in a row. */
-/* Rename and delete were two words in a row that read as body text. As square
-   buttons they are recognisably actions, and the delete one is the only red
-   thing on the toolbar. */
-.btn-icononly {
-  min-width: 0; width: 38px; height: 38px; padding: 0; gap: 0; flex: 0 0 auto;
-}
-.btn-icononly svg { width: 16px; height: 16px; }
-.btn-icononly.is-danger { color: var(--err); }
-.btn-icononly.is-danger:hover { background: var(--err-bg); border-color: var(--err-line); color: var(--err-hi); }
-.setbar-actions { gap: 8px; }
 
 /* Scrollbar-free horizontal rhythm for the danger pair */
 .dangerrow { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -3711,7 +3691,7 @@ body.is-plain .topbar { background: var(--chrome); }
 
 /* A tap target is never smaller than a finger, whatever the width. */
 @media (pointer: coarse) {
-  .btn-icononly, .kmenu-btn { width: 44px; height: 44px; }
+  .kmenu-btn { width: 44px; height: 44px; }
   .kmenu-item { padding: 11px 12px; }
   .linkish { padding: 8px 2px; }
 }
@@ -4118,6 +4098,11 @@ body > .shell { width: 100%; }
 .task-go .crm-chev { width: 16px; height: 16px; }
 
 .tlink-row { grid-template-columns: minmax(0, 1fr) 120px auto; }
+/* A link's address is the row's meta line: one line that ends in an ellipsis
+   (the whole address is in Edit, and Open goes there). Unbroken, it ran on
+   under Open on a phone. Its label is typed, and breaks anywhere. */
+.tlink-row .svc-name small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tlink-row .svc-name b { overflow-wrap: anywhere; }
 .tlink-row > .team-act { align-items: center; gap: 4px; }
 .tlink-kind { min-width: 0; }
 .tsess-row { grid-template-columns: minmax(0, 1fr) 150px 110px; }
@@ -4216,13 +4201,35 @@ body > .shell { width: 100%; }
 .rec-name h2 .askfield { font-size: 19px; min-height: var(--ctl-h-sm); padding-block: 2px; }
 /* A hint under its own field sits on the field, not a block step away. */
 .field > .hint { margin: 6px 0 0; }
-/* Five figures for five weeks on one line, two lines on a phone. The codes
-   a preview answers with wrap as a paragraph under the control that asked. */
-.genweeks { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px 12px; }
-.genout { margin: 12px 0 0; overflow-wrap: anywhere; }
-/* The mix under the format rows, one step clear of the last field. */
-#genFmtSum { margin: 8px 0 0; }
-#genPreview { margin-top: 16px; }
+/* The New sheet's pieces (2026-09-28): a line each, the description, the
+   format and the week on one grid, the remove mark at the end once there is
+   more than one. The first line carries the labels; the rest name themselves.
+   On a narrow card a piece is two lines, what over which format and week,
+   the pieces a hairline apart. */
+.pieces { display: grid; gap: 12px; }
+.piece {
+  display: grid; gap: 12px; align-items: end;
+  grid-template-columns: minmax(0, 1fr) 188px 104px;
+  grid-template-areas: "desc fmt week";
+}
+.piece-desc { grid-area: desc; }
+.piece-fmt { grid-area: fmt; }
+.piece-week { grid-area: week; }
+.piece-x { grid-area: x; }
+.pieces.is-many .piece { grid-template-columns: minmax(0, 1fr) 188px 104px var(--ctl-h); grid-template-areas: "desc fmt week x"; }
+.pieces.no-week .piece { grid-template-columns: minmax(0, 1fr) 188px; grid-template-areas: "desc fmt"; }
+.pieces.no-week.is-many .piece { grid-template-columns: minmax(0, 1fr) 188px var(--ctl-h); grid-template-areas: "desc fmt x"; }
+.pieces.no-week .piece-week, .pieces:not(.is-many) .piece-x { display: none; }
+.pieces-foot { display: flex; margin-top: 12px; }
+/* A piece's fields fill their tracks: a select's own 180px floor would
+   push the week over the remove mark. */
+.piece .input, .piece .select { width: 100%; min-width: 0; }
+#ntCodeHint { margin: 8px 0 0; }
+.is-narrow .piece { grid-template-columns: minmax(0, 1fr) 104px; grid-template-areas: "desc desc" "fmt week"; }
+.is-narrow .pieces.is-many .piece { grid-template-columns: minmax(0, 1fr) 104px var(--ctl-h); grid-template-areas: "desc desc desc" "fmt week x"; }
+.is-narrow .pieces.no-week .piece { grid-template-columns: minmax(0, 1fr); grid-template-areas: "desc" "fmt"; }
+.is-narrow .pieces.no-week.is-many .piece { grid-template-columns: minmax(0, 1fr) var(--ctl-h); grid-template-areas: "desc desc" "fmt x"; }
+.is-narrow .piece + .piece { padding-top: 12px; border-top: 1px solid var(--line-soft); }
 /* Several ticks in a sheet stack one to a line; inline they flowed two to a
    line with the third wrapping under them. */
 .tickstack { display: grid; gap: 2px; margin: 0 0 12px; }
@@ -4423,15 +4430,15 @@ body > .shell { width: 100%; }
    12.5px, and the name is the half that gives way. */
 .cr-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) 200px 96px var(--ctl-h); }
 .cr-links { display: flex; flex-wrap: wrap; gap: 4px 14px; min-width: 0; }
-.cr-rec {
+.cr-record {
   font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums;
   display: flex; align-items: baseline; min-width: 0;
 }
 /* The name truncates and the tail never does: `+2 · Sept 2026` is the part a
    clipped cell would make meaningless, while a shortened campaign name is
    still the campaign. */
-.cr-rec-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cr-rec-tail { flex: 0 0 auto; white-space: pre; }
+.cr-record-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cr-record-when { flex: 0 0 auto; white-space: pre; }
 
 /* What this creator has run, on their own card. A row a campaign, the name
    and the month it was shot, and the whole row opens it — the shape every
@@ -4582,7 +4589,7 @@ body > .shell { width: 100%; }
    which is the only thing that is ever drawn in it. */
 /* **Two lines, and one right margin.** The row drew three different right
    edges: the ⋯ spanned the first line only, so the record line ran to the
-   card's padding at 358 while the fee above it stopped at 302, and `.cr-rec`
+   card's padding at 358 while the fee above it stopped at 302, and `.cr-record`
    is a flex box, so the `text-align: right` it was given moved nothing at all
    and `—` sat at the *left* of a 148px track while `1 · Sept 2026` filled it
    and looked right aligned. Three edges on a two line row is what reads as
@@ -4601,15 +4608,16 @@ body > .shell { width: 100%; }
    nobody can see. */
 .is-narrow .cr-row:has(> .team-act:empty) { grid-template-columns: minmax(0, 1fr) 104px 0; }
 .is-narrow .cr-row > .svc-name { align-self: center; }
-/* Both meta cells start at the top of their line. Centred, the record floated
-   to the middle of a links cell that had wrapped to two rows, so the date sat
-   halfway down the card with nothing beside it. */
-.is-narrow .cr-row > .cr-links { grid-area: links; align-self: start; }
+/* Both meta cells sit on one baseline: the record reads on the first chip's
+   own line. Centred, the record floated to the middle of a links cell that
+   had wrapped to two rows; started at the top, it sat 9px above the text of
+   a 38px outlined chip (2026-09-28). */
+.is-narrow .cr-row > .cr-links { grid-area: links; align-self: baseline; }
 /* The profile links are the row's last line. As bare text their 5px of
    padding read as extra space and the cell took it back (2026-09-21); as
    outlined chips the edge is the ink, so the row's own padding stands. */
-.is-narrow .cr-row > .cr-rec {
-  grid-area: rec; align-self: start;
+.is-narrow .cr-row > .cr-record {
+  grid-area: rec; align-self: baseline;
   /* A flex box is not moved by `text-align`; this is what actually ends the
      record at the card's own margin. */
   justify-content: flex-end;
@@ -6623,12 +6631,16 @@ body.is-canvas { overflow: hidden; }
 @media (max-width: 860px) {
   /* One column: the mockup, then what the decision rests on, then the
      decision. A rail beside a 9:16 mockup on a phone is two columns of
-     nothing. */
+     nothing. And one scroll (2026-09-28, a client's complaint): the stage
+     and the rail were two scroll areas sharing the screen, so the copy and
+     the decision sat over the lower third of every post, a Reel's own
+     caption included. The post is shown whole; its copy and the decision
+     follow it as the page scrolls. */
   .canvas { padding: 0; align-items: flex-end; }
-  .canvas-card { width: 100%; max-height: 100vh; height: 100%; border-radius: 0; }
-  .canvas-body { grid-template-columns: minmax(0, 1fr); }
-  .canvas-stage { border-right: 0; border-bottom: 1px solid var(--line); padding: 14px; }
-  .canvas-rail { padding: 14px 16px 24px; }
+  .canvas-card { width: 100%; max-height: 100vh; max-height: 100dvh; height: 100%; border-radius: 0; }
+  .canvas-body { display: block; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  .canvas-stage { overflow: visible; border-right: 0; border-bottom: 1px solid var(--line); padding: 14px; }
+  .canvas-rail { overflow: visible; padding: 14px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .canvas, .canvas-card { animation: none; }
@@ -8401,6 +8413,18 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rectabs.is-more-end, .tabrow.is-more-end { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
 .rectabs.is-more-start, .tabrow.is-more-start { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); }
 .rectabs.is-more-start.is-more-end, .tabrow.is-more-start.is-more-end { -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
+/* On a phone every strip is the column's width (the user, 2026-09-28: "Why
+   ur tab doesnt go full width. Such awkward width now on mobile?"): at its
+   own width the portal's five tabs stopped 11px short of the cards' edge,
+   which reads as a mistake rather than a choice. The tabs share what is
+   spare, as the view strip's already do; a strip that does not fit scrolls
+   as before, and a desk keeps the strip at its own width. The Performance
+   padlock stays at the row's right end, after the strip. */
+@media (max-width: 640px) {
+  .rectabs, .tabrow { width: 100%; }
+  .rectabs .tab, .tabrow .tab { flex: 1 0 auto; text-align: center; }
+  .tabline > .tabrow { flex: 1 1 auto; }
+}
 
 /* ---- Charts (`js/chart.js`) ------------------------------------------------
    One card per figure, in the page's own tokens so it follows the theme. The
@@ -8936,8 +8960,6 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 #workspace.is-set > .cr-rec { display: block; margin-top: 0; }
 #setPanel > .setbar { margin: 0 0 12px; padding: 18px 20px; border-bottom: 0; }
 #setPanel > .cr-rec { margin-top: 0; }
-.setbar-main { align-items: center; }
-.setbar-note { flex: 1 1 100%; margin: 0; order: 3; }
 .setprog-note { margin: 8px 0 0; }
 #assetSheet .sheet-body > .panel { margin: 0 0 12px; }
 #setTitle, .saved-top > b { color: var(--ink); }

@@ -648,8 +648,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Panes (`tab=`, pushed to history; Overview stays out of the address):
   - Overview, Contacts, Billing, Brand, Services, Documents, Reports, Activity;
   - Requests once a contact has portal access or a request exists.
-  - There is no Work pane. `tab=work` lands in My Work's Clients view
-    (`view=clients&wc=slug`).
+  - There is no Work pane. `tab=work` lands in My Work's Months view
+    (`view=months&wc=slug`).
 - Below 1100 the rail splits. `.rec:not(.cportal) > .rec-rail` is
   `display: contents`, and the blocks take `order`:
   - Next action, the billing gate and Profile come before the tabs.
@@ -866,7 +866,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - og:title `{client name} Content Review Portal by ADspace`, on `review/`
     only.
 - The Review Canvas moves the card's own blocks and puts them back; there is
-  one decision control. Prev/next, the arrow keys and Escape work.
+  one decision control. Prev/next, the arrow keys and Escape work. Below 860
+  it is one scroll: the post whole, then its copy and the decision; each post
+  opens at its top.
 - Console:
   - The client is a record: the mark, name and handles, and one ⋯ (Client
     settings as a sheet with one Save, Reset access link, Remove from Content
@@ -874,8 +876,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     count) beside the review link. A post is a row: the placement with the
     client's decision at the right, the file, the copy, and one ⋯ (Edit,
     Request re-approval, Delete); the re-approval note opens under the post.
-  - A set is a page of its own (`set=`): its head (name renamed in place,
-    state, Publish, one ⋯ with Delete), its posts, and a rail (the client's
+  - A set is a page of its own (`set=`): its head is the record head (the
+    name with the quiet `.rec-pen`, who can see it under it, the state and one
+    ⋯ with Delete at the right edge, Publish at its own width below), its
+    posts, and a rail (the client's
     review, the tasks naming it). Back returns to the client. Add assets is a
     sheet (`#assetSheet`) that shuts on Add to set.
   - Sets are folded, one open at a time.
@@ -1088,7 +1092,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 
 ### My Work (`js/ops.js`, `?s=work`, permission key `ops`, mapped once in `sectionAllowed()`)
 - Views (`view=`):
-  - list (default, out of the address), board, calendar, clients, report.
+  - list (default, out of the address), board, calendar, months (an older
+    `view=clients` reads as it), report.
   - Report opens on Open work by person (`ops.all`), then the figures
     (`ops.reports`); either part opens it. `view=load` lands there.
   - Each draws through `paint()` and `viewBox()`, never straight into a hidden
@@ -1149,10 +1154,11 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The calendar shows every task on its due date (the stage tone) and its
   publish date (`--pub`), with a Due / Publish key. A task whose next date is
   its publish date shows once.
-- Clients view (`view=clients&wc=`): a client select, then that client's
-  months, meetings and tasks (`clientWork()`), remembered per browser. A
-  month whose tasks the filter hides says No matches (Show all), never No
-  tasks this month.
+- Months view (`view=months&wc=`, the tab named Months): a client select,
+  then that client's months, meetings and tasks (`clientWork()`), remembered
+  per browser. A month's ⋯ is Add tasks (the New sheet on that client and
+  month), Edit, Cancel month, Delete. A month whose tasks the filter hides
+  says No matches (Show all), never No tasks this month.
 - The report (`ops_report(p_from, p_to)`, `ops.reports`, no new schema):
   - It reads its figures on arrival, from its address too.
   - Open work by person is bars, most open first, the overdue count beside
@@ -1198,15 +1204,36 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Repeat (`ops_set_recurring`: weekly, monthly on a day, or every N days; ends
   on a date or a count). `ops_generate_recurring` is idempotent on rule and
   date.
-- The bar's ⋯ holds Bulk add, Run repeating tasks, Templates (`ops.workflows`
-  Work: edits families and makes no task), Select tasks (Manage: a sticky bar
-  with Assign task owner and Delete) and Task numbering (admin).
+  - The task a rule copies is its first occurrence: nothing is made on or
+    before its day.
+  - A monthly copy keeps its task's week; a weekly or every-N-days copy takes
+    the week of its own date.
+  - Made once is made: every date a repeat makes is kept
+    (`ops_recurring_made`, by rule and by the task it copies; no policy, no
+    grant), so a deleted copy is never made again and a repeat turned off and
+    on again makes no date twice.
+  - A task deleted stops its repeat (trigger `ops_tasks_stop_repeat`): a rule
+    is seen and turned off only from its task.
+- Repeats run themselves; nobody presses Run:
+  - a client's month confirmed (its meeting set or marked not applicable)
+    makes that client's repeats for it at once, as the person confirming
+    (trigger `ops_engagements_confirmed`; a refusal never fails the
+    confirmation);
+  - every morning at 00:10 MYT (pg_cron `ops-repeats-daily`),
+    `ops_recurring_daily()` makes this month's, and next month's in this
+    month's last seven days (`ops_recurring_periods()`), each rule as the
+    colleague who set it, else its task's owner, with that colleague's own
+    access (`request.jwt.claims`). A rule neither can make waits.
+  - Neither function, nor the trigger's, is callable from a browser.
+- The bar's ⋯ holds Templates (`ops.workflows` Work: edits families and makes
+  no task), Select tasks (Manage: a sticky bar with Assign task owner and
+  Delete) and Task numbering (admin); it is drawn only where one applies.
 - A template is a family (`ops_template_variants`): one checklist and the rate
   card formats it serves, each with its own hours; a format belongs to one
   family (`format-taken`, naming it). A task's format fills it from its family
   inside `ops_create_task` (the checklist and the variant's hours; the
-  caller's workflow and the month's dates stand), so New task, Bulk add and
-  repeats alike. Reels (30s, 60s, 120s), Graphics (Static, GIF, Carousel),
+  caller's workflow and the month's dates stand), so every piece of the New
+  sheet and every repeat alike. Reels (30s, 60s, 120s), Graphics (Static, GIF, Carousel),
   Report.
 - A task is named by a code plus a description.
   - The code (`ops_code_of`: `YYMMW{week}{NN}` for the content month) is made
@@ -1341,16 +1368,25 @@ Each line is a rule that broke once. Its reason is in the archive.
     and the value runs full width beneath.
 - Every client deliverable goes into a confirmed month: one that exists, is
   open, and has its meeting set or marked not applicable (`no-month`,
-  `month-closed`, `month-not-confirmed`). This holds for New task, templates,
-  Duplicate, repeats and Bulk add. Everyday, internal and lead tasks are exempt.
-- Bulk add is one flow: a client, one of their confirmed months (First month or
-  Recurring month), and the count prefilled as planned less held.
-  - Week `floor(i*4/n)+1`, with publish dates inside the week.
-  - Formats: one for every task, or Set each task (`formats`, in creation
-    order).
-  - Preview is a dry run.
-  - Run repeating tasks lives in the ⋯, and a repeat waits for a confirmed
-    month (`held`).
+  `month-closed`, `month-not-confirmed`). This holds for the New sheet,
+  templates, Duplicate and repeats (a repeat waits, `held`). Everyday,
+  internal and lead tasks are exempt.
+- The New sheet (`#taskSheet`) is the one way work is added; there is no Bulk
+  add or Run repeating tasks (`ops_generate_month` stays, uncalled).
+  - A content deliverable is pieces: a line each (description, format, week),
+    Add piece drawing the next with the format above and the week after
+    (after Week 4, Week 1), × on each once there are two. Every piece shares the client,
+    month, type, Task Owner, priority and complexity. Content month reads
+    `{n} planned · {n} added` (`ops_engagement_counts`).
+  - `ops_create_pieces(p_payload, p_idem)` makes them through
+    `ops_create_task`: 1 to 60 (`bad-count`), all or none, the same press
+    twice the same act.
+  - One piece keeps its own dates and brief. With several, Schedule and the
+    brief leave, the button reads Create N tasks, and each piece takes a
+    tentative publish day inside its week, the week's pieces spread across
+    its seven days (a lone piece with a repeat too).
+  - Repeat is a tick (Weekly, Monthly, Every N days; an end date or a count):
+    the same rule on every piece, and what already falls due made at once.
 - Google Meet: only `meet-create` touches the calendar (the refresh token lives
   in its secrets).
   - It asks `ops_engagement_meet_prepare` as the caller.

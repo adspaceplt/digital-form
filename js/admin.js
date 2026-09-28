@@ -1884,7 +1884,7 @@
     // things that just happened, so one does not overwrite the other.
     $('setNote').textContent = live
       ? 'Visible to the client on their review link.'
-      : 'Not visible to the client yet.';
+      : 'Not visible to the client.';
     msg('setMsg', '');
   }
 

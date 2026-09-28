@@ -220,7 +220,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   right. An empty action cell gives up its track on a phone only.
 - A phone list row is a two-column table, top aligned: who over meta on the
   left, state over age on the right. Two or three lines, never a stack of
-  fields.
+  fields. Cells on one line share its baseline: a record beside an outlined
+  chip reads on the chip's text (`.cr-record`).
 - A phone template names every cell it keeps and hides the rest, including the
   restatement lower in the file.
 - An empty grid cell keeps its column on a desk. `display:none` slides the rest
@@ -240,21 +241,26 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   client portal).
 - Every table states its own tracks. A template hung off `:not(...)` claims the
   wrong header.
-- Every tab strip is the view strip: the tonal track at its own width, never
-  a band or a rule across the column, never bleeding past the page's
-  margins. It never wraps; it scrolls sideways with the edge that has more
-  beyond it faded, and each tab is `flex: 0 0 auto`.
+- Every tab strip is the view strip: the tonal track, never a rule across the
+  column, never bleeding past the page's margins. At a desk it is its own
+  width (each tab `flex: 0 0 auto`); on a phone it is the column's width and
+  its tabs share what is spare (`flex: 1 0 auto`). It never wraps; it
+  scrolls sideways with the edge that has more beyond it faded.
 - On a phone a sideways swipe presses the tab beside the chosen one
   (`js/swipe.js`, a region's `data-swipe` naming its strip).
 - A component borrowed for its shape carries its old flex and behaviour. Use a
   class of its own (`.railrow`, never `.navitem`).
+- A class name belongs to one component. A new component never reuses a name
+  already styled elsewhere (grep `css/portal.css` first): Content Review's
+  `.cr-rec` split the Creators List's record cell, then named `.cr-rec` too.
 - A group that must stay together is one element in the markup, never a hope
   about where a wrap falls.
 - Text a person typed (a caption, a brief, a note, a place) breaks anywhere
   (`overflow-wrap: anywhere`), and a grid holding it states
   `minmax(0, 1fr)`, never an `auto` track: one unbroken link otherwise widens
   the card and the page. The walk seeds a 120-character link on both client
-  pages.
+  pages. An address that is a row's meta line under its name is one line
+  ending in an ellipsis (`.tlink-row`); the whole address is one press away.
 - An overlay is positioned against the box it explains (`.sched-field`), never
   its container.
 - An image sized by one axis in a box that can clamp the other is squashed. The
@@ -343,6 +349,12 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   (`.cmdbar-find .input:focus`).
 - A value only read is not a field.
 - A destructive item is red on the item itself.
+- A button that acts carries its action's glyph wherever it is drawn: a plus
+  to add, a pen to edit, the copy mark, the file mark to download, the leaving
+  mark after anything that opens in a new tab (Preview, Open), the chevron
+  after a way to another console page. A form's own commit (Save, Cancel, a
+  submit, a sheet's foot, a confirm) is words. `uxaudit` `glyph` fails a
+  label drawn both ways.
 - A border inside a border groups nothing, so the inner one is shaded.
 - The ⋯ is the lightest control. The account control, the bell and the
   Activity link carry no outline, only a `--line-soft` fill on hover and while
@@ -383,6 +395,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - The head card ends above the fold. Nothing is clipped under the sticky bar.
   Sheets are measured in `dvh` (falling back to `vh`), are full height on a
   phone, come from the floor, and pad the safe area.
+- A line of parts (`client · 10 creators · RM 8,640.00`) wraps between its
+  parts, never inside one: a count and an amount hold their spaces.
 - A narrow cell keeps its heading's meaning: a bare figure names itself when
   the header hides (`Over by | 4 days`).
 - The phone command bar is one row plus the view segment.
@@ -438,10 +452,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   - Request extension, when it will only ask.
   - Creators List (never "roster").
   - Task Owner and Created by (never Owner or Manager).
-  - Bulk add.
+  - Add piece; Create 3 tasks.
   - Import from spreadsheet.
-- Headings name their content: Task details, Assignment, Date and time,
-  Meeting channel, Task quantity, Frequency, End of repeat, Call or visit
+- Headings name their content: Task details, Pieces, Schedule, Repeat,
+  Assignment, Date and time, Meeting channel, Frequency, End of repeat, Call or visit
   details, Contact details, Task settings, Inclusions, Time records, Team
   member.
 - Messages:

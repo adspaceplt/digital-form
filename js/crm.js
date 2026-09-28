@@ -901,10 +901,10 @@
   }
 
   function showPane(key) {
-    /* A client's months, meetings and tasks moved to My Work's Clients view
+    /* A client's months, meetings and tasks moved to My Work's Months view
        (2026-09-25), so an older link to this record's Work pane lands there. */
     if (key === 'work' && state.client && bridge.show) {
-      history.replaceState(null, '', '/admin/?s=work&view=clients&wc=' +
+      history.replaceState(null, '', '/admin/?s=work&view=months&wc=' +
         encodeURIComponent(state.client.slug || state.client.id));
       bridge.show('work');
       return;
