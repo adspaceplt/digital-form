@@ -283,8 +283,8 @@
   function recordCell(c) {
     var rec = state.record && state.record[c.id];
     if (!rec || !rec.on.length) return '<span class="muted">—</span>';
-    return '<span class="cr-rec-name">' + rec.on.length + '</span>' +
-      '<span class="cr-rec-tail">' + (rec.last ? ' · ' + esc(monthOf(rec.last)) : '') + '</span>';
+    return '<span class="cr-record-n">' + rec.on.length + '</span>' +
+      '<span class="cr-record-when">' + (rec.last ? ' · ' + esc(monthOf(rec.last)) : '') + '</span>';
   }
   function monthOf(d) {
     var t = new Date(d + 'T00:00:00');
@@ -412,7 +412,7 @@
         '<span class="svc-name cr-who"><b>' + esc(c.name) +
           (off ? ' <span class="tone">Inactive</span>' : '') + '</b></span>' +
         '<span class="cr-links">' + (links || '<span class="muted">No links</span>') + '</span>' +
-        '<span class="cr-rec">' + recordCell(c) + '</span>' +
+        '<span class="cr-record">' + recordCell(c) + '</span>' +
         '<span class="svc-rate">' + (c.client_rate ? esc(money(c.client_rate))
                                                    : '<span class="muted">RM</span>') + '</span>' +
         '<span class="team-act">' +

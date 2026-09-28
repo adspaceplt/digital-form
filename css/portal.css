@@ -4445,15 +4445,15 @@ body > .shell { width: 100%; }
    12.5px, and the name is the half that gives way. */
 .cr-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) 200px 96px var(--ctl-h); }
 .cr-links { display: flex; flex-wrap: wrap; gap: 4px 14px; min-width: 0; }
-.cr-rec {
+.cr-record {
   font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums;
   display: flex; align-items: baseline; min-width: 0;
 }
 /* The name truncates and the tail never does: `+2 · Sept 2026` is the part a
    clipped cell would make meaningless, while a shortened campaign name is
    still the campaign. */
-.cr-rec-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cr-rec-tail { flex: 0 0 auto; white-space: pre; }
+.cr-record-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cr-record-when { flex: 0 0 auto; white-space: pre; }
 
 /* What this creator has run, on their own card. A row a campaign, the name
    and the month it was shot, and the whole row opens it — the shape every
@@ -4604,7 +4604,7 @@ body > .shell { width: 100%; }
    which is the only thing that is ever drawn in it. */
 /* **Two lines, and one right margin.** The row drew three different right
    edges: the ⋯ spanned the first line only, so the record line ran to the
-   card's padding at 358 while the fee above it stopped at 302, and `.cr-rec`
+   card's padding at 358 while the fee above it stopped at 302, and `.cr-record`
    is a flex box, so the `text-align: right` it was given moved nothing at all
    and `—` sat at the *left* of a 148px track while `1 · Sept 2026` filled it
    and looked right aligned. Three edges on a two line row is what reads as
@@ -4623,15 +4623,16 @@ body > .shell { width: 100%; }
    nobody can see. */
 .is-narrow .cr-row:has(> .team-act:empty) { grid-template-columns: minmax(0, 1fr) 104px 0; }
 .is-narrow .cr-row > .svc-name { align-self: center; }
-/* Both meta cells start at the top of their line. Centred, the record floated
-   to the middle of a links cell that had wrapped to two rows, so the date sat
-   halfway down the card with nothing beside it. */
-.is-narrow .cr-row > .cr-links { grid-area: links; align-self: start; }
+/* Both meta cells sit on one baseline: the record reads on the first chip's
+   own line. Centred, the record floated to the middle of a links cell that
+   had wrapped to two rows; started at the top, it sat 9px above the text of
+   a 38px outlined chip (2026-09-28). */
+.is-narrow .cr-row > .cr-links { grid-area: links; align-self: baseline; }
 /* The profile links are the row's last line. As bare text their 5px of
    padding read as extra space and the cell took it back (2026-09-21); as
    outlined chips the edge is the ink, so the row's own padding stands. */
-.is-narrow .cr-row > .cr-rec {
-  grid-area: rec; align-self: start;
+.is-narrow .cr-row > .cr-record {
+  grid-area: rec; align-self: baseline;
   /* A flex box is not moved by `text-align`; this is what actually ends the
      record at the card's own margin. */
   justify-content: flex-end;

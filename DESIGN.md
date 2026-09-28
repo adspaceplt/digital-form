@@ -220,7 +220,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   right. An empty action cell gives up its track on a phone only.
 - A phone list row is a two-column table, top aligned: who over meta on the
   left, state over age on the right. Two or three lines, never a stack of
-  fields.
+  fields. Cells on one line share its baseline: a record beside an outlined
+  chip reads on the chip's text (`.cr-record`).
 - A phone template names every cell it keeps and hides the rest, including the
   restatement lower in the file.
 - An empty grid cell keeps its column on a desk. `display:none` slides the rest
@@ -248,6 +249,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   (`js/swipe.js`, a region's `data-swipe` naming its strip).
 - A component borrowed for its shape carries its old flex and behaviour. Use a
   class of its own (`.railrow`, never `.navitem`).
+- A class name belongs to one component. A new component never reuses a name
+  already styled elsewhere (grep `css/portal.css` first): Content Review's
+  `.cr-rec` split the Creators List's record cell, then named `.cr-rec` too.
 - A group that must stay together is one element in the markup, never a hope
   about where a wrap falls.
 - Text a person typed (a caption, a brief, a note, a place) breaks anywhere
