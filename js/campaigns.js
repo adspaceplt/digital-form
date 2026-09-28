@@ -1063,10 +1063,14 @@
         (c.state === 'draft' ? '' : 'is-ok') + '">' +
         esc(STATE_WORD[c.state] || c.state) + '</span></span>' +
       /* The one line the phone gets: the client, how many creators, and what
-         it is worth where that is known. */
+         it is worth where that is known. It may wrap between its parts, never
+         inside one: `RM` on one line and `8,640.00` on the next is a value cut
+         in half (2026-09-28), so each part holds its own spaces. */
       '<span class="crm-c crm-c-meta">' +
-        [cl.name, c.slots + (Number(c.slots) === 1 ? ' creator' : ' creators'), amount]
-          .filter(Boolean).map(esc).join(' \u00b7 ') + '</span>' +
+        [cl.name ? esc(cl.name) : '',
+         esc(c.slots + (Number(c.slots) === 1 ? ' creator' : ' creators')).replace(/ /g, '\u00a0'),
+         amount ? esc(amount).replace(/ /g, '\u00a0') : '']
+          .filter(Boolean).join('\u00a0\u00b7 ') + '</span>' +
       '<span class="crm-c crm-c-go" aria-hidden="true">' + CHEV_R + '</span>';
     row.addEventListener('click', function () { openCampaign(c); });
     return row;

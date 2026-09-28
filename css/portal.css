@@ -8424,6 +8424,18 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rectabs.is-more-end, .tabrow.is-more-end { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent); }
 .rectabs.is-more-start, .tabrow.is-more-start { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 32px), transparent); }
 .rectabs.is-more-start.is-more-end, .tabrow.is-more-start.is-more-end { -webkit-mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); mask-image: linear-gradient(to right, transparent, #000 32px, #000 calc(100% - 32px), transparent); }
+/* On a phone every strip is the column's width (the user, 2026-09-28: "Why
+   ur tab doesnt go full width. Such awkward width now on mobile?"): at its
+   own width the portal's five tabs stopped 11px short of the cards' edge,
+   which reads as a mistake rather than a choice. The tabs share what is
+   spare, as the view strip's already do; a strip that does not fit scrolls
+   as before, and a desk keeps the strip at its own width. The Performance
+   padlock stays at the row's right end, after the strip. */
+@media (max-width: 640px) {
+  .rectabs, .tabrow { width: 100%; }
+  .rectabs .tab, .tabrow .tab { flex: 1 0 auto; text-align: center; }
+  .tabline > .tabrow { flex: 1 1 auto; }
+}
 
 /* ---- Charts (`js/chart.js`) ------------------------------------------------
    One card per figure, in the page's own tokens so it follows the theme. The

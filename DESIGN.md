@@ -241,10 +241,11 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   client portal).
 - Every table states its own tracks. A template hung off `:not(...)` claims the
   wrong header.
-- Every tab strip is the view strip: the tonal track at its own width, never
-  a band or a rule across the column, never bleeding past the page's
-  margins. It never wraps; it scrolls sideways with the edge that has more
-  beyond it faded, and each tab is `flex: 0 0 auto`.
+- Every tab strip is the view strip: the tonal track, never a rule across the
+  column, never bleeding past the page's margins. At a desk it is its own
+  width (each tab `flex: 0 0 auto`); on a phone it is the column's width and
+  its tabs share what is spare (`flex: 1 0 auto`). It never wraps; it
+  scrolls sideways with the edge that has more beyond it faded.
 - On a phone a sideways swipe presses the tab beside the chosen one
   (`js/swipe.js`, a region's `data-swipe` naming its strip).
 - A component borrowed for its shape carries its old flex and behaviour. Use a
@@ -387,6 +388,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - The head card ends above the fold. Nothing is clipped under the sticky bar.
   Sheets are measured in `dvh` (falling back to `vh`), are full height on a
   phone, come from the floor, and pad the safe area.
+- A line of parts (`client · 10 creators · RM 8,640.00`) wraps between its
+  parts, never inside one: a count and an amount hold their spaces.
 - A narrow cell keeps its heading's meaning: a bare figure names itself when
   the header hides (`Over by | 4 days`).
 - The phone command bar is one row plus the view segment.
