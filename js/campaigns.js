@@ -1431,6 +1431,8 @@
     // arriving at a campaign starts with them folded.
     var same = !!(state.campaign && state.campaign.id === c.id);
     state.campaign = c;
+    /* A campaign opens at its top, never at the list's scroll. */
+    if (!same && !restoring) window.scrollTo(0, 0);
     /* The tasks naming it are read again on arriving, not on every repaint. */
     if (!same) state.campTasks = null;
     Array.prototype.forEach.call(document.querySelectorAll('#campTabs [data-needs-activity]'), function (b) {

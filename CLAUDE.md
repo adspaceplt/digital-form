@@ -126,6 +126,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
     off its column (`cols`); a cell drifting between rows (`column`); a phone
     row's last column short of the edge (`edge`); uneven gaps in a section
     (`stack`);
+  - a card-sized box drawing a visible outline (`outline`);
   - text under 11px (`type`); a wrapped or clipped value; a control under its
     floor (`target`); a field under the phone scale (`zoom`);
   - mismatched heights or widths in one row; a nameless field or icon button;
@@ -1482,6 +1483,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The portal never writes a record. A request is a row the team applies.
 - A sign-in address is text, never a mailto pill.
 - Covers: Client sign-in, Check your email, Access denied, Unable to load.
+- A contact reads its name with Main contact at the right of the line, the
+  role under it, then the reach chips; who signs in is said once, under
+  Portal access. A past meeting is Completed (已完成), a future one Upcoming.
 
 ### Short Links (`workers/links/`, `hi.adspace.me`)
 - The Worker reads `link_resolve(p_slug, p_qr)` with the anon key and gives one
@@ -1677,6 +1681,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `set=`, `new=`, `view=`, `open=`, `wc=`. A refresh lands where the person
   was. There is no path routing on Pages.
 - The URL pushes history only for a record's pane; everything else replaces.
+- A record (client, campaign, report) opens at its top; Back returns to the
+  list's own scroll, and a refresh restores the record's.
 
 ### Infrastructure (established; never re-ask)
 - Hosting is GitHub Pages (`digital.adspace.me` CNAME → `adspaceplt.github.io`).

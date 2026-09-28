@@ -65,7 +65,7 @@
       reply: 'Reply', more: 'More actions',
       document: 'Document', total: 'Total', issued: 'Issued', download: 'Download', noLetters: 'No letters.', offer: 'Letter of Offer',
       reports: 'Social media reports', report: 'Report', published: 'Published', version: 'Version',
-      meetings: 'Content meetings', meeting: 'Meeting', when: 'Date and time', upcoming: 'Upcoming', held: 'Held',
+      meetings: 'Content meetings', meeting: 'Meeting', when: 'Date and time', upcoming: 'Upcoming', held: 'Completed',
       join: 'Join meeting', discussion: 'Content Discussion',
       channel: { onsite: 'On site', google_meet: 'Google Meet', zoom: 'Zoom', other: 'Online' },
       review: 'Content Review', open: 'Open', campaign: 'Creator campaign',
@@ -102,7 +102,7 @@
       reply: '回复', more: '更多操作',
       document: '文件', total: '总额', issued: '已签发', download: '下载', noLetters: '暂无函件。', offer: '报价函',
       reports: '社交媒体报告', report: '报告', published: '已发布', version: '版本',
-      meetings: '内容会议', meeting: '会议', when: '日期与时间', upcoming: '即将举行', held: '已举行',
+      meetings: '内容会议', meeting: '会议', when: '日期与时间', upcoming: '即将举行', held: '已完成',
       join: '加入会议', discussion: '内容讨论',
       channel: { onsite: '现场', google_meet: 'Google Meet', zoom: 'Zoom', other: '线上' },
       review: '内容审阅', open: '打开', campaign: '博主推广',
@@ -662,19 +662,14 @@
       var ct = table('<div class="crm-head svc-row ct-row"><span>' + esc(w.contact) + '</span><span>' + esc(w.reach) + '</span><span></span></div>');
       contacts.forEach(function (k) {
         var row = document.createElement('div');
-        row.className = 'svc-row ct-row';
+        row.className = 'svc-row ct-row is-read';
         var wa = String(k.phone || '').replace(/[^0-9]/g, '');
         row.innerHTML =
-          '<span class="svc-name"><b>' + esc(k.name) + '</b>' +
-            ((k.is_primary || k.portal_access) ? '<span class="cp-tags">' : '') +
-            /* Green is the live state and it is spent once per row: a sign-in
-               is live, a main contact is a designation. The console already
-               reads it that way; this page had the two the wrong way round, so
-               the same two facts about the same person carried opposite
-               colours on the two screens that show them. */
-            (k.is_primary ? '<span class="tone">' + esc(w.mainContact) + '</span>' : '') +
-            (k.portal_access ? '<span class="tone is-ok">' + esc(w.portal) + '</span>' : '') +
-            ((k.is_primary || k.portal_access) ? '</span>' : '') +
+          /* The name with Main contact at the right of its line, as every card
+             puts its chip; the role under it. Who signs in is the Portal
+             access card's to say, so it is not said again here (2026-09-28). */
+          '<span class="svc-name"><span class="ct-top"><b>' + esc(k.name) + '</b>' +
+            (k.is_primary ? '<span class="tone">' + esc(w.mainContact) + '</span>' : '') + '</span>' +
             (k.role ? '<small>' + esc(k.role) + '</small>' : '') + '</span>' +
           '<span class="crm-reach">' +
             (k.phone ? '<a class="plink" href="tel:' + esc(k.phone) + '">' + esc(k.phone) + '</a>' : '') +

@@ -519,7 +519,7 @@ a { color: inherit; }
 .batch-title { font-size: 20px; font-weight: 600; letter-spacing: -.02em; }
 .batch-date { color: var(--ink-mute); font-size: 13px; }
 .batch-note {
-  background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--fill);
+  background: var(--card); border: 1px solid var(--card-line);
   border-radius: 8px; padding: 12px 16px; margin-bottom: 22px; color: var(--ink-soft);
 }
 
@@ -530,7 +530,7 @@ a { color: inherit; }
   align-items: start;
 }
 .card {
-  background: var(--card); border: 1px solid var(--line);
+  background: var(--card); border: 1px solid var(--card-line);
   border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden;
 }
 /* On a phone the placement name, the pixel size and the status ran into each
@@ -1357,7 +1357,7 @@ a { color: inherit; }
 /* Client and content set cards */
 .cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
 .bigcard {
-  text-align: left; background: var(--card); border: 1px solid var(--line);
+  text-align: left; background: var(--card); border: 1px solid var(--card-line);
   border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px;
   display: flex; flex-direction: column; gap: 4px;
   transition: border-color var(--t) var(--ease-out), transform var(--t-fast) var(--ease-out);
@@ -1522,7 +1522,7 @@ a { color: inherit; }
   grid-template-columns: 62px minmax(0, 1fr) auto;
   grid-template-areas: "thumb body actions";
   align-items: center;
-  border: 1px solid var(--line); border-radius: 12px; background: var(--card); margin-bottom: 8px;
+  border: 1px solid var(--card-line); border-radius: 12px; background: var(--card); margin-bottom: 8px;
   transition: border-color var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out);
 }
 .saved:hover { border-color: #d9d9d9; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
@@ -2675,8 +2675,8 @@ body.is-plain .topbar { background: var(--chrome); }
 /* ---------- Notice ---------- */
 .notice {
   display: flex; gap: 11px; align-items: flex-start;
-  border: 1px solid var(--line); border-radius: var(--radius);
-  background: var(--line-soft); padding: 13px 15px; margin-bottom: 18px;
+  border: 0; border-radius: var(--radius);
+  background: var(--sunk); padding: 13px 15px; margin-bottom: 18px;
 }
 .notice svg { width: 17px; height: 17px; flex: 0 0 auto; margin-top: 1px; color: var(--ink-mute); stroke-width: 1.7; }
 .notice b { font-size: 13px; font-weight: 600; margin-right: 4px; }
@@ -2766,7 +2766,7 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 .tally-cell {
   min-width: 0;
-  border: 1px solid var(--line); border-radius: 10px; padding: 10px 13px;
+  border: 0; background: var(--sunk); border-radius: 10px; padding: 10px 13px;
   display: flex; flex-direction: column; gap: 2px;
 }
 .tally-cell b { font-size: 17px; font-weight: 600; letter-spacing: -.02em; }
@@ -2911,7 +2911,7 @@ body.is-plain .topbar { background: var(--chrome); }
    afternoon of scrolling, and the decision is made by opening profiles and
    comparing rates, which a row puts side by side. */
 .listhint { font-size: 13px; color: var(--ink-mute); margin: -4px 0 12px; }
-.clist { border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.clist { border: 1px solid var(--card-line); border-radius: var(--radius); overflow: hidden; }
 /* A comparison, on a screen wide enough to compare on: the placements a fee
    buys are their own column beside it rather than a line under the name, and
    the columns are named, because a fee with nothing over it is a number the
@@ -3061,7 +3061,7 @@ body.is-plain .topbar { background: var(--chrome); }
 /* ---------- QR codes ---------- */
 .qrrow {
   display: flex; gap: 16px; align-items: flex-start;
-  border: 1px solid var(--line); border-radius: var(--radius);
+  border: 1px solid var(--card-line); border-radius: var(--radius);
   padding: 14px 16px; margin-bottom: 10px; background: var(--card);
 }
 .qrrow.is-off { opacity: .55; }
@@ -3157,7 +3157,7 @@ body.is-plain .topbar { background: var(--chrome); }
 
 .kcard {
   position: relative;              /* the actions menu positions against this */
-  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
   margin-bottom: 12px;
 }
 /* A booking waiting on us, marked so a folded one in a list of ten still reads
@@ -3326,7 +3326,7 @@ body.is-plain .topbar { background: var(--chrome); }
    nobody had chosen. */
 .sectionhead { font-size: 16px; font-weight: 600; letter-spacing: -.01em; margin: 24px 0 12px; }
 .booking {
-  border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
+  border: 1px solid var(--card-line); border-radius: var(--radius); background: var(--card);
   padding: 14px 16px; margin-bottom: 9px;
 }
 .booking.is-off { opacity: .6; }
@@ -3400,7 +3400,7 @@ body.is-plain .topbar { background: var(--chrome); }
 /* The engagement, above everything: how many creators, when it is due, the
    invoice and the money. "Your campaign" below is then only the creators. */
 .engage-card {
-  border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
+  border: 1px solid var(--card-line); border-radius: var(--radius); background: var(--card);
   padding: 0; margin: 16px 0 12px;
 }
 .engage-card .booking-facts { margin: 0; }
@@ -3417,7 +3417,7 @@ body.is-plain .topbar { background: var(--chrome); }
 }
 .engage-card .amountfold-btn { margin-block: calc((20px - var(--ctl-h)) / 2); }
 .rollup-card {
-  border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
+  border: 1px solid var(--card-line); border-radius: var(--radius); background: var(--card);
   padding: 14px 16px; margin: 0 0 12px;
 }
 .rollup-head { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
@@ -3458,7 +3458,7 @@ body.is-plain .topbar { background: var(--chrome); }
 /* The invoice is a card of its own, folded to its number. */
 .amountfold {
   margin: 0 0 12px; padding: 6px 16px;
-  border: 1px solid var(--line); border-radius: var(--radius); background: var(--card);
+  border: 1px solid var(--card-line); border-radius: var(--radius); background: var(--card);
 }
 .amountfold-head { display: flex; align-items: center; gap: 12px; }
 .amountfold-btn {
@@ -3836,7 +3836,7 @@ body.is-plain .topbar { background: var(--chrome); }
 .crm-age.is-late { color: var(--warn); font-weight: 600; }
 .crm-c-mkt { font-variant-numeric: tabular-nums; }
 #crmList {
-  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
   padding-top: 12px; overflow: hidden;
 }
 #crmList .crm-row:last-child { border-bottom: 0; }
@@ -3853,7 +3853,7 @@ body.is-plain .topbar { background: var(--chrome); }
    uses. Four bordered cards with gaps between them was a second language for
    a list, on the one page where five other lists are tables. */
 .work-list {
-  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
   overflow: hidden; margin-bottom: 12px;
 }
 .work-row {
@@ -4786,7 +4786,7 @@ body > .shell { width: 100%; }
   display: grid; align-items: start; gap: 4px 16px;
   grid-template-columns: 128px minmax(0, 1fr) auto;
   grid-template-areas: "when body del";
-  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
   padding: 13px 15px; margin-bottom: 8px;
 }
 .touch.is-due { box-shadow: inset 3px 0 0 var(--warn); }
@@ -4808,7 +4808,7 @@ body > .shell { width: 100%; }
    is, and a Done that clears it. Overdue leads and is marked; this week is
    marked more quietly. */
 .due {
-  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
   padding: 14px 16px 6px; margin-bottom: 22px;
 }
 .due-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
@@ -6089,10 +6089,10 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .railnext, .railmiss {
   display: grid; align-items: center; gap: 2px 10px; width: 100%; text-align: left;
   grid-template-columns: auto minmax(0, 1fr) auto;
-  /* A row that opens something keeps an edge, one tone lighter than the
-     rule, so it reads as a control on a card that has no outline of its own
-     (the user's call on 2026-09-22); the billing gate keeps its red. */
-  border: 1px solid var(--line-soft); border-radius: var(--radius-sm);
+  /* A row that opens something is a white row with no edge, as every card
+     is (the user, 2026-09-28, replacing the faint edge of 2026-09-22); its
+     chevron and its hover say it opens. The billing gate keeps its red. */
+  border: 1px solid var(--card-line); border-radius: var(--radius-sm);
   background: var(--card); padding: 10px 11px; min-height: var(--ctl-h);
   font-size: 13.5px; color: var(--ink);
 }
@@ -6565,7 +6565,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    on and keeps its own boundary. */
 .queue {
   display: flex; flex-direction: column;
-  background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--card); border: 1px solid var(--card-line); border-radius: var(--radius);
   overflow: hidden;
 }
 .qrow {
@@ -6717,7 +6717,13 @@ body.is-canvas { overflow: hidden; }
 .cp-card .facts dd { white-space: pre-line; }
 .acc-email { font-size: 13px; color: var(--ink-soft); overflow-wrap: anywhere; }
 /* A contact's marks sit on a line of their own under the name. */
-.cp-tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px; }
+.ct-top { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; min-width: 0; }
+.ct-top > b { flex: 1 1 auto; min-width: 0; }
+.ct-top > .tone { flex: 0 0 auto; }
+/* A contact only read (the client's portal) has no ⋯, so its row is the name
+   over the ways to reach them, and the chip ends at the card's edge. */
+.is-narrow .ct-row.is-read { grid-template-columns: minmax(0, 1fr); grid-template-areas: "name" "reach"; }
+.is-narrow .ct-row.is-read > .team-act { display: none; }
 /* One of the client's own pages: its name, and Open at the right edge. */
 .cp-eng-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
 .cp-open { flex: 0 0 auto; gap: 6px; }
