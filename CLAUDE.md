@@ -1308,6 +1308,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Nobody is told about their own act.
   - The bell re-reads every minute while visible, and on return.
 - The month (engagement):
+  - Made by hand, never derived from the client's service lines (the portal
+    is supplementary: quotations and invoices are issued in Bukku). New
+    month, New task and Make a copy offer last month and the next six
+    (`fillMonths`).
   - Two checks (Onboarding checklist, Pre-advertising checklist), seeded only on
     a client's first month and handed on when that month is deleted
     (`ops_engagements_hand_on_checks`).
