@@ -25,7 +25,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--ink-mute` | `#6b6760` | `#ada8a3` | Labels, hints, quiet buttons (4.5:1 on every ground) |
 | `--line` | `#e2dfd8` | `#3e3b38` | Card borders, table rules |
 | `--line-soft` | `#ececec` | `#2e2e2e` | Row dividers, the selected fill, a hover on `--sunk` |
-| `--line-ctl` | `#8e8a80` | `#898480` | Field and outline borders, 3:1 on every ground |
+| `--line-ctl` | `#8e8e8e` | `#858585` | Field and outline borders: the lightest neutral that holds 3:1 on every ground |
 | `--page` | `#f5f5f5` | `#171717` | The ground (the brand's own off white; never "corrected") |
 | `--card` | `#ffffff` | `#1f1f1f` | Panels, tables, rows |
 | `--sunk` | `#f9f9f9` | `#272727` | Inset areas, table sub-headings, hover |
