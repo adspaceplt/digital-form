@@ -915,7 +915,12 @@
 
   function queryNow() {
     var q = [];
-    if (section !== 'clients') q.push('s=' + section);
+    /* A client's own address reads as Clients from `client=` alone; the bare
+       list names itself, because `/admin/` is a manager's Overview
+       (2026-09-28), and a refresh on the list must stay on the list. */
+    if (section !== 'clients' || !(window.ADspaceCRM && window.ADspaceCRM.urlState().client)) {
+      q.push('s=' + section);
+    }
     if (section === 'review') {
       // The same readable address the Clients section uses.
       if (state.client) q.push('client=' + encodeURIComponent(clientKey(state.client)));

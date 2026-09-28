@@ -1062,8 +1062,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### Overview (`js/overview.js`, `?s=overview`)
 - The start page of an admin or a group holding Manage on any section or
   part (`managesAny()`): `firstAllowed()` lists it first, so `/admin/` with
-  no `?s=` lands there. It has no key of its own; anyone else is never
-  offered the row and its address falls back.
+  no `?s=` lands there, and every other page names itself (the Clients list
+  writes `s=clients`; a client's record reads as Clients from `client=`
+  alone). It has no key of its own; anyone else is never offered the row
+  and its address falls back.
 - Each card asks its own `may()` before any read; a card not readable is not
   drawn, and a section with no cards takes its heading. Sections in the
   rail's order: My Work (Late tasks, `ops.reports`; Open work by person,

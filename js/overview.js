@@ -160,7 +160,7 @@
 
     { head: 'Clients', cards: [
       { key: 'cold', title: 'Leads going cold', can: function () { return may('clients'); },
-        all: ['/admin/', 'clients'], warn: true, empty: 'No leads over their time.',
+        all: ['/admin/?s=clients', 'clients'], warn: true, empty: 'No leads over their time.',
         load: function () {
           return db.from('clients').select('id, name, slug, stage, stage_since, owner, created_at')
             .in('stage', ['lead', 'proposal']).then(rows).then(function (list) {
@@ -201,7 +201,7 @@
           });
         } },
       { key: 'requests', title: 'Unanswered requests', can: function () { return may('clients.requests'); },
-        all: ['/admin/', 'clients'], empty: 'No requests waiting.',
+        all: ['/admin/?s=clients', 'clients'], empty: 'No requests waiting.',
         load: function () {
           return db.from('client_requests').select('id, kind, service_label, state, created_at, client_id, clients(id, name, slug)')
             .in('state', ['requested', 'reviewing']).is('withdrawn_at', null).order('created_at', { ascending: true })
