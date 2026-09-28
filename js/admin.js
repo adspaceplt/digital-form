@@ -1251,7 +1251,7 @@
      whose month, who. Never a score, a grade or a dispute's words. */
   var PERF_STEP = { released: 'Review released', disputed: 'Review disputed', decided: 'Dispute answered',
                     acknowledged: 'Review acknowledged', finalised: 'Review finalised', reopened: 'Review reopened',
-                    returned: 'Returned to draft', printed: 'Record downloaded', deleted: 'Record deleted' };
+                    returned: 'Reverted to draft', printed: 'Record downloaded', deleted: 'Record deleted' };
 
   /* The section only appears for people on the viewer list. The database
      enforces this too, so hiding it here is convenience rather than the
@@ -2902,7 +2902,7 @@
         var n = (r.data || []).length;
         $('savedCount').textContent = n
           ? n + ' post' + (n === 1 ? '' : 's') + ' in this set.'
-          : 'Nothing added yet.';
+          : 'No posts.';
         if (!n) { settleScroll(); return; }
 
         var ids = r.data.map(function (p) { return p.id; });
@@ -3214,13 +3214,12 @@
   /* Both hosts open, because the fastest way to know a redirector is alive is
      to follow it, and the bare host answers rather than refusing: the Worker
      sends it to the website, since somebody who types it has half a URL. Drawn
-     the way the Register's routenote draws /verify — an underlined link in a
-     new tab, no external mark, because the quiet line is a fact and not a row
-     of controls. */
+     the way the Register's routenote draws /verify: the outlined chip inline
+     in its sentence, in a new tab (no underlined words, 2026-09-28). */
   if ($('linkNote')) $('linkNote').innerHTML = 'Short links redirect from ' +
     hostLink(LINK_HOST) + '. Codes printed with ' + hostLink('go.adspace.me') + ' keep working.';
   function hostLink(h) {
-    return '<a href="https://' + esc(h) + '" target="_blank" rel="noopener">' + esc(h) + '</a>';
+    return '<a class="plink" href="https://' + esc(h) + '" target="_blank" rel="noopener">' + esc(h) + '</a>';
   }
   var links = [];
   var editingSlug = null;
@@ -3295,7 +3294,7 @@
     box.innerHTML = '';
     if (!links.length) {
       box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
-        '<b>No short links yet.</b>' +
+        '<b>No short links.</b>' +
         '<button class="btn btn-sm" data-a="first" type="button">Add the first link</button>' +
         '</div></div>';
       box.querySelector('[data-a="first"]').addEventListener('click', function () { openLinkForm(null, this); });

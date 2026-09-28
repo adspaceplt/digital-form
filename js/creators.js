@@ -996,9 +996,10 @@
   function platsOf(o) {
     // The console stores the placement by its printed name ("rednote, Instagram"),
     // and older rows carry the key, so both resolve to the same word.
-    var key = { rednote: 'xhs', Instagram: 'instagram', TikTok: 'tiktok', Facebook: 'facebook' };
+    // Matched without case, because older rows hold what was typed ("RedNote").
+    var key = { rednote: 'xhs', xhs: 'xhs', xiaohongshu: 'xhs', instagram: 'instagram', tiktok: 'tiktok', facebook: 'facebook' };
     return String(o.platforms || '').split(',').map(function (s) { return s.trim(); })
-      .filter(Boolean).map(function (p) { return t().platform[key[p] || p] || p; });
+      .filter(Boolean).map(function (p) { var k = key[p.toLowerCase()] || p; return t().platform[k] || p; });
   }
 
   function redraw() { paintCards(); paintProgress(); save(); }

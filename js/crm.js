@@ -448,7 +448,7 @@
       if (state.clients.length) {
         UI.emptyLine(box, 'No matches.', 'Clear the filters', clearFilters);
       } else {
-        UI.emptyLine(box, 'No clients yet.', 'Add the first lead', function () { $('crmNew').click(); });
+        UI.emptyLine(box, 'No clients.', 'Add the first lead', function () { $('crmNew').click(); });
       }
       return;
     }
@@ -1107,7 +1107,7 @@
   function ovContact(c) {
     var list = state.contacts || [];
     if (!list.length) {
-      return ovSection('Contact details', 'contacts', 'Edit', ovNone('No contacts yet.'), true);
+      return ovSection('Contact details', 'contacts', 'Edit', ovNone('No contacts.'), true);
     }
     var m = list.filter(function (x) { return x.is_primary; })[0] || list[0];
     var rows = [['Main contact', '<b>' + esc(m.name || '') + '</b>' +
@@ -1522,7 +1522,7 @@
       ' removes the record and everything filed under it. This is immediate and cannot be undone.';
     $('cdelList').innerHTML = (gone.length
       ? gone.map(function (g) { return '<li>' + esc(g) + '</li>'; }).join('')
-      : '<li>Nothing has been filed under this client yet.</li>') +
+      : '<li>No entries.</li>') +
       '<li>Any content sets and campaigns on this client, with everything in them.</li>';
     $('cdelConfirm').value = '';
     if ($('cdelCode')) $('cdelCode').value = '';
@@ -1744,9 +1744,9 @@
     var box = $('crmBrandRead');
     if (!box) return;
     var handle = function (k, label) {
-      return c[k] ? '<a class="readlink" href="' + esc(profileUrl(k, c[k])) + '" target="_blank" rel="noopener">' + esc(c[k]) + '</a>' : '';
+      return c[k] ? '<a class="plink" href="' + esc(profileUrl(k, c[k])) + '" target="_blank" rel="noopener">' + esc(c[k]) + '</a>' : '';
     };
-    var site = c.website ? '<a class="readlink" href="' + esc(/^https?:/i.test(c.website) ? c.website : 'https://' + c.website) +
+    var site = c.website ? '<a class="plink" href="' + esc(/^https?:/i.test(c.website) ? c.website : 'https://' + c.website) +
       '" target="_blank" rel="noopener">' + esc(c.website.replace(/^https?:\/\//i, '').replace(/\/$/, '')) + '</a>' : '';
     var logo = c.logo_url ? '<span class="readlogo"><img src="' + esc(c.logo_url) + '" alt="" onerror="this.remove()"></span>Set' : '';
     box.innerHTML =

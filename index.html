@@ -32,18 +32,18 @@
 <meta property="og:url" content="https://digital.adspace.me/">
 <meta property="og:title" content="ADspace | Digital Marketing Agency in Johor Bahru &amp; Singapore">
 <meta property="og:description" content="Advertising, marketing and branding for 80+ leading and listed brands across Malaysia and Singapore. Visits to our Johor Bahru office by appointment.">
-<meta property="og:image" content="https://digital.adspace.me/img/front-door-1200.jpg">
+<meta property="og:image" content="https://digital.adspace.me/img/front-door-1200.jpg?v=20260928">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="675">
 <meta property="og:image:alt" content="A photo shoot set up at ADspace">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ADspace | Digital Marketing Agency in Johor Bahru &amp; Singapore">
 <meta name="twitter:description" content="Advertising, marketing and branding for 80+ leading and listed brands across Malaysia and Singapore.">
-<meta name="twitter:image" content="https://digital.adspace.me/img/front-door-1200.jpg">
+<meta name="twitter:image" content="https://digital.adspace.me/img/front-door-1200.jpg?v=20260928">
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
 <link rel="preload" as="font" type="font/ttf" href="/css/OPTIMA.TTF" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260928d">
-<script src="/js/config.js?v=20260928d"></script>
+<link rel="stylesheet" href="/css/portal.css?v=20260928g">
+<script src="/js/config.js?v=20260928g"></script>
 <!-- What a search engine reads about ADspace: the business, its office and
      the site. The WhatsApp line is the wa.me address, never the number. -->
 <script type="application/ld+json">
@@ -79,7 +79,7 @@
       "name": "ADspace",
       "parentOrganization": { "@id": "https://adspacestudios.com/#organization" },
       "url": "https://digital.adspace.me/",
-      "image": "https://digital.adspace.me/img/front-door-1200.jpg",
+      "image": "https://digital.adspace.me/img/front-door-1200.jpg?v=20260928",
       "logo": "https://mycdn.adspace.me/adspace-brandname.png",
       "email": "advertise@adspacestudios.com",
       "areaServed": ["MY", "SG"],
@@ -112,7 +112,7 @@
 </head>
 <body class="lp">
 
-<script src="/js/chrome.js?v=20260928d" data-kicker="Creative Advertising Agency"></script>
+<script src="/js/chrome.js?v=20260928g" data-kicker="Creative Advertising Agency"></script>
 
 <main class="lp-main">
 
@@ -159,14 +159,15 @@
 
   <!-- One photograph, edge to edge: a shoot set up at ADspace (the user,
        2026-09-28), whole at the 16:9 it was cut to. Four widths, WebP where
-       the browser reads it. -->
+       the browser reads it. It offers no Save Image, right-click menu, drag
+       or iPhone Save to Photos; a screenshot cannot be stopped. -->
   <figure class="lp-hero">
     <picture>
       <source type="image/webp" sizes="100vw"
-              srcset="/img/front-door-800.webp 800w, /img/front-door-1200.webp 1200w, /img/front-door-2000.webp 2000w, /img/front-door-2560.webp 2560w">
-      <img src="/img/front-door-1200.jpg" sizes="100vw"
-           srcset="/img/front-door-800.jpg 800w, /img/front-door-1200.jpg 1200w, /img/front-door-2000.jpg 2000w, /img/front-door-2560.jpg 2560w"
-           width="2560" height="1439" alt="A photo shoot set up at ADspace" fetchpriority="high">
+              srcset="/img/front-door-800.webp?v=20260928 800w, /img/front-door-1200.webp?v=20260928 1200w, /img/front-door-2000.webp?v=20260928 2000w, /img/front-door-2560.webp?v=20260928 2560w">
+      <img src="/img/front-door-1200.jpg?v=20260928" sizes="100vw"
+           srcset="/img/front-door-800.jpg?v=20260928 800w, /img/front-door-1200.jpg?v=20260928 1200w, /img/front-door-2000.jpg?v=20260928 2000w, /img/front-door-2560.jpg?v=20260928 2560w"
+           width="2560" height="1440" alt="A photo shoot set up at ADspace" fetchpriority="high" draggable="false">
     </picture>
   </figure>
 
@@ -211,6 +212,11 @@
 </main>
 
 <script>
+/* The photograph offers no Save Image: no right-click menu over it. */
+(function () {
+  var hero = document.querySelector('.lp-hero');
+  if (hero) hero.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+})();
 /* The week from today, in Malaysia time whatever the visitor's own clock
    says: Monday to Friday, 10:00 to 18:00. Drawn on arrival and again every
    minute and on return to the tab, so a page left open rolls to the next

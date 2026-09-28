@@ -210,8 +210,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     `space-between`); the ticks in the brand's monochrome (`--fill` with an
     `--on-fill` tick);
   - one photograph, whole at 16:9 and full width up to 1920
-    (`img/front-door-{800,1200,2000,2560}`, WebP with a JPEG fallback), which
-    is also the og:image;
+    (`img/front-door-{800,1200,2000,2560}`, WebP with a JPEG fallback, each
+    URL stamped `?v=` so a replaced photo is fetched again), which is also the
+    og:image; it offers no drag, right-click menu or iPhone Save to Photos
+    (a screenshot cannot be stopped);
   - above 900: the name, the ticks, the photograph; at 900 and under (the
     ticks as a list): the name, the photograph, the list
     (`.lp-band, .lp-duo { order: 1 }`), the markup keeping the desk's order;
@@ -345,7 +347,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `failLine`) and `initials`. **A failed read is never drawn as an empty list.**
   - `fit` writes `is-narrow` (≤640) and `is-tight` (≤460) on `.console-body`,
     `.rec-pane` and `.rec-rail` from a `ResizeObserver`. A list may state its
-    own line (`data-narrow="860"`).
+    own line (`data-narrow="860"`), and a sheet outside the console body
+    states one to be fitted at all (`#taskDrawer` `data-narrow="460"`).
   - Never container queries: they contain the fixed ⋯ menus.
 - `js/group.js` draws every directory card:
   `ADspaceGroup.section({route, key, memo, name, count, marks, shut, table})`,

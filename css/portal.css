@@ -1338,13 +1338,20 @@ a { color: inherit; }
 }
 .backlink svg { width: 15px; height: 15px; }
 .backlink:hover { color: var(--ink); background: var(--line-soft); border-color: var(--line); }
+/* A small act beside what it changes (Change, Remove, Add Chinese caption, a
+   suggested figure): a quiet button at the control floor that gives its
+   height back to the line, never an underlined word (the user, 2026-09-28:
+   no text links in the portal). */
 .linkbtn {
-  border: 0; background: none; padding: 0; color: var(--ink-mute);
-  font-size: 12.5px; text-decoration: underline; text-underline-offset: 2px;
+  display: inline-flex; align-items: center; gap: 4px;
+  min-height: var(--ctl-h); margin-block: calc((20px - var(--ctl-h)) / 2); padding: 0 8px;
+  border: 0; border-radius: var(--radius-sm); background: none; cursor: pointer;
+  color: var(--ink-soft); font: inherit; font-size: 12.5px; font-weight: 500; text-decoration: none;
 }
-.linkbtn:hover { color: var(--ink); }
+@media (hover: hover) { .linkbtn:hover { background: var(--line-soft); color: var(--ink); } }
 .linkbtn.is-danger { color: var(--err); }
-.linkbtn.is-danger:hover { color: var(--err-hi); }
+@media (hover: hover) { .linkbtn.is-danger:hover { background: var(--err-bg); color: var(--err-hi); } }
+.linkbtn .ovgo-chev { width: 14px; height: 14px; flex: 0 0 auto; }
 .dangerrow { margin-top: 14px; }
 
 /* Client and content set cards */
@@ -4144,8 +4151,11 @@ body > .shell { width: 100%; }
 /* Overdue carries the word as well as the colour, so the mark survives
    greyscale and a reader who cannot tell warn from mute. */
 .task-due.is-over > b { color: var(--warn); font-weight: 600; }
-/* Priority rides the meta line as a chip, only where it is the exception. */
-.task-open small .task-pri { vertical-align: 1px; margin-left: 2px; }
+/* Priority is a chip at the right end of the title line, only where it is
+   the exception. */
+.task-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.task-top > b { flex: 1 1 auto; }
+.task-top > .task-pri { flex: 0 0 auto; }
 .is-narrow .task-row > .task-due > small { display: none; }
 .task-go { display: inline-flex; align-items: center; justify-content: flex-end; color: var(--ink-mute); }
 .task-go .crm-chev { width: 16px; height: 16px; }
@@ -4339,8 +4349,10 @@ body > .shell { width: 100%; }
 .tnext-month { margin-top: 12px; }
 /* The head keeps its control on the right wherever the name has 200px
    beside it, which the narrow pane does; only the tight one stacks. */
-.is-tight .eng-head { grid-template-columns: minmax(0, 1fr); }
-.is-tight .eng-ctl { justify-content: flex-start; }
+/* The state and its ⋯ keep the head's right edge on a phone too; the facts
+   wrap in the column beside them. */
+.is-tight .eng-head { align-items: start; }
+.is-tight .eng-ctl { justify-content: flex-end; }
 .eng-open { display: inline-block; margin-top: 8px; font-size: 13px; }
 
 /* A checklist item is a statement that something was done, so the row is the
@@ -4400,7 +4412,6 @@ body > .shell { width: 100%; }
 .ovlinks a, .ovlinks li > span:last-child {
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.ovlinks a { color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
 .timer-run { font-size: 17px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 
 .ovnote { margin: 0 0 8px; font-size: 13.5px; color: var(--ink); overflow-wrap: anywhere; }
@@ -4576,22 +4587,20 @@ body > .shell { width: 100%; }
    it has got to, and what the booking is. The state keeps a line it can be
    read down rather than sharing one with a summary that would squeeze it. */
 .is-tight .bookreg-head { display: none; }
-/* Two lines, not three. The state and the summary share the second line — the
-   chip keeps its own width and the summary takes what is left — so a collapsed
-   booking on a phone is about 70px rather than 119, and six of them can be
-   read without scrolling past three. */
+/* Two lines, not three: the name with its state and ⋯ at the right edge, as
+   every card head in the portal reads, then the summary under the name. */
 .is-tight .bookreg .kcard-head {
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-areas: "lead name act" "lead tags sum";
-  gap: 4px 10px; align-items: center; padding: 10px 14px;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  grid-template-areas: "lead name tags act" "lead sum sum sum";
+  gap: 2px 8px; align-items: center; padding: 10px 8px 10px 14px;
 }
 .is-tight .bookreg .kcard-lead { grid-area: lead; }
 .is-tight .bookreg .kcard-name { grid-area: name; }
 .is-tight .bookreg .kcard-act { grid-area: act; justify-self: end; }
-.is-tight .bookreg .kcard-tags { grid-area: tags; justify-self: start; }
+.is-tight .bookreg .kcard-tags { grid-area: tags; justify-self: end; flex-wrap: nowrap; }
 .is-tight .bookreg .kcard-sum {
   grid-area: sum; white-space: nowrap; overflow: hidden;
-  text-overflow: ellipsis; text-align: right;
+  text-overflow: ellipsis; text-align: left; color: var(--ink-mute);
 }
 /* On a phone these are named areas, so an empty one is a blank line held
    open by the gap and can safely leave. */
@@ -5562,7 +5571,6 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    once left it stranded in the middle of the bar. */
 /* Retired 2026-09-22: the section's name in the console head is what opens
    the line now, because that is what the line is about. */
-.routenote a { color: var(--ink-soft); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
 @media (pointer: coarse) {
   .hintbtn { font-size: 13px; }
 }
@@ -5998,8 +6006,8 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .lhist-when { font-size: 13px; font-weight: 600; color: var(--ink); }
 .lhist-who { flex: 1 1 auto; min-width: 0; font-size: 12.5px; color: var(--ink-mute); }
 .lhist-diff { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; }
-.lhist-diff li { display: flex; align-items: baseline; gap: 8px; min-width: 0; color: var(--ink-soft); }
-.lhist-diff a { min-width: 0; overflow-wrap: anywhere; color: var(--ink); }
+.lhist-diff li { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; color: var(--ink-soft); }
+.lhist-diff .plink { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
 /* The creator's head: who they are and one control, no mark (a creator has
    no artwork on file), and their profile links under a hairline. On a phone
    the control keeps its line beside the name rather than taking a row. */
@@ -6840,8 +6848,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    way there sits under the facts it changes, on their margin. */
 #perfProfileSheet .pp-edit { margin-top: 8px; min-width: 0; padding-inline: 0; }
 .ovfacts dd.is-pre { white-space: pre-line; }
-.readlink { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-ctl); text-underline-offset: 2px; }
-@media (hover: hover) { .readlink:hover { text-decoration-color: var(--ink); } }
 .readlogo { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 8px; vertical-align: middle;
   border-radius: 50%; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
 .readlogo img { width: 100%; height: 100%; object-fit: cover; }
@@ -6862,11 +6868,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .is-narrow .ovrow-svc > :nth-child(2), .is-narrow .ovrow-doc > :nth-child(2) { grid-area: dim; }
 .is-narrow .ovrow-svc > :nth-child(3), .is-narrow .ovrow-doc > :nth-child(3) { grid-area: amt; justify-self: end; }
 .is-narrow .ovrow-svc > :nth-child(4), .is-narrow .ovrow-doc > :nth-child(4) { grid-area: state; justify-self: end; }
-/* Bookings: name and fee on the first line, where they post and where the
-   work has got to on the second. */
+/* Bookings: name and where the work has got to on the first line, where
+   they post and the fee on the second, as the Selection pane reads. */
 .is-narrow .ovrow-book {
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "name amt" "dim state"; gap: 3px 12px;
+  grid-template-areas: "name state" "dim amt"; gap: 3px 12px;
 }
 .is-narrow .ovrow-book > :nth-child(1) { grid-area: name; }
 .is-narrow .ovrow-book > :nth-child(2) { grid-area: dim; }
@@ -7554,7 +7560,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 }
 .tfacts .linkbtn[hidden], .towner[hidden], .towner-pick[hidden] { display: none; }
 .towner-pick { max-width: 100%; }
-.tlink { color: var(--ink); text-decoration: underline; text-underline-offset: 2px; }
+.tlink { margin-left: 2px; }
 /* A date is the row's own control: the value and a pen, at the control
    floor, with a negative block margin so a 38px target does not set the
    height of a 20px line. */
@@ -7815,10 +7821,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 @media (hover: hover) { .qstar:hover { background: var(--line-soft); } }
 .qstar:active { transform: scale(.94); }
 .qrate-note { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-mute); }
-.qfull {
-  align-self: flex-start; display: inline-flex; align-items: center; min-height: var(--ctl-h);
-  font-size: 13px; color: var(--ink-soft); text-decoration: underline; text-underline-offset: 2px;
-}
+.qfull { align-self: flex-start; margin-block: 0; margin-left: -8px; font-size: 13px; }
 .stephand { margin-top: 12px; }
 .stephand[hidden] { display: none; }
 .stephand .tickline { margin: 0; }
@@ -7836,7 +7839,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   .qhead { padding: 10px 16px 12px; border-radius: var(--radius) var(--radius) 0 0; }
   .sheet-side .qbody { padding: 12px 12px calc(20px + env(safe-area-inset-bottom, 0px)); gap: 12px; }
   .qcard { padding: 16px 16px; }
-  .qnext-acts .btn { flex: 1 1 0; min-width: 0; }
+  .qnext-acts .btn { flex: 1 1 0; min-width: 0; white-space: nowrap; }
+  /* A third action takes its own line, so the pair keeps one width each. */
+  .qnext-acts > .btn:nth-child(3) { flex-basis: 100%; }
   .qform-acts .btn { flex: 1 1 0; min-width: 0; }
   /* One field over the other. A column row keeps each field at its own
      height: `.row > div`'s 180px basis is a height in a column, and it drew
@@ -8807,6 +8812,8 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .lp-hero { margin: 0 auto; max-width: 1920px; aspect-ratio: 16 / 9; overflow: hidden; background: var(--line-soft); }
 .lp-hero picture, .lp-hero img { display: block; width: 100%; height: 100%; }
 .lp-hero img { max-width: none; object-fit: cover; }
+/* No drag, no selection and no iPhone Save to Photos over the photograph. */
+.lp-hero, .lp-hero img { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
 /* At a desk the ways in come under the name, as on Apple's page; once they
    read down as a list, the photograph comes under the name and the list
    follows it (the user, 2026-09-28). The markup keeps the desk's order, and
@@ -8908,3 +8915,12 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .kmenu > .kmenu-item, .kmenu .kmenu-item { border-radius: calc(var(--radius) - 6px); }
 /* The bell's list is padded 8. */
 .kmenu.notif-menu .notif-item { border-radius: calc(var(--radius) - 9px); }
+/* The command bar's controls are 32px, so they take the small corner. */
+.cmdbar .btn, .cmdbar .select, .cmdbar-find .input, .cmdbar-views, .cmdbar-views .acttab { border-radius: var(--radius-ctl-sm); }
+.cmdbar-views.has-thumb::before { border-radius: calc(var(--radius-ctl-sm) - 2px); }
+/* A standing fact's link (the verify page, the redirect hosts) is the
+   outlined chip, inline in its sentence. */
+.routenote .plink { margin-block: -4px; vertical-align: baseline; font-size: 12.5px; padding: 3px 9px; }
+/* A chip holding a typed address (a website, a profile, a past link) may
+   wrap rather than widen its row. */
+.readgroup .plink, .lhist-diff .plink { white-space: normal; overflow-wrap: anywhere; text-align: left; }

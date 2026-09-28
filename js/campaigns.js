@@ -326,7 +326,7 @@
 
     box.innerHTML = '';
     if (!state.creators.length) {
-      UI.emptyLine(box, 'No creators yet.', 'Add the first creator', function () {
+      UI.emptyLine(box, 'No creators.', 'Add the first creator', function () {
         $('showAddCreator').click();
       });
       return;
@@ -482,7 +482,7 @@
               '<button class="btn btn-sm" type="button" data-restore="' + esc(h.id) + '">Restore</button></div>' +
             '<ul class="lhist-diff">' + d.map(function (x) {
               return '<li><span class="tone ' + x.tone + '">' + x.word + '</span> ' +
-                esc(PLATFORM_LABEL[x.p.platform] || x.p.platform) + ' <a href="' + esc(x.p.url) + '" target="_blank" rel="noopener">' + esc(x.p.url) + '</a></li>';
+                esc(PLATFORM_LABEL[x.p.platform] || x.p.platform) + ' <a class="plink" href="' + esc(x.p.url) + '" target="_blank" rel="noopener">' + esc(x.p.url.replace(/^https?:\/\/(www\.)?/i, '')) + '</a></li>';
             }).join('') + '</ul>' +
           '</div>';
         }).join('');
@@ -1907,7 +1907,7 @@
     if (!box) return;
     var rows = live.filter(function (o) { return CHARGED.indexOf(o.state) > -1; });
     if (!rows.length) {
-      UI.emptyLine(box, 'No creators booked yet.', 'Go to Creators', function () {
+      UI.emptyLine(box, 'No creators booked.', 'Go to Creators', function () {
         showCampPane('creators'); pushUrl();
       });
       return;
@@ -2050,7 +2050,7 @@
     if (!box) return;
     var rows = live.filter(function (o) { return ((state.files || {})[o.id] || []).length || o.draft_url; });
     if (!rows.length) {
-      UI.emptyLine(box, 'Nothing handed in yet.');
+      UI.emptyLine(box, 'Nothing handed in.');
       return;
     }
     box.innerHTML = '';
@@ -2091,7 +2091,7 @@
     var waiting = live.filter(function (o) {
       return o.state !== 'backup' && CHARGED.indexOf(o.state) < 0;
     });
-    if (!live.length) { UI.emptyLine(box, 'No creators offered yet.'); return; }
+    if (!live.length) { UI.emptyLine(box, 'No creators offered.'); return; }
     var t = document.createElement('div');
     t.className = 'crm-table softpanel';
     t.innerHTML = '<div class="crm-head svc-row pick-row"><span>Creator</span><span>Placements</span>' +
@@ -2108,7 +2108,7 @@
       el.className = 'svc-row pick-row';
       el.innerHTML =
         '<span class="pick-who"><b>' + esc((o.creators || {}).name || '') + '</b></span>' +
-        '<span class="pick-plat">' + esc(o.platforms || '') + '</span>' +
+        '<span class="pick-plat">' + esc(platformsOf(o).map(platWord).join(' · ')) + '</span>' +
         '<span class="svc-rate">' + esc(money(o.rate)) + '</span>' +
         '<span class="pick-state"><span class="tone ' + esc(w[1] || '') + '">' + esc(w[0]) + '</span></span>';
       t.appendChild(el);
@@ -2238,7 +2238,7 @@
     box.innerHTML = '';
     box.className = '';
     if (!state.options.length) {
-      UI.emptyLine(box, 'No creators yet.', 'Add creators', function () { $('showAddOption').click(); });
+      UI.emptyLine(box, 'No creators.', 'Add creators', function () { $('showAddOption').click(); });
     } else {
       /* One surface with a header over it, not a stack of bordered cards: ten
          bookings were ten floating panels with 12px of page ground between
@@ -2368,14 +2368,14 @@
      has got to, and what it costs — the four things anybody asks — on one grid
      so a column starts at the same x on every row. */
   function ovBookings(live) {
-    if (!live.length) return ovSec('Bookings', 'creators', 'Creators', ovNone('No creators offered yet.'));
+    if (!live.length) return ovSec('Bookings', 'creators', 'Creators', ovNone('No creators offered.'));
     var rows = live.slice().sort(function (a, b) {
       return (cardRank(a) - cardRank(b)) || (Number(a.position || 0) - Number(b.position || 0));
     }).slice(0, 8).map(function (o) {
       var w = OPTION_WORD[o.state] || [o.state, ''];
       return '<div class="ovrow ovrow-book">' +
         '<span class="ovname">' + esc((o.creators || {}).name || '') + '</span>' +
-        '<span class="ovdim">' + esc(platformsOf(o).join(' · ') || '—') + '</span>' +
+        '<span class="ovdim">' + esc(platformsOf(o).map(platWord).join(' · ') || '—') + '</span>' +
         '<span><span class="tone ' + esc(w[1] || 'tone-plain') + '">' + esc(w[0]) + '</span></span>' +
         '<span class="ovamt">' + esc(money(o.rate)) + '</span></div>';
     }).join('');
@@ -2391,7 +2391,7 @@
      so this is the same set the Schedule pane reads and never a second store. */
   function ovDates(live) {
     var rows = live.filter(function (o) { return CHARGED.indexOf(o.state) > -1; });
-    if (!rows.length) return ovSec('Schedule', 'schedule', 'Schedule', ovNone('Nothing booked yet.'));
+    if (!rows.length) return ovSec('Schedule', 'schedule', 'Schedule', ovNone('No bookings.'));
     /* The column heading leaves with the header on a phone, so each date
        carries its own caption, shown only where the header is not. Two
        unlabelled dates stacked under each other are two dates nobody reads. */
@@ -2418,7 +2418,7 @@
     var rows = live.filter(function (o) {
       return ((state.files || {})[o.id] || []).length || o.draft_url;
     });
-    if (!rows.length) return ovSec('Deliverables', 'creators', 'Creators', ovNone('Nothing handed in yet.'));
+    if (!rows.length) return ovSec('Deliverables', 'creators', 'Creators', ovNone('Nothing handed in.'));
     var body = rows.slice(0, 6).map(function (o) {
       var n = ((state.files || {})[o.id] || []).length;
       var w = OPTION_WORD[o.state] || [o.state, ''];
@@ -3077,7 +3077,7 @@
     var dead = o.state === 'withdrawn' || o.state === 'replaced';
     var agreed = live || o.state === 'shortlisted';
     var canEdit = ['option', 'backup', 'shortlisted'].indexOf(o.state) > -1;
-    var plats = platformsOf(o).join(' · ');
+    var plats = platformsOf(o).map(platWord).join(' · ');
     var advance = live ? nextState(o.state) : null;
     var back = live ? prevState(o.state, o) : null;
 
@@ -3992,6 +3992,12 @@
     });
   }
 
+  /* A placement as the page names it. Older rows hold what somebody typed
+     ("RedNote", "xhs"); the stored value is left alone and only the word
+     shown is the portal's own. */
+  var PLAT_WORD = { rednote: 'rednote', xhs: 'rednote', xiaohongshu: 'rednote', '小红书': 'rednote',
+    instagram: 'Instagram', ig: 'Instagram', tiktok: 'TikTok', facebook: 'Facebook', fb: 'Facebook' };
+  function platWord(p) { return PLAT_WORD[String(p || '').toLowerCase()] || p; }
   function platformsOf(o) {
     return String(o.platforms || '').split(',').map(function (s) { return s.trim(); })
       .filter(Boolean);

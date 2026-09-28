@@ -14,8 +14,8 @@
  * in the team's words. A report is edited only while it is a draft.
  *
  *   Draft      Submit for review            reports Work
- *   In review  Confirm / Return             Manage, never the submitter
- *   Confirmed  Publish to client / Return   Manage
+ *   In review  Confirm / Send back          Manage, never the submitter
+ *   Confirmed  Publish to client / Send back Manage
  *   Published  Revise, Unpublish            Work / Manage
  *
  * The PDF is drawn in the browser by js/smreport.js from the database's own
@@ -417,7 +417,7 @@
         '<button class="btn btn-sm rp-pdf" type="button" data-a="pdf" aria-label="' + (r.status === 'published' ? 'Download PDF' : 'Preview PDF') + '">' + ICON.file +
           '<span class="rp-pdf-long">' + (r.status === 'published' ? 'Download PDF' : 'Preview PDF') + '</span><span class="rp-pdf-short">PDF</span></button>' +
         moreMenu(r, live) + '</div></div>' +
-      (r.status === 'draft' && r.return_note ? '<p class="rp-note is-warn"><b>Returned:</b> ' + esc(r.return_note) + '</p>' : '') +
+      (r.status === 'draft' && r.return_note ? '<p class="rp-note is-warn"><b>Sent back:</b> ' + esc(r.return_note) + '</p>' : '') +
       '<div class="msg" data-m="head"></div></section>' +
       '<nav class="rp-steps" aria-label="Steps"></nav>' +
       '<div class="rp-stepbox"></div>';
@@ -531,7 +531,7 @@
     if (r.status === 'confirmed' && may('manage')) acts.push('<button class="btn btn-go" type="button" data-a="publish">Publish to client</button>');
     if (r.status === 'published' && may('work')) acts.push('<button class="btn" type="button" data-a="revise">Revise</button>');
     if ((r.status === 'review' && (may('manage') || mine)) || (r.status === 'confirmed' && may('manage'))) {
-      acts.push('<button class="btn" type="button" data-a="return">' + (r.status === 'review' && mine && !may('manage') ? 'Take back' : 'Return') + '</button>');
+      acts.push('<button class="btn" type="button" data-a="return">' + (r.status === 'review' && mine && !may('manage') ? 'Take back' : 'Send back') + '</button>');
     }
     if (r.status === 'draft' && missing.length) wait = 'Add ' + missing.map(function (s) { return s[1].toLowerCase(); }).join(' and ') + ' to submit.';
     else if (r.status === 'review' && mine && may('manage')) wait = 'Waiting on another manager to confirm.';
@@ -594,8 +594,8 @@
         function () { stepCall('sm_report_revise', { p_id: r.id }, 'Version ' + (r.version_no + 1) + ' is a draft.', b, m); });
     });
     on('return', function (b) {
-      window.ADspaceConfirm.ask({ title: 'Return to draft?', go: 'Return', field: { label: 'What needs changing', rows: 3, need: 'Say what needs changing.' } },
-        function (note) { stepCall('sm_report_return', { p_id: r.id, p_note: note }, 'Returned to draft.', b, m); });
+      window.ADspaceConfirm.ask({ title: 'Send back to draft?', go: 'Send back', field: { label: 'What needs changing', rows: 3, need: 'Say what needs changing.' } },
+        function (note) { stepCall('sm_report_return', { p_id: r.id, p_note: note }, 'Sent back to draft.', b, m); });
     });
   }
 
