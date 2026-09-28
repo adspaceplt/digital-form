@@ -125,7 +125,7 @@
     'denied': 'Your group cannot open performance reviews.',
     'not-team': 'Only a team member can open this.',
     'own-review': 'Your own review is not yours to change.',
-    'not-draft': 'A released month keeps its scores. Return it to draft to change them.',
+    'not-draft': 'A released month keeps its scores. Revert it to draft to change them.',
     'incomplete': 'Score all six categories first.',
     'no-staff-code': 'Set their Employee ID on the Team page first. The reference is built from it.',
     'stale': 'Somebody else changed this review. It has been reloaded.',
@@ -442,7 +442,7 @@
     el.setAttribute('data-member', p.team_member_id);
     var meta = [DEPT_WORD[p.department], ROLE_WORD[p.role_family]].filter(Boolean);
     if (p.breaches) meta.push(p.breaches + (p.breaches === 1 ? ' breach' : ' breaches'));
-    var sum = res && res.complete ? [num(res.final), res.grade_word, rewardWord(res)].join(' · ') : '';
+    var sum = res && res.complete ? [num(res.final), res.grade_word, rewardWord(res)].filter(Boolean).join(' · ') : '';
     el.innerHTML =
       '<button class="perf-open" type="button"><b>' + esc(p.name) + '</b>' +
         (meta.length ? '<small>' + esc(meta.join(' · ')) + '</small>' : '') + '</button>' +
@@ -750,14 +750,14 @@
     if (st.editing === 'return' || st.editing === 'reopen') {
       var ret = st.editing === 'return';
       return '<section class="qcard qnext">' +
-        '<h3 class="qnext-title">' + (ret ? 'Return to draft' : 'Reopen') + '</h3>' +
+        '<h3 class="qnext-title">' + (ret ? 'Revert to draft' : 'Reopen') + '</h3>' +
         '<p class="qnext-line">' + esc(ret
           ? (r.member.name || 'They') + ' stops seeing this month until it is released again.'
           : 'A new version is opened in draft with the same reference. The final version is kept on the record.') + '</p>' +
         '<form class="qform" id="pvReasonForm" autocomplete="off">' +
           '<label class="field-label" for="pvReason">Reason</label>' +
           '<textarea class="input" id="pvReason" rows="2" maxlength="500"></textarea>' +
-          '<div class="qform-acts"><button class="btn btn-sm btn-warn" type="submit">' + (ret ? 'Return to draft' : 'Reopen') + '</button>' +
+          '<div class="qform-acts"><button class="btn btn-sm btn-warn" type="submit">' + (ret ? 'Revert' : 'Reopen') + '</button>' +
           '<button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button></div>' +
         '</form><div class="msg" id="pvMsg"></div></section>';
     }
@@ -1030,7 +1030,7 @@
       '<button class="btn btn-sm btn-quiet" type="button" data-a="cancel">Cancel</button></div></form>';
   }
 
-  var EVENT_WORD = { started: 'Started', scored: 'Scores saved', released: 'Released', returned: 'Returned to draft',
+  var EVENT_WORD = { started: 'Started', scored: 'Scores saved', released: 'Released', returned: 'Reverted to draft',
     disputed: 'Disputed', decided: 'Dispute answered', acknowledged: 'Acknowledged', finalised: 'Finalised',
     reopened: 'Reopened', breach_logged: 'Breach logged', breach_voided: 'Breach voided', printed: 'Downloaded', profile: 'Profile changed' };
   /* What a save changed, named (the user, 2026-09-26: "scores saved should
@@ -1168,7 +1168,7 @@
       if (!why) { msg('pvMsg', said({ error: 'reason-needed' }), 'err'); $('pvReason').focus(); return; }
       var ret = st.editing === 'return';
       call(ret ? 'perf_unrelease' : 'perf_reopen', { p_token: token, p_review: r.id, p_reason: why },
-        function (d) { after(d, ret ? 'Returned to draft.' : 'Reopened as version ' + d.version + '.'); });
+        function (d) { after(d, ret ? 'Reverted to draft.' : 'Reopened as version ' + d.version + '.'); });
     });
     var vf = $('pvVoidForm');
     if (vf) vf.addEventListener('submit', function (e) {
@@ -1396,7 +1396,7 @@
       '<span class="perf-score">' + esc(res.complete ? num(res.final) : '—') + '</span>' +
       '<span class="perf-grade">' + gradeChip(res) + '</span>' +
       '<span class="perf-reward">' + esc(rewardWord(res)) + '</span>' +
-      '<span class="perf-sum">' + esc(res.complete ? [num(res.final), res.grade_word, rewardWord(res)].join(' · ') : '') + '</span>' +
+      '<span class="perf-sum">' + esc(res.complete ? [num(res.final), res.grade_word, rewardWord(res)].filter(Boolean).join(' · ') : '') + '</span>' +
       '<span class="perf-chev" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg></span>';
     b.addEventListener('click', function () {
       st.mode = 'mine'; st.editing = null; st.rec = r;

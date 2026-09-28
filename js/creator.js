@@ -41,7 +41,7 @@
       /* The queue names the one that needs them, so nothing on it has to be
          opened to find out whether it does. */
       needsYou: 'Needs you',
-      none: 'Nothing booked yet',
+      none: 'No bookings',
       noneText: 'Confirmed campaigns appear here.',
       signOut: 'Forget this device',
       shootOn: 'Shoot', deliveryOn: 'Delivery', goLive: 'Publish on',

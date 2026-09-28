@@ -300,6 +300,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
     outlined control is the contact chip `.plink`.
   - No bare text links in the portal: a way somewhere is a button, a chip
     or a `.btn-quiet` with a chevron (`.ovgo`), never an underlined word.
+    Inside a line of facts it is `.linkbtn` (quiet, chevron, no underline);
+    a typed address (a website, a profile, a past link) is a `.plink`.
+  - The command bar's controls are 32px and take the small corner
+    (`--radius-ctl-sm`).
   - `.btn-primary` is ink.
   - `.btn-go` is blue.
   - `.btn-warn` is warn on its tint (reversible caution).

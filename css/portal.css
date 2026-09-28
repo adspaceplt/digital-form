@@ -4407,7 +4407,6 @@ body > .shell { width: 100%; }
 .ovlinks a, .ovlinks li > span:last-child {
   min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.ovlinks a { color: var(--ink); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
 .timer-run { font-size: 17px; font-weight: 600; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 
 .ovnote { margin: 0 0 8px; font-size: 13.5px; color: var(--ink); overflow-wrap: anywhere; }
@@ -5569,7 +5568,6 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    once left it stranded in the middle of the bar. */
 /* Retired 2026-09-22: the section's name in the console head is what opens
    the line now, because that is what the line is about. */
-.routenote a { color: var(--ink-soft); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
 @media (pointer: coarse) {
   .hintbtn { font-size: 13px; }
 }
@@ -6005,8 +6003,8 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .lhist-when { font-size: 13px; font-weight: 600; color: var(--ink); }
 .lhist-who { flex: 1 1 auto; min-width: 0; font-size: 12.5px; color: var(--ink-mute); }
 .lhist-diff { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 13px; }
-.lhist-diff li { display: flex; align-items: baseline; gap: 8px; min-width: 0; color: var(--ink-soft); }
-.lhist-diff a { min-width: 0; overflow-wrap: anywhere; color: var(--ink); }
+.lhist-diff li { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; color: var(--ink-soft); }
+.lhist-diff .plink { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
 /* The creator's head: who they are and one control, no mark (a creator has
    no artwork on file), and their profile links under a hairline. On a phone
    the control keeps its line beside the name rather than taking a row. */
@@ -6847,8 +6845,6 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    way there sits under the facts it changes, on their margin. */
 #perfProfileSheet .pp-edit { margin-top: 8px; min-width: 0; padding-inline: 0; }
 .ovfacts dd.is-pre { white-space: pre-line; }
-.readlink { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-ctl); text-underline-offset: 2px; }
-@media (hover: hover) { .readlink:hover { text-decoration-color: var(--ink); } }
 .readlogo { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 8px; vertical-align: middle;
   border-radius: 50%; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
 .readlogo img { width: 100%; height: 100%; object-fit: cover; }
@@ -7840,7 +7836,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   .qhead { padding: 10px 16px 12px; border-radius: var(--radius) var(--radius) 0 0; }
   .sheet-side .qbody { padding: 12px 12px calc(20px + env(safe-area-inset-bottom, 0px)); gap: 12px; }
   .qcard { padding: 16px 16px; }
-  .qnext-acts .btn { flex: 1 1 0; min-width: 0; }
+  .qnext-acts .btn { flex: 1 1 0; min-width: 0; white-space: nowrap; }
+  /* A third action takes its own line, so the pair keeps one width each. */
+  .qnext-acts > .btn:nth-child(3) { flex-basis: 100%; }
   .qform-acts .btn { flex: 1 1 0; min-width: 0; }
   /* One field over the other. A column row keeps each field at its own
      height: `.row > div`'s 180px basis is a height in a column, and it drew
@@ -8918,3 +8916,6 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 /* A standing fact's link (the verify page, the redirect hosts) is the
    outlined chip, inline in its sentence. */
 .routenote .plink { margin-block: -4px; vertical-align: baseline; font-size: 12.5px; padding: 3px 9px; }
+/* A chip holding a typed address (a website, a profile, a past link) may
+   wrap rather than widen its row. */
+.readgroup .plink, .lhist-diff .plink { white-space: normal; overflow-wrap: anywhere; text-align: left; }

@@ -30,7 +30,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260928e">
+<link rel="stylesheet" href="/css/portal.css?v=20260928f">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -54,32 +54,32 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260928e"></script>
-<script src="/js/captcha.js?v=20260928e"></script>
-<script src="/js/words.js?v=20260928e"></script>
-<script src="/js/copy.js?v=20260928e"></script>
-<script src="/js/ask.js?v=20260928e"></script>
-<script src="/js/confirm.js?v=20260928e"></script>
-<script src="/js/sheet.js?v=20260928e"></script>
-<script src="/js/refresh.js?v=20260928e"></script>
-<script src="/js/form.js?v=20260928e"></script>
-<script src="/js/state.js?v=20260928e"></script>
-<script src="/js/group.js?v=20260928e"></script>
-<script src="/js/menu.js?v=20260928e"></script>
-<script src="/js/cmdbar.js?v=20260928e"></script>
-<script src="/js/records.js?v=20260928e"></script>
-<script src="/js/chart.js?v=20260928e"></script>
-<script src="/js/swipe.js?v=20260928e"></script>
-<script src="/js/api.js?v=20260928e"></script>
-<script src="/js/push.js?v=20260928e"></script>
-<script src="/js/money.js?v=20260928e"></script>
-<script src="/js/mockups.js?v=20260928e"></script>
+<script src="/js/config.js?v=20260928f"></script>
+<script src="/js/captcha.js?v=20260928f"></script>
+<script src="/js/words.js?v=20260928f"></script>
+<script src="/js/copy.js?v=20260928f"></script>
+<script src="/js/ask.js?v=20260928f"></script>
+<script src="/js/confirm.js?v=20260928f"></script>
+<script src="/js/sheet.js?v=20260928f"></script>
+<script src="/js/refresh.js?v=20260928f"></script>
+<script src="/js/form.js?v=20260928f"></script>
+<script src="/js/state.js?v=20260928f"></script>
+<script src="/js/group.js?v=20260928f"></script>
+<script src="/js/menu.js?v=20260928f"></script>
+<script src="/js/cmdbar.js?v=20260928f"></script>
+<script src="/js/records.js?v=20260928f"></script>
+<script src="/js/chart.js?v=20260928f"></script>
+<script src="/js/swipe.js?v=20260928f"></script>
+<script src="/js/api.js?v=20260928f"></script>
+<script src="/js/push.js?v=20260928f"></script>
+<script src="/js/money.js?v=20260928f"></script>
+<script src="/js/mockups.js?v=20260928f"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260928e" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260928f" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -914,7 +914,7 @@
               <textarea class="input" id="voidReason" aria-required="true" rows="3" placeholder="Reason"></textarea>
             </div>
             <div class="sheet-foot">
-              <button class="btn btn-warn" id="voidGo" type="button">Void letter</button>
+              <button class="btn btn-warn" id="voidGo" type="button">Void</button>
               <button class="btn btn-quiet" id="voidCancel" type="button">Cancel</button>
             </div>
             <div class="msg" id="voidMsg"></div>
@@ -2902,7 +2902,7 @@
            own card. The full record is one press further, for the rare task
            that needs it; detailed time and activity open only when asked. -->
       <div class="sheet sheet-side" id="taskDrawer" hidden>
-        <div class="sheet-card taskcard" role="dialog" aria-modal="true" aria-labelledby="dwTitle" tabindex="-1">
+        <div class="sheet-card taskcard" role="dialog" aria-modal="true" aria-labelledby="dwTitle" tabindex="-1" data-narrow="460">
           <div class="sheet-head qhead">
             <div class="qhead-top">
               <button class="tcheck" id="dwCheck" type="button" hidden></button>
@@ -3755,7 +3755,7 @@
                 </button>
                 <div class="kmenu" id="pvMenu" hidden role="menu">
                   <button class="kmenu-item" data-a="print" type="button" role="menuitem">Download PDF</button>
-                  <button class="kmenu-item" data-a="return" type="button" role="menuitem">Return to draft</button>
+                  <button class="kmenu-item" data-a="return" type="button" role="menuitem">Revert to draft</button>
                   <button class="kmenu-item" data-a="reopen" type="button" role="menuitem">Reopen</button>
                   <button class="kmenu-item is-danger" data-a="delete" type="button" role="menuitem">Delete</button>
                 </div>
@@ -3999,13 +3999,13 @@ raya-2026        https://example.com/raya"></textarea>
     <div class="sheet-body">
       <dl class="facts" id="portalFacts"></dl>
       <label class="tickline" style="margin-top:14px">
-        <input type="checkbox" id="portalInvite" checked> <span>Send invitation email</span>
+        <input type="checkbox" id="portalInvite"> <span>Send invitation email</span>
       </label>
-      <div class="row acts" style="margin-top:16px;margin-bottom:14px">
-        <button class="btn btn-primary" id="portalGo" type="button">Enable</button>
-        <button class="btn btn-quiet" id="portalCancel" type="button">Cancel</button>
-      </div>
       <div class="msg" id="portalMsg"></div>
+    </div>
+    <div class="sheet-foot">
+      <button class="btn btn-primary" id="portalGo" type="button">Enable</button>
+      <button class="btn btn-quiet" id="portalCancel" type="button">Cancel</button>
     </div>
   </div>
 </div>
@@ -4321,7 +4321,7 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 
-<!-- A person's passkeys: a list, Add a passkey, and Rename and Remove in each
+<!-- A person's passkeys: a list, Add passkey, and Rename and Remove in each
      row's ⋯. The passkeys themselves are Supabase's; nothing is stored here. -->
 <div class="sheet" id="pkSheet" hidden>
   <div class="sheet-card formsheet pk-card" role="dialog" aria-modal="true" aria-labelledby="pkTitle">
@@ -4336,23 +4336,23 @@ raya-2026        https://example.com/raya"></textarea>
       <div class="msg" id="pkMsg" role="status"></div>
     </div>
     <div class="sheet-foot">
-      <button class="btn btn-primary" id="pkAdd" type="button">Add a passkey</button>
+      <button class="btn btn-primary" id="pkAdd" type="button">Add passkey</button>
       <button class="btn btn-quiet" id="pkClose" type="button">Close</button>
     </div>
   </div>
 </div>
-<script src="/js/passkey.js?v=20260928e"></script>
-<script src="/js/admin.js?v=20260928e"></script>
-<script src="/js/documents.js?v=20260928e"></script>
-<script src="/js/letters.js?v=20260928e"></script>
-<script src="/js/smreport.js?v=20260928e"></script>
-<script src="/js/reports.js?v=20260928e"></script>
-<script src="/js/register.js?v=20260928e"></script>
-<script src="/js/crm.js?v=20260928e"></script>
-<script src="/js/team.js?v=20260928e"></script>
-<script src="/js/campaigns.js?v=20260928e"></script>
-<script src="/js/ops.js?v=20260928e"></script>
-<script src="/js/perf.js?v=20260928e"></script>
-<script src="/js/search.js?v=20260928e"></script>
+<script src="/js/passkey.js?v=20260928f"></script>
+<script src="/js/admin.js?v=20260928f"></script>
+<script src="/js/documents.js?v=20260928f"></script>
+<script src="/js/letters.js?v=20260928f"></script>
+<script src="/js/smreport.js?v=20260928f"></script>
+<script src="/js/reports.js?v=20260928f"></script>
+<script src="/js/register.js?v=20260928f"></script>
+<script src="/js/crm.js?v=20260928f"></script>
+<script src="/js/team.js?v=20260928f"></script>
+<script src="/js/campaigns.js?v=20260928f"></script>
+<script src="/js/ops.js?v=20260928f"></script>
+<script src="/js/perf.js?v=20260928f"></script>
+<script src="/js/search.js?v=20260928f"></script>
 </body>
 </html>

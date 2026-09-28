@@ -1251,7 +1251,7 @@
      whose month, who. Never a score, a grade or a dispute's words. */
   var PERF_STEP = { released: 'Review released', disputed: 'Review disputed', decided: 'Dispute answered',
                     acknowledged: 'Review acknowledged', finalised: 'Review finalised', reopened: 'Review reopened',
-                    returned: 'Returned to draft', printed: 'Record downloaded', deleted: 'Record deleted' };
+                    returned: 'Reverted to draft', printed: 'Record downloaded', deleted: 'Record deleted' };
 
   /* The section only appears for people on the viewer list. The database
      enforces this too, so hiding it here is convenience rather than the
@@ -2902,7 +2902,7 @@
         var n = (r.data || []).length;
         $('savedCount').textContent = n
           ? n + ' post' + (n === 1 ? '' : 's') + ' in this set.'
-          : 'Nothing added yet.';
+          : 'No posts.';
         if (!n) { settleScroll(); return; }
 
         var ids = r.data.map(function (p) { return p.id; });
@@ -3294,7 +3294,7 @@
     box.innerHTML = '';
     if (!links.length) {
       box.innerHTML = '<div class="softpanel"><div class="emptyline">' +
-        '<b>No short links yet.</b>' +
+        '<b>No short links.</b>' +
         '<button class="btn btn-sm" data-a="first" type="button">Add the first link</button>' +
         '</div></div>';
       box.querySelector('[data-a="first"]').addEventListener('click', function () { openLinkForm(null, this); });

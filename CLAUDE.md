@@ -345,7 +345,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `failLine`) and `initials`. **A failed read is never drawn as an empty list.**
   - `fit` writes `is-narrow` (≤640) and `is-tight` (≤460) on `.console-body`,
     `.rec-pane` and `.rec-rail` from a `ResizeObserver`. A list may state its
-    own line (`data-narrow="860"`).
+    own line (`data-narrow="860"`), and a sheet outside the console body
+    states one to be fitted at all (`#taskDrawer` `data-narrow="460"`).
   - Never container queries: they contain the fixed ⋯ menus.
 - `js/group.js` draws every directory card:
   `ADspaceGroup.section({route, key, memo, name, count, marks, shut, table})`,
