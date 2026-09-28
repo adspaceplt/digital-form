@@ -232,6 +232,9 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - A padded control on a card's last line gives its padding back with a
   negative block margin (the ⋯, the tick, `.plink-bare`). A control whose
   presence depends on a permission never sizes its row.
+- A chip, a ⋯ or a ring on a title line centres on that line, never on its
+  own target: the control's cell takes the line's height and the 44px target
+  overflows it evenly (the month card, a task row).
 - A rule about something inside a pane keys on `is-narrow` / `is-tight`, never
   on a media query. The window is the measure only for a page's own head (the
   client portal).

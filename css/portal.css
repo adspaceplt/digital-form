@@ -4309,7 +4309,10 @@ body > .shell { width: 100%; }
 /* The state and its ⋯ keep the head's right edge on a phone too; the facts
    wrap in the column beside them. */
 .is-tight .eng-head { align-items: start; }
-.is-tight .eng-ctl { justify-content: flex-end; }
+/* The state and the ⋯ centre on the facts' first line, not on their own 44px
+   target: the group takes that line's height and the target overflows it
+   evenly (2026-09-28, they hung 12px below the line on a phone). */
+.is-tight .eng-ctl { justify-content: flex-end; height: calc(13px * 1.55); }
 .eng-open { display: inline-block; margin-top: 8px; font-size: 13px; }
 
 /* A checklist item is a statement that something was done, so the row is the
@@ -4661,6 +4664,12 @@ body > .shell { width: 100%; }
 .is-tight .task-row > .trow-meta { flex-wrap: wrap; }
 .is-tight .trow-meta > .task-stage { flex: 0 0 100%; margin-left: 0; }
 .is-narrow .task-row > .team-act { grid-area: act; align-self: start; }
+/* The ring, the title with its priority chip, and the ⋯ share one centre:
+   the title line's (22px). The 44px target overflows that line evenly
+   instead of pushing the ⋯ 12px below it (2026-09-28). */
+.is-narrow .task-row > .team-act,
+.is-narrow .task-row > .trow-check { height: 22px; display: flex; align-items: center; }
+.is-narrow .task-row > .team-act { margin-top: 0; }
 .is-narrow .task-row.crm-head { display: none; }
 .is-narrow .tlink-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "kind kind"; }
 .is-narrow .tlink-row > .tlink-kind { grid-area: kind; }
