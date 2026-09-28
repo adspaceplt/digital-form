@@ -1432,6 +1432,7 @@
     state.batch = null;
     $('clientsView').hidden = true;
     $('workspace').hidden = false;
+    $('workspace').classList.remove('is-set');
     $('setPanel').hidden = true;
     paintHead(c);
     msg('wsMsg', '');
@@ -1477,7 +1478,19 @@
     paintLock();
   }
 
-  $('backToClients').addEventListener('click', showClients);
+  /* Back from a set is the client; back from the client is the list. */
+  $('backToClients').addEventListener('click', function () {
+    if (state.batch) closeBatch(); else showClients();
+  });
+  function closeBatch() {
+    state.batch = null;
+    $('setPanel').hidden = true;
+    $('workspace').classList.remove('is-set');
+    if (window.ADspaceSheet.isOpen($('assetSheet'))) window.ADspaceSheet.close();
+    setUrl();
+    loadBatches();
+    window.scrollTo(0, 0);
+  }
 
   /* The client's settings are a sheet from the head's ⋯ (2026-09-28), where
      they were a fold that opened forms in the middle of the page. */
@@ -1787,6 +1800,7 @@
     setUrl();
     state.drafts = readStoredDrafts();
     $('setPanel').hidden = false;
+    $('workspace').classList.add('is-set');
     $('driveUrl').value = state.client.drive_folder || '';
     $('mediaUrl').value = '';
     $('drivePicker').hidden = true;
@@ -1802,7 +1816,7 @@
         (state.drafts.length === 1 ? '' : 's') +
         ' still waiting to be added to this set.', 'ok');
     }
-    if (!quiet) $('setPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!quiet) window.scrollTo(0, 0);
   }
 
   /* The tasks in My Work that name this set (the user, 2026-09-27: "it
@@ -1884,7 +1898,36 @@
     });
   }
 
+  function shutSetMenu() {
+    $('setMenu').hidden = true;
+    $('setMenuBtn').setAttribute('aria-expanded', 'false');
+  }
+  $('setMenuBtn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    var open = $('setMenu').hidden;
+    shutSetMenu();
+    if (!open) return;
+    $('setMenu').hidden = false;
+    this.setAttribute('aria-expanded', 'true');
+    window.ADspaceMenu.place(this, $('setMenu'));
+  });
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('#setMenu, #setMenuBtn')) shutSetMenu();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('setMenu').hidden) { shutSetMenu(); $('setMenuBtn').focus(); }
+  });
+  window.ADspaceMenu.onScroll(shutSetMenu);
+
+  /* Adding assets is a sheet over the set: upload, Drive or a link, the
+     pending files, then Add to set, which shuts it. */
+  $('addAssets').addEventListener('click', function () {
+    window.ADspaceSheet.show($('assetSheet'), { opener: this });
+  });
+  $('assetClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+
   $('deleteSet').addEventListener('click', function () {
+    shutSetMenu();
     var b = state.batch;
     db.from('posts').select('id').eq('batch_id', b.id).then(function (r) {
       var n = (r.data || []).length;
@@ -2944,6 +2987,7 @@
           logAction('post.added', state.client.name + ' — ' + (state.batch.title || ''),
             rows.length + (rows.length === 1 ? ' post' : ' posts'));
           clearDrafts();
+          if (window.ADspaceSheet.isOpen($('assetSheet'))) window.ADspaceSheet.close();
           msg('setMsg', rows.length + ' post' + (rows.length === 1 ? '' : 's') + ' added.', 'ok');
           loadPosts();
           loadBatches();
@@ -2970,8 +3014,9 @@
         }
         var n = (r.data || []).length;
         $('savedCount').textContent = n
-          ? n + ' post' + (n === 1 ? '' : 's') + ' in this set.'
+          ? n + ' post' + (n === 1 ? '' : 's')
           : 'No posts.';
+        $('setProgressBlock').hidden = true;
         if (!n) { settleScroll(); return; }
 
         var ids = r.data.map(function (p) { return p.id; });
@@ -2981,9 +3026,30 @@
             var latest = {};
             (rev.data || []).forEach(function (x) { if (!latest[x.post_id]) latest[x.post_id] = x; });
             r.data.forEach(function (p) { box.appendChild(savedRow(p, latest[p.id])); });
+            paintProgress(r.data, latest, !rev.error);
             settleScroll();
           });
       });
+  }
+
+  /* Where the client's review of a published set stands, in the rail: how
+     many are approved, and how many came back with changes. Drawn only once
+     the set is published and the decisions could be read. */
+  function paintProgress(posts, latest, read) {
+    var block = $('setProgressBlock');
+    if (!read || !state.batch || !state.batch.published) { block.hidden = true; return; }
+    var n = posts.length, ok = 0, ch = 0;
+    posts.forEach(function (p) {
+      var d = latest[p.id];
+      if (d && d.decision === 'approved') ok++;
+      else if (d) ch++;
+    });
+    var pct = n ? Math.round(ok / n * 100) : 0;
+    $('setProgress').innerHTML =
+      '<p class="railpct"><b>' + ok + ' of ' + n + ' approved</b><span>' + pct + '%</span></p>' +
+      '<span class="railbar"><span class="railbar-fill" style="width:' + pct + '%"></span></span>' +
+      (ch ? '<p class="setprog-note"><span class="tone is-warn">' + ch + ' changes requested</span></p>' : '');
+    block.hidden = false;
   }
 
   // The ⋯ this portal draws everywhere a row hides its rarer actions.

@@ -860,6 +860,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     count) beside the review link. A post is a row: the placement with the
     client's decision at the right, the file, the copy, and one ⋯ (Edit,
     Request re-approval, Delete); the re-approval note opens under the post.
+  - A set is a page of its own (`set=`): its head (name renamed in place,
+    state, Publish, one ⋯ with Delete), its posts, and a rail (the client's
+    review, the tasks naming it). Back returns to the client. Add assets is a
+    sheet (`#assetSheet`) that shuts on Add to set.
   - Sets are folded, one open at a time.
   - Publish / Unpublish (warn).
   - Resend with a note.

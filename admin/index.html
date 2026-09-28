@@ -30,7 +30,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260928i">
+<link rel="stylesheet" href="/css/portal.css?v=20260928j">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -54,32 +54,32 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260928i"></script>
-<script src="/js/captcha.js?v=20260928i"></script>
-<script src="/js/words.js?v=20260928i"></script>
-<script src="/js/copy.js?v=20260928i"></script>
-<script src="/js/ask.js?v=20260928i"></script>
-<script src="/js/confirm.js?v=20260928i"></script>
-<script src="/js/sheet.js?v=20260928i"></script>
-<script src="/js/refresh.js?v=20260928i"></script>
-<script src="/js/form.js?v=20260928i"></script>
-<script src="/js/state.js?v=20260928i"></script>
-<script src="/js/group.js?v=20260928i"></script>
-<script src="/js/menu.js?v=20260928i"></script>
-<script src="/js/cmdbar.js?v=20260928i"></script>
-<script src="/js/records.js?v=20260928i"></script>
-<script src="/js/chart.js?v=20260928i"></script>
-<script src="/js/swipe.js?v=20260928i"></script>
-<script src="/js/api.js?v=20260928i"></script>
-<script src="/js/push.js?v=20260928i"></script>
-<script src="/js/money.js?v=20260928i"></script>
-<script src="/js/mockups.js?v=20260928i"></script>
+<script src="/js/config.js?v=20260928j"></script>
+<script src="/js/captcha.js?v=20260928j"></script>
+<script src="/js/words.js?v=20260928j"></script>
+<script src="/js/copy.js?v=20260928j"></script>
+<script src="/js/ask.js?v=20260928j"></script>
+<script src="/js/confirm.js?v=20260928j"></script>
+<script src="/js/sheet.js?v=20260928j"></script>
+<script src="/js/refresh.js?v=20260928j"></script>
+<script src="/js/form.js?v=20260928j"></script>
+<script src="/js/state.js?v=20260928j"></script>
+<script src="/js/group.js?v=20260928j"></script>
+<script src="/js/menu.js?v=20260928j"></script>
+<script src="/js/cmdbar.js?v=20260928j"></script>
+<script src="/js/records.js?v=20260928j"></script>
+<script src="/js/chart.js?v=20260928j"></script>
+<script src="/js/swipe.js?v=20260928j"></script>
+<script src="/js/api.js?v=20260928j"></script>
+<script src="/js/push.js?v=20260928j"></script>
+<script src="/js/money.js?v=20260928j"></script>
+<script src="/js/mockups.js?v=20260928j"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260928i" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260928j" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -1200,36 +1200,92 @@
     <div class="msg" id="setsMsg"></div>
 
     <!-- ============ One set ============ -->
+    <!-- A set is a page of its own (2026-09-28): its head (the name renamed
+         in place, the state, Publish and one ⋯), its posts, and a rail with
+         where the client's review stands and the tasks naming it. Adding
+         assets is a sheet. The client's head, sets and link step aside. -->
     <div id="setPanel" hidden>
 
-      <!-- Header: what this set is and what can be done to it -->
-      <section class="setbar">
+      <section class="panel rec-head setbar">
         <div class="setbar-main">
           <h3 id="setTitle"></h3>
-          <span class="chip" id="setState"></span>
-          <span class="setbar-note" id="setNote"></span>
-        </div>
-        <div class="setbar-actions">
           <button class="btn btn-icononly" id="renameSet" type="button"
                   title="Rename set" aria-label="Rename set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg></button>
-          <button class="btn btn-icononly is-danger" id="deleteSet" data-need="review.sets:manage" type="button"
-                  title="Delete set" aria-label="Delete set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/></svg></button>
+          <span class="chip" id="setState"></span>
+        </div>
+        <p class="setbar-note" id="setNote"></p>
+        <div class="setbar-actions">
           <button class="btn btn-go btn-icon" id="publishSet" data-need="review.sets:work" type="button">
             <svg id="publishIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
                  aria-hidden="true"></svg>
             <span id="publishLabel">Publish</span>
           </button>
+          <div class="kmenu-wrap">
+            <button class="kmenu-btn" id="setMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+            <div class="kmenu" id="setMenu" hidden role="menu">
+              <button class="kmenu-item is-danger" id="deleteSet" data-need="review.sets:manage" type="button" role="menuitem">Delete</button>
+            </div>
+          </div>
         </div>
         <div class="msg" id="setMsg"></div>
       </section>
 
-      <!-- The tasks in My Work that name this set, drawn only where one does. -->
-      <section class="panel" id="setTasks" hidden>
-        <div class="panelhead"><h3>Tasks</h3></div>
-        <div id="setTaskList"></div>
+      <div class="cr-rec">
+      <div class="cr-main">
+      <section class="panel zone-out">
+        <div class="zone-head">
+          <div>
+            <b>Posts</b>
+            <span class="muted" id="savedCount">No posts.</span>
+          </div>
+          <button class="btn btn-sm" id="addAssets" data-need="review.sets:work" type="button">Add assets</button>
+        </div>
+        <div id="postList"></div>
       </section>
+      </div>
 
+      <aside class="cr-rail">
+        <div class="railblock" id="setProgressBlock" hidden>
+          <h3 class="railtitle">Client review</h3>
+          <div id="setProgress"></div>
+        </div>
+        <!-- The tasks in My Work that name this set, drawn only where one does. -->
+        <div class="railblock" id="setTasks" hidden>
+          <h3 class="railtitle">Tasks</h3>
+          <div id="setTaskList"></div>
+        </div>
+      </aside>
+      </div>
+
+    </div>
+    </div>
+
+    <!-- What the client is sent: the link, and whether it asks for a code. -->
+    <aside class="cr-rail">
+      <div class="railblock">
+        <h3 class="railtitle">Review link</h3>
+        <div class="linkbox">
+          <input class="input readfield" id="clientLink" aria-label="Review link" readonly>
+        </div>
+        <div class="row acts cr-linkacts">
+          <a class="btn" id="openLink" target="_blank" rel="noopener">Preview</a>
+          <button class="btn" id="copyLink" type="button">Copy link</button>
+        </div>
+      </div>
+    </aside>
+    </div>
+  </section>
+
+  <!-- Adding to a set: upload, Drive or a link, then the pending files, then
+     Add to set. A sheet over the set (2026-09-28). -->
+  <div class="sheet" id="assetSheet" hidden>
+    <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="assetTitle" tabindex="-1">
+      <div class="sheet-head">
+        <h3 id="assetTitle">Add assets</h3>
+        <button class="iconbtn" id="assetClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <div class="sheet-body">
       <!-- Step 1: where content comes in -->
       <section class="panel zone-in">
         <div class="zone-head">
@@ -1298,36 +1354,9 @@
         </div>
       </section>
 
-      <!-- Step 3: what is actually in the set -->
-      <section class="panel zone-out">
-        <div class="zone-head">
-          <svg class="zone-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.6"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.6"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.6"/></svg>
-          <div>
-            <b>Content in this set</b>
-            <span class="muted" id="savedCount">No content added.</span>
-          </div>
-        </div>
-        <div id="postList"></div>
-      </section>
-
-    </div>
-    </div>
-
-    <!-- What the client is sent: the link, and whether it asks for a code. -->
-    <aside class="cr-rail">
-      <div class="railblock">
-        <h3 class="railtitle">Review link</h3>
-        <div class="linkbox">
-          <input class="input readfield" id="clientLink" aria-label="Review link" readonly>
-        </div>
-        <div class="row acts cr-linkacts">
-          <a class="btn" id="openLink" target="_blank" rel="noopener">Preview</a>
-          <button class="btn" id="copyLink" type="button">Copy link</button>
-        </div>
       </div>
-    </aside>
     </div>
-  </section>
+  </div>
 
   <!-- A client's settings: the handles and logo the mockups print, and the
        access code. One sheet, one Save (2026-09-28). -->
@@ -4362,18 +4391,18 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
-<script src="/js/passkey.js?v=20260928i"></script>
-<script src="/js/admin.js?v=20260928i"></script>
-<script src="/js/documents.js?v=20260928i"></script>
-<script src="/js/letters.js?v=20260928i"></script>
-<script src="/js/smreport.js?v=20260928i"></script>
-<script src="/js/reports.js?v=20260928i"></script>
-<script src="/js/register.js?v=20260928i"></script>
-<script src="/js/crm.js?v=20260928i"></script>
-<script src="/js/team.js?v=20260928i"></script>
-<script src="/js/campaigns.js?v=20260928i"></script>
-<script src="/js/ops.js?v=20260928i"></script>
-<script src="/js/perf.js?v=20260928i"></script>
-<script src="/js/search.js?v=20260928i"></script>
+<script src="/js/passkey.js?v=20260928j"></script>
+<script src="/js/admin.js?v=20260928j"></script>
+<script src="/js/documents.js?v=20260928j"></script>
+<script src="/js/letters.js?v=20260928j"></script>
+<script src="/js/smreport.js?v=20260928j"></script>
+<script src="/js/reports.js?v=20260928j"></script>
+<script src="/js/register.js?v=20260928j"></script>
+<script src="/js/crm.js?v=20260928j"></script>
+<script src="/js/team.js?v=20260928j"></script>
+<script src="/js/campaigns.js?v=20260928j"></script>
+<script src="/js/ops.js?v=20260928j"></script>
+<script src="/js/perf.js?v=20260928j"></script>
+<script src="/js/search.js?v=20260928j"></script>
 </body>
 </html>
