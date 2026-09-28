@@ -1196,9 +1196,16 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Repeat (`ops_set_recurring`: weekly, monthly on a day, or every N days; ends
   on a date or a count). `ops_generate_recurring` is idempotent on rule and
   date.
-- The bar's ⋯ holds Bulk add, From template, Run repeating tasks, Select tasks
-  (Manage: a sticky bar with Assign task owner and Delete) and Task numbering
-  (admin).
+- The bar's ⋯ holds Bulk add, Run repeating tasks, Templates (`ops.workflows`
+  Work: edits families and makes no task), Select tasks (Manage: a sticky bar
+  with Assign task owner and Delete) and Task numbering (admin).
+- A template is a family (`ops_template_variants`): one checklist and the rate
+  card formats it serves, each with its own hours; a format belongs to one
+  family (`format-taken`, naming it). A task's format fills it from its family
+  inside `ops_create_task` (the checklist and the variant's hours; the
+  caller's workflow and the month's dates stand), so New task, Bulk add and
+  repeats alike. Reels (30s, 60s, 120s), Graphics (Static, GIF, Carousel),
+  Report.
 - A task is named by a code plus a description.
   - The code (`ops_code_of`: `YYMMW{week}{NN}` for the content month) is made
     once under an advisory lock and never rewritten.

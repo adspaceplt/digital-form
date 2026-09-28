@@ -210,6 +210,9 @@
     'bad-channel': 'Choose where the meeting is held.',
     'checklist-open': 'Tick both checklists, or mark one not needed, first.',
     'workflow-required': 'No workflow set up. Contact an admin.',
+    'bad-format': 'A format is listed twice or is not on the rate card.',
+    'name-taken': 'Another template has this name.',
+    'name-required': 'A name is required.',
     'bad-kind': 'Invalid link type.',
     'url-required': 'A link is required.',
     'ends-before-it-starts': 'End date is before the start.',
@@ -235,6 +238,7 @@
     if (err === 'tasks-open' && d && d.open) {
       return d.open === 1 ? '1 task in this month is still open.' : d.open + ' tasks in this month are still open.';
     }
+    if (err === 'format-taken') return (d && d.family ? 'A format ticked belongs to ' + d.family + '.' : 'A format ticked belongs to another template.');
     if (err === 'ready-needs-owner-and-due' && t) {
       var need = [];
       /* A queue row carries no assignees; the queue's own read of the owner
@@ -3325,81 +3329,101 @@
     qkMade = 0;
   }
 
-  // ---- From template -------------------------------------------------------
-  /* The tasks a month always needs, made at once and linked once. Each is a
-     new task, so a template made a hundred times has a hundred histories. */
-  var tplRows = [];
-  function openTpl(pre) {
-    if (!may('ops', 'work')) return;
-    loadEngs(function () {
-      db.from('ops_task_templates').select('*').order('name').then(function (r) {
-        tplRows = (!r.error && r.data) || [];
-        linkOptions($('tplLink'), pre && pre.link || '');
-        $('tplBase').value = pre && pre.base ? pre.base : dateValue(new Date());
-        $('tplNew').hidden = !may('ops.workflows', 'work');
-        paintTplList();
-        msg('tplMsg', r.error ? r.error.message : '', r.error ? 'err' : '');
-        sheet('tplSheet', true);
-      });
+  // ---- Templates -------------------------------------------------------------
+  /* A template is a family: one checklist, and the formats it serves, each
+     with the hours that variant takes. Picking a format in New task, Bulk add
+     or a repeat fills the task from its family in the database
+     (`ops_create_task`), so this sheet only edits the families
+     (the user, 2026-09-28). */
+  var tplRows = [], tplVars = [];
+  /* The rate card's formats, from the one list the New task sheet carries. */
+  function fmtList() {
+    return Array.prototype.filter.call(($('ntFormat') || { options: [] }).options, function (o) { return o.value; })
+      .map(function (o) { return { key: o.value, word: o.text }; });
+  }
+  function hoursWord(min) {
+    if (min == null) return '';
+    var h = Math.round(Number(min) / 60 * 10) / 10;
+    return h + 'h';
+  }
+  function openTpl() {
+    if (!may('ops.workflows', 'work')) return;
+    Promise.all([
+      db.from('ops_task_templates').select('*').order('name'),
+      db.from('ops_template_variants').select('template_id, format, estimate_minutes')
+    ]).then(function (r) {
+      var bad = r[0].error || r[1].error;
+      tplRows = (!r[0].error && r[0].data) || [];
+      tplVars = (!r[1].error && r[1].data) || [];
+      paintTplList();
+      msg('tplMsg', bad ? bad.message : '', bad ? 'err' : '');
+      sheet('tplSheet', true);
     });
   }
+  function varsOf(id) { return tplVars.filter(function (v) { return v.template_id === id; }); }
   function paintTplList() {
-    var edit = may('ops.workflows', 'work');
-    var rows = tplRows.filter(function (x) { return x.active || edit; });
-    $('tplList').innerHTML = rows.length ? rows.map(function (x) {
+    var words = {};
+    fmtList().forEach(function (f) { words[f.key] = f.word; });
+    $('tplList').innerHTML = tplRows.length ? tplRows.map(function (x) {
+      var vs = varsOf(x.id).slice().sort(function (p, q) {
+        return fmtList().map(function (f) { return f.key; }).indexOf(p.format) - fmtList().map(function (f) { return f.key; }).indexOf(q.format);
+      });
+      var items = (x.checklist || []).length;
       var bits = [
-        x.due_offset_days != null ? 'Due ' + (Number(x.due_offset_days) === 0 ? 'the same day' : x.due_offset_days + (Number(x.due_offset_days) === 1 ? ' day' : ' days') + ' after') : '',
-        x.default_owner_id ? nameOf(x.default_owner_id) : '',
-        (x.checklist || []).length ? (x.checklist || []).length + ((x.checklist || []).length === 1 ? ' item' : ' items') : '',
-        x.active ? '' : 'Not offered'
+        vs.map(function (v) { return (words[v.format] || v.format) + (v.estimate_minutes ? ' ' + hoursWord(v.estimate_minutes) : ''); }).join(' · '),
+        items ? items + (items === 1 ? ' item' : ' items') : '',
+        x.active ? '' : 'Inactive'
       ].filter(Boolean).join(' · ');
       return '<div class="tplrow">' +
-        '<label class="tickline"><input type="checkbox" data-tpl="' + esc(x.id) + '"' + (x.active ? '' : ' disabled') + '> ' +
-          '<span><b>' + esc(x.name) + '</b>' + (bits ? '<small>' + esc(bits) + '</small>' : '') + '</span></label>' +
-        (edit ? '<button class="btn btn-quiet btn-sm" data-edit="' + esc(x.id) + '" type="button">Edit</button>' : '') +
+        '<span class="tplrow-name"><b>' + esc(x.name) + '</b>' + (bits ? '<small>' + esc(bits) + '</small>' : '') + '</span>' +
+        '<button class="btn btn-quiet btn-sm" data-edit="' + esc(x.id) + '" type="button">Edit</button>' +
         '</div>';
-    }).join('') : '<p class="ovnote mute">No templates yet.</p>';
+    }).join('') : '<p class="ovnote mute">No templates.</p>';
     Array.prototype.forEach.call($('tplList').querySelectorAll('[data-edit]'), function (b) {
       b.addEventListener('click', function () {
         openTplEdit(tplRows.filter(function (x) { return x.id === b.getAttribute('data-edit'); })[0]);
       });
     });
   }
-  function tplCreate() {
-    var picks = Array.prototype.map.call($('tplList').querySelectorAll('[data-tpl]:checked'), function (c) {
-      return c.getAttribute('data-tpl');
-    });
-    if (!picks.length) { msg('tplMsg', 'Tick the templates to make.', 'err'); return; }
-    if (!$('tplLink').value) { msg('tplMsg', 'Choose a client, or Internal.', 'err'); $('tplLink').focus(); return; }
-    var link = $('tplLink').value === 'i:' ? '' : $('tplLink').value;
-    var base = $('tplBase').value || dateValue(new Date());
-    var btn = $('tplGo');
-    btn.disabled = true;
-    var made = 0, i = 0;
-    var next = function () {
-      if (i >= picks.length) {
-        btn.disabled = false;
-        sheet('tplSheet', false);
-        msg('workMsg', made + (made === 1 ? ' task added.' : ' tasks added.'), 'ok');
-        load();
-        return;
+  /* Every format with a tick and its hours; one held by another family says
+     which, and cannot be ticked here. */
+  function paintTplFmts(row) {
+    var mine = {}, held = {};
+    tplVars.forEach(function (v) {
+      if (row && v.template_id === row.id) mine[v.format] = v;
+      else {
+        var fam = tplRows.filter(function (t) { return t.id === v.template_id; })[0];
+        held[v.format] = fam ? fam.name : 'another template';
       }
-      var id = picks[i++];
-      /* The key is what makes two presses the same act: this template, for
-         this client or month, for this day. A second press makes nothing. */
-      call('ops_create_task', {
-        p_payload: {
-          template_id: id,
-          scope: link ? 'client' : 'internal',
-          client_id: link.indexOf('c:') === 0 ? link.slice(2) : null,
-          engagement_id: link.indexOf('e:') === 0 ? link.slice(2) : null,
-          task_type: link.indexOf('e:') === 0 ? 'engagement' : 'adhoc',
-          base_date: base + 'T00:00:00Z'
-        },
-        p_idem: 'tpl:' + id + ':' + (link || 'internal') + ':' + base
-      }, 'tplMsg', function () { made++; next(); }, function () { btn.disabled = false; });
-    };
-    next();
+    });
+    $('teFmts').innerHTML = fmtList().map(function (f) {
+      var v = mine[f.key], other = held[f.key];
+      var id = 'teF_' + f.key;
+      return '<div class="tefmt' + (other ? ' is-held' : '') + '">' +
+        '<label class="tickline" for="' + id + '"><input type="checkbox" id="' + id + '" data-fmt="' + esc(f.key) + '"' +
+          (v ? ' checked' : '') + (other ? ' disabled' : '') + '> <span>' + esc(f.word) +
+          (other ? '<small>In ' + esc(other) + '</small>' : '') + '</span></label>' +
+        '<input class="input input-sm tefmt-hours" type="number" min="0.5" max="100" step="0.5" inputmode="decimal" data-hours="' + esc(f.key) + '"' +
+          ' aria-label="' + esc(f.word) + ', hours" placeholder="Hours"' +
+          (v && v.estimate_minutes ? ' value="' + (Math.round(v.estimate_minutes / 60 * 10) / 10) + '"' : '') +
+          (v ? '' : ' disabled') + '>' +
+        '</div>';
+    }).join('');
+    Array.prototype.forEach.call($('teFmts').querySelectorAll('[data-fmt]'), function (c) {
+      c.addEventListener('change', function () {
+        var h = $('teFmts').querySelector('[data-hours="' + c.getAttribute('data-fmt') + '"]');
+        h.disabled = !c.checked;
+        if (c.checked && !h.value) h.focus();
+      });
+    });
+  }
+  function tplFmtsPicked() {
+    return Array.prototype.filter.call($('teFmts').querySelectorAll('[data-fmt]'), function (c) { return c.checked && !c.disabled; })
+      .map(function (c) {
+        var k = c.getAttribute('data-fmt');
+        var h = Number(($('teFmts').querySelector('[data-hours="' + k + '"]') || {}).value);
+        return { format: k, estimate_minutes: h > 0 ? Math.round(h * 60) : null };
+      });
   }
   var tplEditing = null;
   function openTplEdit(row) {
@@ -3417,6 +3441,7 @@
     $('teKind').value = w && w.key === 'content' ? 'content' : 'task';
     $('teCheck').value = (x.checklist || []).join('\n');
     $('teActive').checked = row ? Boolean(x.active) : true;
+    paintTplFmts(row);
     msg('teMsg', '');
     sheet('tplEditSheet', true);
   }
@@ -3435,11 +3460,15 @@
         default_estimate_minutes: $('teEst').value === '' ? null : Number($('teEst').value),
         workflow_key: $('teKind').value,
         checklist: String($('teCheck').value || '').split(/\n/).map(function (s) { return s.trim(); }).filter(Boolean),
-        active: $('teActive').checked
+        active: $('teActive').checked,
+        variants: tplFmtsPicked()
       }
     }, 'teMsg', function (row) {
       btn.disabled = false;
       sheet('tplEditSheet', false);
+      tplVars = tplVars.filter(function (v) { return v.template_id !== row.id; })
+        .concat((row.variants || []).map(function (v) { return { template_id: row.id, format: v.format, estimate_minutes: v.estimate_minutes }; }));
+      delete row.variants;
       tplRows = tplRows.filter(function (x) { return x.id !== row.id; }).concat([row])
         .sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
       paintTplList();
@@ -5178,7 +5207,7 @@
       }
       var d = r.data;
       if (d && d.error) {
-        msg(msgId, said(d.error, state.task), 'err');
+        msg(msgId, said(d.error, state.task, d), 'err');
         if (d.error === 'stale' && d.task) { applyTask(d.task); paintTask(); }
         if (onFail) onFail();
         return;
@@ -6934,12 +6963,10 @@
       setTimeout(function () { nq.disabled = false; }, 400);
     });
 
-    // From template
+    // Templates
     ['tplClose', 'tplCancel'].forEach(function (id) {
       var b = $(id); if (b) b.addEventListener('click', function () { sheet('tplSheet', false); });
     });
-    var tg = $('tplGo');
-    if (tg) tg.addEventListener('click', tplCreate);
     var tn = $('tplNew');
     if (tn) tn.addEventListener('click', function () { openTplEdit(null); });
     ['teClose', 'teCancel'].forEach(function (id) {

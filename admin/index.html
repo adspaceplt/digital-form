@@ -2056,7 +2056,7 @@
                 <div class="kmenu" id="workMore" hidden role="menu">
                   <button class="kmenu-item" data-a="bulk" type="button" role="menuitem">Bulk add</button>
                   <button class="kmenu-item" data-a="recur" type="button" role="menuitem">Run repeating tasks</button>
-                  <button class="kmenu-item" data-a="template" type="button" role="menuitem">From template</button>
+                  <button class="kmenu-item" data-a="template" type="button" role="menuitem" data-need="ops.workflows:work">Templates</button>
                   <button class="kmenu-item" data-a="select" type="button" role="menuitem" data-need="ops:manage">Select tasks</button>
                   <button class="kmenu-item" data-a="numbering" type="button" role="menuitem" hidden>Task numbering</button>
                 </div>
@@ -3191,31 +3191,21 @@
       <div class="sheet" id="tplSheet" hidden>
         <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="tplHead">
           <div class="sheet-head">
-            <h3 id="tplHead">From template</h3>
+            <h3 id="tplHead">Templates</h3>
             <button class="iconbtn" id="tplClose" type="button" aria-label="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
           </div>
+          <!-- A template is a family: one checklist, and the formats it serves
+               with the hours each takes. Picking a format in New task or Bulk
+               add fills the task from its family, so this sheet only edits
+               them (the user, 2026-09-28). -->
           <div class="sheet-body">
-            <div class="row">
-              <div class="field">
-                <label class="field-label" for="tplLink">Client or engagement</label>
-                <select class="select" id="tplLink" aria-required="true"></select>
-              </div>
-              <div class="field">
-                <label class="field-label" for="tplBase">Made for</label>
-                <input class="input" id="tplBase" type="date">
-              </div>
-            </div>
-            <div class="tpl-head">
-              <span class="field-label">Templates</span>
-              <button class="btn btn-quiet btn-sm" id="tplNew" type="button" hidden>New template</button>
-            </div>
             <div class="tpllist" id="tplList"></div>
           </div>
           <div class="sheet-foot">
-            <button class="btn btn-primary" id="tplGo" type="button">Create tasks</button>
-            <button class="btn btn-quiet" id="tplCancel" type="button">Cancel</button>
+            <button class="btn btn-primary" id="tplNew" type="button">New template</button>
+            <button class="btn btn-quiet" id="tplCancel" type="button">Close</button>
           </div>
           <div class="msg" id="tplMsg"></div>
         </div>
@@ -3275,6 +3265,10 @@
                   <input class="input" id="teEst" type="number" min="0" max="6000" inputmode="numeric" placeholder="Optional">
                 </div>
               </div>
+            </section>
+            <section class="fsec" id="teFmtSec">
+              <h4 class="fsec-h">Formats</h4>
+              <div class="tefmts" id="teFmts"></div>
             </section>
             <section class="fsec">
               <h4 class="fsec-h">Checklist</h4>
