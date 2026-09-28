@@ -562,7 +562,18 @@
     if (name === 'team') return may('team', 'view') || may('team.performance', 'view');
     /* Everybody on the team has a record of their own to read. */
     if (name === 'mine') return Boolean(me && me.id);
+    /* The Overview is the start page of a group that manages something: an
+       admin, or Manage on any section or part (2026-09-28). It has no key of
+       its own; each card asks its own. */
+    if (name === 'overview') return managesAny();
     return may(name, 'view');
+  }
+  function managesAny() {
+    if (!me) return false;
+    if (me.is_admin || me.role === 'admin') return true;
+    var keys = SECTIONS.slice();
+    Object.keys(PARTS).forEach(function (s) { PARTS[s].forEach(function (p) { keys.push(s + '.' + p); }); });
+    return keys.some(function (k) { return level(k) >= RANK.manage; });
   }
 
   /* Hide what the person may not use. Nothing here is the control; the
@@ -636,6 +647,7 @@
      has not been established yet. */
   var section = 'clients';
   var SECTION_TITLE = {
+    overview: 'Overview',
     clients: 'Clients',
     work: 'My Work',
     review: 'Content Review',
@@ -661,6 +673,7 @@
      is an explanation of the product rather than of the section. The user
      sent them back on 2026-09-22 as too long; each is one sentence now. */
   var INTRO = {
+    overview:  'What each section has waiting, for the groups that manage it.',
     clients:   'Every client and lead, from first enquiry to active engagement.',
     work:      'Tasks owed to clients and to the team, ordered by when they are due.',
     review:    'Content sets prepared for client approval.',
@@ -729,7 +742,7 @@
 
   // The first section this person is allowed, for when the one asked for is not.
   function firstAllowed() {
-    var order = ['clients', 'review', 'campaigns', 'links', 'register', 'reports', 'services', 'team'];
+    var order = ['overview', 'clients', 'review', 'campaigns', 'links', 'register', 'reports', 'services', 'team'];
     for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
     return 'clients';
   }
@@ -740,6 +753,7 @@
     if (!SECTION_TITLE[name]) name = 'clients';
     if (meLoaded && !sectionAllowed(name)) name = firstAllowed();
     section = name;
+    $('sectionOverview').hidden  = name !== 'overview';
     $('sectionClients').hidden   = name !== 'clients';
     $('sectionWork').hidden      = name !== 'work';
     $('sectionReview').hidden    = name !== 'review';
@@ -769,6 +783,11 @@
       // Not loaded yet: leave the address alone and enter once it is.
       if (!window.ADspaceCampaigns) { enterLater = 'campaigns'; return; }
       window.ADspaceCampaigns.enter();
+      return;
+    }
+    if (name === 'overview') {
+      if (!window.ADspaceOverview) { enterLater = 'overview'; return; }
+      window.ADspaceOverview.enter();
       return;
     }
     if (name === 'clients') {
@@ -896,7 +915,12 @@
 
   function queryNow() {
     var q = [];
-    if (section !== 'clients') q.push('s=' + section);
+    /* A client's own address reads as Clients from `client=` alone; the bare
+       list names itself, because `/admin/` is a manager's Overview
+       (2026-09-28), and a refresh on the list must stay on the list. */
+    if (section !== 'clients' || !(window.ADspaceCRM && window.ADspaceCRM.urlState().client)) {
+      q.push('s=' + section);
+    }
     if (section === 'review') {
       // The same readable address the Clients section uses.
       if (state.client) q.push('client=' + encodeURIComponent(clientKey(state.client)));
@@ -957,7 +981,10 @@
     // address from state, and state does not know about these yet.
     var clientId = params.get('client');
     var setId = params.get('set');
-    var where = params.get('s') || firstAllowed();
+    /* A client's address carries no `s=` (Clients writes none), so it is read
+       as Clients before the landing page is asked: a refresh inside a record
+       stays inside it (2026-09-28). */
+    var where = params.get('s') || (params.get('client') ? 'clients' : firstAllowed());
     if (!SECTION_TITLE[where]) where = firstAllowed();
 
     if (where !== 'review') {
@@ -3135,6 +3162,11 @@
       if (enterLater !== 'reports' || section !== 'reports') return;
       enterLater = '';
       window.ADspaceReports.enterHub();
+    },
+    overviewReady: function () {
+      if (enterLater !== 'overview' || section !== 'overview') return;
+      enterLater = '';
+      window.ADspaceOverview.enter();
     },
     opsReady: function () {
       if (enterLater !== 'work' || section !== 'work') return;

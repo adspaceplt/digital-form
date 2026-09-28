@@ -8,8 +8,8 @@ GitHub Pages at digital.adspace.me (CNAME in the repo). Pages: `admin/`
 (console), `client/` (client portal), `creators/` (the client's creator
 selection), `creator/` (a creator's own page), `review/` (content review),
 `verify/` (public reference check), `/` and `404.html` (covers). Supabase behind
-`js/api.js`; schema in `supabase/schema.sql` (re-runnable; the user runs it by
-hand in the SQL editor and must be told when). A change to one function or one
+`js/api.js`; schema in `supabase/schema.sql` (re-runnable). Migrations are
+applied by Claude through the Supabase connector (§3). A change to one function or one
 column ships as a dated file in `supabase/migrations/`: narrowly scoped, safe to
 run twice, its own rollback, mirrored in `schema.sql`.
 
@@ -115,6 +115,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `team.js` | team, perms, levels |
 | `perf.js` | perfui, perfguard, perf |
 | `search.js` | search, then `ui` |
+| `overview.js` | overview, then `ui` |
 | `reports.js`, `smreport.js` | reports, adsreport, smsql |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
 | `refresh.js`, `admin/sw.js`, the manifest | pwa, phone |
@@ -275,7 +276,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   record, sheet or menu open.
 
 ### One copy of each mechanism
-- `js/api.js` is the only Supabase client.
+- `js/api.js` is the only Supabase client. It retries a GET once when the
+  connection drops before the answer (`steadyFetch`); a write is never sent
+  twice.
 - `js/money.js` is the only money formatter and the only place a price is
   adjusted.
   - RM for MY, S$ for SG.
@@ -1056,6 +1059,33 @@ Each line is a rule that broke once. Its reason is in the archive.
   `submit_review`, `confirm_selection`, `creator_submit`, `creator_rate`,
   `portal_withdraw`. `save_selection` does not (it autosaves).
 
+### Overview (`js/overview.js`, `?s=overview`)
+- The start page of an admin or a group holding Manage on any section or
+  part (`managesAny()`): `firstAllowed()` lists it first, so `/admin/` with
+  no `?s=` lands there, and every other page names itself (the Clients list
+  writes `s=clients`; a client's record reads as Clients from `client=`
+  alone). It has no key of its own; anyone else is never offered the row
+  and its address falls back.
+- Each card asks its own `may()` before any read; a card not readable is not
+  drawn, and a section with no cards takes its heading. Sections in the
+  rail's order: My Work (Late tasks, `ops.reports`; Open work by person,
+  `ops.all` from `ops_report.open_by_person`; On-time delivery), Clients
+  (Leads going cold by `STALE_H`; New leads and new clients; Unanswered
+  requests, `clients.requests`), Content Review (Sets waiting on the client,
+  by `batches.published_at`; Active clients with no set this month),
+  Creator Campaigns (Bookings past their date; Waiting for the quality
+  check), Documents (Letters of Offer not yet signed, `clients.documents`),
+  Reports (Waiting for confirmation; No report for last month), Team (last
+  month's reviews through `perf_overview`: names and steps only).
+- No money anywhere on it: no value, revenue or fee.
+- A list card: the title, the count (warn only where late), View all to the
+  section; five rows, name over meta, the figure over its age at the right
+  edge; a row writes the record's address and opens it as search does. A
+  refused read is `failLine` with Try again. Read again on every visit,
+  never polled.
+- `batches.published_at` is stamped by `batches_published_at` on the move to
+  published and cleared on Unpublish.
+
 ### My Work (`js/ops.js`, `?s=work`, permission key `ops`, mapped once in `sectionAllowed()`)
 - Views (`view=`):
   - list (default, out of the address), board, calendar, clients, report.
@@ -1168,9 +1198,16 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Repeat (`ops_set_recurring`: weekly, monthly on a day, or every N days; ends
   on a date or a count). `ops_generate_recurring` is idempotent on rule and
   date.
-- The bar's ⋯ holds Bulk add, From template, Run repeating tasks, Select tasks
-  (Manage: a sticky bar with Assign task owner and Delete) and Task numbering
-  (admin).
+- The bar's ⋯ holds Bulk add, Run repeating tasks, Templates (`ops.workflows`
+  Work: edits families and makes no task), Select tasks (Manage: a sticky bar
+  with Assign task owner and Delete) and Task numbering (admin).
+- A template is a family (`ops_template_variants`): one checklist and the rate
+  card formats it serves, each with its own hours; a format belongs to one
+  family (`format-taken`, naming it). A task's format fills it from its family
+  inside `ops_create_task` (the checklist and the variant's hours; the
+  caller's workflow and the month's dates stand), so New task, Bulk add and
+  repeats alike. Reels (30s, 60s, 120s), Graphics (Static, GIF, Carousel),
+  Report.
 - A task is named by a code plus a description.
   - The code (`ops_code_of`: `YYMMW{week}{NN}` for the content month) is made
     once under an advisory lock and never rewritten.
@@ -1273,6 +1310,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Nobody is told about their own act.
   - The bell re-reads every minute while visible, and on return.
 - The month (engagement):
+  - Made by hand, never derived from the client's service lines (the portal
+    is supplementary: quotations and invoices are issued in Bukku). New
+    month, New task and Make a copy offer last month and the next six
+    (`fillMonths`).
   - Two checks (Onboarding checklist, Pre-advertising checklist), seeded only on
     a client's first month and handed on when that month is deleted
     (`ops_engagements_hand_on_checks`).
@@ -1296,7 +1337,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The card (`engCard`) never repeats its heading: the month is named by the
     card above it, whose state chip (`.eng-mark`) shows only while shut. The
     meeting, link and message are `.eng-row`s (label, value, controls at the
-    right edge); under `is-tight` the label and controls share the first line
+    right edge), the message to the client set off by the card's hairline; under `is-tight` the label and controls share the first line
     and the value runs full width beneath.
 - Every client deliverable goes into a confirmed month: one that exists, is
   open, and has its meeting set or marked not applicable (`no-month`,
@@ -1679,9 +1720,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   confirm the Pages build, report.
   - Ask only when readings differ materially.
   - Never re-explain settled decisions.
+- A migration is applied by Claude through the Supabase connector (project
+  `hwwuigvdfubuymchsvyx`, the user, 2026-09-28), once the merge's Pages
+  deploy has succeeded (the page must stop asking before the database stops
+  answering), and verified on the live database afterwards. The report
+  names what was applied.
 - The report lists what the user runs by hand:
-  - a migration;
-  - `schema.sql`;
   - an edge function to deploy (`sign-upload`, `invite-member`, `portal-login`,
     `meet-create`, `push-send`, `s3-sweep`; Verify JWT off);
   - a dashboard setting.

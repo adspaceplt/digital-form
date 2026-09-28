@@ -4276,6 +4276,10 @@ body > .shell { width: 100%; }
 .is-tight .eng-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "lab act" "val val"; }
 .is-tight .eng-row > .eng-lab { align-self: center; }
 .eng-meetwarn { margin: 8px 0 0; }
+/* The message to the client is the section's client-facing act, so it is
+   set off from the meeting's own facts by the card's hairline, 12 on each
+   side as under the head (the user, 2026-09-28). */
+.eng-facts > .eng-meetmsg { margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
 .eng-meetmsg-text { margin: 8px 0 0; padding: 12px 14px; background: var(--sunk); border-radius: var(--radius-sm); font: inherit; font-size: 13px; line-height: 1.55; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
 .engcard .eng-checks { margin-top: 12px; }
 /* The month's stage is a chip on its heading while the card is shut, and
@@ -4309,7 +4313,10 @@ body > .shell { width: 100%; }
 /* The state and its ⋯ keep the head's right edge on a phone too; the facts
    wrap in the column beside them. */
 .is-tight .eng-head { align-items: start; }
-.is-tight .eng-ctl { justify-content: flex-end; }
+/* The state and the ⋯ centre on the facts' first line, not on their own 44px
+   target: the group takes that line's height and the target overflows it
+   evenly (2026-09-28, they hung 12px below the line on a phone). */
+.is-tight .eng-ctl { justify-content: flex-end; height: calc(13px * 1.55); }
 .eng-open { display: inline-block; margin-top: 8px; font-size: 13px; }
 
 /* A checklist item is a statement that something was done, so the row is the
@@ -4661,6 +4668,12 @@ body > .shell { width: 100%; }
 .is-tight .task-row > .trow-meta { flex-wrap: wrap; }
 .is-tight .trow-meta > .task-stage { flex: 0 0 100%; margin-left: 0; }
 .is-narrow .task-row > .team-act { grid-area: act; align-self: start; }
+/* The ring, the title with its priority chip, and the ⋯ share one centre:
+   the title line's (22px). The 44px target overflows that line evenly
+   instead of pushing the ⋯ 12px below it (2026-09-28). */
+.is-narrow .task-row > .team-act,
+.is-narrow .task-row > .trow-check { height: 22px; display: flex; align-items: center; }
+.is-narrow .task-row > .team-act { margin-top: 0; }
 .is-narrow .task-row.crm-head { display: none; }
 .is-narrow .tlink-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name act" "kind kind"; }
 .is-narrow .tlink-row > .tlink-kind { grid-area: kind; }
@@ -7880,12 +7893,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .kindseg .acttab { flex: 1 1 0; text-align: center; min-height: var(--ctl-h); font-size: var(--ctl-text); }
 #qkForm .hint { margin: 10px 0 8px; }
 /* From template: a tick per template, what it makes under its name. */
-.tpl-head { display: flex; align-items: center; justify-content: space-between; margin: 12px 0 4px; }
-.tpllist { display: grid; border-top: 1px solid var(--line-soft); }
-.tplrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line-soft); }
-.tplrow .tickline { margin: 0; align-items: flex-start; }
-.tplrow .tickline span b { display: block; font-weight: 600; font-size: 13.5px; }
-.tplrow .tickline small { display: block; font-size: 12px; color: var(--ink-mute); }
+.tpllist { display: grid; }
 
 /* Owner, due date and status are three columns at a desk and one line on a
    phone: the wrapper is invisible to the desk grid and a row of its own on a
@@ -8935,3 +8943,60 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 #setTitle, .saved-top > b { color: var(--ink); }
 .zone-out .zone-head { display: flex; align-items: center; gap: 12px; }
 .zone-out .zone-head > #addAssets { margin-left: auto; }
+
+/* ---- The Overview (`js/overview.js`) ----------------------------------------
+   Each section's heading over its cards, two across on a desk and one on a
+   phone (`.chartgrid`). A list card is a chart card's shape: its title with a
+   count and View all on one line, then five rows that each open a record,
+   name over meta on the left and the figure over its age at the right edge. */
+.ovw > .ovw-head:first-child { margin-top: 0; }
+.ovw-cardhead { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; }
+.ovw-cardhead h3 { margin: 0; min-width: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.ovw-cardhead .tone { flex: 0 0 auto; }
+/* View all gives its padding back, so the title sits where a chart's does
+   and the chevron ends at the card's edge. */
+.ovw-cardhead .ovgo { margin: -8px -6px -8px auto; flex: 0 0 auto; }
+/* A card left alone on the last row takes the row, never half of it. */
+.ovw-grid > .ovw-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
+.ovw-rows { display: grid; }
+.ovw-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; align-items: start;
+  width: calc(100% + 16px); min-height: var(--ctl-h); margin: 0 -8px; padding: 10px 8px; border: 0; border-top: 1px solid var(--line-soft);
+  border-radius: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
+  transition: background-color var(--t-fast);
+}
+.ovw-row:first-child { border-top: 0; }
+.ovw-row:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--action-ring); border-radius: var(--radius-ctl-sm); }
+@media (hover: hover) { .ovw-row:hover { background: var(--sunk); } }
+.ovw-who, .ovw-fig { display: grid; gap: 2px; min-width: 0; }
+.ovw-who b { font-weight: 600; overflow-wrap: anywhere; }
+.ovw-who small, .ovw-fig small { font-size: 12.5px; color: var(--ink-mute); }
+.ovw-who small { overflow-wrap: anywhere; }
+.ovw-fig { justify-items: end; text-align: right; }
+.ovw-fig b, .ovw-fig small { white-space: nowrap; }
+.ovw-fig b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.ovw-fig b.is-warn { color: var(--warn); }
+.ovw-more { margin: 8px 0 0; font-size: 13px; color: var(--ink-mute); }
+/* The empty and failed lines sit in the card as its content, not as a second
+   card inside it. */
+.ovw-card .softpanel { background: none; border: 0; border-radius: 0; }
+.ovw-card .emptyline { padding: 0; }
+.ovw-card .emptyline b { font-weight: 400; color: var(--ink-mute); }
+.ovw-card .errline { border-bottom: 0; border-radius: var(--radius-sm); }
+
+/* ---- Template families (2026-09-28) ------------------------------------------
+   A template's row reads its name over its formats with their hours; the
+   editor lists every format with a tick and its hours at the right. */
+.tplrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+.tplrow:last-child { border-bottom: 0; }
+.tplrow-name { display: grid; gap: 2px; min-width: 0; }
+.tplrow-name small { font-size: 12.5px; color: var(--ink-mute); overflow-wrap: anywhere; }
+.tplrow > .btn { margin-block: calc((20px - var(--ctl-h-sm)) / 2); }
+.tefmts { display: grid; gap: 4px; }
+.tefmt { display: grid; grid-template-columns: minmax(0, 1fr) 96px; gap: 12px; align-items: center; min-height: var(--ctl-h-sm); }
+.tefmt .tickline { margin: 0; }
+.tefmt .tickline > span { display: grid; gap: 1px; }
+.tefmt .tickline small { font-size: 12px; color: var(--ink-mute); }
+.tefmt.is-held .tickline > span { color: var(--ink-mute); }
+.tefmt-hours { width: 100%; text-align: right; }
+.tefmt-hours:disabled { visibility: hidden; }

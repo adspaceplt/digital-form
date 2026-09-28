@@ -30,7 +30,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260928k">
+<link rel="stylesheet" href="/css/portal.css?v=20260928l">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -54,32 +54,32 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260928k"></script>
-<script src="/js/captcha.js?v=20260928k"></script>
-<script src="/js/words.js?v=20260928k"></script>
-<script src="/js/copy.js?v=20260928k"></script>
-<script src="/js/ask.js?v=20260928k"></script>
-<script src="/js/confirm.js?v=20260928k"></script>
-<script src="/js/sheet.js?v=20260928k"></script>
-<script src="/js/refresh.js?v=20260928k"></script>
-<script src="/js/form.js?v=20260928k"></script>
-<script src="/js/state.js?v=20260928k"></script>
-<script src="/js/group.js?v=20260928k"></script>
-<script src="/js/menu.js?v=20260928k"></script>
-<script src="/js/cmdbar.js?v=20260928k"></script>
-<script src="/js/records.js?v=20260928k"></script>
-<script src="/js/chart.js?v=20260928k"></script>
-<script src="/js/swipe.js?v=20260928k"></script>
-<script src="/js/api.js?v=20260928k"></script>
-<script src="/js/push.js?v=20260928k"></script>
-<script src="/js/money.js?v=20260928k"></script>
-<script src="/js/mockups.js?v=20260928k"></script>
+<script src="/js/config.js?v=20260928l"></script>
+<script src="/js/captcha.js?v=20260928l"></script>
+<script src="/js/words.js?v=20260928l"></script>
+<script src="/js/copy.js?v=20260928l"></script>
+<script src="/js/ask.js?v=20260928l"></script>
+<script src="/js/confirm.js?v=20260928l"></script>
+<script src="/js/sheet.js?v=20260928l"></script>
+<script src="/js/refresh.js?v=20260928l"></script>
+<script src="/js/form.js?v=20260928l"></script>
+<script src="/js/state.js?v=20260928l"></script>
+<script src="/js/group.js?v=20260928l"></script>
+<script src="/js/menu.js?v=20260928l"></script>
+<script src="/js/cmdbar.js?v=20260928l"></script>
+<script src="/js/records.js?v=20260928l"></script>
+<script src="/js/chart.js?v=20260928l"></script>
+<script src="/js/swipe.js?v=20260928l"></script>
+<script src="/js/api.js?v=20260928l"></script>
+<script src="/js/push.js?v=20260928l"></script>
+<script src="/js/money.js?v=20260928l"></script>
+<script src="/js/mockups.js?v=20260928l"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260928k" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260928l" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -167,6 +167,14 @@
       something happens.
     -->
     <nav class="sidebar-nav" aria-label="Sections">
+      <!-- The start page of a group that manages a section: what each section
+           has waiting. On its own above the two chunks, because it is a
+           summary of them rather than one of them. -->
+      <div class="navgroup">
+        <button class="navitem" data-section="overview" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7.5" height="9" rx="1.6"/><rect x="13.5" y="3" width="7.5" height="5" rx="1.6"/><rect x="13.5" y="11" width="7.5" height="10" rx="1.6"/><rect x="3" y="15.5" width="7.5" height="5.5" rx="1.6"/></svg><span>Overview</span>
+        </button>
+      </div>
       <div class="navgroup">
         <span class="sidebar-label">Work</span>
         <button class="navitem" data-section="work" type="button" hidden>
@@ -366,6 +374,10 @@
     </div>
 
     <!-- ---- CRM: the client record everything else points at ---- -->
+    <div class="console-body" id="sectionOverview" hidden>
+      <div class="ovw" id="ovwBody"></div>
+    </div>
+
     <div class="console-body" id="sectionClients" hidden>
 
       <section id="crmListView">
@@ -2044,7 +2056,7 @@
                 <div class="kmenu" id="workMore" hidden role="menu">
                   <button class="kmenu-item" data-a="bulk" type="button" role="menuitem">Bulk add</button>
                   <button class="kmenu-item" data-a="recur" type="button" role="menuitem">Run repeating tasks</button>
-                  <button class="kmenu-item" data-a="template" type="button" role="menuitem">From template</button>
+                  <button class="kmenu-item" data-a="template" type="button" role="menuitem" data-need="ops.workflows:work">Templates</button>
                   <button class="kmenu-item" data-a="select" type="button" role="menuitem" data-need="ops:manage">Select tasks</button>
                   <button class="kmenu-item" data-a="numbering" type="button" role="menuitem" hidden>Task numbering</button>
                 </div>
@@ -3179,31 +3191,21 @@
       <div class="sheet" id="tplSheet" hidden>
         <div class="sheet-card" role="dialog" aria-modal="true" aria-labelledby="tplHead">
           <div class="sheet-head">
-            <h3 id="tplHead">From template</h3>
+            <h3 id="tplHead">Templates</h3>
             <button class="iconbtn" id="tplClose" type="button" aria-label="Close">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
           </div>
+          <!-- A template is a family: one checklist, and the formats it serves
+               with the hours each takes. Picking a format in New task or Bulk
+               add fills the task from its family, so this sheet only edits
+               them (the user, 2026-09-28). -->
           <div class="sheet-body">
-            <div class="row">
-              <div class="field">
-                <label class="field-label" for="tplLink">Client or engagement</label>
-                <select class="select" id="tplLink" aria-required="true"></select>
-              </div>
-              <div class="field">
-                <label class="field-label" for="tplBase">Made for</label>
-                <input class="input" id="tplBase" type="date">
-              </div>
-            </div>
-            <div class="tpl-head">
-              <span class="field-label">Templates</span>
-              <button class="btn btn-quiet btn-sm" id="tplNew" type="button" hidden>New template</button>
-            </div>
             <div class="tpllist" id="tplList"></div>
           </div>
           <div class="sheet-foot">
-            <button class="btn btn-primary" id="tplGo" type="button">Create tasks</button>
-            <button class="btn btn-quiet" id="tplCancel" type="button">Cancel</button>
+            <button class="btn btn-primary" id="tplNew" type="button">New template</button>
+            <button class="btn btn-quiet" id="tplCancel" type="button">Close</button>
           </div>
           <div class="msg" id="tplMsg"></div>
         </div>
@@ -3263,6 +3265,10 @@
                   <input class="input" id="teEst" type="number" min="0" max="6000" inputmode="numeric" placeholder="Optional">
                 </div>
               </div>
+            </section>
+            <section class="fsec" id="teFmtSec">
+              <h4 class="fsec-h">Formats</h4>
+              <div class="tefmts" id="teFmts"></div>
             </section>
             <section class="fsec">
               <h4 class="fsec-h">Checklist</h4>
@@ -4391,18 +4397,19 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
-<script src="/js/passkey.js?v=20260928k"></script>
-<script src="/js/admin.js?v=20260928k"></script>
-<script src="/js/documents.js?v=20260928k"></script>
-<script src="/js/letters.js?v=20260928k"></script>
-<script src="/js/smreport.js?v=20260928k"></script>
-<script src="/js/reports.js?v=20260928k"></script>
-<script src="/js/register.js?v=20260928k"></script>
-<script src="/js/crm.js?v=20260928k"></script>
-<script src="/js/team.js?v=20260928k"></script>
-<script src="/js/campaigns.js?v=20260928k"></script>
-<script src="/js/ops.js?v=20260928k"></script>
-<script src="/js/perf.js?v=20260928k"></script>
-<script src="/js/search.js?v=20260928k"></script>
+<script src="/js/passkey.js?v=20260928l"></script>
+<script src="/js/admin.js?v=20260928l"></script>
+<script src="/js/documents.js?v=20260928l"></script>
+<script src="/js/letters.js?v=20260928l"></script>
+<script src="/js/smreport.js?v=20260928l"></script>
+<script src="/js/reports.js?v=20260928l"></script>
+<script src="/js/register.js?v=20260928l"></script>
+<script src="/js/crm.js?v=20260928l"></script>
+<script src="/js/team.js?v=20260928l"></script>
+<script src="/js/campaigns.js?v=20260928l"></script>
+<script src="/js/ops.js?v=20260928l"></script>
+<script src="/js/perf.js?v=20260928l"></script>
+<script src="/js/search.js?v=20260928l"></script>
+<script src="/js/overview.js?v=20260928l"></script>
 </body>
 </html>

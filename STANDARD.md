@@ -584,6 +584,9 @@ section holds only what is true of the project as a whole.
   counted from the moves into that stage.
 
 ### Not built, or waiting on the user
+- Content months derived from a client's Confirmed service lines: declined
+  for now (the user, 2026-09-28) while the team's SOPs are refined; months
+  stay manual.
 - S3 (`docs/S3-STORAGE.md`), built 2026-09-28. The daily report
   (`s3-sweep`, 03:17 MYT) is deployed and scheduled, and nothing is ever
   deleted (the user, 2026-09-28). Still with the user:
