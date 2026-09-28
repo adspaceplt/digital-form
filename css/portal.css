@@ -1354,42 +1354,7 @@ a { color: inherit; }
 .linkbtn .ovgo-chev { width: 14px; height: 14px; flex: 0 0 auto; }
 .dangerrow { margin-top: 14px; }
 
-/* Client and content set cards */
-.cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
-.bigcard {
-  text-align: left; background: var(--card); border: 1px solid var(--card-line);
-  border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px;
-  display: flex; flex-direction: column; gap: 4px;
-  transition: border-color var(--t) var(--ease-out), transform var(--t-fast) var(--ease-out);
-}
-@media (hover: hover) {
-  .bigcard:hover { border-color: var(--ink); transform: translateY(-1px); }
-}
-.bigcard.is-on { border-color: var(--ink); }
-.bigcard-top { display: flex; align-items: center; gap: 9px; min-width: 0; }
-/* Same treatment as a profile picture in the previews, so what the team sees
-   here is what the client's audience will see: no ring, no inset, no padding.
-   The disc stays white in dark too: the logo is the client's artwork, usually
-   dark on transparent, and it is not ours to invert. */
-.bigcard-logo {
-  width: 26px; height: 26px; flex: 0 0 auto; border-radius: 50%; overflow: hidden;
-  background: #fff;
-}
-.bigcard-logo img { width: 100%; height: 100%; object-fit: contain; }
-.bigcard-name {
-  font-size: 15px; font-weight: 600; letter-spacing: -.01em; min-width: 0;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.bigcard-sub { color: var(--ink-mute); font-size: 12.5px; }
-/* The one line on the card could not be read. Said in warn, in words, so it
-   is not mistaken for a client with nothing on them. */
-.bigcard-sub.is-warn { color: var(--warn); }
-.bigcard-tag {
-  align-self: flex-start; margin-top: 8px; font-size: 11px; font-weight: 600;
-  letter-spacing: 0; padding: 3px 8px; border-radius: 999px;
-  background: var(--line-soft); color: var(--ink-mute);
-}
-.bigcard-tag.is-live { background: var(--ok-bg); color: var(--ok); }
+
 
 .linkbox { display: flex; gap: 8px; flex-wrap: wrap; }
 .linkbox .input {
@@ -1518,14 +1483,17 @@ a { color: inherit; }
    two lines and cut the pixel count in half, so there the marks take a line of
    their own under a hairline and the words get the width. */
 .saved {
-  display: grid; gap: 0 13px; padding: 11px 12px;
+  display: grid; gap: 0 13px; padding: 12px 0;
   grid-template-columns: 62px minmax(0, 1fr) auto;
   grid-template-areas: "thumb body actions";
-  align-items: center;
-  border: 1px solid var(--card-line); border-radius: 12px; background: var(--card); margin-bottom: 8px;
-  transition: border-color var(--t-fast) var(--ease-out), box-shadow var(--t-fast) var(--ease-out);
+  align-items: start;
+  border: 0; border-top: 1px solid var(--line-soft); background: none;
 }
-.saved:hover { border-color: #d9d9d9; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+.saved:first-child { border-top: 0; padding-top: 4px; }
+.saved-top { display: flex; align-items: center; gap: 8px; min-width: 0; width: 100%; }
+.saved-top > b { flex: 1 1 auto; min-width: 0; }
+.saved-top > .tone { flex: 0 0 auto; }
+.saved-actions .kmenu-btn { margin-block: -6px; }
 .saved-thumb {
   grid-area: thumb; width: 62px; height: 62px; border-radius: 9px; overflow: hidden;
   background: var(--line-soft);
@@ -1570,19 +1538,8 @@ a { color: inherit; }
 }
 
 @media (max-width: 640px) {
-  .saved {
-    grid-template-columns: 56px minmax(0, 1fr);
-    grid-template-areas: "thumb body" "actions actions";
-    align-items: start; padding-bottom: 3px;
-  }
+  .saved { grid-template-columns: 56px minmax(0, 1fr) auto; gap: 0 10px; }
   .saved-thumb { width: 56px; height: 56px; }
-  .saved-meta { flex-wrap: wrap; row-gap: 0; }
-  .saved-meta .sep { display: none; }
-  .saved-meta .spec { flex: 1 0 100%; }
-  .saved-actions {
-    justify-content: flex-end; margin-top: 7px; padding-top: 3px;
-    border-top: 1px solid var(--line-soft);
-  }
 }
 
 .saved-note {
@@ -8930,3 +8887,35 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 /* A chip holding a typed address (a website, a profile, a past link) may
    wrap rather than widen its row. */
 .readgroup .plink, .lhist-diff .plink { white-space: normal; overflow-wrap: anywhere; text-align: left; }
+
+/* Content Review's client, as a record: the sets beside the review link
+   (2026-09-28). One column below 1100, the link first. */
+.cr-rec { display: grid; gap: 0 24px; grid-template-columns: minmax(0, 1.618fr) minmax(280px, 1fr); align-items: start; margin-top: 12px; }
+.cr-main { min-width: 0; }
+.cr-main > .viewhead:first-child { margin-top: 0; }
+.cr-rail { min-width: 0; }
+.cr-rail .railblock { border-bottom: 0; margin: 0; }
+.cr-rail .linkbox .input { width: 100%; }
+.cr-linkacts { margin-top: 8px; }
+.cr-linkacts > .btn { flex: 1 1 0; min-width: 0; }
+@media (max-width: 1100px) {
+  .cr-rec { grid-template-columns: minmax(0, 1fr); }
+  .cr-rail { order: -1; margin-bottom: 12px; }
+}
+/* A content set is a row: the name with its state at the right, the count under it. */
+.cr-sets { display: flex; flex-direction: column; padding: 0; }
+.set-row {
+  display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left;
+  padding: 12px 15px; border: 0; border-top: 1px solid var(--line-soft); background: none; font: inherit; color: var(--ink);
+}
+.set-row:first-child { border-top: 0; }
+.set-row-top { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.set-row-top > b { flex: 1 1 auto; min-width: 0; font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.set-row-top > .tone { flex: 0 0 auto; }
+.set-row-sub { font-size: 12.5px; color: var(--ink-mute); }
+.set-row-sub.is-warn { color: var(--warn); }
+.set-row.is-on { background: var(--line-soft); }
+@media (hover: hover) { .set-row:not(.is-on):hover { background: var(--sunk); } }
+.cr-sets > .empty { padding: 12px 15px; margin: 0; }
+/* The re-approval note opens under the post, across the whole row. */
+.saved > .asknote { grid-column: 1 / -1; margin-top: 10px; }

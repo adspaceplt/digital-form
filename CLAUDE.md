@@ -70,6 +70,11 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 - It prints one line per suite and ends `gate: ok` or `gate: PROBLEM (n)`
   (also written to `$OUT`, default `/tmp/gate.txt`).
 - Run it as **one background command and wait for its completion notice**.
+  - Run it through `bash tests/snap.sh <suites… | all | ui>`: it gates a
+    frozen copy of HEAD (commit first), so the next change is built while it
+    runs. The machine has 4 CPUs and one gate fills them: one gate at a time.
+  - While building, run the suites the change touched; `all` once per batch,
+    before the merge.
   - Never poll with sleep.
   - Never watch suites one by one.
   - Never wait on a `pgrep` pattern: the loop's own command line matches it and
@@ -849,6 +854,12 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The Review Canvas moves the card's own blocks and puts them back; there is
   one decision control. Prev/next, the arrow keys and Escape work.
 - Console:
+  - The client is a record: the mark, name and handles, and one ⋯ (Client
+    settings as a sheet with one Save, Reset access link, Remove from Content
+    Review); the sets are rows (name, the state at the right, the post
+    count) beside the review link. A post is a row: the placement with the
+    client's decision at the right, the file, the copy, and one ⋯ (Edit,
+    Request re-approval, Delete); the re-approval note opens under the post.
   - Sets are folded, one open at a time.
   - Publish / Unpublish (warn).
   - Resend with a note.

@@ -30,7 +30,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260928h">
+<link rel="stylesheet" href="/css/portal.css?v=20260928i">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -54,32 +54,32 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260928h"></script>
-<script src="/js/captcha.js?v=20260928h"></script>
-<script src="/js/words.js?v=20260928h"></script>
-<script src="/js/copy.js?v=20260928h"></script>
-<script src="/js/ask.js?v=20260928h"></script>
-<script src="/js/confirm.js?v=20260928h"></script>
-<script src="/js/sheet.js?v=20260928h"></script>
-<script src="/js/refresh.js?v=20260928h"></script>
-<script src="/js/form.js?v=20260928h"></script>
-<script src="/js/state.js?v=20260928h"></script>
-<script src="/js/group.js?v=20260928h"></script>
-<script src="/js/menu.js?v=20260928h"></script>
-<script src="/js/cmdbar.js?v=20260928h"></script>
-<script src="/js/records.js?v=20260928h"></script>
-<script src="/js/chart.js?v=20260928h"></script>
-<script src="/js/swipe.js?v=20260928h"></script>
-<script src="/js/api.js?v=20260928h"></script>
-<script src="/js/push.js?v=20260928h"></script>
-<script src="/js/money.js?v=20260928h"></script>
-<script src="/js/mockups.js?v=20260928h"></script>
+<script src="/js/config.js?v=20260928i"></script>
+<script src="/js/captcha.js?v=20260928i"></script>
+<script src="/js/words.js?v=20260928i"></script>
+<script src="/js/copy.js?v=20260928i"></script>
+<script src="/js/ask.js?v=20260928i"></script>
+<script src="/js/confirm.js?v=20260928i"></script>
+<script src="/js/sheet.js?v=20260928i"></script>
+<script src="/js/refresh.js?v=20260928i"></script>
+<script src="/js/form.js?v=20260928i"></script>
+<script src="/js/state.js?v=20260928i"></script>
+<script src="/js/group.js?v=20260928i"></script>
+<script src="/js/menu.js?v=20260928i"></script>
+<script src="/js/cmdbar.js?v=20260928i"></script>
+<script src="/js/records.js?v=20260928i"></script>
+<script src="/js/chart.js?v=20260928i"></script>
+<script src="/js/swipe.js?v=20260928i"></script>
+<script src="/js/api.js?v=20260928i"></script>
+<script src="/js/push.js?v=20260928i"></script>
+<script src="/js/money.js?v=20260928i"></script>
+<script src="/js/mockups.js?v=20260928i"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260928h" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260928i" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -1165,95 +1165,38 @@
   <section id="workspace" hidden>
     <button class="backlink" id="backToClients" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>Back</button>
 
-    <section class="panel">
-      <div class="viewhead" style="margin:0 0 4px">
-        <span class="headmark"><h2 id="wsClientName"></h2><span class="chip" id="wsLock" hidden>Access code</span></span>
+    <!-- The client as a record, the shape Clients and Campaigns take: the mark,
+         the name and its handles, and one ⋯ for what acts on the whole
+         client. Their sets are rows beside the review link (2026-09-28). -->
+    <section class="panel rec-head">
+      <div class="rec-id">
+        <span class="rec-mark" id="wsMark" aria-hidden="true"></span>
+        <div class="rec-who">
+          <div class="rec-name"><h2 id="wsClientName"></h2></div>
+          <p class="rec-id-meta" id="wsMeta"></p>
+        </div>
+        <div class="rec-ctl">
+          <span class="chip" id="wsLock" hidden>Access code</span>
+          <div class="kmenu-wrap" id="wsMenuWrap">
+            <button class="kmenu-btn" id="wsMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+            <div class="kmenu" id="wsMenu" hidden role="menu">
+              <button class="kmenu-item" id="advancedToggle" type="button" role="menuitem" data-need="review.settings:view">Client settings</button>
+              <button class="kmenu-item" id="resetLink" type="button" role="menuitem" data-need="review.settings:work">Reset access link</button>
+              <button class="kmenu-item is-danger" id="deleteClient" type="button" role="menuitem" data-need="review.sets:manage">Remove from Content Review</button>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="linkbox">
-        <input class="input readfield" id="clientLink" aria-label="Review link" readonly>
-        <button class="btn btn-icon" id="copyLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg><span>Copy link</span></button>
-        <a class="btn btn-icon" id="openLink" target="_blank" rel="noopener">Preview
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M14 4h6v6"/><path d="M20 4 11 13"/>
-            <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>
-          </svg>
-        </a>
-      </div>
+      <div class="msg" id="wsMsg"></div>
     </section>
 
-    <section class="panel panel-collapse" data-need="review.settings:view">
-      <button class="disclosure" id="advancedToggle" type="button" aria-expanded="false">
-        <span class="disclosure-caret" aria-hidden="true">&#9656;</span>
-        <svg class="disclosure-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>
-        <span>Client settings</span>
-        <span class="muted">Handles, logo, access code, link, deletion</span>
-      </button>
-      <div class="disclosure-body" id="advancedBody" hidden>
-
-        <div class="subsection">
-          <h4>Account handles</h4>
-          <div class="row" id="handleRow">
-            <div>
-              <label class="field-label" for="eIg">Instagram</label>
-              <input class="input" id="eIg" placeholder="@handle">
-            </div>
-            <div>
-              <label class="field-label" for="eFb">Facebook page</label>
-              <input class="input" id="eFb" placeholder="Page name">
-            </div>
-            <div>
-              <label class="field-label" for="eTt">TikTok</label>
-              <input class="input" id="eTt" placeholder="@handle">
-            </div>
-            <div>
-              <label class="field-label" for="eXhs">rednote name</label>
-              <input class="input" id="eXhs" placeholder="Name">
-            </div>
-            <button class="btn btn-primary" id="saveHandles" data-need="review.settings:work" type="button">Save</button>
-          </div>
-          <div class="msg" id="handleMsg"></div>
-        </div>
-
-        <div class="subsection">
-          <h4>Logo and access code</h4>
-          <div class="row">
-            <div>
-              <label class="field-label" for="eLogo">Logo URL</label>
-              <div class="logorow">
-                <span class="logopreview" id="logoPreview" title="How it will look as a profile picture">
-                  <img id="logoPreviewImg" alt="" hidden>
-                </span>
-                <input class="input" id="eLogo" placeholder="https://">
-              </div>
-            </div>
-            <div style="flex:0 0 190px">
-              <label class="field-label" for="ePass">Access code</label>
-              <input class="input" id="ePass" placeholder="None">
-            </div>
-            <button class="btn btn-primary" id="saveProfile" data-need="review.settings:work" type="button">Save</button>
-          </div>
-          <div class="msg" id="logoNote"></div>
-          <div class="msg" id="profileMsg"></div>
-        </div>
-
-        <div class="subsection">
-          <h4>Link and removal</h4>
-          <p class="hint">Reset invalidates the current link. Removal deletes the content sets and approvals and keeps the client record.</p>
-          <div class="dangerrow">
-            <button class="btn btn-warn" id="resetLink" data-need="review.settings:work" type="button">Reset access link</button>
-            <button class="btn btn-danger" id="deleteClient" data-need="review.sets:manage" type="button">Remove from Content Review</button>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
+    <div class="cr-rec">
+    <div class="cr-main">
     <div class="viewhead">
-      <span class="headmark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></svg><h2>Content sets</h2></span>
+      <span class="headmark"><h2>Content sets</h2></span>
       <button class="btn btn-primary" id="addBatch" data-need="review.sets:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New content set</button>
     </div>
-    <div class="cards" id="batchCards"></div>
+    <div class="crm-table softpanel cr-sets" id="batchCards"></div>
     <div class="msg" id="setsMsg"></div>
 
     <!-- ============ One set ============ -->
@@ -1368,7 +1311,85 @@
       </section>
 
     </div>
+    </div>
+
+    <!-- What the client is sent: the link, and whether it asks for a code. -->
+    <aside class="cr-rail">
+      <div class="railblock">
+        <h3 class="railtitle">Review link</h3>
+        <div class="linkbox">
+          <input class="input readfield" id="clientLink" aria-label="Review link" readonly>
+        </div>
+        <div class="row acts cr-linkacts">
+          <a class="btn" id="openLink" target="_blank" rel="noopener">Preview</a>
+          <button class="btn" id="copyLink" type="button">Copy link</button>
+        </div>
+      </div>
+    </aside>
+    </div>
   </section>
+
+  <!-- A client's settings: the handles and logo the mockups print, and the
+       access code. One sheet, one Save (2026-09-28). -->
+  <div class="sheet" id="crSettingsSheet" hidden>
+    <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="crSettingsTitle" tabindex="-1">
+      <div class="sheet-head">
+        <h3 id="crSettingsTitle">Client settings</h3>
+        <button class="iconbtn" id="crSettingsClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <div class="sheet-body" id="advancedBody">
+
+
+        <section class="fsec">
+          <h4 class="fsec-h">Account handles</h4>
+          <div class="row fgrid" id="handleRow">
+            <div>
+              <label class="field-label" for="eIg">Instagram</label>
+              <input class="input" id="eIg" placeholder="@handle">
+            </div>
+            <div>
+              <label class="field-label" for="eFb">Facebook page</label>
+              <input class="input" id="eFb" placeholder="Page name">
+            </div>
+            <div>
+              <label class="field-label" for="eTt">TikTok</label>
+              <input class="input" id="eTt" placeholder="@handle">
+            </div>
+            <div>
+              <label class="field-label" for="eXhs">rednote name</label>
+              <input class="input" id="eXhs" placeholder="Name">
+            </div>
+          </div>
+          <div class="msg" id="handleMsg"></div>
+        </section>
+
+        <section class="fsec">
+          <h4 class="fsec-h">Logo and access code</h4>
+          <div class="row">
+            <div>
+              <label class="field-label" for="eLogo">Logo URL</label>
+              <div class="logorow">
+                <span class="logopreview" id="logoPreview" title="How it will look as a profile picture">
+                  <img id="logoPreviewImg" alt="" hidden>
+                </span>
+                <input class="input" id="eLogo" placeholder="https://">
+              </div>
+            </div>
+            <div>
+              <label class="field-label" for="ePass">Access code</label>
+              <input class="input" id="ePass" placeholder="None">
+            </div>
+          </div>
+          <div class="msg" id="logoNote"></div>
+          <div class="msg" id="profileMsg"></div>
+        </section>
+      </div>
+      <div class="sheet-foot">
+        <button class="btn btn-primary" id="crSettingsSave" data-need="review.settings:work" type="button">Save</button>
+        <button class="btn btn-quiet" id="crSettingsCancel" type="button">Cancel</button>
+      </div>
+    </div>
+  </div>
 
     </div>
 
@@ -4341,18 +4362,18 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
-<script src="/js/passkey.js?v=20260928h"></script>
-<script src="/js/admin.js?v=20260928h"></script>
-<script src="/js/documents.js?v=20260928h"></script>
-<script src="/js/letters.js?v=20260928h"></script>
-<script src="/js/smreport.js?v=20260928h"></script>
-<script src="/js/reports.js?v=20260928h"></script>
-<script src="/js/register.js?v=20260928h"></script>
-<script src="/js/crm.js?v=20260928h"></script>
-<script src="/js/team.js?v=20260928h"></script>
-<script src="/js/campaigns.js?v=20260928h"></script>
-<script src="/js/ops.js?v=20260928h"></script>
-<script src="/js/perf.js?v=20260928h"></script>
-<script src="/js/search.js?v=20260928h"></script>
+<script src="/js/passkey.js?v=20260928i"></script>
+<script src="/js/admin.js?v=20260928i"></script>
+<script src="/js/documents.js?v=20260928i"></script>
+<script src="/js/letters.js?v=20260928i"></script>
+<script src="/js/smreport.js?v=20260928i"></script>
+<script src="/js/reports.js?v=20260928i"></script>
+<script src="/js/register.js?v=20260928i"></script>
+<script src="/js/crm.js?v=20260928i"></script>
+<script src="/js/team.js?v=20260928i"></script>
+<script src="/js/campaigns.js?v=20260928i"></script>
+<script src="/js/ops.js?v=20260928i"></script>
+<script src="/js/perf.js?v=20260928i"></script>
+<script src="/js/search.js?v=20260928i"></script>
 </body>
 </html>
