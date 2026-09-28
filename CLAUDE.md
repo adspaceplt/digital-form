@@ -73,8 +73,10 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
   - Run it through `bash tests/snap.sh <suites… | all | ui>`: it gates a
     frozen copy of HEAD (commit first), so the next change is built while it
     runs. The machine has 4 CPUs and one gate fills them: one gate at a time.
-  - While building, run the suites the change touched; `all` once per batch,
-    before the merge.
+  - Run only the suites the change touched (the tiers below), before the
+    merge as well. `all` is for a shared script, the stand-in, or a schema
+    change; never for a style, a copy or a one-screen fix (the user,
+    2026-09-28: a full gate for one border wastes their credits).
   - Never poll with sleep.
   - Never watch suites one by one.
   - Never wait on a `pgrep` pattern: the loop's own command line matches it and
@@ -93,11 +95,11 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 |---|---|
 | Docs or `.md` only | Nothing, but confirm the `@` imports at the top of this file still name real files |
 | Any `js/*.js` | `node --check` on each changed file, then the suites that cover it (map below) |
-| CSS, markup, or anything visual | The above, plus `geom` and `ui` (uxaudit and matrix), plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against `DESIGN.md`'s phone checklist. `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
-| A shared file: `css/portal.css`, `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `tests/stub2.js` | `all` |
+| CSS, markup, or anything visual (`css/portal.css` included) | The above, plus `ui` (uxaudit and matrix; add `geom` for a layout change), plus screenshots at 1280 and 390 of every touched screen (both themes in the console), each opened and read against `DESIGN.md`'s phone checklist. `SHOTS=1 node tests/uxaudit.js tests` writes the walk to `tests/walk/` |
+| A shared script: `js/api.js`, `js/admin.js`, `js/sheet.js`, `js/form.js`, `js/menu.js`, `js/state.js`, `js/group.js`, `js/cmdbar.js`, `js/words.js`, `js/chrome.js`, `js/confirm.js`, `js/ask.js`, `tests/stub2.js` | `all` |
 | `supabase/schema.sql` or a migration | `sql`, plus the area's Postgres suite (`ops`, `perf`, `smsql`, `levels`, `trail`, `s3sql`). These run the file twice against a throwaway Postgres 16 and compare each canonical section with its migration byte for byte |
 | A PDF (`documents.js`, `letters.js`, `smreport.js`, a perf print) | The area's suite, plus `pdfreal` and `pdfcases` (need `npm i pdfjs-dist@3.11.174 --prefix tests/pdfx`) |
-| Before merging any batch that changed behaviour | `all` |
+| Before a merge | The union of the rows above for everything in the batch; `all` only where a row says so |
 
 **File → suites** (at least these; `tests/STATUS.md` has the rest):
 
