@@ -438,10 +438,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   - Request extension, when it will only ask.
   - Creators List (never "roster").
   - Task Owner and Created by (never Owner or Manager).
-  - Bulk add.
+  - Add piece; Create 3 tasks.
   - Import from spreadsheet.
-- Headings name their content: Task details, Assignment, Date and time,
-  Meeting channel, Task quantity, Frequency, End of repeat, Call or visit
+- Headings name their content: Task details, Pieces, Schedule, Repeat,
+  Assignment, Date and time, Meeting channel, Frequency, End of repeat, Call or visit
   details, Contact details, Task settings, Inclusions, Time records, Team
   member.
 - Messages:

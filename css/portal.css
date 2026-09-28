@@ -4216,13 +4216,35 @@ body > .shell { width: 100%; }
 .rec-name h2 .askfield { font-size: 19px; min-height: var(--ctl-h-sm); padding-block: 2px; }
 /* A hint under its own field sits on the field, not a block step away. */
 .field > .hint { margin: 6px 0 0; }
-/* Five figures for five weeks on one line, two lines on a phone. The codes
-   a preview answers with wrap as a paragraph under the control that asked. */
-.genweeks { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px 12px; }
-.genout { margin: 12px 0 0; overflow-wrap: anywhere; }
-/* The mix under the format rows, one step clear of the last field. */
-#genFmtSum { margin: 8px 0 0; }
-#genPreview { margin-top: 16px; }
+/* The New sheet's pieces (2026-09-28): a line each, the description, the
+   format and the week on one grid, the remove mark at the end once there is
+   more than one. The first line carries the labels; the rest name themselves.
+   On a narrow card a piece is two lines, what over which format and week,
+   the pieces a hairline apart. */
+.pieces { display: grid; gap: 12px; }
+.piece {
+  display: grid; gap: 12px; align-items: end;
+  grid-template-columns: minmax(0, 1fr) 188px 104px;
+  grid-template-areas: "desc fmt week";
+}
+.piece-desc { grid-area: desc; }
+.piece-fmt { grid-area: fmt; }
+.piece-week { grid-area: week; }
+.piece-x { grid-area: x; }
+.pieces.is-many .piece { grid-template-columns: minmax(0, 1fr) 188px 104px var(--ctl-h); grid-template-areas: "desc fmt week x"; }
+.pieces.no-week .piece { grid-template-columns: minmax(0, 1fr) 188px; grid-template-areas: "desc fmt"; }
+.pieces.no-week.is-many .piece { grid-template-columns: minmax(0, 1fr) 188px var(--ctl-h); grid-template-areas: "desc fmt x"; }
+.pieces.no-week .piece-week, .pieces:not(.is-many) .piece-x { display: none; }
+.pieces-foot { display: flex; margin-top: 12px; }
+/* A piece's fields fill their tracks: a select's own 180px floor would
+   push the week over the remove mark. */
+.piece .input, .piece .select { width: 100%; min-width: 0; }
+#ntCodeHint { margin: 8px 0 0; }
+.is-narrow .piece { grid-template-columns: minmax(0, 1fr) 104px; grid-template-areas: "desc desc" "fmt week"; }
+.is-narrow .pieces.is-many .piece { grid-template-columns: minmax(0, 1fr) 104px var(--ctl-h); grid-template-areas: "desc desc desc" "fmt week x"; }
+.is-narrow .pieces.no-week .piece { grid-template-columns: minmax(0, 1fr); grid-template-areas: "desc" "fmt"; }
+.is-narrow .pieces.no-week.is-many .piece { grid-template-columns: minmax(0, 1fr) var(--ctl-h); grid-template-areas: "desc desc" "fmt x"; }
+.is-narrow .piece + .piece { padding-top: 12px; border-top: 1px solid var(--line-soft); }
 /* Several ticks in a sheet stack one to a line; inline they flowed two to a
    line with the third wrapping under them. */
 .tickstack { display: grid; gap: 2px; margin: 0 0 12px; }

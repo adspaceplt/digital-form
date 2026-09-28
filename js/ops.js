@@ -190,16 +190,13 @@
     'meeting-required': 'Content meeting not held or marked N/A.',
     'needs-final-or-reason': 'Add a final link or a note.',
     'no-such-person': 'Not a team member.',
-    'bad-count': 'Task count must be 1 to 60.',
-    'bad-weeks': 'Enter up to five weekly figures.',
-    'weeks-do-not-add-up': 'Weekly figures must match the total.',
+    'bad-count': 'Add 1 to 60 pieces.',
     'not-owner': 'Only the Task Owner can change the status.',
-    'no-month': 'This client has no content month for that month. Add it in My Work, Clients first.',
+    'no-month': 'This client has no content month for that month. Add it in My Work, Months first.',
     'month-closed': 'That content month is completed or cancelled.',
     'tasks-open': 'Tasks in this month are still open.',
     'derived-state': 'Set by the month\u2019s readiness, meeting and tasks.',
     'month-not-confirmed': 'Confirm the content meeting for that month first.',
-    'already-generated': 'Already generated from this sheet.',
     'bad-frequency': 'Choose weekly, monthly or every N days.',
     'interval-required': 'Enter the number of days.',
     'bad-state': 'Invalid status.',
@@ -812,14 +809,14 @@
   function viewBox() {
     var list = $('workQueue'), board = $('workBoard'), cal = $('workCal'), cap = $('workCap');
     var rep = $('workReport'), wc = $('workClients');
-    if (wc) wc.hidden = state.view !== 'clients';
+    if (wc) wc.hidden = state.view !== 'months';
     if (list) list.hidden = state.view !== 'list';
     if (board) board.hidden = state.view !== 'board';
     if (cal) cal.hidden = state.view !== 'calendar';
     if (cap) cap.hidden = state.view !== 'board';
     if (rep) rep.hidden = state.view !== 'report';
     return state.view === 'board' ? board
-         : state.view === 'clients' ? wc
+         : state.view === 'months' ? wc
          : state.view === 'calendar' ? cal
          : state.view === 'report' ? rep : list;
   }
@@ -832,7 +829,7 @@
        "how long does Editing take" is a question about every task there has
        ever been and not about the rows on this page. */
     if (state.view === 'report') { paintReport(); return; }
-    if (state.view === 'clients') { paintClients(false); return; }
+    if (state.view === 'months') { paintClients(false); return; }
     if (!state.tasks) return;
     /* The count is read against the view somebody chose, not against every
        row the database sent: "Open work, mine" is where this route opens, so
@@ -1791,13 +1788,16 @@
     /* Workload is the Report's first section now; an old link lands there. */
     if (v === 'load') v = 'report';
     if (v === 'report' && !mayReport()) v = '';
-    if (v === 'clients' && !may('ops', 'view')) v = '';
+    /* The view was Clients until 2026-09-28; an address that still says so
+       lands on Months. */
+    if (v === 'clients') v = 'months';
+    if (v === 'months' && !may('ops', 'view')) v = '';
     /* List, Board and Calendar follow My Work unless the user group shuts
        one (2026-09-24). A view the group may not open falls to the first it
        may, and the list stays when every one of them is shut, because a
        route with no view at all is a blank page. */
     if ((v === 'list' || v === 'board' || v === 'calendar') && !may('ops.' + v, 'view')) v = '';
-    if (!v || ['list', 'board', 'calendar', 'clients', 'report'].indexOf(v) < 0) {
+    if (!v || ['list', 'board', 'calendar', 'months', 'report'].indexOf(v) < 0) {
       v = ['list', 'board', 'calendar'].filter(function (k) { return may('ops.' + k, 'view'); })[0] || 'list';
     }
     state.view = v;
@@ -1810,7 +1810,7 @@
     if ($('workGroup')) $('workGroup').hidden = state.view !== 'list';
     /* The report and the client's months are not filtered lists, so the
        list's own controls say nothing about them. */
-    var whole = state.view === 'report' || state.view === 'clients';
+    var whole = state.view === 'report' || state.view === 'months';
     if ($('workScope')) $('workScope').hidden = whole;
     if ($('workWf')) $('workWf').hidden = state.view !== 'board';
     /* The report is not a filtered list, so the list's own controls say
@@ -1821,10 +1821,10 @@
     var findMark = find && find.parentElement && find.parentElement.previousElementSibling;
     if (findMark && findMark.classList.contains('cmdbar-search')) findMark.hidden = whole;
     if (stg) stg.hidden = whole;
-    if (cnt && (state.view === 'report' || state.view === 'clients')) cnt.textContent = '';
+    if (cnt && (state.view === 'report' || state.view === 'months')) cnt.textContent = '';
     /* The client's months carry their own New task, which knows the client;
        a second add in the bar above it would be the same act twice. */
-    if ($('workNew')) $('workNew').hidden = !may('ops', 'work') || state.view === 'clients';
+    if ($('workNew')) $('workNew').hidden = !may('ops', 'work') || state.view === 'months';
     showPeriod();
     if (window.ADspaceCmdbar) window.ADspaceCmdbar.refresh();
     if (state.view === 'board') loadCapacity();
@@ -1849,7 +1849,7 @@
         /* viewBox() is what shows the months and hides the list, so the
            client's months go through it like every other view: drawn
            straight into a hidden box, they appeared only after a reload. */
-        else if (state.view === 'clients') { viewBox(); paintClients(true); }
+        else if (state.view === 'months') { viewBox(); paintClients(true); }
         else paint();
       }, 0);
     });
@@ -3331,8 +3331,8 @@
 
   // ---- Templates -------------------------------------------------------------
   /* A template is a family: one checklist, and the formats it serves, each
-     with the hours that variant takes. Picking a format in New task, Bulk add
-     or a repeat fills the task from its family in the database
+     with the hours that variant takes. Picking a format for a piece in New
+     task, or a repeat, fills the task from its family in the database
      (`ops_create_task`), so this sheet only edits the families
      (the user, 2026-09-28). */
   var tplRows = [], tplVars = [];
@@ -4185,7 +4185,7 @@
   function monthLink(t) {
     var slug = t.clients && t.clients.slug;
     if (!slug) return null;
-    return { label: 'Open the month', href: '/admin/?s=work&view=clients&wc=' + encodeURIComponent(slug) };
+    return { label: 'Open the month', href: '/admin/?s=work&view=months&wc=' + encodeURIComponent(slug) };
   }
   /* The link a gate asks for is added where the reader is: in the sheet's
      own form, or the record's. */
@@ -5364,6 +5364,13 @@
     $('ntPaused').checked = false;
     $('ntPriority').value = '3';
     $('ntComplex').value = 'standard';
+    ntResetPieces();
+    $('ntRepeat').checked = false;
+    $('ntFreq').value = 'monthly';
+    $('ntInterval').value = '';
+    $('ntEnds').value = '';
+    $('ntMax').value = '';
+    ntRepeatChanged();
     if (ntPrefill) {
       var pc = ntPrefill.client;
       $('ntScope').value = LEAD_STAGES[pc.stage] ? 'lead' : 'client';
@@ -5395,13 +5402,13 @@
     /* An internal task carries no code, so the month and the week that build
        one have nothing to say; and engagement work is for a client. */
     $('ntCodeRow').hidden = scope === 'internal';
+    $('ntPieces').classList.toggle('no-week', scope === 'internal');
     if (scope !== 'client' && $('ntType').value === 'engagement' && !ntTouched.type) $('ntType').value = 'adhoc';
     if (scope === 'client' && !ntTouched.type) $('ntType').value = 'engagement';
     ntLoadMonths();
   }
   /* A client's deliverable goes into one of the client's months that is
-     open with its meeting confirmed, the same months Bulk add offers; the
-     database refuses any other. A lead's work has no months, so it keeps
+     open with its meeting confirmed; the database refuses any other. A lead's work has no months, so it keeps
      the calendar's. */
   var ntEngs = null;
   function ntLoadMonths() {
@@ -5428,7 +5435,7 @@
     }
     sel.innerHTML = '<option value="">Loading</option>';
     sel.disabled = true;
-    db.from('ops_engagements').select('id, period, status, meeting_at, meeting_na')
+    db.from('ops_engagements').select('id, period, status, planned_count, meeting_at, meeting_na')
       .eq('client_id', cid).order('period', { ascending: true }).then(function (r) {
         if ($('ntClient').value !== cid || $('ntScope').value !== 'client') return;
         if (r.error) { msg('ntMsg', dbWord(r.error.message), 'err'); sel.innerHTML = '<option value="">Not loaded</option>'; return; }
@@ -5436,7 +5443,7 @@
         if (!ntEngs.length) {
           sel.innerHTML = '<option value="">No confirmed month</option>';
           if (hint) {
-            hint.textContent = 'No content month with a confirmed meeting. Set the month and its meeting in My Work, Clients.';
+            hint.textContent = 'No content month with a confirmed meeting. Set the month and its meeting in My Work, Months.';
             hint.hidden = false;
           }
           go.disabled = true;
@@ -5454,7 +5461,30 @@
         }).join('');
         sel.disabled = false;
         ntCodeHint();
+        /* What each month already holds, over the whole month rather than
+           the tasks this person can read, so a sheet tops a month up and
+           does not double it. A refused count leaves the line out. */
+        ntHeld = {};
+        db.rpc('ops_engagement_counts', { p_engagements: ntEngs.map(function (e) { return e.id; }) }).then(function (cr) {
+          if ($('ntClient').value !== cid) return;
+          var held = countsOf(cr) || {};
+          ntEngs.forEach(function (e) { if (held[e.id]) ntHeld[e.id] = held[e.id].live || 0; });
+          ntPlanLine();
+        }, function () {});
+        ntPlanLine();
       });
+  }
+  /* The month's plan under the month: what it planned and what it already
+     holds. Nothing is drawn for a month with neither. */
+  var ntHeld = {};
+  function ntPlanLine() {
+    var hint = $('ntMonthHint'), e = ntEng();
+    if (!hint || !e) return;
+    var bits = [];
+    if (e.planned_count) bits.push(e.planned_count + ' planned');
+    if (ntHeld[e.id] != null) bits.push(ntHeld[e.id] + ' added');
+    hint.textContent = bits.join(' \u00b7 ');
+    hint.hidden = !bits.length;
   }
   function ntEng() {
     var per = $('ntPeriod').value;
@@ -5476,7 +5506,7 @@
   function ntCodeHint() {
     var line = $('ntCodeHint');
     if (!line) return;
-    if ($('ntScope').value === 'internal') { line.hidden = true; line.textContent = ''; return; }
+    if ($('ntScope').value === 'internal' || ntRows().length > 1) { line.hidden = true; line.textContent = ''; return; }
     var k = $('ntPeriod').value || '';
     if (!k) { line.hidden = true; line.textContent = ''; return; }
     var code = k.slice(2, 4) + k.slice(5, 7) + 'W' + ($('ntWeek').value || '1') + 'nn';
@@ -5484,14 +5514,101 @@
     line.textContent = 'Named ' + code + (d ? ' ' + d : '') + '. The number is given on save.';
     line.hidden = false;
   }
-  /* The same press twice is one task. The key is what makes the two presses
-     the same act, so it is built from what was typed and not from a counter. */
+  // ---- Pieces --------------------------------------------------------------
+  /* A line a piece (2026-09-28, Bulk add folded in): the first is the form's
+     own description, format and week; Add piece draws the next under it, the
+     format carried and the week the one after, so eight presses spread two a
+     week. With more than one piece the lone piece's dates and brief leave
+     (the database gives each a day inside its week) and Create names the
+     count. */
+  var X_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  function ntRows() { return Array.prototype.slice.call($('ntPieces').querySelectorAll('.piece')); }
+  function ntRowVals(row) {
+    return {
+      desc: row.querySelector('.piece-desc input').value,
+      fmt: row.querySelector('.piece-fmt select').value,
+      week: row.querySelector('.piece-week select').value
+    };
+  }
+  function ntRowSet(row, v) {
+    row.querySelector('.piece-desc input').value = v.desc || '';
+    row.querySelector('.piece-fmt select').value = v.fmt || '';
+    row.querySelector('.piece-week select').value = v.week || '1';
+  }
+  function ntAddPiece() {
+    var rows = ntRows();
+    if (rows.length >= 60) return null;
+    var last = ntRowVals(rows[rows.length - 1]);
+    var row = document.createElement('div');
+    row.className = 'piece';
+    row.innerHTML =
+      '<div class="field piece-desc"><input class="input" placeholder="Content Post" autocomplete="off"></div>' +
+      '<div class="field piece-fmt"><select class="select">' + $('ntFormat').innerHTML + '</select></div>' +
+      '<div class="field piece-week"><select class="select">' + $('ntWeek').innerHTML + '</select></div>' +
+      '<button class="iconbtn piece-x" type="button">' + X_MARK + '</button>';
+    $('ntPieces').appendChild(row);
+    var wk = Number(last.week) || 1;
+    ntRowSet(row, { desc: '', fmt: last.fmt, week: String(wk >= 4 ? 1 : wk + 1) });
+    ntPiecesChanged();
+    return row;
+  }
+  /* Removing a line moves the ones under it up, so the first line stays the
+     form's own. */
+  function ntRemovePiece(row) {
+    var rows = ntRows(), at = rows.indexOf(row);
+    if (rows.length < 2 || at < 0) return;
+    var vals = rows.map(ntRowVals);
+    vals.splice(at, 1);
+    rows[rows.length - 1].parentNode.removeChild(rows[rows.length - 1]);
+    ntRows().forEach(function (r, i) { ntRowSet(r, vals[i]); });
+    ntPiecesChanged();
+  }
+  function ntPiecesChanged() {
+    var rows = ntRows(), n = rows.length;
+    $('ntPieces').classList.toggle('is-many', n > 1);
+    rows.forEach(function (r, i) {
+      var k = i + 1;
+      r.querySelector('.piece-x').setAttribute('aria-label', 'Remove piece ' + k);
+      if (!i) return;
+      r.querySelector('.piece-desc input').setAttribute('aria-label', 'Content description, piece ' + k);
+      r.querySelector('.piece-fmt select').setAttribute('aria-label', 'Deliverable format, piece ' + k);
+      r.querySelector('.piece-week select').setAttribute('aria-label', 'Week, piece ' + k);
+    });
+    $('ntDates').hidden = n > 1;
+    $('ntBriefRow').hidden = n > 1;
+    $('ntAddPiece').hidden = n >= 60;
+    $('ntGo').textContent = n > 1 ? 'Create ' + n + ' tasks' : 'Create task';
+    ntCodeHint();
+  }
+  function ntResetPieces() {
+    ntRows().slice(1).forEach(function (r) { r.parentNode.removeChild(r); });
+    ntPiecesChanged();
+  }
+  /* The repeat opens where it is ticked; the number of days only for every
+     N days. */
+  function ntRepeatChanged() {
+    $('ntRepeatBox').hidden = !$('ntRepeat').checked;
+    $('ntIntervalField').hidden = $('ntFreq').value !== 'custom';
+  }
+
+  /* The same press twice is one act. The key is what makes the two presses
+     the same act, so it is built from what was typed and not from a counter;
+     each piece is that key and its place. */
   var ntKey = '';
   function createTask() {
     var scope = $('ntScope').value;
-    var desc = String($('ntDesc').value || '').trim();
-    if (scope === 'internal' && !desc) {
-      msg('ntMsg', 'A description is required.', 'err'); $('ntDesc').focus(); return;
+    var rows = ntRows();
+    var pieces = rows.map(function (row) {
+      var v = ntRowVals(row);
+      var p = { content_desc: String(v.desc || '').trim() || null, deliverable_type: v.fmt || null };
+      if (scope !== 'internal') p.code_week = Number(v.week) || 1;
+      return p;
+    });
+    if (scope === 'internal') {
+      var blank = pieces.map(function (p, i) { return p.content_desc ? -1 : i; }).filter(function (i) { return i > -1; })[0];
+      if (blank != null) {
+        msg('ntMsg', 'A description is required.', 'err'); rows[blank].querySelector('.piece-desc input').focus(); return;
+      }
     }
     if (scope !== 'internal' && !$('ntClient').value) {
       msg('ntMsg', scope === 'lead' ? 'A lead is required.' : 'A client is required.', 'err');
@@ -5500,44 +5617,61 @@
     if (scope === 'client' && !ntEng()) {
       msg('ntMsg', said(ntEngs ? 'month-not-confirmed' : 'no-month'), 'err'); return;
     }
-    var draft = $('ntDraft').value, fin = $('ntFinal').value;
+    var one = pieces.length === 1;
+    var draft = one ? $('ntDraft').value : '', fin = one ? $('ntFinal').value : '';
     if (draft && fin && draft >= fin) {
       msg('ntMsg', said('draft-not-before-final'), 'err'); $('ntDraft').focus(); return;
+    }
+    var rep = null;
+    if ($('ntRepeat').checked) {
+      var f = $('ntFreq').value;
+      if (f === 'custom' && !(Number($('ntInterval').value) >= 1)) {
+        msg('ntMsg', said('interval-required'), 'err'); $('ntInterval').focus(); return;
+      }
+      rep = {
+        frequency: f,
+        interval_days: f === 'custom' ? Number($('ntInterval').value) : null,
+        ends_on: $('ntEnds').value || null,
+        max_count: Number($('ntMax').value) || null
+      };
+    }
+    if (one) {
+      pieces[0].publish_at = $('ntPublish').value ? $('ntPublish').value + 'T00:00:00Z' : null;
+      pieces[0].first_draft_due_at = draft ? draft + 'T00:00:00Z' : null;
+      pieces[0].final_due_at = fin ? fin + 'T00:00:00Z' : null;
     }
     var payload = {
       scope: scope,
       client_id: scope === 'internal' ? null : $('ntClient').value,
       task_type: $('ntType').value || 'adhoc',
-      content_desc: desc || null,
-      deliverable_type: $('ntFormat').value || null,
       owner_id: $('ntOwner').value || null,
-      description: String($('ntBrief').value || '').trim() || null,
+      description: one ? (String($('ntBrief').value || '').trim() || null) : null,
       priority_level: Number($('ntPriority').value) || 3,
       complexity: $('ntComplex').value || null,
-      publish_at: $('ntPublish').value ? $('ntPublish').value + 'T00:00:00Z' : null,
-      first_draft_due_at: draft ? draft + 'T00:00:00Z' : null,
-      final_due_at: fin ? fin + 'T00:00:00Z' : null,
       code_period: scope === 'internal' ? null : $('ntPeriod').value || null,
-      code_week: scope === 'internal' ? null : Number($('ntWeek').value) || null,
       /* A client's deliverable joins the confirmed month it was made for. */
-      engagement_id: scope === 'client' ? (ntEng() || {}).id || null : null
+      engagement_id: scope === 'client' ? (ntEng() || {}).id || null : null,
+      pieces: pieces,
+      repeat: rep
     };
     if (!ntKey) ntKey = 'nt-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
     var btn = $('ntGo');
     btn.disabled = true;
     var fromClient = Boolean(ntPrefill);
-    makeTask();
-    function makeTask() {
-    call('ops_create_task', { p_payload: payload, p_idem: ntKey }, 'ntMsg', function (t) {
+    call('ops_create_pieces', { p_payload: payload, p_idem: ntKey }, 'ntMsg', function (d) {
       btn.disabled = false;
       ntKey = '';
       sheet('taskSheet', false);
-      /* Made from a client record, the task takes its place on that record's
-         list rather than carrying the person off to My Work. */
-      if (fromClient && cw.box && cw.client && cw.client.id === payload.client_id) readClientWork();
-      else openTask(t.id, true);
+      var made = (d && d.tasks) || [];
+      /* Made from a client's month, the pieces take their place on that
+         month rather than carrying the person off to My Work. */
+      if (fromClient && cw.box && cw.client && cw.client.id === payload.client_id) { readClientWork(); return; }
+      if (made.length === 1) { openTask(made[0].id, true); return; }
+      var c = scope === 'internal' ? null : state.clients.filter(function (x) { return x.id === payload.client_id; })[0];
+      msg('workMsg', made.length + ' tasks added' +
+        (c ? ' for ' + clientName(c) + ', ' + monthWord(payload.code_period) : '') + '.', 'ok');
+      load();
     }, function () { btn.disabled = false; });
-    }
   }
 
   /* The description is edited where it sits: the pen becomes the tick, the
@@ -5634,279 +5768,11 @@
     }, function () { btn.disabled = false; });
   }
 
-  /* GENERATE. A month of tasks for one client, into a content month the
-     client already has in My Work, Clients, with its meeting confirmed, or the
-     month's recurring tasks. The month offered is the client's own, the
-     count is what the month planned less what it holds, and the codes are
-     previewed from the database's own next number, so the preview and the
-     run cannot disagree. */
-  var genKey = '', genEngs = [], genAfter = null, genFirst = '';
+  /* A month takes tasks while it is open and its content meeting is set or
+     marked not applicable: New task, repeats and the month's Add tasks ask
+     the same question the database asks. */
   function monthOpen(e) {
     return Boolean(e && e.status !== 'completed' && e.status !== 'cancelled' && (e.meeting_at || e.meeting_na));
-  }
-  function openGen(pre, recur) {
-    if (!may('ops', 'work')) return;
-    pre = pre && pre.client_id ? pre : null;
-    genKey = '';
-    genAfter = pre && pre.after ? pre.after : null;
-    $('genWhat').value = recur ? 'recur' : 'month';
-    $('genTitle').textContent = recur ? 'Run repeating tasks' : 'Bulk add tasks';
-    $('genPaused').checked = false;
-    fillClients($('genClient'), false, pre ? pre.client_id : '');
-    if (pre && $('genClient').value !== pre.client_id) {
-      $('genPaused').checked = true;
-      fillClients($('genClient'), true, pre.client_id);
-    }
-    $('genCount').value = '8';
-    $('genSpread').value = 'even';
-    ['genW1', 'genW2', 'genW3', 'genW4', 'genW5'].forEach(function (id) { $(id).value = '0'; });
-    $('genType').value = 'engagement';
-    $('genFormat').value = '';
-    genFmts = []; genFmtLast = '';
-    $('genPriority').value = '3';
-    $('genComplex').value = 'standard';
-    fillOwners($('genOwner'), null);
-    $('genOut').hidden = true; $('genOut').textContent = '';
-    msg('genMsg', '');
-    genWhatChanged(pre ? pre.period : null);
-    sheet('genSheet', true);
-  }
-  function genWhatChanged(want) {
-    var recur = $('genWhat').value === 'recur';
-    $('genMonthBox').hidden = recur;
-    $('genClientField').hidden = recur;
-    $('genRecurBox').hidden = !recur;
-    $('genGo').textContent = recur ? 'Run' : 'Add tasks';
-    $('genWeeksRow').hidden = $('genSpread').value !== 'set';
-    if (recur) {
-      $('genPeriod').disabled = false;
-      $('genPlan').hidden = true;
-      $('genGo').disabled = false;
-      /* Repeats are run for the month in hand or the next one. */
-      var nowD = new Date();
-      var here = monthKey(nowD), next = monthKey(new Date(nowD.getFullYear(), nowD.getMonth() + 1, 1));
-      $('genPeriod').innerHTML = [here, next].map(function (k) {
-        return '<option value="' + k + '">' + esc(monthWord(k)) + '</option>';
-      }).join('');
-    } else if (typeof want === 'string' || want === null) {
-      genLoadMonths(want);
-    }
-    genFmtPaint();
-  }
-  /* The client's months that may take tasks: open, and the meeting set or
-     marked not applicable. With the number each has planned and holds. */
-  function genLoadMonths(want) {
-    var cid = $('genClient').value, sel = $('genPeriod');
-    genEngs = [];
-    genFirst = '';
-    $('genOut').hidden = true;
-    if (!cid) {
-      sel.innerHTML = '<option value="">Choose a client first</option>';
-      sel.disabled = true;
-      genPlanLine();
-      return;
-    }
-    sel.disabled = true;
-    sel.innerHTML = '<option value="">Loading</option>';
-    db.from('ops_engagements').select('id, period, status, planned_count, meeting_at, meeting_na')
-      .eq('client_id', cid).order('period', { ascending: true }).then(function (r) {
-        if ($('genClient').value !== cid) return;
-        if (r.error) { msg('genMsg', dbWord(r.error.message), 'err'); sel.innerHTML = '<option value="">Not loaded</option>'; return; }
-        /* The client's first month is the earliest they have, whatever its
-           state: onboarding happens there and in no later month. */
-        genFirst = ((r.data || [])[0] || {}).period || '';
-        var list = (r.data || []).filter(monthOpen);
-        if (!list.length) { genEngs = []; genFillMonths(null); return; }
-        /* What a month already holds is counted over the whole month, not
-           only the tasks this person can read. */
-        db.rpc('ops_engagement_counts', { p_engagements: list.map(function (e) { return e.id; }) }).then(function (cr) {
-          if ($('genClient').value !== cid) return;
-          var held = countsOf(cr) || {};
-          genEngs = list.map(function (e) { return Object.assign({}, e, { held: (held[e.id] || {}).live || 0 }); });
-          genFillMonths(want);
-        });
-      });
-  }
-  function genFillMonths(want) {
-    var sel = $('genPeriod');
-    if (!genEngs.length) {
-      sel.innerHTML = '<option value="">No confirmed month</option>';
-      sel.disabled = true;
-    } else {
-      var now = monthKey(new Date());
-      var pick = want && genEngs.some(function (e) { return e.period === want; }) ? want
-        : (genEngs.filter(function (e) { return e.period >= now; })[0] || genEngs[genEngs.length - 1]).period;
-      sel.innerHTML = genEngs.map(function (e) {
-        return '<option value="' + esc(e.period) + '"' + (e.period === pick ? ' selected' : '') + '>' + esc(monthWord(e.period)) + '</option>';
-      }).join('');
-      sel.disabled = false;
-    }
-    genMonthChanged();
-  }
-  function genEng() {
-    var per = $('genPeriod').value;
-    return genEngs.filter(function (e) { return e.period === per; })[0] || null;
-  }
-  /* The month's plan prefills the count: what it planned, less what it
-     already holds, so a second run tops the month up rather than doubling it. */
-  function genMonthChanged() {
-    if ($('genWhat').value === 'recur') return;
-    var e = genEng();
-    $('genOut').hidden = true;
-    if (e) {
-      var left = Math.max(0, (e.planned_count || 0) - e.held);
-      $('genCount').value = String(left || e.planned_count || 8);
-    }
-    genFmtPaint();
-    genPlanLine();
-  }
-  function genPlanLine() {
-    var line = $('genPlan'), e = genEng();
-    var cid = $('genClient').value;
-    $('genGo').disabled = !e;
-    $('genPreview').disabled = !e;
-    if (!cid) { line.hidden = true; return; }
-    line.hidden = false;
-    if (!e) {
-      line.textContent = genEngs.length ? '' : 'No content month with a confirmed meeting. Set the month and its meeting in My Work, Clients.';
-      line.hidden = !line.textContent;
-      return;
-    }
-    var bits = [];
-    bits.push(e.period === genFirst ? 'First month, onboarding checklists apply' : 'Recurring month');
-    bits.push(e.planned_count ? e.planned_count + ' planned' : 'No number planned');
-    bits.push(e.held === 1 ? '1 already added' : e.held + ' already added');
-    bits.push(e.meeting_na ? 'No meeting this month' : 'Meeting ' + niceDate(e.meeting_at));
-    line.textContent = bits.join(' · ');
-  }
-  function genWeeks() {
-    if ($('genSpread').value !== 'set') return null;
-    return ['genW1', 'genW2', 'genW3', 'genW4', 'genW5'].map(function (id) {
-      return Math.max(0, Math.floor(Number($(id).value) || 0));
-    });
-  }
-  /* A FORMAT A TASK. A month is usually mixed, so the format is set once for
-     every task or task by task, in the order the tasks are made: the week each
-     falls in comes from the same rule the database spreads them by. What was
-     picked for a row is kept by its place while the count or the weeks change. */
-  var genFmts = [], genFmtLast = '';
-  function genWeekOf(count) {
-    var weeks = genWeeks() || [1, 2, 3, 4].map(function (w) {
-      return Math.ceil(w * count / 4) - Math.ceil((w - 1) * count / 4);
-    });
-    var out = [];
-    weeks.forEach(function (n, i) { for (var k = 0; k < n; k++) out.push(i + 1); });
-    return out;
-  }
-  function genFmtCount() {
-    return Math.max(0, Math.min(60, Math.floor(Number($('genCount').value) || 0)));
-  }
-  function genFmtPaint() {
-    var each = $('genFormat').value === 'each';
-    var list = $('genFmtList');
-    list.hidden = !each;
-    if (!each) { list.innerHTML = ''; $('genFmtSum').hidden = true; return; }
-    var n = genFmtCount(), wk = genWeekOf(n);
-    var opts = Array.prototype.filter.call($('genFormat').options, function (o) { return o.value !== 'each'; });
-    var html = '';
-    for (var i = 0; i < n; i++) {
-      var v = genFmts[i] == null ? genFmtLast : genFmts[i];
-      html += '<div class="field"><label class="field-label" for="genFmt' + (i + 1) + '">Task ' + (i + 1) +
-        (wk[i] ? ', week ' + wk[i] : '') + '</label><select class="select" id="genFmt' + (i + 1) + '" data-i="' + i + '">' +
-        opts.map(function (o) {
-          return '<option value="' + esc(o.value) + '"' + (o.value === v ? ' selected' : '') + '>' + esc(o.text) + '</option>';
-        }).join('') + '</select></div>';
-    }
-    list.innerHTML = html;
-    genFmtSumPaint();
-  }
-  function genFmtVals() {
-    return Array.prototype.map.call($('genFmtList').querySelectorAll('select'), function (x) { return x.value; });
-  }
-  /* The mix in one line, the commonest first: 5 Graphic: Static · 3 Reels. */
-  function genFmtSumPaint() {
-    var tally = {}, order = [];
-    genFmtVals().forEach(function (v) {
-      var k = v || '';
-      if (!(k in tally)) { tally[k] = 0; order.push(k); }
-      tally[k]++;
-    });
-    order.sort(function (a, b) { return tally[b] - tally[a]; });
-    var line = $('genFmtSum');
-    line.textContent = order.map(function (k) {
-      return tally[k] + ' ' + (k ? (DELIVER_WORD[k] || k) : 'not set');
-    }).join(' · ');
-    line.hidden = !order.length;
-  }
-  function genPayload() {
-    var count = Math.floor(Number($('genCount').value) || 0);
-    var weeks = genWeeks();
-    if (weeks) {
-      var sum = weeks.reduce(function (a, b) { return a + b; }, 0);
-      if (sum !== count) { msg('genMsg', said('weeks-do-not-add-up') + ' The weeks come to ' + sum + '.', 'err'); return null; }
-    }
-    if (!$('genClient').value) { msg('genMsg', 'A client is required.', 'err'); $('genClient').focus(); return null; }
-    if (!genEng()) { msg('genMsg', said('no-month'), 'err'); return null; }
-    if (count < 1 || count > 60) { msg('genMsg', said('bad-count'), 'err'); $('genCount').focus(); return null; }
-    if ($('genFormat').value === 'each' && genFmtVals().length !== count) genFmtPaint();
-    return {
-      client_id: $('genClient').value,
-      period: $('genPeriod').value,
-      engagement_id: (genEng() || {}).id || null,
-      count: count,
-      weeks: weeks,
-      scope: 'client',
-      task_type: $('genType').value || 'engagement',
-      deliverable_type: $('genFormat').value === 'each' ? null : ($('genFormat').value || null),
-      formats: $('genFormat').value === 'each' ? genFmtVals() : null,
-      priority_level: Number($('genPriority').value) || 3,
-      complexity: $('genComplex').value || null,
-      owner_id: $('genOwner').value || null
-    };
-  }
-  function genPreview() {
-    var pl = genPayload();
-    if (!pl) return;
-    call('ops_generate_month', { p_payload: pl, p_dry_run: true }, 'genMsg', function (d) {
-      var codes = ((d && d.tasks) || []).map(function (x) {
-        return x.format ? x.code + ' ' + (DELIVER_WORD[x.format] || x.format) : x.code;
-      });
-      var out = $('genOut');
-      out.hidden = false;
-      out.textContent = codes.length
-        ? codes.length + (codes.length === 1 ? ' task: ' : ' tasks: ') + codes.join(', ')
-        : 'Nothing would be made.';
-    });
-  }
-  function doGen() {
-    var btn = $('genGo');
-    if ($('genWhat').value === 'recur') {
-      btn.disabled = true;
-      call('ops_generate_recurring', { p_period: $('genPeriod').value }, 'genMsg', function (d) {
-        btn.disabled = false;
-        sheet('genSheet', false);
-        var n = (d && d.created) || 0, s = (d && d.skipped) || 0, h = (d && d.held) || 0;
-        msg('workMsg', (n === 1 ? '1 task added' : n + ' tasks added') + ' for ' + monthWord($('genPeriod').value) +
-          (s ? ', ' + s + ' already there' : '') +
-          (h ? ', ' + (h === 1 ? '1 repeat waits' : h + ' repeats wait') + ' for a confirmed month.' : '.'), 'ok');
-        load();
-      }, function () { btn.disabled = false; });
-      return;
-    }
-    var pl = genPayload();
-    if (!pl) return;
-    if (!genKey) genKey = 'gen-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-    btn.disabled = true;
-    call('ops_generate_month', { p_payload: pl, p_dry_run: false, p_idem: genKey }, 'genMsg', function (d) {
-      btn.disabled = false;
-      genKey = '';
-      sheet('genSheet', false);
-      var n = (d && d.count) || 0;
-      var who = ($('genClient').selectedOptions[0] || {}).textContent || '';
-      msg('workMsg', (n === 1 ? '1 task added' : n + ' tasks added') + ' for ' + who + ', ' + monthWord(pl.period) + '.', 'ok');
-      load();
-      if (genAfter) genAfter();
-    }, function () { btn.disabled = false; });
   }
 
   /* REPEAT. The rule that copies this task on each date. */
@@ -6480,8 +6346,9 @@
     var phase = engPhase(e, checks, n);
     var shut = e.status === 'completed' || e.status === 'cancelled';
     var items = [['edit', 'Edit']];
-    /* A month with its meeting confirmed takes tasks, so it offers them. */
-    if (monthOpen(e)) items.unshift(['bulk', 'Bulk add tasks']);
+    /* A month with its meeting confirmed takes tasks, so it offers them:
+       the New sheet, on this client and this month. */
+    if (monthOpen(e)) items.unshift(['add', 'Add tasks']);
     /* Completed and Cancelled are decisions: an open month can be
        cancelled, and a closed one reopened. Completing is asked for on the
        card once every task is finished. */
@@ -6521,7 +6388,7 @@
     }
     var ctl = el.querySelector('.eng-ctl');
     if (ctl && ctl.querySelector('.kmenu-btn')) wireItemMenu(ctl, function (k) {
-      if (k === 'bulk') openGen({ client_id: cw.client.id, period: e.period, after: readClientWork });
+      if (k === 'add') openNew({ client: cw.client, period: e.period, engagement: e });
       if (k === 'edit') openEng(e, cw.client);
       /* The way back never asks. */
       if (k === 'reopen') setStatus(e, 'planning', el);
@@ -6909,8 +6776,6 @@
         if (!it) return;
         shutWorkMore();
         var a = it.getAttribute('data-a');
-        if (a === 'bulk') openGen();
-        if (a === 'recur') openGen(null, true);
         if (a === 'template') openTpl();
         if (a === 'select') setSelecting(!state.selecting);
         if (a === 'numbering') openNumbering();
@@ -7324,7 +7189,27 @@
     var npub = $('ntPublish');
     if (npub) npub.addEventListener('change', ntPublishChanged);
     var nper = $('ntPeriod');
-    if (nper) nper.addEventListener('change', function () { ntTouched.period = true; ntCodeHint(); });
+    if (nper) nper.addEventListener('change', function () { ntTouched.period = true; ntCodeHint(); ntPlanLine(); });
+    /* A piece more, or one fewer. The new line's description takes the
+       caret at a desk; under a finger the keyboard stays down until asked. */
+    var nadd = $('ntAddPiece');
+    if (nadd) nadd.addEventListener('click', function () {
+      var row = ntAddPiece();
+      if (row && !(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) {
+        row.querySelector('.piece-desc input').focus();
+      }
+    });
+    var npcs = $('ntPieces');
+    if (npcs) npcs.addEventListener('click', function (e) {
+      var x = e.target.closest('.piece-x');
+      if (!x) return;
+      ntRemovePiece(x.closest('.piece'));
+      $('ntAddPiece').focus();
+    });
+    var nrep = $('ntRepeat');
+    if (nrep) nrep.addEventListener('change', ntRepeatChanged);
+    var nfreq = $('ntFreq');
+    if (nfreq) nfreq.addEventListener('change', ntRepeatChanged);
     var nwk = $('ntWeek');
     if (nwk) nwk.addEventListener('change', function () { ntTouched.week = true; ntCodeHint(); });
     var nd = $('ntDesc');
@@ -7341,42 +7226,6 @@
        hand Group by the Preview button. */
     var dupGoBtn = $('dupGo');
     if (dupGoBtn) dupGoBtn.addEventListener('click', doDup);
-    ['genClose', 'genCancel'].forEach(function (id) {
-      var b = $(id); if (b) b.addEventListener('click', function () { sheet('genSheet', false); });
-    });
-    var genSpreadSel = $('genSpread');
-    if (genSpreadSel) genSpreadSel.addEventListener('change', function () { genWhatChanged(); });
-    var genPausedTick = $('genPaused');
-    if (genPausedTick) genPausedTick.addEventListener('change', function () {
-      var was = $('genClient').value;
-      fillClients($('genClient'), genPausedTick.checked, was);
-      if ($('genClient').value !== was) genLoadMonths(null);
-    });
-    var genClientSel = $('genClient');
-    if (genClientSel) genClientSel.addEventListener('change', function () { genLoadMonths(null); });
-    var genPeriodSel = $('genPeriod');
-    if (genPeriodSel) genPeriodSel.addEventListener('change', genMonthChanged);
-    var genFormatSel = $('genFormat');
-    if (genFormatSel) genFormatSel.addEventListener('change', function () {
-      /* Switching to Set each task starts every row from the one format
-         that was chosen; switching back takes one format for them all. */
-      if (genFormatSel.value === 'each') genFmts = [];
-      else genFmtLast = genFormatSel.value;
-      genFmtPaint();
-    });
-    ['genCount', 'genW1', 'genW2', 'genW3', 'genW4', 'genW5'].forEach(function (id) {
-      var f = $(id); if (f) f.addEventListener('input', genFmtPaint);
-    });
-    var genFmtBox = $('genFmtList');
-    if (genFmtBox) genFmtBox.addEventListener('change', function (ev) {
-      var x = ev.target.closest('select[data-i]');
-      if (x) genFmts[Number(x.getAttribute('data-i'))] = x.value;
-      genFmtSumPaint();
-    });
-    var genPreviewBtn = $('genPreview');
-    if (genPreviewBtn) genPreviewBtn.addEventListener('click', genPreview);
-    var genGoBtn = $('genGo');
-    if (genGoBtn) genGoBtn.addEventListener('click', doGen);
     ['recClose', 'recCancel'].forEach(function (id) {
       var b = $(id); if (b) b.addEventListener('click', function () { sheet('recSheet', false); });
     });
@@ -7432,7 +7281,7 @@
         e.stopPropagation();
         return;
       }
-      var open = ['dueSheet', 'taskSheet', 'dupSheet', 'genSheet', 'recSheet',
+      var open = ['dueSheet', 'taskSheet', 'dupSheet', 'recSheet',
        'engSheet', 'meetSheet', 'giveSheet', 'tplSheet', 'tplEditSheet', 'stepSheet', 'tdelSheet'].filter(function (id) {
         return $(id) && !$(id).hidden;
       });
@@ -7484,7 +7333,7 @@
     if (state.openId) q.task = state.openId;
     if (state.openId && state.pane !== 'work') q.pane = state.pane;
     if (!state.openId && state.view !== 'list') q.view = state.view;
-    if (!state.openId && state.view === 'clients' && state.wclient) q.wc = state.wclient.slug || state.wclient.id;
+    if (!state.openId && state.view === 'months' && state.wclient) q.wc = state.wclient.slug || state.wclient.id;
     /* The task open beside the list travels too, so a reload or a copied
        link lands on the list with that task open. */
     if (!state.openId && state.drawer && state.drawerFrom === 'work') q.open = state.drawer;
@@ -7512,10 +7361,11 @@
   function enter() {
     var nw = $('workNew');
     if (nw) nw.hidden = !may('ops', 'work');
-    /* The bar's ⋯ holds acts that need the work level at least; the next
-       number is an admin's alone. */
+    /* The bar's ⋯ holds the templates (Workflows at Work), Select tasks
+       (Manage) and, for an admin, the next number. It is drawn only where
+       one of them is offered, never as an empty menu. */
     var more = $('workMoreWrap');
-    if (more) more.hidden = !may('ops', 'work');
+    if (more) more.hidden = !(may('ops.workflows', 'work') || may('ops', 'manage') || isAdmin());
     var num = $('workMore') && $('workMore').querySelector('[data-a="numbering"]');
     if (num) num.hidden = !isAdmin();
     if (state.selecting && !may('ops', 'manage')) state.selecting = false;
