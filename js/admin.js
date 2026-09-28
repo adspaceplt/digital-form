@@ -976,7 +976,10 @@
     // address from state, and state does not know about these yet.
     var clientId = params.get('client');
     var setId = params.get('set');
-    var where = params.get('s') || firstAllowed();
+    /* A client's address carries no `s=` (Clients writes none), so it is read
+       as Clients before the landing page is asked: a refresh inside a record
+       stays inside it (2026-09-28). */
+    var where = params.get('s') || (params.get('client') ? 'clients' : firstAllowed());
     if (!SECTION_TITLE[where]) where = firstAllowed();
 
     if (where !== 'review') {

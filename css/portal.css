@@ -8966,7 +8966,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .ovw-rows { display: grid; }
 .ovw-row {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; align-items: start;
-  width: calc(100% + 16px); margin: 0 -8px; padding: 10px 8px; border: 0; border-top: 1px solid var(--line-soft);
+  width: calc(100% + 16px); min-height: var(--ctl-h); margin: 0 -8px; padding: 10px 8px; border: 0; border-top: 1px solid var(--line-soft);
   border-radius: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer;
   transition: background-color var(--t-fast);
 }
