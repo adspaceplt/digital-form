@@ -118,8 +118,11 @@
      non-UUID against a uuid column. */
   function clientByKey(key, then) {
     if (!key) { then(null); return; }
-    db.from('clients').select('*').eq(UUID.test(key) ? 'id' : 'slug', key).single()
-      .then(function (r) { then(r.error ? null : (r.data || null)); }, function () { then(null); });
+    db.from('clients').select(API.CLIENT_COLS).eq(UUID.test(key) ? 'id' : 'slug', key).single()
+      .then(function (r) {
+        if (r.error || !r.data) { then(null); return; }
+        API.withBilling(r.data).then(function () { then(r.data); });
+      }, function () { then(null); });
   }
   // The address of a client, wherever one is built.
   function keyOf(c) { return (c && (c.slug || c.id)) || ''; }
@@ -175,7 +178,7 @@
      back rather than patched from here: a guessed timestamp is a timestamp
      that disagrees with the one every other screen will load. */
   function refreshClient(c, then) {
-    db.from('clients').select('*').eq('id', c.id).single().then(function (r) {
+    db.from('clients').select('stage_since, stage_log').eq('id', c.id).single().then(function (r) {
       if (r && r.data) {
         c.stage_since = r.data.stage_since;
         c.stage_log = r.data.stage_log;
@@ -279,9 +282,15 @@
     return list.filter(function (x) { return x.id === c.bill_contact_id; })[0] ||
            list.filter(function (x) { return x.is_primary; })[0] || null;
   }
+  /* Where Billing withholds the values, the database still names the
+     required fields left blank (`billing_missing`), so the gate says what is
+     missing to somebody who cannot read what is there. */
   function billingMissing(c) {
+    var told = !maySeeBilling() && c.billing_missing;
     return BILLING_REQUIRED.filter(function (f) {
-      return f[1] === 'bill_contact_id' ? !billContact(c) : !String(c[f[1]] || '').trim();
+      if (f[1] === 'bill_contact_id') return !billContact(c);
+      if (told) return told.indexOf(f[1]) > -1;
+      return !String(c[f[1]] || '').trim();
     }).map(function (f) { return f[2]; });
   }
   /* A ring for how much of a group is filled, with the count beside it. */
@@ -343,7 +352,9 @@
   function loadClients(then) {
     var box = $('crmList');
     if (!state.clients.length) skeleton(box, 6);
-    db.from('clients').select('*').order('name').then(function (r) {
+    db.from('clients').select(API.CLIENT_COLS).order('name').then(function (r) {
+      return r.error ? r : API.withBilling(r.data || []).then(function () { return r; });
+    }).then(function (r) {
       if (r.error) {
         box.innerHTML = '<div class="softpanel"><div class="errline">' +
           '<b>Clients could not be loaded.</b><span>' + esc(r.error.message) + '</span>' +
@@ -755,7 +766,7 @@
     patch.access_token = token();
     uniqueSlug(name, function (slug) {
     patch.slug = slug;
-    db.from('clients').insert(patch).select().single().then(function (r) {
+    db.from('clients').insert(patch).select(API.CLIENT_COLS).single().then(function (r) {
       if (r.error) { msg('crmMsg', r.error.message, 'err'); return; }
       log('client.added', name, sourceWord(patch.source) + (contactName ? ' · ' + contactName : ''));
       var open = function () { shutForm(); loadClients(function () { openClient(r.data); }); };
@@ -785,7 +796,7 @@
        handles and logo, so a record opened from the list is read again and
        repainted where the row has moved on (2026-09-26). */
     if (!same) {
-      db.from('clients').select('*').eq('id', c.id).single().then(function (r) {
+      db.from('clients').select(API.CLIENT_COLS).eq('id', c.id).single().then(function (r) {
         if (!r || r.error || !r.data || state.client !== c) return;
         var moved = Object.keys(r.data).some(function (k) {
           return JSON.stringify(r.data[k]) !== JSON.stringify(c[k]);
@@ -3639,7 +3650,7 @@
     // What the other sections may offer work to. They ask here rather than
     // keeping a list of their own.
     active: function (then) {
-      db.from('clients').select('*').eq('stage', 'active').order('name')
+      db.from('clients').select(API.CLIENT_COLS).eq('stage', 'active').order('name')
         .then(function (r) { then(r.data || []); }, function () { then([]); });
     },
     billingMissing: billingMissing,

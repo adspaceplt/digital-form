@@ -567,7 +567,10 @@ section holds only what is true of the project as a whole.
   security on, no policy reads `true`, and every policy asks `allowed()`,
   which answers false for anybody who is not an active colleague. The
   internal helpers the API could still reach are closed
-  (`2026-09-27-internal-helpers-stay-internal.sql`).
+  (`2026-09-27-internal-helpers-stay-internal.sql`). A client's billing
+  columns, readable by every section that reads clients, are withheld from
+  the table and answered by the Billing part (2026-09-28,
+  `2026-09-28-client-billing-columns.sql`).
 
 ### Accepted known issues
 - The letterhead is drawn on page 1 and on pages the services table spills
