@@ -4276,6 +4276,10 @@ body > .shell { width: 100%; }
 .is-tight .eng-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "lab act" "val val"; }
 .is-tight .eng-row > .eng-lab { align-self: center; }
 .eng-meetwarn { margin: 8px 0 0; }
+/* The message to the client is the section's client-facing act, so it is
+   set off from the meeting's own facts by the card's hairline, 12 on each
+   side as under the head (the user, 2026-09-28). */
+.eng-facts > .eng-meetmsg { margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
 .eng-meetmsg-text { margin: 8px 0 0; padding: 12px 14px; background: var(--sunk); border-radius: var(--radius-sm); font: inherit; font-size: 13px; line-height: 1.55; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
 .engcard .eng-checks { margin-top: 12px; }
 /* The month's stage is a chip on its heading while the card is shut, and

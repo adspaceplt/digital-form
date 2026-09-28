@@ -276,7 +276,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   record, sheet or menu open.
 
 ### One copy of each mechanism
-- `js/api.js` is the only Supabase client.
+- `js/api.js` is the only Supabase client. It retries a GET once when the
+  connection drops before the answer (`steadyFetch`); a write is never sent
+  twice.
 - `js/money.js` is the only money formatter and the only place a price is
   adjusted.
   - RM for MY, S$ for SG.
@@ -1322,7 +1324,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The card (`engCard`) never repeats its heading: the month is named by the
     card above it, whose state chip (`.eng-mark`) shows only while shut. The
     meeting, link and message are `.eng-row`s (label, value, controls at the
-    right edge); under `is-tight` the label and controls share the first line
+    right edge), the message to the client set off by the card's hairline; under `is-tight` the label and controls share the first line
     and the value runs full width beneath.
 - Every client deliverable goes into a confirmed month: one that exists, is
   open, and has its meeting set or marked not applicable (`no-month`,

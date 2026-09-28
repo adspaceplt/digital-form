@@ -3,9 +3,25 @@
   const cfg = window.ADSPACE_CONFIG || {};
   const configured = Boolean(cfg.supabaseUrl && cfg.supabaseAnonKey);
 
+  /* A read whose connection drops before the answer arrives ("Load failed"
+     in Safari, "Failed to fetch" elsewhere) is tried once more before it is
+     called a failure: a phone resuming the installed app or losing signal
+     for a moment drew "Clients could not be loaded" over a list the server
+     had already answered (2026-09-28). Only a GET is retried; a write is
+     never sent twice. */
+  function steadyFetch(input, init) {
+    const method = String((init && init.method) || (input && input.method) || 'GET').toUpperCase();
+    const go = () => fetch(input, init);
+    if (method !== 'GET') return go();
+    return go().catch((e) => {
+      if (init && init.signal && init.signal.aborted) throw e;
+      return new Promise((res) => setTimeout(res, 600)).then(go);
+    });
+  }
+
   let client = null;
   if (configured && window.supabase) {
-    client = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
+    client = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { global: { fetch: steadyFetch } });
   }
 
   async function getReviewFeed(token, passcode) {
