@@ -849,6 +849,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   (real names).
 
 ### Content Review (`review/`, `js/review.js`, `js/mockups.js`)
+- The client's gallery (`.shell-review`, 1480px, cards from 300px) runs four
+  posts across on a desk from about 1400px and three at 1280.
 - Mockups per platform:
   - Instagram feed 4:5 (1080×1350); Reels and Stories 9:16 at the cover ratio;
   - TikTok;

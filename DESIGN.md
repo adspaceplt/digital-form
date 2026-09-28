@@ -202,7 +202,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A queue and one open record | `.queue` > `.qrow`, ordered by what is owed |
 | Deciding on one item in a gallery | `.canvas`: the item on a stage, the decision in a rail |
 | A figure over time or across things | `ADspaceChart.draw` → `.chartcard`: ink marks, a colour only where the word is a state; the figures folded under it. Only where it answers faster than the table it sits over |
-| Reaching a person | `.plink`, the outlined contact chip (1px `--line-ctl`, no fill, `--sunk` on hover): phone, WhatsApp, email, a meeting or Drive link, a creator's profile, on every page; never an underlined word; equal widths on a phone unless alone |
+| Reaching a person | `.plink`, the outlined contact chip (1px `--line-chip`, `#a1a1a1` / dark `#5f5f5f`, lighter than a field's edge because its words identify it; no fill, `--sunk` on hover): phone, WhatsApp, email, a meeting or Drive link, a creator's profile, on every page; never an underlined word; equal widths on a phone unless alone |
 | A value only read | `.readfield` (the field's height, no box) |
 | An instruction | `.hintline` `?` with its line as a `--sunk` callout pointing at the mark, open three times, then retired; a button, never a `title` |
 | Notifications on a client page | The bar's bell (`.pushbtn`, a second glyph with rays while on) opening `.kmenu.pushpop`, a `.popcard`: title with a close mark, one line, one `.btn-sm` |
@@ -229,7 +229,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - A card's state chip sits on its title row at the right edge, before its ⋯
   (a record head, a month, a booking, a task's priority, a set, a post); the
   facts and the amount go on the lines under the name, on a phone as at a
-  desk.
+  desk. In a desk table row a chip follows the name, never the far edge of
+  a wide cell (a task's Urgent read as the Task Owner's).
 - A padded control on a card's last line gives its padding back with a
   negative block margin (the ⋯, the tick, `.plink-bare`). A control whose
   presence depends on a permission never sizes its row.
@@ -242,10 +243,12 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - Every table states its own tracks. A template hung off `:not(...)` claims the
   wrong header.
 - Every tab strip is the view strip: the tonal track, never a rule across the
-  column, never bleeding past the page's margins. At a desk it is its own
-  width (each tab `flex: 0 0 auto`); on a phone it is the column's width and
-  its tabs share what is spare (`flex: 1 0 auto`). It never wraps; it
-  scrolls sideways with the edge that has more beyond it faded.
+  column, never bleeding past the page's margins. A record's strip
+  (`.rectabs`, the client portal's too) runs the width of the card under it
+  at every width; a section's switch (`.tabrow`) is its own width at a desk
+  and the column's on a phone. Tabs in a full strip share what is spare
+  (`flex: 1 0 auto`). It never wraps; it scrolls sideways with the edge that
+  has more beyond it faded.
 - On a phone a sideways swipe presses the tab beside the chosen one
   (`js/swipe.js`, a region's `data-swipe` naming its strip).
 - A component borrowed for its shape carries its old flex and behaviour. Use a
