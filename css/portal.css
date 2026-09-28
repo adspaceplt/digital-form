@@ -724,17 +724,6 @@ a { color: inherit; }
   font-size: 19px; font-weight: 600; letter-spacing: -.02em;
   min-width: 0; flex: 1 1 260px; max-width: 100%;
 }
-/* The pen has become the tick that saves. It keeps the icon button's box and
-   takes the **ink** fill, not blue: blue moves work to somebody else and
-   Publish is already doing that two controls along, so a blue tick beside a
-   blue Publish is two equally loud actions in one bar. Saving a name is an
-   ordinary operation, which is what the ink primary is for. */
-.btn-icononly.is-saving {
-  color: var(--on-fill); background: var(--fill); border-color: var(--fill);
-}
-@media (hover: hover) {
-  .btn-icononly.is-saving:hover { filter: brightness(1.25); }
-}
 /* A note the console opens under the control that sends it. `.changebox`
    carries the shape; this only says where it sits, because on a card the
    control is in a row of its own and the note belongs under the whole row. */
@@ -1834,19 +1823,23 @@ a { color: inherit; }
    Input, work in progress and output are three different things, so they
    stop looking like one undifferentiated wall of card.
    ========================================================================= */
-/* The open set is a section heading, not a second card. The selected card
-   above already carries the name, so a white panel repeating it read as a
-   stray dropdown glued to the card row. */
-.setbar {
-  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-  margin: 26px 0 18px; padding: 0 2px 14px;
-  border-bottom: 1px solid var(--line);
+/* A set's head is the record head (2026-09-28): the name with its quiet
+   rename pen over who can see it, the state and the ⋯ at the title row's
+   right edge, then Publish at its own width. It was a toolbar: a filled
+   pen square beside the name, the chip hung off the pen, and the ⋯ beside
+   Unpublish on a row of its own. */
+.setbar { display: grid; gap: 12px; }
+.setbar-actions { display: flex; gap: 8px; align-items: center; }
+.setbar-actions > .btn { flex: 0 0 auto; }
+.setbar .msg { margin: 0; }
+.setbar .msg:empty { display: none; }
+.rec-id.rec-id-set { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "who ctl"; }
+.is-narrow .rec-id.rec-id-set {
+  grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name ctl" "meta meta"; gap: 4px 12px;
 }
-.setbar-main { display: flex; align-items: baseline; gap: 10px; min-width: 0; flex-wrap: wrap; }
-.setbar-main h3 { font-size: 17px; font-weight: 600; letter-spacing: -.02em; }
-.setbar-note { color: var(--ink-mute); font-size: 13px; }
-.setbar-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-.setbar .msg { flex: 1 1 100%; margin-top: 10px; }
+.is-narrow .rec-id-set > .rec-who { display: contents; }
+.is-narrow .rec-id-set .rec-name { grid-area: name; }
+.is-narrow .rec-id-set .rec-id-meta { grid-area: meta; }
 
 /* ONE CHIP, ONE SHAPE, ONE SET OF TONES. There were three selectors for the
    same component — `.chip`, `.tone` and `.chip-state` — each restating the
@@ -1914,7 +1907,6 @@ a { color: inherit; }
 }
 
 @media (max-width: 640px) {
-  .setbar-actions { margin-left: 0; width: 100%; }
   .zone-actions { flex-wrap: wrap; }
 }
 
@@ -2027,18 +2019,6 @@ a { color: inherit; }
 }
 .subsection > .hint { margin-bottom: 12px; }
 
-/* The set toolbar: publish carries the weight, rename and delete are marked
-   actions rather than two words sitting in a row. */
-/* Rename and delete were two words in a row that read as body text. As square
-   buttons they are recognisably actions, and the delete one is the only red
-   thing on the toolbar. */
-.btn-icononly {
-  min-width: 0; width: 38px; height: 38px; padding: 0; gap: 0; flex: 0 0 auto;
-}
-.btn-icononly svg { width: 16px; height: 16px; }
-.btn-icononly.is-danger { color: var(--err); }
-.btn-icononly.is-danger:hover { background: var(--err-bg); border-color: var(--err-line); color: var(--err-hi); }
-.setbar-actions { gap: 8px; }
 
 /* Scrollbar-free horizontal rhythm for the danger pair */
 .dangerrow { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -3711,7 +3691,7 @@ body.is-plain .topbar { background: var(--chrome); }
 
 /* A tap target is never smaller than a finger, whatever the width. */
 @media (pointer: coarse) {
-  .btn-icononly, .kmenu-btn { width: 44px; height: 44px; }
+  .kmenu-btn { width: 44px; height: 44px; }
   .kmenu-item { padding: 11px 12px; }
   .linkish { padding: 8px 2px; }
 }
@@ -6646,12 +6626,16 @@ body.is-canvas { overflow: hidden; }
 @media (max-width: 860px) {
   /* One column: the mockup, then what the decision rests on, then the
      decision. A rail beside a 9:16 mockup on a phone is two columns of
-     nothing. */
+     nothing. And one scroll (2026-09-28, a client's complaint): the stage
+     and the rail were two scroll areas sharing the screen, so the copy and
+     the decision sat over the lower third of every post, a Reel's own
+     caption included. The post is shown whole; its copy and the decision
+     follow it as the page scrolls. */
   .canvas { padding: 0; align-items: flex-end; }
-  .canvas-card { width: 100%; max-height: 100vh; height: 100%; border-radius: 0; }
-  .canvas-body { grid-template-columns: minmax(0, 1fr); }
-  .canvas-stage { border-right: 0; border-bottom: 1px solid var(--line); padding: 14px; }
-  .canvas-rail { padding: 14px 16px 24px; }
+  .canvas-card { width: 100%; max-height: 100vh; max-height: 100dvh; height: 100%; border-radius: 0; }
+  .canvas-body { display: block; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  .canvas-stage { overflow: visible; border-right: 0; border-bottom: 1px solid var(--line); padding: 14px; }
+  .canvas-rail { overflow: visible; padding: 14px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .canvas, .canvas-card { animation: none; }
@@ -8971,8 +8955,6 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 #workspace.is-set > .cr-rec { display: block; margin-top: 0; }
 #setPanel > .setbar { margin: 0 0 12px; padding: 18px 20px; border-bottom: 0; }
 #setPanel > .cr-rec { margin-top: 0; }
-.setbar-main { align-items: center; }
-.setbar-note { flex: 1 1 100%; margin: 0; order: 3; }
 .setprog-note { margin: 8px 0 0; }
 #assetSheet .sheet-body > .panel { margin: 0 0 12px; }
 #setTitle, .saved-top > b { color: var(--ink); }

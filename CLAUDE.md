@@ -866,7 +866,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - og:title `{client name} Content Review Portal by ADspace`, on `review/`
     only.
 - The Review Canvas moves the card's own blocks and puts them back; there is
-  one decision control. Prev/next, the arrow keys and Escape work.
+  one decision control. Prev/next, the arrow keys and Escape work. Below 860
+  it is one scroll: the post whole, then its copy and the decision; each post
+  opens at its top.
 - Console:
   - The client is a record: the mark, name and handles, and one ⋯ (Client
     settings as a sheet with one Save, Reset access link, Remove from Content
@@ -874,8 +876,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     count) beside the review link. A post is a row: the placement with the
     client's decision at the right, the file, the copy, and one ⋯ (Edit,
     Request re-approval, Delete); the re-approval note opens under the post.
-  - A set is a page of its own (`set=`): its head (name renamed in place,
-    state, Publish, one ⋯ with Delete), its posts, and a rail (the client's
+  - A set is a page of its own (`set=`): its head is the record head (the
+    name with the quiet `.rec-pen`, who can see it under it, the state and one
+    ⋯ with Delete at the right edge, Publish at its own width below), its
+    posts, and a rail (the client's
     review, the tasks naming it). Back returns to the client. Add assets is a
     sheet (`#assetSheet`) that shuts on Add to set.
   - Sets are folded, one open at a time.
