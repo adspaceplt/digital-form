@@ -29,9 +29,23 @@
 --      (`ops_recurring_periods()`), each rule as the colleague who set it (else
 --      its task's owner) with that colleague's own access. Run repeating tasks
 --      and Bulk add leave the page; `ops_generate_month` stays for the record.
+--   5. A copy somebody deletes stays deleted. Every date a repeat has made is
+--      kept (`ops_recurring_made`, by rule and by the task it copies), and no
+--      date is made twice, even after the repeat is turned off and on again.
+--      The copies already made are recorded here from their keys.
+--   6. A task deleted stops its repeat (`ops_tasks_stop_repeat`), since a rule
+--      is seen and turned off only from its task. A rule whose task was
+--      already gone stops here. Found on the live database before this ran:
+--      one such rule, whose deleted September copy the morning run would have
+--      made again.
 --
 -- ROLLBACK
 --   select cron.unschedule('ops-repeats-daily');
+--   drop trigger if exists ops_tasks_stop_repeat on public.ops_tasks;
+--   drop function if exists public.ops_tasks_stop_repeat();
+--   drop table if exists public.ops_recurring_made;
+--   (a rule stopped because its task was gone stays stopped; set it active by
+--   hand to bring it back)
 --   drop trigger if exists ops_engagements_confirmed on public.ops_engagements;
 --   drop function if exists public.ops_engagements_confirmed();
 --   drop function if exists public.ops_recurring_daily();
@@ -99,6 +113,49 @@ begin
   return to_jsonb(r);
 end $$;
 grant execute on function public.ops_set_recurring(uuid, jsonb) to authenticated;
+
+/* Every date a repeat has made, by its rule and by the task it copies, so a
+   copy deleted is not made again the next morning and a repeat turned off
+   and on again makes no date twice. Written and read only by the generator;
+   no page reads it. */
+create table if not exists public.ops_recurring_made (
+  rule_id        uuid not null references public.ops_recurring_rules(id) on delete cascade,
+  source_task_id uuid,
+  on_date        date not null,
+  made_at        timestamptz not null default now(),
+  primary key (rule_id, on_date)
+);
+create index if not exists ops_recurring_made_source
+  on public.ops_recurring_made (source_task_id, on_date) where source_task_id is not null;
+alter table public.ops_recurring_made enable row level security;
+revoke all on public.ops_recurring_made from anon, authenticated;
+
+/* The copies made before the record began, read from their keys. */
+insert into public.ops_recurring_made (rule_id, source_task_id, on_date)
+select r.id, r.source_task_id, split_part(t.idem_key, ':', 3)::date
+  from public.ops_tasks t
+  join public.ops_recurring_rules r on r.id::text = split_part(t.idem_key, ':', 2)
+ where t.idem_key ~ '^recur:[0-9a-f-]{36}:\d{4}-\d{2}-\d{2}$'
+on conflict do nothing;
+
+/* A task deleted takes its repeat with it: a rule is seen and turned off
+   only from its task, so one left behind would make copies nobody could
+   stop. */
+create or replace function public.ops_tasks_stop_repeat()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  update public.ops_recurring_rules set active = false, updated_at = now()
+   where source_task_id = old.id and active;
+  return old;
+end $$;
+revoke all on function public.ops_tasks_stop_repeat() from public, anon, authenticated;
+drop trigger if exists ops_tasks_stop_repeat on public.ops_tasks;
+create trigger ops_tasks_stop_repeat before delete on public.ops_tasks
+  for each row execute function public.ops_tasks_stop_repeat();
+
+/* A rule whose task was deleted before the trigger stops now. */
+update public.ops_recurring_rules set active = false, updated_at = now()
+ where active and source_task_id is null;
 
 create or replace function public.ops_generate_recurring(
   p_period text, p_rules uuid[] default null, p_idem text default null)
@@ -174,7 +231,13 @@ begin
          and (r.ends_on is null or d <= r.ends_on)
          and (r.max_count is null or r.generated_count < r.max_count) then
         key := 'recur:' || r.id::text || ':' || to_char(d, 'YYYY-MM-DD');
-        if exists (select 1 from public.ops_tasks where idem_key = key) then
+        /* Made once is made: a copy since deleted stays deleted, and a rule
+           set again on the same task makes none of its dates twice. */
+        if exists (select 1 from public.ops_tasks where idem_key = key)
+           or exists (select 1 from public.ops_recurring_made x
+                       where x.on_date = d
+                         and (x.rule_id = r.id
+                              or (r.source_task_id is not null and x.source_task_id = r.source_task_id))) then
           skip := skip + 1;
         else
           wk := coalesce(r.code_week, least(5, ((extract(day from d)::integer - 1) / 7) + 1));
@@ -193,6 +256,8 @@ begin
           end if;
           if one ? 'error' then return one || jsonb_build_object('rule', r.id); end if;
           made := made + 1;
+          insert into public.ops_recurring_made (rule_id, source_task_id, on_date)
+          values (r.id, r.source_task_id, d) on conflict do nothing;
           update public.ops_recurring_rules
              set generated_count = generated_count + 1, last_generated_period = p_period, updated_at = now()
            where id = r.id;

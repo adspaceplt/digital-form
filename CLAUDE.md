@@ -1204,6 +1204,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     before its day.
   - A monthly copy keeps its task's week; a weekly or every-N-days copy takes
     the week of its own date.
+  - Made once is made: every date a repeat makes is kept
+    (`ops_recurring_made`, by rule and by the task it copies; no policy, no
+    grant), so a deleted copy is never made again and a repeat turned off and
+    on again makes no date twice.
+  - A task deleted stops its repeat (trigger `ops_tasks_stop_repeat`): a rule
+    is seen and turned off only from its task.
 - Repeats run themselves; nobody presses Run:
   - a client's month confirmed (its meeting set or marked not applicable)
     makes that client's repeats for it at once, as the person confirming
