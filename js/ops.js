@@ -1187,6 +1187,7 @@
   }
 
   function endDrag() {
+    if (drag && drag.tick) window.cancelAnimationFrame(drag.tick);
     if (drag && drag.el) drag.el.classList.remove('is-dragging');
     var g = drag && drag.ghost && drag.ghost.el;
     if (g && g.parentNode) g.parentNode.removeChild(g);
@@ -1242,10 +1243,57 @@
      hover to read. */
   function colAt(x, y) {
     var el = document.elementFromPoint(x, y);
-    return el ? el.closest('.bcol') : null;
+    var col = el ? el.closest('.bcol') : null;
+    if (col || !drag || !drag.board) return col;
+    /* The whole column takes the drop, not the cards in it: between two
+       columns, or past the foot of a short one, the column nearest the hand
+       is the one it means (the user, 2026-09-28: only the first card's area
+       took a drop). Well away from the board, nothing does. */
+    var b = drag.board.getBoundingClientRect();
+    if (x < b.left - 24 || x > b.right + 24 || y < b.top - 24 || y > b.bottom + 96) return null;
+    var best = null, far = Infinity;
+    Array.prototype.forEach.call(drag.board.querySelectorAll('.bcol'), function (c) {
+      var r = c.getBoundingClientRect();
+      if (!r.width) return;
+      var dx = x < r.left ? r.left - x : x > r.right ? x - r.right : 0;
+      var dy = y < r.top ? r.top - y : y > r.bottom ? y - r.bottom : 0;
+      var d = dx * dx + dy * dy;
+      if (d < far) { far = d; best = c; }
+    });
+    return best;
+  }
+
+  /* The columns answer where the hand is now. */
+  function markDrop(x, y) {
+    var col = colAt(x, y);
+    Array.prototype.forEach.call(drag.board.querySelectorAll('.bcol'), function (c) {
+      c.classList.toggle('is-drop', c === col && dragAllowed(c.getAttribute('data-drop')));
+    });
+  }
+
+  /* A card held near either side of a board wider than the screen scrolls
+     it, so a stage off to the right or left is reached without letting go.
+     Faster the nearer the edge; nothing on a phone, where the columns stack. */
+  var EDGE_ZONE = 56;
+  function edgeScroll() {
+    if (!drag || !drag.board || drag.hx == null) return;
+    var b = drag.board, r = b.getBoundingClientRect(), v = 0;
+    if (b.scrollWidth > b.clientWidth + 1) {
+      if (drag.hx < r.left + EDGE_ZONE) v = -Math.ceil((r.left + EDGE_ZONE - drag.hx) / 4);
+      else if (drag.hx > r.right - EDGE_ZONE) v = Math.ceil((drag.hx - (r.right - EDGE_ZONE)) / 4);
+    }
+    if (v) {
+      var was = b.scrollLeft;
+      b.scrollLeft = was + v;
+      if (b.scrollLeft !== was) markDrop(drag.hx, drag.hy);
+    }
+    drag.tick = window.requestAnimationFrame(edgeScroll);
   }
 
   function wireDrag(el, t) {
+    /* A card is moved by the pointer path below and never by the browser's
+       own drag, which would cancel it. */
+    el.addEventListener('dragstart', function (e) { e.preventDefault(); });
     el.addEventListener('pointerdown', function (e) {
       if (e.button !== 0 && e.pointerType === 'mouse') return;
       /* The title opens the task and the select moves the stage; neither is a
@@ -1256,11 +1304,16 @@
          the card is still the board's to scroll. */
       if (touch && !grip) return;
       if (!grip && e.target.closest('.bcard-title, .state-select, select, button, a')) return;
+      /* A press on a handle selects no text: a selection left across the page
+         by the last drag was dragged natively by the next press, which
+         cancelled the pointer and the card never lifted. */
+      if (!touch) e.preventDefault();
       var sx = e.clientX, sy = e.clientY, id = e.pointerId;
       var lifted = false;
 
       function lift(x, y) {
         lifted = true;
+        if (window.getSelection) window.getSelection().removeAllRanges();
         drag = { task: null, el: null, ghost: null, board: null };
         drag.ghost = ghostOf(el, x, y);
         startDrag(t, el);
@@ -1274,10 +1327,9 @@
         }
         ev.preventDefault();
         drag.ghost.move(ev.clientX, ev.clientY);
-        var col = colAt(ev.clientX, ev.clientY);
-        Array.prototype.forEach.call(drag.board.querySelectorAll('.bcol'), function (c) {
-          c.classList.toggle('is-drop', c === col && dragAllowed(c.getAttribute('data-drop')));
-        });
+        drag.hx = ev.clientX; drag.hy = ev.clientY;
+        if (drag.board && !drag.tick) drag.tick = window.requestAnimationFrame(edgeScroll);
+        markDrop(ev.clientX, ev.clientY);
       }
       function up(ev) {
         if (ev.pointerId !== id) return;

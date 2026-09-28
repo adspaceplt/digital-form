@@ -6604,10 +6604,23 @@ body.is-canvas { overflow: hidden; }
   padding: 0 12px 0 20px; min-height: var(--head-h);
   border-bottom: 1px solid var(--line);
 }
-.canvas-title { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
-.canvas-dims { font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
-/* Where you are in the set, so stepping through it is not counting cards. */
-.canvas-pos { margin-left: auto; font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.canvas-what { display: flex; align-items: baseline; gap: 10px; flex: 0 1 auto; min-width: 0; }
+.canvas-title { font-size: 14px; font-weight: 600; letter-spacing: -.01em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.canvas-dims { font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Previous, where you are in the set, Next: one group, so stepping through
+   the set reads as one control. The three buttons are filled (the tonal
+   secondary), because the quiet icon mark read as a glyph on the bar and not
+   as something to press (the user, 2026-09-28, on an iPhone). Close stands
+   apart at the right edge. */
+.canvas-nav { margin-left: auto; display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.canvas-pos { font-size: 12.5px; color: var(--ink-mute); font-variant-numeric: tabular-nums; white-space: nowrap; min-width: 4.5em; text-align: center; }
+.canvas-head .iconbtn { background: var(--tonal); color: var(--ink); border-radius: var(--radius-sm); }
+.canvas-head .iconbtn svg { width: 18px; height: 18px; stroke-width: 2; }
+.canvas-head .canvas-close { margin-left: 8px; }
+@media (hover: hover) {
+  .canvas-head .iconbtn:hover:not([disabled]) { background: var(--tonal-hover); color: var(--ink); }
+}
+.canvas-head .iconbtn:active:not([disabled]) { background: var(--tonal-press); }
 .canvas-head .iconbtn[disabled] { opacity: .35; }
 .canvas-body {
   flex: 1 1 auto; min-height: 0; display: grid;
@@ -6638,6 +6651,10 @@ body.is-canvas { overflow: hidden; }
      follow it as the page scrolls. */
   .canvas { padding: 0; align-items: flex-end; }
   .canvas-card { width: 100%; max-height: 100vh; max-height: 100dvh; height: 100%; border-radius: 0; }
+  /* The name over its size, so the three buttons keep their room. */
+  .canvas-head { gap: 8px; padding: 0 12px 0 16px; }
+  .canvas-what { flex-direction: column; align-items: stretch; gap: 0; }
+  .canvas-dims { font-size: 12px; }
   .canvas-body { display: block; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
   .canvas-stage { overflow: visible; border-right: 0; border-bottom: 1px solid var(--line); padding: 14px; }
   .canvas-rail { overflow: visible; padding: 14px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
@@ -6992,15 +7009,18 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
    the rule against sideways tables is a rule about tables. On a phone the
    columns stack, so it reads as the list grouped by stage, which is what a
    board is on a screen one column wide. */
-.board { display: flex; gap: 12px; align-items: flex-start; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; }
-.bcol { flex: 0 0 248px; min-width: 0; display: grid; gap: 8px; }
+/* Every column runs the board's full height, so the whole column is where a
+   card lands, not the height of the cards already in it (the user,
+   2026-09-28); its cards stay packed at the top. */
+.board { display: flex; gap: 12px; align-items: stretch; overflow-x: auto; padding-bottom: 8px; scrollbar-width: thin; }
+.bcol { flex: 0 0 248px; min-width: 0; display: grid; grid-template-rows: auto 1fr; gap: 8px; }
 .bcol-head { display: flex; align-items: baseline; gap: 8px; padding: 0 2px 6px; border-bottom: 1px solid var(--line); min-height: 30px; }
 .bcol-head h3 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: -.01em; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* The count, and the guidance where the workflow states one: `4 / 5` reads
    as four in a column meant to hold five, and turns warn past it. */
 .bcol-n { margin-left: auto; font-size: 12px; color: var(--ink-mute); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .bcol.is-over .bcol-n { color: var(--warn); font-weight: 600; }
-.bcards { display: grid; gap: 8px; min-height: 48px; }
+.bcards { display: grid; gap: 8px; min-height: 48px; align-content: start; }
 .bcol-empty { font-size: 12.5px; color: var(--ink-mute); padding: 10px 2px; }
 .bcard {
   display: grid; gap: 6px; padding: 12px 12px 10px;
