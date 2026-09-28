@@ -7583,6 +7583,12 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .tfacts .linkbtn[hidden], .towner[hidden], .towner-pick[hidden] { display: none; }
 .towner-pick { max-width: 100%; }
 .tlink { margin-left: 2px; }
+/* A way on under a value (Open the month) takes a line of its own at its
+   full height, its words on the value's edge: squeezed beside the value with
+   its height given back, it wrapped and its fill covered the line above
+   (the user, 2026-09-28). */
+.tfacts .tbreak { flex-basis: 100%; height: 0; }
+.tfacts .tlink-own { margin: 0 0 0 -6px; }
 /* A date is the row's own control: the value and a pen, at the control
    floor, with a negative block margin so a 38px target does not set the
    height of a 20px line. */
