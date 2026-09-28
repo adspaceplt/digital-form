@@ -8,8 +8,8 @@ GitHub Pages at digital.adspace.me (CNAME in the repo). Pages: `admin/`
 (console), `client/` (client portal), `creators/` (the client's creator
 selection), `creator/` (a creator's own page), `review/` (content review),
 `verify/` (public reference check), `/` and `404.html` (covers). Supabase behind
-`js/api.js`; schema in `supabase/schema.sql` (re-runnable; the user runs it by
-hand in the SQL editor and must be told when). A change to one function or one
+`js/api.js`; schema in `supabase/schema.sql` (re-runnable). Migrations are
+applied by Claude through the Supabase connector (§3). A change to one function or one
 column ships as a dated file in `supabase/migrations/`: narrowly scoped, safe to
 run twice, its own rollback, mirrored in `schema.sql`.
 
@@ -1705,9 +1705,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   confirm the Pages build, report.
   - Ask only when readings differ materially.
   - Never re-explain settled decisions.
+- A migration is applied by Claude through the Supabase connector (project
+  `hwwuigvdfubuymchsvyx`, the user, 2026-09-28), once the merge's Pages
+  deploy has succeeded (the page must stop asking before the database stops
+  answering), and verified on the live database afterwards. The report
+  names what was applied.
 - The report lists what the user runs by hand:
-  - a migration;
-  - `schema.sql`;
   - an edge function to deploy (`sign-upload`, `invite-member`, `portal-login`,
     `meet-create`, `push-send`, `s3-sweep`; Verify JWT off);
   - a dashboard setting.
