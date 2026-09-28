@@ -348,6 +348,11 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   (`.cmdbar-find .input:focus`).
 - A value only read is not a field.
 - A destructive item is red on the item itself.
+- A button that acts carries its action's glyph wherever it is drawn: a plus
+  to add, a pen to edit, the copy mark, the leaving mark after anything that
+  opens elsewhere (Preview, Open). A form's own commit (Save, Cancel, a
+  submit, a sheet's foot, a confirm) is words. `uxaudit` `glyph` fails a
+  label drawn both ways.
 - A border inside a border groups nothing, so the inner one is shaded.
 - The ⋯ is the lightest control. The account control, the bell and the
   Activity link carry no outline, only a `--line-soft` fill on hover and while

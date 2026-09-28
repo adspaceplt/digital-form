@@ -23,6 +23,8 @@
  */
 (function () {
   'use strict';
+  /* An edit carries its pen, as every Edit in the console does. */
+  var PEN_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
   var API = window.ADspaceAPI;
   var db = API && API.client;
   if (!API || !API.configured || !db) return;
@@ -521,7 +523,7 @@
       return '<div class="rp-check' + (done ? ' is-done' : need ? ' is-missing' : '') + '">' +
         '<span class="rp-check-mark" aria-hidden="true">' + (done ? ICON.tick : '') + '</span>' +
         '<span class="rp-check-t"><b>' + esc(s[1]) + '</b><small>' + esc(stepNote(s[0]) + (!done ? (need ? ' · Required' : ' · Optional') : '')) + '</small></span>' +
-        '<button class="btn btn-sm btn-quiet" type="button" data-to="' + s[0] + '">' + (editable() ? 'Edit' : 'View') + '</button></div>';
+        '<button class="btn btn-sm btn-quiet" type="button" data-to="' + s[0] + '">' + (editable() ? PEN_MARK + 'Edit' : 'View') + '</button></div>';
     }).join('');
     var missing = stepsOf(r).slice(0, 3).filter(function (s) { return s[0] !== 'text' && s[0] !== 'figures' && !stepDone(s[0]); });
     var mine = r.submitted_by && r.submitted_by === myId();

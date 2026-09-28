@@ -269,6 +269,8 @@
   /* The padlock beside Performance says which state the reviews are in. */
   var PAD_SHUT = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
   var PAD_OPEN = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.6-1.7"/></svg>';
+  /* An edit carries its pen, as every Edit in the console does. */
+  var PEN_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
   function padlock(open) {
     var b = $('perfLockBtn');
     b.innerHTML = open ? PAD_OPEN : PAD_SHUT;
@@ -2159,7 +2161,7 @@
       t.innerHTML = '<dl class="facts rw-dl">' + facts.map(function (f) {
         return '<div><dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd></div>';
       }).join('') + '</dl>' +
-        (d.admin && !d.confirmed ? '<div class="rw-facts-acts"><button class="btn btn-sm" id="rwFEdit" type="button">Edit</button></div>' : '');
+        (d.admin && !d.confirmed ? '<div class="rw-facts-acts"><button class="btn btn-sm" id="rwFEdit" type="button">' + PEN_MARK + 'Edit</button></div>' : '');
       var eb = t.querySelector('#rwFEdit');
       if (eb) eb.addEventListener('click', function () { openFigures(eb); });
     }

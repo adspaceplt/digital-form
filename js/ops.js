@@ -3376,7 +3376,7 @@
       ].filter(Boolean).join(' · ');
       return '<div class="tplrow">' +
         '<span class="tplrow-name"><b>' + esc(x.name) + '</b>' + (bits ? '<small>' + esc(bits) + '</small>' : '') + '</span>' +
-        '<button class="btn btn-quiet btn-sm" data-edit="' + esc(x.id) + '" type="button">Edit</button>' +
+        '<button class="btn btn-quiet btn-sm" data-edit="' + esc(x.id) + '" type="button">' + PEN_MARK + 'Edit</button>' +
         '</div>';
     }).join('') : '<p class="ovnote mute">No templates.</p>';
     Array.prototype.forEach.call($('tplList').querySelectorAll('[data-edit]'), function (b) {
@@ -5522,6 +5522,10 @@
      (the database gives each a day inside its week) and Create names the
      count. */
   var X_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+  /* An add carries its plus wherever it is drawn (the bar's New task, a
+     month's Add task). */
+  var PLUS_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
+  var PEN_MARK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
   function ntRows() { return Array.prototype.slice.call($('ntPieces').querySelectorAll('.piece')); }
   function ntRowVals(row) {
     return {
@@ -6374,7 +6378,7 @@
         '<div class="eng-row eng-close"><span class="eng-lab">Tasks</span>' +
           '<span class="eng-val">' + (n.done === 1 ? 'The task is done.' : 'All ' + n.done + ' done.') + '</span>' +
           '<span class="eng-meetacts">' +
-            '<button class="btn btn-sm" data-a="addtask" type="button">Add task</button>' +
+            '<button class="btn btn-sm" data-a="addtask" type="button">' + PLUS_MARK + 'Add task</button>' +
             '<button class="btn btn-sm btn-primary" data-a="complete" type="button">Complete month</button>' +
           '</span></div>');
       el.querySelector('[data-a="addtask"]').addEventListener('click', function () {
