@@ -8917,3 +8917,5 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .set-row.is-on { background: var(--line-soft); }
 @media (hover: hover) { .set-row:not(.is-on):hover { background: var(--sunk); } }
 .cr-sets > .empty { padding: 12px 15px; margin: 0; }
+/* The re-approval note opens under the post, across the whole row. */
+.saved > .asknote { grid-column: 1 / -1; margin-top: 10px; }
