@@ -4098,6 +4098,11 @@ body > .shell { width: 100%; }
 .task-go .crm-chev { width: 16px; height: 16px; }
 
 .tlink-row { grid-template-columns: minmax(0, 1fr) 120px auto; }
+/* A link's address is the row's meta line: one line that ends in an ellipsis
+   (the whole address is in Edit, and Open goes there). Unbroken, it ran on
+   under Open on a phone. Its label is typed, and breaks anywhere. */
+.tlink-row .svc-name small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tlink-row .svc-name b { overflow-wrap: anywhere; }
 .tlink-row > .team-act { align-items: center; gap: 4px; }
 .tlink-kind { min-width: 0; }
 .tsess-row { grid-template-columns: minmax(0, 1fr) 150px 110px; }
