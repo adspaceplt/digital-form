@@ -8906,7 +8906,7 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .cr-sets { display: flex; flex-direction: column; padding: 0; }
 .set-row {
   display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left;
-  padding: 12px 15px; border: 0; border-top: 1px solid var(--line-soft); background: none; font: inherit; color: inherit;
+  padding: 12px 15px; border: 0; border-top: 1px solid var(--line-soft); background: none; font: inherit; color: var(--ink);
 }
 .set-row:first-child { border-top: 0; }
 .set-row-top { display: flex; align-items: center; gap: 8px; min-width: 0; }

@@ -854,6 +854,12 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The Review Canvas moves the card's own blocks and puts them back; there is
   one decision control. Prev/next, the arrow keys and Escape work.
 - Console:
+  - The client is a record: the mark, name and handles, and one ⋯ (Client
+    settings as a sheet with one Save, Reset access link, Remove from Content
+    Review); the sets are rows (name, the state at the right, the post
+    count) beside the review link. A post is a row: the placement with the
+    client's decision at the right, the file, the copy, and one ⋯ (Edit,
+    Request re-approval, Delete); the re-approval note opens under the post.
   - Sets are folded, one open at a time.
   - Publish / Unpublish (warn).
   - Resend with a note.
