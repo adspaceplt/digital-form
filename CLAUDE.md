@@ -70,6 +70,11 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 - It prints one line per suite and ends `gate: ok` or `gate: PROBLEM (n)`
   (also written to `$OUT`, default `/tmp/gate.txt`).
 - Run it as **one background command and wait for its completion notice**.
+  - Run it through `bash tests/snap.sh <suites… | all | ui>`: it gates a
+    frozen copy of HEAD (commit first), so the next change is built while it
+    runs. The machine has 4 CPUs and one gate fills them: one gate at a time.
+  - While building, run the suites the change touched; `all` once per batch,
+    before the merge.
   - Never poll with sleep.
   - Never watch suites one by one.
   - Never wait on a `pgrep` pattern: the loop's own command line matches it and
