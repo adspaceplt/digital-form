@@ -687,6 +687,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Billing and Brand read first; Edit opens `#crmBillSheet` /
     `#crmBrandSheet`. The Active gate opens the sheet on the first missing
     field.
+  - The billing columns (registered name, both registration numbers, TIN,
+    SST no., billing contact, finance email, billing address) are withheld
+    from the table by column grants. They are read only through
+    `client_billing(p_ids)` (`ADspaceAPI.withBilling`): the values at
+    Clients: Billing View, the name and address at Documents Work
+    (`register_may('client', 'work')`), and `billing_missing` alone at
+    Clients View, so the gate still names what is missing.
+  - Every read of `clients` names `ADspaceAPI.CLIENT_COLS` or its own list,
+    never `*` (refused). A new column is granted by running the CLIENT
+    BILLING COLUMNS section again. The stand-in refuses `*` and every
+    billing column, top level or embedded.
 - One set of handles and one logo per client:
   - Brand and Content Review settings both edit `handle_*` and `logo_url`.
   - `social_*` is backfilled by `handle_of()` (a bare handle, or a URL's last

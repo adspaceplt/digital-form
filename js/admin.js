@@ -888,7 +888,7 @@
   function clientByKey(key, then) {
     var CRM = window.ADspaceCRM;
     if (CRM && CRM.byKey) { CRM.byKey(key, then); return; }
-    db.from('clients').select('*').eq('id', key).single()
+    db.from('clients').select(API.CLIENT_COLS).eq('id', key).single()
       .then(function (r) { then(r.error ? null : (r.data || null)); }, function () { then(null); });
   }
 
@@ -1006,7 +1006,7 @@
   function loadClients() {
     var box = $('clientCards');
     if (!state.reviewClients) skeleton(box, 3);
-    db.from('clients').select('*').eq('stage', 'active').eq('review_hidden', false)
+    db.from('clients').select(API.CLIENT_COLS).eq('stage', 'active').eq('review_hidden', false)
       .order('name').then(function (r) {
       if (r.error) {
         state.reviewClients = null;
@@ -1449,7 +1449,7 @@
        "why do i have to update both sides"). The row is read again on open,
        and a field somebody has already changed is left as they typed it. */
     var before = { ig: c.handle_ig, fb: c.handle_fb, tt: c.handle_tiktok, xhs: c.handle_xhs, logo: c.logo_url, pass: c.passcode };
-    db.from('clients').select('*').eq('id', c.id).single().then(function (r) {
+    db.from('clients').select(API.CLIENT_COLS).eq('id', c.id).single().then(function (r) {
       if (!r || r.error || !r.data || state.client !== c) return;
       Object.assign(c, r.data);
       fillProfile(c, before);

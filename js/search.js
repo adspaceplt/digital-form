@@ -122,11 +122,13 @@
       } },
     { key: 'clients', head: 'Clients', can: function () { return may('clients'); },
       read: function (q) {
-        var direct = read(db.from('clients').select('id, slug, name, legal_name, client_code, stage')
-          .or(any(['name', 'legal_name', 'client_code'], q)).order('name').limit(LIMIT));
+        /* The registered name is a Billing column the table withholds
+           (2026-09-28), so a client is found by its name and its code. */
+        var direct = read(db.from('clients').select('id, slug, name, client_code, stage')
+          .or(any(['name', 'client_code'], q)).order('name').limit(LIMIT));
         if (!may('clients.contacts')) return direct;
         var people = read(db.from('client_contacts')
-          .select('name, email, phone, client_id, clients(id, slug, name, legal_name, client_code, stage)')
+          .select('name, email, phone, client_id, clients(id, slug, name, client_code, stage)')
           .is('archived_at', null).or(any(['name', 'email', 'phone'], q)).order('name').limit(LIMIT));
         /* A client found by its name leads; one found through a contact
            follows, once, saying which contact. */
@@ -147,7 +149,7 @@
         var via = c.via;
         return {
           id: 'client-' + c.id, name: c.name, code: c.client_code,
-          meta: via ? [via.name, via.email || via.phone] : [stageOf(c.stage), c.legal_name],
+          meta: via ? [via.name, via.email || via.phone] : [stageOf(c.stage)],
           open: function () {
             go('/admin/?client=' + encodeURIComponent(clientKey(c)) + (via ? '&tab=contacts' : ''), 'clients');
           }

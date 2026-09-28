@@ -69,9 +69,61 @@
     }, e => ({ data: {}, error: e, why: words(null, e) }));
   }
 
+  /* The columns of `clients` the table answers to the team. The billing
+     columns (registered name, registration and tax numbers, billing
+     contact, finance email, billing address) are withheld by the database,
+     so `select('*')` on clients is refused; they are read through
+     `client_billing()`, which answers only the people Clients: Billing
+     admits (2026-09-28). */
+  const CLIENT_COLS = 'id, name, logo_url, access_token, passcode, active, created_at, drive_folder, ' +
+    'handle_ig, handle_fb, handle_tiktok, handle_xhs, stage, industry, owner, market, sst_applies, ' +
+    'website, source, brand_notes, updated_at, phone, social_ig, social_fb, social_tiktok, social_xhs, ' +
+    'review_hidden, deal_value, deal_note, commence, slug, stage_since, stage_log, client_code';
+  const BILL_COLS = ['legal_name', 'company_no', 'company_no_old', 'tin', 'sst_no', 'bill_contact_id',
+    'bill_contact', 'bill_contact_email', 'bill_contact_phone', 'finance_email', 'billing_address'];
+  /* Billing by client id: { id: row }. A row carries `missing`, the
+     required fields left blank, even where the values are withheld, so the
+     Active gate still names them. Before the migration has run the function
+     is missing and the columns are still readable, so they are read
+     straight; after it, a refusal answers {}. Never throws. */
+  function clientBilling(ids) {
+    if (!client) return Promise.resolve({});
+    const keyed = (rows) => {
+      const out = {};
+      (rows || []).forEach((r) => { out[r.id] = r; });
+      return out;
+    };
+    const direct = () => {
+      let q = client.from('clients').select('id, ' + BILL_COLS.join(', '));
+      if (ids) q = q.in('id', ids);
+      return q.then((r) => keyed(r.error ? [] : r.data), () => ({}));
+    };
+    return client.rpc('client_billing', { p_ids: ids || null })
+      .then((r) => (r.error ? direct() : keyed(r.data)), direct);
+  }
+  /* Lays billing onto client rows in place. Only the keys the answer holds
+     are written, so a person Billing refuses keeps none. */
+  function withBilling(rows) {
+    const list = [].concat(rows || []).filter(Boolean);
+    if (!list.length) return Promise.resolve(rows);
+    const ids = list.length === 1 ? [list[0].id] : null;
+    return clientBilling(ids).then((by) => {
+      list.forEach((c) => {
+        const b = by[c.id];
+        if (!b) return;
+        Object.keys(b).forEach((k) => { if (k !== 'id') c[k] = b[k]; });
+      });
+      return rows;
+    });
+  }
+
   window.ADspaceAPI = {
     configured,
     client,
+    CLIENT_COLS,
+    BILL_COLS,
+    clientBilling,
+    withBilling,
     getReviewFeed,
     submitReview,
     invokeFn

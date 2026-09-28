@@ -142,7 +142,10 @@
 
   function loadPeople(then) {
     Promise.all([
-      db.from('clients').select('id, name, legal_name, client_code, billing_address, market, stage, created_at').order('name'),
+      /* The registered name and the billing address are Billing's columns,
+         answered to Documents at Work by `client_billing()`. */
+      db.from('clients').select('id, name, client_code, market, stage, created_at').order('name')
+        .then(function (r) { return r.error ? r : API.withBilling(r.data || []).then(function () { return r; }); }),
       db.from('team_members').select('id, name, email, staff_code, designation, active').order('name'),
       LET.types ? new Promise(function (res) { LET.types(function (rows) { res(rows); }); }) : Promise.resolve([])
     ]).then(function (r) {
