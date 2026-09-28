@@ -850,7 +850,7 @@
           client: clientKey(state.client),
           set: state.batch ? state.batch.id : null,
           y: Math.round(window.scrollY),
-          drawer: !$('advancedBody').hidden
+          drawer: false
         }));
       } catch (e) { /* private browsing */ }
     }, 180);
@@ -1433,7 +1433,8 @@
     $('clientsView').hidden = true;
     $('workspace').hidden = false;
     $('setPanel').hidden = true;
-    $('wsClientName').textContent = c.name;
+    paintHead(c);
+    msg('wsMsg', '');
 
     var url = reviewUrl(c);
     $('clientLink').value = url;
@@ -1451,6 +1452,7 @@
       if (!r || r.error || !r.data || state.client !== c) return;
       Object.assign(c, r.data);
       fillProfile(c, before);
+      paintHead(c);
     }, function () {});
     msg('handleMsg', '');
     msg('profileMsg', '');
@@ -1477,24 +1479,83 @@
 
   $('backToClients').addEventListener('click', showClients);
 
+  /* The client's settings are a sheet from the head's ⋯ (2026-09-28), where
+     they were a fold that opened forms in the middle of the page. */
   function openDrawer(open) {
-    $('advancedBody').hidden = !open;
-    $('advancedToggle').setAttribute('aria-expanded', String(open));
-    $('advancedToggle').classList.toggle('is-open', open);
+    var sh = $('crSettingsSheet');
+    if (open) { msg('handleMsg', ''); msg('profileMsg', ''); window.ADspaceSheet.show(sh, { opener: $('wsMenuBtn') }); }
+    else if (window.ADspaceSheet.isOpen(sh)) window.ADspaceSheet.close();
   }
 
-  $('advancedToggle').addEventListener('click', function () {
-    openDrawer($('advancedBody').hidden);
+  $('advancedToggle').addEventListener('click', function () { shutWsMenu(); openDrawer(true); });
+  $('crSettingsCancel').addEventListener('click', function () { openDrawer(false); });
+  $('crSettingsClose').addEventListener('click', function () { openDrawer(false); });
+  /* One Save for both groups; the sheet shuts once both have saved, and a
+     refusal keeps it open with the refusal under its group. */
+  $('crSettingsSave').addEventListener('click', function () {
+    var btn = this, left = 2, ok = true;
+    btn.disabled = true;
+    var one = function (fine) {
+      ok = ok && fine;
+      if (--left) return;
+      btn.disabled = false;
+      if (!ok) return;
+      openDrawer(false);
+      msg('wsMsg', 'Saved.', 'ok');
+    };
+    saveHandles(one); saveProfile(one);
   });
 
-  $('saveHandles').addEventListener('click', function () {
+  /* The head's ⋯: Client settings, Reset access link, Remove. */
+  function shutWsMenu() {
+    $('wsMenu').hidden = true;
+    $('wsMenuBtn').setAttribute('aria-expanded', 'false');
+  }
+  $('wsMenuBtn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    var open = $('wsMenu').hidden;
+    shutWsMenu();
+    if (!open) return;
+    $('wsMenu').hidden = false;
+    this.setAttribute('aria-expanded', 'true');
+    window.ADspaceMenu.place(this, $('wsMenu'));
+  });
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('#wsMenu, #wsMenuBtn')) shutWsMenu();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && !$('wsMenu').hidden) { shutWsMenu(); $('wsMenuBtn').focus(); }
+  });
+  window.ADspaceMenu.onScroll(shutWsMenu);
+
+  /* The head: the client's logo or initials, the name, and their handles. */
+  function paintHead(c) {
+    var mark = $('wsMark');
+    var initials = window.ADspaceState.initials(c.name);
+    if (c.logo_url) {
+      mark.className = 'rec-mark has-logo';
+      mark.innerHTML = '<img src="' + esc(c.logo_url) + '" alt="">';
+      mark.querySelector('img').addEventListener('error', function () {
+        mark.className = 'rec-mark'; mark.textContent = initials;
+      });
+    } else { mark.className = 'rec-mark'; mark.textContent = initials; }
+    $('wsClientName').textContent = c.name || '';
+    $('wsMeta').textContent = [
+      c.handle_ig ? 'Instagram @' + String(c.handle_ig).replace(/^@/, '') : '',
+      c.handle_tiktok ? 'TikTok @' + String(c.handle_tiktok).replace(/^@/, '') : '',
+      c.handle_fb ? 'Facebook ' + c.handle_fb : '',
+      c.handle_xhs ? 'rednote ' + c.handle_xhs : ''
+    ].filter(Boolean).join(' · ');
+  }
+
+  function saveHandles(done) {
     db.from('clients').update({
       handle_ig:     $('eIg').value.trim() || null,
       handle_fb:     $('eFb').value.trim() || null,
       handle_tiktok: $('eTt').value.trim() || null,
       handle_xhs:    $('eXhs').value.trim() || null
     }).eq('id', state.client.id).then(function (r) {
-      if (r.error) { msg('handleMsg', r.error.message, 'err'); return; }
+      if (r.error) { msg('handleMsg', r.error.message, 'err'); done(false); return; }
       logAction('client.handles', state.client.name,
         ['ig', 'fb', 'tiktok', 'xhs'].map(function (k) {
           var v = $({ ig: 'eIg', fb: 'eFb', tiktok: 'eTt', xhs: 'eXhs' }[k]).value.trim();
@@ -1504,9 +1565,11 @@
       state.client.handle_fb = $('eFb').value.trim() || null;
       state.client.handle_tiktok = $('eTt').value.trim() || null;
       state.client.handle_xhs = $('eXhs').value.trim() || null;
+      paintHead(state.client);
       msg('handleMsg', 'Saved.', 'ok');
+      done(true);
     });
-  });
+  }
 
   /* Shows the address as a circle, the way every platform will, and says so
      when the file is not square. Nothing is ever skewed: a wide mark either
@@ -1553,17 +1616,18 @@
 
   /* Logo and access code were set once at creation and then stuck. Both are
      editable here, and clearing either field removes it. */
-  $('saveProfile').addEventListener('click', function () {
+  function saveProfile(done) {
     var logo = $('eLogo').value.trim();
     var pass = $('ePass').value.trim();
     if (logo && !/^https:\/\//i.test(logo)) {
       msg('profileMsg', 'The logo address needs to start with https://', 'err');
+      done(false);
       return;
     }
     var had = Boolean(state.client.passcode);
     db.from('clients').update({ logo_url: logo || null, passcode: pass || null })
       .eq('id', state.client.id).then(function (r) {
-        if (r.error) { msg('profileMsg', r.error.message, 'err'); return; }
+        if (r.error) { msg('profileMsg', r.error.message, 'err'); done(false); return; }
         logAction('client.profile', state.client.name,
           [(logo || null) !== (state.client.logo_url || null) ? 'logo changed' : '',
            !had && pass ? 'access code added' : had && !pass ? 'access code removed'
@@ -1577,10 +1641,13 @@
                  : 'Saved.';
         msg('profileMsg', note, 'ok');
         if (!had && !pass) msg('profileMsg', logo ? 'Logo saved.' : 'Saved.', 'ok');
+        paintHead(state.client);
+        done(true);
       });
-  });
+  }
 
   $('resetLink').addEventListener('click', function () {
+    shutWsMenu();
     window.ADspaceConfirm.ask({
       title: 'Reset the review link',
       body: 'The current link for ' + state.client.name + ' stops working immediately. '
@@ -1591,13 +1658,13 @@
       var next = makeToken();
       db.from('clients').update({ access_token: next }).eq('id', state.client.id)
         .then(function (r) {
-          if (r.error) { msg('handleMsg', r.error.message, 'err'); return; }
+          if (r.error) { msg('wsMsg', r.error.message, 'err'); return; }
           logAction('link.reset', state.client.name, 'Previous link invalidated');
           state.client.access_token = next;
           var fresh = reviewUrl(state.client);
           $('clientLink').value = fresh;
           $('openLink').href = fresh;
-          msg('handleMsg', 'New link issued. The previous link is no longer valid.', 'ok');
+          msg('wsMsg', 'New link issued. The previous link is no longer valid.', 'ok');
         });
     });
   });
@@ -1617,6 +1684,7 @@
      Review holds for them, their content sets, and takes them off this list.
      The company, its contacts and its log stay in Clients, where they belong. */
   $('deleteClient').addEventListener('click', function () {
+    shutWsMenu();
     var c = state.client;
     db.from('batches').select('id').eq('client_id', c.id).then(function (r) {
       var sets = (r.data || []).length;
@@ -1640,9 +1708,9 @@
         }
       }, function () {
         db.from('batches').delete().eq('client_id', c.id).then(function (d) {
-          if (d.error) { msg('profileMsg', d.error.message, 'err'); return; }
+          if (d.error) { msg('wsMsg', d.error.message, 'err'); return; }
           db.from('clients').update({ review_hidden: true }).eq('id', c.id).then(function (u) {
-            if (u.error) { msg('profileMsg', u.error.message, 'err'); return; }
+            if (u.error) { msg('wsMsg', u.error.message, 'err'); return; }
             logAction('review.removed', c.name,
               sets + ' content set' + (sets === 1 ? '' : 's') + ' removed');
             showClients();
@@ -1667,15 +1735,16 @@
           box.innerHTML = '<div class="empty">No content sets.</div>';
           return;
         }
+        /* A set is a row: its name with the state at the right of the line,
+           its post count under it (2026-09-28; it was a 125px card). */
         r.data.forEach(function (b) {
           var card = document.createElement('button');
-          card.className = 'bigcard' + (state.batch && state.batch.id === b.id ? ' is-on' : '');
+          card.className = 'set-row' + (state.batch && state.batch.id === b.id ? ' is-on' : '');
           card.type = 'button';
           card.innerHTML =
-            '<span class="bigcard-name">' + esc(b.title) + '</span>' +
-            '<span class="bigcard-sub" data-role="sub">Loading…</span>' +
-            '<span class="bigcard-tag ' + (b.published ? 'is-live' : '') + '">' +
-              (b.published ? 'Published' : 'Draft') + '</span>';
+            '<span class="set-row-top"><b>' + esc(b.title) + '</b>' +
+              '<span class="tone ' + (b.published ? 'is-ok' : '') + '">' + (b.published ? 'Published' : 'Draft') + '</span></span>' +
+            '<span class="set-row-sub" data-role="sub">Loading…</span>';
           card.addEventListener('click', function () { openBatch(b); });
           box.appendChild(card);
 
@@ -1683,7 +1752,7 @@
              said "0 posts" over a failed request and the set looked empty. */
           db.from('posts').select('id').eq('batch_id', b.id).then(function (p) {
             var sub = card.querySelector('[data-role="sub"]');
-            if (p.error) { sub.textContent = 'Posts unavailable'; sub.className = 'bigcard-sub is-warn'; return; }
+            if (p.error) { sub.textContent = 'Posts unavailable'; sub.className = 'set-row-sub is-warn'; return; }
             var n = (p.data || []).length;
             sub.textContent = n + ' post' + (n === 1 ? '' : 's');
           });
@@ -3022,13 +3091,25 @@
 
   /* Pending, approved, changes requested. The dot is what you scan for; the
      word is what makes it mean something. */
+  /* The client's decision as the portal's chip: warn while it waits on
+     somebody, green once approved. A word, never a coloured dot. */
   function statusMark(review) {
     var kind = !review ? 'pending'
              : review.decision === 'approved' ? 'approved' : 'changes';
     var word = kind === 'pending' ? 'Pending'
              : kind === 'approved' ? 'Approved' : 'Changes requested';
-    return '<span class="status status-' + kind + '">' + word + '</span>';
+    return '<span class="tone ' + (kind === 'approved' ? 'is-ok' : 'is-warn') + '">' + word + '</span>';
   }
+
+  function shutPostMenus() {
+    Array.prototype.forEach.call(document.querySelectorAll('#postList .kmenu'), function (m) { m.hidden = true; });
+    Array.prototype.forEach.call(document.querySelectorAll('#postList .kmenu-btn'), function (b) { b.setAttribute('aria-expanded', 'false'); });
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('#postList .kmenu, #postList .kmenu-btn')) shutPostMenus();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutPostMenus(); });
+  window.ADspaceMenu.onScroll(shutPostMenus);
 
   function savedRow(p, review) {
     var row = document.createElement('div');
@@ -3042,12 +3123,12 @@
           (m.type === 'video'
             ? '<video src="' + m.url + '" muted></video>'
             : '<img src="' + (m.url || '') + '" alt="">') + '</div>' +
+        /* The placement with the client's decision at the right of its line,
+           then the file, then the copy: one row, and its acts in one ⋯
+           (2026-09-28; the pencil and the bin had a line of their own). */
         '<div class="saved-body">' +
-          '<b>' + MK.label(p) + '</b>' +
-          '<span class="saved-meta">' + statusMark(review) +
-            '<span class="sep">&middot;</span>' +
-            '<span class="spec">' + esc(fileLabel(m)) + '</span>' +
-          '</span>' +
+          '<span class="saved-top"><b>' + MK.label(p) + '</b>' + statusMark(review) + '</span>' +
+          '<span class="saved-meta"><span class="spec">' + esc(fileLabel(m)) + '</span></span>' +
           // A post with no copy yet says nothing rather than saying "No caption".
           ((p.caption || p.caption_zh)
             ? '<span class="muted">' + esc((p.caption || p.caption_zh).slice(0, 90)) + '</span>'
@@ -3058,24 +3139,37 @@
             ? '<span class="saved-note is-warn">Sent back: ' + esc(p.review_reset_note) + '</span>'
             : '') +
         '</div>' +
-        // Two marks, not two words. Secondary actions should not outweigh the
-        // name of the placement they belong to.
         '<div class="saved-actions">' +
-          (review && review.decision === 'approved'
-            ? iconBtn('redo', 'reask', 'Request re-approval', 'is-warn') : '') +
-          iconBtn('pencil', 'edit', 'Edit post') +
-          iconBtn('trash', 'del', 'Delete', 'is-danger') +
+          '<button class="kmenu-btn" data-a="menu" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(MK.label(p)) + '">' + DOTS + '</button>' +
+          '<div class="kmenu" data-menu hidden role="menu">' +
+            '<button class="kmenu-item" data-a="edit" type="button" role="menuitem">Edit</button>' +
+            (review && review.decision === 'approved'
+              ? '<button class="kmenu-item" data-a="reask" type="button" role="menuitem">Request re-approval</button>' : '') +
+            '<button class="kmenu-item is-danger" data-a="del" type="button" role="menuitem">Delete</button>' +
+          '</div>' +
         '</div>';
 
-      row.querySelector('[data-a="edit"]').addEventListener('click', paintEdit);
+      var mbtn = row.querySelector('[data-a="menu"]'), menu = row.querySelector('[data-menu]');
+      mbtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var open = menu.hidden;
+        shutPostMenus();
+        if (!open) return;
+        menu.hidden = false;
+        mbtn.setAttribute('aria-expanded', 'true');
+        window.ADspaceMenu.place(mbtn, menu);
+      });
+      row.querySelector('[data-a="edit"]').addEventListener('click', function () { shutPostMenus(); paintEdit(); });
 
       /* The client reads this, so it is a note and not a value: it opens under
          the control that sends it rather than in a browser window over the
          post it is about. */
       var reask = row.querySelector('[data-a="reask"]');
       if (reask) reask.addEventListener('click', function () {
+        shutPostMenus();
         if (reask._ask) { reask._ask.open(); return; }
-        reask._ask = window.ADspaceAsk.note(reask, {
+        /* The note opens under the post it is about, not inside the menu. */
+        reask._ask = window.ADspaceAsk.note(row.querySelector('.saved-body'), {
           label: 'Reason for re-approval', send: 'Request re-approval',
           placeholder: 'Why the client is being asked again. They read this.',
           save: function (why) {
@@ -3094,6 +3188,7 @@
         reask._ask.open();
       });
       row.querySelector('[data-a="del"]').addEventListener('click', function () {
+        shutPostMenus();
         window.ADspaceConfirm.ask({
           title: 'Delete',
           body: MK.label(p) + ' leaves the client view, with its approval record. '
