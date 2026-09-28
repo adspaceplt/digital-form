@@ -359,6 +359,10 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   submit, a sheet's foot, a confirm) is words. `uxaudit` `glyph` fails a
   label drawn both ways.
 - A border inside a border groups nothing, so the inner one is shaded.
+- A word or a value that acts inside a line of text (`.linkbtn`, `.tdate`,
+  `.tinline`, `.serial-copy`) keeps its whole target but never shows it: its
+  hover fill hugs the line (26px, a `::before`), never a slab the height of
+  the target.
 - The ⋯ is the lightest control. The account control, the bell and the
   Activity link carry no outline, only a `--line-soft` fill on hover and while
   open.

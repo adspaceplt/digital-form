@@ -1347,9 +1347,9 @@ a { color: inherit; }
   border: 0; border-radius: var(--radius-sm); background: none; cursor: pointer;
   color: var(--ink-soft); font: inherit; font-size: 12.5px; font-weight: 500; text-decoration: none;
 }
-@media (hover: hover) { .linkbtn:hover { background: var(--line-soft); color: var(--ink); } }
+@media (hover: hover) { .linkbtn:hover { color: var(--ink); } }
 .linkbtn.is-danger { color: var(--err); }
-@media (hover: hover) { .linkbtn.is-danger:hover { background: var(--err-bg); color: var(--err-hi); } }
+@media (hover: hover) { .linkbtn.is-danger:hover { color: var(--err-hi); } .linkbtn.is-danger:hover::before { background: var(--err-bg); } }
 .linkbtn .ovgo-chev { width: 14px; height: 14px; flex: 0 0 auto; }
 .dangerrow { margin-top: 14px; }
 
@@ -4414,7 +4414,7 @@ body > .shell { width: 100%; }
   font: inherit; font-weight: 600; letter-spacing: -.01em; color: inherit; cursor: pointer;
   transition: background var(--t-fast) var(--ease-out), color var(--t-fast) var(--ease-out);
 }
-@media (hover: hover) { .serial-copy:hover { background: var(--sunk); } }
+
 .serial-copy:active { transform: scale(.97); }
 .serial-copy.is-done { color: var(--ok); background: var(--ok-bg); }
 /* Service, what it costs, what that buys. Active is the ordinary case on this
@@ -7599,7 +7599,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   font: inherit; font-size: 13.5px; font-variant-numeric: tabular-nums; cursor: pointer; text-decoration: none;
 }
 .tdate svg { width: 13px; height: 13px; color: var(--ink-mute); flex: 0 0 auto; }
-@media (hover: hover) { .tdate:hover, .tdate-src:hover { background: var(--line-soft); } }
+
 .tdate:active, .tdate-src:active { transform: scale(.97); }
 .tdate.is-over, .tdate-read.is-over { color: var(--warn); font-weight: 600; }
 .tdate-src { color: var(--ink-soft); }
@@ -7678,7 +7678,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
   border: 0; border-radius: var(--radius-ctl); background: none; color: inherit;
   font: inherit; font-size: 13px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-@media (hover: hover) { .tinline:hover { background: var(--line-soft); color: var(--ink); } }
+@media (hover: hover) { .tinline:hover { color: var(--ink); } }
 .tinline[hidden] { display: none; }
 .tinline-pick { width: 100%; min-width: 0; }
 .task-due { display: block; }
@@ -9068,3 +9068,19 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .tefmt.is-held .tickline > span { color: var(--ink-mute); }
 .tefmt-hours { width: 100%; text-align: right; }
 .tefmt-hours:disabled { visibility: hidden; }
+
+/* A word or a value that acts inside a line of text (Change, a due date, a
+   reference, Open the month) keeps its whole target, 38px at a desk and 44
+   under a finger, but its fill hugs the line it reads as: drawn full height,
+   the hover stood as a grey slab over the rows above and below (the user,
+   2026-09-28: "such huge invisible button"). */
+.linkbtn, .tdate, .tdate-src, .tinline, .serial-copy { position: relative; isolation: isolate; }
+.linkbtn::before, .tdate::before, .tdate-src::before, .tinline::before, .serial-copy::before {
+  content: ""; position: absolute; z-index: -1; inset: calc(50% - 13px) 0;
+  border-radius: 6px; background: transparent; transition: background-color var(--t-fast);
+}
+@media (hover: hover) {
+  .linkbtn:hover::before, .tdate:hover::before, .tdate-src:hover::before,
+  .tinline:hover::before { background: var(--line-soft); }
+  .serial-copy:hover::before { background: var(--sunk); }
+}
