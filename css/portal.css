@@ -8919,3 +8919,16 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .cr-sets > .empty { padding: 12px 15px; margin: 0; }
 /* The re-approval note opens under the post, across the whole row. */
 .saved > .asknote { grid-column: 1 / -1; margin-top: 10px; }
+/* A set is a page of its own: the client's head, sets and link step aside. */
+#workspace.is-set > .rec-head,
+#workspace.is-set > .cr-rec > .cr-rail,
+#workspace.is-set .cr-main > .viewhead,
+#workspace.is-set #batchCards,
+#workspace.is-set #setsMsg { display: none; }
+#workspace.is-set > .cr-rec { display: block; margin-top: 0; }
+#setPanel > .setbar { margin: 0 0 12px; padding: 18px 20px; border-bottom: 0; }
+#setPanel > .cr-rec { margin-top: 0; }
+.setbar-main { align-items: center; }
+.setbar-note { flex: 1 1 100%; margin: 0; order: 3; }
+.setprog-note { margin: 8px 0 0; }
+#assetSheet .sheet-body > .panel { margin: 0 0 12px; }
