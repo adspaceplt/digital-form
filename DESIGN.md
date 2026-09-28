@@ -29,7 +29,7 @@ line is in `docs/DESIGN-NOTES.md` (this file as it stood on 2026-09-26) and
 | `--page` | `#f5f5f5` | `#171717` | The ground (the brand's own off white; never "corrected") |
 | `--card` | `#ffffff` | `#1f1f1f` | Panels, tables, rows |
 | `--sunk` | `#f9f9f9` | `#272727` | Inset areas, table sub-headings, hover |
-| `--card-line` | transparent | transparent | Every bounded card's edge (`.panel`, `.crm-table`, `.softpanel`, `.team-table`, `.ovcard`, `.bookreg`) |
+| `--card-line` | transparent | transparent | Every card's edge, on every page (console and client pages alike), and every row that opens something (`.railnext`); nothing else draws a card outline. A box inside a card is shaded (`--sunk`), never outlined. Fields, buttons, the contact chip, menus, sheets and file tiles keep their edges. `uxaudit` `outline` |
 | `--fill` / `--on-fill` | `#1b1a17` / `#fff` | `#f2efec` / `#1c1a19` | The ink surface: the primary for your own progress, a selected `.acttab`, progress. Never the Undo bar |
 | `--tonal`, `--tonal-hover`, `--tonal-press` | ink at 6.5% | light ink at 9% | Every secondary button and bar mark |
 | `--action` / `--on-action` | `#0b57d0` / `#fff` | `#a8c7fa` / `#062e6f` | **Blue: moves work to somebody else** (Publish, Release, Submit, Approve, a hand-off) |

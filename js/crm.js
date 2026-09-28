@@ -776,6 +776,10 @@
        throw somebody out of the pane they were working in. */
     var same = Boolean(state.client && state.client.id === c.id);
     if (!same) { state.contacts = []; state.log = []; }
+    /* A record opens at its top. Opened from a list scrolled down, it kept
+       the list's scroll and drew halfway down its own page (2026-09-28). A
+       refresh restores its own place (`restoring`). */
+    if (!same && !restoring) window.scrollTo(0, 0);
     state.client = c;
     /* The list was read once; Content Review's settings edit the same
        handles and logo, so a record opened from the list is read again and
@@ -1934,15 +1938,14 @@
        language we write to them in. */
     var sub = [ct.role, 'Prefers ' + (LANG_WORD[ct.lang] || 'English')].filter(Boolean).join(' · ');
     row.innerHTML =
-      '<span class="svc-name"><b>' + esc(ct.name) +
-        /* Green is the live state, and on this row the live thing is the
-           sign-in: main contact is a designation, not something running, so
-           it reads neutral and the accent is spent once. Access on means
-           they can sign in, full stop: the login is made on their way in by
-           portal-login, so there is no second state to show. */
-        (removed ? ' <span class="tone">Removed</span>' : ct.is_primary ? ' <span class="tone">Main contact</span>' : '') +
-        (!removed && ct.portal_access ? ' <span class="tone is-ok">Portal access</span>' : '') +
-        '</b><small>' + esc(sub) + '</small></span>' +
+      /* The name, then its chips at the right of the same line before the ⋯,
+         as every card head reads. Green is the live state, and on this row
+         the live thing is the sign-in: main contact is a designation, so it
+         reads neutral and the accent is spent once. */
+      '<span class="svc-name"><span class="ct-top"><b>' + esc(ct.name) + '</b>' +
+        (removed ? '<span class="tone">Removed</span>' : ct.is_primary ? '<span class="tone">Main contact</span>' : '') +
+        (!removed && ct.portal_access ? '<span class="tone is-ok">Portal access</span>' : '') +
+        '</span><small>' + esc(sub) + '</small></span>' +
       '<span class="crm-reach">' +
         (ct.phone ? '<a class="plink" href="tel:' + esc(ct.phone) + '">' + esc(ct.phone) + '</a>' : '') +
         waLink(ct.whatsapp || ct.phone, (state.client || {}).market) +

@@ -3850,7 +3850,7 @@
     if (t.stage_key === 'meeting_scheduled' && state.eng) {
       if (mt === 'none') { n.status = 'Meeting not scheduled'; n.tone = 'is-warn'; }
       else if (mt === 'na') n.status = 'No meeting this month';
-      else if (mt === 'held') n.status = 'Meeting held';
+      else if (mt === 'held') n.status = 'Meeting completed';
       else n.status = 'Meeting ' + shortDate(state.eng.meeting_at);
     }
 

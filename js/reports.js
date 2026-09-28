@@ -338,7 +338,7 @@
     st.open = st.open && st.open.id === id ? st.open : { id: id };
     var want = new URLSearchParams(location.search).get('step');
     showEditor();
-    if (!fromAddress) { st.step = ''; if (bridge.pushUrl) bridge.pushUrl(); }
+    if (!fromAddress) { st.step = ''; if (bridge.pushUrl) bridge.pushUrl(); if (!same) window.scrollTo(0, 0); }
     else if (want) st.step = want;
     if (same && fromAddress) { paintEditor(); return; }
     var host = st.host;
