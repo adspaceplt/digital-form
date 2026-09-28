@@ -21,7 +21,7 @@
   --ink:        #1b1a17;
   --ink-soft:   #524e47;
   --ink-mute:   #6b6760;
-  --line-ctl:   #8e8a80;   /* control boundaries: 3:1 on every page background */
+  --line-ctl:   #8e8e8e;   /* control boundaries: 3:1 on every page background */
   /* The contact chip's outline, lighter than a field's (the user,
      2026-09-28): its words identify it, so its edge need not hold 3:1. */
   --line-chip:  #a1a1a1;
@@ -179,7 +179,7 @@
     --ink:        #f2efec;
     --ink-soft:   #cdc8c3;
     --ink-mute:   #ada8a3;
-    --line-ctl:   #898480;
+    --line-ctl:   #858585;
     --line-chip:  #5f5f5f;
     --line:       #3e3b38;
     --card-line:  transparent;
@@ -7583,6 +7583,12 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .tfacts .linkbtn[hidden], .towner[hidden], .towner-pick[hidden] { display: none; }
 .towner-pick { max-width: 100%; }
 .tlink { margin-left: 2px; }
+/* A way on under a value (Open the month) takes a line of its own at its
+   full height, its words on the value's edge: squeezed beside the value with
+   its height given back, it wrapped and its fill covered the line above
+   (the user, 2026-09-28). */
+.tfacts .tbreak { flex-basis: 100%; height: 0; }
+.tfacts .tlink-own { margin: 0 0 0 -6px; }
 /* A date is the row's own control: the value and a pen, at the control
    floor, with a negative block margin so a 38px target does not set the
    height of a 20px line. */

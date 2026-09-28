@@ -5016,7 +5016,7 @@
     if (e) {
       more += frow('Engagement', esc(monthWord(e.period)) + ' · ' +
         esc(wordOf(ENG_STATE, engPhase(e, checksOf(e, state.engChecks), countFor(e, state.engCounts, [t])))) +
-        (ml ? ' <a class="linkbtn tlink" href="' + esc(ml.href) + '">Open the month' + CHEV_S + '</a>' : ''));
+        (ml ? '<i class="tbreak"></i><a class="linkbtn tlink-own" href="' + esc(ml.href) + '">Open the month' + CHEV_S + '</a>' : ''));
       more += frow('Content meeting', esc(meetingWord(e)));
     }
     $('taskMore').innerHTML = more;

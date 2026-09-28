@@ -366,7 +366,7 @@
         shut: !narrowed && GRP.shut('creators', g[0], g[3], g[2].length === shown.length),
         table: function () {
           var table = GRP.table('svc-row cr-row',
-            ['Creator', 'Profiles', 'Campaigns', { text: 'Fee', cls: 'svc-rate' }, '']);
+            ['Creator', 'Profiles', 'Campaigns', { text: 'Client rate', cls: 'svc-rate' }, '']);
           GRP.more(table, g[2], 30, 'creators', rosterRow);
           return table;
         }
@@ -2101,7 +2101,7 @@
     var t = document.createElement('div');
     t.className = 'crm-table softpanel';
     t.innerHTML = '<div class="crm-head svc-row pick-row"><span>Creator</span><span>Placements</span>' +
-      '<span class="svc-rate">Fee</span><span>State</span></div>';
+      '<span class="svc-rate">Client rate</span><span>State</span></div>';
     var band = function (name, n) {
       var el = document.createElement('div');
       el.className = 'svc-cat';
@@ -2389,7 +2389,7 @@
       ? '<p class="ovmore">' + (live.length - 8) + ' more on the Creators pane.</p>' : '';
     return ovSec('Bookings', 'creators', 'Creators',
       '<div class="ovtable"><div class="ovhead ovrow-book"><span>Creator</span>' +
-      '<span>Posting on</span><span>Step</span><span class="ovamt">Fee</span></div>' +
+      '<span>Posting on</span><span>Step</span><span class="ovamt">Client rate</span></div>' +
       rows + '</div>' + more);
   }
 
@@ -2755,7 +2755,7 @@
                 : '<span class="pickadd">' + platformBoxes(uniq, true) +
                   '<span class="slugfield"><span class="slugfield-pre">RM</span>' +
                   '<input class="input pickrate" type="number" inputmode="decimal" min="0" step="10" ' +
-                  'aria-label="Rate for ' + esc(c.name) + ' on this campaign" value="' +
+                  'aria-label="Client rate for ' + esc(c.name) + ' on this campaign" value="' +
                   (c.client_rate || '') + '" placeholder="rate"></span>' +
                   /* Neutral, not the filled action: this is one button per
                      addable row, so a list of twenty creators drew twenty
