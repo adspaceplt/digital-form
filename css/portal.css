@@ -798,7 +798,7 @@ a { color: inherit; }
 .mk-media video { background: #000; }
 .mk-play {
   position: absolute; left: 50%; top: 50%; z-index: 5; transform: translate(-50%, -50%);
-  width: 64px; height: 64px; border: 0; border-radius: 50%; padding: 0;
+  width: 64px; height: 64px; border: 1.5px solid rgba(255, 255, 255, .5); border-radius: 50%; padding: 0;
   display: grid; place-items: center; cursor: pointer;
   background: rgba(0, 0, 0, .55); color: #fff;
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);

@@ -874,6 +874,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `more` rides the clamped line over a fade.
   - `br + br` collapses while clamped.
   - Likes, caption and comments sit 4px apart.
+- A video waits on black under one play button (`.mk-play`, `js/mockups.js`)
+  and plays in its card; the browser's own bar arrives once it plays. A press
+  on the button or the video never opens the canvas (moving a video that has
+  just started stops it: Edge spun, Safari opened the canvas); Close carries
+  a playing video on in its card.
+- The cover image card names itself once, in its head, and ends under its
+  decision (`.is-cover`).
 - Approve needs a name. Approved reads outlined, with Request changes hidden.
   - The Copywriting label, and the copy control at the top.
   - No Save as PDF.
