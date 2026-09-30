@@ -579,10 +579,12 @@ a { color: inherit; }
 }
 .copyhead h5 { margin-bottom: 0; flex: 0 1 auto; }
 /* The pen beside Copywriting edits the caption where it is read: the
-   quiet icon button of a record's name, at the small control's height. */
+   quiet icon button of a record's name, its full target taking a negative
+   block margin so the heading's line keeps the Copy text button's height. */
 .copy-pen {
   display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
-  width: var(--ctl-h-sm); height: var(--ctl-h-sm); margin: -4px 0 -4px -8px; padding: 0;
+  width: var(--ctl-h); height: var(--ctl-h); padding: 0;
+  margin: calc((var(--ctl-h-sm) - var(--ctl-h)) / 2) 0 calc((var(--ctl-h-sm) - var(--ctl-h)) / 2) -10px;
   border: 0; border-radius: var(--radius-ctl-sm); background: none; color: var(--ink-mute); cursor: pointer;
   transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
 }
