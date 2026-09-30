@@ -211,6 +211,7 @@
     // Vertical formats fill the card edge to edge, so 9:16 is shown as large as
     // the column allows rather than inset inside padding.
     if (stage.querySelector('.mk-phone')) card.classList.add('is-vertical');
+    if (stage.querySelector('.mk-coverwrap')) card.classList.add('is-cover');
     card.appendChild(stage);
 
     // The mockup truncates like the real feed. This shows the caption in full.
@@ -269,11 +270,14 @@
     stage.setAttribute('tabindex', '0');
     stage.setAttribute('aria-label', 'Review ' + MK.label(post));
     stage.addEventListener('click', function (e) {
-      /* A control inside the mockup is the mockup's, not the canvas's. */
-      if (e.target.closest('button, a, input, textarea, select')) return;
+      /* A control inside the mockup is the mockup's, not the canvas's: its
+         play button, and the video's own bar once it plays. */
+      if (e.target.closest('button, a, input, textarea, select, video')) return;
       openCanvas(card);
     });
     stage.addEventListener('keydown', function (e) {
+      /* Enter on the play button (or the caption's more) is that control's. */
+      if (e.target !== stage) return;
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openCanvas(card); }
     });
     return card;
@@ -286,6 +290,17 @@
      card and put back on close, so there is one approve control in the page
      and it cannot drift from the one in the gallery. */
   var canvasFor = null, canvasHome = null, canvasOpener = null;
+
+  /* Moving a video element stops it, so one that was playing when its post
+     moves in or out of the canvas carries on where it was. */
+  function playingIn(root) {
+    return Array.prototype.filter.call(root ? root.querySelectorAll('video') : [], function (v) {
+      return !v.paused && !v.ended;
+    });
+  }
+  function resume(videos) {
+    videos.forEach(function (v) { var p = v.play(); if (p && p.catch) p.catch(function () {}); });
+  }
 
   function galleryCards() {
     return Array.prototype.slice.call(document.querySelectorAll('#content .card'));
@@ -318,11 +333,13 @@
       canvasHome.push([el, el.parentNode, el.nextSibling]);
       into.appendChild(el);
     };
+    var playing = playingIn(card);
     take(card.querySelector('.card-stage'), stage);
     take(badge, rail);
     take(card.querySelector('.copyblock'), rail);
     take(card.querySelector('.reask'), rail);
     take(card.querySelector('.approve'), rail);
+    resume(playing);
 
     $('canvas').hidden = false;
     document.body.classList.add('is-canvas');
@@ -337,19 +354,23 @@
      second block out of a card invalidates the sibling the first one recorded;
      and defensively, because a node that is no longer a child of the parent it
      was next to is appended rather than thrown at insertBefore. */
-  function returnCanvas() {
+  /* `keep`: on Close, a video playing in the canvas carries on in its card;
+     stepping to the next post leaves it stopped. */
+  function returnCanvas(keep) {
+    var playing = keep ? playingIn($('canvasStage')) : [];
     (canvasHome || []).slice().reverse().forEach(function (h) {
       var el = h[0], parent = h[1], before = h[2];
       if (before && before.parentNode === parent) parent.insertBefore(el, before);
       else parent.appendChild(el);
     });
+    resume(playing);
     canvasHome = null;
     canvasFor = null;
   }
 
   function shutCanvas() {
     if (!canvasFor) return;
-    returnCanvas();
+    returnCanvas(true);
     $('canvas').hidden = true;
     document.body.classList.remove('is-canvas');
     if (canvasOpener && document.body.contains(canvasOpener)) canvasOpener.focus();
