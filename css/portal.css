@@ -1339,7 +1339,9 @@ a { color: inherit; }
   color: var(--ink-mute); font-size: 13px;
 }
 .backlink svg { width: 15px; height: 15px; }
-.backlink:hover { color: var(--ink); background: var(--line-soft); border-color: var(--line); }
+@media (hover: hover) {
+  .backlink:hover { color: var(--ink); background: var(--line-soft); }
+}
 /* A small act beside what it changes (Change, Remove, Add Chinese caption, a
    suggested figure): a quiet button at the control floor that gives its
    height back to the line, never an underlined word (the user, 2026-09-28:
@@ -3147,8 +3149,11 @@ body.is-plain .topbar { background: var(--chrome); }
   background: none; color: var(--ink-mute);
 }
 .kmenu-btn svg { width: 17px; height: 17px; }
-.kmenu-btn:hover, .kmenu-btn[aria-expanded="true"] {
-  background: var(--line-soft); border-color: var(--line); color: var(--ink);
+/* The lightest control: a fill on hover and while open, never an outline
+   (DESIGN.md; the audit's `btnline` found the ring on 2026-09-30). */
+.kmenu-btn[aria-expanded="true"] { background: var(--line-soft); color: var(--ink); }
+@media (hover: hover) {
+  .kmenu-btn:hover { background: var(--line-soft); color: var(--ink); }
 }
 /* Raised, because it is the one thing on the page that floats above it. */
 /* An open menu is the top layer of the page it opens on: above every sticky
