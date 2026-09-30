@@ -17,12 +17,14 @@
  *   AWS_REGION    set by Lambda (the bucket's region, ap-southeast-5)
  *
  * Invoked by hand with { "all": true } it walks content/ once and asks for
- * every copy still missing (the videos uploaded before it existed).
+ * every copy still missing (the videos uploaded before it existed); with
+ * { "all": true, "redo": true } it also asks again for any copy over the
+ * cap (1080 × 1920, 60 fps; see logic.mjs).
  */
 import { S3Client, GetObjectCommand, HeadObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
 import { MediaConvertClient, CreateJobCommand } from '@aws-sdk/client-mediaconvert';
 
-import { PREFIX, isCandidate, webKey, codecsIn, alreadyWeb, jobFor, u32, cc } from './logic.mjs';
+import { PREFIX, isCandidate, webKey, codecsIn, videoInfo, overCap, alreadyWeb, jobFor, u32, cc } from './logic.mjs';
 
 const s3 = new S3Client({});
 const mc = new MediaConvertClient({});
@@ -49,23 +51,32 @@ async function inspect(Bucket, Key, size) {
   const ftyp = boxes.find((b) => b.type === 'ftyp');
   let brand = '';
   if (ftyp) brand = cc(await range(Bucket, Key, ftyp.at, ftyp.at + 11), 8);
-  const codecs = moov && moov.len < 64 * 1024 * 1024 ? codecsIn(await range(Bucket, Key, moov.at, moov.at + moov.len - 1)) : [];
-  return { brand, codecs, faststart: !!(moov && mdat && moov.at < mdat.at) };
+  const whole = moov && moov.len < 64 * 1024 * 1024 ? await range(Bucket, Key, moov.at, moov.at + moov.len - 1) : null;
+  return { brand, codecs: whole ? codecsIn(whole) : [], video: whole ? videoInfo(whole) : null,
+    faststart: !!(moov && mdat && moov.at < mdat.at) };
 }
+/* The copy's size in bytes, or null where there is none. */
 async function exists(Bucket, Key) {
-  try { await s3.send(new HeadObjectCommand({ Bucket, Key })); return true; }
-  catch (e) { return false; }
+  try { const h = await s3.send(new HeadObjectCommand({ Bucket, Key })); return h.ContentLength || 0; }
+  catch (e) { return null; }
 }
 
-async function convert(Bucket, Key, size) {
+/* With `redo`, a copy made before the cap is asked for again where it is
+   over it; MediaConvert writes the new copy under the same name. The
+   original is never touched. */
+async function convert(Bucket, Key, size, redo) {
   if (!isCandidate(Key)) return 'not a video';
-  if (await exists(Bucket, webKey(Key))) return 'copy exists';
+  const had = await exists(Bucket, webKey(Key));
+  if (had !== null) {
+    if (!redo) return 'copy exists';
+    if (!overCap((await inspect(Bucket, webKey(Key), had)).video)) return 'copy exists';
+  }
   const ext = (Key.match(/\.([a-z0-9]+)$/i) || [])[1] || '';
   const info = await inspect(Bucket, Key, size);
-  if (alreadyWeb(ext, info)) return 'already plays everywhere';
+  if (had === null && alreadyWeb(ext, info)) return 'already plays everywhere';
   const hasAudio = info.codecs.some((c) => /^(mp4a|ac-3|ec-3|lpcm|sowt|twos|alac)$/.test(c)) || !info.codecs.length;
-  const r = await mc.send(new CreateJobCommand(jobFor(Bucket, Key, hasAudio)));
-  return 'job ' + (r.Job && r.Job.Id);
+  const r = await mc.send(new CreateJobCommand(jobFor(Bucket, Key, hasAudio, info.video)));
+  return (had === null ? 'job ' : 'redo job ') + (r.Job && r.Job.Id);
 }
 
 export const handler = async (event) => {
@@ -76,7 +87,7 @@ export const handler = async (event) => {
     do {
       const page = await s3.send(new ListObjectsV2Command({ Bucket, Prefix: PREFIX, ContinuationToken: token }));
       for (const o of page.Contents || []) {
-        if (isCandidate(o.Key)) done.push([o.Key, await convert(Bucket, o.Key, o.Size)]);
+        if (isCandidate(o.Key)) done.push([o.Key, await convert(Bucket, o.Key, o.Size, !!event.redo)]);
       }
       token = page.IsTruncated ? page.NextContinuationToken : undefined;
     } while (token);
