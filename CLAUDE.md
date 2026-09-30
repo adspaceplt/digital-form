@@ -1770,8 +1770,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   on the bucket's ObjectCreated under `content/`, the user's own setup from
   its README): every video that is not already H.264 in an MP4 indexed first
   gets an AWS Elemental MediaConvert job writing `name.web.mp4` beside it
-  (H.264, AAC, upright, Rec. 709). It reads and asks; it never deletes,
-  copies or overwrites, and `{ "all": true }` converts what came before.
+  (H.264, AAC, upright, Rec. 709, fitted to 1080 × 1920 either way up at up
+  to 60 fps, never enlarged). It reads and asks; it never deletes, copies or
+  touches an original. `{ "all": true }` converts what came before, and
+  `{ "all": true, "redo": true }` remakes only copies over the cap.
 
 ## 3. Workflow and constraints
 

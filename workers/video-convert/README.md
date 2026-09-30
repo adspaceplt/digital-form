@@ -126,6 +126,28 @@ Test. The result lists each video and what was done: `job …` (a copy was
 asked for), `copy exists`, or `already plays everywhere`. Run it again at any
 time; it never asks twice for a copy that exists.
 
+## Size of the copy
+
+Every copy fits 1080 × 1920 (either way up) at up to 60 frames a second. A 4K
+or larger original is scaled down to it; a smaller one keeps its size. Above
+that, some Windows decoders refuse the file and Edge spins without playing,
+and MediaConvert charges its 4K rate.
+
+To remake copies made before this cap, use a Test event named `redo`:
+
+```json
+{ "all": true, "redo": true }
+```
+
+It asks again only for copies over the cap (`redo job …`); every other line
+reads `copy exists`. The new copy replaces the old one under the same name;
+the original is never touched.
+
+CloudFront keeps serving the old copy for up to a day. To serve the new one
+at once: CloudFront → the `mycdn.adspace.me` distribution → Invalidations →
+Create invalidation, with the copy's path (for example
+`/content/<folder>/*`). Up to 1,000 paths a month are free.
+
 ## 5. Check
 
 MediaConvert → Jobs lists each job; **Complete** means the copy is in the
