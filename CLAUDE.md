@@ -964,6 +964,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     the posts; a removed file costs nothing. Cancel aborts; a failed upload
     keeps its draft; only uploaded drafts are kept for a reload; leaving
     with a file held asks first.
+  - A video's thumbnail in a console row is its cover frame (`poster`),
+    else its first frame (`#t=0.1`, `playsinline`), through `thumbOf()`:
+    a bare `<video>` is blank on iPhone Safari until it plays.
   - Sets are folded, one open at a time.
   - Publish / Unpublish (warn).
   - Resend with a note.

@@ -2317,9 +2317,7 @@
     media.forEach(function (m, i) {
       var chip = el2('div', 'slide-chip');
       chip.innerHTML =
-        (m.type === 'video'
-          ? ADspaceMedia.tag(m.url, 'muted')
-          : '<img src="' + m.url + '" alt="">') +
+        thumbOf(m) +
         '<i>' + (i + 1) + '</i>' +
         '<span class="slide-move">' +
           '<button type="button" data-d="-1"' + (i === 0 ? ' disabled' : '') + '>&#8249;</button>' +
@@ -3427,6 +3425,17 @@
       }).join('') + '</details>';
   }
 
+  /* A video's thumbnail in the console: its cover frame where the upload
+     kept one, else the first frame asked for by a media fragment. A bare
+     <video> draws nothing on iPhone Safari until it plays, which left every
+     reel an empty box (the user, 2026-10-01). */
+  function thumbOf(m) {
+    if (m.type !== 'video') return '<img src="' + esc(m.url || '') + '" alt="">';
+    if (m.poster) return '<img src="' + esc(m.poster) + '" alt="">';
+    return '<video muted playsinline preload="metadata">' +
+      ADspaceMedia.sources(m.url).replace(/src="([^"#]+)"/g, 'src="$1#t=0.1"') + '</video>';
+  }
+
   function savedRow(p, review, extra) {
     extra = extra || {};
     var row = document.createElement('div');
@@ -3441,9 +3450,7 @@
       row.classList.remove('is-editing');
       row.innerHTML =
         '<div class="saved-thumb">' +
-          (m.type === 'video'
-            ? ADspaceMedia.tag(m.url, 'muted')
-            : '<img src="' + (m.url || '') + '" alt="">') + '</div>' +
+          thumbOf(m) + '</div>' +
         /* The placement with the client's decision at the right of its line,
            then the file, then the copy: one row, and its acts in one ⋯
            (2026-09-28; the pencil and the bin had a line of their own). */
@@ -3629,9 +3636,7 @@
 
       row.innerHTML =
         '<div class="saved-thumb">' +
-          (m.type === 'video'
-            ? ADspaceMedia.tag(m.url, 'muted')
-            : '<img src="' + (m.url || '') + '" alt="">') + '</div>' +
+          thumbOf(m) + '</div>' +
         '<div class="saved-body">' +
           '<div class="draft-top">' +
             '<select class="select" data-f="placement">' + opts + '</select>' +
