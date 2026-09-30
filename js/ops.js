@@ -6569,6 +6569,30 @@
   var meetEditing = null;
   var meetAfter = null;
   var meetWarn = null;
+  /* The earliest a meeting can be booked: the next half hour from now, so at
+     3:00pm the first slot is 3:30pm and at 3:10pm it is 3:30pm too. */
+  function nextSlot() {
+    var d = new Date();
+    d.setSeconds(0, 0);
+    d.setMinutes(d.getMinutes() < 30 ? 30 : 60);
+    return d;
+  }
+  function dayKey(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  /* The meeting's date and time offer nothing before the next slot. A meeting
+     already held keeps its own date: the sheet still opens on it to change the
+     note or the link, and only a new time is held to the floor. */
+  function meetFloor() {
+    var e = meetEditing;
+    var held = e && e.meeting_at && new Date(e.meeting_at).getTime() < Date.now();
+    var slot = nextSlot();
+    if (held) { $('meetDate').removeAttribute('min'); $('meetTime').removeAttribute('min'); return; }
+    $('meetDate').setAttribute('min', dayKey(slot));
+    if ($('meetDate').value === dayKey(slot)) {
+      $('meetTime').setAttribute('min', String(slot.getHours()).padStart(2, '0') + ':' + String(slot.getMinutes()).padStart(2, '0'));
+    } else $('meetTime').removeAttribute('min');
+  }
   function openMeet(e) {
     if (!may('ops', 'work')) return;
     meetEditing = e;
@@ -6577,9 +6601,7 @@
     var at = e.meeting_at ? new Date(e.meeting_at) : null;
     $('meetDate').value = at ? at.getFullYear() + '-' + String(at.getMonth() + 1).padStart(2, '0') + '-' + String(at.getDate()).padStart(2, '0') : '';
     $('meetTime').value = at ? String(at.getHours()).padStart(2, '0') + ':' + String(at.getMinutes()).padStart(2, '0') : '';
-    /* Error prevention: a meeting first put in the diary is today or later. */
-    if (!e.meeting_at) $('meetDate').setAttribute('min', monthKey(new Date()) + '-' + String(new Date().getDate()).padStart(2, '0'));
-    else $('meetDate').removeAttribute('min');
+    meetFloor();
     if (window.ADspaceForm) ADspaceForm.floor($('meetDate'));
     $('meetChannel').value = e.meeting_channel || 'google_meet';
     $('meetMinutes').value = String(e.meeting_minutes || 30);
@@ -6665,6 +6687,14 @@
         msg('meetMsg', said('bad-meeting-link'), 'err'); $('meetLink').focus(); return;
       }
       var when = new Date($('meetDate').value + 'T' + ($('meetTime').value || '10:00') + ':00');
+      /* A time before the next free slot is refused unless it is the one the
+         meeting already had (a held meeting, opened to change its note). */
+      var kept = e.meeting_at && new Date(e.meeting_at).getTime() === when.getTime();
+      if (!kept && when.getTime() < nextSlot().getTime()) {
+        msg('meetMsg', 'Choose a time from ' + niceTime(nextSlot()) + '.', 'err');
+        $($('meetDate').value < dayKey(nextSlot()) ? 'meetDate' : 'meetTime').focus();
+        return;
+      }
       args.p_at = when.toISOString();
       args.p_channel = channel;
       args.p_owner = $('meetOwner').value || null;
@@ -7312,6 +7342,8 @@
     ['meetChannel', 'meetLink'].forEach(function (id) {
       var el = $(id); if (el) el.addEventListener(id === 'meetLink' ? 'input' : 'change', meetBookShown);
     });
+    var meetDay = $('meetDate');
+    if (meetDay) { meetDay.addEventListener('change', meetFloor); meetDay.addEventListener('input', meetFloor); }
     ['giveClose', 'giveCancel'].forEach(function (id) {
       var b = $(id); if (b) b.addEventListener('click', function () { sheet('giveSheet', false); });
     });
