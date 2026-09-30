@@ -1825,6 +1825,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     clients.
 - Sign-in never says whether an address has an account ("If {email} is
   registered, …").
+- A client's review link and a campaign's selection link carry an
+  eight-character key (`?k=`, alphabet `23456789abcdefghjkmnpqrstuvwxyz`),
+  made by `ADspaceAPI.accessToken()` in the console and `new_link_key()` in
+  SQL (`2026-10-01-short-links.sql`), never `Math.random`. A long key from
+  before is kept as `moved_token`: it opens nothing itself, and
+  `link_moved(kind, token)` answers it with the current key, which the page
+  puts in the address and loads. Changing a key (Reset access link) clears
+  the moved key by trigger, so a reset retires every earlier link.
 - Secrets never enter the repo or the chat:
   - The Supabase anon key and the Google browser key are public by design.
   - The Turnstile secret, the Google refresh token and the performance master

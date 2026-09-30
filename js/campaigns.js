@@ -86,11 +86,8 @@
     var n = $(id); if (!n) return;
     n.textContent = text || ''; n.className = 'msg' + (kind ? ' ' + kind : '');
   }
-  function token() {
-    var a = new Uint8Array(12);
-    crypto.getRandomValues(a);
-    return Array.from(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
-  }
+  /* One maker of link keys, in js/api.js. */
+  function token() { return window.ADspaceAPI.accessToken(); }
   /* Currency belongs to the client, not to the office. A Singapore client is
      quoted in S$ everywhere the number appears, including here. */
   var MON = window.ADspaceMoney;

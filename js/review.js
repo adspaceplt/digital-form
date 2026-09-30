@@ -980,7 +980,16 @@
     }
     API.getReviewFeed(token, passcode).then(function (data) {
       if (!data || data.error === 'not_found') {
-        showState(W.notFound, W.notFoundText);
+        /* A long link from before the short keys still opens: its new key
+           replaces it in the address and the page loads on that. A key
+           retired by Reset access link answers nothing. */
+        API.movedKey('review', token).then(function (next) {
+          if (!next || next === token) { showState(W.notFound, W.notFoundText); return; }
+          token = next;
+          var q = new URLSearchParams(location.search); q.set('k', next);
+          history.replaceState(null, '', location.pathname + '?' + q.toString() + location.hash);
+          load();
+        });
         return;
       }
       if (data.error === 'passcode_required') {

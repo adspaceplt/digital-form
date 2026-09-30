@@ -58,11 +58,6 @@
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }
-  function makeToken() {
-    var a = new Uint8Array(12);
-    crypto.getRandomValues(a);
-    return Array.from(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
-  }
   function reviewUrl(c) { return location.origin + '/review/?k=' + c.access_token; }
 
   /* Records the handful of actions that destroy data or change what a client
@@ -1697,7 +1692,7 @@
       go: 'Reset link',
       tone: 'warn'
     }, function () {
-      var next = makeToken();
+      var next = window.ADspaceAPI.accessToken();
       db.from('clients').update({ access_token: next }).eq('id', state.client.id)
         .then(function (r) {
           if (r.error) { msg('wsMsg', r.error.message, 'err'); return; }

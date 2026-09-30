@@ -83,12 +83,9 @@
     el.textContent = text || '';
     el.className = 'msg' + (kind ? ' ' + kind : '');
   }
-  function token() {
-    var a = new Uint8Array(16);
-    (window.crypto || {}).getRandomValues ? window.crypto.getRandomValues(a)
-      : a.forEach(function (_, i) { a[i] = Math.floor(Math.random() * 256); });
-    return Array.from(a, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
-  }
+  /* One maker of link keys, in js/api.js (never Math.random: the key is the
+     only thing between the link and the client's content). */
+  function token() { return window.ADspaceAPI.accessToken(); }
   function val(id) { return ($(id).value || '').trim(); }
 
   /* A client's address. The record used to travel in the URL as a UUID, which

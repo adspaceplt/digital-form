@@ -311,7 +311,19 @@
     db.rpc('get_campaign', { p_token: TOKEN, p_passcode: passcode }).then(function (r) {
       if (r.error) { showState(t().notFound, r.error.message, false); return; }
       var d = r.data || {};
-      if (d.error === 'not-found') { showState(t().notFound, t().notFoundText, false); return; }
+      if (d.error === 'not-found') {
+        /* A long link from before the short keys: the new key replaces it in
+           the address and the page loads on that. */
+        var moved = window.ADspaceAPI && window.ADspaceAPI.movedKey;
+        (moved ? moved('selection', TOKEN) : Promise.resolve(null)).then(function (next) {
+          if (!next || next === TOKEN) { showState(t().notFound, t().notFoundText, false); return; }
+          TOKEN = next;
+          var q = new URLSearchParams(location.search); q.set('k', next);
+          history.replaceState(null, '', location.pathname + '?' + q.toString() + location.hash);
+          load();
+        });
+        return;
+      }
       if (d.error === 'passcode') {
         // The gate knows whose campaign it is guarding, so say so.
         if (d.client) $('clientName').textContent = d.client;
