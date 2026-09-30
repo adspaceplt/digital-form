@@ -3146,17 +3146,102 @@
         if (!n) { settleScroll(); return; }
 
         var ids = r.data.map(function (p) { return p.id; });
-        db.from('reviews').select('post_id, decision, note, reviewer, created_at')
-          .in('post_id', ids).order('created_at', { ascending: false })
-          .then(function (rev) {
-            var latest = {};
-            (rev.data || []).forEach(function (x) { if (!latest[x.post_id]) latest[x.post_id] = x; });
-            r.data.forEach(function (p) { box.appendChild(savedRow(p, latest[p.id])); });
+        /* The decision on the round on show, what was asked of the round
+           before it, and the rounds kept (POST REVISIONS, 2026-09-30). A
+           database from before the rounds answers without them, and the page
+           reads every decision as the first round's. */
+        Promise.all([
+          db.from('reviews').select('*').in('post_id', ids).order('created_at', { ascending: false }),
+          db.from('post_versions').select('*').in('post_id', ids).order('round', { ascending: false })
+        ]).then(function (both) {
+            var rev = both[0], vers = both[1];
+            var latest = {}, asked = {}, kept = {};
+            var byId = {};
+            r.data.forEach(function (p) { byId[p.id] = p; });
+            (rev.data || []).forEach(function (x) {
+              var p = byId[x.post_id];
+              if (!p) return;
+              var round = x.round || 1, now = p.round || 1;
+              if (round === now && (!p.review_reset_at || x.created_at > p.review_reset_at)) {
+                if (!latest[x.post_id]) latest[x.post_id] = x;
+              } else if (round === now - 1 && x.decision === 'changes' && !asked[x.post_id]) {
+                asked[x.post_id] = x;
+              }
+            });
+            (vers.error ? [] : vers.data || []).forEach(function (v) {
+              (kept[v.post_id] = kept[v.post_id] || []).push(v);
+            });
+            state.postView = { posts: r.data, latest: latest, asked: asked, kept: kept };
+            paintPostStages(true);
             paintProgress(r.data, latest, !rev.error);
             settleScroll();
           });
       });
   }
+
+  /* The set's posts by stage, as the view strip with each stage's count in
+     its tab: a set of thirty mixed outcomes is a work list, not one long
+     scroll (the user, 2026-09-30). Opens on Changes requested while there is
+     any, else All; the choice is kept per set while the page is open. */
+  var POST_STAGES = [['pending', 'Pending'], ['changes', 'Changes requested'], ['approved', 'Approved'], ['all', 'All']];
+  var postStageBy = {};
+  function stageWord(s) {
+    /* On a phone the longest stage takes its short word, so all four fit the
+       column's width without scrolling (the user, 2026-09-30). */
+    return s[0] === 'changes'
+      ? '<span class="tab-long">' + s[1] + '</span><span class="tab-short">Changes</span>'
+      : s[1];
+  }
+  function postStageOf(review) {
+    return !review ? 'pending' : review.decision === 'approved' ? 'approved' : 'changes';
+  }
+  function paintPostStages(fresh) {
+    var v = state.postView, box = $('postList'), strip = $('postStages');
+    if (!v || !state.batch) return;
+    var counts = { pending: 0, changes: 0, approved: 0, all: v.posts.length };
+    v.posts.forEach(function (p) { counts[postStageOf(v.latest[p.id])]++; });
+    var id = state.batch.id;
+    var decided = counts.changes + counts.approved > 0;
+    var pick = postStageBy[id];
+    if (!pick || (pick !== 'all' && !counts[pick])) pick = counts.changes ? 'changes' : 'all';
+    if (!decided && !state.batch.published) pick = 'all';
+    postStageBy[id] = pick;
+    /* A set nobody has decided on yet has one stage, so the strip would
+       only restate the count. */
+    strip.hidden = !decided;
+    strip.innerHTML = POST_STAGES.map(function (s) {
+      var on = s[0] === pick;
+      return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" data-stage="' + s[0] + '"' +
+        ' aria-selected="' + on + '" tabindex="' + (on ? 0 : -1) + '">' + stageWord(s) +
+        ' <span class="tab-n">' + counts[s[0]] + '</span></button>';
+    }).join('');
+    box.innerHTML = '';
+    v.posts.forEach(function (p) {
+      var review = v.latest[p.id];
+      if (pick !== 'all' && postStageOf(review) !== pick) return;
+      box.appendChild(savedRow(p, review, { asked: v.asked[p.id], kept: v.kept[p.id] || [] }));
+    });
+    if (!box.children.length) UI.emptyLine(box, 'No posts.');
+  }
+  $('postStages').addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.tab');
+    if (!b || !state.batch) return;
+    postStageBy[state.batch.id] = b.getAttribute('data-stage');
+    paintPostStages();
+  });
+  $('postStages').addEventListener('keydown', function (e) {
+    var tabs = Array.prototype.slice.call(this.querySelectorAll('.tab'));
+    var i = tabs.indexOf(document.activeElement);
+    if (i < 0) return;
+    var to = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
+    if (to === null) return;
+    e.preventDefault();
+    to = (to + tabs.length) % tabs.length;
+    postStageBy[state.batch.id] = tabs[to].getAttribute('data-stage');
+    paintPostStages();
+    var again = this.querySelector('.tab[data-stage="' + postStageBy[state.batch.id] + '"]');
+    if (again) again.focus();
+  });
 
   /* Where the client's review of a published set stands, in the rail: how
      many are approved, and how many came back with changes. Drawn only once
@@ -3308,10 +3393,44 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') shutPostMenus(); });
   window.ADspaceMenu.onScroll(shutPostMenus);
 
-  function savedRow(p, review) {
+  /* The client's edit to the copy, kept on their request as a suggestion:
+     what they would have it read, and Accept copy to make it the next
+     round's copy without retyping (2026-09-30). */
+  function suggestHtml(review) {
+    if (!review || review.decision !== 'changes') return '';
+    var cap = review.suggested_caption, zh = review.suggested_caption_zh;
+    if (cap == null && zh == null) return '';
+    return '<div class="saved-suggest">' +
+      '<span class="saved-suggest-h">Suggested copy</span>' +
+      (cap != null ? '<p class="saved-suggest-t">' + esc(cap) + '</p>' : '') +
+      (zh != null ? '<p class="saved-suggest-t">' + esc(zh) + '</p>' : '') +
+      '<button class="btn btn-sm" data-a="accept" data-need="review.sets:work" type="button">Accept copy</button>' +
+      '</div>';
+  }
+  /* The rounds this post replaced, for the team alone: the client's page
+     never carries them. Folded, newest first, each opening its file. */
+  function keptHtml(kept) {
+    if (!kept || !kept.length) return '';
+    return '<details class="saved-kept"><summary>Earlier rounds (' + kept.length + ')</summary>' +
+      kept.map(function (v) {
+        var vm = (v.media || [])[0] || {};
+        return '<div class="saved-kept-row">' +
+          '<span class="saved-kept-n">Round ' + v.round + '</span>' +
+          '<span class="saved-kept-t">' + esc((v.caption || v.caption_zh || '').slice(0, 90)) + '</span>' +
+          (vm.url ? '<a class="plink" href="' + esc(vm.url) + '" target="_blank" rel="noopener">' + esc(fileLabel(vm) || 'File') + '</a>' : '') +
+          '</div>';
+      }).join('') + '</details>';
+  }
+
+  function savedRow(p, review, extra) {
+    extra = extra || {};
     var row = document.createElement('div');
     row.className = 'saved';
     var m = (p.media || [])[0] || {};
+    var round = p.round || 1;
+    /* A change after the client decided is the next round (the database
+       keeps the one it replaces), so the edit form says so before it saves. */
+    var decided = !!review;
 
     function paintRead() {
       row.classList.remove('is-editing');
@@ -3325,13 +3444,20 @@
            (2026-09-28; the pencil and the bin had a line of their own). */
         '<div class="saved-body">' +
           '<span class="saved-top"><b>' + MK.label(p) + '</b>' + statusMark(review) + '</span>' +
-          '<span class="saved-meta"><span class="spec">' + esc(fileLabel(m)) + '</span></span>' +
+          '<span class="saved-meta">' +
+            (round > 1 ? '<span class="saved-round">Revision ' + round + '</span><span class="sep">·</span>' : '') +
+            '<span class="spec">' + esc(fileLabel(m)) + '</span></span>' +
           // A post with no copy yet says nothing rather than saying "No caption".
           ((p.caption || p.caption_zh)
             ? '<span class="muted">' + esc((p.caption || p.caption_zh).slice(0, 90)) + '</span>'
             : '') +
           (review && review.decision === 'changes' && review.note
             ? '<span class="saved-note">' + esc(review.note) + '</span>' : '') +
+          suggestHtml(review) +
+          /* What this round answers, while the client has not decided on it. */
+          (!review && extra.asked && extra.asked.note
+            ? '<span class="saved-asked">Asked: ' + esc(extra.asked.note) + '</span>' : '') +
+          keptHtml(extra.kept) +
           (p.review_reset_note
             ? '<span class="saved-note is-warn">Sent back: ' + esc(p.review_reset_note) + '</span>'
             : '') +
@@ -3357,6 +3483,25 @@
         window.ADspaceMenu.place(mbtn, menu);
       });
       row.querySelector('[data-a="edit"]').addEventListener('click', function () { shutPostMenus(); paintEdit(); });
+
+      /* Accepting the client's copy is an edit after their decision, so the
+         database makes it the next round and keeps this one. */
+      var accept = row.querySelector('[data-a="accept"]');
+      if (accept) accept.addEventListener('click', function () {
+        var patch = {};
+        if (review.suggested_caption != null) patch.caption = review.suggested_caption;
+        if (review.suggested_caption_zh != null) patch.caption_zh = review.suggested_caption_zh;
+        accept.disabled = true;
+        db.from('posts').update(patch).eq('id', p.id).select('id').then(function (res) {
+          accept.disabled = false;
+          if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
+          if (!(res.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
+          logAction('post.edited', state.client.name + ' — ' + (state.batch.title || ''),
+            MK.label(p) + ': copy accepted from ' + (review.reviewer || 'the client'));
+          msg('setMsg', 'Copy accepted.', 'ok');
+          loadPosts();
+        }).catch(function (e) { accept.disabled = false; msg('setMsg', (e && e.message) || 'Not saved.', 'err'); });
+      });
 
       /* The client reads this, so it is a note and not a value: it opens under
          the control that sends it rather than in a browser window over the
@@ -3436,6 +3581,11 @@
             esc(p.caption || '') + '</textarea>' +
           '<textarea class="textarea" data-f="caption_zh" placeholder="中文文案">' +
             esc(p.caption_zh || '') + '</textarea>' +
+          /* The revised file goes in here; it stays on this device until
+             Save, like every other file picked in this section. */
+          '<label class="saved-file"><span>Replace file</span>' +
+            '<input class="input" type="file" data-f="file" multiple accept="image/*,video/*"></label>' +
+          (decided ? '<span class="saved-asked">Saves as revision ' + (round + 1) + '.</span>' : '') +
           '<div class="changebox-actions">' +
             '<button class="btn btn-primary btn-sm" data-a="save" type="button">Save</button>' +
             '<button class="btn btn-sm" data-a="cancel" type="button">Cancel</button>' +
@@ -3465,16 +3615,46 @@
           caption_zh: row.querySelector('[data-f="caption_zh"]').value || null,
           media: mediaCopy
         };
-        db.from('posts').update(patch).eq('id', p.id).then(function (res) {
+        var picked = Array.prototype.slice.call(row.querySelector('[data-f="file"]').files || []);
+        var saveBtn = row.querySelector('[data-a="save"]');
+        saveBtn.disabled = true;
+        saveBtn.textContent = picked.length ? 'Uploading…' : 'Saving…';
+        /* A replaced file is sent at Save, then the row points at storage. */
+        var upload = !picked.length ? Promise.resolve(null) : Promise.all(picked.map(function (f) {
+          return probe(f).then(function (info) {
+            return storeFile(f).then(function (url) {
+              return storePoster(info.poster).then(function (poster) {
+                return { url: url, type: info.isVideo ? 'video' : 'image', width: info.width || null,
+                         height: info.height || null, mime: info.mime || f.type || null, poster: poster };
+              });
+            });
+          });
+        }));
+        var moved = [];
+        upload.then(function (fresh) {
+          if (fresh) patch.media = fresh;
+          /* What this save changes, read before it is sent. */
+          moved = Object.keys(patch).filter(function (k) {
+            return JSON.stringify(patch[k] == null ? null : patch[k]) !== JSON.stringify(p[k] == null ? null : p[k]);
+          });
+          return db.from('posts').update(patch).eq('id', p.id).select('id');
+        }).then(function (res) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save';
           if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
+          if (!(res.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
           /* Which fields changed, so the row says what was edited. */
           logAction('post.edited', state.client.name + ' — ' + (state.batch.title || ''),
-            'Post ' + (p.position != null ? p.position + 1 : '') + ': ' + Object.keys(patch).join(', '));
-          Object.keys(patch).forEach(function (k) { p[k] = patch[k]; });
-          m = (p.media || [])[0] || {};
+            MK.label(p) + ': ' + (moved.length ? moved.map(function (k) { return k === 'media' ? 'file' : k; }).join(', ') : 'no change') +
+            (decided && moved.some(function (k) { return ['media', 'caption', 'caption_zh', 'title'].indexOf(k) > -1; })
+              ? ' · revision ' + (round + 1) : ''));
           editMedia = null;
-          paintRead();
           msg('setMsg', 'Post updated.', 'ok');
+          loadPosts();
+        }).catch(function (e) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save';
+          msg('setMsg', 'Not saved. ' + ((e && e.message) || 'The upload failed.'), 'err');
         });
       });
     }

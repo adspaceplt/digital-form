@@ -111,7 +111,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas |
 | `creator.js` | creator, cprofile, results, push |
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
-| `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel |
+| `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise |
 | `portal.js` | portal |
 | `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter |
 | `team.js` | team, perms, levels |
@@ -135,7 +135,8 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
     off its column (`cols`); a cell drifting between rows (`column`); a phone
     row's last column short of the edge (`edge`); uneven gaps in a section
     (`stack`);
-  - a card-sized box drawing a visible outline (`outline`);
+  - a card-sized box drawing a visible outline (`outline`); a button drawn
+    outlined rather than tonal, the contact chip `.plink` aside (`btnline`);
   - text under 11px (`type`); a wrapped or clipped value; a control under its
     floor (`target`); a field under the phone scale (`zoom`);
   - mismatched heights or widths in one row; a nameless field or icon button;
@@ -882,6 +883,25 @@ Each line is a rule that broke once. Its reason is in the archive.
   a playing video on in its card.
 - The cover image card names itself once, in its head, and ends under its
   decision (`.is-cover`).
+- A post is revised in place (`2026-09-30-post-revisions.sql`): a change to
+  its file, copy or title after the client decided on its round is the next
+  round (trigger `posts_revision`; `reviews.round` stamped by
+  `reviews_round`), and the round it replaces is kept whole in
+  `post_versions` for the team. Before any decision an edit is a
+  correction. `get_review_feed` sends the round on show, the decision on it
+  only, and `asked` (the request on the round before); never an earlier
+  round's file or copy. The client's card reads Revision N and You asked.
+- Both sides list posts under the stage strip (`.tabrow`: Pending,
+  Changes requested, Approved, All, each with its count). The client's
+  (`#stageStrip`) opens on Pending and is counted at load: a decision
+  repaints its card but moves it only on the next load. The console's
+  (`#postStages`, drawn once a decision exists) opens on Changes requested.
+  On a phone the strip is the column's width, its tabs sharing it and
+  Changes requested reading Changes (`.tab-short`).
+- Request changes takes a note or an edit to the copy (Edit copy), sent
+  only where changed and kept as `reviews.suggested_caption[_zh]`; the
+  console shows it as Suggested copy with Accept copy (the next round). The
+  console's Edit replaces the file, uploaded at Save.
 - Approve needs a name. Approved reads outlined, with Request changes hidden.
   - The Copywriting label, and the copy control at the top.
   - No Save as PDF.

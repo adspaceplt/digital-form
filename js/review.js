@@ -21,6 +21,8 @@
   function showState(title, body, wantsPass) {
     $('content').innerHTML = '';
     $('filterbar').hidden = true;
+    $('stageStrip').hidden = true;
+    $('stageEmpty').hidden = true;
     $('qrBtn').hidden = true;
     $('cover').hidden = false;
     // Nothing but a notice, so the page is white to the edges rather than a
@@ -73,6 +75,7 @@
         y: Math.round(window.scrollY),
         fmt: $('formatFilter').value,
         bat: $('batchFilter').value,
+        stage: stage,
         safe: $('safeToggle').checked,
         // Only sets the reader opened or closed themselves. The rest follow
         // the automatic rule, which may have changed since they were here.
@@ -102,6 +105,56 @@
 
   var feedLoaded = false;
   var saveTimer = null;
+
+  /* The stage strip: the posts by where they stood when the page loaded, each
+     with its count, the one on show on the sliding surface of the strip.
+     Pending first, because what waits on the reader is what they came for. */
+  var STAGES = [['pending', 'Pending'], ['changes', 'Changes requested'], ['approved', 'Approved'], ['all', 'All']];
+  var stage = null;
+  function stageOf(review) {
+    return !review ? 'pending' : review.decision === 'approved' ? 'approved' : 'changes';
+  }
+  function stageWord(s) {
+    /* On a phone the longest stage takes its short word, so all four fit the
+       column's width without scrolling (the user, 2026-09-30). */
+    return s[0] === 'changes'
+      ? '<span class="tab-long">' + s[1] + '</span><span class="tab-short">Changes</span>'
+      : s[1];
+  }
+  function paintStages(counts) {
+    var strip = $('stageStrip');
+    strip.innerHTML = STAGES.map(function (s) {
+      return '<button class="tab' + (s[0] === stage ? ' is-on' : '') + '" type="button" role="tab" data-stage="' + s[0] + '"' +
+        ' aria-selected="' + (s[0] === stage) + '" tabindex="' + (s[0] === stage ? 0 : -1) + '">' +
+        stageWord(s) + ' <span class="tab-n">' + counts[s[0]] + '</span></button>';
+    }).join('');
+  }
+  function pickStage(to) {
+    stage = to;
+    Array.prototype.forEach.call(document.querySelectorAll('#stageStrip .tab'), function (b) {
+      var on = b.getAttribute('data-stage') === to;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-selected', String(on));
+      b.tabIndex = on ? 0 : -1;
+    });
+    applyFilters();
+  }
+  $('stageStrip').addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.tab');
+    if (b) pickStage(b.getAttribute('data-stage'));
+  });
+  /* A tab list: the arrows move along it, Home and End to its ends. */
+  $('stageStrip').addEventListener('keydown', function (e) {
+    var tabs = Array.prototype.slice.call(this.querySelectorAll('.tab'));
+    var i = tabs.indexOf(document.activeElement);
+    if (i < 0) return;
+    var to = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
+    if (to === null) return;
+    e.preventDefault();
+    to = (to + tabs.length) % tabs.length;
+    tabs[to].focus();
+    pickStage(tabs[to].getAttribute('data-stage'));
+  });
   function queuePlace() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(savePlace, 200);
@@ -196,6 +249,11 @@
     var card = document.createElement('article');
     card.className = 'card';
     card.dataset.format = MK.key(post);
+    /* Where the post stood when the page loaded. A decision made now repaints
+       the card, but it keeps its place in the stage it was shown under until
+       the next load, so a card never vanishes from under the hand that just
+       approved it (the user, 2026-09-30). */
+    card.dataset.stage = stageOf(post.review);
 
     var head = document.createElement('div');
     head.className = 'card-head';
@@ -231,7 +289,13 @@
       copy.innerHTML =
         '<div class="copyhead">' +
           '<h5>Copywriting</h5>' +
-          '<button class="copy-btn" type="button">Copy text</button>' +
+          /* The portal's small tonal button with the copy mark: it was
+             the one outlined button left, and read "a little huge" at a
+             full control's height (the user, 2026-09-30). */
+          '<button class="btn btn-sm copy-btn" type="button">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg>' +
+            '<span>Copy text</span></button>' +
         '</div>' +
         html +
         '<button class="copy-more" type="button" hidden>Show full copy</button>';
@@ -250,6 +314,20 @@
           .filter(Boolean).join('\n\n'));
       });
       card.appendChild(copy);
+    }
+
+    /* A revised post says what it answers: the client's own request on the
+       round before. The earlier file and copy stay with the team; the client
+       sees the revision alone (the user, 2026-09-30). */
+    if (post.round > 1 && post.asked) {
+      var rev = document.createElement('div');
+      rev.className = 'reask is-revision';
+      var askedWhen = fmtDate(post.asked.created_at);
+      rev.innerHTML = '<b>Revision ' + post.round + '</b>' +
+        (post.asked.note ? '<span>You asked: ' + escapeHtml(post.asked.note) + '</span>' : '') +
+        (post.asked.suggested ? '<span>Your copy edit is applied for review.</span>' : '') +
+        '<small>' + (post.asked.reviewer ? escapeHtml(post.asked.reviewer) + ' · ' : '') + askedWhen + '</small>';
+      card.appendChild(rev);
     }
 
     // Something changed since they last approved, so say what before asking again.
@@ -410,7 +488,22 @@
         '<button class="btn btn-changes" type="button" aria-pressed="false">Request changes</button>' +
       '</div>' +
       '<div class="changebox">' +
-        '<textarea class="textarea" placeholder="Describe the changes required."></textarea>' +
+        '<textarea class="textarea" data-f="note" aria-label="Changes required" placeholder="Describe the changes required."></textarea>' +
+        /* The copy is edited where it is asked about, rather than pasted into
+           the note: the edit travels as a suggestion the team accepts. */
+        ((post.caption || post.caption_zh)
+          ? '<button class="btn btn-sm copyedit-open" type="button" aria-expanded="false">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+              '<path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg>Edit copy</button>' +
+            '<div class="copyedit" hidden>' +
+              (post.caption != null
+                ? '<label class="copyedit-f"><span>Copywriting</span><textarea class="textarea" data-f="caption" rows="6">' +
+                    escapeHtml(post.caption || '') + '</textarea></label>' : '') +
+              (post.caption_zh
+                ? '<label class="copyedit-f"><span>中文文案</span><textarea class="textarea" data-f="caption_zh" rows="6">' +
+                    escapeHtml(post.caption_zh) + '</textarea></label>' : '') +
+            '</div>'
+          : '') +
         /* Only where we do not already hold the name: a client who has
            approved a post before is not asked for it a second time. */
         (window.ADspaceDecide.known() ? '' :
@@ -424,7 +517,23 @@
       '<div class="approve-state"></div>';
 
     var box      = wrap.querySelector('.changebox');
-    var textarea = wrap.querySelector('.textarea');
+    var textarea = wrap.querySelector('[data-f="note"]');
+    var editOpen = wrap.querySelector('.copyedit-open');
+    var editBox  = wrap.querySelector('.copyedit');
+    if (editOpen) editOpen.addEventListener('click', function () {
+      editBox.hidden = false;
+      editOpen.hidden = true;
+      editOpen.setAttribute('aria-expanded', 'true');
+      var first = editBox.querySelector('textarea');
+      if (first) first.focus();
+    });
+    /* What the client changed in the copy, or null where they changed
+       nothing: an untouched field is not a suggestion. */
+    function edited(f, was) {
+      var el = editBox && !editBox.hidden ? editBox.querySelector('[data-f="' + f + '"]') : null;
+      if (!el) return null;
+      return el.value !== (was || '') ? el.value : null;
+    }
     var who      = wrap.querySelector('.changebox-who');
     var state    = wrap.querySelector('.approve-state');
     function say(text) { state.textContent = text || ''; }
@@ -451,7 +560,12 @@
     });
     box.querySelector('[data-act="send"]').addEventListener('click', function () {
       var note = textarea.value.trim();
-      if (!note) { textarea.focus(); return; }
+      var cap = edited('caption', post.caption), capZh = edited('caption_zh', post.caption_zh);
+      if (!note && cap === null && capZh === null) {
+        say('Describe the changes, or edit the copy.');
+        textarea.focus();
+        return;
+      }
       /* The note box is already open, so the name it may still need is a
          field inside it rather than one growing out of the row behind it. */
       var name = window.ADspaceDecide.known();
@@ -461,7 +575,7 @@
         window.ADspaceDecide.keep(name);
       }
       box.classList.remove('is-open');
-      send(post, 'changes', note, wrap, badge, name);
+      send(post, 'changes', note, wrap, badge, name, { caption: cap, caption_zh: capZh });
     });
     return wrap;
   }
@@ -469,13 +583,14 @@
   /* An approval with nobody's name on it is worth nothing, so the name is a
      hard stop — but it is settled before this runs, on the page rather than
      in a browser dialog, and arrives here as an argument. */
-  function send(post, decision, note, wrap, badge, reviewer) {
+  function send(post, decision, note, wrap, badge, reviewer, copy) {
     var buttons = wrap.querySelectorAll('.btn');
     Array.prototype.forEach.call(buttons, function (b) { b.disabled = true; });
 
     API.submitReview({
       token: token, postId: post.id, decision: decision,
-      note: note, reviewer: reviewer, passcode: passcode
+      note: note, reviewer: reviewer, passcode: passcode,
+      caption: copy && copy.caption, captionZh: copy && copy.caption_zh
     }).then(function (res) {
       Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
       if (res && res.error) {
@@ -487,7 +602,9 @@
       }
       post.review = {
         decision: decision, note: note, reviewer: reviewer,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+        suggested: !!(copy && (copy.caption !== null && copy.caption !== undefined ||
+                               copy.caption_zh !== null && copy.caption_zh !== undefined))
       };
       paintDecision(post.review, badge, wrap);
     }).catch(function () {
@@ -546,10 +663,10 @@
       badge.className = 'badge status status-changes is-changes';
       changesBtn.setAttribute('aria-pressed', 'true');
       state.innerHTML = 'Changes requested' + who + ' on ' + when + '.';
-      if (review.note) {
+      if (review.note || review.suggested) {
         var n = document.createElement('div');
         n.className = 'approve-note';
-        n.textContent = review.note;
+        n.textContent = [review.note, review.suggested ? 'Copy edit suggested.' : ''].filter(Boolean).join('\n');
         wrap.appendChild(n);
       }
     }
@@ -624,6 +741,15 @@
       }
     });
 
+    /* Counted once, at load: a decision made now does not move its card. */
+    var counts = { pending: 0, changes: 0, approved: 0, all: 0 };
+    feed.batches.forEach(function (b) {
+      b.posts.forEach(function (p) { counts[stageOf(p.review)]++; counts.all++; });
+    });
+    var kept = restoring && restoring.stage;
+    stage = kept && (kept === 'all' || counts[kept]) ? kept : counts.pending ? 'pending' : 'all';
+    paintStages(counts);
+
     var ff = $('formatFilter');
     Object.keys(formats).sort().forEach(function (k) {
       var opt = document.createElement('option');
@@ -641,6 +767,7 @@
     ff.addEventListener('change', applyFilters);
     bf.addEventListener('change', applyFilters);
     $('filterbar').hidden = false;
+    $('stageStrip').hidden = false;
     $('qrBtn').hidden = false;
     paintSafeSwitch();
     watchVideos(document);
@@ -707,7 +834,8 @@
       var batchOk = bat === 'all' || section.dataset.batch === bat;
       var visibleHere = 0;
       section.querySelectorAll('.card').forEach(function (card) {
-        var ok = batchOk && (fmt === 'all' || card.dataset.format === fmt);
+        var ok = batchOk && (fmt === 'all' || card.dataset.format === fmt) &&
+          (!stage || stage === 'all' || card.dataset.stage === stage);
         card.hidden = !ok;
         if (ok) visibleHere++;
       });
@@ -717,6 +845,7 @@
     });
 
     $('countLabel').textContent = shown + ' post' + (shown === 1 ? '' : 's') + ' shown';
+    $('stageEmpty').hidden = shown > 0;
     requestAnimationFrame(remeasure);
     savePlace();
   }

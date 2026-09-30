@@ -42,14 +42,19 @@
     if (!client) {
       return { ok: true, demo: true };
     }
-    const { data, error } = await client.rpc('submit_review', {
+    const args = {
       p_token: payload.token,
       p_post_id: payload.postId,
       p_decision: payload.decision,
       p_note: payload.note || null,
       p_reviewer: payload.reviewer || null,
       p_passcode: payload.passcode || null
-    });
+    };
+    /* A copy edit rides the request only where the client made one, so an
+       ordinary decision is the call it always was. */
+    if (payload.caption != null) args.p_caption = payload.caption;
+    if (payload.captionZh != null) args.p_caption_zh = payload.captionZh;
+    const { data, error } = await client.rpc('submit_review', args);
     if (error) throw error;
     return data;
   }
