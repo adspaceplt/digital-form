@@ -1195,7 +1195,8 @@
        a client approved a post and the portal kept the verdict in `reviews`
        alone, which no screen reads as a history. These carry the name the
        person typed as the actor, so the row says who, what and when. */
-    'review.approved':       ['Client approved', 'is-ok', 'review'],
+    'review.approved':       ['Approved', 'is-ok', 'review'],
+    'review.unconfirmed':    ['Confirmation reverted', 'is-warn', 'review'],
     'review.changes':        ['Changes requested', 'is-warn', 'review'],
     'request.withdrawn':     ['Request withdrawn', 'is-warn', 'clients'],
     'request.reinstated':    ['Request reinstated', '', 'clients'],
@@ -3476,17 +3477,19 @@
         '<div class="saved-actions">' +
           '<button class="kmenu-btn" data-a="menu" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(MK.label(p)) + '">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden role="menu">' +
-            '<button class="kmenu-item" data-a="edit" type="button" role="menuitem">Edit</button>' +
+            '<button class="kmenu-item" data-a="edit" data-need="review.sets:work" type="button" role="menuitem">Edit</button>' +
             /* The client said yes by word of mouth: the team approves the
                round on show for them (the user, 2026-10-01). Its way back is
                Revert confirmation; a client's own approval is asked again. */
-            (!review || review.decision !== 'approved'
-              ? '<button class="kmenu-item" data-a="confirm" type="button" role="menuitem">Confirm internally</button>' : '') +
+            /* Only on a set the client can see: an unpublished one has
+               nothing for them to have agreed to. */
+            ((!review || review.decision !== 'approved') && state.batch && state.batch.published
+              ? '<button class="kmenu-item" data-a="confirm" data-need="review.sets:work" type="button" role="menuitem">Confirm internally</button>' : '') +
             (review && review.decision === 'approved' && review.source === 'team'
-              ? '<button class="kmenu-item" data-a="unconfirm" type="button" role="menuitem">Revert confirmation</button>' : '') +
+              ? '<button class="kmenu-item" data-a="unconfirm" data-need="review.sets:work" type="button" role="menuitem">Revert confirmation</button>' : '') +
             (review && review.decision === 'approved' && review.source !== 'team'
-              ? '<button class="kmenu-item" data-a="reask" type="button" role="menuitem">Request re-approval</button>' : '') +
-            '<button class="kmenu-item is-danger" data-a="del" type="button" role="menuitem">Delete</button>' +
+              ? '<button class="kmenu-item" data-a="reask" data-need="review.sets:work" type="button" role="menuitem">Request re-approval</button>' : '') +
+            '<button class="kmenu-item is-danger" data-a="del" data-need="review.sets:manage" type="button" role="menuitem">Delete</button>' +
           '</div>' +
         '</div>';
 

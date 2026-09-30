@@ -925,11 +925,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   colleague's name, filed `review.approved` … confirmed internally. The
   console row reads Confirmed internally by {colleague}; the client's page
   reads Confirmed by {client name} on {date} (`by_team`), never the
-  colleague. Its way back is Revert confirmation (`review_revert_confirm`,
-  never asks): the row is kept with `undone_at`, only a team approval can
-  be reverted, and the post falls back to the decision before it. Every
-  read of `reviews` skips undone rows. A client's own approval is asked
-  again with Request re-approval.
+  colleague; the feed sends a team decision with no reviewer, so the
+  colleague's name never reaches the client. Its way back is Revert
+  confirmation (`review_revert_confirm`, never asks, filed
+  `review.unconfirmed`, Confirmation reverted): the row is kept with
+  `undone_at`, only a team approval can be reverted, and the post falls
+  back to the decision before it. Every read of `reviews` skips undone
+  rows. A client's own approval is asked again with Request re-approval.
+  Confirm internally shows only on a published set. The post ⋯ items carry
+  their parts (`review.sets:work`; Delete `review.sets:manage`).
+  `review.approved` reads Approved (the actor says who).
 - Approve needs a name. Approved reads outlined, with Request changes hidden.
   - The Copywriting label, and the copy control at the top.
   - No Save as PDF.
