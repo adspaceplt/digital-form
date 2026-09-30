@@ -898,10 +898,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`#postStages`, drawn once a decision exists) opens on Changes requested.
   On a phone the strip is the column's width, its tabs sharing it and
   Changes requested reading Changes (`.tab-short`).
-- Request changes takes a note or an edit to the copy (Edit copy), sent
-  only where changed and kept as `reviews.suggested_caption[_zh]`; the
-  console shows it as Suggested copy with Accept copy (the next round). The
-  console's Edit replaces the file, uploaded at Save.
+- The caption is edited where it is read: the pen beside Copywriting
+  (`.copy-pen`, hidden once approved) turns each caption into a field in
+  place and opens Request changes under it for a note and the name. A
+  request takes a note or a caption edit, sent only where changed and kept
+  as `reviews.suggested_caption[_zh]`; the console shows it as Suggested
+  caption with Accept caption (the next round). The noun is caption, never
+  copy. The console's Edit replaces the file, uploaded at Save.
 - Approve needs a name. Approved reads outlined, with Request changes hidden.
   - The Copywriting label, and the copy control at the top.
   - No Save as PDF.

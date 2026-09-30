@@ -577,10 +577,24 @@ a { color: inherit; }
 .copyhead {
   display: flex; align-items: center; gap: 12px; margin-bottom: 9px;
 }
-.copyhead h5 { margin-bottom: 0; flex: 1 1 auto; }
+.copyhead h5 { margin-bottom: 0; flex: 0 1 auto; }
+/* The pen beside Copywriting edits the caption where it is read: the
+   quiet icon button of a record's name, at the small control's height. */
+.copy-pen {
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  width: var(--ctl-h-sm); height: var(--ctl-h-sm); margin: -4px 0 -4px -8px; padding: 0;
+  border: 0; border-radius: var(--radius-ctl-sm); background: none; color: var(--ink-mute); cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
+}
+.copy-pen svg { width: 15px; height: 15px; }
+.copy-pen[hidden] { display: none; }
+@media (hover: hover) { .copy-pen:hover { background: var(--line-soft); color: var(--ink); } }
+.copy-pen:active { transform: scale(.97); }
+.copyblock .copyfield { display: block; width: 100%; min-height: 140px; }
+.copyblock .copytext + .copyfield + h5 { margin-top: 16px; }
 .copytext { white-space: pre-wrap; color: var(--ink-soft); font-size: 13.5px; }
 .copytext + h5 { margin-top: 16px; }
-.copy-btn { flex: 0 0 auto; min-width: 0; }
+.copy-btn { flex: 0 0 auto; min-width: 0; margin-left: auto; }
 
 /* ---------- Approval ---------- */
 .approve { border-top: 1px solid var(--line-soft); padding: 14px 16px; }
@@ -9116,12 +9130,6 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .reask.is-revision { background: var(--sunk); border-color: transparent; }
 .reask.is-revision b { color: var(--ink); }
 .reask small { font-size: 12px; color: var(--ink-mute); }
-.copyedit-open { margin-top: 9px; }
-.copyedit-open svg { width: 15px; height: 15px; margin-right: 6px; }
-.copyedit { display: grid; gap: 9px; margin-top: 9px; }
-.copyedit-f { display: grid; gap: 5px; }
-.copyedit-f > span { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
-.changebox .copyedit .textarea { min-height: 140px; }
 
 /* The console's set page: the posts by stage, a round, what a round answers,
    the client's suggested copy with Accept, and the rounds kept. */
@@ -9157,3 +9165,12 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .is-narrow .poststages .tab { flex: 1 0 auto; padding: 0 8px; }
 .is-narrow .poststages .tab-long { display: none; }
 .is-narrow .poststages .tab-short { display: inline; }
+
+/* Request changes is one column, every step 12px apart: the note, the name
+   the full width of the box, then Cancel and Send request (the caption is
+   edited in place, under the pen beside Copywriting). The button and the field sat on one line on a
+   phone, at two widths, because both were inline (the user, 2026-09-30:
+   "wtf with this user experience"). */
+.changebox.is-open { display: grid; gap: 12px; }
+.changebox > * { margin: 0; min-width: 0; }
+.changebox .changebox-who { width: 100%; }

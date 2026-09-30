@@ -286,7 +286,7 @@ begin
          b.title || ' · ' || coalesce(nullif(p.platform, ''), 'post') ||
          case when p.round > 1 then ' · revision ' || p.round else '' end ||
          coalesce(' · ' || nullif(btrim(coalesce(p_note, '')), ''), '') ||
-         case when v_cap is not null or v_cap_zh is not null then ' · copy edited' else '' end
+         case when v_cap is not null or v_cap_zh is not null then ' · caption edited' else '' end
     from public.posts p
     join public.batches b on b.id = p.batch_id
     join public.clients c on c.id = b.client_id
