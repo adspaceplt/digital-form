@@ -553,11 +553,9 @@
       screen.appendChild(el('div', 'mk-counter mk-counter-story', media.length + ' frames'));
     }
 
-    if (post.caption) {
-      const sticker = el('div', 'mk-sticker');
-      sticker.innerHTML = captionHtml(post.caption);
-      stage.appendChild(sticker);
-    }
+    /* A story carries no caption on the platform. Laid over the frame, a
+       long one covered the story and its play button; the words are under
+       the card in Copywriting. */
 
     deviceChrome(screen);
     screen.appendChild(safeZone('story'));
