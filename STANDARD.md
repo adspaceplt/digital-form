@@ -598,10 +598,6 @@ section holds only what is true of the project as a whole.
     action;
   - Held: the storage-class half, until storage nears 100 GB or the Free Tier
     ends.
-- Video conversion (built 2026-09-30): the AWS side is the user's, once,
-  from `workers/video-convert/README.md` (the MediaConvert role, the Lambda,
-  the bucket trigger, then the `{ "all": true }` run for the videos already
-  uploaded). Until then every video plays as before (Safari only for HEVC).
 - Documents:
   - S3 storage with expiring public links.
   - The ALP checklists as forms.
