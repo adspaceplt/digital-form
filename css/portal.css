@@ -9182,6 +9182,13 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .changebox.is-open { display: grid; gap: 12px; }
 .changebox > * { margin: 0; min-width: 0; }
 .changebox .changebox-who { width: 100%; }
+/* The decision pair and the request's own pair are equal halves (the user,
+   2026-10-01: Approve took 1.35 shares and Send request its own width, so
+   neither row read as balanced). While Approve asks for the name, Request
+   changes still gives its half to the field. */
+.approve-row > .namebox, .approve-row > .btn-approve, .approve-row > .btn-changes { flex: 1 1 0; min-width: 0; }
+.approve-row.is-asking > .namebox { flex: 1 1 100%; }
+.changebox-actions > .btn { flex: 1 1 0; min-width: 0; }
 /* While a request is open the decision pair steps away, so Cancel and Send
    request are the card's only acts, and the request starts the block. */
 .approve.is-requesting .approve-row { display: none; }

@@ -910,6 +910,26 @@ Each line is a rule that broke once. Its reason is in the archive.
   as `reviews.suggested_caption[_zh]`; the console shows it as Suggested
   caption with Accept caption (the next round). The noun is caption, never
   copy. The console's Edit replaces the file, uploaded at Save.
+- A request not yet answered is changed with Edit request (the Request
+  changes button while one stands): it reopens with the note and the
+  client's own caption edit (`get_review_feed` sends `suggested_caption[_zh]`
+  on the standing decision), and sending again replaces it. Approve over a
+  standing request arms first in place (Approve as it is, "Approving
+  withdraws your request for changes."), and the console keeps the request
+  it replaced in sight (Earlier request). The decision pair and the
+  request's Cancel / Send request are equal halves.
+- Confirm internally (`2026-10-01-review-confirm-internally.sql`) is the
+  team's approval on the client's word, in a post's ⋯ in the console only
+  (Content Review sets at Work, a published set, not already approved):
+  `review_confirm` writes a `reviews` row with `source` team under the
+  colleague's name, filed `review.approved` … confirmed internally. The
+  console row reads Confirmed internally by {colleague}; the client's page
+  reads Confirmed by {client name} on {date} (`by_team`), never the
+  colleague. Its way back is Revert confirmation (`review_revert_confirm`,
+  never asks): the row is kept with `undone_at`, only a team approval can
+  be reverted, and the post falls back to the decision before it. Every
+  read of `reviews` skips undone rows. A client's own approval is asked
+  again with Request re-approval.
 - Approve needs a name. Approved reads outlined, with Request changes hidden.
   - The Copywriting label, and the copy control at the top.
   - No Save as PDF.

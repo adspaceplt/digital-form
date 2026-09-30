@@ -333,7 +333,9 @@
           area.className = 'textarea copyfield';
           area.setAttribute('data-f', f);
           area.setAttribute('aria-label', f === 'caption_zh' ? '中文文案' : 'Caption');
-          area.value = post[f] || '';
+          /* A request still standing reopens with the client's own edit. */
+          var mine = post.review && post.review.decision === 'changes' ? post.review['suggested_' + f] : null;
+          area.value = mine != null ? mine : (post[f] || '');
           t.hidden = true;
           t.parentNode.insertBefore(area, t.nextSibling);
         });
@@ -582,14 +584,41 @@
       box.classList.toggle('is-open', on);
       wrap.classList.toggle('is-requesting', on);
     }
+    /* Approving over a request still standing withdraws it, so it asks in
+       place first: the first press arms (Approve as it is, and the line
+       says what goes), the second approves (the user, 2026-10-01). */
+    function disarm() {
+      if (!approveBtn.classList.contains('is-armed')) return;
+      approveBtn.classList.remove('is-armed');
+      approveBtn.textContent = 'Approve';
+      say('');
+    }
     approveBtn.addEventListener('click', function () {
       openBox(false);
-      asker.need(function (name) { send(post, 'approved', null, wrap, badge, name); });
+      var standing = post.review && post.review.decision === 'changes';
+      if (standing && !approveBtn.classList.contains('is-armed')) {
+        approveBtn.classList.add('is-armed');
+        approveBtn.textContent = 'Approve as it is';
+        say('Approving withdraws your request for changes.');
+        return;
+      }
+      asker.need(function (name) {
+        approveBtn.classList.remove('is-armed');
+        send(post, 'approved', null, wrap, badge, name);
+      });
     });
     /* Opens the request; from the pen the caption field keeps the caret. */
     wrap._openChanges = function (fromPen) {
       asker.close();
-      say('');
+      disarm();
+      /* Edit request: a request not yet answered reopens as it was sent,
+         the note in its box and the caption edit in its fields (the user,
+         2026-10-01). Sending it again replaces it. */
+      var standing = post.review && post.review.decision === 'changes' ? post.review : null;
+      if (standing && !box.classList.contains('is-open')) {
+        textarea.value = standing.note || '';
+        if (!fromPen && copyBlock && (standing.suggested_caption != null || standing.suggested_caption_zh != null)) copyBlock._start();
+      }
       openBox(true);
       if (!fromPen) textarea.focus();
     };
@@ -649,7 +678,9 @@
         decision: decision, note: note, reviewer: reviewer,
         created_at: new Date().toISOString(),
         suggested: !!(copy && (copy.caption !== null && copy.caption !== undefined ||
-                               copy.caption_zh !== null && copy.caption_zh !== undefined))
+                               copy.caption_zh !== null && copy.caption_zh !== undefined)),
+        suggested_caption: copy && copy.caption != null ? copy.caption : null,
+        suggested_caption_zh: copy && copy.caption_zh != null ? copy.caption_zh : null
       };
       if (done) done();
       paintDecision(post.review, badge, wrap);
@@ -683,6 +714,8 @@
     approveBtn.hidden = false;
     approveBtn.disabled = false;
     approveBtn.textContent = 'Approve';
+    approveBtn.classList.remove('is-armed');
+    changesBtn.textContent = review && review.decision === 'changes' ? 'Edit request' : 'Request changes';
     var old = wrap.querySelector('.approve-note');
     if (old) old.remove();
 
@@ -702,7 +735,12 @@
       changesBtn.hidden = true;
       approveBtn.textContent = 'Approved';
       approveBtn.disabled = true;
-      state.innerHTML = 'Approved' + who + ' on ' + when + '.';
+      /* Confirmed for the client by the team, on the client's word: their
+         page names the client, the console names the colleague (the user,
+         2026-10-01: "Confirm by {clientname} on {date}"). */
+      state.innerHTML = review.by_team
+        ? 'Confirmed by <b>' + escapeHtml((feed && feed.client && feed.client.name) || 'you') + '</b> on ' + when + '.'
+        : 'Approved' + who + ' on ' + when + '.';
       autoFold(wrap);
     } else {
       badgeWord.textContent = 'Changes requested';

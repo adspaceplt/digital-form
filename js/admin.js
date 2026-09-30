@@ -3155,15 +3155,19 @@
           db.from('post_versions').select('*').in('post_id', ids).order('round', { ascending: false })
         ]).then(function (both) {
             var rev = both[0], vers = both[1];
-            var latest = {}, asked = {}, kept = {};
+            var latest = {}, asked = {}, kept = {}, earlier = {};
             var byId = {};
             r.data.forEach(function (p) { byId[p.id] = p; });
             (rev.data || []).forEach(function (x) {
               var p = byId[x.post_id];
-              if (!p) return;
+              /* A team approval taken back is kept but no longer stands. */
+              if (!p || x.undone_at) return;
               var round = x.round || 1, now = p.round || 1;
               if (round === now && (!p.review_reset_at || x.created_at > p.review_reset_at)) {
                 if (!latest[x.post_id]) latest[x.post_id] = x;
+                /* A request on this round that an approval since replaced:
+                   kept in sight, so the team knows what was asked. */
+                else if (latest[x.post_id].decision === 'approved' && x.decision === 'changes' && !earlier[x.post_id]) earlier[x.post_id] = x;
               } else if (round === now - 1 && x.decision === 'changes' && !asked[x.post_id]) {
                 asked[x.post_id] = x;
               }
@@ -3171,7 +3175,7 @@
             (vers.error ? [] : vers.data || []).forEach(function (v) {
               (kept[v.post_id] = kept[v.post_id] || []).push(v);
             });
-            state.postView = { posts: r.data, latest: latest, asked: asked, kept: kept };
+            state.postView = { posts: r.data, latest: latest, asked: asked, kept: kept, earlier: earlier };
             paintPostStages(true);
             paintProgress(r.data, latest, !rev.error);
             settleScroll();
@@ -3219,7 +3223,7 @@
     v.posts.forEach(function (p) {
       var review = v.latest[p.id];
       if (pick !== 'all' && postStageOf(review) !== pick) return;
-      box.appendChild(savedRow(p, review, { asked: v.asked[p.id], kept: v.kept[p.id] || [] }));
+      box.appendChild(savedRow(p, review, { asked: v.asked[p.id], kept: v.kept[p.id] || [], earlier: (v.earlier || {})[p.id] }));
     });
     if (!box.children.length) UI.emptyLine(box, 'No posts.');
   }
@@ -3453,6 +3457,13 @@
             : '') +
           (review && review.decision === 'changes' && review.note
             ? '<span class="saved-note">' + esc(review.note) + '</span>' : '') +
+          (review && review.decision === 'approved' && review.source === 'team'
+            ? '<span class="saved-asked">Confirmed internally by ' + esc(review.reviewer || 'the team') + '</span>' : '') +
+          /* The request this approval replaced, kept in sight. */
+          (review && review.decision === 'approved' && extra.earlier
+            ? '<span class="saved-asked">Earlier request: ' +
+                esc([extra.earlier.note, extra.earlier.suggested_caption != null || extra.earlier.suggested_caption_zh != null ? 'caption edit' : '']
+                  .filter(Boolean).join(' · ') || 'no note') + '</span>' : '') +
           suggestHtml(review) +
           /* What this round answers, while the client has not decided on it. */
           (!review && extra.asked && extra.asked.note
@@ -3466,7 +3477,14 @@
           '<button class="kmenu-btn" data-a="menu" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(MK.label(p)) + '">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden role="menu">' +
             '<button class="kmenu-item" data-a="edit" type="button" role="menuitem">Edit</button>' +
-            (review && review.decision === 'approved'
+            /* The client said yes by word of mouth: the team approves the
+               round on show for them (the user, 2026-10-01). Its way back is
+               Revert confirmation; a client's own approval is asked again. */
+            (!review || review.decision !== 'approved'
+              ? '<button class="kmenu-item" data-a="confirm" type="button" role="menuitem">Confirm internally</button>' : '') +
+            (review && review.decision === 'approved' && review.source === 'team'
+              ? '<button class="kmenu-item" data-a="unconfirm" type="button" role="menuitem">Revert confirmation</button>' : '') +
+            (review && review.decision === 'approved' && review.source !== 'team'
               ? '<button class="kmenu-item" data-a="reask" type="button" role="menuitem">Request re-approval</button>' : '') +
             '<button class="kmenu-item is-danger" data-a="del" type="button" role="menuitem">Delete</button>' +
           '</div>' +
@@ -3501,6 +3519,48 @@
           msg('setMsg', 'Caption accepted.', 'ok');
           loadPosts();
         }).catch(function (e) { accept.disabled = false; msg('setMsg', (e && e.message) || 'Not saved.', 'err'); });
+      });
+
+      /* Confirm internally asks first, because the client's page will name
+         who; Revert confirmation is the way back and never asks. */
+      var CONFIRM_SAID = {
+        denied: 'Not allowed for this group.',
+        'no-post': 'That post is no longer there.',
+        'not-published': 'Publish the set first. The client cannot see it yet.',
+        'already-approved': 'Already approved.',
+        'not-confirmed': 'There is no internal confirmation to take back.'
+      };
+      function confirmSaid(e) {
+        var k = String(e || '');
+        if (/review_(revert_)?confirm/.test(k) && /(does not exist|Could not find)/i.test(k)) return 'This needs a database update.';
+        return CONFIRM_SAID[k] || k || 'Not saved.';
+      }
+      var conf = row.querySelector('[data-a="confirm"]');
+      if (conf) conf.addEventListener('click', function () {
+        shutPostMenus();
+        window.ADspaceConfirm.ask({
+          title: 'Confirm internally',
+          body: MK.label(p) + ' is approved on the client\u2019s behalf. Their review page reads Confirmed by ' +
+            ((state.client && state.client.name) || 'the client') + '.',
+          go: 'Confirm'
+        }, function () {
+          db.rpc('review_confirm', { p_post: p.id }).then(function (res) {
+            var d = (res && res.data) || {};
+            if (res.error || d.error) { msg('setMsg', confirmSaid(res.error ? res.error.message : d.error), 'err'); return; }
+            msg('setMsg', 'Confirmed internally.', 'ok');
+            loadPosts();
+          }).catch(function (e) { msg('setMsg', confirmSaid((e && e.message) || String(e)), 'err'); });
+        });
+      });
+      var unconf = row.querySelector('[data-a="unconfirm"]');
+      if (unconf) unconf.addEventListener('click', function () {
+        shutPostMenus();
+        db.rpc('review_revert_confirm', { p_post: p.id }).then(function (res) {
+          var d = (res && res.data) || {};
+          if (res.error || d.error) { msg('setMsg', confirmSaid(res.error ? res.error.message : d.error), 'err'); return; }
+          msg('setMsg', 'Confirmation reverted.', 'ok');
+          loadPosts();
+        }).catch(function (e) { msg('setMsg', confirmSaid((e && e.message) || String(e)), 'err'); });
       });
 
       /* The client reads this, so it is a note and not a value: it opens under

@@ -238,7 +238,8 @@
                   var reset = {}, round = {};
                   posts.forEach(function (p) { reset[p.id] = p.review_reset_at; round[p.id] = p.round || 1; });
                   (revs || []).forEach(function (r) {
-                    if (latest[r.post_id]) return;
+                    /* A team approval taken back no longer stands. */
+                    if (latest[r.post_id] || r.undone_at) return;
                     /* Only a decision on the round on show counts: a revised
                        post waits on the client again (2026-09-30). */
                     if ((r.round || 1) !== round[r.post_id]) return;
