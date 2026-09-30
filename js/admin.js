@@ -1900,7 +1900,7 @@
       var blank = posts.filter(function (p) { return !p.caption && !p.caption_zh; }).length;
       var warn = blank
         ? ' ' + blank + ' of ' + posts.length + ' ' + (blank === 1 ? 'has' : 'have')
-          + ' no copy assigned.'
+          + ' no caption.'
         : '';
       window.ADspaceConfirm.ask({
         title: 'Publish to the client',
@@ -2618,7 +2618,7 @@
         state.drafts.push(res.draft);
         renderDrafts();
         $('mediaUrl').value = '';
-        msg('setMsg', f.name + ' ready. Add copy below, then select Add to set.', 'ok');
+        msg('setMsg', f.name + ' ready. Add the caption below, then select Add to set.', 'ok');
       });
     }).catch(function (e) {
       if (e.name === 'AbortError') {
@@ -2946,7 +2946,7 @@
         if (!toobig.length) {
           msg('driveMsg', done + ' file' + (done === 1 ? '' : 's') + ' ready' +
             (reused ? ', ' + reused + ' already in storage at no additional cost' : '') +
-            '. Add copy below, then select Add to set.', 'ok');
+            '. Add the caption below, then select Add to set.', 'ok');
         }
       })
       .catch(function (e) {
@@ -3394,17 +3394,17 @@
   window.ADspaceMenu.onScroll(shutPostMenus);
 
   /* The client's edit to the copy, kept on their request as a suggestion:
-     what they would have it read, and Accept copy to make it the next
+     what they would have it read, and Accept caption to make it the next
      round's copy without retyping (2026-09-30). */
   function suggestHtml(review) {
     if (!review || review.decision !== 'changes') return '';
     var cap = review.suggested_caption, zh = review.suggested_caption_zh;
     if (cap == null && zh == null) return '';
     return '<div class="saved-suggest">' +
-      '<span class="saved-suggest-h">Suggested copy</span>' +
+      '<span class="saved-suggest-h">Suggested caption</span>' +
       (cap != null ? '<p class="saved-suggest-t">' + esc(cap) + '</p>' : '') +
       (zh != null ? '<p class="saved-suggest-t">' + esc(zh) + '</p>' : '') +
-      '<button class="btn btn-sm" data-a="accept" data-need="review.sets:work" type="button">Accept copy</button>' +
+      '<button class="btn btn-sm" data-a="accept" data-need="review.sets:work" type="button">Accept caption</button>' +
       '</div>';
   }
   /* The rounds this post replaced, for the team alone: the client's page
@@ -3497,8 +3497,8 @@
           if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
           if (!(res.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
           logAction('post.edited', state.client.name + ' — ' + (state.batch.title || ''),
-            MK.label(p) + ': copy accepted from ' + (review.reviewer || 'the client'));
-          msg('setMsg', 'Copy accepted.', 'ok');
+            MK.label(p) + ': caption accepted from ' + (review.reviewer || 'the client'));
+          msg('setMsg', 'Caption accepted.', 'ok');
           loadPosts();
         }).catch(function (e) { accept.disabled = false; msg('setMsg', (e && e.message) || 'Not saved.', 'err'); });
       });

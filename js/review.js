@@ -281,14 +281,20 @@
       // label of its own. A title and a Chinese version are different things
       // and keep theirs.
       if (post.title)      html += '<h5>Title</h5><div class="copytext">' + escapeHtml(post.title) + '</div>';
-      if (post.caption)    html += '<div class="copytext">' + escapeHtml(post.caption) + '</div>';
-      if (post.caption_zh) html += '<h5>中文文案</h5><div class="copytext">' + escapeHtml(post.caption_zh) + '</div>';
+      if (post.caption)    html += '<div class="copytext" data-cap="caption">' + escapeHtml(post.caption) + '</div>';
+      if (post.caption_zh) html += '<h5>中文文案</h5><div class="copytext" data-cap="caption_zh">' + escapeHtml(post.caption_zh) + '</div>';
       // Copy text sits in the heading so it stays where the reader left it.
       // Below the words it moved every time the block was expanded, and sat
       // right beside Show full copy, which is a different kind of action.
       copy.innerHTML =
         '<div class="copyhead">' +
           '<h5>Copywriting</h5>' +
+          /* The pen beside the heading edits the caption where it is read;
+             the edit goes with Request changes as a suggestion the team
+             accepts (the user, 2026-09-30: "why not just build a pen beside
+             the copywriting to edit directly"). */
+          ((post.caption || post.caption_zh)
+            ? '<button class="copy-pen" type="button" aria-label="Edit caption"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg></button>' : '') +
           /* The portal's small tonal button with the copy mark: it was
              the one outlined button left, and read "a little huge" at a
              full control's height (the user, 2026-09-30). */
@@ -298,13 +304,13 @@
             '<span>Copy text</span></button>' +
         '</div>' +
         html +
-        '<button class="copy-more" type="button" hidden>Show full copy</button>';
+        '<button class="copy-more" type="button" hidden>Show full caption</button>';
 
       // Long captions are clamped so cards in a row finish at the same height.
       var more = copy.querySelector('.copy-more');
       more.addEventListener('click', function () {
         var open = copy.classList.toggle('is-open');
-        more.textContent = open ? 'Show less' : 'Show full copy';
+        more.textContent = open ? 'Show less' : 'Show full caption';
         measureCopy(copy);
         syncOpenRows();
       });
@@ -314,6 +320,43 @@
           .filter(Boolean).join('\n\n'));
       });
       card.appendChild(copy);
+
+      /* Editing: each caption becomes its own field in place, the block
+         opens in full, and Request changes opens under it for a note and
+         the name. Cancel puts the words back. */
+      copy._start = function () {
+        if (copy.classList.contains('is-editing')) return;
+        copy.classList.add('is-editing', 'is-open');
+        Array.prototype.forEach.call(copy.querySelectorAll('[data-cap]'), function (t) {
+          var f = t.getAttribute('data-cap');
+          var area = document.createElement('textarea');
+          area.className = 'textarea copyfield';
+          area.setAttribute('data-f', f);
+          area.setAttribute('aria-label', f === 'caption_zh' ? '中文文案' : 'Caption');
+          area.value = post[f] || '';
+          t.hidden = true;
+          t.parentNode.insertBefore(area, t.nextSibling);
+        });
+        var pen = copy.querySelector('.copy-pen');
+        if (pen) pen.hidden = true;
+        more.hidden = true;
+        var first = copy.querySelector('.copyfield');
+        if (first) first.focus();
+        syncOpenRows();
+      };
+      copy._stop = function () {
+        if (!copy.classList.contains('is-editing')) return;
+        copy.classList.remove('is-editing', 'is-open');
+        Array.prototype.forEach.call(copy.querySelectorAll('.copyfield'), function (a) { a.remove(); });
+        Array.prototype.forEach.call(copy.querySelectorAll('[data-cap]'), function (t) { t.hidden = false; });
+        var pen = copy.querySelector('.copy-pen');
+        if (pen) pen.hidden = !!(post.review && post.review.decision === 'approved');
+        measureCopy(copy);
+        syncOpenRows();
+      };
+      /* An approved post is settled, so its caption offers no pen. */
+      var pen0 = copy.querySelector('.copy-pen');
+      if (pen0 && post.review && post.review.decision === 'approved') pen0.hidden = true;
     }
 
     /* A revised post says what it answers: the client's own request on the
@@ -325,7 +368,7 @@
       var askedWhen = fmtDate(post.asked.created_at);
       rev.innerHTML = '<b>Revision ' + post.round + '</b>' +
         (post.asked.note ? '<span>You asked: ' + escapeHtml(post.asked.note) + '</span>' : '') +
-        (post.asked.suggested ? '<span>Your copy edit is applied for review.</span>' : '') +
+        (post.asked.suggested ? '<span>Your caption edit is applied.</span>' : '') +
         '<small>' + (post.asked.reviewer ? escapeHtml(post.asked.reviewer) + ' · ' : '') + askedWhen + '</small>';
       card.appendChild(rev);
     }
@@ -339,7 +382,13 @@
       card.appendChild(again);
     }
 
-    card.appendChild(approvalBlock(post, head.querySelector('.badge')));
+    var decision = approvalBlock(post, head.querySelector('.badge'), copy || null);
+    card.appendChild(decision);
+    var penBtn = copy && copy.querySelector('.copy-pen');
+    if (penBtn) penBtn.addEventListener('click', function () {
+      copy._start();
+      decision._openChanges(true);
+    });
     paintDecision(post.review, head.querySelector('.badge'), card.querySelector('.approve'));
     /* The gallery is how a client sees the month; the canvas is how they
        decide on one post. Opening it is the mockup itself, which is the thing
@@ -479,7 +528,7 @@
     if (e.key === 'ArrowRight') stepCanvas(1);
   });
 
-  function approvalBlock(post, badge) {
+  function approvalBlock(post, badge, copyBlock) {
     var wrap = document.createElement('div');
     wrap.className = 'approve';
     wrap.innerHTML =
@@ -489,21 +538,6 @@
       '</div>' +
       '<div class="changebox">' +
         '<textarea class="textarea" data-f="note" aria-label="Changes required" placeholder="Describe the changes required."></textarea>' +
-        /* The copy is edited where it is asked about, rather than pasted into
-           the note: the edit travels as a suggestion the team accepts. */
-        ((post.caption || post.caption_zh)
-          ? '<button class="btn btn-sm copyedit-open" type="button" aria-expanded="false">' +
-              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-              '<path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M14.5 6.5l3 3"/></svg>Edit copy</button>' +
-            '<div class="copyedit" hidden>' +
-              (post.caption != null
-                ? '<label class="copyedit-f"><span>Copywriting</span><textarea class="textarea" data-f="caption" rows="6">' +
-                    escapeHtml(post.caption || '') + '</textarea></label>' : '') +
-              (post.caption_zh
-                ? '<label class="copyedit-f"><span>中文文案</span><textarea class="textarea" data-f="caption_zh" rows="6">' +
-                    escapeHtml(post.caption_zh) + '</textarea></label>' : '') +
-            '</div>'
-          : '') +
         /* Only where we do not already hold the name: a client who has
            approved a post before is not asked for it a second time. */
         (window.ADspaceDecide.known() ? '' :
@@ -518,19 +552,11 @@
 
     var box      = wrap.querySelector('.changebox');
     var textarea = wrap.querySelector('[data-f="note"]');
-    var editOpen = wrap.querySelector('.copyedit-open');
-    var editBox  = wrap.querySelector('.copyedit');
-    if (editOpen) editOpen.addEventListener('click', function () {
-      editBox.hidden = false;
-      editOpen.hidden = true;
-      editOpen.setAttribute('aria-expanded', 'true');
-      var first = editBox.querySelector('textarea');
-      if (first) first.focus();
-    });
-    /* What the client changed in the copy, or null where they changed
-       nothing: an untouched field is not a suggestion. */
+    /* What the client changed in the caption (edited in place under the
+       pen), or null where they changed nothing: an untouched field is not a
+       suggestion. */
     function edited(f, was) {
-      var el = editBox && !editBox.hidden ? editBox.querySelector('[data-f="' + f + '"]') : null;
+      var el = copyBlock ? copyBlock.querySelector('.copyfield[data-f="' + f + '"]') : null;
       if (!el) return null;
       return el.value !== (was || '') ? el.value : null;
     }
@@ -550,19 +576,22 @@
       box.classList.remove('is-open');
       asker.need(function (name) { send(post, 'approved', null, wrap, badge, name); });
     });
-    wrap.querySelector('.btn-changes').addEventListener('click', function () {
+    /* Opens the request; from the pen the caption field keeps the caret. */
+    wrap._openChanges = function (fromPen) {
       asker.close();
       box.classList.add('is-open');
-      textarea.focus();
-    });
+      if (!fromPen) textarea.focus();
+    };
+    wrap.querySelector('.btn-changes').addEventListener('click', function () { wrap._openChanges(false); });
     box.querySelector('[data-act="cancel"]').addEventListener('click', function () {
       box.classList.remove('is-open');
+      if (copyBlock) copyBlock._stop();
     });
     box.querySelector('[data-act="send"]').addEventListener('click', function () {
       var note = textarea.value.trim();
       var cap = edited('caption', post.caption), capZh = edited('caption_zh', post.caption_zh);
       if (!note && cap === null && capZh === null) {
-        say('Describe the changes, or edit the copy.');
+        say('Describe the changes, or edit the caption.');
         textarea.focus();
         return;
       }
@@ -575,6 +604,7 @@
         window.ADspaceDecide.keep(name);
       }
       box.classList.remove('is-open');
+      if (copyBlock) copyBlock._stop();
       send(post, 'changes', note, wrap, badge, name, { caption: cap, caption_zh: capZh });
     });
     return wrap;
@@ -666,7 +696,7 @@
       if (review.note || review.suggested) {
         var n = document.createElement('div');
         n.className = 'approve-note';
-        n.textContent = [review.note, review.suggested ? 'Copy edit suggested.' : ''].filter(Boolean).join('\n');
+        n.textContent = [review.note, review.suggested ? 'Caption edit suggested.' : ''].filter(Boolean).join('\n');
         wrap.appendChild(n);
       }
     }
