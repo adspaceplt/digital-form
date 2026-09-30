@@ -1126,11 +1126,6 @@ a { color: inherit; }
 }
 .mk-story-head .mk-avatar { width: 26px; height: 26px; }
 .mk-story-time { color: #ddd; font-size: 11.5px; }
-.mk-sticker {
-  position: absolute; left: 16px; right: 16px; bottom: 92px; z-index: 2;
-  background: rgba(0,0,0,.42); border-radius: 10px; padding: 10px 12px;
-  font-size: 13px; line-height: 1.4; color: #fff; backdrop-filter: blur(2px);
-}
 .mk-tap { position: absolute; top: 86px; bottom: 26px; width: 34%; border: 0;
   background: none; z-index: 3; }
 .mk-tap-l { left: 0; } .mk-tap-r { right: 0; }
