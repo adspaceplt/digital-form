@@ -138,7 +138,36 @@
     });
   }
 
+  /* A link from before the short keys (2026-10-01): the long key it carries
+     is answered with the key that replaced it, or null. */
+  async function movedKey(kind, token) {
+    if (!client || !token) return null;
+    try {
+      const { data, error } = await client.rpc('link_moved', { p_kind: kind, p_token: token });
+      return error ? null : (data || null);
+    } catch (e) { return null; }
+  }
+
+  /* The key in a client's review link and a campaign's selection link: eight
+     characters from the creator code's alphabet in lower case (no 0, 1, i,
+     l, o), about 850 billion links, short enough to read aloud (the user,
+     2026-10-01). Rejection sampling keeps every character equally likely. */
+  const TOKEN_ABC = '23456789abcdefghjkmnpqrstuvwxyz';
+  function accessToken() {
+    let out = '';
+    while (out.length < 8) {
+      const a = new Uint8Array(16);
+      window.crypto.getRandomValues(a);
+      for (let i = 0; i < a.length && out.length < 8; i++) {
+        if (a[i] < 248) out += TOKEN_ABC[a[i] % 31];
+      }
+    }
+    return out;
+  }
+
   window.ADspaceAPI = {
+    accessToken,
+    movedKey,
     configured,
     client,
     CLIENT_COLS,

@@ -890,7 +890,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `post_versions` for the team. Before any decision an edit is a
   correction. `get_review_feed` sends the round on show, the decision on it
   only, and `asked` (the request on the round before); never an earlier
-  round's file or copy. The client's card reads Revision N and You asked.
+  round's file or copy. The client's card heads the request it answers
+  `Changes requested by {name} · {date}` (`.reask-head`), the note on its
+  own line under it; never "Revision N" or "You asked" (the team's words).
 - Both sides list posts under the stage strip (`.tabrow`: Pending,
   Changes requested, Approved, All, each with its count). The client's
   (`#stageStrip`) opens on Pending and is counted at load: a decision
@@ -900,11 +902,39 @@ Each line is a rule that broke once. Its reason is in the archive.
   Changes requested reading Changes (`.tab-short`).
 - The caption is edited where it is read: the pen beside Copywriting
   (`.copy-pen`, hidden once approved) turns each caption into a field in
-  place and opens Request changes under it for a note and the name. A
+  place and opens Request changes under it for a note and the name. While
+  a request is open Approve and Request changes step away
+  (`.approve.is-requesting`), so Cancel and Send request are the only acts;
+  a failed send keeps the request and the edit open. A
   request takes a note or a caption edit, sent only where changed and kept
   as `reviews.suggested_caption[_zh]`; the console shows it as Suggested
   caption with Accept caption (the next round). The noun is caption, never
   copy. The console's Edit replaces the file, uploaded at Save.
+- A request not yet answered is changed with Edit request (the Request
+  changes button while one stands): it reopens with the note and the
+  client's own caption edit (`get_review_feed` sends `suggested_caption[_zh]`
+  on the standing decision), and sending again replaces it. Approve over a
+  standing request arms first in place (Approve as it is, "Approving
+  withdraws your request for changes."), and the console keeps the request
+  it replaced in sight (Earlier request). The decision pair and the
+  request's Cancel / Send request are equal halves.
+- Confirm internally (`2026-10-01-review-confirm-internally.sql`) is the
+  team's approval on the client's word, in a post's ⋯ in the console only
+  (Content Review sets at Work, a published set, not already approved):
+  `review_confirm` writes a `reviews` row with `source` team under the
+  colleague's name, filed `review.approved` … confirmed internally. The
+  console row reads Confirmed internally by {colleague}; the client's page
+  reads Confirmed by {client name} on {date} (`by_team`), never the
+  colleague; the feed sends a team decision with no reviewer, so the
+  colleague's name never reaches the client. Its way back is Revert
+  confirmation (`review_revert_confirm`, never asks, filed
+  `review.unconfirmed`, Confirmation reverted): the row is kept with
+  `undone_at`, only a team approval can be reverted, and the post falls
+  back to the decision before it. Every read of `reviews` skips undone
+  rows. A client's own approval is asked again with Request re-approval.
+  Confirm internally shows only on a published set. The post ⋯ items carry
+  their parts (`review.sets:work`; Delete `review.sets:manage`).
+  `review.approved` reads Approved (the actor says who).
 - Approve needs a name. Approved reads outlined, with Request changes hidden.
   - The Copywriting label, and the copy control at the top.
   - No Save as PDF.
@@ -934,6 +964,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     the posts; a removed file costs nothing. Cancel aborts; a failed upload
     keeps its draft; only uploaded drafts are kept for a reload; leaving
     with a file held asks first.
+  - A video's thumbnail in a console row is its cover frame (`poster`),
+    else its first frame (`#t=0.1`, `playsinline`), through `thumbOf()`:
+    a bare `<video>` is blank on iPhone Safari until it plays.
   - Sets are folded, one open at a time.
   - Publish / Unpublish (warn).
   - Resend with a note.
@@ -1792,6 +1825,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     clients.
 - Sign-in never says whether an address has an account ("If {email} is
   registered, …").
+- A client's review link and a campaign's selection link carry an
+  eight-character key (`?k=`, alphabet `23456789abcdefghjkmnpqrstuvwxyz`),
+  made by `ADspaceAPI.accessToken()` in the console and `new_link_key()` in
+  SQL (`2026-10-01-short-links.sql`), never `Math.random`. A long key from
+  before is kept as `moved_token`: it opens nothing itself, and
+  `link_moved(kind, token)` answers it with the current key, which the page
+  puts in the address and loads. Changing a key (Reset access link) clears
+  the moved key by trigger, so a reset retires every earlier link.
 - Secrets never enter the repo or the chat:
   - The Supabase anon key and the Google browser key are public by design.
   - The Turnstile secret, the Google refresh token and the performance master

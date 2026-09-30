@@ -5996,6 +5996,7 @@ language sql immutable parallel safe as $$
                     'client.removed', 'drive.imported', 'link.reset', 'post.added',
                     'post.deleted', 'post.edited', 'reapproval.requested',
                     'review.approved', 'review.changes', 'review.removed',
+                    'review.unconfirmed',
                     'set.created', 'set.deleted', 'set.published', 'set.renamed',
                     'set.task_linked', 'set.task_unlinked',
                     'set.withdrawn') then 'review'
@@ -20668,3 +20669,450 @@ grant execute on function public.get_review_feed(text, text) to anon, authentica
 grant execute on function public.submit_review(text, uuid, text, text, text, text, text, text) to anon, authenticated;
 
 -- END OF POST REVISIONS -----------------------------------------------------
+
+-- ===========================================================================
+-- REVIEW CONFIRMED INTERNALLY — the team approves a post for the client, under
+-- the colleague's own name, and can take it back.
+-- 2026-10-01. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/sql.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   1. `reviews.source`: who decided, 'client' (the review link) or 'team'
+--      (Confirm internally in the console). Every row before this is the
+--      client's.
+--   2. `reviews.undone_at` / `undone_by`: a team approval taken back
+--      (Revert confirmation) is kept, marked undone, and no longer answers
+--      for the post. A client's decision is never undone here; the team asks
+--      again with Request re-approval.
+--   3. `review_confirm(p_post)`: Content Review (sets) at Work approves the
+--      round on show as the signed-in colleague. Refused where the round is
+--      already approved or the set is not published.
+--   4. `review_revert_confirm(p_post)`: takes back the team's approval of the
+--      round on show, and only that. The post falls back to the decision
+--      before it (Pending, or the client's request).
+--   5. `get_review_feed` sends `by_team` on the decision, so the client's page
+--      reads Confirmed internally by {name}; an undone decision is never sent.
+--      It also sends the client's own suggested caption on the decision
+--      standing, so Edit request reopens the request as they sent it.
+--   6. `posts_revision` counts only a decision that stands.
+--   7. `review.unconfirmed` is the tag Revert confirmation files, under
+--      Content Review (`activity_section`, restated whole below; the console's
+--      ACTION_LABEL names it). The feed never sends a colleague's name: a
+--      team decision goes out with no reviewer.
+--
+-- ROLLBACK
+--   drop function if exists public.review_revert_confirm(uuid);
+--   drop function if exists public.review_confirm(uuid);
+--   alter table public.reviews drop constraint if exists reviews_source_check;
+--   alter table public.reviews drop column if exists undone_by;
+--   alter table public.reviews drop column if exists undone_at;
+--   alter table public.reviews drop column if exists source;
+--   Re-run get_review_feed and posts_revision from POST REVISIONS, and
+--   activity_section from TASKS LINK RECORDS.
+-- ===========================================================================
+
+alter table public.reviews add column if not exists source text not null default 'client';
+alter table public.reviews add column if not exists undone_at timestamptz;
+alter table public.reviews add column if not exists undone_by uuid references public.team_members(id) on delete set null;
+alter table public.reviews drop constraint if exists reviews_source_check;
+alter table public.reviews add constraint reviews_source_check check (source in ('client', 'team'));
+
+/* A change to what the client decided on is the next round; a decision
+   taken back (undone, or asked again with Request re-approval) no longer
+   counts, so an edit after it is a correction. */
+create or replace function public.posts_revision() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if (new.media, new.caption, new.caption_zh, new.title)
+     is not distinct from (old.media, old.caption, old.caption_zh, old.title) then
+    return new;
+  end if;
+  if not exists (select 1 from public.reviews r
+                  where r.post_id = old.id and r.round = old.round and r.undone_at is null
+                    and (old.review_reset_at is null or r.created_at > old.review_reset_at)) then
+    return new;
+  end if;
+  insert into public.post_versions (post_id, round, platform, format, title, caption, caption_zh, media, replaced_by)
+  values (old.id, old.round, old.platform, old.format, old.title, old.caption, old.caption_zh, old.media,
+          nullif(auth.jwt() ->> 'email', ''))
+  on conflict (post_id, round) do nothing;
+  new.round := old.round + 1;
+  return new;
+end $$;
+revoke all on function public.posts_revision() from public, anon, authenticated;
+
+create or replace function public.get_review_feed(p_token text, p_passcode text default null)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_client public.clients%rowtype;
+begin
+  select * into v_client
+  from public.clients
+  where access_token = p_token and active;
+
+  if not found then
+    return jsonb_build_object('error', 'not_found');
+  end if;
+
+  if v_client.passcode is not null
+     and (p_passcode is null or p_passcode <> v_client.passcode) then
+    return jsonb_build_object('error', 'passcode_required', 'client', v_client.name);
+  end if;
+
+  return jsonb_build_object(
+    'client', jsonb_build_object(
+      'name', v_client.name,
+      'logo_url', v_client.logo_url,
+      'handles', jsonb_build_object(
+        'instagram', v_client.handle_ig,
+        'facebook',  v_client.handle_fb,
+        'tiktok',    v_client.handle_tiktok,
+        'xhs',       v_client.handle_xhs)),
+    'batches', coalesce((
+      select jsonb_agg(batch order by batch->>'created_at' desc)
+      from (
+        select jsonb_build_object(
+          'id',         b.id,
+          'title',      b.title,
+          'note',       b.note,
+          'created_at', b.created_at,
+          'posts', coalesce((
+            select jsonb_agg(post order by (post->>'position')::int)
+            from (
+              select jsonb_build_object(
+                'id',         p.id,
+                'platform',   p.platform,
+                'format',     p.format,
+                'handle',     p.handle,
+                'caption',    p.caption,
+                'caption_zh', p.caption_zh,
+                'title',      p.title,
+                'media',      p.media,
+                'position',   p.position,
+                'round',      p.round,
+                'reset_note', case
+                  when p.review_reset_at is not null then p.review_reset_note end,
+                /* The decision standing on the round on show: never one about
+                   a round the client no longer sees, never one taken back. */
+                'review',     (
+                  select jsonb_build_object(
+                    'decision',   r.decision,
+                    'note',       r.note,
+                    'reviewer',   case when r.source = 'team' then null else r.reviewer end,
+                    'created_at', r.created_at,
+                    'by_team',    (r.source = 'team'),
+                    'suggested',  (r.suggested_caption is not null or r.suggested_caption_zh is not null),
+                    /* The client's own edit, so Edit request reopens it. */
+                    'suggested_caption',    r.suggested_caption,
+                    'suggested_caption_zh', r.suggested_caption_zh)
+                  from public.reviews r
+                  where r.post_id = p.id and r.round = p.round and r.undone_at is null
+                    and (p.review_reset_at is null or r.created_at > p.review_reset_at)
+                  order by r.created_at desc
+                  limit 1),
+                /* What the client asked of the round before, so a revision
+                   says what it answers. Words only: the earlier file and copy
+                   stay with the team. */
+                'asked',      case when p.round > 1 then (
+                  select jsonb_build_object(
+                    'note',       r.note,
+                    'reviewer',   r.reviewer,
+                    'created_at', r.created_at,
+                    'suggested',  (r.suggested_caption is not null or r.suggested_caption_zh is not null))
+                  from public.reviews r
+                  where r.post_id = p.id and r.round = p.round - 1 and r.decision = 'changes'
+                    and r.undone_at is null
+                  order by r.created_at desc
+                  limit 1) end
+              ) as post
+              from public.posts p
+              where p.batch_id = b.id
+            ) posts
+          ), '[]'::jsonb)
+        ) as batch
+        from public.batches b
+        where b.client_id = v_client.id and b.published
+      ) batches
+    ), '[]'::jsonb)
+  );
+end $$;
+revoke all on function public.get_review_feed(text, text) from public;
+grant execute on function public.get_review_feed(text, text) to anon, authenticated;
+
+/* The client said yes by word of mouth: the team approves the round on show
+   under its own name. The client's page reads Confirmed internally by
+   {name}; the activity record files it as an approval by the colleague. */
+create or replace function public.review_confirm(p_post uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me       public.team_members;
+  v_post   public.posts%rowtype;
+  v_pub    boolean;
+  v_title  text;
+  v_client text;
+  v_now    text;
+begin
+  if not public.allowed('review.sets', 'work') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into me from public.ops_me();
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  select * into v_post from public.posts where id = p_post for update;
+  if v_post.id is null then return jsonb_build_object('error', 'no-post'); end if;
+  select b.published, b.title, c.name into v_pub, v_title, v_client
+    from public.batches b join public.clients c on c.id = b.client_id
+   where b.id = v_post.batch_id;
+  if not coalesce(v_pub, false) then return jsonb_build_object('error', 'not-published'); end if;
+  select r.decision into v_now from public.reviews r
+   where r.post_id = v_post.id and r.round = v_post.round and r.undone_at is null
+     and (v_post.review_reset_at is null or r.created_at > v_post.review_reset_at)
+   order by r.created_at desc limit 1;
+  if v_now = 'approved' then return jsonb_build_object('error', 'already-approved'); end if;
+
+  insert into public.reviews (post_id, decision, reviewer, source)
+  values (v_post.id, 'approved', me.name, 'team');
+
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(nullif(auth.jwt() ->> 'email', ''), me.name), 'review.approved', v_client,
+          v_title || ' · ' || coalesce(nullif(v_post.platform, ''), 'post') ||
+          case when v_post.round > 1 then ' · revision ' || v_post.round else '' end ||
+          ' · confirmed internally');
+  return jsonb_build_object('ok', true, 'reviewer', me.name);
+end $$;
+revoke all on function public.review_confirm(uuid) from public, anon;
+grant execute on function public.review_confirm(uuid) to authenticated;
+
+/* Takes back the team's own approval of the round on show, and nothing else:
+   a client's decision stays theirs. The row is kept, marked undone. */
+create or replace function public.review_revert_confirm(p_post uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  me       public.team_members;
+  v_post   public.posts%rowtype;
+  v_rv     public.reviews%rowtype;
+  v_title  text;
+  v_client text;
+begin
+  if not public.allowed('review.sets', 'work') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into me from public.ops_me();
+  if me.id is null then return jsonb_build_object('error', 'denied'); end if;
+  select * into v_post from public.posts where id = p_post for update;
+  if v_post.id is null then return jsonb_build_object('error', 'no-post'); end if;
+  select r.* into v_rv from public.reviews r
+   where r.post_id = v_post.id and r.round = v_post.round and r.undone_at is null
+     and (v_post.review_reset_at is null or r.created_at > v_post.review_reset_at)
+   order by r.created_at desc limit 1;
+  if v_rv.id is null or v_rv.decision <> 'approved' or v_rv.source <> 'team' then
+    return jsonb_build_object('error', 'not-confirmed');
+  end if;
+  update public.reviews set undone_at = now(), undone_by = me.id where id = v_rv.id;
+
+  select b.title, c.name into v_title, v_client
+    from public.batches b join public.clients c on c.id = b.client_id
+   where b.id = v_post.batch_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (coalesce(nullif(auth.jwt() ->> 'email', ''), me.name), 'review.unconfirmed', v_client,
+          coalesce(v_title, '') || ' · ' || coalesce(nullif(v_post.platform, ''), 'post') ||
+          ' · internal confirmation reverted');
+  return jsonb_build_object('ok', true);
+end $$;
+revoke all on function public.review_revert_confirm(uuid) from public, anon;
+grant execute on function public.review_revert_confirm(uuid) to authenticated;
+
+/* The record files Revert confirmation under Content Review. */
+create or replace function public.activity_section(p_action text)
+returns text
+language sql immutable parallel safe as $$
+  select case
+    when action in ('campaign.bulk', 'campaign.closed', 'campaign.confirmed',
+                    'campaign.created', 'campaign.dates', 'campaign.deleted', 'campaign.edited',
+                    'campaign.file_added', 'campaign.qc',
+                    'campaign.invoice', 'campaign.invoice_file',
+                    'campaign.invoice_removed', 'campaign.keyed', 'campaign.locked',
+                    'campaign.opened', 'campaign.rate', 'campaign.rated',
+                    'campaign.reinstated', 'campaign.replaced', 'campaign.results', 'campaign.review',
+                    'campaign.stage', 'campaign.submitted', 'campaign.task_linked',
+                    'campaign.task_unlinked', 'campaign.unbooked',
+                    'campaign.unkeyed', 'campaign.withdrawn', 'creator.added',
+                    'creator.code', 'creator.links', 'creator.links_restored',
+                    'creator.links_self', 'creator.off', 'creator.on', 'creator.removed',
+                    'creator.updated') then 'campaigns'
+    when action in ('client.action_done', 'client.action_reopened', 'client.added',
+                    'client.billing', 'client.brand', 'client.deleted', 'client.edited',
+                    'client.review_on', 'client.service', 'client.service_changed',
+                    'client.service_removed', 'client.stage', 'client.touch',
+                    'client.touch_edited', 'client.touch_removed',
+                    'client.touch_restored', 'contact.added', 'contact.deleted',
+                    'contact.edited', 'contact.portal_invite', 'contact.portal_off',
+                    'contact.portal_on', 'contact.primary', 'contact.removed',
+                    'contact.restored', 'report.confirmed', 'report.created',
+                    'report.deleted', 'report.published', 'report.returned',
+                    'report.revised', 'report.submitted', 'report.unpublished',
+                    'request.changed', 'request.raised',
+                    'request.reinstated', 'request.replied', 'request.withdrawn',
+                    'service.override') then 'clients'
+    when action in ('qr.created', 'qr.restored', 'qr.revoked', 'shortlink.created',
+                    'shortlink.deleted', 'shortlink.imported', 'shortlink.updated') then 'links'
+    when action in ('ops.deleted', 'ops.month_deleted', 'ops.numbering') then 'ops'
+    when action in ('document.deleted', 'document.issued', 'document.reissued',
+                    'document.restored', 'document.signed', 'document.superseded',
+                    'document.unsigned', 'document.verified', 'document.voided',
+                    'register.added', 'register.edited') then 'register'
+    when action in ('client.drive', 'client.handles', 'client.profile',
+                    'client.removed', 'drive.imported', 'link.reset', 'post.added',
+                    'post.deleted', 'post.edited', 'reapproval.requested',
+                    'review.approved', 'review.changes', 'review.removed',
+                    'review.unconfirmed',
+                    'set.created', 'set.deleted', 'set.published', 'set.renamed',
+                    'set.task_linked', 'set.task_unlinked',
+                    'set.withdrawn') then 'review'
+    when action in ('service.added', 'service.changed', 'service.deleted',
+                    'service.off', 'service.on') then 'services'
+    when action in ('team.added', 'team.changed', 'team.edited', 'team.group_added',
+                    'team.group_changed', 'team.group_removed', 'team.invited') then 'team'
+    else 'other'
+  end
+  from (select p_action as action) t
+$$;
+grant execute on function public.activity_section(text) to authenticated;
+
+-- END OF REVIEW CONFIRMED INTERNALLY ----------------------------------------
+
+-- ===========================================================================
+-- SHORT LINKS FOR CLIENTS — a client's review link and a campaign's
+-- selection link carry an eight-character key, and the long key each had
+-- before still opens, by handing the page its new key.
+-- 2026-10-01. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/sql.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   1. `clients.moved_token` / `campaigns.moved_token`: the long key a link
+--      carried before its short one. It opens nothing by itself; it is
+--      answered only by `link_moved`, with the key that replaced it.
+--   2. `new_link_key()`: eight characters from the creator code's alphabet
+--      in lower case (no 0, 1, i, l, o), from pgcrypto's random bytes, never
+--      one already in use as a key or a moved key. The console makes the
+--      same shape (`ADspaceAPI.accessToken`).
+--   3. Once: every client and campaign whose key is longer than eight
+--      characters keeps it as `moved_token` and takes a new short key. A
+--      second run finds nothing left to move.
+--   4. `link_moved(p_kind, p_token)`: `review` or `selection`, an exact moved
+--      key in, the current key out, else null. Granted to anon, as the pages
+--      that ask are signed out. It answers one key with one key: no listing,
+--      no prefix.
+--   5. A key changed afterwards (Reset access link) clears the moved key by
+--      trigger, so a reset retires every earlier link, the long one
+--      included.
+--
+-- ROLLBACK
+--   Put each long key back first, while it is still known:
+--     update public.clients set access_token = moved_token where moved_token is not null;
+--     update public.campaigns set access_token = moved_token where moved_token is not null;
+--   then:
+--   drop trigger if exists clients_link_moved on public.clients;
+--   drop trigger if exists campaigns_link_moved on public.campaigns;
+--   drop function if exists public.link_key_changed();
+--   drop function if exists public.link_moved(text, text);
+--   drop function if exists public.new_link_key();
+--   alter table public.clients drop column if exists moved_token;
+--   alter table public.campaigns drop column if exists moved_token;
+-- ===========================================================================
+
+alter table public.clients   add column if not exists moved_token text;
+alter table public.campaigns add column if not exists moved_token text;
+create unique index if not exists clients_moved_token_idx
+  on public.clients(moved_token) where moved_token is not null;
+create unique index if not exists campaigns_moved_token_idx
+  on public.campaigns(moved_token) where moved_token is not null;
+
+create or replace function public.new_link_key()
+returns text language plpgsql volatile set search_path = public, extensions as $$
+declare
+  alphabet constant text := '23456789abcdefghjkmnpqrstuvwxyz';
+  v_out   text;
+  v_bytes bytea;
+  v_i     integer;
+  v_b     integer;
+begin
+  loop
+    v_out := '';
+    while length(v_out) < 8 loop
+      v_bytes := gen_random_bytes(16);
+      for v_i in 0..15 loop
+        v_b := get_byte(v_bytes, v_i);
+        /* 248 is 31 × 8: below it every character is equally likely. */
+        if v_b < 248 and length(v_out) < 8 then
+          v_out := v_out || substr(alphabet, 1 + (v_b % 31), 1);
+        end if;
+      end loop;
+    end loop;
+    exit when not exists (select 1 from public.clients c
+                           where c.access_token = v_out or c.moved_token = v_out)
+          and not exists (select 1 from public.campaigns k
+                           where k.access_token = v_out or k.moved_token = v_out);
+  end loop;
+  return v_out;
+end $$;
+revoke all on function public.new_link_key() from public, anon, authenticated;
+
+/* A key changed by anything but this move retires the moved key with it. */
+create or replace function public.link_key_changed() returns trigger
+language plpgsql set search_path = public as $$
+begin
+  if new.access_token is distinct from old.access_token
+     and new.moved_token is not distinct from old.moved_token then
+    new.moved_token := null;
+  end if;
+  return new;
+end $$;
+revoke all on function public.link_key_changed() from public, anon, authenticated;
+drop trigger if exists clients_link_moved on public.clients;
+create trigger clients_link_moved before update on public.clients
+  for each row execute function public.link_key_changed();
+drop trigger if exists campaigns_link_moved on public.campaigns;
+create trigger campaigns_link_moved before update on public.campaigns
+  for each row execute function public.link_key_changed();
+
+/* The move, once: a long key becomes the moved key. */
+do $$
+declare r record;
+begin
+  for r in select id from public.clients
+            where length(access_token) > 8 and moved_token is null loop
+    update public.clients
+       set moved_token = access_token, access_token = public.new_link_key()
+     where id = r.id;
+  end loop;
+  for r in select id from public.campaigns
+            where length(access_token) > 8 and moved_token is null loop
+    update public.campaigns
+       set moved_token = access_token, access_token = public.new_link_key()
+     where id = r.id;
+  end loop;
+end $$;
+
+create or replace function public.link_moved(p_kind text, p_token text)
+returns text language sql stable security definer set search_path = public as $$
+  select case p_kind
+    when 'review' then
+      (select c.access_token from public.clients c
+        where p_token is not null and c.moved_token = p_token and c.active limit 1)
+    when 'selection' then
+      (select k.access_token from public.campaigns k
+        where p_token is not null and k.moved_token = p_token limit 1)
+  end
+$$;
+revoke all on function public.link_moved(text, text) from public;
+grant execute on function public.link_moved(text, text) to anon, authenticated;
+
+-- END OF SHORT LINKS FOR CLIENTS --------------------------------------------

@@ -333,7 +333,9 @@
           area.className = 'textarea copyfield';
           area.setAttribute('data-f', f);
           area.setAttribute('aria-label', f === 'caption_zh' ? '中文文案' : 'Caption');
-          area.value = post[f] || '';
+          /* A request still standing reopens with the client's own edit. */
+          var mine = post.review && post.review.decision === 'changes' ? post.review['suggested_' + f] : null;
+          area.value = mine != null ? mine : (post[f] || '');
           t.hidden = true;
           t.parentNode.insertBefore(area, t.nextSibling);
         });
@@ -360,16 +362,18 @@
     }
 
     /* A revised post says what it answers: the client's own request on the
-       round before. The earlier file and copy stay with the team; the client
-       sees the revision alone (the user, 2026-09-30). */
+       round before, headed by who asked and when, the words under it on
+       their own (the user, 2026-10-01: "You asked:" ran into a note that was
+       itself a caption, and "Revision 2" is the team's word, not theirs).
+       The earlier file and copy stay with the team. */
     if (post.round > 1 && post.asked) {
       var rev = document.createElement('div');
       rev.className = 'reask is-revision';
-      var askedWhen = fmtDate(post.asked.created_at);
-      rev.innerHTML = '<b>Revision ' + post.round + '</b>' +
-        (post.asked.note ? '<span>You asked: ' + escapeHtml(post.asked.note) + '</span>' : '') +
-        (post.asked.suggested ? '<span>Your caption edit is applied.</span>' : '') +
-        '<small>' + (post.asked.reviewer ? escapeHtml(post.asked.reviewer) + ' · ' : '') + askedWhen + '</small>';
+      rev.innerHTML = '<b class="reask-head">Changes requested' +
+          (post.asked.reviewer ? ' by ' + escapeHtml(post.asked.reviewer) : '') +
+          ' · ' + fmtDate(post.asked.created_at) + '</b>' +
+        (post.asked.note ? '<span class="reask-note">' + escapeHtml(post.asked.note) + '</span>' : '') +
+        (post.asked.suggested ? '<small>Caption edit applied.</small>' : '');
       card.appendChild(rev);
     }
 
@@ -572,19 +576,56 @@
       needed: 'A name is required to record this decision.'
     }, say);
 
+    /* While a request is open, Approve and Request changes step away: the
+       request's own Cancel and Send request are the only acts on the card.
+       Left in place, Request changes read as the send and did nothing (the
+       user's iPhone recording, 2026-10-01). */
+    function openBox(on) {
+      box.classList.toggle('is-open', on);
+      wrap.classList.toggle('is-requesting', on);
+    }
+    /* Approving over a request still standing withdraws it, so it asks in
+       place first: the first press arms (Approve as it is, and the line
+       says what goes), the second approves (the user, 2026-10-01). */
+    function disarm() {
+      if (!approveBtn.classList.contains('is-armed')) return;
+      approveBtn.classList.remove('is-armed');
+      approveBtn.textContent = 'Approve';
+      say('');
+    }
     approveBtn.addEventListener('click', function () {
-      box.classList.remove('is-open');
-      asker.need(function (name) { send(post, 'approved', null, wrap, badge, name); });
+      openBox(false);
+      var standing = post.review && post.review.decision === 'changes';
+      if (standing && !approveBtn.classList.contains('is-armed')) {
+        approveBtn.classList.add('is-armed');
+        approveBtn.textContent = 'Approve as it is';
+        say('Approving withdraws your request for changes.');
+        return;
+      }
+      asker.need(function (name) {
+        approveBtn.classList.remove('is-armed');
+        send(post, 'approved', null, wrap, badge, name);
+      });
     });
     /* Opens the request; from the pen the caption field keeps the caret. */
     wrap._openChanges = function (fromPen) {
       asker.close();
-      box.classList.add('is-open');
+      disarm();
+      /* Edit request: a request not yet answered reopens as it was sent,
+         the note in its box and the caption edit in its fields (the user,
+         2026-10-01). Sending it again replaces it. */
+      var standing = post.review && post.review.decision === 'changes' ? post.review : null;
+      if (standing && !box.classList.contains('is-open')) {
+        textarea.value = standing.note || '';
+        if (!fromPen && copyBlock && (standing.suggested_caption != null || standing.suggested_caption_zh != null)) copyBlock._start();
+      }
+      openBox(true);
       if (!fromPen) textarea.focus();
     };
     wrap.querySelector('.btn-changes').addEventListener('click', function () { wrap._openChanges(false); });
     box.querySelector('[data-act="cancel"]').addEventListener('click', function () {
-      box.classList.remove('is-open');
+      openBox(false);
+      say('');
       if (copyBlock) copyBlock._stop();
     });
     box.querySelector('[data-act="send"]').addEventListener('click', function () {
@@ -603,9 +644,12 @@
         if (!name) { say('A name is required to record this decision.'); who.focus(); return; }
         window.ADspaceDecide.keep(name);
       }
-      box.classList.remove('is-open');
-      if (copyBlock) copyBlock._stop();
-      send(post, 'changes', note, wrap, badge, name, { caption: cap, caption_zh: capZh });
+      /* The request and the caption edit stay open until the answer is in,
+         so a failed send loses nothing typed. */
+      send(post, 'changes', note, wrap, badge, name, { caption: cap, caption_zh: capZh }, function () {
+        openBox(false);
+        if (copyBlock) copyBlock._stop();
+      });
     });
     return wrap;
   }
@@ -613,7 +657,7 @@
   /* An approval with nobody's name on it is worth nothing, so the name is a
      hard stop — but it is settled before this runs, on the page rather than
      in a browser dialog, and arrives here as an argument. */
-  function send(post, decision, note, wrap, badge, reviewer, copy) {
+  function send(post, decision, note, wrap, badge, reviewer, copy, done) {
     var buttons = wrap.querySelectorAll('.btn');
     Array.prototype.forEach.call(buttons, function (b) { b.disabled = true; });
 
@@ -634,8 +678,11 @@
         decision: decision, note: note, reviewer: reviewer,
         created_at: new Date().toISOString(),
         suggested: !!(copy && (copy.caption !== null && copy.caption !== undefined ||
-                               copy.caption_zh !== null && copy.caption_zh !== undefined))
+                               copy.caption_zh !== null && copy.caption_zh !== undefined)),
+        suggested_caption: copy && copy.caption != null ? copy.caption : null,
+        suggested_caption_zh: copy && copy.caption_zh != null ? copy.caption_zh : null
       };
+      if (done) done();
       paintDecision(post.review, badge, wrap);
     }).catch(function () {
       Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
@@ -667,6 +714,8 @@
     approveBtn.hidden = false;
     approveBtn.disabled = false;
     approveBtn.textContent = 'Approve';
+    approveBtn.classList.remove('is-armed');
+    changesBtn.textContent = review && review.decision === 'changes' ? 'Edit request' : 'Request changes';
     var old = wrap.querySelector('.approve-note');
     if (old) old.remove();
 
@@ -686,7 +735,12 @@
       changesBtn.hidden = true;
       approveBtn.textContent = 'Approved';
       approveBtn.disabled = true;
-      state.innerHTML = 'Approved' + who + ' on ' + when + '.';
+      /* Confirmed for the client by the team, on the client's word: their
+         page names the client, the console names the colleague (the user,
+         2026-10-01: "Confirm by {clientname} on {date}"). */
+      state.innerHTML = review.by_team
+        ? 'Confirmed by <b>' + escapeHtml((feed && feed.client && feed.client.name) || 'you') + '</b> on ' + when + '.'
+        : 'Approved' + who + ' on ' + when + '.';
       autoFold(wrap);
     } else {
       badgeWord.textContent = 'Changes requested';
@@ -926,7 +980,16 @@
     }
     API.getReviewFeed(token, passcode).then(function (data) {
       if (!data || data.error === 'not_found') {
-        showState(W.notFound, W.notFoundText);
+        /* A long link from before the short keys still opens: its new key
+           replaces it in the address and the page loads on that. A key
+           retired by Reset access link answers nothing. */
+        API.movedKey('review', token).then(function (next) {
+          if (!next || next === token) { showState(W.notFound, W.notFoundText); return; }
+          token = next;
+          var q = new URLSearchParams(location.search); q.set('k', next);
+          history.replaceState(null, '', location.pathname + '?' + q.toString() + location.hash);
+          load();
+        });
         return;
       }
       if (data.error === 'passcode_required') {
