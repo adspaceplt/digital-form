@@ -79,8 +79,23 @@
       const video = document.createElement('video');
       ADspaceMedia.attach(video, item.url);
       if (item.poster) video.poster = item.poster;
-      video.controls = true;
       video.playsInline = true;
+      /* One play button over a black frame, the same in every browser: the
+         browser's own bar arrives only once the video is playing, for pausing,
+         the sound and the timeline. A press plays it where it is; it never
+         opens the Review Canvas (moving a video that has just started stops
+         it, which left Edge spinning and Safari opening the canvas). */
+      const play = el('button', 'mk-play',
+        '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>');
+      play.type = 'button';
+      play.setAttribute('aria-label', 'Play video');
+      play.addEventListener('click', function () {
+        video.controls = true;
+        const going = video.play();
+        if (going && going.catch) going.catch(function () { play.hidden = false; });
+      });
+      video.addEventListener('play', function () { play.hidden = true; video.controls = true; });
+      video.addEventListener('ended', function () { play.hidden = false; });
       /* A set can hold a dozen videos. Asking every one of them for metadata on
          load means a dozen requests before the client sees anything, and for a
          file whose moov atom sits at the end that means downloading it whole.
@@ -93,6 +108,7 @@
         report(video.videoWidth, video.videoHeight);
       });
       wrap.appendChild(video);
+      wrap.appendChild(play);
     } else {
       const img = document.createElement('img');
       img.src = item.url;
@@ -613,9 +629,10 @@
   function coverImage(post, cfg) {
     // A cover is what people see inside the Reels player and the profile grid,
     // so it gets the same overlays. Without them there is no safe zone to judge.
+    // The card's own head already names it Cover image, so nothing under the
+    // frame says it again.
     const wrap = el('div', 'mk mk-coverwrap');
     wrap.appendChild(vertical(post, cfg, 'reel'));
-    wrap.appendChild(el('div', 'mk-cover-tag', 'Cover image'));
     return wrap;
   }
 

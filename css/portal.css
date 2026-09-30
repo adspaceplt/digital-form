@@ -793,6 +793,21 @@ a { color: inherit; }
 /* Belt and braces: some browsers do not match the pseudo-class on the element
    itself, so the script below sets this class as well. */
 .mk-media video.is-fullscreen { object-fit: contain; background: #000; }
+/* A video waits on black under one play button, the same in every browser;
+   the browser's own bar arrives once it plays (js/mockups.js). */
+.mk-media video { background: #000; }
+.mk-play {
+  position: absolute; left: 50%; top: 50%; z-index: 5; transform: translate(-50%, -50%);
+  width: 64px; height: 64px; border: 1.5px solid rgba(255, 255, 255, .5); border-radius: 50%; padding: 0;
+  display: grid; place-items: center; cursor: pointer;
+  background: rgba(0, 0, 0, .55); color: #fff;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  transition: background var(--t-fast), transform var(--t-fast);
+}
+.mk-play svg { width: 28px; height: 28px; margin-left: 3px; fill: currentColor; }
+@media (hover: hover) { .mk-play:hover { background: rgba(0, 0, 0, .72); } }
+.mk-play:active { transform: translate(-50%, -50%) scale(.97); }
+.mk-play:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 3px; }
 
 /* Safe zones. Off unless the page asks for them, so the default view is what
    the audience sees rather than a diagram. The box carries the scrim in its
@@ -1655,13 +1670,12 @@ a { color: inherit; }
 .saved.is-editing .saved-body { gap: 10px; }
 .saved.is-editing .textarea { min-height: 64px; font-size: 13px; }
 
-/* Cover image is an asset, not a post, so it gets a neutral frame */
+/* Cover image is an asset, not a post, so it gets a neutral frame. It has no
+   copy, so its card ends under its decision rather than stretching to the
+   height of a neighbour with copy and leaving a blank. */
 .mk-coverwrap { width: 100%; max-width: 380px; }
 .mk-coverwrap .mk-phone { max-width: 100%; }
-.mk-cover-tag {
-  padding: 8px 12px; font-size: 11.5px; font-weight: 600; letter-spacing: .04em;
-  text-transform: uppercase; color: var(--ink-mute); border-top: 1px solid var(--line-soft);
-}
+.shell-review .card.is-cover { align-self: start; }
 
 @media (max-width: 640px) {
   .batch-progress { margin-left: 0; }
