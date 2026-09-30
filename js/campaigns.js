@@ -1848,7 +1848,7 @@
                frames rather than five downloads. */
             if (f.kind === 'video') {
               return '<div class="filecard filecard-video" data-file="' + esc(f.id) + '">' +
-                '<video controls playsinline preload="metadata" src="' + esc(f.url) + '"></video>' +
+                ADspaceMedia.tag(f.url, 'controls playsinline preload="metadata"') +
                 '<span class="filecard-name">' + esc(f.name) + '</span>' +
                 '<button class="filecard-x" type="button" data-a="removefile" aria-label="Remove submitted file">×</button></div>';
             }

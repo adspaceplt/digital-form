@@ -100,11 +100,16 @@ export function plan({ objects, inUse, now, prefix, minAgeDays = MIN_AGE_DAYS })
   const root = prefix.replace(/\/+$/, '') + '/';
   const cutoff = now.getTime() - minAgeDays * 86400000;
   const out = { outside: [], young: [], kept: [], orphans: [] };
+  /* A video's playable copy (name.web.mp4, workers/video-convert/) is in use
+     while its original is: no row names the copy itself. */
+  const bases = new Set();
+  inUse.forEach((k) => bases.add(String(k).replace(/\.[^./]+$/, '')));
+  const used = (k) => inUse.has(k) || (/\.web\.mp4$/i.test(k) && bases.has(k.replace(/\.web\.mp4$/i, '')));
   for (const o of objects) {
     if (!o.key || !o.key.startsWith(root) || o.key.endsWith('/') || o.key === root) { out.outside.push(o); continue; }
     const t = Date.parse(o.lastModified);
     if (!Number.isFinite(t) || t > cutoff) { out.young.push(o); continue; }
-    (inUse.has(o.key) ? out.kept : out.orphans).push(o);
+    (used(o.key) ? out.kept : out.orphans).push(o);
   }
   return out;
 }

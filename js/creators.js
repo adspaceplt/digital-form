@@ -646,7 +646,7 @@
     var files = o.files || [];
     var media = files.map(function (f) {
       if (f.kind === 'video') {
-        return '<video controls playsinline preload="metadata" src="' + esc(f.url) + '"></video>';
+        return ADspaceMedia.tag(f.url, 'controls playsinline preload="metadata"');
       }
       if (f.kind === 'image') return '<img src="' + esc(f.url) + '" alt="" loading="lazy">';
       return '<a class="btn btn-sm" href="' + esc(f.url) + '" target="_blank" rel="noopener">' +

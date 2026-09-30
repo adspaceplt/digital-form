@@ -124,6 +124,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `money.js` | crm, letter, sgd |
 | `workers/links/` | links |
 | `supabase/functions/s3-sweep/`, the S3 SWEEP section | s3sweep, s3sql |
+| `js/media.js`, `workers/video-convert/` | vconvert, canvas, cprod, camp |
 | the Short Links route | qr, run |
 
 **What the two walks measure:**
@@ -357,6 +358,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   columns, a line, and a ring only for two to five parts of a whole (else
   bars). The figures fold under every chart as a table; a column, a point
   and a slice give their figure on hover or a tap. No chart library.
+- `js/media.js` (`ADspaceMedia.tag(url, attrs)`, `attach(video, url)`) is
+  every video player: it names the H.264 copy `name.web.mp4` first (typed
+  MP4) and the original after, so a browser plays the copy once it exists
+  and the original until then. Never `<video src>` for an uploaded file.
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
   an off-screen textarea.
 - `js/state.js` owns loading, empty and failed (`skeleton`, `emptyLine`,
@@ -1759,7 +1764,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   03:17 MYT, `s3-sweep-daily`): with a list-only key it lists `content/`,
   asks `s3_keys_in_use()` (service role only) which files a row still names,
   judges only objects over 7 days old, and files the counts in `s3_sweeps`.
-  Its code has no delete request, and `tests/s3sweep.js` holds that.
+  Its code has no delete request, and `tests/s3sweep.js` holds that. A
+  video's `.web.mp4` copy counts as in use while its original is.
+- Video conversion (`workers/video-convert/`, AWS Lambda `adspace-video-convert`
+  on the bucket's ObjectCreated under `content/`, the user's own setup from
+  its README): every video that is not already H.264 in an MP4 indexed first
+  gets an AWS Elemental MediaConvert job writing `name.web.mp4` beside it
+  (H.264, AAC, upright, Rec. 709). It reads and asks; it never deletes,
+  copies or overwrites, and `{ "all": true }` converts what came before.
 
 ## 3. Workflow and constraints
 

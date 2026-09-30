@@ -77,7 +77,7 @@
 
     if (item.type === 'video') {
       const video = document.createElement('video');
-      video.src = item.url;
+      ADspaceMedia.attach(video, item.url);
       if (item.poster) video.poster = item.poster;
       video.controls = true;
       video.playsInline = true;
