@@ -114,12 +114,19 @@
   function stageOf(review) {
     return !review ? 'pending' : review.decision === 'approved' ? 'approved' : 'changes';
   }
+  function stageWord(s) {
+    /* On a phone the longest stage takes its short word, so all four fit the
+       column's width without scrolling (the user, 2026-09-30). */
+    return s[0] === 'changes'
+      ? '<span class="tab-long">' + s[1] + '</span><span class="tab-short">Changes</span>'
+      : s[1];
+  }
   function paintStages(counts) {
     var strip = $('stageStrip');
     strip.innerHTML = STAGES.map(function (s) {
       return '<button class="tab' + (s[0] === stage ? ' is-on' : '') + '" type="button" role="tab" data-stage="' + s[0] + '"' +
         ' aria-selected="' + (s[0] === stage) + '" tabindex="' + (s[0] === stage ? 0 : -1) + '">' +
-        s[1] + ' <span class="tab-n">' + counts[s[0]] + '</span></button>';
+        stageWord(s) + ' <span class="tab-n">' + counts[s[0]] + '</span></button>';
     }).join('');
   }
   function pickStage(to) {
@@ -282,7 +289,13 @@
       copy.innerHTML =
         '<div class="copyhead">' +
           '<h5>Copywriting</h5>' +
-          '<button class="copy-btn" type="button">Copy text</button>' +
+          /* The portal's small tonal button with the copy mark: it was
+             the one outlined button left, and read "a little huge" at a
+             full control's height (the user, 2026-09-30). */
+          '<button class="btn btn-sm copy-btn" type="button">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+            '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V5"/></svg>' +
+            '<span>Copy text</span></button>' +
         '</div>' +
         html +
         '<button class="copy-more" type="button" hidden>Show full copy</button>';

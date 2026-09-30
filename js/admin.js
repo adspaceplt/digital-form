@@ -3185,6 +3185,13 @@
      any, else All; the choice is kept per set while the page is open. */
   var POST_STAGES = [['pending', 'Pending'], ['changes', 'Changes requested'], ['approved', 'Approved'], ['all', 'All']];
   var postStageBy = {};
+  function stageWord(s) {
+    /* On a phone the longest stage takes its short word, so all four fit the
+       column's width without scrolling (the user, 2026-09-30). */
+    return s[0] === 'changes'
+      ? '<span class="tab-long">' + s[1] + '</span><span class="tab-short">Changes</span>'
+      : s[1];
+  }
   function postStageOf(review) {
     return !review ? 'pending' : review.decision === 'approved' ? 'approved' : 'changes';
   }
@@ -3205,7 +3212,7 @@
     strip.innerHTML = POST_STAGES.map(function (s) {
       var on = s[0] === pick;
       return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" data-stage="' + s[0] + '"' +
-        ' aria-selected="' + on + '" tabindex="' + (on ? 0 : -1) + '">' + s[1] +
+        ' aria-selected="' + on + '" tabindex="' + (on ? 0 : -1) + '">' + stageWord(s) +
         ' <span class="tab-n">' + counts[s[0]] + '</span></button>';
     }).join('');
     box.innerHTML = '';

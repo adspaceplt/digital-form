@@ -135,7 +135,8 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
     off its column (`cols`); a cell drifting between rows (`column`); a phone
     row's last column short of the edge (`edge`); uneven gaps in a section
     (`stack`);
-  - a card-sized box drawing a visible outline (`outline`);
+  - a card-sized box drawing a visible outline (`outline`); a button drawn
+    outlined rather than tonal, the contact chip `.plink` aside (`btnline`);
   - text under 11px (`type`); a wrapped or clipped value; a control under its
     floor (`target`); a field under the phone scale (`zoom`);
   - mismatched heights or widths in one row; a nameless field or icon button;
@@ -895,6 +896,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`#stageStrip`) opens on Pending and is counted at load: a decision
   repaints its card but moves it only on the next load. The console's
   (`#postStages`, drawn once a decision exists) opens on Changes requested.
+  On a phone the strip is the column's width, its tabs sharing it and
+  Changes requested reading Changes (`.tab-short`).
 - Request changes takes a note or an edit to the copy (Edit copy), sent
   only where changed and kept as `reviews.suggested_caption[_zh]`; the
   console shows it as Suggested copy with Accept copy (the next round). The
