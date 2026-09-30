@@ -226,19 +226,22 @@
               sets = sets || [];
               if (!sets.length) return { count: 0, rows: [] };
               var ids = sets.map(function (s) { return s.id; });
-              return db.from('posts').select('id, batch_id, review_reset_at').in('batch_id', ids).then(rows).then(function (posts) {
+              return db.from('posts').select('*').in('batch_id', ids).then(rows).then(function (posts) {
                 posts = posts || [];
                 var pids = posts.map(function (p) { return p.id; });
                 var reviews = pids.length
-                  ? db.from('reviews').select('post_id, decision, created_at').in('post_id', pids)
+                  ? db.from('reviews').select('*').in('post_id', pids)
                       .order('created_at', { ascending: false }).then(rows)
                   : Promise.resolve([]);
                 return reviews.then(function (revs) {
                   var latest = {};
-                  var reset = {};
-                  posts.forEach(function (p) { reset[p.id] = p.review_reset_at; });
+                  var reset = {}, round = {};
+                  posts.forEach(function (p) { reset[p.id] = p.review_reset_at; round[p.id] = p.round || 1; });
                   (revs || []).forEach(function (r) {
                     if (latest[r.post_id]) return;
+                    /* Only a decision on the round on show counts: a revised
+                       post waits on the client again (2026-09-30). */
+                    if ((r.round || 1) !== round[r.post_id]) return;
                     if (reset[r.post_id] && new Date(r.created_at) < new Date(reset[r.post_id])) return;
                     latest[r.post_id] = r;
                   });

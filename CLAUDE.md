@@ -111,7 +111,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas |
 | `creator.js` | creator, cprofile, results, push |
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
-| `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel |
+| `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise |
 | `portal.js` | portal |
 | `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter |
 | `team.js` | team, perms, levels |
@@ -882,6 +882,23 @@ Each line is a rule that broke once. Its reason is in the archive.
   a playing video on in its card.
 - The cover image card names itself once, in its head, and ends under its
   decision (`.is-cover`).
+- A post is revised in place (`2026-09-30-post-revisions.sql`): a change to
+  its file, copy or title after the client decided on its round is the next
+  round (trigger `posts_revision`; `reviews.round` stamped by
+  `reviews_round`), and the round it replaces is kept whole in
+  `post_versions` for the team. Before any decision an edit is a
+  correction. `get_review_feed` sends the round on show, the decision on it
+  only, and `asked` (the request on the round before); never an earlier
+  round's file or copy. The client's card reads Revision N and You asked.
+- Both sides list posts under the stage strip (`.tabrow`: Pending,
+  Changes requested, Approved, All, each with its count). The client's
+  (`#stageStrip`) opens on Pending and is counted at load: a decision
+  repaints its card but moves it only on the next load. The console's
+  (`#postStages`, drawn once a decision exists) opens on Changes requested.
+- Request changes takes a note or an edit to the copy (Edit copy), sent
+  only where changed and kept as `reviews.suggested_caption[_zh]`; the
+  console shows it as Suggested copy with Accept copy (the next round). The
+  console's Edit replaces the file, uploaded at Save.
 - Approve needs a name. Approved reads outlined, with Request changes hidden.
   - The Copywriting label, and the copy control at the top.
   - No Save as PDF.

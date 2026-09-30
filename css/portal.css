@@ -9100,3 +9100,48 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .zone-draft.is-busy .draft { opacity: .72; pointer-events: none; }
 .teamheld { display: grid; gap: 8px; }
 .teamheld .row.acts { margin: 0; }
+
+/* ---- Content Review: stages and revisions (2026-09-30) --------------------
+   The posts by where they stood when the page loaded, as the view strip with
+   each stage's count inside its tab; the strip has a row of its own, the
+   selects under it. A revised post names the round and what the client asked
+   of the round before, in the neutral inset (it is news, not a caution). The
+   copy is edited inside Request changes. */
+.stagestrip { margin-top: 16px; }
+.stagestrip + .filterbar { padding-top: 12px; }
+.tab-n { margin-left: 4px; font-weight: 500; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
+.tab.is-on .tab-n { color: var(--ink-soft); }
+.stage-empty {
+  margin: 4px 0 24px; padding: 18px 20px; border-radius: var(--radius);
+  background: var(--card); color: var(--ink-mute); font-size: 14px;
+}
+.reask.is-revision { background: var(--sunk); border-color: var(--line-soft); }
+.reask.is-revision b { color: var(--ink); }
+.reask small { font-size: 12px; color: var(--ink-mute); }
+.copyedit-open { margin-top: 9px; }
+.copyedit-open svg { width: 15px; height: 15px; margin-right: 6px; }
+.copyedit { display: grid; gap: 9px; margin-top: 9px; }
+.copyedit-f { display: grid; gap: 5px; }
+.copyedit-f > span { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.changebox .copyedit .textarea { min-height: 140px; }
+
+/* The console's set page: the posts by stage, a round, what a round answers,
+   the client's suggested copy with Accept, and the rounds kept. */
+.poststages { margin: 0 0 12px; }
+.saved-round { font-weight: 600; color: var(--ink-soft); white-space: nowrap; }
+.saved-asked { margin-top: 4px; font-size: 12.5px; color: var(--ink-soft); overflow-wrap: anywhere; }
+.saved-suggest {
+  display: grid; gap: 6px; justify-items: start; margin-top: 6px; width: 100%;
+  padding: 10px 12px; border-radius: var(--radius-sm); background: var(--sunk);
+}
+.saved-suggest-h { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.saved-suggest-t { margin: 0; font-size: 13px; color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+.saved-kept { margin-top: 6px; width: 100%; font-size: 12.5px; }
+.saved-kept > summary { cursor: pointer; color: var(--ink-soft); font-weight: 500; min-height: 32px; display: flex; align-items: center; }
+.saved-kept-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line-soft); }
+.saved-kept-n { font-weight: 600; color: var(--ink-soft); white-space: nowrap; }
+.saved-kept-t { color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.is-narrow .saved-kept-row { grid-template-columns: auto minmax(0, 1fr); }
+.is-narrow .saved-kept-row .plink { grid-column: 1 / -1; justify-self: start; }
+.saved-file { display: grid; gap: 5px; width: 100%; margin-top: 4px; }
+.saved-file > span { font-size: 12px; font-weight: 600; color: var(--ink-mute); }
