@@ -2224,7 +2224,7 @@
       var chip = el2('div', 'slide-chip');
       chip.innerHTML =
         (m.type === 'video'
-          ? '<video src="' + m.url + '" muted></video>'
+          ? ADspaceMedia.tag(m.url, 'muted')
           : '<img src="' + m.url + '" alt="">') +
         '<i>' + (i + 1) + '</i>' +
         '<span class="slide-move">' +
@@ -2903,7 +2903,7 @@
         '<div class="draft-media">' +
           d.media.map(function (m) {
             return m.type === 'video'
-              ? '<video src="' + m.url + '" muted></video>'
+              ? ADspaceMedia.tag(m.url, 'muted')
               : '<img src="' + m.url + '" alt="">';
           }).join('') +
           (d.media.length > 1 ? '<i>' + d.media.length + ' slides</i>' : '') +
@@ -3219,7 +3219,7 @@
       row.innerHTML =
         '<div class="saved-thumb">' +
           (m.type === 'video'
-            ? '<video src="' + m.url + '" muted></video>'
+            ? ADspaceMedia.tag(m.url, 'muted')
             : '<img src="' + (m.url || '') + '" alt="">') + '</div>' +
         /* The placement with the client's decision at the right of its line,
            then the file, then the copy: one row, and its acts in one ⋯
@@ -3323,7 +3323,7 @@
       row.innerHTML =
         '<div class="saved-thumb">' +
           (m.type === 'video'
-            ? '<video src="' + m.url + '" muted></video>'
+            ? ADspaceMedia.tag(m.url, 'muted')
             : '<img src="' + (m.url || '') + '" alt="">') + '</div>' +
         '<div class="saved-body">' +
           '<div class="draft-top">' +
