@@ -1376,7 +1376,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     as open. A task moves into production on the ticks and the meeting, never
     on the stored word.
   - The meeting is `meeting_minutes` (15–240) plus a link (Meet, Zoom or Teams
-    only).
+    only). It is booked no earlier than the next half hour (`nextSlot()`: at
+    3:00pm or 3:10pm the first slot is 3:30pm); the date and time fields
+    start there and an earlier time is refused on the sheet. A meeting
+    already held keeps its time when its sheet is opened.
   - The card (`engCard`) never repeats its heading: the month is named by the
     card above it, whose state chip (`.eng-mark`) shows only while shut. The
     meeting, link and message are `.eng-row`s (label, value, controls at the
@@ -1777,10 +1780,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   deploy has succeeded (the page must stop asking before the database stops
   answering), and verified on the live database afterwards. The report
   names what was applied.
-- The report lists what the user runs by hand:
-  - an edge function to deploy (`sign-upload`, `invite-member`, `portal-login`,
-    `meet-create`, `push-send`, `s3-sweep`; Verify JWT off);
-  - a dashboard setting.
+- An edge function (`sign-upload`, `invite-member`, `portal-login`,
+  `meet-create`, `push-send`, `s3-sweep`) is deployed by Claude through the
+  Supabase connector from the repo copy, keeping its Verify JWT setting, and
+  the live source is read back (the user, 2026-09-30).
+- The report lists what the user does by hand: a dashboard setting.
 - Never ask for a URL, key or asset the repo or config already holds. Check
   `js/config.js` and `css/` first.
 
