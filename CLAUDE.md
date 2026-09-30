@@ -890,7 +890,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `post_versions` for the team. Before any decision an edit is a
   correction. `get_review_feed` sends the round on show, the decision on it
   only, and `asked` (the request on the round before); never an earlier
-  round's file or copy. The client's card reads Revision N and You asked.
+  round's file or copy. The client's card heads the request it answers
+  `Changes requested by {name} · {date}` (`.reask-head`), the note on its
+  own line under it; never "Revision N" or "You asked" (the team's words).
 - Both sides list posts under the stage strip (`.tabrow`: Pending,
   Changes requested, Approved, All, each with its count). The client's
   (`#stageStrip`) opens on Pending and is counted at load: a decision

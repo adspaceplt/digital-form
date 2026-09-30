@@ -360,16 +360,18 @@
     }
 
     /* A revised post says what it answers: the client's own request on the
-       round before. The earlier file and copy stay with the team; the client
-       sees the revision alone (the user, 2026-09-30). */
+       round before, headed by who asked and when, the words under it on
+       their own (the user, 2026-10-01: "You asked:" ran into a note that was
+       itself a caption, and "Revision 2" is the team's word, not theirs).
+       The earlier file and copy stay with the team. */
     if (post.round > 1 && post.asked) {
       var rev = document.createElement('div');
       rev.className = 'reask is-revision';
-      var askedWhen = fmtDate(post.asked.created_at);
-      rev.innerHTML = '<b>Revision ' + post.round + '</b>' +
-        (post.asked.note ? '<span>You asked: ' + escapeHtml(post.asked.note) + '</span>' : '') +
-        (post.asked.suggested ? '<span>Your caption edit is applied.</span>' : '') +
-        '<small>' + (post.asked.reviewer ? escapeHtml(post.asked.reviewer) + ' · ' : '') + askedWhen + '</small>';
+      rev.innerHTML = '<b class="reask-head">Changes requested' +
+          (post.asked.reviewer ? ' by ' + escapeHtml(post.asked.reviewer) : '') +
+          ' · ' + fmtDate(post.asked.created_at) + '</b>' +
+        (post.asked.note ? '<span class="reask-note">' + escapeHtml(post.asked.note) + '</span>' : '') +
+        (post.asked.suggested ? '<small>Caption edit applied.</small>' : '');
       card.appendChild(rev);
     }
 
