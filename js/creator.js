@@ -818,6 +818,8 @@
       '<label class="field-label" for="pick-' + esc(b.id) + '">' + esc(t().addFiles) + '</label>' +
       '<input class="input" type="file" id="pick-' + esc(b.id) + '" multiple ' +
         'accept="image/*,video/*,.pdf" data-a="pick">' +
+      '<div class="filegrid" data-held' + ((held[b.id] || []).length ? '' : ' hidden') + '>' +
+        heldHtml(b.id) + '</div>' +
       /* The same progress the console draws on Content Review: what is going
          up on the left, how far on the right, one bar under both. A thin bar
          with "Uploading 1/1" beside it said neither how far it had got nor
@@ -833,6 +835,37 @@
         esc(b.state === 'submitted' ? t().update : t().submit) + '</button></div>' +
       '<div class="msg" data-msg></div></div>';
   }
+
+  /* Files picked but not yet handed in stay on this device, one list a
+     booking: shown from the device, taken off with × at no cost, and sent to
+     storage only when Submit is pressed. A file removed before then never
+     reaches S3. They live in memory, so a reload lets them go, and leaving
+     the page with one waiting is warned about. */
+  var held = {};
+
+  function heldHtml(id) {
+    return (held[id] || []).map(function (h, i) {
+      var f = h.file;
+      return '<div class="filecard is-held" data-held-i="' + i + '">' +
+        (kindOf(f) === 'image'
+          ? '<img src="' + esc(h.url) + '" alt="" onerror="this.remove()">'
+          : '') +
+        '<span class="filecard-kind">' + esc(String(f.name.split('.').pop() || '').toUpperCase()) + '</span>' +
+        '<span class="filecard-name">' + esc(f.name) + '</span>' +
+        '<button class="filecard-x" type="button" data-a="unhold" aria-label="' +
+          esc(t().remove + ' ' + f.name) + '">×</button>' +
+        '</div>';
+    }).join('');
+  }
+
+  function letGo(h) { try { URL.revokeObjectURL(h.url); } catch (e) {} }
+
+  window.addEventListener('beforeunload', function (e) {
+    var waiting = Object.keys(held).some(function (k) { return held[k].length; });
+    if (!waiting) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
 
   // ---- Upload ---------------------------------------------------------------
 
@@ -995,6 +1028,20 @@
       });
     }
 
+    var grid = card.querySelector('[data-held]');
+    function paintHeld() {
+      grid.innerHTML = heldHtml(b.id);
+      grid.hidden = !(held[b.id] || []).length;
+    }
+    grid.addEventListener('click', function (e) {
+      var x = e.target.closest && e.target.closest('[data-a="unhold"]');
+      if (!x || busy) return;
+      var i = Number(x.closest('[data-held-i]').getAttribute('data-held-i'));
+      var list = held[b.id] || [];
+      if (list[i]) { letGo(list[i]); list.splice(i, 1); }
+      paintHeld();
+    });
+
     pick.addEventListener('change', function () {
       var picked = Array.prototype.slice.call(this.files || []);
       this.value = '';
@@ -1005,67 +1052,75 @@
       var big = picked.filter(function (f) { return f.size > cap; });
       var queue = picked.filter(function (f) { return f.size <= cap; });
       var mb = Math.round(cap / 1048576);
-      var tooBig = big.length === 1
-        ? fill(t().sizeOne, { file: big[0].name, mb: mb })
-        : fill(t().sizeMany, { n: big.length, mb: mb });
-
-      if (!queue.length) { say(tooBig, 'err'); return; }
-
-      lock(true);
-      var total = queue.length, ok = 0, failed = [];
-
-      function run(i) {
-        if (i >= total) return Promise.resolve();
-        return sendOne(queue[i], i + 1, total).then(function () { ok++; }, function (e) {
-          // One bad file does not abandon the rest of the batch.
-          failed.push(queue[i].name);
-          if (window.console) console.warn('[creator upload] ' + queue[i].name, e);
-        }).then(function () { return run(i + 1); });
+      if (big.length) {
+        say(big.length === 1
+          ? fill(t().sizeOne, { file: big[0].name, mb: mb })
+          : fill(t().sizeMany, { n: big.length, mb: mb }), 'err');
       }
-
-      run(0).then(function () {
-        up.hidden = true;
-        lock(false);
-
-        var cls = 'err', text;
-        if (failed.length) {
-          text = (big.length ? tooBig + ' ' : '') + (failed.length === 1
-            ? fill(t().failOne, { file: failed[0] })
-            : fill(t().failMany, { n: failed.length }));
-        } else if (big.length) {
-          text = tooBig;
-        } else {
-          text = t().uploaded; cls = 'ok';
-        }
-
-        /* Repainted from the database, so the page shows what we actually
-           hold rather than what the browser believes it sent. The repaint
-           replaces this card, so the answer is written onto the new one: said
-           before it, the one line explaining what happened was thrown away by
-           the redraw that followed. */
-        return db.rpc('get_creator', { p_code: code }).then(function (r) {
-          if (r.data && !r.data.error) { feed = r.data; paint(); sayOn(b.id, text, cls); }
-          else say(failed.length || big.length ? text : t().failText, 'err');
-        }, function () {
-          say(failed.length || big.length ? text : t().failText, 'err');
-        });
-      });
+      if (!queue.length) return;
+      held[b.id] = (held[b.id] || []).concat(queue.map(function (f) {
+        return { file: f, url: URL.createObjectURL(f) };
+      }));
+      paintHeld();
     });
 
+    /* Submit sends what is held, one file at a time with the bar, and hands
+       in only once every one is in. A file that fails stays held, named, and
+       nothing is handed in; the ones that went up are kept, so pressing
+       Submit again sends only what is left. */
     send.addEventListener('click', function () {
       var btn = this;
       if (busy) return;
       var cap = card.querySelector('[data-cap]').value;
-      btn.disabled = true;
+      var list = held[b.id] || [];
       var was = btn.textContent;
+      lock(true);
       btn.textContent = t().submitting;
-      db.rpc('creator_submit', { p_code: code, p_option: b.id, p_caption: cap }).then(function (r) {
-        btn.disabled = false; btn.textContent = was;
-        var d = r.data || {};
-        if (d.error === 'empty') { say(t().needFiles, 'err'); return; }
-        if (r.error || d.error) { say(t().failText, 'err'); return; }
-        load(code);
-      }, function () { btn.disabled = false; btn.textContent = was; say(t().failText, 'err'); });
+      say('');
+      var failed = [];
+
+      function run(i) {
+        if (i >= list.length) return Promise.resolve();
+        var h = list[i];
+        return sendOne(h.file, i + 1, list.length).then(function () {
+          h.sent = true;
+        }, function (e) {
+          failed.push(h.file.name);
+          if (window.console) console.warn('[creator upload] ' + h.file.name, e);
+        }).then(function () { return run(i + 1); });
+      }
+
+      function finish(text, cls) {
+        up.hidden = true;
+        lock(false);
+        btn.textContent = was;
+        if (text) say(text, cls);
+      }
+
+      run(0).then(function () {
+        list.filter(function (h) { return h.sent; }).forEach(letGo);
+        held[b.id] = list.filter(function (h) { return !h.sent; });
+        paintHeld();
+        if (failed.length) {
+          var text = failed.length === 1
+            ? fill(t().failOne, { file: failed[0] })
+            : fill(t().failMany, { n: failed.length });
+          /* Repainted from the database so the files that did go up show as
+             handed in, and the answer written onto the card that replaced
+             this one. */
+          return db.rpc('get_creator', { p_code: code }).then(function (r) {
+            if (r.data && !r.data.error) { feed = r.data; paint(); sayOn(b.id, text, 'err'); }
+            else finish(text, 'err');
+          }, function () { finish(text, 'err'); });
+        }
+        return db.rpc('creator_submit', { p_code: code, p_option: b.id, p_caption: cap }).then(function (r) {
+          var d = r.data || {};
+          if (d.error === 'empty') { finish(t().needFiles, 'err'); return; }
+          if (r.error || d.error) { finish(t().failText, 'err'); return; }
+          finish();
+          load(code);
+        }, function () { finish(t().failText, 'err'); });
+      });
     });
   }
 

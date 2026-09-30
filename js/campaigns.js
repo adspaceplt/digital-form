@@ -3202,6 +3202,8 @@
                 esc((o.creators || {}).name || 'the creator') + '</span>' +
                 '<input class="input" type="file" multiple data-a="teamfiles" ' +
                 'accept="video/*,image/*,.pdf,.zip"></label>' +
+              '<div class="kfield-wide teamheld" data-teamheld' +
+                ((teamHeld[o.id] || []).length ? '' : ' hidden') + '>' + teamHeldHtml(o.id) + '</div>' +
               '<div class="progress kupload" data-teamup hidden>' +
                 '<div class="progress-head"><span data-teamlabel></span><span data-teampct></span></div>' +
                 '<div class="progress-track"><div class="progress-fill" data-teamfill></div></div>' +
@@ -3278,6 +3280,30 @@
      rather than as an error, so the empty answer is the refusal. One bad
      file never abandons the rest, and the outcome is written after the
      repaint that follows it, or the redraw throws the line away. */
+  /* Files picked for a creator stay in this browser, one list a booking,
+     until Hand in sends them: a file taken off before then never reaches
+     S3. They live in memory, so leaving the page lets them go. */
+  var teamHeld = {};
+  function teamHeldHtml(id) {
+    var list = teamHeld[id] || [];
+    if (!list.length) return '';
+    return '<div class="filepins">' + list.map(function (f, i) {
+      return '<span class="filepin filepin-row" data-held-i="' + i + '">' +
+        '<span class="filepin-open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+          'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+          '<path d="M21 11.5 12.5 20a5 5 0 0 1-7-7l8-8a3.3 3.3 0 0 1 4.7 4.7l-8 8a1.7 1.7 0 0 1-2.4-2.4l7.3-7.3"/>' +
+        '</svg><span class="filepin-name">' + esc(f.name) + '</span></span>' +
+        '<button class="filepin-x" type="button" data-a="teamunhold" aria-label="Remove ' + esc(f.name) + '">×</button></span>';
+    }).join('') + '</div>' +
+      '<div class="row acts"><button class="btn btn-primary" type="button" data-a="teamsend">Hand in ' +
+        list.length + (list.length === 1 ? ' file' : ' files') + '</button></div>';
+  }
+  window.addEventListener('beforeunload', function (e) {
+    if (!Object.keys(teamHeld).some(function (k) { return teamHeld[k].length; })) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
+
   function teamDeliver(card, o, files) {
     var cap = ((cfg.s3 && cfg.s3.maxUploadMB) || 1024) * 1024 * 1024;
     var mb = (cfg.s3 && cfg.s3.maxUploadMB) || 1024;
@@ -3328,11 +3354,17 @@
     }
 
     pick.disabled = true;
+    var sendBtn = card.querySelector('[data-a="teamsend"]');
+    if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Uploading…'; }
     var done = 0, failed = [];
     var chain = Promise.resolve();
     queue.forEach(function (file, idx) {
       chain = chain.then(function () {
-        return sendOne(file, idx + 1, queue.length).then(function () { done++; }, function (e) {
+        return sendOne(file, idx + 1, queue.length).then(function () {
+          done++;
+          // In storage and on the booking: no longer held.
+          teamHeld[o.id] = (teamHeld[o.id] || []).filter(function (f) { return f !== file; });
+        }, function (e) {
           failed.push(file.name + ': ' + (e && e.message ? e.message : 'failed'));
         });
       });
@@ -3474,11 +3506,39 @@
     }
 
     var pick = card.querySelector('[data-a="teamfiles"]');
+    var heldBox = card.querySelector('[data-teamheld]');
+    function paintHeld() {
+      if (!heldBox) return;
+      heldBox.innerHTML = teamHeldHtml(o.id);
+      heldBox.hidden = !(teamHeld[o.id] || []).length;
+    }
     if (pick) pick.addEventListener('change', function () {
       var picked = Array.prototype.slice.call(this.files || []);
       this.value = '';
       if (!picked.length) return;
-      teamDeliver(card, o, picked);
+      var cap = ((cfg.s3 && cfg.s3.maxUploadMB) || 1024) * 1024 * 1024;
+      var mb = (cfg.s3 && cfg.s3.maxUploadMB) || 1024;
+      var big = picked.filter(function (f) { return f.size > cap; });
+      if (big.length) {
+        msg('campWorkMsg', big.length === 1 ? big[0].name + ' is larger than ' + mb + ' MB.'
+          : big.length + ' files are larger than ' + mb + ' MB.', 'err');
+      }
+      teamHeld[o.id] = (teamHeld[o.id] || []).concat(picked.filter(function (f) { return f.size <= cap; }));
+      paintHeld();
+    });
+    if (heldBox) heldBox.addEventListener('click', function (e) {
+      var x = e.target.closest && e.target.closest('[data-a="teamunhold"]');
+      if (x) {
+        if (pick && pick.disabled) return;
+        var i = Number(x.closest('[data-held-i]').getAttribute('data-held-i'));
+        (teamHeld[o.id] || []).splice(i, 1);
+        paintHeld();
+        return;
+      }
+      if (e.target.closest && e.target.closest('[data-a="teamsend"]')) {
+        var list = (teamHeld[o.id] || []).slice();
+        if (list.length) teamDeliver(card, o, list);
+      }
     });
 
     var menu = card.querySelector('[data-menu]');

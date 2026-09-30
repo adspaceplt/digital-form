@@ -905,6 +905,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     posts, and a rail (the client's
     review, the tasks naming it). Back returns to the client. Add assets is a
     sheet (`#assetSheet`) that shuts on Add to set.
+  - A picked or Drive-read file stays on the device (an object URL preview)
+    until Add to set, which uploads what is left with progress, then writes
+    the posts; a removed file costs nothing. Cancel aborts; a failed upload
+    keeps its draft; only uploaded drafts are kept for a reload; leaving
+    with a file held asks first.
   - Sets are folded, one open at a time.
   - Publish / Unpublish (warn).
   - Resend with a note.
@@ -978,7 +983,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   anything else is a `.filepin-row` line.
 - The team hands a file in for a creator (`teamDeliver()`, at pending draft /
   changes / submitted), with `campaign.file_added`. 1 GB per file
-  (`ADSPACE_CONFIG.s3.maxUploadMB` 1024).
+  (`ADSPACE_CONFIG.s3.maxUploadMB` 1024). Picked files are held on the card
+  (`teamHeld`, × each) and upload only on Hand in N files.
 - Removing a handed-in file arms first (`.filearm`), then soft removes, then
   offers Undo in place.
 - A campaign name that would render as nothing reads `Untitled campaign` and
@@ -1049,8 +1055,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     `mediaKind()`).
   - Signed PUT via `sign-upload`, using `creator_may_upload` with a key built
     from the verified option.
-  - The row is written before the file is uploaded. Every failure is named
-    after the repaint.
+  - Picked files are held on the device (`held`, `.filecard.is-held`, ×
+    each) and upload one by one only on Submit or Update; each row is
+    written after its file is stored. A failure keeps that file held and
+    hands in nothing; every failure is named after the repaint.
   - Payment details (AP01) are asked for once posted (`payDue`: posted only),
     never on the draft's approval, and the line never says Approved.
   - `creator_rate` takes 1 to 5 at completed and is never shown to the client.

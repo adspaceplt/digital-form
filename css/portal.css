@@ -9098,3 +9098,10 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
   .tinline:hover::before { background: var(--line-soft); }
   .serial-copy:hover::before { background: var(--sunk); }
 }
+
+/* Picked files stay on the device until they are sent (2026-09-30): the
+   drafts hold still while Add to set uploads them, and the team's files for
+   a creator wait as lines with their own Hand in. */
+.zone-draft.is-busy .draft { opacity: .72; pointer-events: none; }
+.teamheld { display: grid; gap: 8px; }
+.teamheld .row.acts { margin: 0; }
