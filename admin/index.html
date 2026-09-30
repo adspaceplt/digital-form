@@ -8,7 +8,7 @@
 <meta name="description" content="ADspace internal portal.">
 <meta property="og:title" content="ADspace Digital Portal">
 <meta property="og:description" content="ADspace Digital Portal.">
-<meta property="og:image" content="https://digital.adspace.me/img/share-1200.png?v=20260930b">
+<meta property="og:image" content="https://digital.adspace.me/img/share-1200.png?v=20260930c">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="ADspace Digital Portal">
@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20260930b">
+<link rel="stylesheet" href="/css/portal.css?v=20260930c">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -57,33 +57,33 @@
 <!-- Quotations and invoices are drawn in the browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-<script src="/js/config.js?v=20260930b"></script>
-<script src="/js/captcha.js?v=20260930b"></script>
-<script src="/js/words.js?v=20260930b"></script>
-<script src="/js/copy.js?v=20260930b"></script>
-<script src="/js/ask.js?v=20260930b"></script>
-<script src="/js/confirm.js?v=20260930b"></script>
-<script src="/js/sheet.js?v=20260930b"></script>
-<script src="/js/refresh.js?v=20260930b"></script>
-<script src="/js/form.js?v=20260930b"></script>
-<script src="/js/state.js?v=20260930b"></script>
-<script src="/js/group.js?v=20260930b"></script>
-<script src="/js/menu.js?v=20260930b"></script>
-<script src="/js/cmdbar.js?v=20260930b"></script>
-<script src="/js/records.js?v=20260930b"></script>
-<script src="/js/chart.js?v=20260930b"></script>
-<script src="/js/swipe.js?v=20260930b"></script>
-<script src="/js/api.js?v=20260930b"></script>
-<script src="/js/push.js?v=20260930b"></script>
-<script src="/js/money.js?v=20260930b"></script>
-<script src="/js/media.js?v=20260930b"></script>
-<script src="/js/mockups.js?v=20260930b"></script>
+<script src="/js/config.js?v=20260930c"></script>
+<script src="/js/captcha.js?v=20260930c"></script>
+<script src="/js/words.js?v=20260930c"></script>
+<script src="/js/copy.js?v=20260930c"></script>
+<script src="/js/ask.js?v=20260930c"></script>
+<script src="/js/confirm.js?v=20260930c"></script>
+<script src="/js/sheet.js?v=20260930c"></script>
+<script src="/js/refresh.js?v=20260930c"></script>
+<script src="/js/form.js?v=20260930c"></script>
+<script src="/js/state.js?v=20260930c"></script>
+<script src="/js/group.js?v=20260930c"></script>
+<script src="/js/menu.js?v=20260930c"></script>
+<script src="/js/cmdbar.js?v=20260930c"></script>
+<script src="/js/records.js?v=20260930c"></script>
+<script src="/js/chart.js?v=20260930c"></script>
+<script src="/js/swipe.js?v=20260930c"></script>
+<script src="/js/api.js?v=20260930c"></script>
+<script src="/js/push.js?v=20260930c"></script>
+<script src="/js/money.js?v=20260930c"></script>
+<script src="/js/media.js?v=20260930c"></script>
+<script src="/js/mockups.js?v=20260930c"></script>
 </head>
 <body>
 
 <!-- Signed out: the plain page, brand only. The console below draws its
      own bar, so the shared chrome leaves the footer to it. -->
-<script src="/js/chrome.js?v=20260930b" data-kicker="Digital Portal"></script>
+<script src="/js/chrome.js?v=20260930c" data-kicker="Digital Portal"></script>
 
 <main class="shell" id="publicShell">
 
@@ -1322,7 +1322,7 @@
         </div>
 
         <div class="drop" id="drop">
-          <b>Drag files here to upload</b>
+          <b>Drag files here</b>
           <span>Or click to browse. Placement is read from each file.</span>
         </div>
         <input type="file" id="fileInput" multiple accept="image/*,video/*" hidden>
@@ -1356,13 +1356,13 @@
         <button id="driveLoad" type="button" hidden></button>
       </section>
 
-      <!-- Step 2: uploaded but not yet part of the set -->
+      <!-- Step 2: picked, still on this device, until Add to set uploads them -->
       <section class="panel zone-draft" id="draftZone" hidden>
         <div class="zone-head">
           <svg class="zone-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 1.9"/></svg>
           <div>
             <b>Pending assets</b>
-            <span class="muted">Not yet in the set. Not visible to the client.</span>
+            <span class="muted">Uploaded, and visible to the client, only once added to the set.</span>
           </div>
         </div>
 
@@ -1373,9 +1373,17 @@
 
         <div id="drafts"></div>
 
+        <div class="progress" id="saveProgress" hidden>
+          <div class="progress-head">
+            <span id="saveLabel"></span>
+            <span id="savePct"></span>
+          </div>
+          <div class="progress-track"><div class="progress-fill" id="saveFill"></div></div>
+        </div>
+
         <div class="zone-actions" id="draftActions" hidden>
-          <button class="btn btn-quiet" id="clearDrafts" type="button">Discard all</button>
           <button class="btn btn-primary" id="saveDrafts" type="button">Add to set</button>
+          <button class="btn btn-quiet" id="clearDrafts" type="button">Discard all</button>
         </div>
       </section>
 
@@ -4306,19 +4314,19 @@ raya-2026        https://example.com/raya"></textarea>
     </div>
   </div>
 </div>
-<script src="/js/passkey.js?v=20260930b"></script>
-<script src="/js/admin.js?v=20260930b"></script>
-<script src="/js/documents.js?v=20260930b"></script>
-<script src="/js/letters.js?v=20260930b"></script>
-<script src="/js/smreport.js?v=20260930b"></script>
-<script src="/js/reports.js?v=20260930b"></script>
-<script src="/js/register.js?v=20260930b"></script>
-<script src="/js/crm.js?v=20260930b"></script>
-<script src="/js/team.js?v=20260930b"></script>
-<script src="/js/campaigns.js?v=20260930b"></script>
-<script src="/js/ops.js?v=20260930b"></script>
-<script src="/js/perf.js?v=20260930b"></script>
-<script src="/js/search.js?v=20260930b"></script>
-<script src="/js/overview.js?v=20260930b"></script>
+<script src="/js/passkey.js?v=20260930c"></script>
+<script src="/js/admin.js?v=20260930c"></script>
+<script src="/js/documents.js?v=20260930c"></script>
+<script src="/js/letters.js?v=20260930c"></script>
+<script src="/js/smreport.js?v=20260930c"></script>
+<script src="/js/reports.js?v=20260930c"></script>
+<script src="/js/register.js?v=20260930c"></script>
+<script src="/js/crm.js?v=20260930c"></script>
+<script src="/js/team.js?v=20260930c"></script>
+<script src="/js/campaigns.js?v=20260930c"></script>
+<script src="/js/ops.js?v=20260930c"></script>
+<script src="/js/perf.js?v=20260930c"></script>
+<script src="/js/search.js?v=20260930c"></script>
+<script src="/js/overview.js?v=20260930c"></script>
 </body>
 </html>

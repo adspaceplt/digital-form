@@ -42,11 +42,12 @@
   ];
 
   var state = { client: null, batch: null, drafts: [], lastDropCount: 0, uploading: false,
-               storageCheck: null };
+               storageCheck: null, pendingBy: {}, xhrs: [], cancelled: false };
 
-  // Switching tabs is safe. Closing one mid upload is not, so only warn then.
+  /* A picked file stays in the browser until Add to set, so closing the tab
+     with one waiting, or mid upload, is warned about; switching tabs is not. */
   window.addEventListener('beforeunload', function (e) {
-    if (!state.uploading) return;
+    if (!state.uploading && !hasLocal()) return;
     e.preventDefault();
     e.returnValue = '';
   });
@@ -1825,7 +1826,7 @@
   function openBatch(b, quiet) {
     state.batch = b;
     setUrl();
-    state.drafts = readStoredDrafts();
+    state.drafts = state.pendingBy[b.id] || readStoredDrafts();
     $('setPanel').hidden = false;
     $('workspace').classList.add('is-set');
     $('driveUrl').value = state.client.drive_folder || '';
@@ -1839,7 +1840,7 @@
     loadPosts();
 
     if (state.drafts.length) {
-      msg('setMsg', state.drafts.length + ' unsaved upload' +
+      msg('setMsg', state.drafts.length + ' pending asset' +
         (state.drafts.length === 1 ? '' : 's') +
         ' still waiting to be added to this set.', 'ok');
     }
@@ -2122,9 +2123,13 @@
     return 'instagram:feed';                                                       // 4:5, 1:1, landscape
   }
 
+  /* A picked file stays in the browser: it is previewed from the device and
+     goes up to storage only when Add to set is pressed, so a file removed or
+     discarded before then costs nothing and leaves nothing behind in S3. */
   function handleFiles(files) {
     if (!files || !files.length) return;
     if (!state.batch) { msg('setMsg', 'Select a content set first.', 'err'); return; }
+    if (state.uploading) return;
 
     // The size limit belongs to Supabase storage. S3 has no such ceiling.
     var cap = usingS3() ? Infinity : (cfg.maxUploadMB || 50) * 1024 * 1024;
@@ -2137,67 +2142,155 @@
         toobig.map(function (f) { return f.name + ' (' + mb(f.size) + ' MB)'; }).join(', ') +
         ' exceeds the ' + (cfg.maxUploadMB || 50) + ' MB limit. Export a smaller review copy or paste a link.', 'err');
       if (!queue.length) return;
+    } else {
+      msg('setMsg', '');
     }
 
     state.lastDropCount = queue.length;
-    state.uploading = true;
-    var done = 0;
-    var total = queue.reduce(function (n, f) { return n + f.size; }, 0);
-    var sent = queue.map(function () { return 0; });
-    var word = queue.length === 1 ? 'file' : 'files';
-    if (!toobig.length) msg('setMsg', '');
-    showProgress('Uploading ' + queue.length + ' ' + word + '…', 0);
-
-    function tick() {
-      var n = sent.reduce(function (a, b) { return a + b; }, 0);
-      showProgress('Uploading ' + queue.length + ' ' + word + ' · ' +
-        done + ' of ' + queue.length + ' complete', total ? n / total : 0);
-    }
-
     var slow = [];
-    runPool(queue, function (file, i) {
+    runPool(queue, function (file) {
       return probe(file).then(function (info) {
-        return storeFile(file, function (frac) {
-          sent[i] = frac * file.size;
-          tick();
-        }).then(function (publicUrl) {
-          sent[i] = file.size;
-          done++;
-          tick();
-          return hasFastStart(file).then(function (fast) {
-            if (!fast) slow.push(file.name);
-            return storePoster(info.poster).then(function (posterUrl) {
-              info.posterUrl = posterUrl;
-              return { url: publicUrl, info: info };
-            });
-          });
+        return hasFastStart(file).then(function (fast) {
+          if (!fast) slow.push(file.name);
+          return { file: file, info: info };
         });
       });
-    }, 3)
-      .then(function (results) {
-        state.uploading = false;
-        showProgress(null);
-        // Added in the order they were chosen, not the order they happened to
-        // finish, so the running order of a set is never a lottery.
-        results.forEach(function (r) { pushDraft(r.url, r.info, true); });
-        if (slow.length) {
-          msg('setMsg', slow.join(', ') + ': not web-optimised, so playback waits for the full download. ' +
-            'Re-export with Fast Start.', 'err');
-        } else if (!toobig.length) {
-          msg('setMsg', 'Upload complete.', 'ok');
-        }
-        renderDrafts();
-      })
-      .catch(function (e) {
-        state.uploading = false;
-        showProgress(null);
-        var text = e.message || 'Upload failed.';
-        if (/payload|too large|exceeded/i.test(text)) {
-          text = 'File exceeds the ' + (cfg.maxUploadMB || 50) +
-            ' MB limit. Export a smaller review copy or paste a link.';
-        }
-        msg('setMsg', text, 'err');
+    }, 3).then(function (list) {
+      // Added in the order they were chosen, not the order they were read.
+      list.forEach(function (x) {
+        state.drafts.push(draftOf(localMedia(x.file, x.info, extFor(x.file.type, x.file.name)), x.info));
       });
+      renderDrafts();
+      if (slow.length) {
+        msg('setMsg', slow.join(', ') + ': not web-optimised, so playback waits for the full download. ' +
+          'Re-export with Fast Start.', 'err');
+      }
+    });
+  }
+
+  /* A file held in the browser until Add to set: previewed from an object URL
+     on this device, carried with what it needs to go up later. */
+  function localMedia(blob, info, ext, extra) {
+    var m = {
+      url: URL.createObjectURL(blob),
+      type: info.isVideo ? 'video' : 'image',
+      width: info.width || null,
+      height: info.height || null,
+      mime: info.mime || blob.type || null,
+      poster: info.poster ? URL.createObjectURL(info.poster) : null,
+      local: { file: blob, ext: ext, posterBlob: info.poster || null }
+    };
+    if (extra) Object.keys(extra).forEach(function (k) { m[k] = extra[k]; });
+    return m;
+  }
+
+  function draftOf(media, info) {
+    return {
+      placement: guessPlacement(info),
+      media: [media],
+      caption: '', caption_zh: '', title: '', showZh: false
+    };
+  }
+
+  function hasLocal() {
+    return state.drafts.some(function (d) {
+      return d.media.some(function (m) { return m.local; });
+    });
+  }
+
+  function dropLocal(m) {
+    if (!m || !m.local) return;
+    try { URL.revokeObjectURL(m.url); } catch (e) {}
+    if (m.poster && m.local.posterBlob) { try { URL.revokeObjectURL(m.poster); } catch (e) {} }
+  }
+
+  /* Add to set: every file still on this device goes up, a few at a time, with
+     one bar for the lot and Cancel beside it. A file that finishes is kept (its
+     draft now points at storage), so a retry sends only what is left. */
+  function uploadPending() {
+    var items = [];
+    state.drafts.forEach(function (d) {
+      d.media.forEach(function (m) { if (m.local) items.push(m); });
+    });
+    if (!items.length) return Promise.resolve();
+
+    state.uploading = true;
+    state.cancelled = false;
+    paintSaving(true);
+    var done = 0;
+    var total = items.reduce(function (n, m) { return n + (m.local.file.size || 0); }, 0);
+    var sent = items.map(function () { return 0; });
+    var word = items.length === 1 ? 'file' : 'files';
+    function tick() {
+      var n = sent.reduce(function (a, b) { return a + b; }, 0);
+      showProgress('Uploading ' + items.length + ' ' + word + ' · ' +
+        done + ' of ' + items.length + ' complete', total ? n / total : 0, 'save');
+    }
+    tick();
+
+    // Every file runs to its end, success or not, before the answer: a retry
+    // must never send a file that is still on its way.
+    var firstError = null;
+    return runPool(items, function (m, i) {
+      if (state.cancelled) return null;
+      var file = m.local.file;
+      return storeBlob(file, m.local.ext, m.mime || file.type, function (frac) {
+        sent[i] = frac * (file.size || 0);
+        tick();
+      }).then(function (url) {
+        return storePoster(m.local.posterBlob).then(function (posterUrl) {
+          if (m.driveId) {
+            // Remembered even if the post is later deleted, so a re-import is free.
+            db.from('drive_assets').insert({
+              client_id: state.client.id, drive_id: m.driveId, url: url,
+              mime_type: m.mime || null, width: m.width || null, height: m.height || null,
+              bytes: file.size || null, poster_url: posterUrl || null
+            }).then(function () {}, function () {});
+          }
+          dropLocal(m);
+          m.url = url;
+          m.poster = posterUrl || null;
+          delete m.local;
+          sent[i] = file.size || 0;
+          done++;
+          tick();
+          saveDrafts();
+        });
+      }).catch(function (e) {
+        sent[i] = 0;
+        if (!firstError) firstError = e;
+      });
+    }, 3).then(function () {
+      state.uploading = false;
+      paintSaving(false);
+      showProgress(null, 0, 'save');
+      var left = items.filter(function (m) { return m.local; }).length;
+      if (!left) return;
+      renderDrafts();
+      if (state.cancelled) {
+        throw new Error('Upload cancelled. ' + (items.length - left) + ' of ' + items.length +
+          ' uploaded; nothing was added to the set.');
+      }
+      var text = (firstError && firstError.message) || 'Upload failed.';
+      if (/payload|too large|exceeded/i.test(text)) {
+        text = 'File exceeds the ' + (cfg.maxUploadMB || 50) +
+          ' MB limit. Export a smaller review copy or paste a link.';
+      }
+      throw new Error(text + ' ' + left + ' of ' + items.length +
+        ' not uploaded. Select Add to set to send the rest.');
+    });
+  }
+
+  function paintSaving(on) {
+    $('saveDrafts').disabled = on;
+    $('saveDrafts').textContent = on ? 'Uploading…' : 'Add to set';
+    $('clearDrafts').textContent = on ? 'Cancel' : 'Discard all';
+    $('draftZone').classList.toggle('is-busy', on);
+  }
+
+  function cancelUpload() {
+    state.cancelled = true;
+    state.xhrs.slice().forEach(function (x) { try { x.abort(); } catch (e) {} });
   }
 
   function mb(bytes) {
@@ -2277,13 +2370,22 @@
     return [ext, size].filter(Boolean).join(' · ');
   }
 
-  /* Files are already in storage by the time they become drafts, so keeping the
-     draft list locally means a reload never costs you an upload. */
+  /* A draft whose files are already in storage (a link, a Drive file copied
+     before, or one sent by an Add to set that stopped part way) is kept in
+     this browser, so a reload never costs an upload. A file still on the
+     device cannot be kept across a reload: it lives in memory for this set. */
   function draftKey() { return 'adspace_drafts_' + (state.batch ? state.batch.id : 'none'); }
 
   function saveDrafts() {
+    if (state.batch) {
+      if (state.drafts.length) state.pendingBy[state.batch.id] = state.drafts;
+      else delete state.pendingBy[state.batch.id];
+    }
+    var stored = state.drafts.filter(function (d) {
+      return !d.media.some(function (m) { return m.local; });
+    });
     try {
-      if (state.drafts.length) localStorage.setItem(draftKey(), JSON.stringify(state.drafts));
+      if (stored.length) localStorage.setItem(draftKey(), JSON.stringify(stored));
       else localStorage.removeItem(draftKey());
     } catch (e) { /* private mode, carry on without it */ }
   }
@@ -2334,6 +2436,8 @@
   function putToS3(url, blob, contentType, onProgress) {
     return new Promise(function (resolve, reject) {
       var xhr = new XMLHttpRequest();
+      state.xhrs.push(xhr);
+      var forget = function () { state.xhrs = state.xhrs.filter(function (x) { return x !== xhr; }); };
       xhr.open('PUT', url, true);
       xhr.setRequestHeader('Content-Type', contentType || 'application/octet-stream');
       // filenames are random and never reused, so this is safe to cache hard
@@ -2344,12 +2448,15 @@
         };
       }
       xhr.onload = function () {
+        forget();
         if (xhr.status >= 200 && xhr.status < 300) { if (onProgress) onProgress(1); resolve(); }
         else reject(new Error('S3 rejected the upload (HTTP ' + xhr.status + ').'));
       };
       xhr.onerror = function () {
+        forget();
         reject(new Error('The connection to storage dropped part way through the upload.'));
       };
+      xhr.onabort = function () { forget(); reject(new Error('cancelled')); };
       xhr.send(blob);
     });
   }
@@ -2406,21 +2513,18 @@
 
   window.__hasFastStart = hasFastStart;   // used by the test harness
 
+  /* A link already served from somewhere: nothing to upload. The real pixel
+     size is kept so the client's preview frame matches the file before it
+     has finished loading. */
   function pushDraft(url, info, quiet) {
-    // Store the real pixel size so the client's preview frame matches the file
-    // before it has finished loading.
-    state.drafts.push({
-      placement: guessPlacement(info),
-      media: [{
-        url: url,
-        type: info.isVideo ? 'video' : 'image',
-        width: info.width || null,
-        height: info.height || null,
-        mime: info.mime || null,
-        poster: info.posterUrl || null
-      }],
-      caption: '', caption_zh: '', title: '', showZh: false
-    });
+    state.drafts.push(draftOf({
+      url: url,
+      type: info.isVideo ? 'video' : 'image',
+      width: info.width || null,
+      height: info.height || null,
+      mime: info.mime || null,
+      poster: info.posterUrl || null
+    }, info));
     if (!quiet) renderDrafts();
   }
 
@@ -2509,17 +2613,14 @@
           (cfg.maxUploadMB || 50) + ' MB limit. Turning on S3 storage removes this limit.', 'err');
         return;
       }
-      msg('setMsg', 'Copying ' + f.name + ' from Drive…');
-      state.uploading = true;
+      msg('setMsg', 'Reading ' + f.name + ' from Drive…');
       return copyDriveFile(f).then(function (res) {
         state.drafts.push(res.draft);
         renderDrafts();
-        state.uploading = false;
         $('mediaUrl').value = '';
-        msg('setMsg', f.name + ' imported. Add copy below, then select Add to set.', 'ok');
+        msg('setMsg', f.name + ' ready. Add copy below, then select Add to set.', 'ok');
       });
     }).catch(function (e) {
-      state.uploading = false;
       if (e.name === 'AbortError') {
         msg('setMsg', 'Timed out reading that file from Drive.', 'err');
       } else if (/uploaded to s3|s3 rejected|could not start/i.test(e.message || '')) {
@@ -2573,9 +2674,10 @@
     });
   }
 
-  /* Pulls a Drive file into our own storage. If we have copied this Drive file
-     before, reuse it: re-importing after a mistake should not upload again and
-     pay for a second copy in S3. */
+  /* Reads a Drive file into this browser, to go up to our own storage with the
+     rest at Add to set. If we have copied this Drive file before, reuse it:
+     re-importing after a mistake should not upload again and pay for a second
+     copy in S3. */
   function copyDriveFile(f, onProgress) {
     return db.from('drive_assets')
       .select('url, poster_url').eq('client_id', state.client.id).eq('drive_id', f.id).limit(1)
@@ -2585,54 +2687,33 @@
           if (onProgress) onProgress(1);
           return { url: hit.url, reused: true, poster: hit.poster_url || null };
         }
-        // A Drive import is two transfers, down from Google and up to storage,
-        // so each leg gets half the bar rather than the bar sticking at full
-        // while the upload is still running.
-        var leg = function (base) {
-          return onProgress ? function (frac) { onProgress(base + frac / 2); } : null;
-        };
         return fetchWithProgress(
-          DRIVE_API + '/' + f.id + '?alt=media&key=' + encodeURIComponent(driveKey()), leg(0))
+          DRIVE_API + '/' + f.id + '?alt=media&key=' + encodeURIComponent(driveKey()), onProgress)
           .then(function (blob) {
             // The bytes are already here, so the poster costs nothing extra.
             return probeBlob(blob, f.mimeType).then(function (shot) {
-              f.poster = shot.poster;
               if (!f.width)  f.width = shot.width;
               if (!f.height) f.height = shot.height;
-              return blob;
+              return { blob: blob, shot: shot };
             });
-          })
-          .then(function (blob) {
-            return storeBlob(blob, extFor(f.mimeType, f.name), f.mimeType, leg(0.5))
-              .then(function (url) {
-                // Remember it even if the post is later deleted.
-                return storePoster(f.poster).then(function (posterUrl) {
-                  db.from('drive_assets').insert({
-                    client_id: state.client.id, drive_id: f.id, url: url,
-                    mime_type: f.mimeType, width: f.width || null, height: f.height || null,
-                    bytes: f.size || null, poster_url: posterUrl || null
-                  }).then(function () {}, function () {});
-                  return { url: url, reused: false, poster: posterUrl };
-                });
-              });
           });
       })
       .then(function (res) {
         // The caller adds it, so a batch import can keep the chosen order even
-        // though the copies finish out of order.
-        res.draft = {
-          placement: guessPlacement({ width: f.width, height: f.height, isVideo: f.isVideo }),
-          media: [{
-            url: res.url,
-            type: f.isVideo ? 'video' : 'image',
-            width: f.width || null,
-            height: f.height || null,
-            mime: f.mimeType || null,
-            poster: res.poster || null,
-            driveId: f.id
-          }],
-          caption: '', caption_zh: '', title: '', showZh: false
-        };
+        // though the reads finish out of order.
+        var info = { width: f.width, height: f.height, isVideo: f.isVideo, mime: f.mimeType };
+        res.draft = draftOf(res.blob
+          ? localMedia(res.blob, { width: f.width, height: f.height, isVideo: f.isVideo,
+              mime: f.mimeType, poster: res.shot.poster }, extFor(f.mimeType, f.name), { driveId: f.id })
+          : {
+              url: res.url,
+              type: f.isVideo ? 'video' : 'image',
+              width: f.width || null,
+              height: f.height || null,
+              mime: f.mimeType || null,
+              poster: res.poster || null,
+              driveId: f.id
+            }, info);
         return res;
       });
   }
@@ -2800,14 +2881,19 @@
     renderDriveFiles();
   });
 
-  function showProgress(label, fraction) {
-    var box = $('driveProgress');
+  /* Two bars: reading from Drive at the top of the sheet, and Add to set's
+     upload beside the button that started it. */
+  function showProgress(label, fraction, which) {
+    var ids = which === 'save'
+      ? ['saveProgress', 'saveLabel', 'savePct', 'saveFill']
+      : ['driveProgress', 'progressLabel', 'progressPct', 'progressFill'];
+    var box = $(ids[0]);
     if (label === null) { box.hidden = true; return; }
     box.hidden = false;
-    $('progressLabel').textContent = label;
+    $(ids[1]).textContent = label;
     var pct = Math.max(0, Math.min(100, Math.round(fraction * 100)));
-    $('progressPct').textContent = pct + '%';
-    $('progressFill').style.width = pct + '%';
+    $(ids[2]).textContent = pct + '%';
+    $(ids[3]).style.width = pct + '%';
   }
 
   $('driveImport').addEventListener('click', function () {
@@ -2827,7 +2913,6 @@
       if (!queue.length) return;
     }
 
-    state.uploading = true;
     var done = 0;
     var reused = 0;
     var total = queue.reduce(function (n, f) { return n + (f.size || 0); }, 0);
@@ -2836,8 +2921,8 @@
 
     function tick() {
       var n = moved.reduce(function (a, b) { return a + b; }, 0);
-      showProgress('Importing ' + queue.length + ' file' + (queue.length === 1 ? '' : 's') +
-        ' · ' + done + ' of ' + queue.length + ' complete', total ? n / total : 0);
+      showProgress('Reading ' + queue.length + ' file' + (queue.length === 1 ? '' : 's') +
+        ' from Drive · ' + done + ' of ' + queue.length + ' complete', total ? n / total : 0);
     }
 
     runPool(queue, function (f, i) {
@@ -2854,22 +2939,20 @@
       });
     }, 3)
       .then(function (results) {
-        state.uploading = false;
         showProgress(null);
         results.forEach(function (r) { state.drafts.push(r.draft); });
         renderDrafts();
         renderDriveFiles();
         if (!toobig.length) {
-          msg('driveMsg', done + ' file' + (done === 1 ? '' : 's') + ' imported' +
-            (reused ? ', ' + reused + ' reused from storage at no additional cost' : '') +
+          msg('driveMsg', done + ' file' + (done === 1 ? '' : 's') + ' ready' +
+            (reused ? ', ' + reused + ' already in storage at no additional cost' : '') +
             '. Add copy below, then select Add to set.', 'ok');
         }
       })
       .catch(function (e) {
-        state.uploading = false;
         showProgress(null);
         msg('driveMsg', e.name === 'AbortError'
-          ? 'Timed out copying a file. Large videos can take a while, try fewer at a time.'
+          ? 'Timed out reading a file from Drive. Large videos can take a while, try fewer at a time.'
           : e.message, 'err');
       });
   });
@@ -2886,7 +2969,7 @@
     $('combineBar').hidden = !canCombine;
     if (canCombine) {
       $('combineText').textContent =
-        state.drafts.length + ' images uploaded. Separate posts, or one carousel?';
+        state.drafts.length + ' images added. Separate posts, or one carousel?';
     }
 
     state.drafts.forEach(function (d, i) {
@@ -2902,8 +2985,11 @@
       row.innerHTML =
         '<div class="draft-media">' +
           d.media.map(function (m) {
+            /* A file still on this device plays from it; where the browser
+               cannot decode it (an iPhone's HEVC in Chrome) the still read
+               from it stands in. */
             return m.type === 'video'
-              ? ADspaceMedia.tag(m.url, 'muted')
+              ? ADspaceMedia.tag(m.url, 'muted' + (m.poster ? ' poster="' + esc(m.poster) + '"' : ''))
               : '<img src="' + m.url + '" alt="">';
           }).join('') +
           (d.media.length > 1 ? '<i>' + d.media.length + ' slides</i>' : '') +
@@ -2939,6 +3025,8 @@
         d.placement = e.target.value; renderDrafts();
       });
       row.querySelector('[data-f="remove"]').addEventListener('click', function () {
+        if (state.uploading) return;
+        d.media.forEach(dropLocal);
         state.drafts.splice(i, 1); renderDrafts();
       });
       var cap = row.querySelector('[data-f="caption"]');
@@ -2955,6 +3043,7 @@
   }
 
   $('combineBtn').addEventListener('click', function () {
+    if (state.uploading) return;
     var merged = {
       placement: 'instagram:carousel',
       media: state.drafts.reduce(function (all, d) { return all.concat(d.media); }, []),
@@ -2966,11 +3055,13 @@
   });
 
   $('clearDrafts').addEventListener('click', function () {
+    // While Add to set is uploading, this is its Cancel.
+    if (state.uploading) { cancelUpload(); return; }
     if (!state.drafts.length) { clearDrafts(); return; }
     window.ADspaceConfirm.ask({
-      title: 'Discard these uploads',
-      body: state.drafts.length + ' upload' + (state.drafts.length === 1 ? '' : 's')
-          + ' waiting to be saved go. The files themselves are untouched.',
+      title: 'Discard these assets',
+      body: state.drafts.length + ' pending asset' + (state.drafts.length === 1 ? '' : 's')
+          + ' go. Nothing is added to the set.',
       go: 'Discard',
       tone: 'danger'
     }, clearDrafts);
@@ -2983,6 +3074,7 @@
   }
 
   function clearDrafts() {
+    state.drafts.forEach(function (d) { d.media.forEach(dropLocal); });
     state.drafts = [];
     try { localStorage.removeItem(draftKey()); } catch (e) {}
     renderDrafts();
@@ -2991,9 +3083,16 @@
   }
 
   $('saveDrafts').addEventListener('click', function () {
-    if (!state.drafts.length) return;
+    if (!state.drafts.length || state.uploading) return;
+    msg('setMsg', '');
+    uploadPending().then(addPosts).catch(function (e) {
+      msg('setMsg', (e && e.message) || 'Upload failed.', 'err');
+    });
+  });
 
-    db.from('posts').select('position').eq('batch_id', state.batch.id)
+  /* Every file is in storage by now, so the posts are written in one insert. */
+  function addPosts() {
+    return db.from('posts').select('position').eq('batch_id', state.batch.id)
       .order('position', { ascending: false }).limit(1).then(function (r) {
         var next = (r.data && r.data.length ? r.data[0].position : -1) + 1;
         var rows = state.drafts.map(function (d, i) {
@@ -3020,7 +3119,7 @@
           loadBatches();
         });
       });
-  });
+  }
 
   // ---- Saved posts --------------------------------------------------------
   /* Once a post is in the set it is shown as settled rather than as a form.
