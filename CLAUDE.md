@@ -900,7 +900,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   Changes requested reading Changes (`.tab-short`).
 - The caption is edited where it is read: the pen beside Copywriting
   (`.copy-pen`, hidden once approved) turns each caption into a field in
-  place and opens Request changes under it for a note and the name. A
+  place and opens Request changes under it for a note and the name. While
+  a request is open Approve and Request changes step away
+  (`.approve.is-requesting`), so Cancel and Send request are the only acts;
+  a failed send keeps the request and the edit open. A
   request takes a note or a caption edit, sent only where changed and kept
   as `reviews.suggested_caption[_zh]`; the console shows it as Suggested
   caption with Accept caption (the next round). The noun is caption, never

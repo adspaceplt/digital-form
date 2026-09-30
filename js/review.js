@@ -572,19 +572,29 @@
       needed: 'A name is required to record this decision.'
     }, say);
 
+    /* While a request is open, Approve and Request changes step away: the
+       request's own Cancel and Send request are the only acts on the card.
+       Left in place, Request changes read as the send and did nothing (the
+       user's iPhone recording, 2026-10-01). */
+    function openBox(on) {
+      box.classList.toggle('is-open', on);
+      wrap.classList.toggle('is-requesting', on);
+    }
     approveBtn.addEventListener('click', function () {
-      box.classList.remove('is-open');
+      openBox(false);
       asker.need(function (name) { send(post, 'approved', null, wrap, badge, name); });
     });
     /* Opens the request; from the pen the caption field keeps the caret. */
     wrap._openChanges = function (fromPen) {
       asker.close();
-      box.classList.add('is-open');
+      say('');
+      openBox(true);
       if (!fromPen) textarea.focus();
     };
     wrap.querySelector('.btn-changes').addEventListener('click', function () { wrap._openChanges(false); });
     box.querySelector('[data-act="cancel"]').addEventListener('click', function () {
-      box.classList.remove('is-open');
+      openBox(false);
+      say('');
       if (copyBlock) copyBlock._stop();
     });
     box.querySelector('[data-act="send"]').addEventListener('click', function () {
@@ -603,9 +613,12 @@
         if (!name) { say('A name is required to record this decision.'); who.focus(); return; }
         window.ADspaceDecide.keep(name);
       }
-      box.classList.remove('is-open');
-      if (copyBlock) copyBlock._stop();
-      send(post, 'changes', note, wrap, badge, name, { caption: cap, caption_zh: capZh });
+      /* The request and the caption edit stay open until the answer is in,
+         so a failed send loses nothing typed. */
+      send(post, 'changes', note, wrap, badge, name, { caption: cap, caption_zh: capZh }, function () {
+        openBox(false);
+        if (copyBlock) copyBlock._stop();
+      });
     });
     return wrap;
   }
@@ -613,7 +626,7 @@
   /* An approval with nobody's name on it is worth nothing, so the name is a
      hard stop — but it is settled before this runs, on the page rather than
      in a browser dialog, and arrives here as an argument. */
-  function send(post, decision, note, wrap, badge, reviewer, copy) {
+  function send(post, decision, note, wrap, badge, reviewer, copy, done) {
     var buttons = wrap.querySelectorAll('.btn');
     Array.prototype.forEach.call(buttons, function (b) { b.disabled = true; });
 
@@ -636,6 +649,7 @@
         suggested: !!(copy && (copy.caption !== null && copy.caption !== undefined ||
                                copy.caption_zh !== null && copy.caption_zh !== undefined))
       };
+      if (done) done();
       paintDecision(post.review, badge, wrap);
     }).catch(function () {
       Array.prototype.forEach.call(buttons, function (b) { b.disabled = false; });
