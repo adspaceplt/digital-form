@@ -1732,7 +1732,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A result in a table is its count and one short word
     (`ADspaceSmReport.shortResult`: Engagements, Reached, Leads, Messages,
     Conversions, Sales, Clicks…), on one line where it fits, else the word
-    under the count; never broken inside a word. No result reads None.
+    under the count; never broken inside a word. An ad that spent with no
+    result reads 0 Leads, one result 1 Lead; the console's rows read the
+    same word, never Leads (form).
     A full block step separates one objective's table from the next.
   - The tax note follows the market: WHT and SST for MY; DCC and GST for SG.
   - Ad names never break at an underscore.

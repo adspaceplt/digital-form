@@ -1444,6 +1444,8 @@
   /* Ads Manager's own key for a result reads as its word (js/smreport.js). */
   function adName(x) { var AN = window.ADspaceSmReport && window.ADspaceSmReport.adName; return AN ? AN(x) : (x || ''); }
   function resultWord(x) { var RW = window.ADspaceSmReport && window.ADspaceSmReport.resultWord; return RW ? RW(x) : (x || ''); }
+  /* The row reads the short word the PDF prints: Leads, never Leads (form). */
+  function shortWord(x) { var SR = window.ADspaceSmReport && window.ADspaceSmReport.shortResult; return x && SR ? SR(x) : resultWord(x); }
   function adCpr(a) {
     if (a.cpr != null && a.cpr !== '') return Number(a.cpr);
     var reach = /reach/i.test(String(a.result_label || ''));
@@ -1594,7 +1596,7 @@
         '<div class="crm-head rp-ad-row">' + (pick ? tick(null, 'Select every ' + o[1] + ' ad', ads.every(function (a) { return pick[a.id]; })) : '') +
           '<span></span><span>Ad</span><span>Amount spent</span><span>Results</span><span>Cost per result</span><span></span></div>' +
         ads.map(function (a) {
-          var sub = [resultWord(a.result_label), a.audience ? a.audience + ' audience' : '', a.starts_on ? dayWord(a.starts_on) + (a.ends_on ? ' to ' + dayWord(a.ends_on) : '') : ''].filter(Boolean).join(' · ');
+          var sub = [shortWord(a.result_label), a.audience ? a.audience + ' audience' : '', a.starts_on ? dayWord(a.starts_on) + (a.ends_on ? ' to ' + dayWord(a.ends_on) : '') : ''].filter(Boolean).join(' · ');
           var c = adCpr(a);
           return '<div class="crm-row rp-ad-row' + (pick && pick[a.id] ? ' is-picked' : '') + '" data-id="' + esc(a.id) + '">' +
             (pick ? tick(a.id, 'Select ' + a.name, !!pick[a.id]) : '') +

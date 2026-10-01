@@ -838,13 +838,13 @@
        row of S(3) at least, so the text sits in the row with the same space
        above and below it. */
     var T = { size: TY.cell, lh: S(1), padX: S(-2), padY: (S(3) - S(1)) / 2, minH: S(3) };
-    /* A result in a table: its count and short word, None where there was
-       no result. Where the pair is wider than its column (`frac` of the
+    /* A result in a table: its count and short word, 0 Leads where an ad
+       spent and had none, 1 Lead for one (the user, 2026-10-01). Where the pair is wider than its column (`frac` of the
        page's width) the word goes under the count, so neither breaks. */
     function countWord(n, label, frac, f) {
-      var v = num(n);
-      if (v === null || v === 0) return 'None';
-      var t = fmt(v) + ' ' + shortResult(label);
+      var v = num(n) || 0, w = shortResult(label);
+      if (v === 1 && /s$/.test(w)) w = w.replace(/s$/, '');
+      var t = fmt(v) + ' ' + w;
       if (frac && (f || book).widthOfTextAtSize(t, T.size) > CW * frac - T.padX * 2) t = t.replace(' ', '\n');
       return t;
     }
@@ -1705,7 +1705,7 @@
           var perK = g.ads.every(function (a) { return a._per1000; });
           /* Each result reads as its count and one short word, on one line
              where it fits and the word under the count where it does not;
-             never broken inside a word. No result reads None. */
+             never broken inside a word. No result reads 0 Leads. */
           table([{ w: 0.22, align: 'left' }, { w: 0.17 }, { w: 0.14 }, { w: 0.21 }, { w: 0.16 }, { w: 0.1 }],
             [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', 'Results', perK ? 'Per 1,000 reached' : 'Cost per result', 'CTR'],
             ranked.map(function (a) {
