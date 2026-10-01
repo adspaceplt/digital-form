@@ -1645,6 +1645,7 @@
      only repeat the range that was exported, so they are the last resort. */
   var AD_HEAD = [
     [/^(ad name|ad|name)$/, 'name'], [/^(ad set name|ad set|audience)$/, 'audience'], [/^objective$/, 'objective'],
+    [/^(account name|ad account name|ad account)$/, 'account'], [/^ad id$/, 'ad_id'],
     [/^(result type|result indicator|results? type)$/, 'result_label'], [/^results$/, 'results'],
     [/^reach$/, 'reach'], [/^impressions$/, 'impressions'], [/^amount spent/, 'spend'],
     [/^ctr/, 'ctr'], [/^cost per results?/, 'cpr'],
@@ -1653,7 +1654,7 @@
     [/^age$/, 'age'],
     [/^(3-second video plays|video plays at 3 ?s(econds)?|3-second plays)$/, 'plays3'], [/^thruplays$/, 'thruplays'], [/^video plays$/, 'plays'],
     [/^video plays at 25%/, 'v25'], [/^video plays at 50%/, 'v50'], [/^video plays at 75%/, 'v75'], [/^video plays at 95%/, 'v95'], [/^video plays at 100%/, 'v100'],
-    [/^video average play time/, 'avg_play'], [/^hook rate/, 'hook_rate'], [/^hold rate/, 'hold_rate']
+    [/^video average play time/, 'avg_play'], [/^(hook rate|thumb ?stop)/, 'hook_rate'], [/^hold rate/, 'hold_rate']
   ];
   function objectiveOf(v) {
     var x = String(v || '').toLowerCase().replace(/^outcome_/, '').replace(/_/g, ' ').trim();
@@ -1682,38 +1683,46 @@
       return hit ? hit[1] : null;
     });
     if (head.indexOf('name') < 0) return { error: 'The header row needs an Ad name column.' };
-    var byKey = {}, order = [], skipped = 0, daily = 0;
+    var byKey = {}, order = [], skipped = 0, daily = 0, accounts = {};
     var RW = window.ADspaceSmReport && window.ADspaceSmReport.resultWord;
+    var hasAge = head.indexOf('age') > -1;
+    var NUMS = ['results', 'reach', 'impressions', 'spend', 'plays3', 'thruplays', 'plays', 'v25', 'v50', 'v75', 'v95', 'v100'];
+    var acc0 = function () { return { n: {}, w: {}, rows: [], count: 0, ctrw: 0 }; };
+    /* One row's figures into an ad's tally. */
+    var tally = function (a, raw) {
+      a.count++;
+      var im = numIn(raw.impressions), row = { hook_rate: numIn(raw.hook_rate), hold_rate: numIn(raw.hold_rate) };
+      NUMS.forEach(function (k) { var x = numIn(raw[k]); row[k] = x; if (x !== null) a.n[k] = (a.n[k] || 0) + x; });
+      a.rows.push(row);
+      var c = numIn(raw.cpr); if (c !== null) a.n.cpr = c;
+      var pl = playIn(raw.avg_play), pw = numIn(raw.plays) || numIn(raw.plays3) || im || 1;
+      if (pl !== null) { a.n.avg_play = (a.n.avg_play || 0) + pl * pw; a.w.avg_play = (a.w.avg_play || 0) + pw; }
+      var ctr = numIn(raw.ctr);
+      if (ctr !== null) { a.n.ctrSum = (a.n.ctrSum || 0) + ctr * (im || 1); a.ctrw += (im || 1); }
+    };
     lines.slice(1).forEach(function (l) {
       var cells = l.split(sep).map(function (c) { return c.trim().replace(/^"|"$/g, ''); }), raw = {};
       head.forEach(function (k, i) { if (k && raw[k] == null) raw[k] = cells[i] || ''; });
       if (!raw.name) { skipped++; return; }
+      if (raw.account) accounts[raw.account] = true;
       var obj = objectiveOf(raw.objective) || fallbackObj;
-      var key = [raw.name, obj, raw.audience || ''].join('|');
+      /* One ad is one row: an age band or a day of it is gathered into it,
+         and two ads are never added together. Ad ID tells apart two ads that
+         share a name in one ad set; without it, name, objective and ad set. */
+      var key = raw.ad_id ? 'id:' + raw.ad_id : [raw.name, obj, raw.audience || ''].join('|');
       var ad = byKey[key];
       if (!ad) {
         ad = byKey[key] = { name: raw.name, objective: obj, audience: raw.audience || null,
           result_label: raw.result_label ? (RW ? RW(raw.result_label) : raw.result_label) : null,
           own_start: null, own_end: null, rep_start: null, rep_end: null, days: {}, ran_from: null, ran_to: null,
-          _n: {}, _w: {}, _age: {}, _rows: 0, _ctrw: 0 };
+          band: acc0(), total: acc0(), _age: {} };
         order.push(key);
       }
-      ad._rows++;
       var im = numIn(raw.impressions);
-      ['results', 'reach', 'impressions', 'spend', 'plays3', 'thruplays', 'plays', 'v25', 'v50', 'v75', 'v95', 'v100'].forEach(function (k) {
-        var x = numIn(raw[k]); if (x !== null) ad._n[k] = (ad._n[k] || 0) + x;
-      });
-      ['cpr'].forEach(function (k) { var x = numIn(raw[k]); if (x !== null) ad._n[k] = x; });
-      /* A rate is a share of the row's impressions, so rows are weighed by
-         them; a plain last value was one age band's rate. */
-      ['hook_rate', 'hold_rate'].forEach(function (k) {
-        var x = numIn(raw[k]); if (x === null) return;
-        var w = im || 1; ad._n[k] = (ad._n[k] || 0) + x * w; ad._w[k] = (ad._w[k] || 0) + w;
-      });
-      var pl = playIn(raw.avg_play), pw = numIn(raw.plays) || numIn(raw.plays3) || im || 1;
-      if (pl !== null) { ad._n.avg_play = (ad._n.avg_play || 0) + pl * pw; ad._w.avg_play = (ad._w.avg_play || 0) + pw; }
-      var ctr = numIn(raw.ctr);
-      if (ctr !== null) { ad._n.ctrSum = (ad._n.ctrSum || 0) + ctr * (im || 1); ad._ctrw += (im || 1); }
+      /* A report laid out as a table by age carries a row for the ad with no
+         age (its total) above its bands: the total is the ad's figures, the
+         bands only its split. Raw rows have no such row. */
+      tally(hasAge && !String(raw.age || '').trim() ? ad.total : ad.band, raw);
       var os = raw.starts_on ? readDate(raw.starts_on, year) : null, oe = raw.ends_on ? readDate(raw.ends_on, year) : null;
       if (os && (!ad.own_start || os < ad.own_start)) ad.own_start = os;
       if (oe && (!ad.own_end || oe > ad.own_end)) ad.own_end = oe;
@@ -1736,8 +1745,33 @@
         }
       }
     });
+    if (Object.keys(accounts).length > 1) return { error: 'These rows come from ' + Object.keys(accounts).length + ' ad accounts. Export one client\'s account.' };
+    /* A rate Ads Manager sends (a custom Hook rate or Hold rate column) is a
+       formula over the ad's figures. Its formula is found from the rows
+       themselves, then worked out on the ad's whole figures, so the rate
+       reads as Ads Manager shows it for the ad, whatever the formula. */
+    var FORM_N = ['plays3', 'thruplays', 'plays', 'v25', 'v50', 'v75', 'v95', 'v100'], FORM_D = ['impressions', 'reach', 'plays3', 'plays'];
+    var rateOf = function (a, k) {
+      var got = a.rows.filter(function (r) { return r[k] !== null; });
+      if (!got.length) return null;
+      if (a.rows.length === 1) return got[0][k];
+      for (var i = 0; i < FORM_N.length; i++) for (var j = 0; j < FORM_D.length; j++) {
+        var nk = FORM_N[i], dk = FORM_D[j];
+        if (nk === dk || !a.n[dk]) continue;
+        var fits = got.every(function (r) {
+          if (r[nk] === null || !r[dk]) return r[k] === 0 || r[dk] === 0;
+          var v = r[nk] / r[dk];
+          return Math.abs(v * 100 - r[k]) <= Math.max(0.06, Math.abs(r[k]) * 0.003) || Math.abs(v - r[k]) <= 0.0006;
+        });
+        if (fits) return Math.round((a.n[nk] || 0) / a.n[dk] * 10000) / 100;
+      }
+      var sw = 0, sx = 0;
+      got.forEach(function (r) { var w0 = r.impressions || 1; sw += w0; sx += r[k] * w0; });
+      return Math.round(sx / sw * 100) / 100;
+    };
     var rows = order.map(function (k) {
-      var ad = byKey[k], n = ad._n, w = ad._w;
+      var ad = byKey[k];
+      var a = ad.total.count ? ad.total : ad.band, n = a.n, w = a.w;
       var byDay = Object.keys(ad.days).length > 1;
       if (byDay) daily++;
       var from, to;
@@ -1750,13 +1784,18 @@
         reach: n.reach != null && !byDay ? Math.round(n.reach) : null,
         impressions: n.impressions != null ? Math.round(n.impressions) : null,
         spend: n.spend != null ? Math.round(n.spend * 100) / 100 : null,
-        ctr: ad._ctrw ? Math.round(n.ctrSum / ad._ctrw * 100) / 100 : null,
-        cpr: ad._rows === 1 && n.cpr != null ? n.cpr : null,
+        ctr: a.ctrw ? Math.round(n.ctrSum / a.ctrw * 100) / 100 : null,
+        cpr: a.count === 1 && n.cpr != null ? n.cpr : null,
         avg_play: w.avg_play ? Math.round(n.avg_play / w.avg_play * 10) / 10 : null, age: {}, retention: {} };
-      if (w.hook_rate) out.hook_rate = Math.round(n.hook_rate / w.hook_rate * 100) / 100;
+      if (byDay) out._daily = true;
+      /* Without a rate of Ads Manager's own: the hook is 3-second plays over
+         impressions, the hold ThruPlays over 3-second plays (of those the
+         opening stopped, how many stayed; the user, 2026-10-01). */
+      var hk = rateOf(a, 'hook_rate'), hd = rateOf(a, 'hold_rate');
+      if (hk !== null) out.hook_rate = hk;
       else if (n.plays3 != null && n.impressions) out.hook_rate = Math.round(n.plays3 / n.impressions * 10000) / 100;
-      if (w.hold_rate) out.hold_rate = Math.round(n.hold_rate / w.hold_rate * 100) / 100;
-      else if (n.thruplays != null && n.impressions) out.hold_rate = Math.round(n.thruplays / n.impressions * 10000) / 100;
+      if (hd !== null) out.hold_rate = hd;
+      else if (n.thruplays != null && n.plays3) out.hold_rate = Math.round(n.thruplays / n.plays3 * 10000) / 100;
       var base = n.plays || n.plays3;
       if (base) [['p25', 'v25'], ['p50', 'v50'], ['p75', 'v75'], ['p95', 'v95'], ['p100', 'v100']].forEach(function (r0) {
         if (n[r0[1]] != null) out.retention[r0[0]] = Math.round(n[r0[1]] / base * 1000) / 10;
@@ -1785,33 +1824,62 @@
     sum.textContent = ''; say(sm, '');
     var year = Number(String(st.open.period_start).slice(0, 4));
     var go = box.querySelector('[data-a="go"]');
+    /* An ad already in this report, named again by a daily export, takes
+       that export's dates and keeps its figures: the monthly export gives
+       the figures and the reach, the daily one the days each ad ran. */
+    var already = function (r0) {
+      var same = st.ads.filter(function (a) { return a.name === r0.name; });
+      if (same.length > 1 && r0.audience) same = same.filter(function (a) { return (a.audience || '') === r0.audience; });
+      if (same.length > 1) same = same.filter(function (a) { return a.objective === r0.objective; });
+      return same.length === 1 ? same[0] : null;
+    };
+    var named = function (r0) { return st.ads.some(function (a) { return a.name === r0.name; }); };
     var read = function () {
       var out = parseAdRows($('rpPAText').value, { year: year, start: st.open.period_start, end: st.open.period_end }, $('rpPAObj').value);
       if (out.error) { sum.textContent = $('rpPAText').value.trim() ? out.error : ''; go.disabled = true; return out; }
-      sum.textContent = out.rows.length + ' ad' + (out.rows.length === 1 ? '' : 's') + ' ready' +
-        (out.byAge ? ', the age split gathered from the rows' : '') +
-        (out.daily ? ', dates from the days each ad delivered' : '') +
-        (out.skipped ? ', ' + out.skipped + ' without a name skipped' : '') + '.' +
-        (out.daily ? ' Reach is left to type: a daily export counts a person again each day.' : '');
-      go.disabled = !out.rows.length;
+      out.dated = out.rows.filter(function (r0) { return r0._daily && already(r0); });
+      /* A day's rows for a name several ads here share cannot say which ad
+         they date, so they add nothing. */
+      out.unclear = out.rows.filter(function (r0) { return r0._daily && !already(r0) && named(r0); });
+      out.fresh = out.rows.filter(function (r0) { return out.dated.indexOf(r0) < 0 && out.unclear.indexOf(r0) < 0; });
+      var parts = [];
+      if (out.fresh.length) parts.push(out.fresh.length + ' ad' + (out.fresh.length === 1 ? '' : 's') + ' ready');
+      if (out.dated.length) parts.push(out.dated.length + ' ad' + (out.dated.length === 1 ? '' : 's') + ' already here take the days they ran');
+      if (out.byAge) parts.push('the age split gathered from the rows');
+      if (out.fresh.some(function (r0) { return r0._daily; })) parts.push('dates from the days each ad delivered');
+      if (out.unclear.length) parts.push(out.unclear.length + ' left out: more than one ad here has that name');
+      if (out.skipped) parts.push(out.skipped + ' without a name skipped');
+      sum.textContent = parts.join(', ').replace(/^./, function (c) { return c.toUpperCase(); }) + '.' +
+        (out.fresh.some(function (r0) { return r0._daily; }) ? ' Reach is left to type: a daily export counts a person again each day.' : '');
+      go.disabled = !(out.fresh.length + out.dated.length);
       return out;
     };
     $('rpPAText').oninput = read; $('rpPAObj').onchange = read;
     go.disabled = true;
     go.onclick = function () {
       var out = read();
-      if (!out.rows || !out.rows.length) return;
+      if (!out.rows || !(out.fresh.length + out.dated.length)) return;
       var n = st.ads.length;
-      var rows = out.rows.map(function (r0, i) { return Object.assign({ report_id: st.open.id, position: n + i + 1 }, r0); });
+      var rows = out.fresh.map(function (r0, i) { var x = Object.assign({ report_id: st.open.id, position: n + i + 1 }, r0); delete x._daily; return x; });
       go.disabled = true;
-      db.from('sm_report_ads').insert(rows).select('*').then(function (res) {
-        go.disabled = false;
-        if (res.error) { say(sm, said(res.error), 'err'); return; }
+      var dates = out.dated.map(function (r0) {
+        var a = already(r0);
+        return db.from('sm_report_ads').update({ starts_on: r0.starts_on, ends_on: r0.ends_on }).eq('id', a.id).select('*').then(function (res) {
+          if (res.error) throw res.error;
+          if (!(res.data || []).length) throw new Error('Not saved. The database refused the request.');
+          st.ads = st.ads.map(function (x) { return x.id === a.id ? res.data[0] : x; });
+        });
+      });
+      var add = rows.length ? db.from('sm_report_ads').insert(rows).select('*').then(function (res) {
+        if (res.error) throw res.error;
         st.ads = st.ads.concat(res.data || []);
+      }) : Promise.resolve();
+      Promise.all(dates.concat([add])).then(function () {
+        go.disabled = false;
         sortAds();
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
         paintAds(); paintTotals();
-      });
+      }).catch(function (e) { go.disabled = false; sortAds(); paintAds(); paintTotals(); say(sm, said(e), 'err'); });
     };
     window.ADspaceSheet.show(box, { opener: opener });
   }
