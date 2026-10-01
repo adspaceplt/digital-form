@@ -843,7 +843,10 @@
     if (!DOCS) return Promise.reject(new Error('The document engine (js/documents.js) is not loaded'));
     var warnings = [];
     var warn = function (s) { if (warnings.indexOf(s) < 0) warnings.push(s); };
-    ZH = ((snap && snap.report) || {}).lang === 'zh';
+    /* The report's template is always English (the user, 2026-10-01: Meta's
+       own terms read in English); `lang` decides only the language Draft
+       with AI writes the commentary in, which prints as written. */
+    ZH = false;
     var mdl = model(snap);
     var rep = mdl.rep;
     var everyText = [rep.title, rep.intro, rep.headline, rep.client_name].concat(
@@ -1365,8 +1368,8 @@
     var CHART_WEEK = CW / (PHI * PHI);         // 201.9pt: the column over φ²
     var CHART_POSTS = CW / Math.pow(PHI, 2.5); // 158.8pt: half a step shorter
     (function summary() {
-      newPage('Executive summary');
-      pageTitle('Executive summary');
+      newPage('Executive Summary');
+      pageTitle('Executive Summary');
       var t = mdl.totals;
       var head = words(rep.headline).trim();
       var prose = [];
@@ -1408,31 +1411,38 @@
        the report as a whole (older reports) follow under Across all
        platforms. */
     (function insights() {
-      var LAB = [{ w: 1 / (PHI * PHI), align: 'left' }, { w: 1 - 1 / (PHI * PHI), align: 'left' }];
       var rowsOf = function (list) {
-        return list.filter(function (r) { return words(r[1]).trim(); })
-          .map(function (r) { return { cells: [{ t: r[0], f: reg }, { items: points(r[1]) }], split: true }; });
+        return list.filter(function (r) { return words(r[1]).trim(); });
+      };
+      /* Each part under its own shaded head with its points numbered beneath,
+         as the advertising report reads (the user, 2026-10-01), not a label
+         column beside them. */
+      var parts = function (rows) {
+        rows.forEach(function (r, i) {
+          if (i) gap(SP.under);
+          table([{ w: 1, align: 'left' }], [{ t: r[0], align: 'left' }], [{ cells: [{ items: pointTree(r[1]) }], split: true }]);
+        });
       };
       var blocks = mdl.groups.map(function (gg) {
         return { gg: gg, lead: words(gg.summary).trim(),
-          rows: rowsOf([['Highlights', gg.worked], ['Areas to improve', gg.improve], ['Recommendations', gg.actions]]) };
+          rows: rowsOf([['Highlights', gg.worked], ['Areas to Improve', gg.improve], ['Recommendations', gg.actions]]) };
       }).filter(function (b) { return b.lead || b.rows.length; });
-      var across = rowsOf([['Key findings', ins.performed_well], ['Performance drivers', ins.why_well],
-        ['Areas to improve', ins.underperformed], ['Opportunities', ins.opportunities],
-        ['Improvements', ins.improvements], ['Next steps', ins.next_actions]]);
+      var across = rowsOf([['Key Findings', ins.performed_well], ['Performance Drivers', ins.why_well],
+        ['Areas to Improve', ins.underperformed], ['Opportunities', ins.opportunities],
+        ['Improvements', ins.improvements], ['Next Steps', ins.next_actions]]);
       if (!blocks.length && !across.length) return;
-      newPage('Insights and recommendations');
-      pageTitle('Insights and recommendations');
+      newPage('Insights and Recommendations');
+      pageTitle('Insights and Recommendations');
       blocks.forEach(function (b, i) {
         if (i) gap(BLOCK);
         blockTitle(b.gg.label, T.minH * 2);
         if (b.lead) proseBlock(sh.linesOf(b.lead, CW, TY.body, book).map(function (ln) { return { ln: ln, size: TY.body }; }));
-        if (b.rows.length) table(LAB, null, b.rows, { labelCol: true });
+        parts(b.rows);
       });
       if (across.length) {
         if (blocks.length) gap(BLOCK);
-        blockTitle(blocks.length ? 'Across all platforms' : 'Insights', T.minH * 2);
-        table(LAB, null, across, { labelCol: true });
+        blockTitle(blocks.length ? 'Across All Platforms' : 'Insights', T.minH * 2);
+        parts(across);
       }
     })();
 
@@ -1671,8 +1681,8 @@
 
       // ------------------------------------------------ Executive summary
       (function summary() {
-        newPage('Executive summary');
-        pageTitle('Executive summary');
+        newPage('Executive Summary');
+        pageTitle('Executive Summary');
         if (first) leadLine('The headline figures for the period, before the detail.');
         var head = words(rep.headline).trim();
         if (head) proseBlock(sh.linesOf(head, CW, TY.lead, med).slice(0, 3).map(function (ln) { return { ln: ln, size: TY.lead }; }));
@@ -1892,8 +1902,8 @@
 
       (function performance() {
         if (!am.ads.length) return;
-        newPage('Ad performance');
-        pageTitle('Ad performance');
+        newPage('Ad Performance');
+        pageTitle('Ad Performance');
         if (first) {
           leadLine('Each objective ranked by what a result cost, then each creative with its results across objectives.');
           panel('How to read this', [
@@ -1920,21 +1930,24 @@
           /* Each result reads as its count and one short word, on one line
              where it fits and the word under the count where it does not;
              never broken inside a word. No result reads 0 Leads. */
-          table([{ w: 0.22, align: 'left' }, { w: 0.17 }, { w: 0.14 }, { w: 0.21 }, { w: 0.16 }, { w: 0.1 }],
+          /* The ad's name takes the room the figures do not need, so a name
+             reads whole on its line (the user, 2026-10-01: 2608W4_OldOwnorInves|t). */
+          table([{ w: 0.27, align: 'left' }, { w: 0.17 }, { w: 0.15 }, { w: 0.15 }, { w: 0.16 }, { w: 0.1 }],
             [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', 'Results', perK ? 'Per 1,000 reached' : 'Cost per result', 'CTR'],
             ranked.map(function (a) {
               var f = a === best ? med : book;
               return { cells: [{ t: adName(a.name) + (words(a.audience).trim() ? '\n' + words(a.audience).trim() + ' audience' : ''), f: f },
-                { t: range(a.starts_on, a.ends_on), f: f }, { t: money(a.spend), f: f }, { t: countWord(a.results, a._label, 0.21, f), f: f },
-                { t: cost(a._cpr) + (!perK && a._per1000 ? ' per 1,000' : ''), f: f }, { t: pctv(a.ctr), f: f }] };
+                { t: range(a.starts_on, a.ends_on), f: f }, { t: money(a.spend), f: f }, { t: countWord(a.results, a._label, 0.15, f), f: f },
+                { t: a._cpr === null ? '\u2014' : cost(a._cpr) + (!perK && a._per1000 ? ' per 1,000' : ''), f: f },
+                { t: num(a.ctr) === null ? '\u2014' : pctv(a.ctr), f: f }] };
             }), { labelCol: false });
           /* A full block step before the next objective, so each reads as
              its own table (the user, 2026-10-01). */
           y -= BLOCK;
         });
         var creatives = creativesOf();
-        newPage('Creative performance');
-        pageTitle('Creative performance');
+        newPage('Creative Performance');
+        pageTitle('Creative Performance');
         var videoRead = false;
         creatives.forEach(function (c) {
           creativeCard(c);
@@ -1951,11 +1964,11 @@
 
       // ------------------------------------------------ Insights and recommendations
       (function insights() {
-        var blocks = [['What worked', ins.worked], ['Areas to improve', ins.fix], ['Recommended focus for the following month', ins.focus]]
+        var blocks = [['What Worked', ins.worked], ['Areas to Improve', ins.fix], ['Recommended Focus for the Following Month', ins.focus]]
           .filter(function (b) { return words(b[1]).trim(); });
         if (!blocks.length) return;
-        newPage('Insights and recommendations');
-        pageTitle('Insights and recommendations');
+        newPage('Insights and Recommendations');
+        pageTitle('Insights and Recommendations');
         if (first) leadLine('What the period’s figures mean, and what happens next.');
         blocks.forEach(function (b, i) {
           if (i) gap(BLOCK);

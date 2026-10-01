@@ -853,6 +853,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - It never shows the recipient.
   - HR is shown as "HR letter".
 - The Chinese face (`ADSPACE_ORG.fontCjk`):
+  - It is Noto Sans SC as TrueType in the repo (`css/NotoSansSC-Regular.ttf`,
+    `css/NotoSansSC-NOTICE.txt`), embedded with only the characters used.
+    The CDN's CFF face, embedded whole, made every Chinese PDF 8 MB and drew
+    garbled in strict viewers. fontkit's subsetter needs every glyph's data
+    at an even length, so the face is saved with its glyphs padded.
   - A CFF face is embedded whole, never subset (`isCff()`).
   - An unreachable face refuses the letter by name.
   - `fontMed` falls back to Slate Regular.
@@ -1676,7 +1681,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   URLs.
 - Ads reports (`kind = 'ads'`):
   - `first_month` carries the reading guidance; a later month compares against
-    the previous period, which is carried forward.
+    the previous period, which is carried forward. A new report is never a
+    first month by itself (`2026-10-01-ads-first-month-unticked.sql`: most
+    clients advertised before the portal); with no earlier report the period
+    before is prefilled (the previous calendar month, else the same length
+    just before) for the team to type its figures, and the team ticks a
+    client's true first month.
   - One row per ad and objective.
   - Ads Manager's own cost per result (reach per 1,000).
   - Paste from an Ads Manager or Ads Reporting export (2026-10-01). A row on
@@ -1685,9 +1695,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     it; two result types (Post engagements, Interactions) are never added
     together; Post engagements reads Engagements. Ad ID ties each row to its ad; without it, one name with two
     result types is refused. The row keeps its Ad IDs and the Account ID
-    (`ad_ids`, `ad_account`) as the team's reference: each a copy control
-    under the name, Open in Ads Manager in the row's ⋯, a later paste
-    matched by them first; never printed in the PDF. A table's total row gives the figures once.
+    (`ad_ids`, `ad_account`) as the team's reference: the row and the Edit
+    sheet's foot (left of Cancel) name how many (`2 Ad IDs`, a `.linkbtn`)
+    and open them over the page (`#rpIdsPop`, a `.popcard` through
+    `ADspaceMenu.pop`, above a sheet, Escape first): each a copy control,
+    Copy all, Open in Ads Manager; never the IDs in a line under the name. A
+    later paste is matched by them first; never printed in the PDF. A table's total row gives the figures once.
     A paste naming ads already in the report updates them with what it holds
     and adds the rest: a day export the dates (first and last day with
     impressions), an age export the age split, an export with neither the
@@ -1716,17 +1729,15 @@ Each line is a rule that broke once. Its reason is in the archive.
     platform's four fields and each post's remark, read platform by
     platform. Nothing is saved until Save, and written text is replaced only
     after Replace.
-  - A report has a language (`sm_reports.lang`, 'en' or 'zh',
+  - A report has a draft language (`sm_reports.lang`, 'en' or 'zh',
     `2026-10-01-report-language.sql`), the English / 中文 segment beside
     Draft with AI (`#rpAiLang`), saved at once; a new report takes the main
-    contact's preferred language. The draft is written in it (`ZH`), and a
-    Chinese PDF keeps its cover, file name, page titles, head and foot in
-    English (the template) while table titles, column heads, labels, notes
-    and dates read professional Simplified Chinese, each term on one line
-    (a table's dates without the year, `7月5日至6日`)
-    (`ZH_WORDS`, `ZH_COUNT`, `ZH_RULES` in `js/smreport.js`, applied at the
-    drawing primitives); the team's own words print as typed. The Chinese
-    face is Noto Sans SC (`ADSPACE_CONFIG`/`ADSPACE_ORG.fontCjk`).
+    contact's preferred language. It decides only the language Draft with
+    AI writes in (`ZH` in `report-draft`): the PDF's template is English
+    throughout and what the team wrote prints as written (the user,
+    2026-10-01: Meta's own terms read in English). The PDF's Chinese layer
+    (`ZH_WORDS`, `ZH_COUNT`, `ZH_RULES` in `js/smreport.js`) is switched off.
+    Chinese text is drawn in Noto Sans SC (`ADSPACE_ORG.fontCjk`, below).
   - Every draft keeps to `SHARED`: only what the client needs, a few points
     a field, one sentence a point; and never a word against the creative,
     copy, plan or targeting we made: a shortfall is read as what the
@@ -1775,7 +1786,14 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Import controls read Import from spreadsheet and Import from Ads Manager.
 - The PDF:
   - Every section on its own page, on a golden-ratio scale, with a 33.3pt
-    margin; no Methodology page.
+    margin; no Methodology page. Page titles and the commentary's block
+    heads are in title case (Executive Summary, Ad Performance, What Worked,
+    Areas to Improve): a formal document.
+  - Commentary reads one block per part: its shaded head, its points
+    numbered under it, on both kinds of report (never a label column beside
+    the points).
+  - The ranking table gives the ad's name the widest column, so a name reads
+    whole; a missing cost per result or CTR is a dash.
   - The foot is PRIVATE & CONFIDENTIAL and the page count on the margin's
     line; no draft or version line.
   - A page break falls between points, never inside one: each numbered or

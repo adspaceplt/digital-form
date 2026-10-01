@@ -142,7 +142,8 @@
     file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 12v6M9 15l3 3 3-3"/></svg>',
     close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
     tick: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
-    go: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>'
+    go: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>',
+    out: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>'
   };
 
   // ---- State ----------------------------------------------------------------
@@ -1658,10 +1659,12 @@
         }).join('') + '</div></div>';
     }).join('');
     if (pick) { wirePick(box); return; }
-    /* The Ad ID copies itself, so a question about an ad starts from the
-       ad in Ads Manager. */
-    Array.prototype.forEach.call(box.querySelectorAll('[data-a="adid"]'), function (c) {
-      c.addEventListener('click', function () { if (window.ADspaceCopy) window.ADspaceCopy.to(c, c.getAttribute('data-id')); });
+    /* A row names how many Ad IDs it holds; the IDs open over it. */
+    Array.prototype.forEach.call(box.querySelectorAll('[data-a="adids"]'), function (c) {
+      c.addEventListener('click', function (e) {
+        e.stopPropagation();
+        idsOpen(c, st.ads.filter(function (x) { return x.id === c.getAttribute('data-id'); })[0]);
+      });
     });
     wireRows(box, function (id, act, btn) {
       var a = st.ads.filter(function (x) { return x.id === id; })[0];
@@ -1673,14 +1676,66 @@
     });
   }
 
-  /* The team's reference to the ads a row was built from: each Ad ID a
-     copy control, the console's only (the PDF never prints it). */
+  /* The team's reference to the ads a row was built from (the console's
+     only; the PDF never prints it): a quiet control naming how many, which
+     opens the IDs over the row (the user, 2026-10-01: eighteen-digit IDs in
+     a line under every ad read as a mess). */
+  function idsWord(ids) { return ids.length === 1 ? 'Ad ID' : ids.length + ' Ad IDs'; }
   function adIdsHtml(a) {
     var ids = a.ad_ids || [];
     if (!ids.length) return '';
-    return '<small class="rp-adids">' + (ids.length === 1 ? 'Ad ID ' : 'Ad IDs ') + ids.map(function (x) {
-      return '<button class="serial-copy rp-adid" type="button" data-a="adid" data-id="' + esc(x) + '" aria-label="Copy Ad ID ' + esc(x) + '">' + esc(x) + '</button>';
-    }).join(' ') + '</small>';
+    return '<small class="rp-adref"><button class="linkbtn" type="button" data-a="adids" data-id="' + esc(a.id) +
+      '" aria-haspopup="dialog" aria-expanded="false">' + esc(idsWord(ids)) + '</button></small>';
+  }
+  /* One card for every row and the Edit sheet, laid by the one copy of where
+     a popover opens: each ID a copy control, Copy all where there are
+     several (Ads Manager's search takes them comma separated), and Open in
+     Ads Manager. */
+  var idsPop = null, idsBtn = null;
+  function idsShut(back) {
+    if (!idsPop || idsPop.hidden) return;
+    idsPop.hidden = true;
+    if (idsBtn) { idsBtn.setAttribute('aria-expanded', 'false'); if (back) idsBtn.focus(); }
+  }
+  function idsOpen(btn, a) {
+    var ids = (a && a.ad_ids) || [];
+    if (!ids.length) return;
+    if (idsPop && !idsPop.hidden && idsBtn === btn) { idsShut(); return; }
+    if (!idsPop) {
+      idsPop = document.createElement('div');
+      idsPop.className = 'kmenu rp-idspop'; idsPop.id = 'rpIdsPop'; idsPop.hidden = true; idsPop.tabIndex = -1;
+      idsPop.setAttribute('role', 'dialog'); idsPop.setAttribute('aria-labelledby', 'rpIdsTitle');
+      document.body.appendChild(idsPop);
+      idsPop.addEventListener('click', function (e) { e.stopPropagation(); });
+      document.addEventListener('click', function () { idsShut(); });
+      // It answers Escape before the sheet under it does.
+      window.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && idsPop && !idsPop.hidden) { e.stopImmediatePropagation(); e.preventDefault(); idsShut(true); }
+      }, true);
+      if (window.ADspaceMenu) window.ADspaceMenu.onScroll(function () { idsShut(); });
+    }
+    if (idsBtn && idsBtn !== btn) idsBtn.setAttribute('aria-expanded', 'false');
+    idsBtn = btn;
+    idsPop.innerHTML = '<div class="popcard-head"><p class="rp-idspop-title" id="rpIdsTitle">' + esc(idsWord(ids)) + '</p>' +
+      '<button class="iconbtn popcard-x" type="button" data-a="x" aria-label="Close">' + ICON.close + '</button></div>' +
+      '<ul class="rp-idslist">' + ids.map(function (x) {
+        return '<li><button class="serial-copy" type="button" data-id="' + esc(x) + '" aria-label="Copy Ad ID ' + esc(x) + '">' + esc(x) + '</button></li>';
+      }).join('') + '</ul>' +
+      '<div class="rp-idspop-acts">' +
+        (ids.length > 1 ? '<button class="btn btn-sm" type="button" data-a="all">Copy all</button>' : '') +
+        '<button class="btn btn-sm btn-icon" type="button" data-a="open">Open in Ads Manager ' + ICON.out + '</button></div>';
+    var copy = function (el, text) { if (window.ADspaceCopy) window.ADspaceCopy.to(el, text); };
+    Array.prototype.forEach.call(idsPop.querySelectorAll('.serial-copy'), function (c) {
+      c.onclick = function () { copy(c, c.getAttribute('data-id')); };
+    });
+    var all = idsPop.querySelector('[data-a="all"]');
+    if (all) all.onclick = function () { copy(all, ids.join(',')); };
+    idsPop.querySelector('[data-a="open"]').onclick = function () { window.open(adsManagerUrl(a), '_blank', 'noopener'); idsShut(); };
+    idsPop.querySelector('[data-a="x"]').onclick = function () { idsShut(true); };
+    idsPop.hidden = false;
+    btn.setAttribute('aria-expanded', 'true');
+    if (window.ADspaceMenu) window.ADspaceMenu.pop(btn, idsPop, 'left');
+    try { idsPop.focus({ preventScroll: true }); } catch (e) { idsPop.focus(); }
   }
   /* Ads Manager on these ads: the account where it is known, the ads chosen. */
   function adsManagerUrl(a) {
@@ -1823,7 +1878,7 @@
           RET.map(function (r0) { return '<div><label class="field-label" for="rpRet_' + r0[0] + '">Still watching at ' + r0[1] + ' (%)</label><input class="input" id="rpRet_' + r0[0] + '" data-ret="' + r0[0] + '" data-num="pct" type="text" inputmode="decimal"></div>'; }).join('') +
         '</div></details></section>' +
       '<section class="fsec"><h4 class="fsec-h">Remarks</h4><div class="row"><div><label class="field-label" for="rpAdRemark">Remarks on this ad</label><textarea class="input" id="rpAdRemark" rows="2"></textarea></div></div></section>',
-      FOOT('Save'));
+      FOOT('Save') + '<span class="rp-adfoot" id="rpAdRef" hidden></span>');
     box.querySelector('h3').textContent = a && !copy ? 'Edit ad' : 'Add ad';
     var v = function (id, x) { $(id).value = x == null ? '' : x; };
     a = a || {};
@@ -1836,6 +1891,13 @@
     v('rpAdHook', a.hook_rate); v('rpAdHold', a.hold_rate); $('rpAdPlay').value = playOut(a.avg_play);
     RET.forEach(function (r0) { v('rpRet_' + r0[0], (a.retention || {})[r0[0]]); });
     v('rpAdRemark', a.remark);
+    /* The Ad IDs sit in the foot, left of Cancel and Save, the same control
+       as the row's; a copy is a new ad and carries none. */
+    var ref = $('rpAdRef'), held = a.id && !copy ? a : null;
+    ref.innerHTML = held ? adIdsHtml(held) : '';
+    ref.hidden = !ref.innerHTML;
+    var refBtn = ref.querySelector('[data-a="adids"]');
+    if (refBtn) refBtn.onclick = function (e) { e.stopPropagation(); idsOpen(refBtn, held); };
     numFields(box);
     /* The age split is a share of the results, so it adds up to 100%. The
        running total says so while it is typed. */
