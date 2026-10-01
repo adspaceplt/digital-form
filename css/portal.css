@@ -8499,11 +8499,37 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 #activityList .recday { position: sticky; top: 0; z-index: 2; background: var(--card); padding: 6px 0 8px; margin-bottom: 0; }
 /* A long detail reads three lines and opens on a press; the whole entry is
    the control, so it takes the focus ring and says it opens. */
-.rl-detail { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+/* Two lines an entry, each cut at its end, so a long log runs down quickly
+   (the user, 2026-10-01); a press opens the whole entry. */
+.rl-head { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rl-detail { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; line-clamp: 1; overflow: hidden; }
+.recline.is-open .rl-head { white-space: normal; overflow: visible; }
 .recline.is-open .rl-detail { display: block; -webkit-line-clamp: unset; line-clamp: unset; overflow: visible; }
 .recline.is-long { cursor: pointer; border-radius: 4px; }
 .recline.is-long:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; }
 @media (hover: hover) { .recline.is-long:hover .rl-detail { color: var(--ink); } }
+/* Who did it stands at the right edge only in a wide history; a rail reads
+   it at the head of the line. */
+.rl-by { display: none; }
+/* A wide history (js/records.js, 720px and over) reads one line an entry,
+   as a table: the time, what happened and on what, then what changed cut
+   at the line's end in the soft ink, and who at the right edge in a fixed
+   track, a hairline between entries. A cut line opens on a press. */
+.reclist.is-wide .reclines { gap: 0; }
+.reclist.is-wide .recline {
+  grid-template-columns: 40px minmax(0, 1fr) 150px; gap: 0 12px;
+  padding: 5px 0; border-top: 1px solid var(--line-soft);
+}
+.reclist.is-wide .recline:first-child { border-top: 0; }
+.reclist.is-wide .rl-who { display: none; }
+.reclist.is-wide .rl-by { display: block; color: var(--ink-mute); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.reclist.is-wide .rl-body { display: flex; align-items: baseline; gap: 10px; min-width: 0; overflow-wrap: normal; }
+.reclist.is-wide .rl-head { flex: 0 1 auto; max-width: 62%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reclist.is-wide .rl-detail { flex: 1 1 0; margin: 0; display: block; -webkit-line-clamp: unset; line-clamp: unset; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reclist.is-wide .recline.is-open .rl-body { display: block; overflow-wrap: anywhere; }
+.reclist.is-wide .recline.is-open .rl-head { max-width: none; white-space: normal; }
+.reclist.is-wide .recline.is-open .rl-detail { white-space: normal; margin-top: 1px; }
+.reclist.is-wide .recline.is-long { border-radius: 0; }
 
 /* ---------- One strip (2026-09-27) ----------
    A record's panes and a route's tabs take the view strip's look, asked for

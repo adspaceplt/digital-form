@@ -127,7 +127,8 @@
         (x.n > 1 ? ' <span class="rl-n">\u00b7 ' + x.n + ' times</span>' : '') +
       '</div>' +
       (detail ? '<div class="rl-detail">' + esc(detail) + '</div>' : '') +
-      '</div></li>';
+      '</div>' +
+      (x.who ? '<span class="rl-by">' + esc(x.who) + '</span>' : '') + '</li>';
   }
 
   function paint(host, items, o) {
@@ -162,23 +163,41 @@
   var RO = window.ResizeObserver ? new ResizeObserver(function (es) {
     es.forEach(function (e) { measure(e.target); });
   }) : null;
+  /* A history with room reads one line an entry, as a table does (the
+     user, 2026-10-01: a long log should run down quickly): the time, what
+     happened and on what, what changed in the quiet ink cut at the line's
+     end, and who at the right edge. A rail or a phone reads two lines, each
+     cut at its end; a press opens the whole entry. */
+  var WIDE = 720;
   function measure(host) {
+    var list = host.querySelector('.reclist');
+    var wide = !!list && host.clientWidth >= WIDE;
+    if (list) list.classList.toggle('is-wide', wide);
     Array.prototype.forEach.call(host.querySelectorAll('.recline'), function (li) {
       if (li.classList.contains('is-open')) return;
-      var body = li.querySelector('.rl-detail');
-      if (!body || !body.clientHeight) { li.classList.remove('is-long'); return; }
-      var long = body.scrollHeight > body.clientHeight + 1;
-      li.classList.toggle('is-long', long);
-      if (long) {
-        li.tabIndex = 0;
-        li.setAttribute('role', 'button');
-        li.setAttribute('aria-expanded', 'false');
-      } else {
-        li.removeAttribute('tabindex');
-        li.removeAttribute('role');
-        li.removeAttribute('aria-expanded');
+      var body = li.querySelector('.rl-detail'), head = li.querySelector('.rl-head');
+      if (wide) {
+        var cut = function (el) { return !!el && el.clientWidth > 0 && el.scrollWidth > el.clientWidth + 1; };
+        if (!head || !head.clientWidth) { li.classList.remove('is-long'); return; }
+        mark(li, cut(head) || cut(body));
+        return;
       }
+      var headCut = !!head && head.clientWidth > 0 && head.scrollWidth > head.clientWidth + 1;
+      if (!body || !body.clientHeight) { mark(li, headCut); return; }
+      mark(li, headCut || body.scrollHeight > body.clientHeight + 1);
     });
+  }
+  function mark(li, long) {
+    li.classList.toggle('is-long', long);
+    if (long) {
+      li.tabIndex = 0;
+      li.setAttribute('role', 'button');
+      li.setAttribute('aria-expanded', 'false');
+    } else {
+      li.removeAttribute('tabindex');
+      li.removeAttribute('role');
+      li.removeAttribute('aria-expanded');
+    }
   }
   function flip(li) {
     if (!li || !li.classList.contains('is-long')) return;

@@ -1910,9 +1910,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   older rows behind.
 - Every history (the Activity record, a client's and a campaign's Activity and
   rail, a task's log and recent activity) is drawn by `js/records.js`
-  (`ADspaceRecords.paint`): two 12.5px rows an entry (time, who in mute
-  ink, what and on what on the first; the detail on the second in the soft
-  ink, cut at three lines), a heading a day, and a run of the same act by one
+  (`ADspaceRecords.paint`): at 720px and over one 12.5px line an entry
+  (`.reclist.is-wide`: time, what and on what, the detail cut at the line's
+  end in the soft ink, who at the right edge in a 150px track, a hairline
+  between entries); narrower, two lines (time, who in mute ink, what and on
+  what; the detail under it), each cut at its end; a cut entry opens on a
+  press. A heading a day, and a run of the same act by one
   person on one thing within ten minutes folded into one entry (`×n`). On a
   campaign's own page a booking's entry is about its creator (`lead`, the
   detail's first part), and `detailOf()` drops words the first row says
@@ -1925,8 +1928,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   written once on the folded line; the record a pane belongs to) else its
   subject; with neither,
   only identical lines fold. A field changed twice reads as its path
-  (`Admin → Team → Admin`), a run reads `· 3 times`, and a line longer than
-  three lines opens on a press (`is-long`, a button with `aria-expanded`).
+  (`Admin → Team → Admin`), a run reads `· 3 times`, and a cut entry is a
+  button with `aria-expanded` (`is-long`).
   `register.added` / `register.edited` read Document added / edited.
 - Every save files what it changed, from and to (`ADspaceRecords.changes`:
   "Label: old → new", empty reads "not set"); a save that changed nothing
