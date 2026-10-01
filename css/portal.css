@@ -8232,10 +8232,20 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .is-narrow .rp-ad-row { grid-template-columns: 34px minmax(0, 1fr) 96px auto; grid-template-areas: "th name spend act" "th res cpr act"; gap: 2px 12px; }
 .is-narrow .rp-ad-row > .rp-thumb { grid-area: th; }
 .is-narrow .rp-ad-row > .rp-name { grid-area: name; }
-.is-narrow .rp-ad-row > .rp-num:nth-child(3) { grid-area: spend; }
-.is-narrow .rp-ad-row > .rp-num:nth-child(4) { grid-area: res; text-align: left; font-size: 12.5px; color: var(--ink-mute); }
-.is-narrow .rp-ad-row > .rp-num:nth-child(5) { grid-area: cpr; font-size: 12.5px; color: var(--ink-mute); }
+.is-narrow .rp-ad-row > .rp-spend { grid-area: spend; }
+.is-narrow .rp-ad-row > .rp-res { grid-area: res; text-align: left; font-size: 12.5px; color: var(--ink-mute); }
+.is-narrow .rp-ad-row > .rp-cpr { grid-area: cpr; font-size: 12.5px; color: var(--ink-mute); }
 .is-narrow .rp-ad-row > :last-child { grid-area: act; }
+/* Selecting ads: a tick leads every row, the table's own tick heads it. */
+.rp-pick { display: inline-flex; align-items: center; justify-content: center; }
+.rp-ad-table.is-picking .rp-ad-row { grid-template-columns: 24px 34px minmax(0, 1fr) 104px 72px 104px var(--ctl-h); }
+.rp-ad-table.is-picking .rp-ad-row.crm-head > :nth-child(n+4):nth-child(-n+6) { text-align: right; }
+.rp-ad-table.is-picking .rp-ad-row.crm-head > :nth-child(3) { text-align: left; }
+.rp-ad-row.is-picked { background: var(--line-soft); }
+.is-narrow .rp-ad-table.is-picking .rp-ad-row { grid-template-columns: 24px 34px minmax(0, 1fr) 96px; grid-template-areas: "pk th name spend" "pk th res cpr"; }
+.is-narrow .rp-ad-table.is-picking .rp-ad-row > .rp-pick { grid-area: pk; }
+.is-narrow .rp-ad-table.is-picking .rp-ad-row > :last-child:not(.rp-pick) { display: none; }
+.rp-adbar { margin: 0; }
 /* A report is entered in four steps. The strip is the report's own tab row:
    each step names what it holds, and a step that holds something carries a
    tick, so where the report stands reads before anything is opened. */

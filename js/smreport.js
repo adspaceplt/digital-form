@@ -115,6 +115,30 @@
     return PDF.rgb(c.red + (1 - c.red) * white, c.green + (1 - c.green) * white, c.blue + (1 - c.blue) * white);
   }
   function words(s) { return String(s == null ? '' : s).replace(/\r/g, ''); }
+  /* Ads Manager's result indicator is a key (`actions:post_engagement`,
+     `onsite_conversion.messaging_conversation_started_7d`); a report reads
+     the word for it. A label somebody typed is left as typed. */
+  var RESULT_KEY = [
+    [/post_engagement$/, 'Post engagements'], [/page_engagement$/, 'Page engagements'], [/post_reaction$/, 'Post reactions'],
+    [/(^|[:.])like$/, 'Page likes'], [/link_click$/, 'Link clicks'], [/landing_page_view$/, 'Landing page views'],
+    [/messaging_conversation_started/, 'Messaging conversations started'], [/messaging_first_reply/, 'New messaging contacts'],
+    [/lead/, 'Leads'], [/purchase/, 'Purchases'], [/add_to_cart/, 'Adds to cart'], [/complete_registration/, 'Registrations completed'],
+    [/thruplay/, 'ThruPlays'], [/video_view/, '3-second video plays'], [/estimated_ad_recall/, 'Ad recall lift'],
+    [/app_install/, 'App installs'], [/post_save/, 'Post saves'], [/profile_visit/, 'Profile visits'],
+    [/(^|[:.])reach$/, 'Reach'], [/(^|[:.])impressions$/, 'Impressions']
+  ];
+  /* The team's code at the end of an ad's name (`_222`, the person who
+     built it) is the team's: a report reads the name without it. */
+  function adName(s) { return String(s == null ? '' : s).trim().replace(/[\s_-]+(\d)\1\1$/, ''); }
+  function resultWord(s) {
+    var t = String(s == null ? '' : s).trim();
+    if (!t || /\s/.test(t) || !/[:._]/.test(t)) return t;
+    var k = t.toLowerCase();
+    for (var i = 0; i < RESULT_KEY.length; i++) if (RESULT_KEY[i][0].test(k)) return RESULT_KEY[i][1];
+    var w = k.replace(/^actions:/, '').replace(/^(onsite_conversion|offsite_conversion)\./, '').replace(/^fb_pixel_/, '')
+      .replace(/^omni_/, '').replace(/_\d+d$/, '').replace(/[._:]+/g, ' ').trim();
+    return w ? w.charAt(0).toUpperCase() + w.slice(1) : t;
+  }
   /* One point a line: an insights field holds several, one per line, and a
      line that is only whitespace is not a point. Accidental repeated blank
      lines are collapsed; a single blank line still divides two points. */
@@ -268,7 +292,7 @@
         : a._per1000 ? (sp !== null && (/reach/i.test(words(a.result_label)) ? rs : rc) ? sp / (/reach/i.test(words(a.result_label)) ? rs : rc) * 1000 : null)
         : (sp !== null && rs ? sp / rs : null);
       a._freq = rc && im !== null ? im / rc : null;
-      a._label = words(a.result_label).trim() || (OBJECTIVES[a.objective] || {}).result || 'Results';
+      a._label = resultWord(words(a.result_label)) || (OBJECTIVES[a.objective] || {}).result || 'Results';
       var ret = a.retention || {};
       a._video = [a.hook_rate, a.hold_rate, a.avg_play].some(function (v) { return num(v) !== null; }) ||
         RETENTION.some(function (r) { return num(ret[r[0]]) !== null; });
@@ -612,7 +636,7 @@
       Object.keys(rep.insights || {}).map(function (k) { return rep.insights[k]; }),
       mdl.accounts.map(function (a) { return [a.account_name, a.summary, a.worked, a.improve, a.actions, a.metric_notes].join(' '); }),
       mdl.posts.map(function (p) { return [p.title, p.caption, p.observation, p.notable, p.theme].join(' '); }),
-      mdl.ads.map(function (a) { return [a.name, a.result_label, a.audience, a.remark].join(' '); })).join(' ');
+      mdl.ads.map(function (a) { return [adName(a.name), a.result_label, a.audience, a.remark].join(' '); })).join(' ');
     var needsCjk = /[⺀-鿿가-힯豈-﫿＀-￯]/.test(everyText);
     var pdf, fonts, logo, sh;
     return PDF.PDFDocument.create().then(function (p) {
@@ -1486,7 +1510,7 @@
         rect(M, top - HEADH, CW, HEADH, FILL);
         var meta = [words(a.audience).trim() ? words(a.audience).trim() + ' audience' : '', range(a.starts_on, a.ends_on)].filter(Boolean).join('  ·  ');
         var mw = meta ? width(meta, TY.small, book) : 0;
-        tline(clip(a.name, CW - PAD * 3 - mw, TY.body, med), M + PAD, top - HEADH / 2 - TY.body * 0.34, TY.body, med, INK);
+        tline(clip(adName(a.name), CW - PAD * 3 - mw, TY.body, med), M + PAD, top - HEADH / 2 - TY.body * 0.34, TY.body, med, INK);
         if (meta) right(meta, R - PAD, top - HEADH / 2 - TY.small * 0.34, TY.small, book, SOFT);
         var bodyTop = top - HEADH;
         var body = Math.max(THt + PAD * 2, CELLH * 2 + (a._age ? AGEH : 0));
@@ -1604,7 +1628,7 @@
               [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', g.adLabel.length <= 12 ? g.adLabel : 'Results', perK ? 'Per 1,000 reached' : 'Cost per result', 'CTR'],
               ranked.map(function (a) {
                 var f = a === best ? med : book;
-                return { cells: [{ t: a.name + (words(a.audience).trim() ? '\n' + words(a.audience).trim() + ' audience' : ''), f: f },
+                return { cells: [{ t: adName(a.name) + (words(a.audience).trim() ? '\n' + words(a.audience).trim() + ' audience' : ''), f: f },
                   { t: range(a.starts_on, a.ends_on), f: f }, { t: money(a.spend), f: f }, { t: fmt(a.results), f: f },
                   { t: money(a._cpr) + (!perK && a._per1000 ? ' per 1,000' : ''), f: f }, { t: pctv(a.ctr), f: f }] };
               }), { labelCol: false });
@@ -1690,7 +1714,7 @@
   }
 
   window.ADspaceSmReport = {
-    render: render, model: model, fileName: fileName, periodWord: periodWord, titleOf: titleOf,
+    render: render, model: model, fileName: fileName, periodWord: periodWord, titleOf: titleOf, resultWord: resultWord, adName: adName,
     engOf: engOf, growthOf: growthOf, fmt: fmt, PLATFORM_WORD: PLATFORM_WORD, TYPE_WORD: TYPE_WORD, METRIC_WORD: METRIC_WORD, METRICS: METRICS
   };
 })();
