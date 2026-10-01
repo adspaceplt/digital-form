@@ -1662,6 +1662,18 @@
         sortAds();
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
         paintAds(); paintTotals();
+        /* One image a creative (the user, 2026-10-01): an image added or
+           changed here goes on the creative's other rows too, the other
+           objectives it ran under. */
+        if ((saved.thumb_data || null) !== (a.thumb_data || null) && saved.thumb_data) {
+          var sibs = st.ads.filter(function (x) { return x.id !== saved.id && adName(x.name) === adName(saved.name) && x.thumb_data !== saved.thumb_data; });
+          if (!sibs.length) return;
+          db.from('sm_report_ads').update({ thumb_data: saved.thumb_data }).in('id', sibs.map(function (x) { return x.id; })).select('id').then(function (r2) {
+            var done = (r2.data || []).map(function (x) { return x.id; });
+            st.ads.forEach(function (x) { if (done.indexOf(x.id) > -1) x.thumb_data = saved.thumb_data; });
+            paintAds();
+          });
+        }
       });
     };
     window.ADspaceSheet.show(box, { opener: opener });

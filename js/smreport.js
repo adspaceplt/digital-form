@@ -1488,13 +1488,6 @@
       var AGEH = S(7) + S(1);
       var VIDH = CELLH, CURVEH = S(7) + S(2);
       var hasRet = function (a) { var r = a.retention || {}; return RETENTION.filter(function (k) { return num(r[k[0]]) !== null; }).length >= 2; };
-      var remarkLines = function (a) { return words(a.remark).trim() ? sh.linesOf(a.remark, CW - PAD * 2 - S(6), TY.small, book) : []; };
-      var cardH = function (a) {
-        var body = Math.max(THt + PAD * 2, CELLH * 2 + (a._age ? AGEH : 0));
-        var vid = a._video ? (hasRet(a) ? Math.max(VIDH, CURVEH) : VIDH) : 0;
-        var rl = remarkLines(a);
-        return HEADH + body + vid + (rl.length ? PAD * 2 + rl.length * S(0) : 0);
-      };
       var cell = function (x, top, w, label, value, h) {
         var off = h ? (h - CELLH) / 2 : 0;
         tline(clip(label, w - PAD * 2, TY.small, book), x + PAD, top - off - PAD - TY.small * 0.8, TY.small, book, SOFT, w - PAD * 2);
@@ -1502,79 +1495,100 @@
         var size = na ? TY.small : (String(value).length > 11 ? S(1) : S(2));
         tline(value, x + PAD, top - off - CELLH + PAD + 3, size, na ? book : med, na ? MUTE : INK, w - PAD * 2);
       };
-      function adCard(a) {
-        var h = cardH(a);
+      /* One creative, every objective it ran under (the user, 2026-10-01):
+         the image once, then a line an objective and kind of result, each
+         priced against its own result; the age split and the video figures
+         from the line that spent the most. */
+      var LH = S(4) + PAD;
+      var LCOLS = [0.27, 0.27, 0.2, 0.14, 0.12];
+      var creativeH = function (c) {
+        var lines = LH * (c.rows.length + 1);
+        var body = Math.max(THt + PAD * 2, lines + (c.ageAd ? AGEH : 0));
+        var vid = c.vidAd ? (hasRet(c.vidAd) ? Math.max(VIDH, CURVEH) : VIDH) : 0;
+        var rl = c.remark ? sh.linesOf(c.remark, CW - PAD * 2 - S(6), TY.small, book) : [];
+        return HEADH + body + vid + (rl.length ? PAD * 2 + rl.length * S(0) : 0);
+      };
+      function creativeCard(c) {
+        var h = creativeH(c);
         need(h);
         var top = y;
-        // The head: the ad's name, then who it ran to and when.
         rect(M, top - HEADH, CW, HEADH, FILL);
-        var meta = [words(a.audience).trim() ? words(a.audience).trim() + ' audience' : '', range(a.starts_on, a.ends_on)].filter(Boolean).join('  ·  ');
-        var mw = meta ? width(meta, TY.small, book) : 0;
-        tline(clip(adName(a.name), CW - PAD * 3 - mw, TY.body, med), M + PAD, top - HEADH / 2 - TY.body * 0.34, TY.body, med, INK);
-        if (meta) right(meta, R - PAD, top - HEADH / 2 - TY.small * 0.34, TY.small, book, SOFT);
+        var meta = money(c.spend) + ' spent';
+        var mw = width(meta, TY.small, book);
+        tline(clip(c.name, CW - PAD * 3 - mw, TY.body, med), M + PAD, top - HEADH / 2 - TY.body * 0.34, TY.body, med, INK);
+        right(meta, R - PAD, top - HEADH / 2 - TY.small * 0.34, TY.small, book, SOFT);
         var bodyTop = top - HEADH;
-        var body = Math.max(THt + PAD * 2, CELLH * 2 + (a._age ? AGEH : 0));
-        // The creative, in its own column, the frame there whether or not there is a picture.
-        thumbIn(a, M + PAD, bodyTop - PAD, TWd, THt);
-        if (!thumbs[a.id]) center('No image', M + PAD + TWd / 2, bodyTop - PAD - THt / 2 - 3, TY.small, book, MUTE);
+        var lines = LH * (c.rows.length + 1);
+        var body = Math.max(THt + PAD * 2, lines + (c.ageAd ? AGEH : 0));
+        thumbIn(c.img || c.rows[0], M + PAD, bodyTop - PAD, TWd, THt);
+        if (!c.img) center('No image', M + PAD + TWd / 2, bodyTop - PAD - THt / 2 - 3, TY.small, book, MUTE);
         hline(bodyTop, M, R);
         pg.page.drawLine({ start: { x: RX, y: bodyTop }, end: { x: RX, y: bodyTop - body }, thickness: 0.48, color: EDGE });
-        // Six figures, three to a row: what it cost and what it bought, then how far it went.
-        var cw3 = RW / 3;
-        [['Amount spent', money(a.spend)], [a._label, fmt(a.results)], ['Cost per result', money(a._cpr)],
-         ['Reach', fmt(a.reach)], ['Impressions', fmt(a.impressions)], ['Click-through rate', pctv(a.ctr)]].map(function (c, i) {
-          return i === 2 ? [cprLabel(a._per1000), c[1]] : c;
-        }).forEach(function (c, i) {
-          var cx = RX + (i % 3) * cw3, cy = bodyTop - Math.floor(i / 3) * CELLH;
-          cell(cx, cy, cw3, c[0], c[1]);
-          if (i % 3) pg.page.drawLine({ start: { x: cx, y: cy }, end: { x: cx, y: cy - CELLH }, thickness: 0.48, color: EDGE });
+        // A line an objective: what it was for, what it bought and at what price.
+        var xs = [], acc = RX + PAD;
+        LCOLS.forEach(function (f) { xs.push(acc); acc += (RW - PAD * 2) * f; });
+        var heads = ['Objective', 'Results', 'Cost per result', 'Reach', 'CTR'];
+        heads.forEach(function (t0, i) {
+          var w0 = (RW - PAD * 2) * LCOLS[i];
+          if (i) right(t0, xs[i] + w0, bodyTop - LH / 2 - TY.small * 0.34, TY.small, book, SOFT);
+          else tline(t0, xs[i], bodyTop - LH / 2 - TY.small * 0.34, TY.small, book, SOFT);
         });
-        hline(bodyTop - CELLH, RX, R);
-        hline(bodyTop - CELLH * 2, RX, R);
-        // Who responded, by age: one column a band, the largest in ink.
-        if (a._age) {
-          var ay = bodyTop - CELLH * 2;
-          tline('Results by age', RX + PAD, ay - PAD - TY.small * 0.8, TY.small, book, SOFT);
-          var ages = AGE_BANDS.map(function (b) { return num((a.age || {})[b]); });
+        c.rows.forEach(function (a, ri) {
+          var ly = bodyTop - LH * (ri + 1);
+          hline(ly, RX, R, FILL2, 0.6);
+          var base = ly - LH / 2 - TY.small * 0.34;
+          /* A figure not given reads as a dash: a line is a table row. */
+          var got = function (v, f0) { return num(v) === null ? '\u2014' : f0(v); };
+          var cells = [(OBJECTIVES[a.objective] || {}).name || 'Other', num(a.results) === null ? a._label : fmt(a.results) + ' ' + a._label,
+            a._cpr === null ? '\u2014' : money(a._cpr) + (a._per1000 ? ' / 1,000' : ''), got(a.reach, fmt), got(a.ctr, pctv)];
+          cells.forEach(function (t0, i) {
+            var w0 = (RW - PAD * 2) * LCOLS[i];
+            var f = i === 0 ? med : book;
+            var tt = clip(String(t0), w0 - S(-1), TY.small, f);
+            if (i) right(tt, xs[i] + w0, base, TY.small, f, INK);
+            else tline(tt, xs[i], base, TY.small, f, INK);
+          });
+        });
+        if (c.ageAd) {
+          var a = c.ageAd, ay = bodyTop - lines;
+          hline(ay, RX, R);
+          tline('Results by age' + (c.rows.length > 1 ? '  ·  ' + ((OBJECTIVES[a.objective] || {}).name || '') : ''), RX + PAD, ay - PAD - TY.small * 0.8, TY.small, book, SOFT);
+          var ages = AGE_BANDS.map(function (bd) { return num((a.age || {})[bd]); });
           var maxA = ages.reduce(function (m, v) { return Math.max(m, v || 0); }, 0) || 1;
           var slot = (RW - PAD * 2) / AGE_BANDS.length, bw = Math.min(S(4), slot * 0.46);
-          var base = ay - AGEH + PAD + S(0), barH = AGEH - PAD * 2 - S(0) - S(1) - S(2);
-          hline(base, RX + PAD, R - PAD, FILL2, 0.6);
-          AGE_BANDS.forEach(function (b, i) {
+          var base2 = ay - AGEH + PAD + S(0), barH = AGEH - PAD * 2 - S(0) - S(1) - S(2);
+          hline(base2, RX + PAD, R - PAD, FILL2, 0.6);
+          AGE_BANDS.forEach(function (bd, i) {
             var v = ages[i], cx = RX + PAD + slot * i + slot / 2;
             var bh = v ? Math.max(0.8, barH * v / maxA) : 0;
-            if (bh) rect(cx - bw / 2, base, bw, bh, v === maxA ? INK : DATA2);
-            center(v === null ? '' : v.toFixed(1) + '%', cx, base + bh + 3, TY.small, v === maxA ? med : book, INK);
-            center(b, cx, base - S(0) + 1, TY.small, book, MUTE);
+            if (bh) rect(cx - bw / 2, base2, bw, bh, v === maxA ? INK : DATA2);
+            center(v === null ? '' : v.toFixed(1) + '%', cx, base2 + bh + 3, TY.small, v === maxA ? med : book, INK);
+            center(bd, cx, base2 - S(0) + 1, TY.small, book, MUTE);
           });
         }
         var yb = bodyTop - body;
-        // The video: how the opening held, how the rest held, and the curve where it is known.
-        if (a._video) {
-          var vh = hasRet(a) ? Math.max(VIDH, CURVEH) : VIDH;
+        if (c.vidAd) {
+          var va = c.vidAd, vh = hasRet(va) ? Math.max(VIDH, CURVEH) : VIDH;
           hline(yb, M, R);
-          var vw = hasRet(a) ? CW / PHI : CW;
-          var v3 = vw / 3;
-          [['Hook rate', pctShort(a.hook_rate)], ['Hold rate', pctShort(a.hold_rate)], ['Average play time', playW(a.avg_play)]].forEach(function (c, i) {
-            cell(M + v3 * i, yb, v3, c[0], c[1], vh);
+          var vw = hasRet(va) ? CW / PHI : CW, v3 = vw / 3;
+          [['Hook rate', pctShort(va.hook_rate)], ['Hold rate', pctShort(va.hold_rate)], ['Average play time', playW(va.avg_play)]].forEach(function (cc, i) {
+            cell(M + v3 * i, yb, v3, cc[0], cc[1], vh);
             if (i) pg.page.drawLine({ start: { x: M + v3 * i, y: yb }, end: { x: M + v3 * i, y: yb - vh }, thickness: 0.48, color: EDGE });
           });
-          if (hasRet(a)) {
+          if (hasRet(va)) {
             var cxs = M + vw;
             pg.page.drawLine({ start: { x: cxs, y: yb }, end: { x: cxs, y: yb - vh }, thickness: 0.48, color: EDGE });
             tline('Audience retention', cxs + PAD, yb - PAD - TY.small * 0.8, TY.small, book, SOFT);
-            var ret = a.retention || {};
-            var pts = RETENTION.map(function (k) { return { k: k, v: num(ret[k[0]]) }; }).filter(function (p) { return p.v !== null; });
+            var ret = va.retention || {};
+            var pts = RETENTION.map(function (k) { return { k: k, v: num(ret[k[0]]) }; }).filter(function (p0) { return p0.v !== null; });
             var px = cxs + PAD * 2, pw = R - PAD * 2 - px;
             var pb = yb - vh + PAD + S(0), ph = vh - PAD * 2 - S(0) - S(1) - S(1);
-            var maxR = Math.max(100, pts.reduce(function (m, p) { return Math.max(m, p.v); }, 0));
+            var maxR = Math.max(100, pts.reduce(function (m, p0) { return Math.max(m, p0.v); }, 0));
             hline(pb, px, px + pw, FILL2, 0.6);
-            var xy = pts.map(function (p, i) {
-              return { x: px + (RETENTION.map(function (r) { return r[0]; }).indexOf(p.k[0])) * (pw / (RETENTION.length - 1)), y: pb + ph * p.v / maxR, p: p };
+            var xy = pts.map(function (p0) {
+              return { x: px + (RETENTION.map(function (r0) { return r0[0]; }).indexOf(p0.k[0])) * (pw / (RETENTION.length - 1)), y: pb + ph * p0.v / maxR, p: p0 };
             });
-            xy.forEach(function (q, i) {
-              if (i) pg.page.drawLine({ start: { x: xy[i - 1].x, y: xy[i - 1].y }, end: { x: q.x, y: q.y }, thickness: 1.2, color: INK });
-            });
+            xy.forEach(function (q, i) { if (i) pg.page.drawLine({ start: { x: xy[i - 1].x, y: xy[i - 1].y }, end: { x: q.x, y: q.y }, thickness: 1.2, color: INK }); });
             xy.forEach(function (q) {
               pg.page.drawCircle({ x: q.x, y: q.y, size: 1.8, color: INK });
               center(q.p.v.toFixed(0) + '%', q.x, q.y + 4, TY.small, book, INK);
@@ -1583,7 +1597,7 @@
           }
           yb -= vh;
         }
-        var rl = remarkLines(a);
+        var rl = c.remark ? sh.linesOf(c.remark, CW - PAD * 2 - S(6), TY.small, book) : [];
         if (rl.length) {
           hline(yb, M, R);
           var ry = yb - PAD - TY.small * 0.8;
@@ -1593,59 +1607,77 @@
         frame(M, top - h, CW, h);
         y = top - h - S(3);
       }
+      /* The creatives, in the order of what they spent, each holding its
+         objectives' lines in the report's objective order. */
+      var creativesOf = function () {
+        var by = {}, order = [];
+        am.groups.forEach(function (g) {
+          g.ads.forEach(function (a) {
+            var k = adName(a.name);
+            if (!by[k]) { by[k] = { name: k, rows: [], spend: 0 }; order.push(k); }
+            by[k].rows.push(a); by[k].spend += num(a.spend) || 0;
+          });
+        });
+        return order.map(function (k) {
+          var c = by[k];
+          var most = function (list) { return list.slice().sort(function (p, q) { return (num(q.spend) || 0) - (num(p.spend) || 0); })[0] || null; };
+          c.img = c.rows.filter(function (a) { return thumbs[a.id]; })[0] || null;
+          c.ageAd = most(c.rows.filter(function (a) { return a._age; }));
+          c.vidAd = most(c.rows.filter(function (a) { return a._video; }));
+          c.remark = uniq(c.rows.map(function (a) { return words(a.remark).trim(); }).filter(Boolean)).join('\n');
+          return c;
+        }).sort(function (p, q) { return q.spend - p.spend; });
+      };
 
       (function performance() {
         if (!am.ads.length) return;
         newPage('Ad performance');
         pageTitle('Ad performance');
         if (first) {
-          leadLine('The ads that ran this period, grouped by objective.');
+          leadLine('Each objective ranked by what a result cost, then each creative with its results across objectives.');
           panel('How to read this', [
-            'Cost per result is what it cost to get one lead, click or action. Compare it only between ads with the same objective, which is why the ads are grouped by objective.',
+            'Cost per result is what it cost to get one lead, click or action. Compare it only between ads with the same objective, which is why each objective is ranked on its own.',
             'Reach is how many people saw an ad; impressions is how many times it was shown. Frequency is impressions divided by reach.',
-            'An ad that appears under two objectives is the same creative tested for two goals. Compare both to see which one to lean into.'
+            'A creative that ran under two objectives shows one line for each. Compare the lines to see which goal it served best.'
           ]);
         } else {
           leadLine(GLOSSARY);
         }
-        var videoRead = false;
         am.groups.forEach(function (g) {
-          var many = g.ads.length > 1;
-          var firstH = cardH(g.ads[0]);
-          blockTitle(g.name + '  ·  ' + g.ads.length + ' ad' + (g.ads.length === 1 ? '' : 's') + '  ·  ' + money(g.spend),
-            many ? T.minH * (g.ads.length + 1) : firstH);
-          if (many) {
-            // The group ranked by what a result cost, the cheapest first and in weight.
-            var ranked = g.ads.slice().sort(function (p, q) {
-              if (p._cpr === null) return 1; if (q._cpr === null) return -1; return p._cpr - q._cpr;
-            });
-            /* The cheapest is marked only where the results are the same
-               kind: a lead and an ad recall lift are not bought at one price. */
-            var oneKind = uniq(g.ads.map(function (a) { return a._label + '|' + a._per1000; })).length === 1;
-            var best = oneKind && ranked[0] && ranked[0]._cpr !== null ? ranked[0] : null;
-            var perK = g.ads.every(function (a) { return a._per1000; });
-            table([{ w: 0.26, align: 'left' }, { w: 0.23 }, { w: 0.14 }, { w: 0.12 }, { w: 0.15 }, { w: 0.1 }],
-              [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', g.adLabel.length <= 12 ? g.adLabel : 'Results', perK ? 'Per 1,000 reached' : 'Cost per result', 'CTR'],
-              ranked.map(function (a) {
-                var f = a === best ? med : book;
-                return { cells: [{ t: adName(a.name) + (words(a.audience).trim() ? '\n' + words(a.audience).trim() + ' audience' : ''), f: f },
-                  { t: range(a.starts_on, a.ends_on), f: f }, { t: money(a.spend), f: f }, { t: fmt(a.results), f: f },
-                  { t: money(a._cpr) + (!perK && a._per1000 ? ' per 1,000' : ''), f: f }, { t: pctv(a.ctr), f: f }] };
-              }), { labelCol: false });
-            gap(S(3));
-          }
-          g.ads.forEach(function (a) {
-            adCard(a);
-            if (first && a._video && !videoRead) {
-              videoRead = true;
-              panel('How to read the video figures', [
-                'Hook rate is the share of people who kept watching once the ad appeared. The first seconds decide whether somebody stops or scrolls past, so a strong hook rate means the opening is doing its job, and a low one shows where to sharpen the next creative.',
-                'Hold rate is the share who kept watching after the opening had caught them: whether the message holds all the way through. A strong hold rate means the content is doing its job; a low one shows where people start to drop off.',
-                GLOSSARY
-              ]);
-            }
+          blockTitle(g.name + '  ·  ' + g.ads.length + ' ad' + (g.ads.length === 1 ? '' : 's') + '  ·  ' + money(g.spend), T.minH * (g.ads.length + 1));
+          // The group ranked by what a result cost, the cheapest first and in weight.
+          var ranked = g.ads.slice().sort(function (p, q) {
+            if (p._cpr === null) return 1; if (q._cpr === null) return -1; return p._cpr - q._cpr;
           });
+          /* The cheapest is marked only where the results are the same
+             kind: a lead and an ad recall lift are not bought at one price. */
+          var oneKind = uniq(g.ads.map(function (a) { return a._label + '|' + a._per1000; })).length === 1;
+          var best = g.ads.length > 1 && oneKind && ranked[0] && ranked[0]._cpr !== null ? ranked[0] : null;
+          var perK = g.ads.every(function (a) { return a._per1000; });
+          table([{ w: 0.26, align: 'left' }, { w: 0.23 }, { w: 0.14 }, { w: 0.12 }, { w: 0.15 }, { w: 0.1 }],
+            [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', g.adLabel.length <= 12 ? g.adLabel : 'Results', perK ? 'Per 1,000 reached' : 'Cost per result', 'CTR'],
+            ranked.map(function (a) {
+              var f = a === best ? med : book;
+              return { cells: [{ t: adName(a.name) + (words(a.audience).trim() ? '\n' + words(a.audience).trim() + ' audience' : ''), f: f },
+                { t: range(a.starts_on, a.ends_on), f: f }, { t: money(a.spend), f: f }, { t: fmt(a.results) + (g.adLabel === 'Results' ? ' ' + a._label : ''), f: f },
+                { t: money(a._cpr) + (!perK && a._per1000 ? ' per 1,000' : ''), f: f }, { t: pctv(a.ctr), f: f }] };
+            }), { labelCol: false });
           y -= BLOCK - S(3);
+        });
+        var creatives = creativesOf();
+        newPage('Creative performance');
+        pageTitle('Creative performance');
+        var videoRead = false;
+        creatives.forEach(function (c) {
+          creativeCard(c);
+          if (first && c.vidAd && !videoRead) {
+            videoRead = true;
+            panel('How to read the video figures', [
+              'Hook rate is the share of people who kept watching once the ad appeared. The first seconds decide whether somebody stops or scrolls past, so a strong hook rate means the opening is doing its job, and a low one shows where to sharpen the next creative.',
+              'Hold rate is the share who kept watching after the opening had caught them: whether the message holds all the way through. A strong hold rate means the content is doing its job; a low one shows where people start to drop off.',
+              GLOSSARY
+            ]);
+          }
         });
       })();
 

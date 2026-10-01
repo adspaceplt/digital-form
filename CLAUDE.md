@@ -1688,8 +1688,13 @@ Each line is a rule that broke once. Its reason is in the archive.
 - New report: Month and Custom period are never both live, End's `min` is
   Start, and an empty date reads Select date.
 - The ads PDF:
-  - Ads are grouped by objective; the cheapest is marked only among results of
-    the same kind.
+  - Ad performance ranks each objective's ads in a table; the cheapest is
+    marked only among results of the same kind. Creative performance then
+    gives each creative (the name without its creator code) one card: one
+    image, a line per objective and result type (results, cost per result,
+    reach, CTR; a missing figure a dash), the age split and video figures
+    from the line that spent the most (2026-10-01).
+  - An image added to one row of a creative is put on its other rows.
   - The tax note follows the market: WHT and SST for MY; DCC and GST for SG.
   - Ad names never break at an underscore.
 - Import controls read Import from spreadsheet and Import from Ads Manager.
