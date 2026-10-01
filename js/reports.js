@@ -312,7 +312,13 @@
         var id = d.id;
         if (r.error || (d.error && !(d.error === 'exists' && id))) { say(sm, said(r.error || d), 'err'); return; }
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
-        openReport(id);
+        if (d.error === 'exists') { openReport(id); return; }
+        /* A new report is written in the main contact's preferred language. */
+        db.from('client_contacts').select('lang').eq('client_id', client).eq('is_primary', true).limit(1).then(function (x) {
+          var c = x && !x.error && (x.data || [])[0];
+          if (!c || c.lang !== 'zh') return null;
+          return db.from('sm_reports').update({ lang: 'zh' }).eq('id', id).select('id');
+        }).catch(function () { return null; }).then(function () { openReport(id); });
       });
     };
     window.ADspaceSheet.show(box, { opener: opener });
@@ -1075,24 +1081,46 @@
     }
     return null;
   }
+  /* Rows and cells as a spreadsheet copies them: a cell holding line
+     breaks (a caption) arrives quoted, with "" for a quote inside it, and
+     its breaks belong to the cell, not the table (the user, 2026-10-01). */
+  function tableOf(text, sep) {
+    var src = String(text || '').replace(/\r\n?/g, '\n'), rows = [], row = [], cell = '', q = false;
+    for (var i = 0; i < src.length; i++) {
+      var ch = src[i];
+      if (q) {
+        if (ch === '"' && src[i + 1] === '"') { cell += '"'; i++; }
+        else if (ch === '"') q = false;
+        else cell += ch;
+      } else if (ch === '"' && cell === '') q = true;
+      else if (ch === sep) { row.push(cell); cell = ''; }
+      else if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+      else cell += ch;
+    }
+    row.push(cell); rows.push(row);
+    return rows.filter(function (r) { return r.some(function (c) { return String(c).trim(); }); });
+  }
   function parseRows(text, year) {
-    var lines = String(text || '').replace(/\r/g, '').split('\n').filter(function (l) { return l.trim(); });
-    if (lines.length < 2) return { error: 'Paste a header row and at least one post.' };
-    var sep = lines[0].indexOf('\t') > -1 ? '\t' : ',';
-    var head = lines[0].split(sep).map(function (h) {
+    var first = String(text || '').split(/\r?\n/)[0] || '';
+    var sep = first.indexOf('\t') > -1 ? '\t' : ',';
+    var table = tableOf(text, sep);
+    if (table.length < 2) return { error: 'Paste a header row and at least one post.' };
+    var lines = table;
+    var head = lines[0].map(function (h) {
       var k = h.trim().toLowerCase().replace(/\s+/g, ' ');
       var hit = HEAD.filter(function (x) { return x[0].test(k); })[0];
       return hit ? hit[1] : null;
     });
     if (head.indexOf('posted_on') < 0) return { error: 'The header row needs a Date column.' };
     var rows = [], skipped = 0;
-    lines.slice(1).forEach(function (l) {
-      var cells = l.split(sep), row = {}, ok = true;
+    lines.slice(1).forEach(function (cells) {
+      var row = {}, ok = true;
       head.forEach(function (k, i) {
         if (!k) return;
         var v = (cells[i] || '').trim();
         if (k === 'posted_on') { row.posted_on = readDate(v, year); if (!row.posted_on) ok = false; return; }
-        if (['title', 'url', 'caption'].indexOf(k) > -1) { row[k] = v || null; return; }
+        if (k === 'caption') { var cv = String(cells[i] || '').replace(/^\s+|\s+$/g, ''); row.caption = cv || null; return; }
+        if (['title', 'url'].indexOf(k) > -1) { row[k] = v || null; return; }
         if (k === 'content_type') { var f = v.toLowerCase(); row.content_type = FORMAT_WORD[f] ? f : null; return; }
         var n = v.replace(/[, ]/g, '');
         row[k] = n === '' || n === '-' ? null : (/^\d+$/.test(n) ? Number(n) : (/^\d+(\.\d+)?k$/i.test(n) ? Math.round(parseFloat(n) * 1000) : null));
@@ -1300,20 +1328,26 @@
     notes.addEventListener('input', function () {
       try { if (notes.value.trim()) localStorage.setItem(noteKey, notes.value); else localStorage.removeItem(noteKey); } catch (e) { /* storage refused */ }
     });
-    /* The language the client reads: chosen beside the button, kept per
-       client in this browser, and first taken from the main contact's
-       preferred language (the user, 2026-10-01: a Chinese client). */
-    var lang = $('rpAiLang'), langKey = 'adspace-draft-lang:' + r.client_id, keptLang = null;
-    try { keptLang = localStorage.getItem(langKey); } catch (e) { /* storage refused */ }
-    var setLang = function (v) { if (lang.value === v) return; lang.value = v; lang.dispatchEvent(new Event('change')); };
-    if (keptLang === 'zh' || keptLang === 'en') setLang(keptLang);
-    else db.from('client_contacts').select('lang').eq('client_id', r.client_id).eq('is_primary', true).limit(1).then(function (x) {
-      var c = x && !x.error && (x.data || [])[0];
-      if (c && c.lang === 'zh' && $('rpAiLang') === lang) setLang('zh');
-    }).catch(function () { /* English stands */ });
+    /* The report's language (`sm_reports.lang`, the user, 2026-10-01): the
+       draft is written in it and the PDF prints in it, the cover and the
+       file name staying English. Set beside Draft with AI and saved at once;
+       a new report takes the main contact's preferred language. */
+    var lang = $('rpAiLang'), langReady = false;
     lang.addEventListener('change', function () {
-      try { localStorage.setItem(langKey, lang.value); } catch (e) { /* storage refused */ }
+      if (!langReady) return;
+      var v = lang.value === 'zh' ? 'zh' : 'en', was = r.lang === 'zh' ? 'zh' : 'en';
+      if (v === was) return;
+      db.from('sm_reports').update({ lang: v }).eq('id', r.id).select('id').then(function (x) {
+        if (x.error || !(x.data || []).length) throw x.error || new Error('The database refused the change.');
+        r.lang = v; if (st.open && st.open.id === r.id) st.open.lang = v;
+      }).catch(function (err) {
+        lang.value = was; lang.dispatchEvent(new Event('change'));
+        say(am, said(err), 'err');
+      });
     });
+    lang.value = r.lang === 'zh' ? 'zh' : 'en';
+    lang.dispatchEvent(new Event('change'));
+    langReady = true;
     var fill = function (id, v) { var el = $(id); if (el && typeof v === 'string') el.value = v; };
     var put = function (dr) {
       fields.forEach(function (x) { fill('rpT_' + x[0], dr[x[0]]); });

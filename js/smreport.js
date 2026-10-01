@@ -62,6 +62,181 @@
   // The spaces between things, each a step of the scale.
   var SP = { tight: S(-2), line: S(-1), under: S(2), block: S(4) };
 
+
+  // ---- Chinese -----------------------------------------------------------------
+  /* A report whose language is Chinese (`report.lang` 'zh', 2026-10-01)
+     prints every heading, label, note and date in professional, client-
+     facing Simplified Chinese, written as Chinese and never word for word.
+     The team's own words (commentary, captions, ad names) are printed as
+     typed. `tr()` answers a fixed English string with its Chinese, at the
+     drawing primitives, so the layout code reads the same in both. */
+  var ZH = false;
+  var ZH_WORDS = {
+    'social media accounts report': '社交媒体账号报告',
+    'social media advertising report': '社交媒体广告报告',
+    'social media report': '社交媒体报告',
+    'executive summary': '执行摘要',
+    'insights and recommendations': '洞察与建议',
+    'insights': '洞察',
+    'highlights': '成效亮点',
+    'areas to improve': '优化方向',
+    'recommendations': '建议',
+    'summary': '概要',
+    'summary line': '概要',
+    'across all platforms': '跨平台总览',
+    'key findings': '主要发现',
+    'improvements': '优化方向',
+    'next steps': '下一步计划',
+    'opportunities': '发展机会',
+    'performance drivers': '成效驱动因素',
+    'what worked': '成效亮点',
+    'recommended focus for the following month': '下月工作重点',
+    'ad performance': '广告成效',
+    'creative performance': '创意成效',
+    'results by objective': '各广告目标成效',
+    'results by age': '各年龄段成效',
+    'audience retention': '观众留存率',
+    'hook rate': '吸睛率',
+    'hold rate': '持续观看率',
+    'average play time': '平均播放时长',
+    'amount spent': '广告花费',
+    'amount spent *': '广告花费 *',
+    'results': '成效',
+    'result': '成效',
+    'cost per result': '单次成效费用',
+    'per 1,000 reached': '千人覆盖费用',
+    'cost per 1,000 reached': '千人覆盖费用',
+    'reach': '覆盖人数',
+    'impressions': '展示次数',
+    'frequency': '频次',
+    'ctr': '点击率',
+    'share of spend': '花费占比',
+    'objective': '广告目标',
+    'ad': '广告',
+    'period': '投放期间',
+    'platform': '平台',
+    'post': '帖文',
+    'posts': '帖文数',
+    'posts published': '已发布帖文',
+    'rank': '排名',
+    'details': '详情',
+    'date': '日期',
+    'format': '形式',
+    'change': '变化',
+    'previous period': '上一期',
+    'this period': '本期',
+    'start of period': '期初',
+    'end of period': '期末',
+    'growth': '增长',
+    'followers': '粉丝数',
+    'follower growth': '粉丝增长',
+    'account': '账号',
+    'engagement rate': '互动率',
+    'engagements': '互动次数',
+    'interactions': '互动',
+    'views': '观看次数',
+    'likes': '点赞数',
+    'comments': '评论数',
+    'shares': '分享数',
+    'saves': '收藏数',
+    'by platform': '各平台表现',
+    'remarks': '点评',
+    'how to read this': '阅读说明',
+    'how to read the video figures': '视频数据说明',
+    'no data.': '暂无数据。',
+    'no image': '暂无图片',
+    'not available': '暂无数据',
+    'other': '其他',
+    'total': '总计',
+    'private & confidential': '机密文件',
+    'leads': '潜在客户',
+    'messaging': '私信互动',
+    'sales': '销售',
+    'traffic': '流量',
+    'engagement': '互动',
+    'awareness': '品牌认知',
+    'app promotion': '应用推广',
+    'reel': 'Reels', 'video': '视频', 'photo': '图片', 'carousel': '轮播帖', 'story': '限时动态',
+    'live': '直播', 'short': '短视频', 'article': '文章', 'rednote': '小红书',
+    'the headline figures for the period, before the detail.': '本期核心数据一览。',
+    'what the period’s figures mean, and what happens next.': '本期数据解读与后续计划。',
+    'each objective ranked by what a result cost, then each creative with its results across objectives.':
+      '各广告目标按单次成效费用排序，随后呈现每个创意在各目标下的成效。',
+    'cost per result is what it cost to get one lead, click or action. compare it only between ads with the same objective, which is why each objective is ranked on its own.':
+      '单次成效费用指获得一次潜在客户、点击或行动所需的费用。此数据只宜在同一广告目标的广告之间比较，因此每个目标均单独排名。',
+    'each ad is priced only against the result its objective was set to get. a leads ad that also started a few chats is judged by its cost per lead; the chats came alongside, and the budget was not spent on them.':
+      '每则广告只按其投放目标所设定的成效计算费用。例如潜在客户广告即使同时带来少量对话，仍以单次潜在客户费用评估；这些对话属附带成效，预算并非为其投放。',
+    'reach is how many people saw an ad; impressions is how many times it was shown. frequency is impressions divided by reach.':
+      '覆盖人数指看过广告的人数；展示次数指广告获得展示的总次数。频次即展示次数除以覆盖人数。',
+    'a creative that ran under two objectives shows one line for each. compare the lines to see which goal it served best.':
+      '同一创意若在两个广告目标下投放，将各列一行，便于比较该创意最能达成哪一个目标。',
+    'hook rate is the share of people who kept watching once the ad appeared. the first seconds decide whether somebody stops or scrolls past, so a strong hook rate means the opening is doing its job, and a low one shows where to sharpen the next creative.':
+      '吸睛率指广告出现后继续观看的人数比例。开场几秒决定观众停留还是滑过；吸睛率高代表开场奏效，偏低则说明下一则创意的开场可再加强。',
+    'hold rate is the share who kept watching after the opening had caught them: whether the message holds all the way through. a strong hold rate means the content is doing its job; a low one shows where people start to drop off.':
+      '持续观看率指被开场吸引后继续观看的人数比例，反映内容能否从头到尾留住观众。持续观看率高代表内容奏效；偏低则显示观众开始流失的位置。',
+    'every ad term is explained at go.adspace.me/fb-ad-terms.': '各项广告术语的说明，请参阅 go.adspace.me/fb-ad-terms。',
+    'amount spent is the full amount spent on ads. it excludes the 10% wht and 8% sst, charged separately.':
+      '广告花费为投放于广告的全部金额，不包括另行收取的10%预扣税（WHT）及8%销售与服务税（SST）。',
+    'amount spent is the full amount spent on ads. it excludes the 5% dcc and 9% gst, charged separately.':
+      '广告花费为投放于广告的全部金额，不包括另行收取的5%数字服务费（DCC）及9%消费税（GST）。',
+    'amount spent is the full amount spent on ads. it excludes the 10% wht and 8% sst on a malaysian ad account, and the 5% dcc and 9% gst on a singapore one, charged separately.':
+      '广告花费为投放于广告的全部金额。马来西亚广告账户不包括另行收取的10%预扣税（WHT）及8%销售与服务税（SST）；新加坡广告账户不包括另行收取的5%数字服务费（DCC）及9%消费税（GST）。'
+  };
+  /* A count reads as Chinese does: the figure, then its measure word. */
+  var ZH_COUNT = {
+    'leads': '个潜在客户', 'lead': '个潜在客户', 'messages': '次私信对话', 'message': '次私信对话',
+    'engagements': '次互动', 'engagement': '次互动', 'interactions': '次交互', 'interaction': '次交互',
+    'reactions': '次心情反应', 'reaction': '次心情反应', 'reached': '人覆盖', 'sales': '笔销售', 'sale': '笔销售',
+    'conversions': '次转化', 'conversion': '次转化', 'clicks': '次点击', 'click': '次点击',
+    'page views': '次页面浏览', 'page view': '次页面浏览', 'thruplays': '次完整播放', 'thruplay': '次完整播放',
+    'video plays': '次视频播放', 'video play': '次视频播放', 'installs': '次安装', 'install': '次安装',
+    'impressions': '次展示', 'impression': '次展示', 'recall lift': '人广告回想提升',
+    'follows': '位新关注', 'follow': '位新关注', 'profile visits': '次主页访问', 'profile visit': '次主页访问',
+    'saves': '次收藏', 'save': '次收藏', 'results': '次成效', 'result': '次成效'
+  };
+  function trWord(w) { var k = String(w).trim().toLowerCase(); return ZH_WORDS[k] || w; }
+  var ZH_RULES = [
+    [/^Page (\d+) of (\d+)$/, function (m) { return '第 ' + m[1] + ' 页，共 ' + m[2] + ' 页'; }],
+    [/^\* ([\s\S]+)$/, function (m) { var t = tr(m[1]); return t !== m[1] ? '* ' + t : null; }],
+    [/^([\d,]+(?:\.\d+)?) ([A-Za-z][A-Za-z ]*)$/, function (m) { var w = ZH_COUNT[m[2].toLowerCase()]; return w ? m[1] + ' ' + w : null; }],
+    [/^Total (.+)$/, function (m) { var w = trWord(m[1]); return w !== m[1] ? '总' + w : null; }],
+    [/^(.+) by week$/, function (m) { return '每周' + trWord(m[1]); }],
+    [/^(.+) by post$/, function (m) { return '各帖文' + trWord(m[1]); }],
+    [/^Top post by (.+)$/, function (m) { return trWord(m[1]) + '最高的帖文'; }],
+    [/^Top (\d+) posts by (.+)$/, function (m) { return trWord(m[2]) + '最高的 ' + m[1] + ' 篇帖文'; }],
+    [/^(.+) follower growth$/, function (m) { return trWord(m[1]) + ' 粉丝增长'; }],
+    [/^Average (.+)$/, function (m) { return '平均 ' + m[1]; }],
+    [/^Appendix: (.+)$/, function (m) { return '附录：' + trWord(m[1]); }],
+    [/^Remarks: ([\s\S]+)$/, function (m) { return '点评：' + m[1]; }],
+    [/^(.+) spent$/, function (m) { return '花费 ' + m[1]; }],
+    [/^(.+) \(cont\.\)$/, function (m) { return tr(m[1]) + '（续）'; }],
+    [/^Results by age  ·  (.+)$/, function (m) { return '各年龄段成效  ·  ' + trWord(m[1]); }],
+    [/^(.+)  ·  (\d+) ads?  ·  (.+)$/, function (m) { return trWord(m[1]) + '  ·  ' + m[2] + ' 则广告  ·  ' + m[3]; }],
+    [/^(.+) per 1,000$/, function (m) { return m[1] + ' / 千人'; }],
+    [/^(.+) \/ 1,000$/, function (m) { return m[1] + ' / 千人'; }],
+    [/^Previous (.+)$/, function (m) { return '上一期 ' + m[1]; }],
+    [/^(.+) audience$/, function (m) { return m[1] + ' 受众'; }]
+  ];
+  function tr(s) {
+    if (!ZH || s == null) return s;
+    var str = String(s);
+    var k = str.trim().toLowerCase();
+    if (ZH_WORDS[k]) return ZH_WORDS[k];
+    for (var i = 0; i < ZH_RULES.length; i++) {
+      var m = ZH_RULES[i][0].exec(str);
+      if (m) { var out = ZH_RULES[i][1](m); if (out != null) return out; }
+    }
+    return str;
+  }
+  function zhDay(d, year) { return (year ? d.getFullYear() + '年' : '') + (d.getMonth() + 1) + '月' + d.getDate() + '日'; }
+  /* Two dates as one span in Chinese: the year once, the month once where
+     it does not change. */
+  function zhSpan(da, db) {
+    if (da.getFullYear() !== db.getFullYear()) return zhDay(da, true) + '至' + zhDay(db, true);
+    if (da.getMonth() !== db.getMonth()) return zhDay(da, true) + '至' + (db.getMonth() + 1) + '月' + db.getDate() + '日';
+    return zhDay(da, true) + '至' + db.getDate() + '日';
+  }
+
   // ---- Words ------------------------------------------------------------------
   var PLATFORM_WORD = {
     facebook: 'Facebook', instagram: 'Instagram', tiktok: 'TikTok', rednote: 'rednote', xhs: 'rednote',
@@ -89,15 +264,21 @@
   function signed(n) { n = num(n); if (n === null) return 'Not available'; return (n > 0 ? '+' : '') + n.toLocaleString('en-GB'); }
   function pct(v) { return v === null || v === undefined ? 'Not available' : (Math.round(v * 10000) / 100).toFixed(2) + '%'; }
   function dateOf(s) { var d = new Date(String(s || '').slice(0, 10) + 'T00:00:00'); return isNaN(d.getTime()) ? null : d; }
-  function dayWord(s) { var d = dateOf(s); return d ? d.getDate() + ' ' + MON3[d.getMonth()] + ' ' + d.getFullYear() : String(s || ''); }
-  function longDate(s) { var d = dateOf(s); return d ? d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear() : String(s || ''); }
-  function stampWord(iso) { var d = iso ? new Date(iso) : null; return d && !isNaN(d.getTime()) ? d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear() : ''; }
+  function dayWord(s) { var d = dateOf(s); return d ? (ZH ? zhDay(d, true) : d.getDate() + ' ' + MON3[d.getMonth()] + ' ' + d.getFullYear()) : String(s || ''); }
+  function longDate(s) { var d = dateOf(s); return d ? (ZH ? zhDay(d, true) : d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) : String(s || ''); }
+  function stampWord(iso) { var d = iso ? new Date(iso) : null; return d && !isNaN(d.getTime()) ? (ZH ? zhDay(d, true) : d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) : ''; }
   /* "August 2026" for a calendar month, "1 to 15 August 2026" for part of one,
      "28 July to 3 August 2026" across two. */
   function periodWord(a, b) {
     var da = dateOf(a), db = dateOf(b);
     if (!da || !db) return '';
     var last = new Date(da.getFullYear(), da.getMonth() + 1, 0).getDate();
+    if (ZH) {
+      if (da.getMonth() === db.getMonth() && da.getFullYear() === db.getFullYear() && da.getDate() === 1 && db.getDate() === last) {
+        return da.getFullYear() + '年' + (da.getMonth() + 1) + '月';
+      }
+      return zhSpan(da, db);
+    }
     if (da.getMonth() === db.getMonth() && da.getFullYear() === db.getFullYear()) {
       if (da.getDate() === 1 && db.getDate() === last) return MONTHS[da.getMonth()] + ' ' + da.getFullYear();
       return da.getDate() + ' to ' + db.getDate() + ' ' + MONTHS[da.getMonth()] + ' ' + da.getFullYear();
@@ -662,6 +843,7 @@
     if (!DOCS) return Promise.reject(new Error('The document engine (js/documents.js) is not loaded'));
     var warnings = [];
     var warn = function (s) { if (warnings.indexOf(s) < 0) warnings.push(s); };
+    ZH = ((snap && snap.report) || {}).lang === 'zh';
     var mdl = model(snap);
     var rep = mdl.rep;
     var everyText = [rep.title, rep.intro, rep.headline, rep.client_name].concat(
@@ -669,7 +851,7 @@
       mdl.accounts.map(function (a) { return [a.account_name, a.summary, a.worked, a.improve, a.actions, a.metric_notes].join(' '); }),
       mdl.posts.map(function (p) { return [p.title, p.caption, p.observation, p.notable, p.theme].join(' '); }),
       mdl.ads.map(function (a) { return [adName(a.name), a.result_label, a.audience, a.remark].join(' '); })).join(' ');
-    var needsCjk = /[⺀-鿿가-힯豈-﫿＀-￯]/.test(everyText);
+    var needsCjk = ZH || /[⺀-鿿가-힯豈-﫿＀-￯]/.test(everyText);
     var pdf, fonts, logo, sh;
     return PDF.PDFDocument.create().then(function (p) {
       pdf = p;
@@ -680,6 +862,9 @@
         throw new Error('The Chinese font could not be loaded, so the Chinese text in this report cannot be drawn. Check fontCjk in js/config.js.');
       }
       sh = Shaper(PDF, pdf, fonts, warn);
+      /* Every fixed English string reaches the page through here, so a
+         Chinese report reads Chinese without the layout knowing. */
+      if (ZH) { var lo = sh.linesOf; sh.linesOf = function (str, w, size, f) { return lo.call(sh, tr(str), w, size, f); }; }
       /* Every emoji the report holds is drawn and embedded before any page
          is laid out: the pages are drawn in one pass, and an emoji still on
          its way left a blank where it belonged (the user, 2026-10-01). */
@@ -697,6 +882,7 @@
       var clientLogo = got[1];
       return draw(PDF, pdf, fonts, logo, clientLogo, sh, mdl, thumbs, warn, opts).then(function (pages) {
         return sh.ready().then(function () {
+          ZH = false;
           pdf.setTitle(String(rep.client_name || '') + ' ' + titleOf(rep) + ' ' + periodWord(rep.period_start, rep.period_end));
           pdf.setAuthor(CFG.agencyName || 'ADspace');
           pdf.setSubject(rep.kind === 'ads' ? 'Social Media Advertising Report' : 'Social Media Accounts Report');
@@ -707,7 +893,7 @@
           });
         });
       });
-    });
+    }).then(function (out) { ZH = false; return out; }, function (e) { ZH = false; throw e; });
   }
 
   function draw(PDF, pdf, fonts, logo, clientLogo, sh, mdl, thumbs, warn, opts) {
@@ -732,8 +918,19 @@
 
     var pages = [];
     var pg = null, y = 0;
-    var text = function (s, x, yy, size, f, color) { pg.page.drawText(String(s == null ? '' : s), { x: x, y: yy, size: size || 10.5, font: f || book, color: color || INK }); };
-    var width = function (s, size, f) { return (f || book).widthOfTextAtSize(String(s == null ? '' : s), size || 10.5); };
+    /* A label in Chinese is drawn through the shaper, which carries the
+       Chinese face; Latin text keeps the direct path. */
+    var CJK = /[\u2e80-\u9fff\uff00-\uffef\u3000-\u303f]/;
+    var text = function (s, x, yy, size, f, color) {
+      var str = tr(String(s == null ? '' : s));
+      if (CJK.test(str)) { sh.draw(pg.page, sh.linesOf(str, 1e6, size || 10.5, f || book)[0] || [], x, yy, size || 10.5, color || INK); return; }
+      pg.page.drawText(str, { x: x, y: yy, size: size || 10.5, font: f || book, color: color || INK });
+    };
+    var width = function (s, size, f) {
+      var str = tr(String(s == null ? '' : s));
+      if (CJK.test(str)) return sh.lineWidth(sh.linesOf(str, 1e6, size || 10.5, f || book)[0] || [], size || 10.5);
+      return (f || book).widthOfTextAtSize(str, size || 10.5);
+    };
     var right = function (s, xr, yy, size, f, color) { text(s, xr - width(s, size, f), yy, size, f, color); };
     var center = function (s, xc, yy, size, f, color) { text(s, xc - width(s, size, f) / 2, yy, size, f, color); };
     var rect = function (x, yy, w, h, color) { pg.page.drawRectangle({ x: x, y: yy, width: w, height: h, color: color, borderWidth: 0 }); };
@@ -800,7 +997,7 @@
 
     var groupWord = function (p) { return p._group ? p._group.label : ''; };
     var typeWord = function (p) { return TYPE_WORD[p.content_type] || (p.content_type ? String(p.content_type) : ''); };
-    var shortDay = function (s) { var d = dateOf(s); return d ? d.getDate() + ' ' + MON3[d.getMonth()] : ''; };
+    var shortDay = function (s) { var d = dateOf(s); return d ? (ZH ? zhDay(d) : d.getDate() + ' ' + MON3[d.getMonth()]) : ''; };
     /* A post without a title is named by what it is and when it went out, so
        a ranking reads as a list of posts and not as "Untitled post" five
        times. Two on one day are numbered in posting order. */
@@ -810,7 +1007,7 @@
       if (words(p.title).trim()) return words(p.title).trim();
       var k = (p._group ? p._group.key : '') + '|' + p.posted_on;
       var list = sameDay[k] || [p];
-      var base = (typeWord(p) || 'Post') + ', ' + shortDay(p.posted_on);
+      var base = ZH ? tr(typeWord(p) || 'Post') + '，' + shortDay(p.posted_on) : (typeWord(p) || 'Post') + ', ' + shortDay(p.posted_on);
       return list.length > 1 ? base + ' (' + (list.indexOf(p) + 1) + ')' : base;
     };
     var volOf = function (p) { var gg = p._group; return gg && gg.volume ? num(p[gg.volume]) : null; };
@@ -845,7 +1042,7 @@
       var v = num(n) || 0, w = shortResult(label);
       if (v === 1 && /s$/.test(w)) w = w.replace(/s$/, '');
       var t = fmt(v) + ' ' + w;
-      if (frac && (f || book).widthOfTextAtSize(t, T.size) > CW * frac - T.padX * 2) t = t.replace(' ', '\n');
+      if (frac && width(t, T.size, f) > CW * frac - T.padX * 2) t = t.replace(' ', '\n');
       return t;
     }
     function cellLines(c, w) {
@@ -1062,7 +1259,8 @@
       for (var d0 = 0; d0 < days; d0 += 7) {
         var a = new Date(start.getTime() + d0 * 864e5), b = new Date(start.getTime() + Math.min(days - 1, d0 + 6) * 864e5);
         weeks.push({ a: a, b: b, by: {}, total: 0,
-          label: a.getDate() + (a.getMonth() !== b.getMonth() ? ' ' + MON3[a.getMonth()] : '') + ' to ' + b.getDate() + ' ' + MON3[b.getMonth()] });
+          label: ZH ? zhDay(a) + '至' + (a.getMonth() !== b.getMonth() ? zhDay(b) : b.getDate() + '日') :
+            a.getDate() + (a.getMonth() !== b.getMonth() ? ' ' + MON3[a.getMonth()] : '') + ' to ' + b.getDate() + ' ' + MON3[b.getMonth()] });
       }
       posts.forEach(function (p) {
         var k = Math.floor((dateOf(p.posted_on) - start) / 864e5 / 7);
@@ -1137,6 +1335,9 @@
          under it on the same indent, each line a step of the scale below the
          last. The head's wordmark stays on the margin, so the title reads as
          set in from the page and not as another line of the running head. */
+      /* The cover stays in English in a Chinese report too, as the file's
+         name does (the user, 2026-10-01): the report is known by one name. */
+      var zhWas = ZH; ZH = false;
       newPage('cover');
       var cx = M + S(9), cw = R - cx;
       var cy = H / PHI;
@@ -1145,7 +1346,8 @@
       tlines.forEach(function (ln, i) { sh.draw(pg.page, ln, cx, cy, TY.cover, INK); if (i < tlines.length - 1) cy -= S(6); });
       cy -= S(6);
       sh.linesOf(String(rep.client_name || ''), cw, TY.coverSub, reg).forEach(function (ln) { sh.draw(pg.page, ln, cx, cy, TY.coverSub, INK); cy -= S(4); });
-      tline(periodW, cx, cy, TY.coverMeta, book, INK, cw);
+      tline(periodWord(rep.period_start, rep.period_end), cx, cy, TY.coverMeta, book, INK, cw);
+      ZH = zhWas;
     })();
 
     var ins = rep.insights || {};
@@ -1419,11 +1621,14 @@
         var d = (cur - prev) / prev * 100;
         return (d > 0.05 ? '+' : d < -0.05 ? '−' : '') + Math.abs(d).toFixed(1) + '%';
       };
-      var shortD = function (s) { var d = dateOf(s); return d ? d.getDate() + ' ' + MON3[d.getMonth()] : ''; };
+      var shortD = function (s) { var d = dateOf(s); return d ? (ZH ? zhDay(d) : d.getDate() + ' ' + MON3[d.getMonth()]) : ''; };
       var range = function (a, b) {
         var da = dateOf(a), db2 = dateOf(b);
         if (!da && !db2) return '';
         if (!da || !db2) return dayWord(a || b);
+        /* In a table cell the report's own year is understood: 7月5日至6日. */
+        if (ZH) return da.getFullYear() === db2.getFullYear() && String(rep.period_start || '').slice(0, 4) === String(da.getFullYear())
+          ? zhDay(da) + '至' + (da.getMonth() === db2.getMonth() ? db2.getDate() + '日' : zhDay(db2)) : zhSpan(da, db2);
         if (da.getFullYear() !== db2.getFullYear()) return dayWord(a) + ' to ' + dayWord(b);
         // One month says its name once: 1 to 30 Sept 2026.
         if (da.getMonth() === db2.getMonth()) return da.getDate() + ' to ' + dayWord(b);
@@ -1766,8 +1971,10 @@
     var n = pages.length;
     var label = String(rep.client_name || '').toUpperCase();
     var markW = width('ADspace', S(2), mark);
+    var zhOn = ZH;
     pages.forEach(function (p, i) {
       pg = p;
+      ZH = zhOn && i > 0;   // the cover's foot reads as its page does
       text('ADspace', M, HEAD_Y, S(2), mark, INK);
       if (label) {
         var lab = clip(label, CW - markW - S(4), TY.small, med);
@@ -1777,6 +1984,7 @@
       text('PRIVATE & CONFIDENTIAL', M, FOOT_Y, TY.small, med, INK);
       right('Page ' + (i + 1) + ' of ' + n, R, FOOT_Y, TY.small, book, INK);
     });
+    ZH = zhOn;
     return Promise.resolve(n);
   }
 
