@@ -177,7 +177,18 @@ Deno.serve(async (req) => {
     }
     return json({ draft: out }, 200, origin);
   } catch (e) {
-    const status = (e as { status?: number }).status;
-    return json({ error: status === 401 ? 'ai-key' : status === 429 || status === 529 ? 'ai-busy' : 'ai-failed' }, 200, origin);
+    /* The API's own type and message go to the function's log (never the
+       key, which the SDK does not echo), so a refusal can be named. */
+    const err = e as { status?: number; message?: string; error?: { error?: { type?: string; message?: string } } };
+    const status = err.status;
+    const type = err.error?.error?.type || '';
+    const said = err.error?.error?.message || err.message || '';
+    console.error('report-draft: Claude API refused', status, type, said);
+    const code = status === 401 || status === 403 ? 'ai-key'
+      : status === 429 || status === 529 ? 'ai-busy'
+      : /credit balance/i.test(said) ? 'ai-credit'
+      : status === 404 || /model/i.test(said) ? 'ai-model'
+      : 'ai-failed';
+    return json({ error: code }, 200, origin);
   }
 });

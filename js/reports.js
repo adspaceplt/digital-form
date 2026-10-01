@@ -1219,6 +1219,8 @@
     'ai-not-set-up': 'Draft with AI needs its key in Supabase.',
     'ai-key': 'The AI key was refused. Check it in Supabase.',
     'ai-busy': 'The AI service is busy. Try again in a minute.',
+    'ai-credit': 'The AI account has no credit. Top up in the Claude Console.',
+    'ai-model': 'The AI model name in Supabase is not recognised.',
     'ai-failed': 'No draft came back. Try again.',
     'ai-incomplete': 'No draft came back. Try again.',
     'no-ads': 'Add the period\'s ads before drafting.',
