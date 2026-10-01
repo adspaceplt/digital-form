@@ -663,7 +663,10 @@
     FORM.forEach(function (f) { $(f[0]).value = c ? (c[f[1]] || '') : ''; });
     // Rebuilt against this record, so an owner who has since left the team is
     // still the option that is selected rather than silently cleared on save.
-    peopleSelect($('crmOwnerPick'), state.team, c ? (c.owner || '') : '');
+    /* A new lead starts in the hands of whoever keys it in; they change it
+       where someone else takes it (the user, 2026-10-01). */
+    var self = bridge.me && bridge.me();
+    peopleSelect($('crmOwnerPick'), state.team, c ? (c.owner || '') : ((self && self.name) || ''));
     if (!c) $('crmSource').value = 'referral';
     $('crmMarket').value = c ? (c.market || 'MY') : 'MY';
     // The person who asked, and what for. Only a new lead needs this here.

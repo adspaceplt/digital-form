@@ -431,6 +431,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A value out of range is cleared on blur and refused on Enter, with
     `.date-note`. `ADspaceAsk.rename` refuses it too.
   - `data-any-date` opts a field out. This is page-side only.
+  - DD/MM/YYYY (§7): at a desk every `input[type=date]` becomes a text box
+    (`.dmy`) showing DD/MM/YYYY, digits typed straight in taking their
+    slashes and YYYY-MM-DD accepted; its calendar mark at the right edge (or
+    the down arrow) opens the browser's picker through one hidden native
+    field. Its `value` still reads and writes YYYY-MM-DD, so pages never
+    change; the field's own min and max are held on blur ("Choose a date up
+    to …"), and a part-typed date says "Enter the date as DD/MM/YYYY." A
+    coarse pointer keeps the system's own box, as `data-native` keeps any
+    one (My Work's pickers that open in place). Playwright's `inputValue()`
+    reads the shown DD/MM/YYYY; the page's `value` is read in the page.
   - Room for the calendar (§6): at a desk, a date field too near the window's
     foot is lifted before its calendar opens (its scroller scrolls, else a
     `.pick-room` spacer), and a press that lifted it opens the calendar with
@@ -1348,6 +1358,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   views), never straight to `paintReport()`.
 - Every task has an owner from creation (the creator by default); the sheets
   offer no Nobody.
+- Every colleague picker on a create form starts on the person creating it
+  (Task Owner, a new month's Manager or one with none, a new lead's and a new
+  campaign's Person in charge); they change it where someone else takes it.
 - **Only the owner or an admin moves a task** (`ops_owner_may_move()`;
   `not-owner`). `mayMove(t)` hides the controls. The step says who has it.
 - The step asks who takes the work.
@@ -1512,7 +1525,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Deductions are capped at 35.
   - L3 caps at B; L4 caps at D.
 - A member sees nothing of a month, breaches included, until it is released.
-  - A dispute window of 3 days, item by item.
+  - A dispute window of 7 days from release (3 before 2026-10-01; a month
+    keeps the window it was given), item by item.
+  - Date of evaluation (`evaluated_on`, `2026-10-01-performance-date-of-evaluation.sql`):
+    the day the numbers were reported to the member. Release fills it where
+    empty; management corrects it until final (in or after the month, never
+    after today in MYT, `bad-eval-date`). The sheet, the member's page and
+    the printed record's head show it beside Dispute until.
   - Management answers, then it is acknowledged and finalised.
   - `result` is a snapshot.
   - Reference `ADHR/{staff_code}/PR{YYMM}`; an Employee ID is required.
@@ -1574,12 +1593,22 @@ Each line is a rule that broke once. Its reason is in the archive.
     `perf_flex_calc`, `perf_period_calc`, `perf_commission_json`). Confirm
     (Work) keeps a snapshot in `perf_rewards`; Reopen (Manage) removes it,
     files it and never asks. Quarters begin with Q3 2026.
-  - Tied departments are joint winners and one that does not qualify drops
-    out; a winning share is split among the department's active members on
-    the review list.
+  - The quarter (`2026-10-01-performance-quarter-ranked.sql`) is Ranking and
+    rewards: best to worst by average, `rank` shared by equal averages, a
+    short quarter's months under its average (`2 of 3`), and the individual
+    prize from the average of the final months (a weak month can be made up).
+    Confirm is drawn only once every review in the quarter is final
+    (`months-open` refuses otherwise) and asks first where an ended month
+    has no review (`missing_months`). The member's own quarter never carries
+    `rank`.
+  - The department prize goes to the winning department whole (`share`,
+    named "{Department} won"); its team leader decides the split, so no
+    member's row carries a figure for it. Tied departments are joint winners
+    and one that does not qualify drops out.
   - Flexible hours: a month decides the next only once every active member on
     the review list has a final review of it.
-  - A bonus period is two quarters named by its first. Revenue and profit are
+  - A bonus period is a half of the year (Q1 and Q2, Q3 and Q4; `perf_half`),
+    named by its first quarter; any date reads as its half. Revenue and profit are
     read and written only by `perf_is_admin()` and filed by name only; the
     rest of management sees the amounts.
   - Every share is rounded down to the cent and the remainder stated.

@@ -365,9 +365,11 @@
   var FLOOR = '2023-08-14', CEIL = '2099-12-31';
   var FLOOR_WORD = 'Choose a date from 14 Aug 2023.';
   function isDate(el) {
-    return !!el && el.tagName === 'INPUT' && /^(date|month|datetime-local)$/.test(el.type) &&
+    return !!el && el.tagName === 'INPUT' && (el.__dmy || /^(date|month|datetime-local)$/.test(el.type)) &&
       !el.hasAttribute('data-any-date');
   }
+  /* A DD/MM/YYYY box (§7) is a date field whose type reads text. */
+  function kindOf(el) { return el.__dmy ? 'date' : el.type; }
   function bounds(type) {
     if (type === 'month') return [FLOOR.slice(0, 7), CEIL.slice(0, 7)];
     if (type === 'datetime-local') return [FLOOR + 'T00:00', CEIL + 'T23:59'];
@@ -375,7 +377,7 @@
   }
   function floor(el) {
     if (!isDate(el)) return;
-    var b = bounds(el.type);
+    var b = bounds(kindOf(el));
     if (!el.min || el.min < b[0]) el.min = b[0];
     if (!el.max || el.max > b[1]) el.max = b[1];
   }
@@ -390,7 +392,7 @@
     return d >= FLOOR && d <= CEIL;
   }
   function noteHost(el) { return (el.closest && el.closest('.datefield, .sched-field, .tl-row')) || el; }
-  function dateNote(el, bad) {
+  function dateNote(el, bad, word) {
     var host = noteHost(el);
     var note = host.nextElementSibling && host.nextElementSibling.classList &&
       host.nextElementSibling.classList.contains('date-note') ? host.nextElementSibling : null;
@@ -406,17 +408,24 @@
       note.setAttribute('role', 'alert');
       host.parentNode.insertBefore(note, host.nextSibling);
     }
-    note.textContent = FLOOR_WORD;
+    note.textContent = word || FLOOR_WORD;
   }
   function checkDate(el, clear) {
     if (!isDate(el)) return true;
-    var ok = dateOk(el.value, el.type);
+    var v = el.value, ok = dateOk(v, kindOf(el)), word = '';
+    /* A DD/MM/YYYY box has no picker greying out the field's own range, so
+       its own min and max are held here too (a meeting from today, an end
+       after its start). */
+    if (ok && el.__dmy && v) {
+      if (el.min && v < el.min && el.min > FLOOR) { ok = false; word = 'Choose a date from ' + dmyOf(el.min) + '.'; }
+      else if (el.max && v > el.max && el.max < CEIL) { ok = false; word = 'Choose a date up to ' + dmyOf(el.max) + '.'; }
+    }
     if (!ok && clear) {
       el.value = '';
       el.dispatchEvent(new Event('input', { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
     }
-    dateNote(el, !ok);
+    dateNote(el, !ok, word);
     return ok;
   }
   /* Dynamic fields (a timeline date edited where it sits, a row's own
@@ -428,7 +437,7 @@
     if (!checkDate(e.target, false)) { e.preventDefault(); e.stopImmediatePropagation(); }
   }, true);
   document.addEventListener('change', function (e) {
-    if (isDate(e.target) && dateOk(e.target.value, e.target.type)) dateNote(e.target, false);
+    if (isDate(e.target) && dateOk(e.target.value, kindOf(e.target))) dateNote(e.target, false);
   }, true);
 
   /* §6 ROOM FOR THE CALENDAR. A date field at the foot of the window opened
@@ -455,7 +464,7 @@
   }
   function coarse() { return !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches); }
   function lift(el) {
-    if (!isPick(el) || coarse()) return false;
+    if (!(isPick(el) || (el && el.__dmy)) || coarse()) return false;
     var r = el.getBoundingClientRect();
     var need = Math.ceil(r.bottom + PICK_H - window.innerHeight);
     if (need <= 0) return false;
@@ -518,13 +527,144 @@
     if (!pressed) lift(e.target);
   }, true);
   document.addEventListener('focusout', function (e) {
-    if (isPick(e.target)) unroom(e.target);
+    if (isPick(e.target) || (e.target && e.target.__dmy)) unroom(e.target);
   }, true);
   document.addEventListener('scroll', function () { if (rooms.length) trim(); }, true);
   document.addEventListener('focusin', function () { if (rooms.length) setTimeout(trim, 0); }, true);
 
+  /* §7 EVERY DATE BOX READS DD/MM/YYYY. A browser draws its own date box in
+     the order of its own language, so a desk on English (US) read 10/01/2026
+     for 1 October (the user, 2026-10-01: "Can all dates be DD/MM/YYYY? More
+     consistent"). At a desk a date box becomes a text box in DD/MM/YYYY with
+     the calendar at its right edge (the browser's own picker, opened over
+     it); typing takes DD/MM/YYYY, or a date in YYYY-MM-DD, and the slashes
+     come by themselves. The page still reads and writes the field's `value`
+     as YYYY-MM-DD, so nothing that saves or compares a date changes. A
+     phone's date box is the system's own wheel in the phone's own region
+     and is left alone, as `data-native` leaves any one box. */
+  var VALUE = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+  function isoOk(v) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+    var d = new Date(v + 'T00:00:00Z');
+    return !isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+  }
+  function dmyOf(iso) { return isoOk(iso) ? iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4) : ''; }
+  function isoOf(text) {
+    text = String(text == null ? '' : text).trim();
+    if (isoOk(text)) return text;
+    var m = /^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})$/.exec(text);
+    if (!m) return '';
+    var iso = m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);
+    return isoOk(iso) ? iso : '';
+  }
+  /* Digits typed in order become DD/MM/YYYY as they arrive. */
+  function shape(text) {
+    if (/[^\d\/]/.test(text)) return text;
+    var d = text.replace(/\D/g, '').slice(0, 8);
+    if (text.indexOf('/') > -1 && !/^\d*\/?\d*\/?\d*$/.test(text)) return text;
+    if (/\//.test(text) && d.length < 8) return text;
+    return d.length > 4 ? d.slice(0, 2) + '/' + d.slice(2, 4) + '/' + d.slice(4)
+      : d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2) : d;
+  }
+  var pick = null, pickFor = null;
+  function picker() {
+    if (pick) return pick;
+    pick = document.createElement('input');
+    pick.type = 'date';
+    pick.className = 'dmy-pick';
+    pick.tabIndex = -1;
+    pick.setAttribute('aria-hidden', 'true');
+    pick.setAttribute('data-native', '');
+    var take = function () {
+      var el = pickFor;
+      if (!el) return;
+      el.value = VALUE.get.call(pick);
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      el.dispatchEvent(new Event('change', { bubbles: true }));
+      el.focus({ preventScroll: true });
+    };
+    pick.addEventListener('change', take);
+    document.body.appendChild(pick);
+    return pick;
+  }
+  function openPick(el) {
+    var p = picker();
+    if (typeof p.showPicker !== 'function') return;
+    lift(el);
+    var r = el.getBoundingClientRect();
+    p.style.left = Math.round(r.left) + 'px';
+    p.style.top = Math.round(r.bottom - 1) + 'px';
+    p.min = el.min || ''; p.max = el.max || '';
+    VALUE.set.call(p, el.value || '');
+    pickFor = el;
+    try { p.showPicker(); } catch (x) {}
+  }
+  function dmy(el) {
+    if (!el || el.__dmy || el.tagName !== 'INPUT' || el.type !== 'date' || el.hasAttribute('data-native') || coarse()) return;
+    var iso = VALUE.get.call(el);
+    el.__dmy = true;
+    el.type = 'text';
+    el.classList.add('dmy');
+    el.setAttribute('inputmode', 'numeric');
+    el.setAttribute('autocomplete', 'off');
+    el.setAttribute('maxlength', '10');
+    if (!el.getAttribute('placeholder')) el.setAttribute('placeholder', 'DD/MM/YYYY');
+    el.__iso = isoOk(iso) ? iso : '';
+    Object.defineProperty(el, 'value', {
+      configurable: true,
+      get: function () { return el.__iso || ''; },
+      set: function (v) {
+        var next = v ? isoOf(v) : '';
+        el.__iso = next;
+        VALUE.set.call(el, next ? dmyOf(next) : '');
+      }
+    });
+    VALUE.set.call(el, dmyOf(el.__iso));
+    /* The calendar is the glyph at the right edge, or the down arrow. */
+    el.addEventListener('click', function (e) {
+      if (el.disabled || el.readOnly) return;
+      var r = el.getBoundingClientRect();
+      if (e.clientX >= r.right - 36) openPick(el);
+    });
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown' || (e.altKey && e.key === 'ArrowDown') || e.key === 'F4') { e.preventDefault(); openPick(el); }
+    });
+  }
+  /* A box made by a script is a DD/MM/YYYY box by the time it is reached. */
+  document.addEventListener('focusin', function (e) {
+    if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'date') dmy(e.target);
+  }, true);
+  /* What is typed is read before any page listener asks for the value. */
+  document.addEventListener('input', function (e) {
+    var el = e.target;
+    if (!el || !el.__dmy) return;
+    var raw = VALUE.get.call(el), shaped = isoOk(raw.trim()) ? dmyOf(raw.trim()) : shape(raw);
+    if (shaped !== raw) {
+      VALUE.set.call(el, shaped);
+      try { el.setSelectionRange(shaped.length, shaped.length); } catch (x) {}
+    }
+    el.__iso = isoOf(shaped);
+  }, true);
+  /* A box left holding something that is not a whole date says so. */
+  document.addEventListener('focusout', function (e) {
+    var el = e.target;
+    if (!el || !el.__dmy) return;
+    var raw = VALUE.get.call(el).trim();
+    if (raw && !el.__iso) { el.setAttribute('aria-invalid', 'true'); dateNote(el, true, 'Enter the date as DD/MM/YYYY.'); }
+  }, true);
+  var dmyWatch = window.MutationObserver ? new MutationObserver(function (list) {
+    list.forEach(function (m) {
+      Array.prototype.forEach.call(m.addedNodes, function (n) {
+        if (n.nodeType !== 1) return;
+        if (n.matches && n.matches('input[type="date"]')) dmy(n);
+        if (n.querySelectorAll) Array.prototype.forEach.call(n.querySelectorAll('input[type="date"]'), dmy);
+      });
+    });
+  }) : null;
+
   function scan(root) {
     Array.prototype.forEach.call((root || document).querySelectorAll('input[type="date"], input[type="month"], input[type="datetime-local"]'), floor);
+    Array.prototype.forEach.call((root || document).querySelectorAll('input[type="date"]'), dmy);
     Array.prototype.forEach.call((root || document).querySelectorAll('[aria-required="true"]'), req);
     Array.prototype.forEach.call((root || document).querySelectorAll('input[data-hint]'), hint);
     Array.prototype.forEach.call((root || document).querySelectorAll('select[data-seg]'), upgrade);
@@ -606,8 +746,14 @@
        script cleared, and ask whether a value is inside it. */
     floor: floor,
     dateOk: dateOk,
+    /* A date as the date boxes write it: 01/10/2026. */
+    dmy: dmyOf,
     FLOOR: FLOOR
   };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { scan(); });
-  else scan();
+  function start() {
+    scan();
+    if (dmyWatch && document.body) dmyWatch.observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
 })();

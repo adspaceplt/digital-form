@@ -1152,7 +1152,9 @@
     $('campFormat').value = c ? (c.push_format || 'site_visit') : 'site_visit';
     $('campDeliverable').value = c ? (c.deliverable || 'video') : 'video';
     $('campBackups').checked = c ? Boolean(c.backups_open) : false;
-    peopleSelect($('campOwner'), state.team, c ? (c.owner || '') : '');
+    /* A new campaign starts in the hands of whoever makes it (2026-10-01). */
+    var self = bridge.me && bridge.me();
+    peopleSelect($('campOwner'), state.team, c ? (c.owner || '') : ((self && self.name) || ''));
     msg('campMsg', '');
     $('addCampBox').hidden = false;
     if (!restoring) campDraft.note({ editing: c ? c.id : null });
