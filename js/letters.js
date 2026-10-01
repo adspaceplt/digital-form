@@ -143,7 +143,8 @@
       p_recipient: a.recipient || {}, p_body: a.body || {}, p_signatory: a.signatory || null,
       p_languages: a.languages && a.languages.length ? a.languages : ['en'],
       p_idem: a.idem || DOCS.idemKey(),
-      p_salutation: a.salutation || null
+      p_salutation: a.salutation || null,
+      p_signed: typeof a.signed === 'boolean' ? a.signed : null
     }, function (err, out) {
       if (err) { then({ error: err }); return; }
       readBack(out.id, function (doc, e2) {
@@ -308,12 +309,16 @@
          the name and the designation. Reserved together: a signature on a
          page of its own is a signature to nothing. */
       var sig = doc.signatory || {};
-      var closeH = LH * 2 + (doc.signed ? 60 + LH * 2 : 0);
+      /* Unsigned, the name and designation follow the company with no space
+         to sign (the Issue sheet's To be signed tick, 2026-10-01). */
+      var named = String(sig.name || '').trim() !== '';
+      var closeH = LH * 2 + (doc.signed ? 60 : 0) + (named ? LH * 2 : 0);
       need(closeH);
       if (String(doc.closing || '').trim()) { text(doc.closing, M, y, BODY); y -= LH; }
       text(ORG.name || 'ADSPACE PLT', M, y, BODY, bold); y -= LH;
-      if (doc.signed) {
-        y -= 60;
+      if (doc.signed) y -= 60;
+      else if (named) y -= LH * 0.5;
+      if (named) {
         text(String(sig.name || '').toUpperCase(), M, y, BODY, bold); y -= LH;
         if (sig.designation) { text(sig.designation, M, y, BODY, font, mute); y -= LH; }
       }

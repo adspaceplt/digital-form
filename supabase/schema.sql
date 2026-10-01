@@ -3740,6 +3740,9 @@ grant execute on function public.serial_taken(text) to authenticated;
 --      hr           ADHR/{staff code}/{type}{YYMM}
 --    A typed serial is accepted for any family; a built HR one takes a
 --    numeric suffix where the colleague already holds the same type.
+-- The tick added a thirteenth argument; PostgREST cannot choose between two
+-- shapes a call fits, so the twelve-argument one goes first.
+drop function if exists public.issue_document(text, uuid, uuid, text, date, text, jsonb, jsonb, jsonb, text[], text, text);
 create or replace function public.issue_document(
   p_type      text,
   p_client    uuid,
@@ -3752,7 +3755,8 @@ create or replace function public.issue_document(
   p_signatory jsonb,
   p_languages text[],
   p_idem      text,
-  p_salutation text default null
+  p_salutation text default null,
+  p_signed    boolean default null
 )
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -3768,6 +3772,7 @@ declare
   v_n     int;
   v_id    uuid;
   v_langs text[];
+  v_signed boolean;
 begin
   select * into t from public.doc_types where id = p_type and active;
   if t.id is null then return jsonb_build_object('error', 'no-type'); end if;
@@ -3792,8 +3797,15 @@ begin
     if coalesce(btrim(mb.staff_code), '') = '' then return jsonb_build_object('error', 'no-staff-code'); end if;
   end if;
 
-  -- A signed kind is signed by a person, never by a permission.
-  if t.signed then
+  -- Whether the letter leaves space to be signed is the sheet's tick
+  -- (2026-10-01), else the type's own setting. A signed letter is signed by
+  -- a person, never by a permission; an unsigned one may still name who
+  -- issued it, held to the same test.
+  v_signed := coalesce(p_signed, t.signed);
+  if coalesce(btrim(p_signatory ->> 'name'), '') <> '' and not public.issuer_name_ok(p_signatory ->> 'name') then
+    return jsonb_build_object('error', 'issuer-name', 'name', p_signatory ->> 'name');
+  end if;
+  if v_signed then
     if coalesce(btrim(p_signatory ->> 'name'), '') = '' then return jsonb_build_object('error', 'no-signatory'); end if;
     if not public.issuer_name_ok(p_signatory ->> 'name') then
       return jsonb_build_object('error', 'issuer-name', 'name', p_signatory ->> 'name');
@@ -3846,7 +3858,7 @@ begin
      coalesce(nullif(btrim(p_title), ''), t.title),
      coalesce(nullif(btrim(p_salutation), ''), t.salutation), t.closing,
      coalesce(p_recipient, '{}'::jsonb), coalesce(p_body, '{}'::jsonb), v_langs,
-     case when t.signed then p_signatory else null end, t.signed, 'portal',
+     case when coalesce(btrim(p_signatory ->> 'name'), '') <> '' then p_signatory else null end, v_signed, 'portal',
      coalesce(me.name, who), nullif(btrim(p_idem), ''))
   returning id into v_id;
 
@@ -3870,7 +3882,7 @@ exception
     end if;
     return jsonb_build_object('error', 'serial-taken');
 end $$;
-grant execute on function public.issue_document(text, uuid, uuid, text, date, text, jsonb, jsonb, jsonb, text[], text, text) to authenticated;
+grant execute on function public.issue_document(text, uuid, uuid, text, date, text, jsonb, jsonb, jsonb, text[], text, text, boolean) to authenticated;
 
 -- 5. A serial added by hand: a document made elsewhere (the accounting
 --    portal, an older Word letter) that the verify page should still answer.

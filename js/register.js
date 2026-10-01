@@ -481,7 +481,8 @@
     $('docAttnRow').hidden = hr;
     $('docHrRow').hidden = !hr;
     $('docLangRow').hidden = !quote;
-    $('docSignRow').hidden = !t.signed;
+    $('docSignRow').hidden = false;
+    if (reseed) $('docSigned').checked = Boolean(t.signed);
     $('docSerial').placeholder = quote ? 'AQT2607003' : 'Assigned on issue';
     if (reseed) { $('docTitleIn').value = t.title || ''; $('docSerial').value = ''; }
     var c = issuing.client || clientOf($('docClient').value);
@@ -515,7 +516,9 @@
       $('docLangMs').checked = quote && Boolean(t.body_ms);
       langBodies();
     }
-    if (t.signed && reseed) {
+    /* Who issues it is named on every letter; the tick only decides whether
+       the letter leaves space to sign over the name (the user, 2026-10-01). */
+    if (reseed) {
       $('docSigName').value = (state.me && state.me.name) || (bridge.actorName ? bridge.actorName() : '') || '';
       $('docSigRole').value = (state.me && state.me.designation) || '';
     }
@@ -565,7 +568,8 @@
     $('docMember').value = d.member_id || '';
     $('docClientWrap').hidden = hr; $('docMemberWrap').hidden = !hr;
     $('docToRow').hidden = hr; $('docAttnRow').hidden = hr; $('docHrRow').hidden = !hr;
-    $('docLangRow').hidden = !quote; $('docSignRow').hidden = !t.signed;
+    $('docLangRow').hidden = !quote; $('docSignRow').hidden = false;
+    $('docSigned').checked = Boolean(d.signed); $('docSigned').disabled = true;
     $('docSerial').value = d.serial || '';
     $('docDate').value = String(d.issued_at || today()).slice(0, 10);
     $('docTitle').textContent = 'Reissue ' + d.serial;
@@ -584,7 +588,7 @@
   function shutIssue() {
     $('docSheet').hidden = true; issuing = null;
     $('docKind').disabled = false; $('docClient').disabled = false; $('docMember').disabled = false;
-    $('docSerial').readOnly = false; $('docGo').textContent = 'Issue';
+    $('docSerial').readOnly = false; $('docGo').textContent = 'Issue'; $('docSigned').disabled = false;
   }
 
   function ticked(id) { return $(id).checked; }
@@ -613,12 +617,14 @@
       : { name: $('docTo').value.trim(), address: $('docAddr').value.trim(),
           attn: $('docAttn').value.trim(), attn_role: $('docAttnRole').value.trim() };
     if (!hr && !recipient.name) { msg('docMsg', 'Say who the letter is to.', 'err'); $('docTo').focus(); return; }
-    var signatory = t.signed ? { name: $('docSigName').value.trim(), designation: $('docSigRole').value.trim() } : null;
-    if (t.signed && !signatory.name) { msg('docMsg', 'A signatory is required.', 'err'); $('docSigName').focus(); return; }
+    var signed = $('docSigned').checked;
+    var signatory = $('docSigName').value.trim() ? { name: $('docSigName').value.trim(), designation: $('docSigRole').value.trim() } : null;
+    if (signed && !signatory) { msg('docMsg', 'A signatory is required.', 'err'); $('docSigName').focus(); return; }
     return { re: re, t: t, args: {
       type: t.id, client: hr ? null : client, member: hr ? $('docMember').value : null,
       serial: serial || null, issued_at: $('docDate').value || null, title: $('docTitleIn').value.trim(),
-      salutation: $('docSal').value.trim(), recipient: recipient, body: body, signatory: signatory, languages: languages
+      salutation: $('docSal').value.trim(), recipient: recipient, body: body, signatory: signatory, languages: languages,
+      signed: signed
     } };
   }
   /* Preview draws the letter from the sheet as it stands, on the same pen
@@ -631,7 +637,7 @@
     msg('docMsg', '');
     var a = g.args, t = g.t;
     var doc = {
-      serial: g.re ? g.re.serial : (a.serial || 'PREVIEW'), family: t.family, signed: Boolean(t.signed),
+      serial: g.re ? g.re.serial : (a.serial || 'PREVIEW'), family: t.family, signed: a.signed,
       closing: t.closing != null ? t.closing : (g.re ? g.re.closing : 'Yours sincerely,'),
       issued_at: a.issued_at || today(), title: a.title, salutation: a.salutation,
       recipient: a.recipient, body: a.body, signatory: a.signatory, languages: a.languages
