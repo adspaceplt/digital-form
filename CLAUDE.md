@@ -1725,8 +1725,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Ad performance ranks each objective's ads in a table; the cheapest is
     marked only among results of the same kind. Creative performance then
     gives each creative (the name without its creator code) one card: one
-    image, a line per objective and result type (results, cost per result,
-    reach, CTR; a missing figure a dash), the age split and video figures
+    image, a line per objective and result type (amount spent, results,
+    cost per result, reach, CTR; a missing figure a dash) under a shaded
+    head in Slate Regular, as every table in the report, the age split and video figures
     from the line that spent the most (2026-10-01).
   - An image added to one row of a creative is put on its other rows.
   - A result in a table is its count and one short word

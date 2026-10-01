@@ -1547,7 +1547,7 @@
          priced against its own result; the age split and the video figures
          from the line that spent the most. */
       var LH = S(4) + PAD;
-      var LCOLS = [0.27, 0.27, 0.2, 0.14, 0.12];
+      var LCOLS = [0.19, 0.16, 0.21, 0.2, 0.13, 0.11];
       var creativeH = function (c) {
         var lines = LH * (c.rows.length + 1);
         var body = Math.max(THt + PAD * 2, lines + (c.ageAd ? AGEH : 0));
@@ -1574,11 +1574,17 @@
         // A line an objective: what it was for, what it bought and at what price.
         var xs = [], acc = RX + PAD;
         LCOLS.forEach(function (f) { xs.push(acc); acc += (RW - PAD * 2) * f; });
-        var heads = ['Objective', 'Results', 'Cost per result', 'Reach', 'CTR'];
+        /* The head reads as every table's head in the report: a shaded band
+           in Slate Regular over rows in Slate Book (the user, 2026-10-01:
+           the labels and the figures were hard to tell apart). Each line
+           carries what it spent, which its cost per result is read
+           against. */
+        var heads = ['Objective', 'Amount spent', 'Results', 'Cost per result', 'Reach', 'CTR'];
+        rect(RX, bodyTop - LH, RW, LH, FILL);
         heads.forEach(function (t0, i) {
           var w0 = (RW - PAD * 2) * LCOLS[i];
-          if (i) right(t0, xs[i] + w0, bodyTop - LH / 2 - TY.small * 0.34, TY.small, book, SOFT);
-          else tline(t0, xs[i], bodyTop - LH / 2 - TY.small * 0.34, TY.small, book, SOFT);
+          if (i) right(t0, xs[i] + w0, bodyTop - LH / 2 - TY.small * 0.34, TY.small, reg, INK);
+          else tline(t0, xs[i], bodyTop - LH / 2 - TY.small * 0.34, TY.small, reg, INK);
         });
         c.rows.forEach(function (a, ri) {
           var ly = bodyTop - LH * (ri + 1);
@@ -1586,7 +1592,7 @@
           var base = ly - LH / 2 - TY.small * 0.34;
           /* A figure not given reads as a dash: a line is a table row. */
           var got = function (v, f0) { return num(v) === null ? '\u2014' : f0(v); };
-          var cells = [(OBJECTIVES[a.objective] || {}).name || 'Other', countWord(a.results, a._label),
+          var cells = [(OBJECTIVES[a.objective] || {}).name || 'Other', got(a.spend, money), countWord(a.results, a._label),
             a._cpr === null ? '\u2014' : cost(a._cpr) + (a._per1000 ? ' / 1,000' : ''), got(a.reach, fmt), got(a.ctr, pctv)];
           cells.forEach(function (t0, i) {
             var w0 = (RW - PAD * 2) * LCOLS[i];
