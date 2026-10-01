@@ -859,6 +859,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     `{role}` filled. A body somebody has edited is never overwritten.
   - The signatory is the signed-in person and their `designation`.
   - The sheet runs in the letter's own order.
+  - Preview (`#docPreview`, beside Issue) draws the letter from the sheet
+    on the same pen without issuing it: no row, no number spent, the
+    reference reading PREVIEW (a reissue keeps its own); a new tab, else a
+    download.
+  - The register's sheets (`#docSheet`, `#regAddSheet`, void, delete)
+    close on an outside click only while untouched, as `js/sheet.js` holds.
   - `doc_types` is seeded once and is the team's to edit.
   - The Register sorts newest first, with Oldest first and By reference in the
     bar.
