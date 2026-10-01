@@ -1666,11 +1666,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - An empty step's line does not repeat the head's Add.
   - The commentary has no title or headline. An ads report's is four
     fields. An accounts report's is the summary, then one block a platform
-    group (written to its lead account: Summary line, Highlights, Areas to
-    improve, Recommendations) with Why it stood out for its top three posts
-    (`ADspaceSmReport.topOf`, ranked on that platform alone), and the older
-    across-platform fields folded under Across all platforms. The step
-    counts the summary and each platform (`commentaryState`).
+    group (written to its lead account: Summary line, What worked, Areas to
+    improve, Focus for next month, the advertising report's words) and,
+    under its own Top posts label (`.rp-tophead`), Why it stood out for
+    each of its top three posts (`ADspaceSmReport.topOf`, ranked on that
+    platform alone). The older across-platform fields show under Across all
+    platforms only on a report that holds some; an account sheet shows its
+    own remarks only where it is not its group's lead and holds some. The
+    step counts the summary and each platform (`commentaryState`).
 - The client record's tab shows finished reports only (`sm_client_reports`,
   `sm_report_file`).
 - The client portal reads only the newest version that has not been withdrawn

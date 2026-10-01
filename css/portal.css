@@ -8295,6 +8295,10 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 /* A form inside a step steps its fields 16px apart, as a sheet does. */
 .rp-form :where(.row) { margin-top: 16px; row-gap: 16px; }
 .rp-form :where(.row .row) { margin-top: 0; }
+/* A platform's top posts sit under their own label, a step below its
+   fields, so the remarks above read as the platform's. */
+.rp-form .rp-tophead { margin: 24px 0 8px; font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--ink-mute); }
+.rp-form .rp-tophead + .row { margin-top: 0; }
 .rp-form > .rp-hint + .row, .rp-form > .rp-aidraft + .msg + .row, .rp-form > .tickline + .fsec, .rp-form > .fsec:first-child { margin-top: 12px; padding-top: 0; border-top: 0; }
 .rp-form > .rp-aidraft + .msg:empty { display: none; }
 .rp-form > .rp-aidraft + .msg:not(:empty) { margin-top: 8px; }

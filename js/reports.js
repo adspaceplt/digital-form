@@ -398,7 +398,7 @@
     var mdl = M.model({ report: st.open || {}, platforms: st.platforms.map(copy), posts: st.posts.map(copy) });
     return mdl.groups.map(function (g) { return { label: g.label, lead: g.accounts[0], top: M.topOf(g, 3) }; });
   }
-  var PLAT_FIELDS = [['summary', 'Summary line'], ['worked', 'Highlights'], ['improve', 'Areas to improve'], ['actions', 'Recommendations']];
+  var PLAT_FIELDS = [['summary', 'Summary line'], ['worked', 'What worked'], ['improve', 'Areas to improve'], ['actions', 'Focus for next month']];
   function commentaryState() {
     var r = st.open || {}, ins = r.insights || {};
     var has = function (v) { return String(v || '').trim() !== ''; };
@@ -763,6 +763,13 @@
   if (window.ADspaceMenu) window.ADspaceMenu.onScroll(shutMenus);
 
   function accountSheet(a, opener) {
+    /* A platform's remarks are written on the Commentary step, on its lead
+       account, where Draft with AI fills them. An account's own remarks
+       show here only where it is not its group's lead and already holds
+       some (older reports), so they can still be edited or cleared. */
+    var leads = socialGroups().map(function (g) { return g.lead && g.lead.id; });
+    var remarksHere = !!a && leads.indexOf(a.id) < 0 &&
+      ['summary', 'worked', 'improve', 'actions'].some(function (k) { return String(a[k] || '').trim(); });
     var box = sheetShell('rpAccSheet', 'Account',
       '<section class="fsec"><h4 class="fsec-h">Account</h4>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpAccPlatform">Platform</label><select class="select" id="rpAccPlatform">' +
@@ -782,11 +789,11 @@
         '<div class="row fgrid"><div><label class="field-label" for="rpAccBasis">Engagement rate based on</label><select class="select" id="rpAccBasis">' +
           BASIS.map(function (x) { return '<option value="' + x[0] + '">' + esc(x[1]) + '</option>'; }).join('') + '</select></div>' +
         '<div><label class="field-label" for="rpAccNote">Metric note</label><input class="input" id="rpAccNote" type="text" placeholder="Optional"></div></div></section>' +
-      '<details class="fmore" data-none="Optional"><summary>Remarks for this account</summary>' +
+      (remarksHere ? '<details class="fmore" data-none="Optional"><summary>Remarks for this account</summary>' +
         '<div class="row"><div><label class="field-label" for="rpAccSummary">Summary line</label><input class="input" id="rpAccSummary" type="text"></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpAccWorked">Highlights</label><textarea class="input" id="rpAccWorked" rows="3" placeholder="One point a line"></textarea></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpAccImprove">Areas for improvement</label><textarea class="input" id="rpAccImprove" rows="3" placeholder="One point a line"></textarea></div></div>' +
-        '<div class="row"><div><label class="field-label" for="rpAccActions">Recommendations</label><textarea class="input" id="rpAccActions" rows="3" placeholder="One point a line"></textarea></div></div></details>',
+        '<div class="row"><div><label class="field-label" for="rpAccWorked">What worked</label><textarea class="input" id="rpAccWorked" rows="3" placeholder="One point a line"></textarea></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpAccImprove">Areas to improve</label><textarea class="input" id="rpAccImprove" rows="3" placeholder="One point a line"></textarea></div></div>' +
+        '<div class="row"><div><label class="field-label" for="rpAccActions">Focus for next month</label><textarea class="input" id="rpAccActions" rows="3" placeholder="One point a line"></textarea></div></div></details>' : ''),
       FOOT('Save'));
     box.querySelector('h3').textContent = a ? 'Edit account' : 'Add account';
     var v = function (id, x) { $(id).value = x == null ? '' : x; };
@@ -795,7 +802,7 @@
     v('rpAccGrowth', a && a.growth_override); v('rpAccWhy', a && a.growth_reason);
     numFields(box);
     v('rpAccBasis', a ? a.er_basis : 'views'); v('rpAccNote', a && a.metric_notes);
-    v('rpAccSummary', a && a.summary); v('rpAccWorked', a && a.worked); v('rpAccImprove', a && a.improve); v('rpAccActions', a && a.actions);
+    if (remarksHere) { v('rpAccSummary', a.summary); v('rpAccWorked', a.worked); v('rpAccImprove', a.improve); v('rpAccActions', a.actions); }
     var mets = a ? (a.metrics || []) : ['views', 'engagements'];
     Array.prototype.forEach.call(box.querySelectorAll('[data-metric]'), function (c) { c.checked = mets.indexOf(c.getAttribute('data-metric')) > -1; });
     var folds = box.querySelectorAll('details.fmore');
@@ -815,10 +822,12 @@
         group_label: label || null, group_key: label ? label.toLowerCase().replace(/[^a-z0-9]+/g, '-') : null,
         followers_start: numOf('rpAccStart'), followers_end: numOf('rpAccEnd'),
         growth_override: numOf('rpAccGrowth'), growth_reason: $('rpAccWhy').value.trim() || null,
-        metrics: metrics, er_basis: $('rpAccBasis').value || null, metric_notes: $('rpAccNote').value.trim() || null,
-        summary: $('rpAccSummary').value.trim() || null, worked: $('rpAccWorked').value.trim() || null,
-        improve: $('rpAccImprove').value.trim() || null, actions: $('rpAccActions').value.trim() || null
+        metrics: metrics, er_basis: $('rpAccBasis').value || null, metric_notes: $('rpAccNote').value.trim() || null
       };
+      if (remarksHere) {
+        row.summary = $('rpAccSummary').value.trim() || null; row.worked = $('rpAccWorked').value.trim() || null;
+        row.improve = $('rpAccImprove').value.trim() || null; row.actions = $('rpAccActions').value.trim() || null;
+      }
       go.disabled = true;
       var q = a ? db.from('sm_report_platforms').update(row).eq('id', a.id).select('*')
                 : db.from('sm_report_platforms').insert(Object.assign({ report_id: st.open.id, position: st.platforms.length + 1 }, row)).select('*');
@@ -1219,12 +1228,15 @@
       var id = g.lead.id;
       return '<section class="fsec rp-plat" data-acc="' + esc(id) + '"><h4 class="fsec-h">' + esc(g.label) + '</h4>' +
         '<div class="row"><div><label class="field-label" for="rpP_' + id + '_summary">Summary line</label><input class="input" id="rpP_' + id + '_summary" type="text"></div></div>' +
-        area('rpP_' + id + '_worked', 'Highlights', 'One point a line') +
+        area('rpP_' + id + '_worked', 'What worked', 'One point a line') +
         area('rpP_' + id + '_improve', 'Areas to improve', 'One point a line') +
-        area('rpP_' + id + '_actions', 'Recommendations', 'One point a line') +
-        g.top.map(function (p, i) {
-          return area('rpN_' + p.id, 'Top post ' + (i + 1) + ': ' + postName(p), 'Why it stood out', 2);
-        }).join('') + '</section>';
+        area('rpP_' + id + '_actions', 'Focus for next month', 'One point a line') +
+        /* The posts' remarks are one a post, under a head of their own, so
+           the platform's fields above read as the platform's (the user,
+           2026-10-01). */
+        (g.top.length ? '<h5 class="rp-tophead">Top posts</h5>' + g.top.map(function (p, i) {
+          return area('rpN_' + p.id, (i + 1) + '. ' + postName(p), 'Why it stood out', 2);
+        }).join('') : '') + '</section>';
     }).join('');
     box.innerHTML = '<section class="panel rp-form">' +
       '<div class="rp-aidraft"><p class="rp-hint">' + (ads ? 'One point a line. Start a line with a dash for a sub-point.' : 'One point a line.') + '</p>' +
@@ -1236,11 +1248,13 @@
       '<div class="msg" data-m="ai"></div>' +
       fields.map(function (x) { return area('rpT_' + x[0], x[1], x[2], x[3]); }).join('') +
       platHtml +
-      (more.length ? '<details class="fmore rp-across"><summary>Across all platforms <span class="fmore-sum"></span></summary>' +
+      /* What older reports wrote across all platforms stays editable there;
+         a report with none of it shows no fold. */
+      (more.some(function (x) { return has(valOf(x[0])); }) ? '<details class="fmore rp-across"><summary>Across all platforms <span class="fmore-sum"></span></summary>' +
         more.map(function (x) { return area('rpT_' + x[0], x[1], 'One point a line', 3).replace('<textarea ', '<textarea data-none="Optional" data-some="Written" '); }).join('') + '</details>' : '') +
       '<div class="rp-stepfoot"><button class="btn btn-primary" type="button" data-a="savenext">Save and continue</button>' +
         '<button class="btn" type="button" data-a="savetext">Save</button><div class="msg" data-m="text"></div></div></section>';
-    fields.concat(more).forEach(function (x) { $('rpT_' + x[0]).value = valOf(x[0]) || ''; });
+    fields.concat(more).forEach(function (x) { var el = $('rpT_' + x[0]); if (el) el.value = valOf(x[0]) || ''; });
     groups.forEach(function (g) {
       PLAT_FIELDS.forEach(function (f) { $('rpP_' + g.lead.id + '_' + f[0]).value = g.lead[f[0]] || ''; });
       g.top.forEach(function (p) { $('rpN_' + p.id).value = p.notable || ''; });
@@ -1265,7 +1279,9 @@
       delete insights.executive_summary;
       fields.concat(more).forEach(function (x) {
         if (x[0] === 'intro') return;
-        var v = $('rpT_' + x[0]).value.trim();
+        var el = $('rpT_' + x[0]);
+        if (!el) return;
+        var v = el.value.trim();
         if (v) insights[x[0]] = v; else delete insights[x[0]];
       });
       var row = { intro: $('rpT_intro').value.trim() || null, headline: null, insights: insights };

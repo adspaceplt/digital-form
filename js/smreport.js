@@ -1419,7 +1419,7 @@
       };
       var blocks = mdl.groups.map(function (gg) {
         return { gg: gg, lead: words(gg.summary).trim(),
-          rows: rowsOf([['Highlights', gg.worked], ['Areas to Improve', gg.improve], ['Recommendations', gg.actions]]) };
+          rows: rowsOf([['What Worked', gg.worked], ['Areas to Improve', gg.improve], ['Recommended Focus for the Following Month', gg.actions]]) };
       }).filter(function (b) { return b.lead || b.rows.length; });
       var across = rowsOf([['Key Findings', ins.performed_well], ['Performance Drivers', ins.why_well],
         ['Areas to Improve', ins.underperformed], ['Opportunities', ins.opportunities],
