@@ -1774,12 +1774,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     head in Slate Regular, as every table in the report, the age split and video figures
     from the line that spent the most (2026-10-01).
   - An image added to one row of a creative is put on its other rows.
-  - A result in a table is its count and one short word
-    (`ADspaceSmReport.shortResult`: Engagements, Reached, Leads, Messages,
-    Conversions, Sales, Clicks…), on one line where it fits, else the word
-    under the count; never broken inside a word. An ad that spent with no
-    result reads 0 Leads, one result 1 Lead; the console's rows read the
-    same word, never Leads (form).
+  - A result in a PDF table is its count alone (0 where an ad spent with
+    none): the objective heads the table and the client reads the cost per
+    result. The console's rows keep one short word
+    (`ADspaceSmReport.shortResult`: Engagements, Reached, Leads, Messages…),
+    never Leads (form).
     A full block step separates one objective's table from the next.
   - The tax note follows the market: WHT and SST for MY; DCC and GST for SG.
   - Ad names never break at an underscore.
