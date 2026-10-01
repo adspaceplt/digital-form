@@ -1654,7 +1654,17 @@ Each line is a rule that broke once. Its reason is in the archive.
     the previous period, which is carried forward.
   - One row per ad and objective.
   - Ads Manager's own cost per result (reach per 1,000).
-  - Paste from an Ads Manager export, with the age breakdown gathered.
+  - Paste from an Ads Manager export, with the age breakdown gathered
+    (2026-10-01): an export by day or week dates each ad by the first and
+    last day it delivered and leaves its reach to be typed; otherwise the
+    ad's own Starts and Ends, held inside the period (Ongoing reads to its
+    last day); Reporting starts and ends only as a last resort. A Hook or
+    Hold rate column is weighed by impressions across the rows, else worked
+    out (3-second plays or ThruPlays over impressions). A result indicator
+    key (`actions:post_engagement`) reads as its word
+    (`ADspaceSmReport.resultWord`), on import, on the list and in the PDF.
+  - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective
+    and Remove (asks, naming how many), each with Undo.
   - The age split must total 100% (±0.5).
 - Figure fields (`numFields()`, `data-num`) show a count with separators, a
   percentage to 1 decimal, and money as RM or S$. `numIn()` reads them back.

@@ -337,6 +337,7 @@
 
   function openReport(id, fromAddress) {
     var same = st.open && st.open.id === id && st.open.client_id;
+    if (!same) st.adPick = null;
     st.open = st.open && st.open.id === id ? st.open : { id: id };
     var want = new URLSearchParams(location.search).get('step');
     showEditor();
@@ -493,7 +494,8 @@
       box.innerHTML = '<div class="rp-sec">' + head('Account figures') + '<div class="rp-totals"></div></div>' + foot;
       paintTotals();
     } else if (k === 'ads') {
-      box.innerHTML = '<div class="rp-sec">' + head('Ads', ed ? '<button class="btn btn-sm" type="button" data-a="pasteads">Import from Ads Manager</button>' +
+      box.innerHTML = '<div class="rp-sec">' + head('Ads', ed ? '<button class="btn btn-sm" type="button" data-a="pickads">Select</button>' +
+          '<button class="btn btn-sm" type="button" data-a="pasteads">Import from Ads Manager</button>' +
           '<button class="btn btn-sm" type="button" data-a="addad">' + ICON.plus + 'Add ad</button>' : '') +
         '<div class="rp-ads"></div></div>' + foot;
       paintAds();
@@ -510,6 +512,7 @@
     if ((b = box.querySelector('[data-a="paste"]'))) { var pb = b; pb.addEventListener('click', function () { pasteSheet(pb); }); }
     if ((b = box.querySelector('[data-a="addad"]'))) { var ad = b; ad.addEventListener('click', function () { adSheet(null, ad); }); }
     if ((b = box.querySelector('[data-a="pasteads"]'))) { var pa = b; pa.addEventListener('click', function () { pasteAdsSheet(pa); }); }
+    if ((b = box.querySelector('[data-a="pickads"]'))) b.addEventListener('click', function () { st.adPick = {}; paintAds(); });
   }
 
   /* The last step: what the report holds, what is still missing, and the one
@@ -1233,6 +1236,8 @@
     });
   }
   function playOut(v) { if (v == null || v === '') return ''; var s = Math.round(Number(v)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+  /* Ads Manager's own key for a result reads as its word (js/smreport.js). */
+  function resultWord(x) { var RW = window.ADspaceSmReport && window.ADspaceSmReport.resultWord; return RW ? RW(x) : (x || ''); }
   function adCpr(a) {
     if (a.cpr != null && a.cpr !== '') return Number(a.cpr);
     var reach = /reach/i.test(String(a.result_label || ''));
@@ -1334,40 +1339,147 @@
     sn.addEventListener('click', function () { saveTotals(sn, function () { goStep('ads'); }); });
   }
 
+  /* Several ads at once (the user, 2026-10-01): Select puts a tick on every
+     row and a bar over the list, which moves the ticked ads to another
+     objective or removes them, each with its Undo. */
   function paintAds() {
     paintSteps();
     var box = st.host.querySelector('.rp-ads');
     if (!box) return;
     var ed = editable();
+    var pickBtn = st.host.querySelector('[data-a="pickads"]');
+    if (!ed || st.ads.length < 2) st.adPick = null;
+    if (pickBtn) pickBtn.hidden = !ed || st.ads.length < 2 || !!st.adPick;
     if (!st.ads.length) {
       UI.emptyLine(box, 'No ads.');
       return;
     }
-    box.innerHTML = OBJECTIVES.map(function (o) {
+    var pick = st.adPick;
+    if (pick) Object.keys(pick).forEach(function (id) { if (!st.ads.some(function (a) { return a.id === id; })) delete pick[id]; });
+    var tick = function (id, label, on) {
+      return '<span class="rp-pick"><input class="trow-pick" type="checkbox"' + (id ? ' data-pick="' + esc(id) + '"' : ' data-pickall') +
+        (on ? ' checked' : '') + ' aria-label="' + esc(label) + '"></span>';
+    };
+    var bar = pick ? '<div class="bulkbar rp-adbar">' +
+      '<label class="tickline bulkbar-all"><input type="checkbox" id="rpAdAll"> <span id="rpAdCount"></span></label>' +
+      '<span class="bulkbar-acts"><select class="select select-sm" id="rpAdMove" aria-label="Move to objective"><option value="">Move to objective</option>' +
+        OBJECTIVES.map(function (o) { return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('') + '</select>' +
+      '<button class="btn btn-sm btn-danger" id="rpAdRemove" type="button">Remove</button></span>' +
+      '<button class="btn btn-sm btn-quiet bulkbar-done" id="rpAdDone" type="button">Done</button></div>' : '';
+    box.innerHTML = bar + OBJECTIVES.map(function (o) {
       var ads = st.ads.filter(function (a) { return a.objective === o[0]; });
       if (!ads.length) return '';
       var spend = ads.reduce(function (s0, a) { return s0 + (Number(a.spend) || 0); }, 0);
       return '<div class="rp-postgroup"><p class="rp-group">' + esc(o[1]) +
         ' <span class="mute">' + ads.length + ' ad' + (ads.length === 1 ? '' : 's') + ' · ' + esc(money2(spend)) + '</span></p>' +
-        '<div class="crm-table softpanel rp-ad-table">' +
-        '<div class="crm-head rp-ad-row"><span></span><span>Ad</span><span>Amount spent</span><span>Results</span><span>Cost per result</span><span></span></div>' +
+        '<div class="crm-table softpanel rp-ad-table' + (pick ? ' is-picking' : '') + '" data-obj="' + o[0] + '">' +
+        '<div class="crm-head rp-ad-row">' + (pick ? tick(null, 'Select every ' + o[1] + ' ad', ads.every(function (a) { return pick[a.id]; })) : '') +
+          '<span></span><span>Ad</span><span>Amount spent</span><span>Results</span><span>Cost per result</span><span></span></div>' +
         ads.map(function (a) {
-          var sub = [a.result_label, a.audience ? a.audience + ' audience' : '', a.starts_on ? dayWord(a.starts_on) + (a.ends_on ? ' to ' + dayWord(a.ends_on) : '') : ''].filter(Boolean).join(' · ');
+          var sub = [resultWord(a.result_label), a.audience ? a.audience + ' audience' : '', a.starts_on ? dayWord(a.starts_on) + (a.ends_on ? ' to ' + dayWord(a.ends_on) : '') : ''].filter(Boolean).join(' · ');
           var c = adCpr(a);
-          return '<div class="crm-row rp-ad-row" data-id="' + esc(a.id) + '">' +
+          return '<div class="crm-row rp-ad-row' + (pick && pick[a.id] ? ' is-picked' : '') + '" data-id="' + esc(a.id) + '">' +
+            (pick ? tick(a.id, 'Select ' + a.name, !!pick[a.id]) : '') +
             '<span class="rp-thumb">' + (a.thumb_data ? '<img src="' + esc(a.thumb_data) + '" alt="">' : '') + '</span>' +
             '<span class="rp-name"><b>' + esc(a.name) + '</b><small>' + esc(sub) + '</small></span>' +
-            '<span class="rp-num">' + esc(money2(a.spend)) + '</span>' +
-            '<span class="rp-num">' + esc(fmt(a.results)) + '</span>' +
-            '<span class="rp-num">' + esc(c == null ? '—' : money2(c)) + '</span>' +
-            (ed ? rowMenu(['Edit', 'Duplicate', 'Remove']) : '<span></span>') + '</div>';
+            '<span class="rp-num rp-spend">' + esc(money2(a.spend)) + '</span>' +
+            '<span class="rp-num rp-res">' + esc(fmt(a.results)) + '</span>' +
+            '<span class="rp-num rp-cpr">' + esc(c == null ? '—' : money2(c)) + '</span>' +
+            (ed && !pick ? rowMenu(['Edit', 'Duplicate', 'Remove']) : '<span></span>') + '</div>';
         }).join('') + '</div></div>';
     }).join('');
+    if (pick) { wirePick(box); return; }
     if (ed) wireRows(box, function (id, act, btn) {
       var a = st.ads.filter(function (x) { return x.id === id; })[0];
       if (act === 'Edit') adSheet(a, btn);
       if (act === 'Duplicate') adSheet(Object.assign({}, a, { id: null, objective: a.objective }), btn, true);
       if (act === 'Remove') removeAd(a);
+    });
+  }
+
+  function wirePick(box) {
+    var pick = st.adPick;
+    var ids = function () { return Object.keys(pick).filter(function (k) { return pick[k]; }); };
+    var count = function () {
+      var n = ids().length, all = $('rpAdAll');
+      $('rpAdCount').textContent = n + ' selected';
+      all.checked = n === st.ads.length; all.indeterminate = n > 0 && n < st.ads.length;
+      $('rpAdMove').disabled = !n; $('rpAdRemove').disabled = !n;
+      Array.prototype.forEach.call(box.querySelectorAll('.rp-ad-table'), function (t) {
+        var rows = t.querySelectorAll('[data-pick]'), on = t.querySelectorAll('[data-pick]:checked').length, g = t.querySelector('[data-pickall]');
+        if (g) { g.checked = on === rows.length; g.indeterminate = on > 0 && on < rows.length; }
+      });
+    };
+    Array.prototype.forEach.call(box.querySelectorAll('[data-pick]'), function (i) {
+      i.addEventListener('change', function () {
+        var id = i.getAttribute('data-pick');
+        if (i.checked) pick[id] = true; else delete pick[id];
+        i.closest('.rp-ad-row').classList.toggle('is-picked', i.checked);
+        count();
+      });
+    });
+    Array.prototype.forEach.call(box.querySelectorAll('[data-pickall]'), function (g) {
+      g.addEventListener('change', function () {
+        Array.prototype.forEach.call(g.closest('.rp-ad-table').querySelectorAll('[data-pick]'), function (i) {
+          if (i.checked !== g.checked) { i.checked = g.checked; i.dispatchEvent(new Event('change')); }
+        });
+      });
+    });
+    $('rpAdAll').addEventListener('change', function () {
+      var on = $('rpAdAll').checked;
+      st.ads.forEach(function (a) { if (on) pick[a.id] = true; else delete pick[a.id]; });
+      paintAds();
+    });
+    $('rpAdDone').addEventListener('click', function () { st.adPick = null; paintAds(); });
+    $('rpAdMove').addEventListener('change', function () {
+      var to = $('rpAdMove').value, chosen = ids();
+      if (!to || !chosen.length) return;
+      var was = {};
+      st.ads.forEach(function (a) { if (pick[a.id] && a.objective !== to) (was[a.objective] = was[a.objective] || []).push(a.id); });
+      var moving = [].concat.apply([], Object.keys(was).map(function (k) { return was[k]; }));
+      if (!moving.length) { $('rpAdMove').value = ''; return; }
+      $('rpAdMove').disabled = true;
+      setObjective(moving, to).then(function () {
+        var word = OBJ_WORD[to] || to;
+        st.adPick = {};
+        paintAds(); paintTotals();
+        undoBar(moving.length + ' ad' + (moving.length === 1 ? '' : 's') + ' moved to ' + word + '.', st.host.querySelector('.rp-ads'), function () {
+          Object.keys(was).reduce(function (p0, k) { return p0.then(function () { return setObjective(was[k], k); }); }, Promise.resolve())
+            .then(function () { paintAds(); paintTotals(); }).catch(function (e) { say(st.host.querySelector('[data-m="head"]'), said(e), 'err'); });
+        });
+      }).catch(function (e) { $('rpAdMove').disabled = false; say(st.host.querySelector('[data-m="head"]'), said(e), 'err'); });
+    });
+    $('rpAdRemove').addEventListener('click', function () {
+      var chosen = st.ads.filter(function (a) { return pick[a.id]; });
+      if (!chosen.length) return;
+      var n = chosen.length;
+      window.ADspaceConfirm.ask({ title: 'Remove ' + n + ' ad' + (n === 1 ? '' : 's') + '?', body: 'They leave this report.', go: 'Remove', tone: 'danger' }, function () {
+        db.from('sm_report_ads').delete().in('id', chosen.map(function (a) { return a.id; })).select('id').then(function (res) {
+          var gone = (res.data || []).map(function (x) { return x.id; });
+          if (res.error || !gone.length) { say(st.host.querySelector('[data-m="head"]'), said(res.error || 'Not removed. The database refused the request.'), 'err'); return; }
+          var left = chosen.filter(function (a) { return gone.indexOf(a.id) > -1; });
+          st.ads = st.ads.filter(function (a) { return gone.indexOf(a.id) < 0; });
+          st.adPick = st.ads.length > 1 ? {} : null;
+          paintAds(); paintTotals();
+          undoBar(left.length + ' ad' + (left.length === 1 ? '' : 's') + ' removed.', st.host.querySelector('.rp-ads'), function () {
+            db.from('sm_report_ads').insert(left).select('*').then(function (x) {
+              if (x.error) { say(st.host.querySelector('[data-m="head"]'), said(x.error), 'err'); return; }
+              st.ads = st.ads.concat(x.data || []); sortAds(); paintAds(); paintTotals();
+            });
+          });
+        });
+      });
+    });
+    count();
+  }
+  /* One objective for several ads; the answer names every ad it moved. */
+  function setObjective(ids, to) {
+    return db.from('sm_report_ads').update({ objective: to }).in('id', ids).select('id, objective').then(function (res) {
+      if (res.error) throw res.error;
+      var done = (res.data || []).map(function (x) { return x.id; });
+      if (!done.length) throw new Error('Not moved. The database refused the request.');
+      st.ads.forEach(function (a) { if (done.indexOf(a.id) > -1) a.objective = to; });
+      sortAds();
     });
   }
 
@@ -1423,7 +1535,7 @@
     var v = function (id, x) { $(id).value = x == null ? '' : x; };
     a = a || {};
     v('rpAdName', a.name); $('rpAdObj').value = a.objective || st.lastObj || 'leads';
-    v('rpAdResult', a.result_label); v('rpAdAud', a.audience);
+    v('rpAdResult', resultWord(a.result_label)); v('rpAdAud', a.audience);
     v('rpAdStart', a.starts_on || (a.id || copy ? null : st.open.period_start)); v('rpAdEnd', a.ends_on || (a.id || copy ? null : st.open.period_end));
     v('rpAdSpend', a.spend); v('rpAdResults', a.results); v('rpAdCtr', a.ctr); v('rpAdReach', a.reach); v('rpAdImpr', a.impressions);
     v('rpAdCpr', a.cpr); $('rpAdBasis').value = a.cpr_basis || '';
@@ -1522,15 +1634,24 @@
      by age comes in as one row an ad and band; those rows are gathered into
      one ad, its age split taken from its results (or its impressions where
      it has none), and its figures added up. Video plays are turned into the
-     hook rate, the hold rate and the retention curve. */
+     hook rate, the hold rate and the retention curve; a rate Ads Manager
+     sends itself (a custom Hook rate column) is kept, weighted by
+     impressions across the rows, so it reads as it does there.
+     The dates an ad ran (the user, 2026-10-01): an export by day (or week)
+     gives the first and last day the ad delivered, and its reach is left to
+     be typed, since a daily reach counts a person again each day. Otherwise
+     the ad's own Starts and Ends, held inside the report's period; an ad
+     still running reads to the period's last day. Reporting starts and ends
+     only repeat the range that was exported, so they are the last resort. */
   var AD_HEAD = [
     [/^(ad name|ad|name)$/, 'name'], [/^(ad set name|ad set|audience)$/, 'audience'], [/^objective$/, 'objective'],
     [/^(result type|result indicator|results? type)$/, 'result_label'], [/^results$/, 'results'],
     [/^reach$/, 'reach'], [/^impressions$/, 'impressions'], [/^amount spent/, 'spend'],
     [/^ctr/, 'ctr'], [/^cost per results?/, 'cpr'],
-    [/^(reporting starts|starts?|start date|start)$/, 'starts_on'], [/^(reporting ends|ends?|end date|end)$/, 'ends_on'],
+    [/^reporting starts$/, 'rep_start'], [/^reporting ends$/, 'rep_end'], [/^(day|week|month)$/, 'day'],
+    [/^(starts?|start date|start time)$/, 'starts_on'], [/^(ends?|end date|end time|stop time)$/, 'ends_on'],
     [/^age$/, 'age'],
-    [/^(3-second video plays|video plays at 3 ?s|3-second plays)$/, 'plays3'], [/^thruplays$/, 'thruplays'], [/^video plays$/, 'plays'],
+    [/^(3-second video plays|video plays at 3 ?s(econds)?|3-second plays)$/, 'plays3'], [/^thruplays$/, 'thruplays'], [/^video plays$/, 'plays'],
     [/^video plays at 25%/, 'v25'], [/^video plays at 50%/, 'v50'], [/^video plays at 75%/, 'v75'], [/^video plays at 95%/, 'v95'], [/^video plays at 100%/, 'v100'],
     [/^video average play time/, 'avg_play'], [/^hook rate/, 'hook_rate'], [/^hold rate/, 'hold_rate']
   ];
@@ -1546,7 +1667,12 @@
     if (/aware|reach|brand/.test(x)) return 'awareness';
     return null;
   }
-  function parseAdRows(text, year, fallbackObj) {
+  /* A date in the period's terms: before it starts reads as its first day,
+     after it ends (or not ended) as its last. */
+  function clip(d, lo, hi) { return !d ? d : (lo && d < lo ? lo : hi && d > hi ? hi : d); }
+  function parseAdRows(text, period, fallbackObj) {
+    period = period || {};
+    var year = period.year || new Date().getFullYear(), lo = period.start || null, hi = period.end || null;
     var lines = String(text || '').replace(/\r/g, '').split('\n').filter(function (l) { return l.trim(); });
     if (lines.length < 2) return { error: 'Paste a header row and at least one ad.' };
     var sep = lines[0].indexOf('\t') > -1 ? '\t' : ',';
@@ -1556,48 +1682,80 @@
       return hit ? hit[1] : null;
     });
     if (head.indexOf('name') < 0) return { error: 'The header row needs an Ad name column.' };
-    var byKey = {}, order = [], skipped = 0;
+    var byKey = {}, order = [], skipped = 0, daily = 0;
+    var RW = window.ADspaceSmReport && window.ADspaceSmReport.resultWord;
     lines.slice(1).forEach(function (l) {
       var cells = l.split(sep).map(function (c) { return c.trim().replace(/^"|"$/g, ''); }), raw = {};
-      head.forEach(function (k, i) { if (k) raw[k] = cells[i] || ''; });
+      head.forEach(function (k, i) { if (k && raw[k] == null) raw[k] = cells[i] || ''; });
       if (!raw.name) { skipped++; return; }
       var obj = objectiveOf(raw.objective) || fallbackObj;
-      var key = [raw.name, obj, raw.audience || '', raw.starts_on || ''].join('|');
+      var key = [raw.name, obj, raw.audience || ''].join('|');
       var ad = byKey[key];
       if (!ad) {
-        ad = byKey[key] = { name: raw.name, objective: obj, audience: raw.audience || null, result_label: raw.result_label || null,
-          starts_on: raw.starts_on ? readDate(raw.starts_on, year) : null, ends_on: raw.ends_on ? readDate(raw.ends_on, year) : null,
-          _n: {}, _age: {}, _rows: 0, _ctrw: 0 };
+        ad = byKey[key] = { name: raw.name, objective: obj, audience: raw.audience || null,
+          result_label: raw.result_label ? (RW ? RW(raw.result_label) : raw.result_label) : null,
+          own_start: null, own_end: null, rep_start: null, rep_end: null, days: {}, ran_from: null, ran_to: null,
+          _n: {}, _w: {}, _age: {}, _rows: 0, _ctrw: 0 };
         order.push(key);
       }
       ad._rows++;
+      var im = numIn(raw.impressions);
       ['results', 'reach', 'impressions', 'spend', 'plays3', 'thruplays', 'plays', 'v25', 'v50', 'v75', 'v95', 'v100'].forEach(function (k) {
         var x = numIn(raw[k]); if (x !== null) ad._n[k] = (ad._n[k] || 0) + x;
       });
-      ['cpr', 'hook_rate', 'hold_rate'].forEach(function (k) { var x = numIn(raw[k]); if (x !== null) ad._n[k] = x; });
-      var pl = playIn(raw.avg_play); if (pl !== null) ad._n.avg_play = pl;
-      var ctr = numIn(raw.ctr), im = numIn(raw.impressions);
+      ['cpr'].forEach(function (k) { var x = numIn(raw[k]); if (x !== null) ad._n[k] = x; });
+      /* A rate is a share of the row's impressions, so rows are weighed by
+         them; a plain last value was one age band's rate. */
+      ['hook_rate', 'hold_rate'].forEach(function (k) {
+        var x = numIn(raw[k]); if (x === null) return;
+        var w = im || 1; ad._n[k] = (ad._n[k] || 0) + x * w; ad._w[k] = (ad._w[k] || 0) + w;
+      });
+      var pl = playIn(raw.avg_play), pw = numIn(raw.plays) || numIn(raw.plays3) || im || 1;
+      if (pl !== null) { ad._n.avg_play = (ad._n.avg_play || 0) + pl * pw; ad._w.avg_play = (ad._w.avg_play || 0) + pw; }
+      var ctr = numIn(raw.ctr);
       if (ctr !== null) { ad._n.ctrSum = (ad._n.ctrSum || 0) + ctr * (im || 1); ad._ctrw += (im || 1); }
+      var os = raw.starts_on ? readDate(raw.starts_on, year) : null, oe = raw.ends_on ? readDate(raw.ends_on, year) : null;
+      if (os && (!ad.own_start || os < ad.own_start)) ad.own_start = os;
+      if (oe && (!ad.own_end || oe > ad.own_end)) ad.own_end = oe;
+      var rs = raw.day ? readDate(raw.day, year) : raw.rep_start ? readDate(raw.rep_start, year) : null;
+      var re = raw.rep_end ? readDate(raw.rep_end, year) : rs;
+      if (rs) {
+        ad.days[rs] = true;
+        if (!ad.rep_start || rs < ad.rep_start) ad.rep_start = rs;
+        if (re && (!ad.rep_end || re > ad.rep_end)) ad.rep_end = re;
+        if (im === null || im > 0) {
+          if (!ad.ran_from || rs < ad.ran_from) ad.ran_from = rs;
+          if (re && (!ad.ran_to || re > ad.ran_to)) ad.ran_to = re;
+        }
+      }
       if (raw.age) {
         var band = String(raw.age).replace(/\s/g, '').replace(/–/g, '-');
         if (AGE_BANDS.indexOf(band) > -1) {
-          ad._age[band] = { results: numIn(raw.results) || 0, impressions: numIn(raw.impressions) || 0 };
+          var ab = ad._age[band] || (ad._age[band] = { results: 0, impressions: 0 });
+          ab.results += numIn(raw.results) || 0; ab.impressions += im || 0;
         }
       }
     });
     var rows = order.map(function (k) {
-      var ad = byKey[k], n = ad._n;
+      var ad = byKey[k], n = ad._n, w = ad._w;
+      var byDay = Object.keys(ad.days).length > 1;
+      if (byDay) daily++;
+      var from, to;
+      if (byDay) { from = ad.ran_from || ad.rep_start; to = ad.ran_to || ad.rep_end; }
+      else if (ad.own_start || ad.own_end) { from = clip(ad.own_start || lo, lo, hi); to = clip(ad.own_end || hi, lo, hi); }
+      else { from = ad.rep_start; to = ad.rep_end; }
       var out = { name: ad.name, objective: ad.objective, audience: ad.audience, result_label: ad.result_label,
-        starts_on: ad.starts_on, ends_on: ad.ends_on,
-        results: n.results != null ? Math.round(n.results) : null, reach: n.reach != null ? Math.round(n.reach) : null,
+        starts_on: from || null, ends_on: to || null,
+        results: n.results != null ? Math.round(n.results) : null,
+        reach: n.reach != null && !byDay ? Math.round(n.reach) : null,
         impressions: n.impressions != null ? Math.round(n.impressions) : null,
         spend: n.spend != null ? Math.round(n.spend * 100) / 100 : null,
         ctr: ad._ctrw ? Math.round(n.ctrSum / ad._ctrw * 100) / 100 : null,
         cpr: ad._rows === 1 && n.cpr != null ? n.cpr : null,
-        avg_play: n.avg_play != null ? n.avg_play : null, age: {}, retention: {} };
-      if (n.hook_rate != null) out.hook_rate = n.hook_rate;
+        avg_play: w.avg_play ? Math.round(n.avg_play / w.avg_play * 10) / 10 : null, age: {}, retention: {} };
+      if (w.hook_rate) out.hook_rate = Math.round(n.hook_rate / w.hook_rate * 100) / 100;
       else if (n.plays3 != null && n.impressions) out.hook_rate = Math.round(n.plays3 / n.impressions * 10000) / 100;
-      if (n.hold_rate != null) out.hold_rate = n.hold_rate;
+      if (w.hold_rate) out.hold_rate = Math.round(n.hold_rate / w.hold_rate * 100) / 100;
       else if (n.thruplays != null && n.impressions) out.hold_rate = Math.round(n.thruplays / n.impressions * 10000) / 100;
       var base = n.plays || n.plays3;
       if (base) [['p25', 'v25'], ['p50', 'v50'], ['p75', 'v75'], ['p95', 'v95'], ['p100', 'v100']].forEach(function (r0) {
@@ -1612,7 +1770,7 @@
       }
       return out;
     });
-    return { rows: rows, skipped: skipped, columns: head.filter(Boolean), byAge: head.indexOf('age') > -1 };
+    return { rows: rows, skipped: skipped, daily: daily, columns: head.filter(Boolean), byAge: head.indexOf('age') > -1 };
   }
 
   function pasteAdsSheet(opener) {
@@ -1628,11 +1786,13 @@
     var year = Number(String(st.open.period_start).slice(0, 4));
     var go = box.querySelector('[data-a="go"]');
     var read = function () {
-      var out = parseAdRows($('rpPAText').value, year, $('rpPAObj').value);
+      var out = parseAdRows($('rpPAText').value, { year: year, start: st.open.period_start, end: st.open.period_end }, $('rpPAObj').value);
       if (out.error) { sum.textContent = $('rpPAText').value.trim() ? out.error : ''; go.disabled = true; return out; }
       sum.textContent = out.rows.length + ' ad' + (out.rows.length === 1 ? '' : 's') + ' ready' +
         (out.byAge ? ', the age split gathered from the rows' : '') +
-        (out.skipped ? ', ' + out.skipped + ' without a name skipped' : '') + '.';
+        (out.daily ? ', dates from the days each ad delivered' : '') +
+        (out.skipped ? ', ' + out.skipped + ' without a name skipped' : '') + '.' +
+        (out.daily ? ' Reach is left to type: a daily export counts a person again each day.' : '');
       go.disabled = !out.rows.length;
       return out;
     };

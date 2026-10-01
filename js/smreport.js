@@ -115,6 +115,27 @@
     return PDF.rgb(c.red + (1 - c.red) * white, c.green + (1 - c.green) * white, c.blue + (1 - c.blue) * white);
   }
   function words(s) { return String(s == null ? '' : s).replace(/\r/g, ''); }
+  /* Ads Manager's result indicator is a key (`actions:post_engagement`,
+     `onsite_conversion.messaging_conversation_started_7d`); a report reads
+     the word for it. A label somebody typed is left as typed. */
+  var RESULT_KEY = [
+    [/post_engagement$/, 'Post engagements'], [/page_engagement$/, 'Page engagements'], [/post_reaction$/, 'Post reactions'],
+    [/(^|[:.])like$/, 'Page likes'], [/link_click$/, 'Link clicks'], [/landing_page_view$/, 'Landing page views'],
+    [/messaging_conversation_started/, 'Messaging conversations started'], [/messaging_first_reply/, 'New messaging contacts'],
+    [/lead/, 'Leads'], [/purchase/, 'Purchases'], [/add_to_cart/, 'Adds to cart'], [/complete_registration/, 'Registrations completed'],
+    [/thruplay/, 'ThruPlays'], [/video_view/, '3-second video plays'], [/estimated_ad_recall/, 'Ad recall lift'],
+    [/app_install/, 'App installs'], [/post_save/, 'Post saves'], [/profile_visit/, 'Profile visits'],
+    [/(^|[:.])reach$/, 'Reach'], [/(^|[:.])impressions$/, 'Impressions']
+  ];
+  function resultWord(s) {
+    var t = String(s == null ? '' : s).trim();
+    if (!t || /\s/.test(t) || !/[:._]/.test(t)) return t;
+    var k = t.toLowerCase();
+    for (var i = 0; i < RESULT_KEY.length; i++) if (RESULT_KEY[i][0].test(k)) return RESULT_KEY[i][1];
+    var w = k.replace(/^actions:/, '').replace(/^(onsite_conversion|offsite_conversion)\./, '').replace(/^fb_pixel_/, '')
+      .replace(/^omni_/, '').replace(/_\d+d$/, '').replace(/[._:]+/g, ' ').trim();
+    return w ? w.charAt(0).toUpperCase() + w.slice(1) : t;
+  }
   /* One point a line: an insights field holds several, one per line, and a
      line that is only whitespace is not a point. Accidental repeated blank
      lines are collapsed; a single blank line still divides two points. */
@@ -268,7 +289,7 @@
         : a._per1000 ? (sp !== null && (/reach/i.test(words(a.result_label)) ? rs : rc) ? sp / (/reach/i.test(words(a.result_label)) ? rs : rc) * 1000 : null)
         : (sp !== null && rs ? sp / rs : null);
       a._freq = rc && im !== null ? im / rc : null;
-      a._label = words(a.result_label).trim() || (OBJECTIVES[a.objective] || {}).result || 'Results';
+      a._label = resultWord(words(a.result_label)) || (OBJECTIVES[a.objective] || {}).result || 'Results';
       var ret = a.retention || {};
       a._video = [a.hook_rate, a.hold_rate, a.avg_play].some(function (v) { return num(v) !== null; }) ||
         RETENTION.some(function (r) { return num(ret[r[0]]) !== null; });
@@ -1690,7 +1711,7 @@
   }
 
   window.ADspaceSmReport = {
-    render: render, model: model, fileName: fileName, periodWord: periodWord, titleOf: titleOf,
+    render: render, model: model, fileName: fileName, periodWord: periodWord, titleOf: titleOf, resultWord: resultWord,
     engOf: engOf, growthOf: growthOf, fmt: fmt, PLATFORM_WORD: PLATFORM_WORD, TYPE_WORD: TYPE_WORD, METRIC_WORD: METRIC_WORD, METRICS: METRICS
   };
 })();
