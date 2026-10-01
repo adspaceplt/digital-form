@@ -6410,7 +6410,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 /* The end padding is trimmed for the 142px desk tracks; the start padding is
    the date field's own, because under a finger it holds the glyph. */
 .sched-edit .input { min-width: 0; padding-inline-end: 8px; }
-.sched-edit input[type="date"] { flex: 1 1 132px; }
+.sched-edit input[type="date"], .sched-edit input.dmy { flex: 1 1 132px; }
 .sched-edit input[type="time"] { flex: 0 1 92px; }
 /* The rest of the plan (where, whom to meet, or the tracking number) is
    one cell on the row's second line, laid on the columns above it, so the
