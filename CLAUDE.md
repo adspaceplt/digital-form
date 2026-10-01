@@ -1574,12 +1574,19 @@ Each line is a rule that broke once. Its reason is in the archive.
     `perf_flex_calc`, `perf_period_calc`, `perf_commission_json`). Confirm
     (Work) keeps a snapshot in `perf_rewards`; Reopen (Manage) removes it,
     files it and never asks. Quarters begin with Q3 2026.
+  - The quarter (`2026-10-01-performance-quarter-ranked.sql`) is Ranking and
+    rewards: best to worst by average, `rank` shared by equal averages, each
+    person's Individual, Department (`department_share`) and Total. Confirm
+    is refused while any review in the quarter is not final (`months-open`)
+    and asks first where an ended month has no review (`missing_months`).
+    The member's own quarter never carries `rank`.
   - Tied departments are joint winners and one that does not qualify drops
     out; a winning share is split among the department's active members on
     the review list.
   - Flexible hours: a month decides the next only once every active member on
     the review list has a final review of it.
-  - A bonus period is two quarters named by its first. Revenue and profit are
+  - A bonus period is a half of the year (Q1 and Q2, Q3 and Q4; `perf_half`),
+    named by its first quarter; any date reads as its half. Revenue and profit are
     read and written only by `perf_is_admin()` and filed by name only; the
     rest of management sees the amounts.
   - Every share is rounded down to the cent and the remainder stated.

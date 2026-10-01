@@ -227,7 +227,7 @@
       if (pv === 'quarters' || pv === 'company' || pv === 'commission') st.pv = pv;
       if (/^\d{4}-(01|04|07|10)$/.test(qq || '') && qq + '-01' >= FIRST_QUARTER) {
         if (st.pv === 'quarters') st.q = qq + '-01';
-        if (st.pv === 'company') st.pf = qq + '-01';
+        if (st.pv === 'company') st.pf = halfOf(qq + '-01');
       }
     }
     var canMembers = may('team', 'view'), canPerf = may('team.performance', 'view');
@@ -1737,8 +1737,10 @@
     'bad-department': 'Pick a department.',
     'figures-needed': 'Enter the company figures first.'
   };
+  function monthsWord(n) { return n + (n === 1 ? ' month' : ' months'); }
   function rwSaid(d) {
     if (d && d.error === 'pool-over') return 'The pool is at most ' + rm(d.max) + ', 10% of profit.';
+    if (d && d.error === 'months-open') return monthsWord(d.count) + ' in the quarter ' + (d.count === 1 ? 'is' : 'are') + ' not final. Finalise ' + (d.count === 1 ? 'it' : 'them') + ' first.';
     if (d && RW_SAID[d.error]) return RW_SAID[d.error];
     return said(d);
   }
@@ -1759,11 +1761,19 @@
       ? 'Q' + Math.ceil(Number(f.slice(5, 7)) / 3) + ' and Q' + Math.ceil(Number(s.slice(5, 7)) / 3) + ' ' + f.slice(0, 4)
       : qWord(f) + ' and ' + qWord(s);
   }
-  /* The quarters and periods offered: from Q3 2026 to the one running now,
-     newest first, and the page opens on the newest that has ended. */
+  /* The quarters offered: from Q3 2026 to the one running now, newest
+     first, and the page opens on the newest that has ended. The bonus pool's
+     periods are halves of the year (Q1 and Q2, Q3 and Q4), so two never
+     share a quarter (perf_half, 2026-10-01). */
   function quarterList() {
     var out = [], q = FIRST_QUARTER, now = quarterOf(thisMonth());
     while (q <= now) { out.unshift(q); q = addMonths(q, 3); }
+    return out;
+  }
+  function halfOf(p) { return String(p).slice(0, 4) + (Number(String(p).slice(5, 7)) >= 7 ? '-07-01' : '-01-01'); }
+  function halfList() {
+    var out = [], f = FIRST_QUARTER, now = halfOf(thisMonth());
+    while (f <= now) { out.unshift(f); f = addMonths(f, 6); }
     return out;
   }
   function defaultQuarter() {
@@ -1771,7 +1781,7 @@
     return done[0] || list[0];
   }
   function defaultPeriod2() {
-    var list = quarterList(), done = list.filter(function (f) { return addMonths(f, 6) <= thisMonth(); });
+    var list = halfList(), done = list.filter(function (f) { return addMonths(f, 6) <= thisMonth(); });
     return done[0] || list[0];
   }
   st.pv = 'months'; st.q = defaultQuarter(); st.pf = defaultPeriod2();
@@ -1789,10 +1799,11 @@
   function whoCell(p, sub) {
     return '<span class="rw-who"><b>' + esc(p.name || '') + '</b>' + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>';
   }
-  function youRow(cls, p, cells) {
+  function youRow(cls, p, cells, lead) {
     var el = document.createElement('div');
     el.className = 'crm-row rw-row ' + cls + ' is-own';
-    el.innerHTML = whoCell(p, 'Your own is in My performance') +
+    el.innerHTML = (lead ? Array(lead + 1).join('<span class="rw-c">' + dash() + '</span>') : '') +
+      whoCell(p, 'Your own is in My performance') +
       Array(cells).join('x').split('x').map(function () { return '<span class="rw-c">' + dash() + '</span>'; }).join('') +
       '<span class="rw-sum"></span>';
     var cs = el.querySelectorAll('.rw-c'), last = cs[cs.length - 1];
@@ -1968,24 +1979,40 @@
       ? (ind.winners === 1 ? rm(ind.each) : ind.winners + ' ways · ' + rm(ind.each) + ' each') +
         (Number(ind.remainder) > 0 ? ' · ' + rm(ind.remainder) + ' left' : '')
       : 'No payout · ' + (NOPAY[ind.reason] || '');
+    /* What still stands between the quarter and its confirmation: months
+       not final refuse it; months nobody entered are asked about. */
+    var waits = d.confirmed ? '' :
+      (Number(d.open_months) > 0 ? chip(monthsWord(Number(d.open_months)) + ' not final', 'is-warn') : '') +
+      (d.ended && Number(d.missing_months) > 0 ? chip(monthsWord(Number(d.missing_months)) + ' not entered', 'is-warn') : '');
+    /* Best to worst by average, each with their whole reward: the
+       individual prize, their share of a department prize won, and the two
+       together. A rank is shared by equal averages. */
     box.appendChild(G.section({
-      route: 'team-rw', key: 'individual', name: 'Individual prize', count: ppl.length,
-      marks: confirmedChip(d) + chip(won, ind.winners ? '' : ''),
+      route: 'team-rw', key: 'individual', name: 'Ranking and rewards', count: ppl.length,
+      marks: confirmedChip(d) + waits + chip('Individual prize · ' + won),
       shut: false,
       table: function () {
-        var t = G.table('rw-row rwq-row', ['Person', 'Months', 'Average', 'Grade', 'Eligibility', 'Prize']);
+        var t = G.table('rw-row rwq-row', ['Rank', 'Person', 'Average', 'Grade', 'Eligibility', 'Individual', 'Department', 'Total']);
         if (!ppl.length) { UI.emptyLine(t, 'Nobody on the review list.'); return t; }
         G.more(t, ppl, 30, '', function (p) {
-          if (p.own) return youRow('rwq-row', p, 5);
+          if (p.own) return youRow('rwq-row', p, 6, 1);
           var elig = p.eligible ? 'Eligible' : WHY[(p.reasons || [])[0]] || 'Not eligible';
+          var months = Number(p.months || 0), open = Number(p.open || 0);
+          var sub = [DEPT_WORD[p.department] || '', months ? monthsWord(months) : '', open ? open + ' not final' : '']
+            .filter(Boolean).join(' · ');
+          var share = p.department_share == null ? 0 : p.department_share;
+          var total = p.total == null ? Number(p.prize || 0) + Number(share) : p.total;
           return row('rwq-row', [
-            whoCell(p, DEPT_WORD[p.department] || ''),
-            cell(esc(String(p.months || 0))),
+            cell(p.rank == null ? dash() : esc(String(p.rank))),
+            whoCell(p, sub),
             cell(p.average == null ? dash() : esc(num(p.average))),
             cell(gradeCell(p.grade)),
             cell(esc(elig)),
-            cell(money0(p.prize), true)
-          ], [p.average == null ? '' : num(p.average), p.grade ? gradeWord(p.grade) : '', elig]);
+            cell(money0(p.prize)),
+            cell(money0(share)),
+            cell(money0(total), true)
+          ], [p.rank == null ? '' : 'Rank ' + p.rank, p.average == null ? '' : num(p.average), p.grade ? gradeWord(p.grade) : '', elig,
+              Number(p.prize) > 0 ? 'Individual ' + rm(p.prize) : '', Number(share) > 0 ? 'Department ' + rm(share) : '']);
         });
         return t;
       }
@@ -2025,12 +2052,23 @@
     if (h) box.appendChild(h);
   }
   $('rwQConfirm').addEventListener('click', function () {
-    var b = this; b.disabled = true;
-    call('perf_quarter_confirm', { p_token: token, p_quarter: st.q }, function (d) {
-      b.disabled = false;
-      if (d.error) { msg('rwQMsg', rwSaid(d), 'err'); return; }
-      st.quarter = d; paintQuarter(); msg('rwQMsg', 'Confirmed. The team has been told.', 'ok');
-    });
+    var b = this, d0 = st.quarter || {}, missing = Number(d0.missing_months) || 0;
+    var go = function () {
+      b.disabled = true;
+      call('perf_quarter_confirm', { p_token: token, p_quarter: st.q }, function (d) {
+        b.disabled = false;
+        if (d.error) { msg('rwQMsg', rwSaid(d), 'err'); return; }
+        st.quarter = d; paintQuarter(); msg('rwQMsg', 'Confirmed. The team has been told.', 'ok');
+      });
+    };
+    /* A month nobody entered is left out of that person's average; the
+       confirmation names it before the outcome is kept. */
+    if (!missing) { go(); return; }
+    window.ADspaceConfirm.ask({
+      title: 'Confirm ' + (d0.word || qWord(st.q)),
+      body: monthsWord(missing) + ' on the review list ' + (missing === 1 ? 'has' : 'have') + ' no review and ' + (missing === 1 ? 'is' : 'are') + ' left out of the averages.',
+      go: 'Confirm quarter'
+    }, go);
   });
   /* The way back never asks. */
   $('rwQReopen').addEventListener('click', function () {
@@ -2104,7 +2142,7 @@
   // The bonus pool and the trip ------------------------------------------------------------
   function loadPeriod() {
     opened();
-    fillSelect($('perfPeriod'), quarterList(), st.pf, pWord);
+    fillSelect($('perfPeriod'), halfList(), st.pf, pWord);
     if (!st.periodData || st.periodData.period !== st.pf) UI.skeleton($('rwPList'), 4);
     var asked = st.pf;
     call('perf_period', { p_token: token, p_from: st.pf }, function (d) {
