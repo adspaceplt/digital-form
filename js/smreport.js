@@ -1637,6 +1637,7 @@
           leadLine('Each objective ranked by what a result cost, then each creative with its results across objectives.');
           panel('How to read this', [
             'Cost per result is what it cost to get one lead, click or action. Compare it only between ads with the same objective, which is why each objective is ranked on its own.',
+            'Each ad is priced only against the result its objective was set to get. A leads ad that also started a few chats is judged by its cost per lead; the chats came alongside, and the budget was not spent on them.',
             'Reach is how many people saw an ad; impressions is how many times it was shown. Frequency is impressions divided by reach.',
             'A creative that ran under two objectives shows one line for each. Compare the lines to see which goal it served best.'
           ]);
