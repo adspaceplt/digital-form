@@ -3733,12 +3733,13 @@ grant execute on function public.serial_taken(text) to authenticated;
 
 -- 4. Issuing. The serial rules, per family:
 --      quote cover  typed, from the accounting portal (AQT2607003)
---      client       AD/[SA/]{client code}/{type}, SA where the client has
---                   engaged a service (any confirmed line, or a client that
---                   has been Active)
+--      client       ACL/{client code}/{YYMMDD}{NN}: ADspace Cover Letter, the
+--                   client, the letter's date, and the lowest free number
+--                   that client has that day from 01 (2026-10-01, the user;
+--                   two digits a floor, not a width)
 --      hr           ADHR/{staff code}/{type}{YYMM}
---    A typed serial is accepted for any family; a built one takes a numeric
---    suffix where the same client already holds the same type.
+--    A typed serial is accepted for any family; a built HR one takes a
+--    numeric suffix where the colleague already holds the same type.
 create or replace function public.issue_document(
   p_type      text,
   p_client    uuid,
@@ -3766,7 +3767,6 @@ declare
   v_base  text;
   v_n     int;
   v_id    uuid;
-  v_engaged boolean;
   v_langs text[];
 begin
   select * into t from public.doc_types where id = p_type and active;
@@ -3805,17 +3805,26 @@ begin
     if t.family = 'quote_cover' then return jsonb_build_object('error', 'serial-required'); end if;
     if t.family = 'client' then
       if coalesce(btrim(cl.client_code), '') = '' then return jsonb_build_object('error', 'no-client-code'); end if;
-      v_engaged := cl.stage in ('active', 'paused', 'past')
-                or exists (select 1 from public.client_services s where s.client_id = cl.id and s.state = 'confirmed');
-      v_base := 'AD/' || case when v_engaged then 'SA/' else '' end || cl.client_code || '/' || coalesce(t.code, 'GL');
+      v_base := 'ACL/' || upper(btrim(cl.client_code)) || '/' ||
+                to_char(coalesce(p_issued_at, (timezone('Asia/Kuala_Lumpur', now()))::date), 'YYMMDD');
+      -- Two issuers on one client and day wait for each other here, so the
+      -- second never reads the first one's number as free.
+      perform pg_advisory_xact_lock(hashtext('acl:' || v_base));
+      v_n := 1;
+      loop
+        v_serial := v_base || case when v_n < 10 then '0' else '' end || v_n;
+        exit when not public.serial_taken(v_serial);
+        v_n := v_n + 1;
+        if v_n > 999 then return jsonb_build_object('error', 'no-serial'); end if;
+      end loop;
     else
       v_base := 'ADHR/' || upper(mb.staff_code) || '/' || coalesce(t.code, 'GL') ||
                 to_char(timezone('Asia/Kuala_Lumpur', now()), 'YYMM');
+      v_serial := v_base; v_n := 1;
+      while public.serial_taken(v_serial) loop
+        v_n := v_n + 1; v_serial := v_base || '-' || v_n;
+      end loop;
     end if;
-    v_serial := v_base; v_n := 1;
-    while public.serial_taken(v_serial) loop
-      v_n := v_n + 1; v_serial := v_base || '-' || v_n;
-    end loop;
   else
     if v_serial !~ '^[A-Za-z0-9/._-]{3,40}$' then return jsonb_build_object('error', 'serial-shape'); end if;
     if public.serial_taken(v_serial) then return jsonb_build_object('error', 'serial-taken'); end if;

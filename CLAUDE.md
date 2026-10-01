@@ -819,9 +819,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     never Void/Delete/Reissue.
 - Serials per family:
   - a quotation cover takes the accounting portal's, typed;
-  - a client letter `AD/[SA/]{client_code}/{code}`;
+  - a client letter `ACL/{client_code}/{YYMMDD}{NN}` (ADspace Cover
+    Letter; the letter's date; the lowest number free for that client that
+    day from 01, under an advisory lock); older `AD/[SA/]…` letters keep
+    theirs;
   - an HR letter `ADHR/{staff_code}/{code}{YYMM}`.
-  - `-2`, `-3` where a base is spent. `serial_taken()` spans both tables.
+  - `-2`, `-3` where an HR base is spent. `serial_taken()` spans both tables.
 - HR is its own part:
   - `register_may(family, level)` is the read policy and the check in every
     write;

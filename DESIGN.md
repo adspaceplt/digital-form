@@ -526,7 +526,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   - tasks `#WT00001`;
   - task codes `YYMMW{week}{NN}`;
   - HR `ADHR/…`;
-  - client letters `AD/[SA/]…`.
+  - client letters `ACL/{client code}/{YYMMDD}{NN}`.
 - Row ⋯ menus are placed on the viewport. A faded row fades its content, never
   its ⋯. The global click handler spares `.kcard-head`, `.kmenu` and
   `.team-act`. A modal that filters keeps one height.
