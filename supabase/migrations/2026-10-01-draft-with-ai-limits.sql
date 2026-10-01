@@ -1,8 +1,8 @@
 -- ===========================================================================
--- DRAFT WITH AI LIMITS — every press of Draft with AI is counted, and a day
--- (24 hours) allows 5 drafts a report, 20 a colleague and 60 the team, so a
--- slip or a stuck button cannot run up the AI bill. A draft that failed is
--- not counted.
+-- DRAFT WITH AI LIMITS — every press of Draft with AI is counted. A report
+-- has one draft; drafting it again is an admin's (up to 5 a report in 24
+-- hours). A colleague has 20 a day and the team 60, so a slip or a stuck
+-- button cannot run up the AI bill. A draft that failed is not counted.
 -- 2026-10-01. Safe to run twice. Rollback at the foot. Mirrored byte for byte
 -- in supabase/schema.sql under the same banner; tests/smsql.js compares the
 -- two.
@@ -11,10 +11,13 @@
 --   1. `ai_drafts`: one row a press (the report, the colleague, when, and
 --      pending, drafted or failed). Row level security on, no policy, every
 --      grant revoked: only the two functions below read or write it.
---   2. `ai_draft_claim(p_report)`: Reports at Work. Counts the last 24 hours
---      under one lock and answers `ai-limit` with the scope (report, person,
---      team), the limit and when the next draft is free; otherwise records a
---      pending press and answers its id and how many the colleague has left.
+--   2. `ai_draft_claim(p_report)`: Reports at Work. Counts under one lock
+--      and answers `ai-limit` with the scope and when the next draft is
+--      free: `redraft` where a colleague who is not an admin asks for a
+--      report's second draft (no time: an admin redrafts it), `report` where
+--      an admin passes 5 for the report in 24 hours, `person` past 20 and
+--      `team` past 60 in 24 hours. Otherwise it records a pending press and
+--      answers its id and how many the colleague has left today.
 --   3. `ai_draft_done(p_id, p_ok)`: the `report-draft` function marks its
 --      own press drafted or failed; only the colleague who pressed, only
 --      while pending.
@@ -56,6 +59,11 @@ begin
   if m.id is null then return jsonb_build_object('error', 'denied'); end if;
   -- One count at a time, so two presses together cannot both take the last draft.
   perform pg_advisory_xact_lock(hashtext('ai_draft_claim'));
+  -- One draft a report; a second and later is an admin's.
+  if not coalesce(m.is_admin, false) and exists (
+    select 1 from public.ai_drafts d where d.report_id = p_report and d.outcome <> 'failed') then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'redraft', 'limit', 1);
+  end if;
   select count(*), min(d.created_at) into n_report, first_at from public.ai_drafts d
    where d.report_id = p_report and d.created_at > since and d.outcome <> 'failed';
   if n_report >= 5 then

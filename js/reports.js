@@ -1327,8 +1327,9 @@
       window.ADspaceConfirm.ask({ title: 'Replace the commentary?', body: 'The draft replaces what is written in these fields. Nothing is saved until Save.', go: 'Replace' }, draft);
     });
   }
-  /* The database counts every press (5 a report, 20 a colleague, 60 the
-     team in 24 hours); a refusal says which and when the next one is free. */
+  /* The database counts every press: a report has one draft and drafting
+     it again is an admin's (5 a report in 24 hours); 20 a colleague and 60
+     the team in 24 hours. A refusal says which and when the next is free. */
   function aiLimit(d) {
     d = d || {};
     var at = d.next ? new Date(d.next) : null;
@@ -1336,6 +1337,7 @@
       ? at.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][at.getMonth()] + ', ' +
         ((at.getHours() % 12) || 12) + ':' + String(at.getMinutes()).padStart(2, '0') + (at.getHours() < 12 ? 'am' : 'pm')
       : '';
+    if (d.scope === 'redraft') return 'This report has had its draft. An admin can draft it again.';
     var who = d.scope === 'report' ? 'This report has had its ' + (d.limit || 5) + ' drafts for the day.'
       : d.scope === 'person' ? 'You have used your ' + (d.limit || 20) + ' drafts for the day.'
       : 'The team has used its ' + (d.limit || 60) + ' drafts for the day.';

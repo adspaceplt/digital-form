@@ -261,8 +261,9 @@ Deno.serve(async (req) => {
   const schema = { type: 'object', properties, required: Object.keys(properties), additionalProperties: false };
 
   /* Every press is counted by the database once the report has something
-     to draft from and before Claude is asked: 5 drafts a report, 20 a
-     colleague and 60 the team in any 24 hours. A press that fails is marked
+     to draft from and before Claude is asked: a report has one draft and
+     drafting it again is an admin's (5 a report in 24 hours); 20 a
+     colleague and 60 the team in 24 hours. A press that fails is marked
      failed and not counted. */
   const claim = await db.rpc('ai_draft_claim', { p_report: id });
   if (claim.error) return json({ error: 'needs-update' }, 200, origin);

@@ -24,8 +24,9 @@ with AI. The draft states a reason or a plan only when the notes give it.
 
 ## Limits
 
-The database counts every press: 5 drafts a report, 20 a colleague and 60 the
-whole team in any 24 hours. A draft that failed is not counted. When a limit
+The database counts every press. A report has one draft; drafting it again
+is for an admin, up to 5 a report in 24 hours. A colleague has 20 drafts and
+the whole team 60 in any 24 hours. A draft that failed is not counted. When a limit
 is reached the page says which one and when the next draft is free. The
 numbers are in `ai_draft_claim` (`supabase/migrations/2026-10-01-draft-with-ai-limits.sql`).
 For a hard ceiling on cost, also set a monthly spend limit in the Claude
