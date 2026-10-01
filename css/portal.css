@@ -8173,6 +8173,12 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-name { display: flex; flex-direction: column; min-width: 0; }
 .rp-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rp-name small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* An ad's Ad IDs: the team's reference, each a copy control in the code
+   face, on the line under the dates. The control keeps its full target and
+   gives its height back (`.serial-copy`), so the row grows by one line. */
+.rp-name small.rp-adids { overflow: visible; white-space: normal; }
+.rp-adids .serial-copy { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 400;
+  color: var(--ink-soft); margin-left: 0; padding: 0 4px; }
 .rp-ver, .rp-live, .rp-date, .rp-figs { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rp-live .mute, .rp-num .mute { color: var(--ink-mute); }
 .rp-num { font-size: 13.5px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }

@@ -1667,7 +1667,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     ad set and result type: its copies, age bands and days are gathered into
     it; two result types (Post engagements, Interactions) are never added
     together; Post engagements reads Engagements. Ad ID ties each row to its ad; without it, one name with two
-    result types is refused. A table's total row gives the figures once.
+    result types is refused. The row keeps its Ad IDs and the Account ID
+    (`ad_ids`, `ad_account`) as the team's reference: each a copy control
+    under the name, Open in Ads Manager in the row's ⋯, a later paste
+    matched by them first; never printed in the PDF. A table's total row gives the figures once.
     A paste naming ads already in the report updates them with what it holds
     and adds the rest: a day export the dates (first and last day with
     impressions), an age export the age split, an export with neither the

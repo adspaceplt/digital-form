@@ -1549,20 +1549,44 @@
           return '<div class="crm-row rp-ad-row' + (pick && pick[a.id] ? ' is-picked' : '') + '" data-id="' + esc(a.id) + '">' +
             (pick ? tick(a.id, 'Select ' + a.name, !!pick[a.id]) : '') +
             '<span class="rp-thumb">' + (a.thumb_data ? '<img src="' + esc(a.thumb_data) + '" alt="">' : '') + '</span>' +
-            '<span class="rp-name"><b>' + esc(adName(a.name)) + '</b><small>' + esc(sub) + '</small></span>' +
+            '<span class="rp-name"><b>' + esc(adName(a.name)) + '</b><small>' + esc(sub) + '</small>' + adIdsHtml(a) + '</span>' +
             '<span class="rp-num rp-spend">' + esc(money2(a.spend)) + '</span>' +
             '<span class="rp-num rp-res">' + esc(fmt(a.results)) + '</span>' +
             '<span class="rp-num rp-cpr">' + esc(c == null ? '—' : money2(c)) + '</span>' +
-            (ed && !pick ? rowMenu(['Edit', 'Duplicate', 'Remove']) : '<span></span>') + '</div>';
+            (!pick && (ed || (a.ad_ids || []).length) ? rowMenu((ed ? ['Edit', 'Duplicate'] : []).concat((a.ad_ids || []).length ? ['Open in Ads Manager'] : []).concat(ed ? ['Remove'] : [])) : '<span></span>') + '</div>';
         }).join('') + '</div></div>';
     }).join('');
     if (pick) { wirePick(box); return; }
-    if (ed) wireRows(box, function (id, act, btn) {
+    /* The Ad ID copies itself, so a question about an ad starts from the
+       ad in Ads Manager. */
+    Array.prototype.forEach.call(box.querySelectorAll('[data-a="adid"]'), function (c) {
+      c.addEventListener('click', function () { if (window.ADspaceCopy) window.ADspaceCopy.to(c, c.getAttribute('data-id')); });
+    });
+    wireRows(box, function (id, act, btn) {
       var a = st.ads.filter(function (x) { return x.id === id; })[0];
+      if (act === 'Open in Ads Manager') { window.open(adsManagerUrl(a), '_blank', 'noopener'); return; }
+      if (!ed) return;
       if (act === 'Edit') adSheet(a, btn);
       if (act === 'Duplicate') adSheet(Object.assign({}, a, { id: null, objective: a.objective }), btn, true);
       if (act === 'Remove') removeAd(a);
     });
+  }
+
+  /* The team's reference to the ads a row was built from: each Ad ID a
+     copy control, the console's only (the PDF never prints it). */
+  function adIdsHtml(a) {
+    var ids = a.ad_ids || [];
+    if (!ids.length) return '';
+    return '<small class="rp-adids">' + (ids.length === 1 ? 'Ad ID ' : 'Ad IDs ') + ids.map(function (x) {
+      return '<button class="serial-copy rp-adid" type="button" data-a="adid" data-id="' + esc(x) + '" aria-label="Copy Ad ID ' + esc(x) + '">' + esc(x) + '</button>';
+    }).join(' ') + '</small>';
+  }
+  /* Ads Manager on these ads: the account where it is known, the ads chosen. */
+  function adsManagerUrl(a) {
+    var q = [];
+    if (a.ad_account) q.push('act=' + encodeURIComponent(a.ad_account));
+    q.push('selected_ad_ids=' + encodeURIComponent((a.ad_ids || []).join(',')));
+    return 'https://adsmanager.facebook.com/adsmanager/manage/ads?' + q.join('&');
   }
 
   function wirePick(box) {
@@ -1825,7 +1849,7 @@
      only repeat the range that was exported, so they are the last resort. */
   var AD_HEAD = [
     [/^(ad name|ad|name)$/, 'name'], [/^(ad set name|ad set|audience)$/, 'audience'], [/^objective$/, 'objective'],
-    [/^(account name|ad account name|ad account)$/, 'account'], [/^ad id$/, 'ad_id'],
+    [/^(account name|ad account name|ad account)$/, 'account'], [/^ad id$/, 'ad_id'], [/^(account id|ad account id)$/, 'account_id'],
     [/^(result type|result indicator|results? type)$/, 'result_label'], [/^results$/, 'results'],
     [/^reach$/, 'reach'], [/^impressions$/, 'impressions'], [/^amount spent/, 'spend'],
     [/^ctr/, 'ctr'], [/^cost per results?/, 'cpr'],
@@ -1932,9 +1956,16 @@
         ad = byKey[key] = { name: AN ? AN(raw.name) : raw.name, objective: obj, audience: raw.audience || null,
           result_label: null,
           own_start: null, own_end: null, rep_start: null, rep_end: null, days: {}, ran_from: null, ran_to: null,
-          band: acc0(), total: acc0(), _age: {} };
+          band: acc0(), total: acc0(), _age: {}, ids: [], account: null };
         order.push(key);
       }
+      /* The Ad IDs and the account's ID, as the team's references (the
+         user, 2026-10-01): kept only where whole, since a spreadsheet can
+         round a long ID into 1.20E+17. */
+      var aid = String(raw.ad_id || '').trim();
+      if (/^\d{5,25}$/.test(aid) && ad.ids.indexOf(aid) < 0) ad.ids.push(aid);
+      var acct = String(raw.account_id || '').trim().replace(/^act_/, '');
+      if (/^\d{5,25}$/.test(acct)) ad.account = acct;
       /* The result type from the first row that names one: a row with no
          results names none, and Meta's `mixed` names nothing. */
       if (!ad.result_label && raw.result_label && !/^mixed$/i.test(raw.result_label.trim())) ad.result_label = RW ? RW(raw.result_label) : raw.result_label;
@@ -1999,6 +2030,7 @@
       else if (ad.own_start || ad.own_end) { from = clip(ad.own_start || lo, lo, hi); to = clip(ad.own_end || hi, lo, hi); }
       else { from = ad.rep_start; to = ad.rep_end; }
       var out = { name: ad.name, objective: ad.objective, audience: ad.audience, result_label: ad.result_label,
+        ad_ids: ad.ids.length ? ad.ids : null, ad_account: ad.account,
         starts_on: from || null, ends_on: to || null,
         results: n.results != null ? Math.round(n.results) : null,
         reach: n.reach != null && !byDay ? Math.round(n.reach) : null,
@@ -2051,6 +2083,11 @@
        them per ad (reach added up from age rows counts a person once per
        age group, not once per ad). */
     var already = function (r0) {
+      /* An ad named by its Ad ID is that row, whatever its name reads. */
+      if (r0.ad_ids) {
+        var byId = st.ads.filter(function (a) { return (a.ad_ids || []).some(function (x) { return r0.ad_ids.indexOf(x) > -1; }); });
+        if (byId.length === 1) return byId[0];
+      }
       var same = st.ads.filter(function (a) { return adName(a.name) === r0.name; });
       if (same.length > 1 && r0.audience) same = same.filter(function (a) { return (a.audience || '') === r0.audience; });
       if (same.length > 1) same = same.filter(function (a) { return a.objective === r0.objective; });
@@ -2072,7 +2109,15 @@
       out.updates = []; out.unclear = []; out.fresh = [];
       out.rows.forEach(function (r0) {
         var a = already(r0);
-        if (a) { var p0 = patchOf(r0, out); if (p0) out.updates.push({ ad: a, patch: p0 }); return; }
+        if (a) {
+          var p0 = patchOf(r0, out);
+          /* A paste carrying Ad IDs a row does not hold yet adds them. */
+          var more = (r0.ad_ids || []).filter(function (x) { return (a.ad_ids || []).indexOf(x) < 0; });
+          if (more.length) { p0 = p0 || {}; p0.ad_ids = (a.ad_ids || []).concat(more); }
+          if (r0.ad_account && !a.ad_account) { p0 = p0 || {}; p0.ad_account = r0.ad_account; }
+          if (p0) out.updates.push({ ad: a, patch: p0 });
+          return;
+        }
         /* A day's or an age group's rows for a name several ads here share
            cannot say which ad they belong to, so they add nothing. */
         if ((r0._daily || out.byAge) && named(r0)) { out.unclear.push(r0); return; }
