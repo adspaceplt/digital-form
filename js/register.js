@@ -483,7 +483,7 @@
     $('docLangRow').hidden = !quote;
     $('docSignRow').hidden = false;
     if (reseed) $('docSigned').checked = Boolean(t.signed);
-    $('docSerial').placeholder = quote ? 'AQT2607003' : 'Assigned on issue';
+    $('docSerial').placeholder = quote ? 'AQT2601001' : 'Assigned on issue';
     if (reseed) { $('docTitleIn').value = t.title || ''; $('docSerial').value = ''; }
     var c = issuing.client || clientOf($('docClient').value);
     var m = memberOf($('docMember').value);
@@ -763,7 +763,7 @@
     var hr = $('regAddFam').value === 'hr';
     $('regAddClientWrap').hidden = hr;
     $('regAddMemberWrap').hidden = !hr;
-    $('regAddWho').placeholder = hr ? 'Full name' : 'COMPANY NAME SDN BHD';
+    $('regAddWho').placeholder = hr ? 'John Doe' : 'COMPANY NAME SDN BHD';
   }
   function shutAdd() { $('regAddSheet').hidden = true; editing = null; }
   function sendAdd() {

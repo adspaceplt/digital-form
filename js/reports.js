@@ -371,7 +371,7 @@
       sortPosts();
       st.openVersions = got[3].data || [];
       st.ads = [];
-      var more = [db.from('clients').select('id, name, market, slug').eq('id', st.open.client_id).maybeSingle()];
+      var more = [db.from('clients').select('id, name, market, slug, handle_ig, handle_fb, handle_tiktok, handle_xhs').eq('id', st.open.client_id).maybeSingle()];
       if (st.open.kind === 'ads') more.push(db.from('sm_report_ads').select('*').eq('report_id', id).order('position', { ascending: true }));
       return Promise.all(more).then(function (x) {
         if (x[1] && x[1].error) { UI.failLine(box, 'the ads', said(x[1].error), function () { openReport(id, true); }); return; }
@@ -774,7 +774,7 @@
       '<section class="fsec"><h4 class="fsec-h">Account</h4>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpAccPlatform">Platform</label><select class="select" id="rpAccPlatform">' +
           PLATFORMS.map(function (p) { return '<option value="' + p[0] + '">' + esc(p[1]) + '</option>'; }).join('') + '</select></div>' +
-        '<div><label class="field-label" for="rpAccName">Account name</label><input class="input" id="rpAccName" type="text" placeholder="COMPANY NAME"></div></div>' +
+        '<div><label class="field-label" for="rpAccName">Handle</label><input class="input" id="rpAccName" type="text" autocapitalize="off" spellcheck="false" placeholder="@adspace.advertising"></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpAccGroup">Report together as</label><input class="input" id="rpAccGroup" type="text" placeholder="Facebook and Instagram"></div></div></section>' +
       '<section class="fsec"><h4 class="fsec-h">Followers</h4>' +
         '<div class="row fgrid"><div><label class="field-label" for="rpAccStart">At start of period</label><input class="input" id="rpAccStart" data-num="int" type="text" inputmode="numeric"></div>' +
@@ -797,7 +797,22 @@
       FOOT('Save'));
     box.querySelector('h3').textContent = a ? 'Edit account' : 'Add account';
     var v = function (id, x) { $(id).value = x == null ? '' : x; };
-    v('rpAccPlatform', a ? a.platform : 'instagram'); v('rpAccName', a ? a.account_name : st.client.name);
+    /* The handle is the account's own name on the platform, so two accounts
+       on one platform read apart (the user, 2026-10-01); a new account
+       takes the client's handle for the platform from Brand, and follows
+       the platform picked while it still holds that. */
+    var HANDLE_COL = { instagram: 'handle_ig', facebook: 'handle_fb', tiktok: 'handle_tiktok', rednote: 'handle_xhs' };
+    var handleFor = function (pl) {
+      var h = String((st.client || {})[HANDLE_COL[pl]] || '').trim();
+      return h && pl !== 'facebook' && h.charAt(0) !== '@' ? '@' + h : h;
+    };
+    v('rpAccPlatform', a ? a.platform : 'instagram'); v('rpAccName', a ? a.account_name : handleFor('instagram'));
+    if (!a) {
+      var lastHandle = $('rpAccName').value;
+      $('rpAccPlatform').onchange = function () {
+        if ($('rpAccName').value.trim() === lastHandle.trim()) { lastHandle = handleFor($('rpAccPlatform').value); $('rpAccName').value = lastHandle; }
+      };
+    }
     v('rpAccGroup', a ? a.group_label : ''); v('rpAccStart', a && a.followers_start); v('rpAccEnd', a && a.followers_end);
     v('rpAccGrowth', a && a.growth_override); v('rpAccWhy', a && a.growth_reason);
     numFields(box);

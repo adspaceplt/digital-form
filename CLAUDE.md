@@ -1664,6 +1664,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     PDF (`.rp-pdf-short`).
   - The step foot is an action row, the primary at the right edge.
   - An empty step's line does not repeat the head's Add.
+  - An account is named by its handle (`account_name`, labelled Handle):
+    a new account takes the client's Brand handle for the platform picked
+    (`handle_ig`, `handle_fb`, `handle_tiktok`, `handle_xhs`) and follows the
+    platform while untouched. The PDF names the platform, never the handle.
   - The commentary has no title or headline. An ads report's is four
     fields. An accounts report's is the summary, then one block a platform
     group (written to its lead account: Summary line, What worked, Areas to
