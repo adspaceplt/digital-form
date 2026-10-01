@@ -8174,12 +8174,24 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-name { display: flex; flex-direction: column; min-width: 0; }
 .rp-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rp-name small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* An ad's Ad IDs: the team's reference, each a copy control in the code
-   face, on the line under the dates. The control keeps its full target and
-   gives its height back (`.serial-copy`), so the row grows by one line. */
-.rp-name small.rp-adids { overflow: visible; white-space: normal; }
-.rp-adids .serial-copy { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 400;
-  color: var(--ink-soft); margin-left: 0; padding: 0 4px; }
+/* An ad's Ad IDs: the team's reference, one quiet control naming how many
+   on the line under the dates, which opens them over the row; in the Edit
+   sheet the same control sits in the foot, left of Cancel and Save. */
+.rp-name small.rp-adref { overflow: visible; }
+.rp-adref .linkbtn { margin-left: -8px; font-size: 12px; }
+.sheet-foot > .rp-adfoot { order: 1; margin-right: auto; display: flex; align-items: center; }
+.rp-adfoot .linkbtn { font-size: 13px; }
+@media (max-width: 560px) {
+  .sheet-foot > .rp-adfoot { order: -1; flex: 1 1 100%; margin-right: 0; }
+}
+.kmenu.rp-idspop { z-index: 93; width: min(320px, calc(100vw - 32px)); padding: 16px; gap: 8px; }
+.rp-idspop:focus { outline: none; }
+.rp-idspop-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+.rp-idslist { list-style: none; margin: 0; padding: 0; max-height: 240px; overflow-y: auto; }
+.rp-idslist .serial-copy { margin-left: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px; font-weight: 400; color: var(--ink-soft); }
+.rp-idspop-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.popcard.is-dock.rp-idspop .rp-idspop-acts .btn { min-height: var(--ctl-h); flex: 1 1 0; }
 .rp-ver, .rp-live, .rp-date, .rp-figs { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rp-live .mute, .rp-num .mute { color: var(--ink-mute); }
 .rp-num { font-size: 13.5px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }

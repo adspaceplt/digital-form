@@ -1685,9 +1685,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     it; two result types (Post engagements, Interactions) are never added
     together; Post engagements reads Engagements. Ad ID ties each row to its ad; without it, one name with two
     result types is refused. The row keeps its Ad IDs and the Account ID
-    (`ad_ids`, `ad_account`) as the team's reference: each a copy control
-    under the name, Open in Ads Manager in the row's ⋯, a later paste
-    matched by them first; never printed in the PDF. A table's total row gives the figures once.
+    (`ad_ids`, `ad_account`) as the team's reference: the row and the Edit
+    sheet's foot (left of Cancel) name how many (`2 Ad IDs`, a `.linkbtn`)
+    and open them over the page (`#rpIdsPop`, a `.popcard` through
+    `ADspaceMenu.pop`, above a sheet, Escape first): each a copy control,
+    Copy all, Open in Ads Manager; never the IDs in a line under the name. A
+    later paste is matched by them first; never printed in the PDF. A table's total row gives the figures once.
     A paste naming ads already in the report updates them with what it holds
     and adds the rest: a day export the dates (first and last day with
     impressions), an age export the age split, an export with neither the
@@ -1775,7 +1778,14 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Import controls read Import from spreadsheet and Import from Ads Manager.
 - The PDF:
   - Every section on its own page, on a golden-ratio scale, with a 33.3pt
-    margin; no Methodology page.
+    margin; no Methodology page. Page titles and the commentary's block
+    heads are in title case (Executive Summary, Ad Performance, What Worked,
+    Areas to Improve): a formal document.
+  - Commentary reads one block per part: its shaded head, its points
+    numbered under it, on both kinds of report (never a label column beside
+    the points).
+  - The ranking table gives the ad's name the widest column, so a name reads
+    whole; a missing cost per result or CTR is a dash.
   - The foot is PRIVATE & CONFIDENTIAL and the page count on the margin's
     line; no draft or version line.
   - A page break falls between points, never inside one: each numbered or
