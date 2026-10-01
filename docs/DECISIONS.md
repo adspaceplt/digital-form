@@ -685,4 +685,5 @@ From the UX brief's batch 2, the one item the user approved ("Sheet swipe-down +
 
 ### 2026-10-01 · Draft with AI shows how many are left
 The user asked to see the drafts left beside Draft with AI, simply ("1 left", "5 left"). `ai_draft_left(p_report)` reads `ai_drafts` as `ai_draft_claim` counts it and writes nothing: one draft a report for a colleague who is not an admin, five a report a day for an admin, twenty a colleague and sixty the team a day, failed presses not counted. The line shows the least of the three, so it is the figure the next press meets; at 0 the button rests and the message line says which limit and when the next is free. Read when the Commentary step opens and after every press.
+Then, against an accidental click (the user): every press asks first, Draft with AI? on empty fields and Replace the commentary? over written ones, each saying it uses one draft and how many are left.
 

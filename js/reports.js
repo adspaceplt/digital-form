@@ -1446,6 +1446,7 @@
        read from the database as it counts a press, so the figure is the one
        a press would meet. At 0 the button rests and the line under it says
        why and when the next is free. */
+    var lastLeft = null;
     var paintLeft = function () {
       db.rpc('ai_draft_left', { p_report: rid }).then(function (res) {
         var d = res && res.data, h = here();
@@ -1454,6 +1455,7 @@
         if (!line) return;
         if (res.error || !d || d.error || d.left == null) { line.hidden = true; return; }
         line.hidden = false;
+        lastLeft = d.left;
         line.textContent = d.left + ' left';
         line.classList.toggle('is-out', !d.left);
         if (aiRun[rid]) return;
@@ -1468,10 +1470,14 @@
       else say(am, kept.said, 'err');
     }
     paintLeft();
+    /* Every press asks first (the user, 2026-10-01: a draft is counted, so
+       a stray click must not spend one). */
     ab.addEventListener('click', function () {
       var written = allIds().some(function (id) { return $(id) && $(id).value.trim(); });
-      if (!written) { draft(); return; }
-      window.ADspaceConfirm.ask({ title: 'Replace the commentary?', body: 'The draft replaces what is written in these fields. Nothing is saved until Save.', go: 'Replace' }, draft);
+      var uses = 'This uses one draft' + (lastLeft != null ? ' (' + lastLeft + ' left).' : '.');
+      window.ADspaceConfirm.ask(written
+        ? { title: 'Replace the commentary?', body: uses + ' The draft replaces what is written in these fields. Nothing is saved until Save.', go: 'Replace' }
+        : { title: 'Draft with AI?', body: uses + ' Nothing is saved until Save.', go: 'Draft' }, draft);
     });
   }
   /* A draft is paid for once Claude is asked, whatever happens to the page.

@@ -1753,8 +1753,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     forced `tool_choice`. An accounts report sends the platforms and top
     posts the step shows (`platforms`, `posts`) and gets back each
     platform's four fields and each post's remark, read platform by
-    platform. Nothing is saved until Save, and written text is replaced only
-    after Replace.
+    platform. Every press asks first (Draft with AI?, or Replace the
+    commentary? over written text), saying it uses one draft and how many
+    are left; nothing is saved until Save.
   - A report has a draft language (`sm_reports.lang`, 'en' or 'zh',
     `2026-10-01-report-language.sql`), the English / 中文 segment beside
     Draft with AI (`#rpAiLang`), saved at once; a new report takes the main
