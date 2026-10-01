@@ -8693,7 +8693,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .perf-views > .cmdbar-views.actviews { display: inline-flex; vertical-align: top; }
 .rw-row { padding-top: 10px; padding-bottom: 10px; }
 .crm-head.rw-row { padding: 12px 15px 8px; }
-.rwq-row  { grid-template-columns: 40px minmax(0, 1fr) 64px 172px 150px 96px 104px 104px; }
+.rwq-row  { grid-template-columns: 36px minmax(0, 1fr) 64px 160px 140px 96px 96px 104px; }
 .rwd-row  { grid-template-columns: minmax(0, 1fr) 64px 172px 96px 104px 104px; }
 .rwf-row  { grid-template-columns: minmax(0, 1fr) 56px 172px 120px; }
 .rwp-row  { grid-template-columns: minmax(0, 1fr) 88px 64px 172px 48px 104px 104px; }

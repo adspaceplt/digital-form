@@ -1814,7 +1814,8 @@
   function row(cls, cells, sum) {
     var el = document.createElement('div');
     el.className = 'crm-row rw-row ' + cls;
-    el.innerHTML = cells.join('') + '<span class="rw-sum">' + esc((sum || []).filter(Boolean).join(' · ')) + '</span>';
+    /* A line of parts wraps between its parts, never inside one. */
+    el.innerHTML = cells.join('') + '<span class="rw-sum">' + esc((sum || []).filter(Boolean).map(function (x) { return String(x).replace(/ /g, '\u00a0'); }).join(' · ')) + '</span>';
     return el;
   }
   function cell(html, key) { return '<span class="rw-c' + (key ? ' rw-key' : '') + '">' + html + '</span>'; }
@@ -1998,7 +1999,8 @@
           if (p.own) return youRow('rwq-row', p, 6, 1);
           var elig = p.eligible ? 'Eligible' : WHY[(p.reasons || [])[0]] || 'Not eligible';
           var months = Number(p.months || 0), open = Number(p.open || 0);
-          var sub = [DEPT_WORD[p.department] || '', months ? monthsWord(months) : '', open ? open + ' not final' : '']
+          /* The months only when the quarter is not whole for them. */
+          var sub = [DEPT_WORD[p.department] || '', months + open > 0 && months < 3 ? months + ' of 3 months' : '', open ? open + ' not final' : '']
             .filter(Boolean).join(' · ');
           var share = p.department_share == null ? 0 : p.department_share;
           var total = p.total == null ? Number(p.prize || 0) + Number(share) : p.total;
