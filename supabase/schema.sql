@@ -3733,12 +3733,16 @@ grant execute on function public.serial_taken(text) to authenticated;
 
 -- 4. Issuing. The serial rules, per family:
 --      quote cover  typed, from the accounting portal (AQT2607003)
---      client       AD/[SA/]{client code}/{type}, SA where the client has
---                   engaged a service (any confirmed line, or a client that
---                   has been Active)
+--      client       ACL/{client code}/{YYMMDD}{NN}: ADspace Cover Letter, the
+--                   client, the letter's date, and the lowest free number
+--                   that client has that day from 01 (2026-10-01, the user;
+--                   two digits a floor, not a width)
 --      hr           ADHR/{staff code}/{type}{YYMM}
---    A typed serial is accepted for any family; a built one takes a numeric
---    suffix where the same client already holds the same type.
+--    A typed serial is accepted for any family; a built HR one takes a
+--    numeric suffix where the colleague already holds the same type.
+-- The tick added a thirteenth argument; PostgREST cannot choose between two
+-- shapes a call fits, so the twelve-argument one goes first.
+drop function if exists public.issue_document(text, uuid, uuid, text, date, text, jsonb, jsonb, jsonb, text[], text, text);
 create or replace function public.issue_document(
   p_type      text,
   p_client    uuid,
@@ -3751,7 +3755,8 @@ create or replace function public.issue_document(
   p_signatory jsonb,
   p_languages text[],
   p_idem      text,
-  p_salutation text default null
+  p_salutation text default null,
+  p_signed    boolean default null
 )
 returns jsonb
 language plpgsql security definer set search_path = public as $$
@@ -3766,8 +3771,8 @@ declare
   v_base  text;
   v_n     int;
   v_id    uuid;
-  v_engaged boolean;
   v_langs text[];
+  v_signed boolean;
 begin
   select * into t from public.doc_types where id = p_type and active;
   if t.id is null then return jsonb_build_object('error', 'no-type'); end if;
@@ -3792,8 +3797,15 @@ begin
     if coalesce(btrim(mb.staff_code), '') = '' then return jsonb_build_object('error', 'no-staff-code'); end if;
   end if;
 
-  -- A signed kind is signed by a person, never by a permission.
-  if t.signed then
+  -- Whether the letter leaves space to be signed is the sheet's tick
+  -- (2026-10-01), else the type's own setting. A signed letter is signed by
+  -- a person, never by a permission; an unsigned one may still name who
+  -- issued it, held to the same test.
+  v_signed := coalesce(p_signed, t.signed);
+  if coalesce(btrim(p_signatory ->> 'name'), '') <> '' and not public.issuer_name_ok(p_signatory ->> 'name') then
+    return jsonb_build_object('error', 'issuer-name', 'name', p_signatory ->> 'name');
+  end if;
+  if v_signed then
     if coalesce(btrim(p_signatory ->> 'name'), '') = '' then return jsonb_build_object('error', 'no-signatory'); end if;
     if not public.issuer_name_ok(p_signatory ->> 'name') then
       return jsonb_build_object('error', 'issuer-name', 'name', p_signatory ->> 'name');
@@ -3805,17 +3817,26 @@ begin
     if t.family = 'quote_cover' then return jsonb_build_object('error', 'serial-required'); end if;
     if t.family = 'client' then
       if coalesce(btrim(cl.client_code), '') = '' then return jsonb_build_object('error', 'no-client-code'); end if;
-      v_engaged := cl.stage in ('active', 'paused', 'past')
-                or exists (select 1 from public.client_services s where s.client_id = cl.id and s.state = 'confirmed');
-      v_base := 'AD/' || case when v_engaged then 'SA/' else '' end || cl.client_code || '/' || coalesce(t.code, 'GL');
+      v_base := 'ACL/' || upper(btrim(cl.client_code)) || '/' ||
+                to_char(coalesce(p_issued_at, (timezone('Asia/Kuala_Lumpur', now()))::date), 'YYMMDD');
+      -- Two issuers on one client and day wait for each other here, so the
+      -- second never reads the first one's number as free.
+      perform pg_advisory_xact_lock(hashtext('acl:' || v_base));
+      v_n := 1;
+      loop
+        v_serial := v_base || case when v_n < 10 then '0' else '' end || v_n;
+        exit when not public.serial_taken(v_serial);
+        v_n := v_n + 1;
+        if v_n > 999 then return jsonb_build_object('error', 'no-serial'); end if;
+      end loop;
     else
       v_base := 'ADHR/' || upper(mb.staff_code) || '/' || coalesce(t.code, 'GL') ||
                 to_char(timezone('Asia/Kuala_Lumpur', now()), 'YYMM');
+      v_serial := v_base; v_n := 1;
+      while public.serial_taken(v_serial) loop
+        v_n := v_n + 1; v_serial := v_base || '-' || v_n;
+      end loop;
     end if;
-    v_serial := v_base; v_n := 1;
-    while public.serial_taken(v_serial) loop
-      v_n := v_n + 1; v_serial := v_base || '-' || v_n;
-    end loop;
   else
     if v_serial !~ '^[A-Za-z0-9/._-]{3,40}$' then return jsonb_build_object('error', 'serial-shape'); end if;
     if public.serial_taken(v_serial) then return jsonb_build_object('error', 'serial-taken'); end if;
@@ -3837,7 +3858,7 @@ begin
      coalesce(nullif(btrim(p_title), ''), t.title),
      coalesce(nullif(btrim(p_salutation), ''), t.salutation), t.closing,
      coalesce(p_recipient, '{}'::jsonb), coalesce(p_body, '{}'::jsonb), v_langs,
-     case when t.signed then p_signatory else null end, t.signed, 'portal',
+     case when coalesce(btrim(p_signatory ->> 'name'), '') <> '' then p_signatory else null end, v_signed, 'portal',
      coalesce(me.name, who), nullif(btrim(p_idem), ''))
   returning id into v_id;
 
@@ -3861,7 +3882,7 @@ exception
     end if;
     return jsonb_build_object('error', 'serial-taken');
 end $$;
-grant execute on function public.issue_document(text, uuid, uuid, text, date, text, jsonb, jsonb, jsonb, text[], text, text) to authenticated;
+grant execute on function public.issue_document(text, uuid, uuid, text, date, text, jsonb, jsonb, jsonb, text[], text, text, boolean) to authenticated;
 
 -- 5. A serial added by hand: a document made elsewhere (the accounting
 --    portal, an older Word letter) that the verify page should still answer.
@@ -21871,3 +21892,190 @@ grant execute on function public.perf_save(text, uuid, date, jsonb, integer) to 
 grant execute on function public.perf_release(text, uuid, integer, boolean) to authenticated;
 
 -- END OF DATE OF EVALUATION --------------------------------------------------
+-- ===========================================================================
+-- DRAFT WITH AI LIMITS — every press of Draft with AI is counted. A report
+-- has one draft; drafting it again is an admin's (up to 5 a report in 24
+-- hours). A colleague has 20 a day and the team 60, so a slip or a stuck
+-- button cannot run up the AI bill. A draft that failed is not counted.
+-- 2026-10-01. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   1. `ai_drafts`: one row a press (the report, the colleague, when, and
+--      pending, drafted or failed). Row level security on, no policy, every
+--      grant revoked: only the two functions below read or write it.
+--   2. `ai_draft_claim(p_report)`: Reports at Work. Counts under one lock
+--      and answers `ai-limit` with the scope and when the next draft is
+--      free: `redraft` where a colleague who is not an admin asks for a
+--      report's second draft (no time: an admin redrafts it), `report` where
+--      an admin passes 5 for the report in 24 hours, `person` past 20 and
+--      `team` past 60 in 24 hours. Otherwise it records a pending press and
+--      answers its id and how many the colleague has left today.
+--   3. `ai_draft_done(p_id, p_ok)`: the `report-draft` function marks its
+--      own press drafted or failed; only the colleague who pressed, only
+--      while pending.
+--
+-- ROLLBACK
+--   drop function if exists public.ai_draft_done(uuid, boolean);
+--   drop function if exists public.ai_draft_claim(uuid);
+--   drop table if exists public.ai_drafts;
+-- ===========================================================================
+
+create table if not exists public.ai_drafts (
+  id             uuid primary key default gen_random_uuid(),
+  report_id      uuid references public.sm_reports(id) on delete set null,
+  team_member_id uuid references public.team_members(id) on delete set null,
+  outcome        text not null default 'pending',
+  created_at     timestamptz not null default now(),
+  constraint ai_drafts_outcome check (outcome in ('pending', 'drafted', 'failed'))
+);
+create index if not exists ai_drafts_member_idx on public.ai_drafts (team_member_id, created_at);
+create index if not exists ai_drafts_report_idx on public.ai_drafts (report_id, created_at);
+create index if not exists ai_drafts_at_idx on public.ai_drafts (created_at);
+alter table public.ai_drafts enable row level security;
+revoke all on public.ai_drafts from public, anon, authenticated;
+
+create or replace function public.ai_draft_claim(p_report uuid)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  m public.team_members;
+  since timestamptz := now() - interval '24 hours';
+  n_report integer;
+  n_member integer;
+  n_team integer;
+  first_at timestamptz;
+  new_id uuid;
+begin
+  if not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'denied'); end if;
+  -- One count at a time, so two presses together cannot both take the last draft.
+  perform pg_advisory_xact_lock(hashtext('ai_draft_claim'));
+  -- One draft a report; a second and later is an admin's.
+  if not coalesce(m.is_admin, false) and exists (
+    select 1 from public.ai_drafts d where d.report_id = p_report and d.outcome <> 'failed') then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'redraft', 'limit', 1);
+  end if;
+  select count(*), min(d.created_at) into n_report, first_at from public.ai_drafts d
+   where d.report_id = p_report and d.created_at > since and d.outcome <> 'failed';
+  if n_report >= 5 then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'report', 'limit', 5, 'next', first_at + interval '24 hours');
+  end if;
+  select count(*), min(d.created_at) into n_member, first_at from public.ai_drafts d
+   where d.team_member_id = m.id and d.created_at > since and d.outcome <> 'failed';
+  if n_member >= 20 then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'person', 'limit', 20, 'next', first_at + interval '24 hours');
+  end if;
+  select count(*), min(d.created_at) into n_team, first_at from public.ai_drafts d
+   where d.created_at > since and d.outcome <> 'failed';
+  if n_team >= 60 then
+    return jsonb_build_object('error', 'ai-limit', 'scope', 'team', 'limit', 60, 'next', first_at + interval '24 hours');
+  end if;
+  insert into public.ai_drafts (report_id, team_member_id) values (p_report, m.id) returning id into new_id;
+  return jsonb_build_object('id', new_id, 'left', 20 - n_member - 1);
+end $$;
+
+create or replace function public.ai_draft_done(p_id uuid, p_ok boolean)
+returns void
+language sql security definer set search_path = public as $$
+  update public.ai_drafts d
+     set outcome = case when p_ok then 'drafted' else 'failed' end
+   where d.id = p_id and d.outcome = 'pending'
+     and d.team_member_id = (public.ops_me()).id
+$$;
+
+revoke all on function public.ai_draft_claim(uuid) from public, anon, authenticated;
+revoke all on function public.ai_draft_done(uuid, boolean) from public, anon, authenticated;
+grant execute on function public.ai_draft_claim(uuid) to authenticated;
+grant execute on function public.ai_draft_done(uuid, boolean) to authenticated;
+
+-- END OF DRAFT WITH AI LIMITS ------------------------------------------------
+-- ===========================================================================
+-- AD IDS ON THE REPORT — each ad row keeps the Ads Manager Ad IDs it was
+-- built from, and the ad account's ID, for the team to find the ad again.
+-- 2026-10-01. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   1. `sm_report_ads.ad_ids`: the Ad IDs a row gathers (copies of one
+--      creative are one row, so it can hold several). Filled from an export's
+--      Ad ID column; a later paste matches its rows by them first.
+--   2. `sm_report_ads.ad_account`: the ad account's ID, from an Account ID
+--      column, so the console can open the ads in Ads Manager.
+--   Both are the team's references: the console shows them, the PDF never
+--   prints them.
+--
+-- ROLLBACK
+--   alter table public.sm_report_ads drop column if exists ad_account;
+--   alter table public.sm_report_ads drop column if exists ad_ids;
+-- ===========================================================================
+
+alter table public.sm_report_ads add column if not exists ad_ids text[];
+alter table public.sm_report_ads add column if not exists ad_account text;
+
+-- END OF AD IDS ON THE REPORT ------------------------------------------------
+-- ===========================================================================
+-- REPORT LANGUAGE — a report is written and printed in English or Chinese.
+-- 2026-10-01. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   1. `sm_reports.lang` ('en' or 'zh', English by default): the language the
+--      client reads. The console sets it beside Draft with AI; the draft is
+--      written in it and the PDF's own headings, labels and dates follow it.
+--   2. `sm_report_snapshot` sends it, so a published version freezes the
+--      language it was issued in. The function is otherwise unchanged.
+--
+-- ROLLBACK
+--   Run the REPORTS section's sm_report_snapshot again, then
+--   alter table public.sm_reports drop column if exists lang;
+-- ===========================================================================
+
+alter table public.sm_reports add column if not exists lang text not null default 'en';
+alter table public.sm_reports drop constraint if exists sm_reports_lang;
+alter table public.sm_reports add constraint sm_reports_lang check (lang in ('en', 'zh'));
+
+create or replace function public.sm_report_snapshot(p_id uuid, p_final boolean default false)
+returns jsonb
+language plpgsql security definer stable set search_path = public as $$
+declare
+  r public.sm_reports;
+  c public.clients;
+begin
+  if not public.allowed('reports', 'view') and not public.allowed('clients', 'view') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into r from public.sm_reports where id = p_id;
+  if r.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  -- Somebody who reads Clients but not Reports reads the finished report
+  -- only: once it is confirmed, never while it is being prepared.
+  if not public.allowed('reports', 'view') and r.status not in ('confirmed', 'published') then
+    return jsonb_build_object('error', 'denied');
+  end if;
+  select * into c from public.clients where id = r.client_id;
+  return jsonb_build_object(
+    'report', jsonb_build_object(
+      'id', r.id, 'kind', r.kind, 'title', r.title, 'client_name', c.name, 'client_logo_url', c.logo_url,
+      'market', to_jsonb(c) ->> 'market', 'lang', r.lang,
+      'period_start', r.period_start, 'period_end', r.period_end,
+      'headline', r.headline, 'intro', r.intro, 'insights', r.insights, 'rank_metric', r.rank_metric,
+      'first_month', r.first_month, 'ads_totals', r.ads_totals,
+      'status', case when p_final then 'final' else r.status end,
+      'version_no', r.version_no, 'generated_at', now(),
+      'prepared_by_name', (select name from public.team_members where id = r.submitted_by)),
+    'platforms', coalesce((select jsonb_agg(to_jsonb(p) - 'created_at' order by p.position, p.created_at)
+                  from public.sm_report_platforms p where p.report_id = r.id), '[]'::jsonb),
+    'posts', coalesce((select jsonb_agg((to_jsonb(q) - 'created_at' - 'thumb_data') || jsonb_build_object('thumb_url', q.thumb_data)
+                  order by q.posted_on nulls last, q.position, q.created_at)
+                  from public.sm_report_posts q where q.report_id = r.id), '[]'::jsonb),
+    'ads', coalesce((select jsonb_agg((to_jsonb(a) - 'created_at' - 'thumb_data') || jsonb_build_object('thumb_url', a.thumb_data)
+                  order by a.position, a.created_at)
+                  from public.sm_report_ads a where a.report_id = r.id), '[]'::jsonb));
+end $$;
+grant execute on function public.sm_report_snapshot(uuid, boolean) to authenticated;
+
+-- END OF REPORT LANGUAGE -----------------------------------------------------

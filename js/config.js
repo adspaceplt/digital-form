@@ -39,7 +39,7 @@ window.ADSPACE_ORG = {
   // Slate carries no Chinese, so a letter with a Chinese block embeds this
   // face for that block alone. Fetched only when a Chinese block is drawn,
   // and refused by name when it cannot be, rather than drawing boxes.
-  fontCjk: 'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/SubsetOTF/TC/NotoSansTC-Regular.otf',
+  fontCjk: 'https://cdn.jsdelivr.net/gh/notofonts/noto-cjk@main/Sans/SubsetOTF/SC/NotoSansSC-Regular.otf',
   // The public page a letter's footer points to.
   verifyUrl: 'go.adspace.me/verify'
 };

@@ -51,8 +51,8 @@
   var R = W - M, CW = R - M;    // the text column: 528.7pt
   var HEAD_Y = H - M - 11.6;    // the wordmark's baseline: its cap height under the top margin
   var TOP = HEAD_Y - S(5);      // the page title's baseline, one margin under the head
-  var FOOT_Y = M + S(1);        // PRIVATE & CONFIDENTIAL and the page count
-  var FLOOR = FOOT_Y + S(4);    // nothing draws below this; the foot is under it
+  var FOOT_Y = M;               // PRIVATE & CONFIDENTIAL and the page count, on the margin
+  var FLOOR = M + S(1) + S(4);  // nothing draws below this; the foot is under it
   // The type roles, each a step of the scale.
   var TY = {
     cover: S(5), coverSub: S(3), coverMeta: S(1),
@@ -61,6 +61,181 @@
   };
   // The spaces between things, each a step of the scale.
   var SP = { tight: S(-2), line: S(-1), under: S(2), block: S(4) };
+
+
+  // ---- Chinese -----------------------------------------------------------------
+  /* A report whose language is Chinese (`report.lang` 'zh', 2026-10-01)
+     prints every heading, label, note and date in professional, client-
+     facing Simplified Chinese, written as Chinese and never word for word.
+     The team's own words (commentary, captions, ad names) are printed as
+     typed. `tr()` answers a fixed English string with its Chinese, at the
+     drawing primitives, so the layout code reads the same in both. */
+  var ZH = false;
+  var ZH_WORDS = {
+    'social media accounts report': '社交媒体账号报告',
+    'social media advertising report': '社交媒体广告报告',
+    'social media report': '社交媒体报告',
+    'executive summary': '执行摘要',
+    'insights and recommendations': '洞察与建议',
+    'insights': '洞察',
+    'highlights': '成效亮点',
+    'areas to improve': '优化方向',
+    'recommendations': '建议',
+    'summary': '概要',
+    'summary line': '概要',
+    'across all platforms': '跨平台总览',
+    'key findings': '主要发现',
+    'improvements': '优化方向',
+    'next steps': '下一步计划',
+    'opportunities': '发展机会',
+    'performance drivers': '成效驱动因素',
+    'what worked': '成效亮点',
+    'recommended focus for the following month': '下月工作重点',
+    'ad performance': '广告成效',
+    'creative performance': '创意成效',
+    'results by objective': '各广告目标成效',
+    'results by age': '各年龄段成效',
+    'audience retention': '观众留存率',
+    'hook rate': '吸睛率',
+    'hold rate': '持续观看率',
+    'average play time': '平均播放时长',
+    'amount spent': '广告花费',
+    'amount spent *': '广告花费 *',
+    'results': '成效',
+    'result': '成效',
+    'cost per result': '单次成效费用',
+    'per 1,000 reached': '千人覆盖费用',
+    'cost per 1,000 reached': '千人覆盖费用',
+    'reach': '覆盖人数',
+    'impressions': '展示次数',
+    'frequency': '频次',
+    'ctr': '点击率',
+    'share of spend': '花费占比',
+    'objective': '广告目标',
+    'ad': '广告',
+    'period': '投放期间',
+    'platform': '平台',
+    'post': '帖文',
+    'posts': '帖文数',
+    'posts published': '已发布帖文',
+    'rank': '排名',
+    'details': '详情',
+    'date': '日期',
+    'format': '形式',
+    'change': '变化',
+    'previous period': '上一期',
+    'this period': '本期',
+    'start of period': '期初',
+    'end of period': '期末',
+    'growth': '增长',
+    'followers': '粉丝数',
+    'follower growth': '粉丝增长',
+    'account': '账号',
+    'engagement rate': '互动率',
+    'engagements': '互动次数',
+    'interactions': '互动',
+    'views': '观看次数',
+    'likes': '点赞数',
+    'comments': '评论数',
+    'shares': '分享数',
+    'saves': '收藏数',
+    'by platform': '各平台表现',
+    'remarks': '点评',
+    'how to read this': '阅读说明',
+    'how to read the video figures': '视频数据说明',
+    'no data.': '暂无数据。',
+    'no image': '暂无图片',
+    'not available': '暂无数据',
+    'other': '其他',
+    'total': '总计',
+    'private & confidential': '机密文件',
+    'leads': '潜在客户',
+    'messaging': '私信互动',
+    'sales': '销售',
+    'traffic': '流量',
+    'engagement': '互动',
+    'awareness': '品牌认知',
+    'app promotion': '应用推广',
+    'reel': 'Reels', 'video': '视频', 'photo': '图片', 'carousel': '轮播帖', 'story': '限时动态',
+    'live': '直播', 'short': '短视频', 'article': '文章', 'rednote': '小红书',
+    'the headline figures for the period, before the detail.': '本期核心数据一览。',
+    'what the period’s figures mean, and what happens next.': '本期数据解读与后续计划。',
+    'each objective ranked by what a result cost, then each creative with its results across objectives.':
+      '各广告目标按单次成效费用排序，随后呈现每个创意在各目标下的成效。',
+    'cost per result is what it cost to get one lead, click or action. compare it only between ads with the same objective, which is why each objective is ranked on its own.':
+      '单次成效费用指获得一次潜在客户、点击或行动所需的费用。此数据只宜在同一广告目标的广告之间比较，因此每个目标均单独排名。',
+    'each ad is priced only against the result its objective was set to get. a leads ad that also started a few chats is judged by its cost per lead; the chats came alongside, and the budget was not spent on them.':
+      '每则广告只按其投放目标所设定的成效计算费用。例如潜在客户广告即使同时带来少量对话，仍以单次潜在客户费用评估；这些对话属附带成效，预算并非为其投放。',
+    'reach is how many people saw an ad; impressions is how many times it was shown. frequency is impressions divided by reach.':
+      '覆盖人数指看过广告的人数；展示次数指广告获得展示的总次数。频次即展示次数除以覆盖人数。',
+    'a creative that ran under two objectives shows one line for each. compare the lines to see which goal it served best.':
+      '同一创意若在两个广告目标下投放，将各列一行，便于比较该创意最能达成哪一个目标。',
+    'hook rate is the share of people who kept watching once the ad appeared. the first seconds decide whether somebody stops or scrolls past, so a strong hook rate means the opening is doing its job, and a low one shows where to sharpen the next creative.':
+      '吸睛率指广告出现后继续观看的人数比例。开场几秒决定观众停留还是滑过；吸睛率高代表开场奏效，偏低则说明下一则创意的开场可再加强。',
+    'hold rate is the share who kept watching after the opening had caught them: whether the message holds all the way through. a strong hold rate means the content is doing its job; a low one shows where people start to drop off.':
+      '持续观看率指被开场吸引后继续观看的人数比例，反映内容能否从头到尾留住观众。持续观看率高代表内容奏效；偏低则显示观众开始流失的位置。',
+    'every ad term is explained at go.adspace.me/fb-ad-terms.': '各项广告术语的说明，请参阅 go.adspace.me/fb-ad-terms。',
+    'amount spent is the full amount spent on ads. it excludes the 10% wht and 8% sst, charged separately.':
+      '广告花费为投放于广告的全部金额，不包括另行收取的10%预扣税（WHT）及8%销售与服务税（SST）。',
+    'amount spent is the full amount spent on ads. it excludes the 5% dcc and 9% gst, charged separately.':
+      '广告花费为投放于广告的全部金额，不包括另行收取的5%数字服务费（DCC）及9%消费税（GST）。',
+    'amount spent is the full amount spent on ads. it excludes the 10% wht and 8% sst on a malaysian ad account, and the 5% dcc and 9% gst on a singapore one, charged separately.':
+      '广告花费为投放于广告的全部金额。马来西亚广告账户不包括另行收取的10%预扣税（WHT）及8%销售与服务税（SST）；新加坡广告账户不包括另行收取的5%数字服务费（DCC）及9%消费税（GST）。'
+  };
+  /* A count reads as Chinese does: the figure, then its measure word. */
+  var ZH_COUNT = {
+    'leads': '个潜在客户', 'lead': '个潜在客户', 'messages': '次私信对话', 'message': '次私信对话',
+    'engagements': '次互动', 'engagement': '次互动', 'interactions': '次交互', 'interaction': '次交互',
+    'reactions': '次心情反应', 'reaction': '次心情反应', 'reached': '人覆盖', 'sales': '笔销售', 'sale': '笔销售',
+    'conversions': '次转化', 'conversion': '次转化', 'clicks': '次点击', 'click': '次点击',
+    'page views': '次页面浏览', 'page view': '次页面浏览', 'thruplays': '次完整播放', 'thruplay': '次完整播放',
+    'video plays': '次视频播放', 'video play': '次视频播放', 'installs': '次安装', 'install': '次安装',
+    'impressions': '次展示', 'impression': '次展示', 'recall lift': '人广告回想提升',
+    'follows': '位新关注', 'follow': '位新关注', 'profile visits': '次主页访问', 'profile visit': '次主页访问',
+    'saves': '次收藏', 'save': '次收藏', 'results': '次成效', 'result': '次成效'
+  };
+  function trWord(w) { var k = String(w).trim().toLowerCase(); return ZH_WORDS[k] || w; }
+  var ZH_RULES = [
+    [/^Page (\d+) of (\d+)$/, function (m) { return '第 ' + m[1] + ' 页，共 ' + m[2] + ' 页'; }],
+    [/^\* ([\s\S]+)$/, function (m) { var t = tr(m[1]); return t !== m[1] ? '* ' + t : null; }],
+    [/^([\d,]+(?:\.\d+)?) ([A-Za-z][A-Za-z ]*)$/, function (m) { var w = ZH_COUNT[m[2].toLowerCase()]; return w ? m[1] + ' ' + w : null; }],
+    [/^Total (.+)$/, function (m) { var w = trWord(m[1]); return w !== m[1] ? '总' + w : null; }],
+    [/^(.+) by week$/, function (m) { return '每周' + trWord(m[1]); }],
+    [/^(.+) by post$/, function (m) { return '各帖文' + trWord(m[1]); }],
+    [/^Top post by (.+)$/, function (m) { return trWord(m[1]) + '最高的帖文'; }],
+    [/^Top (\d+) posts by (.+)$/, function (m) { return trWord(m[2]) + '最高的 ' + m[1] + ' 篇帖文'; }],
+    [/^(.+) follower growth$/, function (m) { return trWord(m[1]) + ' 粉丝增长'; }],
+    [/^Average (.+)$/, function (m) { return '平均 ' + m[1]; }],
+    [/^Appendix: (.+)$/, function (m) { return '附录：' + trWord(m[1]); }],
+    [/^Remarks: ([\s\S]+)$/, function (m) { return '点评：' + m[1]; }],
+    [/^(.+) spent$/, function (m) { return '花费 ' + m[1]; }],
+    [/^(.+) \(cont\.\)$/, function (m) { return tr(m[1]) + '（续）'; }],
+    [/^Results by age  ·  (.+)$/, function (m) { return '各年龄段成效  ·  ' + trWord(m[1]); }],
+    [/^(.+)  ·  (\d+) ads?  ·  (.+)$/, function (m) { return trWord(m[1]) + '  ·  ' + m[2] + ' 则广告  ·  ' + m[3]; }],
+    [/^(.+) per 1,000$/, function (m) { return m[1] + ' / 千人'; }],
+    [/^(.+) \/ 1,000$/, function (m) { return m[1] + ' / 千人'; }],
+    [/^Previous (.+)$/, function (m) { return '上一期 ' + m[1]; }],
+    [/^(.+) audience$/, function (m) { return m[1] + ' 受众'; }]
+  ];
+  function tr(s) {
+    if (!ZH || s == null) return s;
+    var str = String(s);
+    var k = str.trim().toLowerCase();
+    if (ZH_WORDS[k]) return ZH_WORDS[k];
+    for (var i = 0; i < ZH_RULES.length; i++) {
+      var m = ZH_RULES[i][0].exec(str);
+      if (m) { var out = ZH_RULES[i][1](m); if (out != null) return out; }
+    }
+    return str;
+  }
+  function zhDay(d, year) { return (year ? d.getFullYear() + '年' : '') + (d.getMonth() + 1) + '月' + d.getDate() + '日'; }
+  /* Two dates as one span in Chinese: the year once, the month once where
+     it does not change. */
+  function zhSpan(da, db) {
+    if (da.getFullYear() !== db.getFullYear()) return zhDay(da, true) + '至' + zhDay(db, true);
+    if (da.getMonth() !== db.getMonth()) return zhDay(da, true) + '至' + (db.getMonth() + 1) + '月' + db.getDate() + '日';
+    return zhDay(da, true) + '至' + db.getDate() + '日';
+  }
 
   // ---- Words ------------------------------------------------------------------
   var PLATFORM_WORD = {
@@ -89,15 +264,21 @@
   function signed(n) { n = num(n); if (n === null) return 'Not available'; return (n > 0 ? '+' : '') + n.toLocaleString('en-GB'); }
   function pct(v) { return v === null || v === undefined ? 'Not available' : (Math.round(v * 10000) / 100).toFixed(2) + '%'; }
   function dateOf(s) { var d = new Date(String(s || '').slice(0, 10) + 'T00:00:00'); return isNaN(d.getTime()) ? null : d; }
-  function dayWord(s) { var d = dateOf(s); return d ? d.getDate() + ' ' + MON3[d.getMonth()] + ' ' + d.getFullYear() : String(s || ''); }
-  function longDate(s) { var d = dateOf(s); return d ? d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear() : String(s || ''); }
-  function stampWord(iso) { var d = iso ? new Date(iso) : null; return d && !isNaN(d.getTime()) ? d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear() : ''; }
+  function dayWord(s) { var d = dateOf(s); return d ? (ZH ? zhDay(d, true) : d.getDate() + ' ' + MON3[d.getMonth()] + ' ' + d.getFullYear()) : String(s || ''); }
+  function longDate(s) { var d = dateOf(s); return d ? (ZH ? zhDay(d, true) : d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) : String(s || ''); }
+  function stampWord(iso) { var d = iso ? new Date(iso) : null; return d && !isNaN(d.getTime()) ? (ZH ? zhDay(d, true) : d.getDate() + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear()) : ''; }
   /* "August 2026" for a calendar month, "1 to 15 August 2026" for part of one,
      "28 July to 3 August 2026" across two. */
   function periodWord(a, b) {
     var da = dateOf(a), db = dateOf(b);
     if (!da || !db) return '';
     var last = new Date(da.getFullYear(), da.getMonth() + 1, 0).getDate();
+    if (ZH) {
+      if (da.getMonth() === db.getMonth() && da.getFullYear() === db.getFullYear() && da.getDate() === 1 && db.getDate() === last) {
+        return da.getFullYear() + '年' + (da.getMonth() + 1) + '月';
+      }
+      return zhSpan(da, db);
+    }
     if (da.getMonth() === db.getMonth() && da.getFullYear() === db.getFullYear()) {
       if (da.getDate() === 1 && db.getDate() === last) return MONTHS[da.getMonth()] + ' ' + da.getFullYear();
       return da.getDate() + ' to ' + db.getDate() + ' ' + MONTHS[da.getMonth()] + ' ' + da.getFullYear();
@@ -117,9 +298,10 @@
   function words(s) { return String(s == null ? '' : s).replace(/\r/g, ''); }
   /* Ads Manager's result indicator is a key (`actions:post_engagement`,
      `onsite_conversion.messaging_conversation_started_7d`); a report reads
-     the word for it. A label somebody typed is left as typed. */
+     the word for it. A label somebody typed is left as typed, except Post
+     engagements, which a client reads as Engagements (the user, 2026-10-01). */
   var RESULT_KEY = [
-    [/post_engagement$/, 'Post engagements'], [/page_engagement$/, 'Page engagements'], [/post_reaction$/, 'Post reactions'],
+    [/post_engagement$/, 'Engagements'], [/page_engagement$/, 'Page engagements'], [/post_reaction$/, 'Post reactions'],
     [/(^|[:.])like$/, 'Page likes'], [/link_click$/, 'Link clicks'], [/landing_page_view$/, 'Landing page views'],
     [/messaging_conversation_started/, 'Messaging conversations started'], [/messaging_first_reply/, 'New messaging contacts'],
     [/lead/, 'Leads'], [/purchase/, 'Purchases'], [/add_to_cart/, 'Adds to cart'], [/complete_registration/, 'Registrations completed'],
@@ -132,12 +314,29 @@
   function adName(s) { return String(s == null ? '' : s).trim().replace(/[\s_-]+(\d)\1\1$/, ''); }
   function resultWord(s) {
     var t = String(s == null ? '' : s).trim();
+    if (/^post engagements?$/i.test(t)) return 'Engagements';
     if (!t || /\s/.test(t) || !/[:._]/.test(t)) return t;
     var k = t.toLowerCase();
     for (var i = 0; i < RESULT_KEY.length; i++) if (RESULT_KEY[i][0].test(k)) return RESULT_KEY[i][1];
     var w = k.replace(/^actions:/, '').replace(/^(onsite_conversion|offsite_conversion)\./, '').replace(/^fb_pixel_/, '')
       .replace(/^omni_/, '').replace(/_\d+d$/, '').replace(/[._:]+/g, ' ').trim();
     return w ? w.charAt(0).toUpperCase() + w.slice(1) : t;
+  }
+  /* In a table a result reads as a count and one short word (the user,
+     2026-10-01): 47 Leads, 15 Messages, 84,660 Reached; never Ads
+     Manager's long name, which broke inside a word in a narrow column. */
+  var SHORT_RESULT = [
+    [/engag/i, 'Engagements'], [/interaction/i, 'Interactions'], [/reaction/i, 'Reactions'], [/reach/i, 'Reached'], [/lead/i, 'Leads'],
+    [/messag|conversation|contact/i, 'Messages'], [/purchase|sale/i, 'Sales'],
+    [/conversion|registration|to cart|checkout/i, 'Conversions'], [/landing page/i, 'Page views'],
+    [/click/i, 'Clicks'], [/thruplay/i, 'ThruPlays'], [/video play|3-second/i, 'Video plays'],
+    [/install/i, 'Installs'], [/impression/i, 'Impressions'], [/recall/i, 'Recall lift'],
+    [/like|follow/i, 'Follows'], [/profile visit/i, 'Profile visits'], [/save/i, 'Saves']
+  ];
+  function shortResult(s) {
+    var t = resultWord(s);
+    for (var i = 0; i < SHORT_RESULT.length; i++) if (SHORT_RESULT[i][0].test(t)) return SHORT_RESULT[i][1];
+    return t.replace(/\s*\([^)]*\)\s*$/, '') || 'Results';
   }
   /* One point a line: an insights field holds several, one per line, and a
      line that is only whitespace is not a point. Accidental repeated blank
@@ -257,6 +456,20 @@
              mostEngaged: posts.filter(function (p) { return engOf(p) !== null; }).sort(function (a, b) { return engOf(b) - engOf(a); })[0] || null };
   }
   function uniq(a) { var o = []; a.forEach(function (x) { if (o.indexOf(x) < 0) o.push(x); }); return o; }
+  /* A platform's best posts, ranked on that platform alone by its own
+     figure (its rank metric, else its volume): a post is never ranked
+     against another platform's, whose reach works differently. The PDF and
+     the Commentary step both ask this. */
+  function topOf(g, n) {
+    var key = g.rank === 'engagements' || g.rank === 'interactions' ? null : g.rank;
+    var rankIn = function (p) {
+      var v = key ? num(p[key]) : engOf(p);
+      if (v === null && g.volume) v = num(p[g.volume]);
+      return v;
+    };
+    return g.posts.filter(function (p) { return rankIn(p) !== null; })
+      .sort(function (a, b) { return rankIn(b) - rankIn(a); }).slice(0, n || 3);
+  }
 
   /* ---- The advertising report ------------------------------------------------
      One row an ad and objective. What a row cannot say is the account's own:
@@ -630,6 +843,7 @@
     if (!DOCS) return Promise.reject(new Error('The document engine (js/documents.js) is not loaded'));
     var warnings = [];
     var warn = function (s) { if (warnings.indexOf(s) < 0) warnings.push(s); };
+    ZH = ((snap && snap.report) || {}).lang === 'zh';
     var mdl = model(snap);
     var rep = mdl.rep;
     var everyText = [rep.title, rep.intro, rep.headline, rep.client_name].concat(
@@ -637,7 +851,7 @@
       mdl.accounts.map(function (a) { return [a.account_name, a.summary, a.worked, a.improve, a.actions, a.metric_notes].join(' '); }),
       mdl.posts.map(function (p) { return [p.title, p.caption, p.observation, p.notable, p.theme].join(' '); }),
       mdl.ads.map(function (a) { return [adName(a.name), a.result_label, a.audience, a.remark].join(' '); })).join(' ');
-    var needsCjk = /[⺀-鿿가-힯豈-﫿＀-￯]/.test(everyText);
+    var needsCjk = ZH || /[⺀-鿿가-힯豈-﫿＀-￯]/.test(everyText);
     var pdf, fonts, logo, sh;
     return PDF.PDFDocument.create().then(function (p) {
       pdf = p;
@@ -648,19 +862,27 @@
         throw new Error('The Chinese font could not be loaded, so the Chinese text in this report cannot be drawn. Check fontCjk in js/config.js.');
       }
       sh = Shaper(PDF, pdf, fonts, warn);
+      /* Every fixed English string reaches the page through here, so a
+         Chinese report reads Chinese without the layout knowing. */
+      if (ZH) { var lo = sh.linesOf; sh.linesOf = function (str, w, size, f) { return lo.call(sh, tr(str), w, size, f); }; }
+      /* Every emoji the report holds is drawn and embedded before any page
+         is laid out: the pages are drawn in one pass, and an emoji still on
+         its way left a blank where it belonged (the user, 2026-10-01). */
+      sh.linesOf(everyText, 1e6, 10, fonts.font);
       var thumbJobs = {};
       mdl.posts.concat(mdl.ads).forEach(function (p) {
         var u = p.thumb_url || p.thumb_signed_url || null;
         if (u) thumbJobs[p.id] = embedImage(pdf, u, warn);
       });
       var logoJob = rep.client_logo_url ? embedImage(pdf, rep.client_logo_url, null) : Promise.resolve(null);
-      return Promise.all([Promise.all(Object.keys(thumbJobs).map(function (id) { return thumbJobs[id].then(function (img) { return [id, img]; }); })), logoJob]);
+      return Promise.all([Promise.all(Object.keys(thumbJobs).map(function (id) { return thumbJobs[id].then(function (img) { return [id, img]; }); })), logoJob, sh.ready()]);
     }).then(function (got) {
       var thumbs = {};
       got[0].forEach(function (pair) { thumbs[pair[0]] = pair[1]; });
       var clientLogo = got[1];
       return draw(PDF, pdf, fonts, logo, clientLogo, sh, mdl, thumbs, warn, opts).then(function (pages) {
         return sh.ready().then(function () {
+          ZH = false;
           pdf.setTitle(String(rep.client_name || '') + ' ' + titleOf(rep) + ' ' + periodWord(rep.period_start, rep.period_end));
           pdf.setAuthor(CFG.agencyName || 'ADspace');
           pdf.setSubject(rep.kind === 'ads' ? 'Social Media Advertising Report' : 'Social Media Accounts Report');
@@ -671,7 +893,7 @@
           });
         });
       });
-    });
+    }).then(function (out) { ZH = false; return out; }, function (e) { ZH = false; throw e; });
   }
 
   function draw(PDF, pdf, fonts, logo, clientLogo, sh, mdl, thumbs, warn, opts) {
@@ -692,13 +914,23 @@
     var DATA3 = g(0.80);           // #cccccc: a third series
     var PAPER = g(1);
     var SERIES = [INK, DATA2, DATA3];
-    var isDraft = rep.status !== 'final' || opts.proof;
     var periodW = periodWord(rep.period_start, rep.period_end);
 
     var pages = [];
     var pg = null, y = 0;
-    var text = function (s, x, yy, size, f, color) { pg.page.drawText(String(s == null ? '' : s), { x: x, y: yy, size: size || 10.5, font: f || book, color: color || INK }); };
-    var width = function (s, size, f) { return (f || book).widthOfTextAtSize(String(s == null ? '' : s), size || 10.5); };
+    /* A label in Chinese is drawn through the shaper, which carries the
+       Chinese face; Latin text keeps the direct path. */
+    var CJK = /[\u2e80-\u9fff\uff00-\uffef\u3000-\u303f]/;
+    var text = function (s, x, yy, size, f, color) {
+      var str = tr(String(s == null ? '' : s));
+      if (CJK.test(str)) { sh.draw(pg.page, sh.linesOf(str, 1e6, size || 10.5, f || book)[0] || [], x, yy, size || 10.5, color || INK); return; }
+      pg.page.drawText(str, { x: x, y: yy, size: size || 10.5, font: f || book, color: color || INK });
+    };
+    var width = function (s, size, f) {
+      var str = tr(String(s == null ? '' : s));
+      if (CJK.test(str)) return sh.lineWidth(sh.linesOf(str, 1e6, size || 10.5, f || book)[0] || [], size || 10.5);
+      return (f || book).widthOfTextAtSize(str, size || 10.5);
+    };
     var right = function (s, xr, yy, size, f, color) { text(s, xr - width(s, size, f), yy, size, f, color); };
     var center = function (s, xc, yy, size, f, color) { text(s, xc - width(s, size, f) / 2, yy, size, f, color); };
     var rect = function (x, yy, w, h, color) { pg.page.drawRectangle({ x: x, y: yy, width: w, height: h, color: color, borderWidth: 0 }); };
@@ -738,7 +970,10 @@
     /* The page title in Slate Regular at S(3), the first block S(2) under
        it. Every section starts a page of its own, so a report with little in
        it is shorter by whole sections and never squeezed onto half a page. */
-    var pageTitle = function (s) { tline(s, M, y, TY.title, reg, INK, CW); y -= TY.title * 0.25 + SP.under; };
+    /* The template stays English in a Chinese report (the user, 2026-10-01):
+       the cover, each page's title and the head and foot; what sits under
+       a title (table titles, column heads, notes, dates) reads Chinese. */
+    var pageTitle = function (s) { var z = ZH; ZH = false; tline(s, M, y, TY.title, reg, INK, CW); ZH = z; y -= TY.title * 0.25 + SP.under; };
     /* A block's title in Slate Regular at S(1), the block S(-1) under it.
        `y` is always the top edge of what comes next, so the space between
        two blocks is exactly S(4) whatever they are, and under a title S(2).
@@ -765,7 +1000,7 @@
 
     var groupWord = function (p) { return p._group ? p._group.label : ''; };
     var typeWord = function (p) { return TYPE_WORD[p.content_type] || (p.content_type ? String(p.content_type) : ''); };
-    var shortDay = function (s) { var d = dateOf(s); return d ? d.getDate() + ' ' + MON3[d.getMonth()] : ''; };
+    var shortDay = function (s) { var d = dateOf(s); return d ? (ZH ? zhDay(d) : d.getDate() + ' ' + MON3[d.getMonth()]) : ''; };
     /* A post without a title is named by what it is and when it went out, so
        a ranking reads as a list of posts and not as "Untitled post" five
        times. Two on one day are numbered in posting order. */
@@ -775,7 +1010,7 @@
       if (words(p.title).trim()) return words(p.title).trim();
       var k = (p._group ? p._group.key : '') + '|' + p.posted_on;
       var list = sameDay[k] || [p];
-      var base = (typeWord(p) || 'Post') + ', ' + shortDay(p.posted_on);
+      var base = ZH ? tr(typeWord(p) || 'Post') + '，' + shortDay(p.posted_on) : (typeWord(p) || 'Post') + ', ' + shortDay(p.posted_on);
       return list.length > 1 ? base + ' (' + (list.indexOf(p) + 1) + ')' : base;
     };
     var volOf = function (p) { var gg = p._group; return gg && gg.volume ? num(p[gg.volume]) : null; };
@@ -803,6 +1038,16 @@
        row of S(3) at least, so the text sits in the row with the same space
        above and below it. */
     var T = { size: TY.cell, lh: S(1), padX: S(-2), padY: (S(3) - S(1)) / 2, minH: S(3) };
+    /* A result in a table: its count and short word, 0 Leads where an ad
+       spent and had none, 1 Lead for one (the user, 2026-10-01). Where the pair is wider than its column (`frac` of the
+       page's width) the word goes under the count, so neither breaks. */
+    function countWord(n, label, frac, f) {
+      var v = num(n) || 0, w = shortResult(label);
+      if (v === 1 && /s$/.test(w)) w = w.replace(/s$/, '');
+      var t = fmt(v) + ' ' + w;
+      if (frac && width(t, T.size, f) > CW * frac - T.padX * 2) t = t.replace(' ', '\n');
+      return t;
+    }
     function cellLines(c, w) {
       if (c == null) return [];
       if (typeof c === 'string' || typeof c === 'number') c = { t: String(c) };
@@ -818,12 +1063,16 @@
            hanging S(1) in, the row's own padding between items. */
         c.items.forEach(function (it, i) {
           var t0 = typeof it === 'string' ? it : it.t;
+          /* Each point and sub-point is one unit (`unit` on its first line
+             counts its lines): a page break falls between points, never
+             inside one (the user, 2026-10-01). */
           var ls = sh.linesOf(t0, w - T.padX * 2 - S(1), size, f);
-          ls.forEach(function (ln, k) { out.push({ ln: ln, f: f, size: size, num: k === 0 ? String(i + 1) : null, indent: S(1) }); });
+          ls.forEach(function (ln, k) { out.push({ ln: ln, f: f, size: size, num: k === 0 ? String(i + 1) : null, indent: S(1), unit: k === 0 ? ls.length : 0 }); });
           ((typeof it === 'object' && it && it.sub) || []).forEach(function (sb, j) {
             out.push({ gap: T.padY / 2 });
-            sh.linesOf(sb, w - T.padX * 2 - S(1) * 2, size, f).forEach(function (ln, k) {
-              out.push({ ln: ln, f: f, size: size, num: k === 0 ? String.fromCharCode(97 + j) : null, numIndent: S(1), indent: S(1) * 2 });
+            var sl = sh.linesOf(sb, w - T.padX * 2 - S(1) * 2, size, f);
+            sl.forEach(function (ln, k) {
+              out.push({ ln: ln, f: f, size: size, num: k === 0 ? String.fromCharCode(97 + j) : null, numIndent: S(1), indent: S(1) * 2, unit: k === 0 ? sl.length : 0 });
             });
           });
           if (i < c.items.length - 1) out.push({ gap: T.padY });
@@ -894,7 +1143,7 @@
           var part0 = true;
           var remaining = function () { return ls.some(function (l, i) { return l && cur[i] < l.length; }); };
           while (remaining()) {
-            var avail = y - FLOOR - T.padY * 2;
+            var avail = y - FLOOR - T.padY * 2, fullH = pageSpace - T.padY * 2;
             if (avail < T.lh * 2) { newPage(pg.section); drawHead(); continue; }
             var part = ls.map(function (l, i) {
               if (!l) return [];
@@ -904,11 +1153,23 @@
                 return lab;
               }
               var out = [], used = 0;
-              while (cur[i] < l.length && used + (l[cur[i]].gap || T.lh) <= avail) { out.push(l[cur[i]]); used += l[cur[i]].gap || T.lh; cur[i]++; }
+              while (cur[i] < l.length) {
+                var L = l[cur[i]], take = L.unit && L.unit * T.lh <= fullH ? L.unit : 1;
+                var need0 = L.gap || take * T.lh;
+                if (used + need0 > avail) break;
+                for (var k = 0; k < take; k++) { out.push(l[cur[i]]); cur[i]++; }
+                used += need0;
+              }
               while (out.length && out[0].gap) out.shift();
               while (out.length && out[out.length - 1].gap) out.pop();
               return out;
             });
+            /* Nothing but a repeated label fits above the next whole point:
+               the row goes on the next page instead of an empty slice. */
+            if (!part.some(function (pt, i) { return pt.length && !(o.labelCol && i === 0); })) {
+              if (part0) { cur = ls.map(function () { return 0; }); }
+              newPage(pg.section); drawHead(); continue;
+            }
             var ph = Math.max(T.minH, Math.max.apply(null, part.map(linesH)) + T.padY * 2);
             cells.forEach(function (c, i) {
               rect(xs[i], y - ph, ws[i], ph, c.fill || row.fill || (o.labelCol && i === 0 ? FILL : PAPER));
@@ -1001,7 +1262,8 @@
       for (var d0 = 0; d0 < days; d0 += 7) {
         var a = new Date(start.getTime() + d0 * 864e5), b = new Date(start.getTime() + Math.min(days - 1, d0 + 6) * 864e5);
         weeks.push({ a: a, b: b, by: {}, total: 0,
-          label: a.getDate() + (a.getMonth() !== b.getMonth() ? ' ' + MON3[a.getMonth()] : '') + ' to ' + b.getDate() + ' ' + MON3[b.getMonth()] });
+          label: ZH ? zhDay(a) + '至' + (a.getMonth() !== b.getMonth() ? zhDay(b) : b.getDate() + '日') :
+            a.getDate() + (a.getMonth() !== b.getMonth() ? ' ' + MON3[a.getMonth()] : '') + ' to ' + b.getDate() + ' ' + MON3[b.getMonth()] });
       }
       posts.forEach(function (p) {
         var k = Math.floor((dateOf(p.posted_on) - start) / 864e5 / 7);
@@ -1076,6 +1338,9 @@
          under it on the same indent, each line a step of the scale below the
          last. The head's wordmark stays on the margin, so the title reads as
          set in from the page and not as another line of the running head. */
+      /* The cover stays in English in a Chinese report too, as the file's
+         name does (the user, 2026-10-01): the report is known by one name. */
+      var zhWas = ZH; ZH = false;
       newPage('cover');
       var cx = M + S(9), cw = R - cx;
       var cy = H / PHI;
@@ -1084,7 +1349,8 @@
       tlines.forEach(function (ln, i) { sh.draw(pg.page, ln, cx, cy, TY.cover, INK); if (i < tlines.length - 1) cy -= S(6); });
       cy -= S(6);
       sh.linesOf(String(rep.client_name || ''), cw, TY.coverSub, reg).forEach(function (ln) { sh.draw(pg.page, ln, cx, cy, TY.coverSub, INK); cy -= S(4); });
-      tline(periodW, cx, cy, TY.coverMeta, book, INK, cw);
+      tline(periodWord(rep.period_start, rep.period_end), cx, cy, TY.coverMeta, book, INK, cw);
+      ZH = zhWas;
     })();
 
     var ins = rep.insights || {};
@@ -1134,44 +1400,116 @@
       weeklyChart(mdl.groups, CHART_WEEK);
     })();
 
-    // ------------------------------------------------ Findings and recommendations
-    (function findings() {
-      var obs = points(ins.performed_well);
-      var acts = points(ins.next_actions);
-      var more = [
-        ['Performance drivers', ins.why_well],
-        ['Areas to improve', ins.underperformed],
-        ['Opportunities', ins.opportunities],
-        ['Improvements', ins.improvements]
-      ].filter(function (r) { return words(r[1]).trim(); });
-      if (!obs.length && words(ins.performed_well).trim()) more.unshift(['Highlights', ins.performed_well]);
-      if (!obs.length && !acts.length && !more.length) return;
-      newPage('Findings and recommendations');
-      pageTitle('Findings and recommendations');
-      if (obs.length || acts.length) {
-        var one = [{ w: 0.5, align: 'left' }, { w: 0.5, align: 'left' }];
-        var cells = [obs.length ? { items: obs } : { t: 'None.', color: MUTE }, acts.length ? { items: acts } : { t: 'None.', color: MUTE }];
-        table(one, [{ t: 'Key findings', align: 'left' }, { t: 'Next steps', align: 'left' }], [{ cells: cells, split: true }]);
-      }
-      /* The rest of the team's remarks, never repeating the two lists above:
-         Key findings is the Highlights field and Next steps the Action plan.
-         The label in its grey column, the points numbered beside it. */
-      if (more.length) {
-        if (obs.length || acts.length) gap(BLOCK);
-        blockTitle('Remarks and recommendations', T.minH * 2);
-        table([{ w: 1 / (PHI * PHI), align: 'left' }, { w: 1 / PHI, align: 'left' }], null,
-          more.map(function (r) { return { cells: [{ t: r[0], f: reg }, { items: points(r[1]) }], split: true }; }),
-          { labelCol: true });
+    // ------------------------------------------------ Insights and recommendations
+    /* One block a platform (the user, 2026-10-01: each platform's algorithm
+       works differently, so its findings are read on their own): the
+       platform's line, then its highlights, what to improve and what we
+       recommend next, from the account's own remarks. Remarks written for
+       the report as a whole (older reports) follow under Across all
+       platforms. */
+    (function insights() {
+      var LAB = [{ w: 1 / (PHI * PHI), align: 'left' }, { w: 1 - 1 / (PHI * PHI), align: 'left' }];
+      var rowsOf = function (list) {
+        return list.filter(function (r) { return words(r[1]).trim(); })
+          .map(function (r) { return { cells: [{ t: r[0], f: reg }, { items: points(r[1]) }], split: true }; });
+      };
+      var blocks = mdl.groups.map(function (gg) {
+        return { gg: gg, lead: words(gg.summary).trim(),
+          rows: rowsOf([['Highlights', gg.worked], ['Areas to improve', gg.improve], ['Recommendations', gg.actions]]) };
+      }).filter(function (b) { return b.lead || b.rows.length; });
+      var across = rowsOf([['Key findings', ins.performed_well], ['Performance drivers', ins.why_well],
+        ['Areas to improve', ins.underperformed], ['Opportunities', ins.opportunities],
+        ['Improvements', ins.improvements], ['Next steps', ins.next_actions]]);
+      if (!blocks.length && !across.length) return;
+      newPage('Insights and recommendations');
+      pageTitle('Insights and recommendations');
+      blocks.forEach(function (b, i) {
+        if (i) gap(BLOCK);
+        blockTitle(b.gg.label, T.minH * 2);
+        if (b.lead) proseBlock(sh.linesOf(b.lead, CW, TY.body, book).map(function (ln) { return { ln: ln, size: TY.body }; }));
+        if (b.rows.length) table(LAB, null, b.rows, { labelCol: true });
+      });
+      if (across.length) {
+        if (blocks.length) gap(BLOCK);
+        blockTitle(blocks.length ? 'Across all platforms' : 'Insights', T.minH * 2);
+        table(LAB, null, across, { labelCol: true });
       }
     })();
+
+    /* A caption as it was written: its own lines and blank lines kept, each
+       line wrapped to the column, at most `max` lines with the rest cut. A
+       blank line is a half step. */
+    var captionLines = function (p, w, max) {
+      var out = [];
+      paragraphsOf(p.caption).forEach(function (s) {
+        if (!s.trim()) { if (out.length && out[out.length - 1] !== null) out.push(null); return; }
+        sh.linesOf(s, w, TY.small, book).forEach(function (ln) { out.push(ln); });
+      });
+      while (out.length && out[out.length - 1] === null) out.pop();
+      if (out.length > max) { out = out.slice(0, max); while (out.length && out[out.length - 1] === null) out.pop(); out.cut = true; }
+      return out;
+    };
+    var captionH = function (lines) { return lines.reduce(function (t, l) { return t + (l === null ? S(-2) : S(0)); }, 0); };
+
+    /* A platform's best posts, ranked on that platform alone by its own
+       figure: the image, the figures, the caption and why it stood out. */
+    var postCards = function (gg, list) {
+      var IMG_W = S(8), IMG_H = IMG_W * 1.25;   // 4:5, the portrait post
+      var dw = CW / PHI - T.padX * 2;           // the details column: the golden major
+      table([{ w: 0.1 }, { w: 1 - 1 / PHI - 0.1 }, { w: 1 / PHI, align: 'left' }],
+        ['Rank', 'Post', { t: 'Details', align: 'left' }],
+        list.map(function (p, i) {
+          var cap = words(p.caption).trim() ? captionLines(p, dw, 10) : [];
+          var notable = words(p.notable).trim() ? sh.linesOf(p.notable, dw, TY.body, book) : [];
+          var metrics = [];
+          if (gg.volume) metrics.push([METRIC_WORD[gg.volume], fmt(p[gg.volume])]);
+          metrics.push([engWord(gg), fmt(engOf(p))]);
+          metrics.push(['Engagement rate', pct(erOf(p))]);
+          /* The meta line says only what the name does not: a post with no
+             title is named by its type and day already, so it adds nothing
+             but the platform where the page holds more than one (the user,
+             2026-10-01: "Video, 1 Sept" over "1 Sept 2026 · Video"). */
+          var own = words(p.title).trim();
+          var acc = gg.accounts.length > 1 ? gg.accounts.filter(function (a) { return a.id === p.platform_id; })[0] : null;
+          var meta = [acc ? PLATFORM_WORD[acc.platform] || acc.platform : '', own ? dayWord(p.posted_on) : '', own ? typeWord(p) : ''].filter(Boolean).join('  ·  ');
+          var NAME = S(2), META = NAME + S(2), BOX = (meta ? META : NAME) + S(-1), LABH = S(2), VALH = S(3);
+          var AFTER = BOX + LABH + VALH + S(2);
+          var textH = AFTER + (cap.length ? captionH(cap) + (cap.cut ? S(0) : 0) + S(-2) : 0) + (notable.length ? S(0) + notable.length * S(1) : 0) + S(-2);
+          var h = Math.max(IMG_H + S(-2) * 2, textH);
+          return { minH: h, cells: [
+            { t: String(i + 1), f: med, size: S(2), align: 'center' },
+            { fn: function (x, top, w, hh) { thumbIn(p, x + (w - IMG_W) / 2, top - (hh - IMG_H) / 2, IMG_W, IMG_H); }, h: h },
+            { fn: function (x, top, w, hh) {
+              var tx = x + T.padX;
+              tline(clip(postName(p), dw, TY.lead, med), tx, top - NAME, TY.lead, med, INK);
+              if (meta) tline(meta, tx, top - META, TY.small, book, SOFT, dw);
+              // The figures run the details column's whole width.
+              var mw = dw / metrics.length;
+              var by = top - BOX;
+              metrics.forEach(function (m, k) {
+                var mx = tx + k * mw;
+                rect(mx, by - LABH, mw, LABH, FILL); frame(mx, by - LABH, mw, LABH);
+                center(m[0], mx + mw / 2, by - LABH / 2 - TY.small * 0.34, TY.small, reg, INK);
+                frame(mx, by - LABH - VALH, mw, VALH);
+                center(m[1], mx + mw / 2, by - LABH - VALH / 2 - TY.body * 0.34, TY.body, med, INK);
+              });
+              var ty = top - AFTER;
+              cap.forEach(function (ln) { if (ln === null) { ty -= S(-2); return; } sh.draw(pg.page, ln, tx, ty, TY.small, SOFT); ty -= S(0); });
+              if (cap.cut) { tline('…', tx, ty, TY.small, book, SOFT); ty -= S(0); }
+              if (cap.length) ty -= S(-2);
+              if (notable.length) {
+                tline('Remarks', tx, ty, TY.small, reg, INK); ty -= S(1);
+                notable.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, TY.body, INK); ty -= S(1); });
+              }
+            }, h: h }
+          ] };
+        }));
+    };
 
     // ------------------------------------------------------- Platform pages
     mdl.groups.forEach(function (gg) {
       newPage(gg.label);
       pageTitle(gg.label);
-      if (words(gg.summary).trim()) {
-        proseBlock(sh.linesOf(gg.summary, CW, TY.lead, med).slice(0, 3).map(function (ln) { return { ln: ln, size: TY.lead }; }));
-      }
       var cells = [{ label: 'Posts', value: String(gg.posts.length) }];
       gg.accounts.forEach(function (a) {
         cells.push({ label: (gg.accounts.length > 1 ? (PLATFORM_WORD[a.platform] || a.platform) + ' follower growth' : 'Follower growth'), value: signed(growthOf(a)) });
@@ -1195,105 +1533,12 @@
         postsChart(gg, CHART_POSTS);
         gap(BLOCK);
       }
-      // The five best, one table: the ranking and every figure it rests on.
-      var ranked = gg.posts.filter(function (p) { return mdl.rankOf(p) !== null; })
-        .sort(function (a, b) { return mdl.rankOf(b) - mdl.rankOf(a); }).slice(0, 5);
+      var ranked = topOf(gg, 3);
       if (ranked.length) {
-        var topV = ranked.reduce(function (m, p) { return Math.max(m, volOf(p) || 0); }, 0) || 1;
-        var ROWH = S(6);
-        var TH = ROWH - S(-2) * 2, TW = TH * 0.8;
-        blockTitle('Top ' + ranked.length + ' posts by ' + METRIC_WORD[mdl.rank].toLowerCase(), T.minH + ROWH * 2);
-        table([{ w: 0.07 }, { w: 0.36 }, { w: 0.25 }, { w: 0.14 }, { w: 0.18 }].map(function (c, i) { if (i === 1) c.align = 'left'; return c; }),
-          ['Rank', { t: 'Post', align: 'left' }, volWord(gg), engWord(gg), 'Engagement rate'],
-          ranked.map(function (p, i) {
-            return { minH: ROWH, cells: [
-              { t: String(i + 1), f: med, align: 'center' },
-              { fn: function (x, top, w, h) {
-                thumbIn(p, x + T.padX, top - S(-2), TW, TH);
-                var tx = x + T.padX + TW + S(-2), tw = w - T.padX * 2 - TW - S(-2);
-                tline(clip(postName(p), tw, TY.body, med), tx, top - h / 2 + 2, TY.body, med, INK);
-                tline([dayWord(p.posted_on), typeWord(p)].filter(Boolean).join('  ·  '), tx, top - h / 2 - S(1) + 2, TY.small, book, SOFT, tw);
-              }, h: ROWH },
-              { fn: function (x, top, w, h) {
-                var v = volOf(p), vs = fmt(v), vw = S(6);
-                var bx = x + T.padX, bwMax = w - T.padX * 2 - vw;
-                rect(bx, top - h / 2 - 3, bwMax, S(-2), FILL);
-                if (v !== null) rect(bx, top - h / 2 - 3, Math.max(0.8, bwMax * v / topV), S(-2), i === 0 ? INK : DATA2);
-                right(vs, x + w - T.padX, top - h / 2 - 3.2, TY.body, i === 0 ? med : book, INK);
-              }, h: ROWH },
-              { t: fmt(engOf(p)), align: 'center' },
-              { t: pct(erOf(p)), align: 'center' }
-            ] };
-          }));
-        gap(BLOCK);
-      }
-      // What the month showed on this platform: three columns, the header row over them.
-      var notes = [['Highlights', gg.worked], ['Areas for improvement', gg.improve], ['Recommendations', gg.actions]]
-        .filter(function (b) { return words(b[1]).trim(); });
-      if (notes.length) {
-        var nc = notes.map(function () { return { w: 1 / notes.length, align: 'left' }; });
-        var row = { cells: notes.map(function (b) { return { items: points(b[1]) }; }), split: true };
-        var probeH = Math.max.apply(null, notes.map(function (b) { return linesH(cellLines({ items: points(b[1]) }, CW / notes.length)); })) + T.padY * 2;
-        if (notes.length > 1 && probeH + T.minH + BLOCK <= TOP - FLOOR) {
-          blockTitle('Remarks', T.minH + Math.min(probeH, 120));
-          table(nc, notes.map(function (b) { return { t: b[0], align: 'left' }; }), [row]);
-        } else {
-          blockTitle('Remarks', 60);
-          table([{ w: 1 / (PHI * PHI), align: 'left' }, { w: 1 / PHI, align: 'left' }], null,
-            notes.map(function (b) { return { cells: [{ t: b[0], f: reg }, { items: points(b[1]) }], split: true }; }), { labelCol: true });
-        }
+        blockTitle('Top ' + (ranked.length === 1 ? 'post' : ranked.length + ' posts') + ' by ' + (METRIC_WORD[gg.rank] || METRIC_WORD[gg.volume] || 'views').toLowerCase(), S(8) * 1.25 + T.minH + S(-2) * 2);
+        postCards(gg, ranked);
       }
     });
-
-    // ------------------------------------------------------- Top posts
-    if (mdl.top.length) {
-      newPage('Top posts');
-      pageTitle('Top posts');
-      var IMG_W = S(8), IMG_H = IMG_W * 1.25;   // 4:5, the portrait post
-      var dw = CW / PHI - T.padX * 2;           // the details column: the golden major
-      table([{ w: 0.1 }, { w: 1 - 1 / PHI - 0.1 }, { w: 1 / PHI, align: 'left' }],
-        ['Rank', 'Post', { t: 'Details', align: 'left' }],
-        mdl.top.map(function (p, i) {
-          var gp = p._group;
-          var cap = words(p.caption).trim() ? sh.linesOf(paragraphsOf(p.caption).filter(function (s) { return s.trim(); }).join(' '), dw, TY.small, book).slice(0, 3) : [];
-          var notable = words(p.notable).trim() ? sh.linesOf(p.notable, dw, TY.body, book) : [];
-          var metrics = [];
-          if (gp && gp.volume) metrics.push([METRIC_WORD[gp.volume], fmt(p[gp.volume])]);
-          metrics.push([engWord(gp), fmt(engOf(p))]);
-          metrics.push(['Engagement rate', pct(erOf(p))]);
-          // The details column, top to bottom, each offset a step of the scale.
-          var NAME = S(2), META = NAME + S(2), BOX = META + S(-1), LABH = S(2), VALH = S(3);
-          var AFTER = BOX + LABH + VALH + S(2);
-          var textH = AFTER + (cap.length ? cap.length * S(0) + S(-2) : 0) + (notable.length ? S(0) + notable.length * S(1) : 0) + S(-2);
-          var h = Math.max(IMG_H + S(-2) * 2, textH);
-          return { minH: h, cells: [
-            { t: String(i + 1), f: med, size: S(2), align: 'center' },
-            { fn: function (x, top, w, hh) { thumbIn(p, x + (w - IMG_W) / 2, top - (hh - IMG_H) / 2, IMG_W, IMG_H); }, h: h },
-            { fn: function (x, top, w, hh) {
-              var tx = x + T.padX;
-              tline(clip(postName(p), dw, TY.lead, med), tx, top - NAME, TY.lead, med, INK);
-              tline([gp ? gp.label : '', dayWord(p.posted_on), typeWord(p)].filter(Boolean).join('  ·  '), tx, top - META, TY.small, book, SOFT, dw);
-              // The figures as a small table of their own.
-              var mw = Math.min(S(9), dw / metrics.length);
-              var by = top - BOX;
-              metrics.forEach(function (m, k) {
-                var mx = tx + k * mw;
-                rect(mx, by - LABH, mw, LABH, FILL); frame(mx, by - LABH, mw, LABH);
-                center(m[0], mx + mw / 2, by - LABH / 2 - TY.small * 0.34, TY.small, reg, INK);
-                frame(mx, by - LABH - VALH, mw, VALH);
-                center(m[1], mx + mw / 2, by - LABH - VALH / 2 - TY.body * 0.34, TY.body, med, INK);
-              });
-              var ty = top - AFTER;
-              cap.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, TY.small, SOFT); ty -= S(0); });
-              if (cap.length) ty -= S(-2);
-              if (notable.length) {
-                tline('Remarks', tx, ty, TY.small, reg, INK); ty -= S(1);
-                notable.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, TY.body, INK); ty -= S(1); });
-              }
-            }, h: h }
-          ] };
-        }));
-    }
 
     // ------------------------------------------------------- Appendix
     /* All posts, one platform a page, so a platform's list always opens at
@@ -1313,14 +1558,13 @@
         var ROWH = S(7);
         var TH = ROWH - S(-2) * 2, TW = TH * 0.8;
         var rows = gg.posts.map(function (p) {
-          var capTxt = paragraphsOf(p.caption).filter(function (s) { return s.trim(); }).join(' ');
           var remark = words(p.observation).trim();
           var cells = [{ fn: function (x, top, w, h) {
             thumbIn(p, x + T.padX, top - S(-2), TW, TH);
             var tx = x + T.padX + TW + S(-2), tw = w - T.padX * 2 - TW - S(-2);
             var lines = [];
             lines.push({ s: clip(postName(p), tw, TY.body, med), f: med, size: TY.body, c: INK });
-            if (capTxt) sh.linesOf(capTxt, tw, TY.small, book).slice(0, remark ? 1 : 2).forEach(function (ln) { lines.push({ ln: ln, size: TY.small, c: SOFT }); });
+            if (words(p.caption).trim()) captionLines(p, tw, remark ? 1 : 2).forEach(function (ln) { if (ln) lines.push({ ln: ln, size: TY.small, c: SOFT }); });
             if (remark) lines.push({ s: clip('Remarks: ' + remark, tw, TY.small, book), f: book, size: TY.small, c: INK });
             var bh = TY.body + (lines.length - 1) * S(0);
             var ly = top - (h - bh) / 2 - TY.body * 0.8;
@@ -1360,6 +1604,12 @@
         v = num(v);
         return v === null ? 'Not available' : CUR + ' ' + v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       };
+      /* A result bought for under ten sen (a post engagement) reads to three
+         decimals, so RM 0.004 never prints as a free RM 0.00. */
+      var cost = function (v) {
+        v = num(v);
+        return v !== null && v > 0 && v < 0.1 ? CUR + ' ' + v.toFixed(3) : money(v);
+      };
       var pctv = function (v) { v = num(v); return v === null ? 'Not available' : (Math.round(v * 100) / 100).toFixed(2) + '%'; };
       var pctShort = function (v) { v = num(v); return v === null ? 'Not available' : String(Math.round(v * 100) / 100) + '%'; };
       var cprLabel = function (per1000) { return per1000 ? 'Cost per 1,000 reached' : 'Cost per result'; };
@@ -1374,12 +1624,17 @@
         var d = (cur - prev) / prev * 100;
         return (d > 0.05 ? '+' : d < -0.05 ? '−' : '') + Math.abs(d).toFixed(1) + '%';
       };
-      var shortD = function (s) { var d = dateOf(s); return d ? d.getDate() + ' ' + MON3[d.getMonth()] : ''; };
+      var shortD = function (s) { var d = dateOf(s); return d ? (ZH ? zhDay(d) : d.getDate() + ' ' + MON3[d.getMonth()]) : ''; };
       var range = function (a, b) {
         var da = dateOf(a), db2 = dateOf(b);
         if (!da && !db2) return '';
         if (!da || !db2) return dayWord(a || b);
+        /* In a table cell the report's own year is understood: 7月5日至6日. */
+        if (ZH) return da.getFullYear() === db2.getFullYear() && String(rep.period_start || '').slice(0, 4) === String(da.getFullYear())
+          ? zhDay(da) + '至' + (da.getMonth() === db2.getMonth() ? db2.getDate() + '日' : zhDay(db2)) : zhSpan(da, db2);
         if (da.getFullYear() !== db2.getFullYear()) return dayWord(a) + ' to ' + dayWord(b);
+        // One month says its name once: 1 to 30 Sept 2026.
+        if (da.getMonth() === db2.getMonth()) return da.getDate() + ' to ' + dayWord(b);
         return shortD(a) + ' to ' + dayWord(b);
       };
       var TAX = mk === 'SG'
@@ -1449,9 +1704,9 @@
             am.groups.map(function (g) {
               return { minH: withPrev ? S(4) + S(1) : T.minH, cells: [
                 { t: g.name, f: reg },
-                { t: fmt(g.results) + ' ' + g.label.toLowerCase(), f: med },
+                { t: countWord(g.results, g.label, 0.23), f: med },
                 money(g.spend),
-                { t: money(g.cpr) + (g.per1000 ? ' per 1,000' : '') + (withPrev && g.prevCpr !== null && g.prevCpr !== undefined ? '\nPrevious ' + money(g.prevCpr) : '') },
+                { t: cost(g.cpr) + (g.per1000 ? ' per 1,000' : '') + (withPrev && g.prevCpr !== null && g.prevCpr !== undefined ? '\nPrevious ' + cost(g.prevCpr) : '') },
                 { fn: function (x, top, w, h) {
                   var tw = S(6), bx = x + T.padX, bw = w - T.padX * 2 - tw - S(-2);
                   rect(bx, top - h / 2 - 3, bw, S(-2), FILL);
@@ -1500,7 +1755,7 @@
          priced against its own result; the age split and the video figures
          from the line that spent the most. */
       var LH = S(4) + PAD;
-      var LCOLS = [0.27, 0.27, 0.2, 0.14, 0.12];
+      var LCOLS = [0.19, 0.16, 0.21, 0.2, 0.13, 0.11];
       var creativeH = function (c) {
         var lines = LH * (c.rows.length + 1);
         var body = Math.max(THt + PAD * 2, lines + (c.ageAd ? AGEH : 0));
@@ -1527,11 +1782,17 @@
         // A line an objective: what it was for, what it bought and at what price.
         var xs = [], acc = RX + PAD;
         LCOLS.forEach(function (f) { xs.push(acc); acc += (RW - PAD * 2) * f; });
-        var heads = ['Objective', 'Results', 'Cost per result', 'Reach', 'CTR'];
+        /* The head reads as every table's head in the report: a shaded band
+           in Slate Regular over rows in Slate Book (the user, 2026-10-01:
+           the labels and the figures were hard to tell apart). Each line
+           carries what it spent, which its cost per result is read
+           against. */
+        var heads = ['Objective', 'Amount spent', 'Results', 'Cost per result', 'Reach', 'CTR'];
+        rect(RX, bodyTop - LH, RW, LH, FILL);
         heads.forEach(function (t0, i) {
           var w0 = (RW - PAD * 2) * LCOLS[i];
-          if (i) right(t0, xs[i] + w0, bodyTop - LH / 2 - TY.small * 0.34, TY.small, book, SOFT);
-          else tline(t0, xs[i], bodyTop - LH / 2 - TY.small * 0.34, TY.small, book, SOFT);
+          if (i) right(t0, xs[i] + w0, bodyTop - LH / 2 - TY.small * 0.34, TY.small, reg, INK);
+          else tline(t0, xs[i], bodyTop - LH / 2 - TY.small * 0.34, TY.small, reg, INK);
         });
         c.rows.forEach(function (a, ri) {
           var ly = bodyTop - LH * (ri + 1);
@@ -1539,8 +1800,8 @@
           var base = ly - LH / 2 - TY.small * 0.34;
           /* A figure not given reads as a dash: a line is a table row. */
           var got = function (v, f0) { return num(v) === null ? '\u2014' : f0(v); };
-          var cells = [(OBJECTIVES[a.objective] || {}).name || 'Other', num(a.results) === null ? a._label : fmt(a.results) + ' ' + a._label,
-            a._cpr === null ? '\u2014' : money(a._cpr) + (a._per1000 ? ' / 1,000' : ''), got(a.reach, fmt), got(a.ctr, pctv)];
+          var cells = [(OBJECTIVES[a.objective] || {}).name || 'Other', got(a.spend, money), countWord(a.results, a._label),
+            a._cpr === null ? '\u2014' : cost(a._cpr) + (a._per1000 ? ' / 1,000' : ''), got(a.reach, fmt), got(a.ctr, pctv)];
           cells.forEach(function (t0, i) {
             var w0 = (RW - PAD * 2) * LCOLS[i];
             var f = i === 0 ? med : book;
@@ -1648,6 +1909,7 @@
           blockTitle(g.name + '  ·  ' + g.ads.length + ' ad' + (g.ads.length === 1 ? '' : 's') + '  ·  ' + money(g.spend), T.minH * (g.ads.length + 1));
           // The group ranked by what a result cost, the cheapest first and in weight.
           var ranked = g.ads.slice().sort(function (p, q) {
+            if (p._cpr === null && q._cpr === null) return (num(q.spend) || 0) - (num(p.spend) || 0);
             if (p._cpr === null) return 1; if (q._cpr === null) return -1; return p._cpr - q._cpr;
           });
           /* The cheapest is marked only where the results are the same
@@ -1655,15 +1917,20 @@
           var oneKind = uniq(g.ads.map(function (a) { return a._label + '|' + a._per1000; })).length === 1;
           var best = g.ads.length > 1 && oneKind && ranked[0] && ranked[0]._cpr !== null ? ranked[0] : null;
           var perK = g.ads.every(function (a) { return a._per1000; });
-          table([{ w: 0.26, align: 'left' }, { w: 0.23 }, { w: 0.14 }, { w: 0.12 }, { w: 0.15 }, { w: 0.1 }],
-            [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', g.adLabel.length <= 12 ? g.adLabel : 'Results', perK ? 'Per 1,000 reached' : 'Cost per result', 'CTR'],
+          /* Each result reads as its count and one short word, on one line
+             where it fits and the word under the count where it does not;
+             never broken inside a word. No result reads 0 Leads. */
+          table([{ w: 0.22, align: 'left' }, { w: 0.17 }, { w: 0.14 }, { w: 0.21 }, { w: 0.16 }, { w: 0.1 }],
+            [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', 'Results', perK ? 'Per 1,000 reached' : 'Cost per result', 'CTR'],
             ranked.map(function (a) {
               var f = a === best ? med : book;
               return { cells: [{ t: adName(a.name) + (words(a.audience).trim() ? '\n' + words(a.audience).trim() + ' audience' : ''), f: f },
-                { t: range(a.starts_on, a.ends_on), f: f }, { t: money(a.spend), f: f }, { t: fmt(a.results) + (g.adLabel === 'Results' ? ' ' + a._label : ''), f: f },
-                { t: money(a._cpr) + (!perK && a._per1000 ? ' per 1,000' : ''), f: f }, { t: pctv(a.ctr), f: f }] };
+                { t: range(a.starts_on, a.ends_on), f: f }, { t: money(a.spend), f: f }, { t: countWord(a.results, a._label, 0.21, f), f: f },
+                { t: cost(a._cpr) + (!perK && a._per1000 ? ' per 1,000' : ''), f: f }, { t: pctv(a.ctr), f: f }] };
             }), { labelCol: false });
-          y -= BLOCK - S(3);
+          /* A full block step before the next objective, so each reads as
+             its own table (the user, 2026-10-01). */
+          y -= BLOCK;
         });
         var creatives = creativesOf();
         newPage('Creative performance');
@@ -1684,7 +1951,7 @@
 
       // ------------------------------------------------ Insights and recommendations
       (function insights() {
-        var blocks = [['What worked', ins.worked], ['What to fix', ins.fix], ['Recommended focus for the following month', ins.focus]]
+        var blocks = [['What worked', ins.worked], ['Areas to improve', ins.fix], ['Recommended focus for the following month', ins.focus]]
           .filter(function (b) { return words(b[1]).trim(); });
         if (!blocks.length) return;
         newPage('Insights and recommendations');
@@ -1700,18 +1967,17 @@
     // ------------------------------------------------------- Heads and feet
     /* The rate card's furniture on every page, the cover included, on the
        new margin: the Optima wordmark at S(2) top left and the client's name
-       in small capitals on the right margin; PRIVATE & CONFIDENTIAL over the
-       report's reference at the foot, the page count on the right. Slate
-       Book Italic is not among the portal's fonts, so the reference is Slate
-       Book slanted. */
+       in small capitals on the right margin; PRIVATE & CONFIDENTIAL at the
+       foot on the margin's line, the page count on the right. The line under
+       it naming the draft or the version is gone (the user, 2026-10-01): it
+       lifted the foot off the margin and the page read top heavy. */
     var n = pages.length;
     var label = String(rep.client_name || '').toUpperCase();
-    var ymd = function (iso) { var d = iso ? new Date(iso) : new Date(); return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0'); };
-    var refLine = isDraft ? 'Draft ' + ymd(rep.generated_at) : 'v.' + (rep.version_no || 1) + ' issued ' + ymd(rep.generated_at);
-    var slant = function (s, x, yy, size, f) { pg.page.drawText(String(s), { x: x, y: yy, size: size, font: f, color: INK, ySkew: PDF.degrees(12) }); };
     var markW = width('ADspace', S(2), mark);
+    var zhOn = ZH;
     pages.forEach(function (p, i) {
       pg = p;
+      ZH = false;   // the head and foot are the template's, English throughout
       text('ADspace', M, HEAD_Y, S(2), mark, INK);
       if (label) {
         var lab = clip(label, CW - markW - S(4), TY.small, med);
@@ -1719,10 +1985,9 @@
         tline(lab, R - lw, HEAD_Y + 0.9, TY.small, med, INK);
       }
       text('PRIVATE & CONFIDENTIAL', M, FOOT_Y, TY.small, med, INK);
-      if (/^[\u0000-ɏ -⁯]*$/.test(refLine)) slant(refLine, M, M, TY.small, book);
-      else tline(refLine, M, M, TY.small, book, INK, CW);
       right('Page ' + (i + 1) + ' of ' + n, R, FOOT_Y, TY.small, book, INK);
     });
+    ZH = zhOn;
     return Promise.resolve(n);
   }
 
@@ -1747,7 +2012,7 @@
   }
 
   window.ADspaceSmReport = {
-    render: render, model: model, fileName: fileName, periodWord: periodWord, titleOf: titleOf, resultWord: resultWord, adName: adName,
+    render: render, model: model, topOf: topOf, fileName: fileName, periodWord: periodWord, titleOf: titleOf, resultWord: resultWord, shortResult: shortResult, adName: adName,
     engOf: engOf, growthOf: growthOf, fmt: fmt, PLATFORM_WORD: PLATFORM_WORD, TYPE_WORD: TYPE_WORD, METRIC_WORD: METRIC_WORD, METRICS: METRICS
   };
 })();

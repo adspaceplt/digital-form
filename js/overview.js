@@ -101,7 +101,7 @@
   var LETTERS = ['offer', 'intent', 'cover'];
 
   var SECTIONS = [
-    { head: 'My Work', cards: [
+    { head: 'My Work', key: 'work', cards: [
       { key: 'late', title: 'Late tasks', can: function () { return may('ops.reports'); },
         all: ['/admin/?s=work&view=report', 'work'], warn: true, empty: 'No late tasks.',
         load: function () {
@@ -158,7 +158,7 @@
         } }
     ] },
 
-    { head: 'Clients', cards: [
+    { head: 'Clients', key: 'clients', cards: [
       { key: 'cold', title: 'Leads going cold', can: function () { return may('clients'); },
         all: ['/admin/?s=clients', 'clients'], warn: true, empty: 'No leads over their time.',
         load: function () {
@@ -217,7 +217,7 @@
         } }
     ] },
 
-    { head: 'Content Review', cards: [
+    { head: 'Content Review', key: 'review', cards: [
       { key: 'sets', title: 'Sets waiting on the client', can: function () { return may('review.sets'); },
         all: ['/admin/?s=review', 'review'], empty: 'No sets waiting.',
         load: function () {
@@ -287,7 +287,7 @@
         } }
     ] },
 
-    { head: 'Creator Campaigns', cards: [
+    { head: 'Creator Campaigns', key: 'campaigns', cards: [
       { key: 'bookings', title: 'Bookings past their date', can: function () { return may('campaigns.campaigns'); },
         all: ['/admin/?s=campaigns', 'campaigns'], warn: true, empty: 'No bookings past their date.',
         load: function () {
@@ -329,7 +329,7 @@
         } }
     ] },
 
-    { head: 'Documents', cards: [
+    { head: 'Documents', key: 'register', cards: [
       { key: 'unsigned', title: 'Letters of Offer not yet signed', can: function () { return may('clients.documents'); },
         all: ['/admin/?s=register', 'register'], empty: 'No letters waiting.',
         load: function () {
@@ -347,7 +347,7 @@
         } }
     ] },
 
-    { head: 'Reports', cards: [
+    { head: 'Reports', key: 'reports', cards: [
       { key: 'confirm', title: 'Waiting for confirmation', can: function () { return may('reports'); },
         all: ['/admin/?s=reports', 'reports'], empty: 'No reports waiting.',
         load: function () {
@@ -384,7 +384,7 @@
         } }
     ] },
 
-    { head: 'Team', cards: [
+    { head: 'Team', key: 'team', cards: [
       { key: 'reviews', title: function () { return 'Reviews for ' + lastMonth().word; },
         can: function () { return may('team.performance'); }, empty: 'Every review is final.',
         all: function () { return ['/admin/?s=team&tab=performance&m=' + lastMonth().key, 'team']; },
@@ -425,6 +425,7 @@
     count.hidden = !out.count;
     count.textContent = String(out.count || '');
     count.className = 'ovw-count tone' + (out.count && card.warn ? ' is-warn' : '');
+    if (card.onCount) card.onCount(out.count || 0, Boolean(card.warn));
     var body = el.querySelector('.ovw-body');
     if (!out.rows.length) { UI.emptyLine(body, card.empty || 'Nothing waiting.'); return; }
     body.innerHTML = '<div class="ovw-rows">' + out.rows.slice(0, SHOWN).map(function (r, i) {
@@ -482,27 +483,97 @@
     run();
   }
 
-  function enter() {
-    var box = $('ovwBody');
-    if (!box) return;
-    reportP = null;
-    box.innerHTML = '';
-    SECTIONS.forEach(function (sec) {
-      var cards = sec.cards.filter(function (c) { return c.can(); });
-      if (!cards.length) return;
-      var head = document.createElement('div');
-      head.className = 'viewhead ovw-head';
-      head.innerHTML = '<h3></h3>';
-      head.querySelector('h3').textContent = sec.head;
-      box.appendChild(head);
-      var grid = document.createElement('div');
-      grid.className = 'chartgrid ovw-grid';
-      box.appendChild(grid);
-      cards.forEach(function (c) { drawCard(grid, c); });
+  /* One tab a section, in the rail's order (the user, 2026-10-01: a page
+     read section by section, not one long scroll). Each tab carries how
+     many items its cards hold waiting, warn where one of them is late, so
+     the glance across sections survives in the strip. Every card is read
+     once on the visit; a tab only shows its pane. The tab rides in the
+     address (`tab=`), the first left out. */
+  var shown = null;
+  function pick(key, focus) {
+    var strip = $('ovwTabs');
+    if (!strip) return;
+    shown = key;
+    Array.prototype.forEach.call(strip.querySelectorAll('.tab'), function (b) {
+      var on = b.getAttribute('data-sec') === key;
+      b.classList.toggle('is-on', on);
+      b.setAttribute('aria-selected', String(on));
+      b.tabIndex = on ? 0 : -1;
+      if (on && focus) b.focus();
     });
+    Array.prototype.forEach.call($('ovwBody').querySelectorAll('.ovw-pane'), function (pn) {
+      pn.hidden = pn.getAttribute('data-sec') !== key;
+    });
+    if (window.ADspaceForm && window.ADspaceForm.thumb) window.ADspaceForm.thumb(strip);
     if (bridge.setUrl) bridge.setUrl();
   }
+  function urlState() {
+    var strip = $('ovwTabs'), first = strip && strip.querySelector('.tab');
+    return { tab: shown && first && shown !== first.getAttribute('data-sec') ? shown : '' };
+  }
 
-  window.ADspaceOverview = { enter: enter };
+  function enter() {
+    var box = $('ovwBody'), strip = $('ovwTabs');
+    if (!box || !strip) return;
+    reportP = null;
+    box.innerHTML = ''; strip.innerHTML = '';
+    var secs = SECTIONS.map(function (sec) {
+      return { sec: sec, cards: sec.cards.filter(function (c) { return c.can(); }) };
+    }).filter(function (x) { return x.cards.length; });
+    strip.hidden = !secs.length;
+    secs.forEach(function (x) {
+      var tab = document.createElement('button');
+      tab.type = 'button'; tab.className = 'tab'; tab.setAttribute('role', 'tab');
+      tab.setAttribute('data-sec', x.sec.key);
+      tab.id = 'ovwTab-' + x.sec.key;
+      tab.setAttribute('aria-controls', 'ovwPane-' + x.sec.key);
+      tab.innerHTML = '<span></span><span class="tab-n" hidden></span>';
+      tab.firstChild.textContent = x.sec.head;
+      strip.appendChild(tab);
+      var pane = document.createElement('div');
+      pane.className = 'ovw-pane'; pane.id = 'ovwPane-' + x.sec.key;
+      pane.setAttribute('role', 'tabpanel'); pane.setAttribute('aria-labelledby', tab.id);
+      pane.setAttribute('data-sec', x.sec.key); pane.hidden = true;
+      var grid = document.createElement('div');
+      grid.className = 'chartgrid ovw-grid';
+      pane.appendChild(grid);
+      box.appendChild(pane);
+      var counts = {};
+      var mark = function () {
+        var n = 0, late = false;
+        Object.keys(counts).forEach(function (k) { n += counts[k].n; if (counts[k].n && counts[k].warn) late = true; });
+        var badge = tab.querySelector('.tab-n');
+        badge.hidden = !n;
+        badge.textContent = String(n);
+        badge.classList.toggle('is-warn', late);
+      };
+      x.cards.forEach(function (c) {
+        drawCard(grid, Object.assign({}, c, { onCount: function (n, warn) { counts[c.key] = { n: n, warn: warn }; mark(); } }));
+      });
+    });
+    var want = new URLSearchParams(location.search).get('tab');
+    var keys = secs.map(function (x) { return x.sec.key; });
+    pick(keys.indexOf(want) > -1 ? want : keys[0]);
+  }
+  (function wire() {
+    var strip = $('ovwTabs');
+    if (!strip) return;
+    strip.addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('.tab');
+      if (b) pick(b.getAttribute('data-sec'));
+    });
+    strip.addEventListener('keydown', function (e) {
+      var tabs = Array.prototype.slice.call(strip.querySelectorAll('.tab'));
+      var i = tabs.indexOf(document.activeElement);
+      if (i < 0) return;
+      var to = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1 : null;
+      if (to === null) return;
+      e.preventDefault();
+      to = (to + tabs.length) % tabs.length;
+      pick(tabs[to].getAttribute('data-sec'), true);
+    });
+  })();
+
+  window.ADspaceOverview = { enter: enter, urlState: urlState };
   if (bridge.overviewReady) bridge.overviewReady();
 })();

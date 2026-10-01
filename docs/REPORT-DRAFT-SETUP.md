@@ -6,10 +6,31 @@ The team reads and edits the draft, and nothing is saved until Save.
 
 ## What leaves the portal
 
-Only the report's figures: the period, the account totals, the previous
-period and each ad's or post's numbers (ad names without the creator code).
-No client name, contact, note, handle or image is sent. The draft comes back
-as text and is not stored by the function.
+The report's figures (the period, the account totals, the previous period
+and each ad's or post's numbers, ad names without the creator code), the
+Notes for the draft the colleague typed, and the commentary of the client's
+last finished report so the draft can follow up on it. The client's name is
+replaced by "the brand" wherever the team's words carry it. No contact,
+handle, billing detail or image is sent. The draft comes back as text and is
+not stored by the function; the notes are kept only in the colleague's
+browser.
+
+## Notes for the draft
+
+The figures cannot say why spend moved, which ads were paused, that a lead
+form changed, what the client's goal is or what next month's budget will be.
+Write those in Notes for the draft, one fact a line, before pressing Draft
+with AI. The draft states a reason or a plan only when the notes give it.
+
+## Limits
+
+The database counts every press. A report has one draft; drafting it again
+is for an admin, up to 5 a report in 24 hours. A colleague has 20 drafts and
+the whole team 60 in any 24 hours. A draft that failed is not counted. When a limit
+is reached the page says which one and when the next draft is free. The
+numbers are in `ai_draft_claim` (`supabase/migrations/2026-10-01-draft-with-ai-limits.sql`).
+For a hard ceiling on cost, also set a monthly spend limit in the Claude
+Console (Settings, Limits).
 
 ## One-time setup (the account owner)
 

@@ -2445,7 +2445,8 @@ body.is-plain .topbar { background: var(--chrome); }
    Escape, the focus trap and the dialog announcing itself. */
 .sheet-card[tabindex]:focus { outline: none; }
 @media (max-width: 560px) {
-  .formsheet .sheet-foot > .btn { flex: 1 1 0; min-width: 0; }
+  .formsheet .sheet-foot > .btn,
+  .sheet-wide .sheet-foot > .btn { flex: 1 1 0; min-width: 0; }
 }
 .sheet-card.askcard { width: min(440px, 100%); }
 .askline { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
@@ -7943,6 +7944,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .bulkbar .tickline { margin: 0; font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .bulkbar-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
 .bulkbar-acts .btn { flex: 0 0 auto; }
+/* `.select-sm` fills its row; in the bar it keeps its own width, or the
+   acts wrap and Remove falls under the select. */
+.bulkbar-acts .select { flex: 0 0 auto; width: auto; }
 .bulkbar-done { flex: 0 0 auto; }
 .trow-pick { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
 .task-row.is-picked { background: var(--line-soft); }
@@ -7957,7 +7961,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 @media (max-width: 640px) {
   .bulkbar-done { order: 1; margin-left: auto; }
   .bulkbar-acts { order: 2; width: 100%; margin-left: 0; }
-  .bulkbar-acts .btn { flex: 1 1 0; min-width: 0; }
+  .bulkbar-acts .btn, .bulkbar-acts .select { flex: 1 1 0; min-width: 0; }
 }
 
 /* Add task: the three fields, then the folded rest, then what was just made. */
@@ -8170,6 +8174,12 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-name { display: flex; flex-direction: column; min-width: 0; }
 .rp-name b { font-size: 14px; font-weight: 600; letter-spacing: -.01em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rp-name small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* An ad's Ad IDs: the team's reference, each a copy control in the code
+   face, on the line under the dates. The control keeps its full target and
+   gives its height back (`.serial-copy`), so the row grows by one line. */
+.rp-name small.rp-adids { overflow: visible; white-space: normal; }
+.rp-adids .serial-copy { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 400;
+  color: var(--ink-soft); margin-left: 0; padding: 0 4px; }
 .rp-ver, .rp-live, .rp-date, .rp-figs { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rp-live .mute, .rp-num .mute { color: var(--ink-mute); }
 .rp-num { font-size: 13.5px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
@@ -8198,6 +8208,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-aidraft { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .rp-aidraft .rp-hint { margin: 0; }
 .rp-aidraft .btn { flex: 0 0 auto; }
+/* The draft's language beside its button, one group that never splits. */
+.rp-aiacts { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.is-tight .rp-aidraft { flex-wrap: wrap; }
 .rp-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h-sm); }
 .rp-sec-head .ovsec-title { margin: 0; }
 .rp-sec-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
@@ -9157,6 +9170,8 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .stagestrip + .filterbar { padding-top: 12px; }
 .tab-n { margin-left: 4px; font-weight: 500; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 .tab.is-on .tab-n { color: var(--ink-soft); }
+/* A tab's count turns warn where one of its items is late (Overview). */
+.tab-n.is-warn, .tab.is-on .tab-n.is-warn { color: var(--warn); font-weight: 600; }
 .stage-empty {
   margin: 4px 0 24px; padding: 18px 20px; border-radius: var(--radius);
   background: var(--card); color: var(--ink-mute); font-size: 14px;

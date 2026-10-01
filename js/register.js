@@ -481,7 +481,8 @@
     $('docAttnRow').hidden = hr;
     $('docHrRow').hidden = !hr;
     $('docLangRow').hidden = !quote;
-    $('docSignRow').hidden = !t.signed;
+    $('docSignRow').hidden = false;
+    if (reseed) $('docSigned').checked = Boolean(t.signed);
     $('docSerial').placeholder = quote ? 'AQT2607003' : 'Assigned on issue';
     if (reseed) { $('docTitleIn').value = t.title || ''; $('docSerial').value = ''; }
     var c = issuing.client || clientOf($('docClient').value);
@@ -515,7 +516,9 @@
       $('docLangMs').checked = quote && Boolean(t.body_ms);
       langBodies();
     }
-    if (t.signed && reseed) {
+    /* Who issues it is named on every letter; the tick only decides whether
+       the letter leaves space to sign over the name (the user, 2026-10-01). */
+    if (reseed) {
       $('docSigName').value = (state.me && state.me.name) || (bridge.actorName ? bridge.actorName() : '') || '';
       $('docSigRole').value = (state.me && state.me.designation) || '';
     }
@@ -565,7 +568,8 @@
     $('docMember').value = d.member_id || '';
     $('docClientWrap').hidden = hr; $('docMemberWrap').hidden = !hr;
     $('docToRow').hidden = hr; $('docAttnRow').hidden = hr; $('docHrRow').hidden = !hr;
-    $('docLangRow').hidden = !quote; $('docSignRow').hidden = !t.signed;
+    $('docLangRow').hidden = !quote; $('docSignRow').hidden = false;
+    $('docSigned').checked = Boolean(d.signed); $('docSigned').disabled = true;
     $('docSerial').value = d.serial || '';
     $('docDate').value = String(d.issued_at || today()).slice(0, 10);
     $('docTitle').textContent = 'Reissue ' + d.serial;
@@ -584,12 +588,14 @@
   function shutIssue() {
     $('docSheet').hidden = true; issuing = null;
     $('docKind').disabled = false; $('docClient').disabled = false; $('docMember').disabled = false;
-    $('docSerial').readOnly = false; $('docGo').textContent = 'Issue';
+    $('docSerial').readOnly = false; $('docGo').textContent = 'Issue'; $('docSigned').disabled = false;
   }
 
   function ticked(id) { return $(id).checked; }
-  function sendIssue() {
-    if (!issuing) return;
+  /* The sheet read and checked once, for Issue and for Preview alike:
+     null after naming the first thing missing. */
+  function gather() {
+    if (!issuing) return null;
     var re = issuing.reissue;
     var t = typeById($('docKind').value) || (re ? { id: re.type_id, family: re.family, signed: Boolean(re.signed) } : null);
     if (!t) { msg('docMsg', 'Choose a document type.', 'err'); return; }
@@ -611,17 +617,59 @@
       : { name: $('docTo').value.trim(), address: $('docAddr').value.trim(),
           attn: $('docAttn').value.trim(), attn_role: $('docAttnRole').value.trim() };
     if (!hr && !recipient.name) { msg('docMsg', 'Say who the letter is to.', 'err'); $('docTo').focus(); return; }
-    var signatory = t.signed ? { name: $('docSigName').value.trim(), designation: $('docSigRole').value.trim() } : null;
-    if (t.signed && !signatory.name) { msg('docMsg', 'A signatory is required.', 'err'); $('docSigName').focus(); return; }
+    var signed = $('docSigned').checked;
+    var signatory = $('docSigName').value.trim() ? { name: $('docSigName').value.trim(), designation: $('docSigRole').value.trim() } : null;
+    if (signed && !signatory) { msg('docMsg', 'A signatory is required.', 'err'); $('docSigName').focus(); return; }
+    return { re: re, t: t, args: {
+      type: t.id, client: hr ? null : client, member: hr ? $('docMember').value : null,
+      serial: serial || null, issued_at: $('docDate').value || null, title: $('docTitleIn').value.trim(),
+      salutation: $('docSal').value.trim(), recipient: recipient, body: body, signatory: signatory, languages: languages,
+      signed: signed
+    } };
+  }
+  /* Preview draws the letter from the sheet as it stands, on the same pen
+     and letterhead, without issuing it: nothing is written and no number
+     is spent, and the reference reads PREVIEW until Issue gives it one
+     (the user, 2026-10-01). It opens in a new tab, else downloads. */
+  function previewIssue() {
+    var g = gather();
+    if (!g) return;
+    msg('docMsg', '');
+    var a = g.args, t = g.t;
+    var doc = {
+      serial: g.re ? g.re.serial : (a.serial || 'PREVIEW'), family: t.family, signed: a.signed,
+      closing: t.closing != null ? t.closing : (g.re ? g.re.closing : 'Yours sincerely,'),
+      issued_at: a.issued_at || today(), title: a.title, salutation: a.salutation,
+      recipient: a.recipient, body: a.body, signatory: a.signatory, languages: a.languages
+    };
+    var btn = $('docPreview'), tab = null;
+    try { tab = window.open('', '_blank'); } catch (e) { tab = null; }
+    btn.disabled = true;
+    LET.render(doc).then(function (bytes) {
+      btn.disabled = false;
+      var url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+      if (tab && !tab.closed) { tab.location.href = url; }
+      else {
+        var link = document.createElement('a');
+        link.href = url; link.download = 'Preview ' + LET.fileName(doc);
+        document.body.appendChild(link); link.click(); link.remove();
+      }
+      setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+    }).catch(function (e) {
+      btn.disabled = false;
+      if (tab && !tab.closed) tab.close();
+      msg('docMsg', 'The preview could not be drawn: ' + ((e && e.message) || e), 'err');
+    });
+  }
+  function sendIssue() {
+    var g = gather();
+    if (!g) return;
+    var re = g.re, args = g.args;
     issuing.idem = issuing.idem || (window.ADspaceDocs && window.ADspaceDocs.idemKey());
+    args.idem = issuing.idem;
     var go = $('docGo');
     go.disabled = true; go.textContent = re ? 'Reissuing…' : 'Issuing…';
     var done = issuing.onDone;
-    var args = {
-      type: t.id, client: hr ? null : client, member: hr ? $('docMember').value : null,
-      serial: serial || null, issued_at: $('docDate').value || null, title: $('docTitleIn').value.trim(),
-      salutation: $('docSal').value.trim(), recipient: recipient, body: body, signatory: signatory, languages: languages, idem: issuing.idem
-    };
     var back = function (r) {
       go.disabled = false; go.textContent = re ? 'Reissue' : 'Issue';
       if (r.error) { msg('docMsg', r.error, 'err'); return; }
@@ -777,7 +825,7 @@
     var on = function (id, fn) { var el = $(id); if (el) el.addEventListener('click', fn); };
     on('regIssue', function () { openIssue({}); });
     on('regAdd', function () { openAdd(null); });
-    on('docClose', shutIssue); on('docCancel', shutIssue); on('docGo', sendIssue);
+    on('docClose', shutIssue); on('docCancel', shutIssue); on('docGo', sendIssue); on('docPreview', previewIssue);
     on('regAddClose', shutAdd); on('regAddCancel', shutAdd); on('regAddGo', sendAdd);
     on('rvoidClose', shutVoid); on('rvoidCancel', shutVoid);
     on('rdelClose', shutDel); on('rdelCancel', shutDel);
@@ -838,10 +886,20 @@
         after(v);
       });
     });
+    /* A click outside the card closes a sheet only while nothing has been
+       typed, ticked or picked in it, as js/sheet.js holds for every other
+       sheet: a stray click never costs somebody their letter (the user,
+       2026-10-01). The close mark, Cancel and Escape still close it. */
     ['docSheet', 'regAddSheet', 'rvoidSheet', 'rdelSheet'].forEach(function (id) {
       var el = $(id);
-      if (el) el.addEventListener('click', function (e) {
+      if (!el) return;
+      var touch = function (e) { if (e.isTrusted) el.__touched = true; };
+      el.addEventListener('input', touch);
+      el.addEventListener('change', touch);
+      new MutationObserver(function () { if (el.hidden) el.__touched = false; }).observe(el, { attributes: true, attributeFilter: ['hidden'] });
+      el.addEventListener('click', function (e) {
         if (e.target !== this) return;
+        if (el.__touched) return;
         if (id === 'docSheet') shutIssue(); else if (id === 'regAddSheet') shutAdd();
         else if (id === 'rvoidSheet') shutVoid(); else shutDel();
       });

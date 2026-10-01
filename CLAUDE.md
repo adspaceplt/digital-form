@@ -819,9 +819,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     never Void/Delete/Reissue.
 - Serials per family:
   - a quotation cover takes the accounting portal's, typed;
-  - a client letter `AD/[SA/]{client_code}/{code}`;
+  - a client letter `ACL/{client_code}/{YYMMDD}{NN}` (ADspace Cover
+    Letter; the letter's date; the lowest number free for that client that
+    day from 01, under an advisory lock); older `AD/[SA/]…` letters keep
+    theirs;
   - an HR letter `ADHR/{staff_code}/{code}{YYMM}`.
-  - `-2`, `-3` where a base is spent. `serial_taken()` spans both tables.
+  - `-2`, `-3` where an HR base is spent. `serial_taken()` spans both tables.
 - HR is its own part:
   - `register_may(family, level)` is the read policy and the check in every
     write;
@@ -858,7 +861,17 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The type seeds the title, salutation and body, with `{first name}` and
     `{role}` filled. A body somebody has edited is never overwritten.
   - The signatory is the signed-in person and their `designation`.
+  - To be signed (`#docSigned`, sent as `p_signed`) is a tick prefilled
+    from the type and fixed on a reissue: ticked, the letter leaves space to
+    sign and needs a signatory; unticked, the name and designation follow
+    ADSPACE PLT with no space and the foot reads No signature required.
   - The sheet runs in the letter's own order.
+  - Preview (`#docPreview`, beside Issue) draws the letter from the sheet
+    on the same pen without issuing it: no row, no number spent, the
+    reference reading PREVIEW (a reissue keeps its own); a new tab, else a
+    download.
+  - The register's sheets (`#docSheet`, `#regAddSheet`, void, delete)
+    close on an outside click only while untouched, as `js/sheet.js` holds.
   - `doc_types` is seeded once and is the team's to edit.
   - The Register sorts newest first, with Oldest first and By reference in the
     bar.
@@ -1170,8 +1183,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   writes `s=clients`; a client's record reads as Clients from `client=`
   alone). It has no key of its own; anyone else is never offered the row
   and its address falls back.
+- Each section is a tab (`#ovwTabs`, the view strip, swipe and the arrows;
+  `tab=` in the address, the first left out) over its own pane, every card
+  read once on the visit. A tab counts the items its list cards hold, in
+  warn where a late card has any (`.tab-n.is-warn`).
 - Each card asks its own `may()` before any read; a card not readable is not
-  drawn, and a section with no cards takes its heading. Sections in the
+  drawn, and a section with no cards takes its tab. Sections in the
   rail's order: My Work (Late tasks, `ops.reports`; Open work by person,
   `ops.all` from `ops_report.open_by_person`; On-time delivery), Clients
   (Leads going cold by `STALE_H`; New leads and new clients; Unanswered
@@ -1500,7 +1517,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Google Meet: only `meet-create` touches the calendar (the refresh token lives
   in its secrets).
   - It asks `ops_engagement_meet_prepare` as the caller.
-  - It refuses an overlapping slot (`slot-taken`).
+  - It refuses a slot only where another online meeting overlaps it (a Meet
+    link, or a Meet, Zoom or Teams address on the event; `slot-taken`);
+    other events on the shared calendar do not count.
   - It re-reads until `hangoutLink` appears, and records `meet-pending`.
   - It names a setup fault (`meet-not-set-up` with the missing names;
     `google-token`; `google-refused`).
@@ -1640,7 +1659,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     PDF (`.rp-pdf-short`).
   - The step foot is an action row, the primary at the right edge.
   - An empty step's line does not repeat the head's Add.
-  - The commentary is four fields, with no title or headline.
+  - The commentary has no title or headline. An ads report's is four
+    fields. An accounts report's is the summary, then one block a platform
+    group (written to its lead account: Summary line, Highlights, Areas to
+    improve, Recommendations) with Why it stood out for its top three posts
+    (`ADspaceSmReport.topOf`, ranked on that platform alone), and the older
+    across-platform fields folded under Across all platforms. The step
+    counts the summary and each platform (`commentaryState`).
 - The client record's tab shows finished reports only (`sm_client_reports`,
   `sm_report_file`).
 - The client portal reads only the newest version that has not been withdrawn
@@ -1658,8 +1683,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     the report is one creative (the name without its creator code), objective,
     ad set and result type: its copies, age bands and days are gathered into
     it; two result types (Post engagements, Interactions) are never added
-    together. Ad ID ties each row to its ad; without it, one name with two
-    result types is refused. A table's total row gives the figures once.
+    together; Post engagements reads Engagements. Ad ID ties each row to its ad; without it, one name with two
+    result types is refused. The row keeps its Ad IDs and the Account ID
+    (`ad_ids`, `ad_account`) as the team's reference: each a copy control
+    under the name, Open in Ads Manager in the row's ⋯, a later paste
+    matched by them first; never printed in the PDF. A table's total row gives the figures once.
     A paste naming ads already in the report updates them with what it holds
     and adds the rest: a day export the dates (first and last day with
     impressions), an age export the age split, an export with neither the
@@ -1672,13 +1700,52 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`ADspaceSmReport.resultWord`). The creator code (`_000` to `_999`) is
     dropped on import and hidden on the list and the PDF
     (`ADspaceSmReport.adName`).
-  - Draft with AI on the Commentary step (`report-draft` edge function,
-    secrets `ANTHROPIC_API_KEY` and `REPORT_DRAFT_MODEL`,
-    `docs/REPORT-DRAFT-SETUP.md`): sends the report id alone; the function
-    reads the report as the caller (Reports Work, a draft) and sends Claude
-    only its figures, never a client name, contact, note or image. The
-    draft fills the four fields; nothing is saved until Save, and written
-    text is replaced only after Replace.
+  - Draft with AI on the Commentary step of both kinds (`report-draft` edge
+    function, secrets `ANTHROPIC_API_KEY` and `REPORT_DRAFT_MODEL`,
+    `docs/REPORT-DRAFT-SETUP.md`): sends the report id and Notes for the
+    draft (`#rpAiNotes`: reasons, changes, goal, next month's budget; kept
+    in this browser under `adspace-draft-notes:{id}`, never saved with the
+    report); the function reads the report as the caller (Reports Work, a
+    draft) and sends Claude its figures, the notes and the client's last
+    finished report's commentary, the client's name masked as "the brand",
+    never a contact or image. It writes in a formal, client-facing house
+    style taken from the team's approved reports (`SYSTEM`, `SOCIAL_SYSTEM`),
+    held to its fields by structured output: the model in use refuses a
+    forced `tool_choice`. An accounts report sends the platforms and top
+    posts the step shows (`platforms`, `posts`) and gets back each
+    platform's four fields and each post's remark, read platform by
+    platform. Nothing is saved until Save, and written text is replaced only
+    after Replace.
+  - A report has a language (`sm_reports.lang`, 'en' or 'zh',
+    `2026-10-01-report-language.sql`), the English / 中文 segment beside
+    Draft with AI (`#rpAiLang`), saved at once; a new report takes the main
+    contact's preferred language. The draft is written in it (`ZH`), and a
+    Chinese PDF keeps its cover, file name, page titles, head and foot in
+    English (the template) while table titles, column heads, labels, notes
+    and dates read professional Simplified Chinese, each term on one line
+    (a table's dates without the year, `7月5日至6日`)
+    (`ZH_WORDS`, `ZH_COUNT`, `ZH_RULES` in `js/smreport.js`, applied at the
+    drawing primitives); the team's own words print as typed. The Chinese
+    face is Noto Sans SC (`ADSPACE_CONFIG`/`ADSPACE_ORG.fontCjk`).
+  - Every draft keeps to `SHARED`: only what the client needs, a few points
+    a field, one sentence a point; and never a word against the creative,
+    copy, plan or targeting we made: a shortfall is read as what the
+    audience showed and what we will test next. The ads field `fix` is
+    headed Areas to improve.
+  - Every press is counted by the database before Claude is asked
+    (`ai_draft_claim`, `2026-10-01-draft-with-ai-limits.sql`): a report has
+    one draft and drafting it again is an admin's (`team_members.is_admin`;
+    `redraft`), to 5 a report in 24 hours; 20 a colleague and 60 the team in
+    24 hours; a failed press is
+    marked failed by the function (`ai_draft_done`) and not counted.
+    `ai_drafts` has RLS on, no policy and no grants. A refusal (`ai-limit`)
+    names the scope and when the next draft is free.
+  - A draft is paid for once asked: while one runs, closing or reloading
+    the tab asks first (`beforeunload`), and an answer that lands after the
+    person moved to another step or screen is kept (`aiKept`) and put in
+    the fields when that report's Commentary is next shown, once.
+  - Each objective lists its ads as the PDF ranks them: cheapest cost per
+    result first, then those with no result by spend, most first.
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective
     and Remove (asks, naming how many), each with Undo.
   - The age split must total 100% (±0.5).
@@ -1691,16 +1758,39 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Ad performance ranks each objective's ads in a table; the cheapest is
     marked only among results of the same kind. Creative performance then
     gives each creative (the name without its creator code) one card: one
-    image, a line per objective and result type (results, cost per result,
-    reach, CTR; a missing figure a dash), the age split and video figures
+    image, a line per objective and result type (amount spent, results,
+    cost per result, reach, CTR; a missing figure a dash) under a shaded
+    head in Slate Regular, as every table in the report, the age split and video figures
     from the line that spent the most (2026-10-01).
   - An image added to one row of a creative is put on its other rows.
+  - A result in a table is its count and one short word
+    (`ADspaceSmReport.shortResult`: Engagements, Reached, Leads, Messages,
+    Conversions, Sales, Clicks…), on one line where it fits, else the word
+    under the count; never broken inside a word. An ad that spent with no
+    result reads 0 Leads, one result 1 Lead; the console's rows read the
+    same word, never Leads (form).
+    A full block step separates one objective's table from the next.
   - The tax note follows the market: WHT and SST for MY; DCC and GST for SG.
   - Ad names never break at an underscore.
 - Import controls read Import from spreadsheet and Import from Ads Manager.
 - The PDF:
   - Every section on its own page, on a golden-ratio scale, with a 33.3pt
     margin; no Methodology page.
+  - The foot is PRIVATE & CONFIDENTIAL and the page count on the margin's
+    line; no draft or version line.
+  - A page break falls between points, never inside one: each numbered or
+    lettered point is one unit (`unit`), split only when taller than a page.
+  - A top post card is named by its title, else its type and day; its meta
+    line adds only what the name does not (the platform where a page holds
+    two, the date and type under a title). Its figures run the column's
+    width.
+  - Every emoji is drawn and embedded before any page is laid out
+    (`sh.ready()` before `draw`).
+  - An accounts report reads: Executive summary; Insights and
+    recommendations, one block a platform; each platform's page with its top
+    three posts ranked on that platform alone, each with its figures, its
+    caption on its own lines and its remarks; the appendix. Posts are never
+    ranked across platforms.
   - Named `{client} {report} {period}.pdf`.
   - The first kind is the Social Media Accounts Report.
 
