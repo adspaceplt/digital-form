@@ -9183,7 +9183,12 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .tab-n { margin-left: 4px; font-weight: 500; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 .tab.is-on .tab-n { color: var(--ink-soft); }
 /* A tab's count turns warn where one of its items is late (Overview). */
-.tab-n.is-warn, .tab.is-on .tab-n.is-warn { color: var(--warn); font-weight: 600; }
+/* A late count is a small warn chip, so it holds its contrast on the tab
+   track as on the raised thumb (bare warn ink on the track measured 4.50). */
+.tab-n.is-warn, .tab.is-on .tab-n.is-warn {
+  color: var(--warn); background: var(--warn-bg); font-weight: 600;
+  padding: 0 6px; border-radius: 5px;
+}
 .stage-empty {
   margin: 4px 0 24px; padding: 18px 20px; border-radius: var(--radius);
   background: var(--card); color: var(--ink-mute); font-size: 14px;

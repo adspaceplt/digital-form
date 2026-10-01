@@ -1676,7 +1676,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   URLs.
 - Ads reports (`kind = 'ads'`):
   - `first_month` carries the reading guidance; a later month compares against
-    the previous period, which is carried forward.
+    the previous period, which is carried forward. A new report is never a
+    first month by itself (`2026-10-01-ads-first-month-unticked.sql`: most
+    clients advertised before the portal); with no earlier report the period
+    before is prefilled (the previous calendar month, else the same length
+    just before) for the team to type its figures, and the team ticks a
+    client's true first month.
   - One row per ad and objective.
   - Ads Manager's own cost per result (reach per 1,000).
   - Paste from an Ads Manager or Ads Reporting export (2026-10-01). A row on
@@ -1719,17 +1724,15 @@ Each line is a rule that broke once. Its reason is in the archive.
     platform's four fields and each post's remark, read platform by
     platform. Nothing is saved until Save, and written text is replaced only
     after Replace.
-  - A report has a language (`sm_reports.lang`, 'en' or 'zh',
+  - A report has a draft language (`sm_reports.lang`, 'en' or 'zh',
     `2026-10-01-report-language.sql`), the English / 中文 segment beside
     Draft with AI (`#rpAiLang`), saved at once; a new report takes the main
-    contact's preferred language. The draft is written in it (`ZH`), and a
-    Chinese PDF keeps its cover, file name, page titles, head and foot in
-    English (the template) while table titles, column heads, labels, notes
-    and dates read professional Simplified Chinese, each term on one line
-    (a table's dates without the year, `7月5日至6日`)
-    (`ZH_WORDS`, `ZH_COUNT`, `ZH_RULES` in `js/smreport.js`, applied at the
-    drawing primitives); the team's own words print as typed. The Chinese
-    face is Noto Sans SC (`ADSPACE_CONFIG`/`ADSPACE_ORG.fontCjk`).
+    contact's preferred language. It decides only the language Draft with
+    AI writes in (`ZH` in `report-draft`): the PDF's template is English
+    throughout and what the team wrote prints as written (the user,
+    2026-10-01: Meta's own terms read in English). The PDF's Chinese layer
+    (`ZH_WORDS`, `ZH_COUNT`, `ZH_RULES` in `js/smreport.js`) is switched off.
+    Chinese text is drawn in Noto Sans SC (`ADSPACE_CONFIG`/`ADSPACE_ORG.fontCjk`).
   - Every draft keeps to `SHARED`: only what the client needs, a few points
     a field, one sentence a point; and never a word against the creative,
     copy, plan or targeting we made: a shortfall is read as what the

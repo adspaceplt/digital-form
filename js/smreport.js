@@ -843,7 +843,10 @@
     if (!DOCS) return Promise.reject(new Error('The document engine (js/documents.js) is not loaded'));
     var warnings = [];
     var warn = function (s) { if (warnings.indexOf(s) < 0) warnings.push(s); };
-    ZH = ((snap && snap.report) || {}).lang === 'zh';
+    /* The report's template is always English (the user, 2026-10-01: Meta's
+       own terms read in English); `lang` decides only the language Draft
+       with AI writes the commentary in, which prints as written. */
+    ZH = false;
     var mdl = model(snap);
     var rep = mdl.rep;
     var everyText = [rep.title, rep.intro, rep.headline, rep.client_name].concat(
