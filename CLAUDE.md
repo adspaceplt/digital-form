@@ -1654,22 +1654,24 @@ Each line is a rule that broke once. Its reason is in the archive.
     the previous period, which is carried forward.
   - One row per ad and objective.
   - Ads Manager's own cost per result (reach per 1,000).
-  - Paste from an Ads Manager export (2026-10-01). One ad is one row: its
-    age bands and days are gathered into it, and two ads are never added
-    together (Ad ID, else name, objective and ad set). A table's total row
-    (an ad with no age above its bands) gives the figures, the bands only
-    the split. Dates: the ad's own Starts and Ends held inside the period
-    (Ongoing reads to its last day); a daily export dates each ad by its
-    first and last day with impressions, and for an ad already in the
-    report changes only its dates (a name two ads share is left out);
-    Reporting starts and ends last. Rates: a Hook or Hold rate column's
-    formula is found from the rows and worked out on the ad's whole
-    figures; without one, hook is 3-second plays over impressions and hold
-    ThruPlays over 3-second plays. Rows from more than one ad account are
-    refused. The result type comes from the first row that names one (never
-    Meta's `mixed`), a key reading as its word (`ADspaceSmReport.resultWord`).
-    The team's creator code ending a name (`_000` to `_999`) is dropped on
-    import and never shown on the list or the PDF (`ADspaceSmReport.adName`).
+  - Paste from an Ads Manager or Ads Reporting export (2026-10-01). A row on
+    the report is one creative (the name without its creator code), objective,
+    ad set and result type: its copies, age bands and days are gathered into
+    it; two result types (Post engagements, Interactions) are never added
+    together. Ad ID ties each row to its ad; without it, one name with two
+    result types is refused. A table's total row gives the figures once.
+    A paste naming ads already in the report updates them with what it holds
+    and adds the rest: a day export the dates (first and last day with
+    impressions), an age export the age split, an export with neither the
+    figures and reach as Ads Manager counts them per ad. Dates otherwise:
+    Starts and Ends held inside the period, else the reporting range. Rates:
+    a Hook or Hold rate column's formula is found from the rows; without one,
+    hook is 3-second plays over impressions and hold ThruPlays over 3-second
+    plays. Rows from two ad accounts are refused. The result type comes from
+    the first row naming one (never `mixed`), read as its word
+    (`ADspaceSmReport.resultWord`). The creator code (`_000` to `_999`) is
+    dropped on import and hidden on the list and the PDF
+    (`ADspaceSmReport.adName`).
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective
     and Remove (asks, naming how many), each with Undo.
   - The age split must total 100% (±0.5).

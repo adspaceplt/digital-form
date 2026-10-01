@@ -1701,17 +1701,53 @@
       var ctr = numIn(raw.ctr);
       if (ctr !== null) { a.n.ctrSum = (a.n.ctrSum || 0) + ctr * (im || 1); a.ctrw += (im || 1); }
     };
-    lines.slice(1).forEach(function (l) {
+    var cellsOf = function (l) {
       var cells = l.split(sep).map(function (c) { return c.trim().replace(/^"|"$/g, ''); }), raw = {};
       head.forEach(function (k, i) { if (k && raw[k] == null) raw[k] = cells[i] || ''; });
+      return raw;
+    };
+    var named = function (v) { return v && !/^mixed$/i.test(String(v).trim()) ? String(v).trim() : ''; };
+    /* Which ads are one row on the report (the user, 2026-10-01). An ad's
+       result type is read from its rows that name one (a row with no results
+       names none). Ads are combined only where they are the same creative
+       (the name without the creator code), objective, ad set and result
+       type: two ads of one creative with different results (Post
+       engagements, Interactions) are never added together. With Ad ID each
+       row is known to its ad; without it, rows of one name and objective
+       that name two result types cannot be told apart, and are refused. */
+    var groupOf = {}, idLabel = {}, idBase = {}, noIdLabels = {};
+    var CN = function (x) { return AN ? AN(x) : x; };
+    lines.slice(1).forEach(function (l) {
+      var raw = cellsOf(l);
+      if (!raw.name) return;
+      var obj = objectiveOf(raw.objective) || fallbackObj, base = [CN(raw.name), obj, raw.audience || ''].join('|');
+      if (raw.ad_id) {
+        var id = raw.ad_id + '|' + raw.name;
+        idBase[id] = base;
+        if (!idLabel[id] && named(raw.result_label)) idLabel[id] = named(raw.result_label);
+      } else if (named(raw.result_label)) {
+        (noIdLabels[base] = noIdLabels[base] || {})[named(raw.result_label)] = true;
+      }
+    });
+    var clash = Object.keys(noIdLabels).filter(function (b) { return Object.keys(noIdLabels[b]).length > 1; })[0];
+    if (clash) return { error: clash.split('|')[0] + ' has more than one kind of result (' + Object.keys(noIdLabels[clash]).join(', ') + '). Add the Ad ID column so each ad stays its own.' };
+    var labelsAt = {};
+    Object.keys(idBase).forEach(function (id) { if (idLabel[id]) (labelsAt[idBase[id]] = labelsAt[idBase[id]] || {})[idLabel[id]] = true; });
+    Object.keys(idBase).forEach(function (id) {
+      var b = idBase[id], lab = idLabel[id], kinds = Object.keys(labelsAt[b] || {});
+      /* An ad with no results joins its creative's one kind of result (or
+         the creative's other ads with none), and stands alone where the
+         creative has more than one kind. */
+      groupOf[id] = lab ? b + '|' + lab : kinds.length === 1 ? b + '|' + kinds[0] : kinds.length ? 'id:' + id : b + '|';
+    });
+    lines.slice(1).forEach(function (l) {
+      var raw = cellsOf(l);
       if (!raw.name) { skipped++; return; }
       if (raw.account) accounts[raw.account] = true;
       var obj = objectiveOf(raw.objective) || fallbackObj;
-      /* One ad is one row: an age band or a day of it is gathered into it,
-         and two ads are never added together. Ad ID tells apart two ads that
-         share a name in one ad set (with the name, as a spreadsheet can round a
-         long ID); without it, name, objective and ad set. */
-      var key = raw.ad_id ? 'id:' + raw.ad_id + '|' + raw.name : [raw.name, obj, raw.audience || ''].join('|');
+      /* An age band or a day of an ad is gathered into its row (Ad ID with
+         the name, as a spreadsheet can round a long ID). */
+      var key = raw.ad_id ? groupOf[raw.ad_id + '|' + raw.name] : [CN(raw.name), obj, raw.audience || ''].join('|');
       var ad = byKey[key];
       if (!ad) {
         ad = byKey[key] = { name: AN ? AN(raw.name) : raw.name, objective: obj, audience: raw.audience || null,
@@ -1829,57 +1865,74 @@
     sum.textContent = ''; say(sm, '');
     var year = Number(String(st.open.period_start).slice(0, 4));
     var go = box.querySelector('[data-a="go"]');
-    /* An ad already in this report, named again by a daily export, takes
-       that export's dates and keeps its figures: the monthly export gives
-       the figures and the reach, the daily one the days each ad ran. */
+    /* A paste naming ads already in this report updates them with what it
+       holds, and adds the rest (the user, 2026-10-01): an export by day sets
+       the days each ran; an export by age the age split; an export with
+       neither the figures, reach included, exactly as Ads Manager counts
+       them per ad (reach added up from age rows counts a person once per
+       age group, not once per ad). */
     var already = function (r0) {
       var same = st.ads.filter(function (a) { return adName(a.name) === r0.name; });
       if (same.length > 1 && r0.audience) same = same.filter(function (a) { return (a.audience || '') === r0.audience; });
       if (same.length > 1) same = same.filter(function (a) { return a.objective === r0.objective; });
+      if (same.length > 1 && r0.result_label) same = same.filter(function (a) { return resultWord(a.result_label) === r0.result_label; });
       return same.length === 1 ? same[0] : null;
     };
     var named = function (r0) { return st.ads.some(function (a) { return adName(a.name) === r0.name; }); };
+    var FIGS = ['result_label', 'results', 'reach', 'impressions', 'spend', 'ctr', 'cpr', 'hook_rate', 'hold_rate', 'avg_play', 'retention'];
+    var patchOf = function (r0, out) {
+      if (r0._daily) return { starts_on: r0.starts_on, ends_on: r0.ends_on };
+      if (out.byAge) return Object.keys(r0.age || {}).length ? { age: r0.age } : null;
+      var p0 = {};
+      FIGS.forEach(function (k) { if (r0[k] != null && !(k === 'retention' && !Object.keys(r0[k]).length)) p0[k] = r0[k]; });
+      return p0;
+    };
     var read = function () {
       var out = parseAdRows($('rpPAText').value, { year: year, start: st.open.period_start, end: st.open.period_end }, $('rpPAObj').value);
       if (out.error) { sum.textContent = $('rpPAText').value.trim() ? out.error : ''; go.disabled = true; return out; }
-      out.dated = out.rows.filter(function (r0) { return r0._daily && already(r0); });
-      /* A day's rows for a name several ads here share cannot say which ad
-         they date, so they add nothing. */
-      out.unclear = out.rows.filter(function (r0) { return r0._daily && !already(r0) && named(r0); });
-      out.fresh = out.rows.filter(function (r0) { return out.dated.indexOf(r0) < 0 && out.unclear.indexOf(r0) < 0; });
+      out.updates = []; out.unclear = []; out.fresh = [];
+      out.rows.forEach(function (r0) {
+        var a = already(r0);
+        if (a) { var p0 = patchOf(r0, out); if (p0) out.updates.push({ ad: a, patch: p0 }); return; }
+        /* A day's or an age group's rows for a name several ads here share
+           cannot say which ad they belong to, so they add nothing. */
+        if ((r0._daily || out.byAge) && named(r0)) { out.unclear.push(r0); return; }
+        out.fresh.push(r0);
+      });
+      var what = out.rows.some(function (r0) { return r0._daily; }) ? 'take the days they ran'
+        : out.byAge ? 'take their age split' : 'take Ads Manager\'s figures';
       var parts = [];
       if (out.fresh.length) parts.push(out.fresh.length + ' ad' + (out.fresh.length === 1 ? '' : 's') + ' ready');
-      if (out.dated.length) parts.push(out.dated.length + ' ad' + (out.dated.length === 1 ? '' : 's') + ' already here take the days they ran');
-      if (out.byAge) parts.push('the age split gathered from the rows');
+      if (out.updates.length) parts.push(out.updates.length + ' ad' + (out.updates.length === 1 ? '' : 's') + ' already here ' + what);
+      if (out.fresh.length && out.byAge) parts.push('the age split gathered from the rows');
       if (out.fresh.some(function (r0) { return r0._daily; })) parts.push('dates from the days each ad delivered');
       if (out.unclear.length) parts.push(out.unclear.length + ' left out: more than one ad here has that name');
       if (out.skipped) parts.push(out.skipped + ' without a name skipped');
       sum.textContent = parts.join(', ').replace(/^./, function (c) { return c.toUpperCase(); }) + '.' +
         (out.fresh.some(function (r0) { return r0._daily; }) ? ' Reach is left to type: a daily export counts a person again each day.' : '');
-      go.disabled = !(out.fresh.length + out.dated.length);
+      go.disabled = !(out.fresh.length + out.updates.length);
       return out;
     };
     $('rpPAText').oninput = read; $('rpPAObj').onchange = read;
     go.disabled = true;
     go.onclick = function () {
       var out = read();
-      if (!out.rows || !(out.fresh.length + out.dated.length)) return;
+      if (!out.rows || !(out.fresh.length + out.updates.length)) return;
       var n = st.ads.length;
       var rows = out.fresh.map(function (r0, i) { var x = Object.assign({ report_id: st.open.id, position: n + i + 1 }, r0); delete x._daily; return x; });
       go.disabled = true;
-      var dates = out.dated.map(function (r0) {
-        var a = already(r0);
-        return db.from('sm_report_ads').update({ starts_on: r0.starts_on, ends_on: r0.ends_on }).eq('id', a.id).select('*').then(function (res) {
+      var ups = out.updates.map(function (u) {
+        return db.from('sm_report_ads').update(u.patch).eq('id', u.ad.id).select('*').then(function (res) {
           if (res.error) throw res.error;
           if (!(res.data || []).length) throw new Error('Not saved. The database refused the request.');
-          st.ads = st.ads.map(function (x) { return x.id === a.id ? res.data[0] : x; });
+          st.ads = st.ads.map(function (x) { return x.id === u.ad.id ? res.data[0] : x; });
         });
       });
       var add = rows.length ? db.from('sm_report_ads').insert(rows).select('*').then(function (res) {
         if (res.error) throw res.error;
         st.ads = st.ads.concat(res.data || []);
       }) : Promise.resolve();
-      Promise.all(dates.concat([add])).then(function () {
+      Promise.all(ups.concat([add])).then(function () {
         go.disabled = false;
         sortAds();
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
