@@ -10,8 +10,10 @@
 --   submitted, returned, confirmed, published, revised, unpublished,
 --   deleted) under `reports` instead of `clients`, so the read policy asks
 --   `activity.reports`, a part of the Activity record that answers with the
---   record's own level unless set. A report's edits were never filed, and
---   are not now: only its steps.
+--   record's own level unless set. It also names the three tags the page
+--   now files: every save (`report.saved`: the step or sheet and what it
+--   held) and every Draft with AI, drafted or failed (`report.ai_drafted`,
+--   `report.ai_failed`).
 --
 -- ROLLBACK
 --   Re-run activity_section from 2026-10-01-review-confirm-internally.sql.
@@ -46,8 +48,9 @@ language sql immutable parallel safe as $$
                     'request.changed', 'request.raised',
                     'request.reinstated', 'request.replied', 'request.withdrawn',
                     'service.override') then 'clients'
-    when action in ('report.confirmed', 'report.created', 'report.deleted',
-                    'report.published', 'report.returned', 'report.revised',
+    when action in ('report.ai_drafted', 'report.ai_failed', 'report.confirmed',
+                    'report.created', 'report.deleted', 'report.published',
+                    'report.returned', 'report.revised', 'report.saved',
                     'report.submitted', 'report.unpublished') then 'reports'
     when action in ('qr.created', 'qr.restored', 'qr.revoked', 'shortlink.created',
                     'shortlink.deleted', 'shortlink.imported', 'shortlink.updated') then 'links'

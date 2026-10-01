@@ -1930,9 +1930,12 @@ Each line is a rule that broke once. Its reason is in the archive.
 - One part per tab (`activity.clients`, `.ops`, `.team`, `.review`,
   `.campaigns`, `.links`, `.register`, `.reports`, `.services`). The link
   draws where any tab is readable.
-- Reports files a report's steps only (`report.*`: started, submitted,
-  returned, confirmed, published, revised, unpublished, deleted), never its
-  edits (`2026-10-01-activity-reports-tab.sql`).
+- Reports files a report's steps (`report.*`: started, submitted, returned,
+  confirmed, published, revised, unpublished, deleted), every save
+  (`report.saved`, filed by the page through `fileReport()`: the period and
+  version, then the step or sheet and what it held) and every Draft with AI
+  (`report.ai_drafted` with its language, `report.ai_failed` with the
+  reason) (`2026-10-01-activity-reports-tab.sql`).
 - Performance follows Team (`team.performance` View, no master code), read
   through `perf_activity()`: when, the step, whose month, who; never a score,
   a grade, a breach or a dispute's words, and never the caller's own review.

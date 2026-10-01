@@ -1158,6 +1158,10 @@
     'report.revised':        ['Report revised', '', 'reports'],
     'report.unpublished':    ['Report unpublished', 'is-warn', 'reports'],
     'report.deleted':        ['Report deleted', 'is-danger', 'reports'],
+    /* Every save and every Draft with AI, filed by the page (2026-10-01). */
+    'report.saved':          ['Report saved', '', 'reports'],
+    'report.ai_drafted':     ['Drafted with AI', '', 'reports'],
+    'report.ai_failed':      ['Draft with AI failed', 'is-warn', 'reports'],
     'document.issued':       ['Document issued', 'is-ok', 'register'],
     'document.voided':       ['Document voided', 'is-danger', 'register'],
     'document.restored':     ['Document restored', 'is-ok', 'register'],

@@ -118,6 +118,16 @@
 
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
   function periodWord(a, b) { return SM() ? SM().periodWord(a, b) : String(a) + ' to ' + String(b); }
+  /* Every save and every Draft with AI is filed under Reports (the user,
+     2026-10-01), as the report's own steps are: the client, then the
+     period and version, then what was saved. Fire and forget, as every
+     page-side entry is: a filing that fails never stops the save. */
+  function fileReport(action, what, r0, c0) {
+    var r = r0 || st.open, c = c0 || st.client || {};
+    if (!r || !window.ADspaceAdmin || !window.ADspaceAdmin.log) return;
+    window.ADspaceAdmin.log(action, c.name || '',
+      periodWord(r.period_start, r.period_end) + ' · v' + r.version_no + (what ? ' · ' + what : ''));
+  }
   function dayWord(s) {
     if (!s) return '';
     var d = new Date(String(s).slice(0, 10) + 'T00:00:00');
@@ -852,6 +862,7 @@
         var saved = res.data[0];
         if (a) st.platforms = st.platforms.map(function (x) { return x.id === a.id ? saved : x; });
         else st.platforms.push(saved);
+        fileReport('report.saved', (a ? 'Account edited: ' : 'Account added: ') + (saved.account_name || saved.platform || ''));
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
         paintEditor();
       });
@@ -1067,6 +1078,7 @@
         var saved = res.data[0];
         if (p) st.posts = st.posts.map(function (x) { return x.id === p.id ? saved : x; });
         else st.posts.push(saved);
+        fileReport('report.saved', (p ? 'Post edited: ' : 'Post added: ') + (saved.title || saved.posted_on || ''));
         st.lastAcc = row.platform_id; st.lastDate = row.posted_on; st.lastFormat = row.content_type || '';
         sortPosts();
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
@@ -1191,6 +1203,8 @@
         go.disabled = false;
         if (res.error) { say(sm, said(res.error), 'err'); return; }
         st.posts = st.posts.concat(res.data || []);
+        var np = (res.data || []).length;
+        fileReport('report.saved', np + (np === 1 ? ' post' : ' posts') + ' imported');
         sortPosts();
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
         paintPosts();
@@ -1330,6 +1344,7 @@
       }));
       Promise.all(jobs).then(function () {
         btn.disabled = false;
+        fileReport('report.saved', 'Commentary');
         paintSteps();
         if (then) { then(); return; }
         say(m, 'Saved.', 'ok');
@@ -1401,6 +1416,7 @@
       say(am, '');
       aiRun[rid] = true;
       var body = { report_id: rid, notes: notes.value.trim(), lang: lang.value };
+      var asked = { r: st.open, c: st.client, lang: lang.value === 'zh' ? 'Chinese' : 'English' };
       if (!ads) {
         body.platforms = groups.map(function (g) { return g.lead.id; });
         body.posts = [].concat.apply([], groups.map(function (g) { return g.top.map(function (p) { return p.id; }); }));
@@ -1413,6 +1429,8 @@
         return { said: e && e.message === 'ai-limit' ? aiLimit(e.d) : (AI_SAID[e && e.message] || said(e)) };
       }).then(function (out) {
         delete aiRun[rid];
+        if (out.draft) fileReport('report.ai_drafted', asked.lang, asked.r, asked.c);
+        else fileReport('report.ai_failed', out.said, asked.r, asked.c);
         var h = here();
         /* Away from the step: the answer waits for this report and is put
            in the fields when the step is painted again, so a paid draft is
@@ -1630,6 +1648,7 @@
         btn.disabled = false;
         if (res.error || !(res.data || []).length) { say(m, said(res.error || 'The database refused the change.'), 'err'); return; }
         st.open = res.data[0];
+        fileReport('report.saved', 'Figures');
         paintSteps();
         if (then) { then(); return; }
         say(m, 'Saved.', 'ok');
@@ -2007,6 +2026,7 @@
         var saved = res.data[0];
         if (editing) st.ads = st.ads.map(function (x) { return x.id === a.id ? saved : x; });
         else st.ads.push(saved);
+        fileReport('report.saved', (editing ? 'Ad edited: ' : 'Ad added: ') + (SM() && SM().adName ? SM().adName(saved.name || '') : (saved.name || '')));
         st.lastObj = row.objective;
         sortAds();
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
@@ -2386,6 +2406,11 @@
         }) : Promise.resolve();
       Promise.all(ups.concat([add, tot])).then(function () {
         go.disabled = false;
+        var parts = [];
+        if (rows.length) parts.push(rows.length + (rows.length === 1 ? ' ad added' : ' ads added'));
+        if (out.updates.length) parts.push(out.updates.length + (out.updates.length === 1 ? ' ad updated' : ' ads updated'));
+        if (Object.keys(fill).length) parts.push('account figures filled');
+        fileReport('report.saved', 'Imported from Ads Manager: ' + parts.join(', '));
         sortAds();
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
         paintAds(); paintTotals(); paintSteps();
