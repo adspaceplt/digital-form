@@ -6541,7 +6541,9 @@
     $('engPeriod').disabled = Boolean(e);
     var me = bridge.me && bridge.me();
     $('engManager').innerHTML = state.members.map(function (m) {
-      var pick = e ? m.id === e.manager_id : (me && me.id === m.id);
+      /* A new month, or one nobody manages yet, starts on whoever opens it:
+         never the first name in the list by accident. */
+      var pick = e && e.manager_id ? m.id === e.manager_id : (me && me.id === m.id);
       return '<option value="' + esc(m.id) + '"' + (pick ? ' selected' : '') + '>' + esc(person(m)) + '</option>';
     }).join('');
     $('engPlanned').value = e ? (e.planned_count || '') : '';

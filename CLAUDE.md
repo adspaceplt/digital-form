@@ -1348,6 +1348,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   views), never straight to `paintReport()`.
 - Every task has an owner from creation (the creator by default); the sheets
   offer no Nobody.
+- Every colleague picker on a create form starts on the person creating it
+  (Task Owner, a new month's Manager or one with none, a new lead's and a new
+  campaign's Person in charge); they change it where someone else takes it.
 - **Only the owner or an admin moves a task** (`ops_owner_may_move()`;
   `not-owner`). `mayMove(t)` hides the controls. The step says who has it.
 - The step asks who takes the work.
@@ -1512,7 +1515,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Deductions are capped at 35.
   - L3 caps at B; L4 caps at D.
 - A member sees nothing of a month, breaches included, until it is released.
-  - A dispute window of 3 days, item by item.
+  - A dispute window of 7 days from release (3 before 2026-10-01; a month
+    keeps the window it was given), item by item.
+  - Date of evaluation (`evaluated_on`, `2026-10-01-performance-date-of-evaluation.sql`):
+    the day the numbers were reported to the member. Release fills it where
+    empty; management corrects it until final (in or after the month, never
+    after today in MYT, `bad-eval-date`). The sheet, the member's page and
+    the printed record's head show it beside Dispute until.
   - Management answers, then it is acknowledged and finalised.
   - `result` is a snapshot.
   - Reference `ADHR/{staff_code}/PR{YYMM}`; an Employee ID is required.

@@ -132,6 +132,7 @@
     'bad-score': 'A score is outside its range.',
     'bad-rate': 'A rate is outside its range.',
     'bad-date': 'That date is not valid.',
+    'bad-eval-date': 'The date of evaluation falls on or after the first day of the month reviewed, and not after today.',
     'bad-payload': 'That could not be saved.',
     'bad-category': 'Pick a category.',
     'bad-severity': 'Pick a lower level than the breach has now.',
@@ -143,7 +144,7 @@
     'already-decided': 'Already answered.',
     'bad-decision': 'Pick a decision.',
     'dispute-closed': 'This month can no longer be disputed.',
-    'window-closed': 'The 3 days to dispute have passed.',
+    'window-closed': 'The time to dispute has passed.',
     'nothing-disputed': 'Tick at least one item.',
     'bad-item': 'That item cannot be disputed.',
     'not-final': 'Only a final record can be reopened.',
@@ -957,19 +958,24 @@
   function planCard(r) {
     var edit = canWork() && r.status !== 'final';
     if (!edit) {
-      if (!r.improvement && !r.review_by && !r.reward_step) {
+      if (!r.improvement && !r.review_by && !r.reward_step && !r.evaluated_on) {
         return manage() || r.status === 'final' ? card('Improvement and review', '<p class="perf-quiet">None set.</p>') : '';
       }
       return card('Improvement and review', '<dl class="tfacts perf-facts">' +
+        (r.evaluated_on ? '<div><dt>Date of evaluation</dt><dd>' + esc(dateWord(r.evaluated_on)) + '</dd></div>' : '') +
         (r.improvement ? '<div><dt>Improvement</dt><dd>' + esc(r.improvement) + '</dd></div>' : '') +
         (r.review_by ? '<div><dt>Review by</dt><dd>' + esc(dateWord(r.review_by)) + '</dd></div>' : '') +
         (r.reward_step ? '<div><dt>Step or reward</dt><dd>' + esc(r.reward_step) + '</dd></div>' : '') + '</dl>');
     }
+    /* The day of the 1-1: in or after the month reviewed, never ahead of
+       today in Malaysia, so a month keyed in later keeps its real date. */
+    var today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
     return card('Improvement and review',
-      '<div class="perf-plan"><label class="field-label" for="pvImp">Improvement</label>' +
+      '<div class="perf-plan"><div class="row fgrid"><div><label class="field-label" for="pvEval">Date of evaluation</label><input class="input" id="pvEval" type="date" min="' + esc(r.period) + '" max="' + today + '" value="' + esc(r.evaluated_on || '') + '"></div>' +
+      '<div><label class="field-label" for="pvBy">Review by</label><input class="input" id="pvBy" type="date" value="' + esc(r.review_by || '') + '"></div></div>' +
+      '<label class="field-label" for="pvImp">Improvement</label>' +
       '<textarea class="input" id="pvImp" rows="3" maxlength="4000">' + esc(r.improvement || '') + '</textarea>' +
-      '<div class="row"><div><label class="field-label" for="pvBy">Review by</label><input class="input" id="pvBy" type="date" value="' + esc(r.review_by || '') + '"></div>' +
-      '<div><label class="field-label" for="pvStep">Step or reward to apply</label><input class="input" id="pvStep" maxlength="500" value="' + esc(r.reward_step || '') + '"></div></div>' +
+      '<label class="field-label" for="pvStep">Step or reward to apply</label><input class="input" id="pvStep" maxlength="500" value="' + esc(r.reward_step || '') + '">' +
       (r.status !== 'draft' ? '<div class="qform-acts"><button class="btn btn-sm btn-primary" id="pvPlanSave" type="button">Save</button></div>' : '') +
       '</div>');
   }
@@ -1046,6 +1052,7 @@
     return ': ' + ch.map(function (c) {
       if (c.key === 'notes') return 'notes';
       if (c.key === 'plan') return 'improvement and review';
+      if (c.key === 'evaluated_on') return 'date of evaluation ' + (c.from ? dateWord(c.from) : 'not set') + ' to ' + (c.to ? dateWord(c.to) : 'not set');
       var rate = RATE_WORD[c.key], name = CAT_WORD[c.key] || rate || c.key;
       var v = function (x) { return x == null ? 'not set' : num(x) + (rate ? '%' : ''); };
       return name + ' ' + v(c.from) + ' to ' + v(c.to);
@@ -1073,7 +1080,7 @@
       var el = $('pvR_' + x[0]); if (!el) return;
       p.rates[x[0]] = el.value === '' ? null : Number(el.value);
     });
-    if ($('pvImp')) { p.improvement = $('pvImp').value; p.review_by = $('pvBy').value; p.reward_step = $('pvStep').value; }
+    if ($('pvImp')) { p.improvement = $('pvImp').value; p.review_by = $('pvBy').value; p.reward_step = $('pvStep').value; p.evaluated_on = $('pvEval').value; }
     return p;
   }
   /* A pressed button waits for its answer; a refusal gives it back, so a
@@ -1132,7 +1139,7 @@
     on('pvPlanSave', function (b) {
       busy(b, true);
       call('perf_save', { p_token: token, p_member: r.team_member_id, p_period: r.period,
-        p_payload: { improvement: $('pvImp').value, review_by: $('pvBy').value, reward_step: $('pvStep').value }, p_rev: null },
+        p_payload: { improvement: $('pvImp').value, review_by: $('pvBy').value, reward_step: $('pvStep').value, evaluated_on: $('pvEval').value }, p_rev: null },
         function (d) { busy(b, false); after(d, 'Saved.'); });
     });
     on('pvAck', function (b) {
@@ -1554,9 +1561,11 @@
     var none = 'Not set';
     var pnum = function (v) { return v == null || v === '' ? none : num(v); };
     var facts = [['Team member', m.name], ['Employee ID', m.staff_code], ['Department', DEPT_WORD[m.department]],
-                 ['Role', ROLE_WORD[m.role_family] || m.designation], ['Review month', r.month], ['Reviewed by', r.reviewer]];
-    var colW = W / 3;
-    [facts.slice(0, 3), facts.slice(3)].forEach(function (row) {
+                 ['Role', ROLE_WORD[m.role_family] || m.designation], ['Review month', r.month],
+                 ['Date of evaluation', r.evaluated_on ? dateWord(r.evaluated_on) : ''],
+                 ['Dispute until', r.dispute_until ? timeWord(r.dispute_until) : ''], ['Reviewed by', r.reviewer]];
+    var colW = W / 4;
+    [facts.slice(0, 4), facts.slice(4)].forEach(function (row) {
       var most = 1;
       row.forEach(function (fc, i) {
         var cx = M + i * colW;
