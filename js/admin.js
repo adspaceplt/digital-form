@@ -933,6 +933,9 @@
     } else if (section === 'reports' && window.ADspaceReports) {
       var rp = window.ADspaceReports.urlState();
       Object.keys(rp).forEach(function (k) { if (rp[k]) q.push(k + '=' + encodeURIComponent(rp[k])); });
+    } else if (section === 'overview' && window.ADspaceOverview && window.ADspaceOverview.urlState) {
+      var ov = window.ADspaceOverview.urlState();
+      Object.keys(ov).forEach(function (k) { if (ov[k]) q.push(k + '=' + encodeURIComponent(ov[k])); });
     } else if (section === 'team' && window.ADspacePerf) {
       var pf = window.ADspacePerf.urlState();
       Object.keys(pf).forEach(function (k) { if (pf[k]) q.push(k + '=' + encodeURIComponent(pf[k])); });

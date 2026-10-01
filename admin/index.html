@@ -379,7 +379,8 @@
 
     <!-- ---- CRM: the client record everything else points at ---- -->
     <div class="console-body" id="sectionOverview" hidden>
-      <div class="ovw" id="ovwBody"></div>
+      <nav class="tabrow ovwtabs" id="ovwTabs" role="tablist" aria-label="Overview sections" hidden></nav>
+      <div class="ovw" id="ovwBody" data-swipe="ovwTabs"></div>
     </div>
 
     <div class="console-body" id="sectionClients" hidden>
