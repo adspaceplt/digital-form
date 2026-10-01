@@ -1664,13 +1664,20 @@ Each line is a rule that broke once. Its reason is in the archive.
     PDF (`.rp-pdf-short`).
   - The step foot is an action row, the primary at the right edge.
   - An empty step's line does not repeat the head's Add.
+  - An account is named by its handle (`account_name`, labelled Handle):
+    a new account takes the client's Brand handle for the platform picked
+    (`handle_ig`, `handle_fb`, `handle_tiktok`, `handle_xhs`) and follows the
+    platform while untouched. The PDF names the platform, never the handle.
   - The commentary has no title or headline. An ads report's is four
     fields. An accounts report's is the summary, then one block a platform
-    group (written to its lead account: Summary line, Highlights, Areas to
-    improve, Recommendations) with Why it stood out for its top three posts
-    (`ADspaceSmReport.topOf`, ranked on that platform alone), and the older
-    across-platform fields folded under Across all platforms. The step
-    counts the summary and each platform (`commentaryState`).
+    group (written to its lead account: Summary line, What worked, Areas to
+    improve, Focus for next month, the advertising report's words) and,
+    under its own Top posts label (`.rp-tophead`), Why it stood out for
+    each of its top three posts (`ADspaceSmReport.topOf`, ranked on that
+    platform alone). The older across-platform fields show under Across all
+    platforms only on a report that holds some; an account sheet shows its
+    own remarks only where it is not its group's lead and holds some. The
+    step counts the summary and each platform (`commentaryState`).
 - The client record's tab shows finished reports only (`sm_client_reports`,
   `sm_report_file`).
 - The client portal reads only the newest version that has not been withdrawn
@@ -1804,13 +1811,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A top post card is named by its title, else its type and day; its meta
     line adds only what the name does not (the platform where a page holds
     two, the date and type under a title). Its figures run the column's
-    width.
+    width. It carries no caption: the appendix row holds the caption as an
+    excerpt (`captionExcerpt`, two lines, one beside a remark) ending on `…`
+    where it was cut.
   - Every emoji is drawn and embedded before any page is laid out
     (`sh.ready()` before `draw`).
   - An accounts report reads: Executive summary; Insights and
     recommendations, one block a platform; each platform's page with its top
-    three posts ranked on that platform alone, each with its figures, its
-    caption on its own lines and its remarks; the appendix. Posts are never
+    three posts ranked on that platform alone, each with its figures and its
+    remarks; the appendix of every post with its figures. Posts are never
     ranked across platforms.
   - Named `{client} {report} {period}.pdf`.
   - The first kind is the Social Media Accounts Report.

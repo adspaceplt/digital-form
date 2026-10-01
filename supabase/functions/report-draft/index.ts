@@ -268,8 +268,8 @@ Deno.serve(async (req) => {
   if (kind !== 'ads' && targets.platforms.length) {
     properties.platforms = { type: 'array', items: { type: 'object', additionalProperties: false,
       required: ['ref', 'summary', 'worked', 'improve', 'actions'],
-      properties: { ref: { type: 'string', enum: targets.platforms }, summary: str('One sentence'), worked: str('Highlights, one point a line'),
-        improve: str('Areas to improve, one point a line'), actions: str('Recommendations and next month content, one point a line') } } };
+      properties: { ref: { type: 'string', enum: targets.platforms }, summary: str('One sentence'), worked: str('What worked, one point a line'),
+        improve: str('Areas to improve, one point a line'), actions: str('Focus for next month: the content we will plan, one point a line') } } };
   }
   if (kind !== 'ads' && targets.posts.length) {
     properties.posts = { type: 'array', items: { type: 'object', additionalProperties: false, required: ['ref', 'remark'],

@@ -93,7 +93,7 @@
       /* Just Name. Asking a client for their full name every time they
          approve something reads as an identity check rather than a signature.
          Chinese already said 姓名, which is the same register. */
-      namePlaceholder: 'Name',
+      namePlaceholder: 'John Doe',
       send: 'Confirm',
       cancel: 'Cancel',
       nameNeeded: 'Please enter your name.',
@@ -194,7 +194,7 @@
       confirmHeading: '确认您的选择',
       confirmBlurb: '您的选择将以下方填写的姓名确认。',
       nameLabel: '您的姓名',
-      namePlaceholder: '姓名',
+      namePlaceholder: '陈小明',
       send: '确认',
       cancel: '取消',
       nameNeeded: '请填写姓名。',

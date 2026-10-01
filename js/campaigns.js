@@ -136,7 +136,7 @@
         '<label class="pbox-tick"><input type="checkbox" value="' + name + '"' +
         (ticked.indexOf(name) > -1 ? ' checked' : '') + '><span>' + name + '</span></label>' +
         (links ? '<input class="input input-sm pbox-link" data-p="' + name + '" disabled' +
-          ' aria-label="' + name + ' profile URL" placeholder="Profile URL">' : '') +
+          ' aria-label="' + name + ' profile URL" placeholder="https://www.instagram.com/adspace.advertising">' : '') +
         '</span>';
     }).join('') + '</span>';
   }

@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261001j">
+<link rel="stylesheet" href="/css/portal.css?v=20261001k">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -97,7 +97,7 @@
       <h2>Sign in</h2>
       <div id="authEmailStep" data-cf>
         <label class="field-label" for="authEmail">Company email</label>
-        <input class="input" id="authEmail" type="email" placeholder="john@adspacestudios.com"
+        <input class="input" id="authEmail" type="email" placeholder="email@adspacestudios.com"
                autocomplete="email">
         <button class="btn btn-primary signin-btn" id="authSend" type="button">Sign in</button>
         <!-- Touch ID, Face ID or the device password instead of the email.
@@ -440,12 +440,12 @@
               <div><label class="field-label" for="crmContactName">Contact person</label>
                 <input class="input" id="crmContactName" aria-required="true" placeholder="John Doe"></div>
               <div><label class="field-label" for="crmContactEmail">Email</label>
-                <input class="input" id="crmContactEmail" type="email" placeholder="john@company.com"></div>
+                <input class="input" id="crmContactEmail" type="email" placeholder="email@adspace.me"></div>
               <div><label class="field-label" for="crmContactPhone">Phone</label>
-                <input class="input" id="crmContactPhone" type="tel" inputmode="tel" placeholder="01x-xxx xxxx"></div>
+                <input class="input" id="crmContactPhone" type="tel" inputmode="tel" placeholder="012-345 6789"></div>
               <div><label class="field-label" for="crmContactWa">WhatsApp username</label>
                 <div class="slugfield"><span class="slugfield-pre" aria-hidden="true">@</span>
-                <input class="input" id="crmContactWa" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="username"></div></div>
+                <input class="input" id="crmContactWa" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="adspace.advertising"></div></div>
             </div>
           </section>
           <section class="fsec">
@@ -467,7 +467,7 @@
                    asked for at the door of the first letter. -->
               <div><label class="field-label" for="crmClientCode">Client ID</label>
                 <input class="input" id="crmClientCode" maxlength="12" autocapitalize="characters"
-                       spellcheck="false" placeholder="AC180" data-none="No Client ID" data-some="Client ID set"></div>
+                       spellcheck="false" placeholder="AC001" data-none="No Client ID" data-some="Client ID set"></div>
               <div class="span-all"><label class="field-label" for="crmMarket">Market</label>
                 <select class="select" id="crmMarket" data-seg>
                   <option value="MY">Malaysia · RM</option>
@@ -605,7 +605,7 @@
               <div><label class="field-label" for="ctName">Name</label>
                 <input class="input" id="ctName" aria-required="true" placeholder="John Doe"></div>
               <div><label class="field-label" for="ctRole">Role</label>
-                <input class="input" id="ctRole" placeholder="Marketing"></div>
+                <input class="input" id="ctRole" placeholder="Marketing Manager"></div>
             </div>
             <label class="tickline">
               <input type="checkbox" id="ctPrimary"> <span>Main contact</span>
@@ -615,12 +615,12 @@
             <h4 class="fsec-h">Contact details</h4>
             <div class="row fgrid">
               <div><label class="field-label" for="ctPhone">Phone</label>
-                <input class="input" id="ctPhone" type="tel" inputmode="tel" placeholder="01x-xxx xxxx"></div>
+                <input class="input" id="ctPhone" type="tel" inputmode="tel" placeholder="012-345 6789"></div>
               <div><label class="field-label" for="ctWa">WhatsApp username</label>
                 <div class="slugfield"><span class="slugfield-pre" aria-hidden="true">@</span>
-                <input class="input" id="ctWa" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="username"></div></div>
+                <input class="input" id="ctWa" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="adspace.advertising"></div></div>
               <div class="span-all"><label class="field-label" for="ctEmail">Email</label>
-                <input class="input" id="ctEmail" type="email" placeholder="name@company.com"></div>
+                <input class="input" id="ctEmail" type="email" placeholder="email@adspace.me"></div>
             </div>
             <div class="row">
               <div><label class="field-label" for="ctLang">Preferred language</label>
@@ -694,7 +694,7 @@
                   <div><label class="field-label" for="crmBillContact">Billing contact</label>
                     <select class="select" id="crmBillContact" aria-required="true"></select></div>
                   <div><label class="field-label" for="crmFinanceEmail">Finance department email</label>
-                    <input class="input" id="crmFinanceEmail" type="email" placeholder="accounts@company.com"></div>
+                    <input class="input" id="crmFinanceEmail" type="email" placeholder="accounts@adspace.me"></div>
                   <div class="span-all"><label class="field-label" for="crmBillAddr">Company billing address</label>
                     <textarea class="input textarea" id="crmBillAddr" aria-required="true" rows="3"></textarea></div>
                 </div>
@@ -732,9 +732,9 @@
                 <h4 class="fsec-h">Website and office</h4>
                 <div class="row fgrid">
                   <div><label class="field-label" for="crmWebsite">Website</label>
-                    <input class="input" id="crmWebsite" type="url" placeholder="https://"></div>
+                    <input class="input" id="crmWebsite" type="url" placeholder="https://adspace.me"></div>
                   <div><label class="field-label" for="crmPhone">Office phone</label>
-                    <input class="input" id="crmPhone" type="tel" placeholder="03-xxxx xxxx"></div>
+                    <input class="input" id="crmPhone" type="tel" placeholder="07-123 4567"></div>
                 </div>
               </section>
               <!-- The same four handles and the same logo Content Review draws
@@ -743,13 +743,13 @@
                 <h4 class="fsec-h">Social handles</h4>
                 <div class="row fgrid">
                   <div><label class="field-label" for="crmSocialIg">Instagram</label>
-                    <input class="input" id="crmSocialIg" placeholder="@handle"></div>
+                    <input class="input" id="crmSocialIg" placeholder="@adspace.advertising"></div>
                   <div><label class="field-label" for="crmSocialFb">Facebook page</label>
-                    <input class="input" id="crmSocialFb" placeholder="Page name"></div>
+                    <input class="input" id="crmSocialFb" placeholder="ADspace Advertising"></div>
                   <div><label class="field-label" for="crmSocialTiktok">TikTok</label>
-                    <input class="input" id="crmSocialTiktok" placeholder="@handle"></div>
+                    <input class="input" id="crmSocialTiktok" placeholder="@adspace.advertising"></div>
                   <div><label class="field-label" for="crmSocialXhs">rednote</label>
-                    <input class="input" id="crmSocialXhs" placeholder="Name"></div>
+                    <input class="input" id="crmSocialXhs" placeholder="ADspace"></div>
                 </div>
               </section>
               <section class="fsec">
@@ -760,7 +760,7 @@
                       <span class="logopreview" id="crmLogoPreview" title="How it will look as a profile picture">
                         <img id="crmLogoPreviewImg" alt="" hidden>
                       </span>
-                      <input class="input" id="crmLogo" type="url" placeholder="https://"></div>
+                      <input class="input" id="crmLogo" type="url" placeholder="https://adspace.me/logo.png"></div>
                   </div>
                 </div>
                 <div class="row">
@@ -803,7 +803,7 @@
             </div>
             <div class="row" id="svLabelRow" hidden>
               <div><label class="field-label" for="svLabel">Name</label>
-                <input class="input" id="svLabel" aria-required="true" placeholder="Service name"></div>
+                <input class="input" id="svLabel" aria-required="true" placeholder="Social Media Management"></div>
             </div>
             <div class="row">
               <div><label class="field-label" for="svState">State</label>
@@ -1409,19 +1409,19 @@
           <div class="row fgrid" id="handleRow">
             <div>
               <label class="field-label" for="eIg">Instagram</label>
-              <input class="input" id="eIg" placeholder="@handle">
+              <input class="input" id="eIg" placeholder="@adspace.advertising">
             </div>
             <div>
               <label class="field-label" for="eFb">Facebook page</label>
-              <input class="input" id="eFb" placeholder="Page name">
+              <input class="input" id="eFb" placeholder="ADspace Advertising">
             </div>
             <div>
               <label class="field-label" for="eTt">TikTok</label>
-              <input class="input" id="eTt" placeholder="@handle">
+              <input class="input" id="eTt" placeholder="@adspace.advertising">
             </div>
             <div>
               <label class="field-label" for="eXhs">rednote name</label>
-              <input class="input" id="eXhs" placeholder="Name">
+              <input class="input" id="eXhs" placeholder="ADspace">
             </div>
           </div>
           <div class="msg" id="handleMsg"></div>
@@ -1436,7 +1436,7 @@
                 <span class="logopreview" id="logoPreview" title="How it will look as a profile picture">
                   <img id="logoPreviewImg" alt="" hidden>
                 </span>
-                <input class="input" id="eLogo" placeholder="https://">
+                <input class="input" id="eLogo" placeholder="https://adspace.me/logo.png">
               </div>
             </div>
             <div>
@@ -1481,7 +1481,7 @@
               <div><label class="field-label" for="campOwner">Person in charge</label>
                 <select class="select" id="campOwner"></select></div>
               <div><label class="field-label" for="campTitle">Campaign name</label>
-                <input class="input" id="campTitle" aria-required="true" placeholder="Campaign name"></div>
+                <input class="input" id="campTitle" aria-required="true" placeholder="Product Launch Campaign"></div>
               <div><label class="field-label" for="campPurpose">Campaign purpose</label>
                 <input class="input" id="campPurpose" placeholder="Purpose"></div>
             </div>
@@ -1684,7 +1684,7 @@
             <span class="muted" id="optionCount"></span>
           </div>
           <label class="field-label" for="optionSearch">Search by name</label>
-          <input class="input" id="optionSearch" placeholder="Creator name" autocomplete="off">
+          <input class="input" id="optionSearch" placeholder="Search creators" autocomplete="off">
           <div class="optionpick" id="optionPick"></div>
           <div class="msg" id="optionMsg"></div>
 
@@ -1696,7 +1696,7 @@
             <div id="ncBox" hidden style="margin-top:12px">
               <div class="row">
                 <div><label class="field-label" for="ncName">Name</label>
-                  <input class="input" id="ncName" aria-required="true" placeholder="Creator name"></div>
+                  <input class="input" id="ncName" aria-required="true" placeholder="Jane Doe"></div>
                 <div style="flex:0 0 200px"><label class="field-label" for="ncRate">Client rate for this campaign (RM)</label>
                   <input inputmode="decimal" class="input" id="ncRate" type="number" min="0" step="10" placeholder="360"></div>
               </div>
@@ -1774,7 +1774,7 @@
               <div style="flex:0 0 220px"><label class="field-label" for="invNo">Invoice no.</label>
                 <div class="slugfield">
                   <span class="slugfield-pre">AINV</span>
-                  <input class="input" id="invNo" placeholder="XXXXXX" autocomplete="off">
+                  <input class="input" id="invNo" placeholder="000123" autocomplete="off">
                 </div></div>
               <div><label class="field-label" for="invFile">Invoice PDF</label>
                 <input class="input" id="invFile" type="file" accept="application/pdf,.pdf"></div>
@@ -1872,7 +1872,7 @@
             <h4 class="fsec-h">Creator</h4>
             <div class="row fgrid">
               <div><label class="field-label" for="crName">Name</label>
-                <input class="input" id="crName" aria-required="true" placeholder="Creator name"></div>
+                <input class="input" id="crName" aria-required="true" placeholder="Jane Doe"></div>
               <div><label class="field-label" for="crRate">Usual client rate (RM), optional</label>
                 <input inputmode="decimal" class="input" id="crRate" type="number" min="0" step="10" placeholder="360"></div>
             </div>
@@ -3343,7 +3343,7 @@
                 <div><label class="field-label" for="tmName">Name</label>
                   <input class="input" id="tmName" aria-required="true" placeholder="John Doe"></div>
                 <div><label class="field-label" for="tmEmail">Sign-in email</label>
-                  <input class="input" id="tmEmail" aria-required="true" type="email" placeholder="john@adspacestudios.com"></div>
+                  <input class="input" id="tmEmail" aria-required="true" type="email" placeholder="email@adspacestudios.com"></div>
                 <div><label class="field-label" for="tmRole">Group</label>
                   <select class="select" id="tmRole" aria-required="true"></select></div>
               </div>
@@ -3373,7 +3373,7 @@
                    Stored in minutes because the sessions it is read against are. -->
               <div class="row fgrid">
                 <div><label class="field-label" for="tmStaff">Employee ID</label>
-                  <input class="input" id="tmStaff" placeholder="AD005" autocapitalize="characters" spellcheck="false"></div>
+                  <input class="input" id="tmStaff" placeholder="AD001" autocapitalize="characters" spellcheck="false"></div>
                 <div><label class="field-label" for="tmCap">Weekly capacity, hours</label>
                   <input inputmode="decimal" class="input" id="tmCap" type="number" min="0" max="80" step="0.5" placeholder="40"></div>
               </div>
@@ -3409,7 +3409,7 @@
           <div class="sheet-body">
             <div class="row">
               <div><label class="field-label" for="grName">Name</label>
-                <input class="input" id="grName" aria-required="true" placeholder="Group name"></div>
+                <input class="input" id="grName" aria-required="true" placeholder="Marketing"></div>
             </div>
             <div class="row">
               <div><span class="field-label">Access</span>
@@ -3781,7 +3781,7 @@
             <div><label class="field-label" for="svcCat">Category</label>
               <select class="select" id="svcCat"></select></div>
             <div class="span-2"><label class="field-label" for="svcName">Name</label>
-              <input class="input" id="svcName" aria-required="true" placeholder="Service name"></div>
+              <input class="input" id="svcName" aria-required="true" placeholder="Social Media Management"></div>
           </div>
         </section>
         <section class="fsec">
@@ -3868,13 +3868,13 @@
           </div>
           <div>
             <label class="field-label" for="newLinkLabel">Label (optional)</label>
-            <input class="input" id="newLinkLabel" placeholder="Label">
+            <input class="input" id="newLinkLabel" placeholder="Event poster QR">
           </div>
         </div>
         <div class="row">
           <div>
             <label class="field-label" for="newTarget">Destination</label>
-            <input class="input" id="newTarget" aria-required="true" placeholder="https://…">
+            <input class="input" id="newTarget" aria-required="true" placeholder="https://adspace.me/promo">
           </div>
         </div>
         
@@ -3944,7 +3944,7 @@ raya-2026        https://example.com/raya"></textarea>
       <div id="lockList"></div>
       <p class="lockby">Recorded by <b id="lockBy"></b></p>
       <label class="field-label" for="lockPerson">Confirmed by (optional)</label>
-      <input class="input" id="lockPerson" placeholder="Name">
+      <input class="input" id="lockPerson" placeholder="John Doe">
       <label class="field-label" for="lockSource" style="margin-top:12px">Channel</label>
       <select class="select" id="lockSource">
         <option value="portal">Portal</option>
@@ -4121,17 +4121,17 @@ raya-2026        https://example.com/raya"></textarea>
         <div><label class="field-label" for="docTo">To</label>
           <input class="input" id="docTo" placeholder="COMPANY NAME SDN BHD"></div>
         <div><label class="field-label" for="docAddr">Address</label>
-          <textarea class="input" id="docAddr" rows="3" placeholder="Address"></textarea></div>
+          <textarea class="input" id="docAddr" rows="3" placeholder="No. 1, Jalan Example, 81100 Johor Bahru, Johor"></textarea></div>
       </div>
       <div class="row fgrid" id="docAttnRow">
         <div><label class="field-label" for="docAttn">Attn</label>
           <input class="input" id="docAttn" placeholder="John Doe"></div>
         <div><label class="field-label" for="docAttnRole">Designation</label>
-          <input class="input" id="docAttnRole" placeholder="Designation"></div>
+          <input class="input" id="docAttnRole" placeholder="Marketing Manager"></div>
       </div>
       <div class="row fgrid" id="docHrRow" hidden>
         <div><label class="field-label" for="docRole">Position</label>
-          <input class="input" id="docRole" placeholder="Position"></div>
+          <input class="input" id="docRole" placeholder="Production Executive"></div>
         <div><label class="field-label" for="docIc">NRIC</label>
           <input class="input" id="docIc" placeholder="000214-01-XXXX"></div>
       </div>
@@ -4172,7 +4172,7 @@ raya-2026        https://example.com/raya"></textarea>
         <div><label class="field-label" for="docSigName">Signed by</label>
           <input class="input" id="docSigName" aria-required="true" placeholder="John Doe"></div>
         <div><label class="field-label" for="docSigRole">Designation</label>
-          <input class="input" id="docSigRole" placeholder="Designation"></div>
+          <input class="input" id="docSigRole" placeholder="Account Manager"></div>
       </div>
       </section>
     </div>
@@ -4210,7 +4210,7 @@ raya-2026        https://example.com/raya"></textarea>
         </div>
         <div class="row fgrid-3">
           <div><label class="field-label" for="regAddSerial">Reference</label>
-            <input class="input" id="regAddSerial" aria-required="true" placeholder="AQT2607003" autocapitalize="characters" spellcheck="false"></div>
+            <input class="input" id="regAddSerial" aria-required="true" placeholder="AQT2601001" autocapitalize="characters" spellcheck="false"></div>
           <!-- Chosen from the names this kind already carries; a new one is
                typed under Other and joins the list once saved (2026-09-26). -->
           <div><label class="field-label" for="regAddKindPick">Document</label>
@@ -4240,7 +4240,7 @@ raya-2026        https://example.com/raya"></textarea>
         <summary>More details <span class="fmore-sum"></span></summary>
         <div class="row fgrid">
           <div><label class="field-label" for="regAddUrl">File link</label>
-            <input class="input" id="regAddUrl" placeholder="https://…" data-some="File link" data-none="No file link"></div>
+            <input class="input" id="regAddUrl" placeholder="https://drive.google.com/…" data-some="File link" data-none="No file link"></div>
           <div><label class="field-label" for="regAddNote">Note</label>
             <input class="input" id="regAddNote" placeholder="Note" data-some="Note" data-none="No note"></div>
         </div>
@@ -4322,12 +4322,12 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/admin.js?v=20261001a"></script>
 <script src="/js/documents.js?v=20261001a"></script>
 <script src="/js/letters.js?v=20261001a"></script>
-<script src="/js/smreport.js?v=20261001r"></script>
-<script src="/js/reports.js?v=20261001p"></script>
-<script src="/js/register.js?v=20261001b"></script>
+<script src="/js/smreport.js?v=20261001t"></script>
+<script src="/js/reports.js?v=20261001r"></script>
+<script src="/js/register.js?v=20261001c"></script>
 <script src="/js/crm.js?v=20261001a"></script>
 <script src="/js/team.js?v=20261001a"></script>
-<script src="/js/campaigns.js?v=20261001a"></script>
+<script src="/js/campaigns.js?v=20261001b"></script>
 <script src="/js/ops.js?v=20261001b"></script>
 <script src="/js/perf.js?v=20261001a"></script>
 <script src="/js/search.js?v=20261001a"></script>

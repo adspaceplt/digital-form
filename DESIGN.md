@@ -475,8 +475,13 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
     allowed).
 - Count creators, not slots. rednote is lower case; never Xiaohongshu or
   RedNote. Say Post, never Note.
-- Placeholders: the field's name, or John Doe, john@adspacestudios.com, COMPANY
-  NAME SDN BHD. Never a real client, creator or colleague.
+- Placeholders: a value a person would type, from one generic set: John Doe
+  (Jane Doe for a creator), email@adspace.me (a colleague's
+  email@adspacestudios.com), @adspace.advertising, ADspace Advertising (a
+  Facebook page), 012-345 6789, 07-123 4567, https://adspace.me, COMPANY
+  NAME SDN BHD, AC001, AD001. A field with no natural example keeps a short
+  hint (Optional, One point a line). Never a real client, creator or
+  colleague, nor a code one could hold.
 - ADspace alone, never "ADspace Studio" (a strict rule).
 - Brand names exactly: ADspace, S P Setia, CraftStone, Home Leader, The Mill
   International, EV SUN, Foodince, Furiku Matcha, HKL Lim, HKL Lim Motorsport,
