@@ -853,6 +853,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - It never shows the recipient.
   - HR is shown as "HR letter".
 - The Chinese face (`ADSPACE_ORG.fontCjk`):
+  - It is Noto Sans SC as TrueType in the repo (`css/NotoSansSC-Regular.ttf`,
+    `css/NotoSansSC-NOTICE.txt`), embedded with only the characters used.
+    The CDN's CFF face, embedded whole, made every Chinese PDF 8 MB and drew
+    garbled in strict viewers. fontkit's subsetter needs every glyph's data
+    at an even length, so the face is saved with its glyphs padded.
   - A CFF face is embedded whole, never subset (`isCff()`).
   - An unreachable face refuses the letter by name.
   - `fontMed` falls back to Slate Regular.
@@ -1732,7 +1737,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     throughout and what the team wrote prints as written (the user,
     2026-10-01: Meta's own terms read in English). The PDF's Chinese layer
     (`ZH_WORDS`, `ZH_COUNT`, `ZH_RULES` in `js/smreport.js`) is switched off.
-    Chinese text is drawn in Noto Sans SC (`ADSPACE_CONFIG`/`ADSPACE_ORG.fontCjk`).
+    Chinese text is drawn in Noto Sans SC (`ADSPACE_ORG.fontCjk`, below).
   - Every draft keeps to `SHARED`: only what the client needs, a few points
     a field, one sentence a point; and never a word against the creative,
     copy, plan or targeting we made: a shortfall is read as what the

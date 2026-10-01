@@ -1,0 +1,13 @@
+NotoSansSC-Regular.ttf
+
+Noto Sans SC Regular, version 2.004, converted from its OpenType (CFF)
+outlines to TrueType outlines so that pdf-lib can embed only the characters
+a document uses. Its glyphs, metrics and names are otherwise unchanged; the
+vertical layout and OpenType layout tables are not carried.
+
+Copyright 2014-2021 Adobe (http://www.adobe.com/).
+Noto is a trademark of Google Inc.
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1
+(https://openfontlicense.org). The licence text is carried in the font's own
+name table (name IDs 13 and 14).
