@@ -8191,7 +8191,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-idslist .serial-copy { margin-left: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 12.5px; font-weight: 400; color: var(--ink-soft); }
 .rp-idspop-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-.popcard.is-dock.rp-idspop .rp-idspop-acts .btn { min-height: var(--ctl-h); flex: 1 1 0; }
+.popcard.is-dock.rp-idspop .rp-idspop-acts .btn { min-height: var(--ctl-h); flex: 1 1 100%; }
 .rp-ver, .rp-live, .rp-date, .rp-figs { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rp-live .mute, .rp-num .mute { color: var(--ink-mute); }
 .rp-num { font-size: 13.5px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
