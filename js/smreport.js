@@ -970,7 +970,10 @@
     /* The page title in Slate Regular at S(3), the first block S(2) under
        it. Every section starts a page of its own, so a report with little in
        it is shorter by whole sections and never squeezed onto half a page. */
-    var pageTitle = function (s) { tline(s, M, y, TY.title, reg, INK, CW); y -= TY.title * 0.25 + SP.under; };
+    /* The template stays English in a Chinese report (the user, 2026-10-01):
+       the cover, each page's title and the head and foot; what sits under
+       a title (table titles, column heads, notes, dates) reads Chinese. */
+    var pageTitle = function (s) { var z = ZH; ZH = false; tline(s, M, y, TY.title, reg, INK, CW); ZH = z; y -= TY.title * 0.25 + SP.under; };
     /* A block's title in Slate Regular at S(1), the block S(-1) under it.
        `y` is always the top edge of what comes next, so the space between
        two blocks is exactly S(4) whatever they are, and under a title S(2).
@@ -1974,7 +1977,7 @@
     var zhOn = ZH;
     pages.forEach(function (p, i) {
       pg = p;
-      ZH = zhOn && i > 0;   // the cover's foot reads as its page does
+      ZH = false;   // the head and foot are the template's, English throughout
       text('ADspace', M, HEAD_Y, S(2), mark, INK);
       if (label) {
         var lab = clip(label, CW - markW - S(4), TY.small, med);

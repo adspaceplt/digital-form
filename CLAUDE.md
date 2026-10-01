@@ -1720,8 +1720,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     `2026-10-01-report-language.sql`), the English / 中文 segment beside
     Draft with AI (`#rpAiLang`), saved at once; a new report takes the main
     contact's preferred language. The draft is written in it (`ZH`), and a
-    Chinese PDF keeps its cover and file name in English while every heading,
-    label, note and date inside reads professional Simplified Chinese
+    Chinese PDF keeps its cover, file name, page titles, head and foot in
+    English (the template) while table titles, column heads, labels, notes
+    and dates read professional Simplified Chinese, each term on one line
+    (a table's dates without the year, `7月5日至6日`)
     (`ZH_WORDS`, `ZH_COUNT`, `ZH_RULES` in `js/smreport.js`, applied at the
     drawing primitives); the team's own words print as typed. The Chinese
     face is Noto Sans SC (`ADSPACE_CONFIG`/`ADSPACE_ORG.fontCjk`).
