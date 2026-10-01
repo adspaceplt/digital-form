@@ -158,18 +158,27 @@ Deno.serve(async (req) => {
 
   try {
     const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY') });
+    /* The answer is held to the schema by structured output, never a forced
+       tool call: newer models refuse `tool_choice` of type tool. The model
+       may think first, so the budget leaves room for that. */
     const res = await client.messages.create({
       model: secret('REPORT_DRAFT_MODEL'),
-      max_tokens: 4000,
+      max_tokens: 16000,
       system: SYSTEM,
-      tools: [{ name: 'write_commentary', description: 'The report commentary, one field each.', strict: true, input_schema: schema }],
-      tool_choice: { type: 'tool', name: 'write_commentary' },
+      output_config: { format: { type: 'json_schema', schema } },
       messages: [{ role: 'user', content: 'Draft the commentary for this report.\n\n' + JSON.stringify(data) }]
     } as Anthropic.MessageCreateParamsNonStreaming);
-    if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') return json({ error: 'ai-incomplete' }, 200, origin);
-    const use = res.content.find((b) => b.type === 'tool_use');
-    const draft = use && use.type === 'tool_use' ? use.input as Record<string, unknown> : null;
-    if (!draft) return json({ error: 'ai-incomplete' }, 200, origin);
+    if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') {
+      console.error('report-draft: answer stopped short', res.stop_reason);
+      return json({ error: 'ai-incomplete' }, 200, origin);
+    }
+    const text = res.content.filter((b) => b.type === 'text').map((b) => b.type === 'text' ? b.text : '').join('');
+    let draft: Record<string, unknown> | null = null;
+    try { draft = JSON.parse(text); } catch { draft = null; }
+    if (!draft || typeof draft !== 'object') {
+      console.error('report-draft: no draft in the answer', res.stop_reason);
+      return json({ error: 'ai-incomplete' }, 200, origin);
+    }
     const out: Record<string, string> = {};
     for (const [k] of fields) {
       if (typeof draft[k] !== 'string') return json({ error: 'ai-incomplete' }, 200, origin);
@@ -187,7 +196,7 @@ Deno.serve(async (req) => {
     const code = status === 401 || status === 403 ? 'ai-key'
       : status === 429 || status === 529 ? 'ai-busy'
       : /credit balance/i.test(said) ? 'ai-credit'
-      : status === 404 || /model/i.test(said) ? 'ai-model'
+      : status === 404 || type === 'not_found_error' ? 'ai-model'
       : 'ai-failed';
     return json({ error: code }, 200, origin);
   }
