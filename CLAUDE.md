@@ -316,6 +316,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   - After a failed save, focus goes to the first invalid field.
   - The scrim closes only an untouched sheet. Escape and the close mark always
     close it. The close mark presses that sheet's own Cancel.
+  - On a phone (≤640): a sheet is pulled down from its head (the grabber) to
+    close, pressing its close mark (90px, or a flick); a form sheet (a foot
+    with a filled action, fields) keeps a draft of the fields the person
+    changed when it is left any way but its action (`sessionStorage`
+    `adspace-draft:{sheet id}`, against the state it opened in, hidden
+    fields included), restores it on the next open in that state with
+    `.draftline` Draft restored · Discard, and so its scrim closes it even
+    when touched. Pressing the action ends the draft. Files, passwords and
+    `data-nodraft` fields are never kept. A desk keeps no drafts.
   - Focus is trapped, and handed back on close.
   - `sheet(id, on, swap)` swaps two sheets in one frame (`.is-swap`).
   - Cmd/Ctrl + Enter presses, in order: the caret's small form, then the top
@@ -395,6 +404,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A Filters button over only hidden selects is not drawn.
   - At a desk every bar's search is a 32px mark that grows into a 280px field
     and shuts on Escape or when left empty.
+  - At a desk the filters are behind the same Filters mark (after the bar's
+    last select), in a card hung from it (`#cmdPop`, `ADspaceMenu.pop`,
+    Clear, Escape or a press elsewhere shuts it); a `data-nofilter` select is
+    a view and stays in the bar at a desk.
 - `js/form.js` owns forms.
   - Segments (`select[data-seg]`, the select stays the source of truth, out of
     the tab order; `ADspaceForm.thumb()` slides the surface; `.is-snap` on
@@ -1915,8 +1928,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   the two.
 - A tag nothing names files as `other` and falls back to the section.
 - One part per tab (`activity.clients`, `.ops`, `.team`, `.review`,
-  `.campaigns`, `.links`, `.register`, `.services`). The link draws where any
-  tab is readable.
+  `.campaigns`, `.links`, `.register`, `.reports`, `.services`). The link
+  draws where any tab is readable.
+- Reports files a report's steps only (`report.*`: started, submitted,
+  returned, confirmed, published, revised, unpublished, deleted), never its
+  edits (`2026-10-01-activity-reports-tab.sql`).
 - Performance follows Team (`team.performance` View, no master code), read
   through `perf_activity()`: when, the step, whose month, who; never a score,
   a grade, a breach or a dispute's words, and never the caller's own review.

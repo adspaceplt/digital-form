@@ -30,7 +30,12 @@
  * (Content Review) draws no Filters button, and a lone action that is not the
  * primary (Manage clients) keeps its word, because it fits.
  *
- * Above 640 none of this draws: the bar is exactly what it was.
+ * At a desk the same button holds the same selects (the user, 2026-10-01:
+ * the filters behind one button on every bar), in a card that hangs from it
+ * (`ADspaceMenu.pop`) rather than a sheet, because a desk has the room to
+ * keep the list in sight while it is filtered. A select that is a view and
+ * not a filter (`data-nofilter`: whose work, the workflow, a month or a
+ * quarter) stays in the bar at a desk, where it is read all day.
  */
 (function () {
   'use strict';
@@ -40,6 +45,7 @@
   var bars = [];
   var open = null;   // { bar, slots: [{ slot, node }], from }
   var sheet, card, body, head, title, doneBtn, clearBtn, closeBtn;
+  var pop, popBody, popClear;
 
   function svg(path) {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + path + '</svg>';
@@ -81,10 +87,15 @@
     rec.badge.textContent = n ? String(n) : '';
     rec.badge.hidden = !n;
     rec.btn.setAttribute('aria-label', n ? 'Filters, ' + n + ' set' : 'Filters');
+    if (open && open.rec === rec && open.pop) popClear.disabled = !n;
     /* A view that hides every select (My Work's Clients, Report) has nothing
-       to filter, and a Filters button over an empty sheet is a dead control. */
+       to filter, and a Filters button over an empty sheet is a dead control.
+       At a desk a view select stays in the bar, so it does not count. */
     if (!(open && open.rec === rec)) {
-      rec.btn.hidden = !rec.selects().some(function (sel) { return !sel.hidden; });
+      var desk = !mq.matches;
+      rec.btn.hidden = !rec.selects().some(function (sel) {
+        return !sel.hidden && !(desk && sel.hasAttribute('data-nofilter'));
+      });
     }
   }
   function refresh() { bars.forEach(function (r) { paintBadge(r); mark(r); }); }
@@ -113,9 +124,40 @@
     closeBtn.addEventListener('click', shut);
     clearBtn.addEventListener('click', clear);
     sheet.addEventListener('click', function (e) { if (e.target === sheet) shut(); });
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && open) { e.stopPropagation(); shut(); }
-    }, true);
+  }
+  /* Escape shuts the sheet or the card before anything under it hears it. */
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && open) { e.stopPropagation(); e.preventDefault(); shut(); }
+  }, true);
+  /* The desk's card: the same selects, hung from the button. */
+  function buildPop() {
+    if (pop) return;
+    pop = document.createElement('div');
+    /* Not a `.kmenu`: every section's menu-closer shuts all of those on any
+       press, the one that opens this card included. */
+    pop.className = 'cmdpop';
+    pop.id = 'cmdPop';
+    pop.hidden = true;
+    pop.tabIndex = -1;
+    pop.setAttribute('role', 'dialog');
+    pop.setAttribute('aria-labelledby', 'cmdPopTitle');
+    pop.innerHTML =
+      '<div class="popcard-head"><p class="cmdpop-title" id="cmdPopTitle">Filters</p>' +
+        '<button class="iconbtn popcard-x" id="cmdPopClose" type="button" aria-label="Close">' + GLYPH_X + '</button></div>' +
+      '<div class="cmdpop-body" id="cmdPopBody"></div>' +
+      '<div class="cmdpop-acts"><button class="btn btn-sm" id="cmdPopClear" type="button">Clear</button></div>';
+    document.body.appendChild(pop);
+    popBody = $('cmdPopBody'); popClear = $('cmdPopClear');
+    $('cmdPopClose').addEventListener('click', function () { shut(); });
+    popClear.addEventListener('click', clear);
+    pop.addEventListener('click', function (e) { e.stopPropagation(); });
+    /* A press anywhere else shuts it and leaves focus where the press put it. */
+    document.addEventListener('click', function (e) {
+      if (open && open.pop && !open.rec.btn.contains(e.target)) shut(true);
+    });
+    if (window.ADspaceMenu && window.ADspaceMenu.onScroll) {
+      window.ADspaceMenu.onScroll(function () { if (open && open.pop) shut(true); });
+    }
   }
   /* Moves a node into `to`, leaving a slot where it stood so it can go back
      to exactly that place: the bar's order is the page's, not the sheet's. */
@@ -128,11 +170,14 @@
     return { slot: slot, node: node };
   }
   function show(rec) {
-    build();
-    if (open) shut();
-    open = { rec: rec, slots: [], from: document.activeElement };
-    body.innerHTML = '';
+    var desk = !mq.matches;
+    if (desk) buildPop(); else build();
+    if (open) shut(true);
+    var host = desk ? popBody : body;
+    open = { rec: rec, slots: [], from: document.activeElement, pop: desk };
+    host.innerHTML = '';
     rec.selects().forEach(function (sel) {
+      if (desk && sel.hasAttribute('data-nofilter')) return;
       var field = document.createElement('div');
       field.className = 'field cmdsheet-field';
       field.hidden = sel.hidden;
@@ -142,25 +187,33 @@
       if (!sel.id) sel.id = 'cmd-' + Math.random().toString(36).slice(2, 8);
       lab.setAttribute('for', sel.id);
       field.appendChild(lab);
-      body.appendChild(field);
+      host.appendChild(field);
       open.slots.push(lift(sel, field));
     });
-    sheet.hidden = false;
     rec.btn.setAttribute('aria-expanded', 'true');
+    if (desk) {
+      pop.hidden = false;
+      paintBadge(rec);
+      if (window.ADspaceMenu) window.ADspaceMenu.pop(rec.btn, pop, 'left');
+      try { pop.focus({ preventScroll: true }); } catch (e) { pop.focus(); }
+      return;
+    }
+    sheet.hidden = false;
     /* The card takes focus, never a field: a select focused for the reader
        wears the blue ring, and iOS will not open a select that already has
        focus, so the first tap on it did nothing (the user, 2026-09-26). */
     try { card.focus({ preventScroll: true }); } catch (e) { card.focus(); }
   }
-  function shut() {
+  function shut(stay) {
     if (!open) return;
     var o = open; open = null;
     o.slots.reverse().forEach(function (s) {
-      s.slot.parentNode.replaceChild(s.node, s.slot);
+      if (s.slot.parentNode) s.slot.parentNode.replaceChild(s.node, s.slot);
     });
-    sheet.hidden = true;
+    if (o.pop) pop.hidden = true; else sheet.hidden = true;
     o.rec.btn.setAttribute('aria-expanded', 'false');
     paintBadge(o.rec);
+    if (stay === true) return;
     if (o.from && o.from.focus && document.contains(o.from)) o.from.focus(); else o.rec.btn.focus();
   }
   function clear() {
@@ -325,8 +378,12 @@
     btn.setAttribute('aria-expanded', 'false');
     btn.innerHTML = GLYPH_FILTERS + '<span class="cmdbar-badge" hidden></span>';
     rec.btn = btn; rec.badge = btn.lastChild;
-    if (!rec.selects().length) btn.hidden = true;
-    if (find && find.nextSibling) bar.insertBefore(btn, find.nextSibling); else bar.appendChild(btn);
+    var sels = rec.selects();
+    if (!sels.length) btn.hidden = true;
+    /* After the bar's last select, so at a desk the views kept in the bar
+       come first and the button that holds the rest follows them. */
+    var at = sels.length ? sels[sels.length - 1].nextSibling : (find ? find.nextSibling : null);
+    if (at) bar.insertBefore(btn, at); else bar.appendChild(btn);
     btn.addEventListener('click', function () { if (open && open.rec === rec) shut(); else show(rec); });
     wireSearch(rec);
     wireActions(bar);
@@ -341,17 +398,20 @@
     if (t && t.tagName === 'SELECT') refresh();
   }, true);
   document.addEventListener('click', function () { setTimeout(refresh, 0); }, true);
-  /* Growing past the phone line with the sheet open puts everything back:
-     the desk bar draws its own selects and never this sheet. */
-  function deskAgain() {
-    shut();
-    bars.forEach(function (r) {
-      r.bar.classList.remove('is-searching');
-      if (r.search) r.search.setAttribute('aria-expanded', 'false');
-    });
+  /* Crossing the phone line with the sheet or the card open puts everything
+     back: each width has its own holder, and its own view selects. */
+  function crossed(m) {
+    shut(true);
+    if (!m.matches) {
+      bars.forEach(function (r) {
+        r.bar.classList.remove('is-searching');
+        if (r.search) r.search.setAttribute('aria-expanded', 'false');
+      });
+    }
+    refresh();
   }
-  if (mq.addEventListener) mq.addEventListener('change', function (m) { if (!m.matches) deskAgain(); });
-  else if (mq.addListener) mq.addListener(function (m) { if (!m.matches) deskAgain(); });
+  if (mq.addEventListener) mq.addEventListener('change', crossed);
+  else if (mq.addListener) mq.addListener(crossed);
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireAll);
   else wireAll();

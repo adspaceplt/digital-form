@@ -107,7 +107,7 @@
        console files it under, and the read policy asks the part. */
     activity:  [['ops', 'My Work'], ['clients', 'Clients'],
                 ['review', 'Content Review'], ['campaigns', 'Creator Campaigns'],
-                ['register', 'Documents'], ['links', 'Short Links'],
+                ['register', 'Documents'], ['reports', 'Reports'], ['links', 'Short Links'],
                 ['services', 'Services'], ['team', 'Team']],
     /* THESE FOUR ARE THE EXCEPTION. Every other part is a pane *inside* its
        section's job, so it falls back to the section: a group that works

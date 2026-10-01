@@ -507,7 +507,7 @@
        `activity_section()` in the database maps a tag to the section the
        console files it under and the read policy asks the part, so the tabs
        here draw exactly what the database will send. */
-    activity:  ['ops', 'clients', 'review', 'campaigns', 'register', 'links', 'services', 'team'],
+    activity:  ['ops', 'clients', 'review', 'campaigns', 'register', 'reports', 'links', 'services', 'team'],
     /* Operations is the one section whose parts *widen* it rather than
        narrowing it: the team's whole queue, the reports, the templates and
        another person's hours are all more than "work my own tasks". So they
@@ -1150,14 +1150,14 @@
     'client.service':        ['Service added', 'is-ok', 'clients'],
     'client.service_changed': ['Service changed', '', 'clients'],
     'client.service_removed': ['Service removed', 'is-danger', 'clients'],
-    'report.created':        ['Report started', 'is-ok', 'clients'],
-    'report.submitted':      ['Report submitted', '', 'clients'],
-    'report.returned':       ['Report returned', 'is-warn', 'clients'],
-    'report.confirmed':      ['Report confirmed', 'is-ok', 'clients'],
-    'report.published':      ['Report published', 'is-ok', 'clients'],
-    'report.revised':        ['Report revised', '', 'clients'],
-    'report.unpublished':    ['Report unpublished', 'is-warn', 'clients'],
-    'report.deleted':        ['Report deleted', 'is-danger', 'clients'],
+    'report.created':        ['Report started', 'is-ok', 'reports'],
+    'report.submitted':      ['Report submitted', '', 'reports'],
+    'report.returned':       ['Report returned', 'is-warn', 'reports'],
+    'report.confirmed':      ['Report confirmed', 'is-ok', 'reports'],
+    'report.published':      ['Report published', 'is-ok', 'reports'],
+    'report.revised':        ['Report revised', '', 'reports'],
+    'report.unpublished':    ['Report unpublished', 'is-warn', 'reports'],
+    'report.deleted':        ['Report deleted', 'is-danger', 'reports'],
     'document.issued':       ['Document issued', 'is-ok', 'register'],
     'document.voided':       ['Document voided', 'is-danger', 'register'],
     'document.restored':     ['Document restored', 'is-ok', 'register'],
@@ -1279,7 +1279,7 @@
   var ACT_SECTION = { all: 'Everything',
                       ops: 'My Work', clients: 'Clients',
                       review: 'Content Review', campaigns: 'Creator Campaigns',
-                      register: 'Documents', links: 'Short Links',
+                      register: 'Documents', reports: 'Reports', links: 'Short Links',
                       services: 'Services', team: 'Team', performance: 'Performance' };
   /* The steps of a review, read through perf_activity(): when, the step,
      whose month, who. Never a score, a grade or a dispute's words. */

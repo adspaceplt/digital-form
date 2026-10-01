@@ -2684,6 +2684,21 @@ body.is-plain .topbar { background: var(--chrome); }
   /* The floor the sheet is anchored to is the phone's, not the screen's: on a
      device with a home indicator the last row of a sheet sat under it. */
   .sheet-card { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+  /* The grabber: the head is where a sheet is pulled down to close
+     (`js/sheet.js`), and the mark says so where every phone puts it. */
+  .sheet-card { position: relative; }
+  .sheet-card::before {
+    content: ""; position: absolute; top: 6px; left: 50%; width: 36px; height: 5px;
+    margin-left: -18px; border-radius: 3px; background: var(--line-ctl); opacity: .55;
+    pointer-events: none;
+  }
+  .sheet-head { touch-action: none; }
+}
+/* A form sheet opened again with what was typed before it was left. */
+.draftline {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 8px 0 4px; padding: 4px 4px 4px 12px; border-radius: var(--radius-sm);
+  background: var(--sunk); font-size: 13px; color: var(--ink-soft);
 }
 
 .iconbtn.is-done { color: var(--ok); background: var(--ok-bg); }
@@ -5233,6 +5248,7 @@ body.no-view-activity-review [data-need="activity.review:view"],
 body.no-view-activity-campaigns [data-need="activity.campaigns:view"],
 body.no-view-activity-links [data-need="activity.links:view"],
 body.no-view-activity-register [data-need="activity.register:view"],
+body.no-view-activity-reports [data-need="activity.reports:view"],
 body.no-view-activity-services [data-need="activity.services:view"],
 body.no-view-team-performance [data-need="team.performance:view"],
 body.no-work-team-performance [data-need="team.performance:work"],
@@ -7326,6 +7342,34 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .cmdsheet-quiet { display: flex; align-items: center; gap: 10px; }
 .cmdsheet-quiet .cmdbar-quiet { margin-right: 0; }
 .cmd-slot { display: none; }
+/* AT A DESK THE FILTERS ARE BEHIND ONE BUTTON TOO (2026-10-01). The bar
+   keeps its views (`data-nofilter`: whose work, the workflow, a month); the
+   filters wait in a card that hangs from the Filters mark (`#cmdPop`, laid by
+   `ADspaceMenu.pop`), so every bar is one shape at any width. */
+.cmdbar-filters[hidden] { display: none !important; }
+.cmdpop {
+  position: fixed; z-index: 50; width: min(300px, calc(100vw - 32px));
+  background: var(--card); border: 1px solid var(--line);
+  padding: 16px; display: flex; flex-direction: column; gap: 12px;
+  transform-origin: top left; animation: mk-menu-in var(--t) var(--ease-out);
+}
+.cmdpop:focus { outline: none; }
+.cmdpop-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+.cmdpop-body { display: grid; gap: 12px; }
+.cmdpop-body .select { width: 100%; }
+.cmdpop-acts { display: flex; justify-content: flex-end; }
+@media (min-width: 641px) {
+  .cmdbar > .select:not([data-nofilter]) { display: none; }
+  .cmdbar .cmdbar-filters {
+    display: inline-grid; place-items: center; position: relative; padding: 0;
+    width: var(--ctl-h-sm); min-width: 0; height: var(--ctl-h-sm); flex: 0 0 auto;
+    border: 1px solid transparent; border-radius: var(--radius-ctl);
+    background: var(--tonal); color: var(--ink);
+  }
+  @media (hover: hover) { .cmdbar .cmdbar-filters:hover { background: var(--tonal-hover); } }
+  .cmdbar .cmdbar-filters[aria-expanded="true"] { background: var(--tonal-press); }
+  .cmdbar .cmdbar-filters svg { width: 15px; height: 15px; }
+}
 /* Drawn only while the search is open, and only on a phone: with no rule of
    its own at a desk it rendered as a bare button under the search box. */
 .cmdbar-find-clear {

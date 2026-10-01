@@ -611,5 +611,4 @@ section holds only what is true of the project as a whole.
 - Not started without the user:
   - the UX brief's batch 2 (colour, 16px fields, toasts, a floating button,
     icon and font changes);
-  - filters behind one button on every desk bar;
   - onboarding organised around the team's procedures.
