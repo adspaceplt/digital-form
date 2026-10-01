@@ -441,6 +441,13 @@
         document.body.classList.add('is-plain');
         $('noTeamShell').hidden = false;
         $('noTeamWho').textContent = actor;
+        /* Access that ended on its date says so (TEAM ACCESS EXPIRY). */
+        db.rpc('my_access_expired').then(function (r) {
+          if (r.error || r.data !== true) return;
+          var panel = $('noTeamShell').querySelector('.cover-panel');
+          panel.querySelector('h2').textContent = 'Access expired';
+          panel.querySelector('p').innerHTML = 'Access for <b>' + String(actor).replace(/[&<>"]/g, '') + '</b> has ended. Please contact an administrator to extend it.';
+        }).catch(function () {});
         return;
       }
       $('console').classList.remove('is-booting');

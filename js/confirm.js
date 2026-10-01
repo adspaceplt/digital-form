@@ -226,9 +226,10 @@
         input.rows = f.rows;
       } else {
         input = el('input', 'input');
-        input.type = 'text';
+        input.type = f.type || 'text';
         input.autocomplete = 'off';
         input.spellcheck = false;
+        if (f.min) input.min = f.min;
       }
       input.id = id;
       if (f.placeholder) input.placeholder = f.placeholder;

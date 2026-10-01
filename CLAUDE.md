@@ -513,6 +513,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Access is a level per section, **none < view < work < manage**, in
   `team_roles.access` / `team_members.access`. `allowed(section, level)` is
   every policy's predicate.
+  - The page names them No Access, View, Manage, Full Access (`LEVELS` in
+    `js/team.js`); the stored keys never move.
   - Select is view, insert and update are work, delete is manage.
   - The levels are drawn on reversibility (add, edit and publish are
     reversible; a permanent delete is not), never on CRUD verbs.
@@ -528,7 +530,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   section reads Same as section.
 - Granted parts never inherit (`ops_granted()`): `ops.all`, `ops.reports`,
   `ops.workflows`, `ops.time`, `ops.numbering`, `team.performance`. Their unset
-  option reads `No access`, and each offers only the levels the database checks
+  option reads `No Access`, and each offers only the levels the database checks
   (`PART_LEVELS`). A stored level outside them is shown and saved as what it
   grants (`offered()`).
 - `ops.list`, `ops.board` and `ops.calendar` follow My Work unless set to No
@@ -1890,8 +1892,22 @@ Each line is a rule that broke once. Its reason is in the archive.
   - department (a segment);
   - Position (`designation`);
   - role standard;
-  - `capacity_minutes_week` (entered as hours).
+  - `capacity_minutes_week` (entered as hours);
+  - Access until (`access_until`, the last day in Malaysia; empty for no
+    end), never on your own row (`own-expiry`).
 - A colleague is never deleted, only stood down.
+- Access expiry (`2026-10-01-team-access-expiry.sql`):
+  - every day at 00:05 MYT (pg_cron `team-access-expiry`)
+    `team_expire_access()` stands down each active colleague whose date has
+    passed (`active` false, `expired_at` stamped, filed `team.changed` by
+    `system`), never the last admin with access;
+  - the row reads Access expired and its ⋯ Extend access; moving the date to
+    today or later brings them back at once (`team_access_guard`), and Set
+    active on a passed date is refused (`expired-date`);
+  - the bar's ⋯ Set access expiry (`team_set_expiry`, Team at Manage) sets
+    one date for every active colleague but the caller, refusing a past date;
+  - an expired address signing in reads Access expired
+    (`my_access_expired()`), not Access denied.
 
 ### Activity record
 - Every tag written is named in `ACTION_LABEL` (`js/admin.js`).
