@@ -8194,6 +8194,10 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-actions .btn svg { width: 15px; height: 15px; }
 .rp-wait { font-size: 12.5px; color: var(--ink-mute); }
 .rp-sec { display: grid; gap: 12px; }
+/* The commentary's line and Draft with AI share one row, the button at the right edge. */
+.rp-aidraft { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rp-aidraft .rp-hint { margin: 0; }
+.rp-aidraft .btn { flex: 0 0 auto; }
 .rp-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h-sm); }
 .rp-sec-head .ovsec-title { margin: 0; }
 .rp-sec-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
@@ -8266,7 +8270,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 /* A form inside a step steps its fields 16px apart, as a sheet does. */
 .rp-form :where(.row) { margin-top: 16px; row-gap: 16px; }
 .rp-form :where(.row .row) { margin-top: 0; }
-.rp-form > .rp-hint + .row, .rp-form > .tickline + .fsec, .rp-form > .fsec:first-child { margin-top: 12px; padding-top: 0; border-top: 0; }
+.rp-form > .rp-hint + .row, .rp-form > .rp-aidraft + .msg + .row, .rp-form > .tickline + .fsec, .rp-form > .fsec:first-child { margin-top: 12px; padding-top: 0; border-top: 0; }
+.rp-form > .rp-aidraft + .msg:empty { display: none; }
+.rp-form > .rp-aidraft + .msg:not(:empty) { margin-top: 8px; }
 .rp-form > .fsec:first-child { margin-top: 0; }
 .rp-form > .tickline + .fsec { margin-top: 20px; }
 .rp-hint { margin: 0; font-size: 12.5px; color: var(--ink-mute); }

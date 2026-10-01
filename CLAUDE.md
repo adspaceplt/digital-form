@@ -1672,6 +1672,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`ADspaceSmReport.resultWord`). The creator code (`_000` to `_999`) is
     dropped on import and hidden on the list and the PDF
     (`ADspaceSmReport.adName`).
+  - Draft with AI on the Commentary step (`report-draft` edge function,
+    secrets `ANTHROPIC_API_KEY` and `REPORT_DRAFT_MODEL`,
+    `docs/REPORT-DRAFT-SETUP.md`): sends the report id alone; the function
+    reads the report as the caller (Reports Work, a draft) and sends Claude
+    only its figures, never a client name, contact, note or image. The
+    draft fills the four fields; nothing is saved until Save, and written
+    text is replaced only after Replace.
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective
     and Remove (asks, naming how many), each with Undo.
   - The age split must total 100% (±0.5).
@@ -1681,8 +1688,13 @@ Each line is a rule that broke once. Its reason is in the archive.
 - New report: Month and Custom period are never both live, End's `min` is
   Start, and an empty date reads Select date.
 - The ads PDF:
-  - Ads are grouped by objective; the cheapest is marked only among results of
-    the same kind.
+  - Ad performance ranks each objective's ads in a table; the cheapest is
+    marked only among results of the same kind. Creative performance then
+    gives each creative (the name without its creator code) one card: one
+    image, a line per objective and result type (results, cost per result,
+    reach, CTR; a missing figure a dash), the age split and video figures
+    from the line that spent the most (2026-10-01).
+  - An image added to one row of a creative is put on its other rows.
   - The tax note follows the market: WHT and SST for MY; DCC and GST for SG.
   - Ad names never break at an underscore.
 - Import controls read Import from spreadsheet and Import from Ads Manager.
@@ -1924,7 +1936,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   answering), and verified on the live database afterwards. The report
   names what was applied.
 - An edge function (`sign-upload`, `invite-member`, `portal-login`,
-  `meet-create`, `push-send`, `s3-sweep`) is deployed by Claude through the
+  `meet-create`, `push-send`, `s3-sweep`, `report-draft`) is deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30).
 - The report lists what the user does by hand: a dashboard setting.
