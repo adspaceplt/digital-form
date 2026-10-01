@@ -81,7 +81,7 @@
     social: [['intro', 'Summary', 'Two or three sentences', 4], ['performed_well', 'Key findings', 'One point a line', 4],
              ['underperformed', 'Areas to improve', 'One point a line', 3], ['next_actions', 'Next steps', 'One point a line', 4]],
     ads:    [['intro', 'Summary', 'Two or three sentences', 4], ['worked', 'What worked', 'One point a line', 4],
-             ['fix', 'What to fix', 'One point a line', 3], ['focus', 'Focus for next month', 'One point a line', 3]]
+             ['fix', 'Areas to improve', 'One point a line', 3], ['focus', 'Focus for next month', 'One point a line', 3]]
   };
   var TEXT_MORE = [['why_well', 'Performance drivers'], ['opportunities', 'Opportunities'], ['improvements', 'Improvements']];
   var SAID = {
@@ -1199,7 +1199,8 @@
     }).join('');
     box.innerHTML = '<section class="panel rp-form">' +
       '<div class="rp-aidraft"><p class="rp-hint">' + (ads ? 'One point a line. Start a line with a dash for a sub-point.' : 'One point a line.') + '</p>' +
-        '<button class="btn btn-sm" type="button" data-a="aidraft">Draft with AI</button></div>' +
+        '<div class="rp-aiacts"><select class="select-sm" id="rpAiLang" data-seg aria-label="Draft language"><option value="en">English</option><option value="zh">中文</option></select>' +
+        '<button class="btn btn-sm" type="button" data-a="aidraft">Draft with AI</button></div></div>' +
       '<details class="fmore rp-ainotes"><summary>Notes for the draft <span class="fmore-sum"></span></summary>' +
         '<div class="row"><div><label class="field-label" for="rpAiNotes">Reasons, changes, goal, next month\'s budget</label>' +
         '<textarea class="input" id="rpAiNotes" rows="3" data-none="Optional" data-some="Written"></textarea></div></div></details>' +
@@ -1299,6 +1300,20 @@
     notes.addEventListener('input', function () {
       try { if (notes.value.trim()) localStorage.setItem(noteKey, notes.value); else localStorage.removeItem(noteKey); } catch (e) { /* storage refused */ }
     });
+    /* The language the client reads: chosen beside the button, kept per
+       client in this browser, and first taken from the main contact's
+       preferred language (the user, 2026-10-01: a Chinese client). */
+    var lang = $('rpAiLang'), langKey = 'adspace-draft-lang:' + r.client_id, keptLang = null;
+    try { keptLang = localStorage.getItem(langKey); } catch (e) { /* storage refused */ }
+    var setLang = function (v) { if (lang.value === v) return; lang.value = v; lang.dispatchEvent(new Event('change')); };
+    if (keptLang === 'zh' || keptLang === 'en') setLang(keptLang);
+    else db.from('client_contacts').select('lang').eq('client_id', r.client_id).eq('is_primary', true).limit(1).then(function (x) {
+      var c = x && !x.error && (x.data || [])[0];
+      if (c && c.lang === 'zh' && $('rpAiLang') === lang) setLang('zh');
+    }).catch(function () { /* English stands */ });
+    lang.addEventListener('change', function () {
+      try { localStorage.setItem(langKey, lang.value); } catch (e) { /* storage refused */ }
+    });
     var fill = function (id, v) { var el = $(id); if (el && typeof v === 'string') el.value = v; };
     var put = function (dr) {
       fields.forEach(function (x) { fill('rpT_' + x[0], dr[x[0]]); });
@@ -1319,7 +1334,7 @@
       ab.disabled = true; ab.textContent = 'Drafting';
       say(am, '');
       aiRun[rid] = true;
-      var body = { report_id: rid, notes: notes.value.trim() };
+      var body = { report_id: rid, notes: notes.value.trim(), lang: lang.value };
       if (!ads) {
         body.platforms = groups.map(function (g) { return g.lead.id; });
         body.posts = [].concat.apply([], groups.map(function (g) { return g.top.map(function (p) { return p.id; }); }));

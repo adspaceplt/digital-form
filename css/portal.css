@@ -8207,6 +8207,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-aidraft { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .rp-aidraft .rp-hint { margin: 0; }
 .rp-aidraft .btn { flex: 0 0 auto; }
+/* The draft's language beside its button, one group that never splits. */
+.rp-aiacts { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.is-tight .rp-aidraft { flex-wrap: wrap; }
 .rp-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: var(--ctl-h-sm); }
 .rp-sec-head .ovsec-title { margin: 0; }
 .rp-sec-acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }

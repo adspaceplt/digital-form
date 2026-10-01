@@ -49,10 +49,25 @@ function secret(name: string): string { return (Deno.env.get(name) ?? '').trim()
 /* The fields each kind of report holds, in the page's own keys. */
 const FIELDS: Record<string, [string, string][]> = {
   ads: [['intro', 'Summary: two or three sentences on the month'], ['worked', 'What worked: one point a line'],
-        ['fix', 'What to fix: one point a line'], ['focus', 'Focus for next month: one point a line']],
+        ['fix', 'Areas to improve: one point a line'], ['focus', 'Focus for next month: one point a line']],
   social: [['intro', 'Summary: two or three sentences on the month'], ['performed_well', 'Key findings: one point a line'],
            ['underperformed', 'Areas to improve: one point a line'], ['next_actions', 'Next steps: one point a line']]
 };
+
+/* What every draft keeps to (the user, 2026-10-01): only what a client
+   needs, short, and never a word against the work we made for them. */
+const SHARED = `
+
+OUR WORK
+We made the creatives, the copy, the content plan and the targeting. Never call any of it weak, poor, unclear, ineffective, a mistake or a problem, and never blame the creative, design, copy, planning or set up for a result. Read a shortfall as what the figures show about the audience or the platform, then say confidently what we will test or refine next ("we will test a shorter opening", "we will bring the offer forward"). Never suggest the client's spend was wasted. A cause outside the ads is stated only when the notes give it.
+
+LENGTH
+Write only what the client needs to understand the month and the next step; the tables already show every figure, so a point repeats a figure only to explain a decision. Pick the few ads or posts that matter most, never one point per ad. Each point is one sentence of at most 35 words; a sub-point only where it is essential, at most one under a point. Keep to the counts given for each field.`;
+
+const ZH = `
+
+LANGUAGE
+This replaces the British English named above: write every field in Simplified Chinese for a business owner in Malaysia or Singapore: formal, natural written business Chinese (书面语), composed in Chinese and never translated word for word from English. The agency is 我们; the client is 贵品牌 or 您. Keep ad names, post titles and abbreviations such as CTR exactly as given; platforms as Facebook, Instagram, TikTok and 小红书. Money as RM 12.23 (S$ for SGD), numbers with thousands separators, dates as 2026年9月16日. Full-width Chinese punctuation. One point a line, as in English.`;
 
 /* The house style, taken from the team's approved ads reports (the user,
    2026-10-01) and tightened where those reports were loosest: a reason for
@@ -70,10 +85,10 @@ READING THE FIGURES
 Each ad is priced only by the result its objective was set to get: a leads ad by its cost per lead, a messaging ad by its cost per messaging conversation, a traffic ad by its cost per link click, an awareness ad by its reach and cost per 1,000 people reached. Compare cost per result only between ads counting the same result. CTR shows interest in clicking. Hook rate is how many stopped on the opening; hold rate is how many kept watching after it. A strong hook with a weak hold means the opening works and the middle loses people; a weak hook means the opening needs work. An age split leaning away from the intended audience is worth a sub-point. Spend lower but reach higher is better delivery; say so.
 
 FIELDS
-Summary (intro): one paragraph of three to five sentences. Total spend for the period and its change against the previous period in percent, with the reason when the notes give one; how reach and impressions moved; which objective took most of the budget and why; the strongest ad with its result count, cost per result and CTR. Lead with the client's goal when the notes name one.
-What worked (worked): one point a line, grouped by objective, strongest first; each names the ad, its result count, cost per result and the one or two rates that explain it, then what that shows. A line starting with "- " is a sub-point under the line above, for a second ad in the same objective or a caveat.
-What to fix (fix): one point a line for each ad that underdelivered: the figure that shows it, the likely reason drawn from its own rates, and the action (paused, refined, retargeted, a new opening). If one remedy covers several ads, end with one line saying so.
-Focus for next month (focus): two to four points: how the budget splits across objectives (in percent where the notes or the data support it), which ads continue and where, what new creatives or audiences we will test, and the next period's dates and budget when the notes give them. Each point says "We will".
+Summary (intro): one paragraph of two or three sentences. Total spend for the period and its change against the previous period in percent, with the reason when the notes give one; how reach and impressions moved; which objective took most of the budget and why; the strongest ad with its result count, cost per result and CTR. Lead with the client's goal when the notes name one.
+What worked (worked): two to four points, one a line, grouped by objective, strongest first; each names the ad, its result count, cost per result and the one or two rates that explain it, then what that shows. A line starting with "- " is a sub-point under the line above, for a second ad in the same objective or a caveat.
+Areas to improve (fix): one to three points, one a line, on the ads that delivered least: the figure that shows it, what its own rates suggest about the audience, and what we will test or refine (pause, refine the offer, retarget, a new opening). If one step covers several ads, say so once.
+Focus for next month (focus): two or three points: how the budget splits across objectives (in percent where the notes or the data support it), which ads continue and where, what new creatives or audiences we will test, and the next period's dates and budget when the notes give them. Each point says "We will".
 
 FORM
 Ads are named exactly as in the data. Money as RM 12.23 (S$ for SGD). Percentages to two decimals for CTR and change, one or none for rates. Dates as 16 Sept to 15 Oct 2026. No dashes as punctuation, no emoji, no exclamation marks, no numbering or bullet characters (the report numbers the lines). Explain a platform term in plain words the first time it appears (ad recall lift: people Meta estimates would remember the ad). When last month's commentary is given, follow up on what it promised: say whether what we tested worked.
@@ -83,7 +98,7 @@ intro: September spend was RM 2,140.50, 12.40% lower than August, as part of the
 worked: 2609_OpenHouse generated 31 leads at RM 14.20 cost per lead with the highest CTR of 3.85%, showing that the open house offer is the clearest reason to enquire.
 - Its hold rate of 11.20% was also the strongest, so viewers stayed for the details as well as the opening.
 For Awareness, 2608_Skyline reached 96,400 people at RM 2.05 per 1,000 reached, keeping the brand visible at low cost.
-fix: 2609_Facilities recorded the highest cost per lead at RM 38.90. Its hook rate of 31% was strong but its hold rate fell to 4.80%, so viewers left once the opening ended; we will bring the key message into the first five seconds.
+fix: 2609_Facilities had the highest cost per lead at RM 38.90; its strong 31% hook rate shows the opening draws attention, so we will bring the key message into the first five seconds to turn that attention into enquiries.
 focus: We will keep about 80% of the budget on Leads and 20% on Awareness.
 We will continue 2609_OpenHouse and pause 2609_Facilities until its new cut is ready.`;
 
@@ -103,13 +118,13 @@ READ EACH PLATFORM ON ITS OWN
 Platforms are never ranked against each other and their figures are never added into one judgement: each has its own audience and algorithm. Compare a post only with posts on the same platform.
 
 FIELDS
-intro: one paragraph of three to five sentences across the whole report: what the month achieved on each platform in one clause each, the standout result, and the direction for next month.
+intro: one paragraph of two or three sentences across the whole report: what the month achieved on each platform in one clause each, the standout result, and the direction for next month.
 platforms (one entry for each ref given):
   summary: one sentence, the platform's month in a line.
-  worked: two to four points, one a line, on what performed and why as far as the figures show (formats, topics, timing, hooks).
-  improve: one to three points, one a line, on what fell short, its figure, the likely reason and what we will change.
-  actions: two to four points, one a line, each starting "We will": the content we will plan for next month on this platform (formats, themes, series, posting rhythm, hooks, captions or keywords), built on what worked.
-posts (one entry for each ref given): remark: one or two sentences on why the post stood out on its platform, from its figures, its format and its caption (the hook, the topic, the offer), never inventing what the data does not show.
+  worked: two or three points, one a line, on what performed and why as far as the figures show (formats, topics, timing, hooks).
+  improve: one or two points, one a line, on what can grow, its figure, what it suggests about the audience and what we will test next.
+  actions: two or three points, one a line, each starting "We will": the content we will plan for next month on this platform (formats, themes, series, posting rhythm, hooks, captions or keywords), built on what worked.
+posts (one entry for each ref given): remark: one sentence on why the post stood out on its platform, from its figures, its format and its caption (the hook, the topic, the offer), never inventing what the data does not show.
 
 FORM
 Posts are named by their title or date as in the data. Numbers with thousands separators. Dates as 12 Sept 2026. No dashes as punctuation, no emoji, no exclamation marks, no numbering or bullet characters. When last month's commentary is given, follow up on what it promised.`;
@@ -133,6 +148,8 @@ Deno.serve(async (req) => {
   const id = String(body && body.report_id || '');
   /* What the team knows and the figures cannot show: reasons, changes made,
      the goal, next month's budget. Typed on the page, never stored. */
+  /* The language the client reads: English, or Chinese written as Chinese. */
+  const lang = body && body.lang === 'zh' ? 'zh' : 'en';
   const notes = String(body && body.notes || '').replace(/\r/g, '').trim().slice(0, 2000);
   /* The accounts report names the platforms and top posts its Commentary
      step shows, so the draft answers for exactly those. */
@@ -280,7 +297,7 @@ Deno.serve(async (req) => {
     const res = await client.messages.create({
       model: secret('REPORT_DRAFT_MODEL'),
       max_tokens: 16000,
-      system: kind === 'ads' ? SYSTEM : SOCIAL_SYSTEM,
+      system: (kind === 'ads' ? SYSTEM : SOCIAL_SYSTEM) + SHARED + (lang === 'zh' ? ZH : ''),
       output_config: { format: { type: 'json_schema', schema } },
       messages: [{ role: 'user', content: 'Draft the commentary for this report. The report\'s figures follow as JSON, with the team\'s notes (team_notes), last period\'s commentary (last_period_commentary), and for an accounts report the platforms to write for (platforms_to_write) and the posts to remark on (posts_to_remark), where there are any.\n\n' + JSON.stringify(data) }]
     } as Anthropic.MessageCreateParamsNonStreaming);

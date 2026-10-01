@@ -1743,7 +1743,7 @@
 
       // ------------------------------------------------ Insights and recommendations
       (function insights() {
-        var blocks = [['What worked', ins.worked], ['What to fix', ins.fix], ['Recommended focus for the following month', ins.focus]]
+        var blocks = [['What worked', ins.worked], ['Areas to improve', ins.fix], ['Recommended focus for the following month', ins.focus]]
           .filter(function (b) { return words(b[1]).trim(); });
         if (!blocks.length) return;
         newPage('Insights and recommendations');
