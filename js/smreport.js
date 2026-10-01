@@ -1440,30 +1440,33 @@
       }
     })();
 
-    /* A caption as it was written: its own lines and blank lines kept, each
-       line wrapped to the column, at most `max` lines with the rest cut. A
-       blank line is a half step. */
-    var captionLines = function (p, w, max) {
-      var out = [];
-      paragraphsOf(p.caption).forEach(function (s) {
-        if (!s.trim()) { if (out.length && out[out.length - 1] !== null) out.push(null); return; }
-        sh.linesOf(s, w, TY.small, book).forEach(function (ln) { out.push(ln); });
-      });
-      while (out.length && out[out.length - 1] === null) out.pop();
-      if (out.length > max) { out = out.slice(0, max); while (out.length && out[out.length - 1] === null) out.pop(); out.cut = true; }
-      return out;
+    /* A caption as a short excerpt: its lines run together and cut to `max`
+       lines, the last ending on an ellipsis where any was left out, so a
+       cut reads as a cut (the user, 2026-10-01). */
+    var captionExcerpt = function (p, w, max) {
+      var text = paragraphsOf(p.caption).map(function (x) { return x.trim(); }).filter(Boolean).join(' ');
+      var all = sh.linesOf(text, w, TY.small, book);
+      if (all.length <= max) return all;
+      // Cut by character, never inside an emoji's pair.
+      var chars = Array.from(text), cut = function (n) { return chars.slice(0, n).join('').trim() + '…'; };
+      var lo = 0, hi = chars.length;
+      while (lo < hi) {
+        var mid = Math.ceil((lo + hi) / 2);
+        if (sh.linesOf(cut(mid), w, TY.small, book).length <= max) lo = mid; else hi = mid - 1;
+      }
+      return sh.linesOf(cut(lo), w, TY.small, book);
     };
-    var captionH = function (lines) { return lines.reduce(function (t, l) { return t + (l === null ? S(-2) : S(0)); }, 0); };
 
     /* A platform's best posts, ranked on that platform alone by its own
-       figure: the image, the figures, the caption and why it stood out. */
+       figure: the image, the figures and why it stood out. */
     var postCards = function (gg, list) {
       var IMG_W = S(8), IMG_H = IMG_W * 1.25;   // 4:5, the portrait post
       var dw = CW / PHI - T.padX * 2;           // the details column: the golden major
       table([{ w: 0.1 }, { w: 1 - 1 / PHI - 0.1 }, { w: 1 / PHI, align: 'left' }],
         ['Rank', 'Post', { t: 'Details', align: 'left' }],
         list.map(function (p, i) {
-          var cap = words(p.caption).trim() ? captionLines(p, dw, 10) : [];
+          /* The card carries the figures and why the post stood out; the
+             caption is in the appendix (the user, 2026-10-01). */
           var notable = words(p.notable).trim() ? sh.linesOf(p.notable, dw, TY.body, book) : [];
           var metrics = [];
           if (gg.volume) metrics.push([METRIC_WORD[gg.volume], fmt(p[gg.volume])]);
@@ -1478,7 +1481,7 @@
           var meta = [acc ? PLATFORM_WORD[acc.platform] || acc.platform : '', own ? dayWord(p.posted_on) : '', own ? typeWord(p) : ''].filter(Boolean).join('  ·  ');
           var NAME = S(2), META = NAME + S(2), BOX = (meta ? META : NAME) + S(-1), LABH = S(2), VALH = S(3);
           var AFTER = BOX + LABH + VALH + S(2);
-          var textH = AFTER + (cap.length ? captionH(cap) + (cap.cut ? S(0) : 0) + S(-2) : 0) + (notable.length ? S(0) + notable.length * S(1) : 0) + S(-2);
+          var textH = AFTER + (notable.length ? S(0) + notable.length * S(1) : 0) + S(-2);
           var h = Math.max(IMG_H + S(-2) * 2, textH);
           return { minH: h, cells: [
             { t: String(i + 1), f: med, size: S(2), align: 'center' },
@@ -1498,9 +1501,6 @@
                 center(m[1], mx + mw / 2, by - LABH - VALH / 2 - TY.body * 0.34, TY.body, med, INK);
               });
               var ty = top - AFTER;
-              cap.forEach(function (ln) { if (ln === null) { ty -= S(-2); return; } sh.draw(pg.page, ln, tx, ty, TY.small, SOFT); ty -= S(0); });
-              if (cap.cut) { tline('…', tx, ty, TY.small, book, SOFT); ty -= S(0); }
-              if (cap.length) ty -= S(-2);
               if (notable.length) {
                 tline('Remarks', tx, ty, TY.small, reg, INK); ty -= S(1);
                 notable.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, TY.body, INK); ty -= S(1); });
@@ -1568,7 +1568,7 @@
             var tx = x + T.padX + TW + S(-2), tw = w - T.padX * 2 - TW - S(-2);
             var lines = [];
             lines.push({ s: clip(postName(p), tw, TY.body, med), f: med, size: TY.body, c: INK });
-            if (words(p.caption).trim()) captionLines(p, tw, remark ? 1 : 2).forEach(function (ln) { if (ln) lines.push({ ln: ln, size: TY.small, c: SOFT }); });
+            if (words(p.caption).trim()) captionExcerpt(p, tw, remark ? 1 : 2).forEach(function (ln) { lines.push({ ln: ln, size: TY.small, c: SOFT }); });
             if (remark) lines.push({ s: clip('Remarks: ' + remark, tw, TY.small, book), f: book, size: TY.small, c: INK });
             var bh = TY.body + (lines.length - 1) * S(0);
             var ly = top - (h - bh) / 2 - TY.body * 0.8;
