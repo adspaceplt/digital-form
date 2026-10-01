@@ -1707,6 +1707,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     marked failed by the function (`ai_draft_done`) and not counted.
     `ai_drafts` has RLS on, no policy and no grants. A refusal (`ai-limit`)
     names the scope and when the next draft is free.
+  - A draft is paid for once asked: while one runs, closing or reloading
+    the tab asks first (`beforeunload`), and an answer that lands after the
+    person moved to another step or screen is kept (`aiKept`) and put in
+    the fields when that report's Commentary is next shown, once.
+  - Each objective lists its ads as the PDF ranks them: cheapest cost per
+    result first, then those with no result by spend, most first.
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective
     and Remove (asks, naming how many), each with Undo.
   - The age split must total 100% (±0.5).
@@ -1723,6 +1729,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     reach, CTR; a missing figure a dash), the age split and video figures
     from the line that spent the most (2026-10-01).
   - An image added to one row of a creative is put on its other rows.
+  - A result in a table is its count and one short word
+    (`ADspaceSmReport.shortResult`: Engagements, Reached, Leads, Messages,
+    Conversions, Sales, Clicks…), on one line where it fits, else the word
+    under the count; never broken inside a word. No result reads None.
+    A full block step separates one objective's table from the next.
   - The tax note follows the market: WHT and SST for MY; DCC and GST for SG.
   - Ad names never break at an underscore.
 - Import controls read Import from spreadsheet and Import from Ads Manager.
@@ -1731,6 +1742,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     margin; no Methodology page.
   - The foot is PRIVATE & CONFIDENTIAL and the page count on the margin's
     line; no draft or version line.
+  - A page break falls between points, never inside one: each numbered or
+    lettered point is one unit (`unit`), split only when taller than a page.
+  - A top post card is named by its title, else its type and day; its meta
+    line adds only what the name does not (the platform where a page holds
+    two, the date and type under a title). Its figures run the column's
+    width.
   - Every emoji is drawn and embedded before any page is laid out
     (`sh.ready()` before `draw`).
   - An accounts report reads: Executive summary; Insights and

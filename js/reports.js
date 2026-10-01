@@ -1300,10 +1300,26 @@
       try { if (notes.value.trim()) localStorage.setItem(noteKey, notes.value); else localStorage.removeItem(noteKey); } catch (e) { /* storage refused */ }
     });
     var fill = function (id, v) { var el = $(id); if (el && typeof v === 'string') el.value = v; };
+    var put = function (dr) {
+      fields.forEach(function (x) { fill('rpT_' + x[0], dr[x[0]]); });
+      (dr.platforms || []).forEach(function (pl) {
+        PLAT_FIELDS.forEach(function (f) { fill('rpP_' + pl.ref + '_' + f[0], pl[f[0]]); });
+      });
+      (dr.posts || []).forEach(function (pp) { fill('rpN_' + pp.ref, pp.remark); });
+    };
+    /* The step on screen for this report, or nothing once the person has
+       moved on: a draft answers wherever they are now, not where they
+       pressed. */
+    var rid = r.id;
+    var here = function () {
+      var b = st.open && st.open.id === rid && st.host && st.host.querySelector('.rp-text [data-a="aidraft"]');
+      return b ? { b: b, m: st.host.querySelector('.rp-text [data-m="ai"]') } : null;
+    };
     var draft = function () {
       ab.disabled = true; ab.textContent = 'Drafting';
       say(am, '');
-      var body = { report_id: r.id, notes: notes.value.trim() };
+      aiRun[rid] = true;
+      var body = { report_id: rid, notes: notes.value.trim() };
       if (!ads) {
         body.platforms = groups.map(function (g) { return g.lead.id; });
         body.posts = [].concat.apply([], groups.map(function (g) { return g.top.map(function (p) { return p.id; }); }));
@@ -1311,22 +1327,44 @@
       db.functions.invoke('report-draft', { body: body }).then(function (res) {
         var d = res && res.data;
         if (res.error || !d || d.error || !d.draft) { var x = new Error((d && d.error) || 'ai-failed'); x.d = d; throw x; }
-        fields.forEach(function (x) { fill('rpT_' + x[0], d.draft[x[0]]); });
-        (d.draft.platforms || []).forEach(function (pl) {
-          PLAT_FIELDS.forEach(function (f) { fill('rpP_' + pl.ref + '_' + f[0], pl[f[0]]); });
-        });
-        (d.draft.posts || []).forEach(function (pp) { fill('rpN_' + pp.ref, pp.remark); });
-        say(am, 'Drafted. Read it through, then Save.', 'ok');
+        return { draft: d.draft };
       }).catch(function (e) {
-        say(am, e && e.message === 'ai-limit' ? aiLimit(e.d) : (AI_SAID[e && e.message] || said(e)), 'err');
-      }).then(function () { ab.disabled = false; ab.textContent = 'Draft with AI'; });
+        return { said: e && e.message === 'ai-limit' ? aiLimit(e.d) : (AI_SAID[e && e.message] || said(e)) };
+      }).then(function (out) {
+        delete aiRun[rid];
+        var h = here();
+        /* Away from the step: the answer waits for this report and is put
+           in the fields when the step is painted again, so a paid draft is
+           never lost to a change of screen. */
+        if (!h) { aiKept[rid] = out; return; }
+        h.b.disabled = false; h.b.textContent = 'Draft with AI';
+        if (out.draft) { put(out.draft); say(h.m, 'Drafted. Read it through, then Save.', 'ok'); }
+        else say(h.m, out.said, 'err');
+      });
     };
+    if (aiRun[rid]) { ab.disabled = true; ab.textContent = 'Drafting'; }
+    if (aiKept[rid]) {
+      var kept = aiKept[rid]; delete aiKept[rid];
+      if (kept.draft) { put(kept.draft); say(am, 'Drafted. Read it through, then Save.', 'ok'); }
+      else say(am, kept.said, 'err');
+    }
     ab.addEventListener('click', function () {
       var written = allIds().some(function (id) { return $(id) && $(id).value.trim(); });
       if (!written) { draft(); return; }
       window.ADspaceConfirm.ask({ title: 'Replace the commentary?', body: 'The draft replaces what is written in these fields. Nothing is saved until Save.', go: 'Replace' }, draft);
     });
   }
+  /* A draft is paid for once Claude is asked, whatever happens to the page.
+     While one is being written, closing or reloading the tab asks first
+     (the browser's own question), and an answer that arrives after the
+     person has moved to another screen is kept for its report
+     (`aiKept`) and filled in when its Commentary step is next shown. */
+  var aiRun = {}, aiKept = {};
+  window.addEventListener('beforeunload', function (e) {
+    if (!Object.keys(aiRun).length) return;
+    e.preventDefault();
+    e.returnValue = '';
+  });
   /* The database counts every press: a report has one draft and drafting
      it again is an admin's (5 a report in 24 hours); 20 a colleague and 60
      the team in 24 hours. A refusal says which and when the next is free. */
@@ -1412,9 +1450,21 @@
     if (a.spend == null || !Number(a.results)) return null;
     return Number(a.spend) / Number(a.results) * (reach ? 1000 : 1);
   }
+  /* Each objective's ads in the order the PDF ranks them (the user,
+     2026-10-01): cheapest cost per result first, then those with no result
+     by what they spent, most first; the paste order only breaks a tie. */
   function sortAds() {
     var ord = {}; OBJECTIVES.forEach(function (o, i) { ord[o[0]] = i; });
-    st.ads.sort(function (a, b) { return (ord[a.objective] - ord[b.objective]) || (a.position - b.position); });
+    st.ads.sort(function (a, b) {
+      var d = ord[a.objective] - ord[b.objective];
+      if (d) return d;
+      var ca = adCpr(a), cb = adCpr(b);
+      if (ca === null && cb !== null) return 1;
+      if (cb === null && ca !== null) return -1;
+      if (ca !== null && cb !== null && ca !== cb) return ca - cb;
+      if (ca === null && cb === null && Number(b.spend || 0) !== Number(a.spend || 0)) return Number(b.spend || 0) - Number(a.spend || 0);
+      return a.position - b.position;
+    });
   }
 
   /* The account's figures: typed where they cannot be added up, the rest

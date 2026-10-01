@@ -141,6 +141,22 @@
       .replace(/^omni_/, '').replace(/_\d+d$/, '').replace(/[._:]+/g, ' ').trim();
     return w ? w.charAt(0).toUpperCase() + w.slice(1) : t;
   }
+  /* In a table a result reads as a count and one short word (the user,
+     2026-10-01): 47 Leads, 15 Messages, 84,660 Reached; never Ads
+     Manager's long name, which broke inside a word in a narrow column. */
+  var SHORT_RESULT = [
+    [/engag/i, 'Engagements'], [/interaction/i, 'Interactions'], [/reaction/i, 'Reactions'], [/reach/i, 'Reached'], [/lead/i, 'Leads'],
+    [/messag|conversation|contact/i, 'Messages'], [/purchase|sale/i, 'Sales'],
+    [/conversion|registration|to cart|checkout/i, 'Conversions'], [/landing page/i, 'Page views'],
+    [/click/i, 'Clicks'], [/thruplay/i, 'ThruPlays'], [/video play|3-second/i, 'Video plays'],
+    [/install/i, 'Installs'], [/impression/i, 'Impressions'], [/recall/i, 'Recall lift'],
+    [/like|follow/i, 'Follows'], [/profile visit/i, 'Profile visits'], [/save/i, 'Saves']
+  ];
+  function shortResult(s) {
+    var t = resultWord(s);
+    for (var i = 0; i < SHORT_RESULT.length; i++) if (SHORT_RESULT[i][0].test(t)) return SHORT_RESULT[i][1];
+    return t.replace(/\s*\([^)]*\)\s*$/, '') || 'Results';
+  }
   /* One point a line: an insights field holds several, one per line, and a
      line that is only whitespace is not a point. Accidental repeated blank
      lines are collapsed; a single blank line still divides two points. */
@@ -822,6 +838,16 @@
        row of S(3) at least, so the text sits in the row with the same space
        above and below it. */
     var T = { size: TY.cell, lh: S(1), padX: S(-2), padY: (S(3) - S(1)) / 2, minH: S(3) };
+    /* A result in a table: its count and short word, None where there was
+       no result. Where the pair is wider than its column (`frac` of the
+       page's width) the word goes under the count, so neither breaks. */
+    function countWord(n, label, frac, f) {
+      var v = num(n);
+      if (v === null || v === 0) return 'None';
+      var t = fmt(v) + ' ' + shortResult(label);
+      if (frac && (f || book).widthOfTextAtSize(t, T.size) > CW * frac - T.padX * 2) t = t.replace(' ', '\n');
+      return t;
+    }
     function cellLines(c, w) {
       if (c == null) return [];
       if (typeof c === 'string' || typeof c === 'number') c = { t: String(c) };
@@ -837,12 +863,16 @@
            hanging S(1) in, the row's own padding between items. */
         c.items.forEach(function (it, i) {
           var t0 = typeof it === 'string' ? it : it.t;
+          /* Each point and sub-point is one unit (`unit` on its first line
+             counts its lines): a page break falls between points, never
+             inside one (the user, 2026-10-01). */
           var ls = sh.linesOf(t0, w - T.padX * 2 - S(1), size, f);
-          ls.forEach(function (ln, k) { out.push({ ln: ln, f: f, size: size, num: k === 0 ? String(i + 1) : null, indent: S(1) }); });
+          ls.forEach(function (ln, k) { out.push({ ln: ln, f: f, size: size, num: k === 0 ? String(i + 1) : null, indent: S(1), unit: k === 0 ? ls.length : 0 }); });
           ((typeof it === 'object' && it && it.sub) || []).forEach(function (sb, j) {
             out.push({ gap: T.padY / 2 });
-            sh.linesOf(sb, w - T.padX * 2 - S(1) * 2, size, f).forEach(function (ln, k) {
-              out.push({ ln: ln, f: f, size: size, num: k === 0 ? String.fromCharCode(97 + j) : null, numIndent: S(1), indent: S(1) * 2 });
+            var sl = sh.linesOf(sb, w - T.padX * 2 - S(1) * 2, size, f);
+            sl.forEach(function (ln, k) {
+              out.push({ ln: ln, f: f, size: size, num: k === 0 ? String.fromCharCode(97 + j) : null, numIndent: S(1), indent: S(1) * 2, unit: k === 0 ? sl.length : 0 });
             });
           });
           if (i < c.items.length - 1) out.push({ gap: T.padY });
@@ -913,7 +943,7 @@
           var part0 = true;
           var remaining = function () { return ls.some(function (l, i) { return l && cur[i] < l.length; }); };
           while (remaining()) {
-            var avail = y - FLOOR - T.padY * 2;
+            var avail = y - FLOOR - T.padY * 2, fullH = pageSpace - T.padY * 2;
             if (avail < T.lh * 2) { newPage(pg.section); drawHead(); continue; }
             var part = ls.map(function (l, i) {
               if (!l) return [];
@@ -923,11 +953,23 @@
                 return lab;
               }
               var out = [], used = 0;
-              while (cur[i] < l.length && used + (l[cur[i]].gap || T.lh) <= avail) { out.push(l[cur[i]]); used += l[cur[i]].gap || T.lh; cur[i]++; }
+              while (cur[i] < l.length) {
+                var L = l[cur[i]], take = L.unit && L.unit * T.lh <= fullH ? L.unit : 1;
+                var need0 = L.gap || take * T.lh;
+                if (used + need0 > avail) break;
+                for (var k = 0; k < take; k++) { out.push(l[cur[i]]); cur[i]++; }
+                used += need0;
+              }
               while (out.length && out[0].gap) out.shift();
               while (out.length && out[out.length - 1].gap) out.pop();
               return out;
             });
+            /* Nothing but a repeated label fits above the next whole point:
+               the row goes on the next page instead of an empty slice. */
+            if (!part.some(function (pt, i) { return pt.length && !(o.labelCol && i === 0); })) {
+              if (part0) { cur = ls.map(function () { return 0; }); }
+              newPage(pg.section); drawHead(); continue;
+            }
             var ph = Math.max(T.minH, Math.max.apply(null, part.map(linesH)) + T.padY * 2);
             cells.forEach(function (c, i) {
               rect(xs[i], y - ph, ws[i], ph, c.fill || row.fill || (o.labelCol && i === 0 ? FILL : PAPER));
@@ -1218,7 +1260,14 @@
           if (gg.volume) metrics.push([METRIC_WORD[gg.volume], fmt(p[gg.volume])]);
           metrics.push([engWord(gg), fmt(engOf(p))]);
           metrics.push(['Engagement rate', pct(erOf(p))]);
-          var NAME = S(2), META = NAME + S(2), BOX = META + S(-1), LABH = S(2), VALH = S(3);
+          /* The meta line says only what the name does not: a post with no
+             title is named by its type and day already, so it adds nothing
+             but the platform where the page holds more than one (the user,
+             2026-10-01: "Video, 1 Sept" over "1 Sept 2026 · Video"). */
+          var own = words(p.title).trim();
+          var acc = gg.accounts.length > 1 ? gg.accounts.filter(function (a) { return a.id === p.platform_id; })[0] : null;
+          var meta = [acc ? PLATFORM_WORD[acc.platform] || acc.platform : '', own ? dayWord(p.posted_on) : '', own ? typeWord(p) : ''].filter(Boolean).join('  ·  ');
+          var NAME = S(2), META = NAME + S(2), BOX = (meta ? META : NAME) + S(-1), LABH = S(2), VALH = S(3);
           var AFTER = BOX + LABH + VALH + S(2);
           var textH = AFTER + (cap.length ? captionH(cap) + (cap.cut ? S(0) : 0) + S(-2) : 0) + (notable.length ? S(0) + notable.length * S(1) : 0) + S(-2);
           var h = Math.max(IMG_H + S(-2) * 2, textH);
@@ -1228,8 +1277,9 @@
             { fn: function (x, top, w, hh) {
               var tx = x + T.padX;
               tline(clip(postName(p), dw, TY.lead, med), tx, top - NAME, TY.lead, med, INK);
-              tline([dayWord(p.posted_on), typeWord(p)].filter(Boolean).join('  ·  '), tx, top - META, TY.small, book, SOFT, dw);
-              var mw = Math.min(S(9), dw / metrics.length);
+              if (meta) tline(meta, tx, top - META, TY.small, book, SOFT, dw);
+              // The figures run the details column's whole width.
+              var mw = dw / metrics.length;
               var by = top - BOX;
               metrics.forEach(function (m, k) {
                 var mx = tx + k * mw;
@@ -1446,7 +1496,7 @@
             am.groups.map(function (g) {
               return { minH: withPrev ? S(4) + S(1) : T.minH, cells: [
                 { t: g.name, f: reg },
-                { t: fmt(g.results) + ' ' + g.label.toLowerCase(), f: med },
+                { t: countWord(g.results, g.label, 0.23), f: med },
                 money(g.spend),
                 { t: cost(g.cpr) + (g.per1000 ? ' per 1,000' : '') + (withPrev && g.prevCpr !== null && g.prevCpr !== undefined ? '\nPrevious ' + cost(g.prevCpr) : '') },
                 { fn: function (x, top, w, h) {
@@ -1536,7 +1586,7 @@
           var base = ly - LH / 2 - TY.small * 0.34;
           /* A figure not given reads as a dash: a line is a table row. */
           var got = function (v, f0) { return num(v) === null ? '\u2014' : f0(v); };
-          var cells = [(OBJECTIVES[a.objective] || {}).name || 'Other', num(a.results) === null ? a._label : fmt(a.results) + ' ' + a._label,
+          var cells = [(OBJECTIVES[a.objective] || {}).name || 'Other', countWord(a.results, a._label),
             a._cpr === null ? '\u2014' : cost(a._cpr) + (a._per1000 ? ' / 1,000' : ''), got(a.reach, fmt), got(a.ctr, pctv)];
           cells.forEach(function (t0, i) {
             var w0 = (RW - PAD * 2) * LCOLS[i];
@@ -1645,6 +1695,7 @@
           blockTitle(g.name + '  ·  ' + g.ads.length + ' ad' + (g.ads.length === 1 ? '' : 's') + '  ·  ' + money(g.spend), T.minH * (g.ads.length + 1));
           // The group ranked by what a result cost, the cheapest first and in weight.
           var ranked = g.ads.slice().sort(function (p, q) {
+            if (p._cpr === null && q._cpr === null) return (num(q.spend) || 0) - (num(p.spend) || 0);
             if (p._cpr === null) return 1; if (q._cpr === null) return -1; return p._cpr - q._cpr;
           });
           /* The cheapest is marked only where the results are the same
@@ -1652,18 +1703,20 @@
           var oneKind = uniq(g.ads.map(function (a) { return a._label + '|' + a._per1000; })).length === 1;
           var best = g.ads.length > 1 && oneKind && ranked[0] && ranked[0]._cpr !== null ? ranked[0] : null;
           var perK = g.ads.every(function (a) { return a._per1000; });
-          /* The result's word goes under its count, in a column wide enough
-             for a result's word whole: a word that cannot fit is broken
-             between letters, and "engagement / s" read as a typo. */
+          /* Each result reads as its count and one short word, on one line
+             where it fits and the word under the count where it does not;
+             never broken inside a word. No result reads None. */
           table([{ w: 0.22, align: 'left' }, { w: 0.17 }, { w: 0.14 }, { w: 0.21 }, { w: 0.16 }, { w: 0.1 }],
-            [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', g.adLabel.length <= 12 ? g.adLabel : 'Results', perK ? 'Per 1,000 reached' : 'Cost per result', 'CTR'],
+            [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', 'Results', perK ? 'Per 1,000 reached' : 'Cost per result', 'CTR'],
             ranked.map(function (a) {
               var f = a === best ? med : book;
               return { cells: [{ t: adName(a.name) + (words(a.audience).trim() ? '\n' + words(a.audience).trim() + ' audience' : ''), f: f },
-                { t: range(a.starts_on, a.ends_on), f: f }, { t: money(a.spend), f: f }, { t: fmt(a.results) + (g.adLabel === 'Results' ? '\n' + a._label : ''), f: f },
+                { t: range(a.starts_on, a.ends_on), f: f }, { t: money(a.spend), f: f }, { t: countWord(a.results, a._label, 0.21, f), f: f },
                 { t: cost(a._cpr) + (!perK && a._per1000 ? ' per 1,000' : ''), f: f }, { t: pctv(a.ctr), f: f }] };
             }), { labelCol: false });
-          y -= BLOCK - S(3);
+          /* A full block step before the next objective, so each reads as
+             its own table (the user, 2026-10-01). */
+          y -= BLOCK;
         });
         var creatives = creativesOf();
         newPage('Creative performance');
@@ -1742,7 +1795,7 @@
   }
 
   window.ADspaceSmReport = {
-    render: render, model: model, topOf: topOf, fileName: fileName, periodWord: periodWord, titleOf: titleOf, resultWord: resultWord, adName: adName,
+    render: render, model: model, topOf: topOf, fileName: fileName, periodWord: periodWord, titleOf: titleOf, resultWord: resultWord, shortResult: shortResult, adName: adName,
     engOf: engOf, growthOf: growthOf, fmt: fmt, PLATFORM_WORD: PLATFORM_WORD, TYPE_WORD: TYPE_WORD, METRIC_WORD: METRIC_WORD, METRICS: METRICS
   };
 })();
