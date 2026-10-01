@@ -1708,8 +1708,9 @@
       var obj = objectiveOf(raw.objective) || fallbackObj;
       /* One ad is one row: an age band or a day of it is gathered into it,
          and two ads are never added together. Ad ID tells apart two ads that
-         share a name in one ad set; without it, name, objective and ad set. */
-      var key = raw.ad_id ? 'id:' + raw.ad_id : [raw.name, obj, raw.audience || ''].join('|');
+         share a name in one ad set (with the name, as a spreadsheet can round a
+         long ID); without it, name, objective and ad set. */
+      var key = raw.ad_id ? 'id:' + raw.ad_id + '|' + raw.name : [raw.name, obj, raw.audience || ''].join('|');
       var ad = byKey[key];
       if (!ad) {
         ad = byKey[key] = { name: raw.name, objective: obj, audience: raw.audience || null,
