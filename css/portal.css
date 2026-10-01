@@ -7943,6 +7943,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .bulkbar .tickline { margin: 0; font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .bulkbar-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
 .bulkbar-acts .btn { flex: 0 0 auto; }
+/* `.select-sm` fills its row; in the bar it keeps its own width, or the
+   acts wrap and Remove falls under the select. */
+.bulkbar-acts .select { flex: 0 0 auto; width: auto; }
 .bulkbar-done { flex: 0 0 auto; }
 .trow-pick { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
 .task-row.is-picked { background: var(--line-soft); }
@@ -7957,7 +7960,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 @media (max-width: 640px) {
   .bulkbar-done { order: 1; margin-left: auto; }
   .bulkbar-acts { order: 2; width: 100%; margin-left: 0; }
-  .bulkbar-acts .btn { flex: 1 1 0; min-width: 0; }
+  .bulkbar-acts .btn, .bulkbar-acts .select { flex: 1 1 0; min-width: 0; }
 }
 
 /* Add task: the three fields, then the folded rest, then what was just made. */
