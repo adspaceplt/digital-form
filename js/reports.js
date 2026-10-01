@@ -1866,7 +1866,7 @@
         '<div><label class="field-label" for="rpAdImpr">Impressions</label><input class="input" id="rpAdImpr" data-num="int" type="text" inputmode="numeric"></div>' +
         '<div><label class="field-label" for="rpAdCpr">Cost per result</label><input class="input" id="rpAdCpr" data-num="money" type="text" inputmode="decimal" placeholder="Worked out"></div></div>' +
         '<div class="row"><div><label class="field-label" for="rpAdBasis">Cost per result is</label><select class="select" id="rpAdBasis" data-seg>' +
-          '<option value="">Automatic</option><option value="result">Per result</option><option value="thousand">Per 1,000 reached</option></select></div></div></section>' +
+          '<option value="">Automatic</option><option value="result">Per result</option><option value="thousand">Per 1,000 reach</option></select></div></div></section>' +
       '<section class="fsec"><h4 class="fsec-h">Results by age (%)</h4><div class="row fgrid-3 fgrid">' +
         AGE_BANDS.map(function (b) { return '<div><label class="field-label" for="rpAge_' + b.replace('+', 'p') + '">' + esc(b) + '</label><input class="input" id="rpAge_' + b.replace('+', 'p') + '" data-age="' + esc(b) + '" data-num="pct" type="text" inputmode="decimal"></div>'; }).join('') +
       '</div><p class="rp-agesum" id="rpAgeSum"></p></section>' +
@@ -2106,8 +2106,23 @@
          creative has more than one kind. */
       groupOf[id] = lab ? b + '|' + lab : kinds.length === 1 ? b + '|' + kinds[0] : kinds.length ? 'id:' + id : b + '|';
     });
-    lines.slice(1).forEach(function (l) {
+    /* Ads Manager's first row under the header has no ad name: it is the
+       account's own figures for the period, reach counted once across every
+       ad (and every day), which no adding up of the ads can give. It fills
+       Step 1 (the user, 2026-10-01). */
+    var summary = null;
+    lines.slice(1).forEach(function (l, li) {
       var raw = cellsOf(l);
+      if (!raw.name && li === 0 && !String(raw.age || '').trim()) {
+        var sr = numIn(raw.reach), si = numIn(raw.impressions), ss = numIn(raw.spend);
+        if (sr !== null || si !== null || ss !== null) {
+          summary = {};
+          if (sr !== null) summary.reach = Math.round(sr);
+          if (si !== null) summary.impressions = Math.round(si);
+          if (ss !== null) summary.spend = Math.round(ss * 100) / 100;
+          return;
+        }
+      }
       if (!raw.name) { skipped++; return; }
       if (raw.account) accounts[raw.account] = true;
       var obj = objectiveOf(raw.objective) || fallbackObj;
@@ -2224,7 +2239,7 @@
       }
       return out;
     });
-    return { rows: rows, skipped: skipped, daily: daily, columns: head.filter(Boolean), byAge: head.indexOf('age') > -1 };
+    return { rows: rows, skipped: skipped, daily: daily, columns: head.filter(Boolean), byAge: head.indexOf('age') > -1, summary: summary };
   }
 
   function pasteAdsSheet(opener) {
@@ -2295,16 +2310,29 @@
       if (out.fresh.some(function (r0) { return r0._daily; })) parts.push('dates from the days each ad delivered');
       if (out.unclear.length) parts.push(out.unclear.length + ' left out: more than one ad here has that name');
       if (out.skipped) parts.push(out.skipped + ' without a name skipped');
+      /* The account's figures fill Step 1 where it is empty; a figure the
+         team typed is kept. */
+      var t0 = st.open.ads_totals || {};
+      out.fill = {}; out.kept = [];
+      if (out.summary) Object.keys(out.summary).forEach(function (k) {
+        if (t0[k] == null || t0[k] === '') out.fill[k] = out.summary[k];
+        else if (Number(t0[k]) !== out.summary[k]) out.kept.push(k);
+      });
+      var TW = { reach: 'reach', impressions: 'impressions', spend: 'amount spent' };
+      var fk = Object.keys(out.fill);
+      if (fk.length) parts.push('the account\'s ' + fk.map(function (k) { return TW[k]; }).join(', ').replace(/, ([^,]*)$/, ' and $1') + ' to Step 1');
+      if (out.kept.length) parts.push('Step 1 keeps its typed ' + out.kept.map(function (k) { return TW[k]; }).join(', ').replace(/, ([^,]*)$/, ' and $1'));
       sum.textContent = parts.join(', ').replace(/^./, function (c) { return c.toUpperCase(); }) + '.' +
         (out.fresh.some(function (r0) { return r0._daily; }) ? ' Reach is left to type: a daily export counts a person again each day.' : '');
-      go.disabled = !(out.fresh.length + out.updates.length);
+      go.disabled = !(out.fresh.length + out.updates.length + Object.keys(out.fill).length);
       return out;
     };
     $('rpPAText').oninput = read; $('rpPAObj').onchange = read;
     go.disabled = true;
     go.onclick = function () {
       var out = read();
-      if (!out.rows || !(out.fresh.length + out.updates.length)) return;
+      var fill = out.fill || {};
+      if (!out.rows || !(out.fresh.length + out.updates.length + Object.keys(fill).length)) return;
       var n = st.ads.length;
       var rows = out.fresh.map(function (r0, i) { var x = Object.assign({ report_id: st.open.id, position: n + i + 1 }, r0); delete x._daily; return x; });
       go.disabled = true;
@@ -2319,12 +2347,18 @@
         if (res.error) throw res.error;
         st.ads = st.ads.concat(res.data || []);
       }) : Promise.resolve();
-      Promise.all(ups.concat([add])).then(function () {
+      var tot = Object.keys(fill).length ? db.from('sm_reports').update({ ads_totals: Object.assign({}, st.open.ads_totals || {}, fill) })
+        .eq('id', st.open.id).select('*').then(function (res) {
+          if (res.error) throw res.error;
+          if (!(res.data || []).length) throw new Error('Not saved. The database refused the request.');
+          st.open = res.data[0];
+        }) : Promise.resolve();
+      Promise.all(ups.concat([add, tot])).then(function () {
         go.disabled = false;
         sortAds();
         window.ADspaceSheet.clean(); window.ADspaceSheet.close();
-        paintAds(); paintTotals();
-      }).catch(function (e) { go.disabled = false; sortAds(); paintAds(); paintTotals(); say(sm, said(e), 'err'); });
+        paintAds(); paintTotals(); paintSteps();
+      }).catch(function (e) { go.disabled = false; sortAds(); paintAds(); paintTotals(); paintSteps(); say(sm, said(e), 'err'); });
     };
     window.ADspaceSheet.show(box, { opener: opener });
   }

@@ -1688,7 +1688,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     just before) for the team to type its figures, and the team ticks a
     client's true first month.
   - One row per ad and objective.
-  - Ads Manager's own cost per result (reach per 1,000).
+  - Ads Manager's own cost per result; a reach result reads `RM 1.33 / 1,000`
+    under Cost per result in every table, never Per 1,000 reached.
   - Paste from an Ads Manager or Ads Reporting export (2026-10-01). A row on
     the report is one creative (the name without its creator code), objective,
     ad set and result type: its copies, age bands and days are gathered into
@@ -1701,6 +1702,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     `ADspaceMenu.pop`, above a sheet, Escape first): each a copy control,
     Copy all, Open in Ads Manager; never the IDs in a line under the name. A
     later paste is matched by them first; never printed in the PDF. A table's total row gives the figures once.
+    The export's first row (no ad name) is the account's own reach,
+    impressions and amount spent for the period, reach counted once: it
+    fills Step 1 where empty, and a typed figure is kept (the sheet says so).
     A paste naming ads already in the report updates them with what it holds
     and adds the rest: a day export the dates (first and last day with
     impressions), an age export the age split, an export with neither the
@@ -1771,7 +1775,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     gives each creative (the name without its creator code) one card: one
     image, a line per objective and result type (amount spent, results,
     cost per result, reach, CTR; a missing figure a dash) under a shaded
-    head in Slate Regular, as every table in the report, the age split and video figures
+    head in Slate Regular (the card's own name head white over a hairline), as every table in the report, the age split and video figures
     from the line that spent the most (2026-10-01).
   - An image added to one row of a creative is put on its other rows.
   - A result in a PDF table is its count alone (0 where an ad spent with

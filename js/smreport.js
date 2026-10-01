@@ -1616,7 +1616,6 @@
       };
       var pctv = function (v) { v = num(v); return v === null ? 'Not available' : (Math.round(v * 100) / 100).toFixed(2) + '%'; };
       var pctShort = function (v) { v = num(v); return v === null ? 'Not available' : String(Math.round(v * 100) / 100) + '%'; };
-      var cprLabel = function (per1000) { return per1000 ? 'Cost per 1,000 reached' : 'Cost per result'; };
       var ratio = function (v) { return v === null || v === undefined || isNaN(v) ? 'Not available' : (Math.round(v * 100) / 100).toFixed(2); };
       var playW = function (v) {
         v = num(v); if (v === null) return 'Not available';
@@ -1710,7 +1709,7 @@
                 { t: g.name, f: reg },
                 { t: count(g.results), f: med },
                 money(g.spend),
-                { t: cost(g.cpr) + (g.per1000 ? ' per 1,000' : '') + (withPrev && g.prevCpr !== null && g.prevCpr !== undefined ? '\nPrevious ' + cost(g.prevCpr) : '') },
+                { t: cost(g.cpr) + (g.per1000 ? ' / 1,000' : '') + (withPrev && g.prevCpr !== null && g.prevCpr !== undefined ? '\nPrevious ' + cost(g.prevCpr) : '') },
                 { fn: function (x, top, w, h) {
                   var tw = S(6), bx = x + T.padX, bw = w - T.padX * 2 - tw - S(-2);
                   rect(bx, top - h / 2 - 3, bw, S(-2), FILL);
@@ -1771,7 +1770,9 @@
         var h = creativeH(c);
         need(h);
         var top = y;
-        rect(M, top - HEADH, CW, HEADH, FILL);
+        /* The card's own head is white over a hairline, so the shaded band
+           under it is the table's head alone (the user, 2026-10-01: two
+           shaded bands ran into one). */
         var meta = money(c.spend) + ' spent';
         var mw = width(meta, TY.small, book);
         tline(clip(c.name, CW - PAD * 3 - mw, TY.body, med), M + PAD, top - HEADH / 2 - TY.body * 0.34, TY.body, med, INK);
@@ -1901,7 +1902,7 @@
         if (first) {
           leadLine('Each objective ranked by what a result cost, then each creative with its results across objectives.');
           panel('How to read this', [
-            'Cost per result is what it cost to get one lead, click or action. Compare it only between ads with the same objective, which is why each objective is ranked on its own.',
+            'Cost per result is what it cost to get one lead, click or action; where the result is reach, it is the cost per 1,000 people reached, written / 1,000. Compare it only between ads with the same objective, which is why each objective is ranked on its own.',
             'Each ad is priced only against the result its objective was set to get. A leads ad that also started a few chats is judged by its cost per lead; the chats came alongside, and the budget was not spent on them.',
             'Reach is how many people saw an ad; impressions is how many times it was shown. Frequency is impressions divided by reach.',
             'A creative that ran under two objectives shows one line for each. Compare the lines to see which goal it served best.'
@@ -1920,16 +1921,15 @@
              kind: a lead and an ad recall lift are not bought at one price. */
           var oneKind = uniq(g.ads.map(function (a) { return a._label + '|' + a._per1000; })).length === 1;
           var best = g.ads.length > 1 && oneKind && ranked[0] && ranked[0]._cpr !== null ? ranked[0] : null;
-          var perK = g.ads.every(function (a) { return a._per1000; });
           /* The ad's name takes the room the figures do not need, so a name
              reads whole on its line (the user, 2026-10-01: 2608W4_OldOwnorInves|t). */
           table([{ w: 0.31, align: 'left' }, { w: 0.17 }, { w: 0.15 }, { w: 0.11 }, { w: 0.16 }, { w: 0.1 }],
-            [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', 'Results', perK ? 'Per 1,000 reached' : 'Cost per result', 'CTR'],
+            [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', 'Results', 'Cost per result', 'CTR'],
             ranked.map(function (a) {
               var f = a === best ? med : book;
               return { cells: [{ t: adName(a.name) + (words(a.audience).trim() ? '\n' + words(a.audience).trim() + ' audience' : ''), f: f },
                 { t: range(a.starts_on, a.ends_on), f: f }, { t: money(a.spend), f: f }, { t: count(a.results), f: f },
-                { t: a._cpr === null ? '\u2014' : cost(a._cpr) + (!perK && a._per1000 ? ' per 1,000' : ''), f: f },
+                { t: a._cpr === null ? '\u2014' : cost(a._cpr) + (a._per1000 ? ' / 1,000' : ''), f: f },
                 { t: num(a.ctr) === null ? '\u2014' : pctv(a.ctr), f: f }] };
             }), { labelCol: false });
           /* A full block step before the next objective, so each reads as
