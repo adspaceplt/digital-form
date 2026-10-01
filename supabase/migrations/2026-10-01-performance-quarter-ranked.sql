@@ -10,12 +10,13 @@
 -- WHAT CHANGED
 --   1. perf_quarter_calc: every person carries `rank` (1 is the highest
 --      average; equal averages share a rank; nobody without a final month is
---      ranked), `open` (their months in the quarter not yet final),
---      `department_share` (their part of a department prize won) and `total`
---      (the individual prize plus that share). The list runs best to worst
---      by average. The quarter carries `open_months` (reviews in it not yet
---      final) and `missing_months` (months already ended that an active
---      member on the review list has no review for).
+--      ranked) and `open` (their months in the quarter not yet final). The
+--      list runs best to worst by average. The quarter carries `open_months`
+--      (reviews in it not yet final) and `missing_months` (months already
+--      ended that an active member on the review list has no review for).
+--      The department prize goes to the winning department whole, and its
+--      team leader decides the split (the user, 2026-10-01): a department
+--      carries its `share` and no longer a figure for each member.
 --   2. perf_quarter_confirm refuses `months-open` while any review in the
 --      quarter is not final, naming how many: a month still in dispute or
 --      waiting to be finalised would otherwise be left out of an average
@@ -26,8 +27,9 @@
 --      quarter and no month is paid twice. Any date given is read as the
 --      half it falls in. `perf_company.period` is held to 1 January or
 --      1 July.
---   4. perf_rewards_mine sends a member their own quarter without `rank`:
---      the ranking is management's.
+--   4. perf_rewards_mine sends a member their own quarter without `rank`
+--      (the ranking is management's), and their department's `share` where
+--      it won.
 --
 -- ROLLBACK
 --   Run the PERFORMANCE REWARDS section of supabase/schema.sql again (it
@@ -138,11 +140,7 @@ begin
            'total', z.total, 'grade', case when z.entered then public.perf_grade_of(z.total) end,
            'critical', z.crit, 'top', z.bothin and z.istop,
            'qualifies', z.entered and z.total >= 80 and not z.crit, 'won', z.won,
-           'share', coalesce(z.sharec / 100, 0), 'members', to_jsonb(z.mems),
-           'each', case when z.won and cardinality(z.mems) > 0 then floor(z.sharec / cardinality(z.mems)) / 100 end,
-           'remainder', case when z.won then case when cardinality(z.mems) > 0
-                               then (z.sharec - floor(z.sharec / cardinality(z.mems)) * cardinality(z.mems)) / 100
-                               else z.sharec / 100 end end)
+           'share', coalesce(z.sharec / 100, 0), 'members', to_jsonb(z.mems))
          order by z.ord),
          coalesce(max(z.nwon), 0), bool_and(z.bothin),
          case when bool_and(z.bothin) and max(z.nwon) = 0 then
@@ -153,18 +151,6 @@ begin
     'paid', case when v_dwins > 0 then floor(60000.0 / v_dwins) * v_dwins / 100 else 0 end,
     'remainder', case when v_dwins > 0 then 600 - floor(60000.0 / v_dwins) * v_dwins / 100 else 600 end,
     'reason', case when not v_both then 'scores-needed' else v_why end);
-
-  /* Each person's part of a department prize won, and their whole reward. */
-  select coalesce(jsonb_agg(a.x || jsonb_build_object('department_share', s.ds,
-                                                       'total', (a.x ->> 'prize')::numeric + s.ds)
-                            order by a.n), '[]'::jsonb)
-    into v_people
-    from jsonb_array_elements(v_people) with ordinality a(x, n)
-    cross join lateral (
-      select coalesce((select (dd ->> 'each')::numeric from jsonb_array_elements(v_depts) dd
-                        where (dd ->> 'won')::boolean and dd -> 'members' ? (a.x ->> 'team_member_id')
-                          and dd ->> 'each' is not null
-                        limit 1), 0) as ds) s;
 
   select count(*)::int into v_open
     from public.perf_reviews r
@@ -451,7 +437,7 @@ begin
                'individual', jsonb_build_object('winners', rw.snapshot -> 'individual' -> 'winners',
                                                 'reason', rw.snapshot -> 'individual' -> 'reason'),
                'department', (select jsonb_build_object('department', d ->> 'department', 'total', d -> 'total',
-                                       'grade', d -> 'grade', 'won', d -> 'won', 'each', d -> 'each')
+                                       'grade', d -> 'grade', 'won', d -> 'won', 'share', d -> 'share')
                                 from jsonb_array_elements(rw.snapshot -> 'departments') d
                                where d -> 'members' ? v_id limit 1))
              order by rw.period desc)

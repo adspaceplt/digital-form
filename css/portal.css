@@ -6459,6 +6459,21 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    field is in use. */
 .pick-room { flex: none; margin: 0; padding: 0; pointer-events: none; }
 
+/* A date box at a desk reads DD/MM/YYYY (js/form.js §7): a text box with the
+   calendar mark at its right edge, which opens the browser's own picker. The
+   picker itself is one hidden native field laid under the box it serves. */
+.input.dmy {
+  padding-right: 38px; background-repeat: no-repeat; background-position: right 12px center; background-size: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6760' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
+  font-variant-numeric: tabular-nums;
+}
+:root[data-theme="dark"] .input.dmy {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a6a89e' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E");
+}
+.dmy-pick { position: fixed; left: 0; top: 0; width: 1px; height: 1px; margin: 0; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+/* Under its own hint an empty box keeps its DD/MM/YYYY until it is reached. */
+.datefield.is-empty:not(:focus-within) > .dmy::placeholder { color: transparent; }
+
 /* A date nobody has set yet. An empty `input[type=date]` draws nothing at all
    on iOS — no mm/dd/yyyy, no caret — so a Publish date that has not been
    chosen was a blank pill under a label, with nothing saying it was a date
@@ -8124,8 +8139,9 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .perf-void { justify-self: start; min-width: 0; margin-left: -13px; }
 .perf-answer { margin: 4px 0 0; padding: 8px 10px; background: var(--sunk); border-radius: var(--radius-sm); font-size: 13px; }
 .perf-answer small { display: block; margin-bottom: 2px; }
-.perf-plan { display: grid; gap: 6px; }
-.perf-plan .row { margin-top: 4px; }
+.perf-plan { display: grid; gap: 16px; }
+.perf-plan .row { margin-top: 0; }
+.perf-plan > div:not(.row) > .input { display: block; width: 100%; }
 .perf-dpick { display: grid; gap: 4px; }
 .perf-dpick .tickline { align-items: flex-start; padding-top: 10px; }
 .perf-dpick .tickline input { margin-top: 1px; }
@@ -8693,12 +8709,12 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .perf-views > .cmdbar-views.actviews { display: inline-flex; vertical-align: top; }
 .rw-row { padding-top: 10px; padding-bottom: 10px; }
 .crm-head.rw-row { padding: 12px 15px 8px; }
-.rwq-row  { grid-template-columns: 36px minmax(0, 1fr) 64px 160px 140px 96px 96px 104px; }
-.rwd-row  { grid-template-columns: minmax(0, 1fr) 64px 172px 96px 104px 104px; }
+.rwq-row  { grid-template-columns: 36px minmax(0, 1fr) 64px 172px 150px 104px; }
+.rwd-row  { grid-template-columns: minmax(0, 1fr) 64px 172px 112px 104px; }
 .rwf-row  { grid-template-columns: minmax(0, 1fr) 56px 172px 120px; }
 .rwp-row  { grid-template-columns: minmax(0, 1fr) 88px 64px 172px 48px 104px 104px; }
 .rwc-row  { grid-template-columns: minmax(0, 1fr) 80px 116px 56px 104px var(--state-w) var(--ctl-h); }
-.rwmq-row { grid-template-columns: minmax(0, 1fr) 64px 172px 132px 132px; }
+.rwmq-row { grid-template-columns: minmax(0, 1fr) 64px 172px 132px 200px; }
 .rwmp-row { grid-template-columns: minmax(0, 1fr) 88px 48px 104px 104px; }
 .rwmf-row { grid-template-columns: minmax(0, 1fr) 120px 120px; }
 .rwmc-row { grid-template-columns: minmax(0, 1fr) 116px 56px 104px var(--state-w); }

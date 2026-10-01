@@ -342,6 +342,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   - `::file-selector-button` shaded (`--line-soft`), concentric, 13px;
   - a date or time field with `appearance: none`, the value left aligned,
     `min-height: var(--ctl-h)`, and a glyph on the left under a coarse pointer;
+  - at a desk a date box reads DD/MM/YYYY with the calendar mark at its right
+    edge (`.dmy`, `js/form.js` §7); written dates stay `12 Sept 2026`;
   - the "Not set" hint on the field's wrapper.
 - A control that creates a need answers it in place: the tick grows into the
   field (`.pbox`); the name grows out of Approve (`.namebox`). Both ends of a

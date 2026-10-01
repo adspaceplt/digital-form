@@ -959,23 +959,23 @@
     var edit = canWork() && r.status !== 'final';
     if (!edit) {
       if (!r.improvement && !r.review_by && !r.reward_step && !r.evaluated_on) {
-        return manage() || r.status === 'final' ? card('Improvement and review', '<p class="perf-quiet">None set.</p>') : '';
+        return manage() || r.status === 'final' ? card('Evaluation and follow-up', '<p class="perf-quiet">None set.</p>') : '';
       }
-      return card('Improvement and review', '<dl class="tfacts perf-facts">' +
+      return card('Evaluation and follow-up', '<dl class="tfacts perf-facts">' +
         (r.evaluated_on ? '<div><dt>Date of evaluation</dt><dd>' + esc(dateWord(r.evaluated_on)) + '</dd></div>' : '') +
         (r.improvement ? '<div><dt>Improvement</dt><dd>' + esc(r.improvement) + '</dd></div>' : '') +
-        (r.review_by ? '<div><dt>Review by</dt><dd>' + esc(dateWord(r.review_by)) + '</dd></div>' : '') +
+        (r.review_by ? '<div><dt>Follow-up date</dt><dd>' + esc(dateWord(r.review_by)) + '</dd></div>' : '') +
         (r.reward_step ? '<div><dt>Step or reward</dt><dd>' + esc(r.reward_step) + '</dd></div>' : '') + '</dl>');
     }
     /* The day of the 1-1: in or after the month reviewed, never ahead of
        today in Malaysia, so a month keyed in later keeps its real date. */
     var today = new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 10);
-    return card('Improvement and review',
+    return card('Evaluation and follow-up',
       '<div class="perf-plan"><div class="row fgrid"><div><label class="field-label" for="pvEval">Date of evaluation</label><input class="input" id="pvEval" type="date" min="' + esc(r.period) + '" max="' + today + '" value="' + esc(r.evaluated_on || '') + '"></div>' +
-      '<div><label class="field-label" for="pvBy">Review by</label><input class="input" id="pvBy" type="date" value="' + esc(r.review_by || '') + '"></div></div>' +
-      '<label class="field-label" for="pvImp">Improvement</label>' +
-      '<textarea class="input" id="pvImp" rows="3" maxlength="4000">' + esc(r.improvement || '') + '</textarea>' +
-      '<label class="field-label" for="pvStep">Step or reward to apply</label><input class="input" id="pvStep" maxlength="500" value="' + esc(r.reward_step || '') + '">' +
+      '<div><label class="field-label" for="pvBy">Follow-up date</label><input class="input" id="pvBy" type="date" value="' + esc(r.review_by || '') + '"></div></div>' +
+      '<div><label class="field-label" for="pvImp">Improvement</label>' +
+      '<textarea class="input" id="pvImp" rows="3" maxlength="4000">' + esc(r.improvement || '') + '</textarea></div>' +
+      '<div><label class="field-label" for="pvStep">Step or reward to apply</label><input class="input" id="pvStep" maxlength="500" value="' + esc(r.reward_step || '') + '"></div>' +
       (r.status !== 'draft' ? '<div class="qform-acts"><button class="btn btn-sm btn-primary" id="pvPlanSave" type="button">Save</button></div>' : '') +
       '</div>');
   }
@@ -1051,7 +1051,7 @@
     if (!ch || !ch.length) return '';
     return ': ' + ch.map(function (c) {
       if (c.key === 'notes') return 'notes';
-      if (c.key === 'plan') return 'improvement and review';
+      if (c.key === 'plan') return 'improvement and follow-up';
       if (c.key === 'evaluated_on') return 'date of evaluation ' + (c.from ? dateWord(c.from) : 'not set') + ' to ' + (c.to ? dateWord(c.to) : 'not set');
       var rate = RATE_WORD[c.key], name = CAT_WORD[c.key] || rate || c.key;
       var v = function (x) { return x == null ? 'not set' : num(x) + (rate ? '%' : ''); };
@@ -1649,10 +1649,10 @@
     else para('No development or accountability path applies this month.', 9.5, f.font, p.mute);
     para('A clean month resets the process. Consequences use privileges, training and discretionary rewards, never salary.', 8.5, f.font, p.mute);
 
-    heading('5 · Required improvement and review');
+    heading('5 · Required improvement and follow-up');
     para(r.improvement || 'None set.', 10, f.font, r.improvement ? p.ink : p.mute);
     var stop = function (x) { x = String(x || '').trim(); return /[.!?]$/.test(x) ? x : x + '.'; };
-    para('Review by: ' + stop(r.review_by ? dateWord(r.review_by) : none) + '  Step or reward to apply: ' + stop(r.reward_step || none), 9.5);
+    para('Follow-up date: ' + stop(r.review_by ? dateWord(r.review_by) : none) + '  Step or reward to apply: ' + stop(r.reward_step || none), 9.5);
 
     heading('6 · Dispute');
     var ds = r.disputes || [];
@@ -1976,7 +1976,9 @@
     if (!d || st.pv !== 'quarters') return;
     var ppl = d.people || [], ind = d.individual || {}, dp = d.department_prize || {};
     $('rwQCount').textContent = ppl.length + (ppl.length === 1 ? ' person' : ' people');
-    $('rwQConfirm').hidden = !(may('team.performance', 'work') && !d.confirmed && d.ended);
+    /* Confirm is drawn only once it can be pressed: the quarter ended and
+       every month in it final (the chip names what is still open). */
+    $('rwQConfirm').hidden = !(may('team.performance', 'work') && !d.confirmed && d.ended && !(Number(d.open_months) > 0));
     $('rwQReopen').hidden = !(may('team.performance', 'manage') && d.confirmed);
     box.innerHTML = '';
     if (d.confirmed) {
@@ -1994,53 +1996,49 @@
     var waits = d.confirmed ? '' :
       (Number(d.open_months) > 0 ? chip(monthsWord(Number(d.open_months)) + ' not final', 'is-warn') : '') +
       (d.ended && Number(d.missing_months) > 0 ? chip(monthsWord(Number(d.missing_months)) + ' not entered', 'is-warn') : '');
-    /* Best to worst by average, each with their whole reward: the
-       individual prize, their share of a department prize won, and the two
-       together. A rank is shared by equal averages. */
+    /* Best to worst by average, with the individual prize. A rank is
+       shared by equal averages. The department prize is the department's,
+       its team leader deciding the split (the user, 2026-10-01). */
     box.appendChild(G.section({
       route: 'team-rw', key: 'individual', name: 'Ranking and rewards', count: ppl.length,
       marks: confirmedChip(d) + waits + chip('Individual prize · ' + won),
       shut: false,
       table: function () {
-        var t = G.table('rw-row rwq-row', ['Rank', 'Person', 'Average', 'Grade', 'Eligibility', 'Individual', 'Department', 'Total']);
+        var t = G.table('rw-row rwq-row', ['Rank', 'Person', 'Average', 'Grade', 'Eligibility', 'Prize']);
         if (!ppl.length) { UI.emptyLine(t, 'Nobody on the review list.'); return t; }
         G.more(t, ppl, 30, '', function (p) {
-          if (p.own) return youRow('rwq-row', p, 6, 1);
+          if (p.own) return youRow('rwq-row', p, 4, 1);
           var elig = p.eligible ? 'Eligible' : WHY[(p.reasons || [])[0]] || 'Not eligible';
           var months = Number(p.months || 0), open = Number(p.open || 0);
-          /* The months only when the quarter is not whole for them. */
-          var sub = [DEPT_WORD[p.department] || '', months + open > 0 && months < 3 ? months + ' of 3 months' : '', open ? open + ' not final' : '']
-            .filter(Boolean).join(' · ');
-          var share = p.department_share == null ? 0 : p.department_share;
-          var total = p.total == null ? Number(p.prize || 0) + Number(share) : p.total;
+          /* The months sit under the average they make, and only when the
+             quarter is not whole for them; the name keeps its department. */
+          var sub = DEPT_WORD[p.department] || '';
+          var short = p.average != null && months < 3 ? months + ' of 3' : '';
           return row('rwq-row', [
             cell(p.rank == null ? dash() : esc(String(p.rank))),
             whoCell(p, sub),
-            cell(p.average == null ? dash() : esc(num(p.average))),
+            cell(p.average == null ? dash() : esc(num(p.average)) + (short ? '<small class="rw-why">' + esc(short) + '</small>' : '')),
             cell(gradeCell(p.grade)),
             cell(esc(elig)),
-            cell(money0(p.prize)),
-            cell(money0(share)),
-            cell(money0(total), true)
-          ], [p.rank == null ? '' : 'Rank ' + p.rank, p.average == null ? '' : num(p.average), p.grade ? gradeWord(p.grade) : '', elig,
-              Number(p.prize) > 0 ? 'Individual ' + rm(p.prize) : '', Number(share) > 0 ? 'Department ' + rm(share) : '']);
+            cell(money0(p.prize), true)
+          ], [p.rank == null ? '' : 'Rank ' + p.rank, p.average == null ? '' : num(p.average) + (short ? ' over ' + months + ' of 3 months' : ''),
+              open ? open + ' not final' : '', p.grade ? gradeWord(p.grade) : '', elig]);
         });
         return t;
       }
     }));
     var dwon = (d.departments || []).filter(function (x) { return x.won; });
     var dmark = dwon.length
-      ? dwon.map(function (x) { return DEPT_WORD[x.department]; }).join(' and ') + ' · ' + rm(dwon[0].share) + (dwon.length > 1 ? ' each' : '')
+      ? dwon.map(function (x) { return DEPT_WORD[x.department]; }).join(' and ') + ' won · ' + rm(dwon[0].share) + (dwon.length > 1 ? ' each' : '')
       : 'No payout · ' + (NOPAY[dp.reason] || '');
     var edit = may('team.performance', 'work') && !d.confirmed;
     box.appendChild(G.section({
       route: 'team-rw', key: 'department', name: 'Department prize', count: (d.departments || []).length,
       marks: chip(dmark), shut: false,
       table: function () {
-        var t = G.table('rw-row rwd-row', ['Department', 'Total', 'Grade', 'Critical issue', 'Share', 'Each person']);
+        var t = G.table('rw-row rwd-row', ['Department', 'Total', 'Grade', 'Critical issue', 'Prize']);
         (d.departments || []).forEach(function (x) {
-          var n = (x.members || []).length;
-          var sub = x.entered ? n + (n === 1 ? ' member' : ' members') : 'Not entered';
+          var sub = x.entered ? (x.won ? 'Won' : '') : 'Not entered';
           var name = edit
             ? '<button class="rw-who rw-open" type="button" data-dept="' + x.department + '"><b>' + esc(DEPT_WORD[x.department]) + '</b><small>' + esc(sub) + '</small></button>'
             : whoCell({ name: DEPT_WORD[x.department] }, sub);
@@ -2049,9 +2047,8 @@
             cell(x.entered ? esc(num(x.total)) : dash()),
             cell(gradeCell(x.grade)),
             cell(x.entered ? esc(x.critical ? 'Yes' : 'No') : dash()),
-            cell(money0(x.share), true),
-            cell(x.each != null ? esc(rm(x.each)) : dash())
-          ], [x.entered ? num(x.total) + ' of 100' : '', x.critical ? 'Critical issue' : '', x.each != null ? rm(x.each) + ' each' : '']);
+            cell(money0(x.share), true)
+          ], [x.entered ? num(x.total) + ' of 100' : '', x.grade ? gradeWord(x.grade) : '', x.critical ? 'Critical issue' : '']);
           var ob = el.querySelector('.rw-open');
           if (ob) ob.addEventListener('click', function () { openDept(x.department, ob); });
           t.appendChild(el);
@@ -2505,14 +2502,16 @@
     add('quarters', 'Quarters', d.quarters, ['Quarter', 'Average', 'Grade', 'Individual prize', 'Department prize'], 'rwmq-row', function (x) {
       var me = x.me || {}, dp = x.department;
       var ind = Number(me.prize) > 0 ? rm(me.prize) : me.eligible ? 'Not the highest' : WHY[(me.reasons || [])[0]] || 'Not eligible';
-      var dep = dp ? (dp.won && dp.each != null ? rm(dp.each) : (DEPT_WORD[dp.department] || '') + ' did not win') : '—';
+      /* The department prize is the department's; its team leader shares it. */
+      var dshare = dp ? (dp.share != null ? dp.share : dp.each) : null;
+      var dep = dp ? (dp.won ? (DEPT_WORD[dp.department] || '') + ' won' + (Number(dshare) > 0 ? ' · ' + rm(dshare) : '') : (DEPT_WORD[dp.department] || '') + ' did not win') : '—';
       return row('rwmq-row', [
         whoCell({ name: x.word }, me.months ? me.months + (me.months === 1 ? ' final month' : ' final months') : ''),
         cell(me.average == null ? dash() : esc(num(me.average))),
         cell(gradeCell(me.grade)),
         cell(esc(ind), true),
         cell(esc(dep))
-      ], [me.average == null ? '' : num(me.average), me.grade ? gradeWord(me.grade) : '', dp && dp.won && dp.each != null ? 'Department ' + rm(dp.each) : '']);
+      ], [me.average == null ? '' : num(me.average), me.grade ? gradeWord(me.grade) : '', dp && dp.won ? dep : '']);
     });
     add('periods', 'Bonus and trip', d.periods, ['Period', 'Months at B', 'Units', 'Bonus', 'Trip'], 'rwmp-row', function (x) {
       var me = x.me || {};

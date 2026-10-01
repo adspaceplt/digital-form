@@ -431,6 +431,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A value out of range is cleared on blur and refused on Enter, with
     `.date-note`. `ADspaceAsk.rename` refuses it too.
   - `data-any-date` opts a field out. This is page-side only.
+  - DD/MM/YYYY (§7): at a desk every `input[type=date]` becomes a text box
+    (`.dmy`) showing DD/MM/YYYY, digits typed straight in taking their
+    slashes and YYYY-MM-DD accepted; its calendar mark at the right edge (or
+    the down arrow) opens the browser's picker through one hidden native
+    field. Its `value` still reads and writes YYYY-MM-DD, so pages never
+    change; the field's own min and max are held on blur ("Choose a date up
+    to …"), and a part-typed date says "Enter the date as DD/MM/YYYY." A
+    coarse pointer keeps the system's own box, as `data-native` keeps any
+    one (My Work's pickers that open in place). Playwright's `inputValue()`
+    reads the shown DD/MM/YYYY; the page's `value` is read in the page.
   - Room for the calendar (§6): at a desk, a date field too near the window's
     foot is lifted before its calendar opens (its scroller scrolls, else a
     `.pick-room` spacer), and a press that lifted it opens the calendar with
@@ -1584,14 +1594,17 @@ Each line is a rule that broke once. Its reason is in the archive.
     (Work) keeps a snapshot in `perf_rewards`; Reopen (Manage) removes it,
     files it and never asks. Quarters begin with Q3 2026.
   - The quarter (`2026-10-01-performance-quarter-ranked.sql`) is Ranking and
-    rewards: best to worst by average, `rank` shared by equal averages, each
-    person's Individual, Department (`department_share`) and Total. Confirm
-    is refused while any review in the quarter is not final (`months-open`)
-    and asks first where an ended month has no review (`missing_months`).
-    The member's own quarter never carries `rank`.
-  - Tied departments are joint winners and one that does not qualify drops
-    out; a winning share is split among the department's active members on
-    the review list.
+    rewards: best to worst by average, `rank` shared by equal averages, a
+    short quarter's months under its average (`2 of 3`), and the individual
+    prize from the average of the final months (a weak month can be made up).
+    Confirm is drawn only once every review in the quarter is final
+    (`months-open` refuses otherwise) and asks first where an ended month
+    has no review (`missing_months`). The member's own quarter never carries
+    `rank`.
+  - The department prize goes to the winning department whole (`share`,
+    named "{Department} won"); its team leader decides the split, so no
+    member's row carries a figure for it. Tied departments are joint winners
+    and one that does not qualify drops out.
   - Flexible hours: a month decides the next only once every active member on
     the review list has a final review of it.
   - A bonus period is a half of the year (Q1 and Q2, Q3 and Q4; `perf_half`),

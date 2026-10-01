@@ -2205,6 +2205,9 @@
   function inlineDue(t, el, btn, done) {
     var inp = document.createElement('input');
     inp.type = 'date';
+    /* A date picked in place opens the browser's calendar at once and leaves
+       with it, so it stays the browser's own box (form.js §7). */
+    inp.setAttribute('data-native', '');
     inp.className = 'input input-sm tinline-pick';
     inp.setAttribute('aria-label', 'Due date of ' + (t.title || 'task'));
     inp.value = dateValue(t.current_final_due_at);
@@ -3104,6 +3107,9 @@
   function inlinePublish(t, btn) {
     var inp = document.createElement('input');
     inp.type = 'date';
+    /* A date picked in place opens the browser's calendar at once and leaves
+       with it, so it stays the browser's own box (form.js §7). */
+    inp.setAttribute('data-native', '');
     inp.className = 'input input-sm tinline-pick';
     inp.setAttribute('aria-label', 'Scheduled publish date');
     inp.value = dateValue(t.publish_at);
@@ -4957,7 +4963,7 @@
     var row = $('taskDates').querySelector('[data-row="' + kind + '"] dd');
     if (!row) return;
     var keep = row.innerHTML;
-    row.innerHTML = '<input class="input input-sm tdate-pick" type="date" aria-label="' +
+    row.innerHTML = '<input class="input input-sm tdate-pick" type="date" data-native aria-label="' +
       (kind === 'final' ? 'Final due' : kind === 'first_draft' ? 'Draft due' : 'Scheduled publish') + '">';
     var inp = row.querySelector('input');
     inp.value = dateValue(cur);
