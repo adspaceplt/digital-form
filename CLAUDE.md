@@ -1777,6 +1777,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     marked failed by the function (`ai_draft_done`) and not counted.
     `ai_drafts` has RLS on, no policy and no grants. A refusal (`ai-limit`)
     names the scope and when the next draft is free.
+    Beside the button the count left reads `1 left` (`ai_draft_left`, the
+    least of the report's, the colleague's and the team's, read without
+    writing; `2026-10-01-draft-with-ai-left.sql`); at 0 the button rests and
+    the line under it says why and when the next is free.
   - A draft is paid for once asked: while one runs, closing or reloading
     the tab asks first (`beforeunload`), and an answer that lands after the
     person moved to another step or screen is kept (`aiKept`) and put in

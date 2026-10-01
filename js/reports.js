@@ -1269,7 +1269,7 @@
     }).join('');
     box.innerHTML = '<section class="panel rp-form">' +
       '<div class="rp-aidraft"><p class="rp-hint">' + (ads ? 'One point a line. Start a line with a dash for a sub-point.' : 'One point a line.') + '</p>' +
-        '<div class="rp-aiacts"><select class="select-sm" id="rpAiLang" data-seg aria-label="Draft language"><option value="en">English</option><option value="zh">中文</option></select>' +
+        '<div class="rp-aiacts"><span class="rp-aileft" data-m="aileft" hidden></span><select class="select-sm" id="rpAiLang" data-seg aria-label="Draft language"><option value="en">English</option><option value="zh">中文</option></select>' +
         '<button class="btn btn-sm" type="button" data-a="aidraft">Draft with AI</button></div></div>' +
       '<details class="fmore rp-ainotes"><summary>Notes for the draft <span class="fmore-sum"></span></summary>' +
         '<div class="row"><div><label class="field-label" for="rpAiNotes">Reasons, changes, goal, next month\'s budget</label>' +
@@ -1439,7 +1439,27 @@
         h.b.disabled = false; h.b.textContent = 'Draft with AI';
         if (out.draft) { put(out.draft); say(h.m, 'Drafted. Read it through, then Save.', 'ok'); }
         else say(h.m, out.said, 'err');
+        paintLeft();
       });
+    };
+    /* What is left, beside the button, as `1 left` (the user, 2026-10-01):
+       read from the database as it counts a press, so the figure is the one
+       a press would meet. At 0 the button rests and the line under it says
+       why and when the next is free. */
+    var paintLeft = function () {
+      db.rpc('ai_draft_left', { p_report: rid }).then(function (res) {
+        var d = res && res.data, h = here();
+        if (!h) return;
+        var line = st.host.querySelector('.rp-text [data-m="aileft"]');
+        if (!line) return;
+        if (res.error || !d || d.error || d.left == null) { line.hidden = true; return; }
+        line.hidden = false;
+        line.textContent = d.left + ' left';
+        line.classList.toggle('is-out', !d.left);
+        if (aiRun[rid]) return;
+        h.b.disabled = !d.left;
+        if (!d.left && !h.m.textContent) say(h.m, aiLimit(d), 'warn');
+      }).catch(function () { /* an older database: no line */ });
     };
     if (aiRun[rid]) { ab.disabled = true; ab.textContent = 'Drafting'; }
     if (aiKept[rid]) {
@@ -1447,6 +1467,7 @@
       if (kept.draft) { put(kept.draft); say(am, 'Drafted. Read it through, then Save.', 'ok'); }
       else say(am, kept.said, 'err');
     }
+    paintLeft();
     ab.addEventListener('click', function () {
       var written = allIds().some(function (id) { return $(id) && $(id).value.trim(); });
       if (!written) { draft(); return; }

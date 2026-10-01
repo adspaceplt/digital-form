@@ -8341,6 +8341,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-form :where(.row .row) { margin-top: 0; }
 /* A platform's top posts sit under their own label, a step below its
    fields, so the remarks above read as the platform's. */
+.rp-aileft { font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; align-self: center; }
+.rp-aileft.is-out { color: var(--warn); }
 .rp-form .rp-tophead { margin: 24px 0 8px; font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--ink-mute); }
 .rp-form .rp-tophead + .row { margin-top: 0; }
 .rp-form > .rp-hint + .row, .rp-form > .rp-aidraft + .msg + .row, .rp-form > .tickline + .fsec, .rp-form > .fsec:first-child { margin-top: 12px; padding-top: 0; border-top: 0; }
