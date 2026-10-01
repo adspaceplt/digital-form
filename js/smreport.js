@@ -1360,6 +1360,12 @@
         v = num(v);
         return v === null ? 'Not available' : CUR + ' ' + v.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       };
+      /* A result bought for under ten sen (a post engagement) reads to three
+         decimals, so RM 0.004 never prints as a free RM 0.00. */
+      var cost = function (v) {
+        v = num(v);
+        return v !== null && v > 0 && v < 0.1 ? CUR + ' ' + v.toFixed(3) : money(v);
+      };
       var pctv = function (v) { v = num(v); return v === null ? 'Not available' : (Math.round(v * 100) / 100).toFixed(2) + '%'; };
       var pctShort = function (v) { v = num(v); return v === null ? 'Not available' : String(Math.round(v * 100) / 100) + '%'; };
       var cprLabel = function (per1000) { return per1000 ? 'Cost per 1,000 reached' : 'Cost per result'; };
@@ -1380,6 +1386,8 @@
         if (!da && !db2) return '';
         if (!da || !db2) return dayWord(a || b);
         if (da.getFullYear() !== db2.getFullYear()) return dayWord(a) + ' to ' + dayWord(b);
+        // One month says its name once: 1 to 30 Sept 2026.
+        if (da.getMonth() === db2.getMonth()) return da.getDate() + ' to ' + dayWord(b);
         return shortD(a) + ' to ' + dayWord(b);
       };
       var TAX = mk === 'SG'
@@ -1451,7 +1459,7 @@
                 { t: g.name, f: reg },
                 { t: fmt(g.results) + ' ' + g.label.toLowerCase(), f: med },
                 money(g.spend),
-                { t: money(g.cpr) + (g.per1000 ? ' per 1,000' : '') + (withPrev && g.prevCpr !== null && g.prevCpr !== undefined ? '\nPrevious ' + money(g.prevCpr) : '') },
+                { t: cost(g.cpr) + (g.per1000 ? ' per 1,000' : '') + (withPrev && g.prevCpr !== null && g.prevCpr !== undefined ? '\nPrevious ' + cost(g.prevCpr) : '') },
                 { fn: function (x, top, w, h) {
                   var tw = S(6), bx = x + T.padX, bw = w - T.padX * 2 - tw - S(-2);
                   rect(bx, top - h / 2 - 3, bw, S(-2), FILL);
@@ -1540,7 +1548,7 @@
           /* A figure not given reads as a dash: a line is a table row. */
           var got = function (v, f0) { return num(v) === null ? '\u2014' : f0(v); };
           var cells = [(OBJECTIVES[a.objective] || {}).name || 'Other', num(a.results) === null ? a._label : fmt(a.results) + ' ' + a._label,
-            a._cpr === null ? '\u2014' : money(a._cpr) + (a._per1000 ? ' / 1,000' : ''), got(a.reach, fmt), got(a.ctr, pctv)];
+            a._cpr === null ? '\u2014' : cost(a._cpr) + (a._per1000 ? ' / 1,000' : ''), got(a.reach, fmt), got(a.ctr, pctv)];
           cells.forEach(function (t0, i) {
             var w0 = (RW - PAD * 2) * LCOLS[i];
             var f = i === 0 ? med : book;
@@ -1655,13 +1663,16 @@
           var oneKind = uniq(g.ads.map(function (a) { return a._label + '|' + a._per1000; })).length === 1;
           var best = g.ads.length > 1 && oneKind && ranked[0] && ranked[0]._cpr !== null ? ranked[0] : null;
           var perK = g.ads.every(function (a) { return a._per1000; });
-          table([{ w: 0.26, align: 'left' }, { w: 0.23 }, { w: 0.14 }, { w: 0.12 }, { w: 0.15 }, { w: 0.1 }],
+          /* The result's word goes under its count, in a column wide enough
+             for Post engagements whole: a word that cannot fit is broken
+             between letters, and "engagement / s" read as a typo. */
+          table([{ w: 0.22, align: 'left' }, { w: 0.17 }, { w: 0.14 }, { w: 0.21 }, { w: 0.16 }, { w: 0.1 }],
             [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', g.adLabel.length <= 12 ? g.adLabel : 'Results', perK ? 'Per 1,000 reached' : 'Cost per result', 'CTR'],
             ranked.map(function (a) {
               var f = a === best ? med : book;
               return { cells: [{ t: adName(a.name) + (words(a.audience).trim() ? '\n' + words(a.audience).trim() + ' audience' : ''), f: f },
-                { t: range(a.starts_on, a.ends_on), f: f }, { t: money(a.spend), f: f }, { t: fmt(a.results) + (g.adLabel === 'Results' ? ' ' + a._label : ''), f: f },
-                { t: money(a._cpr) + (!perK && a._per1000 ? ' per 1,000' : ''), f: f }, { t: pctv(a.ctr), f: f }] };
+                { t: range(a.starts_on, a.ends_on), f: f }, { t: money(a.spend), f: f }, { t: fmt(a.results) + (g.adLabel === 'Results' ? '\n' + a._label : ''), f: f },
+                { t: cost(a._cpr) + (!perK && a._per1000 ? ' per 1,000' : ''), f: f }, { t: pctv(a.ctr), f: f }] };
             }), { labelCol: false });
           y -= BLOCK - S(3);
         });

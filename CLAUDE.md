@@ -1672,13 +1672,19 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`ADspaceSmReport.resultWord`). The creator code (`_000` to `_999`) is
     dropped on import and hidden on the list and the PDF
     (`ADspaceSmReport.adName`).
-  - Draft with AI on the Commentary step (`report-draft` edge function,
-    secrets `ANTHROPIC_API_KEY` and `REPORT_DRAFT_MODEL`,
-    `docs/REPORT-DRAFT-SETUP.md`): sends the report id alone; the function
-    reads the report as the caller (Reports Work, a draft) and sends Claude
-    only its figures, never a client name, contact, note or image. The
-    draft fills the four fields; nothing is saved until Save, and written
-    text is replaced only after Replace.
+  - Draft with AI on the Commentary step of both kinds (`report-draft` edge
+    function, secrets `ANTHROPIC_API_KEY` and `REPORT_DRAFT_MODEL`,
+    `docs/REPORT-DRAFT-SETUP.md`): sends the report id and Notes for the
+    draft (`#rpAiNotes`: reasons, changes, goal, next month's budget; kept
+    in this browser under `adspace-draft-notes:{id}`, never saved with the
+    report); the function reads the report as the caller (Reports Work, a
+    draft) and sends Claude its figures, the notes and the client's last
+    finished report's commentary, the client's name masked as "the brand",
+    never a contact or image. It writes in the house style taken from the
+    team's approved reports (its `SYSTEM`), held to the four fields by
+    structured output: the model in use refuses a forced `tool_choice`.
+    The draft fills the four fields; nothing is saved until Save, and
+    written text is replaced only after Replace.
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective
     and Remove (asks, naming how many), each with Undo.
   - The age split must total 100% (±0.5).

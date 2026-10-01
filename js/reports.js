@@ -1158,6 +1158,9 @@
     box.innerHTML = '<section class="panel rp-form">' +
       '<div class="rp-aidraft"><p class="rp-hint">' + (ads ? 'One point a line. Start a line with a dash for a sub-point.' : 'One point a line.') + '</p>' +
         '<button class="btn btn-sm" type="button" data-a="aidraft">Draft with AI</button></div>' +
+      '<details class="fmore rp-ainotes"><summary>Notes for the draft <span class="fmore-sum"></span></summary>' +
+        '<div class="row"><div><label class="field-label" for="rpAiNotes">Reasons, changes, goal, next month\'s budget</label>' +
+        '<textarea class="input" id="rpAiNotes" rows="3" data-none="Optional" data-some="Written"></textarea></div></div></details>' +
       '<div class="msg" data-m="ai"></div>' +
       fields.map(area).join('') +
       (more.length ? '<details class="fmore" data-none="Optional"><summary>More sections</summary>' +
@@ -1197,10 +1200,22 @@
        the team to read and edit. Nothing is saved until Save; what is
        already written is replaced only once the person says so. */
     var ab = box.querySelector('[data-a="aidraft"]'), am = box.querySelector('[data-m="ai"]');
+    /* What the figures cannot show (why spend moved, a form changed, an ad
+       paused, the goal, next month's budget) is typed here and sent with the
+       draft. It is never saved with the report, so it never reaches the
+       client; this browser keeps it for the report until it is cleared. */
+    var notes = $('rpAiNotes'), noteKey = 'adspace-draft-notes:' + r.id;
+    try { notes.value = localStorage.getItem(noteKey) || ''; } catch (e) { /* storage refused */ }
+    var notesFold = notes.closest('details');
+    if (notes.value) notesFold.open = true;
+    if (notesFold.__paint) notesFold.__paint();
+    notes.addEventListener('input', function () {
+      try { if (notes.value.trim()) localStorage.setItem(noteKey, notes.value); else localStorage.removeItem(noteKey); } catch (e) { /* storage refused */ }
+    });
     var draft = function () {
       ab.disabled = true; ab.textContent = 'Drafting';
       say(am, '');
-      db.functions.invoke('report-draft', { body: { report_id: r.id } }).then(function (res) {
+      db.functions.invoke('report-draft', { body: { report_id: r.id, notes: notes.value.trim() } }).then(function (res) {
         var d = res && res.data;
         if (res.error || !d || d.error || !d.draft) { throw new Error((d && d.error) || 'ai-failed'); }
         fields.forEach(function (x) { if (typeof d.draft[x[0]] === 'string') $('rpT_' + x[0]).value = d.draft[x[0]]; });

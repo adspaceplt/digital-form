@@ -5,11 +5,13 @@
  * report's id here. The function reads the report as the caller, under the
  * caller's own access (a colleague with Reports at Work, the report still a
  * draft), builds a summary of its figures and sends only that to the Claude
- * API: the period, the account totals, the previous period, and each ad or
- * post's figures. No client name, contact, note or image leaves the
- * database. The answer is four fields of text, which the page puts in the
- * fields for the team to edit; nothing is saved here and nothing is
- * published.
+ * API: the period, the account totals, the previous period, each ad or
+ * post's figures, the notes the colleague typed for this draft, and the
+ * client's last finished report's commentary. The client's name is masked
+ * as "the brand" wherever the team's words carry it; no contact, image or
+ * billing detail leaves the database. The answer is four fields of text,
+ * which the page puts in the fields for the team to edit; nothing is saved
+ * here and nothing is published.
  *
  * Secrets: ANTHROPIC_API_KEY and REPORT_DRAFT_MODEL (the model id), set in
  *          the Supabase dashboard (docs/REPORT-DRAFT-SETUP.md), plus the
@@ -52,16 +54,56 @@ const FIELDS: Record<string, [string, string][]> = {
            ['underperformed', 'Areas to improve: one point a line'], ['next_actions', 'Next steps: one point a line']]
 };
 
-const SYSTEM = [
-  'You draft the commentary of a monthly social media report that a Malaysian and Singaporean digital marketing agency sends its client.',
-  'Write in polished, professional British English for a business owner: clear, specific and benefit-first, never hype, never generic.',
-  'Every point rests on a figure in the data given; name the figure. Never invent a number, a cause, an audience or a benchmark that the data does not show.',
-  'Compare with the previous period only where its figures are given. Where a figure is missing, say nothing about it.',
-  'Ads are named as they are in the data. Use the currency shown. Write dates as 12 Sept 2026.',
-  'No dashes as punctuation, no emoji, no exclamation marks, no first person singular. Refer to the agency as "we" and to the client as "your".',
-  'Bullet fields are one point a line with no bullet characters; a line starting with a dash is a sub-point, used sparingly.',
-  'Keep each field short: the summary two or three sentences, each list two to four points.'
-].join('\n');
+/* The house style, taken from the team's approved ads reports (the user,
+   2026-10-01) and tightened where those reports were loosest: a reason for
+   every fix, an action with a time for every recommendation, like compared
+   only with like. The example is invented; no client's words are here. */
+const SYSTEM = `You draft the commentary of a monthly social media advertising report that ADspace, a digital marketing agency in Johor Bahru and Singapore, sends its client. A colleague reads your draft, corrects it and sends it; write it ready to send.
+
+VOICE
+Polished, professional British English (optimisation, prioritising) for a business owner who is busy and not a marketer. Confident and specific, never hype, never generic. The agency is "we"; the client is "your" or the brand. Every point gives the figure, then what it means for the client ("showing that", "indicating that"), then, where it applies, what we will do about it.
+
+TRUTH
+Every figure comes from the data given. Never invent a number, a cause, an audience, a benchmark or a plan. A reason is stated only when the team's notes give it (a budget moved to Google Ads, a form changed, an ad paused, unspent budget carried forward); otherwise describe what the figures show and call it what it is ("suggests", "indicates"). Next month's budget, dates and new creatives are mentioned only when the notes give them. Where a figure is missing, say nothing about it.
+
+READING THE FIGURES
+Each ad is priced only by the result its objective was set to get: a leads ad by its cost per lead, a messaging ad by its cost per messaging conversation, a traffic ad by its cost per link click, an awareness ad by its reach and cost per 1,000 people reached. Compare cost per result only between ads counting the same result. CTR shows interest in clicking. Hook rate is how many stopped on the opening; hold rate is how many kept watching after it. A strong hook with a weak hold means the opening works and the middle loses people; a weak hook means the opening needs work. An age split leaning away from the intended audience is worth a sub-point. Spend lower but reach higher is better delivery; say so.
+
+FIELDS
+Summary (intro): one paragraph of three to five sentences. Total spend for the period and its change against the previous period in percent, with the reason when the notes give one; how reach and impressions moved; which objective took most of the budget and why; the strongest ad with its result count, cost per result and CTR. Lead with the client's goal when the notes name one.
+What worked (worked): one point a line, grouped by objective, strongest first; each names the ad, its result count, cost per result and the one or two rates that explain it, then what that shows. A line starting with "- " is a sub-point under the line above, for a second ad in the same objective or a caveat.
+What to fix (fix): one point a line for each ad that underdelivered: the figure that shows it, the likely reason drawn from its own rates, and the action (paused, refined, retargeted, a new opening). If one remedy covers several ads, end with one line saying so.
+Focus for next month (focus): two to four points: how the budget splits across objectives (in percent where the notes or the data support it), which ads continue and where, what new creatives or audiences we will test, and the next period's dates and budget when the notes give them. Each point says "We will".
+
+FORM
+Ads are named exactly as in the data. Money as RM 12.23 (S$ for SGD). Percentages to two decimals for CTR and change, one or none for rates. Dates as 16 Sept to 15 Oct 2026. No dashes as punctuation, no emoji, no exclamation marks, no numbering or bullet characters (the report numbers the lines). Explain a platform term in plain words the first time it appears (ad recall lift: people Meta estimates would remember the ad). When last month's commentary is given, follow up on what it promised: say whether what we tested worked.
+
+EXAMPLE (invented brand and figures, for tone and shape only)
+intro: September spend was RM 2,140.50, 12.40% lower than August, as part of the budget moved to Google Ads. Reach still rose to 182,300 people, showing more efficient delivery. Leads took 70% of the budget and brought 64 leads, with 2609_OpenHouse the strongest at 31 leads for RM 14.20 each and a CTR of 3.85%.
+worked: 2609_OpenHouse generated 31 leads at RM 14.20 cost per lead with the highest CTR of 3.85%, showing that the open house offer is the clearest reason to enquire.
+- Its hold rate of 11.20% was also the strongest, so viewers stayed for the details as well as the opening.
+For Awareness, 2608_Skyline reached 96,400 people at RM 2.05 per 1,000 reached, keeping the brand visible at low cost.
+fix: 2609_Facilities recorded the highest cost per lead at RM 38.90. Its hook rate of 31% was strong but its hold rate fell to 4.80%, so viewers left once the opening ended; we will bring the key message into the first five seconds.
+focus: We will keep about 80% of the budget on Leads and 20% on Awareness.
+We will continue 2609_OpenHouse and pause 2609_Facilities until its new cut is ready.`;
+
+/* The accounts report keeps the same voice and truth, on its own fields. */
+const SOCIAL_SYSTEM = `You draft the commentary of a monthly social media accounts report that ADspace, a digital marketing agency in Johor Bahru and Singapore, sends its client. A colleague reads your draft, corrects it and sends it; write it ready to send.
+
+VOICE
+Polished, professional British English for a busy business owner who is not a marketer. Confident and specific, never hype, never generic. The agency is "we"; the client is "your" or the brand. Every point gives the figure, then what it means for the client, then, where it applies, what we will do.
+
+TRUTH
+Every figure comes from the data given. Never invent a number, a cause, an audience, a benchmark or a plan. A reason is stated only when the team's notes give it; otherwise describe what the figures show ("suggests", "indicates"). Compare with the previous period only where its figures are given.
+
+FIELDS
+Summary (intro): one paragraph of three to five sentences: how each account moved (followers, views, engagement), the strongest post with its figures, and what that says about the content.
+Key findings (performed_well): one point a line, the posts and formats that did best, each with its figures and what made it work as far as the figures show.
+Areas to improve (underperformed): one point a line, what fell short, its figure, the likely reason from the figures and what we will change.
+Next steps (next_actions): two to four points, each starting "We will".
+
+FORM
+Posts are named by their title or date as in the data. Numbers with thousands separators. Dates as 12 Sept 2026. No dashes as punctuation, no emoji, no exclamation marks, no numbering or bullet characters. When last month's commentary is given, follow up on what it promised.`;
 
 function num(v: unknown): number | null {
   const n = typeof v === 'number' ? v : v == null || v === '' ? NaN : Number(v);
@@ -80,6 +122,9 @@ Deno.serve(async (req) => {
 
   const body = await req.json().catch(() => ({}));
   const id = String(body && body.report_id || '');
+  /* What the team knows and the figures cannot show: reasons, changes made,
+     the goal, next month's budget. Typed on the page, never stored. */
+  const notes = String(body && body.notes || '').replace(/\r/g, '').trim().slice(0, 2000);
   if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'bad-request' }, 400, origin);
 
   const auth = req.headers.get('Authorization') ?? '';
@@ -98,10 +143,35 @@ Deno.serve(async (req) => {
   const kind = r.kind === 'ads' ? 'ads' : 'social';
 
   /* The currency follows the client's market, as the page's money does. */
-  const cl = await db.from('clients').select('market').eq('id', r.client_id as string).maybeSingle();
-  const currency = String((cl.data as Record<string, unknown> | null)?.market || '').toUpperCase() === 'SG' ? 'SGD' : 'MYR';
+  const cl = await db.from('clients').select('market, name').eq('id', r.client_id as string).maybeSingle();
+  const crow = (cl.data || {}) as Record<string, unknown>;
+  const currency = String(crow.market || '').toUpperCase() === 'SG' ? 'SGD' : 'MYR';
+  /* The client's name never leaves: wherever the team's words carry it, it
+     reads as the brand. */
+  const cname = String(crow.name || '').trim();
+  const mask = (s: string) => cname.length > 1
+    ? s.replace(new RegExp(cname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), 'the brand') : s;
 
   const data: Record<string, unknown> = { kind, period: { start: r.period_start, end: r.period_end }, currency };
+  if (notes) data.team_notes = mask(notes);
+
+  /* Last period's commentary, so this month follows up on what was said. */
+  const keys = FIELDS[kind].map(([k]) => k);
+  const prev = await db.from('sm_reports')
+    .select('period_start, period_end, intro, insights')
+    .eq('client_id', r.client_id as string).eq('kind', r.kind as string)
+    .neq('status', 'draft').lt('period_end', r.period_start as string)
+    .order('period_end', { ascending: false }).limit(1).maybeSingle();
+  if (!prev.error && prev.data) {
+    const p = prev.data as Record<string, unknown>;
+    const ins = (p.insights || {}) as Record<string, unknown>;
+    const said: Record<string, string> = {};
+    keys.forEach((k) => {
+      const v = k === 'intro' ? [p.intro, ins.executive_summary].filter(Boolean).join('\n\n') : ins[k];
+      if (typeof v === 'string' && v.trim()) said[k] = mask(v.trim()).slice(0, 1500);
+    });
+    if (Object.keys(said).length) data.last_period_commentary = { start: p.period_start, end: p.period_end, ...said };
+  }
   if (kind === 'ads') {
     const ads = await db.from('sm_report_ads')
       .select('name, objective, result_label, audience, starts_on, ends_on, results, reach, impressions, spend, ctr, cpr, hook_rate, hold_rate, avg_play, age, retention')
@@ -116,7 +186,7 @@ Deno.serve(async (req) => {
         impressions: num(t.prev_impressions), spend: num(t.prev_spend), by_objective: t.prev_groups || null };
     }
     data.ads = (ads.data as Record<string, unknown>[]).map((a) => ({
-      ad: adName(a.name), objective: a.objective, result: a.result_label, audience: a.audience,
+      ad: mask(adName(a.name)), objective: a.objective, result: a.result_label, audience: a.audience,
       ran: a.starts_on ? [a.starts_on, a.ends_on] : null,
       results: num(a.results), reach: num(a.reach), impressions: num(a.impressions), spend: num(a.spend),
       ctr_pct: num(a.ctr), cost_per_result: num(a.cpr) ?? (num(a.spend) !== null && num(a.results) ? Math.round(num(a.spend)! / num(a.results)! * 100) / 100 : null),
@@ -143,7 +213,9 @@ Deno.serve(async (req) => {
     });
     data.posts = (ps.data as Record<string, unknown>[]).map((p) => {
       const out: Record<string, unknown> = {};
-      Object.keys(p).forEach((k) => { if (p[k] !== null && p[k] !== '') out[k === 'platform_id' ? 'account_ref' : k] = p[k]; });
+      Object.keys(p).forEach((k) => {
+        if (p[k] !== null && p[k] !== '') out[k === 'platform_id' ? 'account_ref' : k] = typeof p[k] === 'string' ? mask(p[k] as string) : p[k];
+      });
       return out;
     });
   }
@@ -164,9 +236,9 @@ Deno.serve(async (req) => {
     const res = await client.messages.create({
       model: secret('REPORT_DRAFT_MODEL'),
       max_tokens: 16000,
-      system: SYSTEM,
+      system: kind === 'ads' ? SYSTEM : SOCIAL_SYSTEM,
       output_config: { format: { type: 'json_schema', schema } },
-      messages: [{ role: 'user', content: 'Draft the commentary for this report.\n\n' + JSON.stringify(data) }]
+      messages: [{ role: 'user', content: 'Draft the commentary for this report. The report\'s figures follow as JSON, with the team\'s notes (team_notes) and last period\'s commentary (last_period_commentary) where there are any.\n\n' + JSON.stringify(data) }]
     } as Anthropic.MessageCreateParamsNonStreaming);
     if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') {
       console.error('report-draft: answer stopped short', res.stop_reason);
