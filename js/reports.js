@@ -1310,7 +1310,7 @@
       }
       db.functions.invoke('report-draft', { body: body }).then(function (res) {
         var d = res && res.data;
-        if (res.error || !d || d.error || !d.draft) { throw new Error((d && d.error) || 'ai-failed'); }
+        if (res.error || !d || d.error || !d.draft) { var x = new Error((d && d.error) || 'ai-failed'); x.d = d; throw x; }
         fields.forEach(function (x) { fill('rpT_' + x[0], d.draft[x[0]]); });
         (d.draft.platforms || []).forEach(function (pl) {
           PLAT_FIELDS.forEach(function (f) { fill('rpP_' + pl.ref + '_' + f[0], pl[f[0]]); });
@@ -1318,7 +1318,7 @@
         (d.draft.posts || []).forEach(function (pp) { fill('rpN_' + pp.ref, pp.remark); });
         say(am, 'Drafted. Read it through, then Save.', 'ok');
       }).catch(function (e) {
-        say(am, AI_SAID[e && e.message] || said(e), 'err');
+        say(am, e && e.message === 'ai-limit' ? aiLimit(e.d) : (AI_SAID[e && e.message] || said(e)), 'err');
       }).then(function () { ab.disabled = false; ab.textContent = 'Draft with AI'; });
     };
     ab.addEventListener('click', function () {
@@ -1327,7 +1327,22 @@
       window.ADspaceConfirm.ask({ title: 'Replace the commentary?', body: 'The draft replaces what is written in these fields. Nothing is saved until Save.', go: 'Replace' }, draft);
     });
   }
+  /* The database counts every press (5 a report, 20 a colleague, 60 the
+     team in 24 hours); a refusal says which and when the next one is free. */
+  function aiLimit(d) {
+    d = d || {};
+    var at = d.next ? new Date(d.next) : null;
+    var when = at && !isNaN(at.getTime())
+      ? at.getDate() + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][at.getMonth()] + ', ' +
+        ((at.getHours() % 12) || 12) + ':' + String(at.getMinutes()).padStart(2, '0') + (at.getHours() < 12 ? 'am' : 'pm')
+      : '';
+    var who = d.scope === 'report' ? 'This report has had its ' + (d.limit || 5) + ' drafts for the day.'
+      : d.scope === 'person' ? 'You have used your ' + (d.limit || 20) + ' drafts for the day.'
+      : 'The team has used its ' + (d.limit || 60) + ' drafts for the day.';
+    return who + (when ? ' The next is free from ' + when + '.' : '');
+  }
   var AI_SAID = {
+    'needs-update': 'This needs a database update.',
     'ai-not-set-up': 'Draft with AI needs its key in Supabase.',
     'ai-key': 'The AI key was refused. Check it in Supabase.',
     'ai-busy': 'The AI service is busy. Try again in a minute.',

@@ -22,6 +22,15 @@ form changed, what the client's goal is or what next month's budget will be.
 Write those in Notes for the draft, one fact a line, before pressing Draft
 with AI. The draft states a reason or a plan only when the notes give it.
 
+## Limits
+
+The database counts every press: 5 drafts a report, 20 a colleague and 60 the
+whole team in any 24 hours. A draft that failed is not counted. When a limit
+is reached the page says which one and when the next draft is free. The
+numbers are in `ai_draft_claim` (`supabase/migrations/2026-10-01-draft-with-ai-limits.sql`).
+For a hard ceiling on cost, also set a monthly spend limit in the Claude
+Console (Settings, Limits).
+
 ## One-time setup (the account owner)
 
 1. At console.anthropic.com, open **Billing** and add credits (the API is

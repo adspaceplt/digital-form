@@ -1696,6 +1696,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     platform's four fields and each post's remark, read platform by
     platform. Nothing is saved until Save, and written text is replaced only
     after Replace.
+  - Every press is counted by the database before Claude is asked
+    (`ai_draft_claim`, `2026-10-01-draft-with-ai-limits.sql`): 5 drafts a
+    report, 20 a colleague, 60 the team in any 24 hours; a failed press is
+    marked failed by the function (`ai_draft_done`) and not counted.
+    `ai_drafts` has RLS on, no policy and no grants. A refusal (`ai-limit`)
+    names the scope and when the next draft is free.
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective
     and Remove (asks, naming how many), each with Undo.
   - The age split must total 100% (±0.5).

@@ -155,6 +155,7 @@ Deno.serve(async (req) => {
   if (r.status !== 'draft') return json({ error: 'not-draft' }, 200, origin);
   const kind = r.kind === 'ads' ? 'ads' : 'social';
 
+
   /* The currency follows the client's market, as the page's money does. */
   const cl = await db.from('clients').select('market, name').eq('id', r.client_id as string).maybeSingle();
   const crow = (cl.data || {}) as Record<string, unknown>;
@@ -259,6 +260,17 @@ Deno.serve(async (req) => {
   }
   const schema = { type: 'object', properties, required: Object.keys(properties), additionalProperties: false };
 
+  /* Every press is counted by the database once the report has something
+     to draft from and before Claude is asked: 5 drafts a report, 20 a
+     colleague and 60 the team in any 24 hours. A press that fails is marked
+     failed and not counted. */
+  const claim = await db.rpc('ai_draft_claim', { p_report: id });
+  if (claim.error) return json({ error: 'needs-update' }, 200, origin);
+  const got = (claim.data || {}) as Record<string, unknown>;
+  if (got.error) return json(got, 200, origin);
+  const pressId = String(got.id || '');
+  const done = (ok: boolean) => db.rpc('ai_draft_done', { p_id: pressId, p_ok: ok }).then(() => null, () => null);
+
   try {
     const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY') });
     /* The answer is held to the schema by structured output, never a forced
@@ -273,6 +285,7 @@ Deno.serve(async (req) => {
     } as Anthropic.MessageCreateParamsNonStreaming);
     if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') {
       console.error('report-draft: answer stopped short', res.stop_reason);
+      await done(false);
       return json({ error: 'ai-incomplete' }, 200, origin);
     }
     const text = res.content.filter((b) => b.type === 'text').map((b) => b.type === 'text' ? b.text : '').join('');
@@ -280,12 +293,13 @@ Deno.serve(async (req) => {
     try { draft = JSON.parse(text); } catch { draft = null; }
     if (!draft || typeof draft !== 'object') {
       console.error('report-draft: no draft in the answer', res.stop_reason);
+      await done(false);
       return json({ error: 'ai-incomplete' }, 200, origin);
     }
     const clean = (v: unknown) => String(v ?? '').replace(/\r/g, '').trim();
     const out: Record<string, unknown> = {};
     for (const [k] of fields) {
-      if (typeof draft[k] !== 'string') return json({ error: 'ai-incomplete' }, 200, origin);
+      if (typeof draft[k] !== 'string') { await done(false); return json({ error: 'ai-incomplete' }, 200, origin); }
       out[k] = clean(draft[k]);
     }
     if (Array.isArray(draft.platforms)) {
@@ -296,7 +310,8 @@ Deno.serve(async (req) => {
       out.posts = (draft.posts as Record<string, unknown>[]).filter((x) => targets.posts.includes(String(x.ref)))
         .map((x) => ({ ref: String(x.ref), remark: clean(x.remark) }));
     }
-    return json({ draft: out }, 200, origin);
+    await done(true);
+    return json({ draft: out, left: got.left }, 200, origin);
   } catch (e) {
     /* The API's own type and message go to the function's log (never the
        key, which the SDK does not echo), so a refusal can be named. */
@@ -305,6 +320,7 @@ Deno.serve(async (req) => {
     const type = err.error?.error?.type || '';
     const said = err.error?.error?.message || err.message || '';
     console.error('report-draft: Claude API refused', status, type, said);
+    await done(false);
     const code = status === 401 || status === 403 ? 'ai-key'
       : status === 429 || status === 529 ? 'ai-busy'
       : /credit balance/i.test(said) ? 'ai-credit'
