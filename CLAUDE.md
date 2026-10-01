@@ -65,6 +65,9 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
   - A `cut()` of `schema.sql` always ends at the next banner.
 
 **One command, one result:** `bash tests/gate.sh <suites… | all | ui>`.
+- The test commands run without a permission prompt (`.claude/settings.json`:
+  `tests/snap.sh`, `tests/gate.sh`, `node tests/…`, `node --check`; the user,
+  2026-10-01). Nothing else is pre-approved there.
 - It runs browser suites three at a time, the Postgres suites in their own
   lane, then uxaudit and matrix.
 - It prints one line per suite and ends `gate: ok` or `gate: PROBLEM (n)`
