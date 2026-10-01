@@ -1041,16 +1041,10 @@
        row of S(3) at least, so the text sits in the row with the same space
        above and below it. */
     var T = { size: TY.cell, lh: S(1), padX: S(-2), padY: (S(3) - S(1)) / 2, minH: S(3) };
-    /* A result in a table: its count and short word, 0 Leads where an ad
-       spent and had none, 1 Lead for one (the user, 2026-10-01). Where the pair is wider than its column (`frac` of the
-       page's width) the word goes under the count, so neither breaks. */
-    function countWord(n, label, frac, f) {
-      var v = num(n) || 0, w = shortResult(label);
-      if (v === 1 && /s$/.test(w)) w = w.replace(/s$/, '');
-      var t = fmt(v) + ' ' + w;
-      if (frac && width(t, T.size, f) > CW * frac - T.padX * 2) t = t.replace(' ', '\n');
-      return t;
-    }
+    /* A result in a table is its count alone: the objective heads the
+       table and the client reads the cost per result (the user,
+       2026-10-01). 0 where an ad spent and had none. */
+    function count(n) { return fmt(num(n) || 0); }
     function cellLines(c, w) {
       if (c == null) return [];
       if (typeof c === 'string' || typeof c === 'number') c = { t: String(c) };
@@ -1710,11 +1704,11 @@
           var withPrev = am.groups.some(function (g) { return g.prevCpr !== undefined && g.prevCpr !== null; }) && at.hasPrev;
           blockTitle('Results by objective', T.minH * (am.groups.length + 1));
           table([{ w: 0.19, align: 'left' }, { w: 0.23 }, { w: 0.17 }, { w: 0.18 }, { w: 0.23 }],
-            [{ t: 'Objective', align: 'left' }, 'Result', 'Amount spent *', 'Cost per result', 'Share of spend'],
+            [{ t: 'Objective', align: 'left' }, 'Results', 'Amount spent *', 'Cost per result', 'Share of spend'],
             am.groups.map(function (g) {
               return { minH: withPrev ? S(4) + S(1) : T.minH, cells: [
                 { t: g.name, f: reg },
-                { t: countWord(g.results, g.label, 0.23), f: med },
+                { t: count(g.results), f: med },
                 money(g.spend),
                 { t: cost(g.cpr) + (g.per1000 ? ' per 1,000' : '') + (withPrev && g.prevCpr !== null && g.prevCpr !== undefined ? '\nPrevious ' + cost(g.prevCpr) : '') },
                 { fn: function (x, top, w, h) {
@@ -1810,7 +1804,7 @@
           var base = ly - LH / 2 - TY.small * 0.34;
           /* A figure not given reads as a dash: a line is a table row. */
           var got = function (v, f0) { return num(v) === null ? '\u2014' : f0(v); };
-          var cells = [(OBJECTIVES[a.objective] || {}).name || 'Other', got(a.spend, money), countWord(a.results, a._label),
+          var cells = [(OBJECTIVES[a.objective] || {}).name || 'Other', got(a.spend, money), count(a.results),
             a._cpr === null ? '\u2014' : cost(a._cpr) + (a._per1000 ? ' / 1,000' : ''), got(a.reach, fmt), got(a.ctr, pctv)];
           cells.forEach(function (t0, i) {
             var w0 = (RW - PAD * 2) * LCOLS[i];
@@ -1927,17 +1921,14 @@
           var oneKind = uniq(g.ads.map(function (a) { return a._label + '|' + a._per1000; })).length === 1;
           var best = g.ads.length > 1 && oneKind && ranked[0] && ranked[0]._cpr !== null ? ranked[0] : null;
           var perK = g.ads.every(function (a) { return a._per1000; });
-          /* Each result reads as its count and one short word, on one line
-             where it fits and the word under the count where it does not;
-             never broken inside a word. No result reads 0 Leads. */
           /* The ad's name takes the room the figures do not need, so a name
              reads whole on its line (the user, 2026-10-01: 2608W4_OldOwnorInves|t). */
-          table([{ w: 0.27, align: 'left' }, { w: 0.17 }, { w: 0.15 }, { w: 0.15 }, { w: 0.16 }, { w: 0.1 }],
+          table([{ w: 0.31, align: 'left' }, { w: 0.17 }, { w: 0.15 }, { w: 0.11 }, { w: 0.16 }, { w: 0.1 }],
             [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', 'Results', perK ? 'Per 1,000 reached' : 'Cost per result', 'CTR'],
             ranked.map(function (a) {
               var f = a === best ? med : book;
               return { cells: [{ t: adName(a.name) + (words(a.audience).trim() ? '\n' + words(a.audience).trim() + ' audience' : ''), f: f },
-                { t: range(a.starts_on, a.ends_on), f: f }, { t: money(a.spend), f: f }, { t: countWord(a.results, a._label, 0.15, f), f: f },
+                { t: range(a.starts_on, a.ends_on), f: f }, { t: money(a.spend), f: f }, { t: count(a.results), f: f },
                 { t: a._cpr === null ? '\u2014' : cost(a._cpr) + (!perK && a._per1000 ? ' per 1,000' : ''), f: f },
                 { t: num(a.ctr) === null ? '\u2014' : pctv(a.ctr), f: f }] };
             }), { labelCol: false });
