@@ -1500,7 +1500,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Google Meet: only `meet-create` touches the calendar (the refresh token lives
   in its secrets).
   - It asks `ops_engagement_meet_prepare` as the caller.
-  - It refuses an overlapping slot (`slot-taken`).
+  - It refuses a slot only where another online meeting overlaps it (a Meet
+    link, or a Meet, Zoom or Teams address on the event; `slot-taken`);
+    other events on the shared calendar do not count.
   - It re-reads until `hangoutLink` appears, and records `meet-pending`.
   - It names a setup fault (`meet-not-set-up` with the missing names;
     `google-token`; `google-refused`).

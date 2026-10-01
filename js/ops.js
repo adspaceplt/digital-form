@@ -6743,10 +6743,14 @@
            the sheet stays open so the time can change, and the list behind
            it already shows the save. */
         btn.disabled = false;
-        if (d && d.error === 'slot-taken') $('meetTime').focus();
         msg('meetMsg', 'Saved. ' + meetSaid(d), 'warn');
         meetBookShown();
         repaint();
+        /* The line sits under Led by, below the sheet's fold: it is brought
+           into sight, or the sheet reads as stuck open for no reason. */
+        var said = $('meetMsg');
+        if (said && said.scrollIntoView) said.scrollIntoView({ block: 'nearest' });
+        if (d && d.error === 'slot-taken') $('meetTime').focus({ preventScroll: true });
       });
     }, function () { btn.disabled = false; });
   }

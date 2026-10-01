@@ -5,9 +5,10 @@
  *
  * The calendar is the shared account's, reached with a refresh token held in
  * this function's secrets, so nobody on the team signs in to Google and the
- * token never reaches a browser. A slot that already holds an event on that
- * calendar is refused and named, so two meetings cannot be booked into the
- * same half hour.
+ * token never reaches a browser. A slot that already holds another online
+ * meeting on that calendar (a Meet link, or a Meet, Zoom or Teams address) is
+ * refused and named, so two calls cannot be booked into the same half hour;
+ * the calendar's other events do not count.
  *
  * Secrets: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN
  *          (docs/GOOGLE-MEET-SETUP.md), plus the platform's SUPABASE_URL and
@@ -120,15 +121,20 @@ Deno.serve(async (req) => {
   const start = new Date(String(m.meeting_at));
   const end = new Date(start.getTime() + Number(m.meeting_minutes || 30) * 60000);
 
-  /* The shared calendar says whether the slot is free. Anything on it that
-     overlaps, other than this month's own event, refuses the booking and is
-     named, so the person can pick another time. */
+  /* The shared calendar holds the team's other plans too, so only another
+     online meeting in the same slot refuses the booking (the user,
+     2026-10-01): an event carrying a Meet link, or a Meet, Zoom or Teams
+     address. It is named, so the person can pick another time; a shoot or a
+     reminder in the slot is left alone. */
   const list = await fetch(`${CAL}?` + new URLSearchParams({
-    timeMin: start.toISOString(), timeMax: end.toISOString(), singleEvents: 'true', maxResults: '10'
+    timeMin: start.toISOString(), timeMax: end.toISOString(), singleEvents: 'true', maxResults: '50'
   }), { headers: g });
   if (!list.ok) return json({ error: 'google-refused', reason: await why(list) }, 200, origin);
+  const MEETING = /https?:\/\/([a-z0-9-]+\.)*(meet\.google\.com|zoom\.us|teams\.microsoft\.com|teams\.live\.com)\//i;
+  const online = (x: Record<string, unknown>) => Boolean(meetLinkOf(x)) ||
+    MEETING.test(String(x.location || '')) || MEETING.test(String(x.description || ''));
   const clash = ((await list.json()).items || []).find((x: Record<string, unknown>) =>
-    x.id !== eventId && x.status !== 'cancelled' && x.transparency !== 'transparent');
+    x.id !== eventId && x.status !== 'cancelled' && online(x));
   if (clash) {
     return json({ error: 'slot-taken', summary: String(clash.summary || 'Busy'),
       start: (clash.start as Record<string, string>)?.dateTime || null,

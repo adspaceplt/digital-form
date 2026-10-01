@@ -591,9 +591,16 @@
     var p = picker();
     if (typeof p.showPicker !== 'function') return;
     lift(el);
+    /* The hidden field takes the box's own place and size, and its layout is
+       read before the calendar opens: Safari anchors the calendar to where
+       it last laid the field out, so a first open drew it at the window's
+       top left corner (the user, 2026-10-01). */
     var r = el.getBoundingClientRect();
     p.style.left = Math.round(r.left) + 'px';
-    p.style.top = Math.round(r.bottom - 1) + 'px';
+    p.style.top = Math.round(r.top) + 'px';
+    p.style.width = Math.round(r.width) + 'px';
+    p.style.height = Math.round(r.height) + 'px';
+    void p.getBoundingClientRect();
     p.min = el.min || ''; p.max = el.max || '';
     VALUE.set.call(p, el.value || '');
     pickFor = el;
