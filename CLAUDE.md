@@ -1666,8 +1666,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     formula is found from the rows and worked out on the ad's whole
     figures; without one, hook is 3-second plays over impressions and hold
     ThruPlays over 3-second plays. Rows from more than one ad account are
-    refused. A result indicator key reads as its word
-    (`ADspaceSmReport.resultWord`).
+    refused. The result type comes from the first row that names one (never
+    Meta's `mixed`), a key reading as its word (`ADspaceSmReport.resultWord`).
+    The team's creator code ending a name (`_000` to `_999`) is dropped on
+    import and never shown on the list or the PDF (`ADspaceSmReport.adName`).
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective
     and Remove (asks, naming how many), each with Undo.
   - The age split must total 100% (±0.5).

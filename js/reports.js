@@ -1237,6 +1237,7 @@
   }
   function playOut(v) { if (v == null || v === '') return ''; var s = Math.round(Number(v)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
   /* Ads Manager's own key for a result reads as its word (js/smreport.js). */
+  function adName(x) { var AN = window.ADspaceSmReport && window.ADspaceSmReport.adName; return AN ? AN(x) : (x || ''); }
   function resultWord(x) { var RW = window.ADspaceSmReport && window.ADspaceSmReport.resultWord; return RW ? RW(x) : (x || ''); }
   function adCpr(a) {
     if (a.cpr != null && a.cpr !== '') return Number(a.cpr);
@@ -1381,7 +1382,7 @@
           return '<div class="crm-row rp-ad-row' + (pick && pick[a.id] ? ' is-picked' : '') + '" data-id="' + esc(a.id) + '">' +
             (pick ? tick(a.id, 'Select ' + a.name, !!pick[a.id]) : '') +
             '<span class="rp-thumb">' + (a.thumb_data ? '<img src="' + esc(a.thumb_data) + '" alt="">' : '') + '</span>' +
-            '<span class="rp-name"><b>' + esc(a.name) + '</b><small>' + esc(sub) + '</small></span>' +
+            '<span class="rp-name"><b>' + esc(adName(a.name)) + '</b><small>' + esc(sub) + '</small></span>' +
             '<span class="rp-num rp-spend">' + esc(money2(a.spend)) + '</span>' +
             '<span class="rp-num rp-res">' + esc(fmt(a.results)) + '</span>' +
             '<span class="rp-num rp-cpr">' + esc(c == null ? '—' : money2(c)) + '</span>' +
@@ -1684,7 +1685,7 @@
     });
     if (head.indexOf('name') < 0) return { error: 'The header row needs an Ad name column.' };
     var byKey = {}, order = [], skipped = 0, daily = 0, accounts = {};
-    var RW = window.ADspaceSmReport && window.ADspaceSmReport.resultWord;
+    var RW = window.ADspaceSmReport && window.ADspaceSmReport.resultWord, AN = window.ADspaceSmReport && window.ADspaceSmReport.adName;
     var hasAge = head.indexOf('age') > -1;
     var NUMS = ['results', 'reach', 'impressions', 'spend', 'plays3', 'thruplays', 'plays', 'v25', 'v50', 'v75', 'v95', 'v100'];
     var acc0 = function () { return { n: {}, w: {}, rows: [], count: 0, ctrw: 0 }; };
@@ -1713,12 +1714,15 @@
       var key = raw.ad_id ? 'id:' + raw.ad_id + '|' + raw.name : [raw.name, obj, raw.audience || ''].join('|');
       var ad = byKey[key];
       if (!ad) {
-        ad = byKey[key] = { name: raw.name, objective: obj, audience: raw.audience || null,
-          result_label: raw.result_label ? (RW ? RW(raw.result_label) : raw.result_label) : null,
+        ad = byKey[key] = { name: AN ? AN(raw.name) : raw.name, objective: obj, audience: raw.audience || null,
+          result_label: null,
           own_start: null, own_end: null, rep_start: null, rep_end: null, days: {}, ran_from: null, ran_to: null,
           band: acc0(), total: acc0(), _age: {} };
         order.push(key);
       }
+      /* The result type from the first row that names one: a row with no
+         results names none, and Meta's `mixed` names nothing. */
+      if (!ad.result_label && raw.result_label && !/^mixed$/i.test(raw.result_label.trim())) ad.result_label = RW ? RW(raw.result_label) : raw.result_label;
       var im = numIn(raw.impressions);
       /* A report laid out as a table by age carries a row for the ad with no
          age (its total) above its bands: the total is the ad's figures, the
@@ -1829,12 +1833,12 @@
        that export's dates and keeps its figures: the monthly export gives
        the figures and the reach, the daily one the days each ad ran. */
     var already = function (r0) {
-      var same = st.ads.filter(function (a) { return a.name === r0.name; });
+      var same = st.ads.filter(function (a) { return adName(a.name) === r0.name; });
       if (same.length > 1 && r0.audience) same = same.filter(function (a) { return (a.audience || '') === r0.audience; });
       if (same.length > 1) same = same.filter(function (a) { return a.objective === r0.objective; });
       return same.length === 1 ? same[0] : null;
     };
-    var named = function (r0) { return st.ads.some(function (a) { return a.name === r0.name; }); };
+    var named = function (r0) { return st.ads.some(function (a) { return adName(a.name) === r0.name; }); };
     var read = function () {
       var out = parseAdRows($('rpPAText').value, { year: year, start: st.open.period_start, end: st.open.period_end }, $('rpPAObj').value);
       if (out.error) { sum.textContent = $('rpPAText').value.trim() ? out.error : ''; go.disabled = true; return out; }
