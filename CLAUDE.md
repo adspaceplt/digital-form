@@ -1699,6 +1699,16 @@ Each line is a rule that broke once. Its reason is in the archive.
     platform's four fields and each post's remark, read platform by
     platform. Nothing is saved until Save, and written text is replaced only
     after Replace.
+  - The draft's language is a segment beside the button (English / 中文,
+    `#rpAiLang`, sent as `lang`), kept per client in this browser
+    (`adspace-draft-lang:{client}`) and first taken from the main contact's
+    preferred language; Chinese is written as Chinese (`ZH`), the report's
+    own headings staying English.
+  - Every draft keeps to `SHARED`: only what the client needs, a few points
+    a field, one sentence a point; and never a word against the creative,
+    copy, plan or targeting we made: a shortfall is read as what the
+    audience showed and what we will test next. The ads field `fix` is
+    headed Areas to improve.
   - Every press is counted by the database before Claude is asked
     (`ai_draft_claim`, `2026-10-01-draft-with-ai-limits.sql`): a report has
     one draft and drafting it again is an admin's (`team_members.is_admin`;
