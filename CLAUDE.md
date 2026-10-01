@@ -1642,7 +1642,13 @@ Each line is a rule that broke once. Its reason is in the archive.
     PDF (`.rp-pdf-short`).
   - The step foot is an action row, the primary at the right edge.
   - An empty step's line does not repeat the head's Add.
-  - The commentary is four fields, with no title or headline.
+  - The commentary has no title or headline. An ads report's is four
+    fields. An accounts report's is the summary, then one block a platform
+    group (written to its lead account: Summary line, Highlights, Areas to
+    improve, Recommendations) with Why it stood out for its top three posts
+    (`ADspaceSmReport.topOf`, ranked on that platform alone), and the older
+    across-platform fields folded under Across all platforms. The step
+    counts the summary and each platform (`commentaryState`).
 - The client record's tab shows finished reports only (`sm_client_reports`,
   `sm_report_file`).
 - The client portal reads only the newest version that has not been withdrawn
@@ -1660,7 +1666,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     the report is one creative (the name without its creator code), objective,
     ad set and result type: its copies, age bands and days are gathered into
     it; two result types (Post engagements, Interactions) are never added
-    together. Ad ID ties each row to its ad; without it, one name with two
+    together; Post engagements reads Engagements. Ad ID ties each row to its ad; without it, one name with two
     result types is refused. A table's total row gives the figures once.
     A paste naming ads already in the report updates them with what it holds
     and adds the rest: a day export the dates (first and last day with
@@ -1682,11 +1688,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     report); the function reads the report as the caller (Reports Work, a
     draft) and sends Claude its figures, the notes and the client's last
     finished report's commentary, the client's name masked as "the brand",
-    never a contact or image. It writes in the house style taken from the
-    team's approved reports (its `SYSTEM`), held to the four fields by
-    structured output: the model in use refuses a forced `tool_choice`.
-    The draft fills the four fields; nothing is saved until Save, and
-    written text is replaced only after Replace.
+    never a contact or image. It writes in a formal, client-facing house
+    style taken from the team's approved reports (`SYSTEM`, `SOCIAL_SYSTEM`),
+    held to its fields by structured output: the model in use refuses a
+    forced `tool_choice`. An accounts report sends the platforms and top
+    posts the step shows (`platforms`, `posts`) and gets back each
+    platform's four fields and each post's remark, read platform by
+    platform. Nothing is saved until Save, and written text is replaced only
+    after Replace.
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective
     and Remove (asks, naming how many), each with Undo.
   - The age split must total 100% (±0.5).
@@ -1709,6 +1718,15 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The PDF:
   - Every section on its own page, on a golden-ratio scale, with a 33.3pt
     margin; no Methodology page.
+  - The foot is PRIVATE & CONFIDENTIAL and the page count on the margin's
+    line; no draft or version line.
+  - Every emoji is drawn and embedded before any page is laid out
+    (`sh.ready()` before `draw`).
+  - An accounts report reads: Executive summary; Insights and
+    recommendations, one block a platform; each platform's page with its top
+    three posts ranked on that platform alone, each with its figures, its
+    caption on its own lines and its remarks; the appendix. Posts are never
+    ranked across platforms.
   - Named `{client} {report} {period}.pdf`.
   - The first kind is the Social Media Accounts Report.
 

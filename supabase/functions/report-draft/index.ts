@@ -61,7 +61,7 @@ const FIELDS: Record<string, [string, string][]> = {
 const SYSTEM = `You draft the commentary of a monthly social media advertising report that ADspace, a digital marketing agency in Johor Bahru and Singapore, sends its client. A colleague reads your draft, corrects it and sends it; write it ready to send.
 
 VOICE
-Polished, professional British English (optimisation, prioritising) for a business owner who is busy and not a marketer. Confident and specific, never hype, never generic. The agency is "we"; the client is "your" or the brand. Every point gives the figure, then what it means for the client ("showing that", "indicating that"), then, where it applies, what we will do about it.
+Formal, corporate and client-facing British English (optimisation, prioritising), written for a business owner who is busy and not a marketer: complete sentences, measured and confident, never casual, never hype, never generic. No contractions, no slang, no internal shorthand. The agency is "we"; the client is "your" or the brand. Every point gives the figure, then what it means for the client ("showing that", "indicating that"), then, where it applies, what we will do about it.
 
 TRUTH
 Every figure comes from the data given. Never invent a number, a cause, an audience, a benchmark or a plan. A reason is stated only when the team's notes give it (a budget moved to Google Ads, a form changed, an ad paused, unspent budget carried forward); otherwise describe what the figures show and call it what it is ("suggests", "indicates"). Next month's budget, dates and new creatives are mentioned only when the notes give them. Where a figure is missing, say nothing about it.
@@ -87,20 +87,29 @@ fix: 2609_Facilities recorded the highest cost per lead at RM 38.90. Its hook ra
 focus: We will keep about 80% of the budget on Leads and 20% on Awareness.
 We will continue 2609_OpenHouse and pause 2609_Facilities until its new cut is ready.`;
 
-/* The accounts report keeps the same voice and truth, on its own fields. */
+/* The accounts report keeps the same voice and truth, read platform by
+   platform (the user, 2026-10-01: each platform's algorithm works
+   differently), with remarks on each platform's top posts and the content
+   to plan next. */
 const SOCIAL_SYSTEM = `You draft the commentary of a monthly social media accounts report that ADspace, a digital marketing agency in Johor Bahru and Singapore, sends its client. A colleague reads your draft, corrects it and sends it; write it ready to send.
 
 VOICE
-Polished, professional British English for a busy business owner who is not a marketer. Confident and specific, never hype, never generic. The agency is "we"; the client is "your" or the brand. Every point gives the figure, then what it means for the client, then, where it applies, what we will do.
+Formal, corporate and client-facing British English, written for a busy business owner who is not a marketer: complete sentences, measured and confident, never casual, never hype, never generic. No contractions, no slang, no internal shorthand. The agency is "we"; the client is "your" or the brand. Every point gives the figure, then what it means for the client, then, where it applies, what we will do.
 
 TRUTH
-Every figure comes from the data given. Never invent a number, a cause, an audience, a benchmark or a plan. A reason is stated only when the team's notes give it; otherwise describe what the figures show ("suggests", "indicates"). Compare with the previous period only where its figures are given.
+Every figure comes from the data given. Never invent a number, a cause, an audience or a benchmark. A reason is stated only when the team's notes give it; otherwise describe what the figures show ("suggests", "indicates"). Compare with the previous period only where its figures are given. Recommendations may draw on how each platform works (TikTok rewards watch time and a strong first two seconds; Instagram Reels reach beyond followers while carousels earn saves; rednote rewards saves, searchable titles and an authentic first-person voice; Facebook rewards shares and community conversation), but never present that as a measured result.
+
+READ EACH PLATFORM ON ITS OWN
+Platforms are never ranked against each other and their figures are never added into one judgement: each has its own audience and algorithm. Compare a post only with posts on the same platform.
 
 FIELDS
-Summary (intro): one paragraph of three to five sentences: how each account moved (followers, views, engagement), the strongest post with its figures, and what that says about the content.
-Key findings (performed_well): one point a line, the posts and formats that did best, each with its figures and what made it work as far as the figures show.
-Areas to improve (underperformed): one point a line, what fell short, its figure, the likely reason from the figures and what we will change.
-Next steps (next_actions): two to four points, each starting "We will".
+intro: one paragraph of three to five sentences across the whole report: what the month achieved on each platform in one clause each, the standout result, and the direction for next month.
+platforms (one entry for each ref given):
+  summary: one sentence, the platform's month in a line.
+  worked: two to four points, one a line, on what performed and why as far as the figures show (formats, topics, timing, hooks).
+  improve: one to three points, one a line, on what fell short, its figure, the likely reason and what we will change.
+  actions: two to four points, one a line, each starting "We will": the content we will plan for next month on this platform (formats, themes, series, posting rhythm, hooks, captions or keywords), built on what worked.
+posts (one entry for each ref given): remark: one or two sentences on why the post stood out on its platform, from its figures, its format and its caption (the hook, the topic, the offer), never inventing what the data does not show.
 
 FORM
 Posts are named by their title or date as in the data. Numbers with thousands separators. Dates as 12 Sept 2026. No dashes as punctuation, no emoji, no exclamation marks, no numbering or bullet characters. When last month's commentary is given, follow up on what it promised.`;
@@ -125,6 +134,10 @@ Deno.serve(async (req) => {
   /* What the team knows and the figures cannot show: reasons, changes made,
      the goal, next month's budget. Typed on the page, never stored. */
   const notes = String(body && body.notes || '').replace(/\r/g, '').trim().slice(0, 2000);
+  /* The accounts report names the platforms and top posts its Commentary
+     step shows, so the draft answers for exactly those. */
+  const wantPlat = Array.isArray(body && body.platforms) ? (body.platforms as unknown[]).map(String).slice(0, 20) : [];
+  const wantPost = Array.isArray(body && body.posts) ? (body.posts as unknown[]).map(String).slice(0, 60) : [];
   if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: 'bad-request' }, 400, origin);
 
   const auth = req.headers.get('Authorization') ?? '';
@@ -153,6 +166,7 @@ Deno.serve(async (req) => {
     ? s.replace(new RegExp(cname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), 'the brand') : s;
 
   const data: Record<string, unknown> = { kind, period: { start: r.period_start, end: r.period_end }, currency };
+  const targets: { platforms: string[]; posts: string[] } = { platforms: [], posts: [] };
   if (notes) data.team_notes = mask(notes);
 
   /* Last period's commentary, so this month follows up on what was said. */
@@ -197,7 +211,7 @@ Deno.serve(async (req) => {
   } else {
     const pf = await db.from('sm_report_platforms').select('*').eq('report_id', id);
     const ps = await db.from('sm_report_posts')
-      .select('platform_id, posted_on, title, content_type, views, reach, impressions, interactions, engagements, likes, comments, shares, saves')
+      .select('id, platform_id, posted_on, title, caption, content_type, views, reach, impressions, interactions, engagements, likes, comments, shares, saves')
       .eq('report_id', id).order('position', { ascending: true });
     if (pf.error || ps.error) return json({ error: 'not-found' }, 200, origin);
     if (!(ps.data || []).length) return json({ error: 'no-posts' }, 200, origin);
@@ -209,24 +223,41 @@ Deno.serve(async (req) => {
         if (p[k] !== null && p[k] !== '') out[k] = p[k];
       });
       out.ref = p.id;
+      out.platform = p.group_label || p.platform;
       return out;
     });
     data.posts = (ps.data as Record<string, unknown>[]).map((p) => {
       const out: Record<string, unknown> = {};
       Object.keys(p).forEach((k) => {
-        if (p[k] !== null && p[k] !== '') out[k === 'platform_id' ? 'account_ref' : k] = typeof p[k] === 'string' ? mask(p[k] as string) : p[k];
+        if (k === 'id' || p[k] === null || p[k] === '') return;
+        const v = typeof p[k] === 'string' ? mask(p[k] as string) : p[k];
+        out[k === 'platform_id' ? 'account_ref' : k] = k === 'caption' ? String(v).slice(0, 800) : v;
       });
+      out.ref = p.id;
       return out;
     });
+    const platIds = new Set((pf.data as Record<string, unknown>[]).map((p) => String(p.id)));
+    const postIds = new Set((ps.data as Record<string, unknown>[]).map((p) => String(p.id)));
+    targets.platforms = wantPlat.filter((x) => platIds.has(x));
+    targets.posts = wantPost.filter((x) => postIds.has(x));
+    data.platforms_to_write = targets.platforms;
+    data.posts_to_remark = targets.posts;
   }
 
-  const fields = FIELDS[kind];
-  const schema = {
-    type: 'object',
-    properties: Object.fromEntries(fields.map(([k, d]) => [k, { type: 'string', description: d }])),
-    required: fields.map(([k]) => k),
-    additionalProperties: false
-  };
+  const fields = kind === 'ads' ? FIELDS.ads : [FIELDS.social[0]];
+  const str = (d: string) => ({ type: 'string', description: d });
+  const properties: Record<string, unknown> = Object.fromEntries(fields.map(([k, d]) => [k, str(d)]));
+  if (kind !== 'ads' && targets.platforms.length) {
+    properties.platforms = { type: 'array', items: { type: 'object', additionalProperties: false,
+      required: ['ref', 'summary', 'worked', 'improve', 'actions'],
+      properties: { ref: { type: 'string', enum: targets.platforms }, summary: str('One sentence'), worked: str('Highlights, one point a line'),
+        improve: str('Areas to improve, one point a line'), actions: str('Recommendations and next month content, one point a line') } } };
+  }
+  if (kind !== 'ads' && targets.posts.length) {
+    properties.posts = { type: 'array', items: { type: 'object', additionalProperties: false, required: ['ref', 'remark'],
+      properties: { ref: { type: 'string', enum: targets.posts }, remark: str('Why the post stood out, one or two sentences') } } };
+  }
+  const schema = { type: 'object', properties, required: Object.keys(properties), additionalProperties: false };
 
   try {
     const client = new Anthropic({ apiKey: secret('ANTHROPIC_API_KEY') });
@@ -238,7 +269,7 @@ Deno.serve(async (req) => {
       max_tokens: 16000,
       system: kind === 'ads' ? SYSTEM : SOCIAL_SYSTEM,
       output_config: { format: { type: 'json_schema', schema } },
-      messages: [{ role: 'user', content: 'Draft the commentary for this report. The report\'s figures follow as JSON, with the team\'s notes (team_notes) and last period\'s commentary (last_period_commentary) where there are any.\n\n' + JSON.stringify(data) }]
+      messages: [{ role: 'user', content: 'Draft the commentary for this report. The report\'s figures follow as JSON, with the team\'s notes (team_notes), last period\'s commentary (last_period_commentary), and for an accounts report the platforms to write for (platforms_to_write) and the posts to remark on (posts_to_remark), where there are any.\n\n' + JSON.stringify(data) }]
     } as Anthropic.MessageCreateParamsNonStreaming);
     if (res.stop_reason === 'refusal' || res.stop_reason === 'max_tokens') {
       console.error('report-draft: answer stopped short', res.stop_reason);
@@ -251,10 +282,19 @@ Deno.serve(async (req) => {
       console.error('report-draft: no draft in the answer', res.stop_reason);
       return json({ error: 'ai-incomplete' }, 200, origin);
     }
-    const out: Record<string, string> = {};
+    const clean = (v: unknown) => String(v ?? '').replace(/\r/g, '').trim();
+    const out: Record<string, unknown> = {};
     for (const [k] of fields) {
       if (typeof draft[k] !== 'string') return json({ error: 'ai-incomplete' }, 200, origin);
-      out[k] = (draft[k] as string).replace(/\r/g, '').trim();
+      out[k] = clean(draft[k]);
+    }
+    if (Array.isArray(draft.platforms)) {
+      out.platforms = (draft.platforms as Record<string, unknown>[]).filter((x) => targets.platforms.includes(String(x.ref)))
+        .map((x) => ({ ref: String(x.ref), summary: clean(x.summary), worked: clean(x.worked), improve: clean(x.improve), actions: clean(x.actions) }));
+    }
+    if (Array.isArray(draft.posts)) {
+      out.posts = (draft.posts as Record<string, unknown>[]).filter((x) => targets.posts.includes(String(x.ref)))
+        .map((x) => ({ ref: String(x.ref), remark: clean(x.remark) }));
     }
     return json({ draft: out }, 200, origin);
   } catch (e) {

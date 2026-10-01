@@ -379,12 +379,31 @@
   function myId() { var m = me(); return m && m.id; }
 
   /* What each step holds, in the words its button says under its name. */
-  function commentaryCount() {
-    var r = st.open || {}, ins = r.insights || {};
-    return TEXT[r.kind === 'ads' ? 'ads' : 'social'].filter(function (x) {
-      return String((x[0] === 'intro' ? (r.intro || ins.executive_summary) : ins[x[0]]) || '').trim();
-    }).length;
+  /* What the commentary holds, against what it can hold. An accounts report
+     counts its summary and one block a platform (the user, 2026-10-01:
+     findings are read platform by platform); an ads report its four fields. */
+  function socialGroups() {
+    var M = window.ADspaceSmReport;
+    if (!M || !M.model) return [];
+    /* The model marks each post with its group, so it is given copies: the
+       rows the page holds stay plain data. */
+    var copy = function (x) { return Object.assign({}, x); };
+    var mdl = M.model({ report: st.open || {}, platforms: st.platforms.map(copy), posts: st.posts.map(copy) });
+    return mdl.groups.map(function (g) { return { label: g.label, lead: g.accounts[0], top: M.topOf(g, 3) }; });
   }
+  var PLAT_FIELDS = [['summary', 'Summary line'], ['worked', 'Highlights'], ['improve', 'Areas to improve'], ['actions', 'Recommendations']];
+  function commentaryState() {
+    var r = st.open || {}, ins = r.insights || {};
+    var has = function (v) { return String(v || '').trim() !== ''; };
+    if (r.kind === 'ads') {
+      return { n: TEXT.ads.filter(function (x) { return has(x[0] === 'intro' ? (r.intro || ins.executive_summary) : ins[x[0]]); }).length, of: 4 };
+    }
+    var groups = socialGroups();
+    var n = has(r.intro || ins.executive_summary) ? 1 : 0;
+    groups.forEach(function (g) { if (PLAT_FIELDS.some(function (f) { return has(g.lead[f[0]]); })) n++; });
+    return { n: n, of: 1 + groups.length };
+  }
+  function commentaryCount() { return commentaryState().n; }
   function stepDone(k) {
     var r = st.open || {}, t = r.ads_totals || {};
     if (k === 'accounts') return st.platforms.length > 0;
@@ -400,7 +419,7 @@
     if (k === 'posts') return st.posts.length ? plural(st.posts.length, 'post') : 'None yet';
     if (k === 'ads') return st.ads.length ? plural(st.ads.length, 'ad') : 'None yet';
     if (k === 'figures') return (r.ads_totals || {}).reach != null ? 'Reach entered' : 'Reach not entered';
-    if (k === 'text') { var n = commentaryCount(); return n ? n + ' of 4 written' : 'Not written'; }
+    if (k === 'text') { var cs = commentaryState(); return cs.n ? cs.n + ' of ' + cs.of + ' written' : 'Not written'; }
     return (STATUS[r.status] || STATUS.draft)[0];
   }
 
@@ -1128,33 +1147,56 @@
   }
 
   // ---- The report's commentary ---------------------------------------------------------------
-  /* Four fields, the same for both kinds: a summary, what stood out, what to
-     improve, and what comes next. A summary written as an executive summary
-     before this form existed is read into the one field. The pages already
-     carry their own headings, so no title or headline is asked for. */
+  /* An ads report: four fields, a summary, what worked, what to fix and the
+     focus. An accounts report: the summary for the whole report, then one
+     block a platform (the user, 2026-10-01: each platform's algorithm works
+     differently, so it is read on its own): its line, highlights, what to
+     improve and what we recommend, written to the account's own row, with
+     the remarks on that platform's top three posts (each post's Why it
+     stood out). What older reports wrote across all platforms is kept in a
+     fold. A summary written as an executive summary before this form
+     existed is read into the one field. */
   function paintText() {
     var box = st.host.querySelector('.rp-text');
     if (!box) return;
     var r = st.open, ins = r.insights || {}, ads = r.kind === 'ads';
-    var fields = TEXT[ads ? 'ads' : 'social'];
+    var fields = ads ? TEXT.ads : [TEXT.social[0]];
+    var more = ads ? [] : TEXT.social.slice(1).concat(TEXT_MORE);
+    var groups = ads ? [] : socialGroups();
     var valOf = function (k) {
       if (k !== 'intro') return ins[k];
       return [r.intro, ins.executive_summary].filter(function (x) { return String(x || '').trim(); }).join('\n\n');
     };
-    var more = ads ? [] : TEXT_MORE;
+    var has = function (v) { return String(v || '').trim() !== ''; };
     if (!editable()) {
-      var rows = fields.concat(more).map(function (x) { return [x[1], valOf(x[0])]; })
-        .filter(function (x) { return String(x[1] || '').trim(); });
+      var rows = fields.map(function (x) { return [x[1], valOf(x[0])]; });
+      groups.forEach(function (g) {
+        PLAT_FIELDS.forEach(function (f) { rows.push([g.label + ' · ' + f[1], g.lead[f[0]]]); });
+        g.top.forEach(function (p) { rows.push([g.label + ' · ' + postName(p), p.notable]); });
+      });
+      more.forEach(function (x) { rows.push([x[1], valOf(x[0])]); });
+      rows = rows.filter(function (x) { return has(x[1]); });
       if (!rows.length) { UI.emptyLine(box, 'No commentary.'); return; }
       box.innerHTML = '<div class="ovcard"><dl class="ovfacts rp-facts">' + rows.map(function (x) {
         return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]).replace(/\n/g, '<br>') + '</dd>';
       }).join('') + '</dl></div>';
       return;
     }
-    var area = function (x) {
-      return '<div class="row"><div><label class="field-label" for="rpT_' + x[0] + '">' + esc(x[1]) + '</label>' +
-        '<textarea class="input" id="rpT_' + x[0] + '" rows="' + (x[3] || 3) + '"' + (x[2] ? ' placeholder="' + esc(x[2]) + '"' : '') + '></textarea></div></div>';
+    var area = function (id, label, ph, rowsN) {
+      return '<div class="row"><div><label class="field-label" for="' + id + '">' + esc(label) + '</label>' +
+        '<textarea class="input" id="' + id + '" rows="' + (rowsN || 3) + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '></textarea></div></div>';
     };
+    var platHtml = groups.map(function (g) {
+      var id = g.lead.id;
+      return '<section class="fsec rp-plat" data-acc="' + esc(id) + '"><h4 class="fsec-h">' + esc(g.label) + '</h4>' +
+        '<div class="row"><div><label class="field-label" for="rpP_' + id + '_summary">Summary line</label><input class="input" id="rpP_' + id + '_summary" type="text"></div></div>' +
+        area('rpP_' + id + '_worked', 'Highlights', 'One point a line') +
+        area('rpP_' + id + '_improve', 'Areas to improve', 'One point a line') +
+        area('rpP_' + id + '_actions', 'Recommendations', 'One point a line') +
+        g.top.map(function (p, i) {
+          return area('rpN_' + p.id, 'Top post ' + (i + 1) + ': ' + postName(p), 'Why it stood out', 2);
+        }).join('') + '</section>';
+    }).join('');
     box.innerHTML = '<section class="panel rp-form">' +
       '<div class="rp-aidraft"><p class="rp-hint">' + (ads ? 'One point a line. Start a line with a dash for a sub-point.' : 'One point a line.') + '</p>' +
         '<button class="btn btn-sm" type="button" data-a="aidraft">Draft with AI</button></div>' +
@@ -1162,16 +1204,31 @@
         '<div class="row"><div><label class="field-label" for="rpAiNotes">Reasons, changes, goal, next month\'s budget</label>' +
         '<textarea class="input" id="rpAiNotes" rows="3" data-none="Optional" data-some="Written"></textarea></div></div></details>' +
       '<div class="msg" data-m="ai"></div>' +
-      fields.map(area).join('') +
-      (more.length ? '<details class="fmore" data-none="Optional"><summary>More sections</summary>' +
-        more.map(function (x) { return area([x[0], x[1], 'One point a line', 3]); }).join('') + '</details>' : '') +
+      fields.map(function (x) { return area('rpT_' + x[0], x[1], x[2], x[3]); }).join('') +
+      platHtml +
+      (more.length ? '<details class="fmore rp-across"><summary>Across all platforms <span class="fmore-sum"></span></summary>' +
+        more.map(function (x) { return area('rpT_' + x[0], x[1], 'One point a line', 3).replace('<textarea ', '<textarea data-none="Optional" data-some="Written" '); }).join('') + '</details>' : '') +
       '<div class="rp-stepfoot"><button class="btn btn-primary" type="button" data-a="savenext">Save and continue</button>' +
         '<button class="btn" type="button" data-a="savetext">Save</button><div class="msg" data-m="text"></div></div></section>';
     fields.concat(more).forEach(function (x) { $('rpT_' + x[0]).value = valOf(x[0]) || ''; });
-    var fold = box.querySelector('details.fmore');
-    if (fold) fold.open = more.some(function (x) { return String(ins[x[0]] || '').trim(); });
+    groups.forEach(function (g) {
+      PLAT_FIELDS.forEach(function (f) { $('rpP_' + g.lead.id + '_' + f[0]).value = g.lead[f[0]] || ''; });
+      g.top.forEach(function (p) { $('rpN_' + p.id).value = p.notable || ''; });
+    });
+    var fold = box.querySelector('details.rp-across');
+    if (fold) fold.open = more.some(function (x) { return has(ins[x[0]]); });
     if (window.ADspaceForm) window.ADspaceForm.scan(box);
     var m = box.querySelector('[data-m="text"]');
+    /* Every field the step shows, for Draft with AI's question before it
+       replaces what is written. */
+    var allIds = function () {
+      var ids = fields.map(function (x) { return 'rpT_' + x[0]; });
+      groups.forEach(function (g) {
+        PLAT_FIELDS.forEach(function (f) { ids.push('rpP_' + g.lead.id + '_' + f[0]); });
+        g.top.forEach(function (p) { ids.push('rpN_' + p.id); });
+      });
+      return ids;
+    };
     var save = function (btn, then) {
       var insights = {};
       Object.keys(ins).forEach(function (k) { insights[k] = ins[k]; });
@@ -1182,23 +1239,53 @@
         if (v) insights[x[0]] = v; else delete insights[x[0]];
       });
       var row = { intro: $('rpT_intro').value.trim() || null, headline: null, insights: insights };
+      /* A platform's row and a post's remark are written only where they
+         changed; each answer is read back, so a refusal is named. */
+      var jobs = [];
+      groups.forEach(function (g) {
+        var patch = {}, changed = false;
+        PLAT_FIELDS.forEach(function (f) {
+          var v = $('rpP_' + g.lead.id + '_' + f[0]).value.trim() || null;
+          patch[f[0]] = v;
+          if ((g.lead[f[0]] || null) !== v) changed = true;
+        });
+        if (changed) jobs.push(db.from('sm_report_platforms').update(patch).eq('id', g.lead.id).select('*').then(function (res) {
+          if (res.error || !(res.data || []).length) throw res.error || new Error('The database refused the change.');
+          st.platforms = st.platforms.map(function (x) { return x.id === res.data[0].id ? res.data[0] : x; });
+        }));
+        g.top.forEach(function (p) {
+          var v = $('rpN_' + p.id).value.trim() || null;
+          if ((p.notable || null) === v) return;
+          jobs.push(db.from('sm_report_posts').update({ notable: v }).eq('id', p.id).select('*').then(function (res) {
+            if (res.error || !(res.data || []).length) throw res.error || new Error('The database refused the change.');
+            st.posts = st.posts.map(function (x) { return x.id === res.data[0].id ? res.data[0] : x; });
+          }));
+        });
+      });
       btn.disabled = true;
-      db.from('sm_reports').update(row).eq('id', r.id).select('*').then(function (res) {
-        btn.disabled = false;
-        if (res.error || !(res.data || []).length) { say(m, said(res.error || 'The database refused the change.'), 'err'); return; }
+      jobs.unshift(db.from('sm_reports').update(row).eq('id', r.id).select('*').then(function (res) {
+        if (res.error || !(res.data || []).length) throw res.error || new Error('The database refused the change.');
         st.open = res.data[0];
+      }));
+      Promise.all(jobs).then(function () {
+        btn.disabled = false;
         paintSteps();
         if (then) { then(); return; }
         say(m, 'Saved.', 'ok');
+      }).catch(function (e) {
+        btn.disabled = false;
+        say(m, said(e), 'err');
       });
     };
     var sb = box.querySelector('[data-a="savetext"]'), sn = box.querySelector('[data-a="savenext"]');
     sb.addEventListener('click', function () { save(sb); });
     sn.addEventListener('click', function () { save(sn, function () { goStep('check'); }); });
     /* Draft with AI (the user, 2026-10-01): the report's own figures are sent
-       to the report-draft function, and its draft fills the four fields for
-       the team to read and edit. Nothing is saved until Save; what is
-       already written is replaced only once the person says so. */
+       to the report-draft function, and its draft fills the fields for the
+       team to read and edit. Nothing is saved until Save; what is already
+       written is replaced only once the person says so. An accounts report
+       names the platforms and posts this step shows, so the draft answers
+       for exactly these. */
     var ab = box.querySelector('[data-a="aidraft"]'), am = box.querySelector('[data-m="ai"]');
     /* What the figures cannot show (why spend moved, a form changed, an ad
        paused, the goal, next month's budget) is typed here and sent with the
@@ -1212,22 +1299,32 @@
     notes.addEventListener('input', function () {
       try { if (notes.value.trim()) localStorage.setItem(noteKey, notes.value); else localStorage.removeItem(noteKey); } catch (e) { /* storage refused */ }
     });
+    var fill = function (id, v) { var el = $(id); if (el && typeof v === 'string') el.value = v; };
     var draft = function () {
       ab.disabled = true; ab.textContent = 'Drafting';
       say(am, '');
-      db.functions.invoke('report-draft', { body: { report_id: r.id, notes: notes.value.trim() } }).then(function (res) {
+      var body = { report_id: r.id, notes: notes.value.trim() };
+      if (!ads) {
+        body.platforms = groups.map(function (g) { return g.lead.id; });
+        body.posts = [].concat.apply([], groups.map(function (g) { return g.top.map(function (p) { return p.id; }); }));
+      }
+      db.functions.invoke('report-draft', { body: body }).then(function (res) {
         var d = res && res.data;
         if (res.error || !d || d.error || !d.draft) { throw new Error((d && d.error) || 'ai-failed'); }
-        fields.forEach(function (x) { if (typeof d.draft[x[0]] === 'string') $('rpT_' + x[0]).value = d.draft[x[0]]; });
+        fields.forEach(function (x) { fill('rpT_' + x[0], d.draft[x[0]]); });
+        (d.draft.platforms || []).forEach(function (pl) {
+          PLAT_FIELDS.forEach(function (f) { fill('rpP_' + pl.ref + '_' + f[0], pl[f[0]]); });
+        });
+        (d.draft.posts || []).forEach(function (pp) { fill('rpN_' + pp.ref, pp.remark); });
         say(am, 'Drafted. Read it through, then Save.', 'ok');
       }).catch(function (e) {
         say(am, AI_SAID[e && e.message] || said(e), 'err');
       }).then(function () { ab.disabled = false; ab.textContent = 'Draft with AI'; });
     };
     ab.addEventListener('click', function () {
-      var written = fields.some(function (x) { return $('rpT_' + x[0]).value.trim(); });
+      var written = allIds().some(function (id) { return $(id) && $(id).value.trim(); });
       if (!written) { draft(); return; }
-      window.ADspaceConfirm.ask({ title: 'Replace the commentary?', body: 'The draft replaces what is written in the four fields. Nothing is saved until Save.', go: 'Replace' }, draft);
+      window.ADspaceConfirm.ask({ title: 'Replace the commentary?', body: 'The draft replaces what is written in these fields. Nothing is saved until Save.', go: 'Replace' }, draft);
     });
   }
   var AI_SAID = {
@@ -1251,11 +1348,11 @@
      because it cannot be added up from the ads; impressions and spend are
      summed from the ads where nobody typed them. */
   var OBJECTIVES = [['leads', 'Leads', 'Leads'], ['messaging', 'Messaging', 'Messaging conversations'], ['sales', 'Sales', 'Purchases'],
-                    ['traffic', 'Traffic', 'Link clicks'], ['engagement', 'Engagement', 'Post engagements'],
+                    ['traffic', 'Traffic', 'Link clicks'], ['engagement', 'Engagement', 'Engagements'],
                     ['awareness', 'Awareness', 'Reach'], ['app', 'App promotion', 'App installs']];
   var OBJ_WORD = {};
   OBJECTIVES.forEach(function (o) { OBJ_WORD[o[0]] = o[1]; });
-  var RESULT_TYPES = ['Leads', 'Messaging conversations', 'Purchases', 'Link clicks', 'Landing page views', 'Post engagements',
+  var RESULT_TYPES = ['Leads', 'Messaging conversations', 'Purchases', 'Link clicks', 'Landing page views', 'Engagements',
                       'Engagement', 'ThruPlays', 'Ad recall lift', 'Reach', 'Impressions', 'App installs'];
   var AGE_BANDS = ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'];
   var RET = [['p25', '25%'], ['p50', '50%'], ['p75', '75%'], ['p95', '95%'], ['p100', '100%']];

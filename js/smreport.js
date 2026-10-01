@@ -51,8 +51,8 @@
   var R = W - M, CW = R - M;    // the text column: 528.7pt
   var HEAD_Y = H - M - 11.6;    // the wordmark's baseline: its cap height under the top margin
   var TOP = HEAD_Y - S(5);      // the page title's baseline, one margin under the head
-  var FOOT_Y = M + S(1);        // PRIVATE & CONFIDENTIAL and the page count
-  var FLOOR = FOOT_Y + S(4);    // nothing draws below this; the foot is under it
+  var FOOT_Y = M;               // PRIVATE & CONFIDENTIAL and the page count, on the margin
+  var FLOOR = M + S(1) + S(4);  // nothing draws below this; the foot is under it
   // The type roles, each a step of the scale.
   var TY = {
     cover: S(5), coverSub: S(3), coverMeta: S(1),
@@ -117,9 +117,10 @@
   function words(s) { return String(s == null ? '' : s).replace(/\r/g, ''); }
   /* Ads Manager's result indicator is a key (`actions:post_engagement`,
      `onsite_conversion.messaging_conversation_started_7d`); a report reads
-     the word for it. A label somebody typed is left as typed. */
+     the word for it. A label somebody typed is left as typed, except Post
+     engagements, which a client reads as Engagements (the user, 2026-10-01). */
   var RESULT_KEY = [
-    [/post_engagement$/, 'Post engagements'], [/page_engagement$/, 'Page engagements'], [/post_reaction$/, 'Post reactions'],
+    [/post_engagement$/, 'Engagements'], [/page_engagement$/, 'Page engagements'], [/post_reaction$/, 'Post reactions'],
     [/(^|[:.])like$/, 'Page likes'], [/link_click$/, 'Link clicks'], [/landing_page_view$/, 'Landing page views'],
     [/messaging_conversation_started/, 'Messaging conversations started'], [/messaging_first_reply/, 'New messaging contacts'],
     [/lead/, 'Leads'], [/purchase/, 'Purchases'], [/add_to_cart/, 'Adds to cart'], [/complete_registration/, 'Registrations completed'],
@@ -132,6 +133,7 @@
   function adName(s) { return String(s == null ? '' : s).trim().replace(/[\s_-]+(\d)\1\1$/, ''); }
   function resultWord(s) {
     var t = String(s == null ? '' : s).trim();
+    if (/^post engagements?$/i.test(t)) return 'Engagements';
     if (!t || /\s/.test(t) || !/[:._]/.test(t)) return t;
     var k = t.toLowerCase();
     for (var i = 0; i < RESULT_KEY.length; i++) if (RESULT_KEY[i][0].test(k)) return RESULT_KEY[i][1];
@@ -257,6 +259,20 @@
              mostEngaged: posts.filter(function (p) { return engOf(p) !== null; }).sort(function (a, b) { return engOf(b) - engOf(a); })[0] || null };
   }
   function uniq(a) { var o = []; a.forEach(function (x) { if (o.indexOf(x) < 0) o.push(x); }); return o; }
+  /* A platform's best posts, ranked on that platform alone by its own
+     figure (its rank metric, else its volume): a post is never ranked
+     against another platform's, whose reach works differently. The PDF and
+     the Commentary step both ask this. */
+  function topOf(g, n) {
+    var key = g.rank === 'engagements' || g.rank === 'interactions' ? null : g.rank;
+    var rankIn = function (p) {
+      var v = key ? num(p[key]) : engOf(p);
+      if (v === null && g.volume) v = num(p[g.volume]);
+      return v;
+    };
+    return g.posts.filter(function (p) { return rankIn(p) !== null; })
+      .sort(function (a, b) { return rankIn(b) - rankIn(a); }).slice(0, n || 3);
+  }
 
   /* ---- The advertising report ------------------------------------------------
      One row an ad and objective. What a row cannot say is the account's own:
@@ -648,13 +664,17 @@
         throw new Error('The Chinese font could not be loaded, so the Chinese text in this report cannot be drawn. Check fontCjk in js/config.js.');
       }
       sh = Shaper(PDF, pdf, fonts, warn);
+      /* Every emoji the report holds is drawn and embedded before any page
+         is laid out: the pages are drawn in one pass, and an emoji still on
+         its way left a blank where it belonged (the user, 2026-10-01). */
+      sh.linesOf(everyText, 1e6, 10, fonts.font);
       var thumbJobs = {};
       mdl.posts.concat(mdl.ads).forEach(function (p) {
         var u = p.thumb_url || p.thumb_signed_url || null;
         if (u) thumbJobs[p.id] = embedImage(pdf, u, warn);
       });
       var logoJob = rep.client_logo_url ? embedImage(pdf, rep.client_logo_url, null) : Promise.resolve(null);
-      return Promise.all([Promise.all(Object.keys(thumbJobs).map(function (id) { return thumbJobs[id].then(function (img) { return [id, img]; }); })), logoJob]);
+      return Promise.all([Promise.all(Object.keys(thumbJobs).map(function (id) { return thumbJobs[id].then(function (img) { return [id, img]; }); })), logoJob, sh.ready()]);
     }).then(function (got) {
       var thumbs = {};
       got[0].forEach(function (pair) { thumbs[pair[0]] = pair[1]; });
@@ -692,7 +712,6 @@
     var DATA3 = g(0.80);           // #cccccc: a third series
     var PAPER = g(1);
     var SERIES = [INK, DATA2, DATA3];
-    var isDraft = rep.status !== 'final' || opts.proof;
     var periodW = periodWord(rep.period_start, rep.period_end);
 
     var pages = [];
@@ -1134,44 +1153,108 @@
       weeklyChart(mdl.groups, CHART_WEEK);
     })();
 
-    // ------------------------------------------------ Findings and recommendations
-    (function findings() {
-      var obs = points(ins.performed_well);
-      var acts = points(ins.next_actions);
-      var more = [
-        ['Performance drivers', ins.why_well],
-        ['Areas to improve', ins.underperformed],
-        ['Opportunities', ins.opportunities],
-        ['Improvements', ins.improvements]
-      ].filter(function (r) { return words(r[1]).trim(); });
-      if (!obs.length && words(ins.performed_well).trim()) more.unshift(['Highlights', ins.performed_well]);
-      if (!obs.length && !acts.length && !more.length) return;
-      newPage('Findings and recommendations');
-      pageTitle('Findings and recommendations');
-      if (obs.length || acts.length) {
-        var one = [{ w: 0.5, align: 'left' }, { w: 0.5, align: 'left' }];
-        var cells = [obs.length ? { items: obs } : { t: 'None.', color: MUTE }, acts.length ? { items: acts } : { t: 'None.', color: MUTE }];
-        table(one, [{ t: 'Key findings', align: 'left' }, { t: 'Next steps', align: 'left' }], [{ cells: cells, split: true }]);
-      }
-      /* The rest of the team's remarks, never repeating the two lists above:
-         Key findings is the Highlights field and Next steps the Action plan.
-         The label in its grey column, the points numbered beside it. */
-      if (more.length) {
-        if (obs.length || acts.length) gap(BLOCK);
-        blockTitle('Remarks and recommendations', T.minH * 2);
-        table([{ w: 1 / (PHI * PHI), align: 'left' }, { w: 1 / PHI, align: 'left' }], null,
-          more.map(function (r) { return { cells: [{ t: r[0], f: reg }, { items: points(r[1]) }], split: true }; }),
-          { labelCol: true });
+    // ------------------------------------------------ Insights and recommendations
+    /* One block a platform (the user, 2026-10-01: each platform's algorithm
+       works differently, so its findings are read on their own): the
+       platform's line, then its highlights, what to improve and what we
+       recommend next, from the account's own remarks. Remarks written for
+       the report as a whole (older reports) follow under Across all
+       platforms. */
+    (function insights() {
+      var LAB = [{ w: 1 / (PHI * PHI), align: 'left' }, { w: 1 - 1 / (PHI * PHI), align: 'left' }];
+      var rowsOf = function (list) {
+        return list.filter(function (r) { return words(r[1]).trim(); })
+          .map(function (r) { return { cells: [{ t: r[0], f: reg }, { items: points(r[1]) }], split: true }; });
+      };
+      var blocks = mdl.groups.map(function (gg) {
+        return { gg: gg, lead: words(gg.summary).trim(),
+          rows: rowsOf([['Highlights', gg.worked], ['Areas to improve', gg.improve], ['Recommendations', gg.actions]]) };
+      }).filter(function (b) { return b.lead || b.rows.length; });
+      var across = rowsOf([['Key findings', ins.performed_well], ['Performance drivers', ins.why_well],
+        ['Areas to improve', ins.underperformed], ['Opportunities', ins.opportunities],
+        ['Improvements', ins.improvements], ['Next steps', ins.next_actions]]);
+      if (!blocks.length && !across.length) return;
+      newPage('Insights and recommendations');
+      pageTitle('Insights and recommendations');
+      blocks.forEach(function (b, i) {
+        if (i) gap(BLOCK);
+        blockTitle(b.gg.label, T.minH * 2);
+        if (b.lead) proseBlock(sh.linesOf(b.lead, CW, TY.body, book).map(function (ln) { return { ln: ln, size: TY.body }; }));
+        if (b.rows.length) table(LAB, null, b.rows, { labelCol: true });
+      });
+      if (across.length) {
+        if (blocks.length) gap(BLOCK);
+        blockTitle(blocks.length ? 'Across all platforms' : 'Insights', T.minH * 2);
+        table(LAB, null, across, { labelCol: true });
       }
     })();
+
+    /* A caption as it was written: its own lines and blank lines kept, each
+       line wrapped to the column, at most `max` lines with the rest cut. A
+       blank line is a half step. */
+    var captionLines = function (p, w, max) {
+      var out = [];
+      paragraphsOf(p.caption).forEach(function (s) {
+        if (!s.trim()) { if (out.length && out[out.length - 1] !== null) out.push(null); return; }
+        sh.linesOf(s, w, TY.small, book).forEach(function (ln) { out.push(ln); });
+      });
+      while (out.length && out[out.length - 1] === null) out.pop();
+      if (out.length > max) { out = out.slice(0, max); while (out.length && out[out.length - 1] === null) out.pop(); out.cut = true; }
+      return out;
+    };
+    var captionH = function (lines) { return lines.reduce(function (t, l) { return t + (l === null ? S(-2) : S(0)); }, 0); };
+
+    /* A platform's best posts, ranked on that platform alone by its own
+       figure: the image, the figures, the caption and why it stood out. */
+    var postCards = function (gg, list) {
+      var IMG_W = S(8), IMG_H = IMG_W * 1.25;   // 4:5, the portrait post
+      var dw = CW / PHI - T.padX * 2;           // the details column: the golden major
+      table([{ w: 0.1 }, { w: 1 - 1 / PHI - 0.1 }, { w: 1 / PHI, align: 'left' }],
+        ['Rank', 'Post', { t: 'Details', align: 'left' }],
+        list.map(function (p, i) {
+          var cap = words(p.caption).trim() ? captionLines(p, dw, 10) : [];
+          var notable = words(p.notable).trim() ? sh.linesOf(p.notable, dw, TY.body, book) : [];
+          var metrics = [];
+          if (gg.volume) metrics.push([METRIC_WORD[gg.volume], fmt(p[gg.volume])]);
+          metrics.push([engWord(gg), fmt(engOf(p))]);
+          metrics.push(['Engagement rate', pct(erOf(p))]);
+          var NAME = S(2), META = NAME + S(2), BOX = META + S(-1), LABH = S(2), VALH = S(3);
+          var AFTER = BOX + LABH + VALH + S(2);
+          var textH = AFTER + (cap.length ? captionH(cap) + (cap.cut ? S(0) : 0) + S(-2) : 0) + (notable.length ? S(0) + notable.length * S(1) : 0) + S(-2);
+          var h = Math.max(IMG_H + S(-2) * 2, textH);
+          return { minH: h, cells: [
+            { t: String(i + 1), f: med, size: S(2), align: 'center' },
+            { fn: function (x, top, w, hh) { thumbIn(p, x + (w - IMG_W) / 2, top - (hh - IMG_H) / 2, IMG_W, IMG_H); }, h: h },
+            { fn: function (x, top, w, hh) {
+              var tx = x + T.padX;
+              tline(clip(postName(p), dw, TY.lead, med), tx, top - NAME, TY.lead, med, INK);
+              tline([dayWord(p.posted_on), typeWord(p)].filter(Boolean).join('  ·  '), tx, top - META, TY.small, book, SOFT, dw);
+              var mw = Math.min(S(9), dw / metrics.length);
+              var by = top - BOX;
+              metrics.forEach(function (m, k) {
+                var mx = tx + k * mw;
+                rect(mx, by - LABH, mw, LABH, FILL); frame(mx, by - LABH, mw, LABH);
+                center(m[0], mx + mw / 2, by - LABH / 2 - TY.small * 0.34, TY.small, reg, INK);
+                frame(mx, by - LABH - VALH, mw, VALH);
+                center(m[1], mx + mw / 2, by - LABH - VALH / 2 - TY.body * 0.34, TY.body, med, INK);
+              });
+              var ty = top - AFTER;
+              cap.forEach(function (ln) { if (ln === null) { ty -= S(-2); return; } sh.draw(pg.page, ln, tx, ty, TY.small, SOFT); ty -= S(0); });
+              if (cap.cut) { tline('…', tx, ty, TY.small, book, SOFT); ty -= S(0); }
+              if (cap.length) ty -= S(-2);
+              if (notable.length) {
+                tline('Remarks', tx, ty, TY.small, reg, INK); ty -= S(1);
+                notable.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, TY.body, INK); ty -= S(1); });
+              }
+            }, h: h }
+          ] };
+        }));
+    };
 
     // ------------------------------------------------------- Platform pages
     mdl.groups.forEach(function (gg) {
       newPage(gg.label);
       pageTitle(gg.label);
-      if (words(gg.summary).trim()) {
-        proseBlock(sh.linesOf(gg.summary, CW, TY.lead, med).slice(0, 3).map(function (ln) { return { ln: ln, size: TY.lead }; }));
-      }
       var cells = [{ label: 'Posts', value: String(gg.posts.length) }];
       gg.accounts.forEach(function (a) {
         cells.push({ label: (gg.accounts.length > 1 ? (PLATFORM_WORD[a.platform] || a.platform) + ' follower growth' : 'Follower growth'), value: signed(growthOf(a)) });
@@ -1195,105 +1278,12 @@
         postsChart(gg, CHART_POSTS);
         gap(BLOCK);
       }
-      // The five best, one table: the ranking and every figure it rests on.
-      var ranked = gg.posts.filter(function (p) { return mdl.rankOf(p) !== null; })
-        .sort(function (a, b) { return mdl.rankOf(b) - mdl.rankOf(a); }).slice(0, 5);
+      var ranked = topOf(gg, 3);
       if (ranked.length) {
-        var topV = ranked.reduce(function (m, p) { return Math.max(m, volOf(p) || 0); }, 0) || 1;
-        var ROWH = S(6);
-        var TH = ROWH - S(-2) * 2, TW = TH * 0.8;
-        blockTitle('Top ' + ranked.length + ' posts by ' + METRIC_WORD[mdl.rank].toLowerCase(), T.minH + ROWH * 2);
-        table([{ w: 0.07 }, { w: 0.36 }, { w: 0.25 }, { w: 0.14 }, { w: 0.18 }].map(function (c, i) { if (i === 1) c.align = 'left'; return c; }),
-          ['Rank', { t: 'Post', align: 'left' }, volWord(gg), engWord(gg), 'Engagement rate'],
-          ranked.map(function (p, i) {
-            return { minH: ROWH, cells: [
-              { t: String(i + 1), f: med, align: 'center' },
-              { fn: function (x, top, w, h) {
-                thumbIn(p, x + T.padX, top - S(-2), TW, TH);
-                var tx = x + T.padX + TW + S(-2), tw = w - T.padX * 2 - TW - S(-2);
-                tline(clip(postName(p), tw, TY.body, med), tx, top - h / 2 + 2, TY.body, med, INK);
-                tline([dayWord(p.posted_on), typeWord(p)].filter(Boolean).join('  ·  '), tx, top - h / 2 - S(1) + 2, TY.small, book, SOFT, tw);
-              }, h: ROWH },
-              { fn: function (x, top, w, h) {
-                var v = volOf(p), vs = fmt(v), vw = S(6);
-                var bx = x + T.padX, bwMax = w - T.padX * 2 - vw;
-                rect(bx, top - h / 2 - 3, bwMax, S(-2), FILL);
-                if (v !== null) rect(bx, top - h / 2 - 3, Math.max(0.8, bwMax * v / topV), S(-2), i === 0 ? INK : DATA2);
-                right(vs, x + w - T.padX, top - h / 2 - 3.2, TY.body, i === 0 ? med : book, INK);
-              }, h: ROWH },
-              { t: fmt(engOf(p)), align: 'center' },
-              { t: pct(erOf(p)), align: 'center' }
-            ] };
-          }));
-        gap(BLOCK);
-      }
-      // What the month showed on this platform: three columns, the header row over them.
-      var notes = [['Highlights', gg.worked], ['Areas for improvement', gg.improve], ['Recommendations', gg.actions]]
-        .filter(function (b) { return words(b[1]).trim(); });
-      if (notes.length) {
-        var nc = notes.map(function () { return { w: 1 / notes.length, align: 'left' }; });
-        var row = { cells: notes.map(function (b) { return { items: points(b[1]) }; }), split: true };
-        var probeH = Math.max.apply(null, notes.map(function (b) { return linesH(cellLines({ items: points(b[1]) }, CW / notes.length)); })) + T.padY * 2;
-        if (notes.length > 1 && probeH + T.minH + BLOCK <= TOP - FLOOR) {
-          blockTitle('Remarks', T.minH + Math.min(probeH, 120));
-          table(nc, notes.map(function (b) { return { t: b[0], align: 'left' }; }), [row]);
-        } else {
-          blockTitle('Remarks', 60);
-          table([{ w: 1 / (PHI * PHI), align: 'left' }, { w: 1 / PHI, align: 'left' }], null,
-            notes.map(function (b) { return { cells: [{ t: b[0], f: reg }, { items: points(b[1]) }], split: true }; }), { labelCol: true });
-        }
+        blockTitle('Top ' + (ranked.length === 1 ? 'post' : ranked.length + ' posts') + ' by ' + (METRIC_WORD[gg.rank] || METRIC_WORD[gg.volume] || 'views').toLowerCase(), S(8) * 1.25 + T.minH + S(-2) * 2);
+        postCards(gg, ranked);
       }
     });
-
-    // ------------------------------------------------------- Top posts
-    if (mdl.top.length) {
-      newPage('Top posts');
-      pageTitle('Top posts');
-      var IMG_W = S(8), IMG_H = IMG_W * 1.25;   // 4:5, the portrait post
-      var dw = CW / PHI - T.padX * 2;           // the details column: the golden major
-      table([{ w: 0.1 }, { w: 1 - 1 / PHI - 0.1 }, { w: 1 / PHI, align: 'left' }],
-        ['Rank', 'Post', { t: 'Details', align: 'left' }],
-        mdl.top.map(function (p, i) {
-          var gp = p._group;
-          var cap = words(p.caption).trim() ? sh.linesOf(paragraphsOf(p.caption).filter(function (s) { return s.trim(); }).join(' '), dw, TY.small, book).slice(0, 3) : [];
-          var notable = words(p.notable).trim() ? sh.linesOf(p.notable, dw, TY.body, book) : [];
-          var metrics = [];
-          if (gp && gp.volume) metrics.push([METRIC_WORD[gp.volume], fmt(p[gp.volume])]);
-          metrics.push([engWord(gp), fmt(engOf(p))]);
-          metrics.push(['Engagement rate', pct(erOf(p))]);
-          // The details column, top to bottom, each offset a step of the scale.
-          var NAME = S(2), META = NAME + S(2), BOX = META + S(-1), LABH = S(2), VALH = S(3);
-          var AFTER = BOX + LABH + VALH + S(2);
-          var textH = AFTER + (cap.length ? cap.length * S(0) + S(-2) : 0) + (notable.length ? S(0) + notable.length * S(1) : 0) + S(-2);
-          var h = Math.max(IMG_H + S(-2) * 2, textH);
-          return { minH: h, cells: [
-            { t: String(i + 1), f: med, size: S(2), align: 'center' },
-            { fn: function (x, top, w, hh) { thumbIn(p, x + (w - IMG_W) / 2, top - (hh - IMG_H) / 2, IMG_W, IMG_H); }, h: h },
-            { fn: function (x, top, w, hh) {
-              var tx = x + T.padX;
-              tline(clip(postName(p), dw, TY.lead, med), tx, top - NAME, TY.lead, med, INK);
-              tline([gp ? gp.label : '', dayWord(p.posted_on), typeWord(p)].filter(Boolean).join('  ·  '), tx, top - META, TY.small, book, SOFT, dw);
-              // The figures as a small table of their own.
-              var mw = Math.min(S(9), dw / metrics.length);
-              var by = top - BOX;
-              metrics.forEach(function (m, k) {
-                var mx = tx + k * mw;
-                rect(mx, by - LABH, mw, LABH, FILL); frame(mx, by - LABH, mw, LABH);
-                center(m[0], mx + mw / 2, by - LABH / 2 - TY.small * 0.34, TY.small, reg, INK);
-                frame(mx, by - LABH - VALH, mw, VALH);
-                center(m[1], mx + mw / 2, by - LABH - VALH / 2 - TY.body * 0.34, TY.body, med, INK);
-              });
-              var ty = top - AFTER;
-              cap.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, TY.small, SOFT); ty -= S(0); });
-              if (cap.length) ty -= S(-2);
-              if (notable.length) {
-                tline('Remarks', tx, ty, TY.small, reg, INK); ty -= S(1);
-                notable.forEach(function (ln) { sh.draw(pg.page, ln, tx, ty, TY.body, INK); ty -= S(1); });
-              }
-            }, h: h }
-          ] };
-        }));
-    }
 
     // ------------------------------------------------------- Appendix
     /* All posts, one platform a page, so a platform's list always opens at
@@ -1313,14 +1303,13 @@
         var ROWH = S(7);
         var TH = ROWH - S(-2) * 2, TW = TH * 0.8;
         var rows = gg.posts.map(function (p) {
-          var capTxt = paragraphsOf(p.caption).filter(function (s) { return s.trim(); }).join(' ');
           var remark = words(p.observation).trim();
           var cells = [{ fn: function (x, top, w, h) {
             thumbIn(p, x + T.padX, top - S(-2), TW, TH);
             var tx = x + T.padX + TW + S(-2), tw = w - T.padX * 2 - TW - S(-2);
             var lines = [];
             lines.push({ s: clip(postName(p), tw, TY.body, med), f: med, size: TY.body, c: INK });
-            if (capTxt) sh.linesOf(capTxt, tw, TY.small, book).slice(0, remark ? 1 : 2).forEach(function (ln) { lines.push({ ln: ln, size: TY.small, c: SOFT }); });
+            if (words(p.caption).trim()) captionLines(p, tw, remark ? 1 : 2).forEach(function (ln) { if (ln) lines.push({ ln: ln, size: TY.small, c: SOFT }); });
             if (remark) lines.push({ s: clip('Remarks: ' + remark, tw, TY.small, book), f: book, size: TY.small, c: INK });
             var bh = TY.body + (lines.length - 1) * S(0);
             var ly = top - (h - bh) / 2 - TY.body * 0.8;
@@ -1664,7 +1653,7 @@
           var best = g.ads.length > 1 && oneKind && ranked[0] && ranked[0]._cpr !== null ? ranked[0] : null;
           var perK = g.ads.every(function (a) { return a._per1000; });
           /* The result's word goes under its count, in a column wide enough
-             for Post engagements whole: a word that cannot fit is broken
+             for a result's word whole: a word that cannot fit is broken
              between letters, and "engagement / s" read as a typo. */
           table([{ w: 0.22, align: 'left' }, { w: 0.17 }, { w: 0.14 }, { w: 0.21 }, { w: 0.16 }, { w: 0.1 }],
             [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', g.adLabel.length <= 12 ? g.adLabel : 'Results', perK ? 'Per 1,000 reached' : 'Cost per result', 'CTR'],
@@ -1711,15 +1700,12 @@
     // ------------------------------------------------------- Heads and feet
     /* The rate card's furniture on every page, the cover included, on the
        new margin: the Optima wordmark at S(2) top left and the client's name
-       in small capitals on the right margin; PRIVATE & CONFIDENTIAL over the
-       report's reference at the foot, the page count on the right. Slate
-       Book Italic is not among the portal's fonts, so the reference is Slate
-       Book slanted. */
+       in small capitals on the right margin; PRIVATE & CONFIDENTIAL at the
+       foot on the margin's line, the page count on the right. The line under
+       it naming the draft or the version is gone (the user, 2026-10-01): it
+       lifted the foot off the margin and the page read top heavy. */
     var n = pages.length;
     var label = String(rep.client_name || '').toUpperCase();
-    var ymd = function (iso) { var d = iso ? new Date(iso) : new Date(); return d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0'); };
-    var refLine = isDraft ? 'Draft ' + ymd(rep.generated_at) : 'v.' + (rep.version_no || 1) + ' issued ' + ymd(rep.generated_at);
-    var slant = function (s, x, yy, size, f) { pg.page.drawText(String(s), { x: x, y: yy, size: size, font: f, color: INK, ySkew: PDF.degrees(12) }); };
     var markW = width('ADspace', S(2), mark);
     pages.forEach(function (p, i) {
       pg = p;
@@ -1730,8 +1716,6 @@
         tline(lab, R - lw, HEAD_Y + 0.9, TY.small, med, INK);
       }
       text('PRIVATE & CONFIDENTIAL', M, FOOT_Y, TY.small, med, INK);
-      if (/^[\u0000-ɏ -⁯]*$/.test(refLine)) slant(refLine, M, M, TY.small, book);
-      else tline(refLine, M, M, TY.small, book, INK, CW);
       right('Page ' + (i + 1) + ' of ' + n, R, FOOT_Y, TY.small, book, INK);
     });
     return Promise.resolve(n);
@@ -1758,7 +1742,7 @@
   }
 
   window.ADspaceSmReport = {
-    render: render, model: model, fileName: fileName, periodWord: periodWord, titleOf: titleOf, resultWord: resultWord, adName: adName,
+    render: render, model: model, topOf: topOf, fileName: fileName, periodWord: periodWord, titleOf: titleOf, resultWord: resultWord, adName: adName,
     engOf: engOf, growthOf: growthOf, fmt: fmt, PLATFORM_WORD: PLATFORM_WORD, TYPE_WORD: TYPE_WORD, METRIC_WORD: METRIC_WORD, METRICS: METRICS
   };
 })();
