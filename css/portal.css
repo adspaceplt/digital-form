@@ -2445,7 +2445,8 @@ body.is-plain .topbar { background: var(--chrome); }
    Escape, the focus trap and the dialog announcing itself. */
 .sheet-card[tabindex]:focus { outline: none; }
 @media (max-width: 560px) {
-  .formsheet .sheet-foot > .btn { flex: 1 1 0; min-width: 0; }
+  .formsheet .sheet-foot > .btn,
+  .sheet-wide .sheet-foot > .btn { flex: 1 1 0; min-width: 0; }
 }
 .sheet-card.askcard { width: min(440px, 100%); }
 .askline { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
