@@ -1156,7 +1156,9 @@
         '<textarea class="input" id="rpT_' + x[0] + '" rows="' + (x[3] || 3) + '"' + (x[2] ? ' placeholder="' + esc(x[2]) + '"' : '') + '></textarea></div></div>';
     };
     box.innerHTML = '<section class="panel rp-form">' +
-      '<p class="rp-hint">' + (ads ? 'One point a line. Start a line with a dash for a sub-point.' : 'One point a line.') + '</p>' +
+      '<div class="rp-aidraft"><p class="rp-hint">' + (ads ? 'One point a line. Start a line with a dash for a sub-point.' : 'One point a line.') + '</p>' +
+        '<button class="btn btn-sm" type="button" data-a="aidraft">Draft with AI</button></div>' +
+      '<div class="msg" data-m="ai"></div>' +
       fields.map(area).join('') +
       (more.length ? '<details class="fmore" data-none="Optional"><summary>More sections</summary>' +
         more.map(function (x) { return area([x[0], x[1], 'One point a line', 3]); }).join('') + '</details>' : '') +
@@ -1190,7 +1192,41 @@
     var sb = box.querySelector('[data-a="savetext"]'), sn = box.querySelector('[data-a="savenext"]');
     sb.addEventListener('click', function () { save(sb); });
     sn.addEventListener('click', function () { save(sn, function () { goStep('check'); }); });
+    /* Draft with AI (the user, 2026-10-01): the report's own figures are sent
+       to the report-draft function, and its draft fills the four fields for
+       the team to read and edit. Nothing is saved until Save; what is
+       already written is replaced only once the person says so. */
+    var ab = box.querySelector('[data-a="aidraft"]'), am = box.querySelector('[data-m="ai"]');
+    var draft = function () {
+      ab.disabled = true; ab.textContent = 'Drafting';
+      say(am, '');
+      db.functions.invoke('report-draft', { body: { report_id: r.id } }).then(function (res) {
+        var d = res && res.data;
+        if (res.error || !d || d.error || !d.draft) { throw new Error((d && d.error) || 'ai-failed'); }
+        fields.forEach(function (x) { if (typeof d.draft[x[0]] === 'string') $('rpT_' + x[0]).value = d.draft[x[0]]; });
+        say(am, 'Drafted. Read it through, then Save.', 'ok');
+      }).catch(function (e) {
+        say(am, AI_SAID[e && e.message] || said(e), 'err');
+      }).then(function () { ab.disabled = false; ab.textContent = 'Draft with AI'; });
+    };
+    ab.addEventListener('click', function () {
+      var written = fields.some(function (x) { return $('rpT_' + x[0]).value.trim(); });
+      if (!written) { draft(); return; }
+      window.ADspaceConfirm.ask({ title: 'Replace the commentary?', body: 'The draft replaces what is written in the four fields. Nothing is saved until Save.', go: 'Replace' }, draft);
+    });
   }
+  var AI_SAID = {
+    'ai-not-set-up': 'Draft with AI needs its key in Supabase.',
+    'ai-key': 'The AI key was refused. Check it in Supabase.',
+    'ai-busy': 'The AI service is busy. Try again in a minute.',
+    'ai-failed': 'No draft came back. Try again.',
+    'ai-incomplete': 'No draft came back. Try again.',
+    'no-ads': 'Add the period\'s ads before drafting.',
+    'no-posts': 'Add the month\'s posts before drafting.',
+    'not-draft': 'Only a draft can be drafted.',
+    'denied': 'This needs a higher access level for Reports.',
+    'not-found': 'This report no longer exists.'
+  };
 
   // ---- The advertising report ------------------------------------------------------------
   /* An advertising report is the account's figures for the period, one row
