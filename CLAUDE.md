@@ -1706,6 +1706,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     the right edge; the meta under them. On a narrow pane the button reads
     PDF (`.rp-pdf-short`).
   - The step foot is an action row, the primary at the right edge.
+  - Check and submit ends in one too (`.rp-actions`): Send back, then the
+    step forward at the right edge, each at its own width (the base `.btn`
+    is `flex: 1`, so an action row states `flex: 0 0 auto`); who it waits on
+    sits to their left; on a phone the pair are equal halves under it.
   - An empty step's line does not repeat the head's Add.
   - An account is named by its handle (`account_name`, labelled Handle):
     a new account takes the client's Brand handle for the platform picked
@@ -1856,9 +1860,12 @@ Each line is a rule that broke once. Its reason is in the archive.
     marked only among results of the same kind. Creative performance then
     gives each creative (the name without its creator code) one card: one
     image, a line per objective and result type (amount spent, results,
-    cost per result, reach, CTR; a missing figure a dash) under a shaded
-    head in Slate Regular (the card's own name head white over a hairline), as every table in the report, the age split and video figures
-    from the line that spent the most (2026-10-01).
+    cost per result, reach, CTR; a missing figure a dash) under a head in
+    Slate Regular, as every table in the report, the age split and video
+    figures from the line that spent the most (2026-10-01).
+  - The executive summary's Results by objective is one table under an
+    italic band naming it (`band`), each objective's results, amount
+    spent, cost per result and share of spend as a percentage; no bars.
   - An image added to one row of a creative is put on its other rows.
   - A result in a PDF table is its count alone (0 where an ad spent with
     none): the objective heads the table and the client reads the cost per
@@ -1873,11 +1880,19 @@ Each line is a rule that broke once. Its reason is in the archive.
     margin; no Methodology page. Page titles and the commentary's block
     heads are in title case (Executive Summary, Ad Performance, What Worked,
     Areas to Improve): a formal document.
-  - Commentary reads one block per part: its shaded head, its points
-    numbered under it, on both kinds of report (never a label column beside
-    the points).
+  - Tables are white cells on hairline rules (`EDGE`), heads in Slate
+    Regular, figures at one weight and centred (2026-10-02, after the
+    team's own reports). Only a total row, a reading note and an image
+    frame are shaded. A summary table (`roomy`: the account table, Results
+    by objective, By platform) takes S(4) rows; working tables keep S(3).
+  - Commentary reads one block per part: its head, its points numbered
+    under it, on both kinds of report (never a label column beside the
+    points).
   - The ranking table gives the ad's name the widest column, so a name reads
-    whole; a missing cost per result or CTR is a dash.
+    whole; a missing cost per result or CTR is a dash. A figure never breaks
+    inside its cell: each figure column is at least its widest entry in the
+    cheapest row's heavier face, every objective's table shares those
+    tracks, and the name takes the rest.
   - The foot is PRIVATE & CONFIDENTIAL and the page count on the margin's
     line; no draft or version line.
   - A draft carries DRAFT (INTERNAL USE ONLY) and a report in review PENDING

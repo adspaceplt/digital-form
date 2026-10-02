@@ -915,9 +915,9 @@
     var INK = g(0.251);            // #404040, the rate card's one ink
     var SOFT = g(0.40);            // secondary text: captions, dates
     var MUTE = g(0.45);            // axis labels, notes
-    var FILL = g(0.949);           // #f2f2f2: header row, label column, cell edges
+    var FILL = g(0.949);           // #f2f2f2: a total row, a reading note, an image frame (tables are white since 2026-10-02)
     var FILL2 = g(0.851);          // #d9d9d9: a group heading cell
-    var EDGE = g(0.949);           // the rate card draws its grid in the header grey
+    var EDGE = g(0.886);           // hairline rules on white cells (2026-10-02: the user's own reports read lighter)
     var DATA2 = g(0.651);          // #a6a6a6: a second series, the ordinary bars
     var DATA3 = g(0.80);           // #cccccc: a third series
     var PAPER = g(1);
@@ -1044,7 +1044,9 @@
        plain text taller than a page is split between pages. */
     /* The cell: 10pt text on a √φ line (12.72), S(-2) at either side, and a
        row of S(3) at least, so the text sits in the row with the same space
-       above and below it. */
+       above and below it. A summary table (`roomy`) takes a row of S(4), as
+       the team's own reports set their opening tables (2026-10-02); the
+       working tables keep S(3), so a platform's top posts stay on its page. */
     var T = { size: TY.cell, lh: S(1), padX: S(-2), padY: (S(3) - S(1)) / 2, minH: S(3) };
     /* A result in a table is its count alone: the objective heads the
        table and the client reads the cost per result (the user,
@@ -1112,13 +1114,23 @@
       var tot = cols.reduce(function (t, c) { return t + c.w; }, 0);
       var ws = cols.map(function (c) { return c.w * (tw / tot); });
       var xs = []; ws.reduce(function (acc, w, i) { xs[i] = acc; return acc + w; }, x0);
+      var RH = o.roomy ? S(4) : T.minH, PY = (RH - T.lh) / 2;
       var headH = 0;
       var drawHead = function () {
         if (!head) return;
         var hl = head.map(function (hc, i) { return cellLines({ t: norm(hc).t, f: reg }, ws[i]); });
-        headH = Math.max(T.minH, Math.max.apply(null, hl.map(linesH)) + T.padY * 2);
+        headH = Math.max(RH, Math.max.apply(null, hl.map(linesH)) + PY * 2);
+        /* A band naming the table, across every column, in a quiet slant
+           (the user's own reports: "Group by objectives"). */
+        if (o.band) {
+          var bh = RH;
+          rect(x0, y - bh, tw, bh, PAPER); frame(x0, y - bh, tw, bh);
+          var bw = width(o.band, T.size, book);
+          pg.page.drawText(tr(o.band), { x: x0 + (tw - bw) / 2, y: y - bh / 2 - T.size * 0.33, size: T.size, font: book, color: SOFT, ySkew: PDF.degrees(12) });
+          y -= bh;
+        }
         head.forEach(function (hc, i) {
-          rect(xs[i], y - headH, ws[i], headH, norm(hc).fill || FILL);
+          rect(xs[i], y - headH, ws[i], headH, norm(hc).fill || PAPER);
           frame(xs[i], y - headH, ws[i], headH);
           drawLines(hl[i], xs[i], y, ws[i], headH, { align: norm(hc).align || cols[i].align || 'center' });
         });
@@ -1127,14 +1139,14 @@
       var headNeed = function () {
         if (!head) return 0;
         var hl = head.map(function (hc, i) { return cellLines({ t: norm(hc).t, f: reg }, ws[i]); });
-        return Math.max(T.minH, Math.max.apply(null, hl.map(linesH)) + T.padY * 2);
+        return Math.max(RH, Math.max.apply(null, hl.map(linesH)) + PY * 2) + (o.band ? RH : 0);
       };
       var first = true;
       rows.forEach(function (row, ri) {
         var cells = row.cells.map(norm);
         var ls = cells.map(function (c, i) { return c.fn ? null : cellLines(c, ws[i]); });
-        var contentH = Math.max.apply(null, cells.map(function (c, i) { return c.fn ? (c.h || 0) : linesH(ls[i]) + T.padY * 2; }));
-        var h = Math.max(row.minH || T.minH, contentH);
+        var contentH = Math.max.apply(null, cells.map(function (c, i) { return c.fn ? (c.h || 0) : linesH(ls[i]) + PY * 2; }));
+        var h = Math.max(row.minH || RH, contentH);
         var pageSpace = TOP - FLOOR - headNeed();
         if (first) { need(headNeed() + (row.split ? Math.min(h, T.lh * 3 + T.padY * 2) : Math.min(h, pageSpace))); drawHead(); first = false; }
         else if (y - h < FLOOR && h <= pageSpace) { newPage(pg.section); drawHead(); }
@@ -1174,7 +1186,7 @@
             }
             var ph = Math.max(T.minH, Math.max.apply(null, part.map(linesH)) + T.padY * 2);
             cells.forEach(function (c, i) {
-              rect(xs[i], y - ph, ws[i], ph, c.fill || row.fill || (o.labelCol && i === 0 ? FILL : PAPER));
+              rect(xs[i], y - ph, ws[i], ph, c.fill || row.fill || PAPER);
               frame(xs[i], y - ph, ws[i], ph);
               drawLines(part[i], xs[i], y, ws[i], ph, { align: c.align || cols[i].align || 'center', color: c.color, top: !!c.items });
             });
@@ -1185,7 +1197,7 @@
           return;
         }
         cells.forEach(function (c, i) {
-          rect(xs[i], y - h, ws[i], h, c.fill || row.fill || (o.labelCol && i === 0 ? FILL : PAPER));
+          rect(xs[i], y - h, ws[i], h, c.fill || row.fill || PAPER);
           frame(xs[i], y - h, ws[i], h);
           if (c.fn) c.fn(xs[i], y, ws[i], h);
           else drawLines(ls[i], xs[i], y, ws[i], h, { align: c.align || cols[i].align || 'center', color: c.color, top: !!c.items });
@@ -1395,7 +1407,7 @@
           [{ t: 'Platform', align: 'left' }, 'Posts', 'Follower growth', 'Views', 'Engagements', 'Engagement rate'],
           mdl.groups.map(function (gg) {
             return { cells: [gg.label, String(gg.posts.length), signed(gg.growth), fmt(gg.views), fmt(gg.eng), pct(gg.er)] };
-          }), { labelCol: true });
+          }), { labelCol: true, roomy: true });
         gap(BLOCK);
       }
       blockTitle((t.volumeWords.length === 1 ? t.volumeWords[0] : 'Views') + ' by week', CHART_WEEK);
@@ -1500,7 +1512,7 @@
               var by = top - BOX;
               metrics.forEach(function (m, k) {
                 var mx = tx + k * mw;
-                rect(mx, by - LABH, mw, LABH, FILL); frame(mx, by - LABH, mw, LABH);
+                frame(mx, by - LABH, mw, LABH);
                 center(m[0], mx + mw / 2, by - LABH / 2 - TY.small * 0.34, TY.small, reg, INK);
                 frame(mx, by - LABH - VALH, mw, VALH);
                 center(m[1], mx + mw / 2, by - LABH - VALH / 2 - TY.body * 0.34, TY.body, med, INK);
@@ -1690,11 +1702,11 @@
           table([{ w: 0.3, align: 'left' }, { w: 0.25 }, { w: 0.25 }, { w: 0.2 }],
             [{ t: 'Account', align: 'left' }, thisW, prevW, 'Change'],
             [
-              { cells: [{ t: 'Total reach', f: reg }, { t: fmt(at.reach), f: med }, fmt(at.prevReach), change(at.reach, at.prevReach)] },
-              { cells: [{ t: 'Total impressions', f: reg }, { t: fmt(at.impressions), f: med }, fmt(at.prevImpressions), change(at.impressions, at.prevImpressions)] },
-              { cells: [{ t: 'Frequency', f: reg }, { t: ratio(at.freq), f: med }, ratio(at.prevFreq), change(at.freq, at.prevFreq)] },
-              { cells: [{ t: 'Amount spent *', f: reg }, { t: money(at.spend), f: med }, money(at.prevSpend), change(at.spend, at.prevSpend)] }
-            ], { labelCol: true });
+              { cells: [{ t: 'Total reach', f: reg }, fmt(at.reach), fmt(at.prevReach), change(at.reach, at.prevReach)] },
+              { cells: [{ t: 'Total impressions', f: reg }, fmt(at.impressions), fmt(at.prevImpressions), change(at.impressions, at.prevImpressions)] },
+              { cells: [{ t: 'Frequency', f: reg }, ratio(at.freq), ratio(at.prevFreq), change(at.freq, at.prevFreq)] },
+              { cells: [{ t: 'Amount spent *', f: reg }, money(at.spend), money(at.prevSpend), change(at.spend, at.prevSpend)] }
+            ], { labelCol: true, roomy: true });
         } else {
           figures([
             { label: 'Total reach', value: fmt(at.reach) },
@@ -1706,23 +1718,21 @@
         gap(BLOCK);
         if (am.groups.length) {
           var withPrev = am.groups.some(function (g) { return g.prevCpr !== undefined && g.prevCpr !== null; }) && at.hasPrev;
-          blockTitle('Results by objective', T.minH * (am.groups.length + 1));
-          table([{ w: 0.19, align: 'left' }, { w: 0.23 }, { w: 0.17 }, { w: 0.18 }, { w: 0.23 }],
+          /* One table under a band naming it, the figures at one weight and
+             the share as its percentage (2026-10-02: the user's own reports
+             read lighter: no bars, no bold, no second heading). */
+          need(S(4) * (am.groups.length + 2) + S(2));
+          table([{ w: 0.22, align: 'left' }, { w: 0.2 }, { w: 0.2 }, { w: 0.2 }, { w: 0.18 }],
             [{ t: 'Objective', align: 'left' }, 'Results', 'Amount spent *', 'Cost per result', 'Share of spend'],
             am.groups.map(function (g) {
-              return { minH: withPrev ? S(4) + S(1) : T.minH, cells: [
+              return { minH: withPrev ? S(4) + S(1) : S(4), cells: [
                 { t: g.name, f: reg },
-                { t: count(g.results), f: med },
+                count(g.results),
                 money(g.spend),
                 { t: cost(g.cpr) + (g.per1000 ? ' / 1,000' : '') + (withPrev && g.prevCpr !== null && g.prevCpr !== undefined ? '\nPrevious ' + cost(g.prevCpr) : '') },
-                { fn: function (x, top, w, h) {
-                  var tw = S(6), bx = x + T.padX, bw = w - T.padX * 2 - tw - S(-2);
-                  rect(bx, top - h / 2 - 3, bw, S(-2), FILL);
-                  if (g.share) rect(bx, top - h / 2 - 3, Math.max(0.8, bw * g.share), S(-2), INK);
-                  right(g.share === null ? '' : (g.share * 100).toFixed(1) + '%', x + w - T.padX, top - h / 2 - 3.2, TY.body, book, INK);
-                }, h: T.minH }
+                g.share === null ? '' : (g.share * 100).toFixed(1) + '%'
               ] };
-            }), { labelCol: true });
+            }), { labelCol: true, roomy: true, band: 'Results by objective' });
         }
         // The note the asterisks point at, under the tables it qualifies.
         y -= TY.small * 0.72 + S(-1);
@@ -1792,13 +1802,12 @@
         // A line an objective: what it was for, what it bought and at what price.
         var xs = [], acc = RX + PAD;
         LCOLS.forEach(function (f) { xs.push(acc); acc += (RW - PAD * 2) * f; });
-        /* The head reads as every table's head in the report: a shaded band
-           in Slate Regular over rows in Slate Book (the user, 2026-10-01:
-           the labels and the figures were hard to tell apart). Each line
-           carries what it spent, which its cost per result is read
-           against. */
+        /* The head reads as every table's head in the report: Slate
+           Regular on white over a hairline, the rows in Slate Book (the
+           user, 2026-10-01: the labels and the figures were hard to tell
+           apart; 2026-10-02: white cells, no grey bands). Each line carries
+           what it spent, which its cost per result is read against. */
         var heads = ['Objective', 'Amount spent', 'Results', 'Cost per result', 'Reach', 'CTR'];
-        rect(RX, bodyTop - LH, RW, LH, FILL);
         heads.forEach(function (t0, i) {
           var w0 = (RW - PAD * 2) * LCOLS[i];
           if (i) right(t0, xs[i] + w0, bodyTop - LH / 2 - TY.small * 0.34, TY.small, reg, INK);
@@ -1806,7 +1815,7 @@
         });
         c.rows.forEach(function (a, ri) {
           var ly = bodyTop - LH * (ri + 1);
-          hline(ly, RX, R, FILL2, 0.6);
+          hline(ly, RX, R);
           var base = ly - LH / 2 - TY.small * 0.34;
           /* A figure not given reads as a dash: a line is a table row. */
           var got = function (v, f0) { return num(v) === null ? '\u2014' : f0(v); };
@@ -1915,6 +1924,23 @@
         } else {
           leadLine(GLOSSARY);
         }
+        /* A figure never breaks inside itself: each figure column is at
+           least as wide as its widest entry, measured in the heavier face
+           the cheapest row takes, and the ad's name gives up the room
+           (2026-10-02: "26 to 29 Sept / 2026" broke on the marked row).
+           One set of tracks for every objective's table, so a column is a
+           column down the page. */
+        var rankFig = function (a) {
+          return [range(a.starts_on, a.ends_on), money(a.spend), count(a.results),
+            a._cpr === null ? '\u2014' : cost(a._cpr) + (a._per1000 ? ' / 1,000' : ''), num(a.ctr) === null ? '\u2014' : pctv(a.ctr)];
+        };
+        var rankW = [0.31, 0.17, 0.15, 0.11, 0.16, 0.1].map(function (x, i) {
+          if (!i) return x * CW;
+          var widest = am.ads.reduce(function (m, a) { return Math.max(m, width(rankFig(a)[i - 1], T.size, med)); },
+            width(['Period', 'Amount spent', 'Results', 'Cost per result', 'CTR'][i - 1], T.size, reg));
+          return Math.max(x * CW, widest + T.padX * 2 + 2);
+        });
+        rankW[0] = Math.max(CW * 0.2, CW - rankW.slice(1).reduce(function (t, w0) { return t + w0; }, 0));
         am.groups.forEach(function (g) {
           blockTitle(g.name + '  ·  ' + g.ads.length + ' ad' + (g.ads.length === 1 ? '' : 's') + '  ·  ' + money(g.spend), T.minH * (g.ads.length + 1));
           // The group ranked by what a result cost, the cheapest first and in weight.
@@ -1928,15 +1954,12 @@
           var best = g.ads.length > 1 && oneKind && ranked[0] && ranked[0]._cpr !== null ? ranked[0] : null;
           /* The ad's name takes the room the figures do not need, so a name
              reads whole on its line (the user, 2026-10-01: 2608W4_OldOwnorInves|t). */
-          table([{ w: 0.31, align: 'left' }, { w: 0.17 }, { w: 0.15 }, { w: 0.11 }, { w: 0.16 }, { w: 0.1 }],
-            [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', 'Results', 'Cost per result', 'CTR'],
-            ranked.map(function (a) {
-              var f = a === best ? med : book;
-              return { cells: [{ t: adName(a.name) + (words(a.audience).trim() ? '\n' + words(a.audience).trim() + ' audience' : ''), f: f },
-                { t: range(a.starts_on, a.ends_on), f: f }, { t: money(a.spend), f: f }, { t: count(a.results), f: f },
-                { t: a._cpr === null ? '\u2014' : cost(a._cpr) + (a._per1000 ? ' / 1,000' : ''), f: f },
-                { t: num(a.ctr) === null ? '\u2014' : pctv(a.ctr), f: f }] };
-            }), { labelCol: false });
+          var rankHead = [{ t: 'Ad', align: 'left' }, 'Period', 'Amount spent', 'Results', 'Cost per result', 'CTR'];
+          var rankRows = ranked.map(function (a) {
+            var f = a === best ? med : book;
+            return { cells: [{ t: adName(a.name) + (words(a.audience).trim() ? '\n' + words(a.audience).trim() + ' audience' : ''), f: f }].concat(rankFig(a).map(function (t0) { return { t: t0, f: f }; })) };
+          });
+          table(rankW.map(function (w0, i) { return i ? { w: w0 } : { w: w0, align: 'left' }; }), rankHead, rankRows, { labelCol: false });
           /* A full block step before the next objective, so each reads as
              its own table (the user, 2026-10-01). */
           y -= BLOCK;

@@ -8259,9 +8259,17 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-ctl { display: flex; align-items: center; gap: 8px; }
 .rp-ctl .chip { align-self: center; }
 .rp-note { margin: 0; font-size: 13px; color: var(--warn); }
-.rp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+/* The report's next step is an action row as every other: Send back, then
+   the step forward at the right edge, each at its own width (`.btn` is
+   `flex: 1` at its base, which drew Send back across the whole row,
+   2026-10-02); the line saying who it waits on sits to their left. */
+.rp-actions { display: flex; flex-wrap: wrap; flex-direction: row-reverse; justify-content: flex-start; align-items: center; gap: 8px; }
+.rp-actions > .btn { flex: 0 0 auto; }
 .rp-actions .btn svg { width: 15px; height: 15px; }
 .rp-wait { font-size: 12.5px; color: var(--ink-mute); }
+/* On a phone the pair are equal halves under the line. */
+.is-narrow .rp-actions > .btn { flex: 1 1 0; min-width: 0; }
+.is-narrow .rp-actions > .rp-wait { order: -1; flex: 1 0 100%; }
 .rp-sec { display: grid; gap: 12px; }
 /* The commentary's line and Draft with AI share one row, the button at the right edge. */
 .rp-aidraft { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
