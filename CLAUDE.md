@@ -65,6 +65,9 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
   - A `cut()` of `schema.sql` always ends at the next banner.
 
 **One command, one result:** `bash tests/gate.sh <suites… | all | ui>`.
+- The test commands run without a permission prompt (`.claude/settings.json`:
+  `tests/snap.sh`, `tests/gate.sh`, `node tests/…`, `node --check`; the user,
+  2026-10-01). Nothing else is pre-approved there.
 - It runs browser suites three at a time, the Postgres suites in their own
   lane, then uxaudit and matrix.
 - It prints one line per suite and ends `gate: ok` or `gate: PROBLEM (n)`
@@ -115,6 +118,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `portal.js` | portal |
 | `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter |
 | `team.js` | team, perms, levels |
+| `handbook.js` | handbook |
 | `perf.js` | perfui, perfguard, perf |
 | `search.js` | search, then `ui` |
 | `overview.js` | overview, then `ui` |
@@ -316,6 +320,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   - After a failed save, focus goes to the first invalid field.
   - The scrim closes only an untouched sheet. Escape and the close mark always
     close it. The close mark presses that sheet's own Cancel.
+  - On a phone (≤640): a sheet is pulled down from its head (the grabber) to
+    close, pressing its close mark (90px, or a flick); a form sheet (a foot
+    with a filled action, fields) keeps a draft of the fields the person
+    changed when it is left any way but its action (`sessionStorage`
+    `adspace-draft:{sheet id}`, against the state it opened in, hidden
+    fields included), restores it on the next open in that state with
+    `.draftline` Draft restored · Discard, and so its scrim closes it even
+    when touched. Pressing the action ends the draft. Files, passwords and
+    `data-nodraft` fields are never kept. A desk keeps no drafts.
   - Focus is trapped, and handed back on close.
   - `sheet(id, on, swap)` swaps two sheets in one frame (`.is-swap`).
   - Cmd/Ctrl + Enter presses, in order: the caret's small form, then the top
@@ -395,6 +408,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A Filters button over only hidden selects is not drawn.
   - At a desk every bar's search is a 32px mark that grows into a 280px field
     and shuts on Escape or when left empty.
+  - At a desk the filters are behind the same Filters mark (after the bar's
+    last select), in a card hung from it (`#cmdPop`, `ADspaceMenu.pop`,
+    Clear, Escape or a press elsewhere shuts it); a `data-nofilter` select is
+    a view and stays in the bar at a desk.
 - `js/form.js` owns forms.
   - Segments (`select[data-seg]`, the select stays the source of truth, out of
     the tab order; `ADspaceForm.thumb()` slides the surface; `.is-snap` on
@@ -513,6 +530,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Access is a level per section, **none < view < work < manage**, in
   `team_roles.access` / `team_members.access`. `allowed(section, level)` is
   every policy's predicate.
+  - The page names them No Access, View, Manage, Full Access (`LEVELS` in
+    `js/team.js`); the stored keys never move.
   - Select is view, insert and update are work, delete is manage.
   - The levels are drawn on reversibility (add, edit and publish are
     reversible; a permanent delete is not), never on CRUD verbs.
@@ -521,14 +540,15 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The group seeded as Account is named Marketing. Its slug `account` never
   moves.
 - Sections: `ops` (My Work), `clients`, `review`, `campaigns`, `register`
-  (Documents), `reports`, `links`, `services`, `team`, `activity`.
+  (Documents), `reports`, `links`, `services`, `team`, `activity`. The
+  Handbook is not a section: every colleague reads it, an admin writes it.
 - A part (`clients.billing`, `register.hr`, `activity.campaigns`…) answers with
   its own level where one is set, else its section's, in `allowed()` and the
   page's `may()` alike. Only exceptions are stored. A stored level equal to the
   section reads Same as section.
 - Granted parts never inherit (`ops_granted()`): `ops.all`, `ops.reports`,
   `ops.workflows`, `ops.time`, `ops.numbering`, `team.performance`. Their unset
-  option reads `No access`, and each offers only the levels the database checks
+  option reads `No Access`, and each offers only the levels the database checks
   (`PART_LEVELS`). A stored level outside them is shown and saved as what it
   grants (`offered()`).
 - `ops.list`, `ops.board` and `ops.calendar` follow My Work unless set to No
@@ -578,6 +598,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Documents by family;
   - Services by category;
   - Team by user group;
+  - the Handbook by category (Archived shut, an admin's alone);
   - My Work by its axis.
 - A filter repaints only when its value changed: `input` and `change` both fire,
   and `change` on blur detached Clear the filters.
@@ -1738,8 +1759,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     forced `tool_choice`. An accounts report sends the platforms and top
     posts the step shows (`platforms`, `posts`) and gets back each
     platform's four fields and each post's remark, read platform by
-    platform. Nothing is saved until Save, and written text is replaced only
-    after Replace.
+    platform. Every press asks first (Draft with AI?, or Replace the
+    commentary? over written text), saying it uses one draft and how many
+    are left; nothing is saved until Save.
   - A report has a draft language (`sm_reports.lang`, 'en' or 'zh',
     `2026-10-01-report-language.sql`), the English / 中文 segment beside
     Draft with AI (`#rpAiLang`), saved at once; a new report takes the main
@@ -1762,6 +1784,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     marked failed by the function (`ai_draft_done`) and not counted.
     `ai_drafts` has RLS on, no policy and no grants. A refusal (`ai-limit`)
     names the scope and when the next draft is free.
+    Beside the button the count left reads `1 left` (`ai_draft_left`, the
+    least of the report's, the colleague's and the team's, read without
+    writing; `2026-10-01-draft-with-ai-left.sql`); at 0 the button rests and
+    the line under it says why and when the next is free.
   - A draft is paid for once asked: while one runs, closing or reloading
     the tab asks first (`beforeunload`), and an answer that lands after the
     person moved to another step or screen is kept (`aiKept`) and put in
@@ -1880,6 +1906,28 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `ADspaceGroup.keep` opens the card the row moves into.
 - No Status column. Paused is a chip beside the slug.
 
+### Handbook (`js/handbook.js`, `?s=handbook`)
+- The company's internal files: Employee Handbook, SOPs, Policies, Templates
+  and forms, Other (`handbook_docs`, `handbook_versions`,
+  `2026-10-01-handbook.sql`). Every colleague reads (`is_team()`); an admin
+  alone adds, edits, versions, archives and deletes (`handbook_save`,
+  `handbook_add_version`, `handbook_archive`, `handbook_delete`, each
+  `allowed('admin')` and filed `handbook.*`). No acknowledgement step.
+- A file lives in the private Supabase Storage bucket `handbook` (50 MB a
+  file), never in S3 or behind the CDN, at `{doc id}/{time}-{name}`. It is
+  opened only through a signed link of 60 seconds made at the press
+  (`createSignedUrl`), the tab opened before the link returns; nothing
+  stores an address to a file. The bucket reads at `is_team()`, writes and
+  removes at admin.
+- A file is never overwritten: New version adds an object and a row, and
+  Versions opens every earlier one. A document may be a link (https only)
+  instead of a file.
+- Archive (asks) hides a file from everyone but an admin; Restore never
+  asks. Delete takes the title typed back, removes the rows, then the
+  files (`paths` returned by `handbook_delete`).
+- A colleague who is not an admin sees no Add file, no archived file, and
+  a ⋯ only where there are Versions.
+
 ### Team (`js/team.js`)
 - Members sit under their group. Your own row shows the neutral `You` chip.
 - Set inactive / Set active sits in the ⋯ (never on your own row). Send
@@ -1890,8 +1938,22 @@ Each line is a rule that broke once. Its reason is in the archive.
   - department (a segment);
   - Position (`designation`);
   - role standard;
-  - `capacity_minutes_week` (entered as hours).
+  - `capacity_minutes_week` (entered as hours);
+  - Access until (`access_until`, the last day in Malaysia; empty for no
+    end), never on your own row (`own-expiry`).
 - A colleague is never deleted, only stood down.
+- Access expiry (`2026-10-01-team-access-expiry.sql`):
+  - every day at 00:05 MYT (pg_cron `team-access-expiry`)
+    `team_expire_access()` stands down each active colleague whose date has
+    passed (`active` false, `expired_at` stamped, filed `team.changed` by
+    `system`), never the last admin with access;
+  - the row reads Access expired and its ⋯ Extend access; moving the date to
+    today or later brings them back at once (`team_access_guard`), and Set
+    active on a passed date is refused (`expired-date`);
+  - the bar's ⋯ Set access expiry (`team_set_expiry`, Team at Manage) sets
+    one date for every active colleague but the caller, refusing a past date;
+  - an expired address signing in reads Access expired
+    (`my_access_expired()`), not Access denied.
 
 ### Activity record
 - Every tag written is named in `ACTION_LABEL` (`js/admin.js`).
@@ -1899,8 +1961,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   the two.
 - A tag nothing names files as `other` and falls back to the section.
 - One part per tab (`activity.clients`, `.ops`, `.team`, `.review`,
-  `.campaigns`, `.links`, `.register`, `.services`). The link draws where any
-  tab is readable.
+  `.campaigns`, `.links`, `.register`, `.reports`, `.services`,
+  `.handbook`). The link
+  draws where any tab is readable.
+- Reports files a report's steps (`report.*`: started, submitted, returned,
+  confirmed, published, revised, unpublished, deleted), every save
+  (`report.saved`, filed by the page through `fileReport()`: the period and
+  version, then the step or sheet and what it held) and every Draft with AI
+  (`report.ai_drafted` with its language, `report.ai_failed` with the
+  reason) (`2026-10-01-activity-reports-tab.sql`).
 - Performance follows Team (`team.performance` View, no master code), read
   through `perf_activity()`: when, the step, whose month, who; never a score,
   a grade, a breach or a dispute's words, and never the caller's own review.
@@ -1910,9 +1979,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   older rows behind.
 - Every history (the Activity record, a client's and a campaign's Activity and
   rail, a task's log and recent activity) is drawn by `js/records.js`
-  (`ADspaceRecords.paint`): two 12.5px rows an entry (time, who in mute
-  ink, what and on what on the first; the detail on the second in the soft
-  ink, cut at three lines), a heading a day, and a run of the same act by one
+  (`ADspaceRecords.paint`): at 720px and over one 12.5px line an entry
+  (`.reclist.is-wide`: time, what and on what, the detail cut at the line's
+  end in the soft ink, who at the right edge in a 150px track, a hairline
+  between entries); narrower, two lines (time, who in mute ink, what and on
+  what; the detail under it), each cut at its end; a cut entry opens on a
+  press. A heading a day, and a run of the same act by one
   person on one thing within ten minutes folded into one entry (`×n`). On a
   campaign's own page a booking's entry is about its creator (`lead`, the
   detail's first part), and `detailOf()` drops words the first row says
@@ -1925,8 +1997,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   written once on the folded line; the record a pane belongs to) else its
   subject; with neither,
   only identical lines fold. A field changed twice reads as its path
-  (`Admin → Team → Admin`), a run reads `· 3 times`, and a line longer than
-  three lines opens on a press (`is-long`, a button with `aria-expanded`).
+  (`Admin → Team → Admin`), a run reads `· 3 times`, and a cut entry is a
+  button with `aria-expanded` (`is-long`).
   `register.added` / `register.edited` read Document added / edited.
 - Every save files what it changed, from and to (`ADspaceRecords.changes`:
   "Label: old → new", empty reads "not set"); a save that changed nothing

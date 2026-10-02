@@ -6000,12 +6000,14 @@ language sql immutable parallel safe as $$
                     'client.touch_restored', 'contact.added', 'contact.deleted',
                     'contact.edited', 'contact.portal_invite', 'contact.portal_off',
                     'contact.portal_on', 'contact.primary', 'contact.removed',
-                    'contact.restored', 'report.confirmed', 'report.created',
-                    'report.deleted', 'report.published', 'report.returned',
-                    'report.revised', 'report.submitted', 'report.unpublished',
+                    'contact.restored',
                     'request.changed', 'request.raised',
                     'request.reinstated', 'request.replied', 'request.withdrawn',
                     'service.override') then 'clients'
+    when action in ('report.ai_drafted', 'report.ai_failed', 'report.confirmed',
+                    'report.created', 'report.deleted', 'report.published',
+                    'report.returned', 'report.revised', 'report.saved',
+                    'report.submitted', 'report.unpublished') then 'reports'
     when action in ('qr.created', 'qr.restored', 'qr.revoked', 'shortlink.created',
                     'shortlink.deleted', 'shortlink.imported', 'shortlink.updated') then 'links'
     when action in ('ops.deleted', 'ops.month_deleted', 'ops.numbering') then 'ops'
@@ -6021,6 +6023,8 @@ language sql immutable parallel safe as $$
                     'set.created', 'set.deleted', 'set.published', 'set.renamed',
                     'set.task_linked', 'set.task_unlinked',
                     'set.withdrawn') then 'review'
+    when action in ('handbook.added', 'handbook.archived', 'handbook.deleted',
+                    'handbook.edited', 'handbook.restored', 'handbook.version') then 'handbook'
     when action in ('service.added', 'service.changed', 'service.deleted',
                     'service.off', 'service.on') then 'services'
     when action in ('team.added', 'team.changed', 'team.edited', 'team.group_added',
@@ -22172,3 +22176,560 @@ end $$;
 grant execute on function public.sm_report_create(uuid, date, date, text) to authenticated;
 
 -- END OF FIRST MONTH OF ADS UNTICKED -----------------------------------------
+
+-- ===========================================================================
+-- TEAM ACCESS EXPIRY — a colleague's access ends on a date unless extended.
+-- 2026-10-01. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/levels.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   1. `team_members.access_until`: the last day, in Malaysia, a colleague's
+--      access runs; empty for no end. `expired_at` says when it ended.
+--   2. Every morning at 00:05 in Malaysia, `team_expire_access()` stands
+--      down each active colleague whose day has passed (`active` false, as
+--      Set inactive does, so every policy, function and picker that asks
+--      for an active colleague refuses them), and files it under Access
+--      changed. The last admin with access is never stood down: the console
+--      cannot be run without one.
+--   3. `team_access_guard`: nobody sets their own date (`own-expiry`), and a
+--      date moved to today or later on an expired colleague brings them back
+--      at once; Set active on one whose date has passed is refused
+--      (`expired-date`) until the date is moved.
+--   4. `team_set_expiry(p_until)`: Team at Manage sets one date (or none)
+--      for every active colleague but the caller, refusing a past date.
+--   5. `my_access_expired()`: whether the signed-in address was stood down
+--      by its date, so the console says Access expired, not Access denied.
+--
+-- ROLLBACK
+--   select cron.unschedule('team-access-expiry');
+--   drop trigger if exists team_access_guard on public.team_members;
+--   drop function if exists public.team_access_guard(), public.team_expire_access(),
+--     public.team_set_expiry(date), public.my_access_expired();
+--   The two columns may stay; nothing else reads them.
+-- ===========================================================================
+
+alter table public.team_members add column if not exists access_until date;
+alter table public.team_members add column if not exists expired_at timestamptz;
+
+create or replace function public.team_access_guard()
+returns trigger language plpgsql as $$
+declare
+  who text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+begin
+  if new.access_until is distinct from old.access_until and who <> '' and lower(old.email) = who then
+    raise exception 'own-expiry' using hint = 'Another admin sets your access date.';
+  end if;
+  if new.active and not old.active then
+    if new.access_until is not null and new.access_until < today then
+      raise exception 'expired-date' using hint = 'Move the access date first.';
+    end if;
+    new.expired_at := null;
+  elsif old.expired_at is not null and new.access_until is distinct from old.access_until
+        and (new.access_until is null or new.access_until >= today) then
+    new.active := true;
+    new.expired_at := null;
+  end if;
+  return new;
+end $$;
+drop trigger if exists team_access_guard on public.team_members;
+create trigger team_access_guard before update on public.team_members
+  for each row execute function public.team_access_guard();
+
+create or replace function public.team_expire_access()
+returns int language plpgsql security definer set search_path = public as $$
+declare
+  today date := (now() at time zone 'Asia/Kuala_Lumpur')::date;
+  m public.team_members;
+  n int := 0;
+begin
+  for m in select * from public.team_members t
+            where t.active and t.access_until is not null and t.access_until < today
+            order by t.access_until, t.name loop
+    if (m.is_admin or m.role = 'admin') and not exists (
+         select 1 from public.team_members o
+          where o.id <> m.id and o.active and (o.is_admin or o.role = 'admin')
+            and (o.access_until is null or o.access_until >= today)) then
+      continue;
+    end if;
+    update public.team_members set active = false, expired_at = now() where id = m.id;
+    insert into public.activity_log (actor, action, subject, detail)
+    values ('system', 'team.changed', m.name,
+            'Access expired after ' || replace(to_char(m.access_until, 'FMDD Mon YYYY'), ' Sep ', ' Sept '));
+    n := n + 1;
+  end loop;
+  return n;
+end $$;
+revoke all on function public.team_expire_access() from public, anon, authenticated;
+
+create or replace function public.team_set_expiry(p_until date)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  who text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  n int;
+begin
+  if not public.allowed('team', 'manage') then return jsonb_build_object('error', 'denied'); end if;
+  if p_until is not null and p_until < (now() at time zone 'Asia/Kuala_Lumpur')::date then
+    return jsonb_build_object('error', 'past-date');
+  end if;
+  update public.team_members t set access_until = p_until
+   where t.active and lower(t.email) <> who and t.access_until is distinct from p_until;
+  get diagnostics n = row_count;
+  if n > 0 then
+    insert into public.activity_log (actor, action, subject, detail)
+    values (who, 'team.changed', 'Team',
+            'Access until ' || coalesce(replace(to_char(p_until, 'FMDD Mon YYYY'), ' Sep ', ' Sept '), 'not set')
+            || ' for ' || n || case when n = 1 then ' colleague' else ' colleagues' end);
+  end if;
+  return jsonb_build_object('ok', true, 'count', n);
+end $$;
+grant execute on function public.team_set_expiry(date) to authenticated;
+
+create or replace function public.my_access_expired()
+returns boolean language sql security definer stable set search_path = public as $$
+  select exists (select 1 from public.team_members t
+                  where lower(t.email) = lower(auth.jwt() ->> 'email')
+                    and not t.active and t.expired_at is not null)
+$$;
+grant execute on function public.my_access_expired() to authenticated;
+
+/* Every morning at 00:05 in Malaysia (16:05 UTC). */
+do $$
+begin
+  if not exists (select 1 from pg_extension where extname = 'pg_cron') then
+    raise notice 'team-access-expiry: pg_cron is not installed, so no schedule was written.';
+    return;
+  end if;
+  perform cron.unschedule(j.jobid) from cron.job j where j.jobname = 'team-access-expiry';
+  perform cron.schedule('team-access-expiry', '5 16 * * *', 'select public.team_expire_access()');
+end $$;
+
+-- END OF TEAM ACCESS EXPIRY ---------------------------------------------------
+
+-- ===========================================================================
+-- ACTIVITY REPORTS TAB — a report's steps are filed under Reports, its own
+-- tab in the Activity record.
+-- 2026-10-01. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner, and the function in THE
+-- ACTIVITY RECORD, SECTION BY SECTION; tests/sql.js compares them.
+--
+-- WHAT CHANGED
+--   `activity_section()` files the eight steps of a report (started,
+--   submitted, returned, confirmed, published, revised, unpublished,
+--   deleted) under `reports` instead of `clients`, so the read policy asks
+--   `activity.reports`, a part of the Activity record that answers with the
+--   record's own level unless set. It also names the three tags the page
+--   now files: every save (`report.saved`: the step or sheet and what it
+--   held) and every Draft with AI, drafted or failed (`report.ai_drafted`,
+--   `report.ai_failed`).
+--
+-- ROLLBACK
+--   Re-run activity_section from 2026-10-01-review-confirm-internally.sql.
+-- ===========================================================================
+
+create or replace function public.activity_section(p_action text)
+returns text
+language sql immutable parallel safe as $$
+  select case
+    when action in ('campaign.bulk', 'campaign.closed', 'campaign.confirmed',
+                    'campaign.created', 'campaign.dates', 'campaign.deleted', 'campaign.edited',
+                    'campaign.file_added', 'campaign.qc',
+                    'campaign.invoice', 'campaign.invoice_file',
+                    'campaign.invoice_removed', 'campaign.keyed', 'campaign.locked',
+                    'campaign.opened', 'campaign.rate', 'campaign.rated',
+                    'campaign.reinstated', 'campaign.replaced', 'campaign.results', 'campaign.review',
+                    'campaign.stage', 'campaign.submitted', 'campaign.task_linked',
+                    'campaign.task_unlinked', 'campaign.unbooked',
+                    'campaign.unkeyed', 'campaign.withdrawn', 'creator.added',
+                    'creator.code', 'creator.links', 'creator.links_restored',
+                    'creator.links_self', 'creator.off', 'creator.on', 'creator.removed',
+                    'creator.updated') then 'campaigns'
+    when action in ('client.action_done', 'client.action_reopened', 'client.added',
+                    'client.billing', 'client.brand', 'client.deleted', 'client.edited',
+                    'client.review_on', 'client.service', 'client.service_changed',
+                    'client.service_removed', 'client.stage', 'client.touch',
+                    'client.touch_edited', 'client.touch_removed',
+                    'client.touch_restored', 'contact.added', 'contact.deleted',
+                    'contact.edited', 'contact.portal_invite', 'contact.portal_off',
+                    'contact.portal_on', 'contact.primary', 'contact.removed',
+                    'contact.restored',
+                    'request.changed', 'request.raised',
+                    'request.reinstated', 'request.replied', 'request.withdrawn',
+                    'service.override') then 'clients'
+    when action in ('report.ai_drafted', 'report.ai_failed', 'report.confirmed',
+                    'report.created', 'report.deleted', 'report.published',
+                    'report.returned', 'report.revised', 'report.saved',
+                    'report.submitted', 'report.unpublished') then 'reports'
+    when action in ('qr.created', 'qr.restored', 'qr.revoked', 'shortlink.created',
+                    'shortlink.deleted', 'shortlink.imported', 'shortlink.updated') then 'links'
+    when action in ('ops.deleted', 'ops.month_deleted', 'ops.numbering') then 'ops'
+    when action in ('document.deleted', 'document.issued', 'document.reissued',
+                    'document.restored', 'document.signed', 'document.superseded',
+                    'document.unsigned', 'document.verified', 'document.voided',
+                    'register.added', 'register.edited') then 'register'
+    when action in ('client.drive', 'client.handles', 'client.profile',
+                    'client.removed', 'drive.imported', 'link.reset', 'post.added',
+                    'post.deleted', 'post.edited', 'reapproval.requested',
+                    'review.approved', 'review.changes', 'review.removed',
+                    'review.unconfirmed',
+                    'set.created', 'set.deleted', 'set.published', 'set.renamed',
+                    'set.task_linked', 'set.task_unlinked',
+                    'set.withdrawn') then 'review'
+    when action in ('service.added', 'service.changed', 'service.deleted',
+                    'service.off', 'service.on') then 'services'
+    when action in ('team.added', 'team.changed', 'team.edited', 'team.group_added',
+                    'team.group_changed', 'team.group_removed', 'team.invited') then 'team'
+    else 'other'
+  end
+  from (select p_action as action) t
+$$;
+grant execute on function public.activity_section(text) to authenticated;
+
+-- END OF ACTIVITY REPORTS TAB ---------------------------------------------------
+
+-- ===========================================================================
+-- DRAFT WITH AI LEFT — how many drafts a colleague has left on a report,
+-- shown beside Draft with AI.
+-- 2026-10-01. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner; tests/smsql.js compares the
+-- two.
+--
+-- WHAT CHANGED
+--   `ai_draft_left(p_report)`: Reports at Work. Reads `ai_drafts` as
+--   `ai_draft_claim` counts it, writing nothing: what is left on the
+--   report (one draft, else none for a colleague who is not an admin; five
+--   in 24 hours for an admin), for the colleague (twenty in 24 hours) and
+--   for the team (sixty in 24 hours), the least of the three as `left`, the
+--   scope that sets it and its limit, and, where nothing is left, when the
+--   next draft is free. A failed press is not counted.
+--
+-- ROLLBACK
+--   drop function if exists public.ai_draft_left(uuid);
+-- ===========================================================================
+
+create or replace function public.ai_draft_left(p_report uuid)
+returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  m public.team_members;
+  since timestamptz := now() - interval '24 hours';
+  is_adm boolean;
+  n_report integer; n_member integer; n_team integer;
+  at_report timestamptz; at_member timestamptz; at_team timestamptz;
+  l_report integer; l_member integer; l_team integer; l_min integer;
+  v_scope text;
+begin
+  if not public.allowed('reports', 'work') then return jsonb_build_object('error', 'denied'); end if;
+  m := public.ops_me();
+  if m.id is null then return jsonb_build_object('error', 'denied'); end if;
+  is_adm := coalesce(m.is_admin, false);
+  select count(*), min(d.created_at) into n_report, at_report from public.ai_drafts d
+   where d.report_id = p_report and d.created_at > since and d.outcome <> 'failed';
+  if is_adm then
+    l_report := greatest(0, 5 - n_report);
+  elsif exists (select 1 from public.ai_drafts d where d.report_id = p_report and d.outcome <> 'failed') then
+    l_report := 0;
+  else
+    l_report := 1;
+  end if;
+  select count(*), min(d.created_at) into n_member, at_member from public.ai_drafts d
+   where d.team_member_id = m.id and d.created_at > since and d.outcome <> 'failed';
+  l_member := greatest(0, 20 - n_member);
+  select count(*), min(d.created_at) into n_team, at_team from public.ai_drafts d
+   where d.created_at > since and d.outcome <> 'failed';
+  l_team := greatest(0, 60 - n_team);
+  l_min := least(l_report, l_member, l_team);
+  v_scope := case when l_min = l_report then case when is_adm then 'report' else 'redraft' end
+                  when l_min = l_member then 'person' else 'team' end;
+  return jsonb_build_object(
+    'left', l_min, 'scope', v_scope,
+    'limit', case v_scope when 'redraft' then 1 when 'report' then 5 when 'person' then 20 else 60 end,
+    'report', l_report, 'person', l_member, 'team', l_team, 'admin', is_adm,
+    'next', case when l_min > 0 or v_scope = 'redraft' then null
+                 when v_scope = 'report' then at_report + interval '24 hours'
+                 when v_scope = 'person' then at_member + interval '24 hours'
+                 else at_team + interval '24 hours' end);
+end $$;
+
+revoke all on function public.ai_draft_left(uuid) from public, anon, authenticated;
+grant execute on function public.ai_draft_left(uuid) to authenticated;
+
+-- END OF DRAFT WITH AI LEFT --------------------------------------------------
+
+-- ===========================================================================
+-- HANDBOOK — the company's internal files (the Employee Handbook, SOPs,
+-- policies, templates and forms) in one console section, kept private and
+-- opened through a link that lasts 60 seconds.
+-- 2026-10-01. Safe to run twice. Rollback at the foot. Mirrored byte for byte
+-- in supabase/schema.sql under the same banner, and activity_section() in
+-- THE ACTIVITY RECORD, SECTION BY SECTION; tests/sql.js compares
+-- them.
+--
+-- WHAT CHANGED
+--   1. `handbook_docs` (a title, a category, a summary, an outside link or
+--      none, the current version, archived or not) and `handbook_versions`
+--      (each file kept: its private path, name, size, type, what changed,
+--      who and when). Every colleague on the team reads both (`is_team()`);
+--      nothing writes them but the four functions below.
+--   2. `handbook_save`, `handbook_add_version`, `handbook_archive`,
+--      `handbook_delete`: admins only (`allowed('admin')`), each filed
+--      under Handbook in the Activity record. A file is never overwritten:
+--      a new version is a new row and a new object, and every earlier one
+--      stays readable. Delete takes the title typed back and answers the
+--      paths of the files it removed, which the page then takes out of
+--      storage.
+--   3. Storage, where the project has it: the private bucket `handbook`
+--      (50 MB a file, never public). Every colleague reads an object, which
+--      the page does only through a signed link of 60 seconds; only an
+--      admin adds or removes one. Nothing in the bucket is served by the
+--      CDN.
+--   4. `activity_section()` files `handbook.*` under Handbook, a part of
+--      the Activity record that answers with the record's level unless set.
+--
+-- ROLLBACK
+--   drop function if exists public.handbook_delete(uuid, text),
+--     public.handbook_archive(uuid, boolean),
+--     public.handbook_add_version(uuid, text, text, bigint, text, text),
+--     public.handbook_save(uuid, text, text, text, text);
+--   drop table if exists public.handbook_versions, public.handbook_docs;
+--   Storage: drop the three policies `handbook_files_*` on storage.objects
+--   and empty and delete the bucket in the dashboard. Re-run activity_section
+--   from 2026-10-01-activity-reports-tab.sql.
+-- ===========================================================================
+
+create table if not exists public.handbook_docs (
+  id              uuid primary key default gen_random_uuid(),
+  title           text not null,
+  category        text not null default 'handbook',
+  summary         text,
+  link_url        text,
+  current_version integer not null default 0,
+  archived_at     timestamptz,
+  created_at      timestamptz not null default now(),
+  created_by      text,
+  updated_at      timestamptz not null default now(),
+  constraint handbook_docs_category check (category in ('handbook', 'sop', 'policy', 'template', 'other')),
+  constraint handbook_docs_link check (link_url is null or link_url ~ '^https://')
+);
+create table if not exists public.handbook_versions (
+  id          uuid primary key default gen_random_uuid(),
+  doc_id      uuid not null references public.handbook_docs(id) on delete cascade,
+  version_no  integer not null,
+  file_path   text not null,
+  file_name   text not null,
+  file_size   bigint,
+  mime        text,
+  note        text,
+  created_at  timestamptz not null default now(),
+  created_by  text,
+  unique (doc_id, version_no)
+);
+create index if not exists handbook_versions_doc_idx on public.handbook_versions (doc_id, version_no desc);
+
+alter table public.handbook_docs enable row level security;
+alter table public.handbook_versions enable row level security;
+revoke all on public.handbook_docs from anon;
+revoke all on public.handbook_versions from anon;
+drop policy if exists handbook_docs_read on public.handbook_docs;
+create policy handbook_docs_read on public.handbook_docs for select to authenticated using (public.is_team());
+drop policy if exists handbook_versions_read on public.handbook_versions;
+create policy handbook_versions_read on public.handbook_versions for select to authenticated using (public.is_team());
+
+create or replace function public.handbook_save(p_id uuid, p_title text, p_category text, p_summary text, p_link text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  who text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  v_title text := btrim(coalesce(p_title, ''));
+  v_link text := nullif(btrim(coalesce(p_link, '')), '');
+  v_changed text;
+  d public.handbook_docs;
+begin
+  if not public.allowed('admin') then return jsonb_build_object('error', 'denied'); end if;
+  if v_title = '' then return jsonb_build_object('error', 'no-title'); end if;
+  if coalesce(p_category, '') not in ('handbook', 'sop', 'policy', 'template', 'other') then
+    return jsonb_build_object('error', 'bad-category');
+  end if;
+  if v_link is not null and v_link !~ '^https://' then return jsonb_build_object('error', 'bad-link'); end if;
+  select * into d from public.handbook_docs h where h.id = p_id;
+  if d.id is null then
+    insert into public.handbook_docs (id, title, category, summary, link_url, created_by)
+    values (coalesce(p_id, gen_random_uuid()), v_title, p_category, nullif(btrim(coalesce(p_summary, '')), ''), v_link, who)
+    returning * into d;
+    insert into public.activity_log (actor, action, subject, detail)
+    values (who, 'handbook.added', d.title, case d.category when 'handbook' then 'Employee Handbook'
+      when 'sop' then 'SOPs' when 'policy' then 'Policies' when 'template' then 'Templates and forms' else 'Other' end);
+  else
+    v_changed := concat_ws(', ',
+      case when d.title is distinct from v_title then 'title' end,
+      case when d.category is distinct from p_category then 'category' end,
+      case when d.summary is distinct from nullif(btrim(coalesce(p_summary, '')), '') then 'summary' end,
+      case when d.link_url is distinct from v_link then 'link' end);
+    if v_changed = '' then return jsonb_build_object('ok', true, 'id', d.id, 'changed', false); end if;
+    update public.handbook_docs h
+       set title = v_title, category = p_category,
+           summary = nullif(btrim(coalesce(p_summary, '')), ''), link_url = v_link, updated_at = now()
+     where h.id = p_id returning * into d;
+    insert into public.activity_log (actor, action, subject, detail)
+    values (who, 'handbook.edited', d.title, upper(left(v_changed, 1)) || substr(v_changed, 2));
+  end if;
+  return jsonb_build_object('ok', true, 'id', d.id);
+end $$;
+
+create or replace function public.handbook_add_version(p_doc uuid, p_path text, p_name text, p_size bigint, p_mime text, p_note text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  who text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  d public.handbook_docs;
+  n integer;
+begin
+  if not public.allowed('admin') then return jsonb_build_object('error', 'denied'); end if;
+  select * into d from public.handbook_docs h where h.id = p_doc for update;
+  if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if coalesce(p_path, '') = '' or position(p_doc::text || '/' in p_path) <> 1 then
+    return jsonb_build_object('error', 'bad-path');
+  end if;
+  if btrim(coalesce(p_name, '')) = '' then return jsonb_build_object('error', 'no-file'); end if;
+  select coalesce(max(v.version_no), 0) + 1 into n from public.handbook_versions v where v.doc_id = p_doc;
+  insert into public.handbook_versions (doc_id, version_no, file_path, file_name, file_size, mime, note, created_by)
+  values (p_doc, n, p_path, btrim(p_name), p_size, p_mime, nullif(btrim(coalesce(p_note, '')), ''), who);
+  update public.handbook_docs h set current_version = n, updated_at = now() where h.id = p_doc;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, 'handbook.version', d.title,
+          concat_ws(' · ', 'Version ' || n, btrim(p_name), nullif(btrim(coalesce(p_note, '')), '')));
+  return jsonb_build_object('ok', true, 'version', n);
+end $$;
+
+create or replace function public.handbook_archive(p_id uuid, p_on boolean)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  who text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  d public.handbook_docs;
+begin
+  if not public.allowed('admin') then return jsonb_build_object('error', 'denied'); end if;
+  update public.handbook_docs h
+     set archived_at = case when p_on then coalesce(h.archived_at, now()) end
+   where h.id = p_id returning * into d;
+  if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, case when p_on then 'handbook.archived' else 'handbook.restored' end, d.title, null);
+  return jsonb_build_object('ok', true);
+end $$;
+
+create or replace function public.handbook_delete(p_id uuid, p_title text)
+returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  who text := lower(coalesce(auth.jwt() ->> 'email', ''));
+  d public.handbook_docs;
+  v_paths jsonb;
+begin
+  if not public.allowed('admin') then return jsonb_build_object('error', 'denied'); end if;
+  select * into d from public.handbook_docs h where h.id = p_id;
+  if d.id is null then return jsonb_build_object('error', 'not-found'); end if;
+  if lower(btrim(coalesce(p_title, ''))) <> lower(btrim(d.title)) then
+    return jsonb_build_object('error', 'mismatch');
+  end if;
+  select coalesce(jsonb_agg(v.file_path order by v.version_no), '[]'::jsonb) into v_paths
+    from public.handbook_versions v where v.doc_id = p_id;
+  delete from public.handbook_docs h where h.id = p_id;
+  insert into public.activity_log (actor, action, subject, detail)
+  values (who, 'handbook.deleted', d.title,
+          jsonb_array_length(v_paths) || case when jsonb_array_length(v_paths) = 1 then ' version' else ' versions' end);
+  return jsonb_build_object('ok', true, 'paths', v_paths);
+end $$;
+
+revoke all on function public.handbook_save(uuid, text, text, text, text) from public, anon;
+revoke all on function public.handbook_add_version(uuid, text, text, bigint, text, text) from public, anon;
+revoke all on function public.handbook_archive(uuid, boolean) from public, anon;
+revoke all on function public.handbook_delete(uuid, text) from public, anon;
+grant execute on function public.handbook_save(uuid, text, text, text, text) to authenticated;
+grant execute on function public.handbook_add_version(uuid, text, text, bigint, text, text) to authenticated;
+grant execute on function public.handbook_archive(uuid, boolean) to authenticated;
+grant execute on function public.handbook_delete(uuid, text) to authenticated;
+
+/* The private bucket and who may touch it, where the project has storage. */
+do $$
+begin
+  if not exists (select 1 from pg_namespace where nspname = 'storage') then
+    raise notice 'handbook: no storage schema here, so no bucket or policy was written.';
+    return;
+  end if;
+  insert into storage.buckets (id, name, public, file_size_limit)
+  values ('handbook', 'handbook', false, 52428800)
+  on conflict (id) do update set public = false, file_size_limit = 52428800;
+  execute 'drop policy if exists handbook_files_read on storage.objects';
+  execute $p$create policy handbook_files_read on storage.objects for select to authenticated
+    using (bucket_id = 'handbook' and public.is_team())$p$;
+  execute 'drop policy if exists handbook_files_add on storage.objects';
+  execute $p$create policy handbook_files_add on storage.objects for insert to authenticated
+    with check (bucket_id = 'handbook' and public.allowed('admin'))$p$;
+  execute 'drop policy if exists handbook_files_remove on storage.objects';
+  execute $p$create policy handbook_files_remove on storage.objects for delete to authenticated
+    using (bucket_id = 'handbook' and public.allowed('admin'))$p$;
+end $$;
+
+create or replace function public.activity_section(p_action text)
+returns text
+language sql immutable parallel safe as $$
+  select case
+    when action in ('campaign.bulk', 'campaign.closed', 'campaign.confirmed',
+                    'campaign.created', 'campaign.dates', 'campaign.deleted', 'campaign.edited',
+                    'campaign.file_added', 'campaign.qc',
+                    'campaign.invoice', 'campaign.invoice_file',
+                    'campaign.invoice_removed', 'campaign.keyed', 'campaign.locked',
+                    'campaign.opened', 'campaign.rate', 'campaign.rated',
+                    'campaign.reinstated', 'campaign.replaced', 'campaign.results', 'campaign.review',
+                    'campaign.stage', 'campaign.submitted', 'campaign.task_linked',
+                    'campaign.task_unlinked', 'campaign.unbooked',
+                    'campaign.unkeyed', 'campaign.withdrawn', 'creator.added',
+                    'creator.code', 'creator.links', 'creator.links_restored',
+                    'creator.links_self', 'creator.off', 'creator.on', 'creator.removed',
+                    'creator.updated') then 'campaigns'
+    when action in ('client.action_done', 'client.action_reopened', 'client.added',
+                    'client.billing', 'client.brand', 'client.deleted', 'client.edited',
+                    'client.review_on', 'client.service', 'client.service_changed',
+                    'client.service_removed', 'client.stage', 'client.touch',
+                    'client.touch_edited', 'client.touch_removed',
+                    'client.touch_restored', 'contact.added', 'contact.deleted',
+                    'contact.edited', 'contact.portal_invite', 'contact.portal_off',
+                    'contact.portal_on', 'contact.primary', 'contact.removed',
+                    'contact.restored',
+                    'request.changed', 'request.raised',
+                    'request.reinstated', 'request.replied', 'request.withdrawn',
+                    'service.override') then 'clients'
+    when action in ('report.ai_drafted', 'report.ai_failed', 'report.confirmed',
+                    'report.created', 'report.deleted', 'report.published',
+                    'report.returned', 'report.revised', 'report.saved',
+                    'report.submitted', 'report.unpublished') then 'reports'
+    when action in ('qr.created', 'qr.restored', 'qr.revoked', 'shortlink.created',
+                    'shortlink.deleted', 'shortlink.imported', 'shortlink.updated') then 'links'
+    when action in ('ops.deleted', 'ops.month_deleted', 'ops.numbering') then 'ops'
+    when action in ('document.deleted', 'document.issued', 'document.reissued',
+                    'document.restored', 'document.signed', 'document.superseded',
+                    'document.unsigned', 'document.verified', 'document.voided',
+                    'register.added', 'register.edited') then 'register'
+    when action in ('client.drive', 'client.handles', 'client.profile',
+                    'client.removed', 'drive.imported', 'link.reset', 'post.added',
+                    'post.deleted', 'post.edited', 'reapproval.requested',
+                    'review.approved', 'review.changes', 'review.removed',
+                    'review.unconfirmed',
+                    'set.created', 'set.deleted', 'set.published', 'set.renamed',
+                    'set.task_linked', 'set.task_unlinked',
+                    'set.withdrawn') then 'review'
+    when action in ('handbook.added', 'handbook.archived', 'handbook.deleted',
+                    'handbook.edited', 'handbook.restored', 'handbook.version') then 'handbook'
+    when action in ('service.added', 'service.changed', 'service.deleted',
+                    'service.off', 'service.on') then 'services'
+    when action in ('team.added', 'team.changed', 'team.edited', 'team.group_added',
+                    'team.group_changed', 'team.group_removed', 'team.invited') then 'team'
+    else 'other'
+  end
+  from (select p_action as action) t
+$$;
+grant execute on function public.activity_section(text) to authenticated;
+
+-- END OF HANDBOOK -----------------------------------------------------------

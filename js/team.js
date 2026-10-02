@@ -44,13 +44,16 @@
      would be twenty eight switches per group, about sixteen of which name
      nothing this portal does, and this page already replaced one permission
      matrix for exactly that reason. */
+  /* The words the user chose (2026-10-01): No Access, View, Manage, Full
+     Access. Only the words moved; the stored keys (none, view, work,
+     manage) and what each opens are as they were. */
   var LEVELS = [
-    ['none',   'No access'],
+    ['none',   'No Access'],
     ['view',   'View'],
-    ['work',   'Work'],
-    ['manage', 'Manage']
+    ['work',   'Manage'],
+    ['manage', 'Full Access']
   ];
-  var LEVEL_WORD = { view: 'View', work: 'Work', manage: 'Manage' };
+  var LEVEL_WORD = { view: 'View', work: 'Manage', manage: 'Full Access' };
 
   /* Each section offers the levels that mean something in it. The activity
      record is a log, so it is read or not read; administering the team is one
@@ -104,8 +107,8 @@
        console files it under, and the read policy asks the part. */
     activity:  [['ops', 'My Work'], ['clients', 'Clients'],
                 ['review', 'Content Review'], ['campaigns', 'Creator Campaigns'],
-                ['register', 'Documents'], ['links', 'Short Links'],
-                ['services', 'Services'], ['team', 'Team']],
+                ['register', 'Documents'], ['reports', 'Reports'], ['links', 'Short Links'],
+                ['services', 'Services'], ['team', 'Team'], ['handbook', 'Handbook']],
     /* THESE FOUR ARE THE EXCEPTION. Every other part is a pane *inside* its
        section's job, so it falls back to the section: a group that works
        Clients works its Billing pane unless somebody says otherwise. These
@@ -380,9 +383,26 @@
       return String(x.name || '').localeCompare(String(y.name || ''));
     });
   }
+  /* A day as the portal writes it: 31 Dec 2027, 12 Sept 2027. */
+  var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+  function dayWord(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
+    return m ? Number(m[3]) + ' ' + MON[Number(m[2]) - 1] + ' ' + m[1] : '';
+  }
+  function todayMy() { return new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10); }
   function whoLine(m) {
     var post = [DEPT[m.department], m.designation].filter(Boolean).join(', ');
-    return [m.staff_code, post].filter(Boolean).join(' · ');
+    /* The day access ends, where one is set (TEAM ACCESS EXPIRY). */
+    var until = m.active && m.access_until ? 'Until ' + dayWord(m.access_until) : '';
+    return [m.staff_code, post, until].filter(Boolean).join(' · ');
+  }
+  /* The database's refusals, in the team's words. */
+  function teamSaid(e) {
+    var t = String(e && e.message || e || '');
+    if (/own-expiry/.test(t)) return 'Your own access date is set by another admin.';
+    if (/expired-date/.test(t)) return 'Move the access date first.';
+    if (/past-date/.test(t)) return 'Choose today or a later date.';
+    return t;
   }
   function memberRow(m) {
     var self = me() && me().id === m.id;
@@ -403,14 +423,14 @@
         (whoLine(m) ? '<small>' + esc(whoLine(m)) + '</small>' : '') +
       '</span>' +
       '<span class="team-mail">' + esc(m.email || '') + '</span>' +
-      '<span class="team-state">' + (m.active ? '' : '<span class="tone">Inactive</span>') + '</span>' +
+      '<span class="team-state">' + (m.active ? '' : '<span class="tone">' + (m.expired_at ? 'Access expired' : 'Inactive') + '</span>') + '</span>' +
       /* Mail leaves the building and cannot be recalled, so Send invitation
          sits one place from Edit and asks first, as it does on a contact.
          Standing somebody down happens once in a job, so it is here rather
          than a select on every row. A person cannot switch themselves off. */
       menuBtn(menuItem('edit', 'Edit') +
               (m.active && m.email ? menuItem('invite', 'Send invitation') : '') +
-              (self ? '' : menuItem('state', m.active ? 'Set inactive' : 'Set active')));
+              (self ? '' : menuItem('state', m.active ? 'Set inactive' : (m.expired_at ? 'Extend access' : 'Set active'))));
 
     wireMenu(el);
     var st = el.querySelector('[data-a="state"]');
@@ -418,6 +438,17 @@
       shutMenus();
       /* Setting somebody active again asks nothing: it is the way back from
          this, and the way back never asks. */
+      /* Access that ended on its date comes back with a later date (the
+         database brings them back as the date moves). */
+      if (!m.active && m.expired_at) {
+        window.ADspaceConfirm.ask({
+          title: 'Extend access',
+          body: m.name + '\'s access ended after ' + dayWord(m.access_until) + '. Choose the new last day, or leave it empty for no end.',
+          go: 'Extend access',
+          field: { label: 'Access until', type: 'date', min: todayMy(), required: false }
+        }, function (v) { saveMember(m, { access_until: v || null }); });
+        return;
+      }
       if (!m.active) { saveMember(m, { active: true }); return; }
       /* Somebody who is stood down may still be the person in charge of
          clients and open campaigns, and a client whose person in charge
@@ -457,10 +488,11 @@
 
   function saveMember(m, patch, then) {
     db.from('team_members').update(patch).eq('id', m.id).then(function (r) {
-      if (r.error) { msg('teamMsg', r.error.message, 'err'); load(); return; }
+      if (r.error) { msg('teamMsg', teamSaid(r.error), 'err'); load(); return; }
       log('team.changed', m.name, Object.keys(patch).map(function (k) {
         if (k === 'active') return 'Active: ' + (m.active ? 'Yes' : 'No') + ' → ' + (patch.active ? 'Yes' : 'No');
         if (k === 'role') return 'User group: ' + roleName(m.role) + ' → ' + roleName(patch.role);
+        if (k === 'access_until') return 'Access until: ' + (dayWord(m.access_until) || 'not set') + ' → ' + (dayWord(patch.access_until) || 'not set');
         return k + ': ' + (m[k] == null ? 'not set' : m[k]) + ' → ' + (patch[k] == null ? 'not set' : patch[k]);
       }).join('; '));
       msg('teamMsg', 'Saved.', 'ok');
@@ -560,7 +592,7 @@
       var part = bits[1] && (PARTS[bits[0]] || []).filter(function (x) { return x[0] === bits[1]; })[0];
       return (sec ? sec[1] : bits[0]) + (bits[1] ? ' · ' + (part ? part[1] : bits[1]) : '');
     };
-    var word = function (k, v) { return v ? (LEVEL_WORD[v] || 'No access') : (k.indexOf('.') > -1 ? 'Same as section' : 'No access'); };
+    var word = function (k, v) { return v ? (LEVEL_WORD[v] || 'No Access') : (k.indexOf('.') > -1 ? 'Same as section' : 'No Access'); };
     var keys = Object.keys(before).concat(Object.keys(after)).filter(function (k, i, a) { return a.indexOf(k) === i; });
     return keys.filter(function (k) { return (before[k] || '') !== (after[k] || ''); }).map(function (k) {
       return name(k) + ': ' + word(k, before[k]) + ' → ' + word(k, after[k]);
@@ -575,7 +607,7 @@
     var word = function (s) {
       var ex = (PARTS[s[0]] || []).map(function (p) {
         var v = offered(s[0] + '.' + p[0], exceptionOf(acc, s[0] + '.' + p[0]));
-        return v ? p[1] + ': ' + (LEVEL_WORD[v] || 'No access') : '';
+        return v ? p[1] + ': ' + (LEVEL_WORD[v] || 'No Access') : '';
       }).filter(Boolean);
       return s[1] + (ex.length ? ' (' + ex.join(', ') + ')' : '');
     };
@@ -592,7 +624,7 @@
       return ex.length ? s[1] + ' (' + ex.join(', ') + ')' : '';
     }).filter(Boolean);
     if (only.length) parts.push('Only: ' + only.join(', '));
-    return parts.length ? parts.join(' · ') : 'No access';
+    return parts.length ? parts.join(' · ') : 'No Access';
   }
 
   function groupRow(r) {
@@ -725,8 +757,8 @@
             /* A granted part is not inherited, so its unset state is No
                access, said once; an inherited part starts at Same as
                section and may still be shut on its own. */
-            (granted ? '<option value="">No access</option>'
-                     : '<option value="">Same as section</option><option value="none">No access</option>') +
+            (granted ? '<option value="">No Access</option>'
+                     : '<option value="">Same as section</option><option value="none">No Access</option>') +
             /* A My Work view follows its section and has two states. */
             (VIEW_PARTS[key] ? '' :
               partLevels(key).map(function (l) { return '<option value="' + l + '">' + esc(LEVEL_WORD[l]) + '</option>'; }).join('')) +
@@ -969,6 +1001,11 @@
     $('tmDept').value = m ? (m.department || '') : '';
     $('tmRoleStd').value = m ? (m.role_family || '') : '';
     $('tmCap').value = m && m.capacity_minutes_week ? String(Math.round(m.capacity_minutes_week / 30) / 2) : '';
+    /* Nobody sets their own access date; another admin does. */
+    var mine = !!(m && me() && me().id === m.id);
+    $('tmUntilRow').hidden = mine;
+    $('tmUntil').value = m && m.access_until ? m.access_until : '';
+    $('tmUntil').min = todayMy();
     fillRolePick(); $('tmRole').value = m ? m.role : 'account';
     msg('tmMsg', '');
     window.ADspaceSheet.show($('teamAddBox'), {
@@ -977,6 +1014,44 @@
     });
   }
   $('teamAdd').addEventListener('click', function () { openMemberBox(null, this); });
+
+  /* The bar's ⋯: one last day for everybody's access but your own (the
+     user, 2026-10-01: "set all to expire 31/12/2027 unless extended"). */
+  (function () {
+    var wrap = $('teamMoreWrap'), btn = $('teamMoreBtn'), menu = $('teamMore');
+    if (!wrap || !btn || !menu) return;
+    wrap.hidden = false;
+    var shut = function () { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); };
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = menu.hidden;
+      menu.hidden = !open;
+      btn.setAttribute('aria-expanded', String(open));
+      if (open && window.ADspaceMenu) window.ADspaceMenu.place(btn, menu);
+    });
+    document.addEventListener('click', function (e) { if (!e.target.closest || !e.target.closest('#teamMoreWrap')) shut(); });
+    if (window.ADspaceMenu && window.ADspaceMenu.onScroll) window.ADspaceMenu.onScroll(shut);
+    menu.addEventListener('click', function (e) {
+      var it = e.target.closest('.kmenu-item');
+      if (!it) return;
+      shut();
+      var others = state.rows.filter(function (x) { return x.active && !(me() && me().id === x.id); }).length;
+      window.ADspaceConfirm.ask({
+        title: 'Set access expiry',
+        body: 'Every active colleague but you keeps access up to and including this day, unless it is moved for them. Leave it empty for no end. ' +
+              others + (others === 1 ? ' colleague.' : ' colleagues.'),
+        go: 'Set for all',
+        field: { label: 'Access until', type: 'date', min: todayMy(), required: false }
+      }, function (v) {
+        db.rpc('team_set_expiry', { p_until: v || null }).then(function (r) {
+          var d = r.data || {};
+          if (r.error || d.error) { msg('teamMsg', r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : teamSaid(r.error)) : teamSaid(d.error === 'denied' ? 'Not allowed.' : d.error), 'err'); return; }
+          msg('teamMsg', 'Saved.', 'ok');
+          load();
+        });
+      });
+    });
+  })();
   $('tmCancel').addEventListener('click', shutMemberBox);
   $('tmClose').addEventListener('click', shutMemberBox);
   $('tmSave').addEventListener('click', function () {
@@ -995,6 +1070,13 @@
     var fields = { name: name, email: email, role: role, staff_code: staff || null, designation: desig || null,
                    department: $('tmDept').value || null, role_family: $('tmRoleStd').value || null,
                    capacity_minutes_week: capH >= 0 && $('tmCap').value ? Math.round(capH * 60) : null };
+    if (!$('tmUntilRow').hidden) {
+      var until = $('tmUntil').value || null;
+      if (until && until < todayMy() && (!editingMember || until !== editingMember.access_until)) {
+        msg('tmMsg', 'Choose today or a later date.', 'err'); $('tmUntil').focus(); return;
+      }
+      fields.access_until = until;
+    }
     if (editingMember) {
       var m = editingMember;
       /* The row's email is the address the console signs in with, so moving it
@@ -1006,7 +1088,7 @@
           if (r.error) {
             msg('teamMsg', /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
               : /duplicate|unique/i.test(r.error.message)
-              ? 'That email is already on the list.' : r.error.message, 'err');
+              ? 'That email is already on the list.' : teamSaid(r.error), 'err');
             return;
           }
           /* A save that changed nothing files nothing. */
@@ -1014,7 +1096,8 @@
             ['name', 'Name'], ['email', 'Email'], ['role', 'User group', roleName], ['staff_code', 'Employee ID'],
             ['designation', 'Position'], ['department', 'Department', function (v) { return DEPT[v] || v; }],
             ['role_family', 'Role standard', function (v) { return ROLE_STD[v] || v; }],
-            ['capacity_minutes_week', 'Weekly capacity', function (v) { return Math.round(Number(v) / 60) + 'h'; }]]);
+            ['capacity_minutes_week', 'Weekly capacity', function (v) { return Math.round(Number(v) / 60) + 'h'; }],
+            ['access_until', 'Access until', dayWord]]);
           if (moved) log('team.edited', name, moved);
           msg('teamMsg', 'Saved.', 'ok');
           load();

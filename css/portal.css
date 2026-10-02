@@ -2684,6 +2684,21 @@ body.is-plain .topbar { background: var(--chrome); }
   /* The floor the sheet is anchored to is the phone's, not the screen's: on a
      device with a home indicator the last row of a sheet sat under it. */
   .sheet-card { padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+  /* The grabber: the head is where a sheet is pulled down to close
+     (`js/sheet.js`), and the mark says so where every phone puts it. */
+  .sheet-card { position: relative; }
+  .sheet-card::before {
+    content: ""; position: absolute; top: 6px; left: 50%; width: 36px; height: 5px;
+    margin-left: -18px; border-radius: 3px; background: var(--line-ctl); opacity: .55;
+    pointer-events: none;
+  }
+  .sheet-head { touch-action: none; }
+}
+/* A form sheet opened again with what was typed before it was left. */
+.draftline {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 8px 0 4px; padding: 4px 4px 4px 12px; border-radius: var(--radius-sm);
+  background: var(--sunk); font-size: 13px; color: var(--ink-soft);
 }
 
 .iconbtn.is-done { color: var(--ok); background: var(--ok-bg); }
@@ -5233,6 +5248,8 @@ body.no-view-activity-review [data-need="activity.review:view"],
 body.no-view-activity-campaigns [data-need="activity.campaigns:view"],
 body.no-view-activity-links [data-need="activity.links:view"],
 body.no-view-activity-register [data-need="activity.register:view"],
+body.no-view-activity-reports [data-need="activity.reports:view"],
+body.no-view-activity-handbook [data-need="activity.handbook:view"],
 body.no-view-activity-services [data-need="activity.services:view"],
 body.no-view-team-performance [data-need="team.performance:view"],
 body.no-work-team-performance [data-need="team.performance:work"],
@@ -7326,6 +7343,34 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .cmdsheet-quiet { display: flex; align-items: center; gap: 10px; }
 .cmdsheet-quiet .cmdbar-quiet { margin-right: 0; }
 .cmd-slot { display: none; }
+/* AT A DESK THE FILTERS ARE BEHIND ONE BUTTON TOO (2026-10-01). The bar
+   keeps its views (`data-nofilter`: whose work, the workflow, a month); the
+   filters wait in a card that hangs from the Filters mark (`#cmdPop`, laid by
+   `ADspaceMenu.pop`), so every bar is one shape at any width. */
+.cmdbar-filters[hidden] { display: none !important; }
+.cmdpop {
+  position: fixed; z-index: 50; width: min(300px, calc(100vw - 32px));
+  background: var(--card); border: 1px solid var(--line);
+  padding: 16px; display: flex; flex-direction: column; gap: 12px;
+  transform-origin: top left; animation: mk-menu-in var(--t) var(--ease-out);
+}
+.cmdpop:focus { outline: none; }
+.cmdpop-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
+.cmdpop-body { display: grid; gap: 12px; }
+.cmdpop-body .select { width: 100%; }
+.cmdpop-acts { display: flex; justify-content: flex-end; }
+@media (min-width: 641px) {
+  .cmdbar > .select:not([data-nofilter]) { display: none; }
+  .cmdbar .cmdbar-filters {
+    display: inline-grid; place-items: center; position: relative; padding: 0;
+    width: var(--ctl-h-sm); min-width: 0; height: var(--ctl-h-sm); flex: 0 0 auto;
+    border: 1px solid transparent; border-radius: var(--radius-ctl);
+    background: var(--tonal); color: var(--ink);
+  }
+  @media (hover: hover) { .cmdbar .cmdbar-filters:hover { background: var(--tonal-hover); } }
+  .cmdbar .cmdbar-filters[aria-expanded="true"] { background: var(--tonal-press); }
+  .cmdbar .cmdbar-filters svg { width: 15px; height: 15px; }
+}
 /* Drawn only while the search is open, and only on a phone: with no rule of
    its own at a desk it rendered as a bare button under the search box. */
 .cmdbar-find-clear {
@@ -8297,6 +8342,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-form :where(.row .row) { margin-top: 0; }
 /* A platform's top posts sit under their own label, a step below its
    fields, so the remarks above read as the platform's. */
+.rp-aileft { font-size: 12.5px; color: var(--ink-mute); white-space: nowrap; align-self: center; }
+.rp-aileft.is-out { color: var(--warn); }
 .rp-form .rp-tophead { margin: 24px 0 8px; font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--ink-mute); }
 .rp-form .rp-tophead + .row { margin-top: 0; }
 .rp-form > .rp-hint + .row, .rp-form > .rp-aidraft + .msg + .row, .rp-form > .tickline + .fsec, .rp-form > .fsec:first-child { margin-top: 12px; padding-top: 0; border-top: 0; }
@@ -8499,11 +8546,37 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 #activityList .recday { position: sticky; top: 0; z-index: 2; background: var(--card); padding: 6px 0 8px; margin-bottom: 0; }
 /* A long detail reads three lines and opens on a press; the whole entry is
    the control, so it takes the focus ring and says it opens. */
-.rl-detail { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+/* Two lines an entry, each cut at its end, so a long log runs down quickly
+   (the user, 2026-10-01); a press opens the whole entry. */
+.rl-head { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rl-detail { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; line-clamp: 1; overflow: hidden; }
+.recline.is-open .rl-head { white-space: normal; overflow: visible; }
 .recline.is-open .rl-detail { display: block; -webkit-line-clamp: unset; line-clamp: unset; overflow: visible; }
 .recline.is-long { cursor: pointer; border-radius: 4px; }
 .recline.is-long:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; }
 @media (hover: hover) { .recline.is-long:hover .rl-detail { color: var(--ink); } }
+/* Who did it stands at the right edge only in a wide history; a rail reads
+   it at the head of the line. */
+.rl-by { display: none; }
+/* A wide history (js/records.js, 720px and over) reads one line an entry,
+   as a table: the time, what happened and on what, then what changed cut
+   at the line's end in the soft ink, and who at the right edge in a fixed
+   track, a hairline between entries. A cut line opens on a press. */
+.reclist.is-wide .reclines { gap: 0; }
+.reclist.is-wide .recline {
+  grid-template-columns: 40px minmax(0, 1fr) 150px; gap: 0 12px;
+  padding: 5px 0; border-top: 1px solid var(--line-soft);
+}
+.reclist.is-wide .recline:first-child { border-top: 0; }
+.reclist.is-wide .rl-who { display: none; }
+.reclist.is-wide .rl-by { display: block; color: var(--ink-mute); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.reclist.is-wide .rl-body { display: flex; align-items: baseline; gap: 10px; min-width: 0; overflow-wrap: normal; }
+.reclist.is-wide .rl-head { flex: 0 1 auto; max-width: 62%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reclist.is-wide .rl-detail { flex: 1 1 0; margin: 0; display: block; -webkit-line-clamp: unset; line-clamp: unset; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.reclist.is-wide .recline.is-open .rl-body { display: block; overflow-wrap: anywhere; }
+.reclist.is-wide .recline.is-open .rl-head { max-width: none; white-space: normal; }
+.reclist.is-wide .recline.is-open .rl-detail { white-space: normal; margin-top: 1px; }
+.reclist.is-wide .recline.is-long { border-radius: 0; }
 
 /* ---------- One strip (2026-09-27) ----------
    A record's panes and a route's tabs take the view strip's look, asked for
@@ -9261,3 +9334,39 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    request are the card's only acts, and the request starts the block. */
 .approve.is-requesting .approve-row { display: none; }
 .approve.is-requesting .changebox { margin-top: 0; }
+
+/* =========================================================================
+   THE HANDBOOK (2026-10-01): the company's internal files, a card per
+   category. A row is the file and its line, the version, when it last
+   changed, then Open and the ⋯. On a narrow list it is the file over its
+   line with Open and the ⋯ at the right edge.
+   ========================================================================= */
+.hb-row, .crm-head.hb-row {
+  display: grid; align-items: center; gap: 0 12px;
+  grid-template-columns: minmax(0, 1fr) 72px 110px 164px;
+  padding: 10px 15px; border-bottom: 1px solid var(--line-soft);
+}
+.hb-row:last-child { border-bottom: 0; }
+.hb-row.is-off > :not(.hb-act) { opacity: .55; }
+.hb-name { display: grid; gap: 2px; min-width: 0; }
+.hb-name b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-name small { font-size: 12.5px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hb-ver, .hb-when { font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+.hb-act { position: relative; display: flex; gap: 4px; align-items: center; justify-content: flex-end; }
+.is-narrow .crm-head.hb-row { display: none; }
+.is-narrow .hb-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "name act";
+  gap: 2px 10px; padding: 12px 15px;
+}
+.is-narrow .hb-row > .hb-name { grid-area: name; }
+.is-narrow .hb-row > .hb-act { grid-area: act; }
+.is-narrow .hb-row > .hb-ver, .is-narrow .hb-row > .hb-when { display: none; }
+/* A version in the Versions sheet: what it is over who and when, then Open. */
+.hb-verrow {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px;
+  padding: 12px 0; border-bottom: 1px solid var(--line-soft);
+}
+.hb-verrow:last-child { border-bottom: 0; }
+.hb-verrow .tone { margin-left: 6px; }
+.hb-verrow .hb-note { white-space: normal; overflow-wrap: anywhere; color: var(--ink-soft); }

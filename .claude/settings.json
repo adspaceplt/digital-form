@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash tests/snap.sh:*)",
+      "Bash(bash tests/gate.sh:*)",
+      "Bash(node tests/:*)",
+      "Bash(SHOTS=1 node tests/:*)",
+      "Bash(node --check:*)"
+    ]
+  }
+}

@@ -173,7 +173,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Need | Component |
 |---|---|
 | Section head and its one action | `.viewhead` > `.headmark h2` + one `.btn` |
-| Search, filters, count, action | `.cmdbar` > `.cmdbar-find` (a mark that grows to 280px) + selects + `.cmdbar-end` > `.cmdbar-quiet` (count) + `.cmdbar-acts`. Count reads `7 services` whole, `3 of 41` filtered, and is not drawn when empty. Extra acts sit behind one ⋯ |
+| Search, filters, count, action | `.cmdbar` > `.cmdbar-find` (a mark that grows to 280px) + view selects + the Filters mark (the filters in `#cmdPop` at a desk, `#cmdSheet` on a phone) + `.cmdbar-end` > `.cmdbar-quiet` (count) + `.cmdbar-acts`. Count reads `7 services` whole, `3 of 41` filtered, and is not drawn when empty. Extra acts sit behind one ⋯ |
 | What a section is for | `.console-title` button with a 14px info glyph opening `.aboutpop` |
 | A small card a control opens (the bell, a section's purpose) | `.popcard` laid by `ADspaceMenu.pop`: from its control with a caret at a desk; docked at the screen's foot on a phone, the action nearest the thumb, a close mark in its head |
 | A directory | `ADspaceGroup.section`: `.crm-group` > `.crm-group-head` (15px heading, count, marks, the name as the fold) + `.crm-group-body` > `.crm-table.softpanel` with its own `.crm-head` |
@@ -500,7 +500,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - The rail runs in two chunks, ordered by frequency, with the same sequence
   everywhere:
   - **Work**: My Work, Clients, Content Review, Creator Campaigns.
-  - **Records and setup**: Documents, Reports, Short Links, Services, Team.
+  - **Records and setup**: Documents, Reports, Short Links, Services, Team,
+    Handbook.
   - The Activity record sits at the rail's foot (`.sidebar-foot`, a `.railrow`,
     not a section).
   - A chunk whose every route is withheld hides its label.
