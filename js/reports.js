@@ -1005,8 +1005,10 @@
     });
     Array.prototype.forEach.call(box.querySelectorAll('[data-pickall]'), function (g) {
       g.addEventListener('change', function () {
+        /* Read once: each row's change repaints this tick as it goes. */
+        var on = g.checked;
         Array.prototype.forEach.call(g.closest('.rp-post-table').querySelectorAll('[data-pick]'), function (i) {
-          if (i.checked !== g.checked) { i.checked = g.checked; i.dispatchEvent(new Event('change')); }
+          if (i.checked !== on) { i.checked = on; i.dispatchEvent(new Event('change')); }
         });
       });
     });
