@@ -2127,6 +2127,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   deploy has succeeded (the page must stop asking before the database stops
   answering), and verified on the live database afterwards. The report
   names what was applied.
+  - The connector holds any statement holding `drop` or `delete` (a function
+    body included) for a confirmation it cannot show, and times out: apply
+    the rest in small `execute_sql` pieces (`create or replace trigger`, a
+    policy created under `if not exists`), then hand the user the held part
+    for the SQL Editor as its own run. A storage policy goes in a run of its
+    own, since the editor may not alter `storage.objects` and a failure rolls
+    back the whole run.
 - An edge function (`sign-upload`, `invite-member`, `portal-login`,
   `meet-create`, `push-send`, `s3-sweep`, `report-draft`) is deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
