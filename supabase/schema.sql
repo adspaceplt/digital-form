@@ -22463,7 +22463,7 @@ grant execute on function public.ai_draft_left(uuid) to authenticated;
 -- opened through a link that lasts 60 seconds.
 -- 2026-10-01. Safe to run twice. Rollback at the foot. Mirrored byte for byte
 -- in supabase/schema.sql under the same banner, and activity_section() in
--- THE ACTIVITY RECORD, SECTION BY SECTION; tests/handbook-sql.js compares
+-- THE ACTIVITY RECORD, SECTION BY SECTION; tests/sql.js compares
 -- them.
 --
 -- WHAT CHANGED
