@@ -733,3 +733,6 @@ The user, on an objective listing creatives at a high cost per lead or none: eac
 
 ### 2026-10-02 · The appendix prints the whole caption
 The user, on an appendix whose captions stopped after two lines: the caption was hidden. The excerpt (2026-10-01) had been chosen to keep the appendix short. Asked between the whole caption in a wider column, the whole caption in today's column, and six lines, they chose the first. The Post column now takes the room of Date and Format, which a post named by its type and day already says (a titled post carries them on a line under its name); each paragraph wraps on its own and the row grows to fit. A caption past 40 lines, more than a page's column, still runs together and ends on an ellipsis, so no row is taller than a page.
+
+### 2026-10-02 · The title row is shaded again
+The lighter tables of the same day took the grey off the head rows as well as the cells, and the user found the document read as a skeleton of lines. Every table's title row is shaded #f5f5f5 again (`HEAD`), with the body cells kept white on their hairlines: the shade marks where each table begins, the white keeps the figures light.
