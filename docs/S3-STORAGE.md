@@ -20,6 +20,8 @@ Supabase. Part 4 records that nothing is deleted.
 3. [The daily report](#3-the-daily-report): deploy, schedule, read the first
    run.
 4. [Deletes: none](#4-deletes-none).
+5. [Private invoices](#5-private-invoices): a campaign's invoice PDF behind a
+   five-minute link.
 
 ## How a file gets in, and why it stays
 
@@ -328,6 +330,80 @@ read, and setting them changes nothing.
 S3 → `myadspace` → **Objects** → turn on **Show versions** → find the key →
 select its **Delete marker** → **Delete** → confirm. The file is current
 again at the same link.
+
+---
+
+## 5. Private invoices
+
+A campaign's invoice PDF is the one document the portal puts on S3. From
+2026-10-02 a new one is uploaded under `private/` and is never served by
+CloudFront: the console's View invoice and the client's PDF link ask
+`sign-download` for a link that works for **five minutes**. The function finds
+the file from what the caller may already read (the campaign row for a
+colleague; what `get_campaign` gives the client's own link), never from a path
+the browser sends.
+
+```
+private/{clientId}/{uuid}.pdf            a campaign's invoice, from 2026-10-02
+```
+
+Invoices uploaded before keep their public CloudFront address (nothing is
+moved or deleted). To close one, open the campaign → Finance → Remove PDF,
+then upload it again once the switch below is on.
+
+Until steps 5a and 5b are done, `privateInvoices` in `js/config.js` stays
+`false` and invoices upload exactly as before. Claude turns it on once you
+say the two steps are done.
+
+### 5a. The upload key may write and read `private/`
+
+1. IAM → **Users** → open the user whose key is in Supabase as
+   `AWS_ACCESS_KEY_ID` (`adspace-portal-upload`, or the older upload user if
+   that key has not been rotated yet). Copy its **ARN** from the summary at
+   the top (`arn:aws:iam::<account>:user/<name>`); 5b needs it.
+2. **Permissions** tab → open its policy → **Edit** → **JSON**, and add this
+   statement inside `"Statement": [ … ]` (a comma after the one before it):
+
+   ```json
+   {
+     "Sid": "PortalPrivateInvoices",
+     "Effect": "Allow",
+     "Action": ["s3:PutObject", "s3:GetObject"],
+     "Resource": "arn:aws:s3:::myadspace/private/*"
+   }
+   ```
+
+3. **Next** → **Save changes**. It grants no delete and nothing outside
+   `private/`.
+
+### 5b. Nobody else reads `private/`
+
+1. S3 → **myadspace** → **Permissions** → **Bucket policy** → **Edit**.
+2. Add this statement inside `"Statement": [ … ]`, with the ARN from 5a in
+   place of `UPLOAD-USER-ARN`:
+
+   ```json
+   {
+     "Sid": "PrivateOnlyThroughSignedLinks",
+     "Effect": "Deny",
+     "Principal": "*",
+     "Action": "s3:GetObject",
+     "Resource": "arn:aws:s3:::myadspace/private/*",
+     "Condition": { "StringNotEquals": { "aws:PrincipalArn": "UPLOAD-USER-ARN" } }
+   }
+   ```
+
+3. **Save changes**. This shuts CloudFront and every other reader out of
+   `private/` whatever the rest of the policy allows, and leaves `content/`
+   and the brand files exactly as they are. A link signed by `sign-download`
+   is the upload user reading, so it still works.
+
+### 5c. Check
+
+Tell Claude the two steps are done. Claude turns `privateInvoices` on, then:
+an invoice uploaded in the console opens from View invoice and from the
+client's PDF link, its link stops working after five minutes, and
+`https://mycdn.adspace.me/private/…` answers **403**.
 
 ---
 

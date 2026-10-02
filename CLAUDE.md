@@ -1131,6 +1131,14 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The invoice fold arrives with the first confirmed creator and leaves with the
   last.
   - One Save covers the number (`AINV` + six digits) and the PDF.
+  - With `ADSPACE_CONFIG.s3.privateInvoices` on (after
+    `docs/S3-STORAGE.md` §5), the PDF is signed under `private/` and the row
+    keeps the key, never an address; View invoice and the client's PDF link
+    ask `sign-download` for a five-minute link, the file found from what the
+    caller may read (the campaign row; `get_campaign` for the client's key),
+    never from a path the browser sends. An older invoice keeps its public
+    address. A refused open on the client's page is one line in its
+    language (`#amountMsg`).
   - Remove PDF, with Undo.
   - `get_campaign` withholds `invoice_no` and `invoice_url` until a creator is
     confirmed.
@@ -2165,7 +2173,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The Turnstile secret, the Google refresh token and the performance master
     code live only in Supabase.
   - The delete code lives in the database.
-- S3 (`docs/S3-STORAGE.md`): the upload key only writes under `content/`.
+- S3 (`docs/S3-STORAGE.md`): the upload key only writes under `content/`,
+  and under `private/` (write and read, for invoices) once §5 is done;
+  `private/` is closed to CloudFront by the bucket policy.
   Nothing deletes from S3: every uploaded file is kept, Content Review files
   and creator drafts included. `s3-sweep` is a daily report only (pg_cron,
   03:17 MYT, `s3-sweep-daily`): with a list-only key it lists `content/`,
@@ -2209,8 +2219,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     for the SQL Editor as its own run. A storage policy goes in a run of its
     own, since the editor may not alter `storage.objects` and a failure rolls
     back the whole run.
-- An edge function (`sign-upload`, `invite-member`, `portal-login`,
-  `meet-create`, `push-send`, `s3-sweep`, `report-draft`) is deployed by Claude through the
+- An edge function (`sign-upload`, `sign-download`, `invite-member`,
+  `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`) is
+  deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
   the live source is read back (the user, 2026-09-30).
 - The report lists what the user does by hand: a dashboard setting.
