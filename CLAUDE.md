@@ -426,6 +426,20 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`byClient`, `byStaff`). The Clients list itself stays newest first.
   - The `data-hint` date hint.
   - The date floor (below).
+  - A long list is searched (§8): a select of ten options or more opens a
+    finder (`#pickerBox`, `.picker`) in place of the browser's list, the
+    field matching every word typed anywhere in an option's label (a name,
+    a code, or part of either). The select stays the visible control and the
+    source of truth: a pick sets its value and fires `input` and `change`; a
+    value set from outside shuts the finder. A press, Space, Enter, the
+    arrows or a key typed on the select opens it (the key typed is the first
+    of the search); Enter or a press picks, Escape, Tab and a press elsewhere
+    shut it; Escape shuts it first wherever focus is, before a sheet under it. At a desk it hangs under the
+    field; at 640 and under, or under a coarse pointer, it is a sheet of the
+    screen's height named by the field's label, with a close mark, and a tap
+    (not a scroll) opens it. Never on a `data-seg`, a multiple, a
+    `.state-select`, a disabled select or `data-nofind`. Safari cannot run in
+    the sandbox; the user confirms the iPhone tap.
 - `js/words.js` holds every word two pages share (covers, statuses, actions) in
   English and Chinese, plus the tones (`W.TONE`, `W.tone`) and `W.dept` /
   `W.roleStd`.
@@ -458,6 +472,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     coarse pointer keeps the system's own box, as `data-native` keeps any
     one (My Work's pickers that open in place). Playwright's `inputValue()`
     reads the shown DD/MM/YYYY; the page's `value` is read in the page.
+    The calendar is taken down after a day is picked, on a press elsewhere
+    and on Escape (`shutPick()`: the hidden field's type cycled), because
+    Safari left it over the page once the field it belonged to was gone.
   - Room for the calendar (§6): at a desk, a date field too near the window's
     foot is lifted before its calendar opens (its scroller scrolls, else a
     `.pick-room` spacer), and a press that lifted it opens the calendar with
@@ -1671,8 +1688,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Reports is its own section (`reports` View / Work / Manage), not a part of
   Clients. `clients_read` also answers Reports View.
 - Flow:
-  - Draft → Submit for review (Work) → Confirm (Manage; never the submitter) →
-    Publish to client (Manage).
+  - Draft → Submit for review (Work) → Confirm (Manage; never the submitter,
+    but an admin may confirm their own after a question saying nobody else
+    checked it: `2026-10-02-report-admin-confirm.sql`) → Publish to client
+    (Manage).
   - Then Revise (the next version as a draft) or Unpublish (with a reason).
   - A trigger refuses row edits once a report is not a draft, and refuses
     status or stamp changes outside `sm_report_*`.
@@ -1687,6 +1706,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     the right edge; the meta under them. On a narrow pane the button reads
     PDF (`.rp-pdf-short`).
   - The step foot is an action row, the primary at the right edge.
+  - Check and submit ends in one too (`.rp-actions`): Send back, then the
+    step forward at the right edge, each at its own width (the base `.btn`
+    is `flex: 1`, so an action row states `flex: 0 0 auto`); who it waits on
+    sits to their left; on a phone the pair are equal halves under it.
   - An empty step's line does not repeat the head's Add.
   - An account is named by its handle (`account_name`, labelled Handle):
     a new account takes the client's Brand handle for the platform picked
@@ -1717,7 +1740,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     the post is named by its format and date, its caption's first line under
     it), Description is the caption, Publish time the date, Reactions,
     comments and shares the interactions, Post type (and a `/reel/` link)
-    the format. One post a Post ID: a Lifetime row is taken as it is (figures
+    the format. Where a paste names no interactions (Instagram: Likes,
+    Comments, Shares, Saves) they are the sum of those parts, and where it
+    names no engagements they are the interactions, so either figure an
+    account shows is filled. One post a Post ID: a Lifetime row is taken as it is (figures
     to the day of the export); day rows are added up inside the report's
     period, reach left blank (it cannot be added across days). The summary
     line says which.
@@ -1815,6 +1841,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective
     and Remove (asks, naming how many), each with Undo.
   - The age split must total 100% (±0.5).
+  - Step 1's Results by objective show, until a figure is typed, each
+    objective's results as the PDF adds them from its ads (the field's
+    placeholder, read live; a mix of result types named part by part) and
+    its amount spent beside them (`.readfield`, never typed).
+- A step read and not edited (in review and after) is the facts card
+  (`factsCard()`: `.ovcard` > `.ovsec`, each label beside its value, written
+  text keeping its lines), one section a group: This period, Results by
+  objective, Previous period; the commentary's fields, then a block a
+  platform.
 - Figure fields (`numFields()`, `data-num`) show a count with separators, a
   percentage to 1 decimal, and money as RM or S$. `numIn()` reads them back.
 - Money fields take `inputmode="decimal"`; counts take `numeric`.
@@ -1822,18 +1857,25 @@ Each line is a rule that broke once. Its reason is in the archive.
   Start, and an empty date reads Select date.
 - The ads PDF:
   - Ad performance ranks each objective's ads in a table; the cheapest is
-    marked only among results of the same kind. Creative performance then
+    marked only among results of the same kind. Each objective's heading
+    counts its creatives and the ads Meta ran (each Ad ID once, a typed row
+    one ad) where those differ (`Leads · 21 creatives · 64 ads`), else its
+    ads; under the glossary line (in the first month's How to read this) the
+    page says a row combines every variation of one creative and what a
+    weak row means (`VARIATIONS`). Creative performance then
     gives each creative (the name without its creator code) one card: one
     image, a line per objective and result type (amount spent, results,
-    cost per result, reach, CTR; a missing figure a dash) under a shaded
-    head in Slate Regular (the card's own name head white over a hairline), as every table in the report, the age split and video figures
-    from the line that spent the most (2026-10-01).
+    cost per result, reach, CTR; a missing figure a dash) under a head in
+    Slate Regular, as every table in the report, the age split and video
+    figures from the line that spent the most (2026-10-01).
+  - The executive summary's Results by objective is one table under an
+    italic band naming it (`band`), each objective's results, amount
+    spent, cost per result and share of spend as a percentage; no bars.
   - An image added to one row of a creative is put on its other rows.
   - A result in a PDF table is its count alone (0 where an ad spent with
     none): the objective heads the table and the client reads the cost per
-    result. The console's rows keep one short word
-    (`ADspaceSmReport.shortResult`: Engagements, Reached, Leads, Messages…),
-    never Leads (form).
+    result. The console's rows carry no result word either (the user,
+    2026-10-02); `ADspaceSmReport.shortResult` stays for the sheet.
     A full block step separates one objective's table from the next.
   - The tax note follows the market: WHT and SST for MY; DCC and GST for SG.
   - Ad names never break at an underscore.
@@ -1843,21 +1885,35 @@ Each line is a rule that broke once. Its reason is in the archive.
     margin; no Methodology page. Page titles and the commentary's block
     heads are in title case (Executive Summary, Ad Performance, What Worked,
     Areas to Improve): a formal document.
-  - Commentary reads one block per part: its shaded head, its points
-    numbered under it, on both kinds of report (never a label column beside
-    the points).
+  - Tables are white cells on hairline rules (`EDGE`), heads in Slate
+    Regular, figures at one weight and centred (2026-10-02, after the
+    team's own reports). Only a total row, a reading note and an image
+    frame are shaded. A summary table (`roomy`: the account table, Results
+    by objective, By platform) takes S(4) rows; working tables keep S(3).
+  - Commentary reads one block per part: its head, its points numbered
+    under it, on both kinds of report (never a label column beside the
+    points).
   - The ranking table gives the ad's name the widest column, so a name reads
-    whole; a missing cost per result or CTR is a dash.
+    whole; a missing cost per result or CTR is a dash. A figure never breaks
+    inside its cell: each figure column is at least its widest entry in the
+    cheapest row's heavier face, every objective's table shares those
+    tracks, and the name takes the rest.
   - The foot is PRIVATE & CONFIDENTIAL and the page count on the margin's
     line; no draft or version line.
+  - A draft carries DRAFT (INTERNAL USE ONLY) and a report in review PENDING
+    REVIEW (INTERNAL USE ONLY), repeated on the diagonal over every page in
+    faint text drawn last (`WM` in `js/smreport.js`); confirmed, published
+    and every version the client reads carry none.
   - A page break falls between points, never inside one: each numbered or
     lettered point is one unit (`unit`), split only when taller than a page.
   - A top post card is named by its title, else its type and day; its meta
     line adds only what the name does not (the platform where a page holds
     two, the date and type under a title). Its figures run the column's
-    width. It carries no caption: the appendix row holds the caption as an
-    excerpt (`captionExcerpt`, two lines, one beside a remark) ending on `…`
-    where it was cut.
+    width. It carries no caption: the appendix row prints the caption whole,
+    each paragraph wrapped (`captionLines`; past 40 lines it runs together
+    and ends on `…`), the row as tall as it needs. The appendix has no Date or
+    Format column: the Post column takes their room, a post named by its type
+    and day says both, and a titled post carries them on a line under it.
   - Every emoji is drawn and embedded before any page is laid out
     (`sh.ready()` before `draw`).
   - An accounts report reads: Executive summary; Insights and

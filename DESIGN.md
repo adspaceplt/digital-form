@@ -191,6 +191,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | A form of more than five fields | `section.fsec` > `h4.fsec-h` (13/600 ink), 2 to 5 fields each, divided by a `--line-soft` hairline and a 24px step |
 | Fields side by side | `.row.fgrid` (two equal) / `.fgrid-3`, `span-all` / `span-2`; one column under `.is-tight` and below 560. Never a pixel width in a style attribute |
 | A choice of two to four | Segment `select[data-seg]` (five or more stays a select) |
+| A choice of ten or more | A select; it opens the finder (`.picker`, `js/form.js` §8): a search field over the options, under the field at a desk, the screen's height on a phone |
 | Usual defaults | `details.fmore` More details, its line naming what it holds |
 | A record pane of facts | Read first (`readGroup`, missing required values in warn); Edit opens the same groups in a sheet |
 | Optional detail | `.panel.panel-collapse` > `.disclosure` + `.disclosure-body` |

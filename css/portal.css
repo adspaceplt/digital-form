@@ -8259,9 +8259,17 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-ctl { display: flex; align-items: center; gap: 8px; }
 .rp-ctl .chip { align-self: center; }
 .rp-note { margin: 0; font-size: 13px; color: var(--warn); }
-.rp-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+/* The report's next step is an action row as every other: Send back, then
+   the step forward at the right edge, each at its own width (`.btn` is
+   `flex: 1` at its base, which drew Send back across the whole row,
+   2026-10-02); the line saying who it waits on sits to their left. */
+.rp-actions { display: flex; flex-wrap: wrap; flex-direction: row-reverse; justify-content: flex-start; align-items: center; gap: 8px; }
+.rp-actions > .btn { flex: 0 0 auto; }
 .rp-actions .btn svg { width: 15px; height: 15px; }
 .rp-wait { font-size: 12.5px; color: var(--ink-mute); }
+/* On a phone the pair are equal halves under the line. */
+.is-narrow .rp-actions > .btn { flex: 1 1 0; min-width: 0; }
+.is-narrow .rp-actions > .rp-wait { order: -1; flex: 1 0 100%; }
 .rp-sec { display: grid; gap: 12px; }
 /* The commentary's line and Draft with AI share one row, the button at the right edge. */
 .rp-aidraft { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -9377,3 +9385,47 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .hb-verrow:last-child { border-bottom: 0; }
 .hb-verrow .tone { margin-left: 6px; }
 .hb-verrow .hb-note { white-space: normal; overflow-wrap: anywhere; color: var(--ink-soft); }
+
+/* ---- A long list is searched (js/form.js §8) ---------------------------------
+   A select of ten options or more opens this finder in place of the browser's
+   list. At a desk it hangs under its field like a ⋯ menu (the field's own
+   label stands above it, so it carries no head); on a phone it is a sheet of
+   the screen's height with its name and close mark, the field at the top. */
+.picker {
+  position: fixed; z-index: 90; display: flex; flex-direction: column;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--radius); box-shadow: var(--shadow-lift);
+  padding: 6px; overflow: hidden;
+  transform-origin: top center; animation: mk-menu-in var(--t) var(--ease-out);
+}
+.picker[hidden] { display: none; }
+.picker-head { display: none; }
+.picker-field { position: relative; flex: 0 0 auto; margin-bottom: 4px; }
+.picker-field .input { width: 100%; padding-left: 36px; }
+.picker-field svg {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+  width: 15px; height: 15px; stroke: var(--ink-mute); stroke-width: 1.8; fill: none; pointer-events: none;
+}
+.picker-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; overscroll-behavior: contain; min-height: 0; flex: 1 1 auto; }
+.picker-opt {
+  display: flex; align-items: center; gap: 12px; min-height: var(--ctl-h); padding: 6px 10px;
+  border-radius: calc(var(--radius) - 6px); color: var(--ink); font-size: 14px; line-height: 1.35;
+  cursor: pointer; overflow-wrap: anywhere;
+}
+.picker-opt > span { flex: 1 1 auto; min-width: 0; }
+.picker-opt > svg { flex: 0 0 auto; width: 15px; height: 15px; stroke: currentColor; stroke-width: 2; fill: none; }
+.picker-opt.is-on { background: var(--line-soft); font-weight: 600; }
+.picker-opt.is-act:not(.is-on) { background: var(--sunk); }
+.picker-opt.is-off { color: var(--ink-mute); cursor: default; }
+.picker-group { padding: 10px 10px 4px; font-size: 12px; font-weight: 600; color: var(--ink-mute); }
+.picker-none { padding: 10px; font-size: 13px; color: var(--ink-mute); }
+.picker.is-full {
+  inset: 0; width: auto; max-height: none; border: 0; border-radius: 0; box-shadow: none;
+  padding: calc(12px + env(safe-area-inset-top, 0px)) 16px calc(12px + env(safe-area-inset-bottom, 0px));
+  animation: mk-sheet-up var(--t-slow) var(--ease);
+}
+.picker.is-full .picker-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.picker.is-full .picker-head h3 { flex: 1 1 auto; min-width: 0; font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.picker.is-full .picker-field { margin-bottom: 8px; }
+.picker.is-full .picker-opt { min-height: 44px; font-size: 15px; }
+@media (prefers-reduced-motion: reduce) { .picker, .picker.is-full { animation: none; } }
