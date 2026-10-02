@@ -1708,8 +1708,23 @@ Each line is a rule that broke once. Its reason is in the archive.
   (`portal_reports`, `portal_report`), and names it as its cover does
   (`ADspaceSmReport.titleOf`).
 - Accounts carry forward.
-- Posts paste from a spreadsheet by header name. Thumbnails are 320px JPEG data
-  URLs.
+- Posts paste from a spreadsheet, or its CSV file, by header name. Thumbnails
+  are 320px JPEG data URLs.
+  - A slashed date is day first unless the paste shows otherwise (a second
+    part over 12) or is a Meta export (`Post ID` and `Publish time`), which
+    is month first.
+  - A Meta Business Suite export: Title is ignored (it repeats the caption;
+    the post is named by its format and date, its caption's first line under
+    it), Description is the caption, Publish time the date, Reactions,
+    comments and shares the interactions, Post type (and a `/reel/` link)
+    the format. One post a Post ID: a Lifetime row is taken as it is (figures
+    to the day of the export); day rows are added up inside the report's
+    period, reach left blank (it cannot be added across days). The summary
+    line says which.
+  - A post already in the account is matched by its link and updated, never
+    added twice; a blank cell never clears a figure.
+  - Select (`data-a="pickposts"`) ticks posts: Move to account (two accounts
+    or more) and Remove (asks, naming how many), each with Undo.
 - Ads reports (`kind = 'ads'`):
   - `first_month` carries the reading guidance; a later month compares against
     the previous period, which is carried forward. A new report is never a
