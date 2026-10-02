@@ -118,6 +118,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `portal.js` | portal |
 | `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter |
 | `team.js` | team, perms, levels |
+| `handbook.js` | handbook |
 | `perf.js` | perfui, perfguard, perf |
 | `search.js` | search, then `ui` |
 | `overview.js` | overview, then `ui` |
@@ -539,7 +540,8 @@ Each line is a rule that broke once. Its reason is in the archive.
 - The group seeded as Account is named Marketing. Its slug `account` never
   moves.
 - Sections: `ops` (My Work), `clients`, `review`, `campaigns`, `register`
-  (Documents), `reports`, `links`, `services`, `team`, `activity`.
+  (Documents), `reports`, `links`, `services`, `team`, `activity`. The
+  Handbook is not a section: every colleague reads it, an admin writes it.
 - A part (`clients.billing`, `register.hr`, `activity.campaigns`…) answers with
   its own level where one is set, else its section's, in `allowed()` and the
   page's `may()` alike. Only exceptions are stored. A stored level equal to the
@@ -596,6 +598,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Documents by family;
   - Services by category;
   - Team by user group;
+  - the Handbook by category (Archived shut, an admin's alone);
   - My Work by its axis.
 - A filter repaints only when its value changed: `input` and `change` both fire,
   and `change` on blur detached Clear the filters.
@@ -1903,6 +1906,28 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `ADspaceGroup.keep` opens the card the row moves into.
 - No Status column. Paused is a chip beside the slug.
 
+### Handbook (`js/handbook.js`, `?s=handbook`)
+- The company's internal files: Employee Handbook, SOPs, Policies, Templates
+  and forms, Other (`handbook_docs`, `handbook_versions`,
+  `2026-10-01-handbook.sql`). Every colleague reads (`is_team()`); an admin
+  alone adds, edits, versions, archives and deletes (`handbook_save`,
+  `handbook_add_version`, `handbook_archive`, `handbook_delete`, each
+  `allowed('admin')` and filed `handbook.*`). No acknowledgement step.
+- A file lives in the private Supabase Storage bucket `handbook` (50 MB a
+  file), never in S3 or behind the CDN, at `{doc id}/{time}-{name}`. It is
+  opened only through a signed link of 60 seconds made at the press
+  (`createSignedUrl`), the tab opened before the link returns; nothing
+  stores an address to a file. The bucket reads at `is_team()`, writes and
+  removes at admin.
+- A file is never overwritten: New version adds an object and a row, and
+  Versions opens every earlier one. A document may be a link (https only)
+  instead of a file.
+- Archive (asks) hides a file from everyone but an admin; Restore never
+  asks. Delete takes the title typed back, removes the rows, then the
+  files (`paths` returned by `handbook_delete`).
+- A colleague who is not an admin sees no Add file, no archived file, and
+  a ⋯ only where there are Versions.
+
 ### Team (`js/team.js`)
 - Members sit under their group. Your own row shows the neutral `You` chip.
 - Set inactive / Set active sits in the ⋯ (never on your own row). Send
@@ -1936,7 +1961,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   the two.
 - A tag nothing names files as `other` and falls back to the section.
 - One part per tab (`activity.clients`, `.ops`, `.team`, `.review`,
-  `.campaigns`, `.links`, `.register`, `.reports`, `.services`). The link
+  `.campaigns`, `.links`, `.register`, `.reports`, `.services`,
+  `.handbook`). The link
   draws where any tab is readable.
 - Reports files a report's steps (`report.*`: started, submitted, returned,
   confirmed, published, revised, unpublished, deleted), every save

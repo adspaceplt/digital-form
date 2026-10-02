@@ -507,7 +507,7 @@
        `activity_section()` in the database maps a tag to the section the
        console files it under and the read policy asks the part, so the tabs
        here draw exactly what the database will send. */
-    activity:  ['ops', 'clients', 'review', 'campaigns', 'register', 'reports', 'links', 'services', 'team'],
+    activity:  ['ops', 'clients', 'review', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'handbook'],
     /* Operations is the one section whose parts *widen* it rather than
        narrowing it: the team's whole queue, the reports, the templates and
        another person's hours are all more than "work my own tasks". So they
@@ -565,6 +565,9 @@
     if (name === 'team') return may('team', 'view') || may('team.performance', 'view');
     /* Everybody on the team has a record of their own to read. */
     if (name === 'mine') return Boolean(me && me.id);
+    /* The Handbook is every colleague's to read (only an admin changes it),
+       so it has no level of its own on the ladder. */
+    if (name === 'handbook') return Boolean(me && (me.id || me.is_admin));
     /* The Overview is the start page of a group that manages something: an
        admin, or Manage on any section or part (2026-09-28). It has no key of
        its own; each card asks its own. */
@@ -660,6 +663,7 @@
     reports: 'Reports',
     services: 'Services',
     team: 'Team',
+    handbook: 'Handbook',
     mine: 'My performance'
   };
   /* WHAT EACH SECTION IS FOR, in one line, while the team is new to it.
@@ -686,6 +690,7 @@
     reports:   'Client reports, from first draft to the version the client reads.',
     services:  'The rate card every quotation is priced from.',
     team:      'Team members, user groups and what each group may open.',
+    handbook:  'The Employee Handbook, SOPs, policies and templates the team works by.',
     mine:      'Your monthly performance reviews, once each is released at your 1-1.'
   };
   var INTRO_SHOWS = 3;
@@ -745,7 +750,7 @@
 
   // The first section this person is allowed, for when the one asked for is not.
   function firstAllowed() {
-    var order = ['overview', 'clients', 'review', 'campaigns', 'links', 'register', 'reports', 'services', 'team'];
+    var order = ['overview', 'clients', 'review', 'campaigns', 'links', 'register', 'reports', 'services', 'team', 'handbook'];
     for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
     return 'clients';
   }
@@ -767,6 +772,7 @@
     $('sectionServices').hidden  = name !== 'services';
     $('sectionTeam').hidden      = name !== 'team';
     $('sectionMine').hidden      = name !== 'mine';
+    $('sectionHandbook').hidden  = name !== 'handbook';
     $('sectionTitle').querySelector('.console-title-word').textContent = SECTION_TITLE[name];
     $('sectionTitle').setAttribute('aria-label', SECTION_TITLE[name] + ', about this section');
     paintIntro(name);
@@ -833,6 +839,12 @@
     if (name === 'services') {
       if (!window.ADspaceCRM) { enterLater = 'services'; return; }
       window.ADspaceCRM.enterServices();
+      setUrl();
+      return;
+    }
+    if (name === 'handbook') {
+      if (!window.ADspaceHandbook) { enterLater = 'handbook'; return; }
+      window.ADspaceHandbook.enter();
       setUrl();
       return;
     }
@@ -1160,6 +1172,13 @@
     'report.deleted':        ['Report deleted', 'is-danger', 'reports'],
     /* Every save and every Draft with AI, filed by the page (2026-10-01). */
     'report.saved':          ['Report saved', '', 'reports'],
+    /* The Handbook (2026-10-01): its files and their versions. */
+    'handbook.added':        ['File added', 'is-ok', 'handbook'],
+    'handbook.edited':       ['File edited', '', 'handbook'],
+    'handbook.version':      ['New version', '', 'handbook'],
+    'handbook.archived':     ['File archived', 'is-warn', 'handbook'],
+    'handbook.restored':     ['File restored', '', 'handbook'],
+    'handbook.deleted':      ['File deleted', 'is-danger', 'handbook'],
     'report.ai_drafted':     ['Drafted with AI', '', 'reports'],
     'report.ai_failed':      ['Draft with AI failed', 'is-warn', 'reports'],
     'document.issued':       ['Document issued', 'is-ok', 'register'],
@@ -1284,7 +1303,7 @@
                       ops: 'My Work', clients: 'Clients',
                       review: 'Content Review', campaigns: 'Creator Campaigns',
                       register: 'Documents', reports: 'Reports', links: 'Short Links',
-                      services: 'Services', team: 'Team', performance: 'Performance' };
+                      services: 'Services', team: 'Team', performance: 'Performance', handbook: 'Handbook' };
   /* The steps of a review, read through perf_activity(): when, the step,
      whose month, who. Never a score, a grade or a dispute's words. */
   var PERF_STEP = { released: 'Review released', disputed: 'Review disputed', decided: 'Dispute answered',
@@ -3353,6 +3372,11 @@
       if (enterLater !== 'team' || section !== 'team' || !window.ADspaceTeam) return;
       enterLater = '';
       window.ADspacePerf.enterTeam();
+    },
+    handbookReady: function () {
+      if (enterLater !== 'handbook' || section !== 'handbook') return;
+      enterLater = '';
+      window.ADspaceHandbook.enter();
     },
     reportsReady: function () {
       if (enterLater !== 'reports' || section !== 'reports') return;

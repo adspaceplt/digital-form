@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261001n">
+<link rel="stylesheet" href="/css/portal.css?v=20261002a">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -212,6 +212,9 @@
         </button>
         <button class="navitem" data-section="team" type="button" hidden>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/><path d="m17.5 5.5 1 1 2-2"/></svg><span>Team</span>
+        </button>
+        <button class="navitem" data-section="handbook" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H19v14H5.5A1.5 1.5 0 0 0 4 19.5z"/><path d="M4 19.5A1.5 1.5 0 0 0 5.5 21H19v-3"/><path d="M8 8h7M8 11h5"/></svg><span>Handbook</span>
         </button>
       </div>
     </nav>
@@ -3702,6 +3705,107 @@
     <!-- ---- My performance: the signed-in person's own released months.
          Reached from the account menu. No master code: the database answers
          this read for the person's own record and nobody else's. ---- -->
+    <div class="console-body" id="sectionHandbook" hidden>
+      <!-- The company's internal files: the Employee Handbook, SOPs, policies,
+           templates and forms. Every colleague reads them; only an admin adds
+           or changes one. The files are private and open through a link that
+           lasts a minute (js/handbook.js). -->
+      <div class="cmdbar">
+        <span class="cmdbar-find">
+          <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+          <input class="input input-sm" id="hbFind" type="search" placeholder="Search files" aria-label="Search the Handbook" autocomplete="off">
+        </span>
+        <select class="select select-sm" id="hbCat" aria-label="Filter by category" data-default="">
+          <option value="">Every category</option>
+          <option value="handbook">Employee Handbook</option>
+          <option value="sop">SOPs</option>
+          <option value="policy">Policies</option>
+          <option value="template">Templates and forms</option>
+          <option value="other">Other</option>
+        </select>
+        <span class="cmdbar-end">
+          <span class="cmdbar-quiet"><span class="cmdbar-count" id="hbCount"></span></span>
+          <span class="cmdbar-acts">
+            <button class="btn btn-sm btn-primary" id="hbAdd" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add file</button>
+          </span>
+        </span>
+      </div>
+      <div class="msg" id="hbListMsg"></div>
+      <div id="hbList" data-narrow="760"></div>
+    </div>
+
+    <div class="sheet" id="hbSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="hbSheetTitle">
+        <div class="sheet-head">
+          <h3 id="hbSheetTitle">Add file</h3>
+          <button class="iconbtn" id="hbClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <section class="fsec">
+            <h4 class="fsec-h">File details</h4>
+            <div class="row fgrid">
+              <div class="span-all"><label class="field-label" for="hbTitle">Title</label>
+                <input class="input" id="hbTitle" aria-required="true" placeholder="Employee Handbook" autocomplete="off"></div>
+              <div><label class="field-label" for="hbCatPick">Category</label>
+                <select class="select" id="hbCatPick">
+                  <option value="handbook">Employee Handbook</option>
+                  <option value="sop">SOPs</option>
+                  <option value="policy">Policies</option>
+                  <option value="template">Templates and forms</option>
+                  <option value="other">Other</option>
+                </select></div>
+            </div>
+            <div class="row"><div><label class="field-label" for="hbSummary">Summary</label>
+              <textarea class="input" id="hbSummary" rows="2" placeholder="Optional"></textarea></div></div>
+          </section>
+          <section class="fsec" id="hbSourceSec">
+            <h4 class="fsec-h">Source</h4>
+            <div class="row" id="hbKindRow"><div><label class="field-label" for="hbKind">Kept as</label>
+              <select class="select" id="hbKind" data-seg><option value="file">File</option><option value="link">Link</option></select></div></div>
+            <div class="row" id="hbFileRow"><div><label class="field-label" for="hbFile">File</label>
+              <input class="input" id="hbFile" type="file" aria-required="true" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.txt,.csv"></div></div>
+            <div class="row" id="hbLinkRow" hidden><div><label class="field-label" for="hbLink">Link</label>
+              <input class="input" id="hbLink" type="url" inputmode="url" aria-required="true" placeholder="https://adspace.me" autocomplete="off"></div></div>
+          </section>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="hbSave" type="button">Add</button>
+          <button class="btn btn-quiet" id="hbCancel" type="button">Cancel</button>
+        </div>
+        <div class="msg" id="hbMsg"></div>
+      </div>
+    </div>
+
+    <div class="sheet" id="hbVerSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="hbVerTitle">
+        <div class="sheet-head">
+          <h3 id="hbVerTitle">New version</h3>
+          <button class="iconbtn" id="hbVerClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body">
+          <div class="row"><div><label class="field-label" for="hbVerFile">File</label>
+            <input class="input" id="hbVerFile" type="file" aria-required="true" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.txt,.csv"></div></div>
+          <div class="row"><div><label class="field-label" for="hbVerNote">What changed</label>
+            <textarea class="input" id="hbVerNote" rows="2" placeholder="Optional"></textarea></div></div>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="hbVerSave" type="button">Save</button>
+          <button class="btn btn-quiet" id="hbVerCancel" type="button">Cancel</button>
+        </div>
+        <div class="msg" id="hbVerMsg"></div>
+      </div>
+    </div>
+
+    <div class="sheet" id="hbHistSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="hbHistTitle">
+        <div class="sheet-head">
+          <h3 id="hbHistTitle">Versions</h3>
+          <button class="iconbtn" id="hbHistClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <div class="sheet-body" id="hbHistList"></div>
+      </div>
+    </div>
+
     <div class="console-body" id="sectionMine" hidden>
       <!-- A member's own reviews open only for a session verified by a code
            emailed to them in the last 15 minutes. -->
@@ -4048,6 +4152,7 @@ raya-2026        https://example.com/raya"></textarea>
       <button class="acttab btn-sm" data-af="services" data-need="activity.services:view" type="button" aria-pressed="false">Services</button>
       <button class="acttab btn-sm" data-af="team" data-need="activity.team:view" type="button" aria-pressed="false">Team</button>
       <button class="acttab btn-sm" data-af="performance" data-need="team.performance:view" type="button" aria-pressed="false">Performance</button>
+      <button class="acttab btn-sm" data-af="handbook" data-need="activity.handbook:view" type="button" aria-pressed="false">Handbook</button>
     </span></div>
     <div class="sheet-body" id="activityList"></div>
   </div>
@@ -4334,14 +4439,15 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261001a"></script>
-<script src="/js/admin.js?v=20261001d"></script>
+<script src="/js/admin.js?v=20261002a"></script>
 <script src="/js/documents.js?v=20261001a"></script>
 <script src="/js/letters.js?v=20261001a"></script>
 <script src="/js/smreport.js?v=20261001t"></script>
 <script src="/js/reports.js?v=20261001u"></script>
 <script src="/js/register.js?v=20261001c"></script>
 <script src="/js/crm.js?v=20261001a"></script>
-<script src="/js/team.js?v=20261001c"></script>
+<script src="/js/team.js?v=20261002a"></script>
+<script src="/js/handbook.js?v=20261002a"></script>
 <script src="/js/campaigns.js?v=20261001b"></script>
 <script src="/js/ops.js?v=20261001b"></script>
 <script src="/js/perf.js?v=20261001a"></script>

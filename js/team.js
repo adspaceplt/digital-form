@@ -108,7 +108,7 @@
     activity:  [['ops', 'My Work'], ['clients', 'Clients'],
                 ['review', 'Content Review'], ['campaigns', 'Creator Campaigns'],
                 ['register', 'Documents'], ['reports', 'Reports'], ['links', 'Short Links'],
-                ['services', 'Services'], ['team', 'Team']],
+                ['services', 'Services'], ['team', 'Team'], ['handbook', 'Handbook']],
     /* THESE FOUR ARE THE EXCEPTION. Every other part is a pane *inside* its
        section's job, so it falls back to the section: a group that works
        Clients works its Billing pane unless somebody says otherwise. These

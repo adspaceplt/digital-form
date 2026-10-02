@@ -500,7 +500,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 - The rail runs in two chunks, ordered by frequency, with the same sequence
   everywhere:
   - **Work**: My Work, Clients, Content Review, Creator Campaigns.
-  - **Records and setup**: Documents, Reports, Short Links, Services, Team.
+  - **Records and setup**: Documents, Reports, Short Links, Services, Team,
+    Handbook.
   - The Activity record sits at the rail's foot (`.sidebar-foot`, a `.railrow`,
     not a section).
   - A chunk whose every route is withheld hides its label.
