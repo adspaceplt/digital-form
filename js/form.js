@@ -578,14 +578,30 @@
     var take = function () {
       var el = pickFor;
       if (!el) return;
-      el.value = VALUE.get.call(pick);
+      var iso = VALUE.get.call(pick);
+      shutPick();
+      el.value = iso;
       el.dispatchEvent(new Event('input', { bubbles: true }));
       el.dispatchEvent(new Event('change', { bubbles: true }));
       el.focus({ preventScroll: true });
     };
     pick.addEventListener('change', take);
     document.body.appendChild(pick);
+    /* A press anywhere else, or Escape, puts the calendar away. */
+    document.addEventListener('pointerdown', function (e) { if (pickOpen && e.target !== pick) shutPick(); }, true);
+    document.addEventListener('keydown', function (e) { if (pickOpen && e.key === 'Escape') shutPick(); }, true);
     return pick;
+  }
+  /* Safari keeps its calendar up after a day is picked, and after the page
+     moves on (the Timeline's date saved and gone, the calendar still over the
+     record; the user, 2026-10-02): the hidden field is never focused, so
+     nothing it sees ever closes it. Changing the field's type takes the
+     calendar down in every browser; it is put back at once. */
+  var pickOpen = false;
+  function shutPick() {
+    if (!pick) return;
+    pickOpen = false;
+    try { pick.blur(); pick.type = 'text'; pick.type = 'date'; } catch (x) {}
   }
   function openPick(el) {
     var p = picker();
@@ -604,7 +620,7 @@
     p.min = el.min || ''; p.max = el.max || '';
     VALUE.set.call(p, el.value || '');
     pickFor = el;
-    try { p.showPicker(); } catch (x) {}
+    try { p.showPicker(); pickOpen = true; } catch (x) {}
   }
   function dmy(el) {
     if (!el || el.__dmy || el.tagName !== 'INPUT' || el.type !== 'date' || el.hasAttribute('data-native') || coarse()) return;
@@ -732,6 +748,259 @@
         String((a && a.name) || '').localeCompare(String((b && b.name) || ''), 'en', { sensitivity: 'base' });
     };
   }
+
+  /* §8 A LONG LIST IS SEARCHED. A browser's own dropdown finds a line only by
+     the start of its label, and every client and colleague reads code first,
+     so a name typed found nothing (the user, 2026-10-02). A select of ten
+     options or more opens a finder instead of the browser's list: a field
+     over the options, matched anywhere in the label by every word typed, so
+     "like", "132" and "AC132" each find `AC132 · Like Mee Noodle House`. The
+     select stays in the page, drawn and focused as before, and remains the
+     source of truth: a pick sets its value and fires `input` and `change`,
+     so no page changes. At a desk the finder hangs under the field; on a
+     phone it is a sheet of the screen's height. A select opts out with
+     `data-nofind`; a segment, a multiple, a stage select (`.state-select`,
+     a move with its own questions) and a disabled one never open it. */
+  var FIND_AT = 10;
+  var findBox = null, findSel = null, findAct = -1, findRows = [];
+  function findable(sel) {
+    if (!sel || sel.tagName !== 'SELECT' || sel.multiple || sel.size > 1 || sel.disabled) return false;
+    if (sel.__seg || sel.hasAttribute('data-seg') || sel.hasAttribute('data-nofind') || sel.classList.contains('state-select')) return false;
+    var n = 0;
+    for (var i = 0; i < sel.options.length; i++) if (!sel.options[i].hidden) n++;
+    return n >= FIND_AT;
+  }
+  function phoneFind() {
+    return window.innerWidth <= 640 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  }
+  function foldText(s) {
+    s = String(s || '').toLowerCase();
+    return s.normalize ? s.normalize('NFD').replace(/[̀-ͯ]/g, '') : s;
+  }
+  function escHtml(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+  function findLabel(sel) {
+    var l = sel.id && document.querySelector('label[for="' + sel.id + '"]');
+    var t = l ? l.textContent : (sel.getAttribute('aria-label') || '');
+    return t.replace(/\*/g, '').replace(/\s+/g, ' ').trim() || 'Choose';
+  }
+  function findShell() {
+    if (findBox) return findBox;
+    findBox = document.createElement('div');
+    findBox.className = 'picker';
+    findBox.id = 'pickerBox';
+    findBox.hidden = true;
+    findBox.setAttribute('role', 'dialog');
+    findBox.setAttribute('aria-labelledby', 'pickerTitle');
+    findBox.innerHTML =
+      '<div class="picker-head"><h3 id="pickerTitle"></h3>' +
+        '<button class="iconbtn" type="button" id="pickerClose" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>' +
+      '<div class="picker-field"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.4-4.4"/></svg>' +
+        '<input class="input" id="pickerQ" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="done" data-nodraft ' +
+        'role="combobox" aria-autocomplete="list" aria-expanded="true" aria-controls="pickerList" aria-labelledby="pickerTitle" placeholder="Name or code"></div>' +
+      '<ul class="picker-list" id="pickerList" role="listbox" aria-labelledby="pickerTitle"></ul>';
+    document.body.appendChild(findBox);
+    var q = findBox.querySelector('#pickerQ');
+    q.addEventListener('input', function () { findPaint(q.value); });
+    q.addEventListener('keydown', function (e) {
+      if (e.isComposing) return;
+      var live = findRows.filter(function (r) { return !r.off; });
+      var at = live.indexOf(findRows[findAct]);
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (!live.length) return;
+        at = e.key === 'ArrowDown' ? Math.min(live.length - 1, at + 1) : Math.max(0, at - 1);
+        findMark(findRows.indexOf(live[at]));
+      } else if (e.key === 'PageDown' || e.key === 'PageUp') {
+        e.preventDefault();
+        if (!live.length) return;
+        at = e.key === 'PageDown' ? Math.min(live.length - 1, at + 8) : Math.max(0, at - 8);
+        findMark(findRows.indexOf(live[at]));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        if (findRows[findAct] && !findRows[findAct].off) findPick(findRows[findAct]);
+      }
+    });
+    /* Escape and Tab belong to the finder while it is open: a sheet or a ⋯
+       under it listens on the document first, so the finder answers on the
+       window, before them. */
+    window.addEventListener('keydown', function (e) {
+      if (findBox.hidden || !findBox.contains(e.target)) return;
+      if (e.key !== 'Escape' && e.key !== 'Tab') return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      findClose(true);
+    }, true);
+    /* A press inside the finder is not a press elsewhere (the filters card,
+       a ⋯ menu). */
+    findBox.addEventListener('click', function (e) { e.stopPropagation(); });
+    var list = findBox.querySelector('#pickerList');
+    list.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    list.addEventListener('click', function (e) {
+      var li = e.target.closest('[data-i]');
+      if (!li) return;
+      var r = findRows[+li.getAttribute('data-i')];
+      if (r && !r.off) findPick(r);
+    });
+    list.addEventListener('mousemove', function (e) {
+      var li = e.target.closest('[data-i]');
+      if (li && +li.getAttribute('data-i') !== findAct && !findRows[+li.getAttribute('data-i')].off) findMark(+li.getAttribute('data-i'), true);
+    });
+    findBox.querySelector('#pickerClose').addEventListener('click', function () { findClose(true); });
+    document.addEventListener('pointerdown', function (e) {
+      if (findBox.hidden || findBox.contains(e.target) || e.target === findSel) return;
+      findClose(false);
+    }, true);
+    window.addEventListener('resize', function () { if (!findBox.hidden) findPlace(); });
+    document.addEventListener('scroll', function (e) {
+      if (findBox.hidden || findBox.classList.contains('is-full') || findBox.contains(e.target)) return;
+      findPlace();
+    }, true);
+    return findBox;
+  }
+  function findPaint(text) {
+    var terms = foldText(text).split(/\s+/).filter(Boolean);
+    var list = findBox.querySelector('#pickerList'), html = '', group = null, shown = 0;
+    findRows.forEach(function (r, i) {
+      r.hit = !terms.length || terms.every(function (t) { return r.key.indexOf(t) > -1; });
+      if (!r.hit) return;
+      if (r.group !== group) {
+        group = r.group;
+        if (group) html += '<li class="picker-group" role="presentation">' + escHtml(group) + '</li>';
+      }
+      shown++;
+      html += '<li class="picker-opt' + (r.on ? ' is-on' : '') + (r.off ? ' is-off' : '') + '" role="option" id="pickerOpt' + i + '" data-i="' + i + '"' +
+        ' aria-selected="' + (r.on ? 'true' : 'false') + '"' + (r.off ? ' aria-disabled="true"' : '') + '>' +
+        '<span>' + escHtml(r.text) + '</span>' +
+        (r.on ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>' : '') + '</li>';
+    });
+    list.innerHTML = html || '<li class="picker-none" role="presentation">No matches.</li>';
+    var first = -1, onAt = -1;
+    findRows.forEach(function (r, i) {
+      if (!r.hit || r.off) return;
+      if (first < 0) first = i;
+      if (r.on && onAt < 0) onAt = i;
+    });
+    findMark(terms.length ? first : (onAt > -1 ? onAt : first));
+    return shown;
+  }
+  function findMark(i, byPointer) {
+    findAct = i;
+    var q = findBox.querySelector('#pickerQ');
+    Array.prototype.forEach.call(findBox.querySelectorAll('.picker-opt.is-act'), function (li) { li.classList.remove('is-act'); });
+    var li = i > -1 && findBox.querySelector('#pickerOpt' + i);
+    if (li) {
+      li.classList.add('is-act');
+      q.setAttribute('aria-activedescendant', li.id);
+      if (!byPointer) {
+        var list = findBox.querySelector('#pickerList');
+        var top = li.offsetTop, bot = top + li.offsetHeight;
+        if (top < list.scrollTop) list.scrollTop = top - 4;
+        else if (bot > list.scrollTop + list.clientHeight) list.scrollTop = bot - list.clientHeight + 4;
+      }
+    } else q.removeAttribute('aria-activedescendant');
+  }
+  function findPlace() {
+    if (!findSel || !findBox) return;
+    var full = phoneFind();
+    findBox.classList.toggle('is-full', full);
+    if (full) { findBox.style.cssText = ''; return; }
+    var r = findSel.getBoundingClientRect();
+    if (!r.width && !r.height) { findClose(false); return; }
+    var vw = document.documentElement.clientWidth, vh = window.innerHeight;
+    var w = Math.min(Math.max(r.width, 300), vw - 32);
+    var left = Math.max(16, Math.min(r.left, vw - 16 - w));
+    var below = vh - r.bottom - 12, above = r.top - 12;
+    var up = below < 260 && above > below;
+    var room = Math.max(160, Math.min(400, up ? above : below));
+    findBox.style.left = left + 'px';
+    findBox.style.width = w + 'px';
+    findBox.style.maxHeight = room + 'px';
+    if (up) { findBox.style.top = ''; findBox.style.bottom = (vh - r.top + 4) + 'px'; }
+    else { findBox.style.bottom = ''; findBox.style.top = (r.bottom + 4) + 'px'; }
+  }
+  function findOpen(sel, typed) {
+    if (!findable(sel)) return false;
+    findShell();
+    findSel = sel;
+    var cur = sel.value;
+    findRows = [];
+    Array.prototype.forEach.call(sel.options, function (o) {
+      if (o.hidden || (o.value === '' && /^(choose|select)\b/i.test(o.text))) return;
+      var g = o.parentNode && o.parentNode.tagName === 'OPTGROUP' ? o.parentNode.label : '';
+      findRows.push({ value: o.value, text: o.text, key: foldText(o.text), group: g, on: o.value === cur && o.selected, off: o.disabled });
+    });
+    findBox.querySelector('#pickerTitle').textContent = findLabel(sel);
+    var q = findBox.querySelector('#pickerQ');
+    q.value = typed || '';
+    findBox.hidden = false;
+    findPlace();
+    findPaint(q.value);
+    sel.setAttribute('aria-expanded', 'true');
+    q.focus({ preventScroll: true });
+    if (typed) q.setSelectionRange(q.value.length, q.value.length);
+    return true;
+  }
+  function findClose(back) {
+    if (!findBox || findBox.hidden) return;
+    findBox.hidden = true;
+    var sel = findSel;
+    findSel = null;
+    if (sel) {
+      sel.setAttribute('aria-expanded', 'false');
+      /* A phone would open the browser's own list on a focused select. */
+      if (back && !phoneFind()) sel.focus({ preventScroll: true });
+    }
+  }
+  function findPick(r) {
+    var sel = findSel;
+    findClose(true);
+    if (!sel || sel.value === r.value) return;
+    sel.value = r.value;
+    sel.dispatchEvent(new Event('input', { bubbles: true }));
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  /* The browser's list is held back on the press that would open it. */
+  function findPress(e) {
+    var sel = e.target;
+    if (!findable(sel) || (e.button && e.button !== 0)) return;
+    e.preventDefault();
+    if (findSel === sel && !findBox.hidden) return;
+    if (!phoneFind()) sel.focus({ preventScroll: true });
+    findOpen(sel, '');
+  }
+  document.addEventListener('mousedown', findPress, true);
+  /* A tap, not a scroll that began on the field. */
+  var tapAt = null;
+  document.addEventListener('touchstart', function (e) {
+    var t = e.touches && e.touches[0];
+    tapAt = t && findable(e.target) ? { x: t.clientX, y: t.clientY, el: e.target } : null;
+  }, { capture: true, passive: true });
+  document.addEventListener('touchend', function (e) {
+    var t = e.changedTouches && e.changedTouches[0];
+    if (!tapAt || !t || tapAt.el !== e.target) return;
+    var far = Math.abs(t.clientX - tapAt.x) > 10 || Math.abs(t.clientY - tapAt.y) > 10;
+    tapAt = null;
+    if (far) return;
+    findPress(e);
+  }, { capture: true, passive: false });
+  document.addEventListener('click', function (e) {
+    /* A touch screen that sends no touchend (or a stylus) reaches the select
+       by click; the finder opens unless it already has. */
+    if (phoneFind() && findable(e.target) && (!findBox || findBox.hidden)) { e.preventDefault(); findOpen(e.target, ''); }
+  }, true);
+  document.addEventListener('keydown', function (e) {
+    var sel = e.target;
+    if (!findable(sel) || e.ctrlKey || e.metaKey || e.isComposing) return;
+    var opens = e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'F4';
+    var typed = !e.altKey && e.key.length === 1 && e.key !== ' ';
+    if (!opens && !typed) return;
+    e.preventDefault();
+    findOpen(sel, typed ? e.key : '');
+  }, true);
+  /* A value set while the finder is open (a script, a test's selectOption)
+     closes it on the new value. */
+  document.addEventListener('change', function (e) { if (findSel && e.target === findSel && findBox && !findBox.hidden) findClose(false); }, true);
 
   window.ADspaceForm = {
     title: title,

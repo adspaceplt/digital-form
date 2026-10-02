@@ -426,6 +426,20 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`byClient`, `byStaff`). The Clients list itself stays newest first.
   - The `data-hint` date hint.
   - The date floor (below).
+  - A long list is searched (§8): a select of ten options or more opens a
+    finder (`#pickerBox`, `.picker`) in place of the browser's list, the
+    field matching every word typed anywhere in an option's label (a name,
+    a code, or part of either). The select stays the visible control and the
+    source of truth: a pick sets its value and fires `input` and `change`; a
+    value set from outside shuts the finder. A press, Space, Enter, the
+    arrows or a key typed on the select opens it (the key typed is the first
+    of the search); Enter or a press picks, Escape, Tab and a press elsewhere
+    shut it, Escape before a sheet under it. At a desk it hangs under the
+    field; at 640 and under, or under a coarse pointer, it is a sheet of the
+    screen's height named by the field's label, with a close mark, and a tap
+    (not a scroll) opens it. Never on a `data-seg`, a multiple, a
+    `.state-select`, a disabled select or `data-nofind`. Safari cannot run in
+    the sandbox; the user confirms the iPhone tap.
 - `js/words.js` holds every word two pages share (covers, statuses, actions) in
   English and Chinese, plus the tones (`W.TONE`, `W.tone`) and `W.dept` /
   `W.roleStd`.
@@ -458,6 +472,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     coarse pointer keeps the system's own box, as `data-native` keeps any
     one (My Work's pickers that open in place). Playwright's `inputValue()`
     reads the shown DD/MM/YYYY; the page's `value` is read in the page.
+    The calendar is taken down after a day is picked, on a press elsewhere
+    and on Escape (`shutPick()`: the hidden field's type cycled), because
+    Safari left it over the page once the field it belonged to was gone.
   - Room for the calendar (§6): at a desk, a date field too near the window's
     foot is lifted before its calendar opens (its scroller scrolls, else a
     `.pick-room` spacer), and a press that lifted it opens the calendar with
