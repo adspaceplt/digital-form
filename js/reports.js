@@ -1392,7 +1392,25 @@
       return row;
     });
     out.forEach(function (r) { delete r.day; delete r.post_id; });
+    /* Meta names no interactions or engagements column for Instagram (Likes,
+       Comments, Shares, Saves) and gives Facebook's as Reactions, comments
+       and shares (the user, 2026-10-02: the report read them unavailable).
+       Where the paste has no interactions, they are the sum of the parts it
+       has; where it has no engagements, they are the interactions, Meta's
+       own measure of a post's engagement. */
+    var PARTS = ['likes', 'comments', 'shares', 'saves'];
+    var hasParts = PARTS.some(function (k) { return head.indexOf(k) > -1; });
+    var addInter = head.indexOf('interactions') < 0 && hasParts;
+    var addEng = head.indexOf('engagements') < 0 && (addInter || head.indexOf('interactions') > -1);
+    out.forEach(function (r) {
+      if (addInter && PARTS.some(function (k) { return r[k] != null; })) {
+        r.interactions = PARTS.reduce(function (t, k) { return t + (r[k] || 0); }, 0);
+      }
+      if (addEng && r.interactions != null) r.engagements = r.interactions;
+    });
     var columns = head.filter(function (k) { return k && k !== 'day' && k !== 'post_id' && !(mode && mode !== 'lifetime' && k === 'reach'); });
+    if (addInter) columns.push('interactions');
+    if (addEng) columns.push('engagements');
     return { rows: out, skipped: skipped, columns: columns, mode: mode, days: days, outside: outside, mdy: mdy };
   }
 

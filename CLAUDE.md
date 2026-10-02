@@ -1736,7 +1736,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     the post is named by its format and date, its caption's first line under
     it), Description is the caption, Publish time the date, Reactions,
     comments and shares the interactions, Post type (and a `/reel/` link)
-    the format. One post a Post ID: a Lifetime row is taken as it is (figures
+    the format. Where a paste names no interactions (Instagram: Likes,
+    Comments, Shares, Saves) they are the sum of those parts, and where it
+    names no engagements they are the interactions, so either figure an
+    account shows is filled. One post a Post ID: a Lifetime row is taken as it is (figures
     to the day of the export); day rows are added up inside the report's
     period, reach left blank (it cannot be added across days). The summary
     line says which.

@@ -712,3 +712,6 @@ The user then asked why an admin who submitted a report could not confirm it ("t
 ### 2026-10-02 · No result word on an ad's row
 The user, on a row reading "Reached · 18 Sept 2026 to 23 Sept 2026": the result's unit had already been taken out of the PDF's tables, and the console's row kept a short word for it (2026-10-01), which read as nonsense under an ad's name. The row now carries the audience and the dates only; the objective heads the table on both sides. A lone reference reads "1 Ad ID", so it reads as a count and not a label.
 
+### 2026-10-02 · Interactions and engagements filled from Meta's parts
+The user's reports read engagements and interactions as unavailable after the Meta import. Instagram's export carries Likes, Comments, Shares and Saves but no interactions or engagements column; Facebook's carries Reactions, comments and shares (read as interactions) but no engagements. An account shows whichever figures it was set to, so one of the two always came out empty. The import now sums the parts into interactions where no column gives them, and takes engagements as the interactions where none is given: for an organic post Meta counts the two the same. A report imported before this is put right by importing the same file again, which matches each post by its link.
+
