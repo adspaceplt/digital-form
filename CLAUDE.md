@@ -1857,7 +1857,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   Start, and an empty date reads Select date.
 - The ads PDF:
   - Ad performance ranks each objective's ads in a table; the cheapest is
-    marked only among results of the same kind. Creative performance then
+    marked only among results of the same kind. Each objective's heading
+    counts its creatives and the ads Meta ran (each Ad ID once, a typed row
+    one ad) where those differ (`Leads · 21 creatives · 64 ads`), else its
+    ads; under the glossary line (in the first month's How to read this) the
+    page says a row combines every variation of one creative and what a
+    weak row means (`VARIATIONS`). Creative performance then
     gives each creative (the name without its creator code) one card: one
     image, a line per objective and result type (amount spent, results,
     cost per result, reach, CTR; a missing figure a dash) under a head in

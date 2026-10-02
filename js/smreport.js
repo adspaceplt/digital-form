@@ -1688,6 +1688,10 @@
         y -= h + BLOCK;
       };
       var GLOSSARY = 'Every ad term is explained at go.adspace.me/fb-ad-terms.';
+      /* A row is one creative with every variation of it added together,
+         so a weak row reads as the creative tried several ways (the user,
+         2026-10-02, their option B). */
+      var VARIATIONS = 'Each row combines every variation of one creative. Where a row shows a high cost per result or few results, its variations were tested together and did not perform as intended, and the next round builds on the creatives that did.';
 
       // ------------------------------------------------ Executive summary
       (function summary() {
@@ -1919,10 +1923,12 @@
             'Cost per result is what it cost to get one lead, click or action; where the result is reach, it is the cost per 1,000 people reached, written / 1,000. Compare it only between ads with the same objective, which is why each objective is ranked on its own.',
             'Each ad is priced only against the result its objective was set to get. A leads ad that also started a few chats is judged by its cost per lead; the chats came alongside, and the budget was not spent on them.',
             'Reach is how many people saw an ad; impressions is how many times it was shown. Frequency is impressions divided by reach.',
-            'A creative that ran under two objectives shows one line for each. Compare the lines to see which goal it served best.'
+            'A creative that ran under two objectives shows one line for each. Compare the lines to see which goal it served best.',
+            VARIATIONS
           ]);
         } else {
           leadLine(GLOSSARY);
+          leadLine(VARIATIONS);
         }
         /* A figure never breaks inside itself: each figure column is at
            least as wide as its widest entry, measured in the heavier face
@@ -1942,7 +1948,22 @@
         });
         rankW[0] = Math.max(CW * 0.2, CW - rankW.slice(1).reduce(function (t, w0) { return t + w0; }, 0));
         am.groups.forEach(function (g) {
-          blockTitle(g.name + '  ·  ' + g.ads.length + ' ad' + (g.ads.length === 1 ? '' : 's') + '  ·  ' + money(g.spend), T.minH * (g.ads.length + 1));
+          /* The heading counts the creatives and the ads Meta ran for them
+             (each Ad ID once; a typed row is one ad), where those differ:
+             "21 creatives · 64 ads" (2026-10-02). */
+          var made = (function () {
+            var seen = {}, n = 0;
+            g.ads.forEach(function (a) {
+              var ids = a.ad_ids || [];
+              if (!ids.length) { n++; return; }
+              ids.forEach(function (x) { if (!seen[x]) { seen[x] = true; n++; } });
+            });
+            return n;
+          })();
+          var kinds = uniq(g.ads.map(function (a) { return adName(a.name); })).length;
+          var tally = made > kinds ? kinds + ' creative' + (kinds === 1 ? '' : 's') + '  ·  ' + fmt(made) + ' ads'
+            : g.ads.length + ' ad' + (g.ads.length === 1 ? '' : 's');
+          blockTitle(g.name + '  ·  ' + tally + '  ·  ' + money(g.spend), T.minH * (g.ads.length + 1));
           // The group ranked by what a result cost, the cheapest first and in weight.
           var ranked = g.ads.slice().sort(function (p, q) {
             if (p._cpr === null && q._cpr === null) return (num(q.spend) || 0) - (num(p.spend) || 0);
