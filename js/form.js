@@ -825,8 +825,8 @@
        under it listens on the document first, so the finder answers on the
        window, before them. */
     window.addEventListener('keydown', function (e) {
-      if (findBox.hidden || !findBox.contains(e.target)) return;
-      if (e.key !== 'Escape' && e.key !== 'Tab') return;
+      if (findBox.hidden) return;
+      if (e.key !== 'Escape' && !(e.key === 'Tab' && findBox.contains(e.target))) return;
       e.preventDefault();
       e.stopImmediatePropagation();
       findClose(true);

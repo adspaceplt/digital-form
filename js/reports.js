@@ -395,6 +395,18 @@
   function editable() { return st.open && st.open.status === 'draft' && may('work'); }
   function myId() { var m = me(); return m && m.id; }
   function isAdmin() { var m = me(); return Boolean(m && (m.is_admin || m.role === 'admin')); }
+  /* A step read, not edited (a report in review and after): the record's
+     own facts card, one section a group, each label beside its value
+     (the user, 2026-10-02: the labels stood over their values at the card's
+     edge). Text a person wrote keeps its lines. */
+  function factsCard(sections) {
+    return '<div class="ovcard rp-read">' + sections.filter(function (x) { return x.rows.length; }).map(function (x) {
+      return '<div class="ovsec">' + (x.title ? '<div class="ovsec-head"><h3>' + esc(x.title) + '</h3></div>' : '') +
+        '<dl class="ovfacts rp-facts">' + x.rows.map(function (r) {
+          return '<div><dt>' + esc(r[0]) + '</dt><dd class="is-pre">' + esc(r[1]) + '</dd></div>';
+        }).join('') + '</dl></div>';
+    }).join('') + '</div>';
+  }
 
   /* What each step holds, in the words its button says under its name. */
   /* What the commentary holds, against what it can hold. An accounts report
@@ -1527,17 +1539,15 @@
     };
     var has = function (v) { return String(v || '').trim() !== ''; };
     if (!editable()) {
-      var rows = fields.map(function (x) { return [x[1], valOf(x[0])]; });
+      var keep = function (rows) { return rows.filter(function (x) { return has(x[1]); }); };
+      var secs = [{ title: '', rows: keep(fields.map(function (x) { return [x[1], valOf(x[0])]; })) }];
       groups.forEach(function (g) {
-        PLAT_FIELDS.forEach(function (f) { rows.push([g.label + ' · ' + f[1], g.lead[f[0]]]); });
-        g.top.forEach(function (p) { rows.push([g.label + ' · ' + postName(p), p.notable]); });
+        secs.push({ title: g.label, rows: keep(PLAT_FIELDS.map(function (f) { return [f[1], g.lead[f[0]]]; })
+          .concat(g.top.map(function (p) { return [postName(p), p.notable]; }))) });
       });
-      more.forEach(function (x) { rows.push([x[1], valOf(x[0])]); });
-      rows = rows.filter(function (x) { return has(x[1]); });
-      if (!rows.length) { UI.emptyLine(box, 'No commentary.'); return; }
-      box.innerHTML = '<div class="ovcard"><dl class="ovfacts rp-facts">' + rows.map(function (x) {
-        return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]).replace(/\n/g, '<br>') + '</dd>';
-      }).join('') + '</dl></div>';
+      secs.push({ title: 'Across all platforms', rows: keep(more.map(function (x) { return [x[1], valOf(x[0])]; })) });
+      if (!secs.some(function (x) { return x.rows.length; })) { UI.emptyLine(box, 'No commentary.'); return; }
+      box.innerHTML = factsCard(secs);
       return;
     }
     var area = function (id, label, ph, rowsN) {
@@ -1895,15 +1905,41 @@
     var sumSpend = st.ads.reduce(function (s0, a) { return s0 + (Number(a.spend) || 0); }, 0);
     var sumImpr = st.ads.reduce(function (s0, a) { return s0 + (Number(a.impressions) || 0); }, 0);
     var objs = OBJECTIVES.filter(function (o) { return st.ads.some(function (a) { return a.objective === o[0]; }); });
+    /* An objective's results as the PDF adds them from its ads, shown in its
+       fields until a figure is typed (the user, 2026-10-02: Step 1 filled
+       reach, impressions and spend and left these blank). Read live, so an
+       edited or re-imported ad is in step; a mix of result types is named
+       part by part, since the PDF adds them as one. */
+    var SR = window.ADspaceSmReport;
+    var objSum = function (k) {
+      var by = {}, order = [], spent = 0;
+      st.ads.forEach(function (a) {
+        if (a.objective !== k) return;
+        spent += Number(a.spend) || 0;
+        var w = a.result_label && SR && SR.shortResult ? SR.shortResult(a.result_label) : 'Results';
+        if (!(w in by)) { by[w] = 0; order.push(w); }
+        by[w] += Number(a.results) || 0;
+      });
+      var parts = order.map(function (w) { return [w, by[w]]; });
+      return {
+        total: parts.reduce(function (n, x) { return n + x[1]; }, 0), spent: spent,
+        type: parts.length === 1 ? parts[0][0] : 'Results',
+        line: parts.length === 1 ? fmt(parts[0][1]) + ' from the ads' : parts.map(function (x) { return fmt(x[1]) + ' ' + x[0]; }).join(' + ')
+      };
+    };
     if (!editable()) {
-      var rows = [['First month', r.first_month ? 'Yes, with the reading guidance' : 'No, compared with the previous period'],
-        ['Total reach', fmt(t.reach)], ['Total impressions', t.impressions != null ? fmt(t.impressions) : fmt(sumImpr) + ' (from the ads)'],
+      var now = [['Total reach', fmt(t.reach)], ['Total impressions', t.impressions != null ? fmt(t.impressions) : fmt(sumImpr) + ' (from the ads)'],
         ['Amount spent', t.spend != null ? money2(t.spend) : money2(sumSpend) + ' (from the ads)']];
-      if (!r.first_month) rows.push(['Previous period', t.prev_start ? periodWord(t.prev_start, t.prev_end) : '—'],
-        ['Previous reach', fmt(t.prev_reach)], ['Previous impressions', fmt(t.prev_impressions)], ['Previous amount spent', money2(t.prev_spend)]);
-      box.innerHTML = '<div class="ovcard"><dl class="ovfacts rp-facts">' + rows.map(function (x) {
-        return '<dt>' + esc(x[0]) + '</dt><dd>' + esc(x[1]) + '</dd>';
-      }).join('') + '</dl></div>';
+      var byObj = objs.map(function (o) {
+        var gg = (t.groups || {})[o[0]] || {}, sm = objSum(o[0]);
+        /* A count alone, as the PDF prints it; only a mix names its parts. */
+        var res = gg.results != null ? fmt(gg.results) : (sm.line.indexOf(' from the ads') > -1 ? fmt(sm.total) : sm.line);
+        return [o[1], res + ' · ' + money2(sm.spent).replace(/ /g, '\u00a0')];
+      });
+      var before = r.first_month ? [['Comparison', 'First month of ads, with the reading guidance']] :
+        [['Period', t.prev_start ? periodWord(t.prev_start, t.prev_end) : '—'], ['Reach', fmt(t.prev_reach)],
+          ['Impressions', fmt(t.prev_impressions)], ['Amount spent', money2(t.prev_spend)]];
+      box.innerHTML = factsCard([{ title: 'This period', rows: now }, { title: 'Results by objective', rows: byObj }, { title: 'Previous period', rows: before }]);
       return;
     }
     box.innerHTML = '<section class="panel rp-form">' +
@@ -1920,9 +1956,13 @@
         '<div><label class="field-label" for="rpPSpend">Amount spent</label><input class="input" id="rpPSpend" data-num="money" type="text" inputmode="decimal"></div></div></section>' +
       (objs.length ? '<details class="fmore" data-none="Added up from the ads" data-some="Typed for some objectives"><summary>Results by objective</summary>' +
         objs.map(function (o) {
-          return '<div class="row fgrid"><div><label class="field-label" for="rpGR_' + o[0] + '">' + esc(o[1]) + ' results</label>' +
-            '<input class="input" id="rpGR_' + o[0] + '" data-gres="' + o[0] + '" data-num="int" type="text" inputmode="numeric" placeholder="From the ads"></div>' +
-            '<div><label class="field-label" for="rpGL_' + o[0] + '">Result type</label><input class="input" id="rpGL_' + o[0] + '" data-glab="' + o[0] + '" type="text" list="rpResultTypes"></div></div>';
+          var sm = objSum(o[0]);
+          return '<div class="row fgrid-3 fgrid"><div><label class="field-label" for="rpGR_' + o[0] + '">' + esc(o[1]) + ' results</label>' +
+            '<input class="input" id="rpGR_' + o[0] + '" data-gres="' + o[0] + '" data-num="int" type="text" inputmode="numeric" placeholder="' + esc(sm.line) + '"></div>' +
+            '<div><label class="field-label" for="rpGL_' + o[0] + '">Result type</label><input class="input" id="rpGL_' + o[0] + '" data-glab="' + o[0] + '" type="text" list="rpResultTypes" placeholder="' + esc(sm.type) + '"></div>' +
+            /* What the objective spent, added up from its ads, as the PDF's
+               table prints it beside the results (the user, 2026-10-02). */
+            '<div><span class="field-label" id="rpGS_' + o[0] + 'L">Amount spent</span><div class="readfield" id="rpGS_' + o[0] + '" aria-labelledby="rpGS_' + o[0] + 'L">' + esc(money2(sm.spent)) + '</div></div></div>';
         }).join('') + '</details>' : '') +
       '<datalist id="rpResultTypes">' + RESULT_TYPES.map(function (x) { return '<option value="' + esc(x) + '">'; }).join('') + '</datalist>' +
       '<div class="rp-stepfoot"><button class="btn btn-primary" type="button" data-a="savenext">Save and continue</button>' +

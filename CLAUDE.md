@@ -434,7 +434,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     value set from outside shuts the finder. A press, Space, Enter, the
     arrows or a key typed on the select opens it (the key typed is the first
     of the search); Enter or a press picks, Escape, Tab and a press elsewhere
-    shut it, Escape before a sheet under it. At a desk it hangs under the
+    shut it; Escape shuts it first wherever focus is, before a sheet under it. At a desk it hangs under the
     field; at 640 and under, or under a coarse pointer, it is a sheet of the
     screen's height named by the field's label, with a close mark, and a tap
     (not a scroll) opens it. Never on a `data-seg`, a multiple, a
@@ -1837,6 +1837,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Select on the Ads step ticks several ads (`.bulkbar`): Move to objective
     and Remove (asks, naming how many), each with Undo.
   - The age split must total 100% (±0.5).
+  - Step 1's Results by objective show, until a figure is typed, each
+    objective's results as the PDF adds them from its ads (the field's
+    placeholder, read live; a mix of result types named part by part) and
+    its amount spent beside them (`.readfield`, never typed).
+- A step read and not edited (in review and after) is the facts card
+  (`factsCard()`: `.ovcard` > `.ovsec`, each label beside its value, written
+  text keeping its lines), one section a group: This period, Results by
+  objective, Previous period; the commentary's fields, then a block a
+  platform.
 - Figure fields (`numFields()`, `data-num`) show a count with separators, a
   percentage to 1 decimal, and money as RM or S$. `numIn()` reads them back.
 - Money fields take `inputmode="decimal"`; counts take `numeric`.
