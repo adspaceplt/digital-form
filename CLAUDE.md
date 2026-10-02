@@ -1885,10 +1885,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     margin; no Methodology page. Page titles and the commentary's block
     heads are in title case (Executive Summary, Ad Performance, What Worked,
     Areas to Improve): a formal document.
-  - Tables are white cells on hairline rules (`EDGE`), heads in Slate
-    Regular, figures at one weight and centred (2026-10-02, after the
-    team's own reports). Only a total row, a reading note and an image
-    frame are shaded. A summary table (`roomy`: the account table, Results
+  - Tables are white cells under a shaded title row, the title row and the
+    grid in one grey (#f2f2f2: `HEAD` = `EDGE` = `FILL`, as the rate card
+    draws it; every table head, a creative card's line head, a top post's
+    figure labels), heads in Slate Regular, figures at one weight and
+    centred (2026-10-02). A summary table (`roomy`: the account table, Results
     by objective, By platform) takes S(4) rows; working tables keep S(3).
   - Commentary reads one block per part: its head, its points numbered
     under it, on both kinds of report (never a label column beside the

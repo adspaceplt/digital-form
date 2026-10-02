@@ -915,9 +915,13 @@
     var INK = g(0.251);            // #404040, the rate card's one ink
     var SOFT = g(0.40);            // secondary text: captions, dates
     var MUTE = g(0.45);            // axis labels, notes
-    var FILL = g(0.949);           // #f2f2f2: a total row, a reading note, an image frame (tables are white since 2026-10-02)
+    var FILL = g(0.949);           // #f2f2f2: a total row, a reading note, an image frame
+    /* One grey for the title row and the grid, as the rate card draws it
+       (the user, 2026-10-02: a head shaded apart from its lines looked
+       wrong; the report as it was before that day). */
+    var HEAD = FILL;               // every table's title row
     var FILL2 = g(0.851);          // #d9d9d9: a group heading cell
-    var EDGE = g(0.886);           // hairline rules on white cells (2026-10-02: the user's own reports read lighter)
+    var EDGE = FILL;               // the grid, in the title row's grey
     var DATA2 = g(0.651);          // #a6a6a6: a second series, the ordinary bars
     var DATA3 = g(0.80);           // #cccccc: a third series
     var PAPER = g(1);
@@ -1130,7 +1134,7 @@
           y -= bh;
         }
         head.forEach(function (hc, i) {
-          rect(xs[i], y - headH, ws[i], headH, norm(hc).fill || PAPER);
+          rect(xs[i], y - headH, ws[i], headH, norm(hc).fill || HEAD);
           frame(xs[i], y - headH, ws[i], headH);
           drawLines(hl[i], xs[i], y, ws[i], headH, { align: norm(hc).align || cols[i].align || 'center' });
         });
@@ -1512,7 +1516,7 @@
               var by = top - BOX;
               metrics.forEach(function (m, k) {
                 var mx = tx + k * mw;
-                frame(mx, by - LABH, mw, LABH);
+                rect(mx, by - LABH, mw, LABH, HEAD); frame(mx, by - LABH, mw, LABH);
                 center(m[0], mx + mw / 2, by - LABH / 2 - TY.small * 0.34, TY.small, reg, INK);
                 frame(mx, by - LABH - VALH, mw, VALH);
                 center(m[1], mx + mw / 2, by - LABH - VALH / 2 - TY.body * 0.34, TY.body, med, INK);
@@ -1822,11 +1826,12 @@
         var xs = [], acc = RX + PAD;
         LCOLS.forEach(function (f) { xs.push(acc); acc += (RW - PAD * 2) * f; });
         /* The head reads as every table's head in the report: Slate
-           Regular on white over a hairline, the rows in Slate Book (the
-           user, 2026-10-01: the labels and the figures were hard to tell
-           apart; 2026-10-02: white cells, no grey bands). Each line carries
-           what it spent, which its cost per result is read against. */
+           Regular on the #f5f5f5 title row, the rows in Slate Book on white
+           (the user, 2026-10-01: the labels and the figures were hard to
+           tell apart). Each line carries what it spent, which its cost per
+           result is read against. */
         var heads = ['Objective', 'Amount spent', 'Results', 'Cost per result', 'Reach', 'CTR'];
+        rect(RX, bodyTop - LH, RW, LH, HEAD);
         heads.forEach(function (t0, i) {
           var w0 = (RW - PAD * 2) * LCOLS[i];
           if (i) right(t0, xs[i] + w0, bodyTop - LH / 2 - TY.small * 0.34, TY.small, reg, INK);
