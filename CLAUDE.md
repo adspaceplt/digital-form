@@ -1688,8 +1688,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 - Reports is its own section (`reports` View / Work / Manage), not a part of
   Clients. `clients_read` also answers Reports View.
 - Flow:
-  - Draft → Submit for review (Work) → Confirm (Manage; never the submitter) →
-    Publish to client (Manage).
+  - Draft → Submit for review (Work) → Confirm (Manage; never the submitter,
+    but an admin may confirm their own after a question saying nobody else
+    checked it: `2026-10-02-report-admin-confirm.sql`) → Publish to client
+    (Manage).
   - Then Revise (the next version as a draft) or Unpublish (with a reason).
   - A trigger refuses row edits once a report is not a draft, and refuses
     status or stamp changes outside `sm_report_*`.
@@ -1867,6 +1869,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     whole; a missing cost per result or CTR is a dash.
   - The foot is PRIVATE & CONFIDENTIAL and the page count on the margin's
     line; no draft or version line.
+  - A draft carries DRAFT (INTERNAL USE ONLY) and a report in review PENDING
+    REVIEW (INTERNAL USE ONLY), repeated on the diagonal over every page in
+    faint text drawn last (`WM` in `js/smreport.js`); confirmed, published
+    and every version the client reads carry none.
   - A page break falls between points, never inside one: each numbered or
     lettered point is one unit (`unit`), split only when taller than a page.
   - A top post card is named by its title, else its type and day; its meta

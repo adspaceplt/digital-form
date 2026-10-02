@@ -394,6 +394,7 @@
 
   function editable() { return st.open && st.open.status === 'draft' && may('work'); }
   function myId() { var m = me(); return m && m.id; }
+  function isAdmin() { var m = me(); return Boolean(m && (m.is_admin || m.role === 'admin')); }
 
   /* What each step holds, in the words its button says under its name. */
   /* What the commentary holds, against what it can hold. An accounts report
@@ -570,14 +571,14 @@
     var mine = r.submitted_by && r.submitted_by === myId();
     var acts = [], wait = '';
     if (r.status === 'draft' && may('work')) acts.push('<button class="btn btn-go" type="button" data-a="submit"' + (missing.length ? ' disabled' : '') + '>Submit for review</button>');
-    if (r.status === 'review' && may('manage') && !mine) acts.push('<button class="btn btn-primary" type="button" data-a="confirm">Confirm</button>');
+    if (r.status === 'review' && may('manage') && (!mine || isAdmin())) acts.push('<button class="btn btn-primary" type="button" data-a="confirm">Confirm</button>');
     if (r.status === 'confirmed' && may('manage')) acts.push('<button class="btn btn-go" type="button" data-a="publish">Publish to client</button>');
     if (r.status === 'published' && may('work')) acts.push('<button class="btn" type="button" data-a="revise">Revise</button>');
     if ((r.status === 'review' && (may('manage') || mine)) || (r.status === 'confirmed' && may('manage'))) {
       acts.push('<button class="btn" type="button" data-a="return">' + (r.status === 'review' && mine && !may('manage') ? 'Take back' : 'Send back') + '</button>');
     }
     if (r.status === 'draft' && missing.length) wait = 'Add ' + missing.map(function (s) { return s[1].toLowerCase(); }).join(' and ') + ' to submit.';
-    else if (r.status === 'review' && mine && may('manage')) wait = 'Waiting on another manager to confirm.';
+    else if (r.status === 'review' && mine && may('manage') && !isAdmin()) wait = 'Waiting on another manager to confirm.';
     else if (r.status === 'review' && !may('manage')) wait = 'Waiting on a manager to confirm.';
     else if (r.status === 'confirmed' && !may('manage')) wait = 'Waiting on a manager to publish.';
     box.innerHTML = '<div class="rp-sec"><div class="rp-sec-head"><h3 class="ovsec-title">Check and submit</h3></div>' +
@@ -627,7 +628,17 @@
       window.ADspaceConfirm.ask({ title: 'Submit for review?', body: 'A manager checks it before it is published. It is locked while in review.', go: 'Submit' },
         function () { stepCall('sm_report_submit', { p_id: r.id }, 'Submitted for review.', b, m); });
     });
-    on('confirm', function (b) { stepCall('sm_report_confirm', { p_id: r.id }, 'Confirmed.', b, m); });
+    on('confirm', function (b) {
+      /* An admin may confirm a report they submitted (the user, 2026-10-02:
+         the hierarchy ends with them), after a question saying so. */
+      if (r.submitted_by && r.submitted_by === myId()) {
+        window.ADspaceConfirm.ask({ title: 'Confirm your own report?', body: 'You submitted it, so no second person will have checked it.', go: 'Confirm' }, function () {
+          stepCall('sm_report_confirm', { p_id: r.id }, 'Confirmed.', b, m);
+        });
+        return;
+      }
+      stepCall('sm_report_confirm', { p_id: r.id }, 'Confirmed.', b, m);
+    });
     on('publish', function (b) {
       window.ADspaceConfirm.ask({ title: 'Publish to ' + st.client.name + '?', body: 'The client can read and download it in their portal.', go: 'Publish' },
         function () { stepCall('sm_report_publish', { p_id: r.id }, 'Published to the client portal.', b, m); });

@@ -1980,6 +1980,26 @@
        foot on the margin's line, the page count on the right. The line under
        it naming the draft or the version is gone (the user, 2026-10-01): it
        lifted the foot off the margin and the page read top heavy. */
+    /* A report not yet confirmed carries its stage across every page (the
+       user, 2026-10-02): DRAFT, or PENDING REVIEW once submitted, each
+       "(INTERNAL USE ONLY)", in light text repeated on the diagonal over the
+       whole page, drawn last and faint so nothing on the page hides it and it
+       hides nothing. A confirmed or published report, and every version the
+       client reads, carries none. */
+    var WM = { draft: 'DRAFT (INTERNAL USE ONLY)', review: 'PENDING REVIEW (INTERNAL USE ONLY)' }[rep.status] || '';
+    var watermark = function (page) {
+      var size = 11, ang = 35 * Math.PI / 180, cos = Math.cos(ang), sin = Math.sin(ang);
+      var tw = med.widthOfTextAtSize(WM, size), step = tw + 36, rowGap = 72;
+      var reach = Math.sqrt(W * W + H * H) / 2 + step;
+      var cx = W / 2, cy = H / 2;
+      for (var v = -reach, k = 0; v <= reach; v += rowGap, k++) {
+        for (var u = -reach - (k % 2) * step / 2; u <= reach; u += step) {
+          var x = cx + u * cos - v * sin, yy = cy + u * sin + v * cos;
+          if (x < -tw || x > W + tw || yy < -tw || yy > H + tw) continue;
+          page.drawText(WM, { x: x, y: yy, size: size, font: med, color: g(0.45), opacity: 0.16, rotate: PDF.degrees(35) });
+        }
+      }
+    };
     var n = pages.length;
     var label = String(rep.client_name || '').toUpperCase();
     var markW = width('ADspace', S(2), mark);
@@ -1995,6 +2015,7 @@
       }
       text('PRIVATE & CONFIDENTIAL', M, FOOT_Y, TY.small, med, INK);
       right('Page ' + (i + 1) + ' of ' + n, R, FOOT_Y, TY.small, book, INK);
+      if (WM) watermark(p.page);
     });
     ZH = zhOn;
     return Promise.resolve(n);
