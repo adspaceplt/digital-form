@@ -730,3 +730,6 @@ In the PDF the cheapest ad's row is set in the heavier face, and its period ("26
 
 ### 2026-10-02 · The ranking says a row is a creative tried several ways
 The user, on an objective listing creatives at a high cost per lead or none: each row adds up every Ad ID of one creative (six for one of them), so a row with no leads was six attempts, not one ad. They chose a sentence under the glossary line, of three offered, that says so without blaming the creative and ends on the next round, and asked for the ads behind the creatives to be counted. The heading reads `21 creatives · 64 ads` where the two differ and keeps `3 ads` where they do not.
+
+### 2026-10-02 · The appendix prints the whole caption
+The user, on an appendix whose captions stopped after two lines: the caption was hidden. The excerpt (2026-10-01) had been chosen to keep the appendix short. Asked between the whole caption in a wider column, the whole caption in today's column, and six lines, they chose the first. The Post column now takes the room of Date and Format, which a post named by its type and day already says (a titled post carries them on a line under its name); each paragraph wraps on its own and the row grows to fit. A caption past 40 lines, more than a page's column, still runs together and ends on an ellipsis, so no row is taller than a page.

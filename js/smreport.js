@@ -1563,43 +1563,58 @@
 
     // ------------------------------------------------------- Appendix
     /* All posts, one platform a page, so a platform's list always opens at
-       the top of a page and closes on its own total. */
+       the top of a page and closes on its own total. The caption is printed
+       whole, its paragraphs kept (the user, 2026-10-02: cut at two lines it
+       read as hidden), in a Post column that takes the room of Date and
+       Format: a post named by its type and day says both already, and a
+       post named by its title carries them on the line under it. */
     (function appendix() {
       mdl.groups.forEach(function (gg) {
         if (!gg.posts.length) return;
         var name = 'Appendix: ' + gg.label;
         newPage(name);
         pageTitle(name);
-        var hasType = gg.posts.some(function (p) { return typeWord(p); });
-        var cols = [{ w: hasType ? 0.34 : 0.42, align: 'left' }, { w: 0.1 }];
-        var head = [{ t: 'Post', align: 'left' }, 'Date'];
-        if (hasType) { cols.push({ w: 0.1 }); head.push('Format'); }
-        cols.push({ w: 0.12 }, { w: 0.16 }, { w: 0.18 });
-        head.push(volWord(gg), engWord(gg), 'Engagement rate');
-        var ROWH = S(7);
-        var TH = ROWH - S(-2) * 2, TW = TH * 0.8;
+        var cols = [{ w: 0.52, align: 'left' }, { w: 0.15 }, { w: 0.15 }, { w: 0.18 }];
+        var head = [{ t: 'Post', align: 'left' }, volWord(gg), engWord(gg), 'Engagement rate'];
+        var ROWH = S(7), PADV = S(-2);
+        var TH = ROWH - PADV * 2, TW = TH * 0.8;
+        var tw = CW * cols[0].w - T.padX * 2 - TW - S(-2);
+        var NAME_GAP = S(1), LINE = S(0);
+        /* Every paragraph wrapped on its own; a caption too long for a page
+           (40 lines) runs together and ends on an ellipsis, as the excerpt
+           did. */
+        var captionLines = function (p) {
+          var out = [];
+          paragraphsOf(p.caption).map(function (x) { return x.trim(); }).filter(Boolean).forEach(function (para) {
+            out = out.concat(sh.linesOf(para, tw, TY.small, book));
+          });
+          return out.length <= 40 ? out : captionExcerpt(p, tw, 40);
+        };
         var rows = gg.posts.map(function (p) {
           var remark = words(p.observation).trim();
+          var lines = [];
+          lines.push({ s: clip(postName(p), tw, TY.body, med), f: med, size: TY.body, c: INK });
+          if (words(p.title).trim()) {
+            var meta = [typeWord(p), shortDay(p.posted_on)].filter(Boolean).join(' · ');
+            if (meta) lines.push({ s: clip(meta, tw, TY.small, book), f: book, size: TY.small, c: SOFT });
+          }
+          if (words(p.caption).trim()) captionLines(p).forEach(function (ln) { lines.push({ ln: ln, size: TY.small, c: SOFT }); });
+          if (remark) sh.linesOf('Remarks: ' + remark, tw, TY.small, book).forEach(function (ln) { lines.push({ ln: ln, size: TY.small, c: INK }); });
+          var bh = TY.body + (lines.length > 1 ? NAME_GAP + (lines.length - 2) * LINE : 0);
+          var rh = Math.max(ROWH, bh + PADV * 2 + TY.small * 0.4);
           var cells = [{ fn: function (x, top, w, h) {
-            thumbIn(p, x + T.padX, top - S(-2), TW, TH);
-            var tx = x + T.padX + TW + S(-2), tw = w - T.padX * 2 - TW - S(-2);
-            var lines = [];
-            lines.push({ s: clip(postName(p), tw, TY.body, med), f: med, size: TY.body, c: INK });
-            if (words(p.caption).trim()) captionExcerpt(p, tw, remark ? 1 : 2).forEach(function (ln) { lines.push({ ln: ln, size: TY.small, c: SOFT }); });
-            if (remark) lines.push({ s: clip('Remarks: ' + remark, tw, TY.small, book), f: book, size: TY.small, c: INK });
-            var bh = TY.body + (lines.length - 1) * S(0);
-            var ly = top - (h - bh) / 2 - TY.body * 0.8;
+            thumbIn(p, x + T.padX, top - PADV, TW, TH);
+            var tx = x + T.padX + TW + S(-2);
+            var ly = top - Math.max(PADV, (h - bh) / 2) - TY.body * 0.8;
             lines.forEach(function (l, k) {
               if (l.ln) sh.draw(pg.page, l.ln, tx, ly, l.size, l.c); else tline(l.s, tx, ly, l.size, l.f, l.c);
-              ly -= k === 0 ? S(1) : S(0);
+              ly -= k === 0 ? NAME_GAP : LINE;
             });
-          }, h: ROWH }, shortDay(p.posted_on)];
-          if (hasType) cells.push(typeWord(p) || '');
+          }, h: rh }];
           cells.push(fmt(volOf(p)), fmt(engOf(p)), pct(erOf(p)));
           return { minH: ROWH, cells: cells };
         });
-        var totalCells = [{ t: 'Total', f: reg }, ''];
-        if (hasType) totalCells.push('');
+        var totalCells = [{ t: 'Total', f: reg }];
         totalCells.push({ t: fmt(gg.views), f: med }, { t: fmt(gg.eng), f: med }, { t: pct(gg.er), f: med });
         rows.push({ fill: FILL, cells: totalCells });
         table(cols, head, rows);
