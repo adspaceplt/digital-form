@@ -50,7 +50,7 @@ Deno.serve(async (req) => {
 
   let body: {
     ext?: string; clientId?: string; size?: number;
-    creatorCode?: string; optionId?: string;
+    creatorCode?: string; optionId?: string; private?: boolean;
   };
   try { body = await req.json(); } catch { return json({ error: 'bad_request' }, 400, origin); }
 
@@ -114,7 +114,15 @@ Deno.serve(async (req) => {
   const prefix = Deno.env.get('S3_PREFIX') ?? 'portal';
   const cdnBase = (Deno.env.get('CDN_BASE') ?? '').replace(/\/+$/, '');
 
-  const key = `${prefix}/${scope}/${crypto.randomUUID()}.${ext}`;
+  /* A private file (a campaign's invoice PDF, 2026-10-02) goes under
+     `private/`, which CloudFront does not serve: it is opened only through a
+     five-minute link from sign-download. Only the console asks for one, and
+     only for a PDF. */
+  const priv = body.private === true;
+  if (priv && (creatorCode || ext !== 'pdf')) return json({ error: 'bad_private' }, 400, origin);
+  const key = priv
+    ? `private/${scope}/${crypto.randomUUID()}.pdf`
+    : `${prefix}/${scope}/${crypto.randomUUID()}.${ext}`;
   const target = `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 
   const aws = new AwsClient({
@@ -131,7 +139,7 @@ Deno.serve(async (req) => {
 
   return json({
     uploadUrl: signed.url,
-    publicUrl: `${cdnBase}/${key}`,
+    publicUrl: priv ? null : `${cdnBase}/${key}`,
     key
   }, 200, origin);
 });

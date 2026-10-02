@@ -66,7 +66,13 @@ window.ADSPACE_CONFIG = {
     // 2026-09-22 at the user's request); the edge function's own ceiling is
     // 2 GB, and this is the figure the page refuses on, before a single byte
     // moves.
-    maxUploadMB: 1024
+    maxUploadMB: 1024,
+
+    // A campaign's invoice PDF goes under `private/` and opens through a
+    // five-minute link from sign-download. Turned on once the bucket policy
+    // and the upload key's private/* permission are in place
+    // (docs/S3-STORAGE.md §5); until then invoices upload as before.
+    privateInvoices: false
   },
   /* Google Drive import.
 

@@ -599,7 +599,11 @@ section holds only what is true of the project as a whole.
   - Held: the storage-class half, until storage nears 100 GB or the Free Tier
     ends.
 - Documents:
-  - S3 storage with expiring public links.
+  - Expiring links: built for a campaign's invoice PDF (`sign-download`,
+    five minutes, 2026-10-02), switched on once the user has done
+    `docs/S3-STORAGE.md` §5. Letters and reports are never stored (redrawn
+    on Download); Content Review media and creator drafts stay public by
+    the user's choice.
   - The ALP checklists as forms.
 - Access: "Own clients only" (a row scope for Sales).
 - Console search (`js/search.js`, built 2026-09-28) reads names, codes and

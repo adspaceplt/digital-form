@@ -4270,19 +4270,39 @@
     $('invFile').value = '';
     var cur = $('invCurrent');
     if (c.invoice_url) {
-      cur.innerHTML =
-        '<a class="btn btn-icon" href="' + esc(c.invoice_url) + '" target="_blank" rel="noopener">View invoice' +
+      /* A private invoice (a key under `private/`) has no address of its own:
+         View invoice asks sign-download for a five-minute link and opens it. */
+      var leave = 'View invoice' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" ' +
         'stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/>' +
-        '<path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>' +
+        '<path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+      cur.innerHTML =
+        (privateFile(c.invoice_url)
+          ? '<button class="btn btn-icon" id="invView" type="button">' + leave + '</button>'
+          : '<a class="btn btn-icon" href="' + esc(c.invoice_url) + '" target="_blank" rel="noopener">' + leave + '</a>') +
         (c.invoice_uploaded_at
           ? '<span class="muted">Uploaded ' + niceDate(String(c.invoice_uploaded_at).slice(0, 10)) + '</span>' : '') +
         '<button class="btn btn-warn" id="invRemove" type="button">Remove PDF</button>';
       cur.querySelector('#invRemove').addEventListener('click', function () { setInvoiceFile(c, null, null); });
+      if (cur.querySelector('#invView')) cur.querySelector('#invView').addEventListener('click', function () { openPrivateInvoice(c); });
     } else {
       cur.innerHTML = '<span class="muted">No PDF</span>';
     }
     msg('invMsg', '');
+  }
+
+  function privateFile(u) { return /^private\//.test(String(u || '')); }
+  /* The tab opens on the press, before the link returns, so a browser that
+     blocks pop-ups after an await still lets it through. */
+  function openPrivateInvoice(c) {
+    var tab = window.open('', '_blank');
+    msg('invMsg', 'Opening…');
+    db.functions.invoke('sign-download', { body: { campaignId: c.id } }).then(function (r) {
+      var u = r && r.data && r.data.url;
+      if (r.error || !u) throw new Error('The invoice could not be opened. ' + ((r.data && r.data.error) || (r.error && r.error.message) || ''));
+      if (tab) tab.location.href = u; else location.href = u;
+      msg('invMsg', '');
+    }).catch(function (e) { if (tab) tab.close(); msg('invMsg', e.message.trim(), 'err'); });
   }
 
   /* Removing the PDF clears the link the client sees; the file itself stays
@@ -4359,11 +4379,13 @@
     msg('invMsg', file ? 'Uploading…' : 'Saving…');
     var step = file
       ? db.functions.invoke((cfg.s3 && cfg.s3.functionName) || 'sign-upload', {
-          body: { ext: 'pdf', clientId: c.client_id, size: file.size }
+          /* Private once the bucket is set up for it (`privateInvoices`,
+             docs/S3-STORAGE.md §5): the row then keeps the key, not an address. */
+          body: { ext: 'pdf', clientId: c.client_id, size: file.size, private: !!(cfg.s3 && cfg.s3.privateInvoices) }
         }).then(function (r) {
           if (r.error) throw new Error('Could not start the upload. ' + r.error.message);
           if (!r.data || !r.data.uploadUrl) throw new Error('Upload was refused: ' + ((r.data && r.data.error) || 'unknown reason'));
-          return putToS3(r.data.uploadUrl, file, 'application/pdf').then(function () { return r.data.publicUrl; });
+          return putToS3(r.data.uploadUrl, file, 'application/pdf').then(function () { return r.data.publicUrl || r.data.key; });
         })
       : Promise.resolve(null);
 

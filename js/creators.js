@@ -136,6 +136,7 @@
       creatorsLabel: 'Creators',
       dueLabel: 'Campaign due',
       pdf: 'PDF ↗',
+      pdfFail: 'Unable to open the invoice. Please refresh and try again.',
       pic: 'Contact',
       goLive: 'Going live',
       viewPost: 'View post',
@@ -230,6 +231,7 @@
       creatorsLabel: '博主人数',
       dueLabel: '合作截止',
       pdf: 'PDF ↗',
+      pdfFail: '暂时无法打开发票，请刷新页面后再试。',
       pic: '联系人',
       goLive: '发布日期',
       viewPost: '查看帖子',
@@ -302,6 +304,22 @@
   }
 
   $('langToggle').addEventListener('click', function () { setLang(lang === 'en' ? 'zh' : 'en'); });
+
+  $('amountPdf').addEventListener('click', function (e) {
+    if (!this.getAttribute('data-private')) return;
+    e.preventDefault();
+    var tab = window.open('', '_blank'), note = $('amountMsg');
+    note.hidden = true;
+    db.functions.invoke('sign-download', { body: { token: TOKEN, passcode: passcode || null } }).then(function (r) {
+      var u = r && r.data && r.data.url;
+      if (r.error || !u) throw new Error('no-url');
+      if (tab) tab.location.href = u; else location.href = u;
+    }).catch(function () {
+      if (tab) tab.close();
+      // A client page never shows a database message: one line, in its language.
+      note.textContent = t().pdfFail; note.hidden = false;
+    });
+  });
 
   // ---- Load ---------------------------------------------------------------
   function load() {
@@ -458,7 +476,10 @@
     $('amountFold').hidden = !booked.length;
     $('amountLabel').textContent = t().amountLabel;
     $('amountPdf').hidden = !c.invoice_url;
-    $('amountPdf').href = c.invoice_url || '#';
+    /* A private invoice has no address of its own: the press asks
+       sign-download for a five-minute link with this page's own key. */
+    $('amountPdf').href = c.invoice_url && !/^private\//.test(c.invoice_url) ? c.invoice_url : '#';
+    $('amountPdf').setAttribute('data-private', /^private\//.test(c.invoice_url || '') ? '1' : '');
     $('amountPdf').textContent = t().pdf;
     paintRollup(booked);
   }
