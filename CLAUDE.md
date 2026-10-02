@@ -800,6 +800,9 @@ Each line is a rule that broke once. Its reason is in the archive.
 ### Documents (`js/documents.js`, `js/letters.js`, `js/register.js`, `js/verify.js`, `?s=register`)
 - One pen (`ADspaceDocs.pen`) and one letterhead for every document. The PDF is
   never stored: a row holds the snapshot and the file is redrawn on Download.
+- pdf-lib and fontkit are fetched on the first drawing (`ADspaceDocs.lib()`,
+  waited on by every render: letters, reports, performance records); no page
+  loads them in its head (1.1 MB, about 600 ms of a phone's load).
 - Letter of Offer (kind `offer`; older rows `intent`, `cover`):
   - Serial `AQL/{client_code}/{YYMM}{NN}` from the lowest free slot. The
     counter's row lock serialises; the scan is capped (`no-serial`); two
@@ -2203,3 +2206,5 @@ Each line is a rule that broke once. Its reason is in the archive.
   what is known on day one." "Not AI SaaS."
 - **Replies to the user are corporate, short and instructions first**: what
   changed, what it means for them, what they must do. No narration, no essays.
+- The same error twice is a stop: name the cause, never try a third time.
+  Partial work is labelled partial, never reported as done.

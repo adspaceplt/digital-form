@@ -215,6 +215,11 @@
   }
 
   function render(doc) {
+    var D = window.ADspaceDocs;
+    if (!D || !D.lib) return Promise.reject(new Error('The document engine (js/documents.js) is not loaded'));
+    return D.lib().then(function () { return drawLetter(doc); });
+  }
+  function drawLetter(doc) {
     var PDF = window.PDFLib;
     if (!PDF) return Promise.reject(new Error('PDF library not loaded'));
     var langs = (doc.languages && doc.languages.length ? doc.languages : ['en']).filter(function (l) {

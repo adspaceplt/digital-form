@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261002a">
+<link rel="stylesheet" href="/css/portal.css?v=20261002b">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -54,9 +54,6 @@
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<!-- Quotations and invoices are drawn in the browser. -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
 <script src="/js/config.js?v=20261001c"></script>
 <script src="/js/captcha.js?v=20261001a"></script>
 <script src="/js/words.js?v=20261001a"></script>
@@ -443,7 +440,7 @@
               <div><label class="field-label" for="crmContactName">Contact person</label>
                 <input class="input" id="crmContactName" aria-required="true" placeholder="John Doe"></div>
               <div><label class="field-label" for="crmContactEmail">Email</label>
-                <input class="input" id="crmContactEmail" type="email" placeholder="email@adspace.me"></div>
+                <input class="input" id="crmContactEmail" autocomplete="off" type="email" placeholder="email@adspace.me"></div>
               <div><label class="field-label" for="crmContactPhone">Phone</label>
                 <input class="input" id="crmContactPhone" type="tel" inputmode="tel" placeholder="012-345 6789"></div>
               <div><label class="field-label" for="crmContactWa">WhatsApp username</label>
@@ -623,7 +620,7 @@
                 <div class="slugfield"><span class="slugfield-pre" aria-hidden="true">@</span>
                 <input class="input" id="ctWa" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="adspace.advertising"></div></div>
               <div class="span-all"><label class="field-label" for="ctEmail">Email</label>
-                <input class="input" id="ctEmail" type="email" placeholder="email@adspace.me"></div>
+                <input class="input" id="ctEmail" autocomplete="off" type="email" placeholder="email@adspace.me"></div>
             </div>
             <div class="row">
               <div><label class="field-label" for="ctLang">Preferred language</label>
@@ -697,7 +694,7 @@
                   <div><label class="field-label" for="crmBillContact">Billing contact</label>
                     <select class="select" id="crmBillContact" aria-required="true"></select></div>
                   <div><label class="field-label" for="crmFinanceEmail">Finance department email</label>
-                    <input class="input" id="crmFinanceEmail" type="email" placeholder="accounts@adspace.me"></div>
+                    <input class="input" id="crmFinanceEmail" autocomplete="off" type="email" placeholder="accounts@adspace.me"></div>
                   <div class="span-all"><label class="field-label" for="crmBillAddr">Company billing address</label>
                     <textarea class="input textarea" id="crmBillAddr" aria-required="true" rows="3"></textarea></div>
                 </div>
@@ -3323,8 +3320,8 @@
             <span class="cmdbar-count" id="teamCount"></span>
           </span>
           <span class="cmdbar-acts">
-            <span class="kmenu-wrap" id="teamMoreWrap" hidden>
-              <button class="kmenu-btn btn-sm" id="teamMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
+            <span class="kmenu-wrap work-more" id="teamMoreWrap" hidden>
+              <button class="kmenu-btn btn-sm work-more-btn" id="teamMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
               </button>
               <div class="kmenu" id="teamMore" hidden role="menu">
@@ -3354,7 +3351,7 @@
                 <div><label class="field-label" for="tmName">Name</label>
                   <input class="input" id="tmName" aria-required="true" placeholder="John Doe"></div>
                 <div><label class="field-label" for="tmEmail">Sign-in email</label>
-                  <input class="input" id="tmEmail" aria-required="true" type="email" placeholder="email@adspacestudios.com"></div>
+                  <input class="input" id="tmEmail" autocomplete="off" aria-required="true" type="email" placeholder="email@adspacestudios.com"></div>
                 <div><label class="field-label" for="tmRole">Group</label>
                   <select class="select" id="tmRole" aria-required="true"></select></div>
               </div>
@@ -4440,17 +4437,17 @@ raya-2026        https://example.com/raya"></textarea>
 </div>
 <script src="/js/passkey.js?v=20261001a"></script>
 <script src="/js/admin.js?v=20261002a"></script>
-<script src="/js/documents.js?v=20261001a"></script>
-<script src="/js/letters.js?v=20261001a"></script>
-<script src="/js/smreport.js?v=20261001t"></script>
+<script src="/js/documents.js?v=20261002a"></script>
+<script src="/js/letters.js?v=20261002a"></script>
+<script src="/js/smreport.js?v=20261002a"></script>
 <script src="/js/reports.js?v=20261001u"></script>
 <script src="/js/register.js?v=20261001c"></script>
-<script src="/js/crm.js?v=20261001a"></script>
+<script src="/js/crm.js?v=20261002a"></script>
 <script src="/js/team.js?v=20261002a"></script>
 <script src="/js/handbook.js?v=20261002a"></script>
 <script src="/js/campaigns.js?v=20261001b"></script>
 <script src="/js/ops.js?v=20261001b"></script>
-<script src="/js/perf.js?v=20261001a"></script>
+<script src="/js/perf.js?v=20261002a"></script>
 <script src="/js/search.js?v=20261001a"></script>
 <script src="/js/overview.js?v=20261001a"></script>
 </body>

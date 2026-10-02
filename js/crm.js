@@ -3608,7 +3608,11 @@
 
   // ---- Entry --------------------------------------------------------------
   fillSelect($('crmStage'), STAGES.map(function (s) { return [s[0], s[1]]; }), 'Every stage');
-  fillSelect($('crmIndustry'), INDUSTRIES.map(function (i) { return [i, i]; }), 'Not set');
+  /* The lead's industry is a stored value, so its unset choice is empty and
+     saves as null: the filter idiom's `all` here showed a blank select on a
+     new lead and saved "all" as the industry when Not set was picked. */
+  $('crmIndustry').innerHTML = '<option value="">Not set</option>' +
+    INDUSTRIES.map(function (i) { return '<option value="' + esc(i) + '">' + esc(i) + '</option>'; }).join('');
   fillSelect($('crmSource'), SOURCES);
   /* Not fillSelect's "all" option: that is the filter idiom, and here the empty
      choice is a value that gets stored, so it is an empty string and saves as

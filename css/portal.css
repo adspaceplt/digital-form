@@ -2339,10 +2339,12 @@ body.is-plain .topbar { background: var(--chrome); }
 @media (max-width: 860px) {
   .sidebar {
     position: fixed; left: 0; top: 0; z-index: 60; width: 244px; flex-basis: 244px;
-    transform: translateX(-100%); transition: transform var(--t-slow) var(--ease);
-    box-shadow: 0 0 40px rgba(0,0,0,.12);
+    transform: translateX(-100%);
+    transition: transform var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease);
   }
-  .sidebar.is-open { transform: none; }
+  /* The shadow belongs to the open drawer: on the closed one it showed as a
+     grey band down the left edge of every phone screen. */
+  .sidebar.is-open { transform: none; box-shadow: 0 0 40px rgba(0,0,0,.12); }
   .navtoggle { display: inline-grid; place-items: center; }
   .console-head { padding: 0 16px; }
   .console-body { padding: 16px 16px 72px; }
