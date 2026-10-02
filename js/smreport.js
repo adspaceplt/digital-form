@@ -916,9 +916,12 @@
     var SOFT = g(0.40);            // secondary text: captions, dates
     var MUTE = g(0.45);            // axis labels, notes
     var FILL = g(0.949);           // #f2f2f2: a total row, a reading note, an image frame
-    var HEAD = g(0.961);           // #f5f5f5: every table's title row (the user, 2026-10-02: all white read as a skeleton)
+    /* One grey for the title row and the grid, as the rate card draws it
+       (the user, 2026-10-02: a head shaded apart from its lines looked
+       wrong; the report as it was before that day). */
+    var HEAD = FILL;               // every table's title row
     var FILL2 = g(0.851);          // #d9d9d9: a group heading cell
-    var EDGE = g(0.886);           // hairline rules on white cells (2026-10-02: the user's own reports read lighter)
+    var EDGE = FILL;               // the grid, in the title row's grey
     var DATA2 = g(0.651);          // #a6a6a6: a second series, the ordinary bars
     var DATA3 = g(0.80);           // #cccccc: a third series
     var PAPER = g(1);

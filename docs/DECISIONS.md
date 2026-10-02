@@ -736,3 +736,4 @@ The user, on an appendix whose captions stopped after two lines: the caption was
 
 ### 2026-10-02 · The title row is shaded again
 The lighter tables of the same day took the grey off the head rows as well as the cells, and the user found the document read as a skeleton of lines. Every table's title row is shaded #f5f5f5 again (`HEAD`), with the body cells kept white on their hairlines: the shade marks where each table begins, the white keeps the figures light.
+A head shaded in one grey over lines drawn in a darker one looked wrong to the user, who pointed back at the report before that day: the title row and the grid are one grey again, #f2f2f2, the rate card's (`HEAD` and `EDGE` are `FILL`).
