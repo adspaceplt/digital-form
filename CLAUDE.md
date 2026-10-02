@@ -1850,9 +1850,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - An image added to one row of a creative is put on its other rows.
   - A result in a PDF table is its count alone (0 where an ad spent with
     none): the objective heads the table and the client reads the cost per
-    result. The console's rows keep one short word
-    (`ADspaceSmReport.shortResult`: Engagements, Reached, Leads, Messages…),
-    never Leads (form).
+    result. The console's rows carry no result word either (the user,
+    2026-10-02); `ADspaceSmReport.shortResult` stays for the sheet.
     A full block step separates one objective's table from the next.
   - The tax note follows the market: WHT and SST for MY; DCC and GST for SG.
   - Ad names never break at an underscore.
