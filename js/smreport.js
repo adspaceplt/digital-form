@@ -836,6 +836,11 @@
 
   // ---- Rendering ---------------------------------------------------------------
   function render(snap, opts) {
+    var D = window.ADspaceDocs;
+    if (!D || !D.lib) return Promise.reject(new Error('The document engine (js/documents.js) is not loaded'));
+    return D.lib().then(function () { return drawReport(snap, opts); });
+  }
+  function drawReport(snap, opts) {
     opts = opts || {};
     var PDF = window.PDFLib;
     var DOCS = window.ADspaceDocs;

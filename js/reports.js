@@ -509,7 +509,8 @@
         '<div class="rp-accs"></div></div>' + foot;
       paintAccounts();
     } else if (k === 'posts') {
-      box.innerHTML = '<div class="rp-sec">' + head('Posts', ed && st.platforms.length ? '<button class="btn btn-sm" type="button" data-a="paste">Import from spreadsheet</button>' +
+      box.innerHTML = '<div class="rp-sec">' + head('Posts', ed && st.platforms.length ? '<button class="btn btn-sm" type="button" data-a="pickposts">Select</button>' +
+          '<button class="btn btn-sm" type="button" data-a="paste">Import from spreadsheet</button>' +
           '<button class="btn btn-sm" type="button" data-a="addpost">' + ICON.plus + 'Add post</button>' : '') +
         (ed && st.platforms.length ? '<div class="rp-rank"><label class="field-label" for="rpRank">Top posts ranked by</label><select class="select select-sm" id="rpRank">' +
           ['views', 'reach', 'impressions', 'engagements', 'interactions'].map(function (m0) { return '<option value="' + m0 + '">' + esc(METRIC_WORD[m0]) + '</option>'; }).join('') +
@@ -549,6 +550,7 @@
     if ((b = box.querySelector('[data-a="addad"]'))) { var ad = b; ad.addEventListener('click', function () { adSheet(null, ad); }); }
     if ((b = box.querySelector('[data-a="pasteads"]'))) { var pa = b; pa.addEventListener('click', function () { pasteAdsSheet(pa); }); }
     if ((b = box.querySelector('[data-a="pickads"]'))) b.addEventListener('click', function () { st.adPick = {}; paintAds(); });
+    if ((b = box.querySelector('[data-a="pickposts"]'))) b.addEventListener('click', function () { st.postPick = {}; paintPosts(); });
   }
 
   /* The last step: what the report holds, what is still missing, and the one
@@ -915,40 +917,160 @@
     var d = p.posted_on ? new Date(p.posted_on + 'T00:00:00') : null;
     return (FORMAT_WORD[p.content_type] || 'Post') + (d ? ', ' + d.getDate() + ' ' + MON[d.getMonth()] : '');
   }
+  /* Select (the user, 2026-10-02, as on the Ads step): a tick on every row
+     and a bar over the list, which moves the ticked posts to another account
+     or removes them, each with its Undo. */
   function paintPosts() {
     paintSteps();
     var box = st.host.querySelector('.rp-posts');
     if (!box) return;
     var ed = editable();
+    if (!ed || st.posts.length < 2) st.postPick = null;
+    var pick = st.postPick;
+    var pickBtn = st.host.querySelector('[data-a="pickposts"]');
+    if (pickBtn) pickBtn.hidden = !ed || st.posts.length < 2 || !!pick;
     if (!st.platforms.length) { UI.emptyLine(box, 'Add an account first.'); return; }
     if (!st.posts.length) {
       UI.emptyLine(box, 'No posts.');
       return;
     }
-    box.innerHTML = st.platforms.map(function (a) {
+    if (pick) Object.keys(pick).forEach(function (id) { if (!st.posts.some(function (p) { return p.id === id; })) delete pick[id]; });
+    var tick = function (id, label, on) {
+      return '<span class="rp-pick"><input class="trow-pick" type="checkbox"' + (id ? ' data-pick="' + esc(id) + '"' : ' data-pickall') +
+        (on ? ' checked' : '') + ' aria-label="' + esc(label) + '"></span>';
+    };
+    var accWord = function (a) { return (a.account_name || PLATFORM_WORD[a.platform]) + ' · ' + (PLATFORM_WORD[a.platform] || a.platform); };
+    var bar = pick ? '<div class="bulkbar rp-adbar">' +
+      '<label class="tickline bulkbar-all"><input type="checkbox" id="rpPostAll"> <span id="rpPostCount"></span></label>' +
+      '<span class="bulkbar-acts">' + (st.platforms.length > 1 ? '<select class="select select-sm" id="rpPostMove" aria-label="Move to account"><option value="">Move to account</option>' +
+        st.platforms.map(function (a) { return '<option value="' + esc(a.id) + '">' + esc(accWord(a)) + '</option>'; }).join('') + '</select>' : '') +
+      '<button class="btn btn-sm btn-danger" id="rpPostRemove" type="button">Remove</button></span>' +
+      '<button class="btn btn-sm btn-quiet bulkbar-done" id="rpPostDone" type="button">Done</button></div>' : '';
+    box.innerHTML = bar + st.platforms.map(function (a) {
       var posts = st.posts.filter(function (p) { return p.platform_id === a.id; });
       if (!posts.length) return '';
       var m = (a.metrics || []).slice(0, 2);
       while (m.length < 2) m.push(null);
-      return '<div class="rp-postgroup"><p class="rp-group">' + esc(a.account_name || PLATFORM_WORD[a.platform]) + ' · ' + esc(PLATFORM_WORD[a.platform] || a.platform) +
+      return '<div class="rp-postgroup"><p class="rp-group">' + esc(accWord(a)) +
         ' <span class="mute">' + posts.length + ' post' + (posts.length === 1 ? '' : 's') + '</span></p>' +
-        '<div class="crm-table softpanel rp-post-table">' +
-        '<div class="crm-head rp-post-row"><span></span><span>Post</span><span>Date</span><span>' + esc(m[0] ? METRIC_WORD[m[0]] : '') + '</span><span>' + esc(m[1] ? METRIC_WORD[m[1]] : '') + '</span><span></span></div>' +
+        '<div class="crm-table softpanel rp-post-table' + (pick ? ' is-picking' : '') + '" data-acc="' + esc(a.id) + '">' +
+        '<div class="crm-head rp-post-row">' + (pick ? tick(null, 'Select every ' + accWord(a) + ' post', posts.every(function (p) { return pick[p.id]; })) : '') +
+          '<span></span><span>Post</span><span>Date</span><span class="rp-n1">' + esc(m[0] ? METRIC_WORD[m[0]] : '') + '</span><span class="rp-n2">' + esc(m[1] ? METRIC_WORD[m[1]] : '') + '</span><span></span></div>' +
         posts.map(function (p) {
-          return '<div class="crm-row rp-post-row" data-id="' + esc(p.id) + '">' +
+          /* A post with no title of its own (an export's rows carry the
+             caption alone) reads its caption's first line under the name. */
+          var titled = p.title && String(p.title).trim();
+          var line = titled ? (FORMAT_WORD[p.content_type] && p.content_type ? FORMAT_WORD[p.content_type] : '') : firstLine(p.caption);
+          return '<div class="crm-row rp-post-row' + (pick && pick[p.id] ? ' is-picked' : '') + '" data-id="' + esc(p.id) + '">' +
+            (pick ? tick(p.id, 'Select ' + postName(p), !!pick[p.id]) : '') +
             '<span class="rp-thumb">' + (p.thumb_data ? '<img src="' + esc(p.thumb_data) + '" alt="">' : '') + '</span>' +
-            '<span class="rp-name"><b>' + esc(postName(p)) + '</b><small>' + esc([FORMAT_WORD[p.content_type] && p.content_type ? FORMAT_WORD[p.content_type] : '', p.notable ? 'Remarked' : ''].filter(Boolean).join(' · ')) + '</small></span>' +
+            '<span class="rp-name"><b>' + esc(postName(p)) + '</b><small>' + esc([line, p.notable ? 'Remarked' : ''].filter(Boolean).join(' · ')) + '</small></span>' +
             '<span class="rp-date">' + esc(dayWord(p.posted_on)) + '</span>' +
-            '<span class="rp-num">' + (m[0] ? fmt(p[m[0]]) : '') + '</span>' +
-            '<span class="rp-num">' + (m[1] ? fmt(p[m[1]]) : '') + '</span>' +
-            (ed ? rowMenu(['Edit', 'Remove']) : '<span></span>') + '</div>';
+            '<span class="rp-num rp-n1">' + (m[0] ? fmt(p[m[0]]) : '') + '</span>' +
+            '<span class="rp-num rp-n2">' + (m[1] ? fmt(p[m[1]]) : '') + '</span>' +
+            (ed && !pick ? rowMenu(['Edit', 'Remove']) : '<span></span>') + '</div>';
         }).join('') + '</div></div>';
     }).join('');
+    if (pick) { wirePostPick(box); return; }
     if (ed) wireRows(box, function (id, act, btn) {
       var p = st.posts.filter(function (x) { return x.id === id; })[0];
       if (act === 'Edit') postSheet(p, btn);
       if (act === 'Remove') removePost(p);
     });
+  }
+  function firstLine(t) {
+    return String(t || '').split(/\n/).map(function (x) { return x.trim(); }).filter(Boolean)[0] || '';
+  }
+  function wirePostPick(box) {
+    var pick = st.postPick, head = function () { return st.host.querySelector('[data-m="head"]'); };
+    var ids = function () { return Object.keys(pick).filter(function (k) { return pick[k]; }); };
+    var count = function () {
+      var n = ids().length, all = $('rpPostAll');
+      $('rpPostCount').textContent = n + ' selected';
+      all.checked = n === st.posts.length; all.indeterminate = n > 0 && n < st.posts.length;
+      if ($('rpPostMove')) $('rpPostMove').disabled = !n;
+      $('rpPostRemove').disabled = !n;
+      Array.prototype.forEach.call(box.querySelectorAll('.rp-post-table'), function (t) {
+        var rows = t.querySelectorAll('[data-pick]'), on = t.querySelectorAll('[data-pick]:checked').length, g = t.querySelector('[data-pickall]');
+        if (g) { g.checked = on === rows.length; g.indeterminate = on > 0 && on < rows.length; }
+      });
+    };
+    Array.prototype.forEach.call(box.querySelectorAll('[data-pick]'), function (i) {
+      i.addEventListener('change', function () {
+        var id = i.getAttribute('data-pick');
+        if (i.checked) pick[id] = true; else delete pick[id];
+        i.closest('.rp-post-row').classList.toggle('is-picked', i.checked);
+        count();
+      });
+    });
+    Array.prototype.forEach.call(box.querySelectorAll('[data-pickall]'), function (g) {
+      g.addEventListener('change', function () {
+        /* Read once: each row's change repaints this tick as it goes. */
+        var on = g.checked;
+        Array.prototype.forEach.call(g.closest('.rp-post-table').querySelectorAll('[data-pick]'), function (i) {
+          if (i.checked !== on) { i.checked = on; i.dispatchEvent(new Event('change')); }
+        });
+      });
+    });
+    $('rpPostAll').addEventListener('change', function () {
+      var on = $('rpPostAll').checked;
+      st.posts.forEach(function (p) { if (on) pick[p.id] = true; else delete pick[p.id]; });
+      paintPosts();
+    });
+    $('rpPostDone').addEventListener('click', function () { st.postPick = null; paintPosts(); });
+    var setAccount = function (list, to) {
+      return db.from('sm_report_posts').update({ platform_id: to }).in('id', list).select('id, platform_id').then(function (res) {
+        if (res.error) throw res.error;
+        var done = (res.data || []).map(function (x) { return x.id; });
+        if (!done.length) throw new Error('Not moved. The database refused the request.');
+        st.posts.forEach(function (p) { if (done.indexOf(p.id) > -1) p.platform_id = to; });
+        return done;
+      });
+    };
+    if ($('rpPostMove')) $('rpPostMove').addEventListener('change', function () {
+      var to = $('rpPostMove').value;
+      if (!to) return;
+      var was = {};
+      st.posts.forEach(function (p) { if (pick[p.id] && p.platform_id !== to) (was[p.platform_id] = was[p.platform_id] || []).push(p.id); });
+      var moving = [].concat.apply([], Object.keys(was).map(function (k) { return was[k]; }));
+      if (!moving.length) { $('rpPostMove').value = ''; return; }
+      $('rpPostMove').disabled = true;
+      var acc = st.platforms.filter(function (a) { return a.id === to; })[0];
+      setAccount(moving, to).then(function () {
+        st.postPick = {};
+        sortPosts(); paintPosts();
+        var word = moving.length + ' post' + (moving.length === 1 ? '' : 's') + ' moved to ' + (acc ? (acc.account_name || PLATFORM_WORD[acc.platform]) : 'another account');
+        fileReport('report.saved', word);
+        undoBar(word + '.', st.host.querySelector('.rp-posts'), function () {
+          Object.keys(was).reduce(function (p0, k) { return p0.then(function () { return setAccount(was[k], k); }); }, Promise.resolve())
+            .then(function () { sortPosts(); paintPosts(); }).catch(function (e) { say(head(), said(e), 'err'); });
+        });
+      }).catch(function (e) { $('rpPostMove').disabled = false; say(head(), said(e), 'err'); });
+    });
+    $('rpPostRemove').addEventListener('click', function () {
+      var chosen = st.posts.filter(function (p) { return pick[p.id]; });
+      if (!chosen.length) return;
+      var n = chosen.length;
+      window.ADspaceConfirm.ask({ title: 'Remove ' + n + ' post' + (n === 1 ? '' : 's') + '?', body: 'They leave this report.', go: 'Remove', tone: 'danger' }, function () {
+        db.from('sm_report_posts').delete().in('id', chosen.map(function (p) { return p.id; })).select('id').then(function (res) {
+          var gone = (res.data || []).map(function (x) { return x.id; });
+          if (res.error || !gone.length) { say(head(), said(res.error || 'Not removed. The database refused the request.'), 'err'); return; }
+          var left = chosen.filter(function (p) { return gone.indexOf(p.id) > -1; });
+          st.posts = st.posts.filter(function (p) { return gone.indexOf(p.id) < 0; });
+          st.postPick = st.posts.length > 1 ? {} : null;
+          paintPosts();
+          var word = left.length + ' post' + (left.length === 1 ? '' : 's') + ' removed';
+          fileReport('report.saved', word);
+          undoBar(word + '.', st.host.querySelector('.rp-posts'), function () {
+            db.from('sm_report_posts').insert(left).select('*').then(function (x) {
+              if (x.error) { say(head(), said(x.error), 'err'); return; }
+              st.posts = st.posts.concat(x.data || []); sortPosts(); paintPosts();
+            });
+          });
+        });
+      });
+    });
+    count();
   }
 
   function removePost(p) {
@@ -1093,22 +1215,48 @@
   var HEAD = [
     [/^(date|posting date|posted|publish(ed)? (date|time)|date posted)$/, 'posted_on'],
     [/^(post|title|name|post title)$/, 'title'],
-    [/^(format|type|content type|post type)$/, 'content_type'],
+    [/^(format|type|content type|post type|media type|media product type)$/, 'content_type'],
     [/^(link|url|permalink|post link)$/, 'url'],
     [/^(caption|description|text)$/, 'caption'],
     [/^(views?|impressions ?\/ ?views|views ?\/ ?impressions|video views|plays)$/, 'views'],
     [/^reach$/, 'reach'], [/^impressions$/, 'impressions'],
-    [/^(interactions|post interactions)$/, 'interactions'], [/^(engagements?|engagement)$/, 'engagements'],
-    [/^(likes|reactions)$/, 'likes'], [/^comments$/, 'comments'], [/^shares$/, 'shares'], [/^(saves|saved|favourites|favorites)$/, 'saves']
+    [/^(interactions|post interactions|reactions, comments and shares)$/, 'interactions'], [/^(engagements?|engagement)$/, 'engagements'],
+    [/^(likes|reactions)$/, 'likes'], [/^comments$/, 'comments'], [/^shares$/, 'shares'], [/^(saves|saved|favourites|favorites)$/, 'saves'],
+    [/^(post id|media id)$/, 'post_id']
   ];
+  /* Figures a day adds to a day. Reach is people, counted once each: a
+     day's reach cannot be added to the next day's. */
+  var ADDS = ['views', 'impressions', 'interactions', 'engagements', 'likes', 'comments', 'shares', 'saves'];
+  /* An export's own word for its kind of post (Meta: Videos, Photos, IG
+     reel, IG carousel…) read as the report's format. */
+  function formatOf(v, url) {
+    var f = String(v || '').trim().toLowerCase();
+    if (FORMAT_WORD[f] && f) return f;
+    if (/\/reels?\//.test(String(url || ''))) return 'reel';
+    if (/reel/.test(f)) return 'reel';
+    if (/carousel|album/.test(f)) return 'carousel';
+    if (/stor(y|ies)/.test(f)) return 'story';
+    if (/live/.test(f)) return 'live';
+    if (/short/.test(f)) return 'short';
+    if (/video/.test(f)) return 'video';
+    if (/photo|image/.test(f)) return 'photo';
+    if (/article/.test(f)) return 'article';
+    if (/status|text|link|post/.test(f)) return 'post';
+    return null;
+  }
   var MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, sept: 8, oct: 9, nov: 10, dec: 11 };
-  function readDate(s, year) {
+  /* A date written with slashes is read day first (12/09 is 12 Sept), as
+     Malaysia writes it, unless the paste says otherwise: `mdy` reads it
+     month first (Meta's exports: 09/01/2026 is 1 Sept). */
+  function readDate(s, year, mdy) {
     s = String(s || '').trim();
     var m;
     if ((m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s))) return ymd(new Date(+m[1], +m[2] - 1, +m[3]));
     if ((m = /^(\d{1,2})[\/.](\d{1,2})[\/.](\d{2,4})/.exec(s))) {
       var y = +m[3]; if (y < 100) y += 2000;
-      return ymd(new Date(y, +m[2] - 1, +m[1]));
+      var d = mdy ? +m[2] : +m[1], mo = mdy ? +m[1] : +m[2];
+      if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+      return ymd(new Date(y, mo - 1, d));
     }
     if ((m = /^(\d{1,2})[\s-]+([A-Za-z]{3,9})[\s-]*(\d{4})?/.exec(s)) && MONTHS[m[2].toLowerCase().slice(0, m[2].toLowerCase().indexOf('sept') === 0 ? 4 : 3)] != null) {
       return ymd(new Date(m[3] ? +m[3] : year, MONTHS[m[2].toLowerCase().slice(0, m[2].toLowerCase().indexOf('sept') === 0 ? 4 : 3)], +m[1]));
@@ -1137,34 +1285,104 @@
     row.push(cell); rows.push(row);
     return rows.filter(function (r) { return r.some(function (c) { return String(c).trim(); }); });
   }
-  function parseRows(text, year) {
+  /* Which way round the slashed dates in a paste run: a first part over
+     12 can only be a day, a second part over 12 only a day too; a Meta
+     export (Post ID and Publish time) is month first; else day first. */
+  function dateOrder(dates, meta) {
+    var dmy = false, mdy = false;
+    dates.forEach(function (s) {
+      var m = /^(\d{1,2})[\/.](\d{1,2})[\/.]\d{2,4}/.exec(String(s || '').trim());
+      if (!m) return;
+      if (+m[1] > 12) dmy = true;
+      if (+m[2] > 12) mdy = true;
+    });
+    if (mdy && !dmy) return true;
+    if (dmy) return false;
+    return !!meta;
+  }
+  /* A paste, read into posts. A Meta Business Suite export is read as it
+     comes (the user, 2026-10-02): its Title repeats the caption, so the
+     caption is Description and the post is named by its format and date;
+     the date is Publish time, month first; and each Post ID is one post.
+     Its Date column says what a row holds: Lifetime (the post's figures to
+     the day of the export, taken as they are) or one day (the days inside
+     the report's period added up, reach left out). */
+  function parseRows(text, year, period) {
+    text = String(text || '').replace(/^\uFEFF/, '');
     var first = String(text || '').split(/\r?\n/)[0] || '';
     var sep = first.indexOf('\t') > -1 ? '\t' : ',';
     var table = tableOf(text, sep);
     if (table.length < 2) return { error: 'Paste a header row and at least one post.' };
-    var lines = table;
-    var head = lines[0].map(function (h) {
-      var k = h.trim().toLowerCase().replace(/\s+/g, ' ');
+    var names = table[0].map(function (h) { return h.replace(/^﻿/, '').trim().toLowerCase().replace(/\s+/g, ' '); });
+    var head = names.map(function (k) {
       var hit = HEAD.filter(function (x) { return x[0].test(k); })[0];
       return hit ? hit[1] : null;
     });
+    var meta = head.indexOf('post_id') > -1 && names.indexOf('publish time') > -1;
+    /* Where a sheet names both a publish date and a plain Date, the plain
+       one is the day a row's figures are for. */
+    if (names.some(function (k) { return /^publish(ed)? (date|time)$/.test(k); })) {
+      names.forEach(function (k, i) { if (head[i] === 'posted_on' && !/^publish(ed)? (date|time)$/.test(k)) head[i] = 'day'; });
+    }
+    if (meta) names.forEach(function (k, i) { if (k === 'title') head[i] = null; });
+    var seen = {};
+    head = head.map(function (k) { if (!k || seen[k]) return null; seen[k] = true; return k; });
     if (head.indexOf('posted_on') < 0) return { error: 'The header row needs a Date column.' };
+    var col = function (k) { return head.indexOf(k); };
+    var body = table.slice(1);
+    var mdy = dateOrder(body.map(function (c) { return c[col('posted_on')]; })
+      .concat(col('day') > -1 ? body.map(function (c) { return c[col('day')]; }) : []), meta);
     var rows = [], skipped = 0;
-    lines.slice(1).forEach(function (cells) {
+    body.forEach(function (cells) {
       var row = {}, ok = true;
       head.forEach(function (k, i) {
         if (!k) return;
         var v = (cells[i] || '').trim();
-        if (k === 'posted_on') { row.posted_on = readDate(v, year); if (!row.posted_on) ok = false; return; }
+        if (k === 'posted_on') { row.posted_on = readDate(v, year, mdy); if (!row.posted_on) ok = false; return; }
+        if (k === 'day') { row.day = /^lifetime$/i.test(v) ? 'lifetime' : (readDate(v, year, mdy) || (v ? 'other' : null)); return; }
+        if (k === 'post_id') { row.post_id = v || null; return; }
         if (k === 'caption') { var cv = String(cells[i] || '').replace(/^\s+|\s+$/g, ''); row.caption = cv || null; return; }
         if (['title', 'url'].indexOf(k) > -1) { row[k] = v || null; return; }
-        if (k === 'content_type') { var f = v.toLowerCase(); row.content_type = FORMAT_WORD[f] ? f : null; return; }
+        if (k === 'content_type') { row.content_type = v; return; }
         var n = v.replace(/[, ]/g, '');
         row[k] = n === '' || n === '-' ? null : (/^\d+$/.test(n) ? Number(n) : (/^\d+(\.\d+)?k$/i.test(n) ? Math.round(parseFloat(n) * 1000) : null));
       });
+      var fm = formatOf(row.content_type, row.url);
+      if (col('content_type') > -1 || fm) row.content_type = fm;
       if (ok) rows.push(row); else skipped++;
     });
-    return { rows: rows, skipped: skipped, columns: head.filter(Boolean) };
+    /* One post a Post ID (else a link). Lifetime rows stand; day rows are
+       added up within the period, and a post with both keeps its lifetime. */
+    var mode = null, days = 0, outside = 0, byKey = {}, out = [];
+    rows.forEach(function (r) {
+      var key = r.post_id || (r.day && r.url) || null;
+      var daily = r.day && r.day !== 'lifetime';
+      if (r.day === 'lifetime') mode = mode === 'daily' ? 'mixed' : (mode || 'lifetime');
+      if (daily) mode = mode === 'lifetime' ? 'mixed' : (mode || 'daily');
+      if (!key) { out.push(r); return; }
+      var g = byKey[key];
+      if (!g) { g = byKey[key] = { first: r, life: null, sum: null, n: 0 }; out.push(g); }
+      if (r.day === 'lifetime') { g.life = r; return; }
+      if (!daily) { g.life = g.life || r; return; }
+      days++;
+      if (period && (r.day < period[0] || r.day > period[1])) { outside++; return; }
+      if (!g.sum) g.sum = {};
+      ADDS.forEach(function (k) { if (r[k] != null) g.sum[k] = (g.sum[k] || 0) + r[k]; });
+      g.n++;
+    });
+    out = out.map(function (g) {
+      if (!g.first) return g;
+      var base = g.life || g.first, row = {};
+      Object.keys(base).forEach(function (k) { row[k] = base[k]; });
+      if (!g.life) {
+        ADDS.forEach(function (k) { if (k in row) row[k] = g.sum && g.sum[k] != null ? g.sum[k] : (g.sum ? 0 : null); });
+        if ('reach' in row) row.reach = null;
+      }
+      return row;
+    });
+    out.forEach(function (r) { delete r.day; delete r.post_id; });
+    var columns = head.filter(function (k) { return k && k !== 'day' && k !== 'post_id' && !(mode && mode !== 'lifetime' && k === 'reach'); });
+    return { rows: out, skipped: skipped, columns: columns, mode: mode, days: days, outside: outside, mdy: mdy };
   }
 
   function pasteSheet(opener) {
@@ -1172,43 +1390,87 @@
       '<section class="fsec"><div class="row"><div><label class="field-label" for="rpPasteAcc">Account</label><select class="select" id="rpPasteAcc"></select></div></div>' +
       '<div class="row"><div><label class="field-label" for="rpPasteText">Copy the rows from your spreadsheet, with the header row, and paste them here</label>' +
         '<textarea class="input rp-paste" id="rpPasteText" rows="8" placeholder="Date&#9;Title&#9;Views&#9;Interactions"></textarea></div></div>' +
-      '<p class="rp-paste-sum" id="rpPasteSum"></p></section>', FOOT('Add posts'));
+      '<div class="row"><div><label class="field-label" for="rpPasteFile">Or choose the CSV file</label>' +
+        '<input class="input" type="file" id="rpPasteFile" accept=".csv,.tsv,.txt,text/csv,text/plain"></div></div>' +
+      '<p class="rp-paste-sum" id="rpPasteSum"></p></section>', FOOT('Import'));
     var acc = $('rpPasteAcc');
     acc.innerHTML = st.platforms.map(function (a) {
       return '<option value="' + esc(a.id) + '">' + esc((a.account_name || '') + ' · ' + (PLATFORM_WORD[a.platform] || a.platform)) + '</option>';
     }).join('');
     $('rpPasteText').value = '';
+    $('rpPasteFile').value = '';
     var sum = $('rpPasteSum'), sm = box.querySelector('[data-m="sheet"]');
     sum.textContent = ''; say(sm, '');
-    var year = Number(String(st.open.period_start).slice(0, 4));
+    var r0 = st.open, year = Number(String(r0.period_start).slice(0, 4));
+    var period = r0.period_start && r0.period_end ? [String(r0.period_start).slice(0, 10), String(r0.period_end).slice(0, 10)] : null;
     var go = box.querySelector('[data-a="go"]');
+    var plural = function (n, w) { return n + ' ' + w + (n === 1 ? '' : 's'); };
+    /* A post already in this account is matched by its link and refreshed,
+       never added twice. */
+    var known = function (r) {
+      if (!r.url) return null;
+      return st.posts.filter(function (p) { return p.platform_id === acc.value && p.url === r.url; })[0] || null;
+    };
     var read = function () {
-      var out = parseRows($('rpPasteText').value, year);
+      var out = parseRows($('rpPasteText').value, year, period);
       if (out.error) { sum.textContent = $('rpPasteText').value.trim() ? out.error : ''; go.disabled = true; return out; }
-      sum.textContent = out.rows.length + ' post' + (out.rows.length === 1 ? '' : 's') + ' ready' +
-        (out.skipped ? ', ' + out.skipped + ' without a date skipped' : '') + '. Columns: ' +
-        out.columns.map(function (c) { return c === 'posted_on' ? 'Date' : c === 'content_type' ? 'Format' : (METRIC_WORD[c] || c.charAt(0).toUpperCase() + c.slice(1)); }).join(', ') + '.';
+      var upd = out.rows.filter(known).length, add = out.rows.length - upd;
+      var bits = [(add ? plural(add, 'post') + ' to add' : '') + (add && upd ? ', ' : '') + (upd ? plural(upd, 'post') + ' to update' : '') +
+        (out.skipped ? ', ' + out.skipped + ' without a date skipped' : '') + '.'];
+      if (out.mode === 'lifetime') bits.push('Lifetime figures, to the day of the export.');
+      if (out.mode === 'daily' || out.mode === 'mixed') {
+        bits.push(plural(out.days - out.outside, 'daily row') + ' added up' + (period ? ', ' + dayWord(period[0]) + ' to ' + dayWord(period[1]) : '') +
+          (out.outside ? ' (' + out.outside + ' outside the period left out)' : '') + '. Reach is not added across days and is left blank.');
+      }
+      bits.push('Columns: ' + out.columns.map(function (c) { return c === 'posted_on' ? 'Date' : c === 'content_type' ? 'Format' : (METRIC_WORD[c] || c.charAt(0).toUpperCase() + c.slice(1)); }).join(', ') + '.');
+      sum.textContent = bits.join(' ');
       go.disabled = !out.rows.length;
       return out;
     };
     $('rpPasteText').oninput = read;
+    acc.onchange = read;
+    $('rpPasteFile').onchange = function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      var fr = new FileReader();
+      fr.onload = function () { $('rpPasteText').value = String(fr.result || '').replace(/^﻿/, ''); read(); };
+      fr.readAsText(f);
+    };
     go.disabled = true;
     go.onclick = function () {
       var out = read();
       if (!out.rows || !out.rows.length) return;
-      var n = st.posts.length;
-      var rows = out.rows.map(function (r, i) { return Object.assign({ report_id: st.open.id, platform_id: acc.value, position: n + i + 1 }, r); });
-      go.disabled = true;
-      db.from('sm_report_posts').insert(rows).select('*').then(function (res) {
-        go.disabled = false;
-        if (res.error) { say(sm, said(res.error), 'err'); return; }
-        st.posts = st.posts.concat(res.data || []);
-        var np = (res.data || []).length;
-        fileReport('report.saved', np + (np === 1 ? ' post' : ' posts') + ' imported');
-        sortPosts();
-        window.ADspaceSheet.clean(); window.ADspaceSheet.close();
-        paintPosts();
+      var n = st.posts.length, adds = [], ups = [];
+      out.rows.forEach(function (r) {
+        var p = known(r);
+        if (p) ups.push([p, r]); else adds.push(Object.assign({ report_id: st.open.id, platform_id: acc.value, position: n + adds.length + 1 }, r));
       });
+      go.disabled = true;
+      var fail = function (e) { go.disabled = false; say(sm, said(e), 'err'); };
+      var add = adds.length ? db.from('sm_report_posts').insert(adds).select('*') : Promise.resolve({ data: [] });
+      add.then(function (res) {
+        if (res.error) return fail(res.error);
+        st.posts = st.posts.concat(res.data || []);
+        return Promise.all(ups.map(function (u) {
+          var patch = {};
+          Object.keys(u[1]).forEach(function (k) { if (u[1][k] != null) patch[k] = u[1][k]; });
+          return db.from('sm_report_posts').update(patch).eq('id', u[0].id).select('*');
+        })).then(function (all) {
+          var bad = all.filter(function (x) { return x.error || !(x.data || []).length; })[0];
+          all.forEach(function (x) {
+            var row = (x.data || [])[0];
+            if (row) st.posts = st.posts.map(function (p) { return p.id === row.id ? row : p; });
+          });
+          var na = (res.data || []).length, nu = all.length - all.filter(function (x) { return x.error || !(x.data || []).length; }).length;
+          if (na || nu) fileReport('report.saved', [na ? plural(na, 'post') + ' imported' : '', nu ? plural(nu, 'post') + ' updated' : ''].filter(Boolean).join(', ') +
+            (out.mode === 'lifetime' ? ' (lifetime)' : out.mode ? ' (daily, added up)' : ''));
+          sortPosts();
+          paintPosts();
+          if (bad) return fail(bad.error || { message: 'Not saved. The database refused the request.' });
+          go.disabled = false;
+          window.ADspaceSheet.clean(); window.ADspaceSheet.close();
+        });
+      }).catch(fail);
     };
     window.ADspaceSheet.show(box, { opener: opener });
   }

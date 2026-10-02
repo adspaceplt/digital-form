@@ -431,8 +431,42 @@
     return d ? ordinal(d.getDate()) + ' ' + d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }) : String(s || '');
   }
 
+  // ---- The PDF library, fetched on the first drawing ----------------------
+  /* pdf-lib and fontkit are 1.1 MB, and every console and portal load ran
+     them in the head (about 200 ms at a desk and 600 ms on a phone, measured
+     on 2026-10-02) for a PDF most visits never draw. They are fetched here
+     instead, once, the first time anything is drawn; every drawing (a letter,
+     a report, a performance record) waits on this. A failed fetch is said
+     by name and fetched again on the next press. */
+  var LIBS = [
+    ['PDFLib', 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js'],
+    ['fontkit', 'https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js']
+  ];
+  var libWait = null;
+  function lib() {
+    if (window.PDFLib) return Promise.resolve(window.PDFLib);
+    if (libWait) return libWait;
+    libWait = Promise.all(LIBS.map(function (l) {
+      if (window[l[0]]) return null;
+      return new Promise(function (ok, bad) {
+        var s = document.createElement('script');
+        s.src = l[1];
+        s.onload = ok;
+        s.onerror = function () { bad(new Error('The PDF library could not be loaded. Check the connection and try again.')); };
+        document.head.appendChild(s);
+      });
+    })).then(function () {
+      if (!window.PDFLib) throw new Error('PDF library not loaded');
+      return window.PDFLib;
+    }).catch(function (e) { libWait = null; throw e; });
+    return libWait;
+  }
+
   // ---- Drawing ---------------------------------------------------------------
   function render(doc) {
+    return lib().then(function () { return drawDoc(doc); });
+  }
+  function drawDoc(doc) {
     var PDF = window.PDFLib;
     if (!PDF) return Promise.reject(new Error('PDF library not loaded'));
     var k = KIND[doc.kind] || KIND.offer;
@@ -791,7 +825,7 @@
      removes the whole of it. */
 
   window.ADspaceDocs = {
-    issue: issue, download: download, render: render, list: list,
+    issue: issue, download: download, render: render, lib: lib, list: list,
     setVoid: setVoidRpc, remove: removeRpc, KIND: KIND, fileName: fileName,
     setSigned: setSigned, verify: verify, mapOf: mapOf,
     liveDoc: liveDoc, letterState: letterState, quoteOf: quoteOf, idemKey: idemKey,

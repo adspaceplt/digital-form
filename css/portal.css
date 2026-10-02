@@ -2339,10 +2339,12 @@ body.is-plain .topbar { background: var(--chrome); }
 @media (max-width: 860px) {
   .sidebar {
     position: fixed; left: 0; top: 0; z-index: 60; width: 244px; flex-basis: 244px;
-    transform: translateX(-100%); transition: transform var(--t-slow) var(--ease);
-    box-shadow: 0 0 40px rgba(0,0,0,.12);
+    transform: translateX(-100%);
+    transition: transform var(--t-slow) var(--ease), box-shadow var(--t-slow) var(--ease);
   }
-  .sidebar.is-open { transform: none; }
+  /* The shadow belongs to the open drawer: on the closed one it showed as a
+     grey band down the left edge of every phone screen. */
+  .sidebar.is-open { transform: none; box-shadow: 0 0 40px rgba(0,0,0,.12); }
   .navtoggle { display: inline-grid; place-items: center; }
   .console-head { padding: 0 16px; }
   .console-body { padding: 16px 16px 72px; }
@@ -8240,7 +8242,7 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .rp-ver, .rp-live, .rp-date, .rp-figs { font-size: 13px; color: var(--ink-soft); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rp-live .mute, .rp-num .mute { color: var(--ink-mute); }
 .rp-num { font-size: 13.5px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
-.rp-post-row.crm-head > :nth-child(4), .rp-post-row.crm-head > :nth-child(5),
+.rp-post-row.crm-head > .rp-n1, .rp-post-row.crm-head > .rp-n2,
 .rp-acc-row.crm-head > :nth-child(2), .rp-acc-row.crm-head > :nth-child(3) { text-align: right; }
 .rp-go { color: var(--ink-mute); display: flex; justify-content: flex-end; }
 .rp-go svg { width: 16px; height: 16px; }
@@ -8292,8 +8294,8 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .is-narrow .rp-post-row > .rp-thumb { grid-area: th; }
 .is-narrow .rp-post-row > .rp-name { grid-area: name; }
 .is-narrow .rp-post-row > .rp-date { grid-area: date; font-size: 12px; color: var(--ink-mute); }
-.is-narrow .rp-post-row > .rp-num:nth-child(4) { grid-area: n1; }
-.is-narrow .rp-post-row > .rp-num:nth-child(5) { grid-area: n2; font-size: 12.5px; color: var(--ink-mute); }
+.is-narrow .rp-post-row > .rp-n1 { grid-area: n1; }
+.is-narrow .rp-post-row > .rp-n2 { grid-area: n2; font-size: 12.5px; color: var(--ink-mute); }
 .is-narrow .rp-post-row > :last-child { grid-area: act; }
 .is-tight .rp-ticks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 /* The ads of an advertising report, grouped by objective. */
@@ -8319,6 +8321,11 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .is-narrow .rp-ad-table.is-picking .rp-ad-row { grid-template-columns: 24px 34px minmax(0, 1fr) 96px; grid-template-areas: "pk th name spend" "pk th res cpr"; }
 .is-narrow .rp-ad-table.is-picking .rp-ad-row > .rp-pick { grid-area: pk; }
 .is-narrow .rp-ad-table.is-picking .rp-ad-row > :last-child:not(.rp-pick) { display: none; }
+.rp-post-table.is-picking .rp-post-row { grid-template-columns: 24px 34px minmax(0, 1fr) 104px 84px 84px var(--ctl-h); }
+.rp-post-row.is-picked { background: var(--line-soft); }
+.is-narrow .rp-post-table.is-picking .rp-post-row { grid-template-columns: 24px 34px minmax(0, 1fr) 72px; grid-template-areas: "pk th name n1" "pk th date n2"; }
+.is-narrow .rp-post-table.is-picking .rp-post-row > .rp-pick { grid-area: pk; }
+.is-narrow .rp-post-table.is-picking .rp-post-row > :last-child:not(.rp-pick) { display: none; }
 .rp-adbar { margin: 0; }
 /* A report is entered in four steps. The strip is the report's own tab row:
    each step names what it holds, and a step that holds something carries a

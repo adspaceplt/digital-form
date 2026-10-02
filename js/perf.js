@@ -1458,6 +1458,14 @@
   function fileOf(r) { return String(r.serial || ('Performance-' + r.period.slice(0, 7))).replace(/\//g, '-') + '.pdf'; }
 
   function draw(recs, name, btn, then) {
+    var D = window.ADspaceDocs;
+    if (!D || !D.lib) { drawNow(recs, name, btn, then); return; }
+    D.lib().then(function () { drawNow(recs, name, btn, then); }).catch(function (e) {
+      if (btn) msg('pvMsg', 'The file could not be drawn: ' + ((e && e.message) || e), 'err');
+      if (then) then(false);
+    });
+  }
+  function drawNow(recs, name, btn, then) {
     var PDF = window.PDFLib, D = window.ADspaceDocs;
     var fail = function (e) {
       if (btn) msg('pvMsg', 'The file could not be drawn: ' + ((e && e.message) || e), 'err');
