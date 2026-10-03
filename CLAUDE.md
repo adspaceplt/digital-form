@@ -109,7 +109,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 
 | File | Suites |
 |---|---|
-| `crm.js` | crm, register, six, datefloor, phone, letter |
+| `crm.js` | crm, register, six, datefloor, phone, letter, scope |
 | `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink |
 | `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop |
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas |
@@ -118,7 +118,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise |
 | `portal.js` | portal |
 | `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter |
-| `team.js` | team, perms, levels, card |
+| `team.js` | team, perms, levels, card, scope, perfui |
 | `namecard.js`, `card.js` | card, then `ui` |
 | `handbook.js` | handbook |
 | `perf.js` | perfui, perfguard, perf |
@@ -582,6 +582,18 @@ Each line is a rule that broke once. Its reason is in the archive.
   grants (`offered()`).
 - `ops.list`, `ops.board` and `ops.calendar` follow My Work unless set to No
   access.
+- Client scope (`2026-10-03-client-scope.sql`): `clients.leads` (Lead,
+  Contacted, Proposal sent) and `clients.past` (Past) narrow Clients and never
+  widen it (`PART_LEVELS` View and Manage); a group's `client_scope` is `all`
+  or `own` (Person in charge, plus any lead nobody holds, to see and take).
+  One rule, `client_row_seen(stage, owner, level)`, held by a restrictive
+  `client_scope` read policy and a `client_scope_guard` trigger (writes at
+  Manage, `client-scope`) on the client and every table under it, by
+  `ops_may_see_task` / `ops_may_see_engagement` / `ops_scope_error` /
+  `ops_report` (a colleague's own tasks always), and inside `client_billing`,
+  `sm_client_reports`, `sm_report_file` and `sm_report_snapshot`. A new table
+  hanging off a client joins the do-block's list. The Activity record is not
+  scoped. The stand-in holds the same rule (`scopeRowOk`).
 - Columns other parts write are guarded by trigger at the part's Work level:
   `clients_billing_guard` (skipping a cascade, `pg_trigger_depth() > 1`) and
   `campaigns_finance_guard`.
@@ -613,7 +625,11 @@ Each line is a rule that broke once. Its reason is in the archive.
     way to make a group admin.
   - Each section is a segment with one line for its level (`DESC`).
   - The parts sit under Advanced (n), where n counts exceptions only.
+  - Clients they see (`#grScope`, All clients / Own clients only) sits in the
+    Clients fold; Own makes the preset Custom.
   - No preset below Admin opens Team, HR letters or performance reviews.
+- User groups are Team's Groups tab (`tab=groups`, `#teamGroupsPane`), beside
+  Members and Performance.
 - The Admin group has no ⋯ and cannot be deleted. A group delete takes
   `.select('slug')` and names a refusal.
 
@@ -819,6 +835,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   - `delete_client` re-checks at the press.
   - Paused and Past are the everyday exits.
 - Person in charge (`owner` holds a name as text):
+  - Changed from one colleague to another only at Clients Full Access, or by
+    Team Full Access carrying a stand-down or a rename (`clients_owner_guard`,
+    `owner-change`); a lead nobody holds is taken with Take lead in the
+    record's ⋯ (Leads at Manage).
+  - The stage select greys a stage whose band the colleague cannot work, and
+    New lead needs `clients.leads:work`.
   - Standing a colleague down asks who takes their clients and open campaigns.
     Keep is first, and only active colleagues are offered.
   - The move takes `.select('id')` and files `client.edited` /
@@ -2050,8 +2072,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - role standard;
   - `capacity_minutes_week` (entered as hours);
   - Access until (`access_until`, a day in Malaysia, with an optional time
-    `access_until_time`, five-minute steps; no time is the day's end; empty
-    for no end), never on your own row (`own-expiry`);
+    `access_until_time`, five-minute steps, offered only once a day is set;
+    no time is the day's end; empty for no end), never on your own row
+    (`own-expiry`);
   - Mobile, Mobile on card Show / Hide (`card_mobile`) and Card On / Off
     (`card_on`).
 - The member sheet is three sections: Sign-in and access (name, sign-in

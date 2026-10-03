@@ -529,7 +529,10 @@
      opened the Parts fold is where it always was. HR letters were a section
      and are `register.hr` now. */
   var PARTS = {
-    clients:   ['contacts', 'billing', 'services', 'documents', 'requests', 'calls'],
+    /* `leads` and `past` are the lead stages and Past (2026-10-03): they
+       narrow what the Clients level opens on those records, in the database
+       (`client_row_seen`) as here. */
+    clients:   ['contacts', 'billing', 'services', 'documents', 'requests', 'calls', 'leads', 'past'],
     review:    ['sets', 'settings'],
     campaigns: ['campaigns', 'creators', 'finance'],
     register:  ['documents', 'hr'],

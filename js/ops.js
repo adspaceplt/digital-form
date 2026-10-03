@@ -179,6 +179,7 @@
     'client-required': 'A client is required.',
     'client-not-active': 'That record is not a client. Choose a client, or Lead.',
     'not-a-lead': 'Already a client. Choose Client.',
+    'client-scope': 'This client is outside your access.',
     'bad-scope': 'Choose Client, Lead or Internal.',
     'bad-task-type': 'Choose a task type.',
     'bad-period': 'Invalid content month.',

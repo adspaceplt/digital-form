@@ -5165,6 +5165,11 @@ body > .shell { width: 100%; }
 .permsec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 22px; }
 .permsec-name { font-size: 14px; font-weight: 600; color: var(--ink); }
 .permsec-desc { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-mute); }
+/* Four levels across a phone's panel: "Full Access" ran a pixel past its
+   cell at 390 and was cut to "Full Acc…" (Team audit, 2026-10-03). Two
+   pixels back from each side keep every level whole; narrower still, the
+   segment's own measure wraps it into two columns. */
+.permsec .seg-opt { padding: 0 6px; }
 /* The fold names what it holds and how many differ from the section; it
    clears the control floor with the negative block margin the ⋯ uses, so the
    head line keeps the name's height. */
@@ -5244,6 +5249,10 @@ body.no-work-clients-requests [data-need="clients.requests:work"],
 body.no-view-clients-requests [data-need="clients.requests:view"],
 body.no-manage-clients-calls [data-need="clients.calls:manage"],
 body.no-work-clients-calls [data-need="clients.calls:work"],
+body.no-work-clients-leads [data-need="clients.leads:work"],
+body.no-view-clients-leads [data-need="clients.leads:view"],
+body.no-work-clients-past [data-need="clients.past:work"],
+body.no-view-clients-past [data-need="clients.past:view"],
 body.no-view-clients-calls [data-need="clients.calls:view"],
 body.no-manage-reports [data-need="reports:manage"],
 body.no-work-reports [data-need="reports:work"],

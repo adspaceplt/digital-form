@@ -67,6 +67,19 @@
     return Boolean(bridge.may && bridge.may(part, level || 'work'));
   }
   function maySeeBilling() { return mayPart('clients.billing', 'view'); }
+  /* CLIENT SCOPE (2026-10-03): a lead answers to `clients.leads` and a past
+     client to `clients.past` as well as to Clients, each part falling back to
+     the section where it is unset, as the database's `client_row_seen` reads
+     them. A stage a person may not work is offered greyed, and a record in
+     one is read and not moved. */
+  function bandKey(stage) {
+    return ['lead', 'contacted', 'proposal'].indexOf(stage || 'lead') > -1 ? 'clients.leads'
+      : stage === 'past' ? 'clients.past' : 'clients';
+  }
+  function bandMay(stage, level) {
+    var k = bandKey(stage);
+    return mayPart('clients', level) && (k === 'clients' || mayPart(k, level));
+  }
   /* The tabs that carry `data-part` draw only where that part is readable. */
   function gateTabs() {
     Array.prototype.forEach.call(document.querySelectorAll('#crmTabs [data-part]'), function (b) {
@@ -456,7 +469,8 @@
       if (state.clients.length) {
         UI.emptyLine(box, 'No matches.', 'Clear the filters', clearFilters);
       } else {
-        UI.emptyLine(box, 'No clients.', 'Add the first lead', function () { $('crmNew').click(); });
+        if (bandMay('lead', 'work')) UI.emptyLine(box, 'No clients.', 'Add the first lead', function () { $('crmNew').click(); });
+        else UI.emptyLine(box, 'No clients.');
       }
       return;
     }
@@ -667,6 +681,9 @@
        where someone else takes it (the user, 2026-10-01). */
     var self = bridge.me && bridge.me();
     peopleSelect($('crmOwnerPick'), state.team, c ? (c.owner || '') : ((self && self.name) || ''));
+    /* Person in charge moves from one colleague to another at Clients Full
+       Access (`clients_owner_guard`); a record nobody holds may be given. */
+    $('crmOwnerPick').disabled = Boolean(c && String(c.owner || '').trim() && !mayPart('clients', 'manage'));
     if (!c) $('crmSource').value = 'referral';
     $('crmMarket').value = c ? (c.market || 'MY') : 'MY';
     // The person who asked, and what for. Only a new lead needs this here.
@@ -818,9 +835,15 @@
     // sits on it.
     var sel = $('crmClientStage');
     sel.innerHTML = STAGES.map(function (s) {
-      return '<option value="' + s[0] + '"' + (s[0] === (c.stage || 'lead') ? ' selected' : '') + '>' + esc(s[1]) + '</option>';
+      var here = s[0] === (c.stage || 'lead');
+      return '<option value="' + s[0] + '"' + (here ? ' selected' : '') +
+        (!here && !bandMay(s[0], 'work') ? ' disabled' : '') + '>' + esc(s[1]) + '</option>';
     }).join('');
+    sel.disabled = !bandMay(c.stage || 'lead', 'work');
     sel.className = 'select select-sm state-select ' + (w[2] || '');
+    /* A lead nobody is in charge of is anybody's to take who may work leads. */
+    $('crmTake').hidden = !(bandKey(c.stage) === 'clients.leads' && !String(c.owner || '').trim() &&
+                            bandMay(c.stage, 'work') && bridge.me && bridge.me() && bridge.me().name);
     /* There is no Account status block: the stage select in the head says
        where the record stands and the Timeline says for how long, with the
        overdue mark on the stage that is running. A rail block repeating the
@@ -1584,6 +1607,7 @@
         btn.setAttribute('aria-expanded', 'false');
         var a = it.getAttribute('data-a');
         if (a === 'delclient') { openClientDelete(); return; }
+        if (a === 'take') { takeLead(state.client); return; }
         if (a === 'edit') {
           if (!state.clients.length) loadClients();
           openForm(state.client);
@@ -1636,6 +1660,23 @@
       });
     });
   })();
+
+  /* Take a lead nobody is in charge of: Person in charge becomes the person
+     pressing, filed as any other edit of it. */
+  function takeLead(c) {
+    var me = bridge.me && bridge.me();
+    if (!c || !me || !me.name) return;
+    db.from('clients').update({ owner: me.name }).eq('id', c.id).select('id').then(function (r) {
+      if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
+      if (!r.data || !r.data.length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
+      c.owner = me.name;
+      var mine = state.clients.filter(function (x) { return x.id === c.id; })[0];
+      if (mine) mine.owner = me.name;
+      log('client.edited', c.name, 'Person in charge: not set → ' + me.name);
+      msg('crmWorkMsg', 'Taken.', 'ok');
+      openClient(c);
+    }).catch(function () { msg('crmWorkMsg', 'Not saved. Please try again.', 'err'); });
+  }
 
   /* The one rule with teeth: nobody becomes active until they can be
      invoiced. The select goes back and the record opens on what is missing. */
