@@ -997,17 +997,21 @@
         return;
       }
       feed = data;
-      $('cover').hidden = true;
-      document.querySelector('.brand-for').hidden = false;
-      $('clientName').textContent = feed.client.name;
-      // The name goes in front, here and on the tags a crawler would have read
-      // had it run this. Written in one place so the two cannot drift apart.
-      setPageTitle(feed.client.name + ' Content Review Portal by ADspace');
-      if (!feed.batches.length) {
-        showState(W.nothing, W.nothingText);
-        return;
-      }
-      build();
+      // The link has proved itself: the media pass first, then the files.
+      var M = window.ADspaceMedia;
+      return (M && M.pass ? M.pass({ review: token, passcode: passcode || null }) : Promise.resolve()).then(function () {
+        $('cover').hidden = true;
+        document.querySelector('.brand-for').hidden = false;
+        $('clientName').textContent = feed.client.name;
+        // The name goes in front, here and on the tags a crawler would have read
+        // had it run this. Written in one place so the two cannot drift apart.
+        setPageTitle(feed.client.name + ' Content Review Portal by ADspace');
+        if (!feed.batches.length) {
+          showState(W.nothing, W.nothingText);
+          return;
+        }
+        build();
+      });
     }).catch(function (err) {
       console.error(err);
       showState(W.failTitle, W.failText);

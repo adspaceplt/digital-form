@@ -407,6 +407,58 @@ client's PDF link, its link stops working after five minutes, and
 
 ---
 
+## 6. Private media (Content Review, creator drafts)
+
+Everything under `content/` (Content Review files, creator drafts, files the
+team hands in) opens only with CloudFront's **signed cookies** from
+2026-10-03. A page that has proved its link, code or sign-in asks
+`media-pass` for them before it draws a file; they are set on `adspace.me`,
+so `mycdn.adspace.me` receives them, and last **twelve hours** (asked again
+on a page load or a return to the tab once under two are left; a file that
+fails asks again once and loads, a video from the second it was at).
+
+- Stored addresses never change and nothing is moved, copied or deleted.
+- The review link, the selection link and the creator's code work as before.
+- A raw address copied out of a page answers **403** to anybody without a
+  pass.
+- The brand files at the bucket's root (the header mark) stay public.
+- `private/` (§5) is unaffected.
+
+The private half of the signing key is made by `media-pass` on its first call
+and kept in `app_secrets`; it never leaves the database.
+
+### 6a. Give CloudFront the portal's public key
+
+1. Claude hands you the public key (a block starting
+   `-----BEGIN PUBLIC KEY-----`). It is public by design.
+2. CloudFront → **Key management → Public keys → Create public key**. Name
+   `adspace-portal-media`, paste the key, **Create**. Copy its **ID** (starts
+   with `K`).
+3. CloudFront → **Key management → Key groups → Create key group**. Name
+   `adspace-portal-media`, tick the key, **Create**.
+4. Send Claude the key ID. Claude stores it and turns `privateMedia` on.
+   CloudFront still answers every file at this point, so nothing changes for
+   anyone; the pages start carrying the pass.
+
+### 6b. Require the pass under `content/`
+
+Only once Claude confirms the pages carry the pass:
+
+1. CloudFront → the distribution behind `mycdn.adspace.me` → **Behaviors**.
+   If a behaviour for `content/*` exists, **Edit** it; otherwise **Create
+   behavior** with path pattern `content/*` and the bucket as origin.
+2. **Restrict viewer access: Yes** → **Trusted key groups** →
+   `adspace-portal-media`.
+3. Cache policy **CachingOptimized** (cookies and query strings stay out of
+   the cache key, so one copy serves everyone with a pass). Save.
+4. Tell Claude. Claude checks a review link, a selection link, a creator's
+   page and the console on the live site, and that a raw address answers 403.
+
+**To undo:** set **Restrict viewer access** back to **No** on that behaviour.
+Every file is public again within minutes, as before.
+
+---
+
 ## Seeing what is in there
 
 ```sh

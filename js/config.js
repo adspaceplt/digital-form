@@ -72,7 +72,15 @@ window.ADSPACE_CONFIG = {
     // five-minute link from sign-download. Turned on once the bucket policy
     // and the upload key's private/* permission are in place
     // (docs/S3-STORAGE.md §5); until then invoices upload as before.
-    privateInvoices: false
+    privateInvoices: false,
+
+    // Everything under `content/` (Content Review files, creator drafts)
+    // opens only with the CloudFront pass `media-pass` hands a page that has
+    // proved its link, code or sign-in (js/media.js). Turned on once
+    // CloudFront holds the portal's key (docs/S3-STORAGE.md §6); the pass is
+    // set on `mediaCookieDomain` so mycdn.adspace.me receives it.
+    privateMedia: false,
+    mediaCookieDomain: 'adspace.me'
   },
   /* Google Drive import.
 

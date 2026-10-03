@@ -376,6 +376,16 @@ Each line is a rule that broke once. Its reason is in the archive.
   every video player: it names the H.264 copy `name.web.mp4` first (typed
   MP4) and the original after, so a browser plays the copy once it exists
   and the original until then. Never `<video src>` for an uploaded file.
+  It also holds the media pass (`ADspaceMedia.pass(proof)`, 2026-10-03):
+  with `ADSPACE_CONFIG.s3.privateMedia` on, a page that has proved its link
+  (`{review}`, `{campaign}` with the passcode), a creator's code
+  (`{creator}`) or a sign-in (`{}`) asks `media-pass` for CloudFront's three
+  signed cookies over `content/*` before it draws a file, set on
+  `mediaCookieDomain` (adspace.me) for twelve hours and asked again under two
+  left (load, return to the tab). A file under `content/` that fails asks
+  again once and reloads (a video at its second), the page's own `onerror`
+  held until the answer; a `.web.mp4` copy not made yet never asks. Stored
+  addresses never change. A refused or slow pass (6s) never holds a page.
 - `js/copy.js` says Copied one way. The fallback is `execCommand('copy')` over
   an off-screen textarea.
 - `js/state.js` owns loading, empty and failed (`skeleton`, `emptyLine`,
@@ -2175,7 +2185,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The delete code lives in the database.
 - S3 (`docs/S3-STORAGE.md`): the upload key only writes under `content/`,
   and under `private/` (write and read, for invoices) once §5 is done;
-  `private/` is closed to CloudFront by the bucket policy.
+  `private/` is closed to CloudFront by the bucket policy. `content/` is
+  served only with the media pass once §6 is done (`media-pass` signs with a
+  key it made and keeps in `app_secrets`, `cf_media_private`; CloudFront's
+  ID for it is `cf_media_key_id`, and until it is stored the function
+  answers `{ off: true }`).
   Nothing deletes from S3: every uploaded file is kept, Content Review files
   and creator drafts included. `s3-sweep` is a daily report only (pg_cron,
   03:17 MYT, `s3-sweep-daily`): with a list-only key it lists `content/`,
@@ -2219,7 +2233,7 @@ Each line is a rule that broke once. Its reason is in the archive.
     for the SQL Editor as its own run. A storage policy goes in a run of its
     own, since the editor may not alter `storage.objects` and a failure rolls
     back the whole run.
-- An edge function (`sign-upload`, `sign-download`, `invite-member`,
+- An edge function (`sign-upload`, `sign-download`, `media-pass`, `invite-member`,
   `portal-login`, `meet-create`, `push-send`, `s3-sweep`, `report-draft`) is
   deployed by Claude through the
   Supabase connector from the repo copy, keeping its Verify JWT setting, and
