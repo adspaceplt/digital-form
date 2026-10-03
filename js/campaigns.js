@@ -3558,8 +3558,11 @@
             }
             file.remove();
             undoBar((what ? what.trim() + ' removed.' : 'Submission removed.'), function () {
-              db.from('campaign_deliverables').update({ removed_at: null }).eq('id', id)
-                .then(function () { loadOptions(); });
+              db.from('campaign_deliverables').update({ removed_at: null }).eq('id', id).select('id')
+                .then(function (u) {
+                  if (u.error || !(u.data || []).length) msg('campWorkMsg', 'Not restored. The database refused the request.', 'err');
+                  loadOptions();
+                }).catch(function () { msg('campWorkMsg', 'Not restored. Check the connection and try again.', 'err'); });
             }, block);
           });
       }
@@ -4076,12 +4079,16 @@
        else, so a field somebody typed in the card is not lost to the press. */
     var fields = Object.keys(patch || {}).filter(function (k) { return k !== 'state'; });
     var pre = fields.length
-      ? db.from('campaign_options').update(patch).eq('id', o.id)
-      : Promise.resolve({});
-    pre.then(function () {
+      ? db.from('campaign_options').update(patch).eq('id', o.id).select('id')
+      : Promise.resolve({ data: [{}] });
+    pre.then(function (u) {
+      /* A refused save of the typed fields stops the release: the client
+         would otherwise receive the draft without the link just typed. */
+      if (u.error || !(u.data || []).length) return { notSaved: true };
       return db.rpc('campaign_qc_pass', { p_option: o.id, p_want_second: !!want });
     }).then(function (r) {
       qcCount();
+      if (r.notSaved) { msg('qcMsg', 'Not released. The draft link was not saved; the database refused the request.', 'err'); return; }
       if (r.error) { msg('qcMsg', r.error.message, 'err'); return; }
       var out = r.data || {};
       if (out.error) { msg('qcMsg', SAID_QC[out.error] || out.error, 'err'); return; }

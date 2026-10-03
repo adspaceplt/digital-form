@@ -3825,7 +3825,10 @@
                 if (r.error || !(r.data || []).length) { loadDue(); return; }
                 log('client.action_done', c ? c.name : '', t.next_action);
                 undoBar('Marked done: ' + t.next_action, function () {
-                  db.from('client_touches').update({ done_at: null }).eq('id', t.id).then(loadDue);
+                  db.from('client_touches').update({ done_at: null }).eq('id', t.id).select('id').then(function (u) {
+                    if (u.error || !(u.data || []).length) msg('crmListMsg', 'Not restored. The database refused the request.', 'warn');
+                    loadDue();
+                  }).catch(loadDue);
                 });
                 loadDue();
               });

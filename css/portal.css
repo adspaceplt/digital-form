@@ -9624,6 +9624,7 @@ body.ncpage { background: var(--nc-ground); }
   background: var(--card); overflow-y: auto;
 }
 body:not(:has(> .topbar)) .maint-cover { z-index: 60; padding-top: 24px; }
+.maint-cover:focus { outline: none; }
 body.is-maint { overflow: hidden; }
 .maint-cover .maint-back { margin-top: 8px; }
 .maint-cover .maint-note { margin-top: 8px; overflow-wrap: anywhere; }

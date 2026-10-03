@@ -75,9 +75,13 @@
       box = document.createElement('section');
       box.className = 'cover maint-cover';
       box.id = 'maintCover';
-      box.setAttribute('role', 'alertdialog');
-      box.setAttribute('aria-modal', 'true');
+      /* A dialog only where it holds something to press (the console's Sign
+         out); else a named region. Either way it takes focus, so a screen
+         reader reads it first. */
+      box.setAttribute('role', d.out ? 'alertdialog' : 'region');
+      if (d.out) box.setAttribute('aria-modal', 'true');
       box.setAttribute('aria-labelledby', 'maintTitle');
+      box.setAttribute('tabindex', '-1');
       box.innerHTML = '<div class="cover-inner"><div class="cover-panel"></div></div>';
       document.body.appendChild(box);
       document.body.classList.add('is-maint');
@@ -92,8 +96,8 @@
     }
     paint();
     var a = document.activeElement;
-    if (a && a !== document.body && !box.contains(a) && !(a.closest && a.closest('.topbar'))) {
-      try { a.blur(); } catch (e) {}
+    if (!a || a === document.body || (!box.contains(a) && !(a.closest && a.closest('.topbar')))) {
+      try { box.focus({ preventScroll: true }); } catch (e) {}
     }
   }
 
