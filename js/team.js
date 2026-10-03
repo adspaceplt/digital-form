@@ -13,6 +13,12 @@
 
   var $ = function (id) { return document.getElementById(id); };
   var bridge = window.ADspaceAdmin || {};
+  /* What the database lets this colleague change here: a member and a group
+     are written at Team Full Access (`team_admin`), and a colleague's
+     invitation is an admin's alone (`invite-member`). A control the database
+     would refuse is not drawn (audit, 2026-10-03). */
+  function may(key, level) { return Boolean(bridge.may && bridge.may(key, level)); }
+  function amAdmin() { var m = bridge.me && bridge.me(); return Boolean(m && (m.is_admin || m.role === 'admin')); }
   var log = bridge.log || function () {};
   var me = bridge.me || function () { return null; };
   /* Department and role standard are said once, in js/words.js; the sheet's
@@ -220,6 +226,8 @@
       '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
       '<div class="kmenu" data-menu hidden>' + items + '</div></span>';
   }
+  /* A row whose ⋯ would hold nothing keeps its cell and draws no ⋯. */
+  function rowMenu(items) { return items ? menuBtn(items) : '<span class="team-act"></span>'; }
   function shutMenus() {
     Array.prototype.forEach.call(document.querySelectorAll('#sectionTeam .kmenu'), function (m) { m.hidden = true; });
     Array.prototype.forEach.call(document.querySelectorAll('#sectionTeam .kmenu-btn'), function (b) { b.setAttribute('aria-expanded', 'false'); });
@@ -435,6 +443,7 @@
   }
   function memberRow(m) {
     var self = me() && me().id === m.id;
+    var manage = may('team', 'manage');
     var el = document.createElement('div');
     el.className = 'team-row' + (m.active ? '' : ' is-off');
     el.innerHTML =
@@ -463,10 +472,10 @@
          sits one place from Edit and asks first, as it does on a contact.
          Standing somebody down happens once in a job, so it is here rather
          than a select on every row. A person cannot switch themselves off. */
-      menuBtn(menuItem('edit', 'Edit') +
+      rowMenu((manage ? menuItem('edit', 'Edit') : '') +
               (m.active && m.card_key && m.card_on !== false ? menuItem('card', 'Open namecard') : '') +
-              (m.active && m.email ? menuItem('invite', 'Send invitation') : '') +
-              (self ? '' : menuItem('state', m.active ? 'Set inactive' : (m.expired_at ? 'Extend access' : 'Set active'))));
+              (manage && amAdmin() && m.active && m.email ? menuItem('invite', 'Send invitation') : '') +
+              (self || !manage ? '' : menuItem('state', m.active ? 'Set inactive' : (m.expired_at ? 'Extend access' : 'Set active'))));
 
     wireMenu(el);
     var nc = el.querySelector('[data-a="card"]');
@@ -534,8 +543,9 @@
   }
 
   function saveMember(m, patch, then) {
-    db.from('team_members').update(patch).eq('id', m.id).then(function (r) {
+    db.from('team_members').update(patch).eq('id', m.id).select('id').then(function (r) {
       if (r.error) { msg('teamMsg', teamSaid(r.error), 'err'); load(); return; }
+      if (!(r.data || []).length) { msg('teamMsg', 'Not saved. The database refused the request.', 'err'); load(); return; }
       log('team.changed', m.name, Object.keys(patch).map(function (k) {
         if (k === 'active') return 'Active: ' + (m.active ? 'Yes' : 'No') + ' → ' + (patch.active ? 'Yes' : 'No');
         if (k === 'role') return 'User group: ' + roleName(m.role) + ' → ' + roleName(patch.role);
@@ -687,7 +697,7 @@
     el.innerHTML =
       '<span class="group-name"><b>' + esc(r.name) + '</b><small>' + members + ' member' + (members === 1 ? '' : 's') + '</small></span>' +
       '<span class="group-grants">' + esc(grantWord(r)) + '</span>' +
-      (locked ? '<span class="team-act"></span>'
+      (locked || !may('team', 'manage') ? '<span class="team-act"></span>'
         : menuBtn(menuItem('rename', 'Edit') + (used ? '' : menuItem('del', 'Delete', 'is-danger'))));
 
     wireMenu(el);
@@ -722,8 +732,9 @@
 
   function saveGroup(r, patch) {
     var was = Object.assign({}, r, { access: Object.assign({}, r.access || {}) });
-    db.from('team_roles').update(patch).eq('slug', r.slug).then(function (q) {
+    db.from('team_roles').update(patch).eq('slug', r.slug).select('slug').then(function (q) {
       if (q.error) { msg('groupMsg', q.error.message, 'err'); load(); return; }
+      if (!(q.data || []).length) { msg('groupMsg', 'Not saved. The database refused the request.', 'err'); load(); return; }
       Object.keys(patch).forEach(function (k) { r[k] = patch[k]; });
       log('team.group_changed', r.name, Object.keys(patch).map(function (k) {
         if (k === 'access') return accessMoves(was.access, patch.access);
@@ -1192,7 +1203,8 @@
          invited at the new address. */
       function write() {
         shutMemberBox();
-        db.from('team_members').update(fields).eq('id', m.id).then(function (r) {
+        db.from('team_members').update(fields).eq('id', m.id).select('id').then(function (r) {
+          if (!r.error && !(r.data || []).length) { msg('teamMsg', 'Not saved. The database refused the request.', 'err'); return; }
           if (r.error) {
             msg('teamMsg', /slug-taken/.test(r.error.message) ? 'That short link is already in use.'
               : /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'

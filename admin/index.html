@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261003k">
+<link rel="stylesheet" href="/css/portal.css?v=20261003p">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -56,25 +56,26 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="/js/config.js?v=20261003d"></script>
 <script src="/js/captcha.js?v=20261001a"></script>
-<script src="/js/words.js?v=20261001a"></script>
+<script src="/js/words.js?v=20261003o"></script>
 <script src="/js/copy.js?v=20261001a"></script>
 <script src="/js/ask.js?v=20261001a"></script>
-<script src="/js/confirm.js?v=20261001b"></script>
+<script src="/js/confirm.js?v=20261003o"></script>
 <script src="/js/sheet.js?v=20261001b"></script>
 <script src="/js/refresh.js?v=20261001a"></script>
 <script src="/js/form.js?v=20261002b"></script>
 <script src="/js/state.js?v=20261001a"></script>
 <script src="/js/group.js?v=20261001a"></script>
 <script src="/js/menu.js?v=20261001a"></script>
-<script src="/js/cmdbar.js?v=20261001b"></script>
+<script src="/js/cmdbar.js?v=20261003l"></script>
 <script src="/js/records.js?v=20261001b"></script>
 <script src="/js/chart.js?v=20261001a"></script>
 <script src="/js/swipe.js?v=20261001a"></script>
 <script src="/js/api.js?v=20261001a"></script>
+<script src="/js/maintenance.js?v=20261003p"></script>
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261001a"></script>
 <script src="/js/media.js?v=20261003b"></script>
-<script src="/js/mockups.js?v=20261001a"></script>
+<script src="/js/mockups.js?v=20261003n"></script>
 </head>
 <body>
 
@@ -342,6 +343,15 @@
           <button class="kmenu-item" id="refreshApp" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>Refresh app
           </button>
+          <!-- Upgrade mode (js/maintenance.js): an admin's alone, so the group
+               and its rule are drawn only for an admin. A switch, its state at
+               the row's right edge (Off, On, or Set while it waits on its
+               start). -->
+          <hr class="acct-sep" id="acctUpgradeSep" hidden>
+          <button class="kmenu-item" id="acctUpgrade" type="button" role="switch" aria-checked="false" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg><span class="acct-push-word">Upgrade mode</span><span class="acct-val" id="acctUpgradeWord">Off</span>
+          </button>
+          <p class="msg acct-msg" id="acctUpgradeMsg" role="status" hidden></p>
           <hr class="acct-sep">
           <button class="kmenu-item" id="signOut" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 20H6.5A1.5 1.5 0 0 1 5 18.5v-13A1.5 1.5 0 0 1 6.5 4H12"/></svg>Sign out
@@ -428,6 +438,13 @@
       </div>
     </div>
     <!-- ===== end console search panel ===== -->
+
+    <!-- Upgrade mode is on, or set for later: said to an admin, the one
+         person still working, with the way to turn it off beside it. -->
+    <div class="upgradebar" id="upgradeBar" role="status" hidden>
+      <span class="upgradebar-word" id="upgradeWord"></span>
+      <button class="btn btn-sm" id="upgradeOff" type="button">Turn off</button>
+    </div>
 
     <!-- WHILE THE TEAM ROW IS BEING READ. The console is not drawn until
          me() has answered, because its rail names every section of the tool
@@ -559,6 +576,7 @@
         <!-- Every open next action across every client, soonest first. The
              data was already on each log entry; this is the screen that
              gathers it, so nothing is left to memory. -->
+        <div class="msg warn" id="crmListMsg" role="status"></div>
         <section class="due" id="crmDue" hidden>
           <div class="due-head"><h3>Next actions</h3><span class="muted" id="crmDueCount"></span></div>
           <div id="crmDueList"></div>
@@ -831,7 +849,9 @@
                       <span class="logopreview" id="crmLogoPreview" title="How it will look as a profile picture">
                         <img id="crmLogoPreviewImg" alt="" hidden>
                       </span>
-                      <input class="input" id="crmLogo" type="url" placeholder="https://adspace.me/logo.png"></div>
+                      <input class="input" id="crmLogo" type="url" placeholder="https://adspace.me/logo.png">
+                      <button class="btn btn-sm" id="crmLogoUp" type="button" data-need="clients:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg>Upload</button>
+                      <input id="crmLogoFile" type="file" accept="image/png,image/jpeg,image/webp" hidden data-nodraft></div>
                   </div>
                 </div>
                 <div class="row">
@@ -1270,7 +1290,7 @@
             <div class="kmenu" id="wsMenu" hidden role="menu">
               <button class="kmenu-item" id="advancedToggle" type="button" role="menuitem" data-need="review.settings:view">Client settings</button>
               <button class="kmenu-item" id="resetLink" type="button" role="menuitem" data-need="review.settings:work">Reset access link</button>
-              <button class="kmenu-item is-danger" id="deleteClient" type="button" role="menuitem" data-need="review.sets:manage">Remove from Content Review</button>
+              <button class="kmenu-item" id="deleteClient" type="button" role="menuitem" data-need="review.settings:work">Remove from Content Review</button>
             </div>
           </div>
         </div>
@@ -1303,7 +1323,7 @@
           <div class="rec-who">
             <div class="rec-name">
               <h2 id="setTitle"></h2>
-              <button class="rec-pen" id="renameSet" type="button" aria-label="Rename set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+              <button class="rec-pen" id="renameSet" type="button" aria-label="Rename set" data-need="review.sets:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
             </div>
             <p class="rec-id-meta" id="setNote"></p>
           </div>
@@ -1502,12 +1522,14 @@
           <h4 class="fsec-h">Logo and access code</h4>
           <div class="row">
             <div>
-              <label class="field-label" for="eLogo">Logo URL</label>
+              <label class="field-label" for="eLogo">Logo</label>
               <div class="logorow">
                 <span class="logopreview" id="logoPreview" title="How it will look as a profile picture">
                   <img id="logoPreviewImg" alt="" hidden>
                 </span>
                 <input class="input" id="eLogo" placeholder="https://adspace.me/logo.png">
+                <button class="btn btn-sm" id="eLogoUp" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg>Upload</button>
+                <input id="eLogoFile" type="file" accept="image/png,image/jpeg,image/webp" hidden data-nodraft>
               </div>
             </div>
             <div>
@@ -1589,7 +1611,7 @@
           <div class="msg" id="campMsg"></div>
           <!-- Deletion lives with editing: rare, and behind one more click. -->
           <div class="form-danger" id="campDangerRow" data-need="campaigns.campaigns:manage" hidden>
-            <button class="btn btn-quiet is-danger btn-sm" id="campDelete" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/></svg>Delete</button>
+            <button class="btn btn-quiet is-danger btn-sm" id="campDelete" data-need="campaigns.campaigns:manage" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/></svg>Delete</button>
           </div>
         </div>
 
@@ -1652,12 +1674,12 @@
                  one more click. -->
             <div class="rec-ctl">
               <span class="chip" id="campState"></span>
-              <div class="kmenu-wrap" id="campMenuWrap">
+              <div class="kmenu-wrap" id="campMenuWrap" data-need="campaigns.campaigns:work">
                 <button class="kmenu-btn" id="campMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More">
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                 </button>
                 <div class="kmenu" id="campMenu" hidden role="menu">
-                  <button class="kmenu-item" id="campEdit" type="button" role="menuitem" data-a="editcamp">Edit details</button>
+                  <button class="kmenu-item" id="campEdit" type="button" role="menuitem" data-a="editcamp" data-need="campaigns.campaigns:work">Edit details</button>
                 </div>
               </div>
             </div>
@@ -3392,7 +3414,7 @@
             <span class="cmdbar-count" id="teamCount"></span>
           </span>
           <span class="cmdbar-acts">
-            <span class="kmenu-wrap work-more" id="teamMoreWrap" hidden>
+            <span class="kmenu-wrap work-more" id="teamMoreWrap" data-need="team:manage" hidden>
               <button class="kmenu-btn btn-sm work-more-btn" id="teamMoreBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More actions">
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
               </button>
@@ -3400,7 +3422,7 @@
                 <button class="kmenu-item" data-a="expiry" type="button" role="menuitem">Set access expiry</button>
               </div>
             </span>
-            <button class="btn btn-sm btn-primary" id="teamAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add member</button>
+            <button class="btn btn-sm btn-primary" id="teamAdd" data-need="team:manage" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add member</button>
           </span>
         </span>
       </div>
@@ -3529,7 +3551,7 @@
             <span class="cmdbar-count" id="groupCount"></span>
           </span>
           <span class="cmdbar-acts">
-            <button class="btn btn-sm btn-primary" id="groupAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add group</button>
+            <button class="btn btn-sm btn-primary" id="groupAdd" data-need="team:manage" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add group</button>
           </span>
         </span>
       </div>
@@ -4154,11 +4176,12 @@ raya-2026        https://example.com/raya"></textarea>
           </span>
           <span class="cmdbar-acts">
             <button class="btn btn-sm btn-quiet" id="showImport" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M4 20h16"/></svg>Bulk import</button>
-            <button class="btn btn-sm btn-primary" id="showAddLink" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
+            <button class="btn btn-sm btn-primary" id="showAddLink" data-need="links:work" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add link</button>
           </span>
         </span>
       </div>
 
+      <div class="msg" id="linkListMsg"></div>
       <div id="linkList"></div>
       <p class="routenote" id="linkNote"></p>
     </div>
@@ -4557,20 +4580,20 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261001a"></script>
-<script src="/js/admin.js?v=20261003e"></script>
+<script src="/js/admin.js?v=20261003p"></script>
 <script src="/js/documents.js?v=20261002a"></script>
 <script src="/js/letters.js?v=20261002a"></script>
-<script src="/js/smreport.js?v=20261002g"></script>
+<script src="/js/smreport.js?v=20261003p"></script>
 <script src="/js/reports.js?v=20261002f"></script>
 <script src="/js/register.js?v=20261001c"></script>
-<script src="/js/crm.js?v=20261003a"></script>
-<script src="/js/team.js?v=20261003g"></script>
+<script src="/js/crm.js?v=20261003p"></script>
+<script src="/js/team.js?v=20261003m"></script>
 <script src="/js/namecard.js?v=20261003f"></script>
 <script src="/js/handbook.js?v=20261002a"></script>
-<script src="/js/campaigns.js?v=20261003b"></script>
-<script src="/js/ops.js?v=20261003a"></script>
+<script src="/js/campaigns.js?v=20261003p"></script>
+<script src="/js/ops.js?v=20261003l"></script>
 <script src="/js/perf.js?v=20261003a"></script>
 <script src="/js/search.js?v=20261001a"></script>
-<script src="/js/overview.js?v=20261003a"></script>
+<script src="/js/overview.js?v=20261003l"></script>
 </body>
 </html>

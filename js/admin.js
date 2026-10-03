@@ -347,6 +347,116 @@
     shutAcct();
     if (window.ADspaceRefresh) window.ADspaceRefresh.hard(); else location.reload();
   });
+
+  /* ===== Upgrade mode (js/maintenance.js, 2026-10-03). An admin switches
+     every portal page to one cover, Upgrading in progress, now or from a set
+     moment in Malaysia time, until switched off or an end set with it
+     passes. The admin keeps working under a banner; anybody else signed in
+     here meets the cover, with a way to sign out. Turning it off never
+     asks: it is the way back. */
+  var upgrade = { on: false, set: false };
+  var upgradeTimer = null;
+  function isAdminMe() { return Boolean(me && (me.is_admin || me.role === 'admin')); }
+  /* A refusal is said where it can be read: under the switch while the
+     account menu is open, else on the banner's line. */
+  function upgradeSay(text) {
+    if (!$('acctUpgradeMsg')) return;
+    $('acctUpgradeMsg').textContent = text || '';
+    $('acctUpgradeMsg').className = 'msg acct-msg' + (text ? ' err' : '');
+    $('acctUpgradeMsg').hidden = !text;
+    var bar = $('upgradeBar');
+    if (!text) { bar.classList.remove('is-err'); return; }
+    if ($('acctMenu') && !$('acctMenu').hidden) return;
+    bar.hidden = false;
+    bar.classList.add('is-err');
+    $('upgradeWord').textContent = text;
+    $('upgradeOff').hidden = true;
+  }
+  function paintUpgrade(d) {
+    var M = window.ADspaceMaintenance;
+    upgrade = d || { on: false, set: false };
+    var admin = isAdminMe();
+    if ($('acctUpgrade')) {
+      $('acctUpgrade').hidden = $('acctUpgradeSep').hidden = !admin;
+      $('acctUpgrade').setAttribute('aria-checked', String(Boolean(upgrade.set)));
+      $('acctUpgradeWord').textContent = upgrade.on ? 'On' : (upgrade.set ? 'Set' : 'Off');
+    }
+    var bar = $('upgradeBar');
+    if (bar) {
+      bar.classList.remove('is-err');
+      $('upgradeOff').hidden = false;
+      bar.hidden = !(admin && upgrade.set);
+      var w = !M ? '' : upgrade.on
+        ? 'Upgrade mode is on. Only admins can use the portal' + (upgrade.ends_at ? ' until ' + M.when(upgrade.ends_at) : '') + '.'
+        : 'Upgrade mode starts ' + M.when(upgrade.starts_at) + (upgrade.ends_at ? ' and ends ' + M.when(upgrade.ends_at) : '') + '.';
+      $('upgradeWord').textContent = w;
+    }
+    if (M && upgrade.on && !admin && me) {
+      M.cover({ note: upgrade.note, ends_at: upgrade.ends_at, out: function () { $('signOut').click(); } });
+    } else if (document.getElementById('maintCover') && !upgrade.on) {
+      location.reload();
+      return;
+    }
+    if (upgradeTimer) { clearTimeout(upgradeTimer); upgradeTimer = null; }
+    if (M) M.watch(upgrade, function () { M.ask().then(paintUpgrade); });
+  }
+  function readUpgrade() {
+    var M = window.ADspaceMaintenance;
+    if (!M || !me) return;
+    M.ask().then(paintUpgrade);
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && meLoaded) readUpgrade();
+  });
+  function setUpgrade(args, done) {
+    db.rpc('maintenance_set', args).then(function (r) {
+      var d = r.data || {};
+      if (r.error || d.error) {
+        done(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message)
+                     : d.error === 'bad-window' ? 'Choose an end after the start, and later than now.'
+                     : d.error === 'denied' ? 'Only an admin can switch upgrade mode.' : d.error);
+        return;
+      }
+      done('');
+      paintUpgrade(d);
+    }).catch(function () { done('Not saved. Check the connection and try again.'); });
+  }
+  function upgradeOff(btn) {
+    if (btn) btn.disabled = true;
+    setUpgrade({ p_on: false, p_note: null, p_starts: null, p_ends: null }, function (err) {
+      if (btn) btn.disabled = false;
+      upgradeSay(err);
+    });
+  }
+  function myDay(d) { return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }); }
+  function myMoment(day, time, fallback) { return day ? day + 'T' + (time || fallback) + ':00+08:00' : null; }
+  if ($('acctUpgrade')) $('acctUpgrade').addEventListener('click', function (e) {
+    e.stopPropagation();
+    upgradeSay('');
+    if (upgrade.set) { upgradeOff(this); return; }
+    shutAcct();
+    var today = myDay(new Date());
+    window.ADspaceConfirm.ask({
+      title: 'Turn on upgrade mode',
+      body: 'Every portal page shows Upgrading in progress to everyone but admins. The front door and short links stay up. An empty start begins now; an empty end waits to be turned off.',
+      go: 'Turn on',
+      tone: 'warn',
+      fields: [{ name: 'sday', label: 'Starts', type: 'date', min: today, required: false, half: true },
+               { name: 'stime', label: 'Start time', type: 'time', required: false, half: true },
+               { name: 'eday', label: 'Ends', type: 'date', min: today, required: false, half: true },
+               { name: 'etime', label: 'End time', type: 'time', required: false, half: true },
+               { name: 'note', label: 'Note on the cover', placeholder: 'Optional', required: false }]
+    }, function (v) {
+      var starts = myMoment(v.sday, v.stime, '00:00');
+      var ends = myMoment(v.eday, v.etime, '23:59');
+      if (ends && (new Date(ends) <= new Date(starts || Date.now()) || new Date(ends) <= new Date())) {
+        upgradeSay('Choose an end after the start, and later than now.');
+        return;
+      }
+      setUpgrade({ p_on: true, p_note: v.note || null, p_starts: starts, p_ends: ends }, upgradeSay);
+    });
+  });
+  if ($('upgradeOff')) $('upgradeOff').addEventListener('click', function () { upgradeOff(this); });
   /* Signing out ends a performance unlock at once rather than leaving it to
      run out on a machine somebody else may sit at next. */
   $('signOut').addEventListener('click', function () {
@@ -453,6 +563,7 @@
        screen honest about it. Fetched once, before anything is shown. */
     loadMe(function () {
       applyAccess();
+      readUpgrade();
       /* The media pass for a colleague (js/media.js). Not waited on: a file
          drawn before it lands asks again and loads. */
       if (me && window.ADspaceMedia && window.ADspaceMedia.pass) window.ADspaceMedia.pass({});
@@ -601,10 +712,16 @@
     /* The Handbook is every colleague's to read (only an admin changes it),
        so it has no level of its own on the ladder. */
     if (name === 'handbook') return Boolean(me && (me.id || me.is_admin));
-    /* The Overview is the start page of a group that manages something: an
-       admin, or Manage on any section or part (2026-09-28). It has no key of
-       its own; each card asks its own. */
-    if (name === 'overview') return managesAny();
+    /* The Overview is the start page of a group that oversees something: an
+       admin, or a group one of whose cards is allowed (2026-09-28). It has no
+       key of its own; each card asks its own, and the Overview asks them all
+       (`ADspaceOverview.any`), so Full Access on a section with no card
+       (Short Links, Services, Team) never lands on an empty page (audit,
+       2026-10-03). */
+    if (name === 'overview') {
+      var ov = window.ADspaceOverview;
+      return ov && ov.any ? ov.any() : managesAny();
+    }
     return may(name, 'view');
   }
   function managesAny() {
@@ -781,11 +898,15 @@
   });
   ADspaceMenu.onScroll(function () { aboutOpen(false); });
 
-  // The first section this person is allowed, for when the one asked for is not.
+  /* The first section this person is allowed, for when the one asked for is
+     not: the Overview, then the rail's own order, My Work first (it was left
+     out, so a colleague whose day is My Work landed on Clients, or on the
+     Handbook with My Work alone; audit, 2026-10-03). Every colleague reads the
+     Handbook, so it is the floor. */
   function firstAllowed() {
-    var order = ['overview', 'clients', 'review', 'campaigns', 'links', 'register', 'reports', 'services', 'team', 'handbook'];
+    var order = ['overview', 'work', 'clients', 'review', 'campaigns', 'register', 'reports', 'links', 'services', 'team', 'handbook'];
     for (var i = 0; i < order.length; i++) if (sectionAllowed(order[i])) return order[i];
-    return 'clients';
+    return 'handbook';
   }
 
   var enterLater = '';
@@ -1187,7 +1308,7 @@
     'team.group_removed':    ['User group removed', 'is-danger', 'team'],
     'client.removed':        ['Client removed', 'is-danger', 'review'],
     'client.deleted':        ['Client deleted', 'is-danger', 'clients'],
-    'review.removed':        ['Removed from review', 'is-danger', 'review'],
+    'review.removed':        ['Removed from review', 'is-warn', 'review'],
     'client.edited':         ['Client edited', '', 'clients'],
     'client.stage':          ['Stage changed', '', 'clients'],
     'client.billing':        ['Billing updated', '', 'clients'],
@@ -1657,8 +1778,9 @@
       handle_fb:     $('eFb').value.trim() || null,
       handle_tiktok: $('eTt').value.trim() || null,
       handle_xhs:    $('eXhs').value.trim() || null
-    }).eq('id', state.client.id).then(function (r) {
+    }).eq('id', state.client.id).select('id').then(function (r) {
       if (r.error) { msg('handleMsg', r.error.message, 'err'); done(false); return; }
+      if (!(r.data || []).length) { msg('handleMsg', 'Not saved. The database refused the request.', 'err'); done(false); return; }
       logAction('client.handles', state.client.name,
         ['ig', 'fb', 'tiktok', 'xhs'].map(function (k) {
           var v = $({ ig: 'eIg', fb: 'eFb', tiktok: 'eTt', xhs: 'eXhs' }[k]).value.trim();
@@ -1729,8 +1851,9 @@
     }
     var had = Boolean(state.client.passcode);
     db.from('clients').update({ logo_url: logo || null, passcode: pass || null })
-      .eq('id', state.client.id).then(function (r) {
+      .eq('id', state.client.id).select('id').then(function (r) {
         if (r.error) { msg('profileMsg', r.error.message, 'err'); done(false); return; }
+        if (!(r.data || []).length) { msg('profileMsg', 'Not saved. The database refused the request.', 'err'); done(false); return; }
         logAction('client.profile', state.client.name,
           [(logo || null) !== (state.client.logo_url || null) ? 'logo changed' : '',
            !had && pass ? 'access code added' : had && !pass ? 'access code removed'
@@ -1760,8 +1883,9 @@
     }, function () {
       var next = window.ADspaceAPI.accessToken();
       db.from('clients').update({ access_token: next }).eq('id', state.client.id)
-        .then(function (r) {
+        .select('id').then(function (r) {
           if (r.error) { msg('wsMsg', r.error.message, 'err'); return; }
+          if (!(r.data || []).length) { msg('wsMsg', 'Not saved. The database refused the request.', 'err'); return; }
           logAction('link.reset', state.client.name, 'Previous link invalidated');
           state.client.access_token = next;
           var fresh = reviewUrl(state.client);
@@ -1783,45 +1907,57 @@
      answer along; it never learns whether the answer was right until the
      server says so, and a browser that skipped the question outright would be
      refused all the same. */
-  /* "Delete" here used to delete the company. It now removes what Content
-     Review holds for them, their content sets, and takes them off this list.
-     The company, its contacts and its log stay in Clients, where they belong. */
+  /* Remove takes the client off this list and closes their review link, and
+     nothing else: every set, post and approval is kept (audit, 2026-10-03; it
+     deleted them all, with no way back). Undo puts the client back at once,
+     and Enable Content Review on the client's record does the same later,
+     with the same link. The company, its contacts and its log stay in
+     Clients, where they belong. */
   $('deleteClient').addEventListener('click', function () {
     shutWsMenu();
     var c = state.client;
-    db.from('batches').select('id').eq('client_id', c.id).then(function (r) {
-      var sets = (r.data || []).length;
-      /* Two browser dialogs, one after the other — the question, then a naked
-         prompt for the name — and neither said what the other was for. One
-         sheet states what goes and takes the name in the same breath, which
-         is what Delete client on the record already does. */
-      window.ADspaceConfirm.ask({
-        title: 'Remove from Content Review',
-        body: sets + ' content set' + (sets === 1 ? '' : 's')
-            + ' with every post and approval record in ' + (sets === 1 ? 'it' : 'them')
-            + ' goes. There is no restore. The client record is kept.',
-        go: 'Remove',
-        tone: 'danger',
-        field: {
-          label: 'Type the client name to confirm',
-          placeholder: c.name,
-          match: c.name,
-          need: 'Type the client name to confirm.',
-          mismatch: 'That is not this client\'s name.'
-        }
-      }, function () {
-        db.from('batches').delete().eq('client_id', c.id).then(function (d) {
-          if (d.error) { msg('wsMsg', d.error.message, 'err'); return; }
-          db.from('clients').update({ review_hidden: true }).eq('id', c.id).then(function (u) {
-            if (u.error) { msg('wsMsg', u.error.message, 'err'); return; }
-            logAction('review.removed', c.name,
-              sets + ' content set' + (sets === 1 ? '' : 's') + ' removed');
-            showClients();
-          });
-        });
+    window.ADspaceConfirm.ask({
+      title: 'Remove from Content Review',
+      body: c.name + ' leaves this list and its review link stops opening. Every content set is kept.',
+      go: 'Remove',
+      tone: 'warn'
+    }, function () {
+      setReviewHidden(c, true, 'wsMsg', function () {
+        showClients();
+        undoHere(c.name + ' removed from Content Review.', function () {
+          setReviewHidden(c, false, 'clientMsg', loadClients);
+        }, $('clientMsg'));
       });
     });
   });
+  /* One write for both ways, taking the row back: a refused update is a 204
+     with nothing in it, and is named, never filed. */
+  function setReviewHidden(c, hide, msgId, then) {
+    db.from('clients').update({ review_hidden: hide }).eq('id', c.id).select('id').then(function (u) {
+      if (u.error) { msg(msgId, u.error.message, 'err'); return; }
+      if (!u.data || !u.data.length) { msg(msgId, 'Not saved. The database refused the request.', 'err'); return; }
+      c.review_hidden = hide;
+      logAction(hide ? 'review.removed' : 'client.review_on', c.name, '');
+      then();
+    }).catch(function (e) { msg(msgId, (e && e.message) || String(e), 'err'); });
+  }
+  /* The way back, drawn where the act lands: one line and Undo, eight
+     seconds, under `host`. */
+  var undoTimer = null;
+  function undoHere(text, undo, host) {
+    if (!host || !host.parentNode) return;
+    var bar = host.parentNode.querySelector(':scope > .undobar-here');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'undobar undobar-here';
+      host.parentNode.insertBefore(bar, host.nextSibling);
+    }
+    var shut = function () { if (bar.parentNode) bar.parentNode.removeChild(bar); };
+    bar.innerHTML = '<span>' + esc(text) + '</span><button class="btn btn-sm" type="button">Undo</button>';
+    bar.querySelector('button').addEventListener('click', function () { clearTimeout(undoTimer); shut(); undo(); });
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(shut, 8000);
+  }
 
   $('copyLink').addEventListener('click', function () {
     window.ADspaceCopy.to(this, $('clientLink').value);
@@ -1975,8 +2111,9 @@
   });
 
   function setPublished(next) {
-    db.from('batches').update({ published: next }).eq('id', state.batch.id).then(function (r) {
+    db.from('batches').update({ published: next }).eq('id', state.batch.id).select('id').then(function (r) {
       if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
       logAction(next ? 'set.published' : 'set.withdrawn',
         state.client.name + ' — ' + state.batch.title);
       state.batch.published = next;
@@ -2062,8 +2199,9 @@
       label: 'Content set name', max: 120,
       saveLabel: 'Save name',
       save: function (title) {
-        db.from('batches').update({ title: title }).eq('id', state.batch.id).then(function (r) {
+        db.from('batches').update({ title: title }).eq('id', state.batch.id).select('id').then(function (r) {
           if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
+          if (!(r.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
           logAction('set.renamed', state.client.name + ' — ' + title, 'was ' + (state.batch.title || ''));
           state.batch.title = title;
           paintSetHeader();
@@ -2250,8 +2388,47 @@
     return {
       placement: guessPlacement(info),
       media: [media],
-      caption: '', caption_zh: '', title: '', showZh: false
+      caption: '', caption_zh: '', title: '', showZh: false,
+      /* Which reel a cover is for (2026-10-03): its own key, and the key of
+         the reel draft it belongs to, matched by name on arrival. */
+      key: 'd' + Math.random().toString(36).slice(2, 10),
+      name: (media.local && media.local.file && media.local.file.name) || (info && info.name) || '',
+      coverFor: null
     };
+  }
+
+  /* A cover and its reel go up together and show as one card. A cover finds
+     its reel by name first (`launch.mp4` and `launch-cover.jpg`, or
+     `launch_thumb.png`), else it takes the nearest video before it that has
+     no cover yet. A pick by hand is kept. */
+  function isCoverDraft(d) { return d.placement === 'cover:image'; }
+  function isReelDraft(d) { return d.media.length === 1 && d.media[0].type === 'video'; }
+  function stemOf(name) {
+    return String(name || '').toLowerCase().replace(/\.[a-z0-9]+$/, '')
+      .replace(/[\s._-]*(cover|thumb|thumbnail|poster)[\s._-]*\d*$/, '').replace(/[\s._-]+$/, '');
+  }
+  function autoPair() {
+    var reels = state.drafts.filter(isReelDraft);
+    var taken = {};
+    state.drafts.forEach(function (d) {
+      if (!isCoverDraft(d)) { d.coverFor = null; return; }
+      if (d.coverFor && reels.some(function (r) { return r.key === d.coverFor; })) taken[d.coverFor] = true;
+      else d.coverFor = null;
+    });
+    state.drafts.forEach(function (d, i) {
+      if (!isCoverDraft(d) || d.coverFor || d.pairedByHand) return;
+      var stem = stemOf(d.name);
+      var byName = stem && reels.filter(function (r) { return !taken[r.key] && stemOf(r.name) === stem; })[0];
+      var before = null;
+      if (!byName) {
+        for (var j = i - 1; j >= 0; j--) {
+          var r = state.drafts[j];
+          if (isReelDraft(r) && !taken[r.key]) { before = r; break; }
+        }
+      }
+      var got = byName || before;
+      if (got) { d.coverFor = got.key; taken[got.key] = true; }
+    });
   }
 
   function hasLocal() {
@@ -2521,9 +2698,10 @@
     });
   }
 
-  function storeBlob(blob, ext, contentType, onProgress) {
+  function storeBlob(blob, ext, contentType, onProgress, clientId) {
+    var cid = clientId || state.client.id;
     if (!usingS3()) {
-      var path = state.client.id + '/' + crypto.randomUUID() + '.' + (ext || 'bin');
+      var path = cid + '/' + crypto.randomUUID() + '.' + (ext || 'bin');
       return db.storage.from(cfg.storageBucket)
         .upload(path, blob, { cacheControl: '31536000', contentType: contentType || undefined })
         .then(function (r) {
@@ -2535,7 +2713,7 @@
     // Ask our own function to sign one upload, then send the file straight to
     // S3. The file never passes through Supabase, so there is no size ceiling.
     return db.functions.invoke(cfg.s3.functionName || 'sign-upload', {
-      body: { ext: ext || 'bin', clientId: state.client.id, size: blob.size }
+      body: { ext: ext || 'bin', clientId: cid, size: blob.size }
     }).then(function (r) {
       if (r.error) {
         var hint = /failed to send|fetch/i.test(r.error.message || '')
@@ -2570,6 +2748,65 @@
       });
     });
   }
+
+  /* A client's logo kept in our own storage (2026-10-03): a Facebook
+     profile picture's address expires, so the mark broke on every mockup
+     after a while. The picture is drawn down to 800px on its longer side in
+     its own format (a PNG keeps its transparency) and stored under the
+     client's folder like any upload; the address saved is ours and never
+     expires. */
+  function uploadLogo(file, clientId) {
+    if (!file || !clientId) return Promise.reject(new Error('Choose an image.'));
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) return Promise.reject(new Error('Choose a PNG, JPEG or WebP image.'));
+    if (file.size > 10 * 1024 * 1024) return Promise.reject(new Error('Choose an image under 10 MB.'));
+    var png = file.type !== 'image/jpeg';
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        var k = Math.min(1, 800 / Math.max(img.naturalWidth, img.naturalHeight));
+        var cv = document.createElement('canvas');
+        cv.width = Math.max(1, Math.round(img.naturalWidth * k));
+        cv.height = Math.max(1, Math.round(img.naturalHeight * k));
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(url);
+        cv.toBlob(function (b) {
+          if (!b) { reject(new Error('That image could not be read.')); return; }
+          resolve(b);
+        }, png ? 'image/png' : 'image/jpeg', 0.9);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('That image could not be read.')); };
+      img.src = url;
+    }).then(function (b) {
+      return storeBlob(b, png ? 'png' : 'jpg', png ? 'image/png' : 'image/jpeg', null, clientId);
+    });
+  }
+  /* One wiring for every logo field: the Upload button beside it opens its
+     file picker, and the stored address is written into the field, which
+     the sheet's own Save then keeps. */
+  function wireLogoUpload(btnId, fileId, fieldId, msgId, clientOf) {
+    var btn = $(btnId), file = $(fileId);
+    if (!btn || !file) return;
+    btn.addEventListener('click', function () { file.value = ''; file.click(); });
+    file.addEventListener('change', function () {
+      var f = file.files && file.files[0];
+      var c = clientOf();
+      if (!f || !c) return;
+      btn.disabled = true;
+      msg(msgId, 'Uploading…');
+      uploadLogo(f, c.id).then(function (u) {
+        btn.disabled = false;
+        var field = $(fieldId);
+        field.value = u;
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+        msg(msgId, 'Uploaded. Save to keep it.', 'ok');
+      }).catch(function (e) {
+        btn.disabled = false;
+        msg(msgId, (e && e.message) || 'Not uploaded.', 'err');
+      });
+    });
+  }
+  wireLogoUpload('eLogoUp', 'eLogoFile', 'eLogo', 'logoNote', function () { return state.client; });
 
   window.__hasFastStart = hasFastStart;   // used by the test harness
 
@@ -2864,8 +3101,9 @@
       }
 
       // remember the folder so next month is one click
-      db.from('clients').update({ drive_folder: url }).eq('id', state.client.id)
-        .then(function () {
+      db.from('clients').update({ drive_folder: url }).eq('id', state.client.id).select('id')
+        .then(function (r) {
+          if (r.error || !(r.data || []).length) return;
           if (state.client.drive_folder !== url) logAction('client.drive', state.client.name, url);
           state.client.drive_folder = url;
         });
@@ -3018,6 +3256,7 @@
   });
 
   function renderDrafts() {
+    autoPair();
     saveDrafts();
     var box = $('drafts');
     box.innerHTML = '';
@@ -3061,6 +3300,7 @@
             '<span class="muted">Change if wrong</span>' +
             '<button class="linkbtn" data-f="remove" type="button">Remove</button>' +
           '</div>' +
+          (isCoverDraft(d) ? coverForField(d) : '') +
           (isXhs ? '<input class="input" data-f="title" placeholder="Note title 标题" value="' +
                    esc(d.title) + '">' : '') +
           '<textarea class="textarea" data-f="caption" placeholder="Caption">' +
@@ -3097,9 +3337,29 @@
       if (addzh) addzh.addEventListener('click', function () { d.showZh = true; renderDrafts(); });
       var title = row.querySelector('[data-f="title"]');
       if (title) title.addEventListener('input', function (e) { d.title = e.target.value; queueSave(); });
+      var cf = row.querySelector('[data-f="coverfor"]');
+      if (cf) cf.addEventListener('change', function (e) {
+        d.coverFor = e.target.value || null; d.pairedByHand = true; renderDrafts();
+      });
 
       box.appendChild(row);
     });
+  }
+
+  /* A cover's reel, as a choice among the videos being added (each named by
+     its place and file), or none. */
+  function coverForField(d) {
+    var n = 0;
+    var opts = state.drafts.map(function (r) {
+      if (!isReelDraft(r)) return '';
+      n++;
+      var taken = state.drafts.some(function (o) { return o !== d && isCoverDraft(o) && o.coverFor === r.key; });
+      if (taken && d.coverFor !== r.key) return '';
+      return '<option value="' + r.key + '"' + (d.coverFor === r.key ? ' selected' : '') + '>' +
+        esc('Video ' + n + (r.name ? ' · ' + r.name : '')) + '</option>';
+    }).join('');
+    return '<label class="draft-pair"><span class="field-label">Cover for</span>' +
+      '<select class="select" data-f="coverfor"><option value="">No video</option>' + opts + '</select></label>';
   }
 
   $('combineBtn').addEventListener('click', function () {
@@ -3168,8 +3428,27 @@
             position: next + i
           };
         });
-        db.from('posts').insert(rows).then(function (res) {
+        db.from('posts').insert(rows).select('id, position').then(function (res) {
           if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
+          /* Each cover names its reel once both rows exist. */
+          var idAt = {};
+          (res.data || []).forEach(function (x) { idAt[x.position] = x.id; });
+          var keyAt = {};
+          state.drafts.forEach(function (d, i) { keyAt[d.key] = next + i; });
+          var pairs = [];
+          state.drafts.forEach(function (d, i) {
+            if (isCoverDraft(d) && d.coverFor && idAt[next + i] && idAt[keyAt[d.coverFor]]) {
+              pairs.push(db.from('posts').update({ cover_for: idAt[keyAt[d.coverFor]] }).eq('id', idAt[next + i]).select('id'));
+            }
+          });
+          if (pairs.length) Promise.all(pairs).then(function (out) {
+            var bad = out.filter(function (o) { return o.error || !o.data || !o.data.length; }).length;
+            if (bad) msg('setMsg', bad + (bad === 1 ? ' cover was added unpaired. Pair it' : ' covers were added unpaired. Pair them') + ' from the ⋯.', 'warn');
+            loadPosts();
+          }).catch(function () {
+            msg('setMsg', 'Covers were added unpaired. Pair them from the ⋯.', 'warn');
+            loadPosts();
+          });
           logAction('post.added', state.client.name + ' — ' + (state.batch.title || ''),
             rows.length + (rows.length === 1 ? ' post' : ' posts'));
           clearDrafts();
@@ -3248,6 +3527,8 @@
      scroll (the user, 2026-09-30). Opens on Changes requested while there is
      any, else All; the choice is kept per set while the page is open. */
   var POST_STAGES = [['pending', 'Pending'], ['changes', 'Changes requested'], ['approved', 'Approved'], ['all', 'All']];
+  /* A stage's count wears its chip's tone where it counts any. */
+  var STAGE_TONE = { pending: 'is-warn', changes: 'is-err', approved: 'is-ok' };
   var postStageBy = {};
   function stageWord(s) {
     /* On a phone the longest stage takes its short word, so all four fit the
@@ -3277,13 +3558,21 @@
       var on = s[0] === pick;
       return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" data-stage="' + s[0] + '"' +
         ' aria-selected="' + on + '" tabindex="' + (on ? 0 : -1) + '">' + stageWord(s) +
-        ' <span class="tab-n">' + counts[s[0]] + '</span></button>';
+        ' <span class="tab-n' + (counts[s[0]] && STAGE_TONE[s[0]] ? ' ' + STAGE_TONE[s[0]] : '') + '">' + counts[s[0]] + '</span></button>';
     }).join('');
     box.innerHTML = '';
+    /* The set's videos, named by their place in it, for a cover to belong to. */
+    var vn = 0, videos = [];
+    v.posts.forEach(function (p) {
+      var m0 = (p.media || [])[0];
+      if (p.platform !== 'cover' && (p.media || []).length === 1 && m0 && m0.type === 'video') {
+        vn++; videos.push({ id: p.id, label: 'Video ' + vn + ' · ' + MK.label(p) });
+      }
+    });
     v.posts.forEach(function (p) {
       var review = v.latest[p.id];
       if (pick !== 'all' && postStageOf(review) !== pick) return;
-      box.appendChild(savedRow(p, review, { asked: v.asked[p.id], kept: v.kept[p.id] || [], earlier: (v.earlier || {})[p.id] }));
+      box.appendChild(savedRow(p, review, { asked: v.asked[p.id], kept: v.kept[p.id] || [], earlier: (v.earlier || {})[p.id], videos: videos }));
     });
     if (!box.children.length) UI.emptyLine(box, 'No posts.');
   }
@@ -3356,6 +3645,7 @@
      It needs the same marks, the same activity record and the same idea of who
      is signed in, so those are lent rather than written twice. */
   window.ADspaceAdmin = {
+    wireLogoUpload: wireLogoUpload,
     ICON: ICON,
     hold: hold,
     iconBtn: iconBtn,
@@ -3442,14 +3732,15 @@
 
   /* Pending, approved, changes requested. The dot is what you scan for; the
      word is what makes it mean something. */
-  /* The client's decision as the portal's chip: warn while it waits on
-     somebody, green once approved. A word, never a coloured dot. */
+  /* The client's decision as the portal's chip (`.status-*`): warn while
+     it waits, rose for changes requested, green once approved. A word,
+     never a coloured dot. */
   function statusMark(review) {
     var kind = !review ? 'pending'
              : review.decision === 'approved' ? 'approved' : 'changes';
     var word = kind === 'pending' ? 'Pending'
              : kind === 'approved' ? 'Approved' : 'Changes requested';
-    return '<span class="tone ' + (kind === 'approved' ? 'is-ok' : 'is-warn') + '">' + word + '</span>';
+    return '<span class="tone ' + (kind === 'approved' ? 'is-ok' : kind === 'changes' ? 'is-danger' : 'is-warn') + '">' + word + '</span>';
   }
 
   function shutPostMenus() {
@@ -3502,6 +3793,11 @@
       ADspaceMedia.sources(m.url).replace(/src="([^"#]+)"/g, 'src="$1#t=0.1"') + '</video>';
   }
 
+  function coverWord(p, videos) {
+    var v = (videos || []).filter(function (x) { return x.id === p.cover_for; })[0];
+    return v ? 'Cover for ' + v.label : 'No video';
+  }
+
   function savedRow(p, review, extra) {
     extra = extra || {};
     var row = document.createElement('div');
@@ -3524,7 +3820,9 @@
           '<span class="saved-top"><b>' + MK.label(p) + '</b>' + statusMark(review) + '</span>' +
           '<span class="saved-meta">' +
             (round > 1 ? '<span class="saved-round">Revision ' + round + '</span><span class="sep">·</span>' : '') +
-            '<span class="spec">' + esc(fileLabel(m)) + '</span></span>' +
+            '<span class="spec">' + esc(fileLabel(m)) + '</span>' +
+            (p.platform === 'cover' ? '<span class="sep">·</span><span>' + esc(coverWord(p, extra.videos)) + '</span>' : '') +
+            '</span>' +
           // A post with no copy yet says nothing rather than saying "No caption".
           ((p.caption || p.caption_zh)
             ? '<span class="muted">' + esc((p.caption || p.caption_zh).slice(0, 90)) + '</span>'
@@ -3551,6 +3849,8 @@
           '<button class="kmenu-btn" data-a="menu" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(MK.label(p)) + '">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden role="menu">' +
             '<button class="kmenu-item" data-a="edit" data-need="review.sets:work" type="button" role="menuitem">Edit</button>' +
+            (p.platform === 'cover' && (extra.videos || []).length
+              ? '<button class="kmenu-item" data-a="pair" data-need="review.sets:work" type="button" role="menuitem">Pair with video</button>' : '') +
             /* The client said yes by word of mouth: the team approves the
                round on show for them (the user, 2026-10-01). Its way back is
                Revert confirmation; a client's own approval is asked again. */
@@ -3577,6 +3877,29 @@
         window.ADspaceMenu.place(mbtn, menu);
       });
       row.querySelector('[data-a="edit"]').addEventListener('click', function () { shutPostMenus(); paintEdit(); });
+      /* A cover's video, chosen again or cleared: the client's page shows the
+         two as one card with a tab each. Not a revision: the file is the same. */
+      var pairBtn = row.querySelector('[data-a="pair"]');
+      if (pairBtn) pairBtn.addEventListener('click', function () {
+        shutPostMenus();
+        var choices = [['', 'No video']].concat((extra.videos || []).map(function (x) { return [x.id, x.label]; }));
+        window.ADspaceConfirm.ask({
+          title: 'Pair with video',
+          body: 'The client sees the cover and its video as one card, each decided on its own.',
+          go: 'Save',
+          field: { label: 'Video', choices: choices, value: p.cover_for || '', required: false }
+        }, function (val) {
+          var to = (val && typeof val === 'object' ? val[0] : val) || null;
+          db.from('posts').update({ cover_for: to }).eq('id', p.id).select('id').then(function (res) {
+            if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
+            if (!(res.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
+            logAction('post.edited', state.client.name + ' — ' + (state.batch.title || ''),
+              'Cover image: ' + (to ? 'paired with ' + coverWord({ cover_for: to }, extra.videos).replace(/^Cover for /, '') : 'unpaired'));
+            msg('setMsg', 'Saved.', 'ok');
+            loadPosts();
+          }).catch(function (e) { msg('setMsg', (e && e.message) || 'Not saved.', 'err'); });
+        });
+      });
 
       /* Accepting the client's copy is an edit after their decision, so the
          database makes it the next round and keeps this one. */
@@ -3654,8 +3977,9 @@
             db.from('posts').update({
               review_reset_at: new Date().toISOString(),
               review_reset_note: why
-            }).eq('id', p.id).then(function (r) {
+            }).eq('id', p.id).select('id').then(function (r) {
               if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
+              if (!(r.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
               logAction('reapproval.requested',
                 state.client.name + ' — ' + MK.label(p), why);
               msg('setMsg', 'Re-approval requested.', 'ok');
@@ -3955,9 +4279,11 @@
         '<span class="link-act">' +
           iconBtn('copy', 'copy', 'Copy short link') +
           iconBtn('qr',   'qr',   'QR codes') +
-          '<button class="kmenu-btn" data-a="menu" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
+          /* Every item here changes the link, so the ⋯ is drawn at Work, as
+             each item is (a View group was offered Edit, audit 2026-10-03). */
+          '<button class="kmenu-btn" data-a="menu" data-need="links:work" type="button" aria-label="More actions" aria-expanded="false">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden>' +
-            '<button class="kmenu-item" data-a="edit" type="button"><b>Edit</b></button>' +
+            '<button class="kmenu-item" data-a="edit" data-need="links:work" type="button"><b>Edit</b></button>' +
             /* Live is a lifecycle flag flipped once in the life of a row, so
                it is a chip on the row and an item here, never a field in the
                form and never a select on every line — the shape a rate card
@@ -4044,8 +4370,9 @@
       go: 'Delete',
       tone: 'danger'
     }, function () {
-      db.from('links').delete().eq('slug', l.slug).then(function (r) {
-        if (r.error) { msg('linkMsg', r.error.message, 'err'); return; }
+      db.from('links').delete().eq('slug', l.slug).select('slug').then(function (r) {
+        if (r.error) { msg('linkListMsg', r.error.message, 'err'); return; }
+        if (!(r.data || []).length) { msg('linkListMsg', 'Not deleted. The database refused the request.', 'err'); return; }
         logAction('shortlink.deleted', '/' + l.slug, l.target_url || '');
         loadLinks();
       });
@@ -4060,11 +4387,11 @@
      that did not repaint. */
   function setLinkLive(l, live) {
     var run = function () {
-      db.from('links').update({ active: !!live }).eq('slug', l.slug).select('id')
+      db.from('links').update({ active: !!live }).eq('slug', l.slug).select('slug')
         .then(function (r) {
-          if (r.error) { msg('linkMsg', r.error.message, 'err'); return; }
+          if (r.error) { msg('linkListMsg', r.error.message, 'err'); return; }
           if (!r.data || !r.data.length) {
-            msg('linkMsg', 'Not saved. The database refused the request.', 'err');
+            msg('linkListMsg', 'Not saved. The database refused the request.', 'err');
             return;
           }
           /* `shortlink.updated`, not a tag of its own: pausing is a change to
@@ -4131,7 +4458,12 @@
         return;
       }
       if (was && was !== slug) {
-        db.from('links').delete().eq('slug', was).then(function () { loadLinks(); });
+        /* The old address goes once the new one stands; a refusal leaves
+           both live, so it is said rather than left (audit, 2026-10-03). */
+        db.from('links').delete().eq('slug', was).select('slug').then(function (d) {
+          loadLinks();
+          if (d.error || !(d.data || []).length) msg('linkListMsg', '/' + was + ' is still live. The database refused to remove it.', 'err');
+        }).catch(function () { loadLinks(); });
       } else {
         loadLinks();
       }
@@ -4282,8 +4614,9 @@
     var next = !q.active;
     function save() {
       db.from('link_qrs').update({ active: next, revoked_at: next ? null : new Date().toISOString() })
-        .eq('code', q.code).then(function (r) {
+        .eq('code', q.code).select('code').then(function (r) {
           if (r.error) { msg('qrMsg', r.error.message, 'err'); return; }
+          if (!(r.data || []).length) { msg('qrMsg', 'Not saved. The database refused the request.', 'err'); return; }
           logAction(next ? 'qr.restored' : 'qr.revoked', '/' + q.slug, q.label || q.code);
           loadQrs();
         });

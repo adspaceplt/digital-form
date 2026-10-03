@@ -111,20 +111,21 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 
 | File | Suites |
 |---|---|
-| `crm.js` | crm, register, six, datefloor, phone, letter, scope |
+| `crm.js` | crm, register, six, datefloor, phone, letter, scope, viewonly |
 | `ops.js` | work, keys, slide, cmdbar, phone, ops, reflink |
 | `campaigns.js` | camp, prod, qc, undo, keyin, sch, camptime, six, race, reflink, loop |
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas |
 | `creator.js` | creator, cprofile, results, push |
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
-| `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise |
+| `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs |
 | `portal.js` | portal |
 | `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter |
-| `team.js` | team, perms, levels, card, scope, perfui |
+| `team.js` | team, perms, levels, card, scope, perfui, viewonly |
 | `namecard.js`, `card.js` | card, then `ui` |
 | `handbook.js` | handbook |
 | `perf.js` | perfui, perfguard, perf |
 | `search.js` | search, then `ui` |
+| `maintenance.js` | upgrade, sql, then `ui` |
 | `overview.js` | overview, then `ui` |
 | `reports.js`, `smreport.js` | reports, adsreport, smsql |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
@@ -287,6 +288,27 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`ADspacePush.heal`, off the `adspace-push:{scope}` flag).
 - Pull to refresh works only in the installed app, and only on a list with no
   record, sheet or menu open.
+- Upgrade mode (`js/maintenance.js`, `2026-10-03-maintenance-mode.sql`) is
+  a cover, never a lock: the database keeps answering.
+  - One row in `app_flags` (RLS on, no policy, no grant):
+    `maintenance_state()` (anon) answers `on` (covering now), `set` (switched
+    on, maybe waiting on its start), the note and the window;
+    `maintenance_set(p_on, p_note, p_starts, p_ends)` is `allowed('admin')`,
+    refuses an end not after the start and now (`bad-window`), and files
+    `team.changed` under subject Portal ("Upgrade mode: off → on · from … ·
+    until … · note", Malaysia time).
+  - Every portal page loads it after `api.js` but `/` and the 404, so the
+    front door and short links stay up. A client page covers itself under
+    its own bar (`.maint-cover`, z-index 39; the rest `inert`): Upgrading in
+    progress / 系统升级中 (`W.maintTitle`, `maintText`, `maintBack` Expected
+    back by {end}), following the 中文 switch. A page left open covers itself
+    at a start within a day and reloads at the end.
+  - The console covers itself for anybody but an admin (the whole screen,
+    with Sign out); an admin works on under `.upgradebar` (warn, Turn off).
+    The switch is the account menu's Upgrade mode (`role="switch"`, Off /
+    On / Set, an admin's alone): on asks for Starts, Ends (each a date beside
+    its time, MYT; empty start is now, empty end waits) and a note; off never
+    asks.
 
 ### One copy of each mechanism
 - `js/api.js` is the only Supabase client. It retries a GET once when the
@@ -344,6 +366,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `js/confirm.js` (`ADspaceConfirm.ask({title, body, go, tone, field|fields, match, cancel:false}, onYes)`)
   is every question with a consequence. **No `window.confirm`, `prompt` or
   `alert` anywhere.**
+  - A field marked `half` sits beside the next one (a date and its time).
   - A destructive question opens on Cancel.
   - `#askGo` and `#askCancel` are stable ids. `#askSheet` sits at z-index 95,
     above any sheet.
@@ -416,7 +439,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     Clear sets `data-default` (else the first option) and fires `change`.
     `data-nofilter` marks a select that is not a filter (`#workWf`,
     `#workScope`).
-  - A second action goes behind `.cmd-more`.
+  - A second action goes behind `.cmd-more`; each item carries its button's
+    `data-need` and follows its `hidden`, and the ⋯ leaves when nothing in it
+    can be pressed.
   - The Filters sheet focuses its card, never a select (a focused select wears
     the ring, and iOS does not open a select that already has focus).
   - A Filters button over only hidden selects is not drawn.
@@ -504,7 +529,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ok` throws.
 - A refusal is named in the team's words, never the database's (`SAID`-style
   maps). A missing function reads "This needs a database update".
-- A client page never shows a database message. The console may.
+- A client page never shows a database message. The console may. A refused
+  load reads its cover's words; a refused send reads `W.notSent`.
 - Back navigates, Revert undoes a state, Restore brings back a record,
   Reinstate brings back a person, Undo reverses a removal, Void then Delete
   retires an issued document.
@@ -517,6 +543,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   and the Undo stay behind it.
 - A destructive control is drawn behind its permission (`data-need`), and the
   function re-checks at the press.
+- A control the database would refuse is not drawn, writes included: a group
+  at View meets nothing that writes on any route, and a ⋯ whose every item
+  is withheld is not drawn (`tests/viewonly.js` walks every route at View).
 - A delete through a sheet re-checks the permission at the press, takes the
   name or serial typed back, and states what goes and that there is no restore.
   The label is **Delete**, never `Delete {noun}`.
@@ -594,8 +623,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ops_may_see_task` / `ops_may_see_engagement` / `ops_scope_error` /
   `ops_report` (a colleague's own tasks always), and inside `client_billing`,
   `sm_client_reports`, `sm_report_file` and `sm_report_snapshot`. A new table
-  hanging off a client joins the do-block's list. The Activity record is not
-  scoped. The stand-in holds the same rule (`scopeRowOk`).
+  hanging off a client joins the do-block's list. A removal from `clients`,
+  `client_documents`, `documents`, `sm_reports` or `ops_engagements` asks it
+  at Manage (`client_scope_removal`, before delete,
+  `2026-10-03-client-scope-on-removal.sql`), so the delete functions keep to
+  it too. The Activity record is not scoped. The stand-in holds the same rule
+  (`scopeRowOk`).
 - Columns other parts write are guarded by trigger at the part's Work level:
   `clients_billing_guard` (skipping a cascade, `pg_trigger_depth() > 1`) and
   `campaigns_finance_guard`.
@@ -727,7 +760,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   Source, Contact person, Phone, WhatsApp username, Email, Enquiry, Owner,
   Industry, Market, Urgency to commence (`clients.commence`, blank until
   asked). After intake the enquiry is edited like any other fact, and a person
-  becomes a row in Contacts.
+  becomes a row in Contacts. Under Own clients only the Person in charge is
+  fixed: the colleague keying a lead holds it.
+- A client's address outside the colleague's reach (or gone) lands on the list
+  with `#crmListMsg` saying so, never silently.
 - The record head `.rec-id` (`auto minmax(0,1fr) auto`, centred):
   - Mark: `logo_url`, or `initialsOf()` (two characters of a Chinese name; else
     the first letters of the first two words that start with a letter).
@@ -793,7 +829,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     BILLING COLUMNS section again. The stand-in refuses `*` and every
     billing column, top level or embedded.
 - One set of handles and one logo per client:
-  - Brand and Content Review settings both edit `handle_*` and `logo_url`.
+  - Brand and Content Review settings both edit `handle_*` and `logo_url`;
+    each logo field has Upload (`wireLogoUpload`): the picture is drawn down
+    to 800px in its own format and stored under the client's folder by
+    `sign-upload`, so the address never expires as a Facebook picture's does.
   - `social_*` is backfilled by `handle_of()` (a bare handle, or a URL's last
     segment; nothing where that segment is a route) and never written.
   - `profileUrl()` derives the links.
@@ -988,6 +1027,25 @@ Each line is a rule that broke once. Its reason is in the archive.
   a playing video on in its card.
 - The cover image card names itself once, in its head, and ends under its
   decision (`.is-cover`).
+- A card's head is washed in a pastel of its platform's own brand colour
+  with its words in the brand's deep ink (`--plat-ig` magenta, `--plat-tt` a
+  mid grey, `--plat-xhs` pink rose, `--plat-fb` blue; 4.5:1; light only), one line at every width (the title gives way
+  first), and gives the shape as a ratio (`ADspaceMockups.ratio`: the file's
+  size, within 3% of a common ratio reads as it), never pixels.
+- A reel and its cover are one card (`.cardpair`): the reel's head, Reel and
+  Cover as a view strip with each half's state in its tab, then the half on
+  show. The cover names its reel (`posts.cover_for`, no foreign key; sent by
+  `get_review_feed`, `2026-10-03-reel-cover-pairs.sql`); each half is still its
+  own post, decision, round and canvas, the stage strip counts posts, and a
+  pair shows on a half that matches the stage. A pairing is not a revision.
+  Add assets pairs a cover with a video by file name (`launch.mp4`,
+  `launch-cover.jpg`), else the nearest video before it, as a Cover for choice
+  kept by hand; the set page names a cover's video and its ⋯ Pair with video
+  changes or clears it (`post.edited`).
+- The client's page opens on the client portal's name card (`#rvHead`: mark,
+  name, handle and post count, `N to review` counted at load); the bar no
+  longer names the client. The creator selection page opens on the same card
+  (`#campHead`: the client's mark, the campaign, the client).
 - A post is revised in place (`2026-09-30-post-revisions.sql`): a change to
   its file, copy or title after the client decided on its round is the next
   round (trigger `posts_revision`; `reviews.round` stamped by
@@ -1081,6 +1139,13 @@ Each line is a rule that broke once. Its reason is in the archive.
   - A set's name grows out of New content set; a title is renamed in place.
 - Deleting a set is `can_remove` / Manage, drawn behind it
   (`body.no-remove #deleteSet`). Both deletes take `.select('id')`.
+- Remove from Content Review hides the client and nothing else
+  (`clients.review_hidden`, Content Review settings at Work, asked in warn
+  with nothing typed): every set, post and approval is kept, Undo is drawn
+  over the list, and Enable Content Review on the client's record is the way
+  back later, with the same link. While hidden the link opens nothing
+  (`get_review_feed`, `submit_review` answer `not_found`;
+  `2026-10-03-hidden-from-content-review.sql`).
 - Every everyday write leaves an activity row. An edit names the fields it
   changed.
 
@@ -1090,6 +1155,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     Changes requested → Scheduled → Posted → Completed, each gated by its data,
     each with Revert.
   - Withdraw / Replace / Reinstate in the ⋯.
+  - Deleting a campaign or a creator takes the name typed back; every
+    campaign write takes `.select('id')` and names a refusal (Confirm
+    creators counts the bookings not confirmed).
   - In production is derived (`syncCampState` off `loadOptions`).
 - Release to client (Submitted → Reviewing) goes only through
   `campaign_qc_pass(p_option, p_want_second)`. A trigger refuses any other
@@ -1274,12 +1342,15 @@ Each line is a rule that broke once. Its reason is in the archive.
   `portal_withdraw`. `save_selection` does not (it autosaves).
 
 ### Overview (`js/overview.js`, `?s=overview`)
-- The start page of an admin or a group holding Manage on any section or
-  part (`managesAny()`): `firstAllowed()` lists it first, so `/admin/` with
-  no `?s=` lands there, and every other page names itself (the Clients list
+- The start page of a group one of whose cards is allowed
+  (`ADspaceOverview.any()`, asked by `sectionAllowed('overview')`): Full
+  Access on a section with no card (Short Links, Services, Team) is never
+  offered an empty page. `firstAllowed()` lists it first, then the rail's
+  order with My Work first, the Handbook the floor, so `/admin/` with no
+  `?s=` lands there, and every other page names itself (the Clients list
   writes `s=clients`; a client's record reads as Clients from `client=`
   alone). It has no key of its own; anyone else is never offered the row
-  and its address falls back.
+  and its address falls back. The two lead cards also ask `clients.leads`.
 - Each section is a tab (`#ovwTabs`, the view strip, swipe and the arrows;
   `tab=` in the address, the first left out) over its own pane, every card
   read once on the visit. A tab counts the items its list cards hold, in
@@ -1332,9 +1403,14 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Mine keys on the owner's id, never their name.
   - The count is read against the chosen view.
 - The read is bounded, and open work is not part of the bound. Open work is
-  read in full; finished work is read from the period on (three filters, not
-  one `.or()`). The period select draws only while finished work can be on the
-  page.
+  read in full, a thousand rows a page in id order (`readPages`) and put back
+  in the final date's order; finished work is read from the period on (three
+  filters, not one `.or()`). The period select draws only while finished work
+  can be on the page. Who owns what is read for the tasks read alone
+  (`readOwners`, 150 ids a part), never every assignee in the company.
+- A colleague's own task on a client outside their reach names its client
+  through `ops_task_clients(p_tasks)` (the name alone, tasks they may see;
+  `2026-10-03-task-client-names.sql`).
 - The row:
   - A tick (everyday task) or a progress ring (content task).
   - The name cell opens the task; the row is not one button.
@@ -1466,6 +1542,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Client offers active clients (paused by default; past on request);
   - Lead offers lead / contacted / proposal.
 - Add task asks for a client or Internal every time.
+- The content form offers Lead only where `clients.leads` is at Work, and
+  Include past clients only where `clients.past` is; a refused read of the
+  clients is named in the sheet, never an empty list.
 - Add task and the content form open on one segment, Task / Content
   deliverable (`.kindseg`). Switching swaps the sheet in place.
 - Add task is one act: it saves, the sheet shuts, the list is read again and
@@ -1548,6 +1627,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     `reviewFloor()`).
   - The control is named for what it will do: Request extension, or Change due
     date.
+  - A row's date already set opens the due sheet (`openDue('final', row)`),
+    which asks the reason; only a first date is set in place.
   - The ask is drawn under the dates:
     - Approve and Decline for the person asked;
     - Withdraw (`ops_withdraw_due_change`) for the asker;
@@ -1955,9 +2036,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The foot is PRIVATE & CONFIDENTIAL and the page count on the margin's
     line; no draft or version line.
   - A draft carries DRAFT (INTERNAL USE ONLY) and a report in review PENDING
-    REVIEW (INTERNAL USE ONLY), repeated on the diagonal over every page in
-    faint text drawn last (`WM` in `js/smreport.js`); confirmed, published
-    and every version the client reads carry none.
+    REVIEW (INTERNAL USE ONLY), repeated over every page and drawn last
+    (`WM` in `js/smreport.js`) on the report's golden scale: S(4) in Slate
+    Book at the golden angle (31.7°), the size times φ² apart along a row and
+    φ⁴ between rows, each row offset half a step, grey at a tenth's opacity;
+    confirmed, published and every version the client reads carry none.
   - A page break falls between points, never inside one: each numbered or
     lettered point is one unit (`unit`), split only when taller than a page.
   - A top post card is named by its title, else its type and day; its meta
@@ -2066,6 +2149,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   expired, or Card off for somebody still working.
 - Set inactive / Set active sits in the ⋯ (never on your own row). Send
   invitation asks first.
+- Add member, Set access expiry, a member's Edit and Set inactive, and a
+  group's ⋯ are Team Full Access (`team_admin`); Send invitation is an
+  admin's (`invite-member`). A row with nothing it may press draws no ⋯.
 - Changing a member's email asks first.
 - A member row carries:
   - Employee ID (`staff_code`, `^[A-Z0-9]{3,8}$`);

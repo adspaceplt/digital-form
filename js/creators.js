@@ -327,7 +327,8 @@
     if (!TOKEN) { showState(t().notFound, t().notFoundText, false); return; }
 
     db.rpc('get_campaign', { p_token: TOKEN, p_passcode: passcode }).then(function (r) {
-      if (r.error) { showState(t().notFound, r.error.message, false); return; }
+      /* A client page never shows a database message (audit, 2026-10-03). */
+      if (r.error) { showState(t().failTitle, t().failText, false); return; }
       var d = r.data || {};
       if (d.error === 'not-found') {
         /* A long link from before the short keys: the new key replaces it in
@@ -399,6 +400,20 @@
     var title = String(((lang === 'zh' && c.title_zh) ? c.title_zh : c.title) || '').trim();
     if (!title || title === '0' || title === 'null' || title === 'undefined') title = t().untitled;
     $('campTitle').textContent = title;
+    /* The client portal's name card (2026-10-03): the client's mark, the
+       job's name, and whose it is under it; the bar no longer names them. */
+    var mark = $('campMark');
+    if (mark) {
+      var ini = window.ADspaceState ? window.ADspaceState.initials(client.name || '') : '';
+      if (client.logo_url) {
+        mark.className = 'rec-mark has-logo';
+        mark.innerHTML = '<img src="' + esc(client.logo_url) + '" alt="">';
+        mark.querySelector('img').addEventListener('error', function () { mark.className = 'rec-mark'; mark.textContent = ini; });
+      } else { mark.className = 'rec-mark'; mark.textContent = ini; }
+    }
+    if ($('campMeta')) $('campMeta').textContent = client.name || '';
+    var forBar = document.querySelector('.brand-for');
+    if (forBar) forBar.hidden = true;
     var purpose = (lang === 'zh' && c.purpose_zh) ? c.purpose_zh : c.purpose;
     $('campPurpose').textContent = purpose || '';
     $('campPurpose').hidden = !purpose;
@@ -823,7 +838,7 @@
         var d = (r && r.data) || {};
         if ((r && r.error) || d.error) {
           lock(false);
-          say((r.error && r.error.message) || d.error, true);
+          say(d.error === 'closed' ? t().closedText : t().notSent, true);
           return;
         }
         say(t().reviewThanks);

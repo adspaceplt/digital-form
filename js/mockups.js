@@ -686,6 +686,36 @@
     label: function (post) {
       return (LABELS[key(post)] || ['Post', ''])[0];
     },
+    /* The shape a post is made in, as a ratio the reader knows (9:16, 4:5,
+       1:1), from the file's own size where it is known, else the
+       placement's. A size within 3% of a common ratio reads as it, so a
+       1080 x 1918 export is still 9:16 (2026-10-03: pixel sizes vary with
+       every upload). */
+    ratio: function (post) {
+      const m = (post.media || [])[0];
+      const lab = (LABELS[key(post)] || ['Post', ''])[1];
+      let w = m && m.width, h = m && m.height;
+      if (!(w && h)) {
+        const p = /(\d+)\s*x\s*(\d+)/.exec(lab || '');
+        if (!p) return '';
+        w = Number(p[1]); h = Number(p[2]);
+      }
+      const known = [[9, 16], [4, 5], [1, 1], [3, 4], [2, 3], [16, 9], [4, 3], [5, 4], [3, 2], [191, 100]];
+      const r = w / h;
+      for (let i = 0; i < known.length; i++) {
+        const k = known[i][0] / known[i][1];
+        if (Math.abs(r - k) / k < 0.03) return known[i][0] === 191 ? '1.91:1' : known[i][0] + ':' + known[i][1];
+      }
+      const g = function (a, b) { return b ? g(b, a % b) : a; };
+      const d = g(Math.round(w), Math.round(h)) || 1;
+      return Math.round(w / d) + ':' + Math.round(h / d);
+    },
+    /* The platform a card's head is tinted for: a cover belongs to the
+       account its reel posts on, which is Instagram's here. */
+    tint: function (post) {
+      const p = post.platform || 'instagram';
+      return p === 'cover' ? 'instagram' : p;
+    },
     dimensions: function (post) {
       const m = (post.media || [])[0];
       if (m && m.width && m.height) return m.width + ' x ' + m.height;

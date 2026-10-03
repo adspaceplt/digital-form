@@ -163,7 +163,11 @@
     ] },
 
     { head: 'Clients', key: 'clients', cards: [
-      { key: 'cold', title: 'Leads going cold', can: function () { return may('clients', 'manage'); },
+      /* The two lead cards also ask Leads (`clients.leads`, falling back to
+         Clients where unset): a group at Clients Full Access that may not see
+         leads was told "No leads over their time" (audit, 2026-10-03). The
+         part offers View and Manage, so Manage on it is enough. */
+      { key: 'cold', title: 'Leads going cold', can: function () { return may('clients', 'manage') && may('clients.leads', 'work'); },
         all: ['/admin/?s=clients', 'clients'], warn: true, empty: 'No leads over their time.',
         load: function () {
           return db.from('clients').select('id, name, slug, stage, stage_since, owner, created_at')
@@ -182,7 +186,7 @@
               }) };
             });
         } },
-      { key: 'intake', title: 'New leads and new clients', chart: true, can: function () { return may('clients', 'manage'); },
+      { key: 'intake', title: 'New leads and new clients', chart: true, can: function () { return may('clients', 'manage') && may('clients.leads', 'work'); },
         load: function () {
           return db.from('clients').select('id, created_at, stage_log').then(rows).then(function (list) {
             var ms = CH.months(6), at = {};
@@ -516,6 +520,13 @@
     return { tab: shown && first && shown !== first.getAttribute('data-sec') ? shown : '' };
   }
 
+  /* Whether any card is allowed: the console offers the Overview only then
+     (admin.js `sectionAllowed`), so a group with nothing to oversee here
+     starts on its first route instead of an empty page. */
+  function any() {
+    return SECTIONS.some(function (sec) { return sec.cards.some(function (c) { return c.can(); }); });
+  }
+
   function enter() {
     var box = $('ovwBody'), strip = $('ovwTabs');
     if (!box || !strip) return;
@@ -524,6 +535,9 @@
     var secs = SECTIONS.map(function (sec) {
       return { sec: sec, cards: sec.cards.filter(function (c) { return c.can(); }) };
     }).filter(function (x) { return x.cards.length; });
+    /* Reached with nothing to show (an address from before, or a group whose
+       access changed): the console's own first route instead. */
+    if (!secs.length && bridge.show) { bridge.show('work'); return; }
     strip.hidden = !secs.length;
     secs.forEach(function (x) {
       var tab = document.createElement('button');
@@ -578,6 +592,6 @@
     });
   })();
 
-  window.ADspaceOverview = { enter: enter, urlState: urlState };
+  window.ADspaceOverview = { enter: enter, urlState: urlState, any: any };
   if (bridge.overviewReady) bridge.overviewReady();
 })();

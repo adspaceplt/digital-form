@@ -206,7 +206,7 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
 | Reaching a person | `.plink`, the outlined contact chip (1px `--line-chip`, `#a1a1a1` / dark `#5f5f5f`, lighter than a field's edge because its words identify it; no fill, `--sunk` on hover): phone, WhatsApp, email, a meeting or Drive link, a creator's profile, on every page; never an underlined word; equal widths on a phone unless alone |
 | A value only read | `.readfield` (the field's height, no box) |
 | An instruction | `.hintline` `?` with its line as a `--sunk` callout pointing at the mark, open three times, then retired; a button, never a `title` |
-| Who you are (the console's account menu) | `.kmenu.acct-menu`: a head (`.acct-who`, the name over the sign-in email), then three groups set off by `.acct-sep`: you (My performance, My namecard), this device (Passkeys, Notifications as a switch, Refresh app), Sign out. At a desk it hangs from the control; at 640 and under it docks at the screen's foot through `ADspaceMenu.pop`, rows 48px, with a close mark in its head |
+| Who you are (the console's account menu) | `.kmenu.acct-menu`: a head (`.acct-who`, the name over the sign-in email), then groups set off by `.acct-sep`: you (My performance, My namecard), this device (Passkeys, Notifications as a switch, Refresh app), an admin's Upgrade mode as a switch (drawn for an admin alone), Sign out. At a desk it hangs from the control; at 640 and under it docks at the screen's foot through `ADspaceMenu.pop`, rows 48px, with a close mark in its head |
 | Notifications on a client page | The bar's bell (`.pushbtn`, a second glyph with rays while on) opening `.kmenu.pushpop`, a `.popcard`: title with a close mark, one line, one `.btn-sm` |
 | Finding a record in any section | `#searchSheet` (`js/search.js`): a sheet under the head (the floor, full height, on a phone), the field a combobox, answers as `.sgroup` (the rail name in the label face) > `.srow` (name, `.srow-code` in the token face, one mute `.srow-meta`; the match in weight) |
 
@@ -251,6 +251,12 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   and the column's on a phone. Tabs in a full strip share what is spare
   (`flex: 1 0 auto`). It never wraps; it scrolls sideways with the edge that
   has more beyond it faded.
+- A tab's count is a small pill (`.tab-n`, 12/600, radius 5): `--tonal`
+  with the soft ink, or the tone of the state it counts where it counts any
+  (Content Review: Pending warn, Changes requested rose, Approved green, as
+  the cards' own chips on both sides; Overview: warn where an item is late).
+  It gives back its room on a phone (4px under 640, 3px under 400) before a
+  tab's word is cut.
 - On a phone a sideways swipe presses the tab beside the chosen one
   (`js/swipe.js`, a region's `data-swipe` naming its strip).
 - A component borrowed for its shape carries its old flex and behaviour. Use a

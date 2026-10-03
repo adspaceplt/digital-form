@@ -608,8 +608,7 @@ section holds only what is true of the project as a whole.
     `docs/S3-STORAGE.md` §6b.
   - The ALP checklists as forms.
 - Access: client scope (built 2026-10-03) leaves the Activity record
-  unscoped, and a removal at Clients Full Access is not narrowed by Past
-  clients at View.
+  unscoped.
 - Console search (`js/search.js`, built 2026-09-28) reads names, codes and
   references only: not briefs, notes, comments or a document's body.
 - Performance rewards are worked out and confirmed in the portal; the

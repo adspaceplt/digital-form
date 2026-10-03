@@ -420,7 +420,7 @@
                delete was refused and existed nowhere on the page. */
             menuItem('state', off ? 'Set active' : 'Set inactive') +
             menuItem('links', 'Link history') +
-            menuItem('del', 'Remove', 'is-danger', 'campaigns:manage') +
+            menuItem('del', 'Delete', 'is-danger', 'campaigns:manage') +
           '</div>' +
         '</span>';
       rowMenu(row);
@@ -431,10 +431,10 @@
       row.querySelector('[data-a="links"]').addEventListener('click', function () { shutMenus(); openLinkHistory(c, this); });
       row.querySelector('[data-a="state"]').addEventListener('click', function () {
         shutMenus();
-        db.from('creators').update({ active: off }).eq('id', c.id).then(function (r) {
-          if (r.error) {
+        db.from('creators').update({ active: off }).eq('id', c.id).select('id').then(function (r) {
+          if (r.error || !(r.data || []).length) {
             window.ADspaceConfirm.ask({
-              title: 'Not saved', body: r.error.message, go: 'Close', cancel: false
+              title: 'Not saved', body: r.error ? r.error.message : 'The database refused the request.', go: 'Close', cancel: false
             });
             return;
           }
@@ -863,8 +863,9 @@
     };
 
     if (state.editing) {
-      db.from('creators').update(body).eq('id', state.editing.id).then(function (r) {
+      db.from('creators').update(body).eq('id', state.editing.id).select('id').then(function (r) {
         if (r.error) { msg('creatorMsg', r.error.message, 'err'); return; }
+        if (!(r.data || []).length) { msg('creatorMsg', 'Not saved. The database refused the request.', 'err'); return; }
         done(state.editing.id, false);
       });
     } else {
@@ -875,22 +876,33 @@
     }
   });
 
+  /* A permanent delete is named Delete and takes the name typed back; Set
+     inactive is the everyday way out. A refused delete (204 with nothing
+     removed) is named, never filed (audit, 2026-10-03). */
   function removeCreator(c) {
     window.ADspaceConfirm.ask({
-      title: 'Remove',
+      title: 'Delete',
       body: c.name + ' leaves the Creators List. Campaigns they have already run '
           + 'are kept. There is no restore. To stop booking them and keep the '
           + 'record, set them inactive instead.',
-      go: 'Remove',
-      tone: 'danger'
+      go: 'Delete',
+      tone: 'danger',
+      field: {
+        label: 'Type the creator\'s name to confirm',
+        placeholder: c.name,
+        match: c.name,
+        need: 'Type the creator\'s name to confirm.',
+        mismatch: 'That is not this creator\'s name.'
+      }
     }, function () {
-      db.from('creators').delete().eq('id', c.id).then(function (r) {
+      db.from('creators').delete().eq('id', c.id).select('id').then(function (r) {
+        if (!r.error && !(r.data || []).length) r.error = { message: 'Not deleted. The database refused the request.' };
         if (r.error) {
           /* The refusal is a line on the page, not a browser alert: it names a
              way forward (set them inactive) and that is something to read, not
              something to dismiss. */
           window.ADspaceConfirm.ask({
-            title: 'Not removed',
+            title: 'Not deleted',
             body: /foreign key|violates/i.test(r.error.message)
               ? c.name + ' has been offered in a campaign, so the record cannot go. '
                 + 'Set them inactive instead.'
@@ -1617,18 +1629,29 @@
 
   $('campDelete').addEventListener('click', function () {
     var c = state.campaign;
+    /* A delete through a sheet takes the name typed back, and a refused one
+       (204 with nothing removed) is named, never filed and left as gone
+       (audit, 2026-10-03). */
     window.ADspaceConfirm.ask({
       title: 'Delete',
       body: 'Every offer, selection and booking on ' + campName(c) + ' goes with it. '
           + 'There is no restore.',
       go: 'Delete',
-      tone: 'danger'
+      tone: 'danger',
+      field: {
+        label: 'Type the campaign name to confirm',
+        placeholder: campName(c),
+        match: campName(c),
+        need: 'Type the campaign name to confirm.',
+        mismatch: 'That is not this campaign\'s name.'
+      }
     }, function () {
-      db.from('campaigns').delete().eq('id', c.id).then(function (r) {
+      db.from('campaigns').delete().eq('id', c.id).select('id').then(function (r) {
         if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+        if (!(r.data || []).length) { msg('campWorkMsg', 'Not deleted. The database refused the request.', 'err'); return; }
         log('campaign.deleted', c.title, c.invoice_no || '');
         $('campBack').click();
-      });
+      }).catch(function (e) { msg('campWorkMsg', (e && e.message) || String(e), 'err'); });
     });
   });
 
@@ -1894,8 +1917,8 @@
   function syncCampState() {
     var c = state.campaign;
     if (!c || c.state !== 'production' || state.options.some(isLive)) return;
-    db.from('campaigns').update({ state: 'open' }).eq('id', c.id).then(function (r) {
-      if (r.error) return;
+    db.from('campaigns').update({ state: 'open' }).eq('id', c.id).select('id').then(function (r) {
+      if (r.error || !(r.data || []).length) return;
       c.state = 'open';
       log('campaign.opened', c.title, 'no creators in production');
       paintCampState(c);
@@ -2665,8 +2688,9 @@
       if (!rate || rate <= 0) { msg('campWorkMsg', 'Enter a rate above zero.', 'err'); input.focus(); return; }
       if (!plats.length) { msg('campWorkMsg', 'Tick at least one platform.', 'err'); return; }
       db.from('campaign_options').update({ rate: rate, platforms: plats.join(', ') })
-        .eq('id', o.id).then(function (r) {
+        .eq('id', o.id).select('id').then(function (r) {
           if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+          if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
           log('campaign.rate', logSubject(), ((o.creators || {}).name || 'A creator') + ' · ' +
               money(o.rate) + ' → ' + money(rate) + ' · ' + plats.join(', '));
           msg('campWorkMsg', '');
@@ -2685,8 +2709,9 @@
       msg('campWorkMsg', 'All creator places are filled.', 'err');
       return;
     }
-    db.from('campaign_options').update({ state: to }).eq('id', o.id).then(function (r) {
+    db.from('campaign_options').update({ state: to }).eq('id', o.id).select('id').then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(to === 'shortlisted' ? 'campaign.keyed' : 'campaign.unkeyed', name, '');
       msg('campWorkMsg', '');
       loadOptions();
@@ -2710,10 +2735,11 @@
       go: 'Withdraw',
       tone: 'warn'
     }, function () {
-      db.from('campaign_options').delete().eq('id', o.id).then(function (r) {
+      db.from('campaign_options').delete().eq('id', o.id).select('id').then(function (r) {
         if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+        if (!(r.data || []).length) { msg('campWorkMsg', 'Not withdrawn. The database refused the request.', 'err'); return; }
         loadOptions();
-      });
+      }).catch(function (e) { msg('campWorkMsg', (e && e.message) || String(e), 'err'); });
     });
   }
 
@@ -2857,7 +2883,17 @@
       var after = function () { loadOptions(); loadRoster(paintPicker); };
       if (added.length) {
         var held = (c.creator_profiles || []).map(function (p) { return p.url; });
-        db.rpc('creator_save_profiles', { p_creator: c.id, p_profiles: held.concat(added) }).then(after, after);
+        /* The offer stands either way; a link the database refused is named
+           under it rather than dropped without a word. */
+        db.rpc('creator_save_profiles', { p_creator: c.id, p_profiles: held.concat(added) }).then(function (res) {
+          var d = (res && res.data) || {};
+          after();
+          if (res.error || d.error) {
+            msg('optionMsg', c.name + ' added at ' + money(rate) + '. ' + (res.error ? 'The link was not saved.'
+              : d.error === 'taken' ? 'Link not saved: this profile belongs to another creator: ' + (d.url || '')
+              : 'Link not saved: not a profile link: ' + (d.url || '')), 'warn');
+          }
+        }).catch(after);
       }
       else { loadOptions(); setTimeout(paintPicker, 150); }
     });
@@ -3522,8 +3558,11 @@
             }
             file.remove();
             undoBar((what ? what.trim() + ' removed.' : 'Submission removed.'), function () {
-              db.from('campaign_deliverables').update({ removed_at: null }).eq('id', id)
-                .then(function () { loadOptions(); });
+              db.from('campaign_deliverables').update({ removed_at: null }).eq('id', id).select('id')
+                .then(function (u) {
+                  if (u.error || !(u.data || []).length) msg('campWorkMsg', 'Not restored. The database refused the request.', 'err');
+                  loadOptions();
+                }).catch(function () { msg('campWorkMsg', 'Not restored. Check the connection and try again.', 'err'); });
             }, block);
           });
       }
@@ -3622,9 +3661,10 @@
     on('sendback',  function () { sendBack(o, card); });
 
     on('save', function () {
-      db.from('campaign_options').update(readCard(card)).eq('id', o.id).then(function (r) {
+      db.from('campaign_options').update(readCard(card)).eq('id', o.id).select('id').then(function (r) {
         var m = card.querySelector('[data-msg]');
         if (r.error) { m.textContent = r.error.message; m.className = 'msg err'; return; }
+        if (!(r.data || []).length) { m.textContent = 'Not saved. The database refused the request.'; m.className = 'msg err'; return; }
         m.textContent = 'Saved.'; m.className = 'msg ok';
         loadOptions();
       });
@@ -3725,8 +3765,9 @@
         }).catch(function (e) { msg('campWorkMsg', reviewSaid((e && e.message) || String(e)), 'err'); });
         return;
       }
-      db.from('campaign_options').update({ state: to }).eq('id', o.id).then(function (r) {
+      db.from('campaign_options').update({ state: to }).eq('id', o.id).select('id').then(function (r) {
         if (r.error) { msg('campWorkMsg', reviewSaid(r.error.message), 'err'); return; }
+        if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
         done();
       });
     });
@@ -3783,8 +3824,9 @@
       go: 'Revert',
       tone: 'warn'
     }, function () {
-      db.from('campaign_options').update({ state: 'option' }).eq('id', o.id).then(function (r) {
+      db.from('campaign_options').update({ state: 'option' }).eq('id', o.id).select('id').then(function (r) {
         if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+        if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
         log('campaign.unbooked', logSubject(), name);
         msg('campWorkMsg', name + ' reverted to options.', 'ok');
         loadOptions();
@@ -3802,8 +3844,9 @@
     }, function () {
       db.from('campaign_options')
         .update({ state: 'confirmed', drop_reason: null, goodwill: false })
-        .eq('id', o.id).then(function (r) {
+        .eq('id', o.id).select('id').then(function (r) {
           if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+          if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
           log('campaign.reinstated', logSubject(), name);
           msg('campWorkMsg', name + ' reinstated.', 'ok');
           loadOptions();
@@ -4036,12 +4079,16 @@
        else, so a field somebody typed in the card is not lost to the press. */
     var fields = Object.keys(patch || {}).filter(function (k) { return k !== 'state'; });
     var pre = fields.length
-      ? db.from('campaign_options').update(patch).eq('id', o.id)
-      : Promise.resolve({});
-    pre.then(function () {
+      ? db.from('campaign_options').update(patch).eq('id', o.id).select('id')
+      : Promise.resolve({ data: [{}] });
+    pre.then(function (u) {
+      /* A refused save of the typed fields stops the release: the client
+         would otherwise receive the draft without the link just typed. */
+      if (u.error || !(u.data || []).length) return { notSaved: true };
       return db.rpc('campaign_qc_pass', { p_option: o.id, p_want_second: !!want });
     }).then(function (r) {
       qcCount();
+      if (r.notSaved) { msg('qcMsg', 'Not released. The draft link was not saved; the database refused the request.', 'err'); return; }
       if (r.error) { msg('qcMsg', r.error.message, 'err'); return; }
       var out = r.data || {};
       if (out.error) { msg('qcMsg', SAID_QC[out.error] || out.error, 'err'); return; }
@@ -4076,8 +4123,9 @@
     var patch = Object.assign({}, fields || {}, { state: to });
     // Leaving `changes` ends that round, so whose it was goes with it.
     if (o.state === 'changes') patch.changes_by = null;
-    db.from('campaign_options').update(patch).eq('id', o.id).then(function (r) {
+    db.from('campaign_options').update(patch).eq('id', o.id).select('id').then(function (r) {
       if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log('campaign.stage', logSubject(), ((o.creators || {}).name || 'A creator') + ' · ' + wordFor(to));
       if (to !== 'posted') { loadOptions(); return; }
       seedPosts(o, function () { loadOptions(); });
@@ -4222,8 +4270,9 @@
     }, function (why) {
       db.from('campaign_options')
         .update({ state: kind, drop_reason: why.trim() || null, goodwill: goodwill })
-        .eq('id', o.id).then(function (r) {
+        .eq('id', o.id).select('id').then(function (r) {
           if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
+          if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
           log(kind === 'withdrawn' ? 'campaign.withdrawn' : 'campaign.replaced', name, why);
           msg('campWorkMsg', kind === 'withdrawn'
             ? name + ' withdrawn. The place is open for a replacement.'
@@ -4377,8 +4426,9 @@
   }
   function setInvoiceFile(c, url, stamp) {
     var was = { url: c.invoice_url, stamp: c.invoice_uploaded_at };
-    db.from('campaigns').update({ invoice_url: url, invoice_uploaded_at: stamp }).eq('id', c.id).then(function (r) {
+    db.from('campaigns').update({ invoice_url: url, invoice_uploaded_at: stamp }).eq('id', c.id).select('id').then(function (r) {
       if (r.error) { msg('invMsg', r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { msg('invMsg', 'Not saved. The database refused the request.', 'err'); return; }
       c.invoice_url = url; c.invoice_uploaded_at = stamp;
       log(url ? 'campaign.invoice_file' : 'campaign.invoice_removed', c.title, c.invoice_no || '');
       paintInvoice(c);
@@ -4420,8 +4470,9 @@
       var patch = { invoice_no: no };
       var stamp = null;
       if (url) { stamp = new Date().toISOString(); patch.invoice_url = url; patch.invoice_uploaded_at = stamp; }
-      return db.from('campaigns').update(patch).eq('id', c.id).then(function (r) {
+      return db.from('campaigns').update(patch).eq('id', c.id).select('id').then(function (r) {
         if (r.error) throw new Error(r.error.message);
+        if (!(r.data || []).length) throw new Error('Not saved. The database refused the request.');
         c.invoice_no = no;
         if (url) { c.invoice_url = url; c.invoice_uploaded_at = stamp; }
         log(url ? 'campaign.invoice_file' : 'campaign.invoice', c.title, no || 'cleared');
@@ -4480,24 +4531,34 @@
       person: person, source: source
     }).then(function (r) {
       if (r.error) { msg('lockMsg', r.error.message, 'err'); return; }
-      // One at a time, because these are a handful of rows and a partial
-      // failure should leave the rest locked rather than roll the lot back.
-      var left = ids.length;
-      if (!left) { shutLock(); return; }
-      ids.forEach(function (id) {
-        db.from('campaign_options')
+      /* Each booking is written and taken back; a refusal (204 with no row)
+         is named and the campaign is left as it is, never marked in
+         production over bookings that did not move (audit, 2026-10-03). */
+      if (!ids.length) { shutLock(); return; }
+      Promise.all(ids.map(function (id) {
+        return db.from('campaign_options')
           .update({ state: 'confirmed', confirmed_at: stamp, confirmed_by: person })
-          .eq('id', id).then(function () {
-            if (--left) return;
-            db.from('campaigns').update({ state: 'production' }).eq('id', state.campaign.id)
-              .then(function () {
-                state.campaign.state = 'production';
-                log('campaign.locked', state.campaign.title, picked.length + ' creators · ' + person);
-                shutLock();
-                openCampaign(state.campaign);
-              });
+          .eq('id', id).select('id');
+      })).then(function (rs) {
+        var refused = rs.filter(function (x) { return x.error || !(x.data || []).length; }).length;
+        if (refused) {
+          msg('lockMsg', refused + ' of ' + ids.length + ' not confirmed. The database refused the request.', 'err');
+          loadOptions();
+          return;
+        }
+        return db.from('campaigns').update({ state: 'production' }).eq('id', state.campaign.id).select('id')
+          .then(function (q) {
+            if (q.error || !(q.data || []).length) {
+              msg('lockMsg', q.error ? q.error.message : 'Not saved. The database refused the request.', 'err');
+              loadOptions();
+              return;
+            }
+            state.campaign.state = 'production';
+            log('campaign.locked', state.campaign.title, picked.length + ' creators · ' + person);
+            shutLock();
+            openCampaign(state.campaign);
           });
-      });
+      }).catch(function (e) { msg('lockMsg', (e && e.message) || String(e), 'err'); });
     });
   });
 
@@ -4522,7 +4583,7 @@
     var targets = state.options.filter(isLive);
     if (!targets.length) { msg('bulkMsg', 'Nothing is in production yet.', 'err'); return; }
 
-    var left = targets.length, touched = 0;
+    var left = targets.length, touched = 0, refused = 0;
     targets.forEach(function (o) {
       var patch = {};
       keys.forEach(function (k) {
@@ -4532,12 +4593,20 @@
       });
       if (!Object.keys(patch).length) { if (!--left) done(); return; }
       touched++;
-      db.from('campaign_options').update(patch).eq('id', o.id).then(function () {
+      db.from('campaign_options').update(patch).eq('id', o.id).select('id').then(function (r) {
+        if (r.error || !(r.data || []).length) { touched--; refused++; }
         if (!--left) done();
-      });
+      }).catch(function () { touched--; refused++; if (!--left) done(); });
     });
 
     function done() {
+      /* A row the database refused is counted, never applied (audit, 2026-10-03). */
+      if (refused) {
+        msg('bulkMsg', refused + ' not saved. The database refused the request.', 'err');
+        if (touched) log('campaign.bulk', state.campaign.title, touched + ' rows');
+        loadOptions();
+        return;
+      }
       msg('bulkMsg', touched
         ? 'Applied to ' + touched + (touched === 1 ? ' creator.' : ' creators.')
         : 'All rows already have these values. Use Overwrite to replace them.',

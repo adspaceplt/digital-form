@@ -684,6 +684,14 @@
     /* Person in charge moves from one colleague to another at Clients Full
        Access (`clients_owner_guard`); a record nobody holds may be given. */
     $('crmOwnerPick').disabled = Boolean(c && String(c.owner || '').trim() && !mayPart('clients', 'manage'));
+    /* Own clients only: a lead handed to someone else would leave the
+       colleague's sight the moment it is saved (`client_row_seen`), so the
+       one who keys it in holds it, and a lead nobody holds is taken with
+       Take lead. */
+    if (self && self.client_scope === 'own' && !self.is_admin) {
+      if (!c) $('crmOwnerPick').value = self.name || '';
+      $('crmOwnerPick').disabled = true;
+    }
     if (!c) $('crmSource').value = 'referral';
     $('crmMarket').value = c ? (c.market || 'MY') : 'MY';
     // The person who asked, and what for. Only a new lead needs this here.
@@ -763,8 +771,9 @@
 
     if (state.editing) {
       var id = state.editing.id;
-      db.from('clients').update(patch).eq('id', id).then(function (r) {
+      db.from('clients').update(patch).eq('id', id).select('id').then(function (r) {
         if (r.error) { msg('crmMsg', saveWord(r.error.message), 'err'); return; }
+        if (!(r.data || []).length) { msg('crmMsg', 'Not saved. The database refused the request.', 'err'); return; }
         var moved = changed(state.editing, patch, [
           ['name', 'Brand name'], ['client_code', 'Client ID'], ['industry', 'Industry'], ['market', 'Market'],
           ['owner', 'Person in charge'], ['source', 'Source'], ['commence', 'Urgency to commence', commenceWord],
@@ -799,6 +808,7 @@
 
   // ---- One client ---------------------------------------------------------
   function openClient(c, restoring) {
+    if ($('crmListMsg')) $('crmListMsg').textContent = '';
     /* Re-opening the same record is a repaint, not a navigation: logging a
        call moves the stage, which reads the client back, and that used to
        throw somebody out of the pane they were working in. */
@@ -844,6 +854,14 @@
     /* A lead nobody is in charge of is anybody's to take who may work leads. */
     $('crmTake').hidden = !(bandKey(c.stage) === 'clients.leads' && !String(c.owner || '').trim() &&
                             bandMay(c.stage, 'work') && bridge.me && bridge.me() && bridge.me().name);
+    /* Edit and Brand's Edit change the record, so they ask its band at Work
+       as the database does; a View group was offered both, and its save was
+       refused as nothing changed (audit, 2026-10-03). The ⋯ leaves when
+       nothing in it can be pressed. */
+    var canWork = bandMay(c.stage || 'lead', 'work');
+    $('crmEdit').hidden = !canWork;
+    $('crmBrandEdit').hidden = !canWork;
+    $('crmClientMenuWrap').hidden = $('crmTake').hidden && !canWork && !mayPart('clients', 'manage');
     /* There is no Account status block: the stage select in the head says
        where the record stands and the Timeline says for how long, with the
        overdue mark on the stage that is running. A rail block repeating the
@@ -1127,6 +1145,12 @@
      which is this portal's section head drawn flat rather than as a card. An
      Edit carries the pen and no chevron; a View all carries the chevron. */
   function ovSection(title, go, goWord, body, isEdit) {
+    /* A colleague who may only read the pane is offered the way to it, never
+       Edit or Manage (audit, 2026-10-03). */
+    if (goWord !== 'View all' && state.client &&
+        !(bandMay(state.client.stage || 'lead', 'work') && mayPart('clients.' + go, 'work'))) {
+      goWord = 'View all'; isEdit = false;
+    }
     return '<section class="ovsec">' +
       '<div class="ovsec-head"><h3>' + esc(title) + '</h3>' +
       '<button class="btn btn-quiet btn-sm ovgo' + (isEdit ? ' is-edit' : '') + '" type="button" data-go="' + esc(go) + '">' +
@@ -1363,6 +1387,9 @@
        who has been a client since April read "Lead, today"). The pen sits
        beside the duration, and the duration is counted from the date as it
        now stands. */
+    /* The dates are corrected at the record's own band at Work, as every
+       write to it is (`client_scope_guard`); a View group reads them. */
+    var pens = bandMay(c.stage || 'lead', 'work');
     var trip = journeyOf(c).map(function (s) {
       var span = s.days === 0 ? (s.now ? 'Today' : 'Same day') : spanWord(s.days);
       var over = s.now && isStale(c);
@@ -1371,7 +1398,7 @@
           '<span class="tl-when" data-stage-val="' + s.i + '">' + esc(niceDate(s.at)) + '</span></span>' +
         '<span class="tl-end"><span class="tl-span' + (over ? ' is-late' : '') + '">' +
           esc(span + (s.now && s.days > 0 ? ' so far' : '') + (over ? ' · Overdue' : '')) + '</span>' +
-          '<button class="tl-pen" type="button" data-stage-pen="' + s.i + '" aria-label="Edit the ' + esc(s.word) + ' date">' + PEN + '</button>' +
+          (pens ? '<button class="tl-pen" type="button" data-stage-pen="' + s.i + '" aria-label="Edit the ' + esc(s.word) + ' date">' + PEN + '</button>' : '') +
         '</span></div>';
     }).join('');
 
@@ -1388,7 +1415,7 @@
         '<span class="tl-lead"><span class="tl-what">' + esc(r[0]) + '</span>' +
           '<span class="tl-when' + (late ? ' is-late' : '') + '"' + (r[2] ? ' id="crmSinceVal"' : '') + '>' +
             esc(niceDate(r[1])) + '</span></span>' +
-        (r[2] ? '<button class="tl-pen" id="crmSinceEdit" type="button" aria-label="Edit client since">' + PEN + '</button>'
+        (r[2] && pens ? '<button class="tl-pen" id="crmSinceEdit" type="button" aria-label="Edit client since">' + PEN + '</button>'
               : '<span class="tl-span"></span>') +
         '</div>';
     }).join('');
@@ -1702,8 +1729,9 @@
         return;
       }
     }
-    db.from('clients').update({ stage: to }).eq('id', c.id).then(function (r) {
+    db.from('clients').update({ stage: to }).eq('id', c.id).select('id').then(function (r) {
       if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); openClient(c); return; }
+      if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); openClient(c); return; }
       // Read before the local copy moves on: this is how long the stage being
       // left actually ran, which is the fact worth keeping.
       var spent = ageWord(c) || 'no time';
@@ -1841,8 +1869,9 @@
     var patch = { sst_applies: $('crmSstApplies').checked };
     BILLING.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
     if (patch.legal_name) patch.legal_name = patch.legal_name.toUpperCase();
-    db.from('clients').update(patch).eq('id', state.client.id).then(function (r) {
+    db.from('clients').update(patch).eq('id', state.client.id).select('id').then(function (r) {
       if (r.error) { msg('crmBillMsg', r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { msg('crmBillMsg', 'Not saved. The database refused the request.', 'err'); return; }
       Object.keys(patch).forEach(function (k) { state.client[k] = patch[k]; });
       var still = billingMissing(state.client);
       /* Billing is its own part, so the record names what changed and never
@@ -1872,6 +1901,7 @@
     img.hidden = !url;
     if (url) img.src = url;
   }
+  if (bridge.wireLogoUpload) bridge.wireLogoUpload('crmLogoUp', 'crmLogoFile', 'crmLogo', 'crmBrandMsg', function () { return state.client; });
   if ($('crmLogo')) {
     $('crmLogo').addEventListener('input', paintLogoPreview);
     $('crmLogoPreviewImg').addEventListener('error', function () { this.hidden = true; });
@@ -1882,8 +1912,9 @@
     var patch = { brand_notes: val('crmNotes') || null };
     BRAND.forEach(function (f) { patch[f[1]] = val(f[0]) || null; });
     db.from('clients').update(patch).eq('id', state.client.id)
-      .then(function (r) {
+      .select('id').then(function (r) {
         if (r.error) { msg('crmBrandMsg', r.error.message, 'err'); return; }
+        if (!(r.data || []).length) { msg('crmBrandMsg', 'Not saved. The database refused the request.', 'err'); return; }
         Object.keys(patch).forEach(function (k) { state.client[k] = patch[k]; });
         log('client.brand', state.client.name, changed(was, patch, [
           ['website', 'Website'], ['phone', 'Phone'], ['handle_ig', 'Instagram'], ['handle_fb', 'Facebook'],
@@ -2106,8 +2137,9 @@
   }
 
   function setPortal(ct, on, invite) {
-    db.from('client_contacts').update({ portal_access: on }).eq('id', ct.id).then(function (r) {
+    db.from('client_contacts').update({ portal_access: on }).eq('id', ct.id).select('id').then(function (r) {
       if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(on ? 'contact.portal_on' : 'contact.portal_off', state.client.name + ' · ' + ct.name, ct.email || '');
       msg('crmWorkMsg', '');
       loadContacts();
@@ -2186,6 +2218,7 @@
     };
     var after = function (r) {
       if (r.error) { msg('ctMsg', r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { msg('ctMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(editingContact ? 'contact.edited' : 'contact.added', state.client.name + ' · ' + name,
         editingContact ? changed(editingContact, row, [['name', 'Name'], ['role', 'Role'], ['phone', 'Phone'],
           ['whatsapp', 'WhatsApp'], ['email', 'Email'], ['lang', 'Language'], ['is_primary', 'Main contact']]) : (row.role || ''));
@@ -2194,10 +2227,10 @@
     };
     var go = function () {
       if (editingContact) {
-        db.from('client_contacts').update(row).eq('id', editingContact.id).then(after);
+        db.from('client_contacts').update(row).eq('id', editingContact.id).select('id').then(after);
       } else {
         row.client_id = state.client.id;
-        db.from('client_contacts').insert(row).then(after);
+        db.from('client_contacts').insert(row).select('id').then(after);
       }
     };
     var othersPrimary = state.contacts.some(function (c) {
@@ -2212,7 +2245,11 @@
   }
   function makePrimary(ct) {
     clearPrimary(function () {
-      db.from('client_contacts').update({ is_primary: true }).eq('id', ct.id).then(function () {
+      db.from('client_contacts').update({ is_primary: true }).eq('id', ct.id).select('id').then(function (r) {
+        if (r.error || !(r.data || []).length) {
+          msg('crmWorkMsg', r.error ? r.error.message : 'Not saved. The database refused the request.', 'err');
+          loadContacts(); return;
+        }
         log('contact.primary', state.client.name + ' · ' + ct.name, '');
         loadContacts();
       });
@@ -2221,8 +2258,9 @@
   function archiveContact(ct, away) {
     var patch = away ? { archived_at: new Date().toISOString(), is_primary: false }
                      : { archived_at: null };
-    db.from('client_contacts').update(patch).eq('id', ct.id).then(function (r) {
+    db.from('client_contacts').update(patch).eq('id', ct.id).select('id').then(function (r) {
       if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(away ? 'contact.removed' : 'contact.restored', state.client.name + ' · ' + ct.name, '');
       if (away) undoBar(ct.name + ' removed.', function () { archiveContact(ct, false); });
       loadContacts();
@@ -2248,8 +2286,9 @@
       go: 'Delete',
       tone: 'danger'
     }, function () {
-      db.from('client_contacts').delete().eq('id', ct.id).then(function (r) {
+      db.from('client_contacts').delete().eq('id', ct.id).select('id').then(function (r) {
         if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
+        if (!(r.data || []).length) { msg('crmWorkMsg', 'Not deleted. The database refused the request.', 'err'); return; }
         log('contact.deleted', state.client.name + ' · ' + ct.name, ct.email || '');
         msg('crmWorkMsg', 'Deleted.', 'ok');
         loadContacts();
@@ -2341,16 +2380,18 @@
 
   function markDone(tc, done) {
     db.from('client_touches').update({ done_at: done ? new Date().toISOString() : null })
-      .eq('id', tc.id).then(function (r) {
+      .eq('id', tc.id).select('id').then(function (r) {
         if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
+        if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
         log(done ? 'client.action_done' : 'client.action_reopened', state.client.name, tc.next_action || '');
         loadTouches();
       });
   }
   function archiveTouch(tc, away) {
     db.from('client_touches').update({ archived_at: away ? new Date().toISOString() : null })
-      .eq('id', tc.id).then(function (r) {
+      .eq('id', tc.id).select('id').then(function (r) {
         if (r.error) { msg('crmWorkMsg', r.error.message, 'err'); return; }
+        if (!(r.data || []).length) { msg('crmWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
         log(away ? 'client.touch_removed' : 'client.touch_restored', state.client.name, KIND_WORD[tc.kind] || '');
         if (away) undoBar('Log entry removed.', function () { archiveTouch(tc, false); });
         loadTouches();
@@ -2395,14 +2436,15 @@
     };
     var after = function (r) {
       if (r.error) { msg('tcMsg', r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { msg('tcMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(editingTouch ? 'client.touch_edited' : 'client.touch', state.client.name,
           KIND_WORD[row.kind] + (row.next_action ? ' · next: ' + row.next_action : ''));
       shutTouch();
       loadTouches();
       // The first call or visit is what makes a lead contacted.
       if (!editingTouch && (state.client.stage || 'lead') === 'lead') {
-        db.from('clients').update({ stage: 'contacted' }).eq('id', state.client.id).then(function (q) {
-          if (q.error) return;
+        db.from('clients').update({ stage: 'contacted' }).eq('id', state.client.id).select('id').then(function (q) {
+          if (q.error || !(q.data || []).length) return;
           var spent = ageWord(state.client) || 'no time';
           state.client.stage = 'contacted';
           var mine = state.clients.filter(function (x) { return x.id === state.client.id; })[0];
@@ -2414,11 +2456,11 @@
     };
     if (editingTouch) {
       row.updated_at = new Date().toISOString();
-      db.from('client_touches').update(row).eq('id', editingTouch.id).then(after);
+      db.from('client_touches').update(row).eq('id', editingTouch.id).select('id').then(after);
     } else {
       row.client_id = state.client.id;
       row.by_whom = actor() || null;
-      db.from('client_touches').insert(row).then(after);
+      db.from('client_touches').insert(row).select('id').then(after);
     }
   });
 
@@ -2455,24 +2497,42 @@
     if (c.stage !== 'active') { act.innerHTML = ''; box.innerHTML = ''; return; }
     var PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>';
     var OUT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+    /* Each way into the work is offered where it can be taken: Enable Content
+       Review writes the client (Clients at Work, or Content Review settings
+       at Work, as `clients_update` asks), New campaign makes one (Campaigns
+       at Work). A View group was offered both (audit, 2026-10-03). */
+    var canReview = c.review_hidden
+      ? (bandMay(c.stage, 'work') || mayPart('review.settings', 'work'))
+      : mayPart('review', 'view');
+    var canCamp = mayPart('campaigns.campaigns', 'work');
     act.innerHTML =
-      (c.review_hidden
+      (!canReview ? ''
+        : c.review_hidden
         ? '<button class="btn btn-icon" id="crmReviewOn" type="button">' + PLUS + '<span>Enable Content Review</span></button>'
         : '<button class="btn btn-icon" id="crmGoReview" type="button"><span>Open Content Review</span>' + OUT + '</button>') +
-      '<button class="btn btn-icon" id="crmGoCampaign" type="button">' + PLUS + '<span>New campaign</span></button>';
+      (canCamp ? '<button class="btn btn-icon" id="crmGoCampaign" type="button">' + PLUS + '<span>New campaign</span></button>' : '');
     var on = $('crmReviewOn');
+    /* The way back from Remove from Content Review: never asks, and a
+       refused write is named rather than taken for done. */
     if (on) on.addEventListener('click', function () {
-      db.from('clients').update({ review_hidden: false }).eq('id', c.id).then(function () {
+      on.disabled = true;
+      db.from('clients').update({ review_hidden: false }).eq('id', c.id).select('id').then(function (r) {
+        if (r.error || !r.data || !r.data.length) {
+          on.disabled = false;
+          msg('crmWorkMsg', r.error ? r.error.message : 'Not saved. The database refused the request.', 'err');
+          return;
+        }
         c.review_hidden = false;
         log('client.review_on', c.name, '');
         location.href = '/admin/?s=review&client=' + encodeURIComponent(keyOf(c));
-      });
+      }).catch(function (e) { on.disabled = false; msg('crmWorkMsg', (e && e.message) || String(e), 'err'); });
     });
     var go = $('crmGoReview');
     if (go) go.addEventListener('click', function () {
       location.href = '/admin/?s=review&client=' + encodeURIComponent(keyOf(c));
     });
-    $('crmGoCampaign').addEventListener('click', function () {
+    var nc = $('crmGoCampaign');
+    if (nc) nc.addEventListener('click', function () {
       location.href = '/admin/?s=campaigns&new=' + encodeURIComponent(c.id);
     });
 
@@ -2824,8 +2884,9 @@
     });
   });
   function saveService(l, patch, removed) {
-    db.from('client_services').update(patch).eq('id', l.id).then(function (r) {
+    db.from('client_services').update(patch).eq('id', l.id).select('id').then(function (r) {
       if (r.error) { msg('crmServiceMsg', r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { msg('crmServiceMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(removed ? 'client.service_removed' : 'client.service_changed', state.client.name,
           l.label + (patch.state ? ' · ' + SV_STATE[patch.state][0] : ''));
       if (removed) undoBar(l.label + ' removed.', function () { saveService(l, { archived_at: null }); });
@@ -2942,8 +3003,9 @@
   });
   function saveRequest(q, patch, action) {
     patch.decided_by = actorName();
-    db.from('client_requests').update(patch).eq('id', q.id).then(function (r) {
+    db.from('client_requests').update(patch).eq('id', q.id).select('id').then(function (r) {
       if (r.error) { msg(replying ? 'rqMsg' : 'crmReqMsg', r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { msg(replying ? 'rqMsg' : 'crmReqMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(action, state.client.name, (RQ_KIND[q.kind] || q.kind) + (q.service_label ? ' · ' + q.service_label : '') +
         (patch.state ? ' · ' + RQ_STATE[patch.state][0] : '') + (patch.fee != null ? ' · ' + MON.money2(patch.fee, state.client.market) : ''));
       shutReply();
@@ -3590,8 +3652,9 @@
         go: 'Delete',
         tone: 'danger'
       }, function () {
-        db.from('services').delete().eq('slug', s.slug).then(function (r) {
+        db.from('services').delete().eq('slug', s.slug).select('slug').then(function (r) {
           if (r.error) { msg('svcListMsg', r.error.message, 'err'); return; }
+          if (!(r.data || []).length) { msg('svcListMsg', 'Not deleted. The database refused the request.', 'err'); return; }
           log('service.deleted', s.name, s.category || '');
           enterServices();
           msg('svcListMsg', 'Deleted.', 'ok');
@@ -3600,8 +3663,9 @@
     });
   }
   function patchSvc(s, patch, action) {
-    db.from('services').update(patch).eq('slug', s.slug).then(function (r) {
+    db.from('services').update(patch).eq('slug', s.slug).select('slug').then(function (r) {
       if (r.error) { msg('svcListMsg', r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { msg('svcListMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(action, s.name, '');
       enterServices();
     });
@@ -3632,6 +3696,7 @@
                 min_months: Math.max(1, Number(val('svcMin') || 1)), detail: val('svcDetail') || null };
     var after = function (r) {
       if (r.error) { msg('svcMsg', r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { msg('svcMsg', 'Not saved. The database refused the request.', 'err'); return; }
       log(editingSvc ? 'service.changed' : 'service.added', name, editingSvc
         ? changed(editingSvc, row, [['category', 'Category'], ['name', 'Name'], ['rate', 'Rate'], ['unit', 'Unit'],
             ['min_months', 'Minimum months'], ['detail', 'Inclusions']])
@@ -3639,12 +3704,12 @@
       shutSheet('svcBox'); editingSvc = null;
       enterServices();
     };
-    if (editingSvc) { db.from('services').update(row).eq('slug', editingSvc.slug).then(after); return; }
+    if (editingSvc) { db.from('services').update(row).eq('slug', editingSvc.slug).select('slug').then(after); return; }
     row.slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || ('svc-' + Date.now());
     row.position = (catalog || []).length
       ? Math.max.apply(null, catalog.map(function (s) { return Number(s.position || 0); })) + 1 : 1;
     row.active = true;
-    db.from('services').insert(row).then(after);
+    db.from('services').insert(row).select('slug').then(after);
   });
 
   // ---- Entry --------------------------------------------------------------
@@ -3684,7 +3749,13 @@
       loadTeam();
       if (key && !(state.client && (state.client.slug === key || state.client.id === key))) {
         clientByKey(key, function (c) {
-          if (!c) { state.client = null; showList(); return; }
+          /* A link to a client outside the colleague's reach (or gone) says
+             so, rather than dropping to the list as if nothing was asked. */
+          if (!c) {
+            state.client = null; showList();
+            $('crmListMsg').textContent = 'That client is outside your access, or no longer exists.';
+            return;
+          }
           openClient(c, true);
         });
         return;
@@ -3749,11 +3820,15 @@
             '<button class="btn btn-sm" data-a="done" type="button">Done</button>';
           row.querySelector('.due-client').addEventListener('click', function () { if (c) openClient(c); });
           row.querySelector('[data-a="done"]').addEventListener('click', function () {
-            db.from('client_touches').update({ done_at: new Date().toISOString() }).eq('id', t.id)
-              .then(function () {
+            db.from('client_touches').update({ done_at: new Date().toISOString() }).eq('id', t.id).select('id')
+              .then(function (r) {
+                if (r.error || !(r.data || []).length) { loadDue(); return; }
                 log('client.action_done', c ? c.name : '', t.next_action);
                 undoBar('Marked done: ' + t.next_action, function () {
-                  db.from('client_touches').update({ done_at: null }).eq('id', t.id).then(loadDue);
+                  db.from('client_touches').update({ done_at: null }).eq('id', t.id).select('id').then(function (u) {
+                    if (u.error || !(u.data || []).length) msg('crmListMsg', 'Not restored. The database refused the request.', 'warn');
+                    loadDue();
+                  }).catch(loadDue);
                 });
                 loadDue();
               });

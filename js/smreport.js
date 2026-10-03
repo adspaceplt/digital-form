@@ -2051,16 +2051,21 @@
        hides nothing. A confirmed or published report, and every version the
        client reads, carries none. */
     var WM = { draft: 'DRAFT (INTERNAL USE ONLY)', review: 'PENDING REVIEW (INTERNAL USE ONLY)' }[rep.status] || '';
+    /* On the report's own golden scale (the user, 2026-10-03: larger, calmer,
+       softer): S(4) type in the book face, a gap along the line of the size
+       times φ², rows the size times φ⁴ apart, laid at the golden angle
+       (atan 1/φ, 31.7°), each row half a step along from the last, in a
+       light ink at a tenth. Fewer, larger repeats read as one even field. */
     var watermark = function (page) {
-      var size = 11, ang = 35 * Math.PI / 180, cos = Math.cos(ang), sin = Math.sin(ang);
-      var tw = med.widthOfTextAtSize(WM, size), step = tw + 36, rowGap = 72;
+      var size = S(4), ang = Math.atan(1 / PHI), cos = Math.cos(ang), sin = Math.sin(ang);
+      var tw = book.widthOfTextAtSize(WM, size), step = tw + size * PHI * PHI, rowGap = size * Math.pow(PHI, 4);
       var reach = Math.sqrt(W * W + H * H) / 2 + step;
       var cx = W / 2, cy = H / 2;
       for (var v = -reach, k = 0; v <= reach; v += rowGap, k++) {
         for (var u = -reach - (k % 2) * step / 2; u <= reach; u += step) {
           var x = cx + u * cos - v * sin, yy = cy + u * sin + v * cos;
           if (x < -tw || x > W + tw || yy < -tw || yy > H + tw) continue;
-          page.drawText(WM, { x: x, y: yy, size: size, font: med, color: g(0.45), opacity: 0.16, rotate: PDF.degrees(35) });
+          page.drawText(WM, { x: x, y: yy, size: size, font: book, color: g(0.55), opacity: 0.1, rotate: PDF.radians(ang) });
         }
       }
     };
