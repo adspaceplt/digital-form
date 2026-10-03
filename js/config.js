@@ -19,6 +19,9 @@ window.ADSPACE_ORG = {
   email: 'advertise@adspacestudios.com',
   phone: '60187625233',
   website: 'adspacestudios.com',
+  // The office on Google Maps: the front door's Get directions and a
+  // namecard's address open it.
+  map: 'https://maps.app.goo.gl/1CmY1KvMXZ87punW7',
   bank: '',       // bank, account number and account name, on one line
   // The KOC job form a creator fills in for payment, named on their own page
   // once their work has been approved.

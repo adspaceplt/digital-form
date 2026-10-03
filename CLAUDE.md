@@ -7,7 +7,8 @@ Static site, vanilla ES5 IIFE scripts, no build step, no framework, served by
 GitHub Pages at digital.adspace.me (CNAME in the repo). Pages: `admin/`
 (console), `client/` (client portal), `creators/` (the client's creator
 selection), `creator/` (a creator's own page), `review/` (content review),
-`verify/` (public reference check), `/` and `404.html` (covers). Supabase behind
+`verify/` (public reference check), `card/` (a colleague's namecard), `/` and
+`404.html` (covers). Supabase behind
 `js/api.js`; schema in `supabase/schema.sql` (re-runnable). Migrations are
 applied by Claude through the Supabase connector (§3). A change to one function or one
 column ships as a dated file in `supabase/migrations/`: narrowly scoped, safe to
@@ -117,7 +118,8 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise |
 | `portal.js` | portal |
 | `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter |
-| `team.js` | team, perms, levels |
+| `team.js` | team, perms, levels, card |
+| `namecard.js`, `card.js` | card, then `ui` |
 | `handbook.js` | handbook |
 | `perf.js` | perfui, perfguard, perf |
 | `search.js` | search, then `ui` |
@@ -2052,6 +2054,24 @@ Each line is a rule that broke once. Its reason is in the archive.
     one date for every active colleague but the caller, refusing a past date;
   - an expired address signing in reads Access expired
     (`my_access_expired()`), not Access denied.
+- Digital namecards (`js/namecard.js`, `/card/?k=`, `2026-10-03-team-namecards.sql`):
+  - every colleague has a `card_key` (eight characters from the link keys'
+    alphabet), made by trigger and never changed, so a printed QR keeps
+    working; the card answers only while the colleague is active;
+  - `namecard_get(p_key)` (anon) answers name, position, mobile and email
+    alone (`card_email`, else the sign-in address); never the Employee ID,
+    group or access;
+  - the card is the signboard's lockup on the brand's five tones (`--nc-*`,
+    light in both themes): the tagline at 0.46 of the wordmark's size, about
+    1.64 times its width; landscape at 760 and over (`is-land`), portrait
+    under; it turns over to the person and the office (`ADSPACE_ORG`),
+    turns its front to a QR of its own address, and Save contact is a vCard;
+  - every number reads with its country code (`ADspaceCard.phone`:
+    +60 12-345 6789, +60 18-762 5233, +65 8123 4567);
+  - the colleague keeps their own mobile and card email in My namecard (the
+    account menu, `namecard_save_mine`, filed `team.edited`); the Team sheet
+    edits everybody's; a colleague's row ⋯ offers Open namecard. No bar on
+    the card's page: it is the card alone on white.
 
 ### Activity record
 - Every tag written is named in `ACTION_LABEL` (`js/admin.js`).

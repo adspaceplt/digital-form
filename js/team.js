@@ -429,10 +429,16 @@
          Standing somebody down happens once in a job, so it is here rather
          than a select on every row. A person cannot switch themselves off. */
       menuBtn(menuItem('edit', 'Edit') +
+              (m.active && m.card_key ? menuItem('card', 'Open namecard') : '') +
               (m.active && m.email ? menuItem('invite', 'Send invitation') : '') +
               (self ? '' : menuItem('state', m.active ? 'Set inactive' : (m.expired_at ? 'Extend access' : 'Set active'))));
 
     wireMenu(el);
+    var nc = el.querySelector('[data-a="card"]');
+    if (nc) nc.addEventListener('click', function () {
+      shutMenus();
+      window.open('/card/?k=' + encodeURIComponent(m.card_key), '_blank', 'noopener');
+    });
     var st = el.querySelector('[data-a="state"]');
     if (st) st.addEventListener('click', function () {
       shutMenus();
@@ -1006,6 +1012,8 @@
     $('tmUntilRow').hidden = mine;
     $('tmUntil').value = m && m.access_until ? m.access_until : '';
     $('tmUntil').min = todayMy();
+    $('tmMobile').value = m ? (m.mobile || '') : '';
+    $('tmCardEmail').value = m ? (m.card_email || '') : '';
     fillRolePick(); $('tmRole').value = m ? m.role : 'account';
     msg('tmMsg', '');
     window.ADspaceSheet.show($('teamAddBox'), {
@@ -1067,9 +1075,15 @@
     /* The HR serial is built from it, so it is letters and digits only. */
     if (staff && !/^[A-Z0-9]{3,8}$/.test(staff)) { msg('tmMsg', 'An Employee ID is 3 to 8 letters or digits.', 'err'); $('tmStaff').focus(); return; }
     if ($('tmCap').value && !(capH >= 0 && capH <= 80)) { msg('tmMsg', 'Weekly capacity is 0 to 80 hours.', 'err'); $('tmCap').focus(); return; }
+    var mobile = ($('tmMobile').value || '').trim();
+    var cardEmail = ($('tmCardEmail').value || '').trim().toLowerCase();
+    var mobDigits = mobile.replace(/\D/g, '').length;
+    if (mobile && (mobDigits < 8 || mobDigits > 15)) { msg('tmMsg', 'Enter a mobile number of 8 to 15 digits.', 'err'); $('tmMobile').focus(); return; }
+    if (cardEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(cardEmail)) { msg('tmMsg', 'Enter a valid email for the card.', 'err'); $('tmCardEmail').focus(); return; }
     var fields = { name: name, email: email, role: role, staff_code: staff || null, designation: desig || null,
                    department: $('tmDept').value || null, role_family: $('tmRoleStd').value || null,
-                   capacity_minutes_week: capH >= 0 && $('tmCap').value ? Math.round(capH * 60) : null };
+                   capacity_minutes_week: capH >= 0 && $('tmCap').value ? Math.round(capH * 60) : null,
+                   mobile: mobile || null, card_email: cardEmail || null };
     if (!$('tmUntilRow').hidden) {
       var until = $('tmUntil').value || null;
       if (until && until < todayMy() && (!editingMember || until !== editingMember.access_until)) {
@@ -1097,7 +1111,8 @@
             ['designation', 'Position'], ['department', 'Department', function (v) { return DEPT[v] || v; }],
             ['role_family', 'Role standard', function (v) { return ROLE_STD[v] || v; }],
             ['capacity_minutes_week', 'Weekly capacity', function (v) { return Math.round(Number(v) / 60) + 'h'; }],
-            ['access_until', 'Access until', dayWord]]);
+            ['access_until', 'Access until', dayWord],
+            ['mobile', 'Mobile'], ['card_email', 'Email on card']]);
           if (moved) log('team.edited', name, moved);
           msg('teamMsg', 'Saved.', 'ok');
           load();

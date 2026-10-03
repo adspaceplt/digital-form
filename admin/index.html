@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261003a">
+<link rel="stylesheet" href="/css/portal.css?v=20261003b">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -54,7 +54,7 @@
 <!-- Same encoder the client review page already uses, so a QR looks identical
      wherever it is produced. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="/js/config.js?v=20261003c"></script>
+<script src="/js/config.js?v=20261003d"></script>
 <script src="/js/captcha.js?v=20261001a"></script>
 <script src="/js/words.js?v=20261001a"></script>
 <script src="/js/copy.js?v=20261001a"></script>
@@ -313,6 +313,10 @@
           <button class="kmenu-item" id="myPerf" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16"/><path d="m8 14 3-3 3 3 5-6"/></svg>My performance
           </button>
+          <!-- The person's own card to hand a client (js/namecard.js). -->
+          <button class="kmenu-item" id="myCard" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h6M7 14h4"/></svg>My namecard
+          </button>
           <!-- A person's own way in, so it sits with who they are. Hidden
                where this browser cannot use a passkey. -->
           <button class="kmenu-item" id="acctPasskeys" type="button" hidden>
@@ -336,6 +340,48 @@
         </div>
       </div>
     </header>
+
+    <!-- ===== My namecard (js/namecard.js) =====
+         The card as a client sees it, its address to hand over, and the two
+         facts on it the person keeps themselves. -->
+    <div class="sheet" id="mycSheet" hidden>
+      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="mycTitle">
+        <div class="sheet-head">
+          <h3 id="mycTitle">My namecard</h3>
+          <button class="iconbtn" id="mycClose" type="button" aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+        <div class="sheet-body">
+          <div class="ncsheet-card" id="mycPreview"></div>
+          <div class="ncsheet-link">
+            <span class="ncsheet-url" id="mycUrl"></span>
+            <div class="ncsheet-acts">
+              <button class="btn btn-sm" id="mycCopy" type="button">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>Copy link
+              </button>
+              <a class="btn btn-sm" id="mycOpen" target="_blank" rel="noopener">Open
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>
+              </a>
+            </div>
+          </div>
+          <section class="fsec">
+            <h4 class="fsec-h">On the card</h4>
+            <div class="row fgrid">
+              <div><label class="field-label" for="mycMobile">Mobile</label>
+                <input class="input" id="mycMobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="012-345 6789"></div>
+              <div><label class="field-label" for="mycEmail">Email</label>
+                <input class="input" id="mycEmail" type="email" autocomplete="email" placeholder="email@adspacestudios.com"></div>
+            </div>
+          </section>
+          <div class="msg" id="mycMsg"></div>
+        </div>
+        <div class="sheet-foot">
+          <button class="btn btn-primary" id="mycSave" type="button">Save</button>
+          <button class="btn btn-quiet" id="mycCancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
 
     <!-- ===== Console search panel (js/search.js) =====
          A dialog over the console at a desk, and the sheet from the floor on a
@@ -3392,6 +3438,17 @@
                   <input class="input" id="tmUntil" type="date"></div>
               </div>
             </section>
+            <!-- What their digital namecard shows besides the name and
+                 position; an empty email shows the sign-in address. -->
+            <section class="fsec">
+              <h4 class="fsec-h">Namecard</h4>
+              <div class="row fgrid">
+                <div><label class="field-label" for="tmMobile">Mobile</label>
+                  <input class="input" id="tmMobile" type="tel" inputmode="tel" placeholder="012-345 6789"></div>
+                <div><label class="field-label" for="tmCardEmail">Email on card</label>
+                  <input class="input" id="tmCardEmail" type="email" placeholder="email@adspacestudios.com"></div>
+              </div>
+            </section>
             <div class="msg" id="tmMsg"></div>
           </div>
           <div class="sheet-foot">
@@ -4436,14 +4493,15 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261001a"></script>
-<script src="/js/admin.js?v=20261003a"></script>
+<script src="/js/admin.js?v=20261003b"></script>
 <script src="/js/documents.js?v=20261002a"></script>
 <script src="/js/letters.js?v=20261002a"></script>
 <script src="/js/smreport.js?v=20261002g"></script>
 <script src="/js/reports.js?v=20261002f"></script>
 <script src="/js/register.js?v=20261001c"></script>
 <script src="/js/crm.js?v=20261002a"></script>
-<script src="/js/team.js?v=20261002a"></script>
+<script src="/js/team.js?v=20261003a"></script>
+<script src="/js/namecard.js?v=20261003a"></script>
 <script src="/js/handbook.js?v=20261002a"></script>
 <script src="/js/campaigns.js?v=20261003a"></script>
 <script src="/js/ops.js?v=20261001b"></script>
