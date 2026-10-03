@@ -24,7 +24,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261003m">
+<link rel="stylesheet" href="/css/portal.css?v=20261003n">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="/js/config.js?v=20261003d"></script>
 <script src="/js/words.js?v=20261003m"></script>
@@ -64,9 +64,15 @@
 
     <!-- The name of the job, and nothing else. What the campaign is *about*
          belongs with the rest of its detail, inside the card below. -->
-    <div class="camphead">
-      <h1 id="campTitle"></h1>
-    </div>
+    <section class="panel rec-head camp-namecard" id="campHead">
+      <div class="rec-id">
+        <span class="rec-mark" id="campMark" aria-hidden="true"></span>
+        <div class="rec-who">
+          <div class="rec-name"><h1 id="campTitle"></h1></div>
+          <p class="rec-id-meta" id="campMeta"></p>
+        </div>
+      </div>
+    </section>
 
     <!-- One summary band, not two cards. What the campaign is and how far the
          selection has got are the same question asked twice, and they were two
@@ -176,6 +182,6 @@
 </div>
 
 <script src="/js/media.js?v=20261003b"></script>
-<script src="/js/creators.js?v=20261003m"></script>
+<script src="/js/creators.js?v=20261003n"></script>
 </body>
 </html>

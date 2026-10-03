@@ -35,7 +35,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261003m">
+<link rel="stylesheet" href="/css/portal.css?v=20261003n">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="/js/config.js?v=20261003d"></script>
@@ -46,7 +46,7 @@
 <script src="/js/form.js?v=20261002b"></script>
 <script src="/js/api.js?v=20261001a"></script>
 <script src="/js/media.js?v=20261003b"></script>
-<script src="/js/mockups.js?v=20261001a"></script>
+<script src="/js/mockups.js?v=20261003n"></script>
 </head>
 <body>
 
@@ -58,6 +58,18 @@
 <script src="/js/chrome.js?v=20261001a" data-kicker="Content Review" data-for data-actions="qr"></script>
 
 <main class="shell shell-review">
+  <!-- Who the page is for, as the client portal says it: the mark, the name,
+       the handle and how much waits on the reader (2026-10-03). -->
+  <section class="panel rec-head" id="rvHead" hidden>
+    <div class="rec-id">
+      <span class="rec-mark" id="rvMark" aria-hidden="true"></span>
+      <div class="rec-who">
+        <div class="rec-name"><h2 id="rvName"></h2></div>
+        <p class="rec-id-meta" id="rvMeta"></p>
+      </div>
+      <div class="rec-ctl"><span class="tone" id="rvState" hidden></span></div>
+    </div>
+  </section>
   <nav class="tabrow stagestrip" id="stageStrip" role="tablist" aria-label="Review stage" hidden></nav>
   <div class="filterbar" id="filterbar" hidden>
     <select class="select" id="formatFilter" aria-label="Filter by format">
@@ -134,6 +146,6 @@
 </div>
 
 <script src="/js/swipe.js?v=20261001a"></script>
-<script src="/js/review.js?v=20261003a"></script>
+<script src="/js/review.js?v=20261003n"></script>
 </body>
 </html>

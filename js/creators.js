@@ -400,6 +400,20 @@
     var title = String(((lang === 'zh' && c.title_zh) ? c.title_zh : c.title) || '').trim();
     if (!title || title === '0' || title === 'null' || title === 'undefined') title = t().untitled;
     $('campTitle').textContent = title;
+    /* The client portal's name card (2026-10-03): the client's mark, the
+       job's name, and whose it is under it; the bar no longer names them. */
+    var mark = $('campMark');
+    if (mark) {
+      var ini = window.ADspaceState ? window.ADspaceState.initials(client.name || '') : '';
+      if (client.logo_url) {
+        mark.className = 'rec-mark has-logo';
+        mark.innerHTML = '<img src="' + esc(client.logo_url) + '" alt="">';
+        mark.querySelector('img').addEventListener('error', function () { mark.className = 'rec-mark'; mark.textContent = ini; });
+      } else { mark.className = 'rec-mark'; mark.textContent = ini; }
+    }
+    if ($('campMeta')) $('campMeta').textContent = client.name || '';
+    var forBar = document.querySelector('.brand-for');
+    if (forBar) forBar.hidden = true;
     var purpose = (lang === 'zh' && c.purpose_zh) ? c.purpose_zh : c.purpose;
     $('campPurpose').textContent = purpose || '';
     $('campPurpose').hidden = !purpose;

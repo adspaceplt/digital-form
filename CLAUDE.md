@@ -117,7 +117,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `creators.js`, `decide.js` | cprod, bar, backup, client, canvas |
 | `creator.js` | creator, cprofile, results, push |
 | `push.js`, `push-sw.js`, `supabase/functions/push-send/` | push, pushcrypto, sql |
-| `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise |
+| `review.js`, `mockups.js` | canvas, newbadge, regress, sets, setdel, revise, pairs |
 | `portal.js` | portal |
 | `documents.js`, `letters.js`, `register.js`, `verify.js` | docs, letter |
 | `team.js` | team, perms, levels, card, scope, perfui, viewonly |
@@ -806,7 +806,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     BILLING COLUMNS section again. The stand-in refuses `*` and every
     billing column, top level or embedded.
 - One set of handles and one logo per client:
-  - Brand and Content Review settings both edit `handle_*` and `logo_url`.
+  - Brand and Content Review settings both edit `handle_*` and `logo_url`;
+    each logo field has Upload (`wireLogoUpload`): the picture is drawn down
+    to 800px in its own format and stored under the client's folder by
+    `sign-upload`, so the address never expires as a Facebook picture's does.
   - `social_*` is backfilled by `handle_of()` (a bare handle, or a URL's last
     segment; nothing where that segment is a route) and never written.
   - `profileUrl()` derives the links.
@@ -1001,6 +1004,25 @@ Each line is a rule that broke once. Its reason is in the archive.
   a playing video on in its card.
 - The cover image card names itself once, in its head, and ends under its
   decision (`.is-cover`).
+- A card's head is washed in its platform's pastel with its words in the
+  matching ink (`--plat-ig`, `--plat-tt` a mid grey, `--plat-xhs` rose,
+  `--plat-fb`; light only), one line at every width (the title gives way
+  first), and gives the shape as a ratio (`ADspaceMockups.ratio`: the file's
+  size, within 3% of a common ratio reads as it), never pixels.
+- A reel and its cover are one card (`.cardpair`): the reel's head, Reel and
+  Cover as a view strip with each half's state in its tab, then the half on
+  show. The cover names its reel (`posts.cover_for`, no foreign key; sent by
+  `get_review_feed`, `2026-10-03-reel-cover-pairs.sql`); each half is still its
+  own post, decision, round and canvas, the stage strip counts posts, and a
+  pair shows on a half that matches the stage. A pairing is not a revision.
+  Add assets pairs a cover with a video by file name (`launch.mp4`,
+  `launch-cover.jpg`), else the nearest video before it, as a Cover for choice
+  kept by hand; the set page names a cover's video and its ⋯ Pair with video
+  changes or clears it (`post.edited`).
+- The client's page opens on the client portal's name card (`#rvHead`: mark,
+  name, handle and post count, `N to review` counted at load); the bar no
+  longer names the client. The creator selection page opens on the same card
+  (`#campHead`: the client's mark, the campaign, the client).
 - A post is revised in place (`2026-09-30-post-revisions.sql`): a change to
   its file, copy or title after the client decided on its round is the next
   round (trigger `posts_revision`; `reviews.round` stamped by

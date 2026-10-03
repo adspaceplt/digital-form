@@ -511,13 +511,13 @@
       tabShown('meetings', list.length > 0);
       paintNextMeeting(w, list);
       if (!list.length) { box.innerHTML = ''; return; }
-      var tb = table('<div class="crm-head svc-row doc-row"><span>' + esc(w.meeting) + '</span><span class="svc-rate">' + esc(w.when) +
+      var tb = table('<div class="crm-head svc-row doc-row meet-row"><span>' + esc(w.meeting) + '</span><span class="svc-rate">' + esc(w.when) +
         '</span><span>' + esc(w.state) + '</span><span></span></div>');
       var now = Date.now();
       list.forEach(function (v) {
         var ahead = new Date(v.at).getTime() + (Number(v.minutes) || 30) * 60000 > now;
         var row = document.createElement('div');
-        row.className = 'svc-row doc-row';
+        row.className = 'svc-row doc-row meet-row';
         var items = ahead && v.link ? [['join', w.join]] : [];
         row.innerHTML =
           '<span class="svc-name"><b>' + esc(meetAgenda(w, v.period)) + '</b><small>' + esc((w.channel[v.channel] || w.channel.other)) + '</small></span>' +

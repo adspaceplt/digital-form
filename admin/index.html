@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261003m">
+<link rel="stylesheet" href="/css/portal.css?v=20261003n">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -74,7 +74,7 @@
 <script src="/js/push.js?v=20261001a"></script>
 <script src="/js/money.js?v=20261001a"></script>
 <script src="/js/media.js?v=20261003b"></script>
-<script src="/js/mockups.js?v=20261001a"></script>
+<script src="/js/mockups.js?v=20261003n"></script>
 </head>
 <body>
 
@@ -832,7 +832,9 @@
                       <span class="logopreview" id="crmLogoPreview" title="How it will look as a profile picture">
                         <img id="crmLogoPreviewImg" alt="" hidden>
                       </span>
-                      <input class="input" id="crmLogo" type="url" placeholder="https://adspace.me/logo.png"></div>
+                      <input class="input" id="crmLogo" type="url" placeholder="https://adspace.me/logo.png">
+                      <button class="btn btn-sm" id="crmLogoUp" type="button" data-need="clients:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg>Upload</button>
+                      <input id="crmLogoFile" type="file" accept="image/png,image/jpeg,image/webp" hidden data-nodraft></div>
                   </div>
                 </div>
                 <div class="row">
@@ -1503,12 +1505,14 @@
           <h4 class="fsec-h">Logo and access code</h4>
           <div class="row">
             <div>
-              <label class="field-label" for="eLogo">Logo URL</label>
+              <label class="field-label" for="eLogo">Logo</label>
               <div class="logorow">
                 <span class="logopreview" id="logoPreview" title="How it will look as a profile picture">
                   <img id="logoPreviewImg" alt="" hidden>
                 </span>
                 <input class="input" id="eLogo" placeholder="https://adspace.me/logo.png">
+                <button class="btn btn-sm" id="eLogoUp" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M5 20h14"/></svg>Upload</button>
+                <input id="eLogoFile" type="file" accept="image/png,image/jpeg,image/webp" hidden data-nodraft>
               </div>
             </div>
             <div>
@@ -4559,13 +4563,13 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261001a"></script>
-<script src="/js/admin.js?v=20261003m"></script>
+<script src="/js/admin.js?v=20261003n"></script>
 <script src="/js/documents.js?v=20261002a"></script>
 <script src="/js/letters.js?v=20261002a"></script>
 <script src="/js/smreport.js?v=20261002g"></script>
 <script src="/js/reports.js?v=20261002f"></script>
 <script src="/js/register.js?v=20261001c"></script>
-<script src="/js/crm.js?v=20261003m"></script>
+<script src="/js/crm.js?v=20261003n"></script>
 <script src="/js/team.js?v=20261003m"></script>
 <script src="/js/namecard.js?v=20261003f"></script>
 <script src="/js/handbook.js?v=20261002a"></script>

@@ -2277,8 +2277,47 @@
     return {
       placement: guessPlacement(info),
       media: [media],
-      caption: '', caption_zh: '', title: '', showZh: false
+      caption: '', caption_zh: '', title: '', showZh: false,
+      /* Which reel a cover is for (2026-10-03): its own key, and the key of
+         the reel draft it belongs to, matched by name on arrival. */
+      key: 'd' + Math.random().toString(36).slice(2, 10),
+      name: (media.local && media.local.file && media.local.file.name) || (info && info.name) || '',
+      coverFor: null
     };
+  }
+
+  /* A cover and its reel go up together and show as one card. A cover finds
+     its reel by name first (`launch.mp4` and `launch-cover.jpg`, or
+     `launch_thumb.png`), else it takes the nearest video before it that has
+     no cover yet. A pick by hand is kept. */
+  function isCoverDraft(d) { return d.placement === 'cover:image'; }
+  function isReelDraft(d) { return d.media.length === 1 && d.media[0].type === 'video'; }
+  function stemOf(name) {
+    return String(name || '').toLowerCase().replace(/\.[a-z0-9]+$/, '')
+      .replace(/[\s._-]*(cover|thumb|thumbnail|poster)[\s._-]*\d*$/, '').replace(/[\s._-]+$/, '');
+  }
+  function autoPair() {
+    var reels = state.drafts.filter(isReelDraft);
+    var taken = {};
+    state.drafts.forEach(function (d) {
+      if (!isCoverDraft(d)) { d.coverFor = null; return; }
+      if (d.coverFor && reels.some(function (r) { return r.key === d.coverFor; })) taken[d.coverFor] = true;
+      else d.coverFor = null;
+    });
+    state.drafts.forEach(function (d, i) {
+      if (!isCoverDraft(d) || d.coverFor || d.pairedByHand) return;
+      var stem = stemOf(d.name);
+      var byName = stem && reels.filter(function (r) { return !taken[r.key] && stemOf(r.name) === stem; })[0];
+      var before = null;
+      if (!byName) {
+        for (var j = i - 1; j >= 0; j--) {
+          var r = state.drafts[j];
+          if (isReelDraft(r) && !taken[r.key]) { before = r; break; }
+        }
+      }
+      var got = byName || before;
+      if (got) { d.coverFor = got.key; taken[got.key] = true; }
+    });
   }
 
   function hasLocal() {
@@ -2548,9 +2587,10 @@
     });
   }
 
-  function storeBlob(blob, ext, contentType, onProgress) {
+  function storeBlob(blob, ext, contentType, onProgress, clientId) {
+    var cid = clientId || state.client.id;
     if (!usingS3()) {
-      var path = state.client.id + '/' + crypto.randomUUID() + '.' + (ext || 'bin');
+      var path = cid + '/' + crypto.randomUUID() + '.' + (ext || 'bin');
       return db.storage.from(cfg.storageBucket)
         .upload(path, blob, { cacheControl: '31536000', contentType: contentType || undefined })
         .then(function (r) {
@@ -2562,7 +2602,7 @@
     // Ask our own function to sign one upload, then send the file straight to
     // S3. The file never passes through Supabase, so there is no size ceiling.
     return db.functions.invoke(cfg.s3.functionName || 'sign-upload', {
-      body: { ext: ext || 'bin', clientId: state.client.id, size: blob.size }
+      body: { ext: ext || 'bin', clientId: cid, size: blob.size }
     }).then(function (r) {
       if (r.error) {
         var hint = /failed to send|fetch/i.test(r.error.message || '')
@@ -2597,6 +2637,65 @@
       });
     });
   }
+
+  /* A client's logo kept in our own storage (2026-10-03): a Facebook
+     profile picture's address expires, so the mark broke on every mockup
+     after a while. The picture is drawn down to 800px on its longer side in
+     its own format (a PNG keeps its transparency) and stored under the
+     client's folder like any upload; the address saved is ours and never
+     expires. */
+  function uploadLogo(file, clientId) {
+    if (!file || !clientId) return Promise.reject(new Error('Choose an image.'));
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) return Promise.reject(new Error('Choose a PNG, JPEG or WebP image.'));
+    if (file.size > 10 * 1024 * 1024) return Promise.reject(new Error('Choose an image under 10 MB.'));
+    var png = file.type !== 'image/jpeg';
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        var k = Math.min(1, 800 / Math.max(img.naturalWidth, img.naturalHeight));
+        var cv = document.createElement('canvas');
+        cv.width = Math.max(1, Math.round(img.naturalWidth * k));
+        cv.height = Math.max(1, Math.round(img.naturalHeight * k));
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(url);
+        cv.toBlob(function (b) {
+          if (!b) { reject(new Error('That image could not be read.')); return; }
+          resolve(b);
+        }, png ? 'image/png' : 'image/jpeg', 0.9);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('That image could not be read.')); };
+      img.src = url;
+    }).then(function (b) {
+      return storeBlob(b, png ? 'png' : 'jpg', png ? 'image/png' : 'image/jpeg', null, clientId);
+    });
+  }
+  /* One wiring for every logo field: the Upload button beside it opens its
+     file picker, and the stored address is written into the field, which
+     the sheet's own Save then keeps. */
+  function wireLogoUpload(btnId, fileId, fieldId, msgId, clientOf) {
+    var btn = $(btnId), file = $(fileId);
+    if (!btn || !file) return;
+    btn.addEventListener('click', function () { file.value = ''; file.click(); });
+    file.addEventListener('change', function () {
+      var f = file.files && file.files[0];
+      var c = clientOf();
+      if (!f || !c) return;
+      btn.disabled = true;
+      msg(msgId, 'Uploading…');
+      uploadLogo(f, c.id).then(function (u) {
+        btn.disabled = false;
+        var field = $(fieldId);
+        field.value = u;
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+        msg(msgId, 'Uploaded. Save to keep it.', 'ok');
+      }).catch(function (e) {
+        btn.disabled = false;
+        msg(msgId, (e && e.message) || 'Not uploaded.', 'err');
+      });
+    });
+  }
+  wireLogoUpload('eLogoUp', 'eLogoFile', 'eLogo', 'logoNote', function () { return state.client; });
 
   window.__hasFastStart = hasFastStart;   // used by the test harness
 
@@ -3046,6 +3145,7 @@
   });
 
   function renderDrafts() {
+    autoPair();
     saveDrafts();
     var box = $('drafts');
     box.innerHTML = '';
@@ -3089,6 +3189,7 @@
             '<span class="muted">Change if wrong</span>' +
             '<button class="linkbtn" data-f="remove" type="button">Remove</button>' +
           '</div>' +
+          (isCoverDraft(d) ? coverForField(d) : '') +
           (isXhs ? '<input class="input" data-f="title" placeholder="Note title 标题" value="' +
                    esc(d.title) + '">' : '') +
           '<textarea class="textarea" data-f="caption" placeholder="Caption">' +
@@ -3125,9 +3226,29 @@
       if (addzh) addzh.addEventListener('click', function () { d.showZh = true; renderDrafts(); });
       var title = row.querySelector('[data-f="title"]');
       if (title) title.addEventListener('input', function (e) { d.title = e.target.value; queueSave(); });
+      var cf = row.querySelector('[data-f="coverfor"]');
+      if (cf) cf.addEventListener('change', function (e) {
+        d.coverFor = e.target.value || null; d.pairedByHand = true; renderDrafts();
+      });
 
       box.appendChild(row);
     });
+  }
+
+  /* A cover's reel, as a choice among the videos being added (each named by
+     its place and file), or none. */
+  function coverForField(d) {
+    var n = 0;
+    var opts = state.drafts.map(function (r) {
+      if (!isReelDraft(r)) return '';
+      n++;
+      var taken = state.drafts.some(function (o) { return o !== d && isCoverDraft(o) && o.coverFor === r.key; });
+      if (taken && d.coverFor !== r.key) return '';
+      return '<option value="' + r.key + '"' + (d.coverFor === r.key ? ' selected' : '') + '>' +
+        esc('Video ' + n + (r.name ? ' · ' + r.name : '')) + '</option>';
+    }).join('');
+    return '<label class="draft-pair"><span class="field-label">Cover for</span>' +
+      '<select class="select" data-f="coverfor"><option value="">No video</option>' + opts + '</select></label>';
   }
 
   $('combineBtn').addEventListener('click', function () {
@@ -3196,8 +3317,24 @@
             position: next + i
           };
         });
-        db.from('posts').insert(rows).then(function (res) {
+        db.from('posts').insert(rows).select('id, position').then(function (res) {
           if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
+          /* Each cover names its reel once both rows exist. */
+          var idAt = {};
+          (res.data || []).forEach(function (x) { idAt[x.position] = x.id; });
+          var keyAt = {};
+          state.drafts.forEach(function (d, i) { keyAt[d.key] = next + i; });
+          var pairs = [];
+          state.drafts.forEach(function (d, i) {
+            if (isCoverDraft(d) && d.coverFor && idAt[next + i] && idAt[keyAt[d.coverFor]]) {
+              pairs.push(db.from('posts').update({ cover_for: idAt[keyAt[d.coverFor]] }).eq('id', idAt[next + i]).select('id'));
+            }
+          });
+          if (pairs.length) Promise.all(pairs).then(function (out) {
+            var bad = out.filter(function (o) { return o.error || !o.data || !o.data.length; }).length;
+            if (bad) msg('setMsg', bad + (bad === 1 ? ' cover was' : ' covers were') + ' added unpaired. Pair it from its ⋯.', 'warn');
+            loadPosts();
+          });
           logAction('post.added', state.client.name + ' — ' + (state.batch.title || ''),
             rows.length + (rows.length === 1 ? ' post' : ' posts'));
           clearDrafts();
@@ -3308,10 +3445,18 @@
         ' <span class="tab-n">' + counts[s[0]] + '</span></button>';
     }).join('');
     box.innerHTML = '';
+    /* The set's videos, named by their place in it, for a cover to belong to. */
+    var vn = 0, videos = [];
+    v.posts.forEach(function (p) {
+      var m0 = (p.media || [])[0];
+      if (p.platform !== 'cover' && (p.media || []).length === 1 && m0 && m0.type === 'video') {
+        vn++; videos.push({ id: p.id, label: 'Video ' + vn + ' · ' + MK.label(p) });
+      }
+    });
     v.posts.forEach(function (p) {
       var review = v.latest[p.id];
       if (pick !== 'all' && postStageOf(review) !== pick) return;
-      box.appendChild(savedRow(p, review, { asked: v.asked[p.id], kept: v.kept[p.id] || [], earlier: (v.earlier || {})[p.id] }));
+      box.appendChild(savedRow(p, review, { asked: v.asked[p.id], kept: v.kept[p.id] || [], earlier: (v.earlier || {})[p.id], videos: videos }));
     });
     if (!box.children.length) UI.emptyLine(box, 'No posts.');
   }
@@ -3384,6 +3529,7 @@
      It needs the same marks, the same activity record and the same idea of who
      is signed in, so those are lent rather than written twice. */
   window.ADspaceAdmin = {
+    wireLogoUpload: wireLogoUpload,
     ICON: ICON,
     hold: hold,
     iconBtn: iconBtn,
@@ -3530,6 +3676,11 @@
       ADspaceMedia.sources(m.url).replace(/src="([^"#]+)"/g, 'src="$1#t=0.1"') + '</video>';
   }
 
+  function coverWord(p, videos) {
+    var v = (videos || []).filter(function (x) { return x.id === p.cover_for; })[0];
+    return v ? 'Cover for ' + v.label : 'No video';
+  }
+
   function savedRow(p, review, extra) {
     extra = extra || {};
     var row = document.createElement('div');
@@ -3552,7 +3703,9 @@
           '<span class="saved-top"><b>' + MK.label(p) + '</b>' + statusMark(review) + '</span>' +
           '<span class="saved-meta">' +
             (round > 1 ? '<span class="saved-round">Revision ' + round + '</span><span class="sep">·</span>' : '') +
-            '<span class="spec">' + esc(fileLabel(m)) + '</span></span>' +
+            '<span class="spec">' + esc(fileLabel(m)) + '</span>' +
+            (p.platform === 'cover' ? '<span class="sep">·</span><span>' + esc(coverWord(p, extra.videos)) + '</span>' : '') +
+            '</span>' +
           // A post with no copy yet says nothing rather than saying "No caption".
           ((p.caption || p.caption_zh)
             ? '<span class="muted">' + esc((p.caption || p.caption_zh).slice(0, 90)) + '</span>'
@@ -3579,6 +3732,8 @@
           '<button class="kmenu-btn" data-a="menu" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More for ' + esc(MK.label(p)) + '">' + DOTS + '</button>' +
           '<div class="kmenu" data-menu hidden role="menu">' +
             '<button class="kmenu-item" data-a="edit" data-need="review.sets:work" type="button" role="menuitem">Edit</button>' +
+            (p.platform === 'cover' && (extra.videos || []).length
+              ? '<button class="kmenu-item" data-a="pair" data-need="review.sets:work" type="button" role="menuitem">Pair with video</button>' : '') +
             /* The client said yes by word of mouth: the team approves the
                round on show for them (the user, 2026-10-01). Its way back is
                Revert confirmation; a client's own approval is asked again. */
@@ -3605,6 +3760,29 @@
         window.ADspaceMenu.place(mbtn, menu);
       });
       row.querySelector('[data-a="edit"]').addEventListener('click', function () { shutPostMenus(); paintEdit(); });
+      /* A cover's video, chosen again or cleared: the client's page shows the
+         two as one card with a tab each. Not a revision: the file is the same. */
+      var pairBtn = row.querySelector('[data-a="pair"]');
+      if (pairBtn) pairBtn.addEventListener('click', function () {
+        shutPostMenus();
+        var choices = [['', 'No video']].concat((extra.videos || []).map(function (x) { return [x.id, x.label]; }));
+        window.ADspaceConfirm.ask({
+          title: 'Pair with video',
+          body: 'The client sees the cover and its video as one card, each decided on its own.',
+          go: 'Save',
+          field: { label: 'Video', choices: choices, value: p.cover_for || '', required: false }
+        }, function (val) {
+          var to = (val && typeof val === 'object' ? val[0] : val) || null;
+          db.from('posts').update({ cover_for: to }).eq('id', p.id).select('id').then(function (res) {
+            if (res.error) { msg('setMsg', res.error.message, 'err'); return; }
+            if (!(res.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
+            logAction('post.edited', state.client.name + ' — ' + (state.batch.title || ''),
+              'Cover image: ' + (to ? 'paired with ' + coverWord({ cover_for: to }, extra.videos).replace(/^Cover for /, '') : 'unpaired'));
+            msg('setMsg', 'Saved.', 'ok');
+            loadPosts();
+          }).catch(function (e) { msg('setMsg', (e && e.message) || 'Not saved.', 'err'); });
+        });
+      });
 
       /* Accepting the client's copy is an edit after their decision, so the
          database makes it the next round and keeps this one. */

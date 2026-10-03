@@ -1901,6 +1901,7 @@
     img.hidden = !url;
     if (url) img.src = url;
   }
+  if (bridge.wireLogoUpload) bridge.wireLogoUpload('crmLogoUp', 'crmLogoFile', 'crmLogo', 'crmBrandMsg', function () { return state.client; });
   if ($('crmLogo')) {
     $('crmLogo').addEventListener('input', paintLogoPreview);
     $('crmLogoPreviewImg').addEventListener('error', function () { this.hidden = true; });

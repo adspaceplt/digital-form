@@ -254,12 +254,14 @@
        the next load, so a card never vanishes from under the hand that just
        approved it (the user, 2026-09-30). */
     card.dataset.stage = stageOf(post.review);
+    /* The head is washed in the platform's own pastel (2026-10-03). */
+    card.dataset.plat = MK.tint(post);
 
     var head = document.createElement('div');
     head.className = 'card-head';
     head.innerHTML =
       '<span class="card-title">' + MK.label(post) + '</span>' +
-      '<span class="card-dims">' + MK.dimensions(post) + '</span>' +
+      '<span class="card-dims">' + MK.ratio(post) + '</span>' +
       '<span class="badge"></span>';
     card.appendChild(head);
 
@@ -756,6 +758,73 @@
     }
   }
 
+  /* ---- A reel with its cover --------------------------------------------
+     One frame, the reel's head, then Reel and Cover as the view strip with
+     each half's own state in its tab, then the half on show. Both halves
+     stay whole cards (their own decision, their own canvas), so nothing
+     about deciding changes; the tab only chooses which one is in view. */
+  function pairCard(reel, reelCard, coverCard) {
+    var pair = document.createElement('div');
+    pair.className = 'cardpair';
+    pair.dataset.plat = MK.tint(reel);
+    var head = document.createElement('div');
+    head.className = 'card-head pair-head';
+    head.innerHTML = '<span class="card-title">' + escapeHtml(MK.label(reel)) + '</span>' +
+      '<span class="card-dims">' + escapeHtml(MK.ratio(reel)) + ' · with cover</span>';
+    var tabs = document.createElement('div');
+    tabs.className = 'tabrow pairtabs';
+    tabs.setAttribute('role', 'tablist');
+    tabs.setAttribute('aria-label', 'Reel or cover');
+    tabs.innerHTML =
+      '<button class="tab is-on" type="button" role="tab" aria-selected="true" data-half="0">Reel <span class="pair-chip"></span></button>' +
+      '<button class="tab" type="button" role="tab" aria-selected="false" tabindex="-1" data-half="1">Cover <span class="pair-chip"></span></button>';
+    reelCard.classList.add('in-pair'); coverCard.classList.add('in-pair');
+    coverCard.hidden = true;
+    pair.appendChild(head); pair.appendChild(tabs);
+    pair.appendChild(reelCard); pair.appendChild(coverCard);
+    pair.__halves = [reelCard, coverCard];
+    pair.__half = 0;
+    tabs.addEventListener('click', function (e) {
+      var b = e.target.closest('.tab');
+      if (b) showHalf(pair, Number(b.getAttribute('data-half')), true);
+    });
+    tabs.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      showHalf(pair, pair.__half ? 0 : 1, true);
+      tabs.querySelectorAll('.tab')[pair.__half].focus();
+    });
+    syncPair(pair);
+    /* A decision repaints a half's badge; its tab follows. */
+    if (window.MutationObserver) {
+      new MutationObserver(function () { syncPair(pair); })
+        .observe(pair, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class'] });
+    }
+    return pair;
+  }
+  function showHalf(pair, n, byHand) {
+    pair.__half = n;
+    pair.__halves.forEach(function (c, i) { c.hidden = i !== n || c.__filtered === true; });
+    Array.prototype.forEach.call(pair.querySelectorAll('.pairtabs .tab'), function (b, i) {
+      b.classList.toggle('is-on', i === n);
+      b.setAttribute('aria-selected', String(i === n));
+      b.tabIndex = i === n ? 0 : -1;
+    });
+    if (byHand) requestAnimationFrame(remeasure);
+  }
+  function syncPair(pair) {
+    var chips = pair.querySelectorAll('.pairtabs .pair-chip');
+    pair.__halves.forEach(function (c, i) {
+      var badge = c.querySelector('.badge');
+      var chip = chips[i];
+      if (!badge || !chip) return;
+      var word = badge.textContent.trim();
+      var cls = 'pair-chip ' + badge.className.replace(/\bbadge\b/, '').trim();
+      if (chip.textContent !== word) chip.textContent = word;
+      if (chip.className !== cls) chip.className = cls;
+    });
+  }
+
   // ---- Build ---------------------------------------------------------------
   function build() {
     document.body.classList.remove('is-plain');
@@ -792,9 +861,26 @@
 
       var grid = document.createElement('div');
       grid.className = 'grid';
+      /* A reel and the cover made for it are one card with two tabs
+         (2026-10-03: thirty reels with covers read as sixty items). Each
+         half is still its own post with its own decision; the cover names
+         its reel (`posts.cover_for`), and one the set does not hold stands
+         alone as before. */
+      var byId = {}, coverOf = {};
+      batch.posts.forEach(function (p) { byId[p.id] = p; });
+      batch.posts.forEach(function (p) {
+        if (p.platform === 'cover' && p.cover_for && byId[p.cover_for] && !coverOf[p.cover_for]) coverOf[p.cover_for] = p;
+      });
+      var paired = {};
+      Object.keys(coverOf).forEach(function (k) { paired[coverOf[k].id] = true; });
       batch.posts.forEach(function (post) {
         formats[MK.key(post)] = MK.label(post);
-        grid.appendChild(postCard(post, feed.client));
+        if (paired[post.id]) return;
+        var card = postCard(post, feed.client);
+        var cover = coverOf[post.id];
+        if (!cover) { grid.appendChild(card); return; }
+        formats[MK.key(cover)] = MK.label(cover);
+        grid.appendChild(pairCard(post, card, postCard(cover, feed.client)));
       });
       body.appendChild(grid);
       section.appendChild(body);
@@ -909,6 +995,43 @@
     if (section) paintFold(section, false);
   }
 
+  /* The name card: the client's mark, name, handle and what waits on them,
+     counted at load as the stage strip is. The bar no longer names the
+     client: the card does, once. */
+  function paintHead(f) {
+    var c = f.client || {};
+    var mark = $('rvMark');
+    if (c.logo_url) {
+      mark.className = 'rec-mark has-logo';
+      mark.innerHTML = '<img src="' + escapeHtml(c.logo_url) + '" alt="">';
+      var im = mark.querySelector('img');
+      im.addEventListener('error', function () {
+        mark.className = 'rec-mark'; mark.textContent = window.ADspaceState ? window.ADspaceState.initials(c.name) : '';
+      });
+    } else {
+      mark.className = 'rec-mark';
+      mark.textContent = window.ADspaceState ? window.ADspaceState.initials(c.name) : '';
+    }
+    $('rvName').textContent = c.name || '';
+    var hs = c.handles || {};
+    var handle = hs.instagram || hs.tiktok || hs.xhs || hs.facebook || '';
+    var posts = 0, pending = 0;
+    (f.batches || []).forEach(function (b) {
+      (b.posts || []).forEach(function (p) { posts++; if (stageOf(p.review) === 'pending') pending++; });
+    });
+    var bits = [];
+    if (handle) bits.push('@' + String(handle).replace(/^@/, ''));
+    bits.push(posts + (posts === 1 ? ' post' : ' posts'));
+    $('rvMeta').textContent = bits.join(' · ');
+    var st = $('rvState');
+    st.hidden = !pending;
+    st.textContent = pending + ' to review';
+    st.className = 'tone is-warn';
+    $('rvHead').hidden = false;
+    var forBar = document.querySelector('.brand-for');
+    if (forBar) forBar.hidden = true;
+  }
+
   function applyFilters() {
     var fmt = $('formatFilter').value;
     var bat = $('batchFilter').value;
@@ -920,8 +1043,16 @@
       section.querySelectorAll('.card').forEach(function (card) {
         var ok = batchOk && (fmt === 'all' || card.dataset.format === fmt) &&
           (!stage || stage === 'all' || card.dataset.stage === stage);
-        card.hidden = !ok;
+        card.__filtered = !ok;
+        if (!card.classList.contains('in-pair')) card.hidden = !ok;
         if (ok) visibleHere++;
+      });
+      /* A pair shows while either half does, on a half that does. */
+      section.querySelectorAll('.cardpair').forEach(function (pair) {
+        var h = pair.__halves;
+        var any = !h[0].__filtered || !h[1].__filtered;
+        pair.hidden = !any;
+        if (any) showHalf(pair, h[pair.__half].__filtered ? (pair.__half ? 0 : 1) : pair.__half, false);
       });
       section.hidden = visibleHere === 0;
       if (!section.hidden) paintFold(section, false);
@@ -1001,8 +1132,8 @@
       var M = window.ADspaceMedia;
       return (M && M.pass ? M.pass({ review: token, passcode: passcode || null }) : Promise.resolve()).then(function () {
         $('cover').hidden = true;
-        document.querySelector('.brand-for').hidden = false;
         $('clientName').textContent = feed.client.name;
+        paintHead(feed);
         // The name goes in front, here and on the tags a crawler would have read
         // had it run this. Written in one place so the two cannot drift apart.
         setPageTitle(feed.client.name + ' Content Review Portal by ADspace');
