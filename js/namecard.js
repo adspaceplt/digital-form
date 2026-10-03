@@ -89,8 +89,8 @@
     var wa = card.mobile ? 'https://wa.me/' + digits(card.mobile) : '';
     return '<div class="nc-stage"><div class="nc-flip">' +
       '<section class="nc-face nc-front" aria-label="Card front">' +
-        '<div class="nc-lock"><span class="nc-word">ADspace</span>' +
-          '<span class="nc-tag">advertising | marketing | branding</span></div>' +
+        '<div class="nc-lock"><div class="nc-lock-in"><span class="nc-word">ADspace</span>' +
+          '<span class="nc-tag">advertising | marketing | branding</span></div></div>' +
         '<div class="nc-qr" aria-label="QR code to this card">' +
           '<span class="nc-word nc-word-sm">ADspace</span>' +
           '<div class="nc-qrbox" data-nc="qrbox"></div>' +
@@ -135,6 +135,20 @@
           colorDark: '#1a1a1a', colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.M });
       }
     }
+    /* The lockup in golden proportion to the card it is on: the wordmark
+       runs the card's width over φ², and the tagline, set at 0.46 of the
+       wordmark's size (the signboard), runs it over φ. Optima sets ADspace
+       about 3.9 times its size wide. */
+    var stage = host.querySelector('.nc-stage');
+    var fit = function () {
+      var w = stage.getBoundingClientRect().width;
+      if (w) host.style.setProperty('--nc-sw', (Math.round(w / 2.618 / 3.9 * 10) / 10) + 'px');
+    };
+    if (window.ResizeObserver && !host.__ncFit) {
+      host.__ncFit = new ResizeObserver(fit);
+    }
+    if (host.__ncFit) host.__ncFit.observe(stage);
+    fit();
     /* Landscape at a desk, portrait on a phone, following the window. */
     var wide = window.matchMedia ? window.matchMedia('(min-width: 760px)') : null;
     var lie = function () { host.classList.toggle('is-land', !!(wide && wide.matches)); };

@@ -2064,8 +2064,10 @@ Each line is a rule that broke once. Its reason is in the archive.
     alone (`card_email`, else the sign-in address); never the Employee ID,
     group or access;
   - the card is the signboard's lockup on the brand's five tones (`--nc-*`,
-    light in both themes): the tagline at 0.46 of the wordmark's size, about
-    1.64 times its width; landscape at 760 and over (`is-land`), portrait
+    light in both themes) in golden proportion: the wordmark runs the card's
+    width over φ² (`--nc-sw` from the card's width), the tagline at 0.46 of
+    its size runs it over φ (the signboard's 1.64), and the pair centres
+    38.2% down the card; landscape at 760 and over (`is-land`), portrait
     under; it turns over to the person and the office (`ADSPACE_ORG`),
     turns its front to a QR of its own address, and Save contact is a vCard;
   - every number reads with its country code (`ADspaceCard.phone`:
