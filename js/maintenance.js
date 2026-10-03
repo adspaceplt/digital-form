@@ -49,7 +49,7 @@
     var back = shown.ends_at ? (set.maintBack || 'Expected back by {when}.').replace('{when}', when(shown.ends_at)) : '';
     box.querySelector('.cover-panel').innerHTML =
       '<h2 id="maintTitle">' + esc(set.maintTitle || 'Upgrading in progress') + '</h2>' +
-      '<p>' + esc(set.maintText || 'The portal is being upgraded. Please check back shortly.') + '</p>' +
+      '<p>' + esc(set.maintText || "We'll be right back!") + '</p>' +
       (back ? '<p class="maint-back">' + esc(back) + '</p>' : '') +
       (shown.note ? '<p class="maint-note">' + esc(shown.note) + '</p>' : '') +
       (shown.out ? '<button class="btn btn-sm maint-out" type="button" id="maintOut">Sign out</button>' : '');

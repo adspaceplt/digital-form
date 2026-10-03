@@ -216,7 +216,7 @@
     specs.forEach(function (f, n) {
       var id = 'askSheetField' + n;
       /* `half` sets a field beside the next half one (a date and its time). */
-      var wrap = el('div', 'askfield' + (f.half ? ' is-half' : ''));
+      var wrap = el('div', 'askentry' + (f.half ? ' is-half' : ''));
       var lab = el('label', 'field-label', f.label || 'Reason');
       lab.setAttribute('for', id);
       var input;
@@ -243,6 +243,12 @@
       wrap.appendChild(lab);
       wrap.appendChild(input);
       elFields.appendChild(wrap);
+      /* An empty time field says what it wants: Safari otherwise draws the
+         clock's own time in grey, which reads as a value already chosen. */
+      if (f.hint && window.ADspaceForm && ADspaceForm.hint) {
+        input.setAttribute('data-hint', f.hint);
+        ADspaceForm.hint(input);
+      }
       rows.push({ spec: f, input: input });
     });
 
