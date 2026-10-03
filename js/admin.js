@@ -2153,6 +2153,83 @@
   });
   $('assetClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
 
+
+  /* ===== Pair covers (2026-10-03). A set made before covers were paired
+     holds its covers and videos side by side and nothing ties them: the
+     files were stored under random names, and a cover carries no caption.
+     The set's order is the one clue (a cover is uploaded just before its
+     video), so each unpaired cover is proposed the first free video after
+     it, shown side by side, and changed by its select; Save writes only what
+     the sheet holds. Each cover can be paired again later from its ⋯. */
+  function paintPairSheet() {
+    var v = state.postView;
+    var posts = (v && v.posts || []).slice().sort(function (a, b) { return (a.position || 0) - (b.position || 0); });
+    var videos = videosOf(posts);
+    var taken = {};
+    posts.forEach(function (p) { if (p.platform === 'cover' && p.cover_for) taken[p.cover_for] = true; });
+    var covers = posts.filter(function (p) { return p.platform === 'cover' && !p.cover_for; });
+    var opts = function (sel) {
+      return '<option value="">No video</option>' + videos.map(function (x) {
+        return '<option value="' + esc(x.id) + '"' + (x.id === sel ? ' selected' : '') + '>' + esc(x.label) + '</option>';
+      }).join('');
+    };
+    var thumb = function (m) { return m ? '<span class="pairthumb">' + thumbOf(m) + '</span>' : '<span class="pairthumb is-none" aria-hidden="true"></span>'; };
+    $('pairList').innerHTML = covers.map(function (c, i) {
+      var next = videos.filter(function (x) { return (x.pos || 0) > (c.position || 0) && !taken[x.id]; })[0];
+      if (next) taken[next.id] = true;
+      var vid = next ? next.media : null;
+      return '<div class="pairline" data-cover="' + esc(c.id) + '">' +
+        thumb((c.media || [])[0]) +
+        '<label class="pairfield"><span class="field-label">Cover ' + (i + 1) + '</span>' +
+          '<select class="select" data-nodraft aria-label="Video for cover ' + (i + 1) + '">' + opts(next ? next.id : '') + '</select></label>' +
+        thumb(vid) +
+      '</div>';
+    }).join('');
+    Array.prototype.forEach.call($('pairList').querySelectorAll('.pairline select'), function (sel) {
+      sel.addEventListener('change', function () {
+        var x = videos.filter(function (y) { return y.id === sel.value; })[0];
+        var line = sel.closest('.pairline');
+        var old = line.lastElementChild;
+        var tmp = document.createElement('span');
+        tmp.innerHTML = thumb(x ? x.media : null);
+        line.replaceChild(tmp.firstChild, old);
+      });
+    });
+    msg('pairMsg', '', '');
+    return covers.length;
+  }
+  $('pairCovers').addEventListener('click', function () {
+    shutSetMenu();
+    if (!paintPairSheet()) return;
+    window.ADspaceSheet.show($('pairSheet'), { opener: $('setMenuBtn') });
+  });
+  $('pairClose').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('pairCancel').addEventListener('click', function () { window.ADspaceSheet.close(); });
+  $('pairSave').addEventListener('click', function () {
+    var btn = this;
+    var lines = Array.prototype.slice.call($('pairList').querySelectorAll('.pairline'));
+    var picks = lines.map(function (l) { return { cover: l.getAttribute('data-cover'), video: l.querySelector('select').value }; })
+      .filter(function (x) { return x.video; });
+    var seen = {}, twice = picks.some(function (x) { if (seen[x.video]) return true; seen[x.video] = true; return false; });
+    if (twice) { msg('pairMsg', 'One video is chosen for two covers. Give each cover its own video.', 'err'); return; }
+    if (!picks.length) { window.ADspaceSheet.close(); return; }
+    btn.disabled = true;
+    msg('pairMsg', 'Saving…', '');
+    Promise.all(picks.map(function (x) {
+      return db.from('posts').update({ cover_for: x.video }).eq('id', x.cover).select('id')
+        .then(function (r) { return !r.error && (r.data || []).length; })
+        .catch(function () { return false; });
+    })).then(function (out) {
+      btn.disabled = false;
+      var ok = out.filter(Boolean).length, bad = out.length - ok;
+      if (ok) logAction('post.edited', state.client.name + ' — ' + (state.batch.title || ''),
+        'Covers paired: ' + ok);
+      if (bad) { msg('pairMsg', bad + (bad === 1 ? ' cover was' : ' covers were') + ' not paired. The database refused the request.', 'err'); loadPosts(); return; }
+      window.ADspaceSheet.close();
+      msg('setMsg', ok + (ok === 1 ? ' cover paired.' : ' covers paired.'), 'ok');
+      loadPosts();
+    });
+  });
   $('deleteSet').addEventListener('click', function () {
     shutSetMenu();
     var b = state.batch;
@@ -3540,6 +3617,24 @@
   function postStageOf(review) {
     return !review ? 'pending' : review.decision === 'approved' ? 'approved' : 'changes';
   }
+  /* The set's videos, named by their place in it, for a cover to belong to.
+     Named by what tells one video from the next: its title, else the first
+     words of its caption, else its file, else its placement (the user,
+     2026-10-03: thirty reels all read Instagram Reels). */
+  function videosOf(posts) {
+    var vn = 0, videos = [];
+    (posts || []).forEach(function (p) {
+      var m0 = (p.media || [])[0];
+      if (p.platform !== 'cover' && (p.media || []).length === 1 && m0 && m0.type === 'video') {
+        var said = String(p.title || '').trim() ||
+          String(p.caption || '').split(/\n/)[0].trim() || String(m0.name || '').trim();
+        if (said.length > 48) said = said.slice(0, 47).replace(/\s+\S*$/, '') + '…';
+        vn++; videos.push({ id: p.id, n: vn, pos: p.position, media: m0, label: 'Video ' + vn + ' · ' + (said || MK.label(p)) });
+      }
+    });
+    return videos;
+  }
+
   function paintPostStages(fresh) {
     var v = state.postView, box = $('postList'), strip = $('postStages');
     if (!v || !state.batch) return;
@@ -3561,20 +3656,9 @@
         ' <span class="tab-n' + (counts[s[0]] && STAGE_TONE[s[0]] ? ' ' + STAGE_TONE[s[0]] : '') + '">' + counts[s[0]] + '</span></button>';
     }).join('');
     box.innerHTML = '';
-    /* The set's videos, named by their place in it, for a cover to belong to. */
-    var vn = 0, videos = [];
-    v.posts.forEach(function (p) {
-      var m0 = (p.media || [])[0];
-      if (p.platform !== 'cover' && (p.media || []).length === 1 && m0 && m0.type === 'video') {
-        /* Named by what tells one video from the next: its title, else the
-           first words of its caption, else its file, else its placement
-           (the user, 2026-10-03: thirty reels all read Instagram Reels). */
-        var said = String(p.title || '').trim() ||
-          String(p.caption || '').split(/\n/)[0].trim() || String(m0.name || '').trim();
-        if (said.length > 48) said = said.slice(0, 47).replace(/\s+\S*$/, '') + '…';
-        vn++; videos.push({ id: p.id, n: vn, label: 'Video ' + vn + ' · ' + (said || MK.label(p)) });
-      }
-    });
+    var videos = videosOf(v.posts);
+    /* Pair covers is offered while a cover waits for a video. */
+    $('pairCovers').hidden = !videos.length || !v.posts.some(function (p) { return p.platform === 'cover' && !p.cover_for; });
     v.posts.forEach(function (p) {
       var review = v.latest[p.id];
       if (pick !== 'all' && postStageOf(review) !== pick) return;

@@ -1045,7 +1045,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   kept by hand; the set page names a cover's video and its ⋯ Pair with video
   changes or clears it (`post.edited`). A video is named by its number in
   the set (shown on its row) and its title, else its caption's first words,
-  else its file.
+  else its file. A set's ⋯ offers Pair covers while a cover
+  waits (`#pairSheet`): one line a cover, its picture beside the proposed
+  video's (the first free video after it in the set, the only clue an older
+  set holds), each changed by its select; Save writes only lines naming a
+  video, refuses one video for two covers, and files `Covers paired: n`.
 - The client's page opens on the client portal's name card (`#rvHead`: mark,
   name, handle and post count, `N to review` counted at load); the bar no
   longer names the client. The creator selection page opens on the same card

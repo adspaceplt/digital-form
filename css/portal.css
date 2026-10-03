@@ -597,7 +597,7 @@ a { color: inherit; }
 .shell-review .cardpair > .card.in-pair { border: 0; border-radius: 0; box-shadow: none; flex: 1 1 auto; align-self: stretch; }
 .cardpair > .card.in-pair[hidden] { display: none; }
 .cardpair > .card.in-pair > .card-head { display: none; }
-.cardpair > .tabrow.pairtabs { margin: 12px 16px 0; display: flex; width: auto; max-width: none; }
+.cardpair > .tabrow.pairtabs { margin: 12px 16px; display: flex; width: auto; max-width: none; }
 .cardpair > .pairtabs .tab { flex: 1 1 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; white-space: nowrap; }
 .pair-chip { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 5px; white-space: nowrap; }
 .pair-chip:empty { display: none; }
@@ -9664,3 +9664,16 @@ body.is-maint { overflow: hidden; }
 @media (max-width: 640px) {
   .upgradebar { margin: 12px 16px 0; }
 }
+
+/* ---- Pair covers (js/admin.js, 2026-10-03) ---------------------------------
+   One line a cover: its picture, the video chosen for it, that video's
+   picture, so the pair is checked by eye before anything is saved. */
+.pairlist { display: grid; gap: 16px; }
+.pairline { display: grid; grid-template-columns: 56px minmax(0, 1fr) 56px; gap: 12px; align-items: end; }
+.pairthumb {
+  display: block; width: 56px; height: 76px; overflow: hidden;
+  border-radius: var(--radius-ctl-sm); background: var(--sunk);
+}
+.pairthumb img, .pairthumb video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.pairfield { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.pairfield .select { width: 100%; }
