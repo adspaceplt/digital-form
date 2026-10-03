@@ -9492,7 +9492,9 @@ body.ncpage { background: var(--nc-ground); }
 .nc-pill-ink { background: var(--nc-ink); color: var(--nc-card); }
 .nc-pill:active { transform: scale(.97); }
 .nc-pill:focus-visible, .nc-row:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; }
-.nc-ctl { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+/* The pair under the card keeps one width on every face (the portrait card's),
+   so turning the card never moves the button under the finger. */
+.nc-ctl { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; width: min(100%, 326px); }
 .nc-ctl .nc-pill { height: 40px; background: var(--nc-card); }
 .nc-ctl .nc-pill[aria-pressed="true"] { background: var(--nc-ink); color: var(--nc-card); }
 @media (hover: hover) {
