@@ -732,7 +732,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Rows run newest Client ID first (digits as numbers), unnumbered after,
     newest first.
   - The row is one `<button>` with nothing nested.
-  - The Client ID sits under the name in the token face and is searched.
+  - The client's logo leads the name cell (`.cl-mark`, 32px, 28 on a phone;
+    the record head's white disc, initials only while none is held or where
+    it fails to load), and the Client ID sits under the name in the token
+    face and is searched.
   - On a phone the row is two columns: name over meta, and the chip over the
     age in a fixed 120px track, top aligned. The meta omits what is not known,
     never showing a bare currency sign.

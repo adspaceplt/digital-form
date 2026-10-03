@@ -5023,6 +5023,23 @@ body > .shell { width: 100%; }
   grid-template-columns:
     minmax(0, 1.9fr) 128px minmax(0, .9fr) minmax(0, 1fr) 104px 18px;
 }
+/* The client's logo before the name, the record head's mark at row size:
+   white disc and hairline for a logo (light in both themes, as a logo is),
+   initials on the quiet fill while none is held. */
+.crm-row.client-row .crm-c-name { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.cl-mark {
+  flex: 0 0 32px; width: 32px; height: 32px; border-radius: 50%; overflow: hidden;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--line-soft); color: var(--ink-soft);
+  font-size: 12px; font-weight: 600; letter-spacing: -.01em;
+}
+.cl-mark.has-logo { background: #fff; border: 1px solid var(--line); }
+.cl-mark img { width: 100%; height: 100%; object-fit: contain; }
+.cl-who { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+/* A part of a line of parts that must stay whole (a date, a name). */
+.crm-c-meta .nb { white-space: nowrap; }
+/* The header's Client label starts where the names do. */
+.crm-head.client-row > :first-child { padding-left: 44px; }
 /* The date over what it was, the way the stage cell carries its clock: one
    cell, two lines, the second in the same small mute face as `.crm-age`. */
 .crm-c-seen {
@@ -5048,6 +5065,11 @@ body > .shell { width: 100%; }
    and the row it heads leaves with it. */
 @media (max-width: 760px) {
   .crm-head.client-row, .crm-row.client-row { grid-template-columns: minmax(0, 1fr) 120px; }
+  /* The mark at 28px beside the name; the meta line under it starts where
+     the name does. */
+  .cl-mark { flex-basis: 28px; width: 28px; height: 28px; font-size: 11px; }
+  .crm-row.client-row .crm-c-name { gap: 10px; align-items: flex-start; }
+  .crm-row.client-row .crm-c-meta { padding-left: 38px; }
   /* Restated, because the two-line rule above is later in the file than the
      phone rule that hides the cell: the date rides the meta line here. */
   .crm-c-seen { display: none; }

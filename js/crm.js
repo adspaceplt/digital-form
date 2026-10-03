@@ -530,8 +530,18 @@
          its width on every row for a value that is only read when somebody is
          holding an invoice, and the phone template has nowhere to put it. Set
          the way this portal sets every other token. */
-      '<span class="crm-c crm-c-name">' + esc(c.name || '') +
-        (c.client_code ? '<small class="crm-c-code">' + esc(c.client_code) + '</small>' : '') +
+      /* The client's own logo beside the name, the record head's mark at row
+         size (the user, 2026-10-03): most clients hold one, and a logo is
+         found faster than a name is read. Initials stand in only while none
+         is held, or where the picture fails to load, so the names keep one
+         left edge. Decorative: the name beside it says who it is. */
+      '<span class="crm-c crm-c-name">' +
+        '<span class="cl-mark' + (c.logo_url ? ' has-logo' : '') + '" aria-hidden="true">' +
+          (c.logo_url ? '<img src="' + esc(c.logo_url) + '" alt="" loading="lazy" decoding="async">' : esc(initialsOf(c.name || ''))) +
+        '</span>' +
+        '<span class="cl-who">' + esc(c.name || '') +
+          (c.client_code ? '<small class="crm-c-code">' + esc(c.client_code) + '</small>' : '') +
+        '</span>' +
       '</span>' +
       '<span class="crm-c crm-c-stage"><span class="tone ' + w[2] + '">' + esc(w[1]) + '</span>' +
         /* The word carries it, not the colour: the mark has to survive a
@@ -555,7 +565,10 @@
          away for its sign. What is not known is left out rather than stood in
          for, so the line is two or three facts, never a row of placeholders. */
       '<span class="crm-c crm-c-meta">' +
-        [c.industry, c.owner, lastSeenWord(c)].filter(Boolean).map(esc).join(' · ') +
+        /* A line of parts wraps between its parts, never inside one. */
+        [c.industry, c.owner, lastSeenWord(c)].filter(Boolean).map(function (x) {
+          return '<span class="nb">' + esc(x) + '</span>';
+        }).join(' · ') +
       '</span>' +
       /* The mark that says the row goes somewhere, in the column the header
          leaves empty. The row is one button, so the whole of it opens the
@@ -564,6 +577,14 @@
       '<svg class="crm-c crm-c-go" viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
         'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
         '<path d="M9 18l6-6-6-6"/></svg>';
+    /* A logo that will not load (an expired Facebook address) gives way to
+       the initials, never a broken picture. */
+    var logo = row.querySelector('.cl-mark img');
+    if (logo) logo.addEventListener('error', function () {
+      var mk = logo.parentNode;
+      mk.classList.remove('has-logo');
+      mk.textContent = initialsOf(c.name || '');
+    });
     row.addEventListener('click', function () { openClient(c); });
     return row;
   }
