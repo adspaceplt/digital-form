@@ -246,8 +246,8 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   wrong header.
 - Every tab strip is the view strip: the tonal track, never a rule across the
   column, never bleeding past the page's margins. A record's strip
-  (`.rectabs`, the client portal's too) runs the width of the card under it
-  at every width; a section's switch (`.tabrow`) is its own width at a desk
+  (`.rectabs`, the client portal's too) and a strip inside a card (a set's
+  `.poststages`) run the width of that card at every width; a section's switch (`.tabrow`) is its own width at a desk
   and the column's on a phone. Tabs in a full strip share what is spare
   (`flex: 1 0 auto`). It never wraps; it scrolls sideways with the edge that
   has more beyond it faded.

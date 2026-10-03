@@ -119,6 +119,10 @@
 
   function key(e) {
     if (!open) return;
+    /* A long list's finder (js/form.js §8) opened from a field here answers
+       its own keys: Enter picks, Escape shuts the finder, not the question. */
+    var pk = document.getElementById('pickerBox');
+    if (pk && !pk.hidden && (pk.contains(e.target) || e.key === 'Escape')) return;
     if (e.key === 'Escape') { e.preventDefault(); shut(); return; }
     if (e.key === 'Enter' && e.target !== elCancel && e.target !== elClose
         && e.target.tagName !== 'TEXTAREA') {
