@@ -2036,9 +2036,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - The foot is PRIVATE & CONFIDENTIAL and the page count on the margin's
     line; no draft or version line.
   - A draft carries DRAFT (INTERNAL USE ONLY) and a report in review PENDING
-    REVIEW (INTERNAL USE ONLY), repeated on the diagonal over every page in
-    faint text drawn last (`WM` in `js/smreport.js`); confirmed, published
-    and every version the client reads carry none.
+    REVIEW (INTERNAL USE ONLY), repeated over every page and drawn last
+    (`WM` in `js/smreport.js`) on the report's golden scale: S(4) in Slate
+    Book at the golden angle (31.7°), the size times φ² apart along a row and
+    φ⁴ between rows, each row offset half a step, grey at a tenth's opacity;
+    confirmed, published and every version the client reads carry none.
   - A page break falls between points, never inside one: each numbered or
     lettered point is one unit (`unit`), split only when taller than a page.
   - A top post card is named by its title, else its type and day; its meta
