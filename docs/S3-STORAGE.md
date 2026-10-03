@@ -405,6 +405,41 @@ an invoice uploaded in the console opens from View invoice and from the
 client's PDF link, its link stops working after five minutes, and
 `https://mycdn.adspace.me/private/…` answers **403**.
 
+### 5d. Open invoices on mycdn.adspace.me
+
+Until this is done, an invoice opens on an S3 address
+(`myadspace.s3.ap-southeast-5.amazonaws.com/private/…`). After it, the same
+five-minute link reads `mycdn.adspace.me/private/…`, signed with the key
+CloudFront already holds from 6a. Do 6a first.
+
+1. S3 → **myadspace** → **Permissions** → **Bucket policy** → **Edit**. Find
+   the statement that names `cloudfront.amazonaws.com` and copy its
+   distribution ARN (`arn:aws:cloudfront::<account>:distribution/<ID>`). If
+   no statement names CloudFront, stop and tell Claude.
+2. In the same policy, change the condition of `PrivateOnlyThroughSignedLinks`
+   (5b) to let that distribution read too:
+
+   ```json
+   "Condition": {
+     "StringNotEquals": {
+       "aws:PrincipalArn": "UPLOAD-USER-ARN",
+       "aws:SourceArn": "DISTRIBUTION-ARN"
+     }
+   }
+   ```
+
+   **Save changes**. Anybody else is still refused.
+3. CloudFront → the distribution behind `mycdn.adspace.me` → **Behaviors** →
+   **Create behavior**: path pattern `private/*`, the bucket as origin,
+   **Redirect HTTP to HTTPS**, **Restrict viewer access: Yes** → **Trusted
+   key groups** → `adspace-portal-media`, cache policy **CachingDisabled**.
+   **Create**.
+4. Tell Claude. Claude switches the links over (`cf_private_ready` in
+   `app_secrets`; no page changes) and checks that an invoice opens on
+   mycdn.adspace.me and that the address alone answers 403.
+
+**To undo:** Claude sets `cf_private_ready` off and the links go back to S3.
+
 ---
 
 ## 6. Private media (Content Review, creator drafts)

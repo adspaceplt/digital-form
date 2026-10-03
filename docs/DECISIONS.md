@@ -749,3 +749,6 @@ The user added the upload key's `private/*` permission and the bucket policy's D
 
 ### 2026-10-03 · The media pass switched on
 The user created CloudFront's public key and key group (`docs/S3-STORAGE.md` §6a). Its ID was stored as `cf_media_key_id`, the live function was seen signing a twelve-hour policy over `content/*` with it, and `privateMedia` was turned on, so every page carries the pass while CloudFront still answers everyone. Requiring it (§6b) is the user's next step.
+
+### 2026-10-03 · The Schedule folds a row a booking
+The user, with a phone screenshot of three creators' plans laid out field after field: "can the schedule be similar itemized card per users so its not a very long list". The Schedule took the Creators tab's register: a row a booking with its shoot and publish dates (Not set where none), folded, and the plan's fields under it. Kept from before: Upcoming then Past (2026-09-16), the whole plan written here (2026-09-27), and Draft due beside Publish on a phone. A save repaints the register, so the open booking is remembered and stays open; a lone booking opens by itself. At a desk the DD/MM/YYYY placeholder now waits under Not set until the field is reached, where the two had printed over each other.

@@ -1106,7 +1106,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   tracking no.; draft due; publish date) is written only on the Schedule,
   saved on change and filed with what changed. The card reads it
   (`planFacts`, Edit in Schedule) and keeps only the notes. The creator's
-  page shows location and contact.
+  page shows location and contact. The Schedule is the Creators tab's
+  register (`.bookreg.sched-reg`): Upcoming then Past, a folded row a booking
+  (name, shoot date and time, publish date; Not set where none), the plan's
+  fields opening under the row on the name's x; a booking stays open through
+  a save, and a lone booking opens by itself. On a phone Draft due and
+  Publish share a line.
 - The client's selection closes by trigger the moment the bookings fill the
   slots (`campaigns.selection_closed_at`); only Reopen selection clears it,
   offered only while closed with a free slot. While closed, `save_selection`

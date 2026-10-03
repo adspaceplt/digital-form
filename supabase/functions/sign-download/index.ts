@@ -14,6 +14,12 @@
  * An older invoice is a public CloudFront address and is handed back as it
  * is. Nothing here writes or deletes.
  *
+ * Once CloudFront serves `private/*` behind the portal's key group
+ * (docs/S3-STORAGE.md §5d) and `cf_private_ready` reads `on` in
+ * `app_secrets`, the link is a CloudFront signed URL on mycdn.adspace.me,
+ * signed with the media pass's key (`cf_media_private`, `cf_media_key_id`).
+ * Until then it is an S3 presigned link.
+ *
  * AWS credentials are the upload key's (`AWS_ACCESS_KEY_ID`,
  * `AWS_SECRET_ACCESS_KEY`), which needs s3:GetObject on `private/*`
  * (docs/S3-STORAGE.md §5). They never reach the browser.
@@ -33,6 +39,44 @@ const ALLOWED_ORIGINS = [
 const EXPIRES = 300;
 const PRIVATE_KEY = /^private\/[0-9a-f-]{36}\/[0-9a-f-]{36}\.pdf$/;
 const UUID = /^[0-9a-f-]{36}$/;
+const CDN = 'https://mycdn.adspace.me';
+const ALG = { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-1' };
+
+function b64(buf: ArrayBuffer): string {
+  const u8 = new Uint8Array(buf);
+  let s = '';
+  for (let i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]);
+  return btoa(s);
+}
+// CloudFront's own URL-safe alphabet: + → -, = → _, / → ~.
+function cfSafe(s: string): string {
+  return s.replace(/\+/g, '-').replace(/=/g, '_').replace(/\//g, '~');
+}
+function unpem(text: string): Uint8Array {
+  const bin = atob(text.replace(/-----[A-Z ]+-----/g, '').replace(/\s+/g, ''));
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+// A CloudFront signed URL with a canned policy: this one file, five minutes.
+// null while CloudFront is not yet set up to serve private/.
+async function cdnLink(path: string): Promise<string | null> {
+  const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+  const { data } = await admin.from('app_secrets').select('key, value')
+    .in('key', ['cf_private_ready', 'cf_media_private', 'cf_media_key_id']);
+  const s: Record<string, string> = {};
+  (data || []).forEach((r: { key: string; value: string }) => { s[r.key] = r.value; });
+  if (s.cf_private_ready !== 'on' || !s.cf_media_private || !s.cf_media_key_id) return null;
+  const resource = `${CDN}/${path}`;
+  const expires = Math.floor(Date.now() / 1000) + EXPIRES;
+  const policy = JSON.stringify({
+    Statement: [{ Resource: resource, Condition: { DateLessThan: { 'AWS:EpochTime': expires } } }]
+  });
+  const key = await crypto.subtle.importKey('pkcs8', unpem(s.cf_media_private), ALG, false, ['sign']);
+  const sig = await crypto.subtle.sign(ALG.name, key, new TextEncoder().encode(policy));
+  return `${resource}?Expires=${expires}&Signature=${cfSafe(b64(sig))}&Key-Pair-Id=${s.cf_media_key_id}`;
+}
 
 function cors(origin: string | null) {
   const allow = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
@@ -98,6 +142,9 @@ Deno.serve(async (req) => {
   // An invoice from before is a public address; it opens as it always has.
   if (/^https:\/\//.test(stored)) return json({ url: stored }, 200, origin);
   if (!PRIVATE_KEY.test(stored)) return json({ error: 'bad_key' }, 400, origin);
+
+  const cdn = await cdnLink(stored);
+  if (cdn) return json({ url: cdn, expires_in: EXPIRES }, 200, origin);
 
   const bucket = Deno.env.get('S3_BUCKET')!;
   const region = Deno.env.get('S3_REGION')!;
