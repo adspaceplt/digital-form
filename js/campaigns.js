@@ -3671,8 +3671,10 @@
     return /^[a-z][a-z0-9+.-]*:\/\//i.test(u) ? u : 'https://' + u.replace(/^\/+/, '');
   }
 
+  /* The campaign ⋯ menus only: the account menu is shut by its own control,
+     and a scroll as a list finished loading used to take it with these. */
   function shutMenus() {
-    Array.prototype.forEach.call(document.querySelectorAll('.kmenu'), function (m) {
+    Array.prototype.forEach.call(document.querySelectorAll('.kmenu:not(.acct-menu)'), function (m) {
       m.hidden = true;
     });
     Array.prototype.forEach.call(document.querySelectorAll('.kmenu-btn'), function (b) {

@@ -236,21 +236,41 @@
     if (mk) mk.textContent = (word || '?').charAt(0).toUpperCase();
     var btn = $('acctBtn');
     if (btn) btn.setAttribute('aria-label', word ? 'Account, ' + word : 'Account');
+    // The menu's head names you over the address you sign in with.
+    var hn = $('acctWhoName');
+    if (hn) { hn.textContent = name; hn.hidden = !name; }
   }
 
+  /* At a desk the menu hangs from the control; on a phone it docks at the
+     foot of the screen, where the thumb is, as every card a bar control opens
+     does (ADspaceMenu.pop). Docked, it is laid from the page itself, so it is
+     put back under its control when it shuts. */
+  var acctPhone = window.matchMedia ? window.matchMedia('(max-width: 640px)') : null;
   function shutAcct() {
-    $('acctMenu').hidden = true;
+    var menu = $('acctMenu');
+    menu.hidden = true;
     $('acctBtn').setAttribute('aria-expanded', 'false');
+    if (menu.parentNode !== $('acctWrap')) {
+      menu.classList.remove('popcard', 'is-dock', 'is-up');
+      $('acctWrap').appendChild(menu);
+    }
   }
   $('acctBtn').addEventListener('click', function (e) {
     e.stopPropagation();
-    var open = $('acctMenu').hidden;
-    $('acctMenu').hidden = !open;
-    this.setAttribute('aria-expanded', String(open));
-    if (open) $('acctMenu').querySelector('.kmenu-item').focus();
+    var menu = $('acctMenu'), open = menu.hidden;
+    if (!open) { shutAcct(); return; }
+    menu.hidden = false;
+    this.setAttribute('aria-expanded', 'true');
+    if (acctPhone && acctPhone.matches && window.ADspaceMenu) window.ADspaceMenu.pop(this, menu, 'right');
+    menu.querySelector('.kmenu-item:not([hidden])').focus();
+  });
+  if ($('acctClose')) $('acctClose').addEventListener('click', function () { shutAcct(); $('acctBtn').focus(); });
+  // Crossing the phone line with the menu open shuts it rather than leave it laid for the other.
+  if (acctPhone && acctPhone.addEventListener) acctPhone.addEventListener('change', function () {
+    if (!$('acctMenu').hidden) shutAcct();
   });
   document.addEventListener('click', function (e) {
-    if (!$('acctMenu').hidden && !e.target.closest('#acctWrap')) shutAcct();
+    if (!$('acctMenu').hidden && !e.target.closest('#acctWrap') && !e.target.closest('#acctMenu')) shutAcct();
   });
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && !$('acctMenu').hidden) { shutAcct(); $('acctBtn').focus(); }
@@ -277,8 +297,9 @@
     });
   }
   /* Notifications on this device, for the signed-in colleague's bell. The
-     item is named for what the press will do and stays open while it works,
-     so its new name is the answer. Where the device cannot, it says why. */
+     item is a switch with its state at the right edge, and the menu stays
+     open while it works, so the new state is the answer. Where the device
+     cannot, it says why. */
   var PUSH_WHY = {
     install: 'On iPhone, add the console to the Home Screen, then turn notifications on from there.',
     blocked: 'Notifications are blocked for this site in the browser settings.',
@@ -290,7 +311,8 @@
     if (!P || !$('acctPush')) return;
     pushOn = !!(s && s.on);
     $('acctPush').hidden = !s || s.why === 'none' || s.why === 'nokey';
-    $('acctPushWord').textContent = pushOn ? 'Turn off notifications' : 'Turn on notifications';
+    $('acctPushWord').textContent = pushOn ? 'On' : 'Off';
+    $('acctPush').setAttribute('aria-checked', String(pushOn));
   }
   function pushSay(text) {
     $('acctPushMsg').textContent = text || '';

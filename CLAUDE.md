@@ -2041,38 +2041,52 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Position (`designation`);
   - role standard;
   - `capacity_minutes_week` (entered as hours);
-  - Access until (`access_until`, the last day in Malaysia; empty for no
-    end), never on your own row (`own-expiry`).
+  - Access until (`access_until`, a day in Malaysia, with an optional time
+    `access_until_time`, five-minute steps; no time is the day's end; empty
+    for no end), never on your own row (`own-expiry`);
+  - Mobile and Card On / Off (`card_on`).
+- The member sheet is three sections: Sign-in and access (name, sign-in
+  email, group, Access until), Employment (department, position, role
+  standard, Employee ID, weekly capacity), Namecard (mobile, card).
 - A colleague is never deleted, only stood down.
-- Access expiry (`2026-10-01-team-access-expiry.sql`):
-  - every day at 00:05 MYT (pg_cron `team-access-expiry`)
-    `team_expire_access()` stands down each active colleague whose date has
-    passed (`active` false, `expired_at` stamped, filed `team.changed` by
+- Access expiry (`2026-10-01-team-access-expiry.sql`,
+  `2026-10-03-team-access-time.sql`):
+  - every five minutes (pg_cron `team-access-expiry`) `team_expire_access()`
+    stands down each active colleague whose moment has passed
+    (`team_access_ends(day, time)`, MYT) (`active` false, `expired_at` stamped, filed `team.changed` by
     `system`), never the last admin with access;
   - the row reads Access expired and its ⋯ Extend access; moving the date to
     today or later brings them back at once (`team_access_guard`), and Set
     active on a passed date is refused (`expired-date`);
-  - the bar's ⋯ Set access expiry (`team_set_expiry`, Team at Manage) sets
-    one date for every active colleague but the caller, refusing a past date;
+  - Extend access and the bar's ⋯ Set access expiry (`team_set_expiry_at`,
+    Team at Manage) ask for a date and an optional time; the bar's sets them
+    for every active colleague but the caller, refusing a moment passed;
   - an expired address signing in reads Access expired
     (`my_access_expired()`), not Access denied.
 - Digital namecards (`js/namecard.js`, `/card/?k=`, `2026-10-03-team-namecards.sql`):
   - every colleague has a `card_key` (eight characters from the link keys'
     alphabet), made by trigger and never changed, so a printed QR keeps
-    working; the card answers only while the colleague is active;
-  - `namecard_get(p_key)` (anon) answers name, position, mobile and email
-    alone (`card_email`, else the sign-in address); never the Employee ID,
-    group or access;
+    working; the card answers only while the colleague is active and their
+    card is on (`card_on`, Team's sheet; off answers the cover, and the
+    same address works again once on);
+  - `namecard_get(p_key)` (anon) answers name, position, mobile and the
+    sign-in email alone (`2026-10-03-namecard-login-email.sql`; whatever its
+    domain, interns' personal addresses included; `card_email` is unread);
+    never the Employee ID, group or access;
+  - the email row never breaks inside the address: it shrinks to 12px
+    (`fitMail`), else breaks only before the @;
   - the card is the signboard's lockup on the brand's five tones (`--nc-*`,
-    light in both themes): the tagline at 0.46 of the wordmark's size, about
-    1.64 times its width; landscape at 760 and over (`is-land`), portrait
+    light in both themes) in golden proportion: the wordmark runs the card's
+    width over φ² (`--nc-sw` from the card's width), the tagline at 0.46 of
+    its size runs it over φ (the signboard's 1.64), and the pair is centred
+    on the card both ways; landscape at 760 and over (`is-land`), portrait
     under; it turns over to the person and the office (`ADSPACE_ORG`),
     turns its front to a QR of its own address, and Save contact is a vCard;
   - every number reads with its country code (`ADspaceCard.phone`:
     +60 12-345 6789, +60 18-762 5233, +65 8123 4567);
-  - the colleague keeps their own mobile and card email in My namecard (the
-    account menu, `namecard_save_mine`, filed `team.edited`); the Team sheet
-    edits everybody's; a colleague's row ⋯ offers Open namecard. No bar on
+  - the colleague keeps their own mobile in My namecard (the account menu,
+    `namecard_save_mine`, filed `team.edited`); the Team sheet edits
+    everybody's; a row ⋯ offers Open namecard while the card is on. No bar on
     the card's page: it is the card alone on white.
 
 ### Activity record
@@ -2160,8 +2174,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `/creator/sw.js`), all importing `js/push-sw.js`. The client pages carry a
   manifest with no `start_url`, so a Home Screen copy opens its own link.
 - Controls:
-  - the console: Turn on / Turn off notifications in the account menu, which
-    stays open and answers under the item (`#acctPushMsg`);
+  - the console: Notifications in the account menu, a switch
+    (`role="switch"`, On / Off at the row's right edge); the menu stays open
+    and answers under the item (`#acctPushMsg`);
   - the client pages: the bar's bell (`#pushBtn`) opens `#pushPop`, a named
     dialog with one line and one action, its words in `W.push`.
   - An iPhone not on the Home Screen is told to add it; a blocked site is

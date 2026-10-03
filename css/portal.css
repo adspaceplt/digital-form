@@ -416,6 +416,9 @@ a { color: inherit; }
 .input[type="date"]::-webkit-calendar-picker-indicator,
 .input[type="time"]::-webkit-calendar-picker-indicator,
 .input[type="month"]::-webkit-calendar-picker-indicator { opacity: .55; cursor: pointer; }
+/* A time field's value is narrower than the box, so its mark followed the
+   value into the middle; it keeps to the right edge, as the date's does. */
+@media (pointer: fine) { .input[type="time"] { display: block; } }
 /* Under a finger there is no picker mark at all, on iOS or on Android, so
    the field names itself with a glyph on the left: a calendar for a date and
    a clock for a time, the same weight as every other glyph in the console.
@@ -1264,6 +1267,12 @@ a { color: inherit; }
 .row.fgrid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .row.fgrid > .span-all, .row.fgrid-3 > .span-all { grid-column: 1 / -1; }
 .row.fgrid-3 > .span-2 { grid-column: span 2; }
+/* Cells that come and go together without a box of their own (the Team
+   sheet's access date and time); with them gone the first cell takes the row. */
+.row > .fcells { display: contents; }
+.fcells > div { min-width: 0; display: flex; flex-direction: column; }
+.fcells > div > .input { margin-top: auto; }
+.row.fgrid-3:has(> .fcells[hidden]) > :first-child { grid-column: 1 / -1; }
 /* A pane that narrow, or a phone, takes one field a line. */
 .is-tight .row.fgrid, .is-tight .row.fgrid-3 { grid-template-columns: minmax(0, 1fr); }
 .is-tight .row.fgrid-3 > .span-2 { grid-column: auto; }
@@ -2243,19 +2252,30 @@ body.is-plain .topbar { background: var(--chrome); }
 /* The label and its second line read as one row, not as two stacked items. */
 .acct-menu .kmenu-item b { font-weight: 600; }
 .acct-menu .kmenu-item span { margin-left: auto; text-align: right; }
-/* The address is read, never chosen, so it is a line above the items and not
-   one of them. */
+/* Who you are is read, never chosen, so it is the menu's head and not one of
+   its items: the name over the address you sign in with ("Signed in as" said
+   what the head already shows). The close mark is drawn only where the menu
+   docks at the foot of a phone. */
 .acct-who {
-  display: flex; flex-direction: column; gap: 1px;
-  padding: 9px 12px 8px; margin-bottom: 4px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px 10px; margin-bottom: 4px;
   border-bottom: 1px solid var(--line-soft);
-  font-size: 12px; font-weight: 600; letter-spacing: 0;
-  color: var(--ink-mute);
 }
-.acct-who b {
-  font-size: 12.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--ink);
+.acct-who-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.acct-who-text b {
+  font-size: 14px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.acct-who-text span {
+  font-size: 12.5px; color: var(--ink-mute);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.acct-who-text b[hidden] + span { font-size: 13px; color: var(--ink); }
+.acct-x { display: none; }
+/* Three groups (you, this device, the way out), each set off by a hairline. */
+.acct-sep { border: 0; height: 1px; margin: 4px 0; background: var(--line-soft); }
+/* A switch's state at the row's right edge, read in the mute ink. */
+.acct-menu .kmenu-item .acct-val { font-size: 13px; color: var(--ink-mute); }
 
 .acct-menu .kmenu-item svg { width: 15px; height: 15px; stroke-width: 1.8; flex: 0 0 auto; color: var(--ink-mute); }
 
@@ -8947,6 +8967,16 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .aboutpop.popcard { padding: 16px 16px 10px; }
 .aboutpop.is-dock { padding: 20px 20px 12px; }
 .aboutpop.is-dock .aboutpop-text { font-size: 14px; }
+/* The account menu docked on a phone: the card at the foot of the screen,
+   its rows at the finger's height, Sign out last and nearest the thumb. */
+.popcard.is-dock.acct-menu { padding: 6px 8px 8px; max-width: none; }
+.popcard.is-dock.acct-menu .acct-who { padding: 10px 4px 10px 12px; }
+.popcard.is-dock.acct-menu .acct-who-text b { font-size: 16px; }
+.popcard.is-dock.acct-menu .acct-who-text span { font-size: 13px; }
+.popcard.is-dock.acct-menu .acct-x { display: inline-grid; flex: 0 0 auto; }
+.popcard.is-dock.acct-menu .kmenu-item { min-height: 48px; font-size: 15px; gap: 12px; }
+.popcard.is-dock.acct-menu .kmenu-item svg { width: 17px; height: 17px; }
+.popcard.is-dock.acct-menu .acct-msg { font-size: 13px; }
 
 /* The instruction beside its `?` reads as a small callout pointing at the
    mark, rather than loose mute text on the card. */
@@ -9427,12 +9457,16 @@ body.ncpage { background: var(--nc-ground); }
 .nc-back { transform: rotateY(180deg); padding: 30px 26px 26px; display: flex; flex-direction: column; }
 .nc-lock, .nc-qr { position: absolute; inset: 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: center;
   transition: opacity var(--t-slow) var(--ease-out); }
-.nc-lock { justify-content: center; }
+.nc-lock { display: block; }
+/* The lockup centred on the card, both ways. */
+.nc-lock-in { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; align-items: center; }
 .nc-qr { padding: 34px 28px 30px; opacity: 0; pointer-events: none; }
 .nc.is-qr .nc-lock { opacity: 0; pointer-events: none; }
 .nc.is-qr .nc-qr { opacity: 1; pointer-events: auto; }
-.nc-word { display: block; font-family: 'ADspace Optima', Optima, Candara, serif; font-size: 42px; line-height: 1; color: var(--nc-word); }
-.nc-tag { display: block; margin-top: 8px; font-family: var(--font-head); font-size: 19.3px; line-height: 1; white-space: nowrap; color: var(--nc-word); }
+.nc-word { display: block; font-family: 'ADspace Optima', Optima, Candara, serif; font-size: var(--nc-sw, 32px); line-height: 1; color: var(--nc-word); }
+.nc-tag { display: block; margin-top: calc(var(--nc-sw, 32px) * .2); font-family: var(--font-head); font-size: calc(var(--nc-sw, 32px) * .46);
+  line-height: 1; white-space: nowrap; color: var(--nc-word); }
 .nc-word-sm { font-size: 19px; }
 .nc-qrbox { margin-top: auto; width: 228px; height: 228px; box-sizing: border-box; padding: 18px; border-radius: 18px; background: var(--nc-tile); }
 .nc-qrbox canvas, .nc-qrbox img { width: 100% !important; height: auto !important; }
@@ -9447,11 +9481,13 @@ body.ncpage { background: var(--nc-ground); }
 .nc-row-long { padding: 12px 0; align-items: baseline; font-size: 14px; line-height: 1.45; }
 .nc-label { font-size: 12px; color: var(--nc-word); }
 .nc-value { min-width: 0; overflow-wrap: anywhere; }
+.nc-row-mail .nc-value { overflow-wrap: normal; word-break: normal; white-space: nowrap; overflow: hidden; }
+.nc-row-mail .nc-value.is-wrap { white-space: normal; }
 .nc-acts { margin-top: auto; padding-top: 16px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
 .nc-acts.is-one { grid-template-columns: minmax(0, 1fr); }
 .nc-pill { height: 44px; padding: 0 18px; border: 0; border-radius: 22px; background: var(--nc-tile); color: var(--nc-ink);
   display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 500 13.5px var(--font);
-  letter-spacing: .01em; text-decoration: none; cursor: pointer; transition: transform var(--t-fast) var(--ease); }
+  letter-spacing: .01em; white-space: nowrap; text-decoration: none; cursor: pointer; transition: transform var(--t-fast) var(--ease); }
 .nc-pill svg { width: 15px; height: 15px; stroke-width: 1.8; flex: 0 0 auto; }
 .nc-pill-ink { background: var(--nc-ink); color: var(--nc-card); }
 .nc-pill:active { transform: scale(.97); }
@@ -9470,8 +9506,6 @@ body.ncpage { background: var(--nc-ground); }
    in the console's sheet alike. */
 .nc.is-land .nc-stage { width: min(100%, 720px); perspective: 2200px; }
 .nc.is-land .nc-face { min-height: 412px; border-radius: 24px; }
-.nc.is-land .nc-word { font-size: 72px; }
-.nc.is-land .nc-tag { font-size: 33px; margin-top: 14px; }
 .nc.is-land .nc-word-sm { font-size: 24px; }
 .nc.is-land .nc-back { padding: 40px 44px 38px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
     grid-template-rows: auto 1fr auto; column-gap: 44px; }
@@ -9480,7 +9514,7 @@ body.ncpage { background: var(--nc-ground); }
 .nc.is-land .nc-name { font-size: 38px; }
 .nc.is-land .nc-post { font-size: 14px; }
 .nc.is-land .nc-acts { grid-column: 1; grid-row: 3; padding-top: 0; }
-.nc.is-land .nc-acts .nc-pill { height: 40px; }
+.nc.is-land .nc-acts .nc-pill { height: 40px; padding: 0 12px; }
 .nc.is-land .nc-rows { grid-column: 2; grid-row: 1 / 4; align-self: center; margin-top: 0; }
 .nc.is-land .nc-row { grid-template-columns: 72px minmax(0, 1fr); }
 .nc.is-land .nc-qr { padding: 40px 48px; display: grid; grid-template-columns: minmax(0, 1fr) 260px;
@@ -9490,6 +9524,8 @@ body.ncpage { background: var(--nc-ground); }
 .nc.is-land .nc-qrname { grid-column: 1; grid-row: 3; margin: 0; font-size: 34px; }
 .nc.is-land .nc-qrlink { grid-column: 1; grid-row: 4; margin: 8px 0 0; text-align: left; font-size: 14px; }
 @media (prefers-reduced-motion: reduce) { .nc-flip, .nc-lock, .nc-qr { transition: none; } }
+/* The sheet takes the card's full landscape width (720) at a desk. */
+.sheet-card.formsheet.ncsheet { width: min(780px, 100%); }
 /* My namecard in the console: the card as a client sees it, then its
    address with Copy link and Open, then the fields. */
 .ncsheet-card { display: flex; justify-content: center; }

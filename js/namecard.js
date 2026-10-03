@@ -41,6 +41,18 @@
     return '+' + d;
   }
 
+  /* An address stays on one line: set a half point smaller at a time until
+     it fits, down to 12px, else it breaks before its @. */
+  function fitMail(host) {
+    var v = host.querySelector('.nc-row-mail .nc-value');
+    if (!v) return;
+    v.style.fontSize = '';
+    v.classList.remove('is-wrap');
+    var size = parseFloat(getComputedStyle(v).fontSize) || 14.5;
+    while (v.scrollWidth > v.clientWidth + 0.5 && size > 12) { size -= 0.5; v.style.fontSize = size + 'px'; }
+    if (v.scrollWidth > v.clientWidth + 0.5) { v.style.fontSize = ''; v.classList.add('is-wrap'); }
+  }
+
   function address() { return String(ORG.address || '').split('\n').join(', '); }
   function site() { return String(ORG.website || '').replace(/^https?:\/\//, ''); }
   function link(key) { return location.origin + '/card/?k=' + encodeURIComponent(key || ''); }
@@ -75,12 +87,14 @@
   function row(label, value, href, cls) {
     return '<a class="nc-row' + (cls ? ' ' + cls : '') + '" href="' + esc(href) + '"' +
       (/^https?:/.test(href) ? ' target="_blank" rel="noopener"' : '') + '>' +
-      '<span class="nc-label">' + esc(label) + '</span><span class="nc-value">' + esc(value) + '</span></a>';
+      '<span class="nc-label">' + esc(label) + '</span><span class="nc-value">' +
+      /* An address breaks only before its @, never inside a word. */
+      (cls === 'nc-row-mail' ? esc(value).replace('@', '<wbr>@') : esc(value)) + '</span></a>';
   }
   function rows(card) {
     return (card.mobile ? row('Mobile', phone(card.mobile), 'tel:+' + digits(card.mobile)) : '') +
       (ORG.phone ? row('Office', phone(ORG.phone), 'tel:+' + digits(ORG.phone)) : '') +
-      (card.email ? row('Email', card.email, 'mailto:' + card.email) : '') +
+      (card.email ? row('Email', card.email, 'mailto:' + card.email, 'nc-row-mail') : '') +
       (ORG.website ? row('Website', site(), 'https://' + site()) : '') +
       (ORG.address ? row('Address', address(), ORG.map || ('https://maps.google.com/?q=' + encodeURIComponent(address())), 'nc-row-long') : '');
   }
@@ -89,8 +103,8 @@
     var wa = card.mobile ? 'https://wa.me/' + digits(card.mobile) : '';
     return '<div class="nc-stage"><div class="nc-flip">' +
       '<section class="nc-face nc-front" aria-label="Card front">' +
-        '<div class="nc-lock"><span class="nc-word">ADspace</span>' +
-          '<span class="nc-tag">advertising | marketing | branding</span></div>' +
+        '<div class="nc-lock"><div class="nc-lock-in"><span class="nc-word">ADspace</span>' +
+          '<span class="nc-tag">advertising | marketing | branding</span></div></div>' +
         '<div class="nc-qr" aria-label="QR code to this card">' +
           '<span class="nc-word nc-word-sm">ADspace</span>' +
           '<div class="nc-qrbox" data-nc="qrbox"></div>' +
@@ -135,6 +149,22 @@
           colorDark: '#1a1a1a', colorLight: '#ffffff', correctLevel: window.QRCode.CorrectLevel.M });
       }
     }
+    /* The lockup in golden proportion to the card it is on: the wordmark
+       runs the card's width over φ², and the tagline, set at 0.46 of the
+       wordmark's size (the signboard), runs it over φ. Optima sets ADspace
+       about 3.9 times its size wide. */
+    var stage = host.querySelector('.nc-stage');
+    var fit = function () {
+      var w = stage.getBoundingClientRect().width;
+      if (w) host.style.setProperty('--nc-sw', (Math.round(w / 2.618 / 3.9 * 10) / 10) + 'px');
+      fitMail(host);
+    };
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { fitMail(host); });
+    if (window.ResizeObserver && !host.__ncFit) {
+      host.__ncFit = new ResizeObserver(fit);
+    }
+    if (host.__ncFit) host.__ncFit.observe(stage);
+    fit();
     /* Landscape at a desk, portrait on a phone, following the window. */
     var wide = window.matchMedia ? window.matchMedia('(min-width: 760px)') : null;
     var lie = function () { host.classList.toggle('is-land', !!(wide && wide.matches)); };
@@ -156,6 +186,7 @@
         if (wa && next.mobile) wa.href = 'https://wa.me/' + digits(next.mobile);
         host.querySelector('.nc-acts').classList.toggle('is-one', !next.mobile);
         if (wa) wa.hidden = !next.mobile;
+        fitMail(host);
       },
       link: link(key)
     };
@@ -166,7 +197,6 @@
      and the two facts on it they keep themselves (namecard_save_mine). */
   var SAID = {
     'bad-mobile': 'Enter a mobile number of 8 to 15 digits.',
-    'bad-email': 'Enter a valid email.',
     'not-team': 'Not allowed.'
   };
   function $(id) { return document.getElementById(id); }
@@ -187,22 +217,21 @@
       }
       var cardOf = function () {
         return { name: d.name, designation: d.designation,
-                 mobile: ($('mycMobile').value || '').trim() || null,
-                 email: ($('mycEmail').value || '').trim() || d.email };
+                 mobile: ($('mycMobile').value || '').trim() || null, email: d.email };
       };
       $('mycMobile').value = d.mobile || '';
-      $('mycEmail').value = d.card_email || '';
-      $('mycEmail').placeholder = d.email || 'email@adspacestudios.com';
       var handle = mount($('mycPreview'), cardOf(), d.key);
       $('mycUrl').textContent = handle.link.replace(/^https?:\/\//, '');
+      /* Turned off in Team: the card is shown, its address answers nobody. */
+      $('mycUrl').parentNode.hidden = d.on === false;
+      if (d.on === false) say('Your namecard is off.', 'warn');
       $('mycOpen').href = handle.link;
       $('mycCopy').onclick = function () { if (window.ADspaceCopy) window.ADspaceCopy.to(this, handle.link); };
-      $('mycMobile').oninput = $('mycEmail').oninput = function () { handle.update(cardOf()); };
+      $('mycMobile').oninput = function () { handle.update(cardOf()); };
       $('mycSave').onclick = function () {
         var btn = this;
         btn.disabled = true;
-        db.rpc('namecard_save_mine', { p_mobile: ($('mycMobile').value || '').trim() || null,
-                                       p_email: ($('mycEmail').value || '').trim() || null })
+        db.rpc('namecard_save_mine', { p_mobile: ($('mycMobile').value || '').trim() || null, p_email: null })
           .then(function (s) {
             btn.disabled = false;
             var e = s.data && s.data.error;
@@ -210,7 +239,6 @@
               var t = s.error ? String(s.error.message || '') : '';
               say(e ? (SAID[e] || e) : /function|schema cache/i.test(t) ? 'This needs a database update.' : t, 'err');
               if (e === 'bad-mobile') $('mycMobile').focus();
-              if (e === 'bad-email') $('mycEmail').focus();
               return;
             }
             window.ADspaceSheet.close();

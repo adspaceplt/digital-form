@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261003b">
+<link rel="stylesheet" href="/css/portal.css?v=20261003h">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -304,7 +304,13 @@
           <span class="acct-name" id="acctName"></span>
         </button>
         <div class="kmenu acct-menu" id="acctMenu" hidden>
-          <span class="acct-who">Signed in as<b id="whoami"></b></span>
+          <!-- Who you are, read and never chosen: the name over the address
+               you sign in with. On a phone the menu docks at the foot and
+               carries a close mark. -->
+          <div class="acct-who">
+            <span class="acct-who-text"><b id="acctWhoName" hidden></b><span id="whoami"></span></span>
+            <button class="iconbtn acct-x" id="acctClose" type="button" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </div>
           <!-- The theme is on the bar now, on its own control. A second copy
                here would be the same fact twice, and the menu is who you are
                and the way out. -->
@@ -317,16 +323,18 @@
           <button class="kmenu-item" id="myCard" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h6M7 14h4"/></svg>My namecard
           </button>
+          <!-- Three groups: you, this device, the way out. -->
+          <hr class="acct-sep">
           <!-- A person's own way in, so it sits with who they are. Hidden
                where this browser cannot use a passkey. -->
           <button class="kmenu-item" id="acctPasskeys" type="button" hidden>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3"/><path d="m16 7 3 3"/><path d="m14 9 2 2"/></svg>Passkeys
           </button>
           <!-- Notifications on this device: the bell's own notifications, on the
-               phone (js/push.js). Named for what the press will do; hidden where
-               this browser has no push. The answer is said under it. -->
-          <button class="kmenu-item" id="acctPush" type="button" hidden>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="acct-push-word" id="acctPushWord">Turn on notifications</span>
+               phone (js/push.js). A switch, its state at the row's right edge;
+               hidden where this browser has no push. The answer is said under it. -->
+          <button class="kmenu-item" id="acctPush" type="button" role="switch" aria-checked="false" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg><span class="acct-push-word">Notifications</span><span class="acct-val" id="acctPushWord">Off</span>
           </button>
           <p class="msg acct-msg" id="acctPushMsg" role="status" hidden></p>
           <!-- The installed app has no reload button. This one also takes an
@@ -334,6 +342,7 @@
           <button class="kmenu-item" id="refreshApp" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>Refresh app
           </button>
+          <hr class="acct-sep">
           <button class="kmenu-item" id="signOut" type="button">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17l5-5-5-5"/><path d="M20 12H9"/><path d="M12 20H6.5A1.5 1.5 0 0 1 5 18.5v-13A1.5 1.5 0 0 1 6.5 4H12"/></svg>Sign out
           </button>
@@ -345,7 +354,7 @@
          The card as a client sees it, its address to hand over, and the two
          facts on it the person keeps themselves. -->
     <div class="sheet" id="mycSheet" hidden>
-      <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="mycTitle">
+      <div class="sheet-card formsheet ncsheet" role="dialog" aria-modal="true" aria-labelledby="mycTitle">
         <div class="sheet-head">
           <h3 id="mycTitle">My namecard</h3>
           <button class="iconbtn" id="mycClose" type="button" aria-label="Close">
@@ -367,11 +376,9 @@
           </div>
           <section class="fsec">
             <h4 class="fsec-h">On the card</h4>
-            <div class="row fgrid">
+            <div class="row">
               <div><label class="field-label" for="mycMobile">Mobile</label>
                 <input class="input" id="mycMobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="012-345 6789"></div>
-              <div><label class="field-label" for="mycEmail">Email</label>
-                <input class="input" id="mycEmail" type="email" autocomplete="email" placeholder="email@adspacestudios.com"></div>
             </div>
           </section>
           <div class="msg" id="mycMsg"></div>
@@ -3392,14 +3399,26 @@
           </div>
           <div class="sheet-body">
             <section class="fsec">
-              <h4 class="fsec-h">Sign-in</h4>
-              <div class="row fgrid-3">
+              <h4 class="fsec-h">Sign-in and access</h4>
+              <!-- A sign-in address runs long, so it takes half the row. -->
+              <div class="row fgrid">
                 <div><label class="field-label" for="tmName">Name</label>
                   <input class="input" id="tmName" aria-required="true" placeholder="John Doe"></div>
                 <div><label class="field-label" for="tmEmail">Sign-in email</label>
                   <input class="input" id="tmEmail" autocomplete="off" aria-required="true" type="email" placeholder="email@adspacestudios.com"></div>
+              </div>
+              <!-- The last day their access runs, and the time on it (empty
+                   for the day's end); empty for no end. Nobody sets their own
+                   (the database refuses it), and then Group takes the row. -->
+              <div class="row fgrid-3">
                 <div><label class="field-label" for="tmRole">Group</label>
                   <select class="select" id="tmRole" aria-required="true"></select></div>
+                <div class="fcells" id="tmUntilRow">
+                  <div><label class="field-label" for="tmUntil">Access until</label>
+                    <input class="input" id="tmUntil" type="date"></div>
+                  <div><label class="field-label" for="tmUntilTime">Time</label>
+                    <input class="input" id="tmUntilTime" type="time" step="300"></div>
+                </div>
               </div>
             </section>
             <!-- Who the person is to the company, kept once, here: the HR serial is
@@ -3431,22 +3450,19 @@
                 <div><label class="field-label" for="tmCap">Weekly capacity, hours</label>
                   <input inputmode="decimal" class="input" id="tmCap" type="number" min="0" max="80" step="0.5" placeholder="40"></div>
               </div>
-              <!-- The last day their access runs; empty for no end. Nobody
-                   sets their own (the database refuses it). -->
-              <div class="row fgrid" id="tmUntilRow">
-                <div><label class="field-label" for="tmUntil">Access until</label>
-                  <input class="input" id="tmUntil" type="date"></div>
-              </div>
             </section>
-            <!-- What their digital namecard shows besides the name and
-                 position; an empty email shows the sign-in address. -->
+            <!-- What their digital namecard shows besides the name, position
+                 and sign-in email. -->
             <section class="fsec">
               <h4 class="fsec-h">Namecard</h4>
               <div class="row fgrid">
                 <div><label class="field-label" for="tmMobile">Mobile</label>
                   <input class="input" id="tmMobile" type="tel" inputmode="tel" placeholder="012-345 6789"></div>
-                <div><label class="field-label" for="tmCardEmail">Email on card</label>
-                  <input class="input" id="tmCardEmail" type="email" placeholder="email@adspacestudios.com"></div>
+                <div><label class="field-label" for="tmCardOn">Card</label>
+                  <select class="select" id="tmCardOn" data-seg>
+                    <option value="on">On</option>
+                    <option value="off">Off</option>
+                  </select></div>
               </div>
             </section>
             <div class="msg" id="tmMsg"></div>
@@ -4493,17 +4509,17 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261001a"></script>
-<script src="/js/admin.js?v=20261003b"></script>
+<script src="/js/admin.js?v=20261003c"></script>
 <script src="/js/documents.js?v=20261002a"></script>
 <script src="/js/letters.js?v=20261002a"></script>
 <script src="/js/smreport.js?v=20261002g"></script>
 <script src="/js/reports.js?v=20261002f"></script>
 <script src="/js/register.js?v=20261001c"></script>
 <script src="/js/crm.js?v=20261002a"></script>
-<script src="/js/team.js?v=20261003a"></script>
-<script src="/js/namecard.js?v=20261003a"></script>
+<script src="/js/team.js?v=20261003f"></script>
+<script src="/js/namecard.js?v=20261003f"></script>
 <script src="/js/handbook.js?v=20261002a"></script>
-<script src="/js/campaigns.js?v=20261003a"></script>
+<script src="/js/campaigns.js?v=20261003b"></script>
 <script src="/js/ops.js?v=20261001b"></script>
 <script src="/js/perf.js?v=20261002a"></script>
 <script src="/js/search.js?v=20261001a"></script>
