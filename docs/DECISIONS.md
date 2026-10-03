@@ -777,3 +777,6 @@ The user, with a screenshot of the account menu: should it be revamped. Its six 
 
 ### 2026-10-03 · The campaigns' menu closer spares the account menu
 Found by the gate under load: a document scroll as a list finished loading ran the shared scroll closers, and Creator Campaigns' `shutMenus` hid every `.kmenu` on the page, the account menu with it, leaving its control marked open. It now shuts `.kmenu:not(.acct-menu)`; the account menu is shut by its own control, a press elsewhere and Escape.
+
+### 2026-10-03 · The namecard's buttons hold still when it turns
+The user, with the front and back of a live card on an iPhone: should the two buttons be the same size. The pair under the card sized to its words, so Contact details made it the card's width on the front and Front shrank it on the back: both buttons moved under the finger that had just pressed one. The pair is now two equal halves of the portrait card's width on every face (under the landscape card at a desk too), and `tests/card.js` measures both faces against the card.

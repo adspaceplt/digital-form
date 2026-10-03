@@ -2075,6 +2075,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     never the Employee ID, group or access;
   - the email row never breaks inside the address: it shrinks to 12px
     (`fitMail`), else breaks only before the @;
+  - the pair under the card (turn, QR code) is two equal halves of the
+    portrait card's width on every face, so a turn never moves them;
   - the card is the signboard's lockup on the brand's five tones (`--nc-*`,
     light in both themes) in golden proportion: the wordmark runs the card's
     width over φ² (`--nc-sw` from the card's width), the tagline at 0.46 of
