@@ -350,10 +350,14 @@
         return;
       }
       feed = d;
-      $('stateBox').hidden = true;
-      document.body.classList.remove('is-plain');
-      build();
-      follow();
+      // The link has proved itself: the media pass first, then the files.
+      var M = window.ADspaceMedia;
+      (M && M.pass ? M.pass({ campaign: TOKEN, passcode: passcode || null }) : Promise.resolve()).then(function () {
+        $('stateBox').hidden = true;
+        document.body.classList.remove('is-plain');
+        build();
+        follow();
+      });
     });
   }
 

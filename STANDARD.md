@@ -602,8 +602,9 @@ section holds only what is true of the project as a whole.
   - Expiring links: built for a campaign's invoice PDF (`sign-download`,
     five minutes, 2026-10-02), switched on once the user has done
     `docs/S3-STORAGE.md` §5. Letters and reports are never stored (redrawn
-    on Download); Content Review media and creator drafts stay public by
-    the user's choice.
+    on Download). Content Review media and creator drafts open only with
+    the media pass (`media-pass`, twelve hours, 2026-10-03), switched on
+    once the user has done `docs/S3-STORAGE.md` §6.
   - The ALP checklists as forms.
 - Access: "Own clients only" (a row scope for Sales).
 - Console search (`js/search.js`, built 2026-09-28) reads names, codes and

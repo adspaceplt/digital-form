@@ -426,6 +426,9 @@
        screen honest about it. Fetched once, before anything is shown. */
     loadMe(function () {
       applyAccess();
+      /* The media pass for a colleague (js/media.js). Not waited on: a file
+         drawn before it lands asks again and loads. */
+      if (me && window.ADspaceMedia && window.ADspaceMedia.pass) window.ADspaceMedia.pass({});
       /* The bell in the bar is My Work's, drawn on every route for anybody who
          can read the section, so it is told the moment the person is known. */
       if (window.ADspaceOps && window.ADspaceOps.signedIn) window.ADspaceOps.signedIn();

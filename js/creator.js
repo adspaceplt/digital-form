@@ -237,8 +237,12 @@
       code = c;
       try { localStorage.setItem(KEY, c); } catch (e) { /* private window */ }
       feed = d;
-      paint();
-      follow();
+      // The code has proved itself: the media pass first, then the files.
+      var M = window.ADspaceMedia;
+      (M && M.pass ? M.pass({ creator: c }) : Promise.resolve()).then(function () {
+        paint();
+        follow();
+      });
     }, function () { cover(t().failTitle, t().failText); });
   }
 

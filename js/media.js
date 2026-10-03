@@ -39,5 +39,120 @@
     video.innerHTML = sources(url);
     return video;
   }
-  window.ADspaceMedia = { webOf: webOf, sources: sources, tag: tag, attach: attach };
+  /* ---- The pass (2026-10-03) ----------------------------------------------
+     Everything under content/ opens only with CloudFront's signed cookies
+     once `privateMedia` is on (docs/S3-STORAGE.md §6). A page that has proved
+     its link, code or sign-in asks `media-pass` for them before it draws a
+     file, and they are set on adspace.me so mycdn.adspace.me receives them.
+     Stored addresses never change. The pass lasts twelve hours and is asked
+     again on a page load or a return to the tab once under two hours are left;
+     a file that fails in the meantime asks again once and loads again,
+     a video from the second it was at. */
+  var CONTENT = /^https:\/\/mycdn\.adspace\.me\/content\//i;
+  var UNTIL = 'adspace-media-until';
+  var HOUR = 3600 * 1000;
+  var proof = null;
+  var inflight = null;
+  var lastAsk = 0;
+
+  function s3() { var c = window.ADSPACE_CONFIG || {}; return c.s3 || {}; }
+  function isOn() { return !!s3().privateMedia; }
+  function cookie(name) {
+    var m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+    return m ? m[1] : '';
+  }
+  function until() { return (Number(cookie(UNTIL)) || 0) * 1000; }
+  function fresh(margin) { return until() - Date.now() > margin; }
+  /* adspace.me on the real site; the host alone anywhere else (the tests). */
+  function scope() {
+    var d = s3().mediaCookieDomain, h = location.hostname;
+    return d && (h === d || h.slice(-(d.length + 1)) === '.' + d) ? '; domain=' + d : '';
+  }
+  function put(name, value, age) {
+    document.cookie = name + '=' + value + scope() + '; path=/; max-age=' + age + '; secure; samesite=lax';
+  }
+  function ask(force) {
+    if (!isOn() || !proof) return Promise.resolve(false);
+    if (!force && fresh(2 * HOUR)) return Promise.resolve(true);
+    if (inflight) return inflight;
+    var API = window.ADspaceAPI, db = API && API.client;
+    if (!db || !db.functions) return Promise.resolve(false);
+    lastAsk = Date.now();
+    var timer;
+    inflight = new Promise(function (resolve) {
+      // A slow answer never holds the page: it draws, and a failed file asks again.
+      timer = setTimeout(function () { resolve(false); }, 6000);
+      db.functions.invoke('media-pass', { body: proof }).then(function (r) {
+        var d = r && r.data;
+        if (!r || r.error || !d || d.off || !d.signature) { resolve(false); return; }
+        var age = Math.max(60, d.expires - Math.floor(Date.now() / 1000));
+        put('CloudFront-Policy', d.policy, age);
+        put('CloudFront-Signature', d.signature, age);
+        put('CloudFront-Key-Pair-Id', d.keyPairId, age);
+        put(UNTIL, String(d.expires), age);
+        resolve(true);
+      }).catch(function () { resolve(false); });
+    }).then(function (ok) { clearTimeout(timer); inflight = null; return ok; });
+    return inflight;
+  }
+  /* What the page proved: { review: key, passcode }, { campaign: key,
+     passcode }, { creator: code }, or {} for a signed-in colleague. The
+     promise always resolves; a page draws on it either way. */
+  function pass(p) {
+    proof = p || {};
+    return ask(false);
+  }
+
+  function again(media) {
+    if (media.tagName === 'IMG') {
+      var s = media.getAttribute('src');
+      media.addEventListener('load', function () { media.removeAttribute('data-pass-tried'); }, { once: true });
+      media.removeAttribute('src');
+      setTimeout(function () { media.setAttribute('src', s); }, 0);
+      return;
+    }
+    var at = media.currentTime || 0;
+    media.addEventListener('loadedmetadata', function () {
+      media.removeAttribute('data-pass-tried');
+      if (at > 0) {
+        try { media.currentTime = at; } catch (e) { /* not seekable yet */ }
+        var p = media.play();
+        if (p && p.catch) p.catch(function () {});
+      }
+    }, { once: true });
+    media.load();
+  }
+
+  // Only a page listens: the conversion's own tests load this file without one.
+  if (typeof document !== 'undefined') document.addEventListener('error', function (e) {
+    if (!isOn() || !proof) return;
+    var el = e.target;
+    if (!el || !el.tagName) return;
+    var media = el.tagName === 'SOURCE' ? el.parentNode : el;
+    if (!media || (media.tagName !== 'IMG' && media.tagName !== 'VIDEO')) return;
+    var src = el.tagName === 'SOURCE' ? el.getAttribute('src')
+      : (media.currentSrc || media.getAttribute('src'));
+    if (!CONTENT.test(src || '')) return;
+    // A converted copy not made yet fails by design; the original follows it.
+    if (el.tagName === 'SOURCE' && /\.web\.mp4$/i.test(src)) return;
+    if (media.getAttribute('data-pass-tried')) return;
+    // A pass that is still good and was asked for a moment ago is not the cause.
+    if (fresh(5 * 60 * 1000) && Date.now() - lastAsk < 60000) return;
+    media.setAttribute('data-pass-tried', '1');
+    // The page's own fallback (an onerror) waits for the answer.
+    e.stopImmediatePropagation();
+    ask(true).then(function (ok) {
+      if (ok) again(media);
+      else el.dispatchEvent(new Event('error'));
+    });
+  }, true);
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') ask(false);
+    });
+    setInterval(function () { if (document.visibilityState === 'visible') ask(false); }, 30 * 60 * 1000);
+  }
+
+  window.ADspaceMedia = { webOf: webOf, sources: sources, tag: tag, attach: attach, pass: pass };
 })();
