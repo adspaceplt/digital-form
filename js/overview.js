@@ -29,6 +29,10 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
+  /* A section's cards are for whoever holds Full Access (manage) on it or
+     its part (the user, 2026-10-03: Clients showed to a group at Manage);
+     the granted parts (ops.reports, ops.all, team.performance) are their own
+     grant and are asked at it. */
   function may(key, lv) { return Boolean(bridge.may && bridge.may(key, lv || 'view')); }
 
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
@@ -159,7 +163,7 @@
     ] },
 
     { head: 'Clients', key: 'clients', cards: [
-      { key: 'cold', title: 'Leads going cold', can: function () { return may('clients'); },
+      { key: 'cold', title: 'Leads going cold', can: function () { return may('clients', 'manage'); },
         all: ['/admin/?s=clients', 'clients'], warn: true, empty: 'No leads over their time.',
         load: function () {
           return db.from('clients').select('id, name, slug, stage, stage_since, owner, created_at')
@@ -178,7 +182,7 @@
               }) };
             });
         } },
-      { key: 'intake', title: 'New leads and new clients', chart: true, can: function () { return may('clients'); },
+      { key: 'intake', title: 'New leads and new clients', chart: true, can: function () { return may('clients', 'manage'); },
         load: function () {
           return db.from('clients').select('id, created_at, stage_log').then(rows).then(function (list) {
             var ms = CH.months(6), at = {};
@@ -200,7 +204,7 @@
               fmt: function (v) { return String(v); } };
           });
         } },
-      { key: 'requests', title: 'Unanswered requests', can: function () { return may('clients.requests'); },
+      { key: 'requests', title: 'Unanswered requests', can: function () { return may('clients.requests', 'manage'); },
         all: ['/admin/?s=clients', 'clients'], empty: 'No requests waiting.',
         load: function () {
           return db.from('client_requests').select('id, kind, service_label, state, created_at, client_id, clients(id, name, slug)')
@@ -218,7 +222,7 @@
     ] },
 
     { head: 'Content Review', key: 'review', cards: [
-      { key: 'sets', title: 'Sets waiting on the client', can: function () { return may('review.sets'); },
+      { key: 'sets', title: 'Sets waiting on the client', can: function () { return may('review.sets', 'manage'); },
         all: ['/admin/?s=review', 'review'], empty: 'No sets waiting.',
         load: function () {
           return db.from('batches').select('id, title, client_id, published_at, created_at, clients(id, name, slug)')
@@ -268,7 +272,7 @@
               });
             });
         } },
-      { key: 'noset', title: 'No set this month', can: function () { return may('review.sets'); },
+      { key: 'noset', title: 'No set this month', can: function () { return may('review.sets', 'manage'); },
         all: ['/admin/?s=review', 'review'], empty: 'Every active client has a set this month.',
         load: function () {
           var first = new Date(); first = new Date(first.getFullYear(), first.getMonth(), 1);
@@ -288,7 +292,7 @@
     ] },
 
     { head: 'Creator Campaigns', key: 'campaigns', cards: [
-      { key: 'bookings', title: 'Bookings past their date', can: function () { return may('campaigns.campaigns'); },
+      { key: 'bookings', title: 'Bookings past their date', can: function () { return may('campaigns.campaigns', 'manage'); },
         all: ['/admin/?s=campaigns', 'campaigns'], warn: true, empty: 'No bookings past their date.',
         load: function () {
           var t0 = isoDay(today());
@@ -311,7 +315,7 @@
               }) };
             });
         } },
-      { key: 'qc', title: 'Waiting for the quality check', can: function () { return may('campaigns.campaigns'); },
+      { key: 'qc', title: 'Waiting for the quality check', can: function () { return may('campaigns.campaigns', 'manage'); },
         all: ['/admin/?s=campaigns', 'campaigns'], empty: 'No drafts waiting.',
         load: function () {
           return db.from('campaign_options')
@@ -330,7 +334,7 @@
     ] },
 
     { head: 'Documents', key: 'register', cards: [
-      { key: 'unsigned', title: 'Letters of Offer not yet signed', can: function () { return may('clients.documents'); },
+      { key: 'unsigned', title: 'Letters of Offer not yet signed', can: function () { return may('clients.documents', 'manage'); },
         all: ['/admin/?s=register', 'register'], empty: 'No letters waiting.',
         load: function () {
           return db.from('client_documents')
@@ -348,7 +352,7 @@
     ] },
 
     { head: 'Reports', key: 'reports', cards: [
-      { key: 'confirm', title: 'Waiting for confirmation', can: function () { return may('reports'); },
+      { key: 'confirm', title: 'Waiting for confirmation', can: function () { return may('reports', 'manage'); },
         all: ['/admin/?s=reports', 'reports'], empty: 'No reports waiting.',
         load: function () {
           var SM = window.ADspaceSmReport;
@@ -365,7 +369,7 @@
             });
         } },
       { key: 'noreport', title: function () { return 'No report for ' + lastMonth().word; },
-        can: function () { return may('reports'); },
+        can: function () { return may('reports', 'manage'); },
         all: ['/admin/?s=reports', 'reports'], empty: 'Every active client has one.',
         load: function () {
           var lm = lastMonth(), ms = lm.start, me = lm.end;

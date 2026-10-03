@@ -1260,8 +1260,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   `tab=` in the address, the first left out) over its own pane, every card
   read once on the visit. A tab counts the items its list cards hold, in
   warn where a late card has any (`.tab-n.is-warn`).
-- Each card asks its own `may()` before any read; a card not readable is not
-  drawn, and a section with no cards takes its tab. Sections in the
+- Each card asks its own `may()` before any read, at Full Access (`manage`)
+  on its section or part (Manage below it shows nothing); the granted parts
+  (`ops.reports`, `ops.all`, `team.performance`) at their grant. A card not
+  allowed is not drawn, and a section with no cards takes its tab. Sections in the
   rail's order: My Work (Late tasks, `ops.reports`; Open work by person,
   `ops.all` from `ops_report.open_by_person`; On-time delivery), Clients
   (Leads going cold by `STALE_H`; New leads and new clients; Unanswered
