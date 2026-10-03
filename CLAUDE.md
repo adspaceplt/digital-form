@@ -2080,10 +2080,11 @@ Each line is a rule that broke once. Its reason is in the archive.
   - the pair under the card (turn, QR code) is two equal halves of the
     portrait card's width on every face, so a turn never moves them;
   - every card has a short link on the links host (`card_slug`,
-    `2026-10-03-namecard-short-links.sql`): made from the name as the
-    colleague is added (`xue-yi`, numbered where taken), never following a
-    rename, edited in the Team sheet's Namecard (emptied, made again from the
-    name); one slug is never both a card's and a short link's
+    `2026-10-03-namecard-short-links.sql`): made from the name with no space
+    as the colleague is added (Xue Yi `xueyi`, numbered where taken), never
+    following a rename, edited in the Team sheet's Namecard and by the
+    colleague in My namecard (`namecard_save_card`; emptied, made again from
+    the name); one slug is never both a card's and a short link's
     (`slug-taken`, both ways); `link_resolve` answers it with the card's own
     address while the colleague is active and the card on, else missing; My
     namecard shows and copies it; the card's QR keeps the card's own address;
@@ -2096,8 +2097,8 @@ Each line is a rule that broke once. Its reason is in the archive.
     turns its front to a QR of its own address, and Save contact is a vCard;
   - every number reads with its country code (`ADspaceCard.phone`:
     +60 12-345 6789, +60 18-762 5233, +65 8123 4567);
-  - the colleague keeps their own mobile in My namecard (the account menu,
-    `namecard_save_mine`, filed `team.edited`); the Team sheet edits
+  - the colleague keeps their own mobile and short link in My namecard (the
+    account menu, `namecard_save_card`, filed `team.edited`); the Team sheet edits
     everybody's; a row ⋯ offers Open namecard while the card is on. No bar on
     the card's page: it is the card alone on white.
   - the page is named eNamecard by ADspace (`<title>`, og:title) and, once

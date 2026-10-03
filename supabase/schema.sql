@@ -23127,9 +23127,10 @@ grant execute on function public.namecard_save_mine(text, text) to authenticated
 --
 -- WHAT CHANGED
 --   The user, 2026-10-03: a short link for every namecard, made from the
---   name and edited per person in Team.
+--   name with no space and edited per person, in Team and by the colleague
+--   in My namecard.
 --   1. `team_members.card_slug`: made from the name as the colleague is
---      added (Xue Yi reads `xue-yi`), numbered where taken (`-2`), and never
+--      added (Xue Yi reads `xueyi`), numbered where taken (`-2`), and never
 --      following a rename. Team edits it; an empty value is made again from
 --      the name. One slug is never both a card's and a short link's, whichever
 --      came first (`slug-taken`).
@@ -23137,7 +23138,10 @@ grant execute on function public.namecard_save_mine(text, text) to authenticated
 --      (`/card/?k=`) while the colleague is active and the card is on, and
 --      as missing otherwise, so the Worker needs no change. A short link
 --      still wins where both could answer.
---   3. `namecard_mine` adds `slug`, for My namecard to show and copy.
+--   3. `namecard_mine` adds `slug`, for My namecard to show and copy, and
+--      `namecard_save_card(p_mobile, p_slug)` saves the colleague's own
+--      mobile and short link (filed `team.edited`, from and to);
+--      `namecard_save_mine` stays for a page from before.
 --   The QR on the card keeps the card's own address, which never changes,
 --   so a printed code survives an edited slug.
 --
@@ -23145,7 +23149,8 @@ grant execute on function public.namecard_save_mine(text, text) to authenticated
 --   Re-run link_resolve from the SHORT LINKS section of schema.sql and
 --   namecard_mine from NAMECARDS FROM THE SIGN-IN; then remove the triggers
 --   links_card_clash and team_card_slug and their functions, and
---   card_slug_base(text) and card_slug_free(text, uuid). The column may stay.
+--   card_slug_base(text), card_slug_free(text, uuid) and
+--   namecard_save_card(text, text). The column may stay.
 -- ===========================================================================
 
 alter table public.team_members add column if not exists card_slug text;
@@ -23159,11 +23164,11 @@ begin
   end if;
 end $$;
 
-/* A name as a slug: lower case, a dash between words, nothing else. */
+/* A name as a slug: lower case letters and digits, no space (the user,
+   2026-10-03: Xue Yi reads xueyi). */
 create or replace function public.card_slug_base(p_name text)
 returns text language sql immutable as $$
-  select coalesce(nullif(trim(both '-' from left(
-           trim(both '-' from regexp_replace(lower(coalesce(p_name, '')), '[^a-z0-9]+', '-', 'g')), 70)), ''),
+  select coalesce(nullif(left(regexp_replace(lower(coalesce(p_name, '')), '[^a-z0-9]+', '', 'g'), 70), ''),
          'card')
 $$;
 revoke all on function public.card_slug_base(text) from public, anon, authenticated;
@@ -23294,5 +23299,52 @@ returns jsonb language sql security definer stable set search_path = public as $
      limit 1), jsonb_build_object('error', 'not-team'))
 $$;
 grant execute on function public.namecard_mine() to authenticated;
+
+/* The colleague's own mobile and short link, from My namecard. An empty
+   short link is made again from the name; the trigger refuses a taken or
+   badly shaped one, answered here by name. */
+create or replace function public.namecard_save_card(p_mobile text, p_slug text)
+returns jsonb language plpgsql security definer set search_path = public as $$
+declare
+  me_row public.team_members;
+  v_mobile text := nullif(btrim(coalesce(p_mobile, '')), '');
+  v_slug text := lower(btrim(coalesce(p_slug, '')));
+  now_slug text;
+  said text := '';
+begin
+  select * into me_row from public.team_members t
+   where lower(t.email) = lower(auth.jwt() ->> 'email') and t.active limit 1;
+  if me_row.id is null then return jsonb_build_object('error', 'not-team'); end if;
+  if v_mobile is not null and length(regexp_replace(v_mobile, '\D', '', 'g')) not between 8 and 15 then
+    return jsonb_build_object('error', 'bad-mobile');
+  end if;
+  if v_slug <> '' and v_slug !~ '^[a-z0-9][a-z0-9._-]{0,79}$' then
+    return jsonb_build_object('error', 'slug-shape');
+  end if;
+  if v_mobile is not distinct from me_row.mobile and v_slug = coalesce(me_row.card_slug, '') then
+    return jsonb_build_object('ok', true, 'slug', me_row.card_slug);
+  end if;
+  begin
+    update public.team_members set mobile = v_mobile, card_slug = nullif(v_slug, '')
+     where id = me_row.id
+     returning card_slug into now_slug;
+  exception when others then
+    if sqlerrm in ('slug-taken', 'slug-shape') then return jsonb_build_object('error', sqlerrm); end if;
+    raise;
+  end;
+  if v_mobile is distinct from me_row.mobile then
+    said := 'Mobile: ' || coalesce(me_row.mobile, 'not set') || ' → ' || coalesce(v_mobile, 'not set');
+  end if;
+  if now_slug is distinct from me_row.card_slug then
+    said := said || case when said = '' then '' else '; ' end
+         || 'Short link: ' || coalesce(me_row.card_slug, 'not set') || ' → ' || coalesce(now_slug, 'not set');
+  end if;
+  if said <> '' then
+    insert into public.activity_log (actor, action, subject, detail)
+    values (lower(me_row.email), 'team.edited', me_row.name, said);
+  end if;
+  return jsonb_build_object('ok', true, 'slug', now_slug);
+end $$;
+grant execute on function public.namecard_save_card(text, text) to authenticated;
 
 -- END OF NAMECARD SHORT LINKS --------------------------------------------------

@@ -376,9 +376,17 @@
           </div>
           <section class="fsec">
             <h4 class="fsec-h">On the card</h4>
-            <div class="row">
+            <div class="row fgrid">
               <div><label class="field-label" for="mycMobile">Mobile</label>
                 <input class="input" id="mycMobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="012-345 6789"></div>
+              <!-- Their own short link: optional to change; emptied, it is made
+                   again from the name (namecard_save_card). -->
+              <div><label class="field-label" for="mycSlug">Short link</label>
+                <div class="slugfield">
+                  <span class="slugfield-pre" id="mycSlugPre">hi.adspace.me/</span>
+                  <input class="input" id="mycSlug" placeholder="Made from your name" autocapitalize="off"
+                         autocorrect="off" spellcheck="false">
+                </div></div>
             </div>
           </section>
           <div class="msg" id="mycMsg"></div>
@@ -4527,7 +4535,7 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/register.js?v=20261001c"></script>
 <script src="/js/crm.js?v=20261002a"></script>
 <script src="/js/team.js?v=20261003d"></script>
-<script src="/js/namecard.js?v=20261003d"></script>
+<script src="/js/namecard.js?v=20261003e"></script>
 <script src="/js/handbook.js?v=20261002a"></script>
 <script src="/js/campaigns.js?v=20261003b"></script>
 <script src="/js/ops.js?v=20261001b"></script>
