@@ -48,6 +48,14 @@
   --ok-bg:      #ecf5f0;
   --pub:        #6a3fb5;
   --pub-bg:     #f2edfa;
+  /* The namecard (js/namecard.js) is the brand's own five tones, light in
+     both themes as the post mockups are: never redefined below. */
+  --nc-ground:  #ffffff;
+  --nc-card:    #f5f5f5;
+  --nc-tile:    #ffffff;
+  --nc-word:    #515151;
+  --nc-ink:     #1a1a1a;
+  --nc-line:    #cfd0d4;
   --ok-solid:   #1f7a4d;
   --on-ok:      #ffffff;
   /* Amber reads as caution only while it is plainly orange. #9c5c16 had
@@ -9399,3 +9407,97 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
 .picker.is-full .picker-field { margin-bottom: 8px; }
 .picker.is-full .picker-opt { min-height: 44px; font-size: 15px; }
 @media (prefers-reduced-motion: reduce) { .picker, .picker.is-full { animation: none; } }
+
+/* ===== Namecard (js/namecard.js, /card/, the console's My namecard) =====
+   The signboard's lockup on a #f5f5f5 card: the tagline set at 0.46 of the
+   wordmark's size, so it runs about 1.64 times the wordmark's width, as the
+   signboard does. The faces share one grid cell, so the card is as tall as
+   its longer face and turns over without a measured height. */
+body.ncpage { background: var(--nc-ground); }
+.ncmain { min-height: 100vh; min-height: 100dvh; box-sizing: border-box; display: grid; place-items: center;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
+.ncmain > * { width: 100%; }
+.nc { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+.nc-stage { width: min(100%, 326px); perspective: 1600px; }
+.nc-flip { display: grid; transform-style: preserve-3d; transition: transform .8s var(--ease); }
+.nc.is-back .nc-flip { transform: rotateY(180deg); }
+.nc-face { grid-area: 1 / 1; position: relative; min-height: 548px; box-sizing: border-box; border-radius: var(--radius-lg);
+  background: var(--nc-card); color: var(--nc-ink); overflow: hidden;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.nc-back { transform: rotateY(180deg); padding: 30px 26px 26px; display: flex; flex-direction: column; }
+.nc-lock, .nc-qr { position: absolute; inset: 0; box-sizing: border-box; display: flex; flex-direction: column; align-items: center;
+  transition: opacity var(--t-slow) var(--ease-out); }
+.nc-lock { justify-content: center; }
+.nc-qr { padding: 34px 28px 30px; opacity: 0; pointer-events: none; }
+.nc.is-qr .nc-lock { opacity: 0; pointer-events: none; }
+.nc.is-qr .nc-qr { opacity: 1; pointer-events: auto; }
+.nc-word { display: block; font-family: 'ADspace Optima', Optima, Candara, serif; font-size: 42px; line-height: 1; color: var(--nc-word); }
+.nc-tag { display: block; margin-top: 8px; font-family: var(--font-head); font-size: 19.3px; line-height: 1; white-space: nowrap; color: var(--nc-word); }
+.nc-word-sm { font-size: 19px; }
+.nc-qrbox { margin-top: auto; width: 228px; height: 228px; box-sizing: border-box; padding: 18px; border-radius: 18px; background: var(--nc-tile); }
+.nc-qrbox canvas, .nc-qrbox img { width: 100% !important; height: auto !important; }
+.nc-qrname { margin-top: 24px; font-family: var(--font-head); font-weight: 400; font-size: 22px; line-height: 1.1; }
+.nc-qrlink { margin: 6px 0 auto; font-size: 12.5px; color: var(--nc-word); text-align: center; overflow-wrap: anywhere; }
+.nc-who { margin-top: 34px; display: flex; flex-direction: column; gap: 5px; }
+.nc-name { font-family: var(--font-head); font-weight: 400; font-size: 30px; line-height: 1.1; letter-spacing: -.005em; }
+.nc-post { font-size: 13px; color: var(--nc-word); }
+.nc-rows { margin-top: 22px; display: flex; flex-direction: column; border-bottom: 1px solid var(--nc-line); }
+.nc-row { min-height: 44px; display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center;
+  border-top: 1px solid var(--nc-line); color: var(--nc-ink); text-decoration: none; font-size: 14.5px; font-variant-numeric: tabular-nums; }
+.nc-row-long { padding: 12px 0; align-items: baseline; font-size: 14px; line-height: 1.45; }
+.nc-label { font-size: 12px; color: var(--nc-word); }
+.nc-value { min-width: 0; overflow-wrap: anywhere; }
+.nc-acts { margin-top: auto; padding-top: 16px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.nc-acts.is-one { grid-template-columns: minmax(0, 1fr); }
+.nc-pill { height: 44px; padding: 0 18px; border: 0; border-radius: 22px; background: var(--nc-tile); color: var(--nc-ink);
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; font: 500 13.5px var(--font);
+  letter-spacing: .01em; text-decoration: none; cursor: pointer; transition: transform var(--t-fast) var(--ease); }
+.nc-pill svg { width: 15px; height: 15px; stroke-width: 1.8; flex: 0 0 auto; }
+.nc-pill-ink { background: var(--nc-ink); color: var(--nc-card); }
+.nc-pill:active { transform: scale(.97); }
+.nc-pill:focus-visible, .nc-row:focus-visible { outline: 2px solid var(--action-ring); outline-offset: 2px; }
+.nc-ctl { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; }
+.nc-ctl .nc-pill { height: 40px; background: var(--nc-card); }
+.nc-ctl .nc-pill[aria-pressed="true"] { background: var(--nc-ink); color: var(--nc-card); }
+@media (hover: hover) {
+  .nc-pill:hover { filter: brightness(.96); }
+  .nc-pill-ink:hover, .nc-ctl .nc-pill[aria-pressed="true"]:hover { filter: brightness(1.25); }
+  .nc-row:hover .nc-value { color: var(--nc-word); }
+}
+@media (pointer: coarse) { .nc-ctl .nc-pill { height: 44px; } }
+/* On a desk the card lies the way it is printed, landscape (`is-land`,
+   set by js/namecard.js from the window at 760 and over), on its page and
+   in the console's sheet alike. */
+.nc.is-land .nc-stage { width: min(100%, 720px); perspective: 2200px; }
+.nc.is-land .nc-face { min-height: 412px; border-radius: 24px; }
+.nc.is-land .nc-word { font-size: 72px; }
+.nc.is-land .nc-tag { font-size: 33px; margin-top: 14px; }
+.nc.is-land .nc-word-sm { font-size: 24px; }
+.nc.is-land .nc-back { padding: 40px 44px 38px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    grid-template-rows: auto 1fr auto; column-gap: 44px; }
+.nc.is-land .nc-back > .nc-word-sm { grid-column: 1; grid-row: 1; }
+.nc.is-land .nc-who { grid-column: 1; grid-row: 2; align-self: center; margin-top: 0; }
+.nc.is-land .nc-name { font-size: 38px; }
+.nc.is-land .nc-post { font-size: 14px; }
+.nc.is-land .nc-acts { grid-column: 1; grid-row: 3; padding-top: 0; }
+.nc.is-land .nc-acts .nc-pill { height: 40px; }
+.nc.is-land .nc-rows { grid-column: 2; grid-row: 1 / 4; align-self: center; margin-top: 0; }
+.nc.is-land .nc-row { grid-template-columns: 72px minmax(0, 1fr); }
+.nc.is-land .nc-qr { padding: 40px 48px; display: grid; grid-template-columns: minmax(0, 1fr) 260px;
+    grid-template-rows: auto 1fr auto auto 1fr; column-gap: 48px; justify-items: start; align-items: start; }
+.nc.is-land .nc-qr > .nc-word-sm { grid-column: 1; grid-row: 1; }
+.nc.is-land .nc-qrbox { grid-column: 2; grid-row: 1 / 6; align-self: center; margin: 0; width: 260px; height: 260px; padding: 20px; }
+.nc.is-land .nc-qrname { grid-column: 1; grid-row: 3; margin: 0; font-size: 34px; }
+.nc.is-land .nc-qrlink { grid-column: 1; grid-row: 4; margin: 8px 0 0; text-align: left; font-size: 14px; }
+@media (prefers-reduced-motion: reduce) { .nc-flip, .nc-lock, .nc-qr { transition: none; } }
+/* My namecard in the console: the card as a client sees it, then its
+   address with Copy link and Open, then the fields. */
+.ncsheet-card { display: flex; justify-content: center; }
+.ncsheet-card:empty { display: none; }
+.ncsheet-link { margin-top: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.ncsheet-url { flex: 1 1 200px; min-width: 0; font: 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink-soft); overflow-wrap: anywhere; }
+.ncsheet-url:empty, .ncsheet-url:empty + .ncsheet-acts { display: none; }
+.ncsheet-acts { display: flex; gap: 8px; flex: 0 0 auto; }
+.ncsheet-acts .btn { flex: 0 0 auto; min-width: 0; }
+.ncsheet-acts .btn svg { width: 15px; height: 15px; }
+@media (max-width: 640px) { .ncsheet-acts { flex: 1 1 100%; } .ncsheet-acts .btn { flex: 1 1 0; } }

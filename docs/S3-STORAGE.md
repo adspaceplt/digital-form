@@ -414,8 +414,19 @@ CloudFront already holds from 6a. Do 6a first.
 
 1. S3 → **myadspace** → **Permissions** → **Bucket policy** → **Edit**. Find
    the statement that names `cloudfront.amazonaws.com` and copy its
-   distribution ARN (`arn:aws:cloudfront::<account>:distribution/<ID>`). If
-   no statement names CloudFront, stop and tell Claude.
+   distribution ARN (`arn:aws:cloudfront::<account>:distribution/<ID>`).
+   If no statement names CloudFront (it reads the bucket as the public
+   does), give it its own way in first:
+   1. CloudFront → the distribution → **Origins** → the bucket's origin →
+      **Edit**. The origin domain reads
+      `myadspace.s3.ap-southeast-5.amazonaws.com` (if it holds
+      `s3-website`, stop and tell Claude).
+   2. **Origin access** → **Origin access control settings** → **Create new
+      OAC** (defaults: sign requests) → **Create** → **Save changes**.
+      Public files keep loading: the bucket still lets everybody read them.
+   3. CloudFront offers **Copy policy**. Add the copied statement to the
+      bucket policy (beside the others) and save. It names
+      `cloudfront.amazonaws.com` and the distribution ARN to copy.
 2. In the same policy, change the condition of `PrivateOnlyThroughSignedLinks`
    (5b) to let that distribution read too:
 

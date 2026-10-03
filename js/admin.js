@@ -262,6 +262,11 @@
     shutAcct();
     showSection('mine');
   });
+  /* The person's digital namecard (js/namecard.js). */
+  $('myCard').addEventListener('click', function () {
+    shutAcct();
+    if (window.ADspaceCard) window.ADspaceCard.openMine($('acctBtn'));
+  });
   /* Passkeys are the person's own way in, drawn only where this browser can
      use one (js/passkey.js decides). */
   if (window.ADspacePasskey && window.ADspacePasskey.on && $('acctPasskeys')) {
