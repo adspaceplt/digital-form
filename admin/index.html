@@ -379,8 +379,17 @@
             <div class="row fgrid">
               <div><label class="field-label" for="mycMobile">Mobile</label>
                 <input class="input" id="mycMobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="012-345 6789"></div>
+              <!-- Hidden, the number never leaves the database: the card, its
+                   WhatsApp and Save contact go without it (namecard_get). -->
+              <div><label class="field-label" for="mycShow">Mobile on card</label>
+                <select class="select" id="mycShow" data-seg>
+                  <option value="show">Show</option>
+                  <option value="hide">Hide</option>
+                </select></div>
+            </div>
+            <div class="row">
               <!-- Their own short link: optional to change; emptied, it is made
-                   again from the name (namecard_save_card). -->
+                   again from the name (namecard_save). -->
               <div><label class="field-label" for="mycSlug">Short link</label>
                 <div class="slugfield">
                   <span class="slugfield-pre" id="mycSlugPre">hi.adspace.me/</span>
@@ -3466,21 +3475,26 @@
               <div class="row fgrid">
                 <div><label class="field-label" for="tmMobile">Mobile</label>
                   <input class="input" id="tmMobile" type="tel" inputmode="tel" placeholder="012-345 6789"></div>
-                <div><label class="field-label" for="tmCardOn">Card</label>
-                  <select class="select" id="tmCardOn" data-seg>
-                    <option value="on">On</option>
-                    <option value="off">Off</option>
+                <div><label class="field-label" for="tmCardMobile">Mobile on card</label>
+                  <select class="select" id="tmCardMobile" data-seg>
+                    <option value="show">Show</option>
+                    <option value="hide">Hide</option>
                   </select></div>
               </div>
               <!-- The card's short link on the links host: made from the name,
                    edited here; left empty, it is made again from the name. -->
-              <div class="row">
+              <div class="row fgrid">
                 <div><label class="field-label" for="tmCardSlug">Short link</label>
                   <div class="slugfield">
                     <span class="slugfield-pre" id="tmSlugPre">hi.adspace.me/</span>
                     <input class="input" id="tmCardSlug" placeholder="Made from the name" autocapitalize="off"
                            autocorrect="off" spellcheck="false">
                   </div></div>
+                <div><label class="field-label" for="tmCardOn">Card</label>
+                  <select class="select" id="tmCardOn" data-seg>
+                    <option value="on">On</option>
+                    <option value="off">Off</option>
+                  </select></div>
               </div>
             </section>
             <div class="msg" id="tmMsg"></div>
@@ -4534,8 +4548,8 @@ raya-2026        https://example.com/raya"></textarea>
 <script src="/js/reports.js?v=20261002f"></script>
 <script src="/js/register.js?v=20261001c"></script>
 <script src="/js/crm.js?v=20261002a"></script>
-<script src="/js/team.js?v=20261003d"></script>
-<script src="/js/namecard.js?v=20261003e"></script>
+<script src="/js/team.js?v=20261003e"></script>
+<script src="/js/namecard.js?v=20261003f"></script>
 <script src="/js/handbook.js?v=20261002a"></script>
 <script src="/js/campaigns.js?v=20261003b"></script>
 <script src="/js/ops.js?v=20261001b"></script>

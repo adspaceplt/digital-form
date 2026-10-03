@@ -182,6 +182,11 @@
       update: function (next) {
         state.card = next;
         q('rows').innerHTML = rows(next);
+        /* A card drawn without a mobile gains its WhatsApp once one is shown. */
+        if (!q('wa') && next.mobile) {
+          host.querySelector('.nc-acts').insertAdjacentHTML('beforeend',
+            '<a class="nc-pill" data-nc="wa" target="_blank" rel="noopener">WhatsApp</a>');
+        }
         var wa = q('wa');
         if (wa && next.mobile) wa.href = 'https://wa.me/' + digits(next.mobile);
         host.querySelector('.nc-acts').classList.toggle('is-one', !next.mobile);
@@ -194,8 +199,8 @@
 
   /* ---- The console's My namecard --------------------------------------
      The person's own card as a client sees it, the address to hand over,
-     and what they keep themselves: the mobile and the short link
-     (namecard_save_card). */
+     and what they keep themselves: the mobile, whether it is on the card,
+     and the short link (namecard_save). */
   var SAID = {
     'bad-mobile': 'Enter a mobile number of 8 to 15 digits.',
     'slug-taken': 'That short link is already in use.',
@@ -218,11 +223,14 @@
         window.ADspaceSheet.show($('mycSheet'), { opener: opener });
         return;
       }
+      /* The preview is the card as others see it: hidden, it has no mobile. */
       var cardOf = function () {
         return { name: d.name, designation: d.designation,
-                 mobile: ($('mycMobile').value || '').trim() || null, email: d.email };
+                 mobile: $('mycShow').value === 'hide' ? null : ($('mycMobile').value || '').trim() || null,
+                 email: d.email };
       };
       $('mycMobile').value = d.mobile || '';
+      $('mycShow').value = d.show_mobile === false ? 'hide' : 'show';
       $('mycSlug').value = d.slug || '';
       var handle = mount($('mycPreview'), cardOf(), d.key);
       /* The card's short link on the links host, where it has one; the QR on
@@ -237,6 +245,7 @@
       $('mycOpen').href = share;
       $('mycCopy').onclick = function () { if (window.ADspaceCopy) window.ADspaceCopy.to(this, share); };
       $('mycMobile').oninput = function () { handle.update(cardOf()); };
+      $('mycShow').onchange = function () { handle.update(cardOf()); };
       $('mycSave').onclick = function () {
         var btn = this;
         btn.disabled = true;
@@ -244,7 +253,8 @@
         if (slug && !/^[a-z0-9][a-z0-9._-]{0,79}$/.test(slug)) {
           btn.disabled = false; say(SAID['slug-shape'], 'err'); $('mycSlug').focus(); return;
         }
-        db.rpc('namecard_save_card', { p_mobile: ($('mycMobile').value || '').trim() || null, p_slug: slug })
+        db.rpc('namecard_save', { p_mobile: ($('mycMobile').value || '').trim() || null, p_slug: slug,
+                                  p_show: $('mycShow').value !== 'hide' })
           .then(function (s) {
             btn.disabled = false;
             var e = s.data && s.data.error;

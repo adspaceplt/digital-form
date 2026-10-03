@@ -1039,6 +1039,7 @@
     $('tmUntil').min = todayMy();
     $('tmMobile').value = m ? (m.mobile || '') : '';
     $('tmCardOn').value = m && m.card_on === false ? 'off' : 'on';
+    $('tmCardMobile').value = m && m.card_mobile === false ? 'hide' : 'show';
     $('tmCardSlug').value = m ? (m.card_slug || '') : '';
     $('tmSlugPre').textContent = ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '/';
     fillRolePick(); $('tmRole').value = m ? m.role : 'account';
@@ -1115,7 +1116,8 @@
     var fields = { name: name, email: email, role: role, staff_code: staff || null, designation: desig || null,
                    department: $('tmDept').value || null, role_family: $('tmRoleStd').value || null,
                    capacity_minutes_week: capH >= 0 && $('tmCap').value ? Math.round(capH * 60) : null,
-                   mobile: mobile || null, card_on: $('tmCardOn').value !== 'off' };
+                   mobile: mobile || null, card_on: $('tmCardOn').value !== 'off',
+                   card_mobile: $('tmCardMobile').value !== 'hide' };
     /* Empty makes it again from the name; unchanged is not sent. */
     if (!editingMember || cardSlug !== (editingMember.card_slug || '')) fields.card_slug = cardSlug || null;
     if (!$('tmUntilRow').hidden) {
@@ -1155,7 +1157,8 @@
             ['role_family', 'Role standard', function (v) { return ROLE_STD[v] || v; }],
             ['capacity_minutes_week', 'Weekly capacity', function (v) { return Math.round(Number(v) / 60) + 'h'; }],
             ['access_until', 'Access until', dayWord], ['access_until_time', 'Access time', timeWord],
-            ['mobile', 'Mobile'], ['card_on', 'Namecard', function (v) { return v === false ? 'Off' : 'On'; }],
+            ['mobile', 'Mobile'], ['card_mobile', 'Mobile on card', function (v) { return v === false ? 'Hide' : 'Show'; }],
+            ['card_on', 'Namecard', function (v) { return v === false ? 'Off' : 'On'; }],
             ['card_slug', 'Short link']]);
           if (moved) log('team.edited', name, moved);
           msg('teamMsg', 'Saved.', 'ok');

@@ -2046,10 +2046,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Access until (`access_until`, a day in Malaysia, with an optional time
     `access_until_time`, five-minute steps; no time is the day's end; empty
     for no end), never on your own row (`own-expiry`);
-  - Mobile and Card On / Off (`card_on`).
+  - Mobile, Mobile on card Show / Hide (`card_mobile`) and Card On / Off
+    (`card_on`).
 - The member sheet is three sections: Sign-in and access (name, sign-in
   email, group, Access until), Employment (department, position, role
-  standard, Employee ID, weekly capacity), Namecard (mobile, card).
+  standard, Employee ID, weekly capacity), Namecard (mobile, mobile on card,
+  short link, card).
 - A colleague is never deleted, only stood down.
 - Access expiry (`2026-10-01-team-access-expiry.sql`,
   `2026-10-03-team-access-time.sql`):
@@ -2083,11 +2085,18 @@ Each line is a rule that broke once. Its reason is in the archive.
     `2026-10-03-namecard-short-links.sql`): made from the name with no space
     as the colleague is added (Xue Yi `xueyi`, numbered where taken), never
     following a rename, edited in the Team sheet's Namecard and by the
-    colleague in My namecard (`namecard_save_card`; emptied, made again from
+    colleague in My namecard (`namecard_save`; emptied, made again from
     the name); one slug is never both a card's and a short link's
     (`slug-taken`, both ways); `link_resolve` answers it with the card's own
     address while the colleague is active and the card on, else missing; My
     namecard shows and copies it; the card's QR keeps the card's own address;
+  - whether the mobile is on the card is the colleague's own choice
+    (`card_mobile`, Mobile on card Show / Hide, shown by default;
+    `2026-10-03-namecard-mobile-switch.sql`): one card, one link and one QR,
+    and hidden, `namecard_get` sends no mobile, so the card, its WhatsApp and
+    Save contact go without it; set in My namecard (`namecard_save`, one
+    write with the mobile and short link) and in the Team sheet, filed from
+    and to;
   - the card is the signboard's lockup on the brand's five tones (`--nc-*`,
     light in both themes) in golden proportion: the wordmark runs the card's
     width over φ² (`--nc-sw` from the card's width), the tagline at 0.46 of
@@ -2098,7 +2107,7 @@ Each line is a rule that broke once. Its reason is in the archive.
   - every number reads with its country code (`ADspaceCard.phone`:
     +60 12-345 6789, +60 18-762 5233, +65 8123 4567);
   - the colleague keeps their own mobile and short link in My namecard (the
-    account menu, `namecard_save_card`, filed `team.edited`); the Team sheet edits
+    account menu, `namecard_save`, filed `team.edited`); the Team sheet edits
     everybody's; a row ⋯ offers Open namecard while the card is on. No bar on
     the card's page: it is the card alone on white.
   - the page is named eNamecard by ADspace (`<title>`, og:title) and, once
