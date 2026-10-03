@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261003f">
+<link rel="stylesheet" href="/css/portal.css?v=20261003g">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -3391,22 +3391,25 @@
           <div class="sheet-body">
             <section class="fsec">
               <h4 class="fsec-h">Sign-in and access</h4>
-              <div class="row fgrid-3">
+              <!-- A sign-in address runs long, so it takes half the row. -->
+              <div class="row fgrid">
                 <div><label class="field-label" for="tmName">Name</label>
                   <input class="input" id="tmName" aria-required="true" placeholder="John Doe"></div>
                 <div><label class="field-label" for="tmEmail">Sign-in email</label>
                   <input class="input" id="tmEmail" autocomplete="off" aria-required="true" type="email" placeholder="email@adspacestudios.com"></div>
-                <div><label class="field-label" for="tmRole">Group</label>
-                  <select class="select" id="tmRole" aria-required="true"></select></div>
               </div>
               <!-- The last day their access runs, and the time on it (empty
                    for the day's end); empty for no end. Nobody sets their own
-                   (the database refuses it). -->
-              <div class="row fgrid" id="tmUntilRow">
-                <div><label class="field-label" for="tmUntil">Access until</label>
-                  <input class="input" id="tmUntil" type="date"></div>
-                <div><label class="field-label" for="tmUntilTime">Time</label>
-                  <input class="input" id="tmUntilTime" type="time" step="300"></div>
+                   (the database refuses it), and then Group takes the row. -->
+              <div class="row fgrid-3">
+                <div><label class="field-label" for="tmRole">Group</label>
+                  <select class="select" id="tmRole" aria-required="true"></select></div>
+                <div class="fcells" id="tmUntilRow">
+                  <div><label class="field-label" for="tmUntil">Access until</label>
+                    <input class="input" id="tmUntil" type="date"></div>
+                  <div><label class="field-label" for="tmUntilTime">Time</label>
+                    <input class="input" id="tmUntilTime" type="time" step="300"></div>
+                </div>
               </div>
             </section>
             <!-- Who the person is to the company, kept once, here: the HR serial is

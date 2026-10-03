@@ -416,6 +416,9 @@ a { color: inherit; }
 .input[type="date"]::-webkit-calendar-picker-indicator,
 .input[type="time"]::-webkit-calendar-picker-indicator,
 .input[type="month"]::-webkit-calendar-picker-indicator { opacity: .55; cursor: pointer; }
+/* A time field's value is narrower than the box, so its mark followed the
+   value into the middle; it keeps to the right edge, as the date's does. */
+@media (pointer: fine) { .input[type="time"] { display: block; } }
 /* Under a finger there is no picker mark at all, on iOS or on Android, so
    the field names itself with a glyph on the left: a calendar for a date and
    a clock for a time, the same weight as every other glyph in the console.
@@ -1264,6 +1267,12 @@ a { color: inherit; }
 .row.fgrid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .row.fgrid > .span-all, .row.fgrid-3 > .span-all { grid-column: 1 / -1; }
 .row.fgrid-3 > .span-2 { grid-column: span 2; }
+/* Cells that come and go together without a box of their own (the Team
+   sheet's access date and time); with them gone the first cell takes the row. */
+.row > .fcells { display: contents; }
+.fcells > div { min-width: 0; display: flex; flex-direction: column; }
+.fcells > div > .input { margin-top: auto; }
+.row.fgrid-3:has(> .fcells[hidden]) > :first-child { grid-column: 1 / -1; }
 /* A pane that narrow, or a phone, takes one field a line. */
 .is-tight .row.fgrid, .is-tight .row.fgrid-3 { grid-template-columns: minmax(0, 1fr); }
 .is-tight .row.fgrid-3 > .span-2 { grid-column: auto; }
