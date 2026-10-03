@@ -69,10 +69,10 @@ window.ADSPACE_CONFIG = {
     maxUploadMB: 1024,
 
     // A campaign's invoice PDF goes under `private/` and opens through a
-    // five-minute link from sign-download. Turned on once the bucket policy
-    // and the upload key's private/* permission are in place
-    // (docs/S3-STORAGE.md §5); until then invoices upload as before.
-    privateInvoices: false,
+    // five-minute link from sign-download. On since 2026-10-03, once the
+    // bucket policy and the upload key's private/* permission were in place
+    // (docs/S3-STORAGE.md §5).
+    privateInvoices: true,
 
     // Everything under `content/` (Content Review files, creator drafts)
     // opens only with the CloudFront pass `media-pass` hands a page that has
