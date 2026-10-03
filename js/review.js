@@ -110,6 +110,8 @@
      with its count, the one on show on the sliding surface of the strip.
      Pending first, because what waits on the reader is what they came for. */
   var STAGES = [['pending', 'Pending'], ['changes', 'Changes requested'], ['approved', 'Approved'], ['all', 'All']];
+  /* A stage's count wears its cards' chip tone (`.status-*`) where it counts any. */
+  var STAGE_TONE = { pending: 'is-warn', changes: 'is-err', approved: 'is-ok' };
   var stage = null;
   function stageOf(review) {
     return !review ? 'pending' : review.decision === 'approved' ? 'approved' : 'changes';
@@ -126,7 +128,7 @@
     strip.innerHTML = STAGES.map(function (s) {
       return '<button class="tab' + (s[0] === stage ? ' is-on' : '') + '" type="button" role="tab" data-stage="' + s[0] + '"' +
         ' aria-selected="' + (s[0] === stage) + '" tabindex="' + (s[0] === stage ? 0 : -1) + '">' +
-        stageWord(s) + ' <span class="tab-n">' + counts[s[0]] + '</span></button>';
+        stageWord(s) + ' <span class="tab-n' + (counts[s[0]] && STAGE_TONE[s[0]] ? ' ' + STAGE_TONE[s[0]] : '') + '">' + counts[s[0]] + '</span></button>';
     }).join('');
   }
   function pickStage(to) {

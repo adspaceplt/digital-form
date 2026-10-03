@@ -251,6 +251,12 @@ The scale for gaps between blocks is 4, 8, 12, 16, 24, 32, and it stops there.
   and the column's on a phone. Tabs in a full strip share what is spare
   (`flex: 1 0 auto`). It never wraps; it scrolls sideways with the edge that
   has more beyond it faded.
+- A tab's count is a small pill (`.tab-n`, 12/600, radius 5): `--tonal`
+  with the soft ink, or the tone of the state it counts where it counts any
+  (Content Review: Pending warn, Changes requested rose, Approved green, as
+  the cards' own chips on both sides; Overview: warn where an item is late).
+  It gives back its room on a phone (4px under 640, 3px under 400) before a
+  tab's word is cut.
 - On a phone a sideways swipe presses the tab beside the chosen one
   (`js/swipe.js`, a region's `data-swipe` naming its strip).
 - A component borrowed for its shape carries its old flex and behaviour. Use a

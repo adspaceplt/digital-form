@@ -9351,14 +9351,27 @@ body.lp .brand-kicker { font-size: 16px; font-weight: 400; letter-spacing: 0; co
    copy is edited inside Request changes. */
 .stagestrip { margin-top: 16px; }
 .stagestrip + .filterbar { padding-top: 12px; }
-.tab-n { margin-left: 4px; font-weight: 500; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
-.tab.is-on .tab-n { color: var(--ink-soft); }
-/* A tab's count turns warn where one of its items is late (Overview). */
-/* A late count is a small warn chip, so it holds its contrast on the tab
-   track as on the raised thumb (bare warn ink on the track measured 4.50). */
-.tab-n.is-warn, .tab.is-on .tab-n.is-warn {
-  color: var(--warn); background: var(--warn-bg); font-weight: 600;
-  padding: 0 6px; border-radius: 5px;
+/* A tab's count is a small chip of its own (the user, 2026-10-03: noticed
+   at a glance): a soft neutral pill, or the tone of the state it counts
+   where it counts any (Content Review: Pending warn, Changes requested
+   rose, Approved green, as the cards' own chips; Overview: warn where an
+   item is late). Every pair holds 4.5:1 on the track and on the thumb. */
+.tab-n {
+  display: inline-block; margin-left: 6px; min-width: 20px; padding: 0 6px;
+  border-radius: 5px; background: var(--tonal); color: var(--ink-soft);
+  font-size: 12px; font-weight: 600; line-height: 20px; text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.tab-n.is-warn { color: var(--warn); background: var(--warn-bg); }
+.tab-n.is-ok   { color: var(--ok);   background: var(--ok-bg); }
+.tab-n.is-err  { color: var(--err);  background: var(--err-bg); }
+/* On a phone a strip shares the column's width, so the pill gives back
+   its room before any tab's word is cut. */
+@media (max-width: 640px) {
+  .tab-n { margin-left: 4px; min-width: 18px; padding: 0 4px; }
+}
+@media (max-width: 400px) {
+  .tab-n { margin-left: 3px; min-width: 16px; padding: 0 3px; }
 }
 .stage-empty {
   margin: 4px 0 24px; padding: 18px 20px; border-radius: var(--radius);

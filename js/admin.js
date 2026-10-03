@@ -3524,6 +3524,8 @@
      scroll (the user, 2026-09-30). Opens on Changes requested while there is
      any, else All; the choice is kept per set while the page is open. */
   var POST_STAGES = [['pending', 'Pending'], ['changes', 'Changes requested'], ['approved', 'Approved'], ['all', 'All']];
+  /* A stage's count wears its chip's tone where it counts any. */
+  var STAGE_TONE = { pending: 'is-warn', changes: 'is-err', approved: 'is-ok' };
   var postStageBy = {};
   function stageWord(s) {
     /* On a phone the longest stage takes its short word, so all four fit the
@@ -3553,7 +3555,7 @@
       var on = s[0] === pick;
       return '<button class="tab' + (on ? ' is-on' : '') + '" type="button" role="tab" data-stage="' + s[0] + '"' +
         ' aria-selected="' + on + '" tabindex="' + (on ? 0 : -1) + '">' + stageWord(s) +
-        ' <span class="tab-n">' + counts[s[0]] + '</span></button>';
+        ' <span class="tab-n' + (counts[s[0]] && STAGE_TONE[s[0]] ? ' ' + STAGE_TONE[s[0]] : '') + '">' + counts[s[0]] + '</span></button>';
     }).join('');
     box.innerHTML = '';
     /* The set's videos, named by their place in it, for a cover to belong to. */
@@ -3727,14 +3729,15 @@
 
   /* Pending, approved, changes requested. The dot is what you scan for; the
      word is what makes it mean something. */
-  /* The client's decision as the portal's chip: warn while it waits on
-     somebody, green once approved. A word, never a coloured dot. */
+  /* The client's decision as the portal's chip (`.status-*`): warn while
+     it waits, rose for changes requested, green once approved. A word,
+     never a coloured dot. */
   function statusMark(review) {
     var kind = !review ? 'pending'
              : review.decision === 'approved' ? 'approved' : 'changes';
     var word = kind === 'pending' ? 'Pending'
              : kind === 'approved' ? 'Approved' : 'Changes requested';
-    return '<span class="tone ' + (kind === 'approved' ? 'is-ok' : 'is-warn') + '">' + word + '</span>';
+    return '<span class="tone ' + (kind === 'approved' ? 'is-ok' : kind === 'changes' ? 'is-danger' : 'is-warn') + '">' + word + '</span>';
   }
 
   function shutPostMenus() {
