@@ -4123,7 +4123,10 @@
     var was = editingSlug;
 
     db.from('links').upsert(body, { onConflict: 'slug' }).then(function (r) {
-      if (r.error) { msg('linkMsg', r.error.message, 'err'); return; }
+      if (r.error) {
+        msg('linkMsg', /slug-taken/.test(r.error.message) ? '/' + slug + ' is a colleague\'s namecard.' : r.error.message, 'err');
+        return;
+      }
       if (was && was !== slug) {
         db.from('links').delete().eq('slug', was).then(function () { loadLinks(); });
       } else {

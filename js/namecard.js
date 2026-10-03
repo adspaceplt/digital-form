@@ -221,12 +221,16 @@
       };
       $('mycMobile').value = d.mobile || '';
       var handle = mount($('mycPreview'), cardOf(), d.key);
-      $('mycUrl').textContent = handle.link.replace(/^https?:\/\//, '');
+      /* The card's short link on the links host, where it has one; the QR on
+         the card keeps the card's own address, which never changes. */
+      var host = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me';
+      var share = d.slug ? 'https://' + host + '/' + d.slug : handle.link;
+      $('mycUrl').textContent = share.replace(/^https?:\/\//, '');
       /* Turned off in Team: the card is shown, its address answers nobody. */
       $('mycUrl').parentNode.hidden = d.on === false;
       if (d.on === false) say('Your namecard is off.', 'warn');
-      $('mycOpen').href = handle.link;
-      $('mycCopy').onclick = function () { if (window.ADspaceCopy) window.ADspaceCopy.to(this, handle.link); };
+      $('mycOpen').href = share;
+      $('mycCopy').onclick = function () { if (window.ADspaceCopy) window.ADspaceCopy.to(this, share); };
       $('mycMobile').oninput = function () { handle.update(cardOf()); };
       $('mycSave').onclick = function () {
         var btn = this;

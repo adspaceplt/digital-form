@@ -2007,6 +2007,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   - Both take `.select('id')`, filed as `shortlink.updated` with the detail.
   - `ADspaceGroup.keep` opens the card the row moves into.
 - No Status column. Paused is a chip beside the slug.
+- A short link never takes a colleague's card slug (`links_card_clash`,
+  named `/{slug} is a colleague's namecard.`).
 
 ### Handbook (`js/handbook.js`, `?s=handbook`)
 - The company's internal files: Employee Handbook, SOPs, Policies, Templates
@@ -2077,6 +2079,14 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`fitMail`), else breaks only before the @;
   - the pair under the card (turn, QR code) is two equal halves of the
     portrait card's width on every face, so a turn never moves them;
+  - every card has a short link on the links host (`card_slug`,
+    `2026-10-03-namecard-short-links.sql`): made from the name as the
+    colleague is added (`xue-yi`, numbered where taken), never following a
+    rename, edited in the Team sheet's Namecard (emptied, made again from the
+    name); one slug is never both a card's and a short link's
+    (`slug-taken`, both ways); `link_resolve` answers it with the card's own
+    address while the colleague is active and the card on, else missing; My
+    namecard shows and copies it; the card's QR keeps the card's own address;
   - the card is the signboard's lockup on the brand's five tones (`--nc-*`,
     light in both themes) in golden proportion: the wordmark runs the card's
     width over φ² (`--nc-sw` from the card's width), the tagline at 0.46 of

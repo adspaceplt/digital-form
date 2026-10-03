@@ -1039,6 +1039,8 @@
     $('tmUntil').min = todayMy();
     $('tmMobile').value = m ? (m.mobile || '') : '';
     $('tmCardOn').value = m && m.card_on === false ? 'off' : 'on';
+    $('tmCardSlug').value = m ? (m.card_slug || '') : '';
+    $('tmSlugPre').textContent = ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '/';
     fillRolePick(); $('tmRole').value = m ? m.role : 'account';
     msg('tmMsg', '');
     window.ADspaceSheet.show($('teamAddBox'), {
@@ -1106,10 +1108,16 @@
     var mobile = ($('tmMobile').value || '').trim();
     var mobDigits = mobile.replace(/\D/g, '').length;
     if (mobile && (mobDigits < 8 || mobDigits > 15)) { msg('tmMsg', 'Enter a mobile number of 8 to 15 digits.', 'err'); $('tmMobile').focus(); return; }
+    var cardSlug = ($('tmCardSlug').value || '').trim().toLowerCase().replace(/^https?:\/\/[^/]*\//, '').replace(/^\/+|\/+$/g, '');
+    if (cardSlug && !/^[a-z0-9][a-z0-9._-]{0,79}$/.test(cardSlug)) {
+      msg('tmMsg', 'Use lowercase letters, digits, dots, dashes or underscores.', 'err'); $('tmCardSlug').focus(); return;
+    }
     var fields = { name: name, email: email, role: role, staff_code: staff || null, designation: desig || null,
                    department: $('tmDept').value || null, role_family: $('tmRoleStd').value || null,
                    capacity_minutes_week: capH >= 0 && $('tmCap').value ? Math.round(capH * 60) : null,
                    mobile: mobile || null, card_on: $('tmCardOn').value !== 'off' };
+    /* Empty makes it again from the name; unchanged is not sent. */
+    if (!editingMember || cardSlug !== (editingMember.card_slug || '')) fields.card_slug = cardSlug || null;
     if (!$('tmUntilRow').hidden) {
       var until = $('tmUntil').value || null;
       var untilTime = until ? ($('tmUntilTime').value || null) : null;
@@ -1131,19 +1139,24 @@
         shutMemberBox();
         db.from('team_members').update(fields).eq('id', m.id).then(function (r) {
           if (r.error) {
-            msg('teamMsg', /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
+            msg('teamMsg', /slug-taken/.test(r.error.message) ? 'That short link is already in use.'
+              : /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
               : /duplicate|unique/i.test(r.error.message)
               ? 'That email is already on the list.' : teamSaid(r.error), 'err');
             return;
           }
           /* A save that changed nothing files nothing. */
-          var moved = window.ADspaceRecords.changes(m, fields, [
+          /* An emptied short link is made again from the name by the database,
+             so it is not filed as "not set"; the next read shows the new one. */
+          var filed = fields.card_slug === null ? Object.assign({}, fields, { card_slug: m.card_slug }) : fields;
+          var moved = window.ADspaceRecords.changes(m, filed, [
             ['name', 'Name'], ['email', 'Email'], ['role', 'User group', roleName], ['staff_code', 'Employee ID'],
             ['designation', 'Position'], ['department', 'Department', function (v) { return DEPT[v] || v; }],
             ['role_family', 'Role standard', function (v) { return ROLE_STD[v] || v; }],
             ['capacity_minutes_week', 'Weekly capacity', function (v) { return Math.round(Number(v) / 60) + 'h'; }],
             ['access_until', 'Access until', dayWord], ['access_until_time', 'Access time', timeWord],
-            ['mobile', 'Mobile'], ['card_on', 'Namecard', function (v) { return v === false ? 'Off' : 'On'; }]]);
+            ['mobile', 'Mobile'], ['card_on', 'Namecard', function (v) { return v === false ? 'Off' : 'On'; }],
+            ['card_slug', 'Short link']]);
           if (moved) log('team.edited', name, moved);
           msg('teamMsg', 'Saved.', 'ok');
           load();
@@ -1175,7 +1188,8 @@
     db.from('team_members').insert(Object.assign({ active: true }, fields))
       .then(function (r) {
         if (r.error) {
-          msg('tmMsg', /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
+          msg('tmMsg', /slug-taken/.test(r.error.message) ? 'That short link is already in use.'
+            : /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
             : /duplicate|unique/i.test(r.error.message)
             ? 'That email is already on the list.' : r.error.message, 'err');
           return;
