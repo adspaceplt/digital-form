@@ -2174,8 +2174,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   `/creator/sw.js`), all importing `js/push-sw.js`. The client pages carry a
   manifest with no `start_url`, so a Home Screen copy opens its own link.
 - Controls:
-  - the console: Turn on / Turn off notifications in the account menu, which
-    stays open and answers under the item (`#acctPushMsg`);
+  - the console: Notifications in the account menu, a switch
+    (`role="switch"`, On / Off at the row's right edge); the menu stays open
+    and answers under the item (`#acctPushMsg`);
   - the client pages: the bar's bell (`#pushBtn`) opens `#pushPop`, a named
     dialog with one line and one action, its words in `W.push`.
   - An iPhone not on the Home Screen is told to add it; a blocked site is

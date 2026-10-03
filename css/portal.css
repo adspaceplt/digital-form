@@ -2252,19 +2252,30 @@ body.is-plain .topbar { background: var(--chrome); }
 /* The label and its second line read as one row, not as two stacked items. */
 .acct-menu .kmenu-item b { font-weight: 600; }
 .acct-menu .kmenu-item span { margin-left: auto; text-align: right; }
-/* The address is read, never chosen, so it is a line above the items and not
-   one of them. */
+/* Who you are is read, never chosen, so it is the menu's head and not one of
+   its items: the name over the address you sign in with ("Signed in as" said
+   what the head already shows). The close mark is drawn only where the menu
+   docks at the foot of a phone. */
 .acct-who {
-  display: flex; flex-direction: column; gap: 1px;
-  padding: 9px 12px 8px; margin-bottom: 4px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px 10px; margin-bottom: 4px;
   border-bottom: 1px solid var(--line-soft);
-  font-size: 12px; font-weight: 600; letter-spacing: 0;
-  color: var(--ink-mute);
 }
-.acct-who b {
-  font-size: 12.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--ink);
+.acct-who-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1 1 auto; }
+.acct-who-text b {
+  font-size: 14px; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.acct-who-text span {
+  font-size: 12.5px; color: var(--ink-mute);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.acct-who-text b[hidden] + span { font-size: 13px; color: var(--ink); }
+.acct-x { display: none; }
+/* Three groups (you, this device, the way out), each set off by a hairline. */
+.acct-sep { border: 0; height: 1px; margin: 4px 0; background: var(--line-soft); }
+/* A switch's state at the row's right edge, read in the mute ink. */
+.acct-menu .kmenu-item .acct-val { font-size: 13px; color: var(--ink-mute); }
 
 .acct-menu .kmenu-item svg { width: 15px; height: 15px; stroke-width: 1.8; flex: 0 0 auto; color: var(--ink-mute); }
 
@@ -8956,6 +8967,16 @@ a.ovrow:focus-visible { outline: 2px solid var(--action-ring); outline-offset: -
 .aboutpop.popcard { padding: 16px 16px 10px; }
 .aboutpop.is-dock { padding: 20px 20px 12px; }
 .aboutpop.is-dock .aboutpop-text { font-size: 14px; }
+/* The account menu docked on a phone: the card at the foot of the screen,
+   its rows at the finger's height, Sign out last and nearest the thumb. */
+.popcard.is-dock.acct-menu { padding: 6px 8px 8px; max-width: none; }
+.popcard.is-dock.acct-menu .acct-who { padding: 10px 4px 10px 12px; }
+.popcard.is-dock.acct-menu .acct-who-text b { font-size: 16px; }
+.popcard.is-dock.acct-menu .acct-who-text span { font-size: 13px; }
+.popcard.is-dock.acct-menu .acct-x { display: inline-grid; flex: 0 0 auto; }
+.popcard.is-dock.acct-menu .kmenu-item { min-height: 48px; font-size: 15px; gap: 12px; }
+.popcard.is-dock.acct-menu .kmenu-item svg { width: 17px; height: 17px; }
+.popcard.is-dock.acct-menu .acct-msg { font-size: 13px; }
 
 /* The instruction beside its `?` reads as a small callout pointing at the
    mark, rather than loose mute text on the card. */
