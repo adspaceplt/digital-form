@@ -308,7 +308,7 @@
   function teamMatch(m) {
     if (teamGroup && m.role !== teamGroup) return false;
     if (!teamFind) return true;
-    return (String(m.name || '') + ' ' + String(m.email || '') + ' ' + whoLine(m))
+    return (String(m.name || '') + ' ' + String(m.email || '') + ' ' + String(m.staff_code || '') + ' ' + whoLine(m))
       .toLowerCase().indexOf(teamFind) > -1;
   }
 
@@ -398,6 +398,9 @@
     var h = Number(m[1]);
     return ((h % 12) || 12) + (m[2] === '00' ? '' : '.' + m[2]) + (h < 12 ? 'am' : 'pm');
   }
+  /* A switch as the change log hands it over: records.js reads a boolean
+     as Yes or No before the label's own words. */
+  function off(v) { return v === false || v === 'No'; }
   function untilWord(day, time) { return dayWord(day) + (day && time ? ', ' + timeWord(time) : ''); }
   /* A moment still ahead in Malaysia: a later day, or today at a later time
      (no time is the day's end). */
@@ -411,7 +414,7 @@
     var post = [DEPT[m.department], m.designation].filter(Boolean).join(', ');
     /* The day access ends, where one is set (TEAM ACCESS EXPIRY). */
     var until = m.active && m.access_until ? 'Until ' + untilWord(m.access_until, m.access_until_time) : '';
-    return [m.staff_code, post, until].filter(Boolean).join(' · ');
+    return [post, until].filter(Boolean).join(' · ');
   }
   /* The database's refusals, in the team's words. */
   function teamSaid(e) {
@@ -432,15 +435,21 @@
          and names it when they are not. */
       /* You is a designation, not a live state, so it is the neutral chip the
          rate card gives Inactive and not a word in the accent green. */
-      '<span class="team-who"><b>' + esc(m.name) + (self ? ' <span class="tone">You</span>' : '') + '</b>' +
-        /* The Employee ID, then where they sit: "AD026 · Creative, Production
-           Executive". The HR serial and the signature on a letter are built
-           from these, and the department is chosen from a list, so the line
-           reads the same on every row whoever typed it. */
+      /* The name with its Employee ID beside it (the user, 2026-10-03), then
+         where they sit: "Creative, Production Executive". The HR serial and
+         the signature on a letter are built from these, and the department
+         is chosen from a list, so the line reads the same on every row
+         whoever typed it. */
+      '<span class="team-who"><b>' + esc(m.name) +
+        (m.staff_code ? ' <span class="team-eid">' + esc(m.staff_code) + '</span>' : '') +
+        (self ? ' <span class="tone">You</span>' : '') + '</b>' +
         (whoLine(m) ? '<small>' + esc(whoLine(m)) + '</small>' : '') +
       '</span>' +
       '<span class="team-mail">' + esc(m.email || '') + '</span>' +
-      '<span class="team-state">' + (m.active ? '' : '<span class="tone">' + (m.expired_at ? 'Access expired' : 'Inactive') + '</span>') + '</span>' +
+      /* The exception only: Inactive, Access expired, or a card turned off
+         for somebody still working; an ordinary row says nothing. */
+      '<span class="team-state">' + (!m.active ? '<span class="tone">' + (m.expired_at ? 'Access expired' : 'Inactive') + '</span>'
+        : m.card_on === false ? '<span class="tone">Card off</span>' : '') + '</span>' +
       /* Mail leaves the building and cannot be recalled, so Send invitation
          sits one place from Edit and asks first, as it does on a contact.
          Standing somebody down happens once in a job, so it is here rather
@@ -1157,8 +1166,8 @@
             ['role_family', 'Role standard', function (v) { return ROLE_STD[v] || v; }],
             ['capacity_minutes_week', 'Weekly capacity', function (v) { return Math.round(Number(v) / 60) + 'h'; }],
             ['access_until', 'Access until', dayWord], ['access_until_time', 'Access time', timeWord],
-            ['mobile', 'Mobile'], ['card_mobile', 'Mobile on card', function (v) { return v === false ? 'Hide' : 'Show'; }],
-            ['card_on', 'Namecard', function (v) { return v === false ? 'Off' : 'On'; }],
+            ['mobile', 'Mobile'], ['card_mobile', 'Mobile on card', function (v) { return off(v) ? 'Hide' : 'Show'; }],
+            ['card_on', 'Namecard', function (v) { return off(v) ? 'Off' : 'On'; }],
             ['card_slug', 'Short link']]);
           if (moved) log('team.edited', name, moved);
           msg('teamMsg', 'Saved.', 'ok');

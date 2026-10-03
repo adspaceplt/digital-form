@@ -2034,6 +2034,10 @@ Each line is a rule that broke once. Its reason is in the archive.
 
 ### Team (`js/team.js`)
 - Members sit under their group. Your own row shows the neutral `You` chip.
+- A member row reads the name with the Employee ID beside it (`.team-eid`,
+  mute; still searched), then department and position (and Until), then the
+  email; the state column names only the exception: Inactive, Access
+  expired, or Card off for somebody still working.
 - Set inactive / Set active sits in the ⋯ (never on your own row). Send
   invitation asks first.
 - Changing a member's email asks first.

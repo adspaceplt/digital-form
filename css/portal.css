@@ -5137,6 +5137,8 @@ body > .shell { width: 100%; }
 /* Your own row is marked with the neutral chip, not the accent: being you is
    a designation, and green is spent on a live state. */
 .team-who b .tone { margin-left: 6px; vertical-align: 1px; }
+/* The Employee ID beside the name, read after it. */
+.team-who b .team-eid { margin-left: 6px; font-size: 13px; font-weight: 400; letter-spacing: 0; color: var(--ink-mute); font-variant-numeric: tabular-nums; }
 .team-who small { font-size: 12px; color: var(--ink-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* What a group opens, in the panel that edits one: a level per section, then
    the two capabilities that are not sections. The selects carry the ladder and
