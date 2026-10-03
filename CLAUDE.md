@@ -506,7 +506,8 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ok` throws.
 - A refusal is named in the team's words, never the database's (`SAID`-style
   maps). A missing function reads "This needs a database update".
-- A client page never shows a database message. The console may.
+- A client page never shows a database message. The console may. A refused
+  load reads its cover's words; a refused send reads `W.notSent`.
 - Back navigates, Revert undoes a state, Restore brings back a record,
   Reinstate brings back a person, Undo reverses a removal, Void then Delete
   retires an issued document.
@@ -599,8 +600,12 @@ Each line is a rule that broke once. Its reason is in the archive.
   `ops_may_see_task` / `ops_may_see_engagement` / `ops_scope_error` /
   `ops_report` (a colleague's own tasks always), and inside `client_billing`,
   `sm_client_reports`, `sm_report_file` and `sm_report_snapshot`. A new table
-  hanging off a client joins the do-block's list. The Activity record is not
-  scoped. The stand-in holds the same rule (`scopeRowOk`).
+  hanging off a client joins the do-block's list. A removal from `clients`,
+  `client_documents`, `documents`, `sm_reports` or `ops_engagements` asks it
+  at Manage (`client_scope_removal`, before delete,
+  `2026-10-03-client-scope-on-removal.sql`), so the delete functions keep to
+  it too. The Activity record is not scoped. The stand-in holds the same rule
+  (`scopeRowOk`).
 - Columns other parts write are guarded by trigger at the part's Work level:
   `clients_billing_guard` (skipping a cascade, `pg_trigger_depth() > 1`) and
   `campaigns_finance_guard`.
@@ -732,7 +737,10 @@ Each line is a rule that broke once. Its reason is in the archive.
   Source, Contact person, Phone, WhatsApp username, Email, Enquiry, Owner,
   Industry, Market, Urgency to commence (`clients.commence`, blank until
   asked). After intake the enquiry is edited like any other fact, and a person
-  becomes a row in Contacts.
+  becomes a row in Contacts. Under Own clients only the Person in charge is
+  fixed: the colleague keying a lead holds it.
+- A client's address outside the colleague's reach (or gone) lands on the list
+  with `#crmListMsg` saying so, never silently.
 - The record head `.rec-id` (`auto minmax(0,1fr) auto`, centred):
   - Mark: `logo_url`, or `initialsOf()` (two characters of a Chinese name; else
     the first letters of the first two words that start with a letter).
@@ -1102,6 +1110,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     Changes requested → Scheduled → Posted → Completed, each gated by its data,
     each with Revert.
   - Withdraw / Replace / Reinstate in the ⋯.
+  - Deleting a campaign or a creator takes the name typed back; every
+    campaign write takes `.select('id')` and names a refusal (Confirm
+    creators counts the bookings not confirmed).
   - In production is derived (`syncCampState` off `loadOptions`).
 - Release to client (Submitted → Reviewing) goes only through
   `campaign_qc_pass(p_option, p_want_second)`. A trigger refuses any other

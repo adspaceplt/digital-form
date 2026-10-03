@@ -1667,8 +1667,9 @@
       handle_fb:     $('eFb').value.trim() || null,
       handle_tiktok: $('eTt').value.trim() || null,
       handle_xhs:    $('eXhs').value.trim() || null
-    }).eq('id', state.client.id).then(function (r) {
+    }).eq('id', state.client.id).select('id').then(function (r) {
       if (r.error) { msg('handleMsg', r.error.message, 'err'); done(false); return; }
+      if (!(r.data || []).length) { msg('handleMsg', 'Not saved. The database refused the request.', 'err'); done(false); return; }
       logAction('client.handles', state.client.name,
         ['ig', 'fb', 'tiktok', 'xhs'].map(function (k) {
           var v = $({ ig: 'eIg', fb: 'eFb', tiktok: 'eTt', xhs: 'eXhs' }[k]).value.trim();
@@ -1739,8 +1740,9 @@
     }
     var had = Boolean(state.client.passcode);
     db.from('clients').update({ logo_url: logo || null, passcode: pass || null })
-      .eq('id', state.client.id).then(function (r) {
+      .eq('id', state.client.id).select('id').then(function (r) {
         if (r.error) { msg('profileMsg', r.error.message, 'err'); done(false); return; }
+        if (!(r.data || []).length) { msg('profileMsg', 'Not saved. The database refused the request.', 'err'); done(false); return; }
         logAction('client.profile', state.client.name,
           [(logo || null) !== (state.client.logo_url || null) ? 'logo changed' : '',
            !had && pass ? 'access code added' : had && !pass ? 'access code removed'
@@ -1770,8 +1772,9 @@
     }, function () {
       var next = window.ADspaceAPI.accessToken();
       db.from('clients').update({ access_token: next }).eq('id', state.client.id)
-        .then(function (r) {
+        .select('id').then(function (r) {
           if (r.error) { msg('wsMsg', r.error.message, 'err'); return; }
+          if (!(r.data || []).length) { msg('wsMsg', 'Not saved. The database refused the request.', 'err'); return; }
           logAction('link.reset', state.client.name, 'Previous link invalidated');
           state.client.access_token = next;
           var fresh = reviewUrl(state.client);
@@ -1997,8 +2000,9 @@
   });
 
   function setPublished(next) {
-    db.from('batches').update({ published: next }).eq('id', state.batch.id).then(function (r) {
+    db.from('batches').update({ published: next }).eq('id', state.batch.id).select('id').then(function (r) {
       if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
+      if (!(r.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
       logAction(next ? 'set.published' : 'set.withdrawn',
         state.client.name + ' — ' + state.batch.title);
       state.batch.published = next;
@@ -2084,8 +2088,9 @@
       label: 'Content set name', max: 120,
       saveLabel: 'Save name',
       save: function (title) {
-        db.from('batches').update({ title: title }).eq('id', state.batch.id).then(function (r) {
+        db.from('batches').update({ title: title }).eq('id', state.batch.id).select('id').then(function (r) {
           if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
+          if (!(r.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
           logAction('set.renamed', state.client.name + ' — ' + title, 'was ' + (state.batch.title || ''));
           state.batch.title = title;
           paintSetHeader();
@@ -2886,8 +2891,9 @@
       }
 
       // remember the folder so next month is one click
-      db.from('clients').update({ drive_folder: url }).eq('id', state.client.id)
-        .then(function () {
+      db.from('clients').update({ drive_folder: url }).eq('id', state.client.id).select('id')
+        .then(function (r) {
+          if (r.error || !(r.data || []).length) return;
           if (state.client.drive_folder !== url) logAction('client.drive', state.client.name, url);
           state.client.drive_folder = url;
         });
@@ -3676,8 +3682,9 @@
             db.from('posts').update({
               review_reset_at: new Date().toISOString(),
               review_reset_note: why
-            }).eq('id', p.id).then(function (r) {
+            }).eq('id', p.id).select('id').then(function (r) {
               if (r.error) { msg('setMsg', r.error.message, 'err'); return; }
+              if (!(r.data || []).length) { msg('setMsg', 'Not saved. The database refused the request.', 'err'); return; }
               logAction('reapproval.requested',
                 state.client.name + ' — ' + MK.label(p), why);
               msg('setMsg', 'Re-approval requested.', 'ok');
@@ -4068,8 +4075,9 @@
       go: 'Delete',
       tone: 'danger'
     }, function () {
-      db.from('links').delete().eq('slug', l.slug).then(function (r) {
-        if (r.error) { msg('linkMsg', r.error.message, 'err'); return; }
+      db.from('links').delete().eq('slug', l.slug).select('slug').then(function (r) {
+        if (r.error) { msg('linkListMsg', r.error.message, 'err'); return; }
+        if (!(r.data || []).length) { msg('linkListMsg', 'Not deleted. The database refused the request.', 'err'); return; }
         logAction('shortlink.deleted', '/' + l.slug, l.target_url || '');
         loadLinks();
       });
@@ -4084,11 +4092,11 @@
      that did not repaint. */
   function setLinkLive(l, live) {
     var run = function () {
-      db.from('links').update({ active: !!live }).eq('slug', l.slug).select('id')
+      db.from('links').update({ active: !!live }).eq('slug', l.slug).select('slug')
         .then(function (r) {
-          if (r.error) { msg('linkMsg', r.error.message, 'err'); return; }
+          if (r.error) { msg('linkListMsg', r.error.message, 'err'); return; }
           if (!r.data || !r.data.length) {
-            msg('linkMsg', 'Not saved. The database refused the request.', 'err');
+            msg('linkListMsg', 'Not saved. The database refused the request.', 'err');
             return;
           }
           /* `shortlink.updated`, not a tag of its own: pausing is a change to
@@ -4155,7 +4163,12 @@
         return;
       }
       if (was && was !== slug) {
-        db.from('links').delete().eq('slug', was).then(function () { loadLinks(); });
+        /* The old address goes once the new one stands; a refusal leaves
+           both live, so it is said rather than left (audit, 2026-10-03). */
+        db.from('links').delete().eq('slug', was).select('slug').then(function (d) {
+          loadLinks();
+          if (d.error || !(d.data || []).length) msg('linkListMsg', '/' + was + ' is still live. The database refused to remove it.', 'err');
+        }).catch(function () { loadLinks(); });
       } else {
         loadLinks();
       }
@@ -4306,8 +4319,9 @@
     var next = !q.active;
     function save() {
       db.from('link_qrs').update({ active: next, revoked_at: next ? null : new Date().toISOString() })
-        .eq('code', q.code).then(function (r) {
+        .eq('code', q.code).select('code').then(function (r) {
           if (r.error) { msg('qrMsg', r.error.message, 'err'); return; }
+          if (!(r.data || []).length) { msg('qrMsg', 'Not saved. The database refused the request.', 'err'); return; }
           logAction(next ? 'qr.restored' : 'qr.revoked', '/' + q.slug, q.label || q.code);
           loadQrs();
         });

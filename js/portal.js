@@ -305,7 +305,8 @@
     var text = { sign: w.signText, sent: w.sentText(extra || ''), none: w.noAccessText, fail: w.failText }[kind];
     $('stateTitle').textContent = title;
     $('stateText').textContent = text;
-    msg('stateMsg', kind === 'fail' && extra ? extra : '');
+    /* The database's own words never reach a client (audit, 2026-10-03). */
+    msg('stateMsg', '');
     if (kind === 'sign') $('signEmail').focus();
     /* A new address clears the code; a repaint (the language) keeps it. */
     if (kind === 'sent') { if (sentTo !== (extra || '')) $('signCode').value = ''; sentTo = extra || ''; $('signCode').focus(); }
@@ -877,18 +878,18 @@
       .then(function (r) {
         $('reqGo').disabled = false;
         var d = r.data || {};
-        if (r.error || d.error) { msg('reqMsg', r.error ? r.error.message : (d.error === 'note-required' ? t().noteNeeded : d.error), 'err'); return; }
+        if (r.error || d.error) { msg('reqMsg', d.error === 'note-required' ? t().noteNeeded : t().notSent, 'err'); return; }
         shutRequest();
         showPane('services', true);
         msg('rqMsg', t().sent, 'ok');
         load();
-      }, function (e) { $('reqGo').disabled = false; msg('reqMsg', (e && e.message) || String(e), 'err'); });
+      }, function () { $('reqGo').disabled = false; msg('reqMsg', t().notSent, 'err'); });
   });
 
   function withdraw(r) {
     db.rpc('portal_withdraw', { p_id: r.id, p_undo: false }).then(function (res) {
       var d = res.data || {};
-      if (res.error || d.error) { msg('rqMsg', res.error ? res.error.message : d.error, 'err'); return; }
+      if (res.error || d.error) { msg('rqMsg', t().notSent, 'err'); return; }
       msg('rqMsg', '');
       load();
       undoBar(t().withdrawnSay, function () {

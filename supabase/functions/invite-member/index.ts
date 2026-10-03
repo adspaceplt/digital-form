@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
   const { data: caller } = await admin.from('team_members')
-    .select('role, is_admin, active, can_clients').ilike('email', user.email).maybeSingle();
+    .select('role, is_admin, active').ilike('email', user.email).maybeSingle();
   if (!caller || !caller.active) return json({ error: 'not_admin' }, 403, origin);
 
   // 3. What they want. kind "client" invites a client contact to /client/
@@ -86,9 +86,14 @@ Deno.serve(async (req) => {
   const isAdmin = caller.is_admin === true || caller.role === 'admin';
   if (kind === 'team' && !isAdmin) return json({ error: 'not_admin' }, 403, origin);
   if (kind === 'client') {
-    if (!isAdmin && !caller.can_clients) return json({ error: 'not_admin' }, 403, origin);
+    // Contacts at Work, asked as the caller (the retired `can_clients` switch
+    // answered for nobody on the levels), and the contact read as the caller
+    // too, so a client outside their reach (Own clients only, a band below
+    // its level) invites nobody.
+    const { data: may } = await asCaller.rpc('allowed', { p_section: 'clients.contacts', p_level: 'work' });
+    if (!isAdmin && may !== true) return json({ error: 'not_admin' }, 403, origin);
     // Only an address the console has marked for portal access is invited.
-    const { data: contact } = await admin.from('client_contacts')
+    const { data: contact } = await asCaller.from('client_contacts')
       .select('id').ilike('email', email).eq('portal_access', true).is('archived_at', null).limit(1).maybeSingle();
     if (!contact) return json({ error: 'not_portal_contact' }, 403, origin);
   }

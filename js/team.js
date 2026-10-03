@@ -543,8 +543,9 @@
   }
 
   function saveMember(m, patch, then) {
-    db.from('team_members').update(patch).eq('id', m.id).then(function (r) {
+    db.from('team_members').update(patch).eq('id', m.id).select('id').then(function (r) {
       if (r.error) { msg('teamMsg', teamSaid(r.error), 'err'); load(); return; }
+      if (!(r.data || []).length) { msg('teamMsg', 'Not saved. The database refused the request.', 'err'); load(); return; }
       log('team.changed', m.name, Object.keys(patch).map(function (k) {
         if (k === 'active') return 'Active: ' + (m.active ? 'Yes' : 'No') + ' → ' + (patch.active ? 'Yes' : 'No');
         if (k === 'role') return 'User group: ' + roleName(m.role) + ' → ' + roleName(patch.role);
@@ -731,8 +732,9 @@
 
   function saveGroup(r, patch) {
     var was = Object.assign({}, r, { access: Object.assign({}, r.access || {}) });
-    db.from('team_roles').update(patch).eq('slug', r.slug).then(function (q) {
+    db.from('team_roles').update(patch).eq('slug', r.slug).select('slug').then(function (q) {
       if (q.error) { msg('groupMsg', q.error.message, 'err'); load(); return; }
+      if (!(q.data || []).length) { msg('groupMsg', 'Not saved. The database refused the request.', 'err'); load(); return; }
       Object.keys(patch).forEach(function (k) { r[k] = patch[k]; });
       log('team.group_changed', r.name, Object.keys(patch).map(function (k) {
         if (k === 'access') return accessMoves(was.access, patch.access);
@@ -1201,7 +1203,8 @@
          invited at the new address. */
       function write() {
         shutMemberBox();
-        db.from('team_members').update(fields).eq('id', m.id).then(function (r) {
+        db.from('team_members').update(fields).eq('id', m.id).select('id').then(function (r) {
+          if (!r.error && !(r.data || []).length) { msg('teamMsg', 'Not saved. The database refused the request.', 'err'); return; }
           if (r.error) {
             msg('teamMsg', /slug-taken/.test(r.error.message) ? 'That short link is already in use.'
               : /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'

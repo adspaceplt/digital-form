@@ -6004,6 +6004,8 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    else: its old 14px bottom margin left a band of empty panel under it. */
 .rec-head { margin-bottom: 12px; }
 .rec-head .msg:empty { display: none; }
+#crmListMsg { margin: 0 0 12px; }
+#crmListMsg:empty { display: none; }
 /* Identity, in two parts. Left: the mark, then who this is — the name with
    its state on one line and under them the facts that identify rather than
    describe. Right: the one ⋯ that acts on the record itself. The two parts

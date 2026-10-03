@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261003l">
+<link rel="stylesheet" href="/css/portal.css?v=20261003m">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -56,7 +56,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="/js/config.js?v=20261003d"></script>
 <script src="/js/captcha.js?v=20261001a"></script>
-<script src="/js/words.js?v=20261001a"></script>
+<script src="/js/words.js?v=20261003m"></script>
 <script src="/js/copy.js?v=20261001a"></script>
 <script src="/js/ask.js?v=20261001a"></script>
 <script src="/js/confirm.js?v=20261001b"></script>
@@ -559,6 +559,7 @@
         <!-- Every open next action across every client, soonest first. The
              data was already on each log entry; this is the screen that
              gathers it, so nothing is left to memory. -->
+        <div class="msg warn" id="crmListMsg" role="status"></div>
         <section class="due" id="crmDue" hidden>
           <div class="due-head"><h3>Next actions</h3><span class="muted" id="crmDueCount"></span></div>
           <div id="crmDueList"></div>
@@ -1303,7 +1304,7 @@
           <div class="rec-who">
             <div class="rec-name">
               <h2 id="setTitle"></h2>
-              <button class="rec-pen" id="renameSet" type="button" aria-label="Rename set"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
+              <button class="rec-pen" id="renameSet" type="button" aria-label="Rename set" data-need="review.sets:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
             </div>
             <p class="rec-id-meta" id="setNote"></p>
           </div>
@@ -1589,7 +1590,7 @@
           <div class="msg" id="campMsg"></div>
           <!-- Deletion lives with editing: rare, and behind one more click. -->
           <div class="form-danger" id="campDangerRow" data-need="campaigns.campaigns:manage" hidden>
-            <button class="btn btn-quiet is-danger btn-sm" id="campDelete" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/></svg>Delete</button>
+            <button class="btn btn-quiet is-danger btn-sm" id="campDelete" data-need="campaigns.campaigns:manage" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M6.5 7 7.4 19a1.6 1.6 0 0 0 1.6 1.5h6a1.6 1.6 0 0 0 1.6-1.5L17.5 7"/></svg>Delete</button>
           </div>
         </div>
 
@@ -1652,12 +1653,12 @@
                  one more click. -->
             <div class="rec-ctl">
               <span class="chip" id="campState"></span>
-              <div class="kmenu-wrap" id="campMenuWrap">
+              <div class="kmenu-wrap" id="campMenuWrap" data-need="campaigns.campaigns:work">
                 <button class="kmenu-btn" id="campMenuBtn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="More">
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                 </button>
                 <div class="kmenu" id="campMenu" hidden role="menu">
-                  <button class="kmenu-item" id="campEdit" type="button" role="menuitem" data-a="editcamp">Edit details</button>
+                  <button class="kmenu-item" id="campEdit" type="button" role="menuitem" data-a="editcamp" data-need="campaigns.campaigns:work">Edit details</button>
                 </div>
               </div>
             </div>
@@ -4159,6 +4160,7 @@ raya-2026        https://example.com/raya"></textarea>
         </span>
       </div>
 
+      <div class="msg" id="linkListMsg"></div>
       <div id="linkList"></div>
       <p class="routenote" id="linkNote"></p>
     </div>
@@ -4557,17 +4559,17 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261001a"></script>
-<script src="/js/admin.js?v=20261003l"></script>
+<script src="/js/admin.js?v=20261003m"></script>
 <script src="/js/documents.js?v=20261002a"></script>
 <script src="/js/letters.js?v=20261002a"></script>
 <script src="/js/smreport.js?v=20261002g"></script>
 <script src="/js/reports.js?v=20261002f"></script>
 <script src="/js/register.js?v=20261001c"></script>
-<script src="/js/crm.js?v=20261003l"></script>
-<script src="/js/team.js?v=20261003l"></script>
+<script src="/js/crm.js?v=20261003m"></script>
+<script src="/js/team.js?v=20261003m"></script>
 <script src="/js/namecard.js?v=20261003f"></script>
 <script src="/js/handbook.js?v=20261002a"></script>
-<script src="/js/campaigns.js?v=20261003b"></script>
+<script src="/js/campaigns.js?v=20261003m"></script>
 <script src="/js/ops.js?v=20261003l"></script>
 <script src="/js/perf.js?v=20261003a"></script>
 <script src="/js/search.js?v=20261001a"></script>

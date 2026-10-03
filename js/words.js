@@ -32,6 +32,8 @@
     noAccessText: 'Please contact your ADspace account manager.',
     failTitle: 'Unable to load',
     failText: 'Please refresh, or contact your ADspace account manager.',
+    // A client's act the database did not take, said without its words.
+    notSent: 'Not sent. Please try again, or contact your ADspace account manager.',
     closed: 'Selection closed',
     closedText: 'Please contact your ADspace account manager for any changes.',
     nothing: 'No content pending review',
@@ -94,6 +96,7 @@
     noAccessText: '请联系您的 ADspace 客户经理。',
     failTitle: '无法加载',
     failText: '请刷新页面，或联系您的 ADspace 客户经理。',
+    notSent: '未能提交，请重试或联系您的 ADspace 客户经理。',
     closed: '选择已结束',
     closedText: '如需调整，请联系您的 ADspace 客户经理。',
     nothing: '暂无待审阅内容',

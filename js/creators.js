@@ -327,7 +327,8 @@
     if (!TOKEN) { showState(t().notFound, t().notFoundText, false); return; }
 
     db.rpc('get_campaign', { p_token: TOKEN, p_passcode: passcode }).then(function (r) {
-      if (r.error) { showState(t().notFound, r.error.message, false); return; }
+      /* A client page never shows a database message (audit, 2026-10-03). */
+      if (r.error) { showState(t().failTitle, t().failText, false); return; }
       var d = r.data || {};
       if (d.error === 'not-found') {
         /* A long link from before the short keys: the new key replaces it in
@@ -823,7 +824,7 @@
         var d = (r && r.data) || {};
         if ((r && r.error) || d.error) {
           lock(false);
-          say((r.error && r.error.message) || d.error, true);
+          say(d.error === 'closed' ? t().closedText : t().notSent, true);
           return;
         }
         say(t().reviewThanks);
