@@ -48,15 +48,15 @@
   --ok-bg:      #ecf5f0;
   --pub:        #6a3fb5;
   --pub-bg:     #f2edfa;
-  /* The review page's platform tints (2026-10-03): a muted pastel wash on a
-     post card's head, its words in a deep ink of the same hue (4.5:1 and
-     over). Client pages are light only, so these are never redefined below.
-     TikTok is a mid grey (its brand is black; a pastel of black is grey); rednote is rose, never the red that
+  /* The review page's platform tints (2026-10-03): a pastel of each
+     platform's own brand colour on a post card's head (Instagram's magenta,
+     Facebook's blue), its words in the brand's deep ink (4.5:1 and over). Client pages are light only, so these are never redefined below.
+     TikTok is a mid grey (its brand is black; a pastel of black is grey); rednote is a pink rose, never the red that
      means destroys or refuses. */
-  --plat-ig:    #f1e8f6;  --plat-ig-ink:  #5f3479;
+  --plat-ig:    #fce4ef;  --plat-ig-ink:  #a1155a;
   --plat-tt:    #d4d4d4;  --plat-tt-ink:  #141414;
-  --plat-xhs:   #fbe7ea;  --plat-xhs-ink: #80283a;
-  --plat-fb:    #e6edfa;  --plat-fb-ink:  #22406f;
+  --plat-xhs:   #fde1e8;  --plat-xhs-ink: #b0103a;
+  --plat-fb:    #e3eefe;  --plat-fb-ink:  #0a52c4;
   /* The namecard (js/namecard.js) is the brand's own five tones, light in
      both themes as the post mockups are: never redefined below. */
   --nc-ground:  #ffffff;
@@ -2529,6 +2529,11 @@ body.is-plain .topbar { background: var(--chrome); }
 .askline { font-size: 14px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
 .askline:not([hidden]) + .askfields:not([hidden]) { margin-top: 14px; }
 .askfield + .askfield { margin-top: 12px; }
+/* A date beside its time: two halves on one row, every other field the
+   row's width, 16px down as in a sheet. */
+.askfields.has-half { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px 12px; }
+.askfields.has-half > .askfield { grid-column: 1 / -1; margin-top: 0; }
+.askfields.has-half > .askfield.is-half { grid-column: auto; }
 .askfield > .input, .askfield > .select, .askfield > textarea.input { width: 100%; }
 .askfield .field-label { display: block; margin-bottom: 6px; }
 @media (max-width: 560px) {
@@ -9605,3 +9610,32 @@ body.ncpage { background: var(--nc-ground); }
 .ncsheet-acts .btn { flex: 0 0 auto; min-width: 0; }
 .ncsheet-acts .btn svg { width: 15px; height: 15px; }
 @media (max-width: 640px) { .ncsheet-acts { flex: 1 1 100%; } .ncsheet-acts .btn { flex: 1 1 0; } }
+
+/* =========================================================================
+   UPGRADE MODE (js/maintenance.js, 2026-10-03)
+   The cover lies over the page under a client page's bar (the 中文 switch
+   stays in reach); in the console, which has no such bar, it is the whole
+   screen. An admin working on reads one warn line over the section.
+   ========================================================================= */
+.maint-cover {
+  position: fixed; inset: 0; z-index: 39;
+  min-height: 0; margin: 0;
+  padding: calc(var(--head-h) + 24px) 16px calc(24px + env(safe-area-inset-bottom, 0px));
+  background: var(--card); overflow-y: auto;
+}
+body:not(:has(> .topbar)) .maint-cover { z-index: 60; padding-top: 24px; }
+body.is-maint { overflow: hidden; }
+.maint-cover .maint-back { margin-top: 8px; }
+.maint-cover .maint-note { margin-top: 8px; overflow-wrap: anywhere; }
+.maint-cover .maint-out { margin-top: 20px; }
+.upgradebar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 16px 28px 0; padding: 8px 8px 8px 14px;
+  background: var(--warn-bg); color: var(--warn);
+  border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; line-height: 1.45;
+}
+.upgradebar.is-err { background: var(--err-bg); color: var(--err); padding: 8px 14px; }
+.upgradebar .btn { flex: 0 0 auto; }
+@media (max-width: 640px) {
+  .upgradebar { margin: 12px 16px 0; }
+}

@@ -208,9 +208,11 @@
     rows = [];
     var specs = o.fields || (o.field ? [o.field] : []);
     elFields.hidden = !specs.length;
+    elFields.classList.toggle('has-half', specs.some(function (f) { return f && f.half; }));
     specs.forEach(function (f, n) {
       var id = 'askSheetField' + n;
-      var wrap = el('div', 'askfield');
+      /* `half` sets a field beside the next half one (a date and its time). */
+      var wrap = el('div', 'askfield' + (f.half ? ' is-half' : ''));
       var lab = el('label', 'field-label', f.label || 'Reason');
       lab.setAttribute('for', id);
       var input;

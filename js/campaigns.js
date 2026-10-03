@@ -2883,7 +2883,17 @@
       var after = function () { loadOptions(); loadRoster(paintPicker); };
       if (added.length) {
         var held = (c.creator_profiles || []).map(function (p) { return p.url; });
-        db.rpc('creator_save_profiles', { p_creator: c.id, p_profiles: held.concat(added) }).then(after, after);
+        /* The offer stands either way; a link the database refused is named
+           under it rather than dropped without a word. */
+        db.rpc('creator_save_profiles', { p_creator: c.id, p_profiles: held.concat(added) }).then(function (res) {
+          var d = (res && res.data) || {};
+          after();
+          if (res.error || d.error) {
+            msg('optionMsg', c.name + ' added at ' + money(rate) + '. ' + (res.error ? 'The link was not saved.'
+              : d.error === 'taken' ? 'Link not saved: this profile belongs to another creator: ' + (d.url || '')
+              : 'Link not saved: not a profile link: ' + (d.url || '')), 'warn');
+          }
+        }).catch(after);
       }
       else { loadOptions(); setTimeout(paintPicker, 150); }
     });

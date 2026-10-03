@@ -125,6 +125,7 @@ ln -sfn /home/user/digital-form-tests /home/user/digital-form/tests
 | `handbook.js` | handbook |
 | `perf.js` | perfui, perfguard, perf |
 | `search.js` | search, then `ui` |
+| `maintenance.js` | upgrade, sql, then `ui` |
 | `overview.js` | overview, then `ui` |
 | `reports.js`, `smreport.js` | reports, adsreport, smsql |
 | `passkey.js`, `captcha.js`, sign-in | passkey, signin, chrome |
@@ -287,6 +288,27 @@ Each line is a rule that broke once. Its reason is in the archive.
     (`ADspacePush.heal`, off the `adspace-push:{scope}` flag).
 - Pull to refresh works only in the installed app, and only on a list with no
   record, sheet or menu open.
+- Upgrade mode (`js/maintenance.js`, `2026-10-03-maintenance-mode.sql`) is
+  a cover, never a lock: the database keeps answering.
+  - One row in `app_flags` (RLS on, no policy, no grant):
+    `maintenance_state()` (anon) answers `on` (covering now), `set` (switched
+    on, maybe waiting on its start), the note and the window;
+    `maintenance_set(p_on, p_note, p_starts, p_ends)` is `allowed('admin')`,
+    refuses an end not after the start and now (`bad-window`), and files
+    `team.changed` under subject Portal ("Upgrade mode: off → on · from … ·
+    until … · note", Malaysia time).
+  - Every portal page loads it after `api.js` but `/` and the 404, so the
+    front door and short links stay up. A client page covers itself under
+    its own bar (`.maint-cover`, z-index 39; the rest `inert`): Upgrading in
+    progress / 系统升级中 (`W.maintTitle`, `maintText`, `maintBack` Expected
+    back by {end}), following the 中文 switch. A page left open covers itself
+    at a start within a day and reloads at the end.
+  - The console covers itself for anybody but an admin (the whole screen,
+    with Sign out); an admin works on under `.upgradebar` (warn, Turn off).
+    The switch is the account menu's Upgrade mode (`role="switch"`, Off /
+    On / Set, an admin's alone): on asks for Starts, Ends (each a date beside
+    its time, MYT; empty start is now, empty end waits) and a note; off never
+    asks.
 
 ### One copy of each mechanism
 - `js/api.js` is the only Supabase client. It retries a GET once when the
@@ -344,6 +366,7 @@ Each line is a rule that broke once. Its reason is in the archive.
 - `js/confirm.js` (`ADspaceConfirm.ask({title, body, go, tone, field|fields, match, cancel:false}, onYes)`)
   is every question with a consequence. **No `window.confirm`, `prompt` or
   `alert` anywhere.**
+  - A field marked `half` sits beside the next one (a date and its time).
   - A destructive question opens on Cancel.
   - `#askGo` and `#askCancel` are stable ids. `#askSheet` sits at z-index 95,
     above any sheet.
@@ -1004,9 +1027,9 @@ Each line is a rule that broke once. Its reason is in the archive.
   a playing video on in its card.
 - The cover image card names itself once, in its head, and ends under its
   decision (`.is-cover`).
-- A card's head is washed in its platform's pastel with its words in the
-  matching ink (`--plat-ig`, `--plat-tt` a mid grey, `--plat-xhs` rose,
-  `--plat-fb`; light only), one line at every width (the title gives way
+- A card's head is washed in a pastel of its platform's own brand colour
+  with its words in the brand's deep ink (`--plat-ig` magenta, `--plat-tt` a
+  mid grey, `--plat-xhs` pink rose, `--plat-fb` blue; 4.5:1; light only), one line at every width (the title gives way
   first), and gives the shape as a ratio (`ADspaceMockups.ratio`: the file's
   size, within 3% of a common ratio reads as it), never pixels.
 - A reel and its cover are one card (`.cardpair`): the reel's head, Reel and

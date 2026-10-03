@@ -347,6 +347,116 @@
     shutAcct();
     if (window.ADspaceRefresh) window.ADspaceRefresh.hard(); else location.reload();
   });
+
+  /* ===== Upgrade mode (js/maintenance.js, 2026-10-03). An admin switches
+     every portal page to one cover, Upgrading in progress, now or from a set
+     moment in Malaysia time, until switched off or an end set with it
+     passes. The admin keeps working under a banner; anybody else signed in
+     here meets the cover, with a way to sign out. Turning it off never
+     asks: it is the way back. */
+  var upgrade = { on: false, set: false };
+  var upgradeTimer = null;
+  function isAdminMe() { return Boolean(me && (me.is_admin || me.role === 'admin')); }
+  /* A refusal is said where it can be read: under the switch while the
+     account menu is open, else on the banner's line. */
+  function upgradeSay(text) {
+    if (!$('acctUpgradeMsg')) return;
+    $('acctUpgradeMsg').textContent = text || '';
+    $('acctUpgradeMsg').className = 'msg acct-msg' + (text ? ' err' : '');
+    $('acctUpgradeMsg').hidden = !text;
+    var bar = $('upgradeBar');
+    if (!text) { bar.classList.remove('is-err'); return; }
+    if ($('acctMenu') && !$('acctMenu').hidden) return;
+    bar.hidden = false;
+    bar.classList.add('is-err');
+    $('upgradeWord').textContent = text;
+    $('upgradeOff').hidden = true;
+  }
+  function paintUpgrade(d) {
+    var M = window.ADspaceMaintenance;
+    upgrade = d || { on: false, set: false };
+    var admin = isAdminMe();
+    if ($('acctUpgrade')) {
+      $('acctUpgrade').hidden = $('acctUpgradeSep').hidden = !admin;
+      $('acctUpgrade').setAttribute('aria-checked', String(Boolean(upgrade.set)));
+      $('acctUpgradeWord').textContent = upgrade.on ? 'On' : (upgrade.set ? 'Set' : 'Off');
+    }
+    var bar = $('upgradeBar');
+    if (bar) {
+      bar.classList.remove('is-err');
+      $('upgradeOff').hidden = false;
+      bar.hidden = !(admin && upgrade.set);
+      var w = !M ? '' : upgrade.on
+        ? 'Upgrade mode is on. Only admins can use the portal' + (upgrade.ends_at ? ' until ' + M.when(upgrade.ends_at) : '') + '.'
+        : 'Upgrade mode starts ' + M.when(upgrade.starts_at) + (upgrade.ends_at ? ' and ends ' + M.when(upgrade.ends_at) : '') + '.';
+      $('upgradeWord').textContent = w;
+    }
+    if (M && upgrade.on && !admin && me) {
+      M.cover({ note: upgrade.note, ends_at: upgrade.ends_at, out: function () { $('signOut').click(); } });
+    } else if (document.getElementById('maintCover') && !upgrade.on) {
+      location.reload();
+      return;
+    }
+    if (upgradeTimer) { clearTimeout(upgradeTimer); upgradeTimer = null; }
+    if (M) M.watch(upgrade, function () { M.ask().then(paintUpgrade); });
+  }
+  function readUpgrade() {
+    var M = window.ADspaceMaintenance;
+    if (!M || !me) return;
+    M.ask().then(paintUpgrade);
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible' && meLoaded) readUpgrade();
+  });
+  function setUpgrade(args, done) {
+    db.rpc('maintenance_set', args).then(function (r) {
+      var d = r.data || {};
+      if (r.error || d.error) {
+        done(r.error ? (/function|schema cache/i.test(r.error.message) ? 'This needs a database update.' : r.error.message)
+                     : d.error === 'bad-window' ? 'Choose an end after the start, and later than now.'
+                     : d.error === 'denied' ? 'Only an admin can switch upgrade mode.' : d.error);
+        return;
+      }
+      done('');
+      paintUpgrade(d);
+    }).catch(function () { done('Not saved. Check the connection and try again.'); });
+  }
+  function upgradeOff(btn) {
+    if (btn) btn.disabled = true;
+    setUpgrade({ p_on: false, p_note: null, p_starts: null, p_ends: null }, function (err) {
+      if (btn) btn.disabled = false;
+      upgradeSay(err);
+    });
+  }
+  function myDay(d) { return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kuala_Lumpur' }); }
+  function myMoment(day, time, fallback) { return day ? day + 'T' + (time || fallback) + ':00+08:00' : null; }
+  if ($('acctUpgrade')) $('acctUpgrade').addEventListener('click', function (e) {
+    e.stopPropagation();
+    upgradeSay('');
+    if (upgrade.set) { upgradeOff(this); return; }
+    shutAcct();
+    var today = myDay(new Date());
+    window.ADspaceConfirm.ask({
+      title: 'Turn on upgrade mode',
+      body: 'Every portal page shows Upgrading in progress to everyone but admins. The front door and short links stay up. An empty start begins now; an empty end waits to be turned off.',
+      go: 'Turn on',
+      tone: 'warn',
+      fields: [{ name: 'sday', label: 'Starts', type: 'date', min: today, required: false, half: true },
+               { name: 'stime', label: 'Start time', type: 'time', required: false, half: true },
+               { name: 'eday', label: 'Ends', type: 'date', min: today, required: false, half: true },
+               { name: 'etime', label: 'End time', type: 'time', required: false, half: true },
+               { name: 'note', label: 'Note on the cover', placeholder: 'Optional', required: false }]
+    }, function (v) {
+      var starts = myMoment(v.sday, v.stime, '00:00');
+      var ends = myMoment(v.eday, v.etime, '23:59');
+      if (ends && (new Date(ends) <= new Date(starts || Date.now()) || new Date(ends) <= new Date())) {
+        upgradeSay('Choose an end after the start, and later than now.');
+        return;
+      }
+      setUpgrade({ p_on: true, p_note: v.note || null, p_starts: starts, p_ends: ends }, upgradeSay);
+    });
+  });
+  if ($('upgradeOff')) $('upgradeOff').addEventListener('click', function () { upgradeOff(this); });
   /* Signing out ends a performance unlock at once rather than leaving it to
      run out on a machine somebody else may sit at next. */
   $('signOut').addEventListener('click', function () {
@@ -453,6 +563,7 @@
        screen honest about it. Fetched once, before anything is shown. */
     loadMe(function () {
       applyAccess();
+      readUpgrade();
       /* The media pass for a colleague (js/media.js). Not waited on: a file
          drawn before it lands asks again and loads. */
       if (me && window.ADspaceMedia && window.ADspaceMedia.pass) window.ADspaceMedia.pass({});
