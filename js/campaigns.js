@@ -1907,24 +1907,31 @@
      it, and elapsed bookings in their own section at the foot. The option's
      position is deliberately untouched, so the client continues to see the
      creators in the order in which they were offered and selected. */
+  /* One register, as the Creators tab is (the user, 2026-10-03: "similar
+     itemized card per users so its not a very long list"): a row a booking
+     with its shoot and publish dates, folded; the plan's fields open under
+     the row that owns them. A booking stays open across the repaint a save
+     causes, and a lone booking opens by itself. */
+  var schedOpen = {};
   function paintSchedule(live) {
     var box = $('schedList');
     if (!box) return;
     var rows = live.filter(function (o) { return CHARGED.indexOf(o.state) > -1; });
     if (!rows.length) {
+      box.className = '';
       UI.emptyLine(box, 'No creators booked.', 'Go to Creators', function () {
         showCampPane('creators'); pushUrl();
       });
       return;
     }
+    var when = isDelivery() ? 'Delivery' : 'Shoot';
     var t = document.createElement('div');
-    t.className = 'crm-table softpanel';
-    t.innerHTML = '<div class="crm-head svc-row sched-row"><span>Creator</span><span>' +
-      (isDelivery() ? 'Delivery' : 'Shoot') + '</span><span>Draft due</span>' +
-      '<span>Publish</span><span class="sched-log"></span></div>';
+    t.className = 'bookreg sched-reg';
+    t.innerHTML = '<div class="bookreg-head"><span></span><span>Creator</span><span>' + when +
+      '</span><span>Publish</span><span></span></div>';
     function logField(label, key, value, type) {
       return '<label class="sched-f sched-edit" data-label="' + esc(label) + '">' +
-        '<input class="input input-sm" data-schedule="' + key + '" type="' + type + '" value="' +
+        '<input class="input" data-schedule="' + key + '" type="' + type + '" value="' +
         esc(value || '') + '" aria-label="' + esc(label) + '"' +
         (type === 'tel' ? ' inputmode="tel"' : '') + '></label>';
     }
@@ -1945,40 +1952,56 @@
       el.innerHTML = esc(label) + ' <span>' + count + '</span>';
       t.appendChild(el);
     }
+    function dayOr(d, tm) {
+      return d ? esc(niceDate(d) + (tm ? ', ' + clockWord(tm) : '')) : '<span class="sched-unset">Not set</span>';
+    }
     function row(o) {
+      var name = (o.creators || {}).name || '';
+      var open = schedOpen[o.id] != null ? schedOpen[o.id] : rows.length === 1;
       var el = document.createElement('div');
-      el.className = 'svc-row sched-row';
+      el.className = 'kcard sched-card';
+      el.setAttribute('data-option', o.id);
       el.innerHTML =
-        '<span class="sched-who"><b>' + esc((o.creators || {}).name || '') + '</b></span>' +
-        '<span class="sched-when sched-edit" data-label="' + (isDelivery() ? 'Delivery' : 'Shoot') + '"><input class="input input-sm" data-schedule="visit_date" ' +
-          'type="date" value="' + esc(o.visit_date || '') + '" aria-label="' +
-          (isDelivery() ? 'Delivery' : 'Shoot') + ' date">' +
-          '<input class="input input-sm" data-schedule="visit_time" type="time" value="' +
-          esc(clockValue(o.visit_time)) + '" aria-label="Optional time"></span>' +
-        '<span class="sched-when sched-edit sched-one" data-label="Draft due"><span class="sched-field">' +
-          '<input class="input input-sm" data-schedule="submission_due" ' +
-          'type="date" value="' + esc(o.submission_due || '') + '" aria-label="Draft due date"></span></span>' +
-        '<span class="sched-when sched-edit sched-one" data-label="Publish"><span class="sched-field">' +
-          '<input class="input input-sm" data-schedule="planned_publish" ' +
-          'type="date" value="' + esc(o.planned_publish || '') + '" aria-label="Publish date"></span></span>' +
-        /* Where, and whom to meet: the rest of the logistics, on the same row
-           as the dates, so the Schedule is the one place a booking's plan is
-           written (the user, 2026-09-27: "use the schedule of date n time all
-           under Schedule"). One cell, laid on the columns above it. */
-        '<span class="sched-log' + (isDelivery() ? ' is-delivery' : '') + '">' +
-          (isDelivery()
-            ? logField('Tracking no.', 'tracking_no', o.tracking_no, 'text')
-            : logField('Location', 'visit_location', o.visit_location, 'text') +
-              logField('Contact', 'visit_pic', o.visit_pic, 'text') +
-              logField('Contact phone', 'visit_pic_phone', o.visit_pic_phone, 'tel')) +
-        '</span>';
-      /* An empty `input[type=date]` draws nothing at all on iOS — no
-         mm/dd/yyyy, no caret, just an empty pill — so a Publish date nobody
-         has set yet reads as a box with no explanation. The hint hangs off
-         `.sched-field`, which wraps the field and nothing else, so it is
-         centred on the box it explains. Hung off the cell it would be centred
-         on the label as well: on a phone that put "Not set" a third of the way
-         up the field, printed over its top border. */
+        '<header class="kcard-head">' +
+          '<span class="kcard-lead"><button class="kfold" type="button" aria-label="Plan for ' + esc(name) +
+            '" aria-expanded="' + String(open) + '">' + CHEV + '</button></span>' +
+          '<span class="kcard-name">' + esc(name) + '</span>' +
+          '<span class="kcard-sum sched-sum">' + dayOr(o.visit_date, o.visit_time) + '</span>' +
+          '<span class="kcard-tags sched-pubday">' + dayOr(o.planned_publish) + '</span>' +
+          '<span class="kcard-act"></span>' +
+        '</header>' +
+        '<div class="kcard-body sched-body"' + (open ? '' : ' hidden') + '><div class="sched-grid">' +
+          '<span class="sched-when sched-edit sched-shoot" data-label="' + when + '">' +
+            '<input class="input" data-schedule="visit_date" type="date" value="' + esc(o.visit_date || '') +
+            '" aria-label="' + when + ' date">' +
+            '<input class="input" data-schedule="visit_time" type="time" value="' +
+            esc(clockValue(o.visit_time)) + '" aria-label="Optional time"></span>' +
+          '<span class="sched-when sched-edit sched-one sched-due" data-label="Draft due"><span class="sched-field">' +
+            '<input class="input" data-schedule="submission_due" type="date" value="' +
+            esc(o.submission_due || '') + '" aria-label="Draft due date"></span></span>' +
+          '<span class="sched-when sched-edit sched-one sched-pub" data-label="Publish"><span class="sched-field">' +
+            '<input class="input" data-schedule="planned_publish" type="date" value="' +
+            esc(o.planned_publish || '') + '" aria-label="Publish date"></span></span>' +
+          /* Where, and whom to meet: the rest of the plan, so the Schedule is
+             the one place a booking's plan is written (the user, 2026-09-27). */
+          '<span class="sched-log' + (isDelivery() ? ' is-delivery' : '') + '">' +
+            (isDelivery()
+              ? logField('Tracking no.', 'tracking_no', o.tracking_no, 'text')
+              : logField('Location', 'visit_location', o.visit_location, 'text') +
+                logField('Contact', 'visit_pic', o.visit_pic, 'text') +
+                logField('Contact phone', 'visit_pic_phone', o.visit_pic_phone, 'tel')) +
+          '</span>' +
+        '</div></div>';
+      var body = el.querySelector('.sched-body');
+      var foldBtn = el.querySelector('.kfold');
+      el.querySelector('.kcard-head').addEventListener('click', function () {
+        var show = body.hidden;
+        schedOpen[o.id] = show;
+        body.hidden = !show;
+        foldBtn.setAttribute('aria-expanded', String(show));
+      });
+      /* An empty `input[type=date]` draws nothing at all on iOS, so a date
+         nobody has set reads "Not set" over its own box (`.sched-field`). */
       function markEmpty(input) {
         var cell = input.closest('.sched-one');
         if (cell) cell.classList.toggle('is-unset', !input.value);
@@ -1992,8 +2015,8 @@
           if ((o[key] || '') === val) return;
           var patch = {}; patch[key] = val || null;
           /* A visit creates a real production deadline. No-visit campaigns
-             leave the visit blank and use the adjacent Draft due field. */
-          if (this.getAttribute('data-schedule') === 'visit_date') {
+             leave the visit blank and use the Draft due field beside it. */
+          if (key === 'visit_date') {
             patch.submission_due = this.value ? addDays(this.value, 7) : o.submission_due || null;
           }
           var was = {};
@@ -2002,6 +2025,7 @@
             if (r.error) { msg('campWorkMsg', r.error.message, 'err'); return; }
             if (!(r.data || []).length) { msg('campWorkMsg', 'Not saved. The database refused the request.', 'err'); return; }
             Object.keys(patch).forEach(function (k) { o[k] = patch[k]; });
+            schedOpen[o.id] = true;
             var R = window.ADspaceRecords;
             var said = R && R.changes ? R.changes(was, patch, Object.keys(patch).map(function (k) {
               return [k, SCHED_WORD[k] || k, /_date$|_due$|_publish$/.test(k) ? niceDate : null];
@@ -2016,6 +2040,7 @@
     band('Upcoming', upcoming.length);
     upcoming.forEach(row);
     if (passed.length) { band('Past', passed.length); passed.forEach(row); }
+    box.className = '';
     box.innerHTML = '';
     box.appendChild(t);
   }

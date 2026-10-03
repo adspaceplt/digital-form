@@ -6420,60 +6420,48 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .camp-next:has(.camp-next-go) { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; }
 .camp-next-go { margin-block: -4px; }
 
-/* Four columns, not five. The pane is about 590px beside the rail, and a
-   fifth track squeezed the creator's name to two lines and pushed the state
-   header over the one before it. Where they post is on the Creators cards and
-   on Client selection, so the Schedule answers only when. */
-.sched-row { grid-template-columns: minmax(140px, 1fr) minmax(220px, 1.1fr) 142px 142px; }
-.sched-when { font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
-.sched-edit { display: flex; align-items: center; gap: 6px; }
-/* The end padding is trimmed for the 142px desk tracks; the start padding is
-   the date field's own, because under a finger it holds the glyph. */
-.sched-edit .input { min-width: 0; padding-inline-end: 8px; }
-.sched-edit input[type="date"], .sched-edit input.dmy { flex: 1 1 132px; }
-.sched-edit input[type="time"] { flex: 0 1 92px; }
-/* The rest of the plan (where, whom to meet, or the tracking number) is
-   one cell on the row's second line, laid on the columns above it, so the
-   header's count and every column hold. Each field carries its own label,
-   because the heading above the column names the date. */
-.sched-row { row-gap: 8px; }
-.crm-head.sched-row { row-gap: 0; }
-.sched-log {
-  grid-column: 2 / -1; display: grid; grid-template-columns: subgrid;
-  align-items: start; min-width: 0;
+/* The Schedule is the Creators tab's register (2026-10-03): a row a booking
+   with its shoot and publish dates, folded; the plan opens under its row.
+   The fields line up under the name, so the body starts on the name's x. */
+.sched-reg .kcard-head { cursor: pointer; }
+.sched-unset { color: var(--ink-mute); }
+.sched-reg .sched-pubday {
+  font-size: 12.5px; color: var(--ink-soft); font-variant-numeric: tabular-nums; white-space: nowrap;
 }
-.sched-log.is-delivery > .sched-f { grid-column: 1 / 2; }
-.sched-f { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 0; }
-.sched-f::before {
+.sched-body { padding: 0 16px 16px 72px; }
+.sched-grid {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "when when" "due pub" "log log"; gap: 12px; max-width: 560px;
+}
+.sched-grid > .sched-shoot { grid-area: when; }
+.sched-grid > .sched-due { grid-area: due; }
+.sched-grid > .sched-pub { grid-area: pub; }
+.sched-grid > .sched-log { grid-area: log; }
+.sched-when { font-variant-numeric: tabular-nums; }
+.sched-edit { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 0; }
+.sched-edit .input { min-width: 0; width: 100%; }
+/* The label above its field, as every label in the portal is. */
+.sched-when::before, .sched-f::before {
   content: attr(data-label);
   font-size: 12px; font-weight: 600; letter-spacing: 0; color: var(--ink-mute);
 }
+/* The shoot keeps its date and its time on one line under the one label. */
+.sched-grid > .sched-shoot { display: grid; grid-template-columns: minmax(0, 1fr) 122px; gap: 4px 8px; }
+.sched-grid > .sched-shoot::before { grid-column: 1 / -1; }
+.sched-log {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; min-width: 0;
+}
+.sched-log > .sched-f:first-child { grid-column: 1 / -1; }
+.sched-f { display: flex; flex-direction: column; align-items: stretch; gap: 4px; min-width: 0; }
 .sched-f > .input { width: 100%; }
+/* On a phone the body runs the card's width; Draft due and Publish still
+   share a line, so five creators are not fifteen stacked boxes. */
+.is-tight .sched-body { padding: 0 14px 14px; }
 .sched-plat, .pick-plat { font-size: 13px; color: var(--ink-mute); min-width: 0;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pick-state { min-width: 0; }
 .pick-row { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.1fr) 96px 124px; }
 
-/* The campaign's own rows, on the same component-width switch.
-
-   Who, then the shoot, then the two deadlines side by side. Stacked one per
-   line with a 72px label beside each, a creator took three full-width date
-   boxes and the pane became a column of empty fields rather than a schedule:
-   five creators ran to fifteen of them. The label also sat to the left of its
-   field, which is the one place in this portal a field label does not go —
-   everywhere else it is above, so the field can have the width. */
-.is-narrow .sched-row {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas: "who who" "when when" "due pub" "log log";
-  gap: 10px;
-}
-.is-narrow .sched-row > .sched-log {
-  grid-area: log; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px;
-}
-.is-narrow .sched-log > .sched-f:first-child { grid-column: 1 / -1; }
-.is-narrow .sched-edit {
-  display: flex; flex-direction: column; align-items: stretch; gap: 4px;
-}
 /* The room js/form.js §6 makes under a date field at the foot of its
    scroller, so the calendar opens inside the window. Present only while the
    field is in use. */
@@ -6510,7 +6498,6 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
    field is 38px and the token is 32. A wrapper needs neither guess, and one
    rule is then true at every width. */
 .sched-field { position: relative; display: flex; min-width: 0; }
-.sched-edit .sched-field { flex: 1 1 132px; }
 .sched-field > .input { width: 100%; }
 .sched-one.is-unset .sched-field::after {
   content: 'Not set';
@@ -6530,26 +6517,9 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .sched-one.is-unset input::-webkit-datetime-edit { opacity: 0; }
 .sched-one.is-unset input:focus::-webkit-datetime-edit { opacity: 1; }
 .sched-one.is-unset:focus-within .sched-field::after { content: none; }
-/* The cells are as tall as the tallest of them, so a field left to stretch
-   grew to fill a row sized by its neighbour. A control keeps its own height. */
-.is-narrow .sched-row { align-items: start; }
-.is-narrow .sched-edit .input, .is-narrow .sched-edit .sched-field { flex: 0 0 auto; }
-.is-narrow .sched-row > .sched-who { grid-area: who; }
-.is-narrow .sched-row > .sched-when:nth-of-type(2) { grid-area: when; }
-.is-narrow .sched-row > .sched-when:nth-of-type(3) { grid-area: due; }
-.is-narrow .sched-row > .sched-when:nth-of-type(4) { grid-area: pub; }
-/* The label above its field, as every other label in the portal is. */
-.is-narrow .sched-row > .sched-when::before {
-  content: attr(data-label);
-  font-size: 12px; font-weight: 600; letter-spacing: 0;
-  color: var(--ink-mute);
-}
-/* The shoot keeps its date and its time on one line under the one label. */
-.is-narrow .sched-row > .sched-when:nth-of-type(2) {
-  display: grid; grid-template-columns: minmax(0, 1fr) 122px; gap: 4px 8px;
-}
-.is-narrow .sched-row > .sched-when:nth-of-type(2)::before { grid-column: 1 / -1; }
-.is-narrow .sched-edit .input { min-width: 0; width: 100%; }
+/* At a desk the box is the DD/MM/YYYY text field (js/form.js §7): its own
+   placeholder waits under the hint until the field is reached. */
+.sched-one.is-unset .dmy:not(:focus)::placeholder { color: transparent; }
 /* A column is a column on every row, or it is not a column. The second track
    was `auto`, so it was sized by its own row's chip: "Pending draft" opened it
    at 76px and "Submitted" at 72, and the state and the fee under it started
@@ -6567,7 +6537,7 @@ body.no-manage-ops-time [data-need="ops.time:manage"] { display: none !important
 .is-narrow .pick-row > .pick-state { grid-area: state; justify-self: stretch; text-align: right; }
 .is-narrow .pick-row > .pick-plat { grid-area: plat; }
 .is-narrow .pick-row > .svc-rate { grid-area: rate; text-align: right; }
-.is-narrow .crm-head.sched-row, .is-narrow .crm-head.pick-row { display: none; }
+.is-narrow .crm-head.pick-row { display: none; }
 
 /* What a creator handed in. One block per creator, the files as things to
    open, the caption as the text it is. */
