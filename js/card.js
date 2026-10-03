@@ -23,7 +23,11 @@
     var d = r.data;
     if (r.error || !d) { cover(W.failTitle, W.failText); return; }
     if (d.error) { cover(W.notFound, W.notFoundText); return; }
-    document.title = d.name + ' · ADspace';
+    /* {name} • eNamecard by ADspace (the user, 2026-10-03), in the tab and
+       for any reader that takes the title after the page has run. */
+    document.title = d.name + ' • eNamecard by ADspace';
+    var og = document.querySelector('meta[property="og:title"]');
+    if (og) og.setAttribute('content', document.title);
     window.ADspaceCard.mount(document.getElementById('ncHost'), d, key);
   }).catch(function () { cover(W.failTitle, W.failText); });
 })();

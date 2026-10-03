@@ -182,6 +182,11 @@
       update: function (next) {
         state.card = next;
         q('rows').innerHTML = rows(next);
+        /* A card drawn without a mobile gains its WhatsApp once one is shown. */
+        if (!q('wa') && next.mobile) {
+          host.querySelector('.nc-acts').insertAdjacentHTML('beforeend',
+            '<a class="nc-pill" data-nc="wa" target="_blank" rel="noopener">WhatsApp</a>');
+        }
         var wa = q('wa');
         if (wa && next.mobile) wa.href = 'https://wa.me/' + digits(next.mobile);
         host.querySelector('.nc-acts').classList.toggle('is-one', !next.mobile);
@@ -194,9 +199,12 @@
 
   /* ---- The console's My namecard --------------------------------------
      The person's own card as a client sees it, the address to hand over,
-     and the two facts on it they keep themselves (namecard_save_mine). */
+     and what they keep themselves: the mobile, whether it is on the card,
+     and the short link (namecard_save). */
   var SAID = {
     'bad-mobile': 'Enter a mobile number of 8 to 15 digits.',
+    'slug-taken': 'That short link is already in use.',
+    'slug-shape': 'Use lowercase letters, digits, dots, dashes or underscores.',
     'not-team': 'Not allowed.'
   };
   function $(id) { return document.getElementById(id); }
@@ -215,23 +223,38 @@
         window.ADspaceSheet.show($('mycSheet'), { opener: opener });
         return;
       }
+      /* The preview is the card as others see it: hidden, it has no mobile. */
       var cardOf = function () {
         return { name: d.name, designation: d.designation,
-                 mobile: ($('mycMobile').value || '').trim() || null, email: d.email };
+                 mobile: $('mycShow').value === 'hide' ? null : ($('mycMobile').value || '').trim() || null,
+                 email: d.email };
       };
       $('mycMobile').value = d.mobile || '';
+      $('mycShow').value = d.show_mobile === false ? 'hide' : 'show';
+      $('mycSlug').value = d.slug || '';
       var handle = mount($('mycPreview'), cardOf(), d.key);
-      $('mycUrl').textContent = handle.link.replace(/^https?:\/\//, '');
+      /* The card's short link on the links host, where it has one; the QR on
+         the card keeps the card's own address, which never changes. */
+      var host = (window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me';
+      $('mycSlugPre').textContent = host + '/';
+      var share = d.slug ? 'https://' + host + '/' + d.slug : handle.link;
+      $('mycUrl').textContent = share.replace(/^https?:\/\//, '');
       /* Turned off in Team: the card is shown, its address answers nobody. */
       $('mycUrl').parentNode.hidden = d.on === false;
       if (d.on === false) say('Your namecard is off.', 'warn');
-      $('mycOpen').href = handle.link;
-      $('mycCopy').onclick = function () { if (window.ADspaceCopy) window.ADspaceCopy.to(this, handle.link); };
+      $('mycOpen').href = share;
+      $('mycCopy').onclick = function () { if (window.ADspaceCopy) window.ADspaceCopy.to(this, share); };
       $('mycMobile').oninput = function () { handle.update(cardOf()); };
+      $('mycShow').onchange = function () { handle.update(cardOf()); };
       $('mycSave').onclick = function () {
         var btn = this;
         btn.disabled = true;
-        db.rpc('namecard_save_mine', { p_mobile: ($('mycMobile').value || '').trim() || null, p_email: null })
+        var slug = ($('mycSlug').value || '').trim().toLowerCase().replace(/^https?:\/\/[^/]*\//, '').replace(/^\/+|\/+$/g, '');
+        if (slug && !/^[a-z0-9][a-z0-9._-]{0,79}$/.test(slug)) {
+          btn.disabled = false; say(SAID['slug-shape'], 'err'); $('mycSlug').focus(); return;
+        }
+        db.rpc('namecard_save', { p_mobile: ($('mycMobile').value || '').trim() || null, p_slug: slug,
+                                  p_show: $('mycShow').value !== 'hide' })
           .then(function (s) {
             btn.disabled = false;
             var e = s.data && s.data.error;
@@ -239,6 +262,7 @@
               var t = s.error ? String(s.error.message || '') : '';
               say(e ? (SAID[e] || e) : /function|schema cache/i.test(t) ? 'This needs a database update.' : t, 'err');
               if (e === 'bad-mobile') $('mycMobile').focus();
+              if (e === 'slug-taken' || e === 'slug-shape') $('mycSlug').focus();
               return;
             }
             window.ADspaceSheet.close();

@@ -222,6 +222,7 @@
       st.urlRead = true;
       var q = new URLSearchParams(location.search);
       if (q.get('tab') === 'performance') st.tab = 'performance';
+      if (q.get('tab') === 'groups') st.tab = 'groups';
       if (/^\d{4}-\d{2}$/.test(q.get('m') || '')) st.period = q.get('m') + '-01';
       /* The rewards views (2026-09-28) and the quarter or period they show. */
       var pv = q.get('view'), qq = q.get('q');
@@ -232,19 +233,24 @@
       }
     }
     var canMembers = may('team', 'view'), canPerf = may('team.performance', 'view');
-    if (!canPerf) st.tab = 'members';
+    if (!canPerf && st.tab === 'performance') st.tab = 'members';
     if (!canMembers) st.tab = 'performance';
-    $('teamTabs').hidden = !canPerf;
+    /* Members and Groups are one permission and Performance another; the
+       strip draws whenever there is more than one tab to choose. */
+    $('teamTabs').hidden = !canMembers;
     $('teamTabMembers').hidden = !canMembers;
+    $('teamTabGroups').hidden = !canMembers;
+    $('teamTabPerf').hidden = !canPerf;
     Array.prototype.forEach.call(document.querySelectorAll('#teamTabs .tab'), function (b) {
       var on = b.getAttribute('data-tab') === st.tab;
       b.classList.toggle('is-on', on);
       b.setAttribute('aria-selected', String(on));
     });
     $('teamMembersPane').hidden = st.tab !== 'members';
+    $('teamGroupsPane').hidden = st.tab !== 'groups';
     $('teamPerfPane').hidden = st.tab !== 'performance';
     $('perfLockBtn').hidden = st.tab !== 'performance';
-    if (st.tab === 'members') { if (window.ADspaceTeam) window.ADspaceTeam.enter(); }
+    if (st.tab === 'members' || st.tab === 'groups') { if (window.ADspaceTeam) window.ADspaceTeam.enter(); }
     else enterPerf();
   }
   Array.prototype.forEach.call(document.querySelectorAll('#teamTabs .tab'), function (b) {
@@ -2560,6 +2566,7 @@
     enterMine: enterMine,
     lock: function (then) { lock(then); },
     urlState: function () {
+      if (st.tab === 'groups') return { tab: 'groups' };
       if (st.tab !== 'performance') return {};
       if (st.pv === 'quarters') return { tab: 'performance', view: 'quarters', q: st.q.slice(0, 7) };
       if (st.pv === 'company') return { tab: 'performance', view: 'company', q: st.pf.slice(0, 7) };

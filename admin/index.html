@@ -33,7 +33,7 @@
      it: a heading that paints in the system face and flips a moment later
      is the page correcting itself in front of the reader. -->
 <link rel="preload" as="font" type="font/woff2" href="/css/SlateRg.woff2" crossorigin>
-<link rel="stylesheet" href="/css/portal.css?v=20261003i">
+<link rel="stylesheet" href="/css/portal.css?v=20261003k">
 <!-- Read before the stylesheet paints, so neither the stored choice nor the
      device's own setting flashes the other register on every load. A choice
      made here wins for ever; with none stored the console follows the device,
@@ -376,9 +376,26 @@
           </div>
           <section class="fsec">
             <h4 class="fsec-h">On the card</h4>
-            <div class="row">
+            <div class="row fgrid">
               <div><label class="field-label" for="mycMobile">Mobile</label>
                 <input class="input" id="mycMobile" type="tel" inputmode="tel" autocomplete="tel" placeholder="012-345 6789"></div>
+              <!-- Hidden, the number never leaves the database: the card, its
+                   WhatsApp and Save contact go without it (namecard_get). -->
+              <div><label class="field-label" for="mycShow">Mobile on card</label>
+                <select class="select" id="mycShow" data-seg>
+                  <option value="show">Show</option>
+                  <option value="hide">Hide</option>
+                </select></div>
+            </div>
+            <div class="row">
+              <!-- Their own short link: optional to change; emptied, it is made
+                   again from the name (namecard_save). -->
+              <div><label class="field-label" for="mycSlug">Short link</label>
+                <div class="slugfield">
+                  <span class="slugfield-pre" id="mycSlugPre">hi.adspace.me/</span>
+                  <input class="input" id="mycSlug" placeholder="Made from your name" autocapitalize="off"
+                         autocorrect="off" spellcheck="false">
+                </div></div>
             </div>
           </section>
           <div class="msg" id="mycMsg"></div>
@@ -459,7 +476,7 @@
               <span class="cmdbar-count" id="crmCount"></span>
             </span>
             <span class="cmdbar-acts">
-              <button class="btn btn-sm btn-primary" id="crmNew" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add lead</button>
+              <button class="btn btn-sm btn-primary" id="crmNew" type="button" data-need="clients.leads:work"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add lead</button>
             </span>
           </span>
         </div>
@@ -589,6 +606,7 @@
                   <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
                 </button>
                 <div class="kmenu" id="crmClientMenu" hidden role="menu">
+                  <button class="kmenu-item" id="crmTake" type="button" role="menuitem" data-a="take" hidden>Take lead</button>
                   <button class="kmenu-item" id="crmEdit" type="button" role="menuitem" data-a="edit">Edit</button>
                   <button class="kmenu-item is-danger" type="button" role="menuitem" data-a="delclient" data-need="clients:manage">Delete</button>
                 </div>
@@ -3349,6 +3367,7 @@
       <div class="tabline">
         <div class="tabrow" id="teamTabs" role="tablist" hidden>
           <button class="tab is-on" id="teamTabMembers" data-tab="members" type="button" role="tab">Members</button>
+          <button class="tab" id="teamTabGroups" data-tab="groups" type="button" role="tab">Groups</button>
           <button class="tab" id="teamTabPerf" data-tab="performance" type="button" role="tab">Performance</button>
         </div>
         <!-- The lock's state, at the row's right end and outside the strip, so
@@ -3361,7 +3380,7 @@
       <!-- Every console route opens on its command bar. The bar above already
            says Team and the column header says Person, so a "Members" heading
            between the two was a third name for the same list. User groups
-           below keeps its heading, because it is a second thing. -->
+           are a tab of their own (Groups), because they are a second thing. -->
       <div class="cmdbar">
         <span class="cmdbar-find">
           <svg viewBox="0 0 24 24" aria-hidden="true" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
@@ -3416,7 +3435,9 @@
                 <div class="fcells" id="tmUntilRow">
                   <div><label class="field-label" for="tmUntil">Access until</label>
                     <input class="input" id="tmUntil" type="date"></div>
-                  <div><label class="field-label" for="tmUntilTime">Time</label>
+                  <!-- A time means something only on a day, so it arrives with one
+                       (Team audit, 2026-10-03). -->
+                  <div id="tmUntilTimeBox"><label class="field-label" for="tmUntilTime">Time</label>
                     <input class="input" id="tmUntilTime" type="time" step="300"></div>
                 </div>
               </div>
@@ -3458,6 +3479,21 @@
               <div class="row fgrid">
                 <div><label class="field-label" for="tmMobile">Mobile</label>
                   <input class="input" id="tmMobile" type="tel" inputmode="tel" placeholder="012-345 6789"></div>
+                <div><label class="field-label" for="tmCardMobile">Mobile on card</label>
+                  <select class="select" id="tmCardMobile" data-seg>
+                    <option value="show">Show</option>
+                    <option value="hide">Hide</option>
+                  </select></div>
+              </div>
+              <!-- The card's short link on the links host: made from the name,
+                   edited here; left empty, it is made again from the name. -->
+              <div class="row fgrid">
+                <div><label class="field-label" for="tmCardSlug">Short link</label>
+                  <div class="slugfield">
+                    <span class="slugfield-pre" id="tmSlugPre">hi.adspace.me/</span>
+                    <input class="input" id="tmCardSlug" placeholder="Made from the name" autocapitalize="off"
+                           autocorrect="off" spellcheck="false">
+                  </div></div>
                 <div><label class="field-label" for="tmCardOn">Card</label>
                   <select class="select" id="tmCardOn" data-seg>
                     <option value="on">On</option>
@@ -3479,11 +3515,23 @@
            empty line or a failure. A `team-table` here as well nested one
            table inside another and left a pad above the first column name. -->
       <div id="teamList"></div>
+      </div>
 
-      <!-- ---- Groups: one set of switches per group, members inherit ---- -->
-      <div class="viewhead" style="margin-top:28px">
-        <span class="headmark"><h2>User groups</h2></span>
-        <button class="btn" id="groupAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add group</button>
+      <!-- ---- Groups: one set of switches per group, members inherit. A tab
+           of its own (Team audit, 2026-10-03): under the members list a phone
+           scrolled past everybody to reach a group. ---- -->
+      <div id="teamGroupsPane" hidden>
+      <!-- The tab names the list, so the pane opens on its bar as Members
+           does: the count and the one action, no heading saying Groups twice. -->
+      <div class="cmdbar">
+        <span class="cmdbar-end">
+          <span class="cmdbar-quiet">
+            <span class="cmdbar-count" id="groupCount"></span>
+          </span>
+          <span class="cmdbar-acts">
+            <button class="btn btn-sm btn-primary" id="groupAdd" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add group</button>
+          </span>
+        </span>
       </div>
       <div class="sheet" id="groupAddBox" hidden>
         <div class="sheet-card formsheet" role="dialog" aria-modal="true" aria-labelledby="grTitle">
@@ -4509,20 +4557,20 @@ raya-2026        https://example.com/raya"></textarea>
   </div>
 </div>
 <script src="/js/passkey.js?v=20261001a"></script>
-<script src="/js/admin.js?v=20261003c"></script>
+<script src="/js/admin.js?v=20261003e"></script>
 <script src="/js/documents.js?v=20261002a"></script>
 <script src="/js/letters.js?v=20261002a"></script>
 <script src="/js/smreport.js?v=20261002g"></script>
 <script src="/js/reports.js?v=20261002f"></script>
 <script src="/js/register.js?v=20261001c"></script>
-<script src="/js/crm.js?v=20261002a"></script>
-<script src="/js/team.js?v=20261003f"></script>
+<script src="/js/crm.js?v=20261003a"></script>
+<script src="/js/team.js?v=20261003g"></script>
 <script src="/js/namecard.js?v=20261003f"></script>
 <script src="/js/handbook.js?v=20261002a"></script>
 <script src="/js/campaigns.js?v=20261003b"></script>
-<script src="/js/ops.js?v=20261001b"></script>
-<script src="/js/perf.js?v=20261002a"></script>
+<script src="/js/ops.js?v=20261003a"></script>
+<script src="/js/perf.js?v=20261003a"></script>
 <script src="/js/search.js?v=20261001a"></script>
-<script src="/js/overview.js?v=20261001a"></script>
+<script src="/js/overview.js?v=20261003a"></script>
 </body>
 </html>

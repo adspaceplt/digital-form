@@ -529,7 +529,10 @@
      opened the Parts fold is where it always was. HR letters were a section
      and are `register.hr` now. */
   var PARTS = {
-    clients:   ['contacts', 'billing', 'services', 'documents', 'requests', 'calls'],
+    /* `leads` and `past` are the lead stages and Past (2026-10-03): they
+       narrow what the Clients level opens on those records, in the database
+       (`client_row_seen`) as here. */
+    clients:   ['contacts', 'billing', 'services', 'documents', 'requests', 'calls', 'leads', 'past'],
     review:    ['sets', 'settings'],
     campaigns: ['campaigns', 'creators', 'finance'],
     register:  ['documents', 'hr'],
@@ -4123,7 +4126,10 @@
     var was = editingSlug;
 
     db.from('links').upsert(body, { onConflict: 'slug' }).then(function (r) {
-      if (r.error) { msg('linkMsg', r.error.message, 'err'); return; }
+      if (r.error) {
+        msg('linkMsg', /slug-taken/.test(r.error.message) ? '/' + slug + ' is a colleague\'s namecard.' : r.error.message, 'err');
+        return;
+      }
       if (was && was !== slug) {
         db.from('links').delete().eq('slug', was).then(function () { loadLinks(); });
       } else {

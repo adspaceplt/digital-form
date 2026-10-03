@@ -54,6 +54,8 @@
     ['manage', 'Full Access']
   ];
   var LEVEL_WORD = { view: 'View', work: 'Manage', manage: 'Full Access' };
+  var SCOPE_WORD = { all: 'All clients', own: 'Own clients only' };
+  function readScope() { var el = document.getElementById('grScope'); return el && el.value === 'own' ? 'own' : 'all'; }
 
   /* Each section offers the levels that mean something in it. The activity
      record is a log, so it is read or not read; administering the team is one
@@ -95,7 +97,11 @@
      until 2026-09-22; it is a part now, with the same four levels. */
   var PARTS = {
     clients:   [['contacts', 'Contacts'], ['billing', 'Billing'], ['services', 'Services'],
-                ['documents', 'Documents'], ['requests', 'Requests'], ['calls', 'Calls and visits']],
+                ['documents', 'Documents'], ['requests', 'Requests'], ['calls', 'Calls and visits'],
+                /* The lead stages and Past (2026-10-03): No Access, View or
+                   Manage on those records, and on everything filed under
+                   them in every section (`client_row_seen`). */
+                ['leads', 'Leads'], ['past', 'Past clients']],
     review:    [['sets', 'Content sets'], ['settings', 'Client settings']],
     campaigns: [['campaigns', 'Campaigns'], ['creators', 'Creators List'], ['finance', 'Finance']],
     register:  [['documents', 'Client documents'], ['hr', 'HR Letters']],
@@ -148,7 +154,10 @@
   var PART_LEVELS = {
     'ops.all': ['view'], 'ops.reports': ['view'], 'ops.workflows': ['view', 'work'],
     'ops.list': ['view'], 'ops.board': ['view'], 'ops.calendar': ['view'],
-    'ops.time': ['manage'], 'team.performance': ['view', 'work', 'manage']
+    'ops.time': ['manage'], 'team.performance': ['view', 'work', 'manage'],
+    /* Leads and Past clients narrow the Clients level and never widen it;
+       removing a client stays with Clients Full Access. */
+    'clients.leads': ['view', 'work'], 'clients.past': ['view', 'work']
   };
   function partLevels(key) {
     if (PART_LEVELS[key]) return PART_LEVELS[key];
@@ -308,7 +317,7 @@
   function teamMatch(m) {
     if (teamGroup && m.role !== teamGroup) return false;
     if (!teamFind) return true;
-    return (String(m.name || '') + ' ' + String(m.email || '') + ' ' + whoLine(m))
+    return (String(m.name || '') + ' ' + String(m.email || '') + ' ' + String(m.staff_code || '') + ' ' + whoLine(m))
       .toLowerCase().indexOf(teamFind) > -1;
   }
 
@@ -398,6 +407,9 @@
     var h = Number(m[1]);
     return ((h % 12) || 12) + (m[2] === '00' ? '' : '.' + m[2]) + (h < 12 ? 'am' : 'pm');
   }
+  /* A switch as the change log hands it over: records.js reads a boolean
+     as Yes or No before the label's own words. */
+  function off(v) { return v === false || v === 'No'; }
   function untilWord(day, time) { return dayWord(day) + (day && time ? ', ' + timeWord(time) : ''); }
   /* A moment still ahead in Malaysia: a later day, or today at a later time
      (no time is the day's end). */
@@ -411,7 +423,7 @@
     var post = [DEPT[m.department], m.designation].filter(Boolean).join(', ');
     /* The day access ends, where one is set (TEAM ACCESS EXPIRY). */
     var until = m.active && m.access_until ? 'Until ' + untilWord(m.access_until, m.access_until_time) : '';
-    return [m.staff_code, post, until].filter(Boolean).join(' · ');
+    return [post, until].filter(Boolean).join(' · ');
   }
   /* The database's refusals, in the team's words. */
   function teamSaid(e) {
@@ -432,15 +444,21 @@
          and names it when they are not. */
       /* You is a designation, not a live state, so it is the neutral chip the
          rate card gives Inactive and not a word in the accent green. */
-      '<span class="team-who"><b>' + esc(m.name) + (self ? ' <span class="tone">You</span>' : '') + '</b>' +
-        /* The Employee ID, then where they sit: "AD026 · Creative, Production
-           Executive". The HR serial and the signature on a letter are built
-           from these, and the department is chosen from a list, so the line
-           reads the same on every row whoever typed it. */
+      /* The name with its Employee ID beside it (the user, 2026-10-03), then
+         where they sit: "Creative, Production Executive". The HR serial and
+         the signature on a letter are built from these, and the department
+         is chosen from a list, so the line reads the same on every row
+         whoever typed it. */
+      '<span class="team-who"><b>' + esc(m.name) +
+        (m.staff_code ? ' <span class="team-eid">' + esc(m.staff_code) + '</span>' : '') +
+        (self ? ' <span class="tone">You</span>' : '') + '</b>' +
         (whoLine(m) ? '<small>' + esc(whoLine(m)) + '</small>' : '') +
       '</span>' +
       '<span class="team-mail">' + esc(m.email || '') + '</span>' +
-      '<span class="team-state">' + (m.active ? '' : '<span class="tone">' + (m.expired_at ? 'Access expired' : 'Inactive') + '</span>') + '</span>' +
+      /* The exception only: Inactive, Access expired, or a card turned off
+         for somebody still working; an ordinary row says nothing. */
+      '<span class="team-state">' + (!m.active ? '<span class="tone">' + (m.expired_at ? 'Access expired' : 'Inactive') + '</span>'
+        : m.card_on === false ? '<span class="tone">Card off</span>' : '') + '</span>' +
       /* Mail leaves the building and cannot be recalled, so Send invitation
          sits one place from Edit and asks first, as it does on a contact.
          Standing somebody down happens once in a job, so it is here rather
@@ -605,6 +623,8 @@
     head.innerHTML = '<span>Group</span><span>Access</span><span></span>';
     box.appendChild(head);
     state.roles.forEach(function (r) { box.appendChild(groupRow(r)); });
+    var n = state.roles.length;
+    $('groupCount').textContent = n ? n + (n === 1 ? ' group' : ' groups') : '';
   }
 
   /* What the group opens, in its own words, grouped by level so the strongest
@@ -654,6 +674,7 @@
       return ex.length ? s[1] + ' (' + ex.join(', ') + ')' : '';
     }).filter(Boolean);
     if (only.length) parts.push('Only: ' + only.join(', '));
+    if (r.client_scope === 'own') parts.push('Own clients only');
     return parts.length ? parts.join(' · ') : 'No Access';
   }
 
@@ -676,9 +697,7 @@
     if (del) del.addEventListener('click', function () {
       window.ADspaceConfirm.ask({
         title: 'Delete',
-        body: 'The ' + r.name + ' group and the access it carries go. There is no '
-            + 'restore. Anybody still in it falls under "No group" and opens nothing '
-            + 'until they are moved.',
+        body: 'The ' + r.name + ' group and the access it carries go. There is no restore.',
         go: 'Delete',
         tone: 'danger'
       }, function () {
@@ -710,6 +729,7 @@
         if (k === 'access') return accessMoves(was.access, patch.access);
         if (k === 'is_admin') return 'Admin: ' + (was.is_admin ? 'Yes' : 'No') + ' → ' + (patch.is_admin ? 'Yes' : 'No');
         if (k === 'name') return 'Name: ' + (was.name || 'not set') + ' → ' + patch.name;
+        if (k === 'client_scope') return 'Clients they see: ' + SCOPE_WORD[was.client_scope || 'all'] + ' → ' + SCOPE_WORD[patch.client_scope];
         return k.replace('can_', '') + ': ' + was[k] + ' → ' + patch[k];
       }).filter(Boolean).join('; '));
       msg('groupMsg', 'Saved.', 'ok');
@@ -793,7 +813,14 @@
             (VIEW_PARTS[key] ? '' :
               partLevels(key).map(function (l) { return '<option value="' + l + '">' + esc(LEVEL_WORD[l]) + '</option>'; }).join('')) +
             '</select></label>';
-        }).join('') + '</div>' : '') +
+        }).join('') +
+        /* Whose clients the group sees, in every section: all, or the ones
+           its colleague is Person in charge of with any lead nobody holds
+           (`team_roles.client_scope`). */
+        (sec[0] === 'clients' ? '<label class="permpart"><span class="permpart-name">Clients they see</span>' +
+          '<select class="select select-sm" id="grScope" aria-label="Clients: clients they see">' +
+          '<option value="all">All clients</option><option value="own">Own clients only</option></select></label>' : '') +
+        '</div>' : '') +
       '</div>';
     }).join('') +
     /* Admin is chosen from Start from, which already names it (2026-09-26):
@@ -851,6 +878,7 @@
   function presetOf() {
     var adm = flagBoxes().filter(function (cb) { return cb.getAttribute('data-f') === 'is_admin'; })[0];
     if (adm && adm.checked) return 'admin';
+    if (readScope() === 'own') return 'custom';
     var now = canon(readAccess());
     var hit = Object.keys(PRESETS).filter(function (k) { return canon(PRESETS[k]) === now; })[0];
     return hit || 'custom';
@@ -862,15 +890,19 @@
     if (xs.length < 2) return xs.join('');
     return xs.slice(0, -1).join(', ') + (sep || ' and ') + xs[xs.length - 1];
   }
-  /* The group in one sentence, read from the panel as it stands. */
-  function sumText(acc, admin, tuned) {
+  /* The group in one sentence, read from the panel as it stands, in the
+     panel's own words (Team audit, 2026-10-03: it read "can work Clients"
+     and "manage", the stored keys, where the panel says Manage and Full
+     Access). */
+  function sumText(acc, admin, tuned, scope) {
     if (admin) return 'This group can do everything, in every section.';
     var by = { manage: [], work: [], view: [] };
     SECTIONS.forEach(function (s) { var v = acc[s[0]] || 'none'; if (by[v]) by[v].push(s[1]); });
     var said = ['manage', 'work', 'view'].filter(function (lv) { return by[lv].length; }).map(function (lv) {
-      return lv + ' ' + listWords(by[lv]);
+      return LEVEL_WORD[lv] + ' on ' + listWords(by[lv]);
     });
-    var line = said.length ? 'This group can ' + listWords(said, ', and ') + '.' : 'This group has no access.';
+    var line = said.length ? 'This group has ' + listWords(said, ', and ') + '.' : 'This group has no access.';
+    if (scope === 'own') line += ' Own clients only.';
     if (tuned) line += ' ' + tuned + (tuned === 1 ? ' page is' : ' pages are') + ' set in Advanced.';
     return line;
   }
@@ -884,21 +916,31 @@
     SECTIONS.forEach(function (s) {
       var d = $('grDesc-' + s[0]);
       if (d) d.textContent = admin ? 'Every level, as an admin.' : (DESC[s[0]][access[s[0]] || 'none'] || '');
-      var n = (PARTS[s[0]] || []).filter(function (p) { return (s[0] + '.' + p[0]) in access; }).length;
+      var n = (PARTS[s[0]] || []).filter(function (p) { return (s[0] + '.' + p[0]) in access; }).length +
+              (s[0] === 'clients' && readScope() === 'own' ? 1 : 0);
       tuned += n;
+      /* The team's figures (the Report view, the Overview's My Work cards)
+         are a grant of their own, which a group at Full Access on My Work
+         does not hold until it is given (the user found the Overview's My
+         Work missing, 2026-10-03). */
+      if (d && !admin && s[0] === 'ops' && (access.ops || 'none') !== 'none' && !access['ops.reports']) {
+        d.textContent += ' Team figures need Report view in Advanced.';
+      }
       var box = $('grFlags').querySelector('[data-n="' + s[0] + '"]');
       if (box) box.textContent = n ? '(' + n + ')' : '';
     });
     /* An admin opens everything, so the levels under it decide nothing and
        are not offered for change while the tick is on. */
     levelPicks().concat(partPicks()).forEach(function (sel) { sel.disabled = locked || admin; });
+    $('grScope').disabled = locked || admin;
     $('grPreset').value = presetOf();
     $('grPreset').disabled = locked;
     $('grPresetNote').hidden = $('grPreset').value !== 'custom';
-    $('grSum').textContent = sumText(access, admin, tuned);
+    $('grSum').textContent = sumText(access, admin, tuned, readScope());
   }
   function applyPreset(k) {
     flagBoxes().forEach(function (cb) { if (cb.getAttribute('data-f') === 'is_admin') cb.checked = k === 'admin'; });
+    $('grScope').value = 'all';
     if (k !== 'admin') {
       var acc = PRESETS[k];
       levelPicks().forEach(function (sel) { sel.value = acc[sel.getAttribute('data-sec')] || 'none'; });
@@ -957,6 +999,9 @@
       if (sel.value) opened[k.split('.')[0]] = true;
       sel.disabled = Boolean(r && r.slug === 'admin');
     });
+    $('grScope').value = r && r.client_scope === 'own' ? 'own' : 'all';
+    $('grScope').disabled = Boolean(r && r.slug === 'admin');
+    if ($('grScope').value === 'own') opened.clients = true;
     Object.keys(PARTS).forEach(function (sec) { foldSec(sec, Boolean(opened[sec])); });
     flagBoxes().forEach(function (cb) {
       var k = cb.getAttribute('data-f');
@@ -987,6 +1032,7 @@
       if (name !== r.name) patch.name = name;
       Object.keys(flags).forEach(function (k) { if (Boolean(r[k]) !== flags[k]) patch[k] = flags[k]; });
       if (JSON.stringify(accessOf(r)) !== JSON.stringify(access)) patch.access = access;
+      if ((r.client_scope || 'all') !== readScope()) patch.client_scope = readScope();
       shutGroupBox();
       if (Object.keys(patch).length) saveGroup(r, patch);
       return;
@@ -994,7 +1040,7 @@
     var slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     if (!slug) { msg('grMsg', 'Use letters or numbers in the name.', 'err'); return; }
     if (state.roles.some(function (r) { return r.slug === slug; })) { msg('grMsg', 'That group already exists.', 'err'); return; }
-    var row = { slug: slug, name: name, position: state.roles.length, access: access };
+    var row = { slug: slug, name: name, position: state.roles.length, access: access, client_scope: readScope() };
     Object.keys(flags).forEach(function (k) { row[k] = flags[k]; });
     db.from('team_roles').insert(row).then(function (q) {
       if (q.error) { msg('grMsg', q.error.message, 'err'); return; }
@@ -1037,8 +1083,12 @@
     $('tmUntil').value = m && m.access_until ? m.access_until : '';
     $('tmUntilTime').value = m && m.access_until && m.access_until_time ? String(m.access_until_time).slice(0, 5) : '';
     $('tmUntil').min = todayMy();
+    $('tmUntilTimeBox').hidden = !$('tmUntil').value;
     $('tmMobile').value = m ? (m.mobile || '') : '';
     $('tmCardOn').value = m && m.card_on === false ? 'off' : 'on';
+    $('tmCardMobile').value = m && m.card_mobile === false ? 'hide' : 'show';
+    $('tmCardSlug').value = m ? (m.card_slug || '') : '';
+    $('tmSlugPre').textContent = ((window.ADSPACE_CONFIG && window.ADSPACE_CONFIG.linkHost) || 'hi.adspace.me') + '/';
     fillRolePick(); $('tmRole').value = m ? m.role : 'account';
     msg('tmMsg', '');
     window.ADspaceSheet.show($('teamAddBox'), {
@@ -1047,6 +1097,12 @@
     });
   }
   $('teamAdd').addEventListener('click', function () { openMemberBox(null, this); });
+  ['input', 'change'].forEach(function (ev) {
+    $('tmUntil').addEventListener(ev, function () {
+      $('tmUntilTimeBox').hidden = !this.value;
+      if (!this.value) $('tmUntilTime').value = '';
+    });
+  });
 
   /* The bar's ⋯: one last day for everybody's access but your own (the
      user, 2026-10-01: "set all to expire 31/12/2027 unless extended"). */
@@ -1106,10 +1162,17 @@
     var mobile = ($('tmMobile').value || '').trim();
     var mobDigits = mobile.replace(/\D/g, '').length;
     if (mobile && (mobDigits < 8 || mobDigits > 15)) { msg('tmMsg', 'Enter a mobile number of 8 to 15 digits.', 'err'); $('tmMobile').focus(); return; }
+    var cardSlug = ($('tmCardSlug').value || '').trim().toLowerCase().replace(/^https?:\/\/[^/]*\//, '').replace(/^\/+|\/+$/g, '');
+    if (cardSlug && !/^[a-z0-9][a-z0-9._-]{0,79}$/.test(cardSlug)) {
+      msg('tmMsg', 'Use lowercase letters, digits, dots, dashes or underscores.', 'err'); $('tmCardSlug').focus(); return;
+    }
     var fields = { name: name, email: email, role: role, staff_code: staff || null, designation: desig || null,
                    department: $('tmDept').value || null, role_family: $('tmRoleStd').value || null,
                    capacity_minutes_week: capH >= 0 && $('tmCap').value ? Math.round(capH * 60) : null,
-                   mobile: mobile || null, card_on: $('tmCardOn').value !== 'off' };
+                   mobile: mobile || null, card_on: $('tmCardOn').value !== 'off',
+                   card_mobile: $('tmCardMobile').value !== 'hide' };
+    /* Empty makes it again from the name; unchanged is not sent. */
+    if (!editingMember || cardSlug !== (editingMember.card_slug || '')) fields.card_slug = cardSlug || null;
     if (!$('tmUntilRow').hidden) {
       var until = $('tmUntil').value || null;
       var untilTime = until ? ($('tmUntilTime').value || null) : null;
@@ -1131,19 +1194,25 @@
         shutMemberBox();
         db.from('team_members').update(fields).eq('id', m.id).then(function (r) {
           if (r.error) {
-            msg('teamMsg', /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
+            msg('teamMsg', /slug-taken/.test(r.error.message) ? 'That short link is already in use.'
+              : /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
               : /duplicate|unique/i.test(r.error.message)
               ? 'That email is already on the list.' : teamSaid(r.error), 'err');
             return;
           }
           /* A save that changed nothing files nothing. */
-          var moved = window.ADspaceRecords.changes(m, fields, [
+          /* An emptied short link is made again from the name by the database,
+             so it is not filed as "not set"; the next read shows the new one. */
+          var filed = fields.card_slug === null ? Object.assign({}, fields, { card_slug: m.card_slug }) : fields;
+          var moved = window.ADspaceRecords.changes(m, filed, [
             ['name', 'Name'], ['email', 'Email'], ['role', 'User group', roleName], ['staff_code', 'Employee ID'],
             ['designation', 'Position'], ['department', 'Department', function (v) { return DEPT[v] || v; }],
             ['role_family', 'Role standard', function (v) { return ROLE_STD[v] || v; }],
             ['capacity_minutes_week', 'Weekly capacity', function (v) { return Math.round(Number(v) / 60) + 'h'; }],
             ['access_until', 'Access until', dayWord], ['access_until_time', 'Access time', timeWord],
-            ['mobile', 'Mobile'], ['card_on', 'Namecard', function (v) { return v === false ? 'Off' : 'On'; }]]);
+            ['mobile', 'Mobile'], ['card_mobile', 'Mobile on card', function (v) { return off(v) ? 'Hide' : 'Show'; }],
+            ['card_on', 'Namecard', function (v) { return off(v) ? 'Off' : 'On'; }],
+            ['card_slug', 'Short link']]);
           if (moved) log('team.edited', name, moved);
           msg('teamMsg', 'Saved.', 'ok');
           load();
@@ -1175,7 +1244,8 @@
     db.from('team_members').insert(Object.assign({ active: true }, fields))
       .then(function (r) {
         if (r.error) {
-          msg('tmMsg', /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
+          msg('tmMsg', /slug-taken/.test(r.error.message) ? 'That short link is already in use.'
+            : /staff_code/i.test(r.error.message) ? 'That Employee ID is already on the list.'
             : /duplicate|unique/i.test(r.error.message)
             ? 'That email is already on the list.' : r.error.message, 'err');
           return;

@@ -607,7 +607,9 @@ section holds only what is true of the project as a whole.
     pages since 2026-10-03; required by CloudFront once the user has done
     `docs/S3-STORAGE.md` §6b.
   - The ALP checklists as forms.
-- Access: "Own clients only" (a row scope for Sales).
+- Access: client scope (built 2026-10-03) leaves the Activity record
+  unscoped, and a removal at Clients Full Access is not narrowed by Past
+  clients at View.
 - Console search (`js/search.js`, built 2026-09-28) reads names, codes and
   references only: not briefs, notes, comments or a document's body.
 - Performance rewards are worked out and confirmed in the portal; the
