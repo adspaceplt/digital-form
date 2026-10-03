@@ -758,4 +758,4 @@ The user had been building a digital namecard by hand on adspacestudios.com and 
 
 ### 2026-10-03 · Invoice links on mycdn.adspace.me
 The user opened a private invoice and found the address bar reading `myadspace.s3.ap-southeast-5.amazonaws.com`. The five-minute link was an S3 presigned URL because `private/` is closed to CloudFront. `sign-download` now signs a CloudFront URL instead (a canned policy for that one file, five minutes, with the key CloudFront already trusts for the media pass) once CloudFront serves `private/*` behind the key group and the bucket policy lets the distribution read it (`docs/S3-STORAGE.md` §5d). The switch is `cf_private_ready` in `app_secrets`, so turning it on or off needs no deploy.
-
+Switched on the same day: CloudFront's OAC was already on the origin, but the bucket policy let it in by name only once the Deny's placeholder carried the distribution's ID. Checked live: the signed link answers the PDF from mycdn.adspace.me, the address without its signature answers 403, and the S3 address answers 403.

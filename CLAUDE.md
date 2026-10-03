@@ -1153,7 +1153,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     keeps the key, never an address; View invoice and the client's PDF link
     ask `sign-download` for a five-minute link, the file found from what the
     caller may read (the campaign row; `get_campaign` for the client's key),
-    never from a path the browser sends. An older invoice keeps its public
+    never from a path the browser sends. The link is a CloudFront signed URL on
+    mycdn.adspace.me while `cf_private_ready` is `on` in `app_secrets` (on
+    since 2026-10-03, `docs/S3-STORAGE.md` §5d), else an S3 presigned one. An older invoice keeps its public
     address. A refused open on the client's page is one line in its
     language (`#amountMsg`).
   - Remove PDF, with Undo.
