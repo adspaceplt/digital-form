@@ -3443,7 +3443,10 @@
           });
           if (pairs.length) Promise.all(pairs).then(function (out) {
             var bad = out.filter(function (o) { return o.error || !o.data || !o.data.length; }).length;
-            if (bad) msg('setMsg', bad + (bad === 1 ? ' cover was' : ' covers were') + ' added unpaired. Pair it from its ⋯.', 'warn');
+            if (bad) msg('setMsg', bad + (bad === 1 ? ' cover was added unpaired. Pair it' : ' covers were added unpaired. Pair them') + ' from the ⋯.', 'warn');
+            loadPosts();
+          }).catch(function () {
+            msg('setMsg', 'Covers were added unpaired. Pair them from the ⋯.', 'warn');
             loadPosts();
           });
           logAction('post.added', state.client.name + ' — ' + (state.batch.title || ''),
