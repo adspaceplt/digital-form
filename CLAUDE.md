@@ -2090,6 +2090,9 @@ Each line is a rule that broke once. Its reason is in the archive.
     `namecard_save_mine`, filed `team.edited`); the Team sheet edits
     everybody's; a row ⋯ offers Open namecard while the card is on. No bar on
     the card's page: it is the card alone on white.
+  - the page is named eNamecard by ADspace (`<title>`, og:title) and, once
+    the card loads, `{name} • eNamecard by ADspace`; a link preview reads
+    the page before it runs, so it shows the general title.
 
 ### Activity record
 - Every tag written is named in `ACTION_LABEL` (`js/admin.js`).

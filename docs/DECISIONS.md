@@ -780,3 +780,6 @@ Found by the gate under load: a document scroll as a list finished loading ran t
 
 ### 2026-10-03 · The namecard's buttons hold still when it turns
 The user, with the front and back of a live card on an iPhone: should the two buttons be the same size. The pair under the card sized to its words, so Contact details made it the card's width on the front and Front shrank it on the back: both buttons moved under the finger that had just pressed one. The pair is now two equal halves of the portrait card's width on every face (under the landscape card at a desk too), and `tests/card.js` measures both faces against the card.
+
+### 2026-10-03 · eNamecard by ADspace
+The user asked for the card's title to read `{name} • eNamecard by ADspace`. The tab and og:title carry it once the card has loaded; the page's own head reads eNamecard by ADspace, because the portal is static on GitHub Pages and a WhatsApp or iMessage preview reads the head without running the page. A preview naming the colleague would need the head written per card on a server (the `hi.adspace.me` Worker could serve it); not built.
